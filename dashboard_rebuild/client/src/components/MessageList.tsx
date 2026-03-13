@@ -195,10 +195,21 @@ function ProvenanceBadge({ msg }: { msg: ChatMessage }) {
 interface MessageListProps {
   messages: ChatMessage[];
   onArtifactCreated: (artifact: { type: string; content: string; title?: string }) => void;
+  onStudioCapture?: (capture: {
+    content: string;
+    title?: string;
+    itemType?: string;
+    target: "note" | "summary_board";
+    sourceKind?: string;
+    sourcePath?: string;
+    sourceLocator?: Record<string, unknown>;
+  }) => void;
 }
 
 export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
-  function MessageList({ messages, onArtifactCreated }, ref) {
+  function MessageList({ messages, onArtifactCreated, onStudioCapture }, ref) {
+    const [openStudioMenuIndex, setOpenStudioMenuIndex] = useState<number | null>(null);
+
     return (
       <div ref={ref} className="flex-1 overflow-y-auto space-y-4 bg-black/40 p-4 lg:p-6">
         {messages.length === 0 && (
@@ -285,7 +296,7 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
               )}
 
               {msg.role === "assistant" && msg.content && !msg.isStreaming && (
-                <div className="flex items-center gap-1 mt-2 pt-2 border-t border-primary/20">
+                <div className="flex flex-wrap items-center gap-1 mt-2 pt-2 border-t border-primary/20">
                   <button
                     onClick={() =>
                       onArtifactCreated({
@@ -356,6 +367,62 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                       <Network className={`${ICON_SM} text-primary/60`} /> Save Map
                     </button>
                   )}
+                  {onStudioCapture ? (
+                    <div className="relative ml-auto">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setOpenStudioMenuIndex((prev) => (prev === i ? null : i))
+                        }
+                        className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
+                      >
+                        <StickyNote className={`${ICON_SM} text-primary/60`} />
+                        To Studio
+                      </button>
+                      {openStudioMenuIndex === i ? (
+                        <div className="absolute right-0 z-20 mt-1 w-48 border-2 border-primary/30 bg-black/95 p-1 shadow-xl">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onStudioCapture({
+                                content: msg.content,
+                                title: `Tutor note ${i}`,
+                                itemType: "note",
+                                target: "note",
+                                sourceKind: "tutor_chat",
+                              });
+                              setOpenStudioMenuIndex(null);
+                            }}
+                            className="block w-full px-2 py-2 text-left font-arcade text-[10px] text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                          >
+                            NOTE
+                            <div className="mt-1 font-terminal text-[11px] normal-case text-muted-foreground">
+                              Send this response into Studio exactly as-is.
+                            </div>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onStudioCapture({
+                                content: msg.content,
+                                title: `Tutor summary ${i}`,
+                                itemType: "summary",
+                                target: "summary_board",
+                                sourceKind: "tutor_chat",
+                              });
+                              setOpenStudioMenuIndex(null);
+                            }}
+                            className="block w-full px-2 py-2 text-left font-arcade text-[10px] text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                          >
+                            SUMMARY BOARD
+                            <div className="mt-1 font-terminal text-[11px] normal-case text-muted-foreground">
+                              Queue it for cleanup, merging, and later promotion.
+                            </div>
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
               )}
 

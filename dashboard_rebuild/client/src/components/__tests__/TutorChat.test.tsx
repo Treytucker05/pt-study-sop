@@ -293,6 +293,92 @@ describe("TutorChat", () => {
     expect(warnSpy).toHaveBeenCalled();
   });
 
+  it("fires onStudioCapture with note target when To Studio -> NOTE is clicked", async () => {
+    const onStudioCapture = vi.fn();
+    mockFetchForTutor([
+      { type: "token", content: "This is important content about ATP." },
+      { type: "done", model: "codex" },
+    ]);
+
+    render(
+      <TutorChat
+        sessionId="sess-capture-1"
+        availableMaterials={[]}
+        selectedMaterialIds={[]}
+        accuracyProfile="balanced"
+        onAccuracyProfileChange={vi.fn()}
+        onSelectedMaterialIdsChange={vi.fn()}
+        onArtifactCreated={vi.fn()}
+        onTurnComplete={vi.fn()}
+        onStudioCapture={onStudioCapture}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("Ask a question..."), {
+      target: { value: "Explain ATP synthesis" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    const studioBtn = await screen.findByRole("button", { name: /to studio/i });
+    fireEvent.click(studioBtn);
+
+    const noteBtn = await screen.findByText("NOTE");
+    fireEvent.click(noteBtn);
+
+    expect(onStudioCapture).toHaveBeenCalledWith(
+      expect.objectContaining({
+        target: "note",
+        itemType: "note",
+        sourceKind: "tutor_chat",
+        content: "This is important content about ATP.",
+      }),
+    );
+  });
+
+  it("fires onStudioCapture with summary_board target when To Studio -> SUMMARY BOARD is clicked", async () => {
+    const onStudioCapture = vi.fn();
+    mockFetchForTutor([
+      { type: "token", content: "Summary-worthy content here." },
+      { type: "done", model: "codex" },
+    ]);
+
+    render(
+      <TutorChat
+        sessionId="sess-capture-2"
+        availableMaterials={[]}
+        selectedMaterialIds={[]}
+        accuracyProfile="balanced"
+        onAccuracyProfileChange={vi.fn()}
+        onSelectedMaterialIdsChange={vi.fn()}
+        onArtifactCreated={vi.fn()}
+        onTurnComplete={vi.fn()}
+        onStudioCapture={onStudioCapture}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("Ask a question..."), {
+      target: { value: "What are the key pathways?" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    const studioBtn = await screen.findByRole("button", { name: /to studio/i });
+    fireEvent.click(studioBtn);
+
+    const summaryBtn = await screen.findByText("SUMMARY BOARD");
+    fireEvent.click(summaryBtn);
+
+    expect(onStudioCapture).toHaveBeenCalledWith(
+      expect.objectContaining({
+        target: "summary_board",
+        itemType: "summary",
+        sourceKind: "tutor_chat",
+        content: "Summary-worthy content here.",
+      }),
+    );
+  });
+
   it("shows a qualitative provenance label for mixed-source teaching replies", async () => {
     mockFetchForTutor([
       { type: "token", content: "This explanation uses both sources and [From training knowledge — verify with your textbooks]." },

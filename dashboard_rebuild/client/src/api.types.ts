@@ -1307,6 +1307,129 @@ export interface TutorSessionEndResult {
   ended_at: string;
 }
 
+export type TutorShellMode = "studio" | "tutor" | "schedule" | "publish";
+export type TutorBoardScope = "session" | "project" | "overall";
+export type TutorStudioItemScope = "session" | "project";
+export type TutorStudioItemStatus = "captured" | "boarded" | "promoted" | "archived";
+
+export interface TutorProjectShellState {
+  active_tutor_session_id: string | null;
+  last_mode: TutorShellMode;
+  active_board_scope: TutorBoardScope;
+  active_board_id: number | null;
+  viewer_state: Record<string, unknown> | null;
+  selected_material_ids: number[];
+  revision: number;
+  updated_at: string | null;
+}
+
+export interface TutorProjectShellStateRequest {
+  course_id: number;
+  active_tutor_session_id?: string | null;
+  last_mode?: TutorShellMode;
+  active_board_scope?: TutorBoardScope;
+  active_board_id?: number | null;
+  viewer_state?: Record<string, unknown> | null;
+  selected_material_ids?: number[];
+  revision?: number;
+}
+
+export interface TutorProjectShellSessionSummary {
+  session_id: string;
+  course_id: number | null;
+  phase: TutorPhase;
+  topic: string;
+  status: TutorSessionStatus;
+  turn_count: number;
+  started_at: string;
+  ended_at: string | null;
+}
+
+export interface TutorProjectShellResponse {
+  course: {
+    id: number;
+    name: string;
+    code: string | null;
+    term?: string | null;
+    instructor?: string | null;
+    default_study_mode?: string | null;
+    delivery_format?: string | null;
+  };
+  workspace_state: TutorProjectShellState;
+  continuation: {
+    can_resume: boolean;
+    active_tutor_session_id: string | null;
+    last_mode: TutorShellMode;
+  };
+  active_session: TutorProjectShellSessionSummary | null;
+  recent_sessions: TutorProjectShellSessionSummary[];
+  counts: {
+    active_sessions: number;
+    session_count: number;
+    studio_total_items: number;
+    studio_captured_items: number;
+    studio_promoted_items: number;
+    pending_schedule_events: number;
+  };
+}
+
+export interface TutorStudioItem {
+  id: number;
+  course_id: number;
+  tutor_session_id: string | null;
+  scope: TutorStudioItemScope;
+  item_type: string;
+  source_kind: string | null;
+  title: string | null;
+  body_markdown: string | null;
+  source_path: string | null;
+  source_locator: Record<string, unknown> | null;
+  payload: unknown;
+  status: TutorStudioItemStatus;
+  promoted_from_id: number | null;
+  version: number;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface TutorStudioCaptureRequest {
+  course_id: number;
+  tutor_session_id?: string | null;
+  scope?: TutorStudioItemScope;
+  item_type: string;
+  source_kind?: string;
+  title?: string;
+  body_markdown?: string;
+  source_path?: string;
+  source_locator?: Record<string, unknown>;
+  payload?: unknown;
+  status?: TutorStudioItemStatus;
+  idempotency_key?: string;
+}
+
+export interface TutorStudioCaptureResponse {
+  request_id: string;
+  item: TutorStudioItem;
+}
+
+export interface TutorStudioRestoreResponse {
+  course_id: number;
+  items: TutorStudioItem[];
+  counts: {
+    total: number;
+    captured: number;
+    promoted: number;
+  };
+}
+
+export interface TutorStudioPromoteRequest {
+  item_id: number;
+  promotion_mode?: "copy" | "move";
+  target_scope?: "project";
+  idempotency_key?: string;
+}
+
 export interface TutorArtifactRequest {
   type: "note" | "card" | "map" | "structured_notes";
   content: string;

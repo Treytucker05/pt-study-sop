@@ -24,6 +24,64 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 
 ## Active Sprint 2026-03-12
 
+### Sprint 28: Course-Keyed Tutor Shell + Studio Foundation (2026-03-13)
+- [x] Claim scope: open the durable track for the course-keyed Tutor shell plan and land the first backend foundation slice for course-keyed shell state and summary APIs
+  - `conductor/tracks/course-keyed-tutor-shell_20260313/`
+  - `docs/root/TUTOR_TODO.md`
+  - `conductor/tracks.md`
+  - `brain/db_setup.py`
+  - `brain/dashboard/api_tutor.py`
+  - `brain/dashboard/api_tutor_projects.py`
+  - `brain/dashboard/api_tutor_studio.py`
+  - `brain/tests/test_tutor_project_shell.py`
+  - `dashboard_rebuild/client/src/api.ts`
+  - `dashboard_rebuild/client/src/api.types.ts`
+  - `dashboard_rebuild/client/src/__tests__/api.test.ts`
+- [x] Wave A: track + workboard bootstrap
+  - Create the Conductor track with durable `spec.md` and `plan.md`.
+  - Register the active track in `conductor/tracks.md`.
+  - Keep the full roadmap in the track rather than the flat planner queue.
+- [x] Wave B: backend shell-state foundation
+  - Add `project_workspace_state`.
+  - Add normalized Studio tables needed for future shell counts and restore behavior.
+  - Add a Tutor project-shell summary endpoint and a workspace-state persistence endpoint keyed by `course_id`.
+- [x] Wave C: verification
+  - Add targeted backend tests for the new tables and Tutor shell endpoints.
+  - Verify no existing Tutor session routes regress.
+  - Wire the new Tutor shell + Studio contract into the frontend API layer and verify it.
+- [x] Validation
+  - `pytest brain/tests/test_tutor_project_shell.py brain/tests/test_tutor_session_linking.py brain/tests/test_dashboard_routes.py -q`
+  - `cd dashboard_rebuild && npm run test -- client/src/__tests__/api.test.ts`
+  - `cd dashboard_rebuild && npm run build`
+- [x] Wave D: standalone Schedule and Publish mode components
+  - Build reusable `TutorScheduleMode` and `TutorPublishMode` components under `dashboard_rebuild/client/src/components/` on a disjoint write scope from the shell integration.
+  - Reuse existing planner, syllabus, calendar, Anki, and Obsidian APIs/components where practical without changing `pages/tutor.tsx` unless strictly required.
+  - Add focused component tests and keep the result drop-in ready for later Tutor shell wiring.
+  - Validation:
+    - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/SyllabusViewTab.test.tsx client/src/components/__tests__/TutorScheduleMode.test.tsx client/src/components/__tests__/TutorPublishMode.test.tsx`
+    - `cd dashboard_rebuild && npm run build`
+
+### Sprint 27: Trey’s Swarm Planner Skill (2026-03-13)
+- [x] Claim scope: package the planning method used in this repo into a reusable `treys-swarm-planner` skill with a portable personal core and a PT Study System repo adapter
+  - `C:\Users\treyt\.agents\skills\treys-swarm-planner\`
+  - `C:\pt-study-sop\.codex\skills\treys-swarm-planner-repo\`
+  - `docs/root/TUTOR_TODO.md`
+  - `conductor/tracks/GENERAL/log.md`
+- [x] Wave A: core skill contract
+  - Create the personal `treys-swarm-planner` package with `SKILL.md`, `reference.md`, `examples.md`, and reusable planning/audit/task templates.
+  - Lock the generic workflow: ground context, define goal/constraints/out-of-scope/assumptions, build backward, attach task gates, audit with multiple reviewers, revise, and convert to executable tasks.
+- [x] Wave B: PT repo adapter
+  - Create the repo-local `treys-swarm-planner-repo` package that maps the generic workflow onto repo canon, Conductor tracks, planner APIs, and `study_tasks`.
+  - Explicitly forbid obsolete task-board assumptions and duplicate project/task systems.
+- [x] Wave C: dry review and closeout
+  - Run a structural dry review against a real planning scenario and tighten both skill packages until the workflow is clear and reusable.
+- [x] Validation
+  - Manual skill-package checklist:
+    - personal core skill works without PT repo assumptions
+    - repo adapter references `AGENTS.md`, `docs/root/TUTOR_STUDY_BUDDY_CANON.md`, `docs/root/TUTOR_TODO.md`, `conductor/tracks/`, planner APIs, and `study_tasks`
+    - both packages require multi-review audit and revised final plan before acceptance
+    - task-conversion guidance supports flat markdown output and queue-backed planner output
+
 ### Sprint 26: Gap Hardening Before Tutor Deep Dive (2026-03-12)
 - [ ] Claim scope: tighten shell/workspace proof, Methods/chains page-level proof, and one true full-circle Tutor session proof before deeper Tutor feature work
   - `docs/root/TUTOR_TODO.md`

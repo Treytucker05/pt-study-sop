@@ -569,6 +569,24 @@ describe("api.tutor", () => {
     );
   });
 
+  it("getProjectShell builds course query", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ course: { id: 1 }, workspace_state: {} }));
+    await api.tutor.getProjectShell({ course_id: 1, session_id: "tutor-123" });
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).toContain("/api/tutor/project-shell?");
+    expect(url).toContain("course_id=1");
+    expect(url).toContain("session_id=tutor-123");
+  });
+
+  it("saveProjectShellState sends PUT", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ course_id: 1, workspace_state: { revision: 1 } }));
+    await api.tutor.saveProjectShellState({ course_id: 1, revision: 0 });
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/tutor/project-shell/state",
+      expect.objectContaining({ method: "PUT" })
+    );
+  });
+
   it("endSession sends POST", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse({ ended: true }));
     await api.tutor.endSession("tutor-123");
@@ -597,6 +615,38 @@ describe("api.tutor", () => {
     mockFetch.mockResolvedValueOnce(jsonResponse({}));
     await api.tutor.getContentSources();
     expect(mockFetch).toHaveBeenCalledWith("/api/tutor/content-sources", expect.anything());
+  });
+
+  it("captureStudioItem sends POST", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ request_id: "req-1", item: { id: 1 } }));
+    await api.tutor.captureStudioItem({ course_id: 1, item_type: "note" });
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/tutor/studio/capture",
+      expect.objectContaining({ method: "POST" })
+    );
+  });
+
+  it("getMaterialFileUrl returns the direct material file route", () => {
+    expect(api.tutor.getMaterialFileUrl(42)).toBe("/api/tutor/materials/42/file");
+  });
+
+  it("restoreStudioItems builds query string", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ items: [], counts: { total: 0, captured: 0, promoted: 0 } }));
+    await api.tutor.restoreStudioItems({ course_id: 1, tutor_session_id: "tutor-123", scope: "session" });
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).toContain("/api/tutor/studio/restore?");
+    expect(url).toContain("course_id=1");
+    expect(url).toContain("tutor_session_id=tutor-123");
+    expect(url).toContain("scope=session");
+  });
+
+  it("promoteStudioItem sends POST", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ request_id: "req-1", item: { id: 1 } }));
+    await api.tutor.promoteStudioItem({ item_id: 1, promotion_mode: "copy" });
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/tutor/studio/promote",
+      expect.objectContaining({ method: "POST" })
+    );
   });
 
   it("triggerEmbed sends POST", async () => {

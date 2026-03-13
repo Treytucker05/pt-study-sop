@@ -2213,6 +2213,37 @@ def get_material_content(material_id: int):
     )
 
 
+@tutor_bp.route("/materials/<int:material_id>/file", methods=["GET"])
+def get_material_file(material_id: int):
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    cur.execute(
+        "SELECT id, source_path, file_path FROM rag_docs "
+        "WHERE id = ? AND COALESCE(corpus, 'materials') = 'materials'",
+        (material_id,),
+    )
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        return jsonify({"error": "Material not found"}), 404
+
+    file_candidates = [
+        str(row["file_path"] or "").strip(),
+        str(row["source_path"] or "").strip(),
+    ]
+    for raw_path in file_candidates:
+        if not raw_path:
+            continue
+        candidate = Path(raw_path)
+        if candidate.exists() and candidate.is_file():
+            return send_file(candidate)
+
+    return jsonify({"error": "Material file not found"}), 404
+
+
 @tutor_bp.route("/materials/<int:material_id>/asset/<path:asset_path>", methods=["GET"])
 def get_material_asset(material_id: int, asset_path: str):
     conn = get_connection()

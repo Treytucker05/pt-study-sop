@@ -40,6 +40,7 @@ export function TutorChat({
   onSelectedMaterialIdsChange,
   onMaterialsChanged,
   onArtifactCreated,
+  onStudioCapture,
   onTurnComplete,
   initialTurns,
 }: TutorChatProps) {
@@ -274,6 +275,7 @@ export function TutorChat({
           ref={scrollRef}
           messages={messages}
           onArtifactCreated={onArtifactCreated}
+          onStudioCapture={onStudioCapture}
         />
 
         <div className="flex flex-col gap-3 p-4 lg:p-5 border-t-2 border-primary/20 bg-black/50">

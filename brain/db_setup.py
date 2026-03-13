@@ -2091,6 +2091,178 @@ def init_database():
         ON tutor_session_learning_objectives(lo_id)
     """)
 
+    # ------------------------------------------------------------------
+    # Tutor shell state + normalized Studio persistence
+    # ------------------------------------------------------------------
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS project_workspace_state (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            course_id INTEGER NOT NULL UNIQUE,
+            active_tutor_session_id TEXT,
+            last_mode TEXT NOT NULL DEFAULT 'studio',
+            active_board_scope TEXT NOT NULL DEFAULT 'project',
+            active_board_id INTEGER,
+            viewer_state_json TEXT,
+            selected_material_ids_json TEXT NOT NULL DEFAULT '[]',
+            revision INTEGER NOT NULL DEFAULT 0,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(course_id) REFERENCES courses(id),
+            FOREIGN KEY(active_tutor_session_id) REFERENCES tutor_sessions(session_id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_project_workspace_state_course
+        ON project_workspace_state(course_id)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS studio_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            course_id INTEGER NOT NULL,
+            tutor_session_id TEXT,
+            scope TEXT NOT NULL DEFAULT 'session',
+            item_type TEXT NOT NULL,
+            source_kind TEXT,
+            title TEXT,
+            body_markdown TEXT,
+            source_path TEXT,
+            source_locator_json TEXT,
+            payload_json TEXT,
+            status TEXT NOT NULL DEFAULT 'captured',
+            promoted_from_id INTEGER,
+            version INTEGER NOT NULL DEFAULT 1,
+            deleted_at TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT,
+            FOREIGN KEY(course_id) REFERENCES courses(id),
+            FOREIGN KEY(tutor_session_id) REFERENCES tutor_sessions(session_id),
+            FOREIGN KEY(promoted_from_id) REFERENCES studio_items(id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_studio_items_course_scope
+        ON studio_items(course_id, scope, status)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_studio_items_session
+        ON studio_items(tutor_session_id, created_at DESC)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS studio_item_revisions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            studio_item_id INTEGER NOT NULL,
+            revision INTEGER NOT NULL,
+            body_markdown TEXT,
+            payload_json TEXT,
+            source_locator_json TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(studio_item_id, revision),
+            FOREIGN KEY(studio_item_id) REFERENCES studio_items(id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_studio_item_revisions_item
+        ON studio_item_revisions(studio_item_id, revision DESC)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS studio_boards (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            course_id INTEGER,
+            tutor_session_id TEXT,
+            board_scope TEXT NOT NULL,
+            name TEXT NOT NULL,
+            version INTEGER NOT NULL DEFAULT 1,
+            deleted_at TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT,
+            FOREIGN KEY(course_id) REFERENCES courses(id),
+            FOREIGN KEY(tutor_session_id) REFERENCES tutor_sessions(session_id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_studio_boards_scope
+        ON studio_boards(course_id, tutor_session_id, board_scope)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS studio_board_entries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            board_id INTEGER NOT NULL,
+            studio_item_id INTEGER NOT NULL,
+            group_key TEXT,
+            column_key TEXT,
+            x REAL,
+            y REAL,
+            w REAL,
+            h REAL,
+            sort_order INTEGER DEFAULT 0,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(board_id, studio_item_id),
+            FOREIGN KEY(board_id) REFERENCES studio_boards(id),
+            FOREIGN KEY(studio_item_id) REFERENCES studio_items(id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_studio_board_entries_board
+        ON studio_board_entries(board_id, sort_order)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS studio_actions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            idempotency_key TEXT NOT NULL UNIQUE,
+            course_id INTEGER NOT NULL,
+            tutor_session_id TEXT,
+            action_type TEXT NOT NULL,
+            destination_kind TEXT,
+            request_id TEXT,
+            status TEXT NOT NULL DEFAULT 'completed',
+            details_json TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(course_id) REFERENCES courses(id),
+            FOREIGN KEY(tutor_session_id) REFERENCES tutor_sessions(session_id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_studio_actions_course_created
+        ON studio_actions(course_id, created_at DESC)
+        """
+    )
+
     # --- Migration to drop mode column if it still exists ---
     cursor.execute("PRAGMA table_info(tutor_sessions)")
     ts_cols = {col[1] for col in cursor.fetchall()}

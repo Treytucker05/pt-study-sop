@@ -267,6 +267,16 @@ import dashboard.api_tutor_turns  # noqa: E402,F401 — registers routes on tuto
 import dashboard.api_tutor_sessions  # noqa: E402,F401 — registers routes on tutor_bp
 
 # ---------------------------------------------------------------------------
+# Tutor project shell routes  (extracted to api_tutor_projects.py)
+# ---------------------------------------------------------------------------
+import dashboard.api_tutor_projects  # noqa: E402,F401 — registers routes on tutor_bp
+
+# ---------------------------------------------------------------------------
+# Tutor Studio routes  (extracted to api_tutor_studio.py)
+# ---------------------------------------------------------------------------
+import dashboard.api_tutor_studio  # noqa: E402,F401 — registers routes on tutor_bp
+
+# ---------------------------------------------------------------------------
 # Artifact routes  (extracted to api_tutor_artifacts.py)
 # ---------------------------------------------------------------------------
 import dashboard.api_tutor_artifacts  # noqa: E402,F401 — registers routes on tutor_bp

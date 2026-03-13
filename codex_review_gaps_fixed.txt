@@ -1,0 +1,20 @@
+NEEDS_WORK — one remaining behavioral regression risk.
+
+**Issue**
+- Project items created via promote keep a non‑null `tutor_session_id`, but `restore_studio_items` now only includes project items when `tutor_session_id IS NULL` or matches the filter. That means promoted project items from other sessions will be hidden whenever a `tutor_session_id` filter is used (which the UI does for project restore). This is in `brain/dashboard/api_tutor_studio.py` (restore filter and promote copy/move paths).  
+
+**Why this matters**
+- It effectively makes “project” items session‑scoped unless the session matches, which undercuts the project/overall boards across sessions.
+
+**Fix options (pick one)**
+1. Set `tutor_session_id = NULL` when promoting into project scope (copy and move).  
+2. Relax restore filtering so `scope='project'` items are returned regardless of `tutor_session_id` when `scope=project` is requested.  
+3. Stop passing `tutor_session_id` for project-scope restores in the client.
+
+**Test gap**
+- Add a test that promotes a session item to project scope (non‑null `tutor_session_id`) and verifies it appears in project restore even when `tutor_session_id` is different, or assert that promote nulls it.
+
+Everything else you listed is present as described, but the above is a correctness risk I can’t sign off on yet. I didn’t run the tests. 
+
+Recommended next step:
+1. Choose the intended behavior for project items and update either the promote path or restore filter, then add the targeted test.

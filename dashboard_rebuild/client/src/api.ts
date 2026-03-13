@@ -36,6 +36,9 @@ import type {
   TutorSessionPreflightRequest, TutorSessionPreflightResponse,
   TutorCreateSessionRequest,
   TutorSession, TutorSessionWithTurns, TutorSessionEndResult, TutorSessionSummary,
+  TutorProjectShellResponse, TutorProjectShellState, TutorProjectShellStateRequest,
+  TutorStudioCaptureRequest, TutorStudioCaptureResponse, TutorStudioRestoreResponse,
+  TutorStudioPromoteRequest,
   TutorArtifactRequest, TutorArtifactResult,
   TutorContentSources,
   TutorChainRequest, TutorChain, TutorChainWithSessions,
@@ -696,6 +699,19 @@ export const api = {
         method: "POST",
         body: JSON.stringify(data),
       }),
+    getProjectShell: (params: { course_id: number; session_id?: string }) => {
+      const qs = new URLSearchParams({ course_id: String(params.course_id) });
+      if (params.session_id) qs.set("session_id", params.session_id);
+      return request<TutorProjectShellResponse>(`/tutor/project-shell?${qs.toString()}`);
+    },
+    saveProjectShellState: (data: TutorProjectShellStateRequest) =>
+      request<{ course_id: number; workspace_state: TutorProjectShellState }>(
+        "/tutor/project-shell/state",
+        {
+          method: "PUT",
+          body: JSON.stringify(data),
+        },
+      ),
     getSession: (sessionId: string) =>
       request<TutorSessionWithTurns>(`/tutor/session/${sessionId}`),
     saveStrategyFeedback: (
@@ -759,6 +775,22 @@ export const api = {
       }>(`/tutor/session/${sessionId}/artifacts`, {
         method: "DELETE",
         body: JSON.stringify({ indexes }),
+      }),
+    captureStudioItem: (data: TutorStudioCaptureRequest) =>
+      request<TutorStudioCaptureResponse>("/tutor/studio/capture", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    restoreStudioItems: (params: { course_id: number; tutor_session_id?: string; scope?: "session" | "project" }) => {
+      const qs = new URLSearchParams({ course_id: String(params.course_id) });
+      if (params.tutor_session_id) qs.set("tutor_session_id", params.tutor_session_id);
+      if (params.scope) qs.set("scope", params.scope);
+      return request<TutorStudioRestoreResponse>(`/tutor/studio/restore?${qs.toString()}`);
+    },
+    promoteStudioItem: (data: TutorStudioPromoteRequest) =>
+      request<TutorStudioCaptureResponse>("/tutor/studio/promote", {
+        method: "POST",
+        body: JSON.stringify(data),
       }),
     getContentSources: () =>
       request<TutorContentSources>("/tutor/content-sources"),
@@ -843,6 +875,7 @@ export const api = {
         `/tutor/materials/${id}/reextract`,
         { method: "POST" },
       ),
+    getMaterialFileUrl: (id: number) => `${API_BASE}/tutor/materials/${id}/file`,
     getMaterialContent: (id: number) =>
       request<MaterialContent>(`/tutor/materials/${id}/content`),
     autoLinkMaterials: () =>

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Network, PenTool, Table2, FilePlus2 } from "lucide-react";
 
@@ -10,6 +10,21 @@ import { ExcalidrawCanvas } from "@/components/brain/ExcalidrawCanvas";
 import { GraphPanel } from "@/components/brain/GraphPanel";
 import { ComparisonTableEditor } from "@/components/ComparisonTableEditor";
 import type { BrainWorkspace } from "@/components/brain/useBrainWorkspace";
+import { useChromiumDictation } from "@/lib/useChromiumDictation";
+import {
+  createBroadcastChannelTransport,
+  createNotePatch,
+  createPopoutEditHandshakeManager,
+  createStateSnapshot,
+  type BroadcastChannelTransport,
+  type PopoutSyncMessage,
+} from "@/lib/popoutSync";
+import {
+  buildTutorWorkspacePopoutHtml,
+  TUTOR_WORKSPACE_NOTE_POPOUT_CHANNEL,
+  TUTOR_WORKSPACE_VIEWER_POPOUT_CHANNEL,
+  type TutorWorkspacePopoutSnapshot,
+} from "@/lib/tutorWorkspacePopout";
 
 type TutorWorkspaceMode = "notes" | "canvas" | "graph" | "table";
 
@@ -28,6 +43,29 @@ function sanitizeNoteTitle(input: string) {
   return input.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
+type WorkspacePopoutMode = "viewer" | "note";
+
+type WorkspacePopoutHandle = {
+  mode: WorkspacePopoutMode;
+  popup: Window | null;
+  transport: BroadcastChannelTransport;
+  unsubscribe: (() => void) | null;
+};
+
+function appendDictatedText(existing: string, dictated: string) {
+  const normalized = dictated.trim();
+  if (!normalized) return existing;
+  if (!existing.trim()) {
+    return normalized;
+  }
+  const separator = existing.endsWith("\n\n")
+    ? ""
+    : existing.endsWith("\n")
+      ? "\n"
+      : "\n\n";
+  return `${existing}${separator}${normalized}`;
+}
+
 export function TutorWorkspaceSurface() {
   const [mode, setMode] = useState<TutorWorkspaceMode>("notes");
   const [currentFile, setCurrentFile] = useState<string | null>(null);
@@ -37,6 +75,14 @@ export function TutorWorkspaceSurface() {
   const [isSaving, setIsSaving] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [chatExpanded, setChatExpanded] = useState(false);
+  const [popoutStatusMessage, setPopoutStatusMessage] = useState<string | null>(null);
+
+  const snapshotRevisionRef = useRef(0);
+  const popoutsRef = useRef<Record<WorkspacePopoutMode, WorkspacePopoutHandle | null>>({
+    viewer: null,
+    note: null,
+  });
+  const noteHandshakeRef = useRef(createPopoutEditHandshakeManager());
 
   const { data: obsidianConfig } = useQuery({
     queryKey: ["obsidian", "config"],
@@ -62,6 +108,16 @@ export function TutorWorkspaceSurface() {
     }
   }, []);
 
+  const handleDictatedText = useCallback((dictated: string) => {
+    setPreviewMode(false);
+    setFileContent((previous) => appendDictatedText(previous, dictated));
+    setHasChanges(true);
+  }, []);
+
+  const dictation = useChromiumDictation({
+    onText: handleDictatedText,
+  });
+
   const saveFile = useCallback(async () => {
     if (!currentFile) return;
     setIsSaving(true);
@@ -76,6 +132,178 @@ export function TutorWorkspaceSurface() {
       setIsSaving(false);
     }
   }, [currentFile, fileContent]);
+
+  const buildSnapshot = useCallback((): TutorWorkspacePopoutSnapshot => {
+    const title =
+      sanitizeNoteTitle(currentFile?.split("/").pop() || currentFile || "Tutor Note") ||
+      "Tutor Note";
+    return {
+      title,
+      currentFile,
+      content: fileContent,
+      previewMode,
+    };
+  }, [currentFile, fileContent, previewMode]);
+
+  const closePopout = useCallback((targetMode: WorkspacePopoutMode) => {
+    const handle = popoutsRef.current[targetMode];
+    if (!handle) return;
+    handle.unsubscribe?.();
+    handle.transport.close();
+    try {
+      handle.popup?.close();
+    } catch {
+      // Ignore browser popup close failures.
+    }
+    popoutsRef.current[targetMode] = null;
+  }, []);
+
+  const publishPopoutSnapshots = useCallback(() => {
+    const snapshot = buildSnapshot();
+    const revision = snapshotRevisionRef.current;
+
+    const viewer = popoutsRef.current.viewer;
+    if (viewer) {
+      viewer.transport.postMessage(createStateSnapshot(snapshot, revision, true));
+    }
+
+    const note = popoutsRef.current.note;
+    if (note) {
+      note.transport.postMessage(
+        createStateSnapshot(
+          snapshot,
+          revision,
+          !note.transport.available,
+        ),
+      );
+    }
+  }, [buildSnapshot]);
+
+  const handlePopoutMessage = useCallback(
+    (targetMode: WorkspacePopoutMode, message: PopoutSyncMessage) => {
+      if (message.type === "window.closed") {
+        closePopout(targetMode);
+        return;
+      }
+
+      if (message.type === "handshake.hello" || message.type === "handshake.ready") {
+        publishPopoutSnapshots();
+        return;
+      }
+
+      if (targetMode !== "note") return;
+
+      const noteHandle = popoutsRef.current.note;
+      if (!noteHandle) return;
+
+      if (message.type === "note.edit.request") {
+        const grant = noteHandshakeRef.current.grant(
+          message.clientId,
+          message.requestId,
+        );
+        noteHandle.transport.postMessage(grant);
+        setPopoutStatusMessage("Note popout editing granted.");
+        publishPopoutSnapshots();
+        return;
+      }
+
+      if (
+        message.type === "note.edit.patch" &&
+        noteHandshakeRef.current.isAuthorized(message.clientId, message.token)
+      ) {
+        setPreviewMode(false);
+        setFileContent(message.content);
+        setHasChanges(true);
+        snapshotRevisionRef.current = Math.max(
+          snapshotRevisionRef.current + 1,
+          message.revision,
+        );
+        noteHandle.transport.postMessage({
+          type: "note.edit.ack",
+          clientId: message.clientId,
+          revision: snapshotRevisionRef.current,
+        });
+        publishPopoutSnapshots();
+      }
+    },
+    [closePopout, publishPopoutSnapshots],
+  );
+
+  const openPopout = useCallback(
+    (targetMode: WorkspacePopoutMode) => {
+      if (!currentFile) {
+        setPopoutStatusMessage("Open a note before launching a popout.");
+        return;
+      }
+
+      const existing = popoutsRef.current[targetMode];
+      if (existing?.popup && !existing.popup.closed) {
+        existing.popup.focus();
+        publishPopoutSnapshots();
+        return;
+      }
+
+      const channelName =
+        targetMode === "note"
+          ? TUTOR_WORKSPACE_NOTE_POPOUT_CHANNEL
+          : TUTOR_WORKSPACE_VIEWER_POPOUT_CHANNEL;
+
+      const transport = createBroadcastChannelTransport(channelName);
+      const popup = window.open(
+        "",
+        targetMode === "note" ? "TutorWorkspaceNotePopout" : "TutorWorkspaceViewerPopout",
+        "popup=yes,width=980,height=760,resizable=yes,scrollbars=yes",
+      );
+
+      if (!popup) {
+        transport.close();
+        setPopoutStatusMessage("Popup blocked by the browser.");
+        return;
+      }
+
+      popup.document.write(
+        buildTutorWorkspacePopoutHtml({
+          channelName,
+          mode: targetMode,
+          initialSnapshot: buildSnapshot(),
+          liveSyncAvailable: transport.available,
+        }),
+      );
+      popup.document.close();
+
+      const unsubscribe = transport.available
+        ? transport.subscribe((message) => {
+            handlePopoutMessage(targetMode, message);
+          })
+        : null;
+
+      popoutsRef.current[targetMode] = {
+        mode: targetMode,
+        popup,
+        transport,
+        unsubscribe,
+      };
+
+      if (targetMode === "note" && !transport.available) {
+        setPopoutStatusMessage(
+          "BroadcastChannel unavailable. Note popout opened read-only.",
+        );
+      } else if (targetMode === "viewer" && !transport.available) {
+        setPopoutStatusMessage(
+          "BroadcastChannel unavailable. Viewer popout is showing a static snapshot.",
+        );
+      } else {
+        setPopoutStatusMessage(
+          targetMode === "note"
+            ? "Note popout opened. Waiting for live edit handshake."
+            : "Viewer popout opened.",
+        );
+      }
+
+      publishPopoutSnapshots();
+    },
+    [buildSnapshot, currentFile, handlePopoutMessage, publishPopoutSnapshots],
+  );
 
   const handleWikilinkClick = useCallback(
     async (noteName: string, shiftKey: boolean) => {
@@ -133,6 +361,18 @@ export function TutorWorkspaceSurface() {
     toggleFullscreen: () => setIsFullscreen((prev) => !prev),
     toggleChat: () => setChatExpanded((prev) => !prev),
   } as unknown as BrainWorkspace;
+
+  useEffect(() => {
+    snapshotRevisionRef.current += 1;
+    publishPopoutSnapshots();
+  }, [currentFile, fileContent, previewMode, publishPopoutSnapshots]);
+
+  useEffect(() => {
+    return () => {
+      closePopout("viewer");
+      closePopout("note");
+    };
+  }, [closePopout]);
 
   return (
     <div
@@ -220,7 +460,26 @@ export function TutorWorkspaceSurface() {
             </div>
           </div>
           <div className="min-h-0">
-            <VaultEditor workspace={notesWorkspace} />
+            <VaultEditor
+              workspace={notesWorkspace}
+              dictation={{
+                supported: dictation.supported,
+                isListening: dictation.isListening,
+                unsupportedReason: dictation.unsupportedReason,
+                toggle: () => {
+                  if (!currentFile) {
+                    setPopoutStatusMessage("Open a note before starting dictation.");
+                    return;
+                  }
+                  dictation.toggle();
+                },
+              }}
+              popout={{
+                statusMessage: popoutStatusMessage,
+                onOpenViewerPopout: () => openPopout("viewer"),
+                onOpenNotePopout: () => openPopout("note"),
+              }}
+            />
           </div>
         </div>
       ) : null}

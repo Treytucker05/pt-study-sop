@@ -2,6 +2,79 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-13 - Shared skill cleanup batch 1
+
+- Removed 9 low-priority shared skills from `C:\Users\treyt\.agents\skills` and cleaned their projected junctions from Codex, Claude, Cursor, and OpenCode where present:
+  - `business-competitive-ads`
+  - `business-content-writer`
+  - `business-growth-analysis`
+  - `sessions-to-blog`
+  - `research-bdi-cognitive`
+  - `agent-langgraph`
+  - `agent-openai-sdk`
+  - `agent-claude-code`
+  - `plugin-forge`
+- Intentionally kept `ui-ux-pro-max`.
+- Removed a second cleanup batch of 9 shared skills while intentionally keeping `create-skill`:
+  - `design-system-starter`
+  - `skill-judge`
+  - `create-rule`
+  - `code-split_Module_Rules`
+  - `branch-cleaner`
+  - `gh-address-comments`
+  - `pptx`
+  - `xlsx`
+  - `docx`
+- Removed a third cleanup batch of 8 shared skills while intentionally keeping `playground` and `mermaid-diagrams`:
+  - `command-creator`
+  - `create-pr`
+  - `dependency-updater`
+  - `dependency-upgrader`
+  - `database-design`
+  - `database-schema-designer`
+  - `c4-architecture`
+  - `qa-test-planner`
+- Removed a fourth cleanup batch of 10 shared skills:
+  - `agent-md-refactor`
+  - `agents-md`
+  - `readme-updater`
+  - `code-documentation`
+  - `release-notes`
+  - `update-cursor-settings`
+  - `video-transcript-downloader`
+  - `obsidian-bases`
+  - `file-organizer`
+  - `organizer`
+
+## 2026-03-13 - Trey's Swarm Planner skill added
+
+- Added the portable planning meta-skill [treys-swarm-planner](C:/Users/treyt/.agents/skills/treys-swarm-planner/SKILL.md) under `C:\Users\treyt\.agents\skills\treys-swarm-planner\`.
+- Added the PT Study System repo adapter [treys-swarm-planner-repo](C:/pt-study-sop/.codex/skills/treys-swarm-planner-repo/SKILL.md) under `C:\pt-study-sop\.codex\skills\treys-swarm-planner-repo\`.
+- The new skill pair now captures the planning method used in this repo:
+  - ground in repo/system truth
+  - define the exact final goal plus constraints/out-of-scope/assumptions
+  - build the plan backward into dependency-aware tasks with verification gates
+  - require a multi-review audit loop and revise until critical gaps are closed
+  - convert only the first unblocked wave into executable tasks
+- Hardened the initial draft after multi-agent review by adding:
+  - no-doc fallback grounding rules
+  - explicit queue-detection rules
+  - a workable definition of independent review
+  - backward-trace enforcement in the final plan template
+  - stronger first-wave-only task conversion and invalid-review rejection rules
+
+## 2026-03-13 - Trey-Autoresearch added
+
+- Added shared skill [trey-autoresearch](C:/Users/treyt/.agents/skills/trey-autoresearch/SKILL.md) under `C:\Users\treyt\.agents\skills\trey-autoresearch\`.
+- Projected the shared skill into `C:\Users\treyt\.codex\skills\`, `C:\Users\treyt\.claude\skills\`, `C:\Users\treyt\.cursor\skills\`, and `C:\Users\treyt\.opencode\skills\` using per-skill junctions.
+- Translated the screenshot's "infinite mode" brief into a practical improve-measure-checkpoint loop:
+  - baseline first
+  - one bottleneck hypothesis at a time
+  - add tests with each experiment
+  - checkpoint only measured wins
+  - safely drop failed experiments
+- Kept the skill generic enough for cross-project use while making it explicitly obey the active repo's `AGENTS.md` and run/test rules.
+
 ## 2026-03-12 - Docs governance lane Wave A canon collapse
 
 - Reclassified `docs/root/TUTOR_TODO.md` as execution-only and removed product-truth wording.

@@ -1,13 +1,16 @@
 import Layout from "@/components/layout";
-import { Card } from "@/components/ui/card";
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type {
   AppLearningObjective,
   Material,
+  TutorBoardScope,
   TutorAccuracyProfile,
   TutorObjectiveScope,
+  TutorProjectShellResponse,
+  TutorShellMode,
   TutorSessionSummary,
   TutorTemplateChain,
   TutorSessionWithTurns,
@@ -28,6 +31,9 @@ import { TutorWizard } from "@/components/TutorWizard";
 import { TutorChat } from "@/components/TutorChat";
 import { TutorArtifacts, type TutorArtifact } from "@/components/TutorArtifacts";
 import { TutorWorkspaceSurface } from "@/components/TutorWorkspaceSurface";
+import { TutorStudioMode } from "@/components/TutorStudioMode";
+import { TutorScheduleMode } from "@/components/TutorScheduleMode";
+import { TutorPublishMode } from "@/components/TutorPublishMode";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -85,6 +91,54 @@ type TutorBrainLaunchContext = {
   investigationId?: string;
   questionId?: string;
 };
+
+type TutorShellQuery = {
+  courseId?: number;
+  sessionId?: string;
+  mode?: TutorShellMode;
+  boardScope?: TutorBoardScope;
+  boardId?: number;
+};
+
+function readTutorShellQuery(): TutorShellQuery {
+  if (typeof window === "undefined") return {};
+  const params = new URLSearchParams(window.location.search);
+  const parsedCourseId = Number.parseInt(params.get("course_id") || "", 10);
+  const parsedBoardId = Number.parseInt(params.get("board_id") || "", 10);
+  const rawMode = params.get("mode");
+  const rawBoardScope = params.get("board_scope");
+  return {
+    courseId: Number.isFinite(parsedCourseId) ? parsedCourseId : undefined,
+    sessionId: params.get("session_id") || undefined,
+    mode:
+      rawMode === "studio" || rawMode === "tutor" || rawMode === "schedule" || rawMode === "publish"
+        ? rawMode
+        : undefined,
+    boardScope:
+      rawBoardScope === "session" || rawBoardScope === "project" || rawBoardScope === "overall"
+        ? rawBoardScope
+        : undefined,
+    boardId: Number.isFinite(parsedBoardId) ? parsedBoardId : undefined,
+  };
+}
+
+function writeTutorShellQuery(query: TutorShellQuery) {
+  if (typeof window === "undefined") return;
+  const params = new URLSearchParams(window.location.search);
+  if (typeof query.courseId === "number") params.set("course_id", String(query.courseId));
+  else params.delete("course_id");
+  if (query.sessionId) params.set("session_id", query.sessionId);
+  else params.delete("session_id");
+  if (query.mode) params.set("mode", query.mode);
+  else params.delete("mode");
+  if (query.boardScope) params.set("board_scope", query.boardScope);
+  else params.delete("board_scope");
+  if (typeof query.boardId === "number") params.set("board_id", String(query.boardId));
+  else params.delete("board_id");
+
+  const next = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`;
+  window.history.replaceState({}, "", next);
+}
 
 function parseFacilitationSteps(prompt: string | undefined | null): string[] {
   if (!prompt) return [];
@@ -209,6 +263,7 @@ function inferStudyUnitFromMaterial(material: Material): string {
 
 export default function Tutor() {
   const queryClient = useQueryClient();
+  const initialRouteQuery = useMemo(() => readTutorShellQuery(), []);
   const tutorMaterialStorageKey = TUTOR_SELECTED_MATERIAL_IDS_KEY;
   const tutorAccuracyProfileKey = "tutor.accuracy_profile.v1";
   const tutorObjectiveScopeKey = "tutor.objective_scope.v1";
@@ -218,13 +273,27 @@ export default function Tutor() {
   const tutorBrainHandoffKey = "tutor.open_from_brain.v1";
 
   // Session state
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(
+    initialRouteQuery.sessionId || null,
+  );
   const [isStarting, setIsStarting] = useState(false);
   const [hasRestored, setHasRestored] = useState(false);
   const [restoredTurns, setRestoredTurns] = useState<{ question: string; answer: string | null }[] | undefined>();
+  const [shellMode, setShellMode] = useState<TutorShellMode>(initialRouteQuery.mode || "studio");
+  const [activeBoardScope, setActiveBoardScope] = useState<TutorBoardScope>(
+    initialRouteQuery.boardScope || "project",
+  );
+  const [activeBoardId, setActiveBoardId] = useState<number | null>(
+    initialRouteQuery.boardId ?? null,
+  );
+  const [viewerState, setViewerState] = useState<Record<string, unknown> | null>(null);
+  const [shellRevision, setShellRevision] = useState(0);
+  const [shellHydratedCourseId, setShellHydratedCourseId] = useState<number | null>(null);
+  const lastPersistedShellKeyRef = useRef("");
+  const resumedFromProjectShellRef = useRef(false);
 
   // Filter state
-  const [courseId, setCourseId] = useState<number | undefined>();
+  const [courseId, setCourseId] = useState<number | undefined>(initialRouteQuery.courseId);
   const [selectedMaterials, setSelectedMaterials] = useState<number[]>(() =>
     readTutorSelectedMaterialIds()
   );
@@ -268,7 +337,6 @@ export default function Tutor() {
   const [turnCount, setTurnCount] = useState(0);
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [showArtifacts, setShowArtifacts] = useState(false);
-  const [showWorkspace, setShowWorkspace] = useState(false);
   const [showSetup, setShowSetup] = useState<boolean>(() => {
     try {
       return !Boolean(localStorage.getItem(tutorActiveSessionKey));
@@ -549,6 +617,29 @@ export default function Tutor() {
     queryFn: () => api.tutor.listSessions({ limit: 10 }),
   });
 
+  const { data: projectShell } = useQuery<TutorProjectShellResponse>({
+    queryKey: ["tutor-project-shell", courseId, activeSessionId],
+    queryFn: () =>
+      api.tutor.getProjectShell({
+        course_id: courseId!,
+        ...(activeSessionId ? { session_id: activeSessionId } : {}),
+      }),
+    enabled: hasRestored && typeof courseId === "number",
+    staleTime: 30 * 1000,
+  });
+
+  const { data: projectStudioItems } = useQuery({
+    queryKey: ["tutor-studio-restore", "project", courseId, activeSessionId],
+    queryFn: () =>
+      api.tutor.restoreStudioItems({
+        course_id: courseId!,
+        tutor_session_id: activeSessionId || undefined,
+        scope: "project",
+      }),
+    enabled: hasRestored && typeof courseId === "number",
+    staleTime: 15 * 1000,
+  });
+
   // Config check (runs once on mount)
   const { data: configStatus } = useQuery<TutorConfigCheck>({
     queryKey: ["tutor-config-check"],
@@ -769,6 +860,7 @@ export default function Tutor() {
       // Force-refresh materials list so chat sidebar is up-to-date
       queryClient.invalidateQueries({ queryKey: ["tutor-chat-materials-all-enabled"] });
       setShowSetup(false);
+      setShellMode("tutor");
 
       toast.success("Tutor session started");
       queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
@@ -793,6 +885,7 @@ export default function Tutor() {
     setShowSetup(true);
     setShowArtifacts(false);
     setShowEndConfirm(false);
+    setShellMode("studio");
     try {
       localStorage.removeItem(tutorActiveSessionKey);
     } catch (error) {
@@ -898,6 +991,50 @@ export default function Tutor() {
     [activeSessionId, artifacts.length]
   );
 
+  const handleStudioCapture = useCallback(
+    async (capture: {
+      content: string;
+      title?: string;
+      itemType?: string;
+      target: "note" | "summary_board";
+      sourceKind?: string;
+      sourcePath?: string;
+      sourceLocator?: Record<string, unknown>;
+    }) => {
+      if (typeof courseId !== "number") {
+        toast.error("Select a course before sending items to Studio.");
+        return;
+      }
+      try {
+        await api.tutor.captureStudioItem({
+          course_id: courseId,
+          tutor_session_id: activeSessionId,
+          scope: activeSessionId ? "session" : "project",
+          item_type: capture.itemType || "note",
+          title: capture.title,
+          body_markdown: capture.content,
+          source_kind: capture.sourceKind || "tutor_chat",
+          source_path: capture.sourcePath,
+          source_locator: capture.sourceLocator,
+          status: capture.target === "summary_board" ? "boarded" : "captured",
+        });
+        setShellMode("studio");
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["tutor-studio-restore"] }),
+          queryClient.invalidateQueries({ queryKey: ["tutor-project-shell"] }),
+        ]);
+        toast.success(
+          capture.target === "summary_board"
+            ? "Sent to Studio Summary Board"
+            : "Sent to Studio Note",
+        );
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to send item to Studio");
+      }
+    },
+    [activeSessionId, courseId, queryClient],
+  );
+
   const advanceBlock = useCallback(async () => {
     if (!activeSessionId) return;
     try {
@@ -983,6 +1120,7 @@ export default function Tutor() {
       try {
         const session = await api.tutor.getSession(sessionId);
         applySessionState(session);
+        setShellMode("tutor");
         toast.success("Session resumed");
       } catch (err) {
         toast.error(`Failed to resume session: ${err instanceof Error ? err.message : "Unknown"}`);
@@ -1131,6 +1269,135 @@ export default function Tutor() {
     tutorWizardStorageKey,
   ]);
 
+  useEffect(() => {
+    if (!projectShell || typeof courseId !== "number") return;
+
+    if (shellHydratedCourseId !== courseId) {
+      setShellHydratedCourseId(courseId);
+      setShellRevision(projectShell.workspace_state.revision || 0);
+
+      if (
+        !initialRouteQuery.mode &&
+        shellMode === "studio" &&
+        projectShell.workspace_state.last_mode
+      ) {
+        setShellMode(projectShell.workspace_state.last_mode);
+      }
+      if (
+        !initialRouteQuery.boardScope &&
+        activeBoardScope === "project" &&
+        projectShell.workspace_state.active_board_scope
+      ) {
+        setActiveBoardScope(projectShell.workspace_state.active_board_scope);
+      }
+      if (
+        initialRouteQuery.boardId === undefined &&
+        typeof projectShell.workspace_state.active_board_id === "number"
+      ) {
+        setActiveBoardId(projectShell.workspace_state.active_board_id);
+      }
+      if (projectShell.workspace_state.viewer_state) {
+        setViewerState(projectShell.workspace_state.viewer_state);
+      } else {
+        setViewerState(null);
+      }
+      if (
+        selectedMaterials.length === 0 &&
+        Array.isArray(projectShell.workspace_state.selected_material_ids) &&
+        projectShell.workspace_state.selected_material_ids.length > 0
+      ) {
+        setSelectedMaterials(
+          writeTutorSelectedMaterialIds(projectShell.workspace_state.selected_material_ids),
+        );
+      }
+    }
+
+    if (
+      !resumedFromProjectShellRef.current &&
+      !activeSessionId &&
+      projectShell.active_session?.session_id
+    ) {
+      resumedFromProjectShellRef.current = true;
+      void api.tutor
+        .getSession(projectShell.active_session.session_id)
+        .then((session) => {
+          applySessionState(session);
+          setShowSetup(false);
+        })
+        .catch(() => {
+          resumedFromProjectShellRef.current = false;
+        });
+    }
+  }, [
+    activeSessionId,
+    activeBoardScope,
+    applySessionState,
+    courseId,
+    initialRouteQuery.boardScope,
+    initialRouteQuery.mode,
+    projectShell,
+    selectedMaterials.length,
+    shellMode,
+  ]);
+
+  useEffect(() => {
+    writeTutorShellQuery({
+      courseId,
+      sessionId: activeSessionId || undefined,
+      mode: shellMode,
+      boardScope: activeBoardScope,
+      boardId: activeBoardId ?? undefined,
+    });
+  }, [activeBoardId, activeBoardScope, activeSessionId, courseId, shellMode]);
+
+  useEffect(() => {
+    if (!hasRestored || typeof courseId !== "number") return;
+    const persistKey = JSON.stringify({
+      courseId,
+      activeSessionId,
+      shellMode,
+      activeBoardScope,
+      activeBoardId,
+      viewerState,
+      selectedMaterialIds: selectedMaterials,
+    });
+    if (persistKey === lastPersistedShellKeyRef.current) return;
+
+    const timeoutId = window.setTimeout(async () => {
+      lastPersistedShellKeyRef.current = persistKey;
+      try {
+        const result = await api.tutor.saveProjectShellState({
+          course_id: courseId,
+          active_tutor_session_id: activeSessionId,
+          last_mode: shellMode,
+          active_board_scope: activeBoardScope,
+          active_board_id: activeBoardId,
+          viewer_state: viewerState,
+          selected_material_ids: selectedMaterials,
+          revision: shellRevision,
+        });
+        setShellRevision(result.workspace_state.revision);
+        await queryClient.invalidateQueries({ queryKey: ["tutor-project-shell", courseId] });
+      } catch {
+        // Best-effort shell persistence; do not interrupt the Tutor flow.
+        lastPersistedShellKeyRef.current = "";
+      }
+    }, 250);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    activeBoardId,
+    activeBoardScope,
+    activeSessionId,
+    courseId,
+    hasRestored,
+    queryClient,
+    selectedMaterials,
+    shellMode,
+    shellRevision,
+    viewerState,
+  ]);
+
   const toggleMaterial = useCallback((id: number) => {
     setSelectedMaterials((prev) => {
       const next = prev.includes(id) ? prev.filter((mid) => mid !== id) : [...prev, id];
@@ -1168,6 +1435,16 @@ export default function Tutor() {
   const isChainComplete = hasChain && currentBlockIndex >= chainBlocks.length;
   const progressCount = hasChain ? Math.min(currentBlockIndex + 1, chainBlocks.length) : 0;
   const facilitationSteps = parseFacilitationSteps(currentBlock?.facilitation_prompt);
+  const promotedStudioItems =
+    projectStudioItems?.items.filter((item) => item.status === "promoted") || [];
+
+  const handlePublishRecorded = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["tutor-project-shell"] }),
+      queryClient.invalidateQueries({ queryKey: ["tutor-studio-restore"] }),
+      queryClient.invalidateQueries({ queryKey: ["obsidian"] }),
+    ]);
+  }, [queryClient]);
 
   return (
     <Layout>
@@ -1281,101 +1558,120 @@ export default function Tutor() {
             )}
 
             {/* ─── Row 2: Navigation Actions ─── */}
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShellMode("studio")}
+              className={shellMode === "studio" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+            >
+              <PenTool className={`${ICON_MD} mr-1`} />
+              STUDIO
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setShellMode("tutor");
+                if (!activeSessionId) {
+                  setShowSetup(true);
+                }
+              }}
+              className={shellMode === "tutor" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+            >
+              <MessageSquare className={`${ICON_MD} mr-1`} />
+              TUTOR
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShellMode("schedule")}
+              className={shellMode === "schedule" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+            >
+              <Clock className={`${ICON_MD} mr-1`} />
+              SCHEDULE
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShellMode("publish")}
+              className={shellMode === "publish" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+            >
+              <FolderOpen className={`${ICON_MD} mr-1`} />
+              PUBLISH
+            </Button>
+            {shellMode === "tutor" ? (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowSetup(true)}
+                onClick={() => setShowSetup((prev) => !prev || !activeSessionId)}
                 className={showSetup ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
               >
                 <Settings2 className={`${ICON_MD} mr-1`} />
-                WIZARD
+                SETUP
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={openSettings}
-                className={BTN_TOOLBAR}
-              >
-                <SlidersHorizontal className={`${ICON_MD} mr-1`} />
-                SETTINGS
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setShowSetup(false);
-                  setShowWorkspace(false);
-                }}
-                className={!showSetup && !showWorkspace ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
-              >
-                <MessageSquare className={`${ICON_MD} mr-1`} />
-                CHAT
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setShowSetup(false);
-                  setShowWorkspace(true);
-                }}
-                className={!showSetup && showWorkspace ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
-              >
-                <PenTool className={`${ICON_MD} mr-1`} />
-                WORKSPACE
-              </Button>
+            ) : null}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={openSettings}
+              className={BTN_TOOLBAR}
+            >
+              <SlidersHorizontal className={`${ICON_MD} mr-1`} />
+              SETTINGS
+            </Button>
 
-              {activeSessionId && (
-                <>
+            {activeSessionId && shellMode === "tutor" ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowArtifacts((prev) => !prev)}
+                  className={`ml-1 ${showArtifacts ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}`}
+                >
+                  {showArtifacts ? (
+                    <PanelRightClose className={`${ICON_MD} mr-1`} />
+                  ) : (
+                    <PanelRightOpen className={`${ICON_MD} mr-1`} />
+                  )}
+                  ARTIFACTS
+                  {artifacts.length > 0 && (
+                    <Badge variant="outline" className="h-4 px-1 ml-1 text-[10px] rounded-none border-primary/40">
+                      {artifacts.length}
+                    </Badge>
+                  )}
+                </Button>
+                <div className="ml-auto flex items-center gap-1">
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setShowArtifacts((prev) => !prev)}
-                    className={`ml-1 ${showArtifacts ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}`}
+                    onClick={() => {
+                      if (activeSessionId) {
+                        api.tutor.exportSession(activeSessionId).catch(() => {
+                          toast.error("Failed to export session");
+                        });
+                      }
+                    }}
+                    className={BTN_TOOLBAR}
+                    title="Export conversation as Markdown"
                   >
-                    {showArtifacts ? (
-                      <PanelRightClose className={`${ICON_MD} mr-1`} />
-                    ) : (
-                      <PanelRightOpen className={`${ICON_MD} mr-1`} />
-                    )}
-                    ARTIFACTS
-                    {artifacts.length > 0 && (
-                      <Badge variant="outline" className="h-4 px-1 ml-1 text-[10px] rounded-none border-primary/40">
-                        {artifacts.length}
-                      </Badge>
-                    )}
+                    <Download className={`${ICON_MD} mr-1`} />
+                    EXPORT
                   </Button>
-                  <div className="ml-auto flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        if (activeSessionId) {
-                          api.tutor.exportSession(activeSessionId).catch(() => {
-                            toast.error("Failed to export session");
-                          });
-                        }
-                      }}
-                      className={BTN_TOOLBAR}
-                      title="Export conversation as Markdown"
-                    >
-                      <Download className={`${ICON_MD} mr-1`} />
-                      EXPORT
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowEndConfirm(true)}
-                      className="h-8 rounded-none font-arcade text-xs px-3 text-destructive/70 hover:text-destructive hover:bg-destructive/10 border-2 border-transparent"
-                      title="End session"
-                    >
-                      <Square className={`${ICON_MD} mr-1`} />
-                      END
-                    </Button>
-                  </div>
-                </>
-              )}
-            </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowEndConfirm(true)}
+                    className="h-8 rounded-none font-arcade text-xs px-3 text-destructive/70 hover:text-destructive hover:bg-destructive/10 border-2 border-transparent"
+                    title="End session"
+                  >
+                    <Square className={`${ICON_MD} mr-1`} />
+                    END
+                  </Button>
+                </div>
+              </>
+            ) : null}
+          </div>
           </div>
 
           {activeSessionId && scholarStrategy && (
@@ -1508,7 +1804,100 @@ export default function Tutor() {
 
           <div className="flex-1 flex min-h-0 relative">
             <div className="flex-1 bg-black/40 flex flex-col min-w-0">
-              {showSetup ? (
+              {shellMode === "studio" ? (
+                <div key="studio" className="flex-1 min-h-0 animate-fade-slide-in">
+                  <TutorStudioMode
+                    courseId={courseId}
+                    activeSessionId={activeSessionId}
+                    availableMaterials={chatMaterials}
+                  selectedMaterialIds={selectedMaterials}
+                  activeBoardScope={activeBoardScope}
+                  activeBoardId={activeBoardId}
+                  viewerState={viewerState}
+                  onBoardScopeChange={(scope) => {
+                    setActiveBoardScope(scope);
+                    setActiveBoardId(null);
+                  }}
+                  onActiveBoardIdChange={setActiveBoardId}
+                  onViewerStateChange={setViewerState}
+                />
+                </div>
+              ) : shellMode === "schedule" ? (
+                <div key="schedule" className="flex-1 min-h-0 overflow-y-auto p-4 animate-fade-slide-in">
+                  <div className="mx-auto h-full w-full max-w-7xl">
+                    <TutorScheduleMode
+                      courseId={courseId ?? null}
+                      courseName={courseLabel || null}
+                      focusTopic={topic || null}
+                    />
+                  </div>
+                </div>
+              ) : shellMode === "publish" ? (
+                <div key="publish" className="flex-1 min-h-0 overflow-y-auto p-4 animate-fade-slide-in">
+                  <div className="mx-auto grid w-full max-w-7xl gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+                    <TutorPublishMode
+                      activeSessionId={activeSessionId}
+                      courseName={courseLabel || null}
+                      topic={topic || null}
+                      noteMarkdown={promotedStudioItems[0]?.body_markdown || null}
+                      defaultVaultPath={
+                        courseLabel
+                          ? `Tutor Studio/${sanitizeVaultSegment(courseLabel)}/${sanitizeVaultSegment(
+                              topic || promotedStudioItems[0]?.title || "Tutor Session",
+                            ) || "Tutor Session"}.md`
+                          : null
+                      }
+                      onPublished={() => {
+                        void handlePublishRecorded();
+                      }}
+                    />
+
+                    <Card className={`rounded-none ${CARD_BORDER} bg-black/45 border-primary/20`}>
+                      <CardHeader className="border-b border-primary/15 pb-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <CardTitle className="font-arcade text-xs text-primary">
+                            PROJECT RESOURCES
+                          </CardTitle>
+                          <Badge variant="outline" className="rounded-none border-primary/30 text-[10px]">
+                            {promotedStudioItems.length} PROMOTED
+                          </Badge>
+                        </div>
+                        <div className="font-terminal text-xs text-muted-foreground">
+                          Publish acts only on promoted project resources. Review the promoted set here while the publish workspace stages vault and Anki output.
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3 p-4">
+                        {promotedStudioItems.length === 0 ? (
+                          <div className="border border-primary/20 bg-black/35 px-4 py-6 font-terminal text-sm text-muted-foreground">
+                            No promoted Studio resources yet. Use Studio to review captures, then copy or move the useful pieces up to the project layer.
+                          </div>
+                        ) : (
+                          promotedStudioItems.map((item) => (
+                            <div key={item.id} className="border border-primary/20 bg-black/35 p-3">
+                              <div className="flex flex-wrap items-start justify-between gap-2">
+                                <div>
+                                  <div className="font-arcade text-[10px] text-primary">
+                                    {item.title || `${item.item_type.toUpperCase()} ${item.id}`}
+                                  </div>
+                                  <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
+                                    {item.item_type.toUpperCase()} • promoted from {item.scope}
+                                  </div>
+                                </div>
+                                <Badge variant="outline" className="rounded-none border-green-500/30 text-[10px] text-green-300">
+                                  READY TO PUBLISH
+                                </Badge>
+                              </div>
+                              <div className="mt-2 whitespace-pre-wrap font-terminal text-xs text-zinc-200">
+                                {(item.body_markdown || JSON.stringify(item.payload || {}, null, 2)).slice(0, 420)}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              ) : showSetup ? (
                 <div key="wizard" className="flex-1 min-h-0 overflow-y-auto w-full p-4 animate-fade-slide-in">
                   <div className="w-full max-w-4xl mx-auto">
                     <TutorWizard
@@ -1537,7 +1926,11 @@ export default function Tutor() {
                       onStartSession={startSession}
                       isStarting={isStarting}
                       recentSessions={recentSessions}
-                      onResumeSession={(id) => { resumeSession(id); setShowSetup(false); }}
+                      onResumeSession={(id) => {
+                        resumeSession(id);
+                        setShowSetup(false);
+                        setShellMode("tutor");
+                      }}
                       onDeleteSession={async (id) => {
                         try {
                           await api.tutor.deleteSession(id);
@@ -1552,9 +1945,7 @@ export default function Tutor() {
                 </div>
               ) : (
                 <div key="chat" className="flex-1 flex flex-col min-h-0 animate-fade-slide-in">
-                  {showWorkspace ? (
-                    <TutorWorkspaceSurface />
-                  ) : activeSessionId ? (
+                  {activeSessionId ? (
                     <TutorChat
                       sessionId={activeSessionId}
                       courseId={courseId}
@@ -1565,6 +1956,7 @@ export default function Tutor() {
                       onSelectedMaterialIdsChange={setSelectedMaterials}
                       onMaterialsChanged={refreshChatMaterials}
                       onArtifactCreated={handleArtifactCreated}
+                      onStudioCapture={handleStudioCapture}
                       initialTurns={restoredTurns}
                       onTurnComplete={(masteryUpdate) => {
                         setTurnCount((prev) => prev + 1);
@@ -1580,7 +1972,26 @@ export default function Tutor() {
                           READY TO RUN A STUDY SESSION
                         </div>
                         <div className="font-terminal text-sm text-muted-foreground max-w-sm">
-                          Tutor is the live workspace. Click WIZARD to scope a session, or open WORKSPACE for notes, canvas, graph, and table tools.
+                          Tutor is the live study surface. Open SETUP to scope a session, or switch to STUDIO to prepare notes and captures before studying.
+                        </div>
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            type="button"
+                            className={BTN_PRIMARY}
+                            onClick={() => setShowSetup(true)}
+                          >
+                            <Settings2 className={`${ICON_MD} mr-1`} />
+                            OPEN SETUP
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className={BTN_TOOLBAR}
+                            onClick={() => setShellMode("studio")}
+                          >
+                            <PenTool className={`${ICON_MD} mr-1`} />
+                            GO TO STUDIO
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -1634,7 +2045,7 @@ export default function Tutor() {
             </div>
 
             {/* Right side panels overlaid when toggle is ON */}
-            {activeSessionId && !showSetup && showArtifacts && (
+            {activeSessionId && shellMode === "tutor" && !showSetup && showArtifacts && (
               <>
                 {/* Mobile backdrop — click to close */}
                 <div

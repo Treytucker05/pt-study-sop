@@ -47,6 +47,15 @@ export interface TutorChatProps {
   onSelectedMaterialIdsChange: (ids: number[]) => void;
   onMaterialsChanged?: () => Promise<void> | void;
   onArtifactCreated: (artifact: { type: string; content: string; title?: string }) => void;
+  onStudioCapture?: (capture: {
+    content: string;
+    title?: string;
+    itemType?: string;
+    target: "note" | "summary_board";
+    sourceKind?: string;
+    sourcePath?: string;
+    sourceLocator?: Record<string, unknown>;
+  }) => void;
   onTurnComplete?: (masteryUpdate?: { skill_id: string; new_mastery: number; correct: boolean }) => void;
   initialTurns?: { question: string; answer: string | null }[];
 }

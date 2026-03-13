@@ -520,8 +520,11 @@ describe("Brain home recenter", () => {
     renderWithClient(<BrainPage />);
 
     const queueItems = await screen.findAllByTestId("brain-queue-item");
-    expect(screen.getAllByText("Movement Science quiz")).toHaveLength(1);
-    const duplicateItem = screen.getByText("Movement Science quiz").closest("[data-testid='brain-queue-item']");
+    const queue = screen.getByTestId("brain-attention-queue");
+    expect(within(queue).getAllByText("Movement Science quiz")).toHaveLength(1);
+    const duplicateItem = within(queue)
+      .getByText("Movement Science quiz")
+      .closest("[data-testid='brain-queue-item']");
     expect(duplicateItem).not.toBeNull();
     expect(within(duplicateItem as HTMLElement).getByText("Reason: due today.")).toBeInTheDocument();
     expect(queueItems.length).toBeGreaterThan(0);
@@ -718,6 +721,54 @@ describe("Brain home recenter", () => {
         title: "Did the last Tutor block feel too guided?",
         investigationId: "scholar-1",
         questionId: "scholar-q-1",
+      }),
+    );
+  });
+
+  it("renders the Brain projects dashboard and deep-links Tutor with course-backed query params", async () => {
+    const { default: BrainPage } = await import("@/pages/brain");
+    renderWithClient(<BrainPage />);
+
+    await screen.findByTestId("brain-home");
+    expect(screen.getByText("PROJECTS DASHBOARD")).toBeInTheDocument();
+    expect(screen.getByTestId("brain-project-launch-item-current-course")).toBeInTheDocument();
+    expect(screen.getByTestId("brain-project-launch-item-planner")).toBeInTheDocument();
+    expect(screen.getByTestId("brain-project-launch-item-deadline")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("brain-project-launch-action-current-course"));
+    expect(window.location.pathname).toBe("/tutor");
+    expect(window.location.search).toBe("?course_id=4");
+    expect(JSON.parse(sessionStorage.getItem("tutor.open_from_brain.v1") || "{}")).toEqual(
+      expect.objectContaining({
+        source: "brain-home",
+        itemId: "project-current-course",
+        title: "Open Movement Science course shell",
+        courseName: "Movement Science",
+      }),
+    );
+
+    fireEvent.click(screen.getByTestId("brain-project-launch-action-planner"));
+    expect(window.location.pathname).toBe("/tutor");
+    expect(window.location.search).toBe("?course_id=4&mode=tutor");
+    expect(JSON.parse(sessionStorage.getItem("tutor.open_from_brain.v1") || "{}")).toEqual(
+      expect.objectContaining({
+        source: "brain-home",
+        itemId: "project-planner-follow-through",
+        title: "Finish lower quarter retrieval set",
+        courseName: "Movement Science",
+      }),
+    );
+
+    fireEvent.click(screen.getByTestId("brain-project-launch-action-deadline"));
+    expect(window.location.pathname).toBe("/tutor");
+    expect(window.location.search).toBe("?course_id=4&mode=schedule");
+    expect(JSON.parse(sessionStorage.getItem("tutor.open_from_brain.v1") || "{}")).toEqual(
+      expect.objectContaining({
+        source: "brain-home",
+        itemId: "project-deadline-pressure",
+        title: "Movement Science quiz",
+        courseName: "Movement Science",
+        dueDate: expect.any(String),
       }),
     );
   });

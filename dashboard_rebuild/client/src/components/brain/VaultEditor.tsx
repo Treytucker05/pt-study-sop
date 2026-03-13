@@ -1,16 +1,37 @@
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ObsidianRenderer } from "@/components/ObsidianRenderer";
-import { Save, ExternalLink, FileText, Maximize2, Minimize2 } from "lucide-react";
+import {
+  Save,
+  ExternalLink,
+  FileText,
+  Maximize2,
+  Minimize2,
+  Mic,
+  MicOff,
+  PanelTopOpen,
+  PanelsTopLeft,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BrainWorkspace } from "./useBrainWorkspace";
 import brainBg from "@assets/TreysStudySystemIMAGE.jpg";
 
 interface VaultEditorProps {
   workspace: BrainWorkspace;
+  dictation?: {
+    supported: boolean;
+    isListening: boolean;
+    unsupportedReason: string | null;
+    toggle: () => void;
+  };
+  popout?: {
+    statusMessage: string | null;
+    onOpenViewerPopout: () => void;
+    onOpenNotePopout: () => void;
+  };
 }
 
-export function VaultEditor({ workspace }: VaultEditorProps) {
+export function VaultEditor({ workspace, dictation, popout }: VaultEditorProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
 
@@ -85,6 +106,47 @@ export function VaultEditor({ workspace }: VaultEditorProps) {
             size="sm"
             variant="ghost"
             className="h-5 px-2 text-xs font-terminal"
+            onClick={popout?.onOpenViewerPopout}
+            disabled={!popout}
+            title="Open the current note in a read-only popout"
+          >
+            <PanelsTopLeft className="mr-1 h-3 w-3" />
+            Viewer
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-5 px-2 text-xs font-terminal"
+            onClick={popout?.onOpenNotePopout}
+            disabled={!popout}
+            title="Open the current note in a synced popout"
+          >
+            <PanelTopOpen className="mr-1 h-3 w-3" />
+            Popout Note
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-5 px-2 text-xs font-terminal"
+            onClick={dictation?.toggle}
+            disabled={!dictation?.supported}
+            title={
+              dictation?.supported
+                ? "Start or stop browser dictation"
+                : dictation?.unsupportedReason || "Dictation unavailable"
+            }
+          >
+            {dictation?.isListening ? (
+              <MicOff className="mr-1 h-3 w-3 text-red-300" />
+            ) : (
+              <Mic className="mr-1 h-3 w-3" />
+            )}
+            {dictation?.isListening ? "Stop Dictation" : "Dictate"}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-5 px-2 text-xs font-terminal"
             onClick={() => workspace.setPreviewMode(!workspace.previewMode)}
           >
             {workspace.previewMode ? "Edit" : "Preview"}
@@ -110,6 +172,24 @@ export function VaultEditor({ workspace }: VaultEditorProps) {
           </Button>
         </div>
       </div>
+
+      {dictation && !dictation.supported ? (
+        <div
+          data-testid="tutor-workspace-dictation-status"
+          className="border-b border-primary/10 bg-black/30 px-3 py-1 font-terminal text-[11px] text-muted-foreground"
+        >
+          {dictation.unsupportedReason}
+        </div>
+      ) : null}
+
+      {popout?.statusMessage ? (
+        <div
+          data-testid="tutor-workspace-popout-status"
+          className="border-b border-primary/10 bg-black/30 px-3 py-1 font-terminal text-[11px] text-muted-foreground"
+        >
+          {popout.statusMessage}
+        </div>
+      ) : null}
 
       {/* Content area */}
       {workspace.previewMode ? (

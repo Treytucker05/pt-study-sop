@@ -19,7 +19,23 @@ vi.mock("@/lib/api", () => ({
 }));
 
 vi.mock("@/components/brain/VaultEditor", () => ({
-  VaultEditor: () => <div data-testid="tutor-workspace-notes-tool">notes tool</div>,
+  VaultEditor: (props: {
+    dictation?: { supported: boolean; unsupportedReason: string | null };
+    popout?: { statusMessage: string | null };
+  }) => (
+    <div data-testid="tutor-workspace-notes-tool">
+      notes tool
+      <div data-testid="tutor-workspace-notes-dictation-supported">
+        {String(props.dictation?.supported)}
+      </div>
+      <div data-testid="tutor-workspace-notes-dictation-reason">
+        {props.dictation?.unsupportedReason || ""}
+      </div>
+      <div data-testid="tutor-workspace-notes-popout-status">
+        {props.popout?.statusMessage || ""}
+      </div>
+    </div>
+  ),
 }));
 
 vi.mock("@/components/brain/ExcalidrawCanvas", () => ({
@@ -58,6 +74,7 @@ describe("TutorWorkspaceSurface", () => {
     });
     getFileMock.mockResolvedValue({ success: true, content: "# Note" });
     saveFileMock.mockResolvedValue({ success: true, path: "Tutor Workspace/Tutor Note.md" });
+    delete window.webkitSpeechRecognition;
   });
 
   it("defaults to notes and switches across the Tutor-hosted workspace tools", async () => {
@@ -65,6 +82,10 @@ describe("TutorWorkspaceSurface", () => {
 
     expect(await screen.findByTestId("tutor-workspace-surface")).toBeInTheDocument();
     expect(screen.getByTestId("tutor-workspace-notes-tool")).toBeInTheDocument();
+    expect(screen.getByTestId("tutor-workspace-notes-dictation-supported")).toHaveTextContent("false");
+    expect(screen.getByTestId("tutor-workspace-notes-dictation-reason")).toHaveTextContent(
+      /Chromium-based browsers/i,
+    );
 
     fireEvent.click(screen.getByTestId("tutor-workspace-tab-canvas"));
     expect(await screen.findByTestId("tutor-workspace-canvas-tool")).toBeInTheDocument();

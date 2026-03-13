@@ -52,6 +52,7 @@ type BrainCourseMetrics = {
 };
 
 type DateLike = string | Date;
+type TutorLaunchMode = "studio" | "tutor" | "schedule" | "publish";
 
 type BrainLaunchContext = {
   source: "brain-home";
@@ -264,6 +265,18 @@ function buildCourseActionLabel(course: BrainCourseMetrics): string {
   return "Keep the Tutor cadence";
 }
 
+function buildTutorPath(courseId?: number | null, mode?: TutorLaunchMode): string {
+  const params = new URLSearchParams();
+  if (typeof courseId === "number") {
+    params.set("course_id", String(courseId));
+  }
+  if (mode) {
+    params.set("mode", mode);
+  }
+  const query = params.toString();
+  return query ? `/tutor?${query}` : "/tutor";
+}
+
 export function BrainHome({ workspace }: { workspace: BrainWorkspace }) {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
@@ -404,6 +417,24 @@ export function BrainHome({ workspace }: { workspace: BrainWorkspace }) {
   const hasStudiedToday = todaySessions.length > 0;
   const currentCourse = currentCourseData?.currentCourse;
   const masterySkills = masteryDashboard?.skills || [];
+  const courseIdByName = useMemo(() => {
+    const mapping = new Map<string, number>();
+
+    if (currentCourse?.name && typeof currentCourse.id === "number") {
+      mapping.set(normalizeQueueKey(currentCourse.name), currentCourse.id);
+    }
+
+    plannerQueue.forEach((task: PlannerTask) => {
+      if (task.course_name && typeof task.course_id === "number") {
+        const key = normalizeQueueKey(task.course_name);
+        if (!mapping.has(key)) {
+          mapping.set(key, task.course_id);
+        }
+      }
+    });
+
+    return mapping;
+  }, [currentCourse?.id, currentCourse?.name, plannerQueue]);
 
   const queueItems = useMemo<BrainQueueItem[]>(() => {
     const items: BrainQueueItem[] = [];
@@ -497,6 +528,64 @@ export function BrainHome({ workspace }: { workspace: BrainWorkspace }) {
 
   const courseBreakdown = workspace.metrics?.sessionsPerCourse || [];
   const topCourse = courseBreakdown[0];
+  const plannerProject = useMemo(() => {
+    const nextPlannedTask = plannerQueue.find((task: PlannerTask) => {
+      if (task.status === "completed") return false;
+      if (!task.scheduled_date) return false;
+
+      const courseId =
+        typeof task.course_id === "number"
+          ? task.course_id
+          : task.course_name
+            ? courseIdByName.get(normalizeQueueKey(task.course_name))
+            : undefined;
+
+      return typeof courseId === "number";
+    });
+
+    if (!nextPlannedTask) return null;
+
+    const courseId =
+      typeof nextPlannedTask.course_id === "number"
+        ? nextPlannedTask.course_id
+        : nextPlannedTask.course_name
+          ? courseIdByName.get(normalizeQueueKey(nextPlannedTask.course_name))
+          : undefined;
+
+    if (typeof courseId !== "number") return null;
+
+    return {
+      courseId,
+      courseName: nextPlannedTask.course_name || currentCourse?.name || "Planned course",
+      scheduledDate: nextPlannedTask.scheduled_date || undefined,
+      title: nextPlannedTask.anchor_text || nextPlannedTask.notes || "Next planned study block",
+    };
+  }, [courseIdByName, currentCourse?.name, plannerQueue]);
+  const deadlineProject = useMemo(() => {
+    const upcomingDeadline = deadlines
+      .filter((deadline) => !deadline.completed)
+      .map((deadline) => {
+        const date = parseLocalDate(deadline.dueDate);
+        const courseId = deadline.course ? courseIdByName.get(normalizeQueueKey(deadline.course)) : undefined;
+        return { deadline, date, courseId };
+      })
+      .filter((entry) => typeof entry.courseId === "number")
+      .sort((left, right) => {
+        const leftRank = computeDeadlineRank(left.date);
+        const rightRank = computeDeadlineRank(right.date);
+        if (leftRank !== rightRank) return leftRank - rightRank;
+        return left.deadline.title.localeCompare(right.deadline.title);
+      })[0];
+
+    if (!upcomingDeadline || typeof upcomingDeadline.courseId !== "number") return null;
+
+    return {
+      courseId: upcomingDeadline.courseId,
+      courseName: upcomingDeadline.deadline.course || currentCourse?.name || "Deadline course",
+      dueDate: upcomingDeadline.deadline.dueDate,
+      title: upcomingDeadline.deadline.title,
+    };
+  }, [courseIdByName, currentCourse?.name, deadlines]);
   const studyRotationSummary = topCourse
     ? `Stay on ${topCourse.course} until the next block is complete.`
     : "Launch Tutor from your last saved scope";
@@ -579,16 +668,17 @@ async function handleDownloadJson(
   }
 
   function openSupportPage(path: string, handoffContext?: BrainLaunchContext) {
+    const destination = path.split("?")[0] || path;
     try {
       sessionStorage.removeItem(TUTOR_BRAIN_HANDOFF_KEY);
       sessionStorage.removeItem(SCHOLAR_BRAIN_HANDOFF_KEY);
       sessionStorage.removeItem(CALENDAR_BRAIN_HANDOFF_KEY);
       if (handoffContext) {
-        if (path === "/tutor") {
+        if (destination === "/tutor") {
           sessionStorage.setItem(TUTOR_BRAIN_HANDOFF_KEY, JSON.stringify(handoffContext));
-        } else if (path === "/scholar") {
+        } else if (destination === "/scholar") {
           sessionStorage.setItem(SCHOLAR_BRAIN_HANDOFF_KEY, JSON.stringify(handoffContext));
-        } else if (path === "/calendar") {
+        } else if (destination === "/calendar") {
           sessionStorage.setItem(CALENDAR_BRAIN_HANDOFF_KEY, JSON.stringify(handoffContext));
         }
       }
@@ -624,7 +714,7 @@ async function handleDownloadJson(
                   data-testid="brain-open-tutor-primary"
                   className="rounded-none font-arcade text-xs"
                   onClick={() =>
-                    openSupportPage("/tutor", {
+                    openSupportPage(buildTutorPath(currentCourse?.id), {
                       source: "brain-home",
                       itemId: "brain-primary-tutor",
                       title: currentCourse?.name
@@ -833,7 +923,18 @@ async function handleDownloadJson(
                         type="button"
                         variant="outline"
                         className="rounded-none border-primary/40 font-arcade text-[10px]"
-                        onClick={() => openSupportPage("/tutor")}
+                        onClick={() =>
+                          openSupportPage(
+                            buildTutorPath(courseIdByName.get(normalizeQueueKey(course.course))),
+                            {
+                              source: "brain-home",
+                              itemId: `course-breakdown-${normalizeQueueKey(course.course).replace(/\s+/g, "-")}`,
+                              title: `Open ${course.course} from Brain`,
+                              reason: "Reason: Brain is routing your next live block from course history.",
+                              courseName: course.course,
+                            },
+                          )
+                        }
                       >
                         OPEN TUTOR
                       </Button>
@@ -894,7 +995,7 @@ async function handleDownloadJson(
                   variant="outline"
                   className="rounded-none border-primary/40 font-arcade text-xs"
                   onClick={() =>
-                    openSupportPage("/tutor", {
+                    openSupportPage(buildTutorPath(currentCourse?.id), {
                       source: "brain-home",
                       itemId: "brain-state-tutor",
                       title: learnerProfile?.profileSummary?.nextBestActions?.[0] || "Open Tutor workspace",
@@ -913,7 +1014,7 @@ async function handleDownloadJson(
         <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
           <Card data-testid="brain-study-rotation" className="rounded-none border-primary/30 bg-black/45">
             <CardHeader className="border-b border-primary/20">
-              <CardTitle className="font-arcade text-sm text-primary">STUDY ROTATION</CardTitle>
+              <CardTitle className="font-arcade text-sm text-primary">PROJECTS DASHBOARD</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 p-4">
               <div className="border border-primary/15 bg-black/30 p-3">
@@ -925,13 +1026,104 @@ async function handleDownloadJson(
                   {studyRotationSummary}
                 </div>
               </div>
-              <Button
-                type="button"
-                className="rounded-none font-arcade text-xs"
-                onClick={() => openSupportPage("/tutor")}
-              >
-                OPEN TUTOR
-              </Button>
+              <div className="grid gap-3">
+                <div
+                  data-testid="brain-project-launch-item-current-course"
+                  className="border border-primary/15 bg-black/30 p-3"
+                >
+                  <div className="font-arcade text-[11px] text-primary">CURRENT COURSE SHELL</div>
+                  <div className="mt-2 font-terminal text-sm text-white">
+                    {currentCourse?.name || "Last saved Tutor scope"}
+                  </div>
+                  <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
+                    {currentCourse?.code
+                      ? `Launch the course-keyed Tutor shell for ${currentCourse.code}.`
+                      : "Launch Tutor with the most recent saved scope if no course is active."}
+                  </div>
+                  <Button
+                    type="button"
+                    data-testid="brain-project-launch-action-current-course"
+                    className="mt-3 rounded-none font-arcade text-xs"
+                    onClick={() =>
+                      openSupportPage(buildTutorPath(currentCourse?.id), {
+                        source: "brain-home",
+                        itemId: "project-current-course",
+                        title: currentCourse?.name
+                          ? `Open ${currentCourse.name} course shell`
+                          : "Open Tutor from Brain projects",
+                        reason: "Reason: Brain is opening the course-backed Tutor shell.",
+                        courseName: currentCourse?.name,
+                      })
+                    }
+                  >
+                    OPEN COURSE SHELL
+                  </Button>
+                </div>
+
+                {plannerProject ? (
+                  <div
+                    data-testid="brain-project-launch-item-planner"
+                    className="border border-primary/15 bg-black/30 p-3"
+                  >
+                    <div className="font-arcade text-[11px] text-primary">PLANNER FOLLOW-THROUGH</div>
+                    <div className="mt-2 font-terminal text-sm text-white">{plannerProject.title}</div>
+                    <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
+                      {plannerProject.courseName}
+                      {plannerProject.scheduledDate ? ` · ${plannerReason(parseLocalDate(plannerProject.scheduledDate))}` : ""}
+                    </div>
+                    <Button
+                      type="button"
+                      data-testid="brain-project-launch-action-planner"
+                      variant="outline"
+                      className="mt-3 rounded-none border-primary/40 font-arcade text-xs"
+                      onClick={() =>
+                        openSupportPage(buildTutorPath(plannerProject.courseId, "tutor"), {
+                          source: "brain-home",
+                          itemId: "project-planner-follow-through",
+                          title: plannerProject.title,
+                          reason: "Reason: Brain is converting the planner queue into a live Tutor launch.",
+                          courseName: plannerProject.courseName,
+                          dueDate: plannerProject.scheduledDate,
+                        })
+                      }
+                    >
+                      OPEN PLANNER VIEW
+                    </Button>
+                  </div>
+                ) : null}
+
+                {deadlineProject ? (
+                  <div
+                    data-testid="brain-project-launch-item-deadline"
+                    className="border border-primary/15 bg-black/30 p-3"
+                  >
+                    <div className="font-arcade text-[11px] text-primary">DEADLINE PRESSURE</div>
+                    <div className="mt-2 font-terminal text-sm text-white">{deadlineProject.title}</div>
+                    <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
+                      {deadlineProject.courseName}
+                      {deadlineProject.dueDate ? ` · ${deadlineReason(parseLocalDate(deadlineProject.dueDate))}` : ""}
+                    </div>
+                    <Button
+                      type="button"
+                      data-testid="brain-project-launch-action-deadline"
+                      variant="outline"
+                      className="mt-3 rounded-none border-primary/40 font-arcade text-xs"
+                      onClick={() =>
+                        openSupportPage(buildTutorPath(deadlineProject.courseId, "schedule"), {
+                          source: "brain-home",
+                          itemId: "project-deadline-pressure",
+                          title: deadlineProject.title,
+                          reason: "Reason: Brain is routing deadline pressure into the live Tutor shell.",
+                          courseName: deadlineProject.courseName,
+                          dueDate: deadlineProject.dueDate,
+                        })
+                      }
+                    >
+                      OPEN DEADLINE VIEW
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
             </CardContent>
           </Card>
 

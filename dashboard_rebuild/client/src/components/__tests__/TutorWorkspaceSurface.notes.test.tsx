@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { useEffect } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import {
   createBroadcastChannelTransport,
   createEditRequest,
@@ -14,8 +14,6 @@ const getConfigMock = vi.fn();
 const getVaultIndexMock = vi.fn();
 const getFileMock = vi.fn();
 const saveFileMock = vi.fn();
-const getFilesMock = vi.fn();
-const appendMock = vi.fn();
 
 class MockSpeechRecognition {
   continuous = true;
@@ -103,40 +101,20 @@ vi.mock("@/lib/api", () => ({
       getVaultIndex: (...args: unknown[]) => getVaultIndexMock(...args),
       getFile: (...args: unknown[]) => getFileMock(...args),
       saveFile: (...args: unknown[]) => saveFileMock(...args),
-      getFiles: (...args: unknown[]) => getFilesMock(...args),
-      append: (...args: unknown[]) => appendMock(...args),
     },
   },
 }));
 
-vi.mock("@/hooks/use-toast", () => ({
-  useToast: () => ({ toast: vi.fn() }),
+vi.mock("@/components/brain/ExcalidrawCanvas", () => ({
+  ExcalidrawCanvas: () => <div data-testid="workspace-canvas-mock" />,
 }));
 
-vi.mock("@/use-toast", () => ({
-  useToast: () => ({ toast: vi.fn() }),
+vi.mock("@/components/brain/GraphPanel", () => ({
+  GraphPanel: () => <div data-testid="workspace-graph-mock" />,
 }));
 
-vi.mock("@/components/brain/UnifiedBrainCanvas", () => ({
-  UnifiedBrainCanvas: () => <div data-testid="unified-brain-canvas">graph ready</div>,
-}));
-
-vi.mock("@excalidraw/excalidraw", () => ({
-  Excalidraw: ({ excalidrawAPI }: { excalidrawAPI?: (api: unknown) => void }) => {
-    const api = {
-      getSceneElements: () => [],
-      getAppState: () => ({ viewBackgroundColor: "#000", gridSize: 16 }),
-      getFiles: () => ({}),
-      updateScene: vi.fn(),
-      scrollToContent: vi.fn(),
-    };
-    useEffect(() => {
-      excalidrawAPI?.(api);
-    }, [excalidrawAPI]);
-    return <div data-testid="excalidraw-stage">canvas stage</div>;
-  },
-  exportToBlob: vi.fn(),
-  convertToExcalidrawElements: vi.fn((elements) => elements),
+vi.mock("@/components/ComparisonTableEditor", () => ({
+  ComparisonTableEditor: () => <div data-testid="workspace-table-mock" />,
 }));
 
 import { TutorWorkspaceSurface } from "@/components/TutorWorkspaceSurface";
@@ -155,7 +133,7 @@ function renderSurface() {
   );
 }
 
-describe("TutorWorkspaceSurface integration", () => {
+describe("TutorWorkspaceSurface note wiring", () => {
   let recognition: MockSpeechRecognition;
 
   beforeEach(() => {
@@ -169,17 +147,7 @@ describe("TutorWorkspaceSurface integration", () => {
     });
     getFileMock.mockResolvedValue({ success: true, content: "# Tutor note body" });
     saveFileMock.mockResolvedValue({ success: true, path: "Tutor Workspace/Tutor Note.md" });
-    getFilesMock.mockResolvedValue({ files: [] });
-    appendMock.mockResolvedValue({ success: true });
-    window.open = vi.fn(() => ({
-      closed: false,
-      focus: vi.fn(),
-      close: vi.fn(),
-      document: {
-        write: vi.fn(),
-        close: vi.fn(),
-      },
-    })) as unknown as typeof window.open;
+
     recognition = new MockSpeechRecognition();
     class RecognitionCtor {
       constructor() {
@@ -190,6 +158,16 @@ describe("TutorWorkspaceSurface integration", () => {
       RecognitionCtor as unknown as typeof window.webkitSpeechRecognition;
     globalThis.BroadcastChannel =
       FakeBroadcastChannel as unknown as typeof BroadcastChannel;
+
+    window.open = vi.fn(() => ({
+      closed: false,
+      focus: vi.fn(),
+      close: vi.fn(),
+      document: {
+        write: vi.fn(),
+        close: vi.fn(),
+      },
+    })) as unknown as typeof window.open;
   });
 
   afterEach(() => {
@@ -207,52 +185,7 @@ describe("TutorWorkspaceSurface integration", () => {
     );
   });
 
-  it("opens a real workspace note through the Tutor-hosted notes flow", async () => {
-    renderSurface();
-
-    expect(await screen.findByTestId("tutor-workspace-surface")).toBeInTheDocument();
-    fireEvent.click(await screen.findByRole("button", { name: /tutor note\.md/i }));
-
-    expect(await screen.findByDisplayValue("# Tutor note body")).toBeInTheDocument();
-
-    fireEvent.change(screen.getByDisplayValue("# Tutor note body"), {
-      target: { value: "# Tutor note body\n\nUpdated" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
-
-    await waitFor(() => {
-      expect(saveFileMock).toHaveBeenCalledWith(
-        "Tutor Workspace/Tutor Note.md",
-        "# Tutor note body\n\nUpdated",
-      );
-    });
-  });
-
-  it("mounts the real canvas shell with save and load entry points", async () => {
-    renderSurface();
-
-    fireEvent.click(await screen.findByTestId("tutor-workspace-tab-canvas"));
-
-    expect(await screen.findByTestId("excalidraw-stage")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^save$/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /load/i })).toBeInTheDocument();
-  });
-
-  it("mounts the real graph and table surfaces under Tutor ownership", async () => {
-    renderSurface();
-
-    fireEvent.click(await screen.findByTestId("tutor-workspace-tab-graph"));
-    expect(await screen.findByTestId("graph-panel")).toBeInTheDocument();
-    expect(await screen.findByTestId("unified-brain-canvas")).toHaveTextContent("graph ready");
-    expect(screen.queryByTestId("graph-panel-error")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByTestId("tutor-workspace-tab-table"));
-    expect(await screen.findByDisplayValue("Untitled Comparison")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /copy/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^save$/i })).toBeInTheDocument();
-  });
-
-  it("appends dictated text into the current note", async () => {
+  it("appends dictated text into the active note", async () => {
     renderSurface();
 
     fireEvent.click(await screen.findByRole("button", { name: /tutor note\.md/i }));
@@ -271,7 +204,7 @@ describe("TutorWorkspaceSurface integration", () => {
     });
   });
 
-  it("syncs note-popout edits back into the main workspace after the handshake grant", async () => {
+  it("applies note-popout edits after the host grants the edit handshake", async () => {
     renderSurface();
 
     fireEvent.click(await screen.findByRole("button", { name: /tutor note\.md/i }));
@@ -290,10 +223,7 @@ describe("TutorWorkspaceSurface integration", () => {
 
     act(() => {
       child.postMessage(createNoteHello("child-note"));
-    });
-    const request = createEditRequest("child-note");
-    act(() => {
-      child.postMessage(request);
+      child.postMessage(createEditRequest("child-note"));
     });
 
     await waitFor(() => {

@@ -14,6 +14,11 @@ Active execution priority is tracked in `docs/root/TUTOR_TODO.md` under Sprint 2
 
 Latest update: 2026-03-12 opened a repo-wide canon-collapse and pre-Tutor hardening execution wave; closed-track summaries below remain historical and may not describe the latest active queue.
 
+- [ ] **Track: Course-Keyed Tutor Shell + Studio Foundation** (active — created 2026-03-13; scope: course-keyed Tutor shell contract, durable track bootstrap, project workspace state, normalized Studio foundation tables, Tutor shell summary/state APIs)
+  *Link: [./tracks/course-keyed-tutor-shell_20260313/](./tracks/course-keyed-tutor-shell_20260313/)*
+
+---
+
 - [x] **Track: Brain-Centered Triad Reframe** (complete — created 2026-03-12; closed 2026-03-12; scope: corrected one-student Brain / Scholar / Tutor end-state, Tutor-centered value framing, PRD, route/shell recenter, mastery/API follow-up, Gemini embedding migration hardening, and closeout verification)
   *Link: [./tracks/brain-centered-triad_20260312/](./tracks/brain-centered-triad_20260312/)*
 

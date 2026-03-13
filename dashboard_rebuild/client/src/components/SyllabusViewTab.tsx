@@ -2,13 +2,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { Module, LearningObjective, ScheduleEvent, Course } from "@shared/schema";
 
-export function SyllabusViewTab() {
-  const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
+interface SyllabusViewTabProps {
+  initialCourseId?: number | null;
+  lockedCourseId?: number | null;
+}
+
+export function SyllabusViewTab({
+  initialCourseId = null,
+  lockedCourseId = null,
+}: SyllabusViewTabProps) {
+  const [selectedCourseId, setSelectedCourseId] = useState<number | null>(
+    lockedCourseId ?? initialCourseId
+  );
+
+  useEffect(() => {
+    if (lockedCourseId !== null && lockedCourseId !== undefined) {
+      setSelectedCourseId(lockedCourseId);
+    }
+  }, [lockedCourseId]);
 
   // Fetch courses
   const { data: courses = [] } = useQuery({
@@ -70,28 +86,41 @@ export function SyllabusViewTab() {
   return (
     <div className="space-y-4 p-4">
       {/* Course Selector */}
-      <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
-        <CardHeader className="border-b border-primary/50">
-          <CardTitle className="font-arcade text-sm">SELECT COURSE</CardTitle>
-        </CardHeader>
-        <CardContent className="p-3">
-          <Select
-            value={selectedCourseId?.toString() || ""}
-            onValueChange={(value) => setSelectedCourseId(value ? parseInt(value) : null)}
-          >
-            <SelectTrigger className="rounded-none border-primary">
-              <SelectValue placeholder="Choose a course..." />
-            </SelectTrigger>
-            <SelectContent>
-              {courses.map((course: Course) => (
-                <SelectItem key={course.id} value={course.id.toString()}>
-                  {course.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
+      {lockedCourseId === null || lockedCourseId === undefined ? (
+        <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
+          <CardHeader className="border-b border-primary/50">
+            <CardTitle className="font-arcade text-sm">SELECT COURSE</CardTitle>
+          </CardHeader>
+          <CardContent className="p-3">
+            <Select
+              value={selectedCourseId?.toString() || ""}
+              onValueChange={(value) => setSelectedCourseId(value ? parseInt(value) : null)}
+            >
+              <SelectTrigger className="rounded-none border-primary">
+                <SelectValue placeholder="Choose a course..." />
+              </SelectTrigger>
+              <SelectContent>
+                {courses.map((course: Course) => (
+                  <SelectItem key={course.id} value={course.id.toString()}>
+                    {course.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
+          <CardHeader className="border-b border-primary/50">
+            <CardTitle className="font-arcade text-sm">COURSE SYLLABUS</CardTitle>
+          </CardHeader>
+          <CardContent className="p-3">
+            <div className="font-terminal text-xs text-muted-foreground">
+              {courses.find((course: Course) => course.id === lockedCourseId)?.name || `Course ${lockedCourseId}`}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Syllabus Content */}
       {!selectedCourseId ? (

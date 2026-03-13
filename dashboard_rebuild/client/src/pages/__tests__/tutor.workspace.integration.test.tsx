@@ -18,6 +18,9 @@ const {
   getFileMock,
   getFilesMock,
   saveFileMock,
+  getProjectShellMock,
+  saveProjectShellStateMock,
+  restoreStudioItemsMock,
 } = vi.hoisted(() => ({
   getSessionMock: vi.fn(),
   getMaterialsMock: vi.fn(),
@@ -33,6 +36,9 @@ const {
   getFileMock: vi.fn(),
   getFilesMock: vi.fn(),
   saveFileMock: vi.fn(),
+  getProjectShellMock: vi.fn(),
+  saveProjectShellStateMock: vi.fn(),
+  restoreStudioItemsMock: vi.fn(),
 }));
 
 vi.mock("@/components/layout", () => ({
@@ -104,6 +110,9 @@ vi.mock("@/lib/api", () => ({
       getContentSources: getContentSourcesMock,
       preflightSession: preflightSessionMock,
       getSession: getSessionMock,
+      getProjectShell: getProjectShellMock,
+      saveProjectShellState: saveProjectShellStateMock,
+      restoreStudioItems: restoreStudioItemsMock,
       getSettings: vi.fn().mockResolvedValue({ custom_instructions: "" }),
       saveSettings: vi.fn().mockResolvedValue({ custom_instructions: "" }),
       createArtifact: vi.fn(),
@@ -133,6 +142,45 @@ vi.mock("@/lib/api", () => ({
 
 import Tutor from "@/pages/tutor";
 
+function makeProjectShell(courseId = 1) {
+  return {
+    course: {
+      id: courseId,
+      name: `Course ${courseId}`,
+      code: `COURSE-${courseId}`,
+      term: null,
+      instructor: null,
+      default_study_mode: null,
+      delivery_format: null,
+    },
+    workspace_state: {
+      active_tutor_session_id: null,
+      last_mode: "studio",
+      active_board_scope: "project",
+      active_board_id: null,
+      viewer_state: null,
+      selected_material_ids: [],
+      revision: 1,
+      updated_at: new Date("2026-03-13T00:00:00Z").toISOString(),
+    },
+    continuation: {
+      can_resume: false,
+      active_tutor_session_id: null,
+      last_mode: "studio",
+    },
+    active_session: null,
+    recent_sessions: [],
+    counts: {
+      active_sessions: 0,
+      session_count: 0,
+      studio_total_items: 0,
+      studio_captured_items: 0,
+      studio_promoted_items: 0,
+      pending_schedule_events: 0,
+    },
+  };
+}
+
 function renderTutor() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 }, mutations: { retry: false } },
@@ -149,6 +197,7 @@ describe("Tutor workspace route integration", () => {
     vi.clearAllMocks();
     localStorage.clear();
     sessionStorage.clear();
+    window.history.replaceState({}, "", "/tutor");
     getMaterialsMock.mockResolvedValue([]);
     listSessionsMock.mockResolvedValue([]);
     configCheckMock.mockResolvedValue({ ok: true });
@@ -171,7 +220,7 @@ describe("Tutor workspace route integration", () => {
       blockers: [],
     });
     getLearningObjectivesByCourseMock.mockResolvedValue([]);
-    getCurrentCourseMock.mockResolvedValue({ currentCourse: null });
+    getCurrentCourseMock.mockResolvedValue({ currentCourse: { id: 1 } });
     fetchCourseMapMock.mockResolvedValue({ courses: [] });
     getConfigMock.mockResolvedValue({ vaultName: "Treys School" });
     getVaultIndexMock.mockResolvedValue({
@@ -182,12 +231,24 @@ describe("Tutor workspace route integration", () => {
     getFileMock.mockResolvedValue({ success: true, content: "# Tutor Note" });
     getFilesMock.mockResolvedValue({ files: [] });
     saveFileMock.mockResolvedValue({ success: true, path: "Tutor Workspace/Tutor Note.md" });
+    getProjectShellMock.mockResolvedValue(makeProjectShell(1));
+    saveProjectShellStateMock.mockImplementation(async () => ({
+      workspace_state: {
+        active_tutor_session_id: null,
+        last_mode: "studio",
+        active_board_scope: "project",
+        active_board_id: null,
+        viewer_state: null,
+        selected_material_ids: [],
+        revision: 2,
+        updated_at: new Date("2026-03-13T00:00:00Z").toISOString(),
+      },
+    }));
+    restoreStudioItemsMock.mockResolvedValue({ items: [] });
   });
 
-  it("renders the real Tutor workspace tools from the Tutor route without reviving Brain chrome", async () => {
+  it("renders the real Tutor workspace tools from Studio mode without reviving Brain chrome", async () => {
     renderTutor();
-
-    fireEvent.click(await screen.findByRole("button", { name: /workspace/i }));
 
     expect(await screen.findByTestId("tutor-workspace-surface")).toBeInTheDocument();
     expect(screen.queryByTestId("sidebar-rail")).not.toBeInTheDocument();
