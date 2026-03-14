@@ -37,24 +37,29 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - `C:\Users\treyt\.agents\README.md`
   - supported home roots under `C:\Users\treyt\.claude\`, `C:\Users\treyt\.codex\`, `C:\Users\treyt\.cursor\`, `C:\Users\treyt\.gemini\`, `C:\Users\treyt\.antigravity\`, `C:\Users\treyt\.opencode\`, and `C:\Users\treyt\.kimi\`
   - Completed 2026-03-13: opened `conductor/tracks/agent-ecosystem-hygiene_20260313/`, registered the track, claimed the live agent board, and appended the kickoff log entry.
-- [ ] Wave A: track bootstrap + topology proof
+- [x] Wave A: track bootstrap + topology proof
   - claim the work on the sprint/board/track surfaces
   - capture runtime evidence for each CLI
   - freeze supported roots, legacy roots, and local exceptions before mutation
-- [ ] Wave B: rollback + sync harness hardening
+  - Completed 2026-03-13: captured the per-tool evidence matrix in `conductor/tracks/agent-ecosystem-hygiene_20260313/evidence.md` and froze the supported topology in `conductor/tracks/agent-ecosystem-hygiene_20260313/decision-record.md`.
+- [x] Wave B: rollback + sync harness hardening
   - create rollback artifacts before any home-directory change
   - repair `scripts/sync_agent_skills.ps1`
   - prove `DryRun -> Apply -> Check -> Check` against the frozen topology
-- [ ] Wave C: supported root repair + Gemini branch resolution
+  - Completed 2026-03-13: wrote the rollback bundle summary to `conductor/tracks/agent-ecosystem-hygiene_20260313/rollback.md`, created the external backup manifest under `C:\Users\treyt\.agents\backups\agent-ecosystem-hygiene_20260313\manifest.json`, and passed the fixture harness `powershell -ExecutionPolicy Bypass -File scripts/test_sync_agent_skills_fixture.ps1`.
+- [x] Wave C: supported root repair + Gemini branch resolution
   - normalize supported non-embedded roots
   - either normalize or quarantine the embedded Gemini Antigravity subtree based on runtime proof
-- [ ] Wave D: config secret hardening
+  - Completed 2026-03-13: `scripts/sync_agent_skills.ps1 -Mode Apply` passed, both follow-up `-Mode Check` runs passed, the supported-root broken-junction scan returned `0` broken junctions across Claude/Codex/Cursor/OpenCode/Gemini/Antigravity, and the embedded Gemini subtree quarantine was recorded in `conductor/tracks/agent-ecosystem-hygiene_20260313/quarantine.md`.
+- [x] Wave D: config secret hardening
   - audit supported and legacy configs
   - remove plaintext secrets from supported active config
   - capture rotation evidence or an explicit blocker
-- [ ] Wave E: docs, fallback alignment, and close-out
+  - Completed 2026-03-13: recorded the redacted findings and env-injection decision in `conductor/tracks/agent-ecosystem-hygiene_20260313/security-audit.md`, moved the inline GitHub/Obsidian secrets out of `C:\Users\treyt\.gemini\antigravity\mcp_config.json`, re-ran the redacted scan to `0` findings, and logged the remaining credential-rotation work in `conductor/tracks/agent-ecosystem-hygiene_20260313/rotation-blocker.md`.
+- [x] Wave E: docs, fallback alignment, and close-out
   - update repo/operator docs and conditional fallback docs
   - run the final validation set and close the track
+  - Completed 2026-03-13: updated `docs/root/SKILLS_INVENTORY.md`, `docs/root/AGENT_SETUP.md`, `C:\Users\treyt\.agents\README.md`, and `C:\Users\treyt\.gemini\GEMINI.md`; final validation passed on docs sync, agent-config sync, skill sync, broken-junction scan, and `git diff --check`; the remaining manual credential rotation work is explicitly logged in `conductor/tracks/agent-ecosystem-hygiene_20260313/rotation-blocker.md`.
 - [ ] Validation
   - `scripts/sync_agent_skills.ps1 -Mode DryRun`
   - `scripts/sync_agent_skills.ps1 -Mode Apply`
@@ -525,7 +530,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - [x] Phase 4: compare live Week 7 Tutor behavior on `C-TRY-001` vs `C-TRY-002`. (2026-03-13)
 
 ### Sprint 14: Neuroscience Exam Intake + First Tutor Run (2026-03-07)
-- [ ] Claim scope: live neuroscience exam prep
+- [x] Claim scope: live neuroscience exam prep
   - `brain/data/pt_study.db`
   - `brain/dashboard/api_tutor.py`
   - `brain/rag_notes.py`
@@ -533,7 +538,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - `conductor/tracks.md`
   - `conductor/tracks/GENERAL/log.md`
   - `conductor/tracks/neuroscience-exam-intake_20260307/`
-- [ ] Claim scope: live vault scaffold
+- [x] Claim scope: live vault scaffold
   - `C:\Users\treyt\Desktop\Treys School\Courses\Neuroscience\Week 7\`
 - [x] Phase 0: derive Exam 2 scope from schedule + Blackboard and draft the Week 7 Obsidian scaffold.
 - [x] Phase 1: load Week 7 neuroscience source files into the live Library with Neuroscience course linkage.
@@ -546,6 +551,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Updated the Tutor source sidebar to use `map_of_contents` as the canonical session structure.
 - [x] Phase 3: capture remaining one-stop-shop system gaps from the live workflow.
   - Current gaps: objective lock still split across Tutor tool flow vs adapter CRUD; Obsidian transport still split across CLI and Local REST; Week 8 Brain Structure materials still missing locally.
+- [x] Phase 4: close out the narrow Week 7 intake proof and move future neuro expansion to a new track. (2026-03-13)
 
 ### Sprint 13: Skills Catalog Review (2026-03-06)
 - [x] Claim scope: docs/process

@@ -3,7 +3,7 @@
 **Track ID:** neuroscience-exam-intake_20260307
 **Spec:** [./spec.md](./spec.md)
 **Created:** 2026-03-07
-**Status:** [ ] In Progress
+**Status:** [x] Complete
 
 ## Phase 0: Track + Scope Lock
 
@@ -32,7 +32,7 @@
 
 - [x] Task 3.1: Run targeted checks for the touched ingestion/session path.
 - [x] Task 3.2: Record the live workflow and remaining system gaps.
-- [ ] Task 3.3: Update track metadata and close-out notes.
+- [x] Task 3.3: Update track metadata and close-out notes.
 
 ## Verification Gates
 
@@ -70,6 +70,15 @@
 - Frontend build:
   - `cd dashboard_rebuild && npm run build` -> PASS
   - Vite emitted chunk-size warnings only.
+
+## Close-Out Notes
+
+- Closed on `2026-03-13` after the later Tutor certification and vision-lock work confirmed the Week 7 preflight-first workflow is now part of the stable Tutor baseline.
+- Remaining gaps from the first live neuroscience run are no longer blockers for this track:
+  - objective lock is now enforced through the certified preflight/session restore path
+  - the Obsidian week-page bridge is covered by `CERT-002`
+  - the reusable Tutor contract is frozen in `tutor_vision_lock_20260301`
+- Follow-on work for Week 8 or broader Exam 2 expansion should open a new track instead of reactivating this intake-first proof track.
 
 ---
 

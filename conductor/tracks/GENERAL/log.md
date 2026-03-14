@@ -12,6 +12,28 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - repair shared-skill sync plus supported broken junctions with rollback artifacts and idempotence checks
   - harden active config secret handling and align the operator docs/fallback notes
 
+## 2026-03-13 - Agent Ecosystem Hygiene closeout
+
+- Normalized the supported shared-skill projection roots for Claude, Codex, Cursor, OpenCode, Gemini, and Antigravity so each active root now exposes `81` valid canonical shared packages with `0` broken junctions.
+- Rewrote `scripts/sync_agent_skills.ps1` around the supported projection set, documented the local exceptions/quarantine boundaries, and added `scripts/test_sync_agent_skills_fixture.ps1` to prove `DryRun -> Apply -> Check -> Check` in an isolated temp home.
+- Quarantined the embedded Gemini Antigravity skill subtree from the active sync/health contract and documented that separation in the track artifacts.
+- Removed plaintext secrets from `C:\Users\treyt\.gemini\antigravity\mcp_config.json` by moving the GitHub token and Obsidian API key into user-scoped environment variables.
+- Updated repo/operator docs to the repaired topology:
+  - `docs/root/SKILLS_INVENTORY.md`
+  - `docs/root/AGENT_SETUP.md`
+  - `C:\Users\treyt\.agents\README.md`
+  - `C:\Users\treyt\.gemini\GEMINI.md`
+- Final validation:
+  - `python scripts/check_docs_sync.py` -> PASS
+  - `powershell -ExecutionPolicy Bypass -File scripts/sync_agent_config.ps1 -Mode Check` -> PASS
+  - `powershell -ExecutionPolicy Bypass -File scripts/sync_agent_skills.ps1 -Mode Check` -> PASS
+  - supported-root broken-junction scan -> `0` broken junctions across all six supported roots
+  - redacted config scan -> `0` findings
+  - `git diff --check` -> PASS
+- Remaining manual follow-up:
+  - rotate the exposed GitHub PAT and Obsidian API key
+  - restart Gemini / Antigravity so they inherit the rotated environment variables
+
 ## 2026-03-13 - Shared skill cleanup batch 1
 
 - Removed 9 low-priority shared skills from `C:\Users\treyt\.agents\skills` and cleaned their projected junctions from Codex, Claude, Cursor, and OpenCode where present:
@@ -163,6 +185,14 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `518` — `Class wk 7` (`mp4`)
   - `519` — `Development of nervous system updated` (`pdf`)
   - `520` — `Lecture transcript` (`txt`)
+
+---
+
+## 2026-03-13 - Neuroscience Exam Intake close-out
+
+- Closed `neuroscience-exam-intake_20260307` after syncing the remaining metadata and close-out notes.
+- The Week 7 intake-first proof is now superseded operationally by the certified preflight/session flow and the locked Tutor contract package.
+- Future Week 8 or broader Exam 2 expansion should open a fresh track instead of reusing this one-off intake proof.
   - `521` — `PHYT 6313 Developmental_Disorders1_week 7` (`pdf`)
   - `522` — `Week 7 To Do Neuro` (`txt`)
 - Follow-up: keep the first Tutor run scoped to Week 7 and objective `W7-OBJ-6` before loading more of Exam 2.

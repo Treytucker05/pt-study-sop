@@ -3,7 +3,7 @@
 **Track ID:** neuroscience-exam-intake_20260307
 **Type:** Feature
 **Created:** 2026-03-07
-**Status:** Draft
+**Status:** Complete
 
 ## Summary
 
@@ -29,11 +29,11 @@ This track uses Week 7 first so the live workflow can be tested on real material
 
 ## Acceptance Criteria
 
-- Week 7 neuroscience source files are loaded into the live Library (`rag_docs`) and linked to the Neuroscience course.
-- Week 7 Obsidian scaffold exists and is consistent with the loaded material set.
-- The tutor session flow can target a single Week 7 objective using the live Library material scope.
-- The live workflow is documented clearly enough to repeat for Week 8 and Basal Ganglia.
-- The implementation notes make clear which remaining steps still need product wiring for the one-stop-shop goal.
+- [x] Week 7 neuroscience source files are loaded into the live Library (`rag_docs`) and linked to the Neuroscience course.
+- [x] Week 7 Obsidian scaffold exists and is consistent with the loaded material set.
+- [x] The tutor session flow can target a single Week 7 objective using the live Library material scope.
+- [x] The live workflow is documented clearly enough to repeat for Week 8 and Basal Ganglia.
+- [x] The implementation notes make clear which remaining steps still need product wiring for the one-stop-shop goal.
 
 ## Non-goals
 
@@ -50,6 +50,12 @@ This track uses Week 7 first so the live workflow can be tested on real material
 - `brain/rag_notes.py`
 - `brain/data/pt_study.db`
 - `C:\Users\treyt\Desktop\Treys School\Courses\Neuroscience\Week 7\`
+
+## Outcome Summary
+
+- Kept the track narrow: real Week 7 intake, scaffold, and first single-objective Tutor run.
+- Closed the metadata gap on `2026-03-13` after later certification/vision-lock work absorbed the remaining runtime hardening.
+- Future Week 8 or broader Exam 2 expansion should proceed as a new implementation track, not as a reopening of this intake proof.
 
 ---
 

@@ -12,9 +12,9 @@ Update policy: after every significant change, update this file with status chan
 
 Active execution priority is tracked in `docs/root/TUTOR_TODO.md`.
 
-Latest update: 2026-03-13, opened the `Agent Ecosystem Hygiene` track to normalize shared skill topology and config secret handling across the local CLI stack.
+Latest update: 2026-03-13, closed the `Agent Ecosystem Hygiene` track after supported-root repair, secret removal from config, doc/fallback alignment, and final validation; manual credential rotation remains tracked in the track blocker note.
 
-- [ ] **Track: Agent Ecosystem Hygiene** (active — created 2026-03-13; scope: supported skill-topology freeze, sync-script repair, supported-root cleanup, Gemini/Antigravity drift resolution, config secret hardening, docs/fallback alignment)
+- [x] **Track: Agent Ecosystem Hygiene** (complete — created 2026-03-13; closed 2026-03-13; scope: supported skill-topology freeze, sync-script repair, supported-root cleanup, Gemini/Antigravity drift resolution, config secret hardening, docs/fallback alignment)
   *Link: [./tracks/agent-ecosystem-hygiene_20260313/](./tracks/agent-ecosystem-hygiene_20260313/)*
 
 ---
@@ -49,7 +49,7 @@ Latest update: 2026-03-13, opened the `Agent Ecosystem Hygiene` track to normali
 
 ---
 
-- [ ] **Track: Neuroscience Exam Intake + First Tutor Run** (active — created 2026-03-07; scope: Week 7 live intake, Obsidian scaffold bridge, first exam-scoped Tutor run)
+- [x] **Track: Neuroscience Exam Intake + First Tutor Run** (complete — created 2026-03-07; closed 2026-03-13; scope: Week 7 live intake, Obsidian scaffold bridge, first exam-scoped Tutor run)
   *Link: [./tracks/neuroscience-exam-intake_20260307/](./tracks/neuroscience-exam-intake_20260307/)*
 
 ---
