@@ -44,8 +44,17 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
   - Start-panel readiness now treats Library material scope as a valid launch scope.
   - Recent sessions now surface a primary resume action for the active/last session.
   - The toolbar no longer exposes a dead-end `CHAT` button before a session exists.
+- [x] TLR-210. Schedule-mode follow-through is `N/A` on this branch.
+  - No Tutor `Schedule` shell surface exists in this repo slice.
+- [x] TLR-220. Publish-mode follow-through is `N/A` on this branch.
+  - No Tutor `Publish` shell surface exists in this repo slice.
 - [x] TLR-300. Rewrite active docs so they stop describing Tutor as wizard-led.
   - `GUIDE_TUTOR_FLOW.md`, `PROJECT_ARCHITECTURE.md`, and `GUIDE_USER.md` now describe the start-panel model.
+- [x] TLR-900. Final gate and track closeout.
+  - Backend gate: `847 passed, 1 skipped`
+  - Tutor frontend gate: `22 passed`
+  - Live smoke: Tutor read-only `6/0`, golden path `5/0`
+  - Track closed on `2026-03-13`
 
 ## Active Sprint 2026-02-23
 

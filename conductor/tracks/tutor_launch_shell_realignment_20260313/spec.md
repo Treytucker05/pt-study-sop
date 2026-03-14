@@ -1,8 +1,10 @@
 # Track Spec: Tutor Launch / Shell Realignment
 
 Created: 2026-03-13
-Status: Active
+Status: Complete
 Owner: Trey
+
+Closed: 2026-03-13
 
 ## Goal
 
@@ -30,3 +32,9 @@ Make Brain the launch owner, make `/tutor` the course-keyed shell, and replace t
 - Full Brain Profile migration of all Tutor setup
 - New backend routes
 - Replacing Tutor as the live study surface
+
+## Closeout
+
+- Brain-owned launch plus a thin Tutor start/resume surface is now the grounded startup contract on this branch.
+- The old broad Tutor wizard has been removed from the live page path.
+- Branch-absent shell-mode work (`Schedule`, `Publish`) was explicitly closed as `N/A` rather than left active.

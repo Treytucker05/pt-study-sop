@@ -1,7 +1,7 @@
 # Track Plan: Tutor Launch / Shell Realignment
 
 Created: 2026-03-13
-Status: Active
+Status: Complete
 
 ## Goal
 
@@ -71,9 +71,13 @@ Create one clear current Tutor launch model:
     - `npm run test -- client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorStartPanel.test.tsx client/src/components/__tests__/TutorChat.test.tsx client/src/lib/__tests__/tutorClientState.test.ts`
     - `npm run build`
 
-- [ ] TLR-210 Rework Schedule mode to be next-action-first if/when that surface exists in this repo slice.
+- [x] TLR-210 Rework Schedule mode to be next-action-first if/when that surface exists in this repo slice.
+  - Not applicable in this repo slice.
+  - No Tutor `Schedule` shell mode exists on this branch, so there was no shipped surface to rework without inventing net-new UI outside the grounded scope of this track.
 
-- [ ] TLR-220 Rework Publish mode to be readiness-first if/when that surface exists in this repo slice.
+- [x] TLR-220 Rework Publish mode to be readiness-first if/when that surface exists in this repo slice.
+  - Not applicable in this repo slice.
+  - No Tutor `Publish` shell mode exists on this branch, so there was no shipped surface to rework without inventing net-new UI outside the grounded scope of this track.
 
 - [x] TLR-300 Rewrite active docs so they stop describing Tutor as wizard-led.
   - Updated:
@@ -84,7 +88,22 @@ Create one clear current Tutor launch model:
     - `rg -n "Tutor Wizard|wizard, chat, artifacts|return to wizard|Wizard page|Chain page|Start page" docs/root/GUIDE_TUTOR_FLOW.md docs/root/PROJECT_ARCHITECTURE.md docs/root/GUIDE_USER.md`
     - `rg -n "Brain.*launch|/tutor|start/resume surface|TutorStartPanel|start surface" docs/root/GUIDE_TUTOR_FLOW.md docs/root/PROJECT_ARCHITECTURE.md docs/root/GUIDE_USER.md`
 
-- [ ] TLR-900 Run the integrated gate, close the track, and leave one clear current plan.
+- [x] TLR-900 Run the integrated gate, close the track, and leave one clear current plan.
+  - Validation:
+    - `python -m pytest brain/tests -q`
+      - Result: `847 passed, 1 skipped`
+    - `npm run test -- client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorStartPanel.test.tsx client/src/components/__tests__/TutorChat.test.tsx client/src/components/__tests__/TutorArtifacts.test.tsx client/src/lib/__tests__/tutorClientState.test.ts`
+      - Result: `22 passed`
+    - `npm run build`
+      - Result: success
+    - `powershell -ExecutionPolicy Bypass -File scripts/smoke_tutor_readonly.ps1`
+      - Result: `6 passed, 0 failed`
+    - `powershell -ExecutionPolicy Bypass -File scripts/smoke_golden_path.ps1`
+      - Result: `5 passed, 0 failed`
+  - Track closeout:
+    - Brain-owned launch is now the durable startup model for this branch.
+    - Tutor startup is a thin start/resume surface.
+    - Later shell-mode tasks that were absent on this branch were explicitly closed as `N/A` instead of left half-active.
 
 ## Notes
 

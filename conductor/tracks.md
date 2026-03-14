@@ -4,14 +4,14 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Active status: 1 active workstream.
+Active status: 0 active workstreams.
 
-Latest update: 2026-03-13 Opened Tutor Launch / Shell Realignment. TLR-100 complete and pushed: launch-state resolver added, Library now launches Tutor with explicit course scope, and stale wizard startup authority was reduced.
+Latest update: 2026-03-13 Closed Tutor Launch / Shell Realignment. Brain-owned launch, TutorStartPanel startup, launch-precedence tests, learner-first start-surface hardening, and final backend/frontend/smoke gates all passed.
 
 ---
 
-- [ ] **Track: Tutor Launch / Shell Realignment** (active — created 2026-03-13)
-  Brain-owned launch, explicit Tutor course scoping, thin Tutor start/resume surface, and retirement of wizard-era startup authority.
+- [x] **Track: Tutor Launch / Shell Realignment** (complete — created 2026-03-13; closed 2026-03-13)
+  Brain-owned launch, explicit Tutor course scoping, thin Tutor start/resume surface, wizard retirement, and branch-grounded final validation.
   *Link: [./tracks/tutor_launch_shell_realignment_20260313/](./tracks/tutor_launch_shell_realignment_20260313/)*
 
 - [x] **Track: TutorChat Speed Tiers** (complete — created 2026-02-24; closed 2026-02-24; 4 tasks, 766 tests)

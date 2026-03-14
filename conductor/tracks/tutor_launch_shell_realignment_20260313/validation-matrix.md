@@ -61,6 +61,11 @@
   - recent sessions now have a clear primary resume path
   - dead-end no-session `CHAT` control was removed from the toolbar
 
+## TLR-210 / TLR-220 closed as not applicable
+
+- Repo-slice validation:
+  - Result: no Tutor `Schedule` or `Publish` shell surfaces exist on this branch, so those tasks were closed as `N/A` rather than implemented against imaginary files.
+
 ## TLR-300 completed
 
 - Active-doc stale wording grep:
@@ -68,7 +73,20 @@
 - Active-doc current-model grep:
   - Result: active docs now point at Brain/Library launch, `/tutor`, and `TutorStartPanel`
 
-## Remaining validation
+## TLR-900 completed
 
-- Broader Tutor UI regression checks after wizard replacement
-- Final full gate once docs and remaining UI work are complete
+- Full backend gate:
+  - `python -m pytest brain/tests -q`
+  - Result: `847 passed, 1 skipped`
+- Focused Tutor frontend gate:
+  - `npm run test -- client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorStartPanel.test.tsx client/src/components/__tests__/TutorChat.test.tsx client/src/components/__tests__/TutorArtifacts.test.tsx client/src/lib/__tests__/tutorClientState.test.ts`
+  - Result: `22 passed`
+- Frontend build:
+  - `npm run build`
+  - Result: success
+- Read-only live smoke:
+  - `powershell -ExecutionPolicy Bypass -File scripts/smoke_tutor_readonly.ps1`
+  - Result: `6 passed, 0 failed`
+- Golden path smoke:
+  - `powershell -ExecutionPolicy Bypass -File scripts/smoke_golden_path.ps1`
+  - Result: `5 passed, 0 failed`
