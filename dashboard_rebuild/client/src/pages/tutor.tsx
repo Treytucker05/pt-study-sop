@@ -56,6 +56,14 @@ import {
   TEXT_BADGE,
   ICON_SM,
 } from "@/lib/theme";
+import {
+  clearTutorWizardProgress,
+  parseTutorCourseIdFromSearch,
+  readTutorSelectedMaterialIds,
+  readTutorStartState,
+  writeTutorSelectedMaterialIds,
+  writeTutorStartState,
+} from "@/lib/tutorClientState";
 
 function parseFacilitationSteps(prompt: string | undefined | null): string[] {
   if (!prompt) return [];
@@ -81,11 +89,10 @@ function normalizeObjectiveScope(value: unknown): TutorObjectiveScope {
 
 export default function Tutor() {
   const queryClient = useQueryClient();
-  const tutorMaterialStorageKey = "tutor.selected_material_ids.v1";
   const tutorAccuracyProfileKey = "tutor.accuracy_profile.v1";
   const tutorObjectiveScopeKey = "tutor.objective_scope.v1";
-  const tutorWizardStorageKey = "tutor.wizard.state.v1";
   const tutorActiveSessionKey = "tutor.active_session.v1";
+  const prevCourseRef = useRef<number | undefined>(undefined);
 
   // Session state
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -95,16 +102,7 @@ export default function Tutor() {
 
   // Filter state
   const [courseId, setCourseId] = useState<number | undefined>();
-  const [selectedMaterials, setSelectedMaterials] = useState<number[]>(() => {
-    try {
-      const saved = localStorage.getItem(tutorMaterialStorageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed.filter((v) => typeof v === "number");
-      }
-    } catch { /* corrupted */ }
-    return [];
-  });
+  const [selectedMaterials, setSelectedMaterials] = useState<number[]>([]);
   const [accuracyProfile, setAccuracyProfile] = useState<TutorAccuracyProfile>(() => {
     try {
       return normalizeAccuracyProfile(localStorage.getItem(tutorAccuracyProfileKey));
@@ -120,11 +118,7 @@ export default function Tutor() {
   const [topic, setTopic] = useState("");
 
   // Vault save folder
-  const [vaultFolder, setVaultFolder] = useState<string>(() => {
-    try {
-      return localStorage.getItem("tutor.vault_folder.v1") || "";
-    } catch { return ""; }
-  });
+  const [vaultFolder, setVaultFolder] = useState<string>("");
 
   // Vault file picker
   const [selectedPaths, setSelectedPaths] = useState<string[]>(() => {
@@ -143,13 +137,7 @@ export default function Tutor() {
   const [turnCount, setTurnCount] = useState(0);
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [showArtifacts, setShowArtifacts] = useState(false);
-  const [showSetup, setShowSetup] = useState<boolean>(() => {
-    try {
-      return !Boolean(localStorage.getItem(tutorActiveSessionKey));
-    } catch {
-      return true;
-    }
-  });
+  const [showSetup, setShowSetup] = useState<boolean>(true);
   const [objectiveScope, setObjectiveScope] = useState<TutorObjectiveScope>(() => {
     try {
       return normalizeObjectiveScope(localStorage.getItem(tutorObjectiveScopeKey));
@@ -173,10 +161,15 @@ export default function Tutor() {
   const [settingsSaving, setSettingsSaving] = useState(false);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(tutorMaterialStorageKey, JSON.stringify(selectedMaterials));
-    } catch { /* ignore */ }
-  }, [tutorMaterialStorageKey, selectedMaterials]);
+    if (
+      typeof courseId === "number" &&
+      typeof prevCourseRef.current === "number" &&
+      prevCourseRef.current !== courseId
+    ) {
+      return;
+    }
+    writeTutorSelectedMaterialIds(selectedMaterials);
+  }, [courseId, selectedMaterials]);
 
   useEffect(() => {
     try {
@@ -200,26 +193,35 @@ export default function Tutor() {
     } catch { /* ignore */ }
   }, [vaultFolder]);
 
+  // Clear material selection when course changes after initial hydration.
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        tutorWizardStorageKey,
-        JSON.stringify({
-          courseId,
-          topic,
-          selectedMaterials,
-          chainId,
-          customBlockIds,
-          accuracyProfile,
-          objectiveScope,
-          selectedPaths,
-        }),
-      );
-    } catch {
-      /* localStorage write failed — ignore */
+    if (typeof prevCourseRef.current === "undefined") {
+      prevCourseRef.current = courseId;
+      return;
     }
+    if (prevCourseRef.current === courseId) return;
+    prevCourseRef.current = courseId;
+    setSelectedMaterials([]);
+  }, [courseId]);
+
+  useEffect(() => {
+    if (typeof courseId !== "number") return;
+    if (
+      typeof prevCourseRef.current === "number" &&
+      prevCourseRef.current !== courseId
+    ) {
+      return;
+    }
+    writeTutorStartState(courseId, {
+      topic,
+      selectedMaterialIds: selectedMaterials,
+      chainId,
+      customBlockIds,
+      accuracyProfile,
+      objectiveScope,
+      selectedPaths,
+    });
   }, [
-    tutorWizardStorageKey,
     courseId,
     topic,
     selectedMaterials,
@@ -229,15 +231,6 @@ export default function Tutor() {
     objectiveScope,
     selectedPaths,
   ]);
-
-  // Clear material selection when course changes (skip initial mount)
-  const prevCourseRef = useRef(courseId);
-  useEffect(() => {
-    if (prevCourseRef.current !== courseId) {
-      prevCourseRef.current = courseId;
-      setSelectedMaterials([]);
-    }
-  }, [courseId]);
 
   // Recent sessions
   const { data: recentSessions = [] } = useQuery<TutorSessionSummary[]>({
@@ -263,6 +256,9 @@ export default function Tutor() {
   }, [queryClient]);
 
   const applySessionState = useCallback((session: TutorSessionWithTurns) => {
+    const sessionMaterialIds = Array.isArray(session.content_filter?.material_ids)
+      ? session.content_filter.material_ids.filter((value) => typeof value === "number")
+      : [];
     setActiveSessionId(session.session_id);
     setTurnCount(session.turn_count);
     setStartedAt(session.started_at);
@@ -280,17 +276,19 @@ export default function Tutor() {
         facilitation_prompt: block.facilitation_prompt || "",
       }))
     );
-    if (session.content_filter?.material_ids) {
-      setSelectedMaterials(session.content_filter.material_ids);
-    }
-    try {
-      localStorage.setItem(
-        tutorMaterialStorageKey,
-        JSON.stringify(session.content_filter?.material_ids || []),
-      );
-    } catch { /* ignore */ }
+    setSelectedMaterials(sessionMaterialIds);
+    writeTutorSelectedMaterialIds(sessionMaterialIds);
     setAccuracyProfile(normalizeAccuracyProfile(session.content_filter?.accuracy_profile));
     setObjectiveScope(normalizeObjectiveScope(session.content_filter?.objective_scope));
+    if (typeof session.course_id === "number") {
+      writeTutorStartState(session.course_id, {
+        topic: session.topic || "",
+        selectedMaterialIds: sessionMaterialIds,
+        chainId: session.method_chain_id ?? undefined,
+        accuracyProfile: normalizeAccuracyProfile(session.content_filter?.accuracy_profile),
+        objectiveScope: normalizeObjectiveScope(session.content_filter?.objective_scope),
+      });
+    }
     if (session.artifacts_json) {
       try {
         const parsed = JSON.parse(session.artifacts_json);
@@ -319,7 +317,7 @@ export default function Tutor() {
     } catch {
       /* localStorage write failed — ignore */
     }
-  }, [tutorMaterialStorageKey, tutorActiveSessionKey]);
+  }, [tutorActiveSessionKey]);
 
   const openSettings = useCallback(async () => {
     setShowSettings(true);
@@ -617,25 +615,53 @@ export default function Tutor() {
     setHasRestored(true);
 
     const restore = async () => {
-      let resumed = false;
-      let restoredCourseId = false;
+      const routeCourseId = parseTutorCourseIdFromSearch(window.location.search);
+      let launchedFromLibrary = false;
       try {
-        const savedSessionId = localStorage.getItem(tutorActiveSessionKey);
-        if (savedSessionId) {
-          const session = await api.tutor.getSession(savedSessionId);
-          if (session.status === "active") {
-            applySessionState(session);
-            resumed = true;
-          } else {
-            localStorage.removeItem(tutorActiveSessionKey);
-          }
-        }
+        launchedFromLibrary =
+          sessionStorage.getItem("tutor.open_from_library.v1") === "1";
+        sessionStorage.removeItem("tutor.open_from_library.v1");
       } catch {
-        /* session restore failed — clear stale key */
+        launchedFromLibrary = false;
+      }
+      const explicitLaunch = typeof routeCourseId === "number" || launchedFromLibrary;
+
+      if (typeof routeCourseId === "number") {
+        const scopedStartState = readTutorStartState(routeCourseId);
+        setCourseId(routeCourseId);
+        setTopic(scopedStartState.topic);
+        setSelectedMaterials(scopedStartState.selectedMaterialIds);
+        setChainId(scopedStartState.chainId);
+        setCustomBlockIds(scopedStartState.customBlockIds);
+        setAccuracyProfile(scopedStartState.accuracyProfile);
+        setObjectiveScope(scopedStartState.objectiveScope);
+        setSelectedPaths(scopedStartState.selectedPaths);
+        clearTutorWizardProgress();
+      } else if (launchedFromLibrary) {
+        setSelectedMaterials(readTutorSelectedMaterialIds());
+        clearTutorWizardProgress();
+      }
+
+      let resumed = false;
+      if (!explicitLaunch) {
         try {
-          localStorage.removeItem(tutorActiveSessionKey);
+          const savedSessionId = localStorage.getItem(tutorActiveSessionKey);
+          if (savedSessionId) {
+            const session = await api.tutor.getSession(savedSessionId);
+            if (session.status === "active") {
+              applySessionState(session);
+              resumed = true;
+            } else {
+              localStorage.removeItem(tutorActiveSessionKey);
+            }
+          }
         } catch {
-          /* localStorage remove failed — ignore */
+          /* session restore failed — clear stale key */
+          try {
+            localStorage.removeItem(tutorActiveSessionKey);
+          } catch {
+            /* localStorage remove failed — ignore */
+          }
         }
       }
 
@@ -645,41 +671,30 @@ export default function Tutor() {
       }
       setShowSetup(true);
 
-      try {
-        const saved = localStorage.getItem(tutorWizardStorageKey);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (typeof parsed?.courseId === "number") {
-            setCourseId(parsed.courseId);
-            restoredCourseId = true;
-          }
-          if (typeof parsed?.topic === "string") setTopic(parsed.topic);
-          if (Array.isArray(parsed?.selectedMaterials)) {
-            setSelectedMaterials(parsed.selectedMaterials.filter((v: unknown) => typeof v === "number"));
-          }
-          if (typeof parsed?.chainId === "number") setChainId(parsed.chainId);
-          if (Array.isArray(parsed?.customBlockIds)) {
-            setCustomBlockIds(parsed.customBlockIds.filter((v: unknown) => typeof v === "number"));
-          }
-          setAccuracyProfile(normalizeAccuracyProfile(parsed?.accuracyProfile));
-          setObjectiveScope(normalizeObjectiveScope(parsed?.objectiveScope));
-          if (Array.isArray(parsed?.selectedPaths)) {
-            setSelectedPaths(parsed.selectedPaths.filter((v: unknown) => typeof v === "string"));
-          }
-        }
-      } catch {
-        /* wizard state restore failed — ignore */
-      }
-
-      if (restoredCourseId) return;
+      if (typeof routeCourseId === "number" || launchedFromLibrary) return;
 
       try {
         const { currentCourse } = await api.studyWheel.getCurrentCourse();
         if (typeof currentCourse?.id === "number") {
-          setCourseId((prev) => (typeof prev === "number" ? prev : currentCourse.id));
+          const fallbackCourseId = currentCourse.id;
+          const fallbackState = readTutorStartState(fallbackCourseId);
+          setCourseId((prev) => (typeof prev === "number" ? prev : fallbackCourseId));
+          setTopic(fallbackState.topic);
+          setSelectedMaterials(
+            fallbackState.selectedMaterialIds.length > 0
+              ? fallbackState.selectedMaterialIds
+              : readTutorSelectedMaterialIds(),
+          );
+          setChainId(fallbackState.chainId);
+          setCustomBlockIds(fallbackState.customBlockIds);
+          setAccuracyProfile(fallbackState.accuracyProfile);
+          setObjectiveScope(fallbackState.objectiveScope);
+          setSelectedPaths(fallbackState.selectedPaths);
+          clearTutorWizardProgress();
         }
       } catch {
         /* current course fetch failed — ignore */
+        setSelectedMaterials(readTutorSelectedMaterialIds());
       }
     };
 
@@ -687,36 +702,23 @@ export default function Tutor() {
   }, [
     applySessionState,
     hasRestored,
-    tutorAccuracyProfileKey,
-    tutorObjectiveScopeKey,
     tutorActiveSessionKey,
-    tutorWizardStorageKey,
   ]);
 
   const toggleMaterial = useCallback((id: number) => {
     setSelectedMaterials((prev) => {
-      const next = prev.includes(id) ? prev.filter((mid) => mid !== id) : [...prev, id];
-      try {
-        localStorage.setItem(tutorMaterialStorageKey, JSON.stringify(next));
-      } catch { /* ignore */ }
-      return next;
+      return prev.includes(id) ? prev.filter((mid) => mid !== id) : [...prev, id];
     });
-  }, [tutorMaterialStorageKey]);
+  }, []);
 
   const selectAllMaterials = useCallback(() => {
     const allIds = chatMaterials.map((m) => m.id);
     setSelectedMaterials(allIds);
-    try {
-      localStorage.setItem(tutorMaterialStorageKey, JSON.stringify(allIds));
-    } catch { /* ignore */ }
-  }, [chatMaterials, tutorMaterialStorageKey]);
+  }, [chatMaterials]);
 
   const clearMaterialSelection = useCallback(() => {
     setSelectedMaterials([]);
-    try {
-      localStorage.setItem(tutorMaterialStorageKey, JSON.stringify([]));
-    } catch { /* ignore */ }
-  }, [tutorMaterialStorageKey]);
+  }, []);
 
   const getFileName = (path: string) => {
     return path.split(/[/\\]/).pop() || path;
