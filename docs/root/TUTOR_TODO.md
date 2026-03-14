@@ -20,6 +20,31 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 
 ## Active Sprint 2026-03-13
 
+### Sprint: Branch Reconciliation To Main
+- [ ] BRM-100. Reconcile the active feature line, pending side branches, and local harness work into verified `main`.
+  - Integration workspace: `C:\pt-study-sop-worktrees\integrate`
+  - Required inputs: `feature/tutor-wiring-simplification`, `main`, `fix/ci-green`, `claude/happy-hugle`, and the local uncommitted harness changes currently sitting in the root checkout
+  - Done when: local harness work is committed, all required branches are merged with conflicts resolved, targeted validation passes, and `main` is pushed
+
+## Active Sprint 2026-03-13
+
+### Sprint: Trey Agent Repo Readiness
+- [x] TAR-010. Freeze the harness command, env/bootstrap, and agent compatibility contracts.
+  - Isolated contract artifacts live in `conductor/tracks/trey-agent-repo-readiness_20260313/`.
+  - `T1` through `T5` are complete in the track plan.
+- [x] TAR-100. Implement isolated harness startup that can coexist with `Start_Dashboard.bat`.
+  - Track task: `T6`
+  - Shipped: `scripts/harness.ps1`, harness-aware path overrides in `brain/config.py`, and host/port overrides in `brain/dashboard_web.py`
+  - Verification: `pytest brain/tests/test_harness_startup.py`, manual operator launch on `5000`, manual harness launch on a second port with temp data/artifact roots, and concurrent `200` responses from both servers
+- [ ] TAR-110. Add harness bootstrap/validator and backend env templating.
+  - Track tasks: `T7`, `T14`
+- [ ] TAR-120. Build the first hermetic Tutor fixture scenario.
+  - Track tasks: `T8`, `T10`
+- [ ] TAR-130. Add harness artifacts, observability, CI lane, and cross-agent proof.
+  - Track tasks: `T9`, `T11`, `T12`, `T13`, `T15`, `T16`
+
+## Active Sprint 2026-03-13
+
 ### Sprint: Tutor Launch / Shell Realignment
 - [x] TLR-001. Lay the launch realignment plan out durably in the repo.
 - [x] TLR-010. Sync stale planning references to the actual current repo slice.

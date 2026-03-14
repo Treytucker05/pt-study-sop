@@ -2,9 +2,43 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
----
-
 ## 2026-02-23 - RAG chunking fix + Gemini CLI provider wiring
+
+## 2026-03-14 - Trey Agent Repo Readiness activated
+
+- Activated shared harness implementation after isolated planning and contract freeze finished.
+- Registered active harness work in:
+  - `docs/root/TUTOR_TODO.md`
+  - `conductor/tracks.md`
+- Current active track:
+  - `conductor/tracks/trey-agent-repo-readiness_20260313/`
+- Completed before activation:
+  - `T1` durable isolated track + shared skill
+  - `T2` grounded baseline findings
+  - `T3` harness command contract
+  - `T4` env/bootstrap contract
+  - `T5` cross-agent compatibility matrix
+- Next implementation task:
+  - `T6` isolated startup that coexists with `Start_Dashboard.bat`
+
+## 2026-03-14 - Trey Agent Repo Readiness T6 isolated startup
+
+- Implemented isolated startup for harness runs in:
+  - `scripts/harness.ps1`
+  - `brain/config.py`
+  - `brain/dashboard_web.py`
+  - `brain/tests/test_harness_startup.py`
+- Verified focused coverage:
+  - `pytest brain/tests/test_harness_startup.py` -> `3 passed`
+- Verified operator/harness coexistence:
+  - `Start_Dashboard.bat` served `http://127.0.0.1:5000/brain`
+  - harness hermetic run served a second port with temp data/artifact roots
+  - both endpoints returned `200` concurrently
+  - stopping the harness process left the operator server healthy on `5000`
+- Recorded detailed notes in:
+  - `conductor/tracks/trey-agent-repo-readiness_20260313/t6-isolated-startup.md`
+- Next track task:
+  - `T7` repo-local harness bootstrap and setup validator
 
 - Fixed RAG chunking in `brain/tutor_rag.py`:
   - Small-document bypass: docs ≤8,000 chars returned as a single chunk (no splitting).

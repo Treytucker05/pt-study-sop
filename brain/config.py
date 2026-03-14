@@ -8,14 +8,36 @@ import os
 # Version
 VERSION = '9.4'
 
+
+def _env_flag(name: str, default: bool = False) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _resolve_path(path: str) -> str:
+    return os.path.abspath(os.path.expanduser(os.path.expandvars(path)))
+
+
+def _first_env_path(names, default_path: str) -> str:
+    for name in names:
+        raw = os.environ.get(name)
+        if raw:
+            return _resolve_path(raw)
+    return _resolve_path(default_path)
+
 # Load .env if present (lightweight, no external deps)
-def load_env(override_env=True):
+def load_env(override_env=None):
     """
     Load key=value pairs from .env into os.environ.
 
     By default override_env=True so the repo-local .env wins over any
     machine-level env var (prevents stale system env vars).
     """
+    if override_env is None:
+        override_env = _env_flag("PT_BRAIN_DOTENV_OVERRIDE", default=True)
+
     env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
     loaded = {}
     if not os.path.exists(env_path):
@@ -40,38 +62,55 @@ def load_env(override_env=True):
     return loaded
 
 # Initialize environment variables from .env once at import time
-_ENV_CACHE = load_env(override_env=True)
+_ENV_CACHE = load_env()
 
 # Base paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(BASE_DIR, 'data')
-SESSION_LOGS_DIR = os.path.join(BASE_DIR, 'session_logs')
-OUTPUT_DIR = os.path.join(BASE_DIR, 'output')
+DATA_DIR = _first_env_path(["PT_BRAIN_DATA_DIR"], os.path.join(BASE_DIR, 'data'))
+SESSION_LOGS_DIR = _first_env_path(
+    ["PT_BRAIN_SESSION_LOGS_DIR"],
+    os.path.join(BASE_DIR, 'session_logs'),
+)
+OUTPUT_DIR = _first_env_path(
+    ["PT_BRAIN_OUTPUT_DIR"],
+    os.path.join(BASE_DIR, 'output'),
+)
 
 # Study RAG (drop files here; no upload needed)
 _DEFAULT_STUDY_RAG_DIR = os.path.join(DATA_DIR, 'study_rag')
+API_CONFIG_PATH = _first_env_path(
+    ["PT_BRAIN_API_CONFIG_PATH"],
+    os.path.join(DATA_DIR, 'api_config.json'),
+)
+
+
+def _get_env_study_rag_dir():
+    return os.environ.get('PT_STUDY_RAG_DIR')
 
 # Check api_config.json for saved study_rag_path first
 def _load_study_rag_path():
-    api_config_path = os.path.join(DATA_DIR, 'api_config.json')
-    if os.path.exists(api_config_path):
+    env_study_rag_dir = _get_env_study_rag_dir()
+    if _env_flag("PT_BRAIN_PREFER_ENV_PATHS", default=False) and env_study_rag_dir:
+        return env_study_rag_dir
+
+    if os.path.exists(API_CONFIG_PATH):
         try:
-            with open(api_config_path, 'r', encoding='utf-8') as f:
+            with open(API_CONFIG_PATH, 'r', encoding='utf-8') as f:
                 cfg = __import__('json').load(f)
                 if cfg.get('study_rag_path'):
                     return cfg['study_rag_path']
         except:
             pass
     # Fall back to env var or default
-    return os.environ.get('PT_STUDY_RAG_DIR', _DEFAULT_STUDY_RAG_DIR)
+    return env_study_rag_dir or _DEFAULT_STUDY_RAG_DIR
 
 STUDY_RAG_DIR = os.path.abspath(os.path.expanduser(os.path.expandvars(_load_study_rag_path())))
 
 # Database
-DB_PATH = os.path.join(DATA_DIR, 'pt_study.db')
-
-# API Configuration
-API_CONFIG_PATH = os.path.join(DATA_DIR, 'api_config.json')
+DB_PATH = _first_env_path(
+    ["PT_BRAIN_DB_PATH", "PT_STUDY_DB_OVERRIDE", "PT_STUDY_DB"],
+    os.path.join(DATA_DIR, 'pt_study.db'),
+)
 
 # Study modes (legacy - kept for backward compatibility)
 STUDY_MODES_LEGACY = ['Sprint', 'Core', 'Drill']
@@ -336,7 +375,7 @@ def ensure_directories():
     """Create required directories if they don't exist."""
     for dir_path in [DATA_DIR, SESSION_LOGS_DIR, OUTPUT_DIR, STUDY_RAG_DIR]:
         if not os.path.exists(dir_path):
-            os.makedirs(dir_path)
+            os.makedirs(dir_path, exist_ok=True)
             print(f"Created directory: {dir_path}")
 
 if __name__ == '__main__':

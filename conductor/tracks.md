@@ -4,11 +4,15 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Active status: 0 active workstreams.
+Active status: 1 active workstream.
 
-Latest update: 2026-03-13 Closed Tutor Launch / Shell Realignment. Brain-owned launch, TutorStartPanel startup, launch-precedence tests, learner-first start-surface hardening, and final backend/frontend/smoke gates all passed.
+Latest update: 2026-03-14 Trey Agent Repo Readiness completed `T6` isolated startup. Operator launch on `5000` and hermetic harness launch on a second port now coexist; `T7` is next.
 
 ---
+
+- [~] **Track: Trey Agent Repo Readiness** (active — created 2026-03-13; resumed 2026-03-14; `T1`-`T6` complete)
+  Shared repo-local harness contract, env/bootstrap contract, tiered agent matrix, isolated startup implementation, and pending work for harness bootstrap, hermetic Tutor validation, artifacts, CI, and cross-agent proof.
+  *Link: [./tracks/trey-agent-repo-readiness_20260313/](./tracks/trey-agent-repo-readiness_20260313/)*
 
 - [x] **Track: Tutor Launch / Shell Realignment** (complete — created 2026-03-13; closed 2026-03-13)
   Brain-owned launch, explicit Tutor course scoping, thin Tutor start/resume surface, wizard retirement, and branch-grounded final validation.
