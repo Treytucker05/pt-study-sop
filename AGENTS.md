@@ -29,8 +29,8 @@ Preferred response shape: "Here is the best way to give you full access in one s
 ## Onboarding Order
 
 1. Read this `AGENTS.md` first.
-2. Read `docs/root/AGENT_SETUP.md` for exact agent precedence, repo/global boundaries, and maintenance rules.
-3. Read `README.md` for the overall product/system contract.
+2. Read `README.md` for the overall product/system contract.
+3. Read `docs/root/AGENT_SETUP.md` for exact agent precedence, repo/global boundaries, and maintenance rules.
 4. Use `docs/root/GUIDE_DEV.md` for canonical run/build/test commands.
 5. Do not load home-directory Claude/Codex instruction files as extra project canon for this repo.
    - Root `AGENTS.md` is the master instruction file for all LLM tools here.
@@ -48,6 +48,7 @@ Preferred response shape: "Here is the best way to give you full access in one s
 
 ## Live Sources Of Truth
 
+- Top-level repo truth: `README.md`
 - Product/system contract: `README.md`
 - Active execution board: `docs/root/TUTOR_TODO.md`
 - Multi-agent live handoff board: `docs/root/AGENT_BOARD.md`

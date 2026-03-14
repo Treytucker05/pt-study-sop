@@ -15,9 +15,15 @@ param(
 
     [string]$ArtifactRoot,
 
+    [string]$FixtureRoot,
+
     [switch]$NoBrowser,
 
-    [switch]$SkipUiBuild
+    [switch]$SkipUiBuild,
+
+    [switch]$Json,
+
+    [switch]$Fix
 )
 
 $ErrorActionPreference = "Stop"
@@ -26,6 +32,104 @@ $RepoRoot = Split-Path -Parent $PSScriptRoot
 $BrainDir = Join-Path $RepoRoot "brain"
 $BuildScript = Join-Path $RepoRoot "dashboard_rebuild\build-and-sync.ps1"
 $ShellExecutable = (Get-Process -Id $PID).Path
+$BackendEnvTemplatePath = Join-Path $BrainDir ".env.example"
+$FrontendEnvTemplatePath = Join-Path $RepoRoot "dashboard_rebuild\.env.example"
+$LiveEnvPath = Join-Path $BrainDir ".env"
+$DefaultFixtureRoot = Join-Path $BrainDir "tests\fixtures\harness"
+$FixtureManifestName = "manifest.json"
+$HarnessExitCodes = @{
+    "ok" = 0
+    "bootstrap.missing_powershell" = 20
+    "bootstrap.missing_python" = 21
+    "bootstrap.missing_node_toolchain" = 22
+    "bootstrap.missing_live_env" = 23
+    "bootstrap.missing_backend_env_template" = 24
+    "bootstrap.missing_fixture_assets" = 25
+    "bootstrap.missing_harness_run_args" = 26
+    "bootstrap.missing_repo_root" = 27
+}
+
+function Resolve-HarnessPath {
+    param([string]$PathValue)
+
+    if (-not $PathValue) {
+        return $null
+    }
+
+    $expanded = [Environment]::ExpandEnvironmentVariables($PathValue)
+    return [System.IO.Path]::GetFullPath($expanded)
+}
+
+function New-HarnessCheck {
+    param(
+        [string]$Name,
+        [bool]$Passed,
+        [string]$Code,
+        [string]$Message,
+        [string]$Severity = "required"
+    )
+
+    return [ordered]@{
+        name = $Name
+        ok = $Passed
+        code = $Code
+        severity = $Severity
+        message = $Message
+    }
+}
+
+function Write-HarnessResultAndExit {
+    param(
+        [bool]$Ok,
+        [string]$Code,
+        [string]$Message,
+        [System.Collections.IList]$Checks,
+        [hashtable]$Metadata
+    )
+
+    $exitCode = if ($HarnessExitCodes.ContainsKey($Code)) { $HarnessExitCodes[$Code] } else { 1 }
+    $result = [ordered]@{
+        ok = $Ok
+        code = $Code
+        exit_code = $exitCode
+        message = $Message
+        mode = $Mode
+        profile = $Profile
+        repo_root = $RepoRoot
+        generated_at = (Get-Date).ToString("o")
+        checks = @($Checks)
+        metadata = $Metadata
+    }
+
+    if ($Json) {
+        $result | ConvertTo-Json -Depth 6
+    } else {
+        if ($Ok) {
+            Write-Host "[OK] $Message"
+        } else {
+            Write-Error $Message
+        }
+        foreach ($check in $Checks) {
+            $prefix = if ($check.ok) { "[OK]" } else { "[FAIL]" }
+            Write-Host "$prefix $($check.name): $($check.message)"
+        }
+    }
+
+    exit $exitCode
+}
+
+function Find-CommandCandidate {
+    param([string[]]$Names)
+
+    foreach ($name in $Names) {
+        $command = Get-Command $name -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($command) {
+            return $command
+        }
+    }
+
+    return $null
+}
 
 function Get-PythonLaunch {
     foreach ($candidate in @(
@@ -38,6 +142,88 @@ function Get-PythonLaunch {
     }
 
     throw "Python was not found on PATH. Install Python 3 or add python or py -3 to PATH."
+}
+
+function Invoke-HarnessBootstrap {
+    $checks = [System.Collections.Generic.List[object]]::new()
+    $metadata = [ordered]@{
+        shell = $ShellExecutable
+        fix_requested = [bool]$Fix
+        frontend_env_template = Resolve-HarnessPath $FrontendEnvTemplatePath
+        backend_env_template = Resolve-HarnessPath $BackendEnvTemplatePath
+        live_env = Resolve-HarnessPath $LiveEnvPath
+    }
+
+    if (-not (Test-Path (Join-Path $RepoRoot "AGENTS.md"))) {
+        $check = New-HarnessCheck -Name "repo-root" -Passed $false -Code "bootstrap.missing_repo_root" -Message "Harness repo root marker AGENTS.md was not found under $RepoRoot."
+        $checks.Add($check)
+        Write-HarnessResultAndExit -Ok $false -Code $check.code -Message $check.message -Checks $checks -Metadata $metadata
+    }
+    $checks.Add((New-HarnessCheck -Name "repo-root" -Passed $true -Code "ok" -Message "Repo root marker found at $RepoRoot."))
+
+    $checks.Add((New-HarnessCheck -Name "powershell" -Passed $true -Code "ok" -Message "Running under $ShellExecutable."))
+
+    $pythonCommand = Find-CommandCandidate -Names @("python", "py")
+    if (-not $pythonCommand) {
+        $check = New-HarnessCheck -Name "python" -Passed $false -Code "bootstrap.missing_python" -Message "Python was not found on PATH. Install Python 3 or expose python or py -3."
+        $checks.Add($check)
+        Write-HarnessResultAndExit -Ok $false -Code $check.code -Message $check.message -Checks $checks -Metadata $metadata
+    }
+    $metadata.python_command = $pythonCommand.Source
+    $checks.Add((New-HarnessCheck -Name "python" -Passed $true -Code "ok" -Message "Python command available via $($pythonCommand.Name)."))
+
+    $nodeCommand = Find-CommandCandidate -Names @("node")
+    $npmCommand = Find-CommandCandidate -Names @("npm")
+    if ((-not $nodeCommand) -or (-not $npmCommand)) {
+        $check = New-HarnessCheck -Name "node-toolchain" -Passed $false -Code "bootstrap.missing_node_toolchain" -Message "Node and npm must both be available on PATH for harness bootstrap."
+        $checks.Add($check)
+        Write-HarnessResultAndExit -Ok $false -Code $check.code -Message $check.message -Checks $checks -Metadata $metadata
+    }
+    $metadata.node_command = $nodeCommand.Source
+    $metadata.npm_command = $npmCommand.Source
+    $checks.Add((New-HarnessCheck -Name "node-toolchain" -Passed $true -Code "ok" -Message "Node and npm are available on PATH."))
+
+    if (-not (Test-Path $BackendEnvTemplatePath)) {
+        $check = New-HarnessCheck -Name "backend-env-template" -Passed $false -Code "bootstrap.missing_backend_env_template" -Message "Backend env template is missing at $BackendEnvTemplatePath."
+        $checks.Add($check)
+        Write-HarnessResultAndExit -Ok $false -Code $check.code -Message $check.message -Checks $checks -Metadata $metadata
+    }
+    $checks.Add((New-HarnessCheck -Name "backend-env-template" -Passed $true -Code "ok" -Message "Backend env template found at $BackendEnvTemplatePath."))
+
+    if (Test-Path $FrontendEnvTemplatePath) {
+        $checks.Add((New-HarnessCheck -Name "frontend-env-template" -Passed $true -Code "ok" -Message "Frontend env template found at $FrontendEnvTemplatePath." -Severity "info"))
+    } else {
+        $checks.Add((New-HarnessCheck -Name "frontend-env-template" -Passed $false -Code "bootstrap.missing_frontend_env_template" -Message "Frontend env template is missing at $FrontendEnvTemplatePath." -Severity "info"))
+    }
+
+    if ($Profile -eq "Live") {
+        if (-not (Test-Path $LiveEnvPath)) {
+            $check = New-HarnessCheck -Name "live-env" -Passed $false -Code "bootstrap.missing_live_env" -Message "Live profile requires brain/.env at $LiveEnvPath."
+            $checks.Add($check)
+            Write-HarnessResultAndExit -Ok $false -Code $check.code -Message $check.message -Checks $checks -Metadata $metadata
+        }
+
+        $checks.Add((New-HarnessCheck -Name "live-env" -Passed $true -Code "ok" -Message "Live env file found at $LiveEnvPath."))
+    }
+
+    if ($Profile -eq "Hermetic") {
+        $fixtureRootInput = if ($FixtureRoot) { $FixtureRoot } else { $DefaultFixtureRoot }
+        $resolvedFixtureRoot = Resolve-HarnessPath $fixtureRootInput
+        $metadata.fixture_root = $resolvedFixtureRoot
+        $fixtureManifestPath = Join-Path $resolvedFixtureRoot $FixtureManifestName
+        $metadata.fixture_manifest = $fixtureManifestPath
+
+        if ((-not (Test-Path $resolvedFixtureRoot)) -or (-not (Test-Path $fixtureManifestPath))) {
+            $check = New-HarnessCheck -Name "fixture-assets" -Passed $false -Code "bootstrap.missing_fixture_assets" -Message "Hermetic profile requires fixture assets at $resolvedFixtureRoot with $FixtureManifestName present."
+            $checks.Add($check)
+            Write-HarnessResultAndExit -Ok $false -Code $check.code -Message $check.message -Checks $checks -Metadata $metadata
+        }
+
+        $checks.Add((New-HarnessCheck -Name "fixture-assets" -Passed $true -Code "ok" -Message "Hermetic fixture assets found at $resolvedFixtureRoot."))
+    }
+
+    $successMessage = "Harness bootstrap passed for $Profile profile."
+    Write-HarnessResultAndExit -Ok $true -Code "ok" -Message $successMessage -Checks $checks -Metadata $metadata
 }
 
 function Test-PortInUse {
@@ -268,6 +454,9 @@ function Invoke-HarnessRun {
 }
 
 switch ($Mode) {
+    "Bootstrap" {
+        Invoke-HarnessBootstrap
+    }
     "Run" {
         Invoke-HarnessRun
     }

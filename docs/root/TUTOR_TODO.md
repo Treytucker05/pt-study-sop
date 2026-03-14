@@ -91,6 +91,8 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Verification: `pytest brain/tests/test_harness_startup.py`, manual operator launch on `5000`, manual harness launch on a second port with temp data/artifact roots, and concurrent `200` responses from both servers
 - [ ] TAR-110. Add harness bootstrap/validator and backend env templating.
   - Track tasks: `T7`, `T14`
+  - Partial 2026-03-14: `T7` is complete via `scripts/harness.ps1 -Mode Bootstrap`, `brain/.env.example`, `brain/tests/fixtures/harness/manifest.json`, and `brain/tests/test_harness_bootstrap.py`.
+  - Remaining scope: `T14` still needs the broader harness-doc rewrite after later harness tasks land.
 - [ ] TAR-120. Build the first hermetic Tutor fixture scenario.
   - Track tasks: `T8`, `T10`
 - [ ] TAR-130. Add harness artifacts, observability, CI lane, and cross-agent proof.

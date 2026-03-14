@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "profile": "Hermetic",
+  "scenarios": [
+    "tutor-hermetic-smoke"
+  ],
+  "notes": "Bootstrap-only placeholder fixture root for the harness validator. T8 expands this bundle into a real hermetic Tutor scenario."
+}

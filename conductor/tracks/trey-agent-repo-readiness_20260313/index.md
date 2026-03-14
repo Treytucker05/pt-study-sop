@@ -1,6 +1,6 @@
 # Track: Trey Agent Repo Readiness
 
-**Status:** Active; T1-T6 complete, T7 next  
+**Status:** Active; T1-T7 complete, T8 next
 **Created:** 2026-03-13
 
 ## Documents
@@ -13,6 +13,7 @@
 - [Environment And Bootstrap Contract](./contract-env-bootstrap.md)
 - [Cross-Agent Compatibility Matrix](./contract-agent-compatibility-matrix.md)
 - [T6 Isolated Startup Notes](./t6-isolated-startup.md)
+- [T7 Bootstrap Validator](./t7-bootstrap-validator.md)
 
 ## Scope
 

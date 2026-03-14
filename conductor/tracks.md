@@ -14,15 +14,15 @@ Active execution priority is tracked in `docs/root/TUTOR_TODO.md`.
 
 Active status: 1 active workstream.
 
-Latest update: 2026-03-14, Tutor Launch / Shell Realignment Cleanup completed after the start-panel transition, launch-state precedence sync, shell-mode validation, and active-doc rewrite landed.
+Latest update: 2026-03-14, Trey Agent Repo Readiness advanced through `T7` after the repo-local harness bootstrap validator, backend env template, and hermetic fixture manifest landed.
 
 - [x] **Track: Repo Truth Surface Pruning** (complete — created 2026-03-14; closed 2026-03-14; scope: README-first canon promotion, redundant truth-doc compression, repo-local planning-surface alignment, duplicate track cleanup, validator/drift-gate rewiring)
   *Link: [./tracks/repo-truth-surface-pruning_20260314/](./tracks/repo-truth-surface-pruning_20260314/)*
 
 ---
 
-- [~] **Track: Trey Agent Repo Readiness** (active — created 2026-03-13; resumed 2026-03-14; `T1`-`T6` complete)
-  Shared repo-local harness contract, env/bootstrap contract, tiered agent matrix, isolated startup implementation, and pending work for harness bootstrap, hermetic Tutor validation, artifacts, CI, and cross-agent proof.
+- [~] **Track: Trey Agent Repo Readiness** (active — created 2026-03-13; resumed 2026-03-14; `T1`-`T7` complete)
+  Shared repo-local harness contract, env/bootstrap contract, tiered agent matrix, isolated startup implementation, repo-local bootstrap validator, backend env template, and pending work for hermetic Tutor validation, artifacts, CI, and cross-agent proof.
   *Link: [./tracks/trey-agent-repo-readiness_20260313/](./tracks/trey-agent-repo-readiness_20260313/)*
 
 ---

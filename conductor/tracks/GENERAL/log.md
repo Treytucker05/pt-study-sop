@@ -2,6 +2,27 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-14 - Trey Agent Repo Readiness T7 bootstrap validator
+
+- Implemented `Bootstrap` mode in `scripts/harness.ps1` so the repo now has a single repo-local validator command for harness prerequisites.
+- Added deterministic bootstrap exit codes and JSON output for:
+  - missing Python
+  - missing Node/npm
+  - missing live `brain/.env`
+  - missing backend env template
+  - missing hermetic fixture assets
+  - missing repo root marker
+- Added `brain/.env.example` as the backend env template required by the frozen harness contract.
+- Added the bootstrap-stage hermetic fixture manifest at `brain/tests/fixtures/harness/manifest.json`.
+- Added focused regression coverage in `brain/tests/test_harness_bootstrap.py`.
+- Verification:
+  - `python -m pytest brain/tests/test_harness_bootstrap.py -q`
+  - `python -m pytest brain/tests/test_harness_startup.py -q`
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/harness.ps1 -Mode Bootstrap -Profile Hermetic -Json`
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/harness.ps1 -Mode Bootstrap -Profile Live -Json`
+  - `python scripts/check_docs_sync.py`
+  - `git diff --check`
+
 ## 2026-03-14 - Tutor launch / shell realignment closeout
 
 - Closed `conductor/tracks/tutor-launch-shell-realignment_20260313/` after the shipped `/tutor` surface was reconciled with the active track plan.

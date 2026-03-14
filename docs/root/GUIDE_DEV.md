@@ -47,6 +47,21 @@ Skip this section only for backend-only changes under `brain/`.
 - System rules: `sop/library/` (canonical)
 - Tutor embeddings default to Gemini Embedding 2 preview via `GEMINI_API_KEY`, `TUTOR_RAG_EMBEDDING_PROVIDER=gemini`, and `TUTOR_RAG_GEMINI_EMBEDDING_MODEL=gemini-embedding-2-preview`
 
+## Harness Bootstrap
+Use the repo-local harness bootstrap to verify dependency, env-template, and fixture prerequisites before running later harness tasks.
+
+- Hermetic bootstrap:
+  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Bootstrap -Profile Hermetic -Json`
+- Live bootstrap:
+  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Bootstrap -Profile Live -Json`
+
+Current validator checks:
+- Python and Node/npm availability
+- `brain/.env.example`
+- `dashboard_rebuild/.env.example`
+- `brain/.env` for `Live`
+- `brain/tests/fixtures/harness/manifest.json` for `Hermetic`
+
 ## Contracts (Do Not Drift)
 - WRAP schema: `docs/contracts/wrap_schema.md`
 - IDs: `docs/contracts/ids.md`
