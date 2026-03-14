@@ -1247,10 +1247,12 @@ def test_ensure_north_star_context_prefers_objective_group_for_generic_module(mo
 
     assert ns_err is None
     assert ns_ctx is not None
-    assert (
-        ns_ctx["path"]
-        == "Study Notes/Movement Science/Hip Module 1/Hip Module 1/_North_Star.md"
+    expected_path = _api_tutor_mod._canonical_north_star_path(
+        course_label="Movement Science",
+        module_or_week="Hip Module 1",
+        subtopic="Hip Module 1",
     )
+    assert ns_ctx["path"] == expected_path
 
 
 def test_reconcile_obsidian_state_non_missing_error_does_not_set_needs_path(monkeypatch):

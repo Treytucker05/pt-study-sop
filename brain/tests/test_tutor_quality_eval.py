@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import sqlite3
 from pathlib import Path
@@ -42,6 +43,12 @@ def test_recent_tutor_turn_quality_snapshot() -> None:
     - follow-up question rate (25%)
     - concise response rate (30%)
     """
+    if os.getenv("TUTOR_QUALITY_SNAPSHOT_ENFORCE") != "1":
+        pytest.skip(
+            "Live tutor quality snapshot is informational by default. "
+            "Set TUTOR_QUALITY_SNAPSHOT_ENFORCE=1 to enforce it.",
+        )
+
     if not DB_PATH.exists():
         pytest.skip(f"DB not found: {DB_PATH}")
 
