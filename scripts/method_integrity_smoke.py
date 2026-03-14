@@ -216,14 +216,41 @@ def main() -> int:
         default=str(ROOT / "docs" / "root" / "TUTOR_METHOD_INTEGRITY_SMOKE.md"),
         help="Write markdown report to this path",
     )
+    parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON summary")
     args = parser.parse_args()
 
     db_path = Path(args.db).resolve()
     if not db_path.exists():
-        print(f"[ERROR] DB not found: {db_path}")
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "ok": False,
+                        "scenario": "method-integrity-smoke",
+                        "scenario_type": "live/operator",
+                        "db_path": str(db_path),
+                        "error": f"DB not found: {db_path}",
+                    }
+                )
+            )
+        else:
+            print(f"[ERROR] DB not found: {db_path}")
         return 2
     if not METHODS_DIR.exists():
-        print(f"[ERROR] Methods dir not found: {METHODS_DIR}")
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "ok": False,
+                        "scenario": "method-integrity-smoke",
+                        "scenario_type": "live/operator",
+                        "db_path": str(db_path),
+                        "error": f"Methods dir not found: {METHODS_DIR}",
+                    }
+                )
+            )
+        else:
+            print(f"[ERROR] Methods dir not found: {METHODS_DIR}")
         return 2
 
     yaml_methods = _load_yaml_methods()
@@ -234,8 +261,26 @@ def main() -> int:
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(report, encoding="utf-8")
 
-    print(report)
-    print(f"[INFO] report_path={report_path}")
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "ok": failures == 0,
+                    "scenario": "method-integrity-smoke",
+                    "scenario_type": "live/operator",
+                    "db_path": str(db_path),
+                    "report_path": str(report_path),
+                    "summary": {
+                        "yaml_method_count": len(yaml_methods),
+                        "db_method_count": len(db_methods),
+                        "failure_count": failures,
+                    },
+                }
+            )
+        )
+    else:
+        print(report)
+        print(f"[INFO] report_path={report_path}")
     return 0 if failures == 0 else 1
 
 

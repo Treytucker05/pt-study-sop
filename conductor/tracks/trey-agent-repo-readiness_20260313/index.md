@@ -1,6 +1,6 @@
 # Track: Trey Agent Repo Readiness
 
-**Status:** Active; T1-T9 complete, T10 in progress
+**Status:** Active; T1-T12 complete, T13 next
 **Created:** 2026-03-13
 
 ## Documents
@@ -15,6 +15,7 @@
 - [T6 Isolated Startup Notes](./t6-isolated-startup.md)
 - [T7 Bootstrap Validator](./t7-bootstrap-validator.md)
 - [T8 Hermetic Tutor Smoke](./t8-hermetic-tutor-smoke.md)
+- [T10-T12 Scenario Registry, Observability, And CI](./t10-t12-scenarios-observability-ci.md)
 
 ## Scope
 

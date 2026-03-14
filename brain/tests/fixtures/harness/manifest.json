@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "profile": "Hermetic",
   "scenarios": [
     {
@@ -7,9 +7,34 @@
       "fixture_file": "tutor-hermetic-smoke.json",
       "classification": "hermetic",
       "description": "Seeds an isolated Tutor course and two scoped materials, then exercises a provider-free Tutor session over HTTP.",
+      "runner": {
+        "type": "python_script",
+        "script": "scripts/tutor_hermetic_smoke.py",
+        "expects_json": true,
+        "args_template": [
+          "--scenario",
+          "{scenario_id}",
+          "--base-url",
+          "{base_url}",
+          "--db-path",
+          "{db_path}",
+          "--fixture-root",
+          "{fixture_root}",
+          "--artifact-root",
+          "{scenario_artifact_root}",
+          "--json"
+        ]
+      },
       "requires_run_metadata": [
         "base_url",
         "db_path"
+      ],
+      "expected_artifacts": [
+        "result.json",
+        "turn-1.sse.txt",
+        "turn-2.sse.txt",
+        "script.stdout.log",
+        "script.stderr.log"
       ]
     },
     {
@@ -17,11 +42,108 @@
       "fixture_file": "tutor-hermetic-coverage-scope.json",
       "classification": "hermetic",
       "description": "Seeds a wider isolated course library but narrows Tutor to one selected file with the coverage accuracy profile, then exercises provider-free scope shortcuts over HTTP.",
+      "runner": {
+        "type": "python_script",
+        "script": "scripts/tutor_hermetic_smoke.py",
+        "expects_json": true,
+        "args_template": [
+          "--scenario",
+          "{scenario_id}",
+          "--base-url",
+          "{base_url}",
+          "--db-path",
+          "{db_path}",
+          "--fixture-root",
+          "{fixture_root}",
+          "--artifact-root",
+          "{scenario_artifact_root}",
+          "--json"
+        ]
+      },
       "requires_run_metadata": [
         "base_url",
         "db_path"
+      ],
+      "expected_artifacts": [
+        "result.json",
+        "turn-1.sse.txt",
+        "turn-2.sse.txt",
+        "script.stdout.log",
+        "script.stderr.log"
+      ]
+    },
+    {
+      "id": "app-live-golden-path",
+      "classification": "live/operator",
+      "description": "Runs the non-destructive golden-path GET smoke against a running dashboard shell.",
+      "runner": {
+        "type": "powershell_script",
+        "script": "scripts/smoke_golden_path.ps1",
+        "expects_json": true,
+        "args_template": [
+          "-BaseUrl",
+          "{base_url}",
+          "-Json"
+        ]
+      },
+      "requires_run_metadata": [
+        "base_url"
+      ],
+      "expected_artifacts": [
+        "result.json",
+        "script.stdout.log",
+        "script.stderr.log"
+      ]
+    },
+    {
+      "id": "tutor-live-readonly",
+      "classification": "live/operator",
+      "description": "Runs the GET-only Tutor API smoke against a running dashboard shell.",
+      "runner": {
+        "type": "powershell_script",
+        "script": "scripts/smoke_tutor_readonly.ps1",
+        "expects_json": true,
+        "args_template": [
+          "-BaseUrl",
+          "{base_url}",
+          "-Json"
+        ]
+      },
+      "requires_run_metadata": [
+        "base_url"
+      ],
+      "expected_artifacts": [
+        "result.json",
+        "script.stdout.log",
+        "script.stderr.log"
+      ]
+    },
+    {
+      "id": "method-integrity-smoke",
+      "classification": "live/operator",
+      "description": "Checks YAML-to-DB method parity against the active study DB and writes a markdown report artifact.",
+      "runner": {
+        "type": "python_script",
+        "script": "scripts/method_integrity_smoke.py",
+        "expects_json": true,
+        "args_template": [
+          "--db",
+          "{db_path}",
+          "--report",
+          "{scenario_artifact_root}/method-integrity-report.md",
+          "--json"
+        ]
+      },
+      "requires_run_metadata": [
+        "db_path"
+      ],
+      "expected_artifacts": [
+        "result.json",
+        "method-integrity-report.md",
+        "script.stdout.log",
+        "script.stderr.log"
       ]
     }
   ],
-  "notes": "Hermetic Tutor scenarios use provider-free material-count and scope-list shortcuts so they do not require Obsidian state or live provider credentials."
+  "notes": "Hermetic Tutor scenarios use provider-free material-count and scope-list shortcuts so they do not require Obsidian state or live provider credentials. Live/operator scenarios reuse the existing smoke scripts through the same harness registry."
 }

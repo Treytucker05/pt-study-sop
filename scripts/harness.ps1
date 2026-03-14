@@ -46,6 +46,12 @@ $LiveEnvPath = Join-Path $BrainDir ".env"
 $DefaultFixtureRoot = Join-Path $BrainDir "tests\fixtures\harness"
 $FixtureManifestName = "manifest.json"
 $BundleFileName = "bundle.json"
+$EventsFileName = "events.jsonl"
+$HarnessSecretEnvironmentKeys = @(
+    "GEMINI_API_KEY",
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY"
+)
 $HarnessExitCodes = @{
     "ok" = 0
     "bootstrap.missing_powershell" = 20
@@ -67,6 +73,7 @@ $HarnessExitCodes = @{
     "report.missing_artifact_root" = 41
     "report.run_id_mismatch" = 42
 }
+$script:HarnessLastFailureDetails = $null
 
 function Resolve-HarnessPath {
     param([string]$PathValue)
@@ -173,6 +180,85 @@ function Get-HarnessBundlePath {
     return Join-Path $ResolvedArtifactRoot $BundleFileName
 }
 
+function Get-HarnessEventsPath {
+    param([string]$ResolvedArtifactRoot)
+
+    return Join-Path $ResolvedArtifactRoot $EventsFileName
+}
+
+function Get-HarnessFixtureManifestPath {
+    param([string]$ResolvedFixtureRoot)
+
+    return Join-Path $ResolvedFixtureRoot $FixtureManifestName
+}
+
+function Get-HarnessSecretValues {
+    $values = [System.Collections.Generic.List[string]]::new()
+    foreach ($name in $HarnessSecretEnvironmentKeys) {
+        $existing = Get-Item -Path ("Env:{0}" -f $name) -ErrorAction SilentlyContinue
+        if ($existing -and -not [string]::IsNullOrWhiteSpace([string]$existing.Value)) {
+            $values.Add([string]$existing.Value)
+        }
+    }
+
+    return @($values)
+}
+
+function Redact-HarnessText {
+    param([AllowNull()][string]$Text)
+
+    if ($null -eq $Text) {
+        return $null
+    }
+
+    $redacted = [string]$Text
+    foreach ($secret in Get-HarnessSecretValues) {
+        if (-not [string]::IsNullOrWhiteSpace($secret)) {
+            $redacted = $redacted.Replace($secret, "<redacted:secret>")
+        }
+    }
+
+    return $redacted
+}
+
+function Redact-HarnessValue {
+    param($Value)
+
+    if ($null -eq $Value) {
+        return $null
+    }
+
+    if ($Value -is [System.Collections.IDictionary]) {
+        $dictionary = [ordered]@{}
+        foreach ($key in $Value.Keys) {
+            $dictionary[[string]$key] = Redact-HarnessValue -Value $Value[$key]
+        }
+        return $dictionary
+    }
+
+    if ($Value -is [System.Collections.IEnumerable] -and -not ($Value -is [string])) {
+        $items = @()
+        foreach ($item in $Value) {
+            $items += ,(Redact-HarnessValue -Value $item)
+        }
+        return $items
+    }
+
+    if ($Value -is [pscustomobject]) {
+        $dictionary = [ordered]@{}
+        foreach ($property in $Value.PSObject.Properties) {
+            $dictionary[$property.Name] = Redact-HarnessValue -Value $property.Value
+        }
+        return $dictionary
+    }
+
+    if ($Value -is [string]) {
+        return Redact-HarnessText -Text $Value
+    }
+
+    return $Value
+}
+
 function ConvertTo-HarnessDictionary {
     param($Value)
 
@@ -256,6 +342,188 @@ function Resolve-ArtifactRelativePath {
     }
 
     return $resolvedPath
+}
+
+function Resolve-HarnessScenarioScriptPath {
+    param([string]$ScriptValue)
+
+    if (-not $ScriptValue) {
+        throw "Harness scenario runner is missing a script path."
+    }
+
+    if ([System.IO.Path]::IsPathRooted($ScriptValue)) {
+        return Resolve-HarnessPath $ScriptValue
+    }
+
+    return Resolve-HarnessPath (Join-Path $RepoRoot $ScriptValue)
+}
+
+function Get-HarnessScenarioDefinition {
+    param(
+        [string]$ResolvedFixtureRoot,
+        [string]$ScenarioId
+    )
+
+    $manifestPath = Get-HarnessFixtureManifestPath -ResolvedFixtureRoot $ResolvedFixtureRoot
+    if (-not (Test-Path $manifestPath)) {
+        throw "Harness scenario manifest not found at $manifestPath."
+    }
+
+    $manifest = ConvertFrom-HarnessJson -JsonText (Get-Content -Raw -Path $manifestPath)
+    foreach ($scenario in @($manifest.scenarios)) {
+        $candidateId = if ($scenario -is [string]) { [string]$scenario } else { [string]$scenario.id }
+        if (-not $candidateId -or $candidateId -ne $ScenarioId) {
+            continue
+        }
+
+        $runner = if ($scenario -isnot [string] -and $scenario.runner) {
+            ConvertTo-HarnessDictionary -Value $scenario.runner
+        } else {
+            [ordered]@{}
+        }
+        $definition = [ordered]@{
+            id = $candidateId
+            classification = if ($scenario -isnot [string] -and $scenario.classification) { [string]$scenario.classification } else { "hermetic" }
+            description = if ($scenario -isnot [string]) { $scenario.description } else { $null }
+            fixture_file = if ($scenario -isnot [string]) { [string]$scenario.fixture_file } else { "{0}.json" -f $candidateId }
+            requires_run_metadata = @($(if ($scenario -isnot [string]) { $scenario.requires_run_metadata } else { @() }))
+            expected_artifacts = @($(if ($scenario -isnot [string]) { $scenario.expected_artifacts } else { @() }))
+            runner = $runner
+        }
+
+        if (-not $definition.runner.type) {
+            $definition.runner.type = "python_script"
+        }
+        if (-not $definition.runner.script) {
+            $definition.runner.script = "scripts/tutor_hermetic_smoke.py"
+        }
+        if (-not (Test-Path (Resolve-HarnessScenarioScriptPath -ScriptValue $definition.runner.script))) {
+            throw "Harness scenario '$ScenarioId' references missing runner script '$($definition.runner.script)'."
+        }
+
+        if ($definition.fixture_file) {
+            $fixturePath = Join-Path $ResolvedFixtureRoot $definition.fixture_file
+            if ($definition.classification -eq "hermetic" -and -not (Test-Path $fixturePath)) {
+                throw "Harness scenario '$ScenarioId' references missing fixture file '$fixturePath'."
+            }
+        }
+
+        return $definition
+    }
+
+    throw "Unknown eval scenario '$ScenarioId'."
+}
+
+function Resolve-HarnessTemplateString {
+    param(
+        [string]$Template,
+        [System.Collections.IDictionary]$Context
+    )
+
+    $value = [string]$Template
+    foreach ($key in $Context.Keys) {
+        $token = "{{{0}}}" -f $key
+        $value = $value.Replace($token, [string]$Context[$key])
+    }
+
+    return $value
+}
+
+function Resolve-HarnessTemplateArgs {
+    param(
+        [object[]]$Templates,
+        [System.Collections.IDictionary]$Context
+    )
+
+    $resolved = @()
+    foreach ($template in @($Templates)) {
+        $resolved += Resolve-HarnessTemplateString -Template ([string]$template) -Context $Context
+    }
+    return @($resolved)
+}
+
+function Invoke-HarnessProcess {
+    param(
+        [string]$FilePath,
+        [string[]]$ArgumentList,
+        [string]$WorkingDirectory,
+        [string]$OutputRoot
+    )
+
+    $stdoutLog = Join-Path $OutputRoot "script.stdout.log"
+    $stderrLog = Join-Path $OutputRoot "script.stderr.log"
+    $process = Start-Process `
+        -FilePath $FilePath `
+        -ArgumentList $ArgumentList `
+        -WorkingDirectory $WorkingDirectory `
+        -RedirectStandardOutput $stdoutLog `
+        -RedirectStandardError $stderrLog `
+        -PassThru `
+        -Wait
+
+    return [ordered]@{
+        exit_code = [int]$process.ExitCode
+        stdout_log = $stdoutLog
+        stderr_log = $stderrLog
+        stdout_text = if (Test-Path $stdoutLog) { Get-Content -Raw -Path $stdoutLog } else { "" }
+        stderr_text = if (Test-Path $stderrLog) { Get-Content -Raw -Path $stderrLog } else { "" }
+    }
+}
+
+function Write-HarnessEvent {
+    param(
+        [string]$ResolvedArtifactRoot,
+        [string]$ModeValue,
+        [string]$Event,
+        [string]$Level = "info",
+        [string]$Message = "",
+        [string]$RunId = $null,
+        [string]$ScenarioId = $null,
+        [System.Collections.IDictionary]$Details = $null
+    )
+
+    if (-not $ResolvedArtifactRoot) {
+        return
+    }
+
+    $entry = [ordered]@{
+        generated_at = (Get-Date).ToString("o")
+        mode = $ModeValue
+        event = $Event
+        level = $Level
+        run_id = $RunId
+        scenario_id = $ScenarioId
+        message = Redact-HarnessText -Text $Message
+        details = if ($Details) { Redact-HarnessValue -Value $Details } else { [ordered]@{} }
+    }
+
+    $eventsPath = Get-HarnessEventsPath -ResolvedArtifactRoot $ResolvedArtifactRoot
+    Add-Content -Path $eventsPath -Value ($entry | ConvertTo-Json -Depth 8 -Compress) -Encoding UTF8
+}
+
+function Resolve-HarnessFailureCode {
+    param(
+        [string]$ModeValue,
+        [string]$Message
+    )
+
+    switch -Wildcard ($Message) {
+        "Eval mode requires -Scenario.*" { return "eval.missing_scenario" }
+        "Eval mode requires -ArtifactRoot.*" { return "eval.missing_artifact_root" }
+        "Unknown eval scenario*" { return "eval.unknown_scenario" }
+        "*requires ArtifactRoot/run.json*" { return "eval.missing_run_metadata" }
+        "*requires -BaseUrl*" { return "eval.missing_base_url" }
+        "*requires ArtifactRoot/run.json with db_path*" { return "eval.missing_db_path" }
+        "Report mode requires -RunId.*" { return "report.missing_run_id" }
+        "Report mode requires -ArtifactRoot.*" { return "report.missing_artifact_root" }
+        "Report requested run_id*" { return "report.run_id_mismatch" }
+        default {
+            if ($ModeValue -eq "Eval") {
+                return "eval.command_failed"
+            }
+            return "unknown"
+        }
+    }
 }
 
 function Get-HarnessGitMetadata {
@@ -446,6 +714,7 @@ function Get-HarnessBundle {
             updated_at = (Get-Date).ToString("o")
             artifacts = [ordered]@{
                 bundle = $BundleFileName
+                events = $EventsFileName
             }
             environment = [ordered]@{
                 summary = if ($EnvironmentSummary) { $EnvironmentSummary } else { Get-HarnessEnvironmentSummary }
@@ -456,9 +725,12 @@ function Get-HarnessBundle {
     }
 
     if (-not (Test-HarnessKey -Collection $bundle -Key "artifacts")) {
-        $bundle.artifacts = [ordered]@{ bundle = $BundleFileName }
+        $bundle.artifacts = [ordered]@{ bundle = $BundleFileName; events = $EventsFileName }
     } elseif (-not (Test-HarnessKey -Collection $bundle.artifacts -Key "bundle")) {
         $bundle.artifacts.bundle = $BundleFileName
+    }
+    if (-not (Test-HarnessKey -Collection $bundle.artifacts -Key "events")) {
+        $bundle.artifacts.events = $EventsFileName
     }
 
     if (-not (Test-HarnessKey -Collection $bundle -Key "environment")) {
@@ -755,6 +1027,7 @@ function Get-StudyRagRoot {
 }
 
 function Invoke-HarnessRun {
+    $script:HarnessLastFailureDetails = $null
     $startedAt = Get-Date
     if (-not $Port) {
         throw "Run mode requires -Port."
@@ -810,6 +1083,11 @@ function Invoke-HarnessRun {
         PT_HARNESS_DISABLE_VAULT_CONTEXT = $(if ($Profile -eq "Hermetic") { "1" } else { "0" })
     }
     $runIdValue = if ($RunId) { $RunId } else { New-HarnessRunId }
+    Write-HarnessEvent -ResolvedArtifactRoot $resolvedArtifactRoot -ModeValue "Run" -Event "command_started" -RunId $runIdValue -Message "Harness run started." -Details ([ordered]@{
+        profile = $Profile
+        port = $Port
+        data_root = Resolve-ArtifactRelativePath -PathValue $resolvedDataRoot -ResolvedArtifactRoot $resolvedArtifactRoot
+    })
 
     Invoke-WithinEnvironment -Overrides $runEnvironment -Script {
         Push-Location $BrainDir
@@ -843,6 +1121,12 @@ function Invoke-HarnessRun {
 
         $stdoutTail = if (Test-Path $stdoutLog) { Get-Content -Path $stdoutLog -Tail 40 -ErrorAction SilentlyContinue | Out-String } else { "" }
         $stderrTail = if (Test-Path $stderrLog) { Get-Content -Path $stderrLog -Tail 40 -ErrorAction SilentlyContinue | Out-String } else { "" }
+        $script:HarnessLastFailureDetails = [ordered]@{
+            artifacts = [ordered]@{
+                stdout_log = Resolve-ArtifactRelativePath -PathValue $stdoutLog -ResolvedArtifactRoot $resolvedArtifactRoot
+                stderr_log = Resolve-ArtifactRelativePath -PathValue $stderrLog -ResolvedArtifactRoot $resolvedArtifactRoot
+            }
+        }
         throw "Harness run failed to reach $dashboardUrl.`nSTDOUT:`n$stdoutTail`nSTDERR:`n$stderrTail"
     }
 
@@ -894,6 +1178,10 @@ function Invoke-HarnessRun {
             stderr_log = Resolve-ArtifactRelativePath -PathValue $stderrLog -ResolvedArtifactRoot $resolvedArtifactRoot
         }))
     $bundlePath = Save-HarnessBundle -Bundle $bundle -ResolvedArtifactRoot $resolvedArtifactRoot
+    Write-HarnessEvent -ResolvedArtifactRoot $resolvedArtifactRoot -ModeValue "Run" -Event "command_completed" -RunId $runIdValue -Message "Harness run completed." -Details ([ordered]@{
+        dashboard_url = $dashboardUrl
+        bundle = Resolve-ArtifactRelativePath -PathValue $bundlePath -ResolvedArtifactRoot $resolvedArtifactRoot
+    })
 
     if (-not $NoBrowser) {
         Start-Process $dashboardUrl | Out-Null
@@ -916,6 +1204,7 @@ function Get-HarnessRunMetadata {
 }
 
 function Invoke-HarnessEval {
+    $script:HarnessLastFailureDetails = $null
     $startedAt = Get-Date
     if (-not $Scenario) {
         throw "Eval mode requires -Scenario."
@@ -924,64 +1213,144 @@ function Invoke-HarnessEval {
         throw "Eval mode requires -ArtifactRoot."
     }
 
-    $python = Get-PythonLaunch
     $resolvedArtifactRoot = (Resolve-Path -Path (New-Item -ItemType Directory -Force -Path $ArtifactRoot)).Path
     $scenarioArtifactRoot = (Resolve-Path -Path (New-Item -ItemType Directory -Force -Path (Join-Path $resolvedArtifactRoot "scenarios\$Scenario"))).Path
     $runMetadata = Get-HarnessRunMetadata -ResolvedArtifactRoot $resolvedArtifactRoot
     $resolvedFixtureRoot = Resolve-HarnessPath $(if ($FixtureRoot) { $FixtureRoot } else { $DefaultFixtureRoot })
-
-    switch ($Scenario) {
-        "tutor-hermetic-smoke" {}
-        "tutor-hermetic-coverage-scope" {}
-        default {
-            throw "Unknown eval scenario '$Scenario'."
-        }
-    }
+    $scenarioDefinition = Get-HarnessScenarioDefinition -ResolvedFixtureRoot $resolvedFixtureRoot -ScenarioId $Scenario
 
     if (-not $runMetadata) {
         throw "Eval scenario '$Scenario' requires ArtifactRoot/run.json from a prior harness Run invocation."
     }
 
     $effectiveBaseUrl = if ($BaseUrl) { $BaseUrl } elseif ($runMetadata.base_url) { [string]$runMetadata.base_url } else { $null }
-    if (-not $effectiveBaseUrl) {
-        throw "Eval scenario '$Scenario' requires -BaseUrl or ArtifactRoot/run.json with base_url."
-    }
-
     $dbPath = if ($runMetadata.db_path) { [string]$runMetadata.db_path } else { $null }
-    if (-not $dbPath) {
-        throw "Eval scenario '$Scenario' requires ArtifactRoot/run.json with db_path."
+
+    foreach ($requiredField in @($scenarioDefinition.requires_run_metadata)) {
+        switch ([string]$requiredField) {
+            "base_url" {
+                if (-not $effectiveBaseUrl) {
+                    throw "Eval scenario '$Scenario' requires -BaseUrl or ArtifactRoot/run.json with base_url."
+                }
+            }
+            "db_path" {
+                if (-not $dbPath) {
+                    throw "Eval scenario '$Scenario' requires ArtifactRoot/run.json with db_path."
+                }
+            }
+        }
     }
 
-    $scriptPath = Join-Path $RepoRoot "scripts\tutor_hermetic_smoke.py"
-    if (-not (Test-Path $scriptPath)) {
-        throw "Could not find Tutor hermetic smoke script at $scriptPath."
+    $context = [ordered]@{
+        scenario_id = $Scenario
+        repo_root = $RepoRoot
+        fixture_root = $resolvedFixtureRoot
+        artifact_root = $resolvedArtifactRoot
+        scenario_artifact_root = $scenarioArtifactRoot
+        base_url = if ($effectiveBaseUrl) { $effectiveBaseUrl } else { "" }
+        db_path = if ($dbPath) { $dbPath } else { "" }
+    }
+    Write-HarnessEvent -ResolvedArtifactRoot $resolvedArtifactRoot -ModeValue "Eval" -Event "command_started" -RunId $(if ($runMetadata.run_id) { [string]$runMetadata.run_id } else { $RunId }) -ScenarioId $Scenario -Message "Harness eval started." -Details ([ordered]@{
+        scenario_id = $Scenario
+        classification = [string]$scenarioDefinition.classification
+        base_url = $effectiveBaseUrl
+    })
+
+    $runner = $scenarioDefinition.runner
+    $scriptPath = Resolve-HarnessScenarioScriptPath -ScriptValue ([string]$runner.script)
+    $scriptArgs = Resolve-HarnessTemplateArgs -Templates @($runner.args_template) -Context $context
+    $workingDirectory = $RepoRoot
+    switch ([string]$runner.type) {
+        "python_script" {
+            $python = Get-PythonLaunch
+            $processResult = Invoke-HarnessProcess `
+                -FilePath $python.FilePath `
+                -ArgumentList @($python.Prefix + @($scriptPath) + $scriptArgs) `
+                -WorkingDirectory $workingDirectory `
+                -OutputRoot $scenarioArtifactRoot
+        }
+        "powershell_script" {
+            $processResult = Invoke-HarnessProcess `
+                -FilePath $ShellExecutable `
+                -ArgumentList @((@("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $scriptPath) + $scriptArgs)) `
+                -WorkingDirectory $workingDirectory `
+                -OutputRoot $scenarioArtifactRoot
+        }
+        default {
+            throw "Harness scenario '$Scenario' uses unsupported runner type '$($runner.type)'."
+        }
     }
 
-    $scriptArgs = @(
-        $scriptPath,
-        "--scenario",
-        $Scenario,
-        "--base-url",
-        $effectiveBaseUrl,
-        "--db-path",
-        $dbPath,
-        "--fixture-root",
-        $resolvedFixtureRoot,
-        "--artifact-root",
-        $scenarioArtifactRoot,
-        "--json"
-    )
-
-    $scriptOutput = & $python.FilePath @($python.Prefix + $scriptArgs) 2>&1
-    $scriptText = ($scriptOutput | Out-String).Trim()
-    if ($LASTEXITCODE -ne 0) {
-        throw "Eval scenario '$Scenario' failed with exit code $LASTEXITCODE.`n$scriptText"
-    }
-    if (-not $scriptText) {
-        throw "Eval scenario '$Scenario' did not emit JSON output."
+    $stdoutText = [string]$processResult.stdout_text
+    if ($processResult.exit_code -ne 0 -and -not $stdoutText -and -not $processResult.stderr_text) {
+        throw "Eval scenario '$Scenario' failed with exit code $($processResult.exit_code)."
     }
 
-    $payload = ConvertFrom-HarnessJson -JsonText $scriptText
+    $payload = $null
+    if ($runner.expects_json) {
+        $payload = ConvertFrom-HarnessJson -JsonText $stdoutText
+        if (-not $payload) {
+            throw "Eval scenario '$Scenario' did not emit JSON output."
+        }
+    } else {
+        $payload = [ordered]@{
+            ok = ($processResult.exit_code -eq 0)
+        }
+    }
+
+    $payload = ConvertTo-HarnessDictionary -Value $payload
+    $payload.scenario = $Scenario
+    $payload.scenario_type = [string]$scenarioDefinition.classification
+    $payload.scenario_description = $scenarioDefinition.description
+    $payload.exit_code = [int]$processResult.exit_code
+    if (-not (Test-HarnessKey -Collection $payload -Key "ok")) {
+        $payload.ok = ($processResult.exit_code -eq 0)
+    }
+    if (-not $payload.generated_at) {
+        $payload.generated_at = (Get-Date).ToString("o")
+    }
+    if ($effectiveBaseUrl -and -not $payload.base_url) {
+        $payload.base_url = $effectiveBaseUrl
+    }
+    if ($dbPath -and -not $payload.db_path) {
+        $payload.db_path = $dbPath
+    }
+    $payload.fixture_root = $resolvedFixtureRoot
+    $payload.artifact_root = $scenarioArtifactRoot
+    if (-not $payload.summary) {
+        $payload.summary = [ordered]@{}
+    }
+    if (-not (Test-HarnessKey -Collection $payload.summary -Key "pass_count") -and (Test-HarnessKey -Collection $payload -Key "checks")) {
+        $checkCount = @($payload.checks).Count
+        $passCount = @($payload.checks | Where-Object { $_.ok }).Count
+        $payload.summary.pass_count = $passCount
+        $payload.summary.fail_count = $checkCount - $passCount
+        $payload.summary.check_count = $checkCount
+    }
+    if (-not $payload.artifacts) {
+        $payload.artifacts = [ordered]@{}
+    }
+    $payload.artifacts.stdout_log = Split-Path -Leaf $processResult.stdout_log
+    $payload.artifacts.stderr_log = Split-Path -Leaf $processResult.stderr_log
+    if (@($scenarioDefinition.expected_artifacts).Count -gt 0) {
+        $payload.expected_artifacts = @($scenarioDefinition.expected_artifacts)
+    }
+    $resultPath = Join-Path $scenarioArtifactRoot "result.json"
+    $payload | ConvertTo-Json -Depth 10 | Set-Content -Path $resultPath -Encoding UTF8
+
+    if ($processResult.exit_code -ne 0 -or -not [bool]$payload.ok) {
+        $script:HarnessLastFailureDetails = [ordered]@{
+            artifacts = [ordered]@{
+                result = Resolve-ArtifactRelativePath -PathValue $resultPath -ResolvedArtifactRoot $resolvedArtifactRoot
+                stdout_log = Resolve-ArtifactRelativePath -PathValue $processResult.stdout_log -ResolvedArtifactRoot $resolvedArtifactRoot
+                stderr_log = Resolve-ArtifactRelativePath -PathValue $processResult.stderr_log -ResolvedArtifactRoot $resolvedArtifactRoot
+            }
+            summary = if ($payload.summary) { $payload.summary } else { [ordered]@{} }
+        }
+        $errorDetail = if ($payload.error) { [string]$payload.error } elseif ($processResult.stderr_text) { [string]$processResult.stderr_text } else { [string]$processResult.stdout_text }
+        throw "Eval scenario '$Scenario' failed with exit code $($processResult.exit_code).`n$(Redact-HarnessText -Text $errorDetail)"
+    }
+
     $completedAt = Get-Date
     $bundle = Get-HarnessBundle -ResolvedArtifactRoot $resolvedArtifactRoot -DefaultProfile $(if ($runMetadata.profile) { [string]$runMetadata.profile } else { $Profile }) -RequestedRunId $(if ($runMetadata.run_id) { [string]$runMetadata.run_id } else { $RunId }) -EnvironmentSummary (Get-HarnessEnvironmentSummary)
     Set-HarnessBundleRunSnapshot -Bundle $bundle -RunMetadata $runMetadata -ResolvedArtifactRoot $resolvedArtifactRoot
@@ -999,10 +1368,18 @@ function Invoke-HarnessEval {
             base_url = $effectiveBaseUrl
         }) `
         -Artifacts ([ordered]@{
-            result = Resolve-ArtifactRelativePath -PathValue (Join-Path $scenarioArtifactRoot "result.json") -ResolvedArtifactRoot $resolvedArtifactRoot
+            result = Resolve-ArtifactRelativePath -PathValue $resultPath -ResolvedArtifactRoot $resolvedArtifactRoot
+            stdout_log = Resolve-ArtifactRelativePath -PathValue $processResult.stdout_log -ResolvedArtifactRoot $resolvedArtifactRoot
+            stderr_log = Resolve-ArtifactRelativePath -PathValue $processResult.stderr_log -ResolvedArtifactRoot $resolvedArtifactRoot
         }) `
         -ScenarioId $Scenario)
     $bundlePath = Save-HarnessBundle -Bundle $bundle -ResolvedArtifactRoot $resolvedArtifactRoot
+    Write-HarnessEvent -ResolvedArtifactRoot $resolvedArtifactRoot -ModeValue "Eval" -Event "command_completed" -RunId [string]$bundle.run_id -ScenarioId $Scenario -Message "Harness eval completed." -Details ([ordered]@{
+        scenario_id = $Scenario
+        classification = [string]$scenarioDefinition.classification
+        result = Resolve-ArtifactRelativePath -PathValue $resultPath -ResolvedArtifactRoot $resolvedArtifactRoot
+        bundle = Resolve-ArtifactRelativePath -PathValue $bundlePath -ResolvedArtifactRoot $resolvedArtifactRoot
+    })
 
     if ($Json) {
         Write-Output ($payload | ConvertTo-Json -Depth 8)
@@ -1027,6 +1404,9 @@ function Invoke-HarnessReport {
     $inputRootValue = if ($InputRoot) { $InputRoot } else { $resolvedArtifactRoot }
     $resolvedInputRoot = Resolve-HarnessPath $inputRootValue
     $runMetadata = Get-HarnessRunMetadata -ResolvedArtifactRoot $resolvedArtifactRoot
+    Write-HarnessEvent -ResolvedArtifactRoot $resolvedArtifactRoot -ModeValue "Report" -Event "command_started" -RunId $RunId -Message "Harness report started." -Details ([ordered]@{
+        input_root = Resolve-ArtifactRelativePath -PathValue $resolvedInputRoot -ResolvedArtifactRoot $resolvedArtifactRoot
+    })
 
     $bundle = Get-HarnessBundle -ResolvedArtifactRoot $resolvedArtifactRoot -DefaultProfile $(if ($runMetadata -and $runMetadata.profile) { [string]$runMetadata.profile } else { $Profile }) -RequestedRunId $RunId -EnvironmentSummary (Get-HarnessEnvironmentSummary)
     if ($bundle.run_id -and $bundle.run_id -ne $RunId) {
@@ -1055,6 +1435,10 @@ function Invoke-HarnessReport {
             bundle = $BundleFileName
         }))
     $bundlePath = Save-HarnessBundle -Bundle $bundle -ResolvedArtifactRoot $resolvedArtifactRoot
+    Write-HarnessEvent -ResolvedArtifactRoot $resolvedArtifactRoot -ModeValue "Report" -Event "command_completed" -RunId [string]$bundle.run_id -Message "Harness report completed." -Details ([ordered]@{
+        bundle = Resolve-ArtifactRelativePath -PathValue $bundlePath -ResolvedArtifactRoot $resolvedArtifactRoot
+        scenario_count = @($bundle.scenarios.Keys).Count
+    })
 
     if ($Json) {
         Write-Output ($bundle | ConvertTo-Json -Depth 8)
@@ -1065,20 +1449,82 @@ function Invoke-HarnessReport {
     }
 }
 
-switch ($Mode) {
-    "Bootstrap" {
-        Invoke-HarnessBootstrap
+try {
+    $script:HarnessLastFailureDetails = $null
+    switch ($Mode) {
+        "Bootstrap" {
+            Invoke-HarnessBootstrap
+        }
+        "Run" {
+            Invoke-HarnessRun
+        }
+        "Eval" {
+            Invoke-HarnessEval
+        }
+        "Report" {
+            Invoke-HarnessReport
+        }
+        default {
+            throw "Mode '$Mode' is not implemented yet. T6 only ships Run mode."
+        }
     }
-    "Run" {
-        Invoke-HarnessRun
+} catch {
+    $failureMessage = Redact-HarnessText -Text $_.Exception.Message
+    $failureCode = Resolve-HarnessFailureCode -ModeValue $Mode -Message $failureMessage
+    $exitCode = if ($HarnessExitCodes.ContainsKey($failureCode)) { $HarnessExitCodes[$failureCode] } else { 1 }
+    $resolvedFailureArtifactRoot = $null
+    if ($ArtifactRoot) {
+        try {
+            $resolvedFailureArtifactRoot = (Resolve-Path -Path (New-Item -ItemType Directory -Force -Path $ArtifactRoot)).Path
+        } catch {
+            $resolvedFailureArtifactRoot = $null
+        }
     }
-    "Eval" {
-        Invoke-HarnessEval
+
+    if ($resolvedFailureArtifactRoot) {
+        $failureDetails = [ordered]@{
+            code = $failureCode
+        }
+        if ($script:HarnessLastFailureDetails) {
+            if ($script:HarnessLastFailureDetails.artifacts) {
+                $failureDetails.failure_artifacts = $script:HarnessLastFailureDetails.artifacts
+            }
+            if ($script:HarnessLastFailureDetails.summary) {
+                $failureDetails.failure_summary = $script:HarnessLastFailureDetails.summary
+            }
+        }
+        Write-HarnessEvent -ResolvedArtifactRoot $resolvedFailureArtifactRoot -ModeValue $Mode -Event "command_failed" -Level "error" -RunId $RunId -ScenarioId $Scenario -Message $failureMessage -Details ([ordered]@{
+            code = $failureCode
+            failure_artifacts = $failureDetails.failure_artifacts
+            failure_summary = $failureDetails.failure_summary
+        })
     }
-    "Report" {
-        Invoke-HarnessReport
+
+    if ($Json) {
+        $responseArtifacts = [ordered]@{}
+        if ($resolvedFailureArtifactRoot) {
+            $responseArtifacts.events = $EventsFileName
+        }
+        if ($script:HarnessLastFailureDetails -and $script:HarnessLastFailureDetails.artifacts) {
+            foreach ($artifactKey in $script:HarnessLastFailureDetails.artifacts.Keys) {
+                $responseArtifacts[$artifactKey] = $script:HarnessLastFailureDetails.artifacts[$artifactKey]
+            }
+        }
+        [ordered]@{
+            ok = $false
+            code = $failureCode
+            exit_code = $exitCode
+            message = $failureMessage
+            mode = $Mode
+            profile = $Profile
+            scenario = $Scenario
+            run_id = $RunId
+            generated_at = (Get-Date).ToString("o")
+            artifacts = $responseArtifacts
+        } | ConvertTo-Json -Depth 6 | Write-Output
+    } else {
+        Write-Error $failureMessage
     }
-    default {
-        throw "Mode '$Mode' is not implemented yet. T6 only ships Run mode."
-    }
+
+    exit $exitCode
 }

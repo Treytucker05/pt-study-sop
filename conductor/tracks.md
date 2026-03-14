@@ -14,15 +14,15 @@ Active execution priority is tracked in `docs/root/TUTOR_TODO.md`.
 
 Active status: 1 active workstream.
 
-Latest update: 2026-03-14, Trey Agent Repo Readiness advanced through `T9`, landed the second hermetic Tutor scenario, and left `T10` as the next normalization pass.
+Latest update: 2026-03-14, Trey Agent Repo Readiness advanced through `T12`, completed the scenario registry + observability + CI harness lane work, and left `T13` as the next proof task.
 
 - [x] **Track: Repo Truth Surface Pruning** (complete — created 2026-03-14; closed 2026-03-14; scope: README-first canon promotion, redundant truth-doc compression, repo-local planning-surface alignment, duplicate track cleanup, validator/drift-gate rewiring)
   *Link: [./tracks/repo-truth-surface-pruning_20260314/](./tracks/repo-truth-surface-pruning_20260314/)*
 
 ---
 
-- [~] **Track: Trey Agent Repo Readiness** (active — created 2026-03-13; resumed 2026-03-14; `T1`-`T9` complete, `T10` started)
-  Shared repo-local harness contract, env/bootstrap contract, tiered agent matrix, isolated startup implementation, repo-local bootstrap validator, backend env template, first two hermetic Tutor fixture scenarios, standardized artifact bundle/report output, and pending work for broader scenario normalization, observability, CI, and cross-agent proof.
+- [~] **Track: Trey Agent Repo Readiness** (active — created 2026-03-13; resumed 2026-03-14; `T1`-`T12` complete, `T13` next)
+  Shared repo-local harness contract, env/bootstrap contract, tiered agent matrix, isolated startup implementation, repo-local bootstrap validator, backend env template, hermetic + live/operator scenario registry normalization, standardized artifact bundle/report output, structured JSONL observability, and the Windows CI harness lane are complete; pending work is cross-agent proof and final closeout.
   *Link: [./tracks/trey-agent-repo-readiness_20260313/](./tracks/trey-agent-repo-readiness_20260313/)*
 
 ---

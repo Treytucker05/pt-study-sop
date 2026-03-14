@@ -93,15 +93,16 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Track tasks: `T7`, `T14`
   - Partial 2026-03-14: `T7` is complete via `scripts/harness.ps1 -Mode Bootstrap`, `brain/.env.example`, `brain/tests/fixtures/harness/manifest.json`, and `brain/tests/test_harness_bootstrap.py`.
   - Remaining scope: `T14` still needs the broader harness-doc rewrite after later harness tasks land.
-- [ ] TAR-120. Build the first hermetic Tutor fixture scenario.
+- [x] TAR-120. Build the first hermetic Tutor fixture scenario and finish the named-scenario registry pass.
   - Track tasks: `T8`, `T10`
   - Partial 2026-03-14: `T8` is complete via `scripts/tutor_hermetic_smoke.py`, `scripts/harness.ps1 -Mode Eval -Scenario tutor-hermetic-smoke`, `brain/tests/fixtures/harness/tutor-hermetic-smoke.json`, and `brain/tests/test_harness_eval.py`.
-  - Additional 2026-03-14: the first `T10` slice is shipped via `tutor-hermetic-coverage-scope`, the expanded fixture manifest, and multi-scenario `Eval` + `Report` coverage in `brain/tests/test_harness_eval.py`.
-  - Remaining scope: `T10` still needs the broader named-scenario registry and normalization pass across the other smoke surfaces.
+  - Additional 2026-03-14: `T10` is complete via `tutor-hermetic-coverage-scope`, manifest v3, live/operator scenario registration for `app-live-golden-path`, `tutor-live-readonly`, and `method-integrity-smoke`, plus structured smoke-script JSON outputs and expanded `brain/tests/test_harness_eval.py` coverage.
 - [ ] TAR-130. Add harness artifacts, observability, CI lane, and cross-agent proof.
   - Track tasks: `T9`, `T11`, `T12`, `T13`, `T15`, `T16`
   - Partial 2026-03-14: `T9` is complete via `bundle.json`, `Report` mode, command records, git metadata, redacted environment summaries, repeated-bundle-shape regression coverage, and Windows PowerShell JSON compatibility in `scripts/harness.ps1`.
-  - Remaining scope: `T11`, `T12`, `T13`, `T15`, and `T16`
+  - Additional 2026-03-14: `T11` is complete via root `events.jsonl`, redacted `command_started` / `command_completed` / `command_failed` entries, and failure-artifact diagnostics in `scripts/harness.ps1` plus induced-failure coverage in `brain/tests/test_harness_eval.py`.
+  - Additional 2026-03-14: `T12` is complete via the Windows `harness_contract` job in `.github/workflows/ci.yml` and local proof of the exact `Bootstrap -> Run -> Eval tutor-hermetic-smoke -> Report` lane commands.
+  - Remaining scope: `T13`, `T15`, and `T16`
 
 ### Sprint 31: Tutor Launch / Shell Realignment Cleanup (2026-03-13)
 - [x] Claim scope: create the durable track, make the Brain launch + `/tutor` shell + thin Tutor start/resume model the only active planning path, and explicitly demote wizard-era plans/docs to historical status.

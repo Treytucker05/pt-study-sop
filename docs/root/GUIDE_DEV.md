@@ -62,6 +62,12 @@ Examples below use `powershell`; `pwsh` also works if installed.
   - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Eval -Scenario tutor-hermetic-smoke -ArtifactRoot $env:TEMP\pt-harness-artifacts -Json`
 - Second hermetic Tutor scenario:
   - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Eval -Scenario tutor-hermetic-coverage-scope -ArtifactRoot $env:TEMP\pt-harness-artifacts -Json`
+- Live/operator endpoint smoke through the shared registry:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Eval -Scenario app-live-golden-path -ArtifactRoot $env:TEMP\pt-harness-artifacts -Json`
+- Live/operator Tutor read-only smoke through the shared registry:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Eval -Scenario tutor-live-readonly -ArtifactRoot $env:TEMP\pt-harness-artifacts -Json`
+- Method integrity smoke through the shared registry:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Eval -Scenario method-integrity-smoke -ArtifactRoot $env:TEMP\pt-harness-artifacts -Json`
 - Artifact bundle report:
   - `$run = Get-Content -Raw "$env:TEMP\pt-harness-artifacts\run.json" | ConvertFrom-Json`
   - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Report -RunId $run.run_id -ArtifactRoot $env:TEMP\pt-harness-artifacts -Json`
@@ -76,8 +82,21 @@ Current validator checks:
 Hermetic Tutor scenario notes:
 - `tutor-hermetic-smoke` seeds an isolated course + material set directly into the harness DB, then exercises Tutor materials, session create, two provider-free turn shortcuts, restore, summary, end, and delete over HTTP.
 - `tutor-hermetic-coverage-scope` seeds a wider isolated course library but narrows Tutor to one selected file with the `coverage` accuracy profile, then verifies the scoped retrieval path over HTTP.
+- `app-live-golden-path` runs the existing top-level dashboard smoke endpoints through the shared scenario registry and returns structured JSON summaries.
+- `tutor-live-readonly` runs the retained live Tutor read-only smoke through the shared scenario registry and returns structured JSON summaries.
+- `method-integrity-smoke` runs the method library integrity check through the shared scenario registry and emits a structured JSON summary plus its markdown report artifact.
 - Hermetic runs disable Obsidian note/vault retrieval through `PT_HARNESS_DISABLE_VAULT_CONTEXT=1`, so the scenario does not depend on vault state or provider credentials.
 - `Report` emits `bundle.json` with git metadata, command records, scenario artifacts, and a redacted environment summary. The bundle path is stable across `powershell` and `pwsh`.
+- `events.jsonl` records redacted `command_started`, `command_completed`, and `command_failed` entries for the run.
+
+## CI Harness Lane
+
+- `.github/workflows/ci.yml` now runs `harness_contract` on Windows.
+- The lane uses the same repo-local commands as manual validation:
+  - `Bootstrap`
+  - `Run`
+  - `Eval tutor-hermetic-smoke`
+  - `Report`
 
 ## Contracts (Do Not Drift)
 - WRAP schema: `docs/contracts/wrap_schema.md`

@@ -2,6 +2,33 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-14 - Trey Agent Repo Readiness T10-T12 scenario registry, observability, and CI lane
+
+- Finished `T10` by normalizing the remaining shared harness scenarios through manifest v3:
+  - `tutor-hermetic-smoke`
+  - `tutor-hermetic-coverage-scope`
+  - `app-live-golden-path`
+  - `tutor-live-readonly`
+  - `method-integrity-smoke`
+- Updated the retained smoke scripts so they now emit structured JSON and can run under the shared `Eval` contract:
+  - `scripts/smoke_golden_path.ps1`
+  - `scripts/smoke_tutor_readonly.ps1`
+  - `scripts/method_integrity_smoke.py`
+- Finished `T11` by adding root-level `events.jsonl` observability to `scripts/harness.ps1` with redacted `command_started`, `command_completed`, and `command_failed` entries plus failure-artifact pointers.
+- Expanded `brain/tests/test_harness_eval.py` to cover:
+  - passing live/operator registry execution
+  - redacted bundle/event artifacts
+  - unknown-scenario failure diagnostics
+  - failed live/operator scenario artifact diagnostics
+- Finished `T12` by wiring the Windows `harness_contract` job into `.github/workflows/ci.yml`.
+- Verification:
+  - `python -m pytest brain/tests/test_harness_eval.py -q`
+  - `python -m pytest brain/tests/test_harness_bootstrap.py brain/tests/test_harness_startup.py brain/tests/test_harness_eval.py -q`
+  - `python -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml', encoding='utf-8').read())"`
+  - local Windows `Bootstrap -> Run -> Eval tutor-hermetic-smoke -> Report`
+- Relevant note:
+  - a broader Windows frontend CI lane was tested locally but left out of `T12` after `npm --prefix dashboard_rebuild run test` exposed an unrelated intermittent failure in `client/src/components/__tests__/TutorWorkspaceSurface.notes.test.tsx`
+
 ## 2026-03-14 - Trey Agent Repo Readiness T9 artifact bundle and second hermetic scenario slice
 
 - Implemented `Report` mode in `scripts/harness.ps1` and standardized `bundle.json` as the machine-readable harness artifact bundle.

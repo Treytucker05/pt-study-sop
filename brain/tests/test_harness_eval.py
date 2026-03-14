@@ -107,6 +107,15 @@ def _bundle_shape(value: object) -> object:
     return type(value).__name__
 
 
+def _read_jsonl(path: Path) -> list[dict[str, object]]:
+    lines = [
+        line.strip()
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    return [json.loads(line) for line in lines]
+
+
 def test_harness_eval_runs_tutor_hermetic_smoke(tmp_path: Path) -> None:
     db_path = tmp_path / "harness-eval.db"
     artifact_root = tmp_path / "artifacts"
@@ -191,6 +200,83 @@ def test_harness_eval_runs_tutor_hermetic_smoke(tmp_path: Path) -> None:
             os.environ["PT_HARNESS_DISABLE_VAULT_CONTEXT"] = original_vault_context_env
 
 
+def test_harness_eval_runs_live_golden_path_from_registry(tmp_path: Path) -> None:
+    db_path = tmp_path / "harness-live.db"
+    artifact_root = tmp_path / "artifacts"
+    artifact_root.mkdir(parents=True, exist_ok=True)
+    port = _find_free_port()
+    host = "127.0.0.1"
+
+    original_env = os.environ.get("PT_STUDY_DB")
+    original_vault_context_env = os.environ.get("PT_HARNESS_DISABLE_VAULT_CONTEXT")
+    original_config_db = config.DB_PATH
+    original_db_setup_db = db_setup.DB_PATH
+
+    os.environ["PT_STUDY_DB"] = str(db_path)
+    os.environ["PT_HARNESS_DISABLE_VAULT_CONTEXT"] = "1"
+    config.DB_PATH = str(db_path)
+    db_setup.DB_PATH = str(db_path)
+    db_setup.init_database()
+
+    app = create_app()
+    app.config["TESTING"] = True
+    server = _ServerThread(app, host, port)
+    server.start()
+    _wait_for_server(host, port)
+
+    _write_run_metadata(
+        artifact_root,
+        host=host,
+        port=port,
+        db_path=db_path,
+        run_id="harness-live-golden-path",
+    )
+
+    try:
+        eval_result = _run_harness(
+            "-Mode",
+            "Eval",
+            "-Scenario",
+            "app-live-golden-path",
+            "-ArtifactRoot",
+            str(artifact_root),
+            "-Json",
+        )
+
+        assert eval_result.returncode == 0, (
+            f"eval failed\nstdout:\n{eval_result.stdout}\nstderr:\n{eval_result.stderr}"
+        )
+
+        payload = json.loads(eval_result.stdout)
+        assert payload["ok"] is True
+        assert payload["scenario"] == "app-live-golden-path"
+        assert payload["scenario_type"] == "live/operator"
+        assert payload["exit_code"] == 0
+        assert payload["summary"]["pass_count"] >= 1
+        assert payload["summary"]["fail_count"] == 0
+
+        result_path = artifact_root / "scenarios" / "app-live-golden-path" / "result.json"
+        assert result_path.exists()
+        result_payload = json.loads(result_path.read_text(encoding="utf-8"))
+        assert result_payload["ok"] is True
+        assert result_payload["scenario"] == "app-live-golden-path"
+        assert result_payload["artifacts"]["stdout_log"] == "script.stdout.log"
+        assert result_payload["artifacts"]["stderr_log"] == "script.stderr.log"
+    finally:
+        server.shutdown()
+        server.join(timeout=5)
+        config.DB_PATH = original_config_db
+        db_setup.DB_PATH = original_db_setup_db
+        if original_env is None:
+            os.environ.pop("PT_STUDY_DB", None)
+        else:
+            os.environ["PT_STUDY_DB"] = original_env
+        if original_vault_context_env is None:
+            os.environ.pop("PT_HARNESS_DISABLE_VAULT_CONTEXT", None)
+        else:
+            os.environ["PT_HARNESS_DISABLE_VAULT_CONTEXT"] = original_vault_context_env
+
+
 def test_harness_report_emits_redacted_bundle_for_multiple_scenarios(
     tmp_path: Path,
 ) -> None:
@@ -260,6 +346,7 @@ def test_harness_report_emits_redacted_bundle_for_multiple_scenarios(
         assert payload["run_id"] == run_id
         assert payload["repo"]["git"]["sha"]
         assert payload["artifacts"]["bundle"] == "bundle.json"
+        assert payload["artifacts"]["events"] == "events.jsonl"
         assert payload["environment"]["summary"]["GEMINI_API_KEY"]["present"] is True
         assert payload["environment"]["summary"]["GEMINI_API_KEY"]["value"] == "<redacted:secret>"
         assert "top-secret-harness-value" not in report_result.stdout
@@ -274,6 +361,12 @@ def test_harness_report_emits_redacted_bundle_for_multiple_scenarios(
         command_modes = [entry["mode"] for entry in bundle_payload["commands"]]
         assert command_modes.count("Eval") == 2
         assert command_modes[-1] == "Report"
+
+        events_path = artifact_root / "events.jsonl"
+        assert events_path.exists()
+        events = _read_jsonl(events_path)
+        assert any(event["event"] == "command_started" and event["mode"] == "Eval" for event in events)
+        assert any(event["event"] == "command_completed" and event["mode"] == "Report" for event in events)
     finally:
         server.shutdown()
         server.join(timeout=5)
@@ -291,6 +384,105 @@ def test_harness_report_emits_redacted_bundle_for_multiple_scenarios(
             os.environ.pop("GEMINI_API_KEY", None)
         else:
             os.environ["GEMINI_API_KEY"] = original_secret_env
+
+
+def test_harness_eval_unknown_scenario_writes_failure_diagnostics(
+    tmp_path: Path,
+) -> None:
+    artifact_root = tmp_path / "artifacts"
+    artifact_root.mkdir(parents=True, exist_ok=True)
+    os.environ["GEMINI_API_KEY"] = "failure-secret-value"
+
+    try:
+        eval_result = _run_harness(
+            "-Mode",
+            "Eval",
+            "-Scenario",
+            "missing-scenario",
+            "-ArtifactRoot",
+            str(artifact_root),
+            "-Json",
+        )
+        assert eval_result.returncode != 0
+
+        payload = json.loads(eval_result.stdout)
+        assert payload["ok"] is False
+        assert payload["code"] == "eval.unknown_scenario"
+        assert "failure-secret-value" not in eval_result.stdout
+
+        events_path = artifact_root / "events.jsonl"
+        assert events_path.exists()
+        events = _read_jsonl(events_path)
+        failed_events = [event for event in events if event["event"] == "command_failed"]
+        assert failed_events
+        assert failed_events[-1]["mode"] == "Eval"
+        assert failed_events[-1]["scenario_id"] == "missing-scenario"
+        assert "failure-secret-value" not in json.dumps(failed_events)
+    finally:
+        os.environ.pop("GEMINI_API_KEY", None)
+
+
+def test_harness_eval_failed_live_scenario_writes_failure_artifacts(
+    tmp_path: Path,
+) -> None:
+    artifact_root = tmp_path / "artifacts"
+    artifact_root.mkdir(parents=True, exist_ok=True)
+    db_path = tmp_path / "failure-live.db"
+    os.environ["GEMINI_API_KEY"] = "live-failure-secret"
+
+    try:
+        _write_run_metadata(
+            artifact_root,
+            host="127.0.0.1",
+            port=_find_free_port(),
+            db_path=db_path,
+            run_id="harness-live-failure",
+        )
+
+        eval_result = _run_harness(
+            "-Mode",
+            "Eval",
+            "-Scenario",
+            "app-live-golden-path",
+            "-ArtifactRoot",
+            str(artifact_root),
+            "-Json",
+        )
+        assert eval_result.returncode != 0
+
+        payload = json.loads(eval_result.stdout)
+        assert payload["ok"] is False
+        assert payload["code"] == "eval.command_failed"
+        assert payload["artifacts"]["events"] == "events.jsonl"
+        assert payload["artifacts"]["result"] == "scenarios/app-live-golden-path/result.json"
+        assert (
+            payload["artifacts"]["stdout_log"]
+            == "scenarios/app-live-golden-path/script.stdout.log"
+        )
+        assert (
+            payload["artifacts"]["stderr_log"]
+            == "scenarios/app-live-golden-path/script.stderr.log"
+        )
+        assert "live-failure-secret" not in eval_result.stdout
+
+        result_path = artifact_root / "scenarios" / "app-live-golden-path" / "result.json"
+        assert result_path.exists()
+        result_payload = json.loads(result_path.read_text(encoding="utf-8"))
+        assert result_payload["ok"] is False
+        assert result_payload["summary"]["fail_count"] >= 1
+
+        events_path = artifact_root / "events.jsonl"
+        assert events_path.exists()
+        events = _read_jsonl(events_path)
+        failed_events = [event for event in events if event["event"] == "command_failed"]
+        assert failed_events
+        assert failed_events[-1]["details"]["failure_artifacts"]["result"] == (
+            "scenarios/app-live-golden-path/result.json"
+        )
+        assert failed_events[-1]["details"]["failure_summary"]["fail_count"] >= 1
+        assert "live-failure-secret" not in json.dumps(failed_events)
+    finally:
+        os.environ.pop("GEMINI_API_KEY", None)
 
 
 def test_harness_report_bundle_shape_is_stable_for_repeated_smoke_runs(

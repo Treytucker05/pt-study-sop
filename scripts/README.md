@@ -6,7 +6,7 @@ System context: scripts support CP-MSS v1.0 operations and governance.
 
 ## Common entries
 - `generate_architecture_dump.ps1` - Regenerates `docs/root/ARCHITECTURE_CONTEXT.md`.
-- `harness.ps1` - Repo-local harness entrypoint. Supports `Bootstrap`, isolated `Run`, named `Eval` scenarios (`tutor-hermetic-smoke`, `tutor-hermetic-coverage-scope`), and `Report` bundle generation with redacted environment data.
+- `harness.ps1` - Repo-local harness entrypoint. Supports `Bootstrap`, isolated `Run`, named `Eval` scenarios (`tutor-hermetic-smoke`, `tutor-hermetic-coverage-scope`, `app-live-golden-path`, `tutor-live-readonly`, `method-integrity-smoke`), root `events.jsonl` observability, and `Report` bundle generation with redacted environment data.
 - `release_check.py` - Runs release checks.
 - `sync_agent_config.ps1` - Repo drift check for agent instruction entrypoints and tool stubs.
 - `sync_ai_config.ps1` - Deprecated (use `sync_agent_config.ps1`).
@@ -42,6 +42,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode 
 # Run the second fixture-backed Tutor scenario against that same run
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Eval -Scenario tutor-hermetic-coverage-scope -ArtifactRoot $artifact -Json
 
+# Run a retained live/operator smoke through the same Eval contract
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Eval -Scenario app-live-golden-path -ArtifactRoot $artifact -Json
+
 # Emit the machine-readable bundle for the run
 $run = Get-Content -Raw (Join-Path $artifact "run.json") | ConvertFrom-Json
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Report -RunId $run.run_id -ArtifactRoot $artifact -Json
@@ -53,6 +56,8 @@ Stop-Process -Id $run.server_pid -Force
 Hermetic note:
 - Hermetic runs set `PT_HARNESS_DISABLE_VAULT_CONTEXT=1`, so Tutor turn context skips Obsidian note/vault retrieval and does not depend on personal vault state.
 - `Report` writes `bundle.json` with git metadata, scenario artifact pointers, command records, timings, and a redacted environment summary.
+- `events.jsonl` records redacted `command_started`, `command_completed`, and `command_failed` entries for the run.
+- CI now uses the same contract in `.github/workflows/ci.yml` via the Windows `harness_contract` job.
 
 ## Parallel Agent Quickstart
 ```powershell
