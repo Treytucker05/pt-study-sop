@@ -1,6 +1,7 @@
 # Tutor System Architecture
 
 > Generated 2026-03-03. Comprehensive visual map of the PT Study Tutor system.
+> Historical note: this document describes the pre-shell, wizard-led Tutor surface and is preserved as historical evidence only. Current product authority lives in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`, and current launch/start-panel cleanup lives in `conductor/tracks/tutor-launch-shell-realignment_20260313/`.
 
 ---
 

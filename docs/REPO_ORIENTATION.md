@@ -1,6 +1,7 @@
 # PT Study SOP — Repository Orientation
 
 > Generated: 2026-03-08
+> Historical note: this orientation predates the Brain-home and `/tutor` shell cleanup and is preserved as historical evidence only. Current product authority lives in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`, and current launch/start-panel cleanup lives in `conductor/tracks/tutor-launch-shell-realignment_20260313/`.
 
 ## Top-Level Structure
 
