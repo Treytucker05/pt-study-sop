@@ -2,10 +2,12 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, CATEGORY_COLORS } from "@/lib/api";
 import type {
+  AppLearningObjective,
   MethodCategory,
   TutorConfigCheck,
   TutorContentSources,
   TutorObjectiveScope,
+  TutorSessionPreflightResponse,
   TutorSessionSummary,
   TutorTemplateChain,
 } from "@/lib/api";
@@ -58,8 +60,22 @@ interface TutorStartPanelProps {
   setCustomBlockIds: (ids: number[]) => void;
   objectiveScope: TutorObjectiveScope;
   setObjectiveScope: (scope: TutorObjectiveScope) => void;
+  selectedObjectiveId: string;
+  setSelectedObjectiveId: (value: string) => void;
+  selectedObjectiveGroup: string;
+  setSelectedObjectiveGroup: (value: string) => void;
+  availableObjectives: AppLearningObjective[];
+  studyUnitOptions: {
+    value: string;
+    objectiveCount: number;
+    materialCount: number;
+  }[];
   vaultFolder: string;
   setVaultFolder: (folder: string) => void;
+  vaultFolderPreview: string;
+  preflight?: TutorSessionPreflightResponse;
+  preflightLoading?: boolean;
+  preflightError?: string | null;
   onStartSession: () => void;
   isStarting: boolean;
   recentSessions: TutorSessionSummary[];
@@ -81,8 +97,18 @@ export function TutorStartPanel({
   setCustomBlockIds,
   objectiveScope,
   setObjectiveScope,
+  selectedObjectiveId,
+  setSelectedObjectiveId,
+  selectedObjectiveGroup,
+  setSelectedObjectiveGroup,
+  availableObjectives,
+  studyUnitOptions,
   vaultFolder,
   setVaultFolder,
+  vaultFolderPreview,
+  preflight,
+  preflightLoading = false,
+  preflightError = null,
   onStartSession,
   isStarting,
   recentSessions,
@@ -125,6 +151,33 @@ export function TutorStartPanel({
     const match = templateChains.find((chain) => chain.id === chainId);
     return match?.name ?? "Template";
   }, [chainId, chainMode, customBlockIds.length, templateChains]);
+  const groupedObjectives = useMemo(() => {
+    const groups = new Map<string, AppLearningObjective[]>();
+    for (const objective of availableObjectives) {
+      const key = String(objective.groupName || "").trim() || "Ungrouped";
+      const bucket = groups.get(key) || [];
+      bucket.push(objective);
+      groups.set(key, bucket);
+    }
+    return Array.from(groups.entries()).map(([group, objectives]) => ({
+      group,
+      objectives,
+    }));
+  }, [availableObjectives]);
+  const activeGroupObjectives = useMemo(() => {
+    if (!selectedObjectiveGroup) return [];
+    return (
+      groupedObjectives.find(({ group }) => group === selectedObjectiveGroup)
+        ?.objectives || []
+    );
+  }, [groupedObjectives, selectedObjectiveGroup]);
+  const selectedObjectiveRecord = useMemo(
+    () =>
+      availableObjectives.find(
+        (objective) => String(objective.loCode || "") === selectedObjectiveId,
+      ),
+    [availableObjectives, selectedObjectiveId],
+  );
   const highlightedSession = useMemo(() => {
     if (recentSessions.length === 0) return null;
     return recentSessions.find((session) => session.status === "active") ?? recentSessions[0];
@@ -136,6 +189,13 @@ export function TutorStartPanel({
       .slice(0, 4);
   }, [highlightedSession, recentSessions]);
   const hasExplicitLaunchScope = Boolean(courseId) || selectedMaterials.length > 0;
+  const hasSelectedStudyUnit = selectedObjectiveGroup.trim().length > 0;
+  const requiresFocusObjective = objectiveScope === "single_focus";
+  const hasFocusObjective =
+    !requiresFocusObjective || selectedObjectiveId.trim().length > 0;
+  const primaryBlocker = preflight?.blockers?.[0] || null;
+  const startDisabled =
+    isStarting || (requiresFocusObjective && !selectedObjectiveId.trim());
   const readinessItems = [
     {
       label: "Launch scope",
@@ -155,6 +215,40 @@ export function TutorStartPanel({
           : "No explicit scope",
       ready: selectedMaterials.length > 0,
       fallback: "Tutor can still start, but course-scoped materials are recommended.",
+    },
+    {
+      label: "Study unit",
+      detail: hasSelectedStudyUnit
+        ? selectedObjectiveGroup
+        : "No study unit selected",
+      ready: hasSelectedStudyUnit,
+      fallback: "Choose the study unit so Tutor can sync objectives and vault naming.",
+    },
+    {
+      label: requiresFocusObjective ? "Focus objective" : "Objective scope",
+      detail: requiresFocusObjective
+        ? hasFocusObjective
+          ? selectedObjectiveRecord?.title || selectedObjectiveId
+          : "Single-focus session needs one objective"
+        : "Module-first launch",
+      ready: hasFocusObjective,
+      fallback: "Single-focus sessions require one explicit objective.",
+    },
+    {
+      label: "Session preflight",
+      detail: preflightLoading
+        ? "Checking launch readiness..."
+        : preflightError
+          ? preflightError
+          : primaryBlocker
+            ? primaryBlocker.message
+            : preflight
+              ? "Ready"
+              : "Waiting for study-unit + material scope",
+      ready: !preflightLoading && !preflightError && !primaryBlocker && Boolean(preflight),
+      fallback:
+        preflightError ||
+        "Preflight runs once study unit and materials are both selected.",
     },
     {
       label: "Tutor config",
@@ -190,6 +284,11 @@ export function TutorStartPanel({
         </div>
         <div className="p-3 space-y-2">
           <SummaryRow label="COURSE" value={courseName} />
+          <SummaryRow
+            label="STUDY UNIT"
+            value={selectedObjectiveGroup || "(not set)"}
+            muted={!selectedObjectiveGroup}
+          />
           <SummaryRow label="TOPIC" value={topic || "(not set)"} muted={!topic} />
           <SummaryRow
             label="MATERIALS"
@@ -208,6 +307,17 @@ export function TutorStartPanel({
                 : "Whole module first"
             }
           />
+          {objectiveScope === "single_focus" ? (
+            <SummaryRow
+              label="FOCUS OBJECTIVE"
+              value={
+                selectedObjectiveRecord?.title ||
+                selectedObjectiveId ||
+                "(required)"
+              }
+              muted={!selectedObjectiveId}
+            />
+          ) : null}
           <SummaryRow label="CHAIN" value={selectedChainName} />
         </div>
       </Card>
@@ -348,7 +458,7 @@ export function TutorStartPanel({
 
           <Button
             onClick={onStartSession}
-            disabled={isStarting}
+            disabled={startDisabled}
             className={`${BTN_PRIMARY} h-12 text-base gap-2`}
           >
             {isStarting ? (
@@ -387,7 +497,15 @@ export function TutorStartPanel({
                   value={courseId ?? ""}
                   onChange={(event) => {
                     const nextValue = event.target.value;
-                    setCourseId(nextValue ? Number(nextValue) : undefined);
+                    const nextCourseId = nextValue ? Number(nextValue) : undefined;
+                    const courseChanged = nextCourseId !== courseId;
+                    setCourseId(nextCourseId);
+                    if (courseChanged) {
+                      setSelectedMaterials([]);
+                      setSelectedObjectiveId("");
+                      setSelectedObjectiveGroup("");
+                      setTopic("");
+                    }
                     toast.success("Launch course updated");
                   }}
                   className={`${SELECT_BASE} bg-black/40 border-2 border-primary font-terminal shadow-none`}
@@ -402,6 +520,112 @@ export function TutorStartPanel({
                 </select>
               </div>
             </Card>
+
+            {(typeof courseId === "number" || availableObjectives.length > 0) ? (
+              <Card className="bg-black/30 border-2 border-primary rounded-none">
+                <div className="px-3 py-2 border-b border-primary/30">
+                  <span className={TEXT_SECTION_LABEL}>OBJECTIVES</span>
+                </div>
+                <div className="p-3 space-y-3">
+                  <div>
+                    <label className={`${TEXT_MUTED} block mb-1 text-xs`}>
+                      STUDY UNIT
+                    </label>
+                    <select
+                      value={selectedObjectiveGroup}
+                      onChange={(event) => {
+                        const nextGroup = event.target.value;
+                        const groupChanged = nextGroup !== selectedObjectiveGroup;
+                        setSelectedObjectiveGroup(nextGroup);
+                        const stillValid = groupedObjectives
+                          .find(({ group }) => group === nextGroup)
+                          ?.objectives.some(
+                            (objective) =>
+                              String(objective.loCode || "") ===
+                              selectedObjectiveId,
+                          );
+                        if (!stillValid) {
+                          setSelectedObjectiveId("");
+                        }
+                        if (groupChanged) {
+                          setTopic("");
+                        }
+                      }}
+                      className={`${SELECT_BASE} bg-black/40 border-2 border-primary font-terminal shadow-none`}
+                    >
+                      <option value="">Select study unit</option>
+                      {studyUnitOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.value}
+                          {option.objectiveCount > 0
+                            ? ` (${option.objectiveCount} objectives)`
+                            : option.materialCount > 0
+                              ? ` (${option.materialCount} materials, objectives not saved yet)`
+                              : ""}
+                        </option>
+                      ))}
+                    </select>
+                    <div className={`${TEXT_MUTED} mt-2 text-xs`}>
+                      The study unit controls week-page sync and note naming.
+                    </div>
+                    {selectedObjectiveGroup &&
+                    !studyUnitOptions.find(
+                      (option) => option.value === selectedObjectiveGroup,
+                    )?.objectiveCount ? (
+                      <div className="mt-2 border border-yellow-500/30 bg-yellow-500/10 px-2 py-2 text-xs font-terminal text-yellow-200">
+                        This study unit has materials, but no approved objectives
+                        saved yet. Preflight will block until objectives exist in
+                        the DB.
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {objectiveScope === "single_focus" ? (
+                    <div>
+                      <label className={`${TEXT_MUTED} block mb-1 text-xs`}>
+                        FOCUS OBJECTIVE
+                      </label>
+                      <select
+                        value={selectedObjectiveId}
+                        onChange={(event) =>
+                          setSelectedObjectiveId(event.target.value)
+                        }
+                        disabled={
+                          !selectedObjectiveGroup ||
+                          activeGroupObjectives.length === 0
+                        }
+                        className={`${SELECT_BASE} bg-black/40 border-2 border-primary font-terminal shadow-none`}
+                      >
+                        <option value="">Select one objective</option>
+                        {activeGroupObjectives.map((objective) => (
+                          <option
+                            key={`${objective.id}-${objective.loCode}`}
+                            value={String(objective.loCode || "")}
+                          >
+                            {objective.loCode ? `${objective.loCode} — ` : ""}
+                            {objective.title}
+                          </option>
+                        ))}
+                      </select>
+                      <div className={`${TEXT_MUTED} mt-2 text-xs`}>
+                        Single-focus sessions require one explicit objective so
+                        Tutor does not auto-pick the wrong target.
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="border border-primary/20 p-2">
+                    <div className="font-arcade text-[10px] text-primary mb-1">
+                      TUTOR VAULT FOLDER
+                    </div>
+                    <div className="font-terminal text-xs text-foreground/80 break-all">
+                      {vaultFolderPreview ||
+                        "Will derive after you choose a study unit."}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ) : null}
 
             <Card className="bg-black/30 border-2 border-primary rounded-none">
               <div className="px-3 py-2 border-b border-primary/30">
@@ -611,6 +835,12 @@ export function TutorStartPanel({
                   className={`${INPUT_BASE} bg-black/40 border-2 border-primary font-terminal shadow-none`}
                 />
                 <div className={`${TEXT_MUTED} text-xs mt-2`}>
+                  Resolved path:{" "}
+                  {vaultFolder.trim() ||
+                    vaultFolderPreview ||
+                    "Will derive after you choose a study unit."}
+                </div>
+                <div className={`${TEXT_MUTED} text-xs mt-1`}>
                   Persisted for convenience only. It is no longer treated as
                   launch authority.
                 </div>

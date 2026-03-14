@@ -12,9 +12,9 @@ Update policy: after every significant change, update this file with status chan
 
 Active execution priority is tracked in `docs/root/TUTOR_TODO.md`.
 
-Active status: 2 active workstreams.
+Active status: 1 active workstream.
 
-Latest update: 2026-03-14, Repo Truth Surface Pruning completed after the README-first truth compression, duplicate track cleanup, and validator/planning-surface rewiring landed.
+Latest update: 2026-03-14, Tutor Launch / Shell Realignment Cleanup completed after the start-panel transition, launch-state precedence sync, shell-mode validation, and active-doc rewrite landed.
 
 - [x] **Track: Repo Truth Surface Pruning** (complete — created 2026-03-14; closed 2026-03-14; scope: README-first canon promotion, redundant truth-doc compression, repo-local planning-surface alignment, duplicate track cleanup, validator/drift-gate rewiring)
   *Link: [./tracks/repo-truth-surface-pruning_20260314/](./tracks/repo-truth-surface-pruning_20260314/)*
@@ -27,7 +27,7 @@ Latest update: 2026-03-14, Repo Truth Surface Pruning completed after the README
 
 ---
 
-- [ ] **Track: Tutor Launch / Shell Realignment Cleanup** (active — created 2026-03-13; scope: durable track bootstrap, stale planning/doc sync, Tutor launch-state authority, start-panel replacement, shell UX cleanup, active-doc rewrite, integrated validation)
+- [x] **Track: Tutor Launch / Shell Realignment Cleanup** (complete — created 2026-03-13; closed 2026-03-14; scope: durable track bootstrap, stale planning/doc sync, Tutor launch-state authority, start-panel replacement, shell UX cleanup, active-doc rewrite, integrated validation)
   *Link: [./tracks/tutor-launch-shell-realignment_20260313/](./tracks/tutor-launch-shell-realignment_20260313/)*
 
 ---

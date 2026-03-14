@@ -7,7 +7,7 @@ Definition: A "window" is a visible card/panel/major section within a page.
 Historical note:
 - this inventory describes the pre-Brain-home and pre-shell route/window model
 - it is preserved as historical evidence only
-- current product authority lives in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- current product authority lives in `README.md`
 - current launch/start-panel cleanup lives in `conductor/tracks/tutor-launch-shell-realignment_20260313/`
 
 ## Routes and pages

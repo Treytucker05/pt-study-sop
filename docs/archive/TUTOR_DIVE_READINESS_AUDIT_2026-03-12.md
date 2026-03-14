@@ -6,7 +6,7 @@ Scope: confirm what still needs to be hardened before the next Tutor-focused imp
 
 Historical note:
 - this audit describes the pre-shell, wizard-led Tutor readiness surface and is preserved as historical evidence only
-- current product authority lives in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- current product authority lives in `README.md`
 - current launch/start-panel cleanup lives in `conductor/tracks/tutor-launch-shell-realignment_20260313/`
 
 ## Decision Summary

@@ -2,6 +2,28 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-14 - Tutor launch / shell realignment closeout
+
+- Closed `conductor/tracks/tutor-launch-shell-realignment_20260313/` after the shipped `/tutor` surface was reconciled with the active track plan.
+- Landed the start-panel launch model in the live shell:
+  - `dashboard_rebuild/client/src/lib/tutorClientState.ts`
+  - `dashboard_rebuild/client/src/pages/tutor.tsx`
+  - `dashboard_rebuild/client/src/components/TutorStartPanel.tsx`
+  - removed `dashboard_rebuild/client/src/components/TutorWizard.tsx`
+- Verified the learner-first shell modes during closeout:
+  - `TutorStudioMode.tsx` as Inbox/promote workflow
+  - `TutorScheduleMode.tsx` as course-keyed next-action workflow
+  - `TutorPublishMode.tsx` as readiness/publish workflow
+- Synced active docs to the shipped model and repaired historical pre-shell headers so they point back to `README.md` + `docs/root/PROJECT_ARCHITECTURE.md` instead of the retired canon path.
+- Validation:
+  - `python -m pytest brain/tests/test_tutor_project_shell.py brain/tests/test_tutor_session_linking.py brain/tests/test_tutor_artifact_certification.py brain/tests/test_tutor_audit_remediation.py brain/tests/test_tutor_turn_stream_contract.py brain/tests/test_dashboard_routes.py -q`
+  - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/brain.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/pages/__tests__/library.test.tsx client/src/components/__tests__/TutorStartPanel.test.tsx client/src/components/__tests__/TutorStudioMode.test.tsx client/src/components/__tests__/TutorScheduleMode.test.tsx client/src/components/__tests__/TutorPublishMode.test.tsx client/src/components/__tests__/TutorChat.test.tsx client/src/components/__tests__/TutorArtifacts.test.tsx client/src/components/__tests__/TutorWorkspaceSurface.test.tsx client/src/components/__tests__/TutorWorkspaceSurface.integration.test.tsx client/src/components/__tests__/TutorWorkspaceSurface.notes.test.tsx client/src/lib/__tests__/tutorClientState.test.ts client/src/__tests__/api.test.ts`
+  - `cd dashboard_rebuild && npm run check`
+  - `cd dashboard_rebuild && npm run build`
+  - `python scripts/check_docs_sync.py`
+  - `cmd /c C:\pt-study-sop\Start_Dashboard.bat`
+  - `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5000`
+
 ## 2026-03-14 - Historical drift archive follow-up
 
 - Archived the completed Sprint 29+ execution history out of `docs/root/TUTOR_TODO.md` into `docs/archive/TUTOR_TODO_history_2026-03-14.md` so the active board stops surfacing retired truth-file references.

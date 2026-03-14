@@ -113,7 +113,7 @@ vi.mock("@/lib/api", () => ({
 }));
 
 vi.mock("@/use-toast", () => ({
-  useToast: () => ({ toast: vi.fn() }),
+  useToast: () => ({ toast: vi.fn(), toasts: [] }),
 }));
 
 vi.mock("sonner", () => ({

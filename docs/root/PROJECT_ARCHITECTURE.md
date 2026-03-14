@@ -1,7 +1,7 @@
 # PT Study System — Comprehensive Project Architecture
 
-**Version:** 4.2
-**Last Updated:** 2026-03-11
+**Version:** 4.3
+**Last Updated:** 2026-03-14
 **Scope:** Entire repository (SOP, Brain, Scholar, Scripts)
 **Purpose:** Reference-only technical documentation for system architecture, dependencies, and integration. Top-level product/page ownership authority lives in `README.md`.
 
@@ -377,7 +377,7 @@ Backend entry points:
 Frontend entry points:
 
 - `dashboard_rebuild/client/src/pages/tutor.tsx`
-- `dashboard_rebuild/client/src/components/TutorWizard.tsx`
+- `dashboard_rebuild/client/src/components/TutorStartPanel.tsx`
 - `dashboard_rebuild/client/src/components/TutorChat.tsx`
 - `dashboard_rebuild/client/src/components/TutorArtifacts.tsx`
 - `dashboard_rebuild/client/src/api.ts`
@@ -415,13 +415,14 @@ Turn-time loop:
 
 Startup and restore:
 
-1. `pages/tutor.tsx` reads local state and active-session keys.
-2. If an active session exists, frontend fetches `GET /api/tutor/session/{id}`.
-3. If the session is still active, the page hydrates chat mode; otherwise it clears stale state.
+1. `pages/tutor.tsx` resolves launch precedence in this order: explicit query params, Brain/Library handoff, same-course active session, project-shell workspace state, persisted Tutor start state, then current-course fallback.
+2. `tutorClientState.ts` owns the browser-side Tutor startup keys, migration, and handoff parsing.
+3. If an active session exists, frontend fetches `GET /api/tutor/session/{id}`.
+4. If the session is still active, the page hydrates chat mode; otherwise it clears stale state and falls back to the Tutor start panel.
 
 Session creation:
 
-1. the Tutor start surface submits selected configuration
+1. `TutorStartPanel.tsx` submits selected configuration
 2. frontend posts `POST /api/tutor/session`
 3. page switches into the live Tutor workspace with the returned `session_id`
 
@@ -439,14 +440,19 @@ Important browser state keys:
 - `tutor.selected_material_ids.v2`
 - `tutor.accuracy_profile.v1`
 - `tutor.objective_scope.v1`
-- `tutor.wizard.state.v1`
+- `tutor.start.state.v2`
 - `tutor.active_session.v1`
 - `tutor.open_from_library.v1`
+- `tutor.open_from_brain.v1`
 - `tutor.vault_folder.v1`
 - `tutor.vault_selected.v1`
-- `tutor.wizard.progress.v1`
 - `tutor.chat.selected_vault_paths.v1`
 - `tutor-mermaid-import`
+
+Legacy compatibility keys still read or cleared during migration:
+
+- `tutor.wizard.state.v1`
+- `tutor.wizard.progress.v1`
 
 ---
 
@@ -538,7 +544,7 @@ Use the docs in this order:
 
 **Main Surfaces**
 - Brain home: attention queue, learner state, stats bands, support-system launches
-- Tutor: live study workspace, wizard, chat, artifacts, bounded Scholar strategy context
+- Tutor: shell modes, start/resume panel, live study workspace, chat, artifacts, bounded Scholar strategy context
 - Scholar: investigation console, questions, findings, run status
 - Support pages: Library, Mastery, Calendar, Methods, Vault Health
 

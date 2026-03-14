@@ -49,8 +49,8 @@ vi.mock("@/components/ContentFilter", () => ({
   ContentFilter: () => <div data-testid="content-filter" />,
 }));
 
-vi.mock("@/components/TutorWizard", () => ({
-  TutorWizard: () => <div data-testid="tutor-wizard">wizard</div>,
+vi.mock("@/components/TutorStartPanel", () => ({
+  TutorStartPanel: () => <div data-testid="tutor-start-panel">start panel</div>,
 }));
 
 vi.mock("@/components/TutorChat", () => ({

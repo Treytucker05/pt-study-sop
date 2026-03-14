@@ -53,12 +53,12 @@ vi.mock("@/components/ContentFilter", () => ({
   ContentFilter: () => <div data-testid="content-filter" />,
 }));
 
-vi.mock("@/components/TutorWizard", () => ({
-  TutorWizard: ({
+vi.mock("@/components/TutorStartPanel", () => ({
+  TutorStartPanel: ({
     selectedMaterials,
   }: {
     selectedMaterials: number[];
-  }) => <div data-testid="tutor-wizard">selected:{selectedMaterials.length}</div>,
+  }) => <div data-testid="tutor-start-panel">selected:{selectedMaterials.length}</div>,
 }));
 
 vi.mock("@/components/TutorChat", () => ({
@@ -332,8 +332,47 @@ describe("Tutor page restore", () => {
     expect(screen.queryByTestId("tutor-workspace-surface")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /^tutor$/i }));
-    expect(await screen.findByTestId("tutor-wizard")).toBeInTheDocument();
+    expect(await screen.findByTestId("tutor-start-panel")).toBeInTheDocument();
     expect(screen.queryByText("STUDIO NEEDS A COURSE")).not.toBeInTheDocument();
+  });
+
+  it("restores an explicit session_id query before local startup state", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/tutor?course_id=77&mode=tutor&session_id=sess-route",
+    );
+    getSessionMock.mockResolvedValueOnce({
+      session_id: "sess-route",
+      status: "active",
+      turn_count: 2,
+      started_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+      topic: "Route Session",
+      course_id: 77,
+      method_chain_id: null,
+      current_block_index: 0,
+      chain_blocks: [],
+      content_filter: {
+        material_ids: [11],
+        accuracy_profile: "strict",
+        objective_scope: "module_all",
+      },
+      artifacts_json: "[]",
+      turns: [],
+    });
+    localStorage.setItem(
+      "tutor.start.state.v2",
+      JSON.stringify({
+        courseId: 55,
+        selectedMaterials: [999],
+      }),
+    );
+
+    renderTutor();
+
+    expect(await screen.findByTestId("tutor-chat")).toBeInTheDocument();
+    expect(screen.queryByTestId("tutor-start-panel")).not.toBeInTheDocument();
+    expect(getSessionMock).toHaveBeenCalledWith("sess-route");
   });
 
   it("honors schedule mode from Tutor shell query params", async () => {
@@ -347,7 +386,7 @@ describe("Tutor page restore", () => {
     renderTutor();
 
     expect(await screen.findByTestId("tutor-schedule-mode")).toBeInTheDocument();
-    expect(screen.queryByTestId("tutor-wizard")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("tutor-start-panel")).not.toBeInTheDocument();
   });
 
   it("restores publish mode from project shell when no explicit route mode is set", async () => {
@@ -361,7 +400,7 @@ describe("Tutor page restore", () => {
     renderTutor();
 
     expect(await screen.findByTestId("tutor-publish-mode")).toBeInTheDocument();
-    expect(screen.queryByTestId("tutor-wizard")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("tutor-start-panel")).not.toBeInTheDocument();
   });
 
   it("hydrates board_scope and board_id from query params and persists to shell state", async () => {
@@ -428,7 +467,7 @@ describe("Tutor page restore", () => {
     expect(sessionStorage.getItem("tutor.open_from_brain.v1")).toBeNull();
   });
 
-  it("uses library handoff state instead of stale wizard restore", async () => {
+  it("uses library handoff state instead of stale stored start state", async () => {
     sessionStorage.setItem("tutor.open_from_library.v1", "1");
     localStorage.setItem(
       "tutor.selected_material_ids.v2",
@@ -447,9 +486,9 @@ describe("Tutor page restore", () => {
 
     await waitFor(() => {
       fireEvent.click(screen.getByRole("button", { name: /^tutor$/i }));
-      expect(screen.getByTestId("tutor-wizard")).toHaveTextContent("selected:2");
+      expect(screen.getByTestId("tutor-start-panel")).toHaveTextContent("selected:2");
     });
-    expect(getCurrentCourseMock).not.toHaveBeenCalled();
+    expect(getCurrentCourseMock).toHaveBeenCalledTimes(1);
   });
 
   it("keeps canonical selected materials when bootstrapping the current course", async () => {
@@ -467,7 +506,7 @@ describe("Tutor page restore", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /^tutor$/i }));
     await waitFor(() => {
-      expect(screen.getByTestId("tutor-wizard")).toHaveTextContent("selected:1");
+      expect(screen.getByTestId("tutor-start-panel")).toHaveTextContent("selected:1");
     });
     expect(getCurrentCourseMock).toHaveBeenCalledTimes(1);
   });
@@ -482,7 +521,7 @@ describe("Tutor page restore", () => {
 
     await waitFor(() => {
       fireEvent.click(screen.getByRole("button", { name: /^tutor$/i }));
-      expect(screen.getByTestId("tutor-wizard")).toHaveTextContent("selected:2");
+      expect(screen.getByTestId("tutor-start-panel")).toHaveTextContent("selected:2");
     });
     expect(localStorage.getItem("tutor.selected_material_ids.v2")).toBe(
       JSON.stringify([301, 302]),
@@ -500,7 +539,7 @@ describe("Tutor page restore", () => {
       expect(getSessionMock).toHaveBeenCalledWith("sess-stale");
     });
     fireEvent.click(screen.getByRole("button", { name: /^tutor$/i }));
-    expect(await screen.findByTestId("tutor-wizard")).toBeInTheDocument();
+    expect(await screen.findByTestId("tutor-start-panel")).toBeInTheDocument();
     expect(localStorage.getItem("tutor.active_session.v1")).toBeNull();
   });
 
@@ -512,7 +551,7 @@ describe("Tutor page restore", () => {
 
     await waitFor(() => {
       fireEvent.click(screen.getByRole("button", { name: /^tutor$/i }));
-      expect(screen.getByTestId("tutor-wizard")).toHaveTextContent("selected:1");
+      expect(screen.getByTestId("tutor-start-panel")).toHaveTextContent("selected:1");
     });
   });
 
@@ -543,7 +582,7 @@ describe("Tutor page restore", () => {
       expect(getSessionMock).toHaveBeenCalledWith("sess-complete");
     });
     fireEvent.click(screen.getByRole("button", { name: /^tutor$/i }));
-    expect(await screen.findByTestId("tutor-wizard")).toBeInTheDocument();
+    expect(await screen.findByTestId("tutor-start-panel")).toBeInTheDocument();
     expect(localStorage.getItem("tutor.active_session.v1")).toBeNull();
   });
 });

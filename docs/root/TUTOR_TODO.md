@@ -97,25 +97,26 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Track tasks: `T9`, `T11`, `T12`, `T13`, `T15`, `T16`
 
 ### Sprint 31: Tutor Launch / Shell Realignment Cleanup (2026-03-13)
-- [ ] Claim scope: create the durable track, make the Brain launch + `/tutor` shell + thin Tutor start/resume model the only active planning path, and explicitly demote wizard-era plans/docs to historical status.
+- [x] Claim scope: create the durable track, make the Brain launch + `/tutor` shell + thin Tutor start/resume model the only active planning path, and explicitly demote wizard-era plans/docs to historical status.
   - `conductor/tracks/tutor-launch-shell-realignment_20260313/`
   - `conductor/tracks.md`
   - `docs/root/TUTOR_TODO.md`
   - `docs/root/AGENT_BOARD.md`
   - `conductor/tracks/GENERAL/log.md`
   - stale/synced Tutor planning and doc surfaces listed in the track plan
-- [ ] Wave A: durable track bootstrap and active-board registration
+- [x] Wave A: durable track bootstrap and active-board registration
   - create `spec.md`, `plan.md`, `findings.md`, `validation-matrix.md`, `review.md`, and `index.md`
   - register the track in `conductor/tracks.md`
   - claim the work in `docs/root/AGENT_BOARD.md`
-- [ ] Wave B: stale planning/doc sync
+- [x] Wave B: stale planning/doc sync
   - sync forward active Tutor planning artifacts that still present the wizard as current
   - mark pre-shell docs historical instead of letting them compete in repo search
-- [ ] Wave C: launch-state authority and Tutor start-panel refactor
+- [x] Wave C: launch-state authority and Tutor start-panel refactor
   - replace wizard-era startup authority with shell-context precedence
   - replace `TutorWizard` with a thin `TutorStartPanel`
-- [ ] Wave D: shell UX cleanup and active-doc rewrite
+- [x] Wave D: shell UX cleanup and active-doc rewrite
   - make Studio, Schedule, and Publish learner-first
   - rewrite active docs to the Brain launch + `/tutor` shell + start-panel model
-- [ ] Validation
+- [x] Validation
   - see `conductor/tracks/tutor-launch-shell-realignment_20260313/validation-matrix.md`
+  - Completed 2026-03-14: launch precedence now lives in `dashboard_rebuild/client/src/lib/tutorClientState.ts`, `/tutor` renders `TutorStartPanel`, Studio/Schedule/Publish match the shell model, historical pre-shell docs point back to `README.md`, and the integrated backend/frontend/live validation gate passed.

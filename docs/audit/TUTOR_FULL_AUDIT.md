@@ -4,7 +4,7 @@
 > **Scope**: Every moving part of the Adaptive Tutor feature, explained in plain English.
 > **Audience**: Anyone — no coding knowledge required.
 >
-> **Historical note**: this audit describes the pre-shell, wizard-led Tutor surface. It is preserved as historical evidence only. Current product authority lives in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`, and current Tutor launch cleanup lives in `conductor/tracks/tutor-launch-shell-realignment_20260313/`.
+> **Historical note**: this audit describes the pre-shell, wizard-led Tutor surface. It is preserved as historical evidence only. Current product authority lives in `README.md`, runtime wiring lives in `docs/root/PROJECT_ARCHITECTURE.md`, and Tutor launch cleanup evidence lives in `conductor/tracks/tutor-launch-shell-realignment_20260313/`.
 
 ---
 

@@ -64,7 +64,7 @@ The system is not a generic chatbot, not a set of equal peer pages fighting for 
 | Surface | Owns | Must not own |
 |--------|------|--------------|
 | **Brain** | home/dashboard, learner profile, telemetry, mastery framing, support-system launch points | public study-workspace sprawl, direct pedagogy control |
-| **Tutor** | launch, live study workspace, notes/canvas/graph/table, artifacts, resume/restore, structured teaching flow | generic dashboard behavior, unbounded off-protocol teaching |
+| **Tutor** | launch, live study workspace shell, notes/canvas/graph/table, artifacts, resume/restore, structured teaching flow | generic dashboard behavior, unbounded off-protocol teaching |
 | **Scholar** | investigations, focused learner questions when blocked, findings, bounded strategy proposals, system research | live course teaching, direct Tutor control, replacing Brain home |
 | **Library** | what Tutor can teach through material scope | how Tutor teaches |
 | **SOP library** | how Tutor teaches through stages, methods, chains, and rules | course-content truth |
@@ -72,7 +72,7 @@ The system is not a generic chatbot, not a set of equal peer pages fighting for 
 | Route | Meaning |
 |------|---------|
 | `/` and `/brain` | Brain home |
-| `/tutor` | Tutor live workspace |
+| `/tutor` | Tutor live workspace shell |
 | `/scholar` | Scholar investigation console |
 | `/library` | Library support system |
 | `/calendar` | Calendar support system |
@@ -190,7 +190,7 @@ Start_Dashboard.bat
 
 1. Launch the app with `Start_Dashboard.bat`.
 2. Upload at least one study file on `/library`.
-3. Open `/tutor`, choose the course/material scope, and start the session.
+3. Open `/tutor`, use the Tutor start panel to choose or resume the course/material scope, and start the session.
 4. Follow the active chain. Wrap writes the `Exit Ticket + Session Ledger` to Brain and, when enabled, to Obsidian and Anki.
 
 ---

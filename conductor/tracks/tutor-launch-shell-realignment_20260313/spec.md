@@ -6,7 +6,7 @@
 **Track ID:** tutor-launch-shell-realignment_20260313  
 **Type:** roadmap  
 **Created:** 2026-03-13  
-**Status:** Active
+**Status:** Complete
 
 ## Summary
 
@@ -38,12 +38,12 @@ Leave the repo with one current Tutor launch story and one current implementatio
 
 ## Acceptance criteria
 
-- [ ] A durable track exists for the full cleanup and is registered on the active board.
-- [ ] Older wizard-era docs and tracks are either synced forward or explicitly marked historical.
-- [ ] `/tutor` launches through a thin start panel rather than the legacy step wizard.
-- [ ] Brain/Library launch precedence is explicit and regression-tested.
-- [ ] Active docs describe the Brain launch + `/tutor` shell + start-panel model.
-- [ ] The integrated backend/frontend/live validation gate passes.
+- [x] A durable track exists for the full cleanup and is registered on the active board.
+- [x] Older wizard-era docs and tracks are either synced forward or explicitly marked historical.
+- [x] `/tutor` launches through a thin start panel rather than the legacy step wizard.
+- [x] Brain/Library launch precedence is explicit and regression-tested.
+- [x] Active docs describe the Brain launch + `/tutor` shell + start-panel model.
+- [x] The integrated backend/frontend/live validation gate passes.
 
 ## Out of scope
 

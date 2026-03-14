@@ -3,7 +3,7 @@
 ## Planning and docs
 
 - `rg -n "tutor-launch-shell-realignment_20260313" conductor/tracks.md docs/root/TUTOR_TODO.md docs/root/AGENT_BOARD.md`
-- `rg -n "historical|pre-shell|wizard-led|superseded by" docs/audit/TUTOR_FULL_AUDIT.md docs/root/TUTOR_DIVE_READINESS_AUDIT_2026-03-12.md docs/TUTOR_ARCHITECTURE.md docs/REPO_ORIENTATION.md docs/dashboard/DASHBOARD_WINDOW_INVENTORY.md`
+- `rg -n "historical|pre-shell|wizard-led|superseded by" docs/audit/TUTOR_FULL_AUDIT.md docs/archive/TUTOR_DIVE_READINESS_AUDIT_2026-03-12.md docs/TUTOR_ARCHITECTURE.md docs/REPO_ORIENTATION.md docs/dashboard/DASHBOARD_WINDOW_INVENTORY.md`
 
 ## Backend
 
@@ -22,5 +22,6 @@
 
 ## Final grep guard
 
-- `rg -n "dashboard\\.tsx|Vite dev|text-embedding-3-small|Tutor Wizard" docs dashboard_rebuild/README.md docs/root`
+- `rg -n "TutorWizard|wizard-led Tutor|legacy step wizard" README.md docs/root/GUIDE_DEV.md docs/root/PROJECT_ARCHITECTURE.md dashboard_rebuild/client/src/pages/tutor.tsx`
+- `rg -n "TutorWizard" dashboard_rebuild/client/src/components dashboard_rebuild/client/src/pages -g "!**/__tests__/**"`
 - `git diff --check`
