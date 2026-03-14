@@ -50,14 +50,21 @@ Skip this section only for backend-only changes under `brain/`.
 ## Harness Commands
 Use the repo-local harness commands to validate prerequisites, launch isolated app instances, and run fixture-backed harness scenarios.
 
+Examples below use `powershell`; `pwsh` also works if installed.
+
 - Hermetic bootstrap:
-  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Bootstrap -Profile Hermetic -Json`
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Bootstrap -Profile Hermetic -Json`
 - Live bootstrap:
-  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Bootstrap -Profile Live -Json`
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Bootstrap -Profile Live -Json`
 - Hermetic run:
-  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Run -Profile Hermetic -Port 5127 -DataRoot $env:TEMP\pt-harness-data -ArtifactRoot $env:TEMP\pt-harness-artifacts -NoBrowser -SkipUiBuild`
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Run -Profile Hermetic -Port 5127 -DataRoot $env:TEMP\pt-harness-data -ArtifactRoot $env:TEMP\pt-harness-artifacts -NoBrowser -SkipUiBuild`
 - First hermetic Tutor scenario:
-  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Eval -Scenario tutor-hermetic-smoke -ArtifactRoot $env:TEMP\pt-harness-artifacts -Json`
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Eval -Scenario tutor-hermetic-smoke -ArtifactRoot $env:TEMP\pt-harness-artifacts -Json`
+- Second hermetic Tutor scenario:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Eval -Scenario tutor-hermetic-coverage-scope -ArtifactRoot $env:TEMP\pt-harness-artifacts -Json`
+- Artifact bundle report:
+  - `$run = Get-Content -Raw "$env:TEMP\pt-harness-artifacts\run.json" | ConvertFrom-Json`
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Report -RunId $run.run_id -ArtifactRoot $env:TEMP\pt-harness-artifacts -Json`
 
 Current validator checks:
 - Python and Node/npm availability
@@ -68,7 +75,9 @@ Current validator checks:
 
 Hermetic Tutor scenario notes:
 - `tutor-hermetic-smoke` seeds an isolated course + material set directly into the harness DB, then exercises Tutor materials, session create, two provider-free turn shortcuts, restore, summary, end, and delete over HTTP.
+- `tutor-hermetic-coverage-scope` seeds a wider isolated course library but narrows Tutor to one selected file with the `coverage` accuracy profile, then verifies the scoped retrieval path over HTTP.
 - Hermetic runs disable Obsidian note/vault retrieval through `PT_HARNESS_DISABLE_VAULT_CONTEXT=1`, so the scenario does not depend on vault state or provider credentials.
+- `Report` emits `bundle.json` with git metadata, command records, scenario artifacts, and a redacted environment summary. The bundle path is stable across `powershell` and `pwsh`.
 
 ## Contracts (Do Not Drift)
 - WRAP schema: `docs/contracts/wrap_schema.md`

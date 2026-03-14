@@ -45,6 +45,7 @@ $FrontendEnvTemplatePath = Join-Path $RepoRoot "dashboard_rebuild\.env.example"
 $LiveEnvPath = Join-Path $BrainDir ".env"
 $DefaultFixtureRoot = Join-Path $BrainDir "tests\fixtures\harness"
 $FixtureManifestName = "manifest.json"
+$BundleFileName = "bundle.json"
 $HarnessExitCodes = @{
     "ok" = 0
     "bootstrap.missing_powershell" = 20
@@ -62,6 +63,9 @@ $HarnessExitCodes = @{
     "eval.missing_base_url" = 34
     "eval.missing_db_path" = 35
     "eval.command_failed" = 36
+    "report.missing_run_id" = 40
+    "report.missing_artifact_root" = 41
+    "report.run_id_mismatch" = 42
 }
 
 function Resolve-HarnessPath {
@@ -157,6 +161,409 @@ function Get-PythonLaunch {
     }
 
     throw "Python was not found on PATH. Install Python 3 or add python or py -3 to PATH."
+}
+
+function New-HarnessRunId {
+    return "run-{0}" -f (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssfffZ")
+}
+
+function Get-HarnessBundlePath {
+    param([string]$ResolvedArtifactRoot)
+
+    return Join-Path $ResolvedArtifactRoot $BundleFileName
+}
+
+function ConvertTo-HarnessDictionary {
+    param($Value)
+
+    if ($null -eq $Value) {
+        return $null
+    }
+
+    if ($Value -is [System.Collections.IDictionary]) {
+        $dictionary = [ordered]@{}
+        foreach ($key in $Value.Keys) {
+            $dictionary[[string]$key] = ConvertTo-HarnessDictionary -Value $Value[$key]
+        }
+        return $dictionary
+    }
+
+    if ($Value -is [System.Collections.IEnumerable] -and -not ($Value -is [string])) {
+        $items = @()
+        foreach ($item in $Value) {
+            $items += ,(ConvertTo-HarnessDictionary -Value $item)
+        }
+        return $items
+    }
+
+    if ($Value -is [pscustomobject]) {
+        $dictionary = [ordered]@{}
+        foreach ($property in $Value.PSObject.Properties) {
+            $dictionary[$property.Name] = ConvertTo-HarnessDictionary -Value $property.Value
+        }
+        return $dictionary
+    }
+
+    return $Value
+}
+
+function ConvertFrom-HarnessJson {
+    param([string]$JsonText)
+
+    if ([string]::IsNullOrWhiteSpace($JsonText)) {
+        return $null
+    }
+
+    if ($PSVersionTable.PSVersion.Major -ge 6) {
+        return $JsonText | ConvertFrom-Json -AsHashtable
+    }
+
+    return ConvertTo-HarnessDictionary -Value ($JsonText | ConvertFrom-Json)
+}
+
+function Test-HarnessKey {
+    param(
+        $Collection,
+        [string]$Key
+    )
+
+    if ($null -eq $Collection) {
+        return $false
+    }
+
+    return @($Collection.Keys) -contains $Key
+}
+
+function Resolve-ArtifactRelativePath {
+    param(
+        [string]$PathValue,
+        [string]$ResolvedArtifactRoot
+    )
+
+    if (-not $PathValue) {
+        return $null
+    }
+
+    $resolvedPath = Resolve-HarnessPath $PathValue
+    $artifactRootNormalized = (Resolve-HarnessPath $ResolvedArtifactRoot).TrimEnd("\")
+    $pathNormalized = $resolvedPath
+
+    if ($pathNormalized.StartsWith($artifactRootNormalized, [System.StringComparison]::OrdinalIgnoreCase)) {
+        $relative = $pathNormalized.Substring($artifactRootNormalized.Length).TrimStart("\")
+        if ($relative) {
+            return $relative -replace "\\", "/"
+        }
+    }
+
+    return $resolvedPath
+}
+
+function Get-HarnessGitMetadata {
+    $gitCommand = Find-CommandCandidate -Names @("git")
+    if (-not $gitCommand) {
+        return [ordered]@{
+            available = $false
+            sha = $null
+            branch = $null
+        }
+    }
+
+    $sha = (& $gitCommand.Source -C $RepoRoot rev-parse HEAD 2>$null | Out-String).Trim()
+    $branch = (& $gitCommand.Source -C $RepoRoot rev-parse --abbrev-ref HEAD 2>$null | Out-String).Trim()
+
+    return [ordered]@{
+        available = [bool]($sha)
+        sha = if ($sha) { $sha } else { $null }
+        branch = if ($branch) { $branch } else { $null }
+    }
+}
+
+function New-RedactedEnvironmentEntry {
+    param(
+        [string]$Name,
+        [AllowNull()][string]$Value
+    )
+
+    $isPresent = -not [string]::IsNullOrWhiteSpace([string]$Value)
+    $lowerName = $Name.ToLowerInvariant()
+    $entry = [ordered]@{
+        present = $isPresent
+    }
+
+    if (-not $isPresent) {
+        $entry.redaction = "none"
+        $entry.value = $null
+        return $entry
+    }
+
+    $isSecret = $lowerName.Contains("key") -or $lowerName.Contains("token") -or $lowerName.Contains("secret") -or $lowerName.Contains("password")
+    $isPath = $lowerName.EndsWith("_dir") -or $lowerName.EndsWith("_path") -or $lowerName.Contains("root")
+
+    if ($isSecret) {
+        $entry.redaction = "secret"
+        $entry.value = "<redacted:secret>"
+        return $entry
+    }
+
+    if ($isPath) {
+        $entry.redaction = "path"
+        $entry.value = "<redacted:path>"
+        $entry.leaf = Split-Path -Leaf $Value
+        return $entry
+    }
+
+    $entry.redaction = "none"
+    $entry.value = $Value
+    return $entry
+}
+
+function Get-HarnessEnvironmentSummary {
+    param([hashtable]$Overrides = $null)
+
+    $keys = @(
+        "PT_BRAIN_DOTENV_OVERRIDE",
+        "PT_BRAIN_PREFER_ENV_PATHS",
+        "PT_BRAIN_DATA_DIR",
+        "PT_BRAIN_SESSION_LOGS_DIR",
+        "PT_BRAIN_OUTPUT_DIR",
+        "PT_BRAIN_DB_PATH",
+        "PT_BRAIN_API_CONFIG_PATH",
+        "PT_STUDY_RAG_DIR",
+        "PT_BRAIN_HOST",
+        "PT_BRAIN_PORT",
+        "PT_BRAIN_RUN_PROFILE",
+        "PT_HARNESS_DISABLE_VAULT_CONTEXT",
+        "GEMINI_API_KEY",
+        "OPENAI_API_KEY",
+        "ANTHROPIC_API_KEY"
+    )
+
+    $summary = [ordered]@{}
+    foreach ($key in $keys) {
+        $value = $null
+        if ($Overrides -and $Overrides.ContainsKey($key)) {
+            $value = [string]$Overrides[$key]
+        } else {
+            $existing = Get-Item -Path ("Env:{0}" -f $key) -ErrorAction SilentlyContinue
+            $value = if ($existing) { [string]$existing.Value } else { $null }
+        }
+
+        $summary[$key] = New-RedactedEnvironmentEntry -Name $key -Value $value
+    }
+
+    return $summary
+}
+
+function Get-HarnessDurationMs {
+    param(
+        [datetime]$StartedAt,
+        [datetime]$CompletedAt
+    )
+
+    return [int][Math]::Round(($CompletedAt - $StartedAt).TotalMilliseconds)
+}
+
+function New-HarnessCommandRecord {
+    param(
+        [string]$ModeValue,
+        [string]$ProfileValue,
+        [string]$Status,
+        [int]$ExitCode,
+        [datetime]$StartedAt,
+        [datetime]$CompletedAt,
+        [hashtable]$Arguments,
+        [hashtable]$Artifacts,
+        [string]$ScenarioId = $null
+    )
+
+    return [ordered]@{
+        id = "{0}-{1}" -f $ModeValue.ToLowerInvariant(), [guid]::NewGuid().ToString("N").Substring(0, 8)
+        mode = $ModeValue
+        profile = $ProfileValue
+        scenario_id = $ScenarioId
+        status = $Status
+        exit_code = $ExitCode
+        started_at = $StartedAt.ToString("o")
+        completed_at = $CompletedAt.ToString("o")
+        duration_ms = Get-HarnessDurationMs -StartedAt $StartedAt -CompletedAt $CompletedAt
+        arguments = if ($Arguments) { $Arguments } else { [ordered]@{} }
+        artifacts = if ($Artifacts) { $Artifacts } else { [ordered]@{} }
+    }
+}
+
+function Set-HarnessBundleRunSnapshot {
+    param(
+        [System.Collections.IDictionary]$Bundle,
+        [hashtable]$RunMetadata,
+        [string]$ResolvedArtifactRoot
+    )
+
+    if (-not $RunMetadata) {
+        return
+    }
+
+    $Bundle["run"] = [ordered]@{
+        run_id = $RunMetadata.run_id
+        profile = $RunMetadata.profile
+        port = $RunMetadata.port
+        base_url = $RunMetadata.base_url
+        dashboard_url = $RunMetadata.dashboard_url
+        started_at = $RunMetadata.started_at
+        server_pid = $RunMetadata.server_pid
+        artifacts = [ordered]@{
+            run_metadata = "run.json"
+            stdout_log = Resolve-ArtifactRelativePath -PathValue $RunMetadata.stdout_log -ResolvedArtifactRoot $ResolvedArtifactRoot
+            stderr_log = Resolve-ArtifactRelativePath -PathValue $RunMetadata.stderr_log -ResolvedArtifactRoot $ResolvedArtifactRoot
+        }
+    }
+}
+
+function Get-HarnessBundle {
+    param(
+        [string]$ResolvedArtifactRoot,
+        [string]$DefaultProfile,
+        [string]$RequestedRunId,
+        [hashtable]$EnvironmentSummary
+    )
+
+    $bundlePath = Get-HarnessBundlePath -ResolvedArtifactRoot $ResolvedArtifactRoot
+    $runMetadata = Get-HarnessRunMetadata -ResolvedArtifactRoot $ResolvedArtifactRoot
+
+    if (Test-Path $bundlePath) {
+        $bundle = ConvertFrom-HarnessJson -JsonText (Get-Content -Raw -Path $bundlePath)
+    } else {
+        $resolvedRunId = if ($RequestedRunId) { $RequestedRunId } elseif ($runMetadata -and $runMetadata.run_id) { [string]$runMetadata.run_id } else { New-HarnessRunId }
+        $profileValue = if ($runMetadata -and $runMetadata.profile) { [string]$runMetadata.profile } else { $DefaultProfile }
+        $bundle = [ordered]@{
+            schema_version = 1
+            run_id = $resolvedRunId
+            profile = $profileValue
+            repo = [ordered]@{
+                root = $RepoRoot
+                git = Get-HarnessGitMetadata
+            }
+            created_at = (Get-Date).ToString("o")
+            updated_at = (Get-Date).ToString("o")
+            artifacts = [ordered]@{
+                bundle = $BundleFileName
+            }
+            environment = [ordered]@{
+                summary = if ($EnvironmentSummary) { $EnvironmentSummary } else { Get-HarnessEnvironmentSummary }
+            }
+            commands = @()
+            scenarios = [ordered]@{}
+        }
+    }
+
+    if (-not (Test-HarnessKey -Collection $bundle -Key "artifacts")) {
+        $bundle.artifacts = [ordered]@{ bundle = $BundleFileName }
+    } elseif (-not (Test-HarnessKey -Collection $bundle.artifacts -Key "bundle")) {
+        $bundle.artifacts.bundle = $BundleFileName
+    }
+
+    if (-not (Test-HarnessKey -Collection $bundle -Key "environment")) {
+        $bundle.environment = [ordered]@{ summary = if ($EnvironmentSummary) { $EnvironmentSummary } else { Get-HarnessEnvironmentSummary } }
+    } elseif ($EnvironmentSummary) {
+        $bundle.environment.summary = $EnvironmentSummary
+    }
+
+    if (-not (Test-HarnessKey -Collection $bundle -Key "commands")) {
+        $bundle.commands = @()
+    }
+
+    if (-not (Test-HarnessKey -Collection $bundle -Key "scenarios")) {
+        $bundle.scenarios = [ordered]@{}
+    }
+
+    if ($RequestedRunId) {
+        $bundle.run_id = $RequestedRunId
+    }
+
+    if ($runMetadata) {
+        if (-not $bundle.run_id -and $runMetadata.run_id) {
+            $bundle.run_id = [string]$runMetadata.run_id
+        }
+        Set-HarnessBundleRunSnapshot -Bundle $bundle -RunMetadata $runMetadata -ResolvedArtifactRoot $ResolvedArtifactRoot
+    }
+
+    $bundle.updated_at = (Get-Date).ToString("o")
+    return $bundle
+}
+
+function Save-HarnessBundle {
+    param(
+        [System.Collections.IDictionary]$Bundle,
+        [string]$ResolvedArtifactRoot
+    )
+
+    $Bundle.updated_at = (Get-Date).ToString("o")
+    $bundlePath = Get-HarnessBundlePath -ResolvedArtifactRoot $ResolvedArtifactRoot
+    $Bundle | ConvertTo-Json -Depth 8 | Set-Content -Path $bundlePath -Encoding UTF8
+    return $bundlePath
+}
+
+function Add-HarnessCommandToBundle {
+    param(
+        [System.Collections.IDictionary]$Bundle,
+        [hashtable]$CommandRecord
+    )
+
+    $commands = [System.Collections.ArrayList]::new()
+    $existingEntries = @()
+    if ($null -eq $Bundle["commands"]) {
+        $existingEntries = @()
+    } elseif ($Bundle["commands"] -is [System.Collections.IDictionary]) {
+        $existingEntries = @(, $Bundle["commands"])
+    } else {
+        $existingEntries = @($Bundle["commands"])
+    }
+
+    foreach ($entry in $existingEntries) {
+        [void]$commands.Add($entry)
+    }
+    [void]$commands.Add($CommandRecord)
+    $Bundle["commands"] = @($commands)
+}
+
+function Merge-HarnessScenarioResults {
+    param(
+        [System.Collections.IDictionary]$Bundle,
+        [string]$ResolvedArtifactRoot
+    )
+
+    $scenariosRoot = Join-Path $ResolvedArtifactRoot "scenarios"
+    if (-not (Test-Path $scenariosRoot)) {
+        return
+    }
+
+    foreach ($scenarioDirectory in Get-ChildItem -Path $scenariosRoot -Directory) {
+        $resultPath = Join-Path $scenarioDirectory.FullName "result.json"
+        if (-not (Test-Path $resultPath)) {
+            continue
+        }
+
+        $payload = ConvertFrom-HarnessJson -JsonText (Get-Content -Raw -Path $resultPath)
+        $scenarioId = [string]$payload.scenario
+        $turnArtifacts = @()
+        foreach ($turn in @($payload.turns)) {
+            $artifactPath = $turn.artifact_path
+            if ($artifactPath) {
+                $turnArtifacts += Resolve-ArtifactRelativePath -PathValue $artifactPath -ResolvedArtifactRoot $ResolvedArtifactRoot
+            }
+        }
+
+        $Bundle["scenarios"][$scenarioId] = [ordered]@{
+            scenario_id = $scenarioId
+            classification = if ($payload.scenario_type) { $payload.scenario_type } else { "hermetic" }
+            description = $payload.scenario_description
+            ok = [bool]$payload.ok
+            generated_at = $payload.generated_at
+            result_path = Resolve-ArtifactRelativePath -PathValue $resultPath -ResolvedArtifactRoot $ResolvedArtifactRoot
+            turn_artifacts = @($turnArtifacts)
+            summary = $payload.summary
+            seeded = $payload.seeded
+        }
+    }
 }
 
 function Invoke-HarnessBootstrap {
@@ -348,6 +755,7 @@ function Get-StudyRagRoot {
 }
 
 function Invoke-HarnessRun {
+    $startedAt = Get-Date
     if (-not $Port) {
         throw "Run mode requires -Port."
     }
@@ -401,6 +809,7 @@ function Invoke-HarnessRun {
         PT_BRAIN_RUN_PROFILE = $Profile
         PT_HARNESS_DISABLE_VAULT_CONTEXT = $(if ($Profile -eq "Hermetic") { "1" } else { "0" })
     }
+    $runIdValue = if ($RunId) { $RunId } else { New-HarnessRunId }
 
     Invoke-WithinEnvironment -Overrides $runEnvironment -Script {
         Push-Location $BrainDir
@@ -439,6 +848,7 @@ function Invoke-HarnessRun {
 
     $metadata = [ordered]@{
         mode = "Run"
+        run_id = $runIdValue
         profile = $Profile
         port = $Port
         repo_root = $RepoRoot
@@ -460,6 +870,30 @@ function Invoke-HarnessRun {
     }
 
     $metadata | ConvertTo-Json -Depth 4 | Set-Content -Path (Join-Path $resolvedArtifactRoot "run.json") -Encoding UTF8
+    $completedAt = Get-Date
+    $bundle = Get-HarnessBundle -ResolvedArtifactRoot $resolvedArtifactRoot -DefaultProfile $Profile -RequestedRunId $runIdValue -EnvironmentSummary (Get-HarnessEnvironmentSummary -Overrides $runEnvironment)
+    $bundle.artifacts.run_metadata = "run.json"
+    Set-HarnessBundleRunSnapshot -Bundle $bundle -RunMetadata $metadata -ResolvedArtifactRoot $resolvedArtifactRoot
+    Add-HarnessCommandToBundle -Bundle $bundle -CommandRecord (New-HarnessCommandRecord `
+        -ModeValue "Run" `
+        -ProfileValue $Profile `
+        -Status "ok" `
+        -ExitCode 0 `
+        -StartedAt $startedAt `
+        -CompletedAt $completedAt `
+        -Arguments ([ordered]@{
+            port = $Port
+            no_browser = [bool]$NoBrowser
+            skip_ui_build = [bool]$SkipUiBuild
+            data_root = Resolve-ArtifactRelativePath -PathValue $resolvedDataRoot -ResolvedArtifactRoot $resolvedArtifactRoot
+            artifact_root = "."
+        }) `
+        -Artifacts ([ordered]@{
+            run_metadata = "run.json"
+            stdout_log = Resolve-ArtifactRelativePath -PathValue $stdoutLog -ResolvedArtifactRoot $resolvedArtifactRoot
+            stderr_log = Resolve-ArtifactRelativePath -PathValue $stderrLog -ResolvedArtifactRoot $resolvedArtifactRoot
+        }))
+    $bundlePath = Save-HarnessBundle -Bundle $bundle -ResolvedArtifactRoot $resolvedArtifactRoot
 
     if (-not $NoBrowser) {
         Start-Process $dashboardUrl | Out-Null
@@ -467,6 +901,7 @@ function Invoke-HarnessRun {
 
     Write-Host "[OK] Harness run is live at $dashboardUrl"
     Write-Host "[OK] Run metadata: $(Join-Path $resolvedArtifactRoot "run.json")"
+    Write-Host "[OK] Harness bundle: $bundlePath"
 }
 
 function Get-HarnessRunMetadata {
@@ -477,10 +912,11 @@ function Get-HarnessRunMetadata {
         return $null
     }
 
-    return Get-Content -Raw -Path $runMetadataPath | ConvertFrom-Json -AsHashtable
+    return ConvertFrom-HarnessJson -JsonText (Get-Content -Raw -Path $runMetadataPath)
 }
 
 function Invoke-HarnessEval {
+    $startedAt = Get-Date
     if (-not $Scenario) {
         throw "Eval mode requires -Scenario."
     }
@@ -495,62 +931,137 @@ function Invoke-HarnessEval {
     $resolvedFixtureRoot = Resolve-HarnessPath $(if ($FixtureRoot) { $FixtureRoot } else { $DefaultFixtureRoot })
 
     switch ($Scenario) {
-        "tutor-hermetic-smoke" {
-            if (-not $runMetadata) {
-                throw "Eval scenario '$Scenario' requires ArtifactRoot/run.json from a prior harness Run invocation."
-            }
-
-            $effectiveBaseUrl = if ($BaseUrl) { $BaseUrl } elseif ($runMetadata.base_url) { [string]$runMetadata.base_url } else { $null }
-            if (-not $effectiveBaseUrl) {
-                throw "Eval scenario '$Scenario' requires -BaseUrl or ArtifactRoot/run.json with base_url."
-            }
-
-            $dbPath = if ($runMetadata.db_path) { [string]$runMetadata.db_path } else { $null }
-            if (-not $dbPath) {
-                throw "Eval scenario '$Scenario' requires ArtifactRoot/run.json with db_path."
-            }
-
-            $scriptPath = Join-Path $RepoRoot "scripts\tutor_hermetic_smoke.py"
-            if (-not (Test-Path $scriptPath)) {
-                throw "Could not find Tutor hermetic smoke script at $scriptPath."
-            }
-
-            $scriptArgs = @(
-                $scriptPath,
-                "--scenario",
-                $Scenario,
-                "--base-url",
-                $effectiveBaseUrl,
-                "--db-path",
-                $dbPath,
-                "--fixture-root",
-                $resolvedFixtureRoot,
-                "--artifact-root",
-                $scenarioArtifactRoot,
-                "--json"
-            )
-
-            $scriptOutput = & $python.FilePath @($python.Prefix + $scriptArgs) 2>&1
-            $scriptText = ($scriptOutput | Out-String).Trim()
-            if ($LASTEXITCODE -ne 0) {
-                throw "Eval scenario '$Scenario' failed with exit code $LASTEXITCODE.`n$scriptText"
-            }
-            if (-not $scriptText) {
-                throw "Eval scenario '$Scenario' did not emit JSON output."
-            }
-
-            if ($Json) {
-                Write-Output $scriptText
-            } else {
-                $payload = $scriptText | ConvertFrom-Json -AsHashtable
-                Write-Host "[OK] Harness eval passed for scenario '$Scenario'."
-                Write-Host "[OK] Result artifact: $(Join-Path $scenarioArtifactRoot "result.json")"
-                Write-Host "[OK] Turn count: $($payload.summary.turn_count)"
-            }
-        }
+        "tutor-hermetic-smoke" {}
+        "tutor-hermetic-coverage-scope" {}
         default {
             throw "Unknown eval scenario '$Scenario'."
         }
+    }
+
+    if (-not $runMetadata) {
+        throw "Eval scenario '$Scenario' requires ArtifactRoot/run.json from a prior harness Run invocation."
+    }
+
+    $effectiveBaseUrl = if ($BaseUrl) { $BaseUrl } elseif ($runMetadata.base_url) { [string]$runMetadata.base_url } else { $null }
+    if (-not $effectiveBaseUrl) {
+        throw "Eval scenario '$Scenario' requires -BaseUrl or ArtifactRoot/run.json with base_url."
+    }
+
+    $dbPath = if ($runMetadata.db_path) { [string]$runMetadata.db_path } else { $null }
+    if (-not $dbPath) {
+        throw "Eval scenario '$Scenario' requires ArtifactRoot/run.json with db_path."
+    }
+
+    $scriptPath = Join-Path $RepoRoot "scripts\tutor_hermetic_smoke.py"
+    if (-not (Test-Path $scriptPath)) {
+        throw "Could not find Tutor hermetic smoke script at $scriptPath."
+    }
+
+    $scriptArgs = @(
+        $scriptPath,
+        "--scenario",
+        $Scenario,
+        "--base-url",
+        $effectiveBaseUrl,
+        "--db-path",
+        $dbPath,
+        "--fixture-root",
+        $resolvedFixtureRoot,
+        "--artifact-root",
+        $scenarioArtifactRoot,
+        "--json"
+    )
+
+    $scriptOutput = & $python.FilePath @($python.Prefix + $scriptArgs) 2>&1
+    $scriptText = ($scriptOutput | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) {
+        throw "Eval scenario '$Scenario' failed with exit code $LASTEXITCODE.`n$scriptText"
+    }
+    if (-not $scriptText) {
+        throw "Eval scenario '$Scenario' did not emit JSON output."
+    }
+
+    $payload = ConvertFrom-HarnessJson -JsonText $scriptText
+    $completedAt = Get-Date
+    $bundle = Get-HarnessBundle -ResolvedArtifactRoot $resolvedArtifactRoot -DefaultProfile $(if ($runMetadata.profile) { [string]$runMetadata.profile } else { $Profile }) -RequestedRunId $(if ($runMetadata.run_id) { [string]$runMetadata.run_id } else { $RunId }) -EnvironmentSummary (Get-HarnessEnvironmentSummary)
+    Set-HarnessBundleRunSnapshot -Bundle $bundle -RunMetadata $runMetadata -ResolvedArtifactRoot $resolvedArtifactRoot
+    Merge-HarnessScenarioResults -Bundle $bundle -ResolvedArtifactRoot $resolvedArtifactRoot
+    Add-HarnessCommandToBundle -Bundle $bundle -CommandRecord (New-HarnessCommandRecord `
+        -ModeValue "Eval" `
+        -ProfileValue $(if ($runMetadata.profile) { [string]$runMetadata.profile } else { $Profile }) `
+        -Status "ok" `
+        -ExitCode 0 `
+        -StartedAt $startedAt `
+        -CompletedAt $completedAt `
+        -Arguments ([ordered]@{
+            scenario = $Scenario
+            artifact_root = "."
+            base_url = $effectiveBaseUrl
+        }) `
+        -Artifacts ([ordered]@{
+            result = Resolve-ArtifactRelativePath -PathValue (Join-Path $scenarioArtifactRoot "result.json") -ResolvedArtifactRoot $resolvedArtifactRoot
+        }) `
+        -ScenarioId $Scenario)
+    $bundlePath = Save-HarnessBundle -Bundle $bundle -ResolvedArtifactRoot $resolvedArtifactRoot
+
+    if ($Json) {
+        Write-Output ($payload | ConvertTo-Json -Depth 8)
+    } else {
+        Write-Host "[OK] Harness eval passed for scenario '$Scenario'."
+        Write-Host "[OK] Result artifact: $(Join-Path $scenarioArtifactRoot "result.json")"
+        Write-Host "[OK] Bundle: $bundlePath"
+        Write-Host "[OK] Turn count: $($payload.summary.turn_count)"
+    }
+}
+
+function Invoke-HarnessReport {
+    $startedAt = Get-Date
+    if (-not $RunId) {
+        throw "Report mode requires -RunId."
+    }
+    if (-not $ArtifactRoot) {
+        throw "Report mode requires -ArtifactRoot."
+    }
+
+    $resolvedArtifactRoot = (Resolve-Path -Path (New-Item -ItemType Directory -Force -Path $ArtifactRoot)).Path
+    $inputRootValue = if ($InputRoot) { $InputRoot } else { $resolvedArtifactRoot }
+    $resolvedInputRoot = Resolve-HarnessPath $inputRootValue
+    $runMetadata = Get-HarnessRunMetadata -ResolvedArtifactRoot $resolvedArtifactRoot
+
+    $bundle = Get-HarnessBundle -ResolvedArtifactRoot $resolvedArtifactRoot -DefaultProfile $(if ($runMetadata -and $runMetadata.profile) { [string]$runMetadata.profile } else { $Profile }) -RequestedRunId $RunId -EnvironmentSummary (Get-HarnessEnvironmentSummary)
+    if ($bundle.run_id -and $bundle.run_id -ne $RunId) {
+        throw "Report requested run_id '$RunId' but artifact bundle contains '$($bundle.run_id)'."
+    }
+
+    if ($runMetadata) {
+        Set-HarnessBundleRunSnapshot -Bundle $bundle -RunMetadata $runMetadata -ResolvedArtifactRoot $resolvedArtifactRoot
+    }
+    Merge-HarnessScenarioResults -Bundle $bundle -ResolvedArtifactRoot $resolvedInputRoot
+
+    $completedAt = Get-Date
+    Add-HarnessCommandToBundle -Bundle $bundle -CommandRecord (New-HarnessCommandRecord `
+        -ModeValue "Report" `
+        -ProfileValue $(if ($bundle.profile) { [string]$bundle.profile } else { $Profile }) `
+        -Status "ok" `
+        -ExitCode 0 `
+        -StartedAt $startedAt `
+        -CompletedAt $completedAt `
+        -Arguments ([ordered]@{
+            run_id = $RunId
+            artifact_root = "."
+            input_root = Resolve-ArtifactRelativePath -PathValue $resolvedInputRoot -ResolvedArtifactRoot $resolvedArtifactRoot
+        }) `
+        -Artifacts ([ordered]@{
+            bundle = $BundleFileName
+        }))
+    $bundlePath = Save-HarnessBundle -Bundle $bundle -ResolvedArtifactRoot $resolvedArtifactRoot
+
+    if ($Json) {
+        Write-Output ($bundle | ConvertTo-Json -Depth 8)
+    } else {
+        Write-Host "[OK] Harness report generated."
+        Write-Host "[OK] Bundle: $bundlePath"
+        Write-Host "[OK] Scenarios: $(@($bundle.scenarios.Keys).Count)"
     }
 }
 
@@ -563,6 +1074,9 @@ switch ($Mode) {
     }
     "Eval" {
         Invoke-HarnessEval
+    }
+    "Report" {
+        Invoke-HarnessReport
     }
     default {
         throw "Mode '$Mode' is not implemented yet. T6 only ships Run mode."

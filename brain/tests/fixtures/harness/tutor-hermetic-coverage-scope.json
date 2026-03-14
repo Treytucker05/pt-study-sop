@@ -1,0 +1,70 @@
+{
+  "scenario": "tutor-hermetic-coverage-scope",
+  "course": {
+    "id": 4202,
+    "name": "Harness Coverage Scope Course",
+    "code": "HARN-4202",
+    "term": "Spring 2026"
+  },
+  "materials": [
+    {
+      "id": 9201,
+      "title": "Ion Channel Primer",
+      "source_path": "Fixtures/Harness/ion-channel-primer.md",
+      "file_type": "md",
+      "content": "Voltage-gated sodium channels initiate fast depolarization when threshold is reached."
+    },
+    {
+      "id": 9202,
+      "title": "Membrane Potential Notes",
+      "source_path": "Fixtures/Harness/membrane-potential.md",
+      "file_type": "md",
+      "content": "Resting membrane potential depends on ionic gradients and selective permeability."
+    },
+    {
+      "id": 9203,
+      "title": "Synaptic Transmission",
+      "source_path": "Fixtures/Harness/synaptic-transmission.md",
+      "file_type": "md",
+      "content": "Chemical synapses convert presynaptic action potentials into neurotransmitter release."
+    }
+  ],
+  "session": {
+    "mode": "Core",
+    "topic": "Harness Coverage Scope Session",
+    "content_filter": {
+      "material_ids": [
+        9202
+      ],
+      "accuracy_profile": "coverage"
+    }
+  },
+  "turns": [
+    {
+      "message": "How many files are you using?",
+      "expect_substrings": [
+        "You selected 1 files for this turn."
+      ],
+      "expect_retrieval_debug": {
+        "material_ids_count": 1,
+        "selected_material_count": 1,
+        "accuracy_profile": "coverage"
+      }
+    },
+    {
+      "message": "List selected files.",
+      "expect_substrings": [
+        "Membrane Potential Notes"
+      ],
+      "expect_retrieval_debug": {
+        "material_ids_count": 1,
+        "selected_material_count": 1,
+        "accuracy_profile": "coverage"
+      }
+    }
+  ],
+  "expect": {
+    "material_count": 3,
+    "turn_count": 2
+  }
+}

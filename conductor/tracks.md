@@ -14,15 +14,15 @@ Active execution priority is tracked in `docs/root/TUTOR_TODO.md`.
 
 Active status: 1 active workstream.
 
-Latest update: 2026-03-14, Trey Agent Repo Readiness advanced through `T8` after the first hermetic Tutor fixture scenario and `Eval` wrapper landed.
+Latest update: 2026-03-14, Trey Agent Repo Readiness advanced through `T9`, landed the second hermetic Tutor scenario, and left `T10` as the next normalization pass.
 
 - [x] **Track: Repo Truth Surface Pruning** (complete — created 2026-03-14; closed 2026-03-14; scope: README-first canon promotion, redundant truth-doc compression, repo-local planning-surface alignment, duplicate track cleanup, validator/drift-gate rewiring)
   *Link: [./tracks/repo-truth-surface-pruning_20260314/](./tracks/repo-truth-surface-pruning_20260314/)*
 
 ---
 
-- [~] **Track: Trey Agent Repo Readiness** (active — created 2026-03-13; resumed 2026-03-14; `T1`-`T8` complete)
-  Shared repo-local harness contract, env/bootstrap contract, tiered agent matrix, isolated startup implementation, repo-local bootstrap validator, backend env template, first hermetic Tutor fixture scenario, and pending work for standardized artifacts, CI, and cross-agent proof.
+- [~] **Track: Trey Agent Repo Readiness** (active — created 2026-03-13; resumed 2026-03-14; `T1`-`T9` complete, `T10` started)
+  Shared repo-local harness contract, env/bootstrap contract, tiered agent matrix, isolated startup implementation, repo-local bootstrap validator, backend env template, first two hermetic Tutor fixture scenarios, standardized artifact bundle/report output, and pending work for broader scenario normalization, observability, CI, and cross-agent proof.
   *Link: [./tracks/trey-agent-repo-readiness_20260313/](./tracks/trey-agent-repo-readiness_20260313/)*
 
 ---

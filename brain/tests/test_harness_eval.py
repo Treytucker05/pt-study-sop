@@ -70,6 +70,43 @@ def _wait_for_server(host: str, port: int, timeout_seconds: float = 10.0) -> Non
     raise AssertionError(f"Server did not start on {host}:{port}")
 
 
+def _write_run_metadata(
+    artifact_root: Path,
+    *,
+    host: str,
+    port: int,
+    db_path: Path,
+    run_id: str,
+) -> dict[str, object]:
+    run_metadata = {
+        "mode": "Run",
+        "run_id": run_id,
+        "profile": "Hermetic",
+        "port": port,
+        "repo_root": str(REPO_ROOT),
+        "artifact_root": str(artifact_root),
+        "db_path": str(db_path),
+        "base_url": f"http://{host}:{port}",
+        "dashboard_url": f"http://{host}:{port}/brain",
+        "started_at": "2026-03-14T00:00:00Z",
+    }
+    (artifact_root / "run.json").write_text(
+        json.dumps(run_metadata, indent=2),
+        encoding="utf-8",
+    )
+    return run_metadata
+
+
+def _bundle_shape(value: object) -> object:
+    if isinstance(value, dict):
+        return {key: _bundle_shape(value[key]) for key in sorted(value)}
+    if isinstance(value, list):
+        if not value:
+            return []
+        return [_bundle_shape(value[0])]
+    return type(value).__name__
+
+
 def test_harness_eval_runs_tutor_hermetic_smoke(tmp_path: Path) -> None:
     db_path = tmp_path / "harness-eval.db"
     artifact_root = tmp_path / "artifacts"
@@ -94,19 +131,12 @@ def test_harness_eval_runs_tutor_hermetic_smoke(tmp_path: Path) -> None:
     server.start()
     _wait_for_server(host, port)
 
-    run_metadata = {
-        "mode": "Run",
-        "profile": "Hermetic",
-        "port": port,
-        "repo_root": str(REPO_ROOT),
-        "artifact_root": str(artifact_root),
-        "db_path": str(db_path),
-        "base_url": f"http://{host}:{port}",
-        "dashboard_url": f"http://{host}:{port}/brain",
-    }
-    (artifact_root / "run.json").write_text(
-        json.dumps(run_metadata, indent=2),
-        encoding="utf-8",
+    _write_run_metadata(
+        artifact_root,
+        host=host,
+        port=port,
+        db_path=db_path,
+        run_id="harness-eval-smoke",
     )
 
     try:
@@ -159,3 +189,203 @@ def test_harness_eval_runs_tutor_hermetic_smoke(tmp_path: Path) -> None:
             os.environ.pop("PT_HARNESS_DISABLE_VAULT_CONTEXT", None)
         else:
             os.environ["PT_HARNESS_DISABLE_VAULT_CONTEXT"] = original_vault_context_env
+
+
+def test_harness_report_emits_redacted_bundle_for_multiple_scenarios(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "harness-report.db"
+    artifact_root = tmp_path / "artifacts"
+    artifact_root.mkdir(parents=True, exist_ok=True)
+    port = _find_free_port()
+    host = "127.0.0.1"
+    run_id = "harness-report-multi"
+
+    original_db_env = os.environ.get("PT_STUDY_DB")
+    original_vault_context_env = os.environ.get("PT_HARNESS_DISABLE_VAULT_CONTEXT")
+    original_secret_env = os.environ.get("GEMINI_API_KEY")
+    original_config_db = config.DB_PATH
+    original_db_setup_db = db_setup.DB_PATH
+
+    os.environ["PT_STUDY_DB"] = str(db_path)
+    os.environ["PT_HARNESS_DISABLE_VAULT_CONTEXT"] = "1"
+    os.environ["GEMINI_API_KEY"] = "top-secret-harness-value"
+    config.DB_PATH = str(db_path)
+    db_setup.DB_PATH = str(db_path)
+    db_setup.init_database()
+
+    app = create_app()
+    app.config["TESTING"] = True
+    server = _ServerThread(app, host, port)
+    server.start()
+    _wait_for_server(host, port)
+    _write_run_metadata(
+        artifact_root,
+        host=host,
+        port=port,
+        db_path=db_path,
+        run_id=run_id,
+    )
+
+    try:
+        for scenario_id in ("tutor-hermetic-smoke", "tutor-hermetic-coverage-scope"):
+            eval_result = _run_harness(
+                "-Mode",
+                "Eval",
+                "-Scenario",
+                scenario_id,
+                "-ArtifactRoot",
+                str(artifact_root),
+                "-Json",
+            )
+            assert eval_result.returncode == 0, (
+                f"eval failed for {scenario_id}\nstdout:\n{eval_result.stdout}\nstderr:\n{eval_result.stderr}"
+            )
+
+        report_result = _run_harness(
+            "-Mode",
+            "Report",
+            "-RunId",
+            run_id,
+            "-ArtifactRoot",
+            str(artifact_root),
+            "-Json",
+        )
+        assert report_result.returncode == 0, (
+            f"report failed\nstdout:\n{report_result.stdout}\nstderr:\n{report_result.stderr}"
+        )
+
+        payload = json.loads(report_result.stdout)
+        assert payload["schema_version"] == 1
+        assert payload["run_id"] == run_id
+        assert payload["repo"]["git"]["sha"]
+        assert payload["artifacts"]["bundle"] == "bundle.json"
+        assert payload["environment"]["summary"]["GEMINI_API_KEY"]["present"] is True
+        assert payload["environment"]["summary"]["GEMINI_API_KEY"]["value"] == "<redacted:secret>"
+        assert "top-secret-harness-value" not in report_result.stdout
+
+        scenario_ids = set(payload["scenarios"].keys())
+        assert scenario_ids == {"tutor-hermetic-smoke", "tutor-hermetic-coverage-scope"}
+
+        bundle_path = artifact_root / "bundle.json"
+        assert bundle_path.exists()
+
+        bundle_payload = json.loads(bundle_path.read_text(encoding="utf-8"))
+        command_modes = [entry["mode"] for entry in bundle_payload["commands"]]
+        assert command_modes.count("Eval") == 2
+        assert command_modes[-1] == "Report"
+    finally:
+        server.shutdown()
+        server.join(timeout=5)
+        config.DB_PATH = original_config_db
+        db_setup.DB_PATH = original_db_setup_db
+        if original_db_env is None:
+            os.environ.pop("PT_STUDY_DB", None)
+        else:
+            os.environ["PT_STUDY_DB"] = original_db_env
+        if original_vault_context_env is None:
+            os.environ.pop("PT_HARNESS_DISABLE_VAULT_CONTEXT", None)
+        else:
+            os.environ["PT_HARNESS_DISABLE_VAULT_CONTEXT"] = original_vault_context_env
+        if original_secret_env is None:
+            os.environ.pop("GEMINI_API_KEY", None)
+        else:
+            os.environ["GEMINI_API_KEY"] = original_secret_env
+
+
+def test_harness_report_bundle_shape_is_stable_for_repeated_smoke_runs(
+    tmp_path: Path,
+) -> None:
+    original_db_env = os.environ.get("PT_STUDY_DB")
+    original_vault_context_env = os.environ.get("PT_HARNESS_DISABLE_VAULT_CONTEXT")
+    original_secret_env = os.environ.get("GEMINI_API_KEY")
+    original_config_db = config.DB_PATH
+    original_db_setup_db = db_setup.DB_PATH
+    secret_value = "stable-shape-secret"
+
+    def _run_once(run_suffix: str) -> dict[str, object]:
+        db_path = tmp_path / f"harness-shape-{run_suffix}.db"
+        artifact_root = tmp_path / f"artifacts-{run_suffix}"
+        artifact_root.mkdir(parents=True, exist_ok=True)
+        port = _find_free_port()
+        host = "127.0.0.1"
+        run_id = f"harness-shape-{run_suffix}"
+
+        os.environ["PT_STUDY_DB"] = str(db_path)
+        os.environ["PT_HARNESS_DISABLE_VAULT_CONTEXT"] = "1"
+        os.environ["GEMINI_API_KEY"] = secret_value
+        config.DB_PATH = str(db_path)
+        db_setup.DB_PATH = str(db_path)
+        db_setup.init_database()
+
+        app = create_app()
+        app.config["TESTING"] = True
+        server = _ServerThread(app, host, port)
+        server.start()
+        _wait_for_server(host, port)
+        _write_run_metadata(
+            artifact_root,
+            host=host,
+            port=port,
+            db_path=db_path,
+            run_id=run_id,
+        )
+
+        try:
+            eval_result = _run_harness(
+                "-Mode",
+                "Eval",
+                "-Scenario",
+                "tutor-hermetic-smoke",
+                "-ArtifactRoot",
+                str(artifact_root),
+                "-Json",
+            )
+            assert eval_result.returncode == 0, (
+                f"eval failed for {run_suffix}\nstdout:\n{eval_result.stdout}\nstderr:\n{eval_result.stderr}"
+            )
+
+            report_result = _run_harness(
+                "-Mode",
+                "Report",
+                "-RunId",
+                run_id,
+                "-ArtifactRoot",
+                str(artifact_root),
+                "-Json",
+            )
+            assert report_result.returncode == 0, (
+                f"report failed for {run_suffix}\nstdout:\n{report_result.stdout}\nstderr:\n{report_result.stderr}"
+            )
+            assert secret_value not in report_result.stdout
+
+            bundle_path = artifact_root / "bundle.json"
+            bundle_text = bundle_path.read_text(encoding="utf-8")
+            assert secret_value not in bundle_text
+
+            bundle_payload = json.loads(bundle_text)
+            assert bundle_payload["environment"]["summary"]["GEMINI_API_KEY"]["value"] == "<redacted:secret>"
+            return bundle_payload
+        finally:
+            server.shutdown()
+            server.join(timeout=5)
+
+    try:
+        first_bundle = _run_once("one")
+        second_bundle = _run_once("two")
+        assert _bundle_shape(first_bundle) == _bundle_shape(second_bundle)
+    finally:
+        config.DB_PATH = original_config_db
+        db_setup.DB_PATH = original_db_setup_db
+        if original_db_env is None:
+            os.environ.pop("PT_STUDY_DB", None)
+        else:
+            os.environ["PT_STUDY_DB"] = original_db_env
+        if original_vault_context_env is None:
+            os.environ.pop("PT_HARNESS_DISABLE_VAULT_CONTEXT", None)
+        else:
+            os.environ["PT_HARNESS_DISABLE_VAULT_CONTEXT"] = original_vault_context_env
+        if original_secret_env is None:
+            os.environ.pop("GEMINI_API_KEY", None)
+        else:
+            os.environ["GEMINI_API_KEY"] = original_secret_env

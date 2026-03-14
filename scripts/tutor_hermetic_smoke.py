@@ -30,7 +30,7 @@ def _load_manifest(fixture_root: Path) -> dict[str, Any]:
     return json.loads(manifest_path.read_text(encoding="utf-8"))
 
 
-def _load_scenario(fixture_root: Path, scenario_id: str) -> dict[str, Any]:
+def _resolve_scenario_entry(fixture_root: Path, scenario_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
     manifest = _load_manifest(fixture_root)
     scenarios = manifest.get("scenarios") or []
     for scenario in scenarios:
@@ -38,8 +38,20 @@ def _load_scenario(fixture_root: Path, scenario_id: str) -> dict[str, Any]:
             if scenario != scenario_id:
                 continue
             fixture_file = f"{scenario_id}.json"
+            scenario_entry: dict[str, Any] = {
+                "id": scenario_id,
+                "fixture_file": fixture_file,
+                "classification": "hermetic",
+                "description": None,
+            }
         elif isinstance(scenario, dict) and str(scenario.get("id") or "").strip() == scenario_id:
             fixture_file = str(scenario.get("fixture_file") or "").strip()
+            scenario_entry = {
+                "id": scenario_id,
+                "fixture_file": fixture_file,
+                "classification": str(scenario.get("classification") or "hermetic"),
+                "description": scenario.get("description"),
+            }
         else:
             continue
 
@@ -49,7 +61,7 @@ def _load_scenario(fixture_root: Path, scenario_id: str) -> dict[str, Any]:
         fixture_path = fixture_root / fixture_file
         if not fixture_path.exists():
             raise FileNotFoundError(f"Scenario fixture not found at {fixture_path}")
-        return json.loads(fixture_path.read_text(encoding="utf-8"))
+        return scenario_entry, json.loads(fixture_path.read_text(encoding="utf-8"))
 
     raise ValueError(f"Scenario {scenario_id!r} is not declared in {fixture_root / MANIFEST_NAME}")
 
@@ -183,7 +195,7 @@ def run_smoke(
     artifact_root: Path,
     scenario_id: str,
 ) -> dict[str, Any]:
-    scenario = _load_scenario(fixture_root, scenario_id)
+    scenario_entry, scenario = _resolve_scenario_entry(fixture_root, scenario_id)
     seeded = seed_fixture(db_path, scenario)
     artifact_root.mkdir(parents=True, exist_ok=True)
 
@@ -219,7 +231,8 @@ def run_smoke(
     session_payload = dict(scenario.get("session") or {})
     session_payload["course_id"] = course_id
     session_payload.setdefault("content_filter", {})
-    session_payload["content_filter"]["material_ids"] = material_ids
+    selected_material_ids = session_payload["content_filter"].get("material_ids") or material_ids
+    session_payload["content_filter"]["material_ids"] = selected_material_ids
     session_payload["content_filter"].setdefault("accuracy_profile", "strict")
 
     create_resp = session.post(
@@ -378,6 +391,8 @@ def run_smoke(
     result = {
         "ok": True,
         "scenario": scenario_id,
+        "scenario_type": scenario_entry.get("classification") or "hermetic",
+        "scenario_description": scenario_entry.get("description"),
         "base_url": base_url,
         "db_path": str(db_path),
         "fixture_root": str(fixture_root),

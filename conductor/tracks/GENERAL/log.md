@@ -2,6 +2,22 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-14 - Trey Agent Repo Readiness T9 artifact bundle and second hermetic scenario slice
+
+- Implemented `Report` mode in `scripts/harness.ps1` and standardized `bundle.json` as the machine-readable harness artifact bundle.
+- Added git metadata, command history, scenario artifact pointers, timings, and redacted environment summaries to the bundle.
+- Fixed the bundle mutation bug that was dropping earlier `Eval` command records when the bundle began life as an ordered dictionary.
+- Added Windows PowerShell JSON compatibility in `scripts/harness.ps1` so `Run`, `Eval`, and `Report` no longer depend on `ConvertFrom-Json -AsHashtable`.
+- Expanded the hermetic scenario manifest and runner with the second named Tutor scenario:
+  - `tutor-hermetic-coverage-scope`
+  - `brain/tests/fixtures/harness/tutor-hermetic-coverage-scope.json`
+- Added repeated-bundle-shape + secret-redaction regression coverage in `brain/tests/test_harness_eval.py`.
+- Verification:
+  - `python -m pytest brain/tests/test_harness_eval.py brain/tests/test_harness_bootstrap.py brain/tests/test_harness_startup.py -q`
+  - real `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/harness.ps1 -Mode Run ... -> Eval tutor-hermetic-smoke -> Eval tutor-hermetic-coverage-scope -> Report`
+- Next track task:
+  - finish `T10` by normalizing the remaining live/operator validation flows into the named scenario registry
+
 ## 2026-03-14 - Trey Agent Repo Readiness T8 hermetic Tutor smoke
 
 - Implemented the first harness `Eval` scenario in `scripts/harness.ps1` for `tutor-hermetic-smoke`.

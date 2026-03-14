@@ -5,12 +5,23 @@
     {
       "id": "tutor-hermetic-smoke",
       "fixture_file": "tutor-hermetic-smoke.json",
+      "classification": "hermetic",
       "description": "Seeds an isolated Tutor course and two scoped materials, then exercises a provider-free Tutor session over HTTP.",
+      "requires_run_metadata": [
+        "base_url",
+        "db_path"
+      ]
+    },
+    {
+      "id": "tutor-hermetic-coverage-scope",
+      "fixture_file": "tutor-hermetic-coverage-scope.json",
+      "classification": "hermetic",
+      "description": "Seeds a wider isolated course library but narrows Tutor to one selected file with the coverage accuracy profile, then exercises provider-free scope shortcuts over HTTP.",
       "requires_run_metadata": [
         "base_url",
         "db_path"
       ]
     }
   ],
-  "notes": "The first real hermetic harness scenario uses material-count and material-list shortcuts so it does not require Obsidian state or live provider credentials."
+  "notes": "Hermetic Tutor scenarios use provider-free material-count and scope-list shortcuts so they do not require Obsidian state or live provider credentials."
 }

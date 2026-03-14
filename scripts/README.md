@@ -6,7 +6,7 @@ System context: scripts support CP-MSS v1.0 operations and governance.
 
 ## Common entries
 - `generate_architecture_dump.ps1` - Regenerates `docs/root/ARCHITECTURE_CONTEXT.md`.
-- `harness.ps1` - Repo-local harness entrypoint. Supports `Bootstrap`, isolated `Run`, and the first `Eval` scenario (`tutor-hermetic-smoke`).
+- `harness.ps1` - Repo-local harness entrypoint. Supports `Bootstrap`, isolated `Run`, named `Eval` scenarios (`tutor-hermetic-smoke`, `tutor-hermetic-coverage-scope`), and `Report` bundle generation with redacted environment data.
 - `release_check.py` - Runs release checks.
 - `sync_agent_config.ps1` - Repo drift check for agent instruction entrypoints and tool stubs.
 - `sync_ai_config.ps1` - Deprecated (use `sync_agent_config.ps1`).
@@ -29,23 +29,30 @@ System context: scripts support CP-MSS v1.0 operations and governance.
 ## Harness Quickstart
 ```powershell
 # Validate hermetic prerequisites
-pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Bootstrap -Profile Hermetic -Json
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Bootstrap -Profile Hermetic -Json
 
 # Start one isolated harness run
 $artifact = Join-Path $env:TEMP "pt-harness-artifacts"
 $data = Join-Path $env:TEMP "pt-harness-data"
-pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Run -Profile Hermetic -Port 5127 -DataRoot $data -ArtifactRoot $artifact -NoBrowser -SkipUiBuild
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Run -Profile Hermetic -Port 5127 -DataRoot $data -ArtifactRoot $artifact -NoBrowser -SkipUiBuild
 
 # Run the first fixture-backed Tutor scenario against that isolated run
-pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Eval -Scenario tutor-hermetic-smoke -ArtifactRoot $artifact -Json
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Eval -Scenario tutor-hermetic-smoke -ArtifactRoot $artifact -Json
+
+# Run the second fixture-backed Tutor scenario against that same run
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Eval -Scenario tutor-hermetic-coverage-scope -ArtifactRoot $artifact -Json
+
+# Emit the machine-readable bundle for the run
+$run = Get-Content -Raw (Join-Path $artifact "run.json") | ConvertFrom-Json
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Report -RunId $run.run_id -ArtifactRoot $artifact -Json
 
 # Stop the isolated server when you are done
-$run = Get-Content -Raw (Join-Path $artifact "run.json") | ConvertFrom-Json
 Stop-Process -Id $run.server_pid -Force
 ```
 
 Hermetic note:
 - Hermetic runs set `PT_HARNESS_DISABLE_VAULT_CONTEXT=1`, so Tutor turn context skips Obsidian note/vault retrieval and does not depend on personal vault state.
+- `Report` writes `bundle.json` with git metadata, scenario artifact pointers, command records, timings, and a redacted environment summary.
 
 ## Parallel Agent Quickstart
 ```powershell
@@ -77,9 +84,11 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap_parallel_agent
 ```
 
 ## Coordination Source of Truth
-- Use `conductor/tracks.md` as the only active coordination board.
-- Use each track's `plan.md` checkboxes for task ownership and progress.
-- Use `conductor/tracks/GENERAL/log.md` for chronological, non-track-specific updates.
+- Use `README.md` as the top-level repo truth.
+- Use `docs/root/TUTOR_TODO.md` as the active execution board.
+- Use `docs/root/AGENT_BOARD.md` for live multi-agent ownership and handoffs.
+- Use `conductor/tracks.md` as the track registry and status history.
+- Use `conductor/tracks/GENERAL/log.md` for chronological updates, especially when behavior changes.
 
 ### Integrate role usage
 - Integrate role path/branch is `wt/integrate` and is meant for final merge conflict resolution and release readiness tasks.

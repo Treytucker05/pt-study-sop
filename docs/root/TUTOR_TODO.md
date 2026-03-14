@@ -96,9 +96,12 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - [ ] TAR-120. Build the first hermetic Tutor fixture scenario.
   - Track tasks: `T8`, `T10`
   - Partial 2026-03-14: `T8` is complete via `scripts/tutor_hermetic_smoke.py`, `scripts/harness.ps1 -Mode Eval -Scenario tutor-hermetic-smoke`, `brain/tests/fixtures/harness/tutor-hermetic-smoke.json`, and `brain/tests/test_harness_eval.py`.
+  - Additional 2026-03-14: the first `T10` slice is shipped via `tutor-hermetic-coverage-scope`, the expanded fixture manifest, and multi-scenario `Eval` + `Report` coverage in `brain/tests/test_harness_eval.py`.
   - Remaining scope: `T10` still needs the broader named-scenario registry and normalization pass across the other smoke surfaces.
 - [ ] TAR-130. Add harness artifacts, observability, CI lane, and cross-agent proof.
   - Track tasks: `T9`, `T11`, `T12`, `T13`, `T15`, `T16`
+  - Partial 2026-03-14: `T9` is complete via `bundle.json`, `Report` mode, command records, git metadata, redacted environment summaries, repeated-bundle-shape regression coverage, and Windows PowerShell JSON compatibility in `scripts/harness.ps1`.
+  - Remaining scope: `T11`, `T12`, `T13`, `T15`, and `T16`
 
 ### Sprint 31: Tutor Launch / Shell Realignment Cleanup (2026-03-13)
 - [x] Claim scope: create the durable track, make the Brain launch + `/tutor` shell + thin Tutor start/resume model the only active planning path, and explicitly demote wizard-era plans/docs to historical status.
