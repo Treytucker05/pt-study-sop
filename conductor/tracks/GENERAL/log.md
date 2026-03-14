@@ -2204,6 +2204,21 @@ ubric) when stage is PRIME.
   - extracted Week 8 to-do bullets from the source text file
 - Cleaned the live Week 8 vault folder so only the canonical files remain:
   - `Learning Objectives & To Do.md`
+
+## 2026-03-08 — Full repository audit artifact
+
+- Completed a full code audit of the current repository with focus on Tutor backend, OpenAI/Codex OAuth and streaming paths, dashboard chat UI, storage layer, and Obsidian/Anki integrations.
+- Added `docs/root/AUDIT_REPO_2026-03-08.md` as a permanent audit artifact listing inspected components.
+- Delivered detailed implementation-level findings, integration points, and a ranked gap analysis in the audit response.
+
+## 2026-03-08 — Audit artifact reformatted as single copyable window
+
+- Replaced `docs/root/AUDIT_REPO_2026-03-08.md` with a full single-block "copy window" version formatted as an ASCII-style chart.
+- Included the complete requested audit content in that block:
+  - repo structure
+  - backend/frontend/data/auth/Obsidian/Anki findings
+  - integration points
+  - ranked gap analysis
   - `_Map of Contents.md`
 - Validation:
   - `pytest brain/tests/test_frontmatter.py brain/tests/test_tutor_obsidian_io.py -q` -> `10 passed`
