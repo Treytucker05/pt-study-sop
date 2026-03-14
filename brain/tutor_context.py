@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import logging
 import json
+import os
 import sqlite3
 from pathlib import Path
 from typing import Any, Literal, Optional
@@ -36,6 +37,11 @@ _course_map_cache: Optional[str] = None
 ContextDepth = Literal["auto", "none", "notes", "materials"]
 
 FULL_CONTENT_BUDGET = 200_000  # ~50K tokens — safe for 128K+ context models
+
+
+def _vault_context_disabled() -> bool:
+    value = str(os.environ.get("PT_HARNESS_DISABLE_VAULT_CONTEXT") or "").strip().lower()
+    return value in {"1", "true", "yes", "on"}
 
 
 def _expand_linked_material_ids(material_ids: Optional[list[int]]) -> Optional[list[int]]:
@@ -201,6 +207,8 @@ def build_context(
         dict with keys: materials, notes, vault_state, course_map, debug
     """
     debug: dict[str, Any] = {"depth": depth}
+    vault_context_disabled = _vault_context_disabled()
+    debug["vault_context_disabled"] = vault_context_disabled
     result: dict[str, Any] = {
         "materials": "",
         "notes": "",
@@ -223,15 +231,19 @@ def build_context(
         )
 
     if depth in ("auto", "notes"):
-        result["notes"] = _fetch_notes(
-            query,
-            module_prefix=module_prefix,
-            debug=debug,
-        )
-        result["vault_state"] = _fetch_vault_state(
-            course_id=course_id,
-            topic=module_prefix or "",
-        )
+        if vault_context_disabled:
+            debug["notes_skipped"] = "PT_HARNESS_DISABLE_VAULT_CONTEXT"
+            debug["vault_state_skipped"] = "PT_HARNESS_DISABLE_VAULT_CONTEXT"
+        else:
+            result["notes"] = _fetch_notes(
+                query,
+                module_prefix=module_prefix,
+                debug=debug,
+            )
+            result["vault_state"] = _fetch_vault_state(
+                course_id=course_id,
+                topic=module_prefix or "",
+            )
 
     return result
 

@@ -1,0 +1,65 @@
+{
+  "scenario": "tutor-hermetic-smoke",
+  "course": {
+    "id": 4201,
+    "name": "Harness Hermetic Course",
+    "code": "HARN-4201",
+    "term": "Spring 2026"
+  },
+  "materials": [
+    {
+      "id": 9101,
+      "title": "Signal Cascade Overview",
+      "source_path": "Fixtures/Harness/signal-cascade.md",
+      "file_type": "md",
+      "content": "Signal transduction begins at the membrane receptor and proceeds through intracellular messengers."
+    },
+    {
+      "id": 9102,
+      "title": "Feedback Loops",
+      "source_path": "Fixtures/Harness/feedback-loops.md",
+      "file_type": "md",
+      "content": "Negative feedback stabilizes the pathway while positive feedback amplifies selected transitions."
+    }
+  ],
+  "session": {
+    "mode": "Core",
+    "topic": "Harness Hermetic Session",
+    "content_filter": {
+      "material_ids": [
+        9101,
+        9102
+      ],
+      "accuracy_profile": "strict"
+    }
+  },
+  "turns": [
+    {
+      "message": "How many files are you using?",
+      "expect_substrings": [
+        "You selected 2 files for this turn."
+      ],
+      "expect_retrieval_debug": {
+        "material_ids_count": 2,
+        "selected_material_count": 2,
+        "accuracy_profile": "strict"
+      }
+    },
+    {
+      "message": "List selected files.",
+      "expect_substrings": [
+        "Signal Cascade Overview",
+        "Feedback Loops"
+      ],
+      "expect_retrieval_debug": {
+        "material_ids_count": 2,
+        "selected_material_count": 2,
+        "accuracy_profile": "strict"
+      }
+    }
+  ],
+  "expect": {
+    "material_count": 2,
+    "turn_count": 2
+  }
+}

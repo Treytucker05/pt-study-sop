@@ -47,13 +47,17 @@ Skip this section only for backend-only changes under `brain/`.
 - System rules: `sop/library/` (canonical)
 - Tutor embeddings default to Gemini Embedding 2 preview via `GEMINI_API_KEY`, `TUTOR_RAG_EMBEDDING_PROVIDER=gemini`, and `TUTOR_RAG_GEMINI_EMBEDDING_MODEL=gemini-embedding-2-preview`
 
-## Harness Bootstrap
-Use the repo-local harness bootstrap to verify dependency, env-template, and fixture prerequisites before running later harness tasks.
+## Harness Commands
+Use the repo-local harness commands to validate prerequisites, launch isolated app instances, and run fixture-backed harness scenarios.
 
 - Hermetic bootstrap:
   - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Bootstrap -Profile Hermetic -Json`
 - Live bootstrap:
   - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Bootstrap -Profile Live -Json`
+- Hermetic run:
+  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Run -Profile Hermetic -Port 5127 -DataRoot $env:TEMP\pt-harness-data -ArtifactRoot $env:TEMP\pt-harness-artifacts -NoBrowser -SkipUiBuild`
+- First hermetic Tutor scenario:
+  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Eval -Scenario tutor-hermetic-smoke -ArtifactRoot $env:TEMP\pt-harness-artifacts -Json`
 
 Current validator checks:
 - Python and Node/npm availability
@@ -61,6 +65,10 @@ Current validator checks:
 - `dashboard_rebuild/.env.example`
 - `brain/.env` for `Live`
 - `brain/tests/fixtures/harness/manifest.json` for `Hermetic`
+
+Hermetic Tutor scenario notes:
+- `tutor-hermetic-smoke` seeds an isolated course + material set directly into the harness DB, then exercises Tutor materials, session create, two provider-free turn shortcuts, restore, summary, end, and delete over HTTP.
+- Hermetic runs disable Obsidian note/vault retrieval through `PT_HARNESS_DISABLE_VAULT_CONTEXT=1`, so the scenario does not depend on vault state or provider credentials.
 
 ## Contracts (Do Not Drift)
 - WRAP schema: `docs/contracts/wrap_schema.md`

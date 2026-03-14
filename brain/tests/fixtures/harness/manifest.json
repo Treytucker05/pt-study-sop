@@ -1,8 +1,16 @@
 {
-  "version": 1,
+  "version": 2,
   "profile": "Hermetic",
   "scenarios": [
-    "tutor-hermetic-smoke"
+    {
+      "id": "tutor-hermetic-smoke",
+      "fixture_file": "tutor-hermetic-smoke.json",
+      "description": "Seeds an isolated Tutor course and two scoped materials, then exercises a provider-free Tutor session over HTTP.",
+      "requires_run_metadata": [
+        "base_url",
+        "db_path"
+      ]
+    }
   ],
-  "notes": "Bootstrap-only placeholder fixture root for the harness validator. T8 expands this bundle into a real hermetic Tutor scenario."
+  "notes": "The first real hermetic harness scenario uses material-count and material-list shortcuts so it does not require Obsidian state or live provider credentials."
 }

@@ -1,6 +1,6 @@
 # Track: Trey Agent Repo Readiness
 
-**Status:** Active; T1-T7 complete, T8 next
+**Status:** Active; T1-T8 complete, T9 next
 **Created:** 2026-03-13
 
 ## Documents
@@ -14,6 +14,7 @@
 - [Cross-Agent Compatibility Matrix](./contract-agent-compatibility-matrix.md)
 - [T6 Isolated Startup Notes](./t6-isolated-startup.md)
 - [T7 Bootstrap Validator](./t7-bootstrap-validator.md)
+- [T8 Hermetic Tutor Smoke](./t8-hermetic-tutor-smoke.md)
 
 ## Scope
 

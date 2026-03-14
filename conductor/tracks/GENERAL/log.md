@@ -2,6 +2,22 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-14 - Trey Agent Repo Readiness T8 hermetic Tutor smoke
+
+- Implemented the first harness `Eval` scenario in `scripts/harness.ps1` for `tutor-hermetic-smoke`.
+- Added the fixture-backed smoke runner in `scripts/tutor_hermetic_smoke.py`.
+- Expanded `brain/tests/fixtures/harness/manifest.json` from a placeholder into a real scenario manifest and added `brain/tests/fixtures/harness/tutor-hermetic-smoke.json`.
+- Added `brain/tests/test_harness_eval.py` to exercise `harness.ps1 -Mode Eval -Scenario tutor-hermetic-smoke` against an isolated Flask app with synthetic `run.json`.
+- Hermetic context now disables Obsidian note/vault retrieval through `PT_HARNESS_DISABLE_VAULT_CONTEXT=1` in:
+  - `scripts/harness.ps1`
+  - `brain/tutor_context.py`
+- Updated active docs and track evidence in:
+  - `docs/root/GUIDE_DEV.md`
+  - `scripts/README.md`
+  - `conductor/tracks/trey-agent-repo-readiness_20260313/`
+- Next track task:
+  - `T9` standardize the machine-readable harness artifact bundle
+
 ## 2026-03-14 - Trey Agent Repo Readiness T7 bootstrap validator
 
 - Implemented `Bootstrap` mode in `scripts/harness.ps1` so the repo now has a single repo-local validator command for harness prerequisites.

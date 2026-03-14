@@ -6,6 +6,7 @@ System context: scripts support CP-MSS v1.0 operations and governance.
 
 ## Common entries
 - `generate_architecture_dump.ps1` - Regenerates `docs/root/ARCHITECTURE_CONTEXT.md`.
+- `harness.ps1` - Repo-local harness entrypoint. Supports `Bootstrap`, isolated `Run`, and the first `Eval` scenario (`tutor-hermetic-smoke`).
 - `release_check.py` - Runs release checks.
 - `sync_agent_config.ps1` - Repo drift check for agent instruction entrypoints and tool stubs.
 - `sync_ai_config.ps1` - Deprecated (use `sync_agent_config.ps1`).
@@ -24,6 +25,27 @@ System context: scripts support CP-MSS v1.0 operations and governance.
 ## Notes
 - Run from repo root unless the script states otherwise.
 - Check local/global agent permission policy files before running new commands (for example `.claude/permissions.json` if present and `C:/Users/treyt/.claude/CLAUDE.md` guidance).
+
+## Harness Quickstart
+```powershell
+# Validate hermetic prerequisites
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Bootstrap -Profile Hermetic -Json
+
+# Start one isolated harness run
+$artifact = Join-Path $env:TEMP "pt-harness-artifacts"
+$data = Join-Path $env:TEMP "pt-harness-data"
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Run -Profile Hermetic -Port 5127 -DataRoot $data -ArtifactRoot $artifact -NoBrowser -SkipUiBuild
+
+# Run the first fixture-backed Tutor scenario against that isolated run
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Eval -Scenario tutor-hermetic-smoke -ArtifactRoot $artifact -Json
+
+# Stop the isolated server when you are done
+$run = Get-Content -Raw (Join-Path $artifact "run.json") | ConvertFrom-Json
+Stop-Process -Id $run.server_pid -Force
+```
+
+Hermetic note:
+- Hermetic runs set `PT_HARNESS_DISABLE_VAULT_CONTEXT=1`, so Tutor turn context skips Obsidian note/vault retrieval and does not depend on personal vault state.
 
 ## Parallel Agent Quickstart
 ```powershell

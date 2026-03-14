@@ -11,11 +11,19 @@ param(
 
     [int]$Port,
 
+    [string]$Scenario,
+
+    [string]$BaseUrl,
+
     [string]$DataRoot,
 
     [string]$ArtifactRoot,
 
     [string]$FixtureRoot,
+
+    [string]$RunId,
+
+    [string]$InputRoot,
 
     [switch]$NoBrowser,
 
@@ -47,6 +55,13 @@ $HarnessExitCodes = @{
     "bootstrap.missing_fixture_assets" = 25
     "bootstrap.missing_harness_run_args" = 26
     "bootstrap.missing_repo_root" = 27
+    "eval.missing_scenario" = 30
+    "eval.missing_artifact_root" = 31
+    "eval.unknown_scenario" = 32
+    "eval.missing_run_metadata" = 33
+    "eval.missing_base_url" = 34
+    "eval.missing_db_path" = 35
+    "eval.command_failed" = 36
 }
 
 function Resolve-HarnessPath {
@@ -384,6 +399,7 @@ function Invoke-HarnessRun {
         PT_BRAIN_HOST = "127.0.0.1"
         PT_BRAIN_PORT = [string]$Port
         PT_BRAIN_RUN_PROFILE = $Profile
+        PT_HARNESS_DISABLE_VAULT_CONTEXT = $(if ($Profile -eq "Hermetic") { "1" } else { "0" })
     }
 
     Invoke-WithinEnvironment -Overrides $runEnvironment -Script {
@@ -453,12 +469,100 @@ function Invoke-HarnessRun {
     Write-Host "[OK] Run metadata: $(Join-Path $resolvedArtifactRoot "run.json")"
 }
 
+function Get-HarnessRunMetadata {
+    param([string]$ResolvedArtifactRoot)
+
+    $runMetadataPath = Join-Path $ResolvedArtifactRoot "run.json"
+    if (-not (Test-Path $runMetadataPath)) {
+        return $null
+    }
+
+    return Get-Content -Raw -Path $runMetadataPath | ConvertFrom-Json -AsHashtable
+}
+
+function Invoke-HarnessEval {
+    if (-not $Scenario) {
+        throw "Eval mode requires -Scenario."
+    }
+    if (-not $ArtifactRoot) {
+        throw "Eval mode requires -ArtifactRoot."
+    }
+
+    $python = Get-PythonLaunch
+    $resolvedArtifactRoot = (Resolve-Path -Path (New-Item -ItemType Directory -Force -Path $ArtifactRoot)).Path
+    $scenarioArtifactRoot = (Resolve-Path -Path (New-Item -ItemType Directory -Force -Path (Join-Path $resolvedArtifactRoot "scenarios\$Scenario"))).Path
+    $runMetadata = Get-HarnessRunMetadata -ResolvedArtifactRoot $resolvedArtifactRoot
+    $resolvedFixtureRoot = Resolve-HarnessPath $(if ($FixtureRoot) { $FixtureRoot } else { $DefaultFixtureRoot })
+
+    switch ($Scenario) {
+        "tutor-hermetic-smoke" {
+            if (-not $runMetadata) {
+                throw "Eval scenario '$Scenario' requires ArtifactRoot/run.json from a prior harness Run invocation."
+            }
+
+            $effectiveBaseUrl = if ($BaseUrl) { $BaseUrl } elseif ($runMetadata.base_url) { [string]$runMetadata.base_url } else { $null }
+            if (-not $effectiveBaseUrl) {
+                throw "Eval scenario '$Scenario' requires -BaseUrl or ArtifactRoot/run.json with base_url."
+            }
+
+            $dbPath = if ($runMetadata.db_path) { [string]$runMetadata.db_path } else { $null }
+            if (-not $dbPath) {
+                throw "Eval scenario '$Scenario' requires ArtifactRoot/run.json with db_path."
+            }
+
+            $scriptPath = Join-Path $RepoRoot "scripts\tutor_hermetic_smoke.py"
+            if (-not (Test-Path $scriptPath)) {
+                throw "Could not find Tutor hermetic smoke script at $scriptPath."
+            }
+
+            $scriptArgs = @(
+                $scriptPath,
+                "--scenario",
+                $Scenario,
+                "--base-url",
+                $effectiveBaseUrl,
+                "--db-path",
+                $dbPath,
+                "--fixture-root",
+                $resolvedFixtureRoot,
+                "--artifact-root",
+                $scenarioArtifactRoot,
+                "--json"
+            )
+
+            $scriptOutput = & $python.FilePath @($python.Prefix + $scriptArgs) 2>&1
+            $scriptText = ($scriptOutput | Out-String).Trim()
+            if ($LASTEXITCODE -ne 0) {
+                throw "Eval scenario '$Scenario' failed with exit code $LASTEXITCODE.`n$scriptText"
+            }
+            if (-not $scriptText) {
+                throw "Eval scenario '$Scenario' did not emit JSON output."
+            }
+
+            if ($Json) {
+                Write-Output $scriptText
+            } else {
+                $payload = $scriptText | ConvertFrom-Json -AsHashtable
+                Write-Host "[OK] Harness eval passed for scenario '$Scenario'."
+                Write-Host "[OK] Result artifact: $(Join-Path $scenarioArtifactRoot "result.json")"
+                Write-Host "[OK] Turn count: $($payload.summary.turn_count)"
+            }
+        }
+        default {
+            throw "Unknown eval scenario '$Scenario'."
+        }
+    }
+}
+
 switch ($Mode) {
     "Bootstrap" {
         Invoke-HarnessBootstrap
     }
     "Run" {
         Invoke-HarnessRun
+    }
+    "Eval" {
+        Invoke-HarnessEval
     }
     default {
         throw "Mode '$Mode' is not implemented yet. T6 only ships Run mode."
