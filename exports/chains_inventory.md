@@ -18,4 +18,5 @@
 | C-RS-001 | Review Sprint | M-PRE-002, M-REF-003, M-REF-004, M-RET-002, M-INT-002, M-OVR-001 | sop/library/chains/C-RS-001.yaml |
 | C-SW-001 | SWEEP | M-PRE-005, M-ENC-009, M-ENC-010, M-REF-003, M-REF-004, M-RET-002, M-OVR-002 | sop/library/chains/C-SW-001.yaml |
 | C-TRY-001 | Top-Down Narrative Mastery | M-PRE-004, M-PRE-011, M-CAL-004, M-ENC-001, M-INT-001, M-REF-003, M-RET-001, M-ENC-004, M-OVR-004 | sop/library/chains/C-TRY-001.yaml |
+| C-TRY-002 | Top-Down Forward Progress | M-PRE-004, M-PRE-011, M-CAL-001, M-REF-003, M-ENC-001, M-INT-001, M-ENC-009, M-ENC-004, M-OVR-004 | sop/library/chains/C-TRY-002.yaml |
 | C-VE-001 | Visual Encoding | M-PRE-001, M-ENC-009, M-ENC-010, M-REF-003, M-REF-004, M-RET-001, M-OVR-001 | sop/library/chains/C-VE-001.yaml |

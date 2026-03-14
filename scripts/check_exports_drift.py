@@ -31,6 +31,7 @@ ROOT = Path(__file__).resolve().parents[1]
 METHODS_DIR = ROOT / "sop" / "library" / "methods"
 CHAINS_DIR = ROOT / "sop" / "library" / "chains"
 EXPORTS_DIR = ROOT / "exports"
+CHAIN_FILE_GLOB = "C-*.yaml"
 
 METHODS_MD = EXPORTS_DIR / "methods_inventory.md"
 METHODS_CSV = EXPORTS_DIR / "methods_inventory.csv"
@@ -188,7 +189,7 @@ def build_expected() -> dict[str, Any]:
 
     chains: list[dict[str, Any]] = []
     unknown_ids: list[dict[str, Any]] = []
-    chain_files = sorted(CHAINS_DIR.glob("*.yaml"))
+    chain_files = sorted(CHAINS_DIR.glob(CHAIN_FILE_GLOB))
     for path in chain_files:
         data, text = read_yaml(path)
         chain_id = str(data.get("id", ""))

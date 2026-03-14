@@ -43,7 +43,7 @@ Each method block represents a single study activity.
 2. **CALIBRATE** — Diagnostic micro-assessments to identify weaknesses before encoding (e.g., micro precheck, confidence tagging, priority set, story confidence tag)
 3. **ENCODE** — Attach meaning to material through active processing (e.g., kwik hook, seed-lock generation, draw-label, teach-back, why-chain, self-explanation protocol, mechanism trace, concept map, comparison table, process flowchart, clinical decision tree, memory palace, chain linking, analogy bridge, clinical application, cross-topic link, side-by-side comparison, case walkthrough, illness script builder)
 4. **REFERENCE** — Generate target cues and cheat sheets for retrieval (e.g., error autopsy, mastery loop, one-page anchor, question bank seed)
-5. **RETRIEVE** — Test recall with adversarial near-miss and timed sprints (e.g., free recall blurt, sprint quiz, fill-in-blank, mixed practice, variable retrieval, adversarial drill, timed sprint sets)
+5. **RETRIEVE** — Test recall with adversarial near-miss and timed sprints (e.g., timed brain dump, sprint quiz, fill-in-blank, mixed practice, variable retrieval, adversarial drill, timed sprint sets)
 6. **OVERLEARN** — Close loop, capture artifacts, Anki, drill sheets (e.g., exit ticket, anki card draft, drill sheet builder, post-learn brain dump)
 
 **Evidence citation format:** `Author (Year); brief finding`
@@ -109,7 +109,7 @@ Each method block represents a single study activity.
 ### Retrieve (7 blocks)
 | Block | Duration | Energy | Evidence |
 |-------|----------|--------|----------|
-| Free Recall Blurt | 5 min | medium | Roediger & Karpicke (2006); testing effect — retrieval practice > re-reading for long-term retention |
+| Timed Brain Dump | 5 min | medium | Roediger & Karpicke (2006); testing effect — retrieval practice > re-reading for long-term retention |
 | Sprint Quiz | 5 min | medium | McDaniel et al. (2007); quiz-based retrieval enhances later exam performance |
 | Fill-in-Blank | 5 min | low | Dunlosky et al. (2013); cloze-based retrieval is effective for factual knowledge |
 | Mixed Practice | 10 min | high | Rohrer et al. (2015); interleaved practice improves discrimination and transfer |
@@ -127,7 +127,7 @@ Each method block represents a single study activity.
 
 ---
 
-## §4 Template Chains (19 chains)
+## §4 Template Chains (20 chains)
 
 ### Control Plane Chains (CP-MSS v1.0)
 
@@ -137,7 +137,7 @@ Each method block represents a single study activity.
 **Use for:** Standard first-exposure chain for medium-energy sessions targeting classification and mechanism modes. Full PEIRRO cycle with structural extraction, calibration, comparison encoding, reference generation, and timed retrieval sprint.
 
 #### C-FE-MIN. First Exposure: Minimal
-**Blocks:** Learning Objectives Primer → Structural Extraction → One-Page Anchor → Free Recall Blurt → Exit Ticket
+**Blocks:** Learning Objectives Primer → Structural Extraction → One-Page Anchor → Timed Brain Dump → Exit Ticket
 **Context:** low energy, 20 min
 **Use for:** Minimal first-exposure chain for low-energy sessions targeting definition and recognition modes. Covers structural extraction, anchor generation, free recall, and exit wrap-up.
 
@@ -149,7 +149,7 @@ Each method block represents a single study activity.
 ### Core Chains
 
 #### 1. First Exposure (Core)
-**Blocks:** Learning Objectives Primer → Structural Extraction → Syntopical Big-Picture Synthesis → Micro Precheck → Confidence Tagging → Priority Set → KWIK Hook → One-Page Anchor → Question Bank Seed → Free Recall Blurt → Adversarial Drill → Timed Sprint Sets → Anki Card Draft → Drill Sheet Builder
+**Blocks:** Learning Objectives Primer → Structural Extraction → Syntopical Big-Picture Synthesis → Micro Precheck → Confidence Tagging → Priority Set → KWIK Hook → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Adversarial Drill → Timed Sprint Sets → Anki Card Draft → Drill Sheet Builder
 **Context:** first exposure, high energy, 55 min
 **Use for:** Control-plane first exposure flow. PRIME → CALIBRATE → ENCODE → REFERENCE → RETRIEVE → OVERLEARN with deterministic Priority Set routing.
 **Note:** Retrieval (Free Recall) comes before generative encoding (KWIK Hook) per Roelle et al. (2022) — lower cognitive load, higher gains.
@@ -165,7 +165,7 @@ Each method block represents a single study activity.
 **Use for:** Minimal time investment. Prepare → Retrieve → Overlearn. Good for spacing reviews.
 
 #### 4. Anatomy Deep Dive
-**Blocks:** Prior Knowledge Scan → Structural Skimming + Pillar Mapping → Draw-Label → One-Page Anchor → Question Bank Seed → Free Recall Blurt → Anki Card Draft
+**Blocks:** Prior Knowledge Scan → Structural Skimming + Pillar Mapping → Draw-Label → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Anki Card Draft
 **Context:** Anatomy, first exposure, high energy, 40 min
 **Use for:** Anatomy-focused chain with drawing. Prepare → Encode (Draw-Label) → Retrieve → Overlearn.
 
@@ -185,36 +185,36 @@ Each method block represents a single study activity.
 **Use for:** Build clinical reasoning chains. Prepare → Interrogate → Refine → Overlearn.
 
 #### 8. Mastery Review
-**Blocks:** One-Page Anchor → Question Bank Seed → Free Recall Blurt → Error Autopsy → Mastery Loop → Anki Card Draft
+**Blocks:** One-Page Anchor → Question Bank Seed → Timed Brain Dump → Error Autopsy → Mastery Loop → Anki Card Draft
 **Context:** consolidation, medium energy, 30 min
 **Use for:** Deep consolidation with successive relearning. Retrieve → Refine → Overlearn.
 
 ### Intake-Focused Chains
 
 #### 9. Dense Anatomy Intake
-**Blocks:** Pre-Test → Draw-Label → One-Page Anchor → Question Bank Seed → Free Recall Blurt → KWIK Hook → Anki Card Draft
+**Blocks:** Pre-Test → Draw-Label → One-Page Anchor → Question Bank Seed → Timed Brain Dump → KWIK Hook → Anki Card Draft
 **Context:** Anatomy, first exposure, high energy, 40 min
 **Use for:** High-detail anatomy first exposure. Pre-Test primes encoding, Draw-Label for spatial memory, retrieval before generative steps.
 
 #### 10. Pathophysiology Intake
-**Blocks:** Pre-Test → Self-Explanation Protocol → Skeleton Concept Hierarchy → One-Page Anchor → Question Bank Seed → Free Recall Blurt → Error Autopsy
+**Blocks:** Pre-Test → Self-Explanation Protocol → Skeleton Concept Hierarchy → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Error Autopsy
 **Context:** Pathology, first exposure, high energy, 45 min
 **Use for:** Pathology first exposure with mechanism tracing. Pre-Test → Self-Explanation → Concept Cluster → Retrieve → Refine.
 
 #### 11. Clinical Reasoning Intake
-**Blocks:** Pre-Test → Illness Script Builder → Side-by-Side Comparison → One-Page Anchor → Question Bank Seed → Free Recall Blurt → Anki Card Draft
+**Blocks:** Pre-Test → Illness Script Builder → Side-by-Side Comparison → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Anki Card Draft
 **Context:** Clinical, first exposure, high energy, 45 min
 **Use for:** Clinical first exposure with illness scripts. Pre-Test → Illness Script → Compare → Retrieve → Overlearn.
 
 #### 12. Quick First Exposure
-**Blocks:** Pre-Test → Hierarchical Advance Organizer → One-Page Anchor → Question Bank Seed → Free Recall Blurt → Exit Ticket
+**Blocks:** Pre-Test → Hierarchical Advance Organizer → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Exit Ticket
 **Context:** first exposure, medium energy, 20 min
 **Use for:** Minimal intake chain when time is limited. Pre-Test → AI Skeleton → Retrieve → Overlearn.
 
 ### Visualization Chains
 
 #### 13. Visual Encoding
-**Blocks:** Brain Dump → Concept Map → Comparison Table → One-Page Anchor → Question Bank Seed → Free Recall Blurt → Exit Ticket
+**Blocks:** Brain Dump → Concept Map → Comparison Table → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Exit Ticket
 **Context:** first exposure, high energy, 40 min
 **Use for:** Visualization-first encoding for topics with confusable concepts. Build visual representations before retrieval.
 

@@ -20,6 +20,7 @@ META_DIR = LIB_DIR / "meta"
 RUNTIME_DIR = SOP_DIR / "runtime"
 UPLOAD_DIR = RUNTIME_DIR / "knowledge_upload"
 GOLDEN_DIR = SOP_DIR / "tests" / "golden"
+CHAIN_FILE_GLOB = "C-*.yaml"
 
 
 def rel(path: Path) -> str:
@@ -91,19 +92,24 @@ def join_sections(text: str, headings: Iterable[str]) -> str:
     return "\n\n".join(extract_section(text, heading) for heading in headings)
 
 
+def has_heading(text: str, heading: str) -> bool:
+    text = normalize(text)
+    return any(line.strip() == heading for line in text.split("\n"))
+
+
 def find_wrap_heading(text: str) -> str:
     text = normalize(text)
     lines = text.split("\n")
-    prefix = "## M6: Wrap"
+    prefixes = ("## Phase 3: Wrap", "## M6: Wrap")
     for line in lines:
         stripped = line.strip()
-        if stripped.startswith(prefix):
+        if any(stripped.startswith(prefix) for prefix in prefixes):
             print(f"Wrap section found: {stripped}")
             return stripped
     raise ValueError(
-        "M6 Wrap heading not found. Acceptable headings: "
-        "'## M6: Wrap (Close and Schedule)', '## M6: Wrap', "
-        "or any heading starting with '## M6: Wrap'."
+        "Wrap heading not found. Acceptable headings include "
+        "'## Phase 3: Wrap (Close and Schedule)', '## M6: Wrap (Close and Schedule)', "
+        "'## M6: Wrap', or any heading starting with '## Phase 3: Wrap' / '## M6: Wrap'."
     )
 
 
@@ -192,18 +198,27 @@ def build_index_and_rules(core_rules: str, evidence: str) -> str:
 
 
 def build_modules(session_flow: str, modes: str) -> str:
-    wrap_heading = find_wrap_heading(session_flow)
-    headings = [
-        "## 60-Second Quick Start",
-        "## M0: Planning",
-        "## M1: Entry",
-        "## M2: Prime (Map the Territory — No Scoring)",
-        "## M2.5: Calibrate (Diagnostic, Not Testing)",
-        "## M3: Encode (Attach Meaning)",
-        "## M4: Build (Practice and Transfer)",
-        wrap_heading,
-        "## Quick Reference: Session Flow",
-    ]
+    if has_heading(session_flow, "## Phase 1: Tutor Wizard (Session Setup)"):
+        headings = [
+            "## 60-Second Quick Start",
+            "## Phase 1: Tutor Wizard (Session Setup)",
+            "## Phase 2: Chain Execution",
+            find_wrap_heading(session_flow),
+            "## Quick Reference: Session Flow",
+        ]
+    else:
+        wrap_heading = find_wrap_heading(session_flow)
+        headings = [
+            "## 60-Second Quick Start",
+            "## M0: Planning",
+            "## M1: Entry",
+            "## M2: Prime (Map the Territory — No Scoring)",
+            "## M2.5: Calibrate (Diagnostic, Not Testing)",
+            "## M3: Encode (Attach Meaning)",
+            "## M4: Build (Practice and Transfer)",
+            wrap_heading,
+            "## Quick Reference: Session Flow",
+        ]
     session_extract = join_sections(session_flow, headings)
     return (
         render_source_block(LIB_DIR / "05-session-flow.md", session_extract)
@@ -489,7 +504,7 @@ def _load_yaml_methods() -> list[dict]:
 def _load_yaml_chains() -> list[dict]:
     """Load all chain YAML files sorted by ID."""
     chains = []
-    for path in sorted(CHAINS_DIR.glob("*.yaml")):
+    for path in sorted(CHAINS_DIR.glob(CHAIN_FILE_GLOB)):
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
         if data:
             chains.append(data)

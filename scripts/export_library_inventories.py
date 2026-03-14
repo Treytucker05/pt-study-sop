@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 METHODS_DIR = ROOT / "sop" / "library" / "methods"
 CHAINS_DIR = ROOT / "sop" / "library" / "chains"
 EXPORTS_DIR = ROOT / "exports"
+CHAIN_FILE_GLOB = "C-*.yaml"
 
 EXPORTS_DIR.mkdir(exist_ok=True)
 
@@ -190,7 +191,7 @@ for row in methods:
     )
 methods_md_path.write_text("\n".join(md_lines) + "\n", encoding="utf-8")
 
-chain_files = sorted(CHAINS_DIR.glob("*.yaml"))
+chain_files = sorted(CHAINS_DIR.glob(CHAIN_FILE_GLOB))
 chains = []
 chain_catalog = []
 chain_id_map = {}
