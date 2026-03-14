@@ -11,6 +11,7 @@ All LLM tools should treat `C:\pt-study-sop\AGENTS.md` as the master project ins
 - Repo-local Claude commands: `.claude/commands/*`
 - Global Claude defaults: `C:\Users\treyt\.claude\CLAUDE.md`, `C:\Users\treyt\.claude\rules\*`, `C:\Users\treyt\.claude\agents\*`
 - Global Codex defaults: `C:\Users\treyt\.codex\AGENTS.md`, `C:\Users\treyt\.codex\config.toml`, `C:\Users\treyt\.codex\agents\*.toml`, `C:\Users\treyt\.codex\rules\default.rules`
+- Global Gemini defaults: `C:\Users\treyt\.gemini\GEMINI.md`, `C:\Users\treyt\.gemini\settings.json`
 - Multi-agent coordination board: `docs/root/AGENT_BOARD.md`
 
 ## Coordination Surfaces
@@ -20,6 +21,40 @@ All LLM tools should treat `C:\pt-study-sop\AGENTS.md` as the master project ins
 - `docs/root/SKILLS_INVENTORY.md`: grouped view of the shared skill ecosystem and cleanup buckets
 - `conductor/tracks.md`: active/completed track registry
 - `conductor/tracks/GENERAL/log.md`: chronological audit trail
+
+## Shared Skill Topology (2026-03-13)
+
+Canonical shared upstream:
+
+- `C:\Users\treyt\.agents\skills`
+
+Supported active projection roots:
+
+- `C:\Users\treyt\.codex\skills`
+- `C:\Users\treyt\.claude\skills`
+- `C:\Users\treyt\.cursor\skills`
+- `C:\Users\treyt\.opencode\skills`
+- `C:\Users\treyt\.gemini\skills`
+- `C:\Users\treyt\.antigravity\skills`
+
+Documented local exceptions:
+
+- Codex: `.system`, `agent-skills`, `dev-browser`
+- Claude: `continuous-learning`, `learned`
+- Cursor: `C:\Users\treyt\.cursor\skills-cursor`
+- OpenCode: `agent-strategy`, `ensure-agent-workflow`
+
+Excluded from shared-skill sync:
+
+- `C:\Users\treyt\.kimi` (config-only)
+- `C:\Users\treyt\.conduit` (config-only)
+- `C:\Users\treyt\.gemini\antigravity\skills`
+- `C:\Users\treyt\.gemini\antigravity\global_skills`
+
+Validation commands for this topology:
+
+- `powershell -ExecutionPolicy Bypass -File scripts/sync_agent_skills.ps1 -Mode Check`
+- `powershell -ExecutionPolicy Bypass -File scripts/test_sync_agent_skills_fixture.ps1`
 
 ## Resolution Order
 
@@ -41,7 +76,7 @@ Files under `.claude/agents/*` are allowed to define role behavior, but they mus
 
 ### 5. Global defaults are cross-project only
 
-`C:\Users\treyt\.claude\*` and `C:\Users\treyt\.codex\*` are reusable defaults. They must defer to the repo canon whenever this project is active.
+`C:\Users\treyt\.claude\*`, `C:\Users\treyt\.codex\*`, and `C:\Users\treyt\.gemini\*` are reusable defaults. They must defer to the repo canon whenever this project is active.
 
 When those fallback defaults do apply, they should still start from user intent first: find the best way to accomplish what the user wants, present tradeoffs without substituting agent preference, and avoid assuming the user is unaware of the tradeoffs they are choosing.
 
@@ -55,7 +90,7 @@ If a repo-local agent name overlaps with a global agent name, the repo-local one
 2. Nearest nested/module `AGENTS.md` that applies to the current file or task scope
 3. Repo compatibility files only when a tool requires them (`CLAUDE.md`, `.claude/AGENTS.md`, `.claude/CLAUDE.md`)
 4. Explicitly invoked repo-local agents under `.claude/agents/*`
-5. Tool-specific global defaults only as fallback/runtime surfaces (`C:\Users\treyt\.claude\CLAUDE.md`, `C:\Users\treyt\.claude\rules\*`, `C:\Users\treyt\.codex\AGENTS.md`, `C:\Users\treyt\.codex\config.toml`)
+5. Tool-specific global defaults only as fallback/runtime surfaces (`C:\Users\treyt\.claude\CLAUDE.md`, `C:\Users\treyt\.claude\rules\*`, `C:\Users\treyt\.codex\AGENTS.md`, `C:\Users\treyt\.codex\config.toml`, `C:\Users\treyt\.gemini\GEMINI.md`, `C:\Users\treyt\.gemini\settings.json`)
 6. Global reusable agents (`C:\Users\treyt\.claude\agents\*`)
 
 Rule:
@@ -85,6 +120,8 @@ Collision rule:
 | `C:\Users\treyt\.codex\AGENTS.md` | Global Codex defaults | No |
 | `C:\Users\treyt\.codex\agents\*.toml` | Codex role runtime settings | No policy text |
 | `C:\Users\treyt\.codex\rules\default.rules` | Global Codex permission/rule surface | No project policy |
+| `C:\Users\treyt\.gemini\GEMINI.md` | Global Gemini defaults | No |
+| `C:\Users\treyt\.gemini\settings.json` | Gemini runtime settings | No project policy |
 
 ## Safe Change Rules
 
@@ -147,13 +184,25 @@ Inventory result on this machine:
   - Has one global defaults file: `AGENTS.md`
   - Has runtime role configs in `agents\*.toml`
   - Does **not** have a repeated markdown agent catalog like Claude, so there was no equivalent compression pass to apply there
+- `C:\Users\treyt\.gemini`
+  - Has an actively consumed global fallback file: `GEMINI.md`
+  - Has runtime settings in `settings.json`
+  - Has a supported shared-skill projection root at `skills\`
+  - Carries an embedded `antigravity\{skills,global_skills}` subtree that is quarantined and excluded from the active shared-skill mirror
 - `C:\Users\treyt\.cursor`
-  - Exposes skills, plugins, plans, and worktrees
+  - Exposes a supported shared-skill projection root at `skills\`
+  - Exposes a Cursor-local skill root at `skills-cursor\`
   - No comparable home-directory agent-role markdown catalog was found for this cleanup
 - `C:\Users\treyt\.opencode`
-  - Exposes skills, not a reusable markdown agent-role catalog
+  - Exposes a supported shared-skill projection root at `skills\`
+  - Keeps `agent-strategy` and `ensure-agent-workflow` as local-only skill directories
+- `C:\Users\treyt\.antigravity`
+  - Exposes a supported shared-skill projection root at `skills\`
+  - Does not expose a reusable markdown agent-role catalog on this machine
 - `C:\Users\treyt\.conduit`
   - Uses `config.toml`, not an agent-role markdown catalog
+- `C:\Users\treyt\.kimi`
+  - Uses `config.toml`, not a shared-skill root or agent-role markdown catalog
 
 Practical rule:
 
@@ -167,11 +216,12 @@ Practical rule:
 After any agent-config change:
 
 1. Run `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync_agent_config.ps1 -Mode Check`
-2. Verify repo shims still point to root `AGENTS.md`
-3. Verify repo command files reference valid repo-local agent IDs
-4. Verify `.claude/permissions.json` still matches root `permissions.json` if that compatibility file is present
-5. Spawn one Codex subagent and one Claude role path if the change touched those systems
-6. Update `docs/root/TUTOR_TODO.md`, `conductor/tracks/GENERAL/log.md`, and `conductor/tracks.md`
+2. Run `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync_agent_skills.ps1 -Mode Check` if the change touched shared-skill topology
+3. Verify repo shims still point to root `AGENTS.md`
+4. Verify repo command files reference valid repo-local agent IDs
+5. Verify `.claude/permissions.json` still matches root `permissions.json` if that compatibility file is present
+6. Spawn one Codex subagent and one Claude role path if the change touched those systems
+7. Update `docs/root/TUTOR_TODO.md`, `conductor/tracks/GENERAL/log.md`, and `conductor/tracks.md`
 
 ## Multi-Agent Rule
 
