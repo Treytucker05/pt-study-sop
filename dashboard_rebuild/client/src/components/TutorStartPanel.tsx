@@ -125,12 +125,27 @@ export function TutorStartPanel({
     const match = templateChains.find((chain) => chain.id === chainId);
     return match?.name ?? "Template";
   }, [chainId, chainMode, customBlockIds.length, templateChains]);
+  const highlightedSession = useMemo(() => {
+    if (recentSessions.length === 0) return null;
+    return recentSessions.find((session) => session.status === "active") ?? recentSessions[0];
+  }, [recentSessions]);
+  const secondarySessions = useMemo(() => {
+    if (!highlightedSession) return [];
+    return recentSessions
+      .filter((session) => session.session_id !== highlightedSession.session_id)
+      .slice(0, 4);
+  }, [highlightedSession, recentSessions]);
+  const hasExplicitLaunchScope = Boolean(courseId) || selectedMaterials.length > 0;
   const readinessItems = [
     {
       label: "Launch scope",
-      detail: courseName,
-      ready: Boolean(courseId),
-      fallback: "Select a course or launch from Brain/Library.",
+      detail: courseId
+        ? courseName
+        : selectedMaterials.length > 0
+          ? `Material-scoped launch (${selectedMaterials.length} selected)`
+          : "No explicit course or materials",
+      ready: hasExplicitLaunchScope,
+      fallback: "Select a course or launch from Brain/Library with materials.",
     },
     {
       label: "Materials",
@@ -148,6 +163,18 @@ export function TutorStartPanel({
       fallback: "Runtime config check did not report a hard blocker.",
     },
   ];
+
+  const formatSessionTime = (value: string | undefined) => {
+    if (!value) return "Time unavailable";
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return "Time unavailable";
+    return parsed.toLocaleString([], {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
 
   return (
     <div className={`${SECTION_GAP} w-full max-w-full min-w-0`}>
@@ -190,43 +217,100 @@ export function TutorStartPanel({
           <span className={TEXT_SECTION_LABEL}>RECENT SESSIONS</span>
         </div>
         <div className="p-3 space-y-2">
-          {recentSessions.length === 0 ? (
-            <div className={TEXT_MUTED}>No recent sessions to resume.</div>
-          ) : (
-            recentSessions.slice(0, 5).map((session) => (
-              <div
-                key={session.session_id}
-                className="flex items-center gap-2 border-2 border-primary/20 px-2 py-2"
-              >
-                <button
-                  onClick={() => onResumeSession(session.session_id)}
-                  className="flex flex-1 items-center gap-2 text-left"
-                >
-                  <span
-                    className={`h-2 w-2 rounded-full ${
-                      session.status === "active"
-                        ? "bg-green-400"
-                        : "bg-muted-foreground/40"
-                    }`}
-                  />
-                  <span className="font-terminal text-sm text-foreground truncate">
-                    {session.topic || session.mode || "Session"}
-                  </span>
-                  <span className={`${TEXT_MUTED} text-xs`}>
-                    {session.turn_count} turns
-                  </span>
-                </button>
-                {onDeleteSession ? (
-                  <button
-                    onClick={() => onDeleteSession(session.session_id)}
-                    className="text-muted-foreground hover:text-red-400 transition-colors"
-                    title="Delete session"
+          {highlightedSession ? (
+            <div className="space-y-2">
+              <div className="border-2 border-primary/30 bg-primary/10 px-3 py-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-arcade text-xs text-primary">
+                    {highlightedSession.status === "active" ? "ACTIVE SESSION READY" : "LAST SESSION"}
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className={`${TEXT_BADGE} border-primary/40 text-primary`}
                   >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                ) : null}
+                    {highlightedSession.status.toUpperCase()}
+                  </Badge>
+                </div>
+                <div className="font-terminal text-base text-foreground break-words">
+                  {highlightedSession.topic || highlightedSession.mode || "Session"}
+                </div>
+                <div className={`${TEXT_MUTED} text-xs flex flex-wrap gap-x-3 gap-y-1`}>
+                  <span>{highlightedSession.turn_count} turns</span>
+                  <span>{formatSessionTime(highlightedSession.started_at)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => onResumeSession(highlightedSession.session_id)}
+                    className={`${BTN_PRIMARY} h-10 px-4 gap-2`}
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    {highlightedSession.status === "active"
+                      ? "RESUME ACTIVE SESSION"
+                      : "RESUME LAST SESSION"}
+                  </Button>
+                  {onDeleteSession ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => onDeleteSession(highlightedSession.session_id)}
+                      className="h-10 rounded-none font-arcade text-xs"
+                    >
+                      <X className="w-3.5 h-3.5 mr-1" />
+                      DELETE
+                    </Button>
+                  ) : null}
+                </div>
               </div>
-            ))
+
+              {secondarySessions.length > 0 ? (
+                <div className="space-y-2">
+                  <div className="font-arcade text-[10px] tracking-wide text-primary/70">
+                    OTHER RECENT SESSIONS
+                  </div>
+                  {secondarySessions.map((session) => (
+                    <div
+                      key={session.session_id}
+                      className="flex items-center justify-between gap-2 border-2 border-primary/20 px-2 py-2"
+                    >
+                      <div className="min-w-0">
+                        <div className="font-terminal text-sm text-foreground truncate">
+                          {session.topic || session.mode || "Session"}
+                        </div>
+                        <div className={`${TEXT_MUTED} text-xs flex flex-wrap gap-x-3 gap-y-1`}>
+                          <span>{session.turn_count} turns</span>
+                          <span>{formatSessionTime(session.started_at)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge
+                          variant="outline"
+                          className={`${TEXT_BADGE} border-primary/30 text-primary/80`}
+                        >
+                          {session.status.toUpperCase()}
+                        </Badge>
+                        <Button
+                          variant="outline"
+                          onClick={() => onResumeSession(session.session_id)}
+                          className="h-8 rounded-none font-arcade text-[10px]"
+                        >
+                          RESUME
+                        </Button>
+                        {onDeleteSession ? (
+                          <button
+                            onClick={() => onDeleteSession(session.session_id)}
+                            className="text-muted-foreground hover:text-red-400 transition-colors"
+                            title="Delete session"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <div className={TEXT_MUTED}>No recent sessions to resume.</div>
           )}
         </div>
       </Card>
@@ -273,7 +357,7 @@ export function TutorStartPanel({
               </>
             ) : (
               <>
-                <Play className="w-4 h-4" /> START SESSION
+                <Play className="w-4 h-4" /> START NEW SESSION
               </>
             )}
           </Button>

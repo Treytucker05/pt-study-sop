@@ -107,7 +107,7 @@ describe("TutorStartPanel", () => {
 
     expect(screen.getByText("LAUNCH SUMMARY")).toBeInTheDocument();
     expect(screen.getByText("READINESS")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /START SESSION/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /START NEW SESSION/i })).toBeInTheDocument();
     expect(screen.queryByText("1. COURSE")).not.toBeInTheDocument();
   });
 
@@ -125,7 +125,7 @@ describe("TutorStartPanel", () => {
     const onStartSession = vi.fn();
     renderStartPanel({ onStartSession });
 
-    fireEvent.click(screen.getByRole("button", { name: /START SESSION/i }));
+    fireEvent.click(screen.getByRole("button", { name: /START NEW SESSION/i }));
 
     expect(onStartSession).toHaveBeenCalled();
   });
@@ -146,8 +146,47 @@ describe("TutorStartPanel", () => {
       onResumeSession,
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Recent anatomy/i }));
+    fireEvent.click(screen.getByRole("button", { name: /RESUME ACTIVE SESSION/i }));
 
     expect(onResumeSession).toHaveBeenCalledWith("sess-1");
+  });
+
+  it("treats material-scoped launches as valid launch scope", () => {
+    renderStartPanel({
+      courseId: undefined,
+      selectedMaterials: [7, 8],
+    });
+
+    expect(screen.getByText("Material-scoped launch (2 selected)")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Select a course or launch from Brain/Library with materials."),
+    ).not.toBeInTheDocument();
+  });
+
+  it("highlights the active session as the primary resume action", () => {
+    renderStartPanel({
+      recentSessions: [
+        {
+          session_id: "sess-active",
+          topic: "Active neuro review",
+          mode: "Core",
+          status: "active",
+          turn_count: 5,
+          started_at: "2026-03-13T00:00:00Z",
+        },
+        {
+          session_id: "sess-old",
+          topic: "Older review",
+          mode: "Core",
+          status: "completed",
+          turn_count: 2,
+          started_at: "2026-03-12T00:00:00Z",
+        },
+      ],
+    });
+
+    expect(screen.getByRole("button", { name: /RESUME ACTIVE SESSION/i })).toBeInTheDocument();
+    expect(screen.getByText("OTHER RECENT SESSIONS")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^RESUME$/i })).toBeInTheDocument();
   });
 });

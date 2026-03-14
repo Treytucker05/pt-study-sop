@@ -48,6 +48,19 @@
   - delayed selected-material persistence until launch hydration completes
   - delayed setup close on resume until session payload load succeeds
 
+## TLR-200 completed
+
+- Focused Tutor shell tests:
+  - `npm run test -- client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorStartPanel.test.tsx client/src/components/__tests__/TutorChat.test.tsx client/src/lib/__tests__/tutorClientState.test.ts`
+  - Result: `19 passed`
+- Frontend build:
+  - `npm run build`
+  - Result: success
+- UX hardening delivered in this step:
+  - material-scoped Library launches now read as valid launch scope
+  - recent sessions now have a clear primary resume path
+  - dead-end no-session `CHAT` control was removed from the toolbar
+
 ## TLR-300 completed
 
 - Active-doc stale wording grep:

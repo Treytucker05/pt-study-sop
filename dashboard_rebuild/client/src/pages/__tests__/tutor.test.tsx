@@ -159,6 +159,7 @@ describe("Tutor page launch precedence", () => {
     expect(panel).toHaveAttribute("data-selected-material-count", "2");
     expect(panel).toHaveAttribute("data-topic", "Week 7 review");
     expect(screen.queryByTestId("tutor-chat")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^CHAT$/i })).not.toBeInTheDocument();
     expect(mockGetSession).not.toHaveBeenCalledWith("stale-session");
   });
 
@@ -191,6 +192,7 @@ describe("Tutor page launch precedence", () => {
     const chat = await screen.findByTestId("tutor-chat");
     expect(chat).toHaveAttribute("data-session-id", "sess-restore");
     expect(chat).toHaveAttribute("data-course-id", "9");
+    expect(screen.getByRole("button", { name: /^CHAT$/i })).toBeInTheDocument();
     expect(screen.queryByTestId("tutor-start-panel")).not.toBeInTheDocument();
   });
 

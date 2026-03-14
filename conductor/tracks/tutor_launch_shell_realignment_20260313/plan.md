@@ -62,7 +62,14 @@ Create one clear current Tutor launch model:
     - `npm run test -- client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorStartPanel.test.tsx client/src/components/__tests__/TutorChat.test.tsx client/src/lib/__tests__/tutorClientState.test.ts`
     - `npm run build`
 
-- [ ] TLR-200 Make Tutor startup and surrounding UI more trustworthy and learner-first.
+- [x] TLR-200 Make Tutor startup and surrounding UI more trustworthy and learner-first.
+  - Material-scoped Library launches now count as valid launch scope in readiness copy.
+  - Recent sessions now highlight the active/last session with an explicit primary resume action.
+  - Secondary recent sessions now show status/time metadata with explicit resume controls.
+  - The top-toolbar `CHAT` control is now hidden until an active session exists, removing the no-session dead end.
+  - Validation:
+    - `npm run test -- client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorStartPanel.test.tsx client/src/components/__tests__/TutorChat.test.tsx client/src/lib/__tests__/tutorClientState.test.ts`
+    - `npm run build`
 
 - [ ] TLR-210 Rework Schedule mode to be next-action-first if/when that surface exists in this repo slice.
 

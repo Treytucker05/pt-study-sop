@@ -796,21 +796,20 @@ export default function Tutor() {
                   <SlidersHorizontal className="w-3.5 h-3.5 mr-1" />
                   SETTINGS
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowSetup(false)}
-                  className={`h-8 rounded-none font-arcade text-xs px-3 ${!showSetup
-                    ? "text-primary bg-primary/15 border-2 border-primary/40"
-                    : "text-muted-foreground hover:text-primary border-2 border-transparent"
-                    }`}
-                >
-                  <MessageSquare className="w-3.5 h-3.5 mr-1" />
-                  CHAT
-                </Button>
-
                 {activeSessionId && (
                   <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowSetup(false)}
+                      className={`h-8 rounded-none font-arcade text-xs px-3 ${!showSetup
+                        ? "text-primary bg-primary/15 border-2 border-primary/40"
+                        : "text-muted-foreground hover:text-primary border-2 border-transparent"
+                        }`}
+                    >
+                      <MessageSquare className="w-3.5 h-3.5 mr-1" />
+                      CHAT
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"

@@ -40,6 +40,10 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
   - Added page-level Tutor launch-precedence coverage in `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`.
   - Fixed Library handoff hydration so selected materials are not wiped before launch restore completes.
   - Fixed resume behavior so setup closes only after the session payload loads successfully.
+- [x] TLR-200. Make the live Tutor shell more trustworthy and learner-first.
+  - Start-panel readiness now treats Library material scope as a valid launch scope.
+  - Recent sessions now surface a primary resume action for the active/last session.
+  - The toolbar no longer exposes a dead-end `CHAT` button before a session exists.
 - [x] TLR-300. Rewrite active docs so they stop describing Tutor as wizard-led.
   - `GUIDE_TUTOR_FLOW.md`, `PROJECT_ARCHITECTURE.md`, and `GUIDE_USER.md` now describe the start-panel model.
 
