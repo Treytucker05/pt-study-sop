@@ -58,6 +58,7 @@ Hermetic note:
 - `Report` writes `bundle.json` with git metadata, scenario artifact pointers, command records, timings, and a redacted environment summary.
 - `events.jsonl` records redacted `command_started`, `command_completed`, and `command_failed` entries for the run.
 - CI now uses the same contract in `.github/workflows/ci.yml` via the Windows `harness_contract` job.
+- Cross-agent headless proof is currently stored for `Codex`, `Claude`, `Gemini`, and `OpenCode`; `Cursor` and `Antigravity` remain pending because their installed local agent surfaces are editor/GUI hosted on this machine.
 
 ## Parallel Agent Quickstart
 ```powershell

@@ -12,17 +12,17 @@ Update policy: after every significant change, update this file with status chan
 
 Active execution priority is tracked in `docs/root/TUTOR_TODO.md`.
 
-Active status: 1 active workstream.
+Active status: 0 active workstreams.
 
-Latest update: 2026-03-14, Trey Agent Repo Readiness advanced through `T12`, completed the scenario registry + observability + CI harness lane work, and left `T13` as the next proof task.
+Latest update: 2026-03-14, Trey Agent Repo Readiness closed after cross-agent proof, final harness doc sync, execution-split closeout, and the integrated release gate all passed.
 
 - [x] **Track: Repo Truth Surface Pruning** (complete — created 2026-03-14; closed 2026-03-14; scope: README-first canon promotion, redundant truth-doc compression, repo-local planning-surface alignment, duplicate track cleanup, validator/drift-gate rewiring)
   *Link: [./tracks/repo-truth-surface-pruning_20260314/](./tracks/repo-truth-surface-pruning_20260314/)*
 
 ---
 
-- [~] **Track: Trey Agent Repo Readiness** (active — created 2026-03-13; resumed 2026-03-14; `T1`-`T12` complete, `T13` next)
-  Shared repo-local harness contract, env/bootstrap contract, tiered agent matrix, isolated startup implementation, repo-local bootstrap validator, backend env template, hermetic + live/operator scenario registry normalization, standardized artifact bundle/report output, structured JSONL observability, and the Windows CI harness lane are complete; pending work is cross-agent proof and final closeout.
+- [x] **Track: Trey Agent Repo Readiness** (complete — created 2026-03-13; resumed 2026-03-14; closed 2026-03-14; scope: shared repo-local harness contract, isolated startup, bootstrap validator, hermetic + live/operator scenario registry, artifact/report output, structured observability, CI lane, cross-agent proof, final closeout)
+  Headless proof is closed for `Codex`, `Claude`, `Gemini`, and `OpenCode`; `Cursor`, `Antigravity`, `Kimi`, and `Conduit` remain explicitly pending until stronger local launch proof exists. The integrated closeout gate passed across docs sync, focused harness tests, direct bootstrap validation, hermetic `Run -> Eval tutor-hermetic-smoke -> Report`, live/operator `Run -Profile Live -> Eval app-live-golden-path`, CI YAML parse, and the full backend suite.
   *Link: [./tracks/trey-agent-repo-readiness_20260313/](./tracks/trey-agent-repo-readiness_20260313/)*
 
 ---

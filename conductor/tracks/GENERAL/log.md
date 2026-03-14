@@ -181,3 +181,33 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `conductor/tracks/trey-agent-repo-readiness_20260313/t6-isolated-startup.md`
 - Next track task:
   - `T7` repo-local harness bootstrap and setup validator
+
+## 2026-03-14 - Trey Agent Repo Readiness T13 proof + T15-T16 closeout
+
+- Captured cross-agent harness proof in `conductor/tracks/trey-agent-repo-readiness_20260313/t13-cross-agent-proof.md`.
+- Verified the shared repo-local harness bootstrap command across the installed headless tools:
+  - `Codex`
+  - `Claude`
+  - `Gemini`
+  - `OpenCode`
+- Revised the compatibility matrix to match the actual local launch surfaces:
+  - `Cursor` moved to explicit pending status until a reproducible headless `cursor-agent` shim is available on this machine
+  - `Antigravity` moved to explicit pending status because the installed CLI exposes editor/window/MCP management but no promptable headless agent surface
+- Synced the shipped harness contract across:
+  - `README.md`
+  - `docs/root/GUIDE_DEV.md`
+  - `scripts/README.md`
+  - `contract-harness-command-surface.md`
+  - `contract-agent-compatibility-matrix.md`
+- Recorded the execution-split decision in `t15-t16-closeout.md`:
+  - no planner queue conversion was emitted because no unblocked execution wave remained after the final doc sync
+- Final validation gate passed:
+  - `python scripts/check_docs_sync.py`
+  - `git diff --check`
+  - `python -m pytest brain/tests/test_harness_bootstrap.py brain/tests/test_harness_startup.py brain/tests/test_harness_eval.py -q`
+  - `python -c "import yaml, pathlib; yaml.safe_load(pathlib.Path('.github/workflows/ci.yml').read_text())"`
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Bootstrap -Profile Hermetic -Json`
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Bootstrap -Profile Live -Json`
+  - hermetic `Run -> Eval tutor-hermetic-smoke -> Report`
+  - live/operator `Run -Profile Live -> Eval app-live-golden-path`
+  - `python -m pytest brain/tests -q --timeout=60`

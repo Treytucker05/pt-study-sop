@@ -13,12 +13,19 @@ This file defines the command contract only. Implementing the contract is deferr
 ## Canonical entrypoint
 
 ```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode <Bootstrap|Run|Eval|Report> [options]
+```
+
+Accepted equivalent:
+
+```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode <Bootstrap|Run|Eval|Report> [options]
 ```
 
-Why this shape:
+Why this shipped shape:
 
-- `pwsh` is already the repo's main scripting surface for smoke and config scripts.
+- `powershell` is available by default on the Windows machines this repo targets.
+- `pwsh` remains a supported equivalent and is what CI currently uses.
 - a single entrypoint minimizes tool-specific instructions
 - `-Mode` keeps the contract stable while implementation details evolve behind the wrapper
 

@@ -52,6 +52,10 @@ Use the repo-local harness commands to validate prerequisites, launch isolated a
 
 Examples below use `powershell`; `pwsh` also works if installed.
 
+Cross-agent proof status:
+- Headless proof captured for `Codex`, `Claude`, `Gemini`, and `OpenCode`.
+- `Cursor` and `Antigravity` stay pending until their installed local agent surfaces expose a reproducible headless prompt path on this machine.
+
 - Hermetic bootstrap:
   - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Bootstrap -Profile Hermetic -Json`
 - Live bootstrap:

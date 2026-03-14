@@ -576,6 +576,9 @@ The `error_logs` table enables deterministic routing by tracking granular item-l
 # Start dashboard (recommended)
 Start_Dashboard.bat
 
+# Validate hermetic harness prerequisites
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Bootstrap -Profile Hermetic -Json
+
 # Run tests (916+ tests)
 pytest brain/tests/
 
@@ -585,6 +588,10 @@ cd dashboard_rebuild && npm run build
 # Run Scholar
 scripts/run_scholar.bat
 ```
+
+The repo-local harness contract lives in `docs/root/GUIDE_DEV.md` and
+`scripts/README.md`. `powershell` is the canonical Windows example and `pwsh`
+is an accepted equivalent used in CI.
 
 ### Post-Change Checklist
 

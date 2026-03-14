@@ -89,20 +89,21 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Track task: `T6`
   - Shipped: `scripts/harness.ps1`, harness-aware path overrides in `brain/config.py`, and host/port overrides in `brain/dashboard_web.py`
   - Verification: `pytest brain/tests/test_harness_startup.py`, manual operator launch on `5000`, manual harness launch on a second port with temp data/artifact roots, and concurrent `200` responses from both servers
-- [ ] TAR-110. Add harness bootstrap/validator and backend env templating.
+- [x] TAR-110. Add harness bootstrap/validator and backend env templating.
   - Track tasks: `T7`, `T14`
-  - Partial 2026-03-14: `T7` is complete via `scripts/harness.ps1 -Mode Bootstrap`, `brain/.env.example`, `brain/tests/fixtures/harness/manifest.json`, and `brain/tests/test_harness_bootstrap.py`.
-  - Remaining scope: `T14` still needs the broader harness-doc rewrite after later harness tasks land.
+  - Completed 2026-03-14: `T7` shipped `scripts/harness.ps1 -Mode Bootstrap`, `brain/.env.example`, `brain/tests/fixtures/harness/manifest.json`, and `brain/tests/test_harness_bootstrap.py`; `T14` then synced `README.md`, `docs/root/GUIDE_DEV.md`, `scripts/README.md`, and the track contracts to the shipped harness command and proof model.
 - [x] TAR-120. Build the first hermetic Tutor fixture scenario and finish the named-scenario registry pass.
   - Track tasks: `T8`, `T10`
   - Partial 2026-03-14: `T8` is complete via `scripts/tutor_hermetic_smoke.py`, `scripts/harness.ps1 -Mode Eval -Scenario tutor-hermetic-smoke`, `brain/tests/fixtures/harness/tutor-hermetic-smoke.json`, and `brain/tests/test_harness_eval.py`.
   - Additional 2026-03-14: `T10` is complete via `tutor-hermetic-coverage-scope`, manifest v3, live/operator scenario registration for `app-live-golden-path`, `tutor-live-readonly`, and `method-integrity-smoke`, plus structured smoke-script JSON outputs and expanded `brain/tests/test_harness_eval.py` coverage.
-- [ ] TAR-130. Add harness artifacts, observability, CI lane, and cross-agent proof.
+- [x] TAR-130. Add harness artifacts, observability, CI lane, and cross-agent proof.
   - Track tasks: `T9`, `T11`, `T12`, `T13`, `T15`, `T16`
   - Partial 2026-03-14: `T9` is complete via `bundle.json`, `Report` mode, command records, git metadata, redacted environment summaries, repeated-bundle-shape regression coverage, and Windows PowerShell JSON compatibility in `scripts/harness.ps1`.
   - Additional 2026-03-14: `T11` is complete via root `events.jsonl`, redacted `command_started` / `command_completed` / `command_failed` entries, and failure-artifact diagnostics in `scripts/harness.ps1` plus induced-failure coverage in `brain/tests/test_harness_eval.py`.
   - Additional 2026-03-14: `T12` is complete via the Windows `harness_contract` job in `.github/workflows/ci.yml` and local proof of the exact `Bootstrap -> Run -> Eval tutor-hermetic-smoke -> Report` lane commands.
-  - Remaining scope: `T13`, `T15`, and `T16`
+  - Additional 2026-03-14: `T13` captured headless cross-agent proof for `Codex`, `Claude`, `Gemini`, and `OpenCode`, and moved `Cursor` plus `Antigravity` to explicit pending status until stronger local launch proof exists.
+  - Additional 2026-03-14: `T15` recorded that no planner queue conversion was needed because no unblocked execution wave remained after the final doc sync.
+  - Completed 2026-03-14: `T16` passed docs sync, CI YAML parse, focused harness tests, direct `Bootstrap` for `Hermetic` and `Live`, hermetic `Run -> Eval tutor-hermetic-smoke -> Report`, live/operator `Run -Profile Live -> Eval app-live-golden-path`, and the full backend suite.
 
 ### Sprint 31: Tutor Launch / Shell Realignment Cleanup (2026-03-13)
 - [x] Claim scope: create the durable track, make the Brain launch + `/tutor` shell + thin Tutor start/resume model the only active planning path, and explicitly demote wizard-era plans/docs to historical status.
