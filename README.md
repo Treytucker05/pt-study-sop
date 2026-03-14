@@ -1,12 +1,21 @@
 # PT Study OS (runtime prompt v9.5.2)
 
-A local-first, AI-powered study operating system for DPT coursework. Sessions run through a **native adaptive tutor** built on Flask + ChromaDB RAG, following the **Control Plane** learning pipeline (CP-MSS v1.0) with citation-first teaching, deterministic logging, and continuous improvement via Scholar meta-audits.
+This file is the master repo truth for `C:\pt-study-sop`.
 
-Top-level system canon: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
-This README is the repo overview. It is not the master product truth path.
+Use it for:
+- product and subsystem identity
+- route meaning and ownership
+- source-of-truth order
+- non-negotiable operating laws
+
+If another active doc disagrees with this file on product meaning, route ownership, or source-of-truth order, that other doc is wrong and must be corrected or removed.
 
 ## Table of Contents
 
+- [Repo Truth Order](#repo-truth-order)
+- [Core Identity](#core-identity)
+- [Ownership And Routes](#ownership-and-routes)
+- [Locked Operating Laws](#locked-operating-laws)
 - [System Overview](#system-overview)
 - [Architecture](#architecture)
 - [Quick Start](#quick-start)
@@ -19,10 +28,77 @@ This README is the repo overview. It is not the master product truth path.
 - [External Integrations](#external-integrations)
 - [Database](#database)
 - [Development](#development)
+- [Troubleshooting](#troubleshooting)
 - [Repo Layout](#repo-layout)
 - [More Docs](#more-docs)
 
 ---
+
+## Repo Truth Order
+
+When repo sources disagree, use this order:
+
+1. `README.md`
+2. `AGENTS.md` for agent working policy only
+3. `sop/library/17-control-plane.md` plus active SOP methods and chains for pedagogy and control-plane semantics
+4. `docs/root/PROJECT_ARCHITECTURE.md` for runtime and technical wiring
+5. `docs/root/GUIDE_DEV.md` for build, run, and test commands
+6. execution-only surfaces:
+   - `docs/root/TUTOR_TODO.md`
+   - `docs/root/AGENT_BOARD.md`
+   - `conductor/tracks.md`
+   - `conductor/tracks/GENERAL/log.md`
+
+## Core Identity
+
+PT Study OS is a personal 3-part study system for one learner:
+
+- **Brain** is the home surface and learner-model engine.
+- **Tutor** is the live study workspace and protocol executor.
+- **Scholar** is the system-facing investigation and improvement console.
+
+The system is not a generic chatbot, not a set of equal peer pages fighting for center stage, and not an institution platform. Brain is where the learner lands. Tutor is where the learner does the work. Scholar is where the system researches friction and proposes bounded improvements.
+
+## Ownership And Routes
+
+| Surface | Owns | Must not own |
+|--------|------|--------------|
+| **Brain** | home/dashboard, learner profile, telemetry, mastery framing, support-system launch points | public study-workspace sprawl, direct pedagogy control |
+| **Tutor** | launch, live study workspace, notes/canvas/graph/table, artifacts, resume/restore, structured teaching flow | generic dashboard behavior, unbounded off-protocol teaching |
+| **Scholar** | investigations, focused learner questions when blocked, findings, bounded strategy proposals, system research | live course teaching, direct Tutor control, replacing Brain home |
+| **Library** | what Tutor can teach through material scope | how Tutor teaches |
+| **SOP library** | how Tutor teaches through stages, methods, chains, and rules | course-content truth |
+
+| Route | Meaning |
+|------|---------|
+| `/` and `/brain` | Brain home |
+| `/tutor` | Tutor live workspace |
+| `/scholar` | Scholar investigation console |
+| `/library` | Library support system |
+| `/calendar` | Calendar support system |
+| `/mastery` | Mastery support system |
+| `/methods` | Methods support system |
+| `/vault-health` | Vault Health support system |
+
+## Locked Operating Laws
+
+1. Tutor is the bread-and-butter product value. Optimize the live study experience first.
+2. Brain is the canonical home surface.
+3. Library controls what Tutor teaches.
+4. SOP controls how Tutor teaches.
+5. Tutor owns the active study workspace and artifact flow.
+6. Brain stays evidence-first and must not directly steer Tutor.
+7. Scholar is system-facing and does not become the course-content teacher.
+8. Obsidian is the durable note home.
+9. Archive and old tracks are evidence, not authority.
+
+## Tutor Defaults
+
+- Tutor behavior is modeled as `Category -> Method -> Knob -> Chain`.
+- Default operating assumption is first exposure unless the session has strong prior-mastery evidence.
+- `PRIME` is non-assessment structure and teaching. `CALIBRATE` is where assessment begins.
+- Tutor-generated Obsidian notes must include wiki links at creation time, not as deferred cleanup.
+- Mind Map uses `ASCII` as the project-default representation knob unless a session explicitly overrides it.
 
 ## System Overview
 
@@ -47,7 +123,7 @@ Five pillars work in a continuous loop:
 | **Study Materials Library** | Defines *what* Tutor teaches by managing the learner's class materials | `/library` route + `brain/data/` |
 | **Brain** | Stores sessions, telemetry, artifact metadata, indexes, and operational state | `brain/` |
 | **Tutor** | Protocol-led study operator that executes the active chain against the learner's selected scope | `brain/dashboard/api_tutor.py` |
-| **Dashboard** | Surfaces metrics, manages ingestion, calendar, Anki, tutor UI | `dashboard_rebuild/` |
+| **App Shell** | Serves the Brain, Tutor, Scholar, and support-system routes through the React frontend | `dashboard_rebuild/` |
 | **Scholar** | Reads Brain outputs, researches patterns, and proposes evidence-based improvements | `scholar/` |
 
 ---
@@ -110,6 +186,13 @@ Start_Dashboard.bat
 
 > **Note:** Vite outputs directly to `brain/static/dist/` — no copy step needed. Never use `npm run dev`, and do not start the dashboard through a direct Flask command. Use `Start_Dashboard.bat`.
 
+### First Study Session
+
+1. Launch the app with `Start_Dashboard.bat`.
+2. Upload at least one study file on `/library`.
+3. Open `/tutor`, choose the course/material scope, and start the session.
+4. Follow the active chain. Wrap writes the `Exit Ticket + Session Ledger` to Brain and, when enabled, to Obsidian and Anki.
+
 ---
 
 ## Control Plane Pipeline
@@ -168,7 +251,7 @@ The `brain/selector.py` router automatically selects the optimal chain based on 
 
 The **SOP** (Standard Operating Procedure) defines the learning methodology. Source of truth: `sop/library/`.
 
-For the overall Study Buddy contract and subsystem precedence order, use `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+For runtime wiring details and endpoint/state maps, use `docs/root/PROJECT_ARCHITECTURE.md`.
 
 | # | File | Description |
 |---|------|-------------|
@@ -274,13 +357,15 @@ React SPA with a retro arcade theme (high-contrast red/black, terminal fonts).
 
 ```
 localhost:5000/
-  +-- /           Dashboard (overview, quick stats)
-  +-- /brain      Brain (session ingestion, logs, Anki sync)
-  +-- /calendar   Calendar (Google Calendar/Tasks, local events)
-  +-- /scholar    Scholar (runs, proposals, lifecycle panel)
-  +-- /tutor      Tutor (chat, sources drawer, Map of Contents, vault authoring)
-  +-- /library    Library (study material upload, course organization, tutor source selection)
-  +-- /methods    Methods (block library, chains, analytics)
+  +-- /            Brain home
+  +-- /brain       Brain home alias
+  +-- /tutor       Tutor live workspace
+  +-- /scholar     Scholar investigation console
+  +-- /library     Library support system
+  +-- /calendar    Calendar support system
+  +-- /mastery     Mastery support system
+  +-- /methods     Methods support system
+  +-- /vault-health Vault Health support system
 ```
 
 ### Build + Deploy
@@ -306,8 +391,8 @@ The tutor is a **native Flask application** — not a Custom GPT. It runs entire
 
 | Component | File | Purpose |
 |-----------|------|---------|
-| API endpoints | `brain/dashboard/api_tutor.py` | 40+ endpoints, SSE streaming, session orchestration |
-| RAG retrieval | `brain/tutor_rag.py` | ChromaDB + text-embedding-3-small, MMR, dual-context search |
+| API endpoints | `brain/dashboard/api_tutor.py` | Tutor registration/config hub plus split route imports |
+| RAG retrieval | `brain/tutor_rag.py` | ChromaDB + Gemini Embedding 2 preview by default, MMR, dual-context search |
 | Chain engine | `brain/tutor_chains.py` | Method block progression through CP-MSS stages |
 | Streaming | `brain/tutor_streaming.py` | SSE response formatting with inline citations |
 | Vault writes | `brain/obsidian_vault.py` | Fire-and-forget Obsidian CLI wrapper with retry/cache |
@@ -395,17 +480,20 @@ Session Logs + DB
 +------------------+       +------------------+       +------------------+
 
 +------------------+
-|  Codex API       |
+|  Tutor models    |
 |  (gpt-5.3-codex  |
-|   + embeddings)  |
+|   + Gemini/OpenAI|
+|   embeddings)    |
 +--------+---------+
          |
     Codex CLI auth
+    + env-backed embedding config
          |
 +--------v---------+
 |  Tutor LLM +     |
-|  text-embedding-  |
-|  3-small (RAG)   |
+|  Gemini Embedding|
+|  2 preview       |
+|  (OpenAI fallback)|
 +------------------+
 ```
 
@@ -414,7 +502,7 @@ Session Logs + DB
 | **Google Calendar/Tasks** | Two-way sync of study events + tasks | OAuth 2.0 via `brain/gcal.py` |
 | **Anki** | Sync card drafts to Anki Desktop | AnkiConnect on port 8765 |
 | **Obsidian** | Vault reads/writes + template rendering | CLI wrapper (`brain/obsidian_vault.py`) |
-| **Codex API** | Tutor LLM (gpt-5.3-codex) + embeddings (text-embedding-3-small) | Codex CLI auth + OpenAI API key |
+| **Tutor model + embeddings** | Tutor LLM (`gpt-5.3-codex`) with Gemini Embedding 2 preview by default and OpenAI fallback only when configured | Codex CLI auth + `GEMINI_API_KEY` or fallback embedding env vars |
 
 ---
 
@@ -479,7 +567,8 @@ The `error_logs` table enables deterministic routing by tracking granular item-l
 - Node.js 18+
 - SQLite 3
 - Codex CLI authenticated (`codex login`) for tutor LLM
-- OpenAI API key (for embeddings)
+- `GEMINI_API_KEY` for the default embedding path
+- Optional fallback only: `OPENAI_API_KEY` if you intentionally switch embeddings back to OpenAI
 
 ### Commands
 
@@ -502,6 +591,18 @@ scripts/run_scholar.bat
 1. **Backend changes:** `pytest brain/tests/`
 2. **Frontend changes:** `npm run build` in `dashboard_rebuild` + restart Flask
 3. **SOP changes:** Update method blocks in DB if block definitions changed
+
+---
+
+## Troubleshooting
+
+- **Nothing shows or the wrong server starts:** always launch with `Start_Dashboard.bat`. Do not use `npm run dev`.
+- **Frontend changes do not appear:** rebuild with `cd dashboard_rebuild && npm run build`, restart the app, then hard refresh the browser.
+- **Tutor shell loads stale or broken JS:** rebuild the frontend, restart Flask, and hard refresh.
+- **Tutor delete/reporting feels inconsistent:** use the returned `request_id` and inspect the persisted Tutor delete telemetry for the exact failure path.
+- **Bulk delete leaves the UI stuck:** rebuild, restart, hard refresh, then retry. The intended closeout flow is the themed in-panel confirm, not a stale overlay.
+- **Tutor responses are slow:** disable extra toggles you do not need and verify material scope on the turn request.
+- **Tutor seems to ignore selected files:** inspect the `turn` request payload and confirm `content_filter.material_ids` contains the full selection.
 
 ---
 
@@ -552,11 +653,10 @@ pt-study-sop/
 
 | Doc | Location |
 |-----|----------|
-| Docs index (canonical) | `docs/README.md` |
+| Docs index | `docs/README.md` |
 | Tutor architecture (visual) | `docs/TUTOR_ARCHITECTURE.md` |
 | Developer guide | `docs/root/GUIDE_DEV.md` |
 | Architecture | `docs/root/PROJECT_ARCHITECTURE.md` |
-| User guide | `docs/root/GUIDE_USER.md` |
 | SOP overview | `sop/library/00-overview.md` |
 | Product definition | `conductor/product.md` |
 | Calendar/Tasks | `docs/calendar_tasks.md` |

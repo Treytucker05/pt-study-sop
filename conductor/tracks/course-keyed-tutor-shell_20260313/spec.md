@@ -1,6 +1,6 @@
 # Specification: Course-Keyed Tutor Shell + Studio Foundation
 
-> Track artifact. Product/ownership authority lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+> Track artifact. Product/ownership authority lives only in `README.md`.
 > This spec records the execution contract for this track; it does not replace the canon.
 
 **Track ID:** course-keyed-tutor-shell_20260313  

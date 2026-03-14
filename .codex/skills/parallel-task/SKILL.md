@@ -36,7 +36,7 @@ The orchestrator is responsible for:
   - `pending -> todo`
   - `completed -> done`
 - File ownership constraints (to avoid overlap).
-- Mapping from plan IDs (`1.2`) to board IDs (`T-###`).
+- Mapping from plan IDs (`1.2`) to the repo's real execution surfaces when needed.
 
 ## Execution modes
 
@@ -126,13 +126,11 @@ Persist worker artifacts for audit and recovery:
 - If file overlap is unavoidable, serialize those tasks.
 - Use follow-up fix tasks instead of silent overwrite.
 
-Optional coordination with existing task board:
+Optional coordination with repo-native execution surfaces:
 
-```powershell
-python .\scripts\agent_task_board.py claim --task-id T-101 --agent codex-1 --role ui
-python .\scripts\agent_task_board.py heartbeat --task-id T-101 --note "implementing"
-python .\scripts\agent_task_board.py done --task-id T-101 --note "tests pass"
-```
+- `docs/root/TUTOR_TODO.md` for active scope
+- `docs/root/AGENT_BOARD.md` for live ownership and handoff
+- `conductor/tracks/GENERAL/log.md` for dated behavior-changing notes
 
 ## Completion condition
 

@@ -3,9 +3,9 @@
 **Version:** 4.2
 **Last Updated:** 2026-03-11
 **Scope:** Entire repository (SOP, Brain, Scholar, Scripts)
-**Purpose:** Reference-only technical documentation for system architecture, dependencies, and integration. Product/page ownership authority lives in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+**Purpose:** Reference-only technical documentation for system architecture, dependencies, and integration. Top-level product/page ownership authority lives in `README.md`.
 
-> Master product canon: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+> Master repo truth: `README.md`
 > Canonical domain primitives + CP-MSS v1.0 architecture: `sop/library/17-control-plane.md`.
 > Terminology note: current DB/UI `modules` are CourseModules (course material units), not LearningModules.
 
@@ -305,7 +305,7 @@ These scripts populate the database:
 
 ## 5. App Shell (`dashboard_rebuild/` + `brain/dashboard/`)
 
-The app shell is the current React/Vite frontend served by Flask. Public-surface ownership and route meaning are defined in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`; this section only describes the runtime shell that serves those surfaces.
+The app shell is the current React/Vite frontend served by Flask. Public-surface ownership and route meaning are defined in `README.md`; this section only describes the runtime shell that serves those surfaces.
 
 **Frontend source:** `dashboard_rebuild/client/src/`
 **Build output:** `brain/static/dist/`
@@ -353,6 +353,100 @@ Representative routes for the live system:
 | **Scholar** | GET | `/api/scholar/status` | Poll current Scholar status |
 | **Obsidian** | GET | `/api/obsidian/status` | Vault connectivity status |
 | **Anki** | POST | `/api/anki/sync` | Push approved drafts to Anki |
+
+### 5.4 Tutor Runtime Wiring
+
+Backend entry points:
+
+- `brain/dashboard/app.py` registers the Tutor blueprint on `/api/tutor/*`
+- `brain/dashboard/api_tutor.py` is the Tutor registration/config hub
+- split Tutor route ownership lives in:
+  - `api_tutor_sessions.py`
+  - `api_tutor_turns.py`
+  - `api_tutor_artifacts.py`
+  - `api_tutor_materials.py`
+- supporting runtime modules:
+  - `brain/tutor_context.py`
+  - `brain/tutor_prompt_builder.py`
+  - `brain/tutor_streaming.py`
+  - `brain/tutor_tools.py`
+  - `brain/tutor_rag.py`
+  - `brain/obsidian_vault.py`
+  - `brain/db_setup.py`
+
+Frontend entry points:
+
+- `dashboard_rebuild/client/src/pages/tutor.tsx`
+- `dashboard_rebuild/client/src/components/TutorWizard.tsx`
+- `dashboard_rebuild/client/src/components/TutorChat.tsx`
+- `dashboard_rebuild/client/src/components/TutorArtifacts.tsx`
+- `dashboard_rebuild/client/src/api.ts`
+
+### 5.5 Tutor Turn Path
+
+Primary route:
+
+- `POST /api/tutor/session/<session_id>/turn`
+
+Execution sequence:
+
+1. Validate the active session and request payload.
+2. Load session turns and chain/block context.
+3. Build retrieval context from selected study materials first and supporting Obsidian notes second.
+4. Build the final prompt from chain, block, session, and retrieved evidence.
+5. Start the streaming model call with tool schemas.
+6. Emit SSE frames for token deltas, tool calls/results, status, and completion.
+7. Persist turn and session state updates, including block progress when needed.
+
+### 5.6 Tool Calling Pipeline
+
+Tool registry lives in `brain/tutor_tools.py` and is exposed through `get_tool_schemas()` and `execute_tool()`.
+
+Turn-time loop:
+
+1. model emits `tool_call`
+2. backend dispatches the tool
+3. backend emits `tool_result`
+4. tool output is appended into the conversation
+5. model resumes generation
+6. loop stops on completion or tool-iteration cap
+
+### 5.7 Frontend Tutor Lifecycle
+
+Startup and restore:
+
+1. `pages/tutor.tsx` reads local state and active-session keys.
+2. If an active session exists, frontend fetches `GET /api/tutor/session/{id}`.
+3. If the session is still active, the page hydrates chat mode; otherwise it clears stale state.
+
+Session creation:
+
+1. the Tutor start surface submits selected configuration
+2. frontend posts `POST /api/tutor/session`
+3. page switches into the live Tutor workspace with the returned `session_id`
+
+Turn flow:
+
+1. `TutorChat.tsx` posts the turn request with a raw streaming `fetch`
+2. frontend parses SSE lines into token, tool, and debug states
+3. frontend finalizes the assistant turn on `done`
+4. artifact/session handlers run after the turn completes
+
+### 5.8 Tutor State Keys
+
+Important browser state keys:
+
+- `tutor.selected_material_ids.v2`
+- `tutor.accuracy_profile.v1`
+- `tutor.objective_scope.v1`
+- `tutor.wizard.state.v1`
+- `tutor.active_session.v1`
+- `tutor.open_from_library.v1`
+- `tutor.vault_folder.v1`
+- `tutor.vault_selected.v1`
+- `tutor.wizard.progress.v1`
+- `tutor.chat.selected_vault_paths.v1`
+- `tutor-mermaid-import`
 
 ---
 
@@ -430,7 +524,7 @@ cd ..
 
 Use the docs in this order:
 
-1. `docs/root/TUTOR_STUDY_BUDDY_CANON.md` for overall product vision and subsystem contracts.
+1. `README.md` for overall product vision, subsystem contracts, and route ownership.
 2. `sop/library/17-control-plane.md` plus the rest of `sop/library/` for pedagogy, rules, and chains.
 3. This file for technical architecture and code-level system map.
 4. `conductor/tracks/` and archive folders for historical evidence only.

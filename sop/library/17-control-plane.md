@@ -17,7 +17,19 @@ The system strictly enforces this sequence. Every module must belong to exactly 
 > **Rule:** No `M-RET-*` (Retrieval) module may execute until a valid `QuestionBankSeed.md` or `OnePageAnchor.md` exists.
 > *Reasoning:* You cannot retrieve what you have not defined. Retrieving without targets reinforces guessing, not memory.
 
-## 3. The Knob Dictionary (Acute Variables)
+## 3. Stage Boundaries and First-Exposure Default
+
+The default session assumption is first exposure unless the learner has strong prior-mastery evidence.
+
+- `PRIME` is structure-first and non-assessment.
+- `CALIBRATE` is the first stage where assessment questions may begin.
+- `PRIME` may teach, orient, scaffold, and ask non-scored structure questions.
+- `PRIME` must not grade correctness, require confidence scoring, or log accuracy.
+- `CALIBRATE` may probe correctness, confidence, latency, and error type.
+- Every method belongs to exactly one control-plane stage.
+- Any first-exposure chain must begin with `PRIME` before `CALIBRATE`.
+
+## 4. The Knob Dictionary (Acute Variables)
 Modules are parameterized by these knobs to prevent library bloat.
 
 | Knob | Allowed Values | Default | Effect |
@@ -30,7 +42,7 @@ Modules are parameterized by these knobs to prevent library bloat.
 | **near_miss_intensity** | `none`, `low`, `high` | `low` | `high` forces distractors to share exact structural boundaries. |
 | **timed** | `off`, `soft`, `hard` | `soft` | `hard` logs a `Speed` error if latency > 45s. |
 
-## 4. Deterministic Error Routing
+## 5. Deterministic Error Routing
 When `ErrorLog.csv` detects a dominant error type, the system overrides the next session plan:
 
 *   **Confusion** $\rightarrow$ Force `M-ENC-010` (Contrast Matrix).

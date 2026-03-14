@@ -86,4 +86,4 @@ tags: [pt-study, tutor]
 
 ## Ownership and Change Control
 - Update this file when note schema, linking policy, or graph rules change.
-- If owner preference changes, update `docs/root/TUTOR_OWNER_INTENT.md` first, then reconcile this file.
+- If product or owner preference changes, update `README.md` first and reconcile `sop/library/17-control-plane.md` if stage semantics change, then reconcile this file.

@@ -30,7 +30,7 @@ Preferred response shape: "Here is the best way to give you full access in one s
 
 1. Read this `AGENTS.md` first.
 2. Read `docs/root/AGENT_SETUP.md` for exact agent precedence, repo/global boundaries, and maintenance rules.
-3. Read `docs/root/TUTOR_STUDY_BUDDY_CANON.md` for the overall product contract.
+3. Read `README.md` for the overall product/system contract.
 4. Use `docs/root/GUIDE_DEV.md` for canonical run/build/test commands.
 5. Do not load home-directory Claude/Codex instruction files as extra project canon for this repo.
    - Root `AGENTS.md` is the master instruction file for all LLM tools here.
@@ -48,7 +48,7 @@ Preferred response shape: "Here is the best way to give you full access in one s
 
 ## Live Sources Of Truth
 
-- Product/system contract: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- Product/system contract: `README.md`
 - Active execution board: `docs/root/TUTOR_TODO.md`
 - Multi-agent live handoff board: `docs/root/AGENT_BOARD.md`
 - Agent precedence and machine setup: `docs/root/AGENT_SETUP.md`
@@ -101,7 +101,7 @@ Rule: when someone says "library" in this repo, determine which of those two the
 
 ### Source-Of-Truth Order
 
-- Overall product truth: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- Overall product truth: `README.md`
 - Active work/status truth: `docs/root/TUTOR_TODO.md`
 - Track registry/history: `conductor/tracks.md`
 - Pedagogy truth: `sop/library/`
@@ -149,9 +149,9 @@ For the full incident log, troubleshooting snippets, and detailed guardrails, us
 ## Reference Docs
 
 - Agent setup: `docs/root/AGENT_SETUP.md`
+- Repo truth: `README.md`
 - Developer guide: `docs/root/GUIDE_DEV.md`
 - Technical architecture: `docs/root/PROJECT_ARCHITECTURE.md`
-- Product canon: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
 - Active workboard: `docs/root/TUTOR_TODO.md`
 - Multi-agent handoff board: `docs/root/AGENT_BOARD.md`
 - Guardrails and troubleshooting: `docs/root/AGENT_GUARDRAILS.md`

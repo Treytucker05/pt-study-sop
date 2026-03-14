@@ -16,7 +16,7 @@ Use this skill after `treys-swarm-planner` when the planning target is
 
 1. Root `AGENTS.md`
 2. `docs/root/AGENT_SETUP.md`
-3. `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+3. `README.md`
 4. `docs/root/GUIDE_DEV.md`
 5. `docs/root/TUTOR_TODO.md`
 6. Relevant code, APIs, schemas, tests, and existing track artifacts

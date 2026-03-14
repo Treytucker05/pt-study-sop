@@ -1,6 +1,6 @@
 # Specification: Tutor Launch / Shell Realignment Cleanup
 
-> Track artifact. Product/ownership authority lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+> Track artifact. Product/ownership authority lives only in `README.md`.
 > This spec records the execution contract for this track; it does not replace the canon.
 
 **Track ID:** tutor-launch-shell-realignment_20260313  

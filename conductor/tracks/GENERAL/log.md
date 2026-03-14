@@ -2,6 +2,39 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-14 - Repo Truth Surface Pruning closeout
+
+- Finished the README-first truth compression pass and closed `repo-truth-surface-pruning_20260314`.
+- Promoted `README.md` to the only top-level repo truth file and rewired active docs, Conductor entrypoints, and repo-local planning surfaces to point at it.
+- Folded the surviving runtime details into `docs/root/PROJECT_ARCHITECTURE.md` and the surviving stage-boundary rules into `sop/library/17-control-plane.md`.
+- Deleted the merged-away active truth docs:
+  - `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+  - `docs/root/GUIDE_TUTOR_FLOW.md`
+  - `docs/root/GUIDE_ARCHITECTURE.md`
+  - `docs/root/GUIDE_USER.md`
+  - `docs/root/TUTOR_OWNER_INTENT.md`
+  - `docs/root/TUTOR_CATEGORY_DEFINITIONS.md`
+  - `docs/root/TUTOR_METHOD_SELECTION_RULES.md`
+  - `docs/root/TUTOR_CONTROL_PLANE_CANON.md`
+- Removed the duplicate underscore Tutor launch track artifacts under `conductor/tracks/tutor_launch_shell_realignment_20260313/`.
+- Tightened repo-local planning surfaces so the active repo contract no longer recreates obsolete task-board assumptions and no longer requires metadata-first track shape.
+- Validation:
+  - `python scripts/check_docs_sync.py` -> PASS
+  - `git diff --check` -> PASS (CRLF/LF warnings only)
+  - targeted planning sweep -> only intentional negative `agent_task_board.py` note remains in `treys-swarm-planner-repo`
+
+## 2026-03-14 - Repo Truth Surface Pruning kickoff
+
+- Opened new cleanup track `repo-truth-surface-pruning_20260314`.
+- Added `README-First Truth Compression` to the active sprint in `docs/root/TUTOR_TODO.md`.
+- Claimed live ownership in `docs/root/AGENT_BOARD.md`.
+- Registered the track in `conductor/tracks.md`.
+- Initial scope:
+  - make `README.md` the single top-level repo truth file
+  - merge away redundant active truth docs without losing unique detail
+  - align repo-local planning skills and `.claude/commands/plan.md` to the same README-first truth order
+  - delete stale conflicting files only after migration maps, reference sweeps, and validator rewrites pass
+
 ## 2026-03-14 - Trey Agent Repo Readiness activated
 
 - Activated shared harness implementation after isolated planning and contract freeze finished.

@@ -2,6 +2,11 @@
 
 This file contains detailed patterns, checklists, and code samples referenced by the skill.
 
+Repo-local note:
+
+- Prefer markdown-first tracks built around `spec.md`, `plan.md`, and `index.md`.
+- Treat `metadata.json` as legacy compatibility only when it already exists.
+
 ## Pre-flight Checks
 
 1. Verify Conductor is initialized:
@@ -984,7 +989,7 @@ For each directory:
   Enter track type (feature/bug/chore/refactor):
 
 - Add entry to appropriate section in tracks.md
-- Create metadata.json if missing
+- Keep the track markdown-first; do not create metadata.json unless the repo still explicitly uses legacy metadata
 ```
 
 **For Registry Orphans (Action 2):**
@@ -1004,7 +1009,7 @@ Note: No files were deleted, only tracks.md was updated.
 Creating missing files from templates...
 
 partial_20250105/:
-- Created metadata.json from template
+- Left metadata.json absent because markdown-first tracks do not require it
 - Created index.md from template
 
 Note: You may need to populate these files with actual content.

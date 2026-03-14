@@ -39,7 +39,6 @@ Minimum requirements:
   - Status from `todo|in_progress|blocked|done` (normalize `pending/completed` to `todo/done` if needed)
   - Stable phase/task ID (`1.1`, `1.2`, ...)
   - Canonical dependency ID (`T1`, `T2`, ...) for graph readability
-  - Optional task-board ID (`T-###`) when integrating with `scripts/agent_task_board.py`
   - Dependencies via `depends_on: []` (empty list when no prereqs)
   - Concrete file paths
   - Definition of done
@@ -73,6 +72,5 @@ When this plan will be executed with subagents, include:
 - Worker prompt requirements (what context must be passed).
 - Expected worker output shape.
 - Rejection criteria for low-quality worker outputs.
-- Mapping between phase/task IDs and task-board IDs (`T-###`) when a board is used.
-  - Use an explicit mapping block/table.
-  - Keep mapping 1:1 for active tasks.
+- Mapping between phase/task IDs and the repo's actual execution surfaces when needed.
+  - Do not assume a separate task-board system exists.

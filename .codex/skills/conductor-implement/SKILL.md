@@ -73,7 +73,8 @@ Load all relevant context for implementation:
 1. Track documents:
    - `conductor/tracks/{trackId}/spec.md` - Requirements
    - `conductor/tracks/{trackId}/plan.md` - Task list
-   - `conductor/tracks/{trackId}/metadata.json` - Progress state
+   - `conductor/tracks/{trackId}/index.md` - Track status/navigation
+   - `conductor/tracks/{trackId}/metadata.json` - Legacy progress state only if present
 
 2. Project context:
    - `conductor/product.md` - Product understanding
@@ -90,7 +91,7 @@ Update track to in-progress:
 1. In `conductor/tracks.md`:
    - Change `[ ]` to `[~]` for this track
 
-2. In `conductor/tracks/{trackId}/metadata.json`:
+2. If `conductor/tracks/{trackId}/metadata.json` exists:
    - Set `status: "in_progress"`
    - Update `updated` timestamp
 
@@ -171,7 +172,7 @@ git add conductor/tracks/{trackId}/plan.md
 git commit -m "chore: mark task X.Y complete ({trackId})"
 ```
 
-**Update metadata.json:**
+**If `metadata.json` exists, update it:**
 
 - Increment `tasks.completed`
 - Update `updated` timestamp
@@ -276,7 +277,7 @@ In `conductor/tracks.md`:
 - Change `[~]` to `[x]` for this track
 - Update the "Updated" column
 
-In `conductor/tracks/{trackId}/metadata.json`:
+If `conductor/tracks/{trackId}/metadata.json` exists:
 
 - Set `status: "complete"`
 - Set `phases.completed` to total
@@ -332,7 +333,7 @@ Next steps:
 
 ## Progress Tracking
 
-Maintain progress in `metadata.json` throughout:
+If `metadata.json` exists, maintain legacy progress fields there. Otherwise keep progress in `plan.md` and `index.md`:
 
 ```json
 {
@@ -363,8 +364,8 @@ Maintain progress in `metadata.json` throughout:
 
 If implementation is paused and resumed:
 
-1. Load `metadata.json` for current state
-2. Find current task from `current_task` field
+1. Load `metadata.json` for current state if it exists; otherwise infer state from `plan.md` and `index.md`
+2. Find current task from `current_task` or the first `[~]` / next `[ ]` task in `plan.md`
 3. Check if task is `[~]` in plan.md
 4. Ask user:
 
@@ -386,4 +387,4 @@ If implementation is paused and resumed:
 3. **Follow workflow.md strictly** - TDD, commit strategy, and verification rules are mandatory
 4. **Keep plan.md updated** - Task status must reflect actual progress
 5. **Commit frequently** - Each task completion should be committed
-6. **Track all commits** - Record commit hashes in metadata.json for potential revert
+6. **Track all commits** - Record commit hashes in metadata.json when it exists, otherwise keep them in `index.md` or the final completion summary

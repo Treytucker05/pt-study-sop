@@ -2,7 +2,7 @@
 
 Execution-only workflow for this repo.
 
-- Product/page ownership authority lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+- Top-level repo truth lives in `README.md`.
 - Active execution priority lives in `docs/root/TUTOR_TODO.md`.
 - Conductor files exist to sequence work, record status, and preserve implementation history.
 

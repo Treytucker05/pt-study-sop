@@ -4,7 +4,7 @@ Source for the PT Study dashboard UI (frontend only). The API is served by Flask
 Canonical system context: tutor/session behavior is governed by CP-MSS v1.0 (`PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
 This README is implementation context only, not product authority.
 
-- Product/ownership authority: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- Top-level repo truth: `README.md`
 - Build/run/test authority: `docs/root/GUIDE_DEV.md`
 
 ## Entry points

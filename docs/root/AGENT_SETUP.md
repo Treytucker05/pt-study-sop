@@ -4,6 +4,7 @@
 
 This repo uses one project canon plus thin compatibility layers.
 All LLM tools should treat `C:\pt-study-sop\AGENTS.md` as the master project instruction file when this repo is active.
+All repo-local product/system truth should be taken from `C:\pt-study-sop\README.md`.
 
 - Project canon: `C:\pt-study-sop\AGENTS.md`
 - Repo compatibility files: `CLAUDE.md`, `.claude/AGENTS.md`, `.claude/CLAUDE.md`
@@ -16,6 +17,7 @@ All LLM tools should treat `C:\pt-study-sop\AGENTS.md` as the master project ins
 
 ## Coordination Surfaces
 
+- `README.md`: top-level repo truth
 - `docs/root/TUTOR_TODO.md`: active sprint and scope-claim board
 - `docs/root/AGENT_BOARD.md`: live multi-agent ownership and handoff surface
 - `docs/root/SKILLS_INVENTORY.md`: grouped view of the shared skill ecosystem and cleanup buckets

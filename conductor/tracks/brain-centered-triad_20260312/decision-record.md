@@ -1,6 +1,6 @@
 # Decision Record: Brain-Centered Triad Reframe
 
-> Historical track artifact. Product/ownership authority lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+> Historical track artifact. Product/ownership authority lives only in `README.md`.
 > If wording here conflicts with the canon, the canon wins.
 
 Date: 2026-03-12  

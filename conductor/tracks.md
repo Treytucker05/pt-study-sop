@@ -4,7 +4,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Execution registry only. Product or subsystem truth does not live here.
 
-- Product/ownership authority lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+- Top-level repo truth lives only in `README.md`.
 - Active execution board lives in `docs/root/TUTOR_TODO.md`.
 - Track documents are implementation evidence and status history; if they conflict with the canon, the canon wins.
 
@@ -14,7 +14,12 @@ Active execution priority is tracked in `docs/root/TUTOR_TODO.md`.
 
 Active status: 2 active workstreams.
 
-Latest update: 2026-03-14, Trey Agent Repo Readiness completed `T6` isolated startup while `Tutor Launch / Shell Realignment Cleanup` remains the active Tutor workstream.
+Latest update: 2026-03-14, Repo Truth Surface Pruning completed after the README-first truth compression, duplicate track cleanup, and validator/planning-surface rewiring landed.
+
+- [x] **Track: Repo Truth Surface Pruning** (complete — created 2026-03-14; closed 2026-03-14; scope: README-first canon promotion, redundant truth-doc compression, repo-local planning-surface alignment, duplicate track cleanup, validator/drift-gate rewiring)
+  *Link: [./tracks/repo-truth-surface-pruning_20260314/](./tracks/repo-truth-surface-pruning_20260314/)*
+
+---
 
 - [~] **Track: Trey Agent Repo Readiness** (active — created 2026-03-13; resumed 2026-03-14; `T1`-`T6` complete)
   Shared repo-local harness contract, env/bootstrap contract, tiered agent matrix, isolated startup implementation, and pending work for harness bootstrap, hermetic Tutor validation, artifacts, CI, and cross-agent proof.

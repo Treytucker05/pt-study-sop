@@ -1,6 +1,6 @@
 # Specification: Brain / Scholar / Tutor Realignment
 
-> Historical track artifact. Product/ownership authority lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+> Historical track artifact. Product/ownership authority lives only in `README.md`.
 > This spec is preserved as implementation history and may contain superseded framing.
 
 **Track ID:** brain-scholar-tutor-realignment_20260311  

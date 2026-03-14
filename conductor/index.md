@@ -2,12 +2,12 @@
 
 Conductor is execution-only in this repo.
 
-- Product/ownership authority lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+- Top-level repo truth lives in `README.md`.
 - This index is a navigation surface for execution artifacts, not a competing product-definition layer.
 
 ## Canon And Execution
 
-- Master product canon: [docs/root/TUTOR_STUDY_BUDDY_CANON.md](../docs/root/TUTOR_STUDY_BUDDY_CANON.md)
+- Master repo truth: [README.md](../README.md)
 - Active execution board: [docs/root/TUTOR_TODO.md](../docs/root/TUTOR_TODO.md)
 - Track registry: [tracks.md](./tracks.md)
 - Conductor workflow: [workflow.md](./workflow.md)

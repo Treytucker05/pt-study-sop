@@ -2,10 +2,10 @@
 
 Date: 2026-03-13
 Owner: Trey
-Authority: execution-only sprint and backlog tracker. Product/page ownership lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+Authority: execution-only sprint and backlog tracker. Top-level repo truth lives only in `README.md`.
 Purpose: keep implementation work ordered, visible, and tied to tests and verification gates without redefining the product.
 
-- Product/ownership authority: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- Top-level repo truth: `README.md`
 - Supporting technical/runtime docs: `docs/root/PROJECT_ARCHITECTURE.md`, `docs/root/GUIDE_DEV.md`
 - Conductor execution registry: `conductor/tracks.md`
 
@@ -17,13 +17,51 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Added explicit Scholar proposal approve/reject endpoints.
   - Aligned Scholar status/history API compatibility and frontend API usage.
 - Execution references:
-  - `docs/root/TUTOR_STUDY_BUDDY_CANON.md` (master product canon)
+  - `README.md` (master repo truth)
   - `docs/root/TUTOR_TODO.md` (active execution board)
   - `conductor/tracks.md` (track registry / archival)
 - Historical note: completed sprint entries below remain as execution history. If any older wording conflicts with the canon, the canon wins.
 - Launch-model note: the active Tutor direction is Brain-owned launch plus the `/tutor` shell with a thin Tutor start/resume surface. Older `wizard` wording below is historical execution language unless explicitly re-opened by a new active sprint.
 
 ## Active Sprint 2026-03-13
+
+### Sprint: README-First Truth Compression (2026-03-14)
+- [x] RTC-001. Compress repo truth surfaces down to the minimum active set and make `README.md` the only top-level repo truth file.
+  - `conductor/tracks/repo-truth-surface-pruning_20260314/`
+  - `README.md`
+  - `AGENTS.md`
+  - `docs/root/GUIDE_DEV.md`
+  - `docs/root/PROJECT_ARCHITECTURE.md`
+  - `docs/root/TUTOR_TODO.md`
+  - `docs/root/AGENT_BOARD.md`
+  - `conductor/tracks.md`
+  - `conductor/tracks/GENERAL/log.md`
+  - `.claude/commands/plan.md`
+  - `.codex/skills/`
+  - `scripts/check_docs_sync.py`
+  - current truth-like support docs under `docs/root/`
+  - duplicate stale Tutor launch track artifacts
+  - Done when: `README.md` is the master truth file, redundant active truth docs are merged away, repo-local planning surfaces all point at the same surviving truth stack, and destructive deletes only happen after reference sweeps and validator updates pass.
+- [x] Wave A: durable track bootstrap and migration map
+  - create the Conductor track with `spec.md`, `plan.md`, `findings.md`, `review.md`, and `index.md`
+  - register the track in `conductor/tracks.md`
+  - claim the work in `docs/root/AGENT_BOARD.md`
+  - build the keep/merge/delete matrix and source-section to destination-section migration map before any deletes
+- [x] Wave B: README-first canon promotion and doc compression
+  - fold the surviving Study Buddy canon and owner contract into `README.md`
+  - compress runtime/reference guidance into `docs/root/PROJECT_ARCHITECTURE.md`
+  - keep `docs/root/GUIDE_DEV.md` command-only and make all surviving docs point to the new README-first truth order
+- [x] Wave C: planning surface alignment
+  - update repo-local planning skills and `.claude/commands/plan.md` to use the README-first truth stack
+  - remove repo-local assumptions that `scripts/agent_task_board.py` or required `metadata.json` are part of the active planning contract
+- [x] Wave D: destructive cleanup and drift enforcement
+  - delete merged-away support docs and the duplicate underscore Tutor launch track only after active references are cleared
+  - update validators and grep gates so the minimal surviving topology stays enforced
+- [x] Validation
+  - `python scripts/check_docs_sync.py`
+  - `git diff --check`
+  - repo-wide `rg` sweeps for deleted paths, stale planner assumptions, and the duplicate Tutor launch track path
+  - Completed 2026-03-14: `README.md` is now the single top-level repo truth file, redundant active truth docs were deleted, the duplicate underscore Tutor launch track was removed, and the README-first validator/planning contract passed.
 
 ### Sprint: Branch Reconciliation To Main
 - [x] BRM-100. Reconcile the active feature line, pending side branches, and local harness work into verified `main`.

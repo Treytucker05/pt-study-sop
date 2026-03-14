@@ -2,7 +2,7 @@
 
 Reference-only run/build/test guide.
 
-- Product/page ownership authority: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- Top-level repo truth: `README.md`
 
 ## Overview
 This guide covers how to run the stack, update docs, and extend the system safely.
@@ -80,7 +80,6 @@ See `docs/root/PROJECT_ARCHITECTURE.md` § 4.2 for full module map and endpoint 
 - Release check: `python scripts/release_check.py`
 
 ## Docs Discipline
-- User Guide: `docs/root/GUIDE_USER.md`
 - Developer Guide: `docs/root/GUIDE_DEV.md`
-- Architecture Spec: `docs/root/GUIDE_ARCHITECTURE.md`
+- Runtime architecture: `docs/root/PROJECT_ARCHITECTURE.md`
 - Index: `docs/README.md` (`DOCS_INDEX.md` is legacy)

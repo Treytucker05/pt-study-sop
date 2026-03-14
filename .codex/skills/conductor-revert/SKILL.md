@@ -248,7 +248,7 @@ After successful git reverts, update plan.md:
    - `[x]` -> `[ ]`
    - `[~]` -> `[ ]`
 3. Write updated plan.md
-4. Update metadata.json:
+4. If `metadata.json` exists, update it:
    - Decrement `tasks.completed`
    - Update `status` if needed
    - Update `updated` timestamp

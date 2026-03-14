@@ -350,32 +350,10 @@ After plan approval:
    conductor/tracks/{trackId}/
    ├── spec.md
    ├── plan.md
-   ├── metadata.json
    └── index.md
    ```
 
-2. Create `metadata.json`:
-
-   ```json
-   {
-     "id": "{trackId}",
-     "title": "{Track Title}",
-     "type": "feature|bug|chore|refactor",
-     "status": "pending",
-     "created": "ISO_TIMESTAMP",
-     "updated": "ISO_TIMESTAMP",
-     "phases": {
-       "total": N,
-       "completed": 0
-     },
-     "tasks": {
-       "total": M,
-       "completed": 0
-     }
-   }
-   ```
-
-3. Create `index.md`:
+2. Create `index.md`:
 
    ```markdown
    # Track: {Track Title}
@@ -399,7 +377,7 @@ After plan approval:
    - [Product Context](../../product.md)
    ```
 
-4. Register in `conductor/tracks.md`:
+3. Register in `conductor/tracks.md`:
    - Add row to tracks table
    - Format: `| [ ] | {trackId} | {title} | {created} | {created} |`
 
@@ -417,7 +395,7 @@ Location: conductor/tracks/{trackId}/
 Files created:
 - spec.md - Requirements specification
 - plan.md - Phased implementation plan
-- metadata.json - Track metadata
+- optional metadata.json - legacy compatibility only when the repo still needs it
 - index.md - Track navigation
 
 Next steps:

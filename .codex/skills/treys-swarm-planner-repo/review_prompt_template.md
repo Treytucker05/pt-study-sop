@@ -9,7 +9,7 @@ You must evaluate all of the following:
 4. hidden assumptions
 5. rollout, migration, or compatibility risk
 6. task-conversion quality
-7. canon drift against `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+7. canon drift against `README.md`
 8. sprint-board compliance against `docs/root/TUTOR_TODO.md`
 9. Conductor-vs-planner split quality
 10. run/build/test command correctness

@@ -38,8 +38,8 @@
   - `brain/config.py` loads `brain/.env`
   - `dashboard_rebuild/.env.example` exists
   - `brain/.env.example` is missing
-- Repo docs and planning references drift from repo reality:
-  - the session instructions reference `docs/root/AGENT_SETUP.md`, `docs/root/TUTOR_STUDY_BUDDY_CANON.md`, and `docs/root/AGENT_BOARD.md`, but those files are absent in this checkout
+- Repo docs and planning references drifted from repo reality at baseline:
+  - the draft assumed `docs/root/AGENT_SETUP.md` and `docs/root/AGENT_BOARD.md` were absent, but they do exist in this checkout, and the repo truth has since been compressed into `README.md`
   - `scripts/README.md` references `scripts/agent_worktrees.ps1`, `scripts/bootstrap_parallel_agents.ps1`, and `scripts/check_parallel_setup.ps1`, which are absent in this checkout
   - the repo-local planner review template path used by the draft track is absent:
     - `.codex/skills/treys-swarm-planner-repo/review_prompt_template.md`

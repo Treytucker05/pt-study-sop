@@ -35,4 +35,4 @@
 ## Quick Links
 
 - [Back to Tracks](../../tracks.md)
-- [Product Canon](../../../docs/root/TUTOR_STUDY_BUDDY_CANON.md)
+- [Repo Truth](../../../README.md)

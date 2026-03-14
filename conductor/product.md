@@ -4,7 +4,7 @@ Historical filename retained for Conductor compatibility.
 
 This file is not product authority.
 
-- Product/ownership authority lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+- Top-level repo truth lives in `README.md`.
 - Technical/runtime support lives in `docs/root/PROJECT_ARCHITECTURE.md` and `docs/root/GUIDE_DEV.md`.
 - Execution status lives in `docs/root/TUTOR_TODO.md` and `conductor/tracks.md`.
 
@@ -34,7 +34,7 @@ Do not freeze or reinterpret subsystem roles here.
 
 ## Canon Pointers
 
-- Master product canon: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- Master repo truth: `README.md`
 - Execution board: `docs/root/TUTOR_TODO.md`
 - Track registry: `conductor/tracks.md`
 - Workflow instructions: `conductor/workflow.md`

@@ -30,7 +30,7 @@ The repo is considered harness-ready when:
 
 ## Observed repo drift relevant to this track
 
-- The session instructions reference `docs/root/AGENT_SETUP.md`, `docs/root/TUTOR_STUDY_BUDDY_CANON.md`, and `docs/root/AGENT_BOARD.md`, but those files are absent in the current checkout.
+- The baseline draft assumed several repo-local authority files were absent, but this checkout does contain `docs/root/AGENT_SETUP.md` and `docs/root/AGENT_BOARD.md`, and the active repo truth now lives in `README.md`.
 - `scripts/README.md` references several parallel-agent/worktree scripts that are also absent in the current checkout.
 - The repo-local planner review/conversion template paths cited by the first draft are absent in this checkout, so the track must use the shared fallback templates under `C:\Users\treyt\.agents\skills\treys-swarm-planner\templates\`.
 
@@ -54,7 +54,7 @@ These mismatches are part of the harness-readiness problem and must be handled i
 - `AGENTS.md`
 - `docs/root/GUIDE_DEV.md`
 - `docs/root/TUTOR_TODO.md`
-- `docs/root/TUTOR_TRUTH_PATH.md`
+- `README.md`
 - `Start_Dashboard.bat`
 - `scripts/`
 - `.github/workflows/ci.yml`

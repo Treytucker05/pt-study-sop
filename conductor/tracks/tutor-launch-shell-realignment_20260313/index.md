@@ -1,6 +1,6 @@
 # Track: Tutor Launch / Shell Realignment Cleanup
 
-> Track artifact. Product/ownership authority lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+> Track artifact. Product/ownership authority lives only in `README.md`.
 > Use this folder for implementation evidence and closeout history only.
 
 **ID:** tutor-launch-shell-realignment_20260313  
@@ -24,4 +24,4 @@
 ## Quick Links
 
 - [Back to Tracks](../../tracks.md)
-- [Tutor Canon](../../../docs/root/TUTOR_STUDY_BUDDY_CANON.md)
+- [Repo Truth](../../../README.md)

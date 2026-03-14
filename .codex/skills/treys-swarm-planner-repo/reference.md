@@ -6,7 +6,7 @@ Before planning, confirm all of the following:
 
 - root `AGENTS.md`
 - `docs/root/AGENT_SETUP.md`
-- `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- `README.md`
 - `docs/root/GUIDE_DEV.md`
 - `docs/root/TUTOR_TODO.md`
 - relevant code paths and tests
@@ -97,7 +97,7 @@ When mapping plan tasks into queue items:
 
 Before accepting the plan, verify:
 
-1. it does not drift from `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+1. it does not drift from `README.md`
 2. it does not redefine page ownership or product behavior in `TUTOR_TODO.md`
 3. it does not invent obsolete task-board systems
 4. it does not duplicate existing course/session/calendar/task primitives

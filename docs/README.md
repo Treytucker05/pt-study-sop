@@ -4,7 +4,7 @@ Documentation index for the PT Study repo.
 
 This file is reference-only.
 
-- Product/page ownership authority: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- Top-level repo truth: `README.md`
 - Execution queue: `docs/root/TUTOR_TODO.md`
 - Run/build/test workflow: `docs/root/GUIDE_DEV.md`
 - Technical architecture: `docs/root/PROJECT_ARCHITECTURE.md`
@@ -14,21 +14,19 @@ This file is reference-only.
 
 | Class | Meaning |
 |---|---|
-| **Canonical** | `docs/root/TUTOR_STUDY_BUDDY_CANON.md` only |
+| **Canonical** | `README.md` only |
 | **Execution-only** | `docs/root/TUTOR_TODO.md`, `conductor/` |
 | **Reference-only** | guides, READMEs, architecture docs |
 | **Historical** | `docs/archive/`, superseded track artifacts |
 
 ## Primary Entry Points
 
-- Study system canon: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- Study system truth: `README.md`
 - Execution board: `docs/root/TUTOR_TODO.md`
 - Developer guide: `docs/root/GUIDE_DEV.md`
 - Technical architecture: `docs/root/PROJECT_ARCHITECTURE.md`
-- User guide: `docs/root/GUIDE_USER.md`
-- Tutor flow guide: `docs/root/GUIDE_TUTOR_FLOW.md`
 
 ## Notes
 
-- If a reference doc conflicts with the canon, follow the canon.
+- If a reference doc conflicts with `README.md`, follow `README.md`.
 - If a historical doc appears current in search, archive it or hard-mark it as historical.

@@ -3,6 +3,7 @@
 Purpose: preserve the detailed incident learnings, implementation guardrails, and troubleshooting snippets that were removed from root `AGENTS.md` to keep the startup canon short.
 
 Root startup canon: `AGENTS.md`
+Top-level repo truth: `README.md`
 
 ## Fast Rules
 
@@ -146,5 +147,5 @@ Array.from(document.querySelectorAll('.fixed')).map(e => ({
 - Agent setup: `docs/root/AGENT_SETUP.md`
 - Developer guide: `docs/root/GUIDE_DEV.md`
 - Technical architecture: `docs/root/PROJECT_ARCHITECTURE.md`
-- Product canon: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- Top-level repo truth: `README.md`
 - Active workboard: `docs/root/TUTOR_TODO.md`

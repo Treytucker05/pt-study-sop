@@ -1,6 +1,6 @@
 # Specification: Brain-Centered Triad Reframe
 
-> Historical track artifact. Product/ownership authority lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+> Historical track artifact. Product/ownership authority lives only in `README.md`.
 > This spec records why the track existed and what it implemented; it does not replace the canon.
 
 **Track ID:** brain-centered-triad_20260312  

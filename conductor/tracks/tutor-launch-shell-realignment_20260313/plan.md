@@ -45,9 +45,9 @@ Replace the active Tutor wizard model with the recovered shell model while clean
 ## Phase 4: Reference-doc sync and closeout
 
 - [ ] `TLR-300` Rewrite active docs to match the shipped shell/start-panel model:
-  - `docs/root/GUIDE_TUTOR_FLOW.md`
+  - `README.md`
   - `docs/root/PROJECT_ARCHITECTURE.md`
-  - `docs/root/GUIDE_USER.md`
+  - `docs/root/GUIDE_DEV.md`
 - [ ] `TLR-900` Run the integrated gate, record results, and close the track.
 
 ## Dependency graph
