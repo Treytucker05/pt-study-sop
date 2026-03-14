@@ -159,7 +159,7 @@ class TestRealLibrary:
 
     def test_real_library_chain_count(self) -> None:
         chains_dir = Path(__file__).resolve().parents[1] / "library" / "chains"
-        assert len(list(chains_dir.glob("*.yaml"))) == 19
+        assert len(list(chains_dir.glob("C-*.yaml"))) == 20
 
     def test_first_exposure_core_mode_coverage(self) -> None:
         chains_dir = Path(__file__).resolve().parents[1] / "library" / "chains"

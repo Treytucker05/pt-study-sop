@@ -81,6 +81,7 @@ coverage/
 # Local/unrelated directories (keep on disk; ignore in git)
 Arcade-RetroDesignNEW/
 PT School Semester 2/
+Treys School/
 ui/
 !dashboard_rebuild/client/src/components/ui/
 !dashboard_rebuild/client/src/components/ui/**

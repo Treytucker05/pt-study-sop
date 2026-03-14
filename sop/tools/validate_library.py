@@ -52,6 +52,7 @@ CHAINS_DIR = LIB_DIR / "chains"
 META_DIR = LIB_DIR / "meta"
 TEMPLATES_DIR = LIB_DIR / "templates"
 KNOB_REGISTRY_PATH = META_DIR / "knob_registry.yaml"
+CHAIN_FILE_GLOB = "C-*.yaml"
 
 ALLOWED_OPERATIONAL_STAGES = {
     "PRIME",
@@ -503,7 +504,7 @@ def validate_chains(
         result.error("chains/ directory does not exist")
         return chains
 
-    yaml_files = sorted(CHAINS_DIR.glob("*.yaml"))
+    yaml_files = sorted(CHAINS_DIR.glob(CHAIN_FILE_GLOB))
     if not yaml_files:
         result.error("chains/ directory contains no YAML files")
         return chains
@@ -749,7 +750,7 @@ def main() -> int:
             print(f"OK — 0 errors, {len(result.warnings)} warnings")
             # Print summary
             method_count = len(list(METHODS_DIR.glob("*.yaml"))) if METHODS_DIR.exists() else 0
-            chain_count = len(list(CHAINS_DIR.glob("*.yaml"))) if CHAINS_DIR.exists() else 0
+            chain_count = len(list(CHAINS_DIR.glob(CHAIN_FILE_GLOB))) if CHAINS_DIR.exists() else 0
             print(f"  {method_count} methods, {chain_count} chains validated")
 
     return 0 if result.ok else 1

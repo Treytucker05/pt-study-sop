@@ -541,7 +541,7 @@ These three agents are the "hardware" of the system:
 ### Explicit (Well-Covered)
 - ✅ All 6 core principles implemented with evidence (28 citations)
 - ✅ H/M/Y/L series, PEIRRO, KWIK fully specified
-- ✅ M0-M6 flow, 5 modes, 34 blocks, 13 chains comprehensive
+- ✅ M0-M6 flow, 5 modes, 50 blocks, 19 chains comprehensive
 
 ### Implicit (Needs Labeling)
 - ⚠️ Paradigm layer present but not explicitly documented
