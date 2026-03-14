@@ -27,7 +27,9 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
   - Library launch now prefers explicit `course_id` handoff.
   - Ambiguous multi-course Tutor launch from Library now blocks with an explicit error.
   - Legacy wizard progress is no longer trusted as startup authority.
-- [ ] TLR-110. Replace the broad Tutor wizard with a thin Tutor start/resume panel.
+- [x] TLR-110. Replace the broad Tutor wizard with a thin Tutor start/resume panel.
+  - Replaced `TutorWizard` with `TutorStartPanel`.
+  - The start surface now uses launch summary, recent-session resume, readiness, and collapsible launch options instead of a stepper.
 - [ ] TLR-120. Rework Tutor launch tests around the start-panel model.
 - [ ] TLR-300. Rewrite active docs so they stop describing Tutor as wizard-led.
 

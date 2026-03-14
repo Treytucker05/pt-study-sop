@@ -27,9 +27,12 @@ Create one clear current Tutor launch model:
     - `0762b6a6` `refactor: derive tutor launch state from shell context`
     - `fedc68b0` `test: unblock tutor pre-push gates`
 
-- [ ] TLR-110 Replace `TutorWizard` with a thin `TutorStartPanel`.
+- [x] TLR-110 Replace `TutorWizard` with a thin `TutorStartPanel`.
   - Remove the default `COURSE -> CHAIN -> START` step model
   - Keep launch summary, resume/new session, readiness/preflight, and advanced launch options
+  - Validation:
+    - `npm run test -- client/src/components/__tests__/TutorStartPanel.test.tsx client/src/lib/__tests__/tutorClientState.test.ts client/src/components/__tests__/TutorChat.test.tsx`
+    - `npm run build`
 
 - [ ] TLR-120 Rework Tutor launch tests around the start-panel model.
 

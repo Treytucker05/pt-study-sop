@@ -14,7 +14,7 @@ import type {
   TutorConfigCheck,
 } from "@/lib/api";
 import { ContentFilter } from "@/components/ContentFilter";
-import { TutorWizard } from "@/components/TutorWizard";
+import { TutorStartPanel } from "@/components/TutorStartPanel";
 import { TutorChat } from "@/components/TutorChat";
 import { TutorArtifacts, type TutorArtifact } from "@/components/TutorArtifacts";
 import { toast } from "sonner";
@@ -781,7 +781,7 @@ export default function Tutor() {
                     }`}
                 >
                   <Settings2 className="w-3.5 h-3.5 mr-1" />
-                  WIZARD
+                  START
                 </Button>
                 <Button
                   variant="ghost"
@@ -849,7 +849,7 @@ export default function Tutor() {
               {showSetup ? (
                 <div className="flex-1 min-h-0 overflow-y-auto w-full p-4">
                   <div className="w-full max-w-4xl mx-auto">
-                    <TutorWizard
+                    <TutorStartPanel
                       courseId={courseId}
                       setCourseId={setCourseId}
                       selectedMaterials={selectedMaterials}
@@ -867,6 +867,7 @@ export default function Tutor() {
                       onStartSession={startSession}
                       isStarting={isStarting}
                       recentSessions={recentSessions}
+                      configStatus={configStatus}
                       onResumeSession={(id) => { resumeSession(id); setShowSetup(false); }}
                       onDeleteSession={async (id) => {
                         try {
@@ -908,7 +909,7 @@ export default function Tutor() {
                           READY TO LEARN
                         </div>
                         <div className="font-terminal text-sm text-muted-foreground max-w-sm">
-                          Click WIZARD to configure your session, or select a recent session to resume.
+                          Click START to configure your session, or select a recent session to resume.
                         </div>
                       </div>
                     </div>
