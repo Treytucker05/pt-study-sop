@@ -2420,3 +2420,15 @@ ubric) when stage is PRIME.
 - Registered the track in `conductor/tracks.md`, added the claim to `docs/root/TUTOR_TODO.md`, and claimed the live board row in `docs/root/AGENT_BOARD.md`.
 - Locked the next active cleanup direction around Brain-owned launch, `/tutor` as the course-keyed shell, and a thin Tutor start/resume surface instead of the legacy step wizard.
 - Preserved older sprint wording in `docs/root/TUTOR_TODO.md` as history while adding an explicit top-level note that those `wizard` references are no longer the active product model.
+
+## 2026-03-14 — Post-push branch and worktree cleanup
+
+- Merged the remaining remote-only `origin/codex/perform-complete-code-audit-of-repository` docs branch into `main` so branch cleanup could finish without leaving unique repo history behind.
+- Cleaned unrelated leftover state before branch removal:
+  - restored CRLF-only dirt in `.claude/worktrees/quirky-lalande`
+  - restored the unrelated nested `tools/chrome-devtools-mcp` dependency bump instead of pushing a random vendor update upstream
+- Aligned the root checkout back to `main`, removed stale merged auxiliary worktrees, and deleted the merged local/remote reconciliation branches so `main` is the only remaining active repo branch.
+- Validation:
+  - `git branch --no-merged main` -> no local branches
+  - `git branch -r --no-merged main` -> no remote branches after cleanup
+  - `git worktree list --porcelain` -> root checkout only

@@ -26,10 +26,14 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 ## Active Sprint 2026-03-13
 
 ### Sprint: Branch Reconciliation To Main
-- [ ] BRM-100. Reconcile the active feature line, pending side branches, and local harness work into verified `main`.
+- [x] BRM-100. Reconcile the active feature line, pending side branches, and local harness work into verified `main`.
   - Integration workspace: `C:\pt-study-sop-worktrees\integrate`
   - Required inputs: `feature/tutor-wiring-simplification`, `main`, `fix/ci-green`, `claude/happy-hugle`, and the local harness/readiness commit now preserved on the feature branch
   - Done when: all required branches are merged with conflicts resolved, targeted validation passes, and `main` is pushed
+- [x] BRM-110. Clean merged local branches and reconcile unrelated worktrees after the `main` push.
+  - Scope: root checkout branch alignment, stale merged branches, stale worktrees, and any remaining dirty unrelated worktrees that must be pushed, relocated, or deliberately retained
+  - Done when: merged stale branches/worktrees are cleaned up, unresolved dirty unrelated state is either pushed or explicitly preserved, and the root checkout is aligned to `main`
+  - Completed 2026-03-14: merged the remaining remote-only audit branch into `main`, cleaned the unrelated nested `tools/chrome-devtools-mcp` dependency drift instead of pushing it upstream, and removed the stale merged worktrees/branches after aligning the root checkout
 
 ### Sprint: Trey Agent Repo Readiness
 - [x] TAR-010. Freeze the harness command, env/bootstrap, and agent compatibility contracts.
