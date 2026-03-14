@@ -106,3 +106,25 @@ gating_rules:
 - Force active processing (explain, transform, or map), not passive reading.
 - Keep output scoped to mapped objectives only.
 artifact_type: notes
+allowed_moves:
+- Present the initial statement or fact for interrogation
+- Prompt the learner with "Why is this true?" at each level
+- Require the learner to write each answer as a new statement before proceeding
+- Guide the learner to go deeper when answers are superficial
+- Flag circular reasoning and redirect to new information
+- Enforce minimum 3 levels of depth before allowing stop
+- Prompt learner to verify chain accuracy against source material
+- Help identify bedrock knowledge (point where further explanation requires new learning)
+forbidden_moves:
+- Answer the "why?" questions FOR the learner
+- Accept circular reasoning as a valid chain link
+- Allow stopping before 3 levels of depth are reached
+- Skip source verification of the completed chain
+- Deliver a passive causal explanation instead of guiding interrogation
+- Accept made-up explanations without verification
+- Present information outside the objective scope
+- Move to retrieval before the why-chain is complete and verified
+required_outputs:
+- Why-chain document (3-5 linked explanations)
+- Depth level reached
+- Verification status

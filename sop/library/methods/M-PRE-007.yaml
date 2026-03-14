@@ -111,3 +111,23 @@ gating_rules:
 - Require a best attempt before giving correction.
 - Capture confidence and accuracy for each item.
 artifact_type: notes
+allowed_moves:
+- Present 3-5 pre-test questions on the upcoming topic
+- Require the learner to attempt every question (guessing is the point)
+- Capture confidence ratings (1-5 or H/M/L) for each answer
+- Score answers diagnostically to establish a calibration baseline
+- Keep pre-test visible during subsequent study for answer checking
+- Include a mix of difficulty levels (some answerable from prior knowledge)
+- Encourage guessing when uncertain (wrong answers prime encoding)
+forbidden_moves:
+- Teach new content or provide explanations during the pre-test
+- Reveal correct answers before study begins (delay until ENCODE phase)
+- Let the learner check answers immediately after answering
+- Make mastery judgments or grade the learner summatively
+- Skip confidence capture for any item
+- Lecture or provide extended feedback on answers
+- Use pre-test results to gatekeep or block further study
+required_outputs:
+- Pre-test answers with confidence ratings for each item
+- Calibration baseline (accuracy vs confidence alignment)
+- Encoding priming record (questions kept visible for study phase)

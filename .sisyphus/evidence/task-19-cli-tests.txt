@@ -1,0 +1,87 @@
+TASK 19: Write pytest tests for CLI retry logic and caching in brain/obsidian_vault.py
+COMPLETED: 2026-03-03
+
+SUMMARY
+=======
+Added 3 new test cases to brain/tests/test_obsidian_vault.py covering:
+1. Retry on transient timeout (fail 1st, succeed 2nd)
+2. Retry exhaustion (all 3 attempts fail)
+3. is_available() caching (called twice → subprocess called once)
+
+TEST RESULTS
+============
+pytest brain/tests/test_obsidian_vault.py -v
+
+============================= 42 passed in 18.51s =============================
+
+Test count: 42 total (39 existing + 3 new)
+All tests PASSED ✓
+
+NEW TESTS ADDED
+===============
+
+1. test_run_retry_on_transient_timeout()
+   - Mocks subprocess.run to raise TimeoutExpired on first call
+   - Second call returns success
+   - Verifies: result == "success", mock_run.call_count == 2, sleep called once with 1s delay
+   - Pattern: @patch("obsidian_vault.subprocess.run"), @patch("obsidian_vault.time.sleep")
+
+2. test_run_retry_exhaustion_all_fail()
+   - Mocks subprocess.run to raise TimeoutExpired on all 3 attempts
+   - Verifies: result == "", mock_run.call_count == 3, sleep called twice (1s, 2s)
+   - Tests the exhaustion path where all retries fail
+
+3. test_is_available_caches_result_single_call()
+   - Mocks subprocess.run and time.time
+   - First call at t=1000.0 → subprocess called
+   - Second call at t=1010.0 (within 30s TTL) → subprocess NOT called again
+   - Verifies: mock_run.call_count == 1 after two is_available() calls
+   - Tests the caching mechanism
+
+MOCK PATTERN USED
+=================
+Followed existing test pattern exactly:
+- @patch("obsidian_vault.subprocess.run") for subprocess mocking
+- @patch("obsidian_vault.time.sleep") for sleep mocking
+- @patch("obsidian_vault.time.time") for time mocking
+- MagicMock for return values
+- side_effect for sequential return values or exceptions
+
+VERIFICATION
+============
+✓ All 42 tests pass (39 existing + 3 new)
+✓ No existing tests broken
+✓ Retry logic verified: transient failures recover, exhaustion returns empty
+✓ Caching verified: subprocess called once within TTL, not called again
+✓ Mock pattern consistent with existing 39 tests
+
+FILES MODIFIED
+===============
+- brain/tests/test_obsidian_vault.py (+45 lines, 3 new test functions)
+
+IMPLEMENTATION DETAILS
+======================
+
+test_run_retry_on_transient_timeout:
+  - Tests the happy-path retry: first attempt times out, second succeeds
+  - Verifies backoff delay (1s) is applied
+  - Confirms result is returned correctly after retry
+
+test_run_retry_exhaustion_all_fail:
+  - Tests the failure path: all 3 attempts fail
+  - Verifies empty string returned (not exception raised)
+  - Confirms both backoff delays (1s, 2s) are applied
+
+test_is_available_caches_result_single_call:
+  - Tests caching within TTL (30 seconds)
+  - Mocks time.time to simulate passage of time
+  - Verifies subprocess.run called only once despite two is_available() calls
+  - Confirms cache hit behavior
+
+NOTES
+=====
+- All tests use the exact same mock pattern as existing 39 tests
+- No new dependencies added
+- No modifications to brain/obsidian_vault.py (tests only)
+- Tests are isolated and independent
+- Mock patches are scoped to test functions (no global state)

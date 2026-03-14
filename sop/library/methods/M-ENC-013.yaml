@@ -113,3 +113,25 @@ gating_rules:
 - Force active processing (explain, transform, or map), not passive reading.
 - Keep output scoped to mapped objectives only.
 artifact_type: notes
+allowed_moves:
+- Prompt learner to choose a deeply familiar location for the palace
+- Guide learner to identify 5-10 specific spots in sequential order
+- Suggest vivid, absurd, emotional imagery for each item placement
+- Prompt learner to mentally place each item at its location (learner creates the loci)
+- Guide the mental walkthrough to test retrieval in order
+- Prompt forward and backward retrieval to verify completeness
+- Identify weak links where retrieval breaks and suggest strengthening imagery
+- Suggest splitting into multiple palaces if list exceeds 10 items
+forbidden_moves:
+- Create the palace locations or loci FOR the learner
+- Dictate specific images instead of letting learner generate their own
+- Allow unfamiliar or imagined locations (must be deeply known places)
+- Accept bland or non-vivid imagery without prompting for absurdity/emotion
+- Skip the mental walkthrough retrieval test
+- Allow more than 10 items in a single palace without splitting
+- Deliver a passive list review instead of guiding spatial encoding
+- Move to retrieval before the learner can walk the palace without errors
+required_outputs:
+- Mental palace with placed items
+- Retrieval accuracy check
+- Weak links identified

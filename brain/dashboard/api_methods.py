@@ -548,6 +548,57 @@ def delete_method(method_id: int):
         conn.close()
 
 
+@methods_bp.route("/methods/<int:method_id>/template-prompt", methods=["GET"])
+def get_template_prompt(method_id: int):
+    """Return the canonical facilitation prompt regenerated from YAML seed data."""
+    conn = get_connection()
+    _ensure_method_blocks_columns(conn)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, name, method_id, control_stage, description, default_duration_min, energy_cost, artifact_type FROM method_blocks WHERE id = ?",
+        (method_id,),
+    )
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return jsonify({"error": "Method not found"}), 404
+
+    cols = [d[0] for d in cursor.description]
+    block = dict(zip(cols, row))
+
+    # Try to load YAML source for this block
+    yaml_data = None
+    try:
+        import yaml as _yaml  # noqa: F811
+
+        if _METHODS_DIR.exists():
+            for path in sorted(_METHODS_DIR.glob("*.yaml")):
+                data = _yaml.safe_load(path.read_text(encoding="utf-8"))
+                if not data:
+                    continue
+                yaml_mid = (data.get("id") or "").strip()
+                if yaml_mid and yaml_mid == (block.get("method_id") or "").strip():
+                    yaml_data = data
+                    break
+                if data.get("name") == block.get("name"):
+                    yaml_data = data
+                    break
+    except ImportError:
+        pass
+
+    try:
+        from data.seed_methods import generate_facilitation_prompt
+    except ImportError:
+        return jsonify({"error": "seed_methods not available"}), 500
+
+    source = yaml_data if yaml_data else block
+    # Ensure artifact_type is present for format examples
+    if yaml_data and "artifact_type" not in yaml_data:
+        source["artifact_type"] = block.get("artifact_type", "")
+    prompt = generate_facilitation_prompt(source)
+    return jsonify({"facilitation_prompt": prompt})
+
+
 # ---------------------------------------------------------------------------
 # Method Chains
 # ---------------------------------------------------------------------------

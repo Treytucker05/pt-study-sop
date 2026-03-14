@@ -33,6 +33,21 @@ function makeSseResponse(chunks: Array<Record<string, unknown>>): Response {
   });
 }
 
+function makeRawSseResponse(payload: string): Response {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(encoder.encode(payload));
+      controller.close();
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: { "Content-Type": "text/event-stream" },
+  });
+}
+
 /**
  * Mock fetch so every call gets a FRESH Response:
  *  - /turn  → SSE stream
@@ -179,5 +194,228 @@ describe("TutorChat", () => {
       expect(body.content_filter.accuracy_profile).toBe("strict");
       expect(body.content_filter.material_ids).toEqual([11, 12]);
     });
+  });
+
+  it("surfaces a retryable error when the stream ends with malformed chunks", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : (input as Request).url;
+
+      if (url.includes("/turn")) {
+        return makeRawSseResponse(
+          'data: {"type":"token","content":"Partial"}\n' +
+            "data: {bad json}\n",
+        );
+      }
+
+      return new Response(JSON.stringify({}), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+
+    render(
+      <TutorChat
+        sessionId="sess-4"
+        availableMaterials={[]}
+        selectedMaterialIds={[]}
+        accuracyProfile="balanced"
+        onAccuracyProfileChange={vi.fn()}
+        onSelectedMaterialIdsChange={vi.fn()}
+        onArtifactCreated={vi.fn()}
+        onTurnComplete={vi.fn()}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("Ask a question..."), {
+      target: { value: "Explain the gait cycle" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    expect(
+      await screen.findByText(/Some stream chunks were malformed/i),
+    ).toBeInTheDocument();
+    expect(warnSpy).toHaveBeenCalled();
+  });
+
+  it("surfaces a retryable error when malformed chunks are followed by DONE", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : (input as Request).url;
+
+      if (url.includes("/turn")) {
+        return makeRawSseResponse(
+          'data: {"type":"token","content":"Partial"}\n' +
+            "data: {bad json}\n" +
+            "data: [DONE]\n",
+        );
+      }
+
+      return new Response(JSON.stringify({}), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+
+    render(
+      <TutorChat
+        sessionId="sess-5"
+        availableMaterials={[]}
+        selectedMaterialIds={[]}
+        accuracyProfile="balanced"
+        onAccuracyProfileChange={vi.fn()}
+        onSelectedMaterialIdsChange={vi.fn()}
+        onArtifactCreated={vi.fn()}
+        onTurnComplete={vi.fn()}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("Ask a question..."), {
+      target: { value: "Explain the gait cycle" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    expect(
+      await screen.findByText(/Some stream chunks were malformed/i),
+    ).toBeInTheDocument();
+    expect(warnSpy).toHaveBeenCalled();
+  });
+
+  it("fires onStudioCapture with note target when To Studio -> NOTE is clicked", async () => {
+    const onStudioCapture = vi.fn();
+    mockFetchForTutor([
+      { type: "token", content: "This is important content about ATP." },
+      { type: "done", model: "codex" },
+    ]);
+
+    render(
+      <TutorChat
+        sessionId="sess-capture-1"
+        availableMaterials={[]}
+        selectedMaterialIds={[]}
+        accuracyProfile="balanced"
+        onAccuracyProfileChange={vi.fn()}
+        onSelectedMaterialIdsChange={vi.fn()}
+        onArtifactCreated={vi.fn()}
+        onTurnComplete={vi.fn()}
+        onStudioCapture={onStudioCapture}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("Ask a question..."), {
+      target: { value: "Explain ATP synthesis" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    const studioBtn = await screen.findByRole("button", { name: /to studio/i });
+    fireEvent.click(studioBtn);
+
+    const noteBtn = await screen.findByText("NOTE");
+    fireEvent.click(noteBtn);
+
+    expect(onStudioCapture).toHaveBeenCalledWith(
+      expect.objectContaining({
+        target: "note",
+        itemType: "note",
+        sourceKind: "tutor_chat",
+        content: "This is important content about ATP.",
+      }),
+    );
+  });
+
+  it("fires onStudioCapture with summary_board target when To Studio -> SUMMARY BOARD is clicked", async () => {
+    const onStudioCapture = vi.fn();
+    mockFetchForTutor([
+      { type: "token", content: "Summary-worthy content here." },
+      { type: "done", model: "codex" },
+    ]);
+
+    render(
+      <TutorChat
+        sessionId="sess-capture-2"
+        availableMaterials={[]}
+        selectedMaterialIds={[]}
+        accuracyProfile="balanced"
+        onAccuracyProfileChange={vi.fn()}
+        onSelectedMaterialIdsChange={vi.fn()}
+        onArtifactCreated={vi.fn()}
+        onTurnComplete={vi.fn()}
+        onStudioCapture={onStudioCapture}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("Ask a question..."), {
+      target: { value: "What are the key pathways?" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    const studioBtn = await screen.findByRole("button", { name: /to studio/i });
+    fireEvent.click(studioBtn);
+
+    const summaryBtn = await screen.findByText("SUMMARY BOARD");
+    fireEvent.click(summaryBtn);
+
+    expect(onStudioCapture).toHaveBeenCalledWith(
+      expect.objectContaining({
+        target: "summary_board",
+        itemType: "summary",
+        sourceKind: "tutor_chat",
+        content: "Summary-worthy content here.",
+      }),
+    );
+  });
+
+  it("shows a qualitative provenance label for mixed-source teaching replies", async () => {
+    mockFetchForTutor([
+      { type: "token", content: "This explanation uses both sources and [From training knowledge — verify with your textbooks]." },
+      {
+        type: "done",
+        model: "codex",
+        citations: [{ source: "Lecture transcript.txt", index: 1 }],
+      },
+    ]);
+
+    render(
+      <TutorChat
+        sessionId="sess-6"
+        availableMaterials={[]}
+        selectedMaterialIds={[]}
+        accuracyProfile="balanced"
+        onAccuracyProfileChange={vi.fn()}
+        onSelectedMaterialIdsChange={vi.fn()}
+        onArtifactCreated={vi.fn()}
+        onTurnComplete={vi.fn()}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("Ask a question..."), {
+      target: { value: "Teach me with an analogy" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    expect(
+      await screen.findByText(/partly grounded, partly general knowledge/i),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(/mixed confidence - verify specifics/i),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /where from/i }));
+    expect(await screen.findByText(/^Confidence$/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Cited source: Lecture transcript.txt/i)).toBeInTheDocument();
   });
 });

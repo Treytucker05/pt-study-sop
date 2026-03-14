@@ -115,3 +115,27 @@ gating_rules:
 - Require closed-note recall first, then feedback.
 - If repeated misses occur, route back to ENCODE or REFERENCE.
 artifact_type: notes
+allowed_moves:
+- Deliver rapid-fire questions (10-15) within timed block
+- Require committed answer before revealing feedback
+- Provide corrective feedback AFTER each answer is committed
+- Track running accuracy tally for RSR calculation
+- Flag uncertain-but-correct items as weak anchors
+- Enforce RSR threshold at 85% for advance
+- Route back to ENCODE on RSR below 80%
+- Use varied question formats (definition, application, comparison)
+- Enforce time constraints for desirable difficulty
+forbidden_moves:
+- Reveal answer before learner commits to a response
+- Accept hedged or uncommitted answers ("I think maybe...")
+- Provide hints during first attempt at any question
+- Allow reference materials during quiz
+- Skip RSR calculation at end of block
+- Teach new material during retrieval
+- Skip tracking weak anchors (uncertain but correct)
+- Remove time pressure from the sprint format
+required_outputs:
+- RSR percentage (correct/total)
+- List of missed questions with correct answers
+- Weak anchor flags (uncertain but correct items)
+- Topics needing re-encoding

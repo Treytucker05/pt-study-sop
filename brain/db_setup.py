@@ -15,6 +15,187 @@ from pathlib import Path
 from config import DB_PATH
 
 
+def _create_learner_profile_tables(cursor) -> None:
+    """Create Wave 1 Brain learner-profile tables."""
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS learner_profile_snapshots (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            archetype_slug TEXT NOT NULL,
+            archetype_label TEXT NOT NULL,
+            archetype_summary TEXT NOT NULL,
+            supporting_traits_json TEXT,
+            profile_summary_json TEXT,
+            evidence_summary_json TEXT,
+            model_version TEXT NOT NULL,
+            source_window_start TEXT,
+            source_window_end TEXT,
+            active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_learner_profile_snapshots_user_created
+        ON learner_profile_snapshots(user_id, created_at DESC)
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS learner_profile_claims (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            snapshot_id INTEGER NOT NULL,
+            user_id TEXT NOT NULL,
+            claim_key TEXT NOT NULL,
+            claim_label TEXT NOT NULL,
+            score REAL NOT NULL,
+            value_band TEXT NOT NULL,
+            confidence REAL NOT NULL,
+            freshness_days REAL,
+            contradiction_state TEXT NOT NULL DEFAULT 'stable',
+            evidence_tier INTEGER NOT NULL,
+            evidence_label TEXT,
+            signal_direction TEXT NOT NULL DEFAULT 'strength',
+            observed_count INTEGER NOT NULL DEFAULT 0,
+            explanation TEXT,
+            recommended_strategy TEXT,
+            evidence_json TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(snapshot_id) REFERENCES learner_profile_snapshots(id),
+            UNIQUE(snapshot_id, claim_key)
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_learner_profile_claims_snapshot
+        ON learner_profile_claims(snapshot_id)
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS learner_profile_questions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            snapshot_id INTEGER,
+            question_key TEXT NOT NULL,
+            question_text TEXT NOT NULL,
+            claim_key TEXT,
+            rationale TEXT,
+            question_type TEXT NOT NULL DEFAULT 'calibration',
+            status TEXT NOT NULL DEFAULT 'pending',
+            blocking INTEGER NOT NULL DEFAULT 0,
+            evidence_needed TEXT,
+            answer_text TEXT,
+            answer_source TEXT,
+            answered_at TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(snapshot_id) REFERENCES learner_profile_snapshots(id)
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_learner_profile_questions_user_status
+        ON learner_profile_questions(user_id, status, question_key)
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS learner_profile_feedback_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            snapshot_id INTEGER,
+            claim_key TEXT,
+            question_id INTEGER,
+            feedback_type TEXT NOT NULL,
+            response_text TEXT,
+            source TEXT NOT NULL DEFAULT 'ui',
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(snapshot_id) REFERENCES learner_profile_snapshots(id),
+            FOREIGN KEY(question_id) REFERENCES learner_profile_questions(id)
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_learner_profile_feedback_user_created
+        ON learner_profile_feedback_events(user_id, created_at DESC)
+        """
+    )
+
+
+def _create_product_shell_tables(cursor) -> None:
+    """Create premium product shell tables for events, privacy, and feature flags."""
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS product_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_id TEXT NOT NULL UNIQUE,
+            user_id TEXT NOT NULL DEFAULT 'default',
+            workspace_id TEXT NOT NULL DEFAULT 'default',
+            event_type TEXT NOT NULL,
+            source TEXT NOT NULL DEFAULT 'system',
+            metadata_json TEXT NOT NULL DEFAULT '{}',
+            created_at TEXT NOT NULL
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_product_events_scope_created
+        ON product_events(user_id, workspace_id, created_at DESC)
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_product_events_type_created
+        ON product_events(event_type, created_at DESC)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS product_privacy_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL DEFAULT 'default',
+            workspace_id TEXT NOT NULL DEFAULT 'default',
+            retention_days INTEGER NOT NULL DEFAULT 180,
+            allow_tier2_signals INTEGER NOT NULL DEFAULT 1,
+            allow_vault_signals INTEGER NOT NULL DEFAULT 1,
+            allow_calendar_signals INTEGER NOT NULL DEFAULT 1,
+            allow_scholar_personalization INTEGER NOT NULL DEFAULT 1,
+            allow_outcome_reports INTEGER NOT NULL DEFAULT 1,
+            updated_at TEXT NOT NULL,
+            UNIQUE(user_id, workspace_id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS product_feature_flags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            flag_key TEXT NOT NULL UNIQUE,
+            enabled INTEGER NOT NULL DEFAULT 1,
+            variant TEXT NOT NULL DEFAULT 'on',
+            description TEXT,
+            scope TEXT NOT NULL DEFAULT 'global',
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_product_feature_flags_scope
+        ON product_feature_flags(scope, enabled)
+        """
+    )
+
+
 def _migrate_academic_deadlines(cursor) -> None:
     """Merge academic_deadlines into course_events, then drop the table.
 
@@ -515,6 +696,8 @@ def init_database():
             last_session_id INTEGER,
             last_session_date TEXT,
             next_action TEXT,
+            group_name TEXT,
+            managed_by_tutor INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT,
             FOREIGN KEY(course_id) REFERENCES courses(id),
@@ -738,6 +921,16 @@ def init_database():
         try:
             cursor.execute("ALTER TABLE learning_objectives ADD COLUMN group_name TEXT")
             print("[INFO] Added 'group_name' column to learning_objectives table")
+        except sqlite3.OperationalError:
+            pass
+    if "managed_by_tutor" not in lo_cols:
+        try:
+            cursor.execute(
+                "ALTER TABLE learning_objectives ADD COLUMN managed_by_tutor INTEGER NOT NULL DEFAULT 0"
+            )
+            print(
+                "[INFO] Added 'managed_by_tutor' column to learning_objectives table"
+            )
         except sqlite3.OperationalError:
             pass
 
@@ -1121,6 +1314,26 @@ def init_database():
             pass
 
     # ------------------------------------------------------------------
+    # Brain learner-profile tables
+    # ------------------------------------------------------------------
+    _create_learner_profile_tables(cursor)
+
+    # ------------------------------------------------------------------
+    # Premium product shell tables
+    # ------------------------------------------------------------------
+    _create_product_shell_tables(cursor)
+
+    # ------------------------------------------------------------------
+    # Scholar research tables
+    # ------------------------------------------------------------------
+    try:
+        from scholar_research import ensure_scholar_research_schema
+
+        ensure_scholar_research_schema(conn)
+    except Exception as exc:
+        print(f"[WARN] Scholar research tables skipped: {exc}")
+
+    # ------------------------------------------------------------------
     # Scholar Digests table (strategic analysis documents)
     # ------------------------------------------------------------------
     cursor.execute(
@@ -1187,6 +1400,160 @@ def init_database():
     )
 
     # ------------------------------------------------------------------
+    # Scholar Questions table (deterministic question lifecycle tracking)
+    # ------------------------------------------------------------------
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS scholar_questions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            question_id TEXT NOT NULL UNIQUE,
+            question_hash TEXT NOT NULL UNIQUE,
+            question_text TEXT NOT NULL,
+            source TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            answered_at TEXT,
+            answer_text TEXT,
+            answer_source TEXT,
+            status_updated_at TEXT,
+            status_reason TEXT
+        )
+    """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_scholar_questions_question_id
+        ON scholar_questions(question_id)
+    """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_scholar_questions_hash
+        ON scholar_questions(question_hash)
+    """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_scholar_questions_status
+        ON scholar_questions(status)
+    """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_scholar_questions_source
+        ON scholar_questions(source)
+    """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_scholar_questions_updated
+        ON scholar_questions(updated_at DESC)
+    """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS scholar_investigations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            investigation_id TEXT NOT NULL UNIQUE,
+            title TEXT NOT NULL,
+            query_text TEXT NOT NULL,
+            rationale TEXT NOT NULL,
+            audience_type TEXT NOT NULL DEFAULT 'learner',
+            mode TEXT NOT NULL DEFAULT 'brain',
+            status TEXT NOT NULL DEFAULT 'queued',
+            source_policy TEXT NOT NULL DEFAULT 'trusted-first',
+            confidence TEXT NOT NULL DEFAULT 'low',
+            uncertainty_summary TEXT,
+            linked_profile_snapshot_id TEXT,
+            requested_by TEXT NOT NULL DEFAULT 'ui',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            started_at TEXT,
+            completed_at TEXT,
+            run_notes TEXT,
+            output_markdown TEXT,
+            error_message TEXT
+        )
+    """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_scholar_investigations_status
+        ON scholar_investigations(status)
+    """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_scholar_investigations_updated
+        ON scholar_investigations(updated_at DESC)
+    """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS scholar_sources (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_id TEXT NOT NULL UNIQUE,
+            investigation_id TEXT NOT NULL,
+            url TEXT NOT NULL,
+            normalized_url TEXT NOT NULL,
+            domain TEXT NOT NULL,
+            title TEXT,
+            publisher TEXT,
+            published_at TEXT,
+            snippet TEXT,
+            source_type TEXT NOT NULL DEFAULT 'web',
+            trust_tier TEXT NOT NULL DEFAULT 'general',
+            rank_order INTEGER NOT NULL DEFAULT 0,
+            fetched_at TEXT,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(investigation_id) REFERENCES scholar_investigations(investigation_id)
+        )
+    """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_scholar_sources_investigation
+        ON scholar_sources(investigation_id)
+    """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_scholar_sources_domain
+        ON scholar_sources(domain)
+    """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS scholar_findings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            finding_id TEXT NOT NULL UNIQUE,
+            investigation_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            summary TEXT NOT NULL,
+            relevance TEXT,
+            confidence TEXT NOT NULL DEFAULT 'low',
+            uncertainty TEXT,
+            learner_visible INTEGER NOT NULL DEFAULT 1,
+            source_ids_json TEXT NOT NULL DEFAULT '[]',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY(investigation_id) REFERENCES scholar_investigations(investigation_id)
+        )
+    """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_scholar_findings_investigation
+        ON scholar_findings(investigation_id)
+    """
+    )
+
+    # ------------------------------------------------------------------
     # Scholar Run tracking (v9.4.2 - for UI run button + history)
     # ------------------------------------------------------------------
     cursor.execute("""
@@ -1219,6 +1586,89 @@ def init_database():
     for table, cols in [
         ("scholar_digests", [("content", "TEXT"), ("cluster_id", "TEXT")]),
         ("scholar_proposals", [("content", "TEXT"), ("cluster_id", "TEXT")]),
+        (
+            "scholar_questions",
+            [
+                ("question_id", "TEXT"),
+                ("question_hash", "TEXT"),
+                ("question_text", "TEXT"),
+                ("source", "TEXT"),
+                ("status", "TEXT"),
+                ("created_at", "TEXT"),
+                ("updated_at", "TEXT"),
+                ("answered_at", "TEXT"),
+                ("answer_text", "TEXT"),
+                ("answer_source", "TEXT"),
+                ("status_updated_at", "TEXT"),
+                ("status_reason", "TEXT"),
+                ("audience_type", "TEXT"),
+                ("rationale", "TEXT"),
+                ("is_blocking", "INTEGER DEFAULT 0"),
+                ("linked_investigation_id", "TEXT"),
+                ("evidence_needed", "TEXT"),
+                ("answer_incorporation_status", "TEXT"),
+                ("answer_incorporated_at", "TEXT"),
+            ],
+        ),
+        (
+            "scholar_investigations",
+            [
+                ("investigation_id", "TEXT"),
+                ("title", "TEXT"),
+                ("query_text", "TEXT"),
+                ("rationale", "TEXT"),
+                ("audience_type", "TEXT"),
+                ("mode", "TEXT"),
+                ("status", "TEXT"),
+                ("source_policy", "TEXT"),
+                ("confidence", "TEXT"),
+                ("uncertainty_summary", "TEXT"),
+                ("linked_profile_snapshot_id", "TEXT"),
+                ("requested_by", "TEXT"),
+                ("created_at", "TEXT"),
+                ("updated_at", "TEXT"),
+                ("started_at", "TEXT"),
+                ("completed_at", "TEXT"),
+                ("run_notes", "TEXT"),
+                ("output_markdown", "TEXT"),
+                ("error_message", "TEXT"),
+            ],
+        ),
+        (
+            "scholar_sources",
+            [
+                ("source_id", "TEXT"),
+                ("investigation_id", "TEXT"),
+                ("url", "TEXT"),
+                ("normalized_url", "TEXT"),
+                ("domain", "TEXT"),
+                ("title", "TEXT"),
+                ("publisher", "TEXT"),
+                ("published_at", "TEXT"),
+                ("snippet", "TEXT"),
+                ("source_type", "TEXT"),
+                ("trust_tier", "TEXT"),
+                ("rank_order", "INTEGER"),
+                ("fetched_at", "TEXT"),
+                ("created_at", "TEXT"),
+            ],
+        ),
+        (
+            "scholar_findings",
+            [
+                ("finding_id", "TEXT"),
+                ("investigation_id", "TEXT"),
+                ("title", "TEXT"),
+                ("summary", "TEXT"),
+                ("relevance", "TEXT"),
+                ("confidence", "TEXT"),
+                ("uncertainty", "TEXT"),
+                ("learner_visible", "INTEGER"),
+                ("source_ids_json", "TEXT"),
+                ("created_at", "TEXT"),
+                ("updated_at", "TEXT"),
+            ],
+        ),
     ]:
         cursor.execute(f"PRAGMA table_info({table})")
         existing = {c[1] for c in cursor.fetchall()}
@@ -1239,6 +1689,7 @@ def init_database():
             title TEXT,
             content TEXT NOT NULL,
             note_type TEXT NOT NULL DEFAULT 'notes',
+            tutor_session_id TEXT,
             position INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
@@ -1255,11 +1706,22 @@ def init_database():
             )
         except Exception:
             pass
+    if "tutor_session_id" not in quick_notes_cols:
+        try:
+            cursor.execute("ALTER TABLE quick_notes ADD COLUMN tutor_session_id TEXT")
+        except Exception:
+            pass
     cursor.execute("UPDATE quick_notes SET note_type = COALESCE(note_type, 'notes')")
     cursor.execute(
         """
         CREATE INDEX IF NOT EXISTS idx_quick_notes_position
         ON quick_notes(position)
+    """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_quick_notes_tutor_session
+        ON quick_notes(tutor_session_id)
     """
     )
 
@@ -1588,12 +2050,15 @@ def init_database():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             session_id TEXT NOT NULL UNIQUE,
             brain_session_id INTEGER,
+            brain_profile_snapshot_id INTEGER,
             codex_thread_id TEXT,
             last_response_id TEXT,
             course_id INTEGER,
             phase TEXT NOT NULL DEFAULT 'first_pass',
             topic TEXT,
             content_filter_json TEXT,
+            scholar_strategy_json TEXT,
+            strategy_feedback_json TEXT,
             status TEXT DEFAULT 'active',
             turn_count INTEGER DEFAULT 0,
             artifacts_json TEXT,
@@ -1615,6 +2080,200 @@ def init_database():
         CREATE INDEX IF NOT EXISTS idx_tutor_sessions_status
         ON tutor_sessions(status)
     """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tutor_session_learning_objectives (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tutor_session_id TEXT NOT NULL,
+            lo_id INTEGER NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(tutor_session_id, lo_id),
+            FOREIGN KEY(tutor_session_id) REFERENCES tutor_sessions(session_id),
+            FOREIGN KEY(lo_id) REFERENCES learning_objectives(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_tutor_session_lo_session
+        ON tutor_session_learning_objectives(tutor_session_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_tutor_session_lo_lo_id
+        ON tutor_session_learning_objectives(lo_id)
+    """)
+
+    # ------------------------------------------------------------------
+    # Tutor shell state + normalized Studio persistence
+    # ------------------------------------------------------------------
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS project_workspace_state (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            course_id INTEGER NOT NULL UNIQUE,
+            active_tutor_session_id TEXT,
+            last_mode TEXT NOT NULL DEFAULT 'studio',
+            active_board_scope TEXT NOT NULL DEFAULT 'project',
+            active_board_id INTEGER,
+            viewer_state_json TEXT,
+            selected_material_ids_json TEXT NOT NULL DEFAULT '[]',
+            revision INTEGER NOT NULL DEFAULT 0,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(course_id) REFERENCES courses(id),
+            FOREIGN KEY(active_tutor_session_id) REFERENCES tutor_sessions(session_id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_project_workspace_state_course
+        ON project_workspace_state(course_id)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS studio_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            course_id INTEGER NOT NULL,
+            tutor_session_id TEXT,
+            scope TEXT NOT NULL DEFAULT 'session',
+            item_type TEXT NOT NULL,
+            source_kind TEXT,
+            title TEXT,
+            body_markdown TEXT,
+            source_path TEXT,
+            source_locator_json TEXT,
+            payload_json TEXT,
+            status TEXT NOT NULL DEFAULT 'captured',
+            promoted_from_id INTEGER,
+            version INTEGER NOT NULL DEFAULT 1,
+            deleted_at TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT,
+            FOREIGN KEY(course_id) REFERENCES courses(id),
+            FOREIGN KEY(tutor_session_id) REFERENCES tutor_sessions(session_id),
+            FOREIGN KEY(promoted_from_id) REFERENCES studio_items(id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_studio_items_course_scope
+        ON studio_items(course_id, scope, status)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_studio_items_session
+        ON studio_items(tutor_session_id, created_at DESC)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS studio_item_revisions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            studio_item_id INTEGER NOT NULL,
+            revision INTEGER NOT NULL,
+            body_markdown TEXT,
+            payload_json TEXT,
+            source_locator_json TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(studio_item_id, revision),
+            FOREIGN KEY(studio_item_id) REFERENCES studio_items(id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_studio_item_revisions_item
+        ON studio_item_revisions(studio_item_id, revision DESC)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS studio_boards (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            course_id INTEGER,
+            tutor_session_id TEXT,
+            board_scope TEXT NOT NULL,
+            name TEXT NOT NULL,
+            version INTEGER NOT NULL DEFAULT 1,
+            deleted_at TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT,
+            FOREIGN KEY(course_id) REFERENCES courses(id),
+            FOREIGN KEY(tutor_session_id) REFERENCES tutor_sessions(session_id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_studio_boards_scope
+        ON studio_boards(course_id, tutor_session_id, board_scope)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS studio_board_entries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            board_id INTEGER NOT NULL,
+            studio_item_id INTEGER NOT NULL,
+            group_key TEXT,
+            column_key TEXT,
+            x REAL,
+            y REAL,
+            w REAL,
+            h REAL,
+            sort_order INTEGER DEFAULT 0,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(board_id, studio_item_id),
+            FOREIGN KEY(board_id) REFERENCES studio_boards(id),
+            FOREIGN KEY(studio_item_id) REFERENCES studio_items(id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_studio_board_entries_board
+        ON studio_board_entries(board_id, sort_order)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS studio_actions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            idempotency_key TEXT NOT NULL UNIQUE,
+            course_id INTEGER NOT NULL,
+            tutor_session_id TEXT,
+            action_type TEXT NOT NULL,
+            destination_kind TEXT,
+            request_id TEXT,
+            status TEXT NOT NULL DEFAULT 'completed',
+            details_json TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(course_id) REFERENCES courses(id),
+            FOREIGN KEY(tutor_session_id) REFERENCES tutor_sessions(session_id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_studio_actions_course_created
+        ON studio_actions(course_id, created_at DESC)
+        """
+    )
 
     # --- Migration to drop mode column if it still exists ---
     cursor.execute("PRAGMA table_info(tutor_sessions)")
@@ -1683,6 +2342,69 @@ def init_database():
     """)
 
     # ------------------------------------------------------------------
+    # Adaptive Tutor: tutor_delete_telemetry (persistent delete diagnostics)
+    # ------------------------------------------------------------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tutor_delete_telemetry (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            request_id TEXT NOT NULL,
+            route TEXT NOT NULL,
+            session_id TEXT,
+            status TEXT NOT NULL,
+            requested_count INTEGER NOT NULL DEFAULT 0,
+            deleted_count INTEGER NOT NULL DEFAULT 0,
+            skipped_count INTEGER NOT NULL DEFAULT 0,
+            failed_count INTEGER NOT NULL DEFAULT 0,
+            details_json TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(session_id) REFERENCES tutor_sessions(session_id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_tutor_delete_telemetry_request
+        ON tutor_delete_telemetry(request_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_tutor_delete_telemetry_session
+        ON tutor_delete_telemetry(session_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_tutor_delete_telemetry_created_at
+        ON tutor_delete_telemetry(created_at)
+    """)
+
+    # ------------------------------------------------------------------
+    # Adaptive Tutor: rag_embedding_failures (per-document embed telemetry)
+    # ------------------------------------------------------------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS rag_embedding_failures (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            rag_doc_id INTEGER NOT NULL,
+            provider TEXT,
+            embedding_model TEXT,
+            collection_name TEXT,
+            failure_stage TEXT,
+            error_type TEXT,
+            error_message TEXT,
+            failed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(rag_doc_id) REFERENCES rag_docs(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_rag_embedding_failures_doc
+        ON rag_embedding_failures(rag_doc_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_rag_embedding_failures_failed_at
+        ON rag_embedding_failures(failed_at)
+    """)
+
+    # ------------------------------------------------------------------
     # Adaptive Tutor: rag_embeddings (vector chunks for ChromaDB)
     # ------------------------------------------------------------------
     cursor.execute("""
@@ -1692,6 +2414,7 @@ def init_database():
             chunk_index INTEGER NOT NULL DEFAULT 0,
             chunk_text TEXT NOT NULL,
             embedding_model TEXT DEFAULT 'text-embedding-3-small',
+            provider TEXT,
             chroma_id TEXT,
             token_count INTEGER,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1704,6 +2427,32 @@ def init_database():
         CREATE INDEX IF NOT EXISTS idx_rag_embeddings_doc
         ON rag_embeddings(rag_doc_id)
     """)
+
+    # Add metadata columns for existing installations
+    cursor.execute("PRAGMA table_info(rag_embeddings)")
+    rag_cols = {row[1] for row in cursor.fetchall()}
+    if "provider" not in rag_cols:
+        try:
+            cursor.execute("ALTER TABLE rag_embeddings ADD COLUMN provider TEXT")
+            print("[INFO] Added 'provider' column to rag_embeddings table")
+        except sqlite3.OperationalError:
+            pass
+    if "embedding_model" not in rag_cols:
+        try:
+            cursor.execute(
+                "ALTER TABLE rag_embeddings ADD COLUMN embedding_model TEXT"
+            )
+            print("[INFO] Added 'embedding_model' column to rag_embeddings table")
+        except sqlite3.OperationalError:
+            pass
+    if "embedding_dimension" not in rag_cols:
+        try:
+            cursor.execute(
+                "ALTER TABLE rag_embeddings ADD COLUMN embedding_dimension INTEGER"
+            )
+            print("[INFO] Added 'embedding_dimension' column to rag_embeddings table")
+        except sqlite3.OperationalError:
+            pass
 
     # ------------------------------------------------------------------
     # Adaptive Tutor: column migrations
@@ -1905,10 +2654,27 @@ def init_database():
     except ImportError as exc:
         print(f"[WARN] Adaptive tables skipped (import failed): {exc}")
 
-    # tutor_turns: add evaluation_json + behavior_override columns
+    # tutor_sessions: add strategy/profile columns
+    cursor.execute("PRAGMA table_info(tutor_sessions)")
+    ts_cols_strategy = {col[1] for col in cursor.fetchall()}
+    for col_name, col_type in [
+        ("brain_profile_snapshot_id", "INTEGER"),
+        ("scholar_strategy_json", "TEXT"),
+        ("strategy_feedback_json", "TEXT"),
+    ]:
+        if col_name not in ts_cols_strategy:
+            try:
+                cursor.execute(
+                    f"ALTER TABLE tutor_sessions ADD COLUMN {col_name} {col_type}"
+                )
+                print(f"[INFO] Added '{col_name}' column to tutor_sessions table")
+            except sqlite3.OperationalError:
+                pass
+
+    # tutor_turns: add evaluation_json + behavior_override + strategy_snapshot_json columns
     cursor.execute("PRAGMA table_info(tutor_turns)")
     tt_cols_eval = {col[1] for col in cursor.fetchall()}
-    for col_name in ["evaluation_json", "behavior_override"]:
+    for col_name in ["evaluation_json", "behavior_override", "strategy_snapshot_json"]:
         if col_name not in tt_cols_eval:
             try:
                 cursor.execute(
@@ -1950,11 +2716,37 @@ def init_database():
     cursor.execute("DROP TABLE IF EXISTS topics")
     cursor.execute("DROP INDEX IF EXISTS idx_topics_course")
 
+    # ------------------------------------------------------------------
+    # Tutor Accuracy Feedback Loop (Gap 9)
+    # ------------------------------------------------------------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tutor_accuracy_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            turn_number INTEGER,
+            topic TEXT,
+            retrieval_confidence TEXT,
+            source_count INTEGER,
+            chunk_count INTEGER,
+            created_at TEXT DEFAULT (datetime('now'))
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_tutor_accuracy_log_session
+        ON tutor_accuracy_log(session_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_tutor_accuracy_log_topic
+        ON tutor_accuracy_log(topic)
+    """)
+
     conn.commit()
     conn.close()
 
     print(f"[OK] Database initialized at: {DB_PATH}")
-    print("[OK] Schema version: 9.5 + video enrichment API usage")
+    print("[OK] Schema version: 9.7 + premium product shell")
 
 
 def migrate_method_categories():
@@ -2080,6 +2872,63 @@ def log_error(session_id: str, item_id: str = None, error_type: str = None,
         fix_applied
     ))
     
+    conn.commit()
+    row_id = cursor.lastrowid
+    conn.close()
+    return row_id
+
+
+def log_tutor_delete_telemetry(
+    request_id: str,
+    route: str,
+    status: str,
+    session_id: str = None,
+    requested_count: int = 0,
+    deleted_count: int = 0,
+    skipped_count: int = 0,
+    failed_count: int = 0,
+    details: Optional[dict] = None,
+) -> int:
+    """
+    Persist tutor delete telemetry for post-mortem debugging.
+
+    Args:
+        request_id: Correlation ID returned by delete endpoints.
+        route: Endpoint route name.
+        status: Delete outcome status.
+        session_id: Tutor session ID.
+        requested_count: Number of items requested for deletion.
+        deleted_count: Number of items deleted.
+        skipped_count: Number of items skipped/already missing.
+        failed_count: Number of failed delete attempts.
+        details: Additional structured details.
+
+    Returns:
+        Inserted row ID.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO tutor_delete_telemetry
+        (
+            request_id, route, session_id, status,
+            requested_count, deleted_count, skipped_count, failed_count, details_json
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            request_id,
+            route,
+            session_id,
+            status,
+            int(requested_count or 0),
+            int(deleted_count or 0),
+            int(skipped_count or 0),
+            int(failed_count or 0),
+            json.dumps(details) if details else None,
+        ),
+    )
     conn.commit()
     row_id = cursor.lastrowid
     conn.close()

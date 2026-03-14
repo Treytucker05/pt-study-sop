@@ -4,6 +4,7 @@ import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -13,6 +14,7 @@ import config
 import db_setup
 from dashboard.app import create_app
 import dashboard.api_tutor as api_tutor_mod
+from dashboard.api_tutor_utils import VIDEO_JOBS, VIDEO_JOBS_LOCK
 
 
 @pytest.fixture(scope="module")
@@ -120,7 +122,7 @@ def test_process_video_material_rejects_non_mp4(client, tmp_path: Path) -> None:
 
 
 def test_video_status_endpoint(client) -> None:
-    api_tutor_mod.VIDEO_JOBS["job-status-1"] = {
+    VIDEO_JOBS["job-status-1"] = {
         "job_id": "job-status-1",
         "status": "running",
         "phase": "processing",
@@ -130,3 +132,50 @@ def test_video_status_endpoint(client) -> None:
     payload = resp.get_json()
     assert payload["job_id"] == "job-status-1"
     assert payload["status"] == "running"
+
+
+def test_video_status_includes_budget_visibility(client) -> None:
+    """Task 19 regression: provider + remaining_budget_pct appear in status."""
+    VIDEO_JOBS["job-budget-vis"] = {
+        "job_id": "job-budget-vis",
+        "status": "complete",
+    }
+    fake_status = {
+        "provider": "gemini-file-api",
+        "remaining_budget_pct": 73.5,
+        "budget": {"monthly_spend": 1.33, "monthly_cap": 5.0},
+    }
+    # The import happens inside the function as `from video_enrich_api import ...`
+    with patch(
+        "video_enrich_api.get_enrichment_status",
+        return_value=fake_status,
+    ):
+        resp = client.get("/api/tutor/materials/video/status/job-budget-vis")
+    assert resp.status_code == 200
+    payload = resp.get_json()
+    assert payload["provider"] == "gemini-file-api"
+    assert payload["remaining_budget_pct"] == 73.5
+
+
+def test_video_status_budget_fallback_on_import_error(client) -> None:
+    """Budget fields degrade gracefully if enrichment status unavailable."""
+    VIDEO_JOBS["job-fallback"] = {
+        "job_id": "job-fallback",
+        "status": "running",
+    }
+    with patch(
+        "video_enrich_api.get_enrichment_status",
+        side_effect=RuntimeError("unavailable"),
+    ):
+        resp = client.get("/api/tutor/materials/video/status/job-fallback")
+    assert resp.status_code == 200
+    payload = resp.get_json()
+    # Fallback values applied
+    assert payload["provider"] == "gemini-file-api"
+    assert payload["remaining_budget_pct"] is None
+
+
+def test_video_status_not_found(client) -> None:
+    """Unknown job ID returns 404."""
+    resp = client.get("/api/tutor/materials/video/status/nonexistent-job")
+    assert resp.status_code == 404

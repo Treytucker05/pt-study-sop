@@ -96,3 +96,23 @@ failure_modes:
 - mode: Drift into testing
   mitigation: Return to orientation-only behavior.
 artifact_type: notes
+allowed_moves:
+- Extract top-level pillars from each source (headings and conceptual anchors only)
+- Merge overlapping pillars into one unified top-down structure
+- Add cross-links between sources where concepts overlap
+- Flag contradictions or conflicts between sources for follow-up
+- Synthesize structure across 2-3 sources at a high level
+- Preserve source-specific distinctions where needed
+forbidden_moves:
+- Score, grade, or assess the learner
+- Teach new detailed content or provide in-depth explanations
+- Deep-dive into details when resolving contradictions
+- Exceed source_cap (3 default) for synthesis
+- Run quizzes, retrieval prompts, or correctness checks
+- Run this method with only one source (skip if single-source)
+- Summarize paragraph-level content instead of structural pillars
+required_outputs:
+- UnifiedTopDownTree (integrated hierarchy from all sources)
+- CrossSourceLinks list
+- ConflictFlags list
+- FollowUpTargets list

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import sqlite3
 from typing import Any
 
 from flask import Blueprint, jsonify, request
@@ -29,13 +30,40 @@ def _get_default_config():
     return MasteryConfig()
 
 
+def _get_mastery_connection() -> sqlite3.Connection:
+    """Return a DB connection configured for dict-style row access.
+
+    The adaptive mastery helpers and some API serialization paths read rows by
+    column name. Live app connections come from ``db_setup.get_connection()``,
+    which does not set ``row_factory``. Tests often do, so force it here to
+    keep runtime behavior aligned with the API's expectations.
+    """
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def _row_get(row: Any, key: str, default: Any = None) -> Any:
+    """Best-effort row access that tolerates sqlite row variants."""
+    if row is None:
+        return default
+    if isinstance(row, sqlite3.Row):
+        try:
+            return row[key]
+        except Exception:
+            return default
+    if isinstance(row, dict):
+        return row.get(key, default)
+    return default
+
+
 @mastery_bp.route("/<skill_id>", methods=["GET"])
 def get_mastery(skill_id: str):
     """Get effective mastery + status for a single skill."""
     from adaptive.bkt import get_effective_mastery, get_or_init_mastery
     from adaptive.curriculum import compute_status
 
-    conn = get_connection()
+    conn = _get_mastery_connection()
     config = _get_default_config()
     user_id = request.args.get("user_id", _DEFAULT_USER_ID)
 
@@ -49,7 +77,7 @@ def get_mastery(skill_id: str):
             "effective_mastery": round(effective, 4),
             "status": status,
             "p_mastery_latent": row["p_mastery_latent"],
-            "last_practiced_at": row.get("last_practiced_at"),
+            "last_practiced_at": _row_get(row, "last_practiced_at"),
         })
     finally:
         conn.close()
@@ -61,7 +89,7 @@ def mastery_dashboard():
     from adaptive.bkt import get_effective_mastery
     from adaptive.curriculum import compute_status
 
-    conn = get_connection()
+    conn = _get_mastery_connection()
     config = _get_default_config()
     user_id = request.args.get("user_id", _DEFAULT_USER_ID)
 
@@ -105,7 +133,7 @@ def record_practice_event():
     if not skill_id:
         return jsonify({"error": "skill_id is required"}), 400
 
-    conn = get_connection()
+    conn = _get_mastery_connection()
     config = _get_default_config()
 
     try:
@@ -132,7 +160,7 @@ def why_locked(skill_id: str):
     from adaptive.bkt import get_effective_mastery
     from adaptive.curriculum import compute_status, get_node
 
-    conn = get_connection()
+    conn = _get_mastery_connection()
     config = _get_default_config()
     user_id = request.args.get("user_id", _DEFAULT_USER_ID)
 
@@ -217,7 +245,7 @@ def metrics_dashboard():
     from adaptive.metrics import compute_dashboard_metrics
 
     user_id = request.args.get("user_id", _DEFAULT_USER_ID)
-    conn = get_connection()
+    conn = _get_mastery_connection()
     try:
         metrics = compute_dashboard_metrics(conn, user_id)
         return jsonify({"metrics": metrics, "count": len(metrics)})
@@ -231,7 +259,7 @@ def skill_metrics(skill_id: str):
     from adaptive.metrics import compute_skill_metrics
 
     user_id = request.args.get("user_id", _DEFAULT_USER_ID)
-    conn = get_connection()
+    conn = _get_mastery_connection()
     try:
         m = compute_skill_metrics(conn, user_id, skill_id)
         return jsonify(m.to_dict())
@@ -244,7 +272,7 @@ def get_session_config(session_id: str):
     """Get experiment configuration for a tutor session."""
     from adaptive.session_config import load_session_config
 
-    conn = get_connection()
+    conn = _get_mastery_connection()
     try:
         cfg = load_session_config(conn, session_id)
         return jsonify({"session_id": session_id, "config": cfg.to_dict()})
@@ -268,7 +296,7 @@ def set_session_config(session_id: str):
     if not is_valid:
         return jsonify({"error": "Invalid config", "issues": issues}), 400
 
-    conn = get_connection()
+    conn = _get_mastery_connection()
     try:
         save_session_config(conn, session_id, cfg)
         return jsonify({"session_id": session_id, "config": cfg.to_dict()})

@@ -1,23 +1,32 @@
 import { useState, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { getCoursePaths } from "@/config/courses";
 
-export type MainMode = "canvas" | "edit" | "graph" | "table" | "data";
+export type MainMode = "home" | "profile";
 
-const VALID_MAIN_MODES: MainMode[] = ["canvas", "edit", "graph", "table", "data"];
+const VALID_MAIN_MODES: MainMode[] = ["home", "profile"];
 
-function loadState<T>(key: string, fallback: T): T {
+function loadState<T>(key: string, fallback: T, validate: (value: unknown) => value is T): T {
   try {
     const saved = localStorage.getItem(key);
-    if (saved !== null) return JSON.parse(saved) as T;
+    if (saved === null) return fallback;
+    const parsed = JSON.parse(saved);
+    return validate(parsed) ? parsed : fallback;
   } catch { /* corrupted — fall through */ }
   return fallback;
 }
 
-function loadBrainMainMode(fallback: MainMode = "canvas"): MainMode {
-  const raw = loadState<MainMode>("brain-main-mode", fallback);
-  return VALID_MAIN_MODES.includes(raw) ? raw : fallback;
+function isValidMainMode(value: unknown): value is MainMode {
+  return typeof value === "string" && VALID_MAIN_MODES.includes(value as MainMode);
+}
+
+function loadBooleanState(key: string, fallback: boolean): boolean {
+  return loadState<boolean>(key, fallback, (value): value is boolean => typeof value === "boolean");
+}
+
+function loadBrainMainMode(fallback: MainMode = "home"): MainMode {
+  return loadState("brain-main-mode", fallback, isValidMainMode);
 }
 
 function saveState(key: string, value: unknown) {
@@ -27,8 +36,9 @@ function saveState(key: string, value: unknown) {
 }
 
 export function useBrainWorkspace() {
+  const queryClient = useQueryClient();
   const [mainMode, setMainModeRaw] = useState<MainMode>(
-    () => loadBrainMainMode("canvas")
+    () => loadBrainMainMode("home")
   );
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState("");
@@ -37,11 +47,11 @@ export function useBrainWorkspace() {
   const [isSaving, setIsSaving] = useState(false);
 
   const [sidebarExpanded, setSidebarExpandedRaw] = useState<boolean>(
-    () => loadState<boolean>("brain-sidebar-expanded", true)
+    () => loadBooleanState("brain-sidebar-expanded", true)
   );
 
   const [chatExpanded, setChatExpandedRaw] = useState<boolean>(
-    () => loadState<boolean>("brain-chat-expanded", true)
+    () => loadBooleanState("brain-chat-expanded", true)
   );
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -107,6 +117,26 @@ export function useBrainWorkspace() {
   const { data: metrics } = useQuery({
     queryKey: ["brain", "metrics"],
     queryFn: api.brain.getMetrics,
+  });
+
+  const { data: learnerProfile, isLoading: learnerProfileLoading } = useQuery({
+    queryKey: ["brain", "profile"],
+    queryFn: () => api.brain.getProfileSummary(),
+  });
+
+  const { data: learnerProfileClaimsData, isLoading: learnerProfileClaimsLoading } = useQuery({
+    queryKey: ["brain", "profile", "claims"],
+    queryFn: () => api.brain.getProfileClaims(),
+  });
+
+  const { data: learnerProfileQuestionsData, isLoading: learnerProfileQuestionsLoading } = useQuery({
+    queryKey: ["brain", "profile", "questions"],
+    queryFn: () => api.brain.getProfileQuestions(),
+  });
+
+  const { data: learnerProfileHistoryData, isLoading: learnerProfileHistoryLoading } = useQuery({
+    queryKey: ["brain", "profile", "history"],
+    queryFn: () => api.brain.getProfileHistory(),
   });
 
   const { data: ankiDrafts = [] } = useQuery({
@@ -183,6 +213,41 @@ export function useBrainWorkspace() {
     console.warn(`Note not found: ${noteName}`);
   }, [obsidianConfig, vaultIndex, openFile]);
 
+  const refreshLearnerProfile = useCallback(async () => {
+    await Promise.all([
+      queryClient.fetchQuery({
+        queryKey: ["brain", "profile"],
+        queryFn: () => api.brain.getProfileSummary(true),
+      }),
+      queryClient.fetchQuery({
+        queryKey: ["brain", "profile", "claims"],
+        queryFn: () => api.brain.getProfileClaims(true),
+      }),
+      queryClient.fetchQuery({
+        queryKey: ["brain", "profile", "questions"],
+        queryFn: () => api.brain.getProfileQuestions(true),
+      }),
+      queryClient.fetchQuery({
+        queryKey: ["brain", "profile", "history"],
+        queryFn: () => api.brain.getProfileHistory(),
+      }),
+    ]);
+  }, [queryClient]);
+
+  const submitProfileFeedback = useCallback(
+    async (payload: Parameters<typeof api.brain.submitProfileFeedback>[0]) => {
+      const result = await api.brain.submitProfileFeedback(payload);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["brain", "profile"] }),
+        queryClient.invalidateQueries({ queryKey: ["brain", "profile", "claims"] }),
+        queryClient.invalidateQueries({ queryKey: ["brain", "profile", "questions"] }),
+        queryClient.invalidateQueries({ queryKey: ["brain", "profile", "history"] }),
+      ]);
+      return result;
+    },
+    [queryClient]
+  );
+
   return {
     // Main mode
     mainMode, setMainMode,
@@ -212,6 +277,17 @@ export function useBrainWorkspace() {
     metrics,
     ankiDrafts,
     pendingDrafts,
+    learnerProfile,
+    learnerProfileClaims: learnerProfileClaimsData?.claims ?? [],
+    learnerProfileQuestions: learnerProfileQuestionsData?.questions ?? [],
+    learnerProfileHistory: learnerProfileHistoryData?.history ?? [],
+    learnerProfileLoading:
+      learnerProfileLoading ||
+      learnerProfileClaimsLoading ||
+      learnerProfileQuestionsLoading ||
+      learnerProfileHistoryLoading,
+    refreshLearnerProfile,
+    submitProfileFeedback,
   };
 }
 

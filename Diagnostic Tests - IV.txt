@@ -1,0 +1,123 @@
+Okay, diagnostic tests, likelihood ratios.
+So likelihood ratios are really kind of a special kind of test metric that almost have
+kind of a magical component to it.
+It's really not magic.
+We'll see what's going on, but it kind of feels that way at first glance sometimes.
+So likelihood ratios can be used to estimate how the probability of the condition changes
+from a pre-test probability to the post-test probability after the test results are known.
+And that kind of has to do with just that sort of general scenario for considering a diagnostic
+test.
+So when a patient presents in the clinic, you'll have scenarios where you see the chart, you
+see the referral, you see the person, you have a brief conversation with them, it's
+very clear what's going on.
+In those circumstances, when your sort of pre-test probability of what you think the
+condition is is super high, you don't need to do a test.
+And conversely, you know, there are certainly conditions where you wouldn't consider performing
+a special test for in that particular case because there's no real indication for that
+disease.
+There's a very low probability, super, super low probability that they have one condition
+or another.
+And in those circumstances, you don't need to test either because it's just a super, super
+low probability.
+It's in that much, much wider center area that we conduct a test to kind of rule in
+or rule out our initial suspicion.
+And so as we're sitting there looking at that patient, you know, there's some suggestion
+of a particular diagnosis and it's not completely clear.
+You have a kind of a pre-test, you have, you know, before you do a diagnostic test,
+you have an idea of what the condition is that's slightly present and the likelihood
+of it being there.
+That's when you do a test, that's the scenario when you do a diagnostic test.
+And then you get the results of that test after you do it and then you make a decision.
+So sensitivity and specificity can be combined into this measure called a likelihood ratio.
+And it just tells us how much more likely it is that a person has the diagnosis that
+we have in mind that we're conducting this test for after the test is done.
+That's kind of the magical, kind of seemingly piece part of it.
+And there, when you, you know, you see a paper that has a published likelihood ratio,
+it'll give you an LR positive and an LR negative along with the sensitivity and specificity.
+And the LR positive is just how much more likely a positive test is in someone with
+the condition and in someone without it.
+And the LR negative is how much more likely a negative test is in someone with the condition
+than someone without it.
+There, it's kind of another pretty straightforward calculation.
+LR positive is just the sensitivity of the test divided by 1 minus specificity.
+So you're dividing sensitivity, you're dividing the true positive rate by, which is sensitivity,
+by the false positive rate, which is essentially 1 minus specificity.
+And these will usually have values greater than 1.
+This is just a little scenario.
+Sensitivity is 80 percent, specificity is 94 percent.
+So LR positive is just sensitivity, which is the true positive rate divided by 1 minus specificity,
+which is the false positive rate, which comes out to 13.3.
+So here, the LR positive is 13.3.
+And so it means that a positive test is more likely to occur with people, in people with
+the condition, than people without the condition.
+We can look at negative likelihood ratios are very similar.
+So we have the LR negative is just 1 minus sensitivity, which is the false negative
+rate divided by specificity.
+And these will have values less than 1.
+So here we have 80 percent sensitivity, 94 percent specificity, the LR negative is just 1 divided
+by 0.8, which is now it's, yeah, divided by the, it's the sensitivity divided by the specificity.
+1 minus, 1 minus sensitivity, 1 minus 0.8 divided by the specificity, which is 0.2 divided by
+0.94 or 0.21.
+So here, the LR negative is 0.21.
+And how do we interpret those numbers?
+So the big broad rule is LR positive is greater than 5, or LR negatives less than 0.2 are
+associated with pretty large shifts in your pre-test to post-test probability.
+And this is kind of a little bit more fine or breakdown, and this is a table I would like you to learn.
+So basically, for LR positives, you just kind of have in your head what a 2, a 5 or a 10 are associated with.
+So initially, likelihood ratios are actually odds, but we're converting them to probabilities here,
+because it's easier to interpret.
+So an LR positive of 10 increases the probability of the condition after you, with a positive test, about 45%.
+LR negative of 0.1 decreases the probability by about 45%.
+We can see how that kind of works.
+So this is bringing that all together.
+This is a normogram.
+All these calculations are kind of done on your phone now, but this kind of helps visualize it.
+So our scenario is, young lady presents to you in the clinic.
+She comes from a physician that, you know, sends you a certain kind of patient most of the time.
+You know, she has some of the thing you've already kind of just done a brief history and talked to her.
+She has some issues from her history, and the scenario suggests that she has a disruption of her ankle ligaments.
+But not everything makes sense.
+Not everything in the story is pointing in that direction.
+So it's not a clear cut, yes, it's not a clear cut, no.
+So we're going to do a diagnostic test to see if we can rule in or rule out that she has a ligament tear.
+But so we pick a test, and I'm just going to say anterior drawer.
+I don't remember if these numbers exactly line up with that, but for our purposes, for this.
+And the published LR positive for that test is a 10.
+Published LR negative is like a 0.3.
+And so I haven't done the test yet, but I'm thinking some aspects of her story are saying yes, some are storing no, some are pointing no.
+I think it's 50-50 whether she has a ligament tear.
+I could go either way.
+So that's my pretest probability, that 50%, that number that's in my head, based on my clinical experience.
+I'm thinking there's a 50% chance she has this condition, this diagnosis.
+So I'm going to do this test.
+I do the test with her.
+It comes back positive.
+So I know that the LR positive for this test is a 10.
+So it's going to increase my post-test probability by about 45, almost 50%.
+So now, so I've done the test, it's positive.
+And based on that LR positive value for that test, now I can be almost 95% sure she has a ligament tear.
+Okay, that's how that works.
+Okay, now we roll the tape back.
+I haven't done the test yet.
+I'm still kind of at that pretest probability, I think.
+Okay, she's got about, there's about a 50-50 chance.
+I do this test.
+It has an LR negative of 0.3.
+I do the test, it comes back, the test is negative for a ligament tear.
+Now I can decrease my pretest probability by about 45%.
+So now I'm thinking, oh, there's only, you know, there's a, you know, of a 0.3 is about 25%.
+So now there's only, with that negative test, there's only about a 25% chance she has the condition.
+So that's what these LR positives and LR negatives do.
+They change, they tell us how much to change our pretest probability to once the results of the test are no.
+Okay.
+So here's another example.
+So here's our two-by-two table for, this is the anterior drawer test.
+So we can look at the, so the, those participants in this study on the, determine the diagnostic accuracy of this anterior drawer test, there were 90 plus 27 people who had a ligament rupture.
+90 of them tested positive, were true positives.
+27 of that, 117, I think, that have a true ligament disorder did not, tested negative, 27 tested negative.
+So those are the false negatives because everybody in that sensitivity column has the condition.
+And then of those people in that sample, 38 of them, 37 of them did not have a ligament rupture.
+28 of that 37 had tested negative.
+There were true negatives, but nine were positives.
+There were nine false positives.
+And so the sensitivity and specificity likelihood ratios are just calculated in a very straightforward manner.

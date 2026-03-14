@@ -8,7 +8,6 @@ def test_send_turn_calls_build_context():
     """When mode.materials=True, build_context should be called."""
     mock_ctx = {
         "materials": "mock material text",
-        "instructions": "mock instructions",
         "notes": "mock notes",
         "course_map": "mock map",
         "debug": {},
@@ -25,7 +24,6 @@ def test_build_context_returns_expected_keys():
     """build_context return dict has the keys send_turn expects."""
     mock_ctx = {
         "materials": "",
-        "instructions": "",
         "notes": "",
         "course_map": "",
         "debug": {"depth": "none"},
@@ -34,7 +32,7 @@ def test_build_context_returns_expected_keys():
         from tutor_context import build_context
 
         result = build_context("any question", depth="none")
-        for key in ("materials", "instructions", "notes", "course_map", "debug"):
+        for key in ("materials", "notes", "course_map", "debug"):
             assert key in result, f"Missing key: {key}"
 
 
@@ -65,7 +63,6 @@ def test_empty_materials_triggers_fallback():
     """When build_context returns empty materials, the fallback text fires."""
     mock_ctx = {
         "materials": "",
-        "instructions": "",
         "notes": "",
         "course_map": "",
         "debug": {},
@@ -91,7 +88,6 @@ def test_notes_merge_into_materials():
     """When notes are present, they get appended to material_text."""
     mock_ctx = {
         "materials": "Some retrieved material content",
-        "instructions": "",
         "notes": "### Module1/note.md\nSome note content",
         "course_map": "",
         "debug": {},

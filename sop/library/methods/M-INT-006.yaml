@@ -114,3 +114,28 @@ gating_rules:
 - Force active processing (explain, transform, or map), not passive reading.
 - Keep output scoped to mapped objectives only.
 artifact_type: notes
+allowed_moves:
+- Ask probing questions about each illness script component (enabling conditions, fault, consequences)
+- Require explicit causal links between the three script parts
+- Challenge generic enabling conditions — demand specific risk factors ranked by importance
+- Push for discriminating features vs. similar conditions
+- Require comparison to textbook/source version with gap identification
+- Use Socratic questioning to expose missing pathophysiological links
+- Demand the learner articulate "unlike [X] which has..." for confusable conditions
+- Question consequences that lack explicit mechanism links
+forbidden_moves:
+- Accept consequences without explicit pathophysiological mechanism linking them
+- Accept generic or incomplete enabling conditions
+- Skip the discriminating features step (vs. similar conditions)
+- Build the illness script FOR the learner
+- Accept an illness script missing any of the three required parts
+- Teach new content — interrogation uses what was already encoded
+- Skip the comparison to textbook/source version
+- Move on without causal chain connecting all three parts
+- Accept one-word or surface-level answers without probing
+- Present content outside the mapped objective scope
+required_outputs:
+- Complete illness script (enabling conditions, pathophysiological fault, clinical consequences)
+- Causal chain diagram (enabling -> fault -> consequences)
+- Comparison to textbook version (gaps identified)
+- Discriminating features vs. similar conditions

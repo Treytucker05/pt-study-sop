@@ -120,11 +120,23 @@ export function SessionEvidence() {
 
   const queryClient = useQueryClient();
 
+  const openEditSession = (id: number) => {
+    if (deleteSessionsMutation.isPending) return;
+    setDeleteDialogOpen(false);
+    setSessionsToDelete([]);
+    setEditingSession(id);
+  };
+
   const deleteSessionsMutation = useMutation({
     mutationFn: (ids: number[]) => api.sessions.deleteMany(ids),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
       queryClient.invalidateQueries({ queryKey: ["brain", "metrics"] });
+      setSelectedSessions(new Set());
+    },
+    onSettled: () => {
+      setSessionsToDelete([]);
+      setDeleteDialogOpen(false);
       setSelectedSessions(new Set());
     },
   });
@@ -157,20 +169,22 @@ export function SessionEvidence() {
   };
 
   const handleDeleteSelected = () => {
-    if (selectedSessions.size === 0) return;
+    if (selectedSessions.size === 0 || deleteSessionsMutation.isPending) return;
+    setEditingSession(null);
     setSessionsToDelete(Array.from(selectedSessions));
     setDeleteDialogOpen(true);
   };
 
   const handleDeleteSingle = (id: number) => {
+    if (deleteSessionsMutation.isPending) return;
+    setEditingSession(null);
     setSessionsToDelete([id]);
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = () => {
+    if (deleteSessionsMutation.isPending || sessionsToDelete.length === 0) return;
     deleteSessionsMutation.mutate(sessionsToDelete);
-    setDeleteDialogOpen(false);
-    setSessionsToDelete([]);
   };
 
   useEffect(() => {
@@ -391,7 +405,8 @@ export function SessionEvidence() {
                             size="icon"
                             variant="outline"
                             className="h-6 w-6 border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/20"
-                            onClick={() => setEditingSession(session.id)}
+                            onClick={() => openEditSession(session.id)}
+                            disabled={deleteSessionsMutation.isPending}
                           >
                             <Pencil className="w-3 h-3" />
                           </Button>
@@ -399,6 +414,7 @@ export function SessionEvidence() {
                             size="icon"
                             variant="outline"
                             className="h-6 w-6 border-red-500/50 text-red-400 hover:bg-red-500/20"
+                            disabled={deleteSessionsMutation.isPending}
                             onClick={() => handleDeleteSingle(session.id)}
                           >
                             <Trash2 className="w-3 h-3" />
@@ -413,14 +429,15 @@ export function SessionEvidence() {
 
             {selectedSessions.size > 0 && (
               <div className="flex gap-2 pt-4 border-t border-secondary/30">
-                <Button
-                  size="sm"
-                  className="flex-1 font-terminal text-xs bg-red-600 hover:bg-red-700"
-                  onClick={handleDeleteSelected}
-                >
-                  <Trash2 className="w-3 h-3 mr-1" />
-                  Delete Selected ({selectedSessions.size})
-                </Button>
+              <Button
+                size="sm"
+                className="flex-1 font-terminal text-xs bg-red-600 hover:bg-red-700"
+                disabled={deleteSessionsMutation.isPending || selectedSessions.size === 0}
+                onClick={handleDeleteSelected}
+              >
+                <Trash2 className="w-3 h-3 mr-1" />
+                Delete Selected ({selectedSessions.size})
+              </Button>
               </div>
             )}
           </CardContent>
@@ -431,13 +448,17 @@ export function SessionEvidence() {
       <Dialog
         open={!!editingSessionData}
         onOpenChange={(open) => {
-          if (!open) setEditingSession(null);
+          if (!open) {
+            setEditingSession(null);
+          } else {
+            setDeleteDialogOpen(false);
+            setSessionsToDelete([]);
+          }
         }}
       >
         <DialogContent
           data-modal="brain-edit-session"
-          className="bg-black border-[3px] border-double border-primary rounded-none max-w-2xl translate-y-0"
-          style={{ zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" }}
+          className="bg-black border-[3px] border-double border-primary rounded-none max-w-2xl"
         >
           <DialogHeader>
             <DialogTitle className="font-arcade text-primary flex items-center gap-2">
@@ -557,12 +578,14 @@ export function SessionEvidence() {
       {/* Delete Confirmation Dialog */}
       <AlertDialog
         open={deleteDialogOpen && sessionsToDelete.length > 0}
-        onOpenChange={setDeleteDialogOpen}
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) setSessionsToDelete([]);
+        }}
       >
         <AlertDialogContent
           data-modal="brain-delete-session"
-          className="bg-black border-2 border-destructive rounded-none translate-y-0"
-          style={{ zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" }}
+          className="bg-black border-2 border-destructive rounded-none"
         >
           <AlertDialogHeader>
             <AlertDialogTitle className="font-arcade text-destructive flex items-center gap-2">
@@ -580,6 +603,7 @@ export function SessionEvidence() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
+              disabled={deleteSessionsMutation.isPending}
               className="font-terminal rounded-none bg-destructive hover:bg-destructive/80 text-destructive-foreground"
             >
               <Trash2 className="w-4 h-4 mr-2" />

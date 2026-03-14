@@ -595,11 +595,63 @@ def _infer_doc_type_from_suffix(suffix: str) -> str:
     return "other"
 
 
+def _prune_missing_folder_sync_docs(
+    root: Path,
+    *,
+    corpus: str,
+    allowed_exts: set[str],
+    current_files: set[str],
+) -> dict[str, Any]:
+    """Remove stale synced docs whose files no longer exist under a full-sync root."""
+    root_resolved = root.resolve()
+    conn = _connect()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT id, source_path
+        FROM rag_docs
+        WHERE COALESCE(corpus, 'runtime') = ?
+        """,
+        (corpus,),
+    )
+    rows = cur.fetchall()
+
+    deleted_paths: list[str] = []
+    stale_chroma_ids: list[str] = []
+
+    for row in rows:
+        source_path = str(row["source_path"] or "").strip()
+        if not source_path:
+            continue
+        if Path(source_path).suffix.lower() not in allowed_exts:
+            continue
+        try:
+            resolved_source = Path(source_path).resolve(strict=False)
+            rel_path = resolved_source.relative_to(root_resolved)
+        except Exception:
+            continue
+
+        rel_normalized = str(rel_path).replace("\\", "/")
+        if rel_normalized in current_files:
+            continue
+
+        stale_chroma_ids.extend(_clear_rag_embeddings(cur, int(row["id"])))
+        cur.execute("DELETE FROM rag_docs WHERE id = ?", (int(row["id"]),))
+        deleted_paths.append(source_path)
+
+    conn.commit()
+    conn.close()
+    _delete_from_chroma(stale_chroma_ids, corpus=corpus)
+    return {"deleted": len(deleted_paths), "deleted_paths": deleted_paths}
+
+
 def sync_folder_to_rag(
     root_dir: str,
     *,
     corpus: str = "study",
     allowed_exts: Optional[set[str]] = None,
+    include_paths: Optional[set[str]] = None,
+    course_id: Optional[int] = None,
     exclude_dir_names: Optional[set[str]] = None,
     progress_callback: Optional[Callable[[dict[str, Any]], None]] = None,
 ) -> dict:
@@ -628,6 +680,17 @@ def sync_folder_to_rag(
             (ext.lower() if ext.startswith(".") else f".{ext.lower()}")
             for ext in allowed_exts
         }
+    normalized_include_paths: Optional[set[str]] = None
+    if include_paths is not None:
+        normalized_include_paths = set()
+        for raw_path in include_paths:
+            rel = str(raw_path or "").replace("\\", "/").strip()
+            if not rel:
+                continue
+            parts = [part for part in rel.split("/") if part and part != "."]
+            if not parts or any(part == ".." for part in parts):
+                continue
+            normalized_include_paths.add("/".join(parts))
     if exclude_dir_names is None:
         exclude_dir_names = {".git", ".venv", "__pycache__"}
 
@@ -647,12 +710,21 @@ def sync_folder_to_rag(
             file_path = Path(dirpath) / filename
             if file_path.suffix.lower() not in allowed_exts:
                 continue
+            rel_file = os.path.relpath(str(file_path), str(root)).replace("\\", "/")
+            if normalized_include_paths is not None and rel_file not in normalized_include_paths:
+                continue
             candidate_files.append(file_path)
 
     total_files = len(candidate_files)
+    current_rel_files = {
+        os.path.relpath(str(file_path), str(root)).replace("\\", "/")
+        for file_path in candidate_files
+    }
     processed = 0
     errors: list[str] = []
     ingested_ids: list[int] = []
+    deleted = 0
+    deleted_paths: list[str] = []
 
     _emit_progress(
         {
@@ -690,7 +762,7 @@ def sync_folder_to_rag(
                     ingest_document,
                     path=str(file_path),
                     doc_type=doc_type,
-                    course_id=None,
+                    course_id=course_id,
                     topic_tags=["study-folder"],
                     corpus=corpus,
                     folder_path=rel_folder,
@@ -726,12 +798,37 @@ def sync_folder_to_rag(
         }
     )
 
+    if normalized_include_paths is None:
+        _emit_progress(
+            {
+                "phase": "pruning",
+                "processed": processed,
+                "total": total_files,
+                "index": total_files,
+                "current_file": None,
+                "errors": len(errors),
+            }
+        )
+        try:
+            prune_result = _prune_missing_folder_sync_docs(
+                root,
+                corpus=corpus,
+                allowed_exts=allowed_exts or set(),
+                current_files=current_rel_files,
+            )
+            deleted = int(prune_result.get("deleted") or 0)
+            deleted_paths = list(prune_result.get("deleted_paths") or [])
+        except Exception as exc:
+            errors.append(f"stale_prune: {exc}")
+
     return {
         "ok": len(errors) == 0,
         "root": str(root),
         "total": total_files,
         "processed": processed,
         "failed": len(errors),
+        "deleted": deleted,
+        "deleted_paths": deleted_paths,
         "errors": errors,
         "doc_ids": ingested_ids,
     }

@@ -29,6 +29,23 @@ def _resolve_root() -> Path:
 
 
 ROOT = _resolve_root()
+MASTER_CANON = ROOT / "docs" / "root" / "TUTOR_STUDY_BUDDY_CANON.md"
+
+SECONDARY_DOCS_REQUIRING_CANON_POINTER = [
+    ROOT / "docs" / "README.md",
+    ROOT / "docs" / "root" / "README.md",
+    ROOT / "docs" / "root" / "TUTOR_TODO.md",
+    ROOT / "docs" / "root" / "PROJECT_ARCHITECTURE.md",
+    ROOT / "docs" / "root" / "GUIDE_ARCHITECTURE.md",
+    ROOT / "docs" / "root" / "GUIDE_DEV.md",
+    ROOT / "docs" / "root" / "GUIDE_USER.md",
+    ROOT / "dashboard_rebuild" / "README.md",
+    ROOT / "dashboard_rebuild" / "client" / "src" / "pages" / "README.md",
+    ROOT / "conductor" / "index.md",
+    ROOT / "conductor" / "product.md",
+    ROOT / "conductor" / "workflow.md",
+    ROOT / "conductor" / "tracks.md",
+]
 
 
 def _read_text(path: Path) -> str:
@@ -62,8 +79,31 @@ def _tracked_markdown() -> list[Path]:
     return _tracked_files("*.md")
 
 
+def _top_lines(path: Path, count: int = 40) -> str:
+    return "\n".join(_read_text(path).splitlines()[:count])
+
+
+def _require_contains(path: Path, text: str, needle: str, failures: list[str]) -> None:
+    if needle not in text:
+        failures.append(f"{path}: missing required phrase: {needle}")
+
+
+def _require_any(path: Path, text: str, needles: list[str], failures: list[str], label: str) -> None:
+    if not any(needle in text for needle in needles):
+        failures.append(f"{path}: missing required {label}: one of {needles}")
+
+
 def main() -> None:
     failures: list[str] = []
+
+    for doc in SECONDARY_DOCS_REQUIRING_CANON_POINTER:
+        if not doc.exists():
+            failures.append(f"Missing required secondary doc: {doc}")
+            continue
+        if "TUTOR_STUDY_BUDDY_CANON.md" not in _top_lines(doc):
+            failures.append(
+                f"{doc}: must point to docs/root/TUTOR_STUDY_BUDDY_CANON.md near the top of the file"
+            )
 
     runtime_prompt_path = ROOT / "sop" / "runtime" / "runtime_prompt.md"
     runtime_prompt = _read_text(runtime_prompt_path)
@@ -82,6 +122,25 @@ def main() -> None:
 
     guide_path = ROOT / "docs" / "root" / "GUIDE_DEV.md"
     guide = _read_text(guide_path)
+
+    canon_path = ROOT / "docs" / "root" / "TUTOR_STUDY_BUDDY_CANON.md"
+    canon = _read_text(canon_path)
+    todo_path = ROOT / "docs" / "root" / "TUTOR_TODO.md"
+    todo = _read_text(todo_path)
+    docs_readme_path = ROOT / "docs" / "README.md"
+    docs_readme = _read_text(docs_readme_path)
+    conductor_index_path = ROOT / "conductor" / "index.md"
+    conductor_index = _read_text(conductor_index_path)
+    conductor_product_path = ROOT / "conductor" / "product.md"
+    conductor_product = _read_text(conductor_product_path)
+    conductor_workflow_path = ROOT / "conductor" / "workflow.md"
+    conductor_workflow = _read_text(conductor_workflow_path)
+    conductor_tracks_path = ROOT / "conductor" / "tracks.md"
+    conductor_tracks = _read_text(conductor_tracks_path)
+    dashboard_readme_path = ROOT / "dashboard_rebuild" / "README.md"
+    dashboard_readme = _read_text(dashboard_readme_path)
+    pages_readme_path = ROOT / "dashboard_rebuild" / "client" / "src" / "pages" / "README.md"
+    pages_readme = _read_text(pages_readme_path)
 
     validator_path = ROOT / "sop" / "tools" / "validate_log_v9_4.py"
 
@@ -111,6 +170,35 @@ def main() -> None:
 
     if "docs/root/GUIDE_DEV.md" not in claude:
         failures.append(f"{claude_path}: must point to docs/root/GUIDE_DEV.md as the canonical command reference")
+
+    _require_contains(canon_path, canon, "Status: Canonical product contract", failures)
+    _require_contains(canon_path, canon, "only file allowed to define product/page ownership", failures)
+    _require_contains(canon_path, canon, "docs/root/TUTOR_STUDY_BUDDY_CANON.md", failures)
+
+    _require_contains(todo_path, todo, "Authority: execution-only sprint and backlog tracker.", failures)
+    _require_contains(todo_path, todo, "Product/page ownership lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`", failures)
+    _require_contains(todo_path, todo, "Product/ownership authority: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`", failures)
+    _require_contains(todo_path, todo, "Conductor execution registry: `conductor/tracks.md`", failures)
+
+    for path, text in (
+        (docs_readme_path, docs_readme),
+        (conductor_index_path, conductor_index),
+        (conductor_product_path, conductor_product),
+        (conductor_workflow_path, conductor_workflow),
+        (conductor_tracks_path, conductor_tracks),
+        (dashboard_readme_path, dashboard_readme),
+        (pages_readme_path, pages_readme),
+    ):
+        _require_contains(path, text, "docs/root/TUTOR_STUDY_BUDDY_CANON.md", failures)
+
+    _require_contains(docs_readme_path, docs_readme, "Product/page ownership authority", failures)
+    _require_contains(conductor_index_path, conductor_index, "Conductor is execution-only in this repo.", failures)
+    _require_contains(conductor_product_path, conductor_product, "Historical filename retained for Conductor compatibility.", failures)
+    _require_contains(conductor_product_path, conductor_product, "This file is not product authority.", failures)
+    _require_contains(conductor_workflow_path, conductor_workflow, "Execution-only workflow for this repo.", failures)
+    _require_contains(conductor_tracks_path, conductor_tracks, "Execution registry only. Product or subsystem truth does not live here.", failures)
+    _require_contains(dashboard_readme_path, dashboard_readme, "This README is implementation context only, not product authority.", failures)
+    _require_contains(pages_readme_path, pages_readme, "This file is implementation context only, not product authority.", failures)
 
     # Enforce README terminology hygiene so CP-MSS stays first-class across entrypoints.
     strict_legacy_patterns = (
@@ -152,12 +240,26 @@ def main() -> None:
     # Historical/generated paths are excluded from strict failures.
     markdown_strict_excluded_prefixes = (
         "docs/archive/",
+        "docs/plans/",
+        "docs/prd/",
+        "docs/project/",
+        "dashboard_rebuild/attached_assets/",
+        "brain/README.md",
+        "sop/README.md",
+        "GEMINI.md",
         "sop/archive/",
         "scholar/knowledge/",
         "sop/runtime/knowledge_upload/",
         "sop/tests/golden/",
+        "conductor/tracks/",
     )
     markdown_allow_hints = ("legacy", "compatib", "deprecat", "archiv", "stale", "histor")
+    product_truth_patterns = (
+        r"The Plan is the Source of Truth",
+        r"single source of truth",
+        r"canonical home route",
+        r"learner-facing Scholar",
+    )
 
     for md_file in _tracked_markdown():
         rel = md_file.relative_to(ROOT).as_posix()
@@ -173,6 +275,27 @@ def main() -> None:
                         failures.append(
                             f"{md_file}:{i}: contains deprecated term '{pat}'."
                         )
+
+            if md_file != MASTER_CANON:
+                for pat in product_truth_patterns:
+                    if re.search(pat, line, flags=re.I):
+                        if "rg -n " in line or line.strip().startswith("`rg -n "):
+                            continue
+                        if not any(h in line_lower for h in markdown_allow_hints):
+                            failures.append(
+                                f"{md_file}:{i}: contains unauthorized product-truth phrase '{pat}'."
+                            )
+
+    historical_required_markers = [
+        ROOT / "conductor" / "tracks" / "brain-centered-triad_20260312" / "spec.md",
+        ROOT / "conductor" / "tracks" / "brain-centered-triad_20260312" / "decision-record.md",
+        ROOT / "conductor" / "tracks" / "brain-centered-triad_20260312" / "index.md",
+        ROOT / "conductor" / "tracks" / "brain-scholar-tutor-realignment_20260311" / "spec.md",
+    ]
+    historical_marker = "Historical track artifact. Product/ownership authority lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`."
+    for path in historical_required_markers:
+        text = _read_text(path)
+        _require_contains(path, text, historical_marker, failures)
 
     if failures:
         print("Docs sync check failed:")

@@ -85,3 +85,24 @@ failure_modes:
 - mode: Repeated misses
   mitigation: Route back to ENCODE with targeted scaffold.
 artifact_type: notes
+allowed_moves:
+- Select confusable pairs with highest error risk from ErrorLog
+- Present near-miss prompts with minimal cues
+- Require explicit discriminator in each response
+- Provide corrective feedback AFTER each attempt
+- Log misses to ErrorLog with error_type and fix_applied
+- Route back to ENCODE with targeted scaffold on repeated misses
+- Use recent Confusion errors as priority source
+- Increase discrimination difficulty progressively
+forbidden_moves:
+- Reveal answer or discriminating feature before learner attempt
+- Provide hints during first attempt
+- Use easy or non-confusable items (must be near-miss pairs)
+- Skip requiring explicit discriminator in responses
+- Teach new material during retrieval
+- Accept "I don't know" without at least one discrimination attempt
+- Skip ErrorLog updates for missed items
+- Allow low-support items to leak answer through prompt wording
+required_outputs:
+- Adversarial near-miss results with discrimination accuracy
+- ErrorLog updates (error_type and fix_applied per miss)

@@ -240,8 +240,7 @@ export function EventEditModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
           data-modal="calendar-edit-google"
-          className="font-arcade bg-black border-[3px] border-double border-green-500 rounded-none max-w-none w-[min(96vw,42rem)] p-0 overflow-hidden translate-y-0 max-h-[calc(100vh-4rem)]"
-          style={{ zIndex: 100005, top: "3rem", left: "50%", transform: "translate(-50%, 0)" }}
+          className="font-arcade bg-black border-[3px] border-double border-green-500 rounded-none max-w-none w-[min(96vw,42rem)] p-0 overflow-hidden max-h-[calc(100vh-4rem)]"
         >
         <DialogTitle className="sr-only">Edit Google Calendar event</DialogTitle>
         <DialogDescription className="sr-only">Update event details, time, recurrence, attendees, and settings.</DialogDescription>

@@ -1,0 +1,1 @@
+params=['course_id', 'folder_path', 'corpus', 'progress_callback']

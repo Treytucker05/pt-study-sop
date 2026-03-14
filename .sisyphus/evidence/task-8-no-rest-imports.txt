@@ -1,0 +1,18 @@
+# Task 8 Evidence: No REST Obsidian imports remain
+
+Command run:
+  grep -rn "from dashboard.api_adapter import.*obsidian" brain/ --include="*.py" | grep -v "api_adapter.py"
+
+Result: 0 matches (grep exit code 1 = no output)
+
+Files migrated:
+- brain/chain_runner.py: obsidian_append → vault.append_note()
+- brain/vault_janitor.py: obsidian_get_file/save_file → vault.read_note()/replace_content()
+  Functions migrated: apply_fix(), ai_resolve(), ai_apply(), enrich_links()
+
+Tests passing:
+- pytest brain/tests/test_obsidian_vault.py: 39/39
+- pytest brain/tests/test_vault_janitor.py: 42/42
+- Total: 81/81
+
+Date: 2026-03-02

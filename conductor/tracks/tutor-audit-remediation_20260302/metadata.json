@@ -1,0 +1,16 @@
+{
+  "id": "tutor-audit-remediation_20260302",
+  "title": "Tutor Audit Remediation (P0/P1)",
+  "type": "bug",
+  "status": "pending",
+  "created": "2026-03-02T00:00:00Z",
+  "updated": "2026-03-02T00:00:00Z",
+  "phases": {
+    "total": 3,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 10,
+    "completed": 0
+  }
+}

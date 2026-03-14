@@ -257,3 +257,85 @@ def test_seed_methods_strict_sync_updates_stale_artifact_type(
     assert row[1] == "KWIK Hook"
     assert row[2] == "Canonical description"
     assert row[3] == "notes"
+
+
+def test_load_from_yaml_merges_chain_certification_registry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    module = _load_seed_methods_module()
+    methods_dir = tmp_path / "methods"
+    chains_dir = tmp_path / "chains"
+    meta_dir = tmp_path / "meta"
+    methods_dir.mkdir()
+    chains_dir.mkdir()
+    meta_dir.mkdir()
+
+    (methods_dir / "M-PRE-001.yaml").write_text(
+        "\n".join(
+            [
+                "id: M-PRE-001",
+                "name: Brain Dump",
+                "control_stage: PRIME",
+                "description: Test block",
+                "default_duration_min: 3",
+                "energy_cost: low",
+                "knobs: {}",
+                "constraints: {}",
+                "inputs: []",
+                "steps: []",
+                "outputs: []",
+                "stop_criteria: []",
+                "facilitation_prompt: Test prompt",
+                "gating_rules: []",
+                "failure_modes: []",
+                "artifact_type: notes",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (chains_dir / "C-TEST-001.yaml").write_text(
+        "\n".join(
+            [
+                "id: C-TEST-001",
+                "name: Test Chain",
+                "description: Chain for registry merge",
+                "blocks:",
+                "  - M-PRE-001",
+                "is_template: true",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (chains_dir / "certification_registry.yaml").write_text(
+        "\n".join(
+            [
+                "version: 1",
+                "chains:",
+                "  C-TEST-001:",
+                "    disposition: baseline-certification",
+                "    bar: baseline",
+                "    selectable: true",
+                "    rationale: Test chain must pass baseline certification.",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (meta_dir / "version.yaml").write_text("version: test\n", encoding="utf-8")
+
+    monkeypatch.setattr(module, "_METHODS_DIR", methods_dir)
+    monkeypatch.setattr(module, "_CHAINS_DIR", chains_dir)
+    monkeypatch.setattr(module, "_VERSION_PATH", meta_dir / "version.yaml")
+    monkeypatch.setattr(
+        module,
+        "_CHAIN_CERTIFICATION_REGISTRY_PATH",
+        chains_dir / "certification_registry.yaml",
+    )
+
+    loaded = module.load_from_yaml()
+
+    assert loaded is not None
+    assert loaded["chains"]
+    chain = loaded["chains"][0]
+    assert chain["context_tags"]["template_id"] == "C-TEST-001"
+    assert chain["context_tags"]["certification"]["disposition"] == "baseline-certification"
+    assert chain["context_tags"]["certification"]["bar"] == "baseline"

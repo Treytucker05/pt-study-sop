@@ -1,0 +1,45 @@
+{
+  "generated_at": "2026-03-07T04:48:30",
+  "week7_topdown_compare": {
+    "status": "passed",
+    "sessions": [
+      {
+        "chain": "C-TRY-001",
+        "session_id": "tutor-20260307-044613-a51859",
+        "brain_session_id": 47,
+        "finding": "Opened with a compressed top-down narrative frame and ended with a check-in."
+      },
+      {
+        "chain": "C-TRY-002",
+        "session_id": "tutor-20260307-044613-fa811f",
+        "brain_session_id": 48,
+        "finding": "Opened with a more structured PillarTree / PriorKnowledgeLinks / StructuralHypotheses format and ended with a constrained next-step prompt."
+      }
+    ]
+  },
+  "week8_first_exposure": {
+    "status": "passed",
+    "session_id": "tutor-20260307-044748-d105c7",
+    "brain_session_id": 46,
+    "chain": "First Exposure: Standard",
+    "finding": "Stayed on W8-OBJ-2, taught the lobe functions clearly in one chunk, and preserved scoped first-exposure behavior."
+  },
+  "basal_ganglia_review": {
+    "status": "passed",
+    "session_id": "tutor-20260307-044755-636116",
+    "brain_session_id": 49,
+    "chain": "Review Sprint",
+    "finding": "Stayed on BG-OBJ-4 and compared direct vs indirect pathways step by step with clear movement consequences."
+  },
+  "live_artifact_persistence": {
+    "status": "passed",
+    "session_id": "tutor-20260307-044748-d105c7",
+    "brain_session_id": 46,
+    "evidence": {
+      "quick_note_title": "Week 8 Lobe Summary",
+      "card_id": 8,
+      "structured_note_session_path": "Courses/Neuroscience/Week 8/Week 8 - Brain Structure/Sessions/2026-03-07_Session_Week_8_-_Brain_Structure.md",
+      "structured_note_concept_path": "Courses/Neuroscience/Week 8/Week 8 - Brain Structure/Concepts/Insula.md"
+    }
+  }
+}

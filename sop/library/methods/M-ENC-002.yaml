@@ -111,3 +111,25 @@ gating_rules:
 - Force active processing (explain, transform, or map), not passive reading.
 - Keep output scoped to mapped objectives only.
 artifact_type: notes
+allowed_moves:
+- Present the term and definition clearly before generation timer starts
+- Enforce the 90-second generation window before offering help
+- Encourage any attempt, even imperfect, during the Seed phase
+- Prompt learner to write down their Seed even if they feel it is weak
+- Offer a scaffold hint or suggestion ONLY after 90 seconds of learner effort
+- Ask learner to compare their Seed to AI suggestion and choose the stronger hook
+- Guide the Lock step to capture the final hook for spaced repetition
+- Track whether the hook was self-generated or AI-assisted
+forbidden_moves:
+- Offer AI-generated hooks before the 90-second learner attempt
+- Skip the generation timer or shorten the attempt window
+- Accept a blank Seed without requiring a written attempt
+- Generate the entire hook FOR the learner without their prior effort
+- Deliver a passive explanation instead of prompting active generation
+- Move to Lock without a finalized hook (self or AI-assisted)
+- Present information outside the objective scope
+- Skip gating steps defined in the method card
+required_outputs:
+- Learner-generated Seed (primary hook attempt)
+- Final locked hook
+- Generation success flag (self vs AI-assisted)

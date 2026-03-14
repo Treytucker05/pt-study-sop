@@ -1,10 +1,17 @@
-# Tutor Owner Intent (Session-Persistent Notes)
+# Tutor Owner Intent (Supporting Reference)
 
 Date: 2026-02-22  
 Owner: Trey  
-Purpose: keep non-negotiable product intent in one place so sessions do not drift.
+Purpose: keep owner-specific Tutor lock-ins in one place so sessions do not drift.
+
+Overall system canon now lives in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+This file is a supporting owner-intent reference, not the top-level Study Buddy truth path.
+If this file conflicts with the canon on subsystem roles or ownership, the canon wins.
 
 ## Core Intent
+- Keep Trey’s Study System visibly organized around **Brain / Scholar / Tutor** rather than around a pile of pages.
+- Make **Brain** identify how the learner learns best using evidence-backed profile claims and visible hybrid learner archetypes.
+- Make **Scholar** a system-facing research partner that can ask the learner focused questions when needed, research the web, and improve the system without becoming the teaching engine.
 - Build a tutor that teaches any learner at any level and makes learning stick long-term.
 - Prioritize durable learning and transfer, not short-term performance optics.
 
@@ -12,6 +19,13 @@ Purpose: keep non-negotiable product intent in one place so sessions do not drif
 - The control plane remains category-first:
   - `PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`
 - Model is `Category -> Method -> Knob -> Chain`.
+- Library controls what Tutor teaches.
+- Brain stores telemetry and fit signals, builds learner-profile claims, and exposes challengeable archetype summaries.
+- Scholar is the layer that turns Brain outputs into research, learner questions, strategy recommendations, and system-improvement proposals.
+- Brain must not directly steer Tutor. Any live adaptation must pass through Scholar in a bounded envelope.
+- Scholar may ask the learner focused research/calibration questions and perform cited web research, but it must not teach course content.
+- Obsidian is the main note home.
+- Anki output is chain-conditional, not always-on.
 - Tutor-generated Obsidian notes must include wiki links at creation time (not deferred cleanup).
 - For Mind Map:
   - Method = `Mind Map`
@@ -28,12 +42,22 @@ Purpose: keep non-negotiable product intent in one place so sessions do not drif
 - CALIBRATE should identify gaps without punitive framing.
 
 ## Anti-Drift Rules
-- Keep category definitions and owner intent as canonical references.
+- Keep the master canon, category definitions, and owner intent aligned.
 - Do not reinterpret method/knob terms per session.
 - Any new product preference from owner must be appended here with date and rationale.
-- If a recommendation conflicts with this file, this file wins unless owner explicitly changes it.
+- If a recommendation conflicts with the master canon on overall subsystem roles, the master canon wins.
+- If a recommendation conflicts with this file on owner-specific Tutor lock-ins, this file wins unless owner explicitly changes it.
 
 ## Change Log
+- 2026-03-11:
+  - Locked the 3-part system identity: Brain = learner-model engine, Scholar = research partner, Tutor = live teacher.
+  - Locked Brain learner archetypes as visible, challengeable, evidence-backed summaries rather than hidden labels.
+  - Locked Scholar as system-facing first with focused questions + cited web research when blocked, while keeping Tutor as the only live teaching engine.
+  - Locked the no-direct-Brain-to-Tutor rule; live adaptation must pass through Scholar.
+- 2026-03-06:
+  - Clarified that Library controls content scope while SOP controls teaching behavior.
+  - Clarified that Brain feeds Scholar for system improvement rather than directly steering Tutor pedagogy.
+  - Clarified that Obsidian is the primary note home and Anki output is chain-conditional.
 - 2026-02-22:
   - Added first-exposure-first requirement.
   - Locked behavior: PRIME teaches and structures before calibration pressure.

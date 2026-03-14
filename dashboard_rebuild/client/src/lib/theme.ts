@@ -3,7 +3,7 @@
  *
  * All pages MUST use these instead of ad-hoc Tailwind classes.
  * This keeps font sizes, spacing, and borders consistent
- * across Dashboard, Brain, Calendar, Methods, Scholar, and Tutor.
+ * across Brain home, Calendar, Methods, Scholar, and Tutor.
  *
  * Font families:
  *   font-arcade  — Press Start 2P (headers, labels, buttons)
@@ -62,6 +62,14 @@ export const BTN_PRIMARY =
 /** Secondary/outline button */
 export const BTN_OUTLINE =
   "rounded-none border border-muted-foreground/30 font-arcade text-sm h-9 hover:border-muted-foreground/50";
+
+/** Toolbar toggle button (inactive) */
+export const BTN_TOOLBAR =
+  "h-8 rounded-none font-arcade text-xs px-3 text-muted-foreground hover:text-primary border-2 border-transparent";
+
+/** Toolbar toggle button (active) */
+export const BTN_TOOLBAR_ACTIVE =
+  "h-8 rounded-none font-arcade text-xs px-3 text-primary bg-primary/15 border-2 border-primary/40";
 
 // ---------------------------------------------------------------------------
 // Layout

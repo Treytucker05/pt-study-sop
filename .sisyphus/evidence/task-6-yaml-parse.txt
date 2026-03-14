@@ -1,0 +1,36 @@
+Task 6: vault_courses.yaml Validation
+======================================
+
+Date: 2026-03-02
+File: brain/data/vault_courses.yaml
+
+Validation Command:
+  python -c "from brain.course_map import load_course_map; cm=load_course_map(); print([c.code for c in cm.courses])"
+
+Result:
+  ['PHYT_6216', 'PHYT_6220', 'PHYT_6313', 'PHYT_6314', 'PHYT_6443']
+
+Status: PASS
+
+Details:
+  - 5 courses loaded successfully
+  - All Spring 2026 term
+  - PHYT_6502 (Fall 2025) removed ✓
+  - PHYT_6419 (Fall 2025) removed ✓
+  - PHYT_6216 (Exercise Physiology) added with 8 topics ✓
+  - PHYT_6220 (EBP) added with 15 weeks ✓
+  - PHYT_6313 (Neuroscience) kept with 8 weeks ✓
+  - PHYT_6314 (Movement Science) kept with 5 constructs ✓
+  - PHYT_6443 (Therapeutic Interventions) updated with 5 modules (3 original + Immersion 1 + Motor Control) ✓
+
+Schema Compliance:
+  - vault_root: "Study Notes" ✓
+  - courses dict keyed by PHYT code ✓
+  - Each course has label, term, unit_type, units ✓
+  - Units have id, name, topics ✓
+  - Week IDs zero-padded (week_01 through week_15) ✓
+  - Topic IDs use underscore format (topic_1, topic_8) ✓
+  - Module IDs use underscore format (module_1 through module_4, immersion_1) ✓
+  - Construct IDs use underscore format (construct_1 through construct_5) ✓
+
+File Size: 171 lines → 175 lines (4 lines added for Immersion 1 + Motor Control)

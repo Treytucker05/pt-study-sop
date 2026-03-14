@@ -1,6 +1,8 @@
 # 14 — Learning Objective Engine (LO Engine)
 
-**Purpose:** Turn explicit Learning Objectives into anchored teaching steps and deterministic note output aligned to the Six-Phase Topic SOP (see `13-custom-gpt-system-instructions.md`).
+**Purpose:** Turn explicit Learning Objectives into anchored teaching steps and deterministic note output aligned to the Six-Phase Topic SOP.
+
+**Integration Status:** The LO Engine is a **Protocol Pack** that defines *what* to teach and in what order. It is not yet integrated into the Wizard as an automatic step. Currently, the learner invokes it manually by declaring LOs during a session or by selecting an LO-aware chain. Future roadmap: auto-extract LOs from uploaded materials during Wizard Step 1.
 
 ## Table of Contents
 - [When to Use](#when-to-use)
@@ -10,7 +12,7 @@
 - [Hard Gates](#hard-gates)
 - [Six-Phase Execution](#six-phase-execution)
 - [Outputs](#outputs-obsidian-ready-fixed-order)
-- [Integration with M0-M6](#integration-with-m0-m6)
+- [Integration with Chain Execution](#integration-with-chain-execution)
 - [State Machine](#state-machine)
 - [Failure Modes + Recovery](#failure-modes--recovery)
 - [Worked Example](#worked-example)
@@ -37,7 +39,7 @@ LO Engine (workflow)
   └── wraps Concept Engine  → when LOs cover abstract/non-spatial topics
 ```
 
-Routing is defined in `13-custom-gpt-system-instructions.md` § Protocol Pack routing. If inference is uncertain, ask: "Anatomy Pack or Concept Pack?"
+If inference is uncertain, ask: "Anatomy Pack or Concept Pack?"
 
 ## Inputs
 
@@ -72,19 +74,17 @@ These are non-negotiable. Violation = stop and fix before continuing.
 
 ## Six-Phase Execution
 
-The LO Engine follows the Six-Phase Topic SOP for each topic (full spec in `13-custom-gpt-system-instructions.md`):
+The LO Engine follows the Six-Phase Topic SOP for each topic:
 
 ### Phase 1: Scope & Pretest
-- **Exposure Check first:** ask "Have you seen this material before?"
 - Present LOs to learner, confirm scope.
-- **Track A (first exposure):** brain dump — "What do you already know about [LO1]?" UNKNOWN is valid. You can't test what you haven't learned.
-- **Track B (review):** retrieval pre-test — 1-3 items, no hints. Establishes baseline gaps.
+- **First exposure:** brain dump — "What do you already know about [LO1]?" UNKNOWN is valid.
+- **Review:** retrieval pre-test — 1-3 items, no hints. Establishes baseline gaps.
 - NO-GUESS rule: if unsure, learner answers "UNKNOWN" rather than guessing.
 - Output: gap map (what's known vs unknown).
 
 ### Phase 2: Parse & Cluster
-- **Track A:** if cluster map was already created in M0 (from pasted materials), use it — skip to teaching. Otherwise build here.
-- **Track B:** build source anchors: map each LO to specific page/slide/section references.
+- Build source anchors: map each LO to specific page/slide/section references.
 - Create Milestone Map: 3-7 milestones per LO, each with a source anchor. Milestones must be checkable.
 - Organize into 3-5 clusters mapped to LOs.
 - Present cluster map to learner for approval before teaching.
@@ -126,21 +126,24 @@ The LO Engine follows the Six-Phase Topic SOP for each topic (full spec in `13-c
 | 8 | Transfer prompt | 1 per LO (apply to new context) |
 | 9 | Next micro-task | <=15 words |
 
-**Wrap outputs:** Exit Ticket + Session Ledger only (Lite Wrap). No JSON at Wrap. See `08-logging.md` for schema, `09-templates.md` for template.
+**Wrap outputs:** Exit Ticket + Session Ledger only (Lite Wrap). No JSON at Wrap.
 
-## Integration with M0-M6
+## Integration with Chain Execution
+
+The LO Engine overlays onto chain execution. When active, it provides the *content sequencing* while the chain provides the *method sequencing*:
 
 ```
-M0 (Planning)  → LOs declared, sources uploaded, pre-test (Phase 1)
-M1 (Entry)     → Source anchors built, Milestone Map created (Phase 2 start)
-M2 (Prime)     → Cluster Map approved, learner oriented (Phase 2 complete)
-M3 (Encode)    → Three-Layer teach loop, cluster by cluster (Phase 3)
-M4 (Build)     → Retrieval + transfer practice (Phase 4)
-M5 (Modes)     → Mode-specific pacing (Sprint/Drill if review)
-M6 (Wrap)      → Consolidate + Export + Next Step (Phases 5-6)
+Wizard Step 1  → LOs declared, sources uploaded (Phase 1 — Scope)
+Wizard Step 2  → Chain selected (LO-aware or general)
+Chain Start    → Source anchors built, Milestone Map created (Phase 2)
+PRIME blocks   → Cluster Map approved, learner oriented (Phase 2 complete)
+ENCODE blocks  → Three-Layer teach loop, cluster by cluster (Phase 3)
+RETRIEVE blocks→ Retrieval + transfer practice (Phase 4)
+OVERLEARN blocks→ Consolidate + Export + Next Step (Phases 5-6)
+Wrap           → Exit Ticket + Session Ledger
 ```
 
-The LO Engine wraps the underlying content engine during M3-M4:
+The LO Engine wraps the underlying content engine during ENCODE/RETRIEVE blocks:
 - If LOs are anatomy-focused → Anatomy Engine sequence (OIANA+) within each cluster
 - If LOs are concept-focused → Concept Engine sequence (Identity → Application) within each cluster
 
@@ -204,23 +207,16 @@ The LO Engine wraps the underlying content engine during M3-M4:
 > AI: "Three LOs for the shoulder — landmarks, rotator cuff attachments, and stability. Before we start: brain dump in 60 seconds — what do you already know about the shoulder girdle and rotator cuff?"
 
 **Phase 2 — Parse & Cluster:**
-> AI: "Here's our Milestone Map:
-> - LO1: Identify scapula landmarks (acromion, coracoid, spine, glenoid), clavicle landmarks, proximal humerus landmarks (greater/lesser tubercle, intertubercular groove). Source: Lab Manual p.12-14.
-> - LO2: Map O/I for supraspinatus, infraspinatus, teres minor, subscapularis. Source: Slides 22-28.
-> - LO3: Explain how the rotator cuff creates dynamic stability (concavity-compression, force couples). Source: Textbook Ch.5 p.89-91.
->
-> Clusters: (1) Bony landmarks [LO1], (2) Rotator cuff attachments [LO2], (3) Stability mechanism [LO3]. Does this look right?"
+> AI builds Milestone Map with source anchors (Lab Manual p.12-14, Slides 22-28, Textbook Ch.5 p.89-91), organizes into 3 clusters: (1) Bony landmarks, (2) Rotator cuff attachments, (3) Stability mechanism. Learner approves.
 
 **Phase 3 — Teach (Cluster 1, One-Step):**
-> AI: "Starting with Cluster 1 — bony landmarks. Source: Lab Manual p.12.
-> The scapula has four key landmarks you need: the acromion (the shelf you can palpate at the top of your shoulder), the coracoid process (the hook-like projection anteriorly), the spine of the scapula (the ridge on the posterior surface), and the glenoid fossa (the shallow socket).
-> Which of these four can you already locate on yourself or a skeleton?"
+> AI teaches using Three-Layer Chunks with source citations, one question at a time.
 
 **Phase 4 — Retrieval (Cluster 1):**
-> AI: "Good recall on acromion and spine. Without looking: where is the coracoid process relative to the acromion, and what attaches there?"
+> AI runs 2-3 free-recall questions per cluster.
 
 **Phase 5 — Consolidate:**
-> AI emits Obsidian note with source anchors, plus 4 Anki card drafts (one per landmark).
+> AI emits Obsidian note with source anchors, plus Anki card drafts.
 
 **Phase 6 — Next Step:**
 > "Next: review rotator cuff attachments using Lab Manual slides 22-28."

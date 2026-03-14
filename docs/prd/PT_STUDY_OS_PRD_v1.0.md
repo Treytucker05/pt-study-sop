@@ -1,5 +1,8 @@
 # PT Study OS — Product Requirements Document (PRD) v1.0
 
+> Historical product artifact. Product/ownership authority lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+> Use this PRD for background and historical framing, not as the live subsystem contract.
+
 **Repo:** `pt-study-sop`  
 **Status:** Draft (ready to implement)  
 **Last updated:** 2026-01-25 (America/Chicago)  
@@ -8,7 +11,7 @@
 
 PT Study OS is a local-first study system that turns each study session into structured evidence, learning artifacts, and a continuous improvement loop:
 
-**Tutor (Custom GPT)** → generates **WRAP** (truth-based session record) →  
+**Tutor (native Flask)** → generates **WRAP** (truth-based session record) →  
 **Brain** ingests and stores it, computes metrics, generates flashcards, proposes safe Obsidian updates →  
 **Scholar** (manual button) audits how you learn, questions the SOP/dashboard, asks you clarifying questions when blocked, and produces proposals →  
 You accept/edit/deny proposals → loop returns to Tutor.
@@ -50,8 +53,8 @@ You accept/edit/deny proposals → loop returns to Tutor.
 
 ## 3. System components and responsibilities
 
-### 3.1 Tutor (Custom GPT)
-**Role:** run tutoring guided by SOP; output WRAP at session end.
+### 3.1 Tutor (Native Flask)
+**Role:** run tutoring guided by SOP via method block chains; output WRAP at session end.
 
 Tutor must output:
 - Notes covered (what was actually studied)
@@ -132,7 +135,7 @@ Calendar must:
 ## 4. Canonical workflows
 
 ### 4.1 Daily session loop (v1)
-1. Open **Tutor (Custom GPT)**
+1. Open **Tutor** (`/tutor`)
 2. Run session guided by SOP
 3. Produce WRAP (truth-based)
 4. Ingest WRAP into Brain (CLI for now)

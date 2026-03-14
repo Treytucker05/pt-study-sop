@@ -1,0 +1,16 @@
+{
+  "id": "tutor-10-certification_20260307",
+  "title": "Tutor 10/10 Certification",
+  "type": "certification",
+  "status": "active",
+  "created": "2026-03-07T00:00:00Z",
+  "updated": "2026-03-07T00:00:00Z",
+  "phases": {
+    "total": 7,
+    "completed": 1
+  },
+  "tasks": {
+    "total": 28,
+    "completed": 17
+  }
+}

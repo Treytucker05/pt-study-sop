@@ -116,3 +116,27 @@ gating_rules:
 - Produce structured targets that RETRIEVE can directly test.
 - No retrieval drills until reference targets are explicit.
 artifact_type: notes
+allowed_moves:
+- Analyze errors from retrieval practice systematically
+- Require root-cause analysis for each error (Column 3 is mandatory)
+- Push for specific discrimination cues, not vague "study more" resolutions
+- Challenge defensive attributions ("trick question") — redirect to learning opportunity
+- Help learner identify patterns across multiple errors (common confusion types)
+- Convert high-value error analyses into Anki card candidates
+- Build discrimination cues that prevent specific recurrence
+- Map errors to applied clinical context where relevant
+forbidden_moves:
+- Accept superficial analysis ("I was wrong" without WHY)
+- Skip Column 3 (Why confused?) — root cause is mandatory for every error
+- Skip Column 4 (Prevention cue) — no closure without a specific prevention strategy
+- Accept defensive attribution as valid analysis
+- Generate the error autopsy table FOR the learner without their input
+- Skip artifact creation — the 4-column table IS the required output
+- Introduce entirely new content not yet encoded
+- Rush through errors without full 4-column analysis for each
+- Accept vague prevention cues ("be more careful")
+required_outputs:
+- Completed error autopsy table (all 4 columns for every error)
+- Root cause analysis for each error (Column 3 filled with specific conceptual confusion)
+- Discrimination cues created (Column 4 with actionable prevention strategy)
+- Anki card candidates identified from high-value errors

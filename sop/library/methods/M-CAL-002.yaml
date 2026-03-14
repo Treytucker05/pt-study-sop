@@ -83,6 +83,28 @@ primary_citations:
 - Metcalfe (2017)
 - Dunlosky et al. (2013)
 evidence_raw: Confidence-calibration signals improve targeting of corrective study actions.
+allowed_moves:
+- Apply confidence tag to each item using configured confidence scale
+- Capture confidence BEFORE revealing correctness feedback
+- Identify high-confidence misses (overconfidence signals)
+- Identify low-confidence hits (underconfidence signals)
+- Compute calibration bias summary (confidence vs correctness pattern)
+- Emit risk flags for downstream routing
+- Collapse scale to HML if learner always picks same level
+- Invalidate and re-prompt if confidence captured after feedback
+forbidden_moves:
+- Reveal correctness before confidence tag is captured (never reverse order)
+- Teach or explain content during calibration (diagnostic only)
+- Lower difficulty based on confidence alone (requires correctness/latency corroboration)
+- Skip confidence capture for any attempted item
+- Switch into teaching or tutoring mode
+- Change confidence scale mid-block
+- Use confidence data to bypass performance-based routing
+required_outputs:
+- ConfidenceTaggedResults (per-item confidence + correctness)
+- HighConfidenceMisses (overconfidence items)
+- LowConfidenceHits (underconfidence items)
+- CalibrationRiskFlags (routing signals for downstream methods)
 facilitation_prompt: 'You are running M-CAL-002 (Confidence Tagging) in CALIBRATE stage.
 
   Convert item attempts into actionable calibration signals.

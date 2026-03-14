@@ -13,6 +13,7 @@ import sys
 import tempfile
 import sqlite3
 import json
+from typing import Any
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -23,6 +24,7 @@ from dashboard.app import create_app
 import dashboard.api_data as _api_data_mod
 import dashboard.api_adapter as _api_adapter_mod
 import dashboard.api_tutor as _api_tutor_mod
+import dashboard.api_tutor_turns as _api_tutor_turns_mod
 import llm_provider
 import tutor_context
 import tutor_tools
@@ -41,20 +43,46 @@ def app():
     _orig_api_data = _api_data_mod.DB_PATH
     _orig_obsidian_get = _api_adapter_mod.obsidian_get_file
     _orig_obsidian_save = _api_adapter_mod.obsidian_save_file
+    _orig_tutor_vault_read = _api_tutor_mod._vault_read_note
+    _orig_tutor_vault_save = _api_tutor_mod._vault_save_note
+    _orig_tutor_vault_delete = _api_tutor_mod._vault_delete_note
 
-    north_star_store: dict[str, str] = {}
-    north_star_write_calls: list[str] = []
+    map_of_contents_store: dict[str, str] = {}
+    map_of_contents_write_calls: list[str] = []
 
     def _fake_obsidian_get_file(path: str):
-        content = north_star_store.get(path)
+        rel_path = _normalize_path(path)
+        content = map_of_contents_store.get(rel_path)
         if content is None:
             return {"success": False, "error": "not found"}
-        return {"success": True, "content": content, "path": path}
+        return {"success": True, "content": content, "path": rel_path}
 
     def _fake_obsidian_save_file(path: str, content: str):
-        north_star_write_calls.append(path)
-        north_star_store[path] = content
-        return {"success": True, "path": path}
+        rel_path = _normalize_path(path)
+        map_of_contents_write_calls.append(rel_path)
+        map_of_contents_store[rel_path] = content
+        return {"success": True, "path": rel_path}
+
+    def _normalize_path(path: str) -> str:
+        return str(path or "").replace("\\", "/").strip().lstrip("/")
+
+    def _fake_tutor_vault_read(path: str):
+        rel_path = _normalize_path(path)
+        content = map_of_contents_store.get(rel_path)
+        if content is None:
+            return {"success": False, "error": "file not found", "path": rel_path}
+        return {"success": True, "content": content, "path": rel_path}
+
+    def _fake_tutor_vault_save(path: str, content: str):
+        rel_path = _normalize_path(path)
+        map_of_contents_write_calls.append(rel_path)
+        map_of_contents_store[rel_path] = content
+        return {"success": True, "path": rel_path}
+
+    def _fake_tutor_vault_delete(path: str):
+        rel_path = _normalize_path(path)
+        map_of_contents_store.pop(rel_path, None)
+        return {"success": True, "path": rel_path}
 
     # Patch module-cached DB paths
     os.environ["PT_STUDY_DB"] = tmp_path
@@ -63,12 +91,16 @@ def app():
     _api_data_mod.DB_PATH = tmp_path
     _api_adapter_mod.obsidian_get_file = _fake_obsidian_get_file
     _api_adapter_mod.obsidian_save_file = _fake_obsidian_save_file
+    _api_tutor_mod._vault_read_note = _fake_tutor_vault_read
+    _api_tutor_mod._vault_save_note = _fake_tutor_vault_save
+    _api_tutor_mod._vault_delete_note = _fake_tutor_vault_delete
 
     db_setup.init_database()
+    db_setup._METHOD_LIBRARY_ENSURED = False
     app_obj = create_app()
     app_obj.config["TESTING"] = True
-    app_obj.config["TEST_NORTH_STAR_WRITES"] = north_star_write_calls
-    app_obj.config["TEST_OBSIDIAN_STORE"] = north_star_store
+    app_obj.config["TEST_MAP_OF_CONTENTS_WRITES"] = map_of_contents_write_calls
+    app_obj.config["TEST_OBSIDIAN_STORE"] = map_of_contents_store
     yield app_obj
 
     # Restore environment/module state
@@ -77,6 +109,9 @@ def app():
     _api_data_mod.DB_PATH = _orig_api_data
     _api_adapter_mod.obsidian_get_file = _orig_obsidian_get
     _api_adapter_mod.obsidian_save_file = _orig_obsidian_save
+    _api_tutor_mod._vault_read_note = _orig_tutor_vault_read
+    _api_tutor_mod._vault_save_note = _orig_tutor_vault_save
+    _api_tutor_mod._vault_delete_note = _orig_tutor_vault_delete
     if _orig_env is None:
         os.environ.pop("PT_STUDY_DB", None)
     else:
@@ -114,7 +149,7 @@ def _create_tutor_session(
     brain_session_id: int | None = None,
     method_chain_id: int | None = None,
 ) -> str:
-    payload = {"mode": "Core", "topic": "Tutor Link Test"}
+    payload: dict[str, Any] = {"mode": "Core", "topic": "Tutor Link Test"}
     if brain_session_id is not None:
         payload["brain_session_id"] = brain_session_id
     if method_chain_id is not None:
@@ -163,7 +198,9 @@ def _insert_method_block(
             knob_overrides_json,
         ),
     )
-    block_id = int(cur.lastrowid)
+    last_row_id = cur.lastrowid
+    assert last_row_id is not None
+    block_id = int(last_row_id)
     conn.commit()
     conn.close()
     return block_id
@@ -226,11 +263,20 @@ def test_send_turn_persists_and_reuses_response_id(client, monkeypatch):
 
     # Remove external dependencies from this unit test path.
     monkeypatch.setattr(
-        tutor_context, "build_context",
-        lambda *args, **kwargs: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
+        tutor_context,
+        "build_context",
+        lambda *args, **kwargs: {
+            "materials": "",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        },
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     calls: list[str | None] = []
     counter = {"n": 0}
@@ -293,6 +339,507 @@ def test_send_turn_persists_and_reuses_response_id(client, monkeypatch):
     assert turns[0]["model_id"] == "gpt-5.3-codex"
 
 
+def test_single_focus_session_requires_explicit_focus_objective(client):
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        """
+        INSERT INTO courses (id, name, code, color, created_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+        """,
+        (3, "Neuroscience", "PHYT 6313", "#ff0000"),
+    )
+    conn.commit()
+    conn.close()
+
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "course_id": 3,
+            "mode": "Core",
+            "topic": "Week 7 - Development of Nervous System",
+            "module_name": "Week 7 - Development of Nervous System",
+            "objective_scope": "single_focus",
+            "learning_objectives": [
+                {"lo_code": "OBJ-1", "title": "Describe neurulation."},
+                {
+                    "lo_code": "OBJ-6",
+                    "title": "Differentiate neural tube and neural crest derivatives.",
+                },
+            ],
+            "content_filter": {
+                "vault_folder": "Courses/Neuroscience/Week 7",
+                "objective_scope": "single_focus",
+            },
+        },
+    )
+
+    assert resp.status_code == 400
+    body = resp.get_json()
+    assert body["code"] == "FOCUS_OBJECTIVE_REQUIRED"
+    assert "OBJ-1" in body["objective_ids"]
+    assert "OBJ-6" in body["objective_ids"]
+
+
+def test_reference_bounds_allows_continuation_style_followups():
+    allowed = _api_tutor_mod._question_within_reference_targets(
+        "Yes. Give me chunk 3 and make the derivative map explicit.",
+        ["[[OBJ-6]]", "[[Differentiate embryologic origins of the CNS and PNS]]"],
+    )
+
+    assert allowed is True
+
+
+def test_reference_bounds_rejects_generic_continue_without_target():
+    allowed = _api_tutor_mod._question_within_reference_targets(
+        "Continue.",
+        ["[[OBJ-6]]", "[[Differentiate embryologic origins of the CNS and PNS]]"],
+    )
+
+    assert allowed is False
+
+
+def test_preflight_reports_focus_objective_blocker(client):
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        """
+        INSERT INTO courses (id, name, code, color, created_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+        """,
+        (7, "Neuroscience", "PHYT 6313", "#ff0000"),
+    )
+    conn.commit()
+    conn.close()
+
+    resp = client.post(
+        "/api/tutor/session/preflight",
+        json={
+            "course_id": 7,
+            "study_unit": "Week 7 - Development of Nervous System",
+            "objective_scope": "single_focus",
+            "learning_objectives": [
+                {"lo_code": "OBJ-1", "title": "Describe neurulation."},
+                {"lo_code": "OBJ-6", "title": "Differentiate neural tube and neural crest derivatives."},
+            ],
+            "content_filter": {
+                "material_ids": [1, 2],
+                "vault_folder": "Courses/Neuroscience/Week 7",
+            },
+        },
+    )
+
+    assert resp.status_code == 200
+    body = resp.get_json()
+    assert body["ok"] is False
+    assert any(blocker["code"] == "FOCUS_OBJECTIVE_REQUIRED" for blocker in body["blockers"])
+    assert body["map_of_contents"]["path"] == "Courses/Neuroscience/Week 7/_Map of Contents.md"
+    assert (
+        body["learning_objectives_page"]["path"]
+        == "Courses/Neuroscience/Week 7/Learning Objectives & To Do.md"
+    )
+    assert body["page_sync_result"]["ok"] is True
+    assert body["page_sync_result"]["map_of_contents"]["status"] == "test_mode_no_write"
+    assert (
+        body["page_sync_result"]["learning_objectives_todo"]["status"]
+        == "test_mode_no_write"
+    )
+
+
+def test_create_session_requires_preflight_for_objective_scoped_setup(client):
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "mode": "Core",
+            "topic": "Week 7 without preflight",
+            "focus_objective_id": "OBJ-6",
+            "objective_scope": "single_focus",
+            "learning_objectives": [
+                {"lo_code": "OBJ-6", "title": "Differentiate neural tube and neural crest derivatives."}
+            ],
+            "content_filter": {
+                "material_ids": [11, 12],
+                "vault_folder": "Courses/Neuroscience/Week 7",
+                "objective_scope": "single_focus",
+                "focus_objective_id": "OBJ-6",
+            },
+        },
+    )
+
+    assert resp.status_code == 400
+    body = resp.get_json()
+    assert body["code"] == "PREFLIGHT_REQUIRED"
+
+
+def test_create_session_rejects_non_integer_course_id(client):
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "mode": "Core",
+            "topic": "Bad course id",
+            "course_id": "abc",
+        },
+    )
+
+    assert resp.status_code == 400
+    body = resp.get_json()
+    assert body["error"] == "course_id must be an integer"
+    assert body["code"] == "INVALID_COURSE_ID"
+
+
+def test_preflight_requires_study_unit(client):
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        """
+        INSERT INTO courses (id, name, code, color, created_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+        """,
+        (9, "Neuroscience", "PHYT 6313", "#ff0000"),
+    )
+    conn.commit()
+    conn.close()
+
+    resp = client.post(
+        "/api/tutor/session/preflight",
+        json={
+            "course_id": 9,
+            "objective_scope": "module_all",
+            "content_filter": {"material_ids": [1]},
+        },
+    )
+
+    assert resp.status_code == 200
+    body = resp.get_json()
+    assert body["ok"] is False
+    assert any(blocker["code"] == "STUDY_UNIT_REQUIRED" for blocker in body["blockers"])
+
+
+def test_preflight_blocks_missing_approved_objectives_without_syncing_placeholder_pages(
+    client,
+):
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        """
+        INSERT INTO courses (id, name, code, color, created_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+        """,
+        (10, "Neuroscience", "PHYT 6313", "#ff0000"),
+    )
+    conn.commit()
+    conn.close()
+
+    resp = client.post(
+        "/api/tutor/session/preflight",
+        json={
+            "course_id": 10,
+            "study_unit": "Week 9 - Basal Ganglia",
+            "topic": "Stale Topic Should Not Sync",
+            "objective_scope": "module_all",
+            "content_filter": {
+                "material_ids": [1],
+                "vault_folder": "Courses/Neuroscience/Week 9",
+            },
+        },
+    )
+
+    assert resp.status_code == 200
+    body = resp.get_json()
+    assert body["ok"] is False
+    assert any(
+        blocker["code"] == "APPROVED_OBJECTIVES_REQUIRED"
+        for blocker in body["blockers"]
+    )
+    assert body["page_sync_result"]["ok"] is False
+    assert (
+        body["page_sync_result"]["map_of_contents"]["status"]
+        == "skipped_missing_objectives"
+    )
+    assert (
+        body["page_sync_result"]["learning_objectives_todo"]["status"]
+        == "skipped_missing_objectives"
+    )
+
+
+def test_template_chains_endpoint_exposes_certification_metadata(client):
+    resp = client.get("/api/tutor/chains/templates")
+    assert resp.status_code == 200
+    body = resp.get_json()
+    assert isinstance(body, list) and body
+
+    top_down = next(
+        (item for item in body if item.get("name") == "Top-Down Narrative Mastery"),
+        None,
+    )
+    assert top_down is not None
+    assert top_down["template_id"] == "C-TRY-001"
+    assert top_down["certification"]["disposition"] == "strict-certification"
+    assert top_down["certification"]["gold_standard"] is True
+
+
+def test_create_session_uses_preflight_bundle(client):
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        """
+        INSERT INTO courses (id, name, code, color, created_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+        """,
+        (8, "Neuroscience", "PHYT 6313", "#ff0000"),
+    )
+    conn.commit()
+    conn.close()
+
+    preflight_resp = client.post(
+        "/api/tutor/session/preflight",
+        json={
+            "course_id": 8,
+            "study_unit": "Week 7 - Development of Nervous System",
+            "topic": "Week 7 - Development of Nervous System",
+            "objective_scope": "single_focus",
+            "focus_objective_id": "OBJ-6",
+            "learning_objectives": [
+                {"lo_code": "OBJ-1", "title": "Describe neurulation.", "group": "Week 7 - Development of Nervous System"},
+                {"lo_code": "OBJ-6", "title": "Differentiate neural tube and neural crest derivatives.", "group": "Week 7 - Development of Nervous System"},
+            ],
+            "content_filter": {
+                "material_ids": [11, 12],
+                "vault_folder": "Courses/Neuroscience/Week 7",
+                "accuracy_profile": "strict",
+            },
+        },
+    )
+    assert preflight_resp.status_code == 200
+    preflight = preflight_resp.get_json()
+    assert preflight["ok"] is True
+    assert preflight["map_of_contents"]["follow_up_targets"][0] == "[[OBJ-6]]"
+    assert "[[OBJ-UNMAPPED]]" not in preflight["map_of_contents"]["follow_up_targets"]
+
+    session_resp = client.post(
+        "/api/tutor/session",
+        json={
+            "preflight_id": preflight["preflight_id"],
+            "mode": "Core",
+        },
+    )
+    assert session_resp.status_code == 201
+    body = session_resp.get_json()
+    assert body["focus_objective_id"] == "OBJ-6"
+    assert body["map_of_contents"]["path"] == "Courses/Neuroscience/Week 7/_Map of Contents.md"
+    assert (
+        body["learning_objectives_page"]["path"]
+        == "Courses/Neuroscience/Week 7/Learning Objectives & To Do.md"
+    )
+    assert body["page_sync_result"]["ok"] is True
+
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT content_filter_json FROM tutor_sessions WHERE session_id = ?",
+        (body["session_id"],),
+    ).fetchone()
+    conn.close()
+    saved_filter = json.loads(row["content_filter_json"] or "{}")
+    assert saved_filter["focus_objective_id"] == "OBJ-6"
+    assert saved_filter["vault_folder"] == "Courses/Neuroscience/Week 7"
+    assert (
+        saved_filter["learning_objectives_page"]["path"]
+        == "Courses/Neuroscience/Week 7/Learning Objectives & To Do.md"
+    )
+    assert saved_filter["page_sync_result"]["ok"] is True
+    assert saved_filter["follow_up_targets"][0] == "[[OBJ-6]]"
+    assert "[[OBJ-UNMAPPED]]" not in saved_filter["follow_up_targets"]
+
+
+def test_session_restore_matrix_01_preflight_scope_is_authoritative_for_create(client):
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        """
+        INSERT INTO courses (id, name, code, color, created_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+        """,
+        (14, "Neuroscience", "PHYT 6313", "#ff0000"),
+    )
+    conn.commit()
+    conn.close()
+
+    preflight_resp = client.post(
+        "/api/tutor/session/preflight",
+        json={
+            "course_id": 14,
+            "study_unit": "Week 7 - Development of Nervous System",
+            "topic": "Week 7 - Development of Nervous System",
+            "objective_scope": "single_focus",
+            "focus_objective_id": "OBJ-6",
+            "learning_objectives": [
+                {"lo_code": "OBJ-1", "title": "Describe neurulation.", "group": "Week 7 - Development of Nervous System"},
+                {"lo_code": "OBJ-6", "title": "Differentiate neural tube and neural crest derivatives.", "group": "Week 7 - Development of Nervous System"},
+            ],
+            "content_filter": {
+                "material_ids": [11, 12],
+                "vault_folder": "Courses/Neuroscience/Week 7",
+                "accuracy_profile": "strict",
+            },
+        },
+    )
+    assert preflight_resp.status_code == 200
+    preflight = preflight_resp.get_json()
+    assert preflight["ok"] is True
+
+    session_resp = client.post(
+        "/api/tutor/session",
+        json={
+            "preflight_id": preflight["preflight_id"],
+            "topic": "Injected topic should be ignored",
+            "course_id": 999,
+            "objective_scope": "module_all",
+            "focus_objective_id": "OBJ-FAKE",
+            "content_filter": {
+                "accuracy_profile": "rapid",
+                "vault_folder": "Injected/Week 7",
+                "material_ids": [999, 998],
+                "objective_scope": "module_all",
+                "focus_objective_id": "OBJ-FAKE",
+            },
+            "module_name": "Injected Module",
+        },
+    )
+    assert session_resp.status_code == 201
+    body = session_resp.get_json()
+    assert body["topic"] == "Week 7 - Development of Nervous System"
+    assert body["objective_scope"] == "single_focus"
+    assert body["focus_objective_id"] == "OBJ-6"
+    assert body["map_of_contents"]["path"] == "Courses/Neuroscience/Week 7/_Map of Contents.md"
+
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT content_filter_json FROM tutor_sessions WHERE session_id = ?",
+        (body["session_id"],),
+    ).fetchone()
+    conn.close()
+
+    saved_filter = json.loads(row["content_filter_json"] or "{}")
+    assert saved_filter["objective_scope"] == "single_focus"
+    assert saved_filter["focus_objective_id"] == "OBJ-6"
+    assert saved_filter["material_ids"] == [11, 12]
+    assert saved_filter["vault_folder"] == "Courses/Neuroscience/Week 7"
+    assert saved_filter["accuracy_profile"] == "strict"
+    assert saved_filter["follow_up_targets"][0] == "[[OBJ-6]]"
+    assert "[[OBJ-UNMAPPED]]" not in saved_filter["follow_up_targets"]
+    assert saved_filter.get("map_of_contents", {}).get("path") == "Courses/Neuroscience/Week 7/_Map of Contents.md"
+
+
+def test_session_restore_matrix_02_get_session_round_trip_preserves_scoped_state(client, monkeypatch):
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        """
+        INSERT INTO courses (id, name, code, color, created_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+        """,
+        (15, "Neuroscience", "PHYT 6313", "#ff0000"),
+    )
+    conn.commit()
+    conn.close()
+
+    preflight_resp = client.post(
+        "/api/tutor/session/preflight",
+        json={
+            "course_id": 15,
+            "study_unit": "Week 7 - Development of Nervous System",
+            "topic": "Week 7 - Development of Nervous System",
+            "objective_scope": "single_focus",
+            "focus_objective_id": "OBJ-6",
+            "learning_objectives": [
+                {"lo_code": "OBJ-1", "title": "Describe neurulation.", "group": "Week 7 - Development of Nervous System"},
+                {"lo_code": "OBJ-6", "title": "Differentiate neural tube and neural crest derivatives.", "group": "Week 7 - Development of Nervous System"},
+            ],
+            "content_filter": {
+                "material_ids": [11, 12],
+                "vault_folder": "Courses/Neuroscience/Week 7",
+                "accuracy_profile": "strict",
+            },
+        },
+    )
+    assert preflight_resp.status_code == 200
+    preflight = preflight_resp.get_json()
+    assert preflight["ok"] is True
+
+    session_resp = client.post(
+        "/api/tutor/session",
+        json={"preflight_id": preflight["preflight_id"], "mode": "Core"},
+    )
+    assert session_resp.status_code == 201
+    session = session_resp.get_json()
+    assert isinstance(session.get("session_id"), str) and session["session_id"]
+
+    monkeypatch.setattr(
+        tutor_context,
+        "build_context",
+        lambda *_a, **_k: {
+            "materials": "",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        },
+    )
+    monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
+    monkeypatch.setattr(
+        tutor_tools,
+        "execute_tool",
+        lambda *_a, **_k: {"success": True},
+    )
+
+    def fake_stream(_system_prompt, _user_prompt, **_kwargs):
+        yield {"type": "delta", "text": "ok"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-restore",
+            "thread_id": "thread-restore",
+        }
+
+    monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
+
+    turn_resp = client.post(
+        f"/api/tutor/session/{session['session_id']}/turn",
+        json={"message": "Continue with the derivative map"},
+    )
+    assert turn_resp.status_code == 200
+    _ = turn_resp.get_data(as_text=True)
+
+    restored_resp = client.get(f"/api/tutor/session/{session['session_id']}")
+    assert restored_resp.status_code == 200
+    restored = restored_resp.get_json()
+    restored_filter = restored["content_filter"]
+
+    assert restored["session_id"] == session["session_id"]
+    assert restored["status"] == "active"
+    assert restored["turn_count"] == 1
+    assert restored_filter["vault_folder"] == "Courses/Neuroscience/Week 7"
+    assert restored_filter["objective_scope"] == "single_focus"
+    assert restored_filter["focus_objective_id"] == "OBJ-6"
+    assert restored_filter["material_ids"] == [11, 12]
+    assert restored_filter["accuracy_profile"] == "strict"
+    assert restored_filter["map_of_contents"]["path"] == "Courses/Neuroscience/Week 7/_Map of Contents.md"
+    assert len(restored["turns"]) == 1
+    assert restored["turns"][0]["question"] == "Continue with the derivative map"
+    assert restored["turns"][0]["response_id"] == "resp-restore"
+
+
+def test_create_session_rejects_non_object_content_filter(client):
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "mode": "Core",
+            "topic": "Bad content filter",
+            "content_filter": "strict",
+        },
+    )
+
+    assert resp.status_code == 400
+    body = resp.get_json()
+    assert body["error"] == "content_filter must be an object"
+    assert body["code"] == "INVALID_CONTENT_FILTER"
+
+
 def test_send_turn_scales_material_retrieval_to_selected_materials(client, monkeypatch):
     material_ids = list(range(1, 31))
     resp = client.post(
@@ -311,15 +858,28 @@ def test_send_turn_scales_material_retrieval_to_selected_materials(client, monke
     def fake_build_context(_question, **kwargs):
         captured["k_materials"] = kwargs.get("k_materials")
         captured["material_ids"] = kwargs.get("material_ids")
-        return {"materials": "doc 1\n\ndoc 2", "instructions": "", "notes": "", "course_map": "", "debug": {}}
+        return {
+            "materials": "doc 1\n\ndoc 2",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        }
 
     monkeypatch.setattr(tutor_context, "build_context", fake_build_context)
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     def fake_stream(_system_prompt, _user_prompt, **_kwargs):
         yield {"type": "delta", "text": "ok"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-k", "thread_id": "thread-k"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-k",
+            "thread_id": "thread-k",
+        }
 
     monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
 
@@ -355,15 +915,28 @@ def test_send_turn_strict_profile_boosts_retrieval_depth(client, monkeypatch):
 
     def fake_build_context(_question, **kwargs):
         captured["k_materials"] = kwargs.get("k_materials")
-        return {"materials": "strict doc", "instructions": "", "notes": "", "course_map": "", "debug": {}}
+        return {
+            "materials": "strict doc",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        }
 
     monkeypatch.setattr(tutor_context, "build_context", fake_build_context)
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     def fake_stream(_system_prompt, _user_prompt, **_kwargs):
         yield {"type": "delta", "text": "ok"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-strict", "thread_id": "thread-strict"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-strict",
+            "thread_id": "thread-strict",
+        }
 
     monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
 
@@ -396,15 +969,28 @@ def test_send_turn_applies_per_turn_material_override(client, monkeypatch):
 
     def fake_build_context(_query, **kwargs):
         captured["material_ids"] = kwargs.get("material_ids")
-        return {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}}
+        return {
+            "materials": "",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        }
 
     monkeypatch.setattr(tutor_context, "build_context", fake_build_context)
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     def fake_stream(_system_prompt, _user_prompt, **_kwargs):
         yield {"type": "delta", "text": "ok"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-ovr", "thread_id": "thread-ovr"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-ovr",
+            "thread_id": "thread-ovr",
+        }
 
     monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
 
@@ -461,18 +1047,45 @@ def test_send_turn_includes_selected_material_scope_in_prompt(client, monkeypatc
     tutor_sid = resp.get_json()["session_id"]
 
     monkeypatch.setattr(
-        tutor_context, "build_context",
-        lambda *_a, **_k: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
+        tutor_context,
+        "build_context",
+        lambda *_a, **_k: {
+            "materials": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {
+                "materials": {
+                    "mode": "vector_search",
+                    "retrieved_chunks": 4,
+                    "retrieved_unique_sources": 2,
+                    "sources": ["gamma.md", "delta.md"],
+                    "top_source": "gamma.md",
+                    "top_source_share": 0.5,
+                    "candidate_pool_similarity": 12,
+                    "candidate_pool_mmr": 6,
+                    "candidate_pool_merged": 14,
+                    "candidate_pool_after_cap": 10,
+                    "candidate_pool_dropped_by_cap": 4,
+                }
+            },
+        },
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     captured: dict[str, str] = {"system_prompt": ""}
 
     def fake_stream(system_prompt, _user_prompt, **_kwargs):
         captured["system_prompt"] = system_prompt
         yield {"type": "delta", "text": "ok"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-scope", "thread_id": "thread-scope"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-scope",
+            "thread_id": "thread-scope",
+        }
 
     monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
 
@@ -519,18 +1132,45 @@ def test_send_turn_material_count_question_uses_selected_scope(client, monkeypat
     tutor_sid = resp.get_json()["session_id"]
 
     monkeypatch.setattr(
-        tutor_context, "build_context",
-        lambda *_a, **_k: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
+        tutor_context,
+        "build_context",
+        lambda *_a, **_k: {
+            "materials": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {
+                "materials": {
+                    "mode": "vector_search",
+                    "retrieved_chunks": 4,
+                    "retrieved_unique_sources": 2,
+                    "sources": ["gamma.md", "delta.md"],
+                    "top_source": "gamma.md",
+                    "top_source_share": 0.5,
+                    "candidate_pool_similarity": 12,
+                    "candidate_pool_mmr": 6,
+                    "candidate_pool_merged": 14,
+                    "candidate_pool_after_cap": 10,
+                    "candidate_pool_dropped_by_cap": 4,
+                }
+            },
+        },
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     stream_calls = {"count": 0}
 
     def fake_stream(*_args, **_kwargs):
         stream_calls["count"] += 1
         yield {"type": "delta", "text": "llm-stream-should-not-run"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-count", "thread_id": "thread-count"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-count",
+            "thread_id": "thread-count",
+        }
 
     monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
 
@@ -546,8 +1186,24 @@ def test_send_turn_material_count_question_uses_selected_scope(client, monkeypat
     assert stream_calls["count"] == 0
 
 
-def test_send_turn_selected_scope_listing_question_uses_selected_scope(client, monkeypatch):
-    selected_ids = [951, 952]
+def test_send_turn_selected_scope_listing_question_uses_selected_scope(
+    client, monkeypatch
+):
+    selected_ids = [953, 954]
+    conn = sqlite3.connect(config.DB_PATH)
+    cur = conn.cursor()
+    cur.executemany(
+        """INSERT INTO rag_docs
+           (id, title, source_path, content, corpus, enabled, created_at, updated_at)
+           VALUES (?, ?, ?, ?, 'materials', 1, datetime('now'), datetime('now'))""",
+        [
+            (selected_ids[0], "Gamma Notes", "C:/materials/gamma.md", "gamma content"),
+            (selected_ids[1], "Delta Notes", "C:/materials/delta.md", "delta content"),
+        ],
+    )
+    conn.commit()
+    conn.close()
+
     resp = client.post(
         "/api/tutor/session",
         json={
@@ -560,24 +1216,53 @@ def test_send_turn_selected_scope_listing_question_uses_selected_scope(client, m
     tutor_sid = resp.get_json()["session_id"]
 
     monkeypatch.setattr(
-        tutor_context, "build_context",
-        lambda *_a, **_k: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
+        tutor_context,
+        "build_context",
+        lambda *_a, **_k: {
+            "materials": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {
+                "materials": {
+                    "mode": "vector_search",
+                    "retrieved_chunks": 4,
+                    "retrieved_unique_sources": 2,
+                    "sources": ["gamma.md", "delta.md"],
+                    "top_source": "gamma.md",
+                    "top_source_share": 0.5,
+                    "candidate_pool_similarity": 12,
+                    "candidate_pool_mmr": 6,
+                    "candidate_pool_merged": 14,
+                    "candidate_pool_after_cap": 10,
+                    "candidate_pool_dropped_by_cap": 4,
+                }
+            },
+        },
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     stream_calls = {"count": 0}
 
     def fake_stream(*_args, **_kwargs):
         stream_calls["count"] += 1
         yield {"type": "delta", "text": "llm-stream-should-not-run"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-list", "thread_id": "thread-list"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-list",
+            "thread_id": "thread-list",
+        }
 
     monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
 
     turn_resp = client.post(
         f"/api/tutor/session/{tutor_sid}/turn",
-        json={"message": "List every selected file you can currently access for this turn."},
+        json={
+            "message": "List every selected file you can currently access for this turn."
+        },
     )
     assert turn_resp.status_code == 200
     body = turn_resp.get_data(as_text=True)
@@ -590,7 +1275,52 @@ def test_send_turn_selected_scope_listing_question_uses_selected_scope(client, m
     assert stream_calls["count"] == 0
 
 
-def test_material_count_shortcut_does_not_overwrite_last_response_id(client, monkeypatch):
+def test_material_context_expands_selected_mp4_to_linked_processed_docs():
+    conn = sqlite3.connect(config.DB_PATH)
+    cur = conn.cursor()
+    mp4_id = 3001
+    transcript_id = 3002
+    cur.executemany(
+        """INSERT INTO rag_docs
+           (id, title, source_path, content, checksum, metadata_json, corpus, file_type, enabled, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, 'materials', ?, 1, datetime('now'), datetime('now'))""",
+        [
+            (
+                mp4_id,
+                "Lecture Video",
+                "C:/materials/lecture.mp4",
+                "",
+                "checksum-mp4",
+                json.dumps({}),
+                "mp4",
+            ),
+            (
+                transcript_id,
+                "Lecture Transcript",
+                "C:/materials/lecture_transcript.md",
+                "Transcribed pathway explanation from the processed video.",
+                "checksum-transcript",
+                json.dumps({"video_material_id": mp4_id, "video_doc_role": "transcript"}),
+                "md",
+            ),
+        ],
+    )
+    conn.commit()
+    conn.close()
+    ctx = tutor_context.build_context(
+        "Teach me from the selected video only.",
+        depth="materials",
+        material_ids=[mp4_id],
+        k_materials=4,
+    )
+
+    assert "lecture_transcript.md" in ctx["materials"]
+    assert "Transcribed pathway explanation from the processed video." in ctx["materials"]
+
+
+def test_material_count_shortcut_does_not_overwrite_last_response_id(
+    client, monkeypatch
+):
     selected_ids = [951, 952]
     resp = client.post(
         "/api/tutor/session",
@@ -604,18 +1334,32 @@ def test_material_count_shortcut_does_not_overwrite_last_response_id(client, mon
     tutor_sid = resp.get_json()["session_id"]
 
     monkeypatch.setattr(
-        tutor_context, "build_context",
-        lambda *_a, **_k: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
+        tutor_context,
+        "build_context",
+        lambda *_a, **_k: {
+            "materials": "",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        },
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     stream_calls = {"count": 0}
 
     def fake_stream(_system_prompt, _user_prompt, **_kwargs):
         stream_calls["count"] += 1
         yield {"type": "delta", "text": "normal reply"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-1", "thread_id": "thread-1"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-1",
+            "thread_id": "thread-1",
+        }
 
     monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
 
@@ -682,15 +1426,28 @@ def test_send_turn_material_scope_overrides_course_filter(client, monkeypatch):
     def fake_build_context(_query, **kwargs):
         captured["course_id"] = kwargs.get("course_id")
         captured["material_ids"] = kwargs.get("material_ids")
-        return {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}}
+        return {
+            "materials": "",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        }
 
     monkeypatch.setattr(tutor_context, "build_context", fake_build_context)
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     def fake_stream(_system_prompt, _user_prompt, **_kwargs):
         yield {"type": "delta", "text": "ok"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-cross", "thread_id": "thread-cross"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-cross",
+            "thread_id": "thread-cross",
+        }
 
     monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
 
@@ -719,15 +1476,42 @@ def test_send_turn_done_payload_includes_retrieval_debug(client, monkeypatch):
     tutor_sid = resp.get_json()["session_id"]
 
     monkeypatch.setattr(
-        tutor_context, "build_context",
-        lambda *_a, **_k: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
+        tutor_context,
+        "build_context",
+        lambda *_a, **_k: {
+            "materials": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {
+                "materials": {
+                    "mode": "vector_search",
+                    "retrieved_chunks": 4,
+                    "retrieved_unique_sources": 2,
+                    "sources": ["gamma.md", "delta.md"],
+                    "top_source": "gamma.md",
+                    "top_source_share": 0.5,
+                    "candidate_pool_similarity": 12,
+                    "candidate_pool_mmr": 6,
+                    "candidate_pool_merged": 14,
+                    "candidate_pool_after_cap": 10,
+                    "candidate_pool_dropped_by_cap": 4,
+                }
+            },
+        },
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     def fake_stream(_system_prompt, _user_prompt, **_kwargs):
         yield {"type": "delta", "text": "[Source: C:/materials/gamma.md]"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-debug", "thread_id": "thread-debug"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-debug",
+            "thread_id": "thread-debug",
+        }
 
     monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
 
@@ -744,10 +1528,10 @@ def test_send_turn_done_payload_includes_retrieval_debug(client, monkeypatch):
     assert debug["material_ids_count"] == 2
     assert debug["selected_material_count"] == 2
     assert debug["material_k"] == 10
-    assert debug["retrieved_material_chunks"] == 0
-    assert debug["retrieved_material_unique_sources"] == 0
-    assert debug["retrieved_instruction_chunks"] == 0
-    assert debug["retrieved_instruction_unique_sources"] == 0
+    assert debug["material_retrieval_mode"] == "vector_search"
+    assert debug["retrieved_material_chunks"] == 4
+    assert debug["retrieved_material_unique_sources"] == 2
+    assert debug["retrieved_material_sources"] == ["gamma.md", "delta.md"]
     assert debug["citations_total"] >= 1
     assert debug["citations_unique_sources"] >= 1
     assert debug["accuracy_profile"] == "strict"
@@ -757,7 +1541,9 @@ def test_send_turn_done_payload_includes_retrieval_debug(client, monkeypatch):
     assert debug["retrieval_confidence_tier"] in ("low", "medium", "high")
 
 
-def test_material_count_shortcut_done_payload_includes_retrieval_debug(client, monkeypatch):
+def test_material_count_shortcut_done_payload_includes_retrieval_debug(
+    client, monkeypatch
+):
     selected_ids = [951, 952]
     resp = client.post(
         "/api/tutor/session",
@@ -771,11 +1557,28 @@ def test_material_count_shortcut_done_payload_includes_retrieval_debug(client, m
     tutor_sid = resp.get_json()["session_id"]
 
     monkeypatch.setattr(
-        tutor_context, "build_context",
-        lambda *_a, **_k: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
+        tutor_context,
+        "build_context",
+        lambda *_a, **_k: {
+            "materials": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {
+                "materials": {
+                    "mode": "full_content",
+                    "retrieved_chunks": 2,
+                    "retrieved_unique_sources": 2,
+                    "sources": ["alpha.pdf", "beta.pdf"],
+                    "top_source": "alpha.pdf",
+                    "top_source_share": 0.5,
+                }
+            },
+        },
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
     monkeypatch.setattr(
         llm_provider,
         "stream_chatgpt_responses",
@@ -794,8 +1597,9 @@ def test_material_count_shortcut_done_payload_includes_retrieval_debug(client, m
     assert debug["material_ids_provided"] is True
     assert debug["material_ids_count"] == 2
     assert debug["selected_material_count"] == 2
-    assert debug["retrieved_material_chunks"] == 0
-    assert debug["retrieved_material_unique_sources"] == 0
+    assert debug["material_retrieval_mode"] == "full_content"
+    assert debug["retrieved_material_chunks"] == 2
+    assert debug["retrieved_material_unique_sources"] == 2
     assert debug["citations_total"] == 0
     assert debug["citations_unique_sources"] == 0
     assert debug["accuracy_profile"] == "strict"
@@ -803,7 +1607,9 @@ def test_material_count_shortcut_done_payload_includes_retrieval_debug(client, m
     assert 0.0 <= debug["retrieval_confidence"] <= 1.0
 
 
-def test_finalize_structured_notes_writes_obsidian_and_artifact_index(client, app, monkeypatch):
+def test_finalize_structured_notes_writes_obsidian_and_artifact_index(
+    client, app, monkeypatch
+):
     tutor_sid = _create_tutor_session(client)
 
     monkeypatch.setattr(
@@ -858,7 +1664,9 @@ def test_finalize_structured_notes_writes_obsidian_and_artifact_index(client, ap
     data = resp.get_json()
     assert data["type"] == "structured_notes"
     assert isinstance(data.get("session_path"), str) and data["session_path"]
-    assert isinstance(data.get("concept_paths"), list) and len(data["concept_paths"]) == 1
+    assert (
+        isinstance(data.get("concept_paths"), list) and len(data["concept_paths"]) == 1
+    )
     assert data["graph_sync"]["notes_synced"] == 2
 
     store = app.config.get("TEST_OBSIDIAN_STORE") or {}
@@ -872,7 +1680,9 @@ def test_finalize_structured_notes_writes_obsidian_and_artifact_index(client, ap
     if isinstance(artifacts, str):
         artifacts = json.loads(artifacts)
     assert isinstance(artifacts, list)
-    assert any(a.get("type") == "structured_notes" for a in artifacts if isinstance(a, dict))
+    assert any(
+        a.get("type") == "structured_notes" for a in artifacts if isinstance(a, dict)
+    )
 
 
 def test_finalize_rejects_invalid_single_focus_concept_count(client):
@@ -918,7 +1728,9 @@ def test_finalize_rejects_invalid_single_focus_concept_count(client):
     assert resp.status_code == 400
     body = resp.get_json()
     assert body["error"] == "validation_failed"
-    assert any("session_mode 'single_focus'" in detail for detail in body.get("details", []))
+    assert any(
+        "session_mode 'single_focus'" in detail for detail in body.get("details", [])
+    )
 
 
 def test_finalize_rejects_prime_confidence_fields(client):
@@ -1028,7 +1840,9 @@ def test_create_session_rejects_stage_method_mismatch(client):
     assert body["details"][0]["method_id"] == "M-CAL-001"
 
 
-def test_send_turn_autofills_missing_knob_snapshot_and_reports_drift(client, monkeypatch):
+def test_send_turn_autofills_missing_knob_snapshot_and_reports_drift(
+    client, monkeypatch
+):
     block_id = _insert_method_block(
         name="Prime Drift Autofill",
         control_stage="PRIME",
@@ -1037,19 +1851,35 @@ def test_send_turn_autofills_missing_knob_snapshot_and_reports_drift(client, mon
         artifact_type="notes",
         knob_overrides_json="{}",
     )
-    chain_id = _create_chain(client, name="Prime Drift Autofill Chain", block_ids=[block_id])
+    chain_id = _create_chain(
+        client, name="Prime Drift Autofill Chain", block_ids=[block_id]
+    )
     tutor_sid = _create_tutor_session(client, method_chain_id=chain_id)
 
     monkeypatch.setattr(
-        tutor_context, "build_context",
-        lambda *_a, **_k: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
+        tutor_context,
+        "build_context",
+        lambda *_a, **_k: {
+            "materials": "",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        },
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     def fake_stream(_system_prompt, _user_prompt, **_kwargs):
         yield {"type": "delta", "text": "ok"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-1", "thread_id": "thread-1"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-1",
+            "thread_id": "thread-1",
+        }
 
     monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
 
@@ -1061,13 +1891,18 @@ def test_send_turn_autofills_missing_knob_snapshot_and_reports_drift(client, mon
     done = _extract_done_payload(resp.get_data(as_text=True))
     retrieval_debug = done.get("retrieval_debug") or {}
     drift_events = retrieval_debug.get("runtime_drift_events") or []
-    assert any(event.get("code") == "MISSING_KNOB_SNAPSHOT_FILLED" for event in drift_events)
+    assert any(
+        event.get("code") == "MISSING_KNOB_SNAPSHOT_FILLED" for event in drift_events
+    )
     assert retrieval_debug.get("active_method_id") == "M-PRE-010"
 
     conn = sqlite3.connect(config.DB_PATH)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
-    cur.execute("SELECT content_filter_json FROM tutor_sessions WHERE session_id = ?", (tutor_sid,))
+    cur.execute(
+        "SELECT content_filter_json FROM tutor_sessions WHERE session_id = ?",
+        (tutor_sid,),
+    )
     row = cur.fetchone()
     conn.close()
     assert row is not None
@@ -1075,7 +1910,9 @@ def test_send_turn_autofills_missing_knob_snapshot_and_reports_drift(client, mon
     assert isinstance(content_filter.get("knob_snapshot"), dict)
 
 
-def test_send_turn_blocks_when_prompt_and_artifact_contract_missing(client, monkeypatch):
+def test_send_turn_blocks_when_prompt_and_artifact_contract_missing(
+    client, monkeypatch
+):
     block_id = _insert_method_block(
         name="Prime Contract Missing",
         control_stage="PRIME",
@@ -1083,10 +1920,12 @@ def test_send_turn_blocks_when_prompt_and_artifact_contract_missing(client, monk
         facilitation_prompt="",
         artifact_type="",
     )
-    chain_id = _create_chain(client, name="Prime Contract Missing Chain", block_ids=[block_id])
+    chain_id = _create_chain(
+        client, name="Prime Contract Missing Chain", block_ids=[block_id]
+    )
     tutor_sid = _create_tutor_session(client, method_chain_id=chain_id)
 
-    monkeypatch.setattr(_api_tutor_mod, "_load_method_contracts", lambda: {})
+    monkeypatch.setattr(_api_tutor_turns_mod, "_load_method_contracts", lambda: {})
 
     resp = client.post(
         f"/api/tutor/session/{tutor_sid}/turn",
@@ -1154,160 +1993,7 @@ def test_sync_graph_uses_session_artifact_paths(client, monkeypatch):
     assert sync_data["graph_sync"]["notes_synced"] >= 2
 
 
-def test_session_start_tolerates_obsidian_connectivity_errors(client, monkeypatch):
-    monkeypatch.setattr(_api_tutor_mod, "_north_star_io_disabled", lambda: False)
-
-    connection_error = (
-        "HTTPSConnectionPool(host='host.docker.internal', port=27124): "
-        "Max retries exceeded with url: /vault/test.md "
-        "(Caused by NameResolutionError(\"... getaddrinfo failed\"))"
-    )
-
-    monkeypatch.setattr(
-        _api_adapter_mod,
-        "obsidian_get_file",
-        lambda _path: {"success": False, "error": connection_error},
-    )
-    monkeypatch.setattr(
-        _api_adapter_mod,
-        "obsidian_save_file",
-        lambda _path, _content: {"success": False, "error": connection_error},
-    )
-
-    resp = client.post(
-        "/api/tutor/session",
-        json={"mode": "Core", "topic": "Connectivity fallback test"},
-    )
-    assert resp.status_code == 201
-    data = resp.get_json()
-    assert data["session_id"]
-    assert data["north_star"]["status"] == "io_unavailable_no_write"
-
-
-def test_session_start_keeps_hard_failure_for_non_connectivity_errors(client, monkeypatch):
-    monkeypatch.setattr(_api_tutor_mod, "_north_star_io_disabled", lambda: False)
-
-    monkeypatch.setattr(
-        _api_adapter_mod,
-        "obsidian_get_file",
-        lambda _path: {"success": False, "error": "Status 403"},
-    )
-    monkeypatch.setattr(
-        _api_adapter_mod,
-        "obsidian_save_file",
-        lambda _path, _content: {"success": False, "error": "Status 403: forbidden"},
-    )
-
-    resp = client.post(
-        "/api/tutor/session",
-        json={"mode": "Core", "topic": "Non-connectivity error test"},
-    )
-    assert resp.status_code == 500
-    data = resp.get_json()
-    assert "North Star build failed" in str(data.get("error", ""))
-
-
-def test_ensure_north_star_context_prefers_objective_group_for_generic_module(monkeypatch):
-    monkeypatch.setattr(_api_tutor_mod, "_north_star_io_disabled", lambda: False)
-    monkeypatch.setattr(_api_tutor_mod, "_resolve_class_label", lambda _cid: "Movement Science")
-    monkeypatch.setattr(_api_tutor_mod, "_collect_objectives_from_payload", lambda _lo: [])
-    monkeypatch.setattr(
-        _api_tutor_mod,
-        "_collect_objectives_from_db",
-        lambda _course_id, _module_id=None, max_items=40: [
-            {
-                "objective_id": "OBJ-1",
-                "title": "Hip objective",
-                "status": "active",
-                "group": "Hip Module 1",
-            }
-        ],
-    )
-    monkeypatch.setattr(
-        _api_adapter_mod,
-        "obsidian_get_file",
-        lambda _path: {"success": True, "content": "# Existing North Star"},
-    )
-    monkeypatch.setattr(
-        _api_adapter_mod,
-        "obsidian_save_file",
-        lambda _path, _content: {"success": True, "path": _path},
-    )
-
-    ns_ctx, ns_err = _api_tutor_mod._ensure_north_star_context(
-        course_id=4,
-        module_id=None,
-        module_name="Movement science",
-        topic="Movement science",
-        learning_objectives=None,
-        source_ids=[],
-        force_refresh=False,
-        path_override=None,
-    )
-
-    assert ns_err is None
-    assert ns_ctx is not None
-    expected_path = _api_tutor_mod._canonical_north_star_path(
-        course_label="Movement Science",
-        module_or_week="Hip Module 1",
-        subtopic="Hip Module 1",
-    )
-    assert ns_ctx["path"] == expected_path
-
-
-def test_reconcile_obsidian_state_non_missing_error_does_not_set_needs_path(monkeypatch):
-    monkeypatch.setattr(
-        _api_adapter_mod,
-        "obsidian_get_file",
-        lambda _path: {"success": False, "error": "Status 403"},
-    )
-
-    session = {
-        "session_id": "test-session-ns-403",
-        "content_filter_json": json.dumps(
-            {
-                "north_star": {
-                    "path": "Study Notes/Movement Science/Hip Module 1/Hip Module 1/_North_Star.md",
-                    "status": "reviewed",
-                    "objective_ids": ["OBJ-1", "OBJ-2"],
-                }
-            }
-        ),
-        "artifacts_json": "[]",
-    }
-
-    _api_tutor_mod._reconcile_obsidian_state(session)
-    updated = json.loads(session["content_filter_json"])
-    assert updated["north_star"]["status"] == "io_unavailable_no_write"
-
-
-def test_reconcile_obsidian_state_404_sets_needs_path(monkeypatch):
-    monkeypatch.setattr(
-        _api_adapter_mod,
-        "obsidian_get_file",
-        lambda _path: {"success": False, "error": "Status 404"},
-    )
-
-    session = {
-        "session_id": "test-session-ns-404",
-        "content_filter_json": json.dumps(
-            {
-                "north_star": {
-                    "path": "Study Notes/Movement Science/Hip Module 1/Hip Module 1/_North_Star.md",
-                    "status": "reviewed",
-                    "objective_ids": [],
-                }
-            }
-        ),
-        "artifacts_json": "[]",
-    }
-
-    _api_tutor_mod._reconcile_obsidian_state(session)
-    updated = json.loads(session["content_filter_json"])
-    assert updated["north_star"]["status"] == "needs_path"
-
-
-def test_testing_mode_blocks_north_star_writes(app):
-    writes = app.config.get("TEST_NORTH_STAR_WRITES") or []
+def test_testing_mode_blocks_map_of_contents_writes(app):
+    writes = app.config.get("TEST_MAP_OF_CONTENTS_WRITES") or []
     normalized = [str(w).replace("\\", "/") for w in writes]
-    assert all(not w.endswith("/_North_Star.md") for w in normalized)
+    assert all(not w.endswith("/Map of Contents.md") for w in normalized)

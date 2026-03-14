@@ -1044,10 +1044,37 @@ def api_scholar_run_history():
     """Get run history."""
     from dashboard.scholar import get_scholar_run_history
     limit = request.args.get('limit', 10, type=int)
-    return jsonify({
-        'ok': True,
-        'runs': get_scholar_run_history(limit)
-    })
+    limit = max(1, min(limit, 100))
+    try:
+        runs = get_scholar_run_history(limit)
+        return jsonify({
+            'ok': True,
+            'runs': runs
+        })
+    except Exception:
+        # Fallback: best-effort history from orchestrator logs.
+        run_dir = Path(__file__).resolve().parents[2] / "scholar" / "outputs" / "orchestrator_runs"
+        runs = []
+        if run_dir.exists():
+            log_files = sorted(
+                run_dir.glob("*.log"),
+                key=lambda p: p.stat().st_mtime,
+                reverse=True,
+            )[:limit]
+            for idx, log_file in enumerate(log_files, start=1):
+                runs.append(
+                    {
+                        "id": idx,
+                        "run_id": log_file.stem,
+                        "status": "unknown",
+                        "started_at": datetime.utcfromtimestamp(log_file.stat().st_mtime).isoformat() + "Z",
+                        "ended_at": None,
+                        "proposals_created": None,
+                        "error_message": None,
+                        "triggered_by": "unknown",
+                    }
+                )
+        return jsonify({"ok": True, "runs": runs})
 
 
 @dashboard_bp.route("/api/mastery")

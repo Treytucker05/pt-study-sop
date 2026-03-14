@@ -1,7 +1,7 @@
 id: M-RET-001
-name: Free Recall Blurt
+name: Timed Brain Dump
 category: retrieve
-description: Close materials. Write everything you remember about the topic. No peeking. Compare after.
+description: Close materials. Set timer. Write everything you remember about the topic. No peeking. Compare after. Timed constraint adds desirable difficulty.
 default_duration_min: 5
 energy_cost: medium
 best_stage: review
@@ -15,6 +15,8 @@ mechanisms:
 - retrieval
 - generation
 - calibration
+stipulations:
+- If a chain or learner-ready gate is active, do not start retrieval until that gate is satisfied.
 knobs:
   difficulty: medium
   feedback_timing: after_attempt
@@ -72,7 +74,7 @@ evidence:
   finding: testing effect — retrieval practice > re-reading for long-term retention
   source: seed_methods.py
 evidence_raw: Roediger & Karpicke (2006); testing effect — retrieval practice > re-reading for long-term retention
-facilitation_prompt: 'You are running M-RET-001 (Free Recall Blurt) in RETRIEVE stage.
+facilitation_prompt: 'You are running M-RET-001 (Timed Brain Dump) in RETRIEVE stage.
 
   Execute this method card exactly and keep outputs deterministic.
 
@@ -84,6 +86,7 @@ facilitation_prompt: 'You are running M-RET-001 (Free Recall Blurt) in RETRIEVE 
   - Do not reveal full answer before attempt.
 
   - Capture errors and route signals.
+  - If the chain requires learner readiness before retrieval, confirm readiness first.
 
 
   Required outputs:
@@ -108,8 +111,33 @@ facilitation_prompt: 'You are running M-RET-001 (Free Recall Blurt) in RETRIEVE 
 
   If required inputs are missing, request only the minimum needed input and continue.
 
+  This is retrieval, not surprise evaluation. If a learner-ready gate is active, honor it explicitly before the dump begins.
+
   '
 gating_rules:
 - Require closed-note recall first, then feedback.
 - If repeated misses occur, route back to ENCODE or REFERENCE.
 artifact_type: notes
+allowed_moves:
+- Prompt free recall with topic cue only
+- Enforce closed-note gate before recall begins
+- Start and enforce hard 5-minute timer
+- Provide corrective feedback AFTER timer ends and recall is complete
+- Mark gaps explicitly with question marks during recall
+- Score accuracy against source material during comparison step
+- Route back to ENCODE or REFERENCE on repeated misses
+- Track RSR percentage estimate
+forbidden_moves:
+- Reveal answers or source content before recall attempt
+- Provide hints during the recall phase
+- Extend timer past 5 minutes (constraint is the feature)
+- Allow peeking at materials during recall
+- Skip the source comparison step after recall
+- Teach new material during retrieval
+- Accept blank output without pushing for at least one recall attempt
+- Remove time pressure (desirable difficulty)
+required_outputs:
+- Free recall dump with gaps marked
+- Accuracy assessment (correct vs incorrect items)
+- Gap list (missing items identified)
+- RSR percentage estimate

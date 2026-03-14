@@ -2,9 +2,11 @@
 Video Enrichment API — orchestrates flagging, Gemini enrichment, budget caps,
 caching, and markdown artifact emission.
 """
+
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 from datetime import datetime
 from pathlib import Path
@@ -64,11 +66,15 @@ def flag_segments(
 _cache: dict[str, dict[str, Any]] = {}
 
 
-def _cache_key(video_hash: str, start_sec: float, end_sec: float, prompt_version: str) -> str:
+def _cache_key(
+    video_hash: str, start_sec: float, end_sec: float, prompt_version: str
+) -> str:
     return f"{video_hash}:{start_sec:.1f}-{end_sec:.1f}:{prompt_version}"
 
 
-def get_cached(video_hash: str, start_sec: float, end_sec: float, prompt_version: str = "v1") -> Optional[dict]:
+def get_cached(
+    video_hash: str, start_sec: float, end_sec: float, prompt_version: str = "v1"
+) -> Optional[dict]:
     key = _cache_key(video_hash, start_sec, end_sec, prompt_version)
     return _cache.get(key)
 
@@ -87,6 +93,7 @@ def set_cached(
 # ---------------------------------------------------------------------------
 # Budget / Cap Enforcement
 # ---------------------------------------------------------------------------
+
 
 def get_monthly_spend() -> float:
     """Sum estimated costs from video_api_usage this calendar month."""
@@ -120,7 +127,9 @@ def get_video_spend(video_hash: str) -> float:
         conn.close()
 
 
-def check_budget(video_hash: str, config: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+def check_budget(
+    video_hash: str, config: Optional[dict[str, Any]] = None
+) -> dict[str, Any]:
     """Check whether enrichment is within budget.
 
     Returns dict with 'allowed' bool and details.
@@ -151,6 +160,88 @@ def check_budget(video_hash: str, config: Optional[dict[str, Any]] = None) -> di
         result["reason"] = None
 
     return result
+
+
+def get_enrichment_status(
+    *,
+    video_path: Optional[str] = None,
+    mode: Optional[Literal["off", "auto", "manual"]] = None,
+) -> dict[str, Any]:
+    """Return current enrichment mode, budget state, and key/fallback readiness."""
+    cfg = _load_config()
+    active_mode = mode or str(cfg.get("mode") or "off")
+    budget_cfg = cfg.get("budget") or {}
+    models_cfg = cfg.get("models") or {}
+    model_pref = str(cfg.get("model_preference") or "flash")
+    selected_model = models_cfg.get(model_pref) or models_cfg.get("flash") or {}
+
+    monthly_cap = float(budget_cfg.get("monthly_cap_usd", 5.0))
+    per_video_cap = float(budget_cfg.get("per_video_cap_usd", 0.50))
+    local_only_fallback = bool(budget_cfg.get("local_only_fallback", True))
+    monthly_spend = get_monthly_spend()
+    api_key_configured = bool(
+        os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    )
+    key_sources_configured = [
+        source
+        for source in ("GEMINI_API_KEY", "GEMINI_API_KEY_BUSINESS", "GOOGLE_API_KEY")
+        if (os.environ.get(source) or "").strip()
+    ]
+
+    remaining_budget_pct = round(
+        max(0.0, (1.0 - monthly_spend / monthly_cap) * 100) if monthly_cap > 0 else 0.0,
+        1,
+    )
+
+    status: dict[str, Any] = {
+        "provider": "gemini-file-api",
+        "mode": active_mode,
+        "model_preference": model_pref,
+        "model_name": str(selected_model.get("name") or "gemini-3-flash-preview"),
+        "api_key_configured": api_key_configured,
+        "key_sources_configured": key_sources_configured,
+        "key_failover_strategy": "GEMINI_API_KEY -> GEMINI_API_KEY_BUSINESS -> GOOGLE_API_KEY",
+        "local_only_fallback": local_only_fallback,
+        "remaining_budget_pct": remaining_budget_pct,
+        "budget": {
+            "monthly_spend": monthly_spend,
+            "monthly_cap": monthly_cap,
+            "per_video_cap": per_video_cap,
+            "remaining_budget_pct": remaining_budget_pct,
+        },
+        "allowed": False,
+        "reason": None,
+    }
+
+    if active_mode == "off":
+        status["reason"] = "enrichment_mode_off"
+        return status
+
+    if not api_key_configured:
+        status["reason"] = "gemini_api_key_missing"
+        return status
+
+    if video_path:
+        from video_enrich_providers.gemini_provider import compute_video_hash
+
+        video_hash = compute_video_hash(video_path)
+        budget_check = check_budget(video_hash, cfg)
+        status["budget"].update(
+            {
+                "video_spend": float(budget_check.get("video_spend", 0.0)),
+                "allowed": bool(budget_check.get("allowed")),
+                "reason": budget_check.get("reason"),
+            }
+        )
+        status["allowed"] = bool(budget_check.get("allowed"))
+        status["reason"] = budget_check.get("reason")
+        return status
+
+    status["allowed"] = monthly_spend < monthly_cap
+    status["reason"] = None if status["allowed"] else "monthly_cap_exceeded"
+    status["budget"]["allowed"] = status["allowed"]
+    status["budget"]["reason"] = status["reason"]
+    return status
 
 
 def record_usage(
@@ -192,6 +283,7 @@ def record_usage(
 # Enrichment orchestrator
 # ---------------------------------------------------------------------------
 
+
 def enrich_video(
     *,
     video_path: str,
@@ -220,7 +312,9 @@ def enrich_video(
     # Budget check
     budget_check = check_budget(video_hash, cfg)
     if not budget_check["allowed"]:
-        local_fallback = bool((cfg.get("budget") or {}).get("local_only_fallback", True))
+        local_fallback = bool(
+            (cfg.get("budget") or {}).get("local_only_fallback", True)
+        )
         return {
             "status": "budget_exceeded",
             "reason": budget_check["reason"],
@@ -250,13 +344,19 @@ def enrich_video(
         model_pref = str(cfg.get("model_preference") or "flash")
         models = cfg.get("models") or {}
         model_cfg = models.get(model_pref) or models.get("flash") or {}
-        model_name = str(model_cfg.get("name") or "gemini-2.5-flash")
+        model_name = str(model_cfg.get("name") or "gemini-3-flash-preview")
         cost_per_1m = float(model_cfg.get("input_cost_per_1m_tokens", 0.10))
 
-        # Upload video once
-        video_file = upload_video(video_path)
+        upload_result = upload_video(video_path)
+        video_file = upload_result.get("video_file")
+        video_client = upload_result.get("client")
 
-        results = gemini_enrich(video_file, uncached, model=model_name)
+        results = gemini_enrich(
+            video_file,
+            uncached,
+            model=model_name,
+            client=video_client,
+        )
 
         for res in results:
             usage = res.get("usage") or {}

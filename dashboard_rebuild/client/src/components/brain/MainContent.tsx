@@ -1,22 +1,15 @@
 import { useEffect, useState, useCallback } from "react";
-import { PenTool, Pencil, Network, Table2, Layers, Database } from "lucide-react";
-import { VaultEditor } from "./VaultEditor";
-import { GraphPanel } from "./GraphPanel";
-import { ExcalidrawCanvas } from "./ExcalidrawCanvas";
-import { ComparisonTableEditor } from "@/components/ComparisonTableEditor";
-import { AnkiIntegration } from "@/components/AnkiIntegration";
-import { DataEditor } from "./DataEditor";
+import { House, BrainCircuit } from "lucide-react";
+import { BrainHome } from "./BrainHome";
+import { LearnerProfilePanel } from "./LearnerProfilePanel";
 import { ErrorBoundary, TabErrorFallback } from "@/components/ErrorBoundary";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { BrainWorkspace } from "./useBrainWorkspace";
 
 const TABS = [
-  { id: "canvas" as const, label: "CANVAS", icon: PenTool, hint: "Alt+1" },
-  { id: "edit" as const, label: "NOTES", icon: Pencil, hint: "Alt+2" },
-  { id: "graph" as const, label: "GRAPH", icon: Network, hint: "Alt+3" },
-  { id: "table" as const, label: "TABLE", icon: Table2, hint: "Alt+4" },
-  { id: "data" as const, label: "DATA", icon: Database, hint: "Alt+5" },
+  { id: "home" as const, label: "HOME", icon: House, hint: "Alt+1" },
+  { id: "profile" as const, label: "PROFILE", icon: BrainCircuit, hint: "Alt+2" },
 ] as const;
 
 interface MainContentProps {
@@ -33,7 +26,7 @@ export function MainContent({ workspace }: MainContentProps) {
     }));
   }, []);
 
-  // Alt+1..6 keyboard shortcuts for tab switching
+  // Alt+1..2 keyboard shortcuts for tab switching
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (!e.altKey || e.ctrlKey || e.metaKey) return;
@@ -128,119 +121,48 @@ export function MainContent({ workspace }: MainContentProps) {
       </div>
 
       <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-        {currentTab === "canvas" && (
+        {currentTab === "home" && (
           <div
-            id="brain-tabpanel-canvas"
+            id="brain-tabpanel-home"
             role="tabpanel"
-            aria-labelledby="brain-tab-canvas"
-            data-tab="canvas"
+            aria-labelledby="brain-tab-home"
+            data-tab="home"
             className="flex-1 min-h-0 overflow-hidden flex flex-col brain-tab-enter"
             tabIndex={0}
           >
             <ErrorBoundary
-              key={`canvas-${errorKeys["canvas"] || 0}`}
+              key={`home-${errorKeys["home"] || 0}`}
               fallback={
                 <TabErrorFallback
-                  tabName="CANVAS"
-                  onReset={() => resetErrorBoundary("canvas")}
+                  tabName="HOME"
+                  onReset={() => resetErrorBoundary("home")}
                 />
               }
             >
-              <ExcalidrawCanvas workspace={workspace} />
+              <BrainHome workspace={workspace} />
             </ErrorBoundary>
           </div>
         )}
 
-        {currentTab === "edit" && (
+        {currentTab === "profile" && (
           <div
-            id="brain-tabpanel-edit"
+            id="brain-tabpanel-profile"
             role="tabpanel"
-            aria-labelledby="brain-tab-edit"
-            data-tab="edit"
+            aria-labelledby="brain-tab-profile"
+            data-tab="profile"
             className="flex-1 min-h-0 overflow-hidden flex flex-col brain-tab-enter"
             tabIndex={0}
           >
             <ErrorBoundary
-              key={`edit-${errorKeys["edit"] || 0}`}
+              key={`profile-${errorKeys["profile"] || 0}`}
               fallback={
                 <TabErrorFallback
-                  tabName="EDIT"
-                  onReset={() => resetErrorBoundary("edit")}
+                  tabName="PROFILE"
+                  onReset={() => resetErrorBoundary("profile")}
                 />
               }
             >
-              <VaultEditor workspace={workspace} />
-            </ErrorBoundary>
-          </div>
-        )}
-
-        {currentTab === "graph" && (
-          <div
-            id="brain-tabpanel-graph"
-            role="tabpanel"
-            aria-labelledby="brain-tab-graph"
-            data-tab="graph"
-            className="flex-1 min-h-0 overflow-hidden flex flex-col brain-tab-enter"
-            tabIndex={0}
-          >
-            <ErrorBoundary
-              key={`graph-${errorKeys["graph"] || 0}`}
-              fallback={
-                <TabErrorFallback
-                  tabName="GRAPH"
-                  onReset={() => resetErrorBoundary("graph")}
-                />
-              }
-            >
-              <GraphPanel />
-            </ErrorBoundary>
-          </div>
-        )}
-
-        {currentTab === "table" && (
-          <div
-            id="brain-tabpanel-table"
-            role="tabpanel"
-            aria-labelledby="brain-tab-table"
-            data-tab="table"
-            className="flex-1 min-h-0 overflow-hidden flex flex-col brain-tab-enter"
-            tabIndex={0}
-          >
-            <ErrorBoundary
-              key={`table-${errorKeys["table"] || 0}`}
-              fallback={
-                <TabErrorFallback
-                  tabName="TABLE"
-                  onReset={() => resetErrorBoundary("table")}
-                />
-              }
-            >
-              <ComparisonTableEditor />
-            </ErrorBoundary>
-          </div>
-        )}
-
-
-
-        {currentTab === "data" && (
-          <div
-            id="brain-tabpanel-data"
-            role="tabpanel"
-            aria-labelledby="brain-tab-data"
-            data-tab="data"
-            className="flex-1 min-h-0 overflow-hidden flex flex-col brain-tab-enter"
-            tabIndex={0}
-          >
-            <ErrorBoundary
-              key={`data-${errorKeys["data"] || 0}`}
-              fallback={
-                <TabErrorFallback
-                  tabName="DATA"
-                  onReset={() => resetErrorBoundary("data")}
-                />
-              }
-            >
-              <DataEditor />
+              <LearnerProfilePanel workspace={workspace} />
             </ErrorBoundary>
           </div>
         )}

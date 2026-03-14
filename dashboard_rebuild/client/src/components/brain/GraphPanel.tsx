@@ -12,7 +12,7 @@ class GraphErrorBoundary extends Component<{ children: ReactNode }, { error: str
   render() {
     if (this.state.error) {
       return (
-        <div className="flex flex-col items-center justify-center h-full gap-2 p-4">
+        <div data-testid="graph-panel-error" className="flex flex-col items-center justify-center h-full gap-2 p-4">
           <p className="font-arcade text-xs text-red-400">GRAPH RENDER ERROR</p>
           <p className="font-terminal text-xs text-muted-foreground text-center">{this.state.error}</p>
           <button
@@ -30,7 +30,7 @@ class GraphErrorBoundary extends Component<{ children: ReactNode }, { error: str
 
 function GraphLoading() {
   return (
-    <div className="flex items-center justify-center h-full">
+    <div data-testid="graph-panel-loading" className="flex items-center justify-center h-full">
       <Loader2 className="w-6 h-6 animate-spin text-primary" />
     </div>
   );
@@ -38,7 +38,7 @@ function GraphLoading() {
 
 export function GraphPanel() {
   return (
-    <div className="flex flex-col h-full">
+    <div data-testid="graph-panel" className="flex flex-col h-full">
       <div className="flex-1 min-h-0 overflow-hidden">
         <GraphErrorBoundary>
           <Suspense fallback={<GraphLoading />}>

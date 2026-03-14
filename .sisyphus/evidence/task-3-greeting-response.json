@@ -1,0 +1,11 @@
+{
+  "with_chain": {
+    "status": 201,
+    "greeting": "Let's begin with Prior Knowledge Scan (PRIME). ## Current Activity Block: Prior Knowledge Scan (PRIME, ~3 min)\n\n_Conditional PRIME method that maps known concepts to the new topic when prior notes or North Star context already exist._\n\n\n### Your T",
+    "current_block_name": "Prior Knowledge Scan"
+  },
+  "without_chain": {
+    "status": 201,
+    "greeting": null
+  }
+}

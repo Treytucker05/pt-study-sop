@@ -82,6 +82,8 @@ coverage/
 Arcade-RetroDesignNEW/
 PT School Semester 2/
 ui/
+!dashboard_rebuild/client/src/components/ui/
+!dashboard_rebuild/client/src/components/ui/**
 jules-sdk/
 dashboard_rebuild/client/node_modules/.vite/
 dashboard_rebuild/client/node_modules/bufferutil/

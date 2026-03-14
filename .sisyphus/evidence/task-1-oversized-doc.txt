@@ -1,0 +1,2 @@
+Document content too large (600000 chars), truncating to 500000: huge.md
+chunks=589, first_len=999

@@ -2,8 +2,6 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
-## 2026-02-23 - RAG chunking fix + Gemini CLI provider wiring
-
 ## 2026-03-14 - Trey Agent Repo Readiness activated
 
 - Activated shared harness implementation after isolated planning and contract freeze finished.
@@ -39,6 +37,586 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `conductor/tracks/trey-agent-repo-readiness_20260313/t6-isolated-startup.md`
 - Next track task:
   - `T7` repo-local harness bootstrap and setup validator
+
+## 2026-03-13 - Agent Ecosystem Hygiene kickoff
+
+- Created new infra track `agent-ecosystem-hygiene_20260313`.
+- Added `Agent Ecosystem Hygiene` to the active sprint in `docs/root/TUTOR_TODO.md` and to `docs/root/AGENT_BOARD.md`.
+- Scope:
+  - capture runtime truth for Claude, Codex, Cursor, OpenCode, Gemini, Antigravity, Kimi, and Conduit
+  - freeze supported versus legacy skill roots and local exceptions before mutation
+  - repair shared-skill sync plus supported broken junctions with rollback artifacts and idempotence checks
+  - harden active config secret handling and align the operator docs/fallback notes
+
+## 2026-03-13 - Agent Ecosystem Hygiene closeout
+
+- Normalized the supported shared-skill projection roots for Claude, Codex, Cursor, OpenCode, Gemini, and Antigravity so each active root now exposes `81` valid canonical shared packages with `0` broken junctions.
+- Rewrote `scripts/sync_agent_skills.ps1` around the supported projection set, documented the local exceptions/quarantine boundaries, and added `scripts/test_sync_agent_skills_fixture.ps1` to prove `DryRun -> Apply -> Check -> Check` in an isolated temp home.
+- Quarantined the embedded Gemini Antigravity skill subtree from the active sync/health contract and documented that separation in the track artifacts.
+- Removed plaintext secrets from `C:\Users\treyt\.gemini\antigravity\mcp_config.json` by moving the GitHub token and Obsidian API key into user-scoped environment variables.
+- Updated repo/operator docs to the repaired topology:
+  - `docs/root/SKILLS_INVENTORY.md`
+  - `docs/root/AGENT_SETUP.md`
+  - `C:\Users\treyt\.agents\README.md`
+  - `C:\Users\treyt\.gemini\GEMINI.md`
+- Final validation:
+  - `python scripts/check_docs_sync.py` -> PASS
+  - `powershell -ExecutionPolicy Bypass -File scripts/sync_agent_config.ps1 -Mode Check` -> PASS
+  - `powershell -ExecutionPolicy Bypass -File scripts/sync_agent_skills.ps1 -Mode Check` -> PASS
+  - supported-root broken-junction scan -> `0` broken junctions across all six supported roots
+  - redacted config scan -> `0` findings
+  - `git diff --check` -> PASS
+- Remaining manual follow-up:
+  - rotate the exposed GitHub PAT and Obsidian API key
+  - restart Gemini / Antigravity so they inherit the rotated environment variables
+
+## 2026-03-13 - Shared skill cleanup batch 1
+
+- Removed 9 low-priority shared skills from `C:\Users\treyt\.agents\skills` and cleaned their projected junctions from Codex, Claude, Cursor, and OpenCode where present:
+  - `business-competitive-ads`
+  - `business-content-writer`
+  - `business-growth-analysis`
+  - `sessions-to-blog`
+  - `research-bdi-cognitive`
+  - `agent-langgraph`
+  - `agent-openai-sdk`
+  - `agent-claude-code`
+  - `plugin-forge`
+- Intentionally kept `ui-ux-pro-max`.
+- Removed a second cleanup batch of 9 shared skills while intentionally keeping `create-skill`:
+  - `design-system-starter`
+  - `skill-judge`
+  - `create-rule`
+  - `code-split_Module_Rules`
+  - `branch-cleaner`
+  - `gh-address-comments`
+  - `pptx`
+  - `xlsx`
+  - `docx`
+- Removed a third cleanup batch of 8 shared skills while intentionally keeping `playground` and `mermaid-diagrams`:
+  - `command-creator`
+  - `create-pr`
+  - `dependency-updater`
+  - `dependency-upgrader`
+  - `database-design`
+  - `database-schema-designer`
+  - `c4-architecture`
+  - `qa-test-planner`
+- Removed a fourth cleanup batch of 10 shared skills:
+  - `agent-md-refactor`
+  - `agents-md`
+  - `readme-updater`
+  - `code-documentation`
+  - `release-notes`
+  - `update-cursor-settings`
+  - `video-transcript-downloader`
+  - `obsidian-bases`
+  - `file-organizer`
+  - `organizer`
+
+## 2026-03-13 - Trey's Swarm Planner skill added
+
+- Added the portable planning meta-skill [treys-swarm-planner](C:/Users/treyt/.agents/skills/treys-swarm-planner/SKILL.md) under `C:\Users\treyt\.agents\skills\treys-swarm-planner\`.
+- Added the PT Study System repo adapter [treys-swarm-planner-repo](C:/pt-study-sop/.codex/skills/treys-swarm-planner-repo/SKILL.md) under `C:\pt-study-sop\.codex\skills\treys-swarm-planner-repo\`.
+- The new skill pair now captures the planning method used in this repo:
+  - ground in repo/system truth
+  - define the exact final goal plus constraints/out-of-scope/assumptions
+  - build the plan backward into dependency-aware tasks with verification gates
+  - require a multi-review audit loop and revise until critical gaps are closed
+  - convert only the first unblocked wave into executable tasks
+- Hardened the initial draft after multi-agent review by adding:
+  - no-doc fallback grounding rules
+  - explicit queue-detection rules
+  - a workable definition of independent review
+  - backward-trace enforcement in the final plan template
+  - stronger first-wave-only task conversion and invalid-review rejection rules
+
+## 2026-03-13 - Trey-Autoresearch added
+
+- Added shared skill [trey-autoresearch](C:/Users/treyt/.agents/skills/trey-autoresearch/SKILL.md) under `C:\Users\treyt\.agents\skills\trey-autoresearch\`.
+- Projected the shared skill into `C:\Users\treyt\.codex\skills\`, `C:\Users\treyt\.claude\skills\`, `C:\Users\treyt\.cursor\skills\`, and `C:\Users\treyt\.opencode\skills\` using per-skill junctions.
+- Translated the screenshot's "infinite mode" brief into a practical improve-measure-checkpoint loop:
+  - baseline first
+  - one bottleneck hypothesis at a time
+  - add tests with each experiment
+  - checkpoint only measured wins
+  - safely drop failed experiments
+- Kept the skill generic enough for cross-project use while making it explicitly obey the active repo's `AGENTS.md` and run/test rules.
+
+## 2026-03-12 - Docs governance lane Wave A canon collapse
+
+- Reclassified `docs/root/TUTOR_TODO.md` as execution-only and removed product-truth wording.
+- Rewrote `conductor/product.md`, `conductor/workflow.md`, and `conductor/index.md` to act as execution context only and point back to `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+- Tightened `conductor/tracks.md`, `docs/README.md`, `dashboard_rebuild/README.md`, and `dashboard_rebuild/client/src/pages/README.md` so they explicitly defer to the master canon for product and ownership truth.
+- Hard-marked closed triad/realignment track docs as historical artifacts instead of live authority:
+  - `conductor/tracks/brain-centered-triad_20260312/{index.md,spec.md,decision-record.md}`
+  - `conductor/tracks/brain-scholar-tutor-realignment_20260311/spec.md`
+- Strengthened `scripts/check_docs_sync.py` to enforce canon pointers and execution-only wording across the approved secondary surfaces.
+
+---
+
+## 2026-03-09 - Tutor Gaps Swarm Closeout
+
+26-task swarm completed. All 12 audit gaps (except Gap 6), Queues C/D/E, and Sprints 15/17 closed.
+
+**Commits (24 swarm + 2 followup):**
+- `e63d62ed` → `69bcd7af`: Monolith split (Gap 1) — `api_tutor.py` (9,128→431 lines) into 6 modules
+- `fe233207`: Stop-generating button (Gap 2)
+- `ded50c88`: Conversation export + session duration fix (Gaps 3, 5)
+- `bc0020db`: Rich session restore (Gap 4)
+- `ac2885c5`: Accuracy feedback loop (Gap 9)
+- `ad773ff5`: ChromaDB request-level locking (Gap 7)
+- `85b4212e`: Vault janitor expansion (Gap 10)
+- `bcf7950a`: Behavioral contracts for all 49 methods (Gap 11)
+- `2f78f6f3`: Gemini Vision refinement (Gap 12)
+- `d390b1b2`: Mock infrastructure for LLM/Vault/ChromaDB (Gap 8)
+- `0bbbade2`: Top-down hardening phases 0-3 + provenance (Sprint 15)
+- `cd8e0592`: Category reference pages (Queue C)
+- `efdefda7`: MP4 budget visibility + regression tests (Queue D)
+- `bbbf2f5c`: UI method controls polish (Queue E)
+- `5250b4a1`: Sprint 17 certification report (all 6 phases)
+- `8cdc258c`: TUTOR_TODO closeout
+- `b34fa0e1`: Objectives auto-import from vault
+- `f2061bd8`: Session restore 50-turn cap fix
+
+**Remaining blockers (not in swarm scope):**
+- Sprint 15 Phase 4 (live Week 7 C-TRY-001 vs C-TRY-002 comparison) — requires user live testing
+- Workstream F (Video Ingest remaining items) — deferred
+- Sprint 1 items A4, A5 (PRIME→CALIBRATE transition criteria, runtime chain validation) — deferred
+- Sprint 2 items B1-B3 (transfer integrity) — partially covered by swarm, remaining items deferred
+
+---
+
+## 2026-03-07 - Top-Down Tutor Hardening kickoff
+
+- Created new feature track `topdown-tutor-hardening_20260307`.
+- Added `Top-Down Tutor Hardening` to the active sprint in `docs/root/TUTOR_TODO.md`.
+- Scope:
+  - rewrite generic runtime tutor rules into a hybrid top-down-friendly policy
+  - add explicit runtime profiles for `Top-Down Narrative Mastery` and `Top-Down Forward Progress`
+  - tighten weak method prompts used by the top-down chains
+  - improve user-facing confidence/provenance behavior without killing natural teaching
+
+---
+
+## 2026-03-07 - Neuroscience Exam Intake kickoff
+
+- Created new feature track `neuroscience-exam-intake_20260307`.
+- Added `Neuroscience Exam Intake + First Tutor Run` to the active sprint in `docs/root/TUTOR_TODO.md`.
+- Locked the live exam window from schedule + Blackboard:
+  - `EXAM 2` on `2026-03-10`
+  - covered course window `2026-02-17` through `2026-03-03`
+- Drafted the initial Week 7 Obsidian scaffold under:
+  - `C:\Users\treyt\Desktop\Treys School\Courses\Neuroscience\Week 7\`
+- Planned next live implementation step:
+  - ingest the Week 7 source set into the live Library DB
+  - keep the first Tutor target fixed to Week 7 objective `W7-OBJ-6`
+
+---
+
+## 2026-03-07 - Neuroscience Week 7 live Library intake
+
+- Loaded the first real neuroscience exam-week source set into `rag_docs` for course id `3` (`Neuroscience`).
+- Week 7 rows created:
+  - `518` — `Class wk 7` (`mp4`)
+  - `519` — `Development of nervous system updated` (`pdf`)
+  - `520` — `Lecture transcript` (`txt`)
+
+---
+
+## 2026-03-13 - Neuroscience Exam Intake close-out
+
+- Closed `neuroscience-exam-intake_20260307` after syncing the remaining metadata and close-out notes.
+- The Week 7 intake-first proof is now superseded operationally by the certified preflight/session flow and the locked Tutor contract package.
+- Future Week 8 or broader Exam 2 expansion should open a fresh track instead of reusing this one-off intake proof.
+
+---
+
+## 2026-03-13 - Tutor Artifact Ownership Hardening
+
+- Opened and closed `tutor-artifact-ownership-hardening_20260313` to make `note`, `card`, and `map` cleanup ownership explicit.
+- Added Tutor-session ownership metadata to `quick_notes`, artifact-entry ids for note/card cleanup, and delete-path cleanup for artifact delete + session delete.
+- Updated Tutor artifact certification coverage and the reusable vision-lock package to the new artifact-ownership baseline.
+  - `521` — `PHYT 6313 Developmental_Disorders1_week 7` (`pdf`)
+  - `522` — `Week 7 To Do Neuro` (`txt`)
+- Follow-up: keep the first Tutor run scoped to Week 7 and objective `W7-OBJ-6` before loading more of Exam 2.
+
+---
+
+## 2026-03-07 - Week 7 Wizard/session wiring fix
+
+- Patched the Tutor Wizard + backend session path so `single_focus` sessions require an explicit objective instead of silently auto-picking the first objective row.
+- Added grouped learning-objective data to the adapter response so the Wizard can drive study-unit selection and focus-objective selection from live system state.
+- Added `POST /api/tutor/session/preflight` and preflight bundle caching so the Wizard can resolve scope, blockers, and `map_of_contents` before creating a live session.
+- Added `map_of_contents` to the client session contract and updated the Tutor source sidebar to read the live `map_of_contents` data instead of depending on the stale `north_star` field.
+- Relaxed reference-bounds gating for continuation-style prompts (`continue`, `chunk 3`, `make the derivative map explicit`) so normal follow-up questions do not throw `Concept outside current reference bounds`.
+- Validation:
+  - `pytest -q brain/tests/test_tutor_session_linking.py brain/tests/test_api_tutor_mode_flags.py` -> `29 passed`
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorWizard.test.tsx client/src/pages/__tests__/tutor.test.tsx` -> `10 passed`
+  - `cd dashboard_rebuild && npm run build` -> PASS
+
+---
+
+## 2026-03-07 - Week 7 live Tutor findings
+
+- The live Tutor can teach Week 7 correctly once the scope is narrowed, the objectives are in `learning_objectives`, and the session is pointed at the real Week 7 vault folder.
+- The answer quality improved materially:
+  - chunked teaching
+  - explicit pause/check-in
+  - stayed on the Week 7 objective
+- Remaining one-stop-shop gaps still visible after the live run:
+  - objective confirmation still happens too late in the flow
+  - Obsidian write/read ownership is still split across CLI and Local REST paths
+  - Week 8 Brain Structure is still missing from the local PT School folder
+
+---
+
+## 2026-03-06 - Skills Catalog Review kickoff
+
+- Created new docs track `skills-catalog-review_20260306`.
+- Added `Skills Catalog Review` to the active sprint in `docs/root/TUTOR_TODO.md`.
+- Scope:
+  - create a full per-skill catalog with descriptions
+  - add decision fields so skills can be reviewed one by one
+  - seed the review workflow starting with the planning category
+
+---
+
+## 2026-03-06 - Skills Catalog Review completion
+
+- Closed track `skills-catalog-review_20260306` after:
+  - creating `docs/root/SKILLS_CATALOG.md` as the per-skill review surface
+  - adding one row per shared skill and tool-local exception
+  - adding review decision fields for iterative cleanup/customization
+  - seeding the planning category with first-pass recommendations
+- Validation:
+  - catalog and track docs passed markdown hygiene checks
+  - planning rows were reviewed and annotated with initial recommendations
+- Closing commit:
+  - `d6e9e8f3` — `docs(skills): add full catalog and seed planning review`
+
+---
+
+## 2026-03-06 - Skills Hygiene kickoff
+
+- Created new infra track `skills-hygiene_20260306`.
+- Added `Skills Hygiene` to the active sprint in `docs/root/TUTOR_TODO.md`.
+- Scope:
+  - document the shared `.agents` skill architecture and tool-local exceptions
+  - group skills into keep/optional/tool-specific/broken/likely-unused buckets
+  - perform a safe first cleanup pass focused on clearly broken surfaces before considering shared-skill deletion
+
+---
+
+## 2026-03-06 - Skills Hygiene completion
+
+- Closed track `skills-hygiene_20260306` after:
+  - documenting the shared skill architecture in `docs/root/SKILLS_INVENTORY.md`
+  - grouping skills into core, optional, tool-specific, low-confidence, and broken-surface buckets
+  - adding usage-evidence caveats so shared-skill deletion is not guessed from weak telemetry
+  - writing a backup manifest for broken Cursor links to `C:\\Users\\treyt\\.cursor\\backups\\skills-hygiene_20260306\\broken-junctions.json`
+  - removing the broken Cursor junction set as the safe first cleanup wave
+- Validation:
+  - broken Cursor junction count reduced to `0`
+  - no shared `.agents` skills were deleted
+  - repo-side inventory and setup docs updated
+- Review:
+  - final review subagent timed out and did not return
+  - manual validation found the first cleanup wave safe because it only removed broken Cursor links
+- Closing commit:
+  - `49225778` — `docs(skills): group skills and clean broken links`
+
+---
+
+## 2026-03-06 - Repo-Native Agent Board kickoff
+
+- Created new docs track `agent-board_20260306`.
+- Added `Repo-Native Agent Board` to the active sprint in `docs/root/TUTOR_TODO.md`.
+- Scope:
+  - create one shared handoff/status surface for multiple agents
+  - keep `TUTOR_TODO.md` as the active sprint board and `conductor/tracks.md` as the portfolio registry
+  - wire the board into root `AGENTS.md` and `docs/root/AGENT_SETUP.md`
+
+---
+
+## 2026-03-06 - Repo-Native Agent Board completion
+
+- Closed track `agent-board_20260306` after:
+  - creating `docs/root/AGENT_BOARD.md` as the shared multi-agent handoff board
+  - linking it from root `AGENTS.md`
+  - linking it from `docs/root/AGENT_SETUP.md`
+  - documenting a minimal row schema, ownership rules, status vocabulary, and handoff template
+- Validation:
+  - `git diff --check` passed for the touched docs
+  - related docs and links verified to exist
+- Review:
+  - final review subagent timed out and did not return
+  - manual review found no correctness issues in the docs-only change
+- Closing commit:
+  - `9b225c31` — `docs(agents): add repo-native handoff board`
+
+---
+
+## 2026-03-06 - Repo-Native Agent Board addendum
+
+- Updated `docs/root/AGENT_BOARD.md` to default explicitly to the working triad:
+  - `codex-implement`
+  - `claude-review`
+  - `gemini-research`
+- Updated `docs/root/AGENT_SETUP.md` so the same triad is documented in the multi-agent rule section.
+
+---
+
+## 2026-03-06 - Root AGENTS Canon Trim kickoff
+
+- Created new docs track `agents-root-trim_20260306`.
+- Added `Root AGENTS Canon Trim` to the active sprint in `docs/root/TUTOR_TODO.md`.
+- Scope:
+  - trim root `AGENTS.md` to the agreed keep-only sections
+  - move detailed learnings/troubleshooting into a linked guardrails doc
+  - keep existing canonical links for setup, architecture, developer guide, and active work
+
+---
+
+## 2026-03-06 - Root AGENTS Canon Trim completion
+
+- Closed track `agents-root-trim_20260306` after:
+  - trimming root `AGENTS.md` from mixed status/reference/history content down to startup canon only
+  - removing dated plan/state sections from root `AGENTS.md`
+  - replacing bulky structure/architecture reference sections with links to canonical docs already in the repo
+  - moving detailed learnings and troubleshooting into `docs/root/AGENT_GUARDRAILS.md`
+- Validation:
+  - root `AGENTS.md` reduced from `442` lines to `127`
+  - `docs/root/AGENT_GUARDRAILS.md` created to preserve moved detail
+  - linked canonical docs verified to exist
+  - `git diff --check` passed for the touched docs
+- Review:
+  - final review subagent timed out and was interrupted
+  - manual validation and doc-link review found no correctness issues in the trimmed canon
+- Closing commit:
+  - `f4c63ded` — `docs(agents): trim root canon and extract guardrails`
+
+---
+
+## 2026-03-06 - Agent Canon Follow-Up kickoff
+
+- Created new Conductor infra track `agent-canon-followup_20260306`.
+- Added `Agent Canon Follow-Up` to the active sprint in `docs/root/TUTOR_TODO.md`.
+- Scope:
+  - reduce repeated inheritance boilerplate in global Claude agents
+  - improve `scripts/sync_agent_config.ps1` summary output
+  - keep the final walkthrough aligned with the optimized setup
+
+---
+
+## 2026-03-06 - Agent Canon Follow-Up completion
+
+- Closed track `agent-canon-followup_20260306` after:
+  - reducing repeated inheritance boilerplate across global Claude agents
+  - moving the shared inheritance explanation into `C:\Users\treyt\.claude\rules\agents.md`
+  - tightening `scripts/sync_agent_config.ps1` to print mode, summary counts, and final result lines
+  - making `.claude/permissions.json` an explicit mirror target in the sync script
+- Validation:
+  - `scripts/sync_agent_config.ps1 -Mode Check` -> `RESULT  PASS`
+  - `scripts/sync_agent_config.ps1 -Mode DryRun` -> `RESULT  PASS`
+  - `scripts/sync_agent_config.ps1 -Mode Apply` -> `RESULT  PASS`
+  - spot checks passed for optimized global Claude agents
+- Closing commit:
+  - `e5092411` — `docs(agents): optimize follow-up canon tooling`
+
+---
+
+## 2026-03-06 - Agent Canon Alignment kickoff
+
+- Created new Conductor infra track `agent-canon-alignment_20260306` with:
+  - `spec.md`
+  - `plan.md`
+  - `metadata.json`
+  - `index.md`
+- Registered the track as the active workstream in `conductor/tracks.md`.
+- Added `Agent Canon Alignment + Codex Subagent Reliability` to the active sprint in `docs/root/TUTOR_TODO.md`.
+- Claimed docs/process, repo/local agent canon, global agent defaults, and integration/review scopes.
+- Set the first execution gate to repairing the failing Codex subagent model/settings mismatch before broader AGENTS cleanup.
+
+---
+
+## 2026-03-06 - Agent Canon Alignment completion
+
+- Closed track `agent-canon-alignment_20260306` after:
+  - repairing the broken Codex subagent role startup path
+  - defining explicit repo/global precedence in `AGENTS.md`
+  - normalizing repo-local Claude compatibility shims and repo-local agents
+  - normalizing global Claude defaults/agents to defer cleanly to repo canon
+  - expanding `C:\Users\treyt\.codex\AGENTS.md` into explicit global Codex defaults
+  - writing `docs/root/AGENT_SETUP.md` as the operator-facing setup and maintenance guide
+  - restoring `.claude/permissions.json` as a local compatibility copy of root `permissions.json`
+- Validation:
+  - spawned Codex `explorer` role -> `explorer-ok`
+  - spawned Codex `worker` role -> `worker-ok`
+  - outside-repo `codex exec --skip-git-repo-check` -> `codex-outside-ok`
+  - outside-repo `claude -p --output-format text --permission-mode bypassPermissions` -> `claude-outside-ok`
+  - `scripts/sync_agent_config.ps1 -Mode Check` -> exit `0`
+  - repo/global inheritance headers verified across normalized agent files
+- Review:
+  - final review subagent attempts hung and were interrupted
+  - manual review of the touched config/doc surfaces found no correctness issues after validation
+- Closing commit:
+  - `5c7c81d4` — `docs(agents): align canon and repair codex subagents`
+
+---
+
+## 2026-03-05 - Tutor Audit Hardening kickoff
+
+- Created new Conductor bug track `tutor-audit-hardening_20260305` with:
+  - `spec.md`
+  - `plan.md`
+  - `metadata.json`
+  - `index.md`
+- Registered track as the active workstream in `conductor/tracks.md`.
+- Added `Tutor Audit Hardening` subsection to `docs/root/TUTOR_TODO.md` `Current Sprint` and claimed docs/process, backend/runtime, frontend/UI, and integration/review scopes.
+
+---
+
+## 2026-03-06 - Tutor Audit Hardening completion
+
+- Closed track `tutor-audit-hardening_20260305` after shipping the full remediation set:
+  - safe tutor-owned learning-objective ownership/link tracking and delete garbage-collection
+  - dead instruction-retrieval plumbing removal
+  - truthful retrieval-debug/runtime telemetry
+  - Library -> Tutor material handoff unification on `tutor.selected_material_ids.v2`
+  - `structured_notes` restore support
+  - partial artifact-delete reporting in Tutor UI
+  - malformed Tutor SSE chunk hardening with visible retry guidance
+  - dead `otherMaterials` removal and legacy `"standard"` accuracy-profile alias normalization
+- Added/updated regression coverage across backend and frontend tutor flows, including:
+  - shared/manual learning-objective survival
+  - Tutor material-key migration and Library handoff
+  - `structured_notes` hydration
+  - malformed SSE with and without `[DONE]`
+- Verification:
+  - `npx vitest run client/src/pages/__tests__/library.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorArtifacts.test.tsx client/src/components/__tests__/TutorChat.test.tsx client/src/lib/__tests__/tutorClientState.test.ts` -> PASS (`19 passed`)
+  - `npm run build` -> PASS
+  - `pytest -q brain/tests/test_tutor_audit_remediation.py brain/tests/test_tutor_context.py brain/tests/test_tutor_context_wiring.py brain/tests/test_tutor_session_linking.py` -> PASS (`50 passed`)
+  - `pytest -q brain/tests/` -> PASS (`925 passed, 1 skipped`)
+  - Live smoke:
+    - Library selected materials persisted into Tutor and Tutor opened on step `1. COURSE`
+    - Bulk session delete showed the active-session warning and returned cleanly to Wizard without overlay deadlock
+    - Forced partial bulk delete rendered the in-panel report with `Requested 2 · Deleted 1 · Already gone 1 · Failed 0`
+    - Real artifact bulk delete removed two persisted artifacts and rendered `Artifact delete completed` with request id and zero skips/failures
+  - Final code-review subagent pass: `No findings`
+
+---
+
+## 2026-03-05 - Library Sync folder tree selection + class assignment
+
+- Added backend Sync Study Folder preview endpoint in [api_tutor.py](/C:/pt-study-sop/brain/dashboard/api_tutor.py):
+  - `POST /api/tutor/materials/sync/preview` returns nested folder/file tree for allowed material types.
+  - Added selected-file path normalization and traversal guards for `selected_files`.
+  - Extended sync payload to accept `selected_files` + optional `course_id`.
+- Updated sync ingest pipeline:
+  - [api_tutor.py](/C:/pt-study-sop/brain/dashboard/api_tutor.py) passes selected files and `course_id` into sync worker.
+  - [rag_notes.py](/C:/pt-study-sop/brain/rag_notes.py) now supports `include_paths` filtering and per-sync `course_id` assignment.
+- Updated frontend Library page and tutor API client:
+  - [api.ts](/C:/pt-study-sop/dashboard_rebuild/client/src/api.ts) adds preview endpoint/client types and extended sync payload types.
+  - [library.tsx](/C:/pt-study-sop/dashboard_rebuild/client/src/pages/library.tsx) adds:
+    - folder-tree scan UI with file checkboxes,
+    - select all/clear all for discovered files,
+    - class picker for Sync Study Folder,
+    - class picker for Upload Materials (passes `courseId` into uploader),
+    - stale-selection guard so disabled materials are excluded from bulk in-view actions.
+- Validation:
+  - `cd dashboard_rebuild && npm run build` -> PASS
+  - `pytest brain/tests -k "tutor and (sync or material or materials)"` -> PASS (`16 passed`, `905 deselected`)
+
+## 2026-03-05 - Tutor chat timeout hardening
+
+- Updated tutor turn runtime timeout selection in [api_tutor.py](/C:/pt-study-sop/brain/dashboard/api_tutor.py):
+  - Base timeout `120s`.
+  - `300s` when Deep Think is enabled.
+  - `180s` when Web Search or Gemini Vision is enabled.
+  - High reasoning effort enforces minimum `240s`.
+  - Applied same timeout to both streaming and fallback (`call_codex_json`) paths.
+- Updated user-facing timeout guidance in [tutor_streaming.py](/C:/pt-study-sop/brain/tutor_streaming.py) to include mode-toggle recovery steps.
+- Validation:
+  - `python -m py_compile brain/dashboard/api_tutor.py brain/tutor_streaming.py` -> PASS
+  - `pytest brain/tests -k "tutor and (session or context or stream)"` -> PASS (`44 passed`, `877 deselected`)
+
+## 2026-03-03 - Tutor Runtime Error Documentation
+
+- Added `tutor-ZmKF4bYl.js` ReferenceError troubleshooting guidance in `docs/root/GUIDE_USER.md`.
+- Included recovery playbook for Tutor black-screen recurrence after Recent Sessions bulk-delete flow:
+  restart from `Start_Dashboard.bat`, hard refresh, rebuild UI assets, and capture console/network artifacts when reproducible.
+
+## 2026-03-03 - Tutor delete telemetry persistence
+
+- Added persistent delete telemetry storage in `brain/db_setup.py`:
+  - New table: `tutor_delete_telemetry` with request correlation (`request_id`), route, status, counts, details JSON, timestamp.
+  - Added indexes for `request_id`, `session_id`, and `created_at`.
+- Added helper `log_tutor_delete_telemetry(...)` in `brain/db_setup.py`.
+- Wired delete telemetry in `brain/dashboard/api_tutor.py`:
+  - `DELETE /api/tutor/session/<id>` logs `already_missing`, `obsidian_cleanup_failed`, `db_delete_failed`, `deleted`.
+  - `DELETE /api/tutor/session/<id>/artifacts` logs `invalid_request`, `session_not_found`, `deleted`/`partial_success`.
+- Updated user troubleshooting docs in `docs/root/GUIDE_USER.md` with where to inspect persistent delete diagnostics.
+
+## 2026-03-03 - Tutor session delete best-effort warning mode
+
+- Changed `DELETE /api/tutor/session/<id>` behavior in `brain/dashboard/api_tutor.py`:
+  - No longer hard-fails the whole delete when Obsidian cleanup is partial.
+  - If DB delete succeeds but some expected Obsidian files are missing/unremovable, response now returns:
+    - `deleted: true`
+    - `status: "deleted_with_warnings"`
+    - `warning` message
+    - `obsidian_cleanup.success: false` + `obsidian_cleanup.missing_paths`
+- Telemetry now records warning-mode outcomes in `tutor_delete_telemetry` using `status=deleted_with_warnings`.
+
+## 2026-03-03 - Dialog centering hardening (Calendar + Brain modals)
+
+- Removed inline modal positioning overrides that were forcing dialogs off-center:
+  - `dashboard_rebuild/client/src/pages/calendar.tsx` (`calendar-manage`, `calendar-create`)
+  - `dashboard_rebuild/client/src/components/EventEditModal.tsx`
+  - `dashboard_rebuild/client/src/components/LocalEventEditModal.tsx`
+  - `dashboard_rebuild/client/src/components/DataTablesSection.tsx`
+  - `dashboard_rebuild/client/src/components/SessionEvidence.tsx`
+  - `dashboard_rebuild/client/src/components/AnkiIntegration.tsx`
+- Standardized on shared dialog centering (`.dialog-center`) in `dashboard_rebuild/client/src/index.css`.
+- Added guardrail note to `AGENTS.md` Learnings: avoid per-dialog `top/left/transform` overrides on `DialogContent`/`AlertDialogContent`.
+
+## 2026-03-03 - Tutor TDZ crash fix
+
+- Fixed a frontend `ReferenceError` source in `dashboard_rebuild/client/src/pages/tutor.tsx`:
+  - Moved `tutor-chat-materials-all-enabled` query initialization ahead of the effect that uses it in its dependency array.
+  - Prevents `Cannot access '... before initialization` / TDZ crashes during Tutor session list interactions.
+
+## 2026-03-03 - Tutor bulk delete overlay deadlock fix
+
+- Fixed recurring Tutor UI lock in `dashboard_rebuild/client/src/components/TutorArtifacts.tsx`:
+  - Replaced bulk action `AlertDialog` path with a themed in-panel confirm modal (non-portal) for:
+    - Recent sessions bulk delete
+    - Recent active sessions bulk end
+    - Artifact bulk delete
+  - Removed deadlock-prone overlay flow that produced translucent black screen and blocked interaction.
+- Added recurrence notes and recovery guidance:
+  - `docs/root/GUIDE_USER.md` troubleshooting entry for overlay-stuck symptom.
+  - `AGENTS.md` Learnings entry documenting cause and fix pattern.
+
+## 2026-03-01 - Tutor smoothness + notes organization audit
+
+- Completed full end-to-end tutor audit per plan `tutor-audit-smoothness`.
+- Added Sprint 4 item to `docs/root/TUTOR_TODO.md`: Tutor smoothness + notes organization audit.
+- Created `docs/root/TUTOR_AUDIT_REPORT.md`:
+  - API↔UI contract verification: summary (duration_minutes vs duration_seconds, artifacts vs artifact_count, objectives vs objectives_covered), save-wrap URL bug, artifact type mismatch (table/smap rejected).
+  - Notes persistence trace: quick_notes, card_drafts, artifacts_json, Obsidian; folder_paths extracted but not passed to retrieval; table/smap never persist.
+  - Runtime smoothness: turn payload integrity, retrieval telemetry, SSE error handling verified.
+- Created `docs/root/TUTOR_AUDIT_REMEDIATION.md`:
+  - P0: Fix save-wrap URL, align summary response, chain progress shape.
+  - P1: Accept table/structured_map in create_artifact (map to note/map).
+  - P2: Wire folder_paths into retrieval, session wrap path uniqueness.
+  - P3: Optional telemetry and latency audit.
+  - Implementation checklist and regression tests to add.
+
+---
+
+## 2026-02-23 - RAG chunking fix + Gemini CLI provider wiring
 
 - Fixed RAG chunking in `brain/tutor_rag.py`:
   - Small-document bypass: docs ≤8,000 chars returned as a single chunk (no splitting).
@@ -403,7 +981,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - strict in-repo evidence anchors from method YAML citation fields
   - hard-rule section (dependency law + control-stage requirement)
   - runtime drift register for current known mismatches across YAML/DB/API/UI
-- Purpose: establish a single source of truth for category semantics before method-by-method vetting and knob governance.
+- Purpose: establish a shared reference baseline for category semantics before method-by-method vetting and knob governance.
 
 ## 2026-02-20 - CP-MSS-first README normalization + guardrail
 
@@ -747,7 +1325,8 @@ px vitest run --reporter=verbose (341 passed)
 
 - Root cause fixed: when explicit material_ids were selected, tutor retrieval still AND-filtered by session course_id, collapsing results to a small subset (often ~6 files).
 - Updated tutor turn retrieval to treat explicit selected files as authoritative scope:
-  - etrieval_course_id = None when material_ids are present
+  - 
+etrieval_course_id = None when material_ids are present
   - pass that through to both embedding and keyword dual search paths
 - Updated 	utor_rag filters so material_ids override course_id in both embedding and keyword fallback queries.
 - Increased selected-material retrieval cap from 30 to 60 chunks for broader coverage on larger selections.
@@ -1272,7 +1851,8 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
 ## 2026-02-23 - A1.4 PRIME runtime non-assessment enforcement
 - Added hard PRIME runtime guardrails in rain/dashboard/api_tutor.py:
   - blocks ehavior_override=evaluate|teach_back while active stage is PRIME (returns PRIME_ASSESSMENT_BLOCKED).
-  - validates artifact/finalize payload trees for assessment fields (score, grade, confidence, ccuracy, calibration, mastery, erdict, ubric) when stage is PRIME.
+  - validates artifact/finalize payload trees for assessment fields (score, grade, confidence, ccuracy, calibration, mastery, erdict, 
+ubric) when stage is PRIME.
   - rejects PRIME artifacts that include RETRIEVE/OVERLEARN in session.stage_flow.
 - Added regression tests in rain/tests/test_tutor_session_linking.py:
   - 	est_finalize_rejects_prime_confidence_fields`n  - 	est_send_turn_blocks_prime_evaluate_mode`n- Updated board status in docs/root/TUTOR_TODO.md (A1.4 checked).
@@ -1289,126 +1869,515 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
 - Removed PRIME guardrail test skip dependency by creating explicit PRIME-first chain in test setup (rain/tests/test_tutor_session_linking.py).
 - Added method API tests for knob contract and knob update round-trip (rain/tests/test_methods_api.py).
 
-## 2026-02-26 - Tutor session startup: North Star Obsidian connectivity fallback hardening
-- Fixed Tutor startup failure path in `brain/dashboard/api_tutor.py` when North Star read/write hits transient Obsidian transport issues (e.g., `host.docker.internal` name resolution).
-- Added `_is_obsidian_connectivity_error(...)` and fallback behavior to continue session creation with `north_star.status = io_unavailable_no_write` instead of returning API 500 for connectivity-only failures.
-- Hardened reconcile-on-load (`_reconcile_obsidian_state`) so connectivity errors no longer mark notes as missing or trigger learning-objective deletion; true-missing files still map to `needs_path`.
-- Updated end-session North Star refresh metadata to be status-aware (`updated` only for built/updated/refreshed) and added `degraded` flag for no-write fallback states.
-- Added regression tests in `brain/tests/test_tutor_session_linking.py`:
-  - `test_session_start_tolerates_obsidian_connectivity_errors`
-  - `test_session_start_keeps_hard_failure_for_non_connectivity_errors`
-- Validation:
-  - `python -m py_compile brain/dashboard/api_tutor.py brain/tests/test_tutor_session_linking.py` -> PASS
-  - `pytest brain/tests/test_tutor_session_linking.py -q` -> blocked locally (`ModuleNotFoundError: No module named 'flask'`)
+## 2026-03-02 — Embedding Sync Fix (embedding-sync-fix plan)
 
-## 2026-02-26 - Obsidian notes retrieval fix for Tutor (Local REST API v3.4+)
-- Root cause: `ObsidianClient.search()` posted raw body to `/search/simple/`, but current Local REST API expects `?query=` URL parameter and returned 400, causing Tutor to miss notes even with Obsidian mode enabled.
-- Updated `brain/obsidian_client.py` search flow:
-  - primary call: `POST /search/simple/?query=<encoded>`
-  - compatibility fallback: legacy body POST `/search/simple/`.
-- Added regression test `test_obsidian_client_search_uses_query_parameter` in `brain/tests/test_obsidian_client.py`.
-- Local runtime verification (same path Tutor uses): `ObsidianClient.search('hip')` now returns note hits from vault.
-- Validation:
-  - `py -3 -m pytest brain/tests/test_obsidian_client.py -q` -> 10 passed.
+**Problem**: Material sync hung indefinitely on embedding phase. Root cause: Doc 445 (`spine mobilization lab handout.docx`) had 15.5M chars from Docling table extraction bloat. `embed_rag_docs()` had no timeout, no progress reporting, and a partial-embed bug that permanently skipped failed docs on retry.
 
-## 2026-02-27 - Tutor Obsidian capability gap closed (browse/read/search tools)
-- Added new Tutor tools in `brain/tutor_tools.py`:
-  - `list_obsidian_paths` (vault folder listing)
-  - `read_obsidian_note` (read note content)
-  - `search_obsidian_notes` (query search across notes)
-- Updated Tutor prompt tooling section in `brain/dashboard/api_tutor.py` to instruct model to use Obsidian tools when asked about vault visibility/browsing.
-- Added server-side policy gate in `execute_tool(...)`:
-  - Obsidian read/browse tools require `allow_obsidian_read=True`.
-  - Tutor turn runner now passes `allow_obsidian_read=_obsidian_on` so browse/read/search are only available when Obsidian mode toggle is enabled.
-- Hardened Obsidian search error semantics:
-  - `execute_search_obsidian_notes` now checks `obsidian_health_check()` and returns explicit unavailability errors instead of silent empty matches when offline.
-- Added/updated tests:
-  - `brain/tests/test_tutor_obsidian_tools.py` (schema presence, list/read/search behavior, offline behavior, gate behavior)
-  - `brain/tests/test_figma_tools.py` (updated schema count expectation)
+**Changes committed**:
+- `fix(rag): cap document content before chunking to prevent hang` (54cc152a)
+  - Added `MAX_CONTENT_CHARS = 500_000` constant
+  - Guard clause in `chunk_document()`: strip → cap → split (prevents MarkdownHeaderTextSplitter regex hang)
+- `fix(rag): add per-doc timeout and partial-embed cleanup` (78002c7b)
+  - Added `DOC_EMBED_TIMEOUT_SEC = 120` constant
+  - `embed_rag_docs()` now accepts `progress_callback: Optional[Callable[[int, int, str], None]]`
+  - Per-doc ThreadPoolExecutor timeout (120s)
+  - On timeout/error: DELETE rag_embeddings for that doc (fixes permanent-skip bug)
+  - Return dict now includes `timed_out` count
+- `fix(sync): wire embedding progress into sync job status` (2e48ebe8)
+  - Progress callback wired into `_launch_materials_sync_job()`
+  - `embedding_progress` dict added to sync job state (current, total, current_file)
+  - 10-minute overall phase timeout safety net
+
+**Pending (requires Flask restart)**:
+- DB cleanup: stuck sync job thread holds write lock on pt_study.db
+- After `Start_Dashboard.bat` restart:
+  1. `DELETE FROM rag_docs WHERE id = 445` (re-sync will re-extract with cap)
+  2. POST `/api/tutor/materials/sync/start` with Joint Mobility folder
+  3. Verify all 5 docs embed successfully
+
+## 2026-03-03 — Tutor delete hardening (session + artifacts)
+
+- Hardened Tutor delete semantics in `brain/dashboard/api_tutor.py`:
+  - `DELETE /api/tutor/session/<id>` is now idempotent for already-missing sessions (`deleted:false`, HTTP 200).
+  - Added structured delete response fields (`status`, `request_id`, requested/deleted/skipped/failed counts).
+  - Enforced Obsidian cleanup gate: if expected session-owned Obsidian paths are not deleted, endpoint returns failure (`obsidian_cleanup_failed`) and does not delete DB rows.
+  - Added structured server logs for session/artifact delete operations with request id and counts.
+  - `GET /api/tutor/session/<id>` reconciliation is now side-effect-free (`persist=False`) so reads do not mutate DB state.
+  - `DELETE /api/tutor/session/<id>/artifacts` now returns `requested_count`, `applied_count`, and `skipped_indexes` for partial-success transparency.
+
+- Hardened Tutor artifacts UI in `dashboard_rebuild/client/src/components/TutorArtifacts.tsx`:
+  - Bulk session delete now reports deleted/already-gone/failed counts and renders an in-panel failure details report.
+  - Added active-session warning in bulk delete confirm modal.
+  - Added operation locks for single-row delete actions to prevent duplicate requests while deletes/ends are in-flight.
+  - Ensures session list is invalidated before user-facing completion status is shown.
+
+- Updated API typing contracts in `dashboard_rebuild/client/src/api.ts` for richer delete responses.
+- Updated user troubleshooting guide in `docs/root/GUIDE_USER.md` for new delete report semantics.
+
+## 2026-03-06 — Obsidian CLI argv quoting hotfix
+
+- Fixed `brain/obsidian_vault.py` so `subprocess.run([...])` passes raw argv values like `vault=Treys School` and `path=...` instead of shell-quoted strings like `vault="Treys School"`.
+- This specifically hardens Windows Obsidian delete/read/save flows that were spawning `obsidian.exe` with literal quote characters in argv and surfacing repeated main-process `EPIPE: broken pipe, write` popups.
+- Updated `brain/tests/test_obsidian_vault.py` to lock in the new argv shape and prevent regression.
+- Verification:
+  - `pytest brain/tests/test_obsidian_vault.py -q` -> `42 passed`
+  - `pytest brain/tests/` -> `918 passed, 2 failed, 1 skipped`
+    - unrelated existing failures:
+      - `brain/tests/test_path_generation.py::test_get_course_map_has_vault_root`
+      - `brain/tests/test_tutor_session_linking.py::test_send_turn_done_payload_includes_retrieval_debug`
+
+## 2026-03-04 — Scholar/Tutor contract alignment + lifecycle hardening
+
+- Added deterministic Scholar question persistence in `brain/db_setup.py`:
+  - New `scholar_questions` table (stable `question_id`, `question_hash`, lifecycle status/timestamps, answer fields).
+  - Added supporting indexes and migration-safe missing-column backfill pattern.
+
+- Reworked Scholar question APIs in `brain/dashboard/api_adapter.py`:
+  - `GET /api/scholar/questions` now ingests question files into DB and returns stable IDs + lifecycle fields.
+  - Added `POST /api/scholar/questions/<id>/answer` for persisted answer/status transitions.
+
+- Added explicit proposal action routes in `brain/dashboard/api_adapter.py`:
+  - `POST /api/scholar/proposals/<id>/approve`
+  - `POST /api/scholar/proposals/<id>/reject`
+
+- Hardened run status/history contract surfaces:
+  - Extended `_scholar_status_payload()` with compatibility fields (`run_id`, `phase`, `started_at`, `finished_at`, `error`).
+  - Added `/api/scholar/status` alias in `brain/dashboard/routes.py`.
+  - Added best-effort fallback in `/api/scholar/run/history` when DB history path fails.
+
+- Frontend contract cleanup:
+  - `dashboard_rebuild/client/src/api.ts`: Scholar `run()` now accepts payload; `runStatus()` now targets `/api/scholar/status`; `runHistory()` now tolerates wrapped or bare history payload shapes.
+  - `dashboard_rebuild/client/src/components/ScholarRunStatus.tsx`: switched to centralized API client (`api.scholar.runStatus`, `api.scholar.run`) and shared status typing.
+
+- Added implementation notes:
+  - `docs/root/SCHOLAR_TUTOR_ALIGNMENT_AUDIT_2026-03-04.md`
+
+## 2026-03-04 — Scholar open-question answer flow wired in active UI
+
+- Updated active Scholar page (`dashboard_rebuild/client/src/pages/scholar.tsx`) to support end-to-end question resolution:
+  - Pending open questions now include inline answer input + submit button.
+  - Submit action calls Scholar API answer endpoint and refreshes `scholar-questions`.
+  - Answered questions now display persisted answer content/status.
+- Updated Scholar API client (`dashboard_rebuild/client/src/api.ts`):
+  - Added `api.scholar.answerQuestion(questionId, answer, source)`.
+  - Extended `ScholarQuestion` type with lifecycle/status fields used by the active page.
+- Updated implementation notes in:
+  - `docs/root/SCHOLAR_TUTOR_ALIGNMENT_AUDIT_2026-03-04.md`
+
+## 2026-03-04 — Scholar answer-submit lock + regression test guardrail
+
+- Hardened Scholar answer submissions in `dashboard_rebuild/client/src/pages/scholar.tsx`:
+  - Added per-question in-flight lock to prevent duplicate submit races.
+  - Added explicit button disabled/loading states during answer mutation.
+  - Added stable test ids for answer assertions (`button-submit-answer-*`, `saved-answer-*`).
+- Added page-level regression test in `dashboard_rebuild/client/src/pages/__tests__/scholar.test.tsx`:
+  - Verifies answered questions render `ANSWERED`.
+  - Verifies a single `Saved Answer` block is shown with persisted answer text.
+- Prevention note:
+  - For mutation-backed inline actions, always add an in-flight guard + UI disabled state + deterministic test id before shipping.
+
+## 2026-03-05 — Start_Dashboard startup deadlock guard (step [0/6])
+
+- Fixed startup hang in `Start_Dashboard.bat` where process cleanup could block at:
+  - `[0/6] Closing any existing dashboard server processes...`
+- Replaced expensive PowerShell process scans with fast/non-blocking cleanup:
+  - `taskkill /FI "WINDOWTITLE eq PT Study Brain Dashboard*" /T /F`
+  - `netstat -ano -p tcp | findstr ":5000"` + numeric PID guard + `taskkill /PID ... /F`
 - Validation:
-  - `py -3 -m pytest brain/tests/test_tutor_obsidian_tools.py brain/tests/test_figma_tools.py brain/tests/test_obsidian_client.py -q` -> 35 passed.
-## 2026-02-27 - Obsidian API URL authority + fallback noise reduction
-- Updated `brain/dashboard/api_adapter.py` Obsidian transport defaults to align with active Local REST endpoint (`http://127.0.0.1:27123`).
-- Changed `_obsidian_api_urls()` behavior to treat explicit `OBSIDIAN_API_URL` as authoritative:
-  - use configured URL first,
-  - include additional URLs only when `OBSIDIAN_API_URLS` is explicitly set,
-  - avoid automatic probing of legacy fallback hosts when an explicit URL exists.
-- Result: fewer false/noisy connection warnings in logs while keeping manual multi-URL fallback available via env.
+  - `Start_Dashboard.bat` progresses past step `[0/6]`.
+  - Dashboard server listens on `127.0.0.1:5000`.
+  - Tutor runtime smoke passed (`/api/tutor/chains/templates`, session create, chain-status, advance-block, delete).
+
+## 2026-03-05 — Tutor backend test unblock + reliability hardening
+
+- Fixed test import bootstrap in `brain/tests/conftest.py`:
+  - Added both repo root and `brain/` paths to support mixed import styles (`brain.*` and legacy top-level imports).
+  - Added integration-aware timeout defaults (`180s` for `@integration`, `30s` baseline otherwise) to reduce false hangs while preserving guardrails.
+- Hardened tutor context integration test stability:
+  - Marked `brain/tests/test_tutor_context_integration.py` as `integration` and added explicit `timeout(180)`.
+  - Added `pytest.ini` marker registration for `integration`.
+- Updated `brain/tests/test_tutor_session_linking.py` fixture stubs:
+  - Added explicit stubs for `dashboard.api_tutor` vault helpers (`_vault_read_note`, `_vault_save_note`, `_vault_delete_note`) to match current runtime write path.
+  - Normalized fake Obsidian paths consistently to avoid store-key mismatch.
+- Verification:
+  - `pytest brain/tests/test_selector_bridge.py brain/tests/test_tutor_context_integration.py brain/tests/test_chain_validator.py brain/tests/test_api_tutor_mode_flags.py -q` → all pass.
+  - Broader tutor/chain/rules bundle:
+    `pytest brain/tests/test_seed_methods.py brain/tests/test_method_cards_hardening.py brain/tests/test_selector_bridge.py brain/tests/test_chain_runner.py brain/tests/test_chain_validator.py brain/tests/test_api_tutor_mode_flags.py brain/tests/test_tutor_context_wiring.py brain/tests/test_tutor_context_integration.py brain/tests/test_tutor_session_linking.py -q`
+    → `95 passed` (warnings only from upstream Chroma/LangChain deprecations).
+
+## 2026-03-06 — Study Buddy canon audit kickoff
+
+- Opened new Conductor track: `study-buddy-canon-audit_20260306`.
+- Scope:
+  - create one master product canon for Tutor / Study Buddy behavior
+  - publish an evidence audit with source classification matrix + evolution timeline
+  - rewire active docs away from overlapping overall source-of-truth claims
+- Deliverables:
+  - `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+  - `docs/root/TUTOR_STUDY_BUDDY_AUDIT_2026-03-06.md`
+- Guardrails:
+  - keep `sop/library/` as pedagogy canon
+  - keep archive files read-only and use them as historical evidence only
+  - do not make runtime/API/schema changes in this pass
+
+## 2026-03-06 — Study Buddy canon audit close-out
+
+- Published the new master canon:
+  - `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- Published the supporting evidence audit:
+  - `docs/root/TUTOR_STUDY_BUDDY_AUDIT_2026-03-06.md`
+- Rewired active docs to point to the new canon and removed overlapping top-level source-of-truth claims across:
+  - `README.md`
+  - `docs/README.md`
+  - `docs/root/PROJECT_ARCHITECTURE.md`
+  - `docs/root/TUTOR_OWNER_INTENT.md`
+  - `docs/root/GUIDE_TUTOR_FLOW.md`
+  - `conductor/product.md`
 - Validation:
-  - `python -m py_compile brain/dashboard/api_adapter.py` -> PASS
-  - `pytest brain/tests/test_tutor_obsidian_tools.py -q` -> 6 passed
-  - runtime check `GET /api/obsidian/status` -> `{\"connected\":true,\"status\":\"online\"}`
-## 2026-02-27 - Obsidian explicit fallback URLs configured
-- Added `OBSIDIAN_API_URLS` in `brain/.env` to explicitly allow controlled fallback endpoints:
-  - `https://127.0.0.1:27124`
-  - `https://localhost:27124`
-- Effective runtime URL order now:
-  - `http://127.0.0.1:27123` (primary)
-  - `https://127.0.0.1:27124`
-  - `https://localhost:27124`
+  - `git diff --check -- [canon audit doc set]`
+  - stale-string grep sweep for deprecated Tutor endpoints and legacy dashboard architecture markers
+- Review:
+  - fresh doc-code consistency subagent pass returned `No findings`
+
+## 2026-03-07 — Top-down tutor hardening follow-through
+
+- Tightened runtime trust behavior for the Tutor:
+  - generic custom instructions no longer replace the core hybrid-teaching / provenance / objective-lock rules
+  - chain prompt assembly now includes runtime profile plus chain guardrails (gates, recovery routes, tier exits, reference-target requirement)
+  - continuation bounds were narrowed so generic `continue` prompts do not bypass objective scoping
+- Hardened top-down chain behavior:
+  - `C-TRY-002` now makes earlier calibration explicitly conditional on prior exposure/readiness
+  - `M-ENC-009` now requires a short top-down verbal frame and marks generated structure as teaching support unless specifically sourced
+- Tightened the Tutor UI trust surface:
+  - assistant replies now show qualitative provenance and qualitative confidence labels above the existing citation/debug footer
+  - `WHERE FROM?` now expands both provenance details and confidence guidance
 - Validation:
-  - `GET /api/obsidian/status` -> `{"connected":true,"status":"online"}`
-## 2026-02-27 - Tutor North Star wrong-path remediation (Obsidian)
-- Root cause: generic module/topic labels (e.g., `Movement science`) could route North Star to an incorrect canonical folder and trigger repeated `needs_path` prompts.
-- Updated `brain/dashboard/api_tutor.py`:
-  - Added `_is_obsidian_missing_error(...)` and now only treat explicit missing-path signals (404/not found) as deletion/missing.
-  - `_reconcile_obsidian_state(...)` now maps non-missing read failures (auth/permission/server) to `io_unavailable_no_write` instead of `needs_path`.
-  - Artifact reconcile now marks `missing_paths` only for true missing errors (404/not found), not all non-connectivity errors.
-  - `_ensure_north_star_context(...)` now prefers objective-group-derived module routing when module label is generic (course/topic-like), preventing wrong-folder checks.
-  - Hardened `North Star File Missing` prompt instructions to require `list_obsidian_paths` tool output before suggesting folders (no invented course-tree fallback).
+  - `pytest -q brain/tests/test_chain_runner.py brain/tests/test_tutor_session_linking.py` -> `50 passed`
+  - `npx vitest run client/src/components/__tests__/TutorChat.test.tsx` -> `6 passed`
+  - `npm run build` in `dashboard_rebuild/` -> PASS
+  - `python brain/data/seed_methods.py --strict-sync` -> PASS
+
+## 2026-03-07 — Repo-local strategic architect skill
+
+- Added a new repo-local Codex skill:
+  - `.codex/skills/personal-strategic-architect/SKILL.md`
+- Captured the supplied strategic architect spec as an operational skill contract:
+  - exact first-response payload
+  - 5-round diagnostic sequence
+  - constraint classification (`C1`-`C6`)
+  - required strategic report sections
+  - post-report accountability behavior
+- Updated live coordination surfaces for the scoped work:
+  - `docs/root/TUTOR_TODO.md`
+  - `docs/root/AGENT_BOARD.md`
 - Validation:
-  - `python -m py_compile brain/dashboard/api_tutor.py brain/tests/test_tutor_session_linking.py` -> PASS
-  - Live API smoke test after restart:
-    - `POST /api/tutor/session` with topic `Movement science`, course_id `4`, source_ids `[426,427]`
-    - returned `north_star.path = Study Notes/Movement Science/Hip Module 1/Hip Module 1/_North_Star.md` and `status = updated`.
-  - Note: local pytest execution remains blocked in this shell due missing `flask` package in interpreter.
-## 2026-02-27 - One-time active session metadata repair (North Star path)
-- Repaired stale active tutor session `tutor-20260227-072121-28f542` content filter metadata that still pointed to an invalid Construct 1 North Star path.
-- Updated North Star fields to:
-  - `path`: `Study Notes/Movement Science/Hip Module 1/Hip Module 1/_North_Star.md`
-  - `status`: `updated`
-  - `module_name`: `Hip Module 1`
-  - `subtopic_name`: `Hip Module 1`
-- Purpose: prevent current in-progress session from repeatedly asking for wrong-file re-save after backend fix.
-## 2026-02-27 - Obsidian deterministic browse hardening (Tutor turn + tools + UI)
-- Implemented Obsidian browse tool backward compatibility in `brain/tutor_tools.py`:
-  - `list_obsidian_paths` now accepts canonical `folder` and maps legacy `path -> folder` when needed.
-  - returns `used_legacy_path_arg` for telemetry/debug.
-- Implemented deterministic folder-tree shortcut in `brain/dashboard/api_tutor.py`:
-  - detects vault/folder-structure questions and calls `obsidian_list_files(...)` directly.
-  - bypasses LLM/tool loop for these requests.
-  - returns explicit live API failure message and states no cached/inferred tree is used.
-- Fixed prompt mismatch in `api_tutor.py` North Star recovery instructions:
-  - changed `list_obsidian_paths(path="")` -> `list_obsidian_paths(folder="")`.
-- Improved vault browser UX in `dashboard_rebuild/client/src/components/TutorChat.tsx`:
-  - nested folder query errors now render inline instead of silently appearing as empty folders.
-- Added tests:
-  - `brain/tests/test_tutor_obsidian_tools.py`: legacy `path` arg compatibility.
-  - `brain/tests/test_api_tutor_mode_flags.py`: deterministic folder-listing shortcut success + explicit failure message.
+  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync_agent_config.ps1 -Mode Check` -> `RESULT PASS`
+- Review:
+  - read-only review subagent returned no material findings
+  - one low-severity note flagged that the outer single quotes in the source activation payload are treated as delimiters rather than literal output characters
+
+## 2026-03-07 — Tutor 10/10 certification kickoff
+
+- Opened a new certification track:
+  - `conductor/tracks/tutor-10-certification_20260307/`
+- Published initial certification artifacts:
+  - `scorecard.md`
+  - `chain-dispositions.md`
+  - `fixtures.md`
+- Added machine-readable template-chain certification metadata source:
+  - `sop/library/chains/certification_registry.yaml`
+- Began surfacing certification metadata through Tutor template-chain responses so later harness work can consume a stable disposition contract instead of ad hoc chain-name checks.
+
+## 2026-03-07 — Tutor 10/10 material pipeline hardening
+
+- Added first Milestone 1 certification artifact:
+  - `conductor/tracks/tutor-10-certification_20260307/material-matrix.md`
+- Added explicit material pipeline certification coverage:
+  - upload coverage for PDF, PPTX, DOCX, TXT/MD, and MP4
+  - folder sync preview/start coverage
+  - full-sync stale-row pruning
+  - sync update/dedupe behavior
+  - duplicate-upload detection
+  - selected MP4 -> linked transcript material-context expansion
+- Fixed a real backend defect found by the new certification tests:
+  - duplicate upload detection in `upload_material()` assumed dict-like cursor rows and crashed on tuple rows
 - Validation:
-  - `python -m py_compile brain/tutor_tools.py brain/dashboard/api_tutor.py` -> PASS
-  - `pytest brain/tests/test_tutor_obsidian_tools.py -q` -> 7 passed
-  - `pytest brain/tests/test_tutor_obsidian_tools.py brain/tests/test_api_tutor_mode_flags.py -q` -> blocked in this shell (`ModuleNotFoundError: flask`)
+  - `pytest -q brain/tests/test_tutor_material_pipeline_certification.py brain/tests/test_rag_notes_reembed.py` -> `14 passed`
+  - `pytest -q brain/tests/test_seed_methods.py brain/tests/test_template_chain_certification.py brain/tests/test_tutor_session_linking.py` -> `34 passed`
+  - `python brain/data/seed_methods.py --strict-sync` -> PASS
+  - `npm run build` in `dashboard_rebuild/` -> PASS
+
+## 2026-03-07 — Tutor 10/10 session-authority hardening
+
+- Froze the canonical certified setup ownership map:
+  - `conductor/tracks/tutor-10-certification_20260307/session-authority.md`
+- Tightened the certified setup path:
+  - objective-scoped sessions now require preflight instead of direct create-session starts
+- Expanded restore/resume certification coverage:
+  - stale active-session key cleanup
+  - completed-session cleanup
+  - corrupted wizard-state fallback
+  - library handoff precedence
+- Validation:
+  - `pytest -q brain/tests/test_tutor_session_linking.py brain/tests/test_tutor_material_pipeline_certification.py brain/tests/test_seed_methods.py brain/tests/test_template_chain_certification.py` -> `48 passed`
+  - `python brain/data/seed_methods.py --strict-sync` -> PASS
+
+## 2026-03-07 — Tutor 10/10 chain-certification kickoff
+
+- Marked template-chain inventory/disposition work as active certification truth rather than planning-only.
+- Added strict-chain runtime-contract guardrails so certified top-down chains cannot silently lose:
+  - runtime profiles
+  - gates
+  - recovery routes
+  - reference-target discipline
+- Validation:
+  - `pytest -q brain/tests/test_template_chain_runtime_contract.py brain/tests/test_template_chain_certification.py` -> `3 passed`
+
+## 2026-03-07 — Tutor 10/10 certification runner
+
+- Added executable release-gate script:
+  - `scripts/run_tutor_certification.py`
+- Runner now emits:
+  - `conductor/tracks/tutor-10-certification_20260307/latest-certification-report.json`
+  - `conductor/tracks/tutor-10-certification_20260307/latest-certification-report.md`
+- Current runner status:
+  - `overall_status=not_ready`
+  - this is expected because artifact reliability, trust, full chain certification, and neuro golden-path signoff are not complete yet
+
+## 2026-03-07 — Tutor 10/10 release gate reached
+
+- Completed live signoff artifacts:
+  - `conductor/tracks/tutor-10-certification_20260307/live-signoff.json`
+  - `conductor/tracks/tutor-10-certification_20260307/live-signoff.md`
+- Live evidence now includes:
+  - Week 7 top-down compare on `C-TRY-001` vs `C-TRY-002`
+  - Week 8 first-exposure live session
+  - Basal Ganglia review live session
+  - live note/card/structured-notes persistence check
+- Full certification runner status:
+  - `python scripts/run_tutor_certification.py` -> `overall_status=ready`
+
+## 2026-03-07 — Tutor week-page preflight sync
+
+- Added deterministic preflight page sync for both:
+  - `Learning Objectives & To Do.md`
+  - `_Map of Contents.md`
+- Sync now patches managed sections instead of overwriting whole files, preserves existing frontmatter keys, and carries structured `page_sync_result` through the Tutor preflight/session contract and Wizard step 3.
+- Added Week 8 proof data in the live DB for Neuroscience (`course_id=3`) with parent/child `lo_code` hierarchy so the new sync can generate the ASCII chapter map from approved objectives plus selected materials.
+- Hardened Obsidian verification so CLI error text no longer counts as a successful note read/write; preflight now blocks with `PAGE_SYNC_FAILED` when the local Obsidian transport is unhealthy.
+- Validation:
+  - `pytest brain/tests/test_tutor_session_linking.py brain/tests/test_frontmatter.py brain/tests/test_tutor_obsidian_io.py -q` -> `37 passed`
+  - `npm run build` in `dashboard_rebuild/` -> success
+  - Live Week 8 preflight against the real DB now returns `200` with `PAGE_SYNC_FAILED`, `page_sync_result.ok=false`, and both page statuses `build_failed` because the local Obsidian CLI reports `Your Obsidian installer is out of date`
+
+## 2026-03-08 — Week 8 Obsidian sync cleanup and layout alignment
+
+- Fixed the week-page save guard so Obsidian bridge/read failures no longer fall through to `create_note()`, which had been producing numbered duplicates like `Learning Objectives & To Do 1.md`.
+- Updated the Week-page renderer to better match the Week 7 study-note shape:
+  - cleaner parent/child objective checklists
+  - deduped source materials
+  - one shared ASCII source-material branch instead of repeating materials under every parent objective
+  - extracted Week 8 to-do bullets from the source text file
+- Cleaned the live Week 8 vault folder so only the canonical files remain:
+  - `Learning Objectives & To Do.md`
+  - `_Map of Contents.md`
+- Validation:
+  - `pytest brain/tests/test_frontmatter.py brain/tests/test_tutor_obsidian_io.py -q` -> `10 passed`
+  - `pytest brain/tests/test_tutor_session_linking.py -q` -> `31 passed`
+  - live Week 8 preflight -> `ok=true`, `vault_ready=true`, `page_sync_result.ok=true`
+  - live Week 8 Tutor start from certified preflight -> `session_id=tutor-20260308-002644-53589f`
+
+## 2026-03-08 — Tutor follow-up target cleanup
+
+- Fixed the preflight/session follow-up target derivation so real objective-scoped weeks no longer leak the placeholder `[[OBJ-UNMAPPED]]` when valid objectives exist.
+- Follow-up targets now derive from approved objective IDs, preferring child objectives first and honoring the focused objective when one is selected.
+- Validation:
+  - `pytest brain/tests/test_tutor_session_linking.py -q` -> `31 passed`
+  - live Week 8 preflight after clean dashboard restart -> `follow_up_targets` resolved to real objective links instead of `[[OBJ-UNMAPPED]]`
+
+## 2026-03-08 — Week 9 Wizard hardening and Library UX cleanup
+
+- Fixed Tutor study-unit inference so descriptive week folders outrank vague or misleading filenames when materials are used to seed study-unit options.
+- Changed Tutor Wizard topic precedence so the selected study unit or focus objective drives note naming and preflight context ahead of any stale typed topic text.
+- Tightened Wizard preflight readiness so it only runs after a study unit is selected, and clarified the topic field as an optional session label rather than the source of truth for week naming.
+- Reworked the Library header actions to separate:
+  - ingest (`Upload Materials`, `Sync Study Folder`)
+  - organization (`Link View`)
+  - Tutor handoff (`Replace With View`, `Add View`, `Clear Queue`, `Open Tutor`)
+- Added explicit Tutor queue visibility messaging so hidden selections from other views are surfaced before opening Tutor.
+- Validation:
+  - `pytest brain/tests/test_tutor_session_linking.py -q` -> `32 passed`
+  - `npm run build` in `dashboard_rebuild/` -> success
+
+## 2026-03-09 — MCP config cleanup
+
+- Fixed both Claude MCP configs to point `obsidian-mcp` at the live vault path `C:\Users\treyt\Desktop\Treys School` instead of the stale non-existent `C:\Users\treyt\Desktop\PT School Semester 2`.
+- Removed the stale Codex `paper` MCP entry from `C:\Users\treyt\.codex\config.toml` because `http://127.0.0.1:29979/mcp` was refusing connections during validation.
+- Review findings left intentionally unchanged for a follow-up pass:
+  - Claude Desktop GitHub MCP still has an empty `GITHUB_PERSONAL_ACCESS_TOKEN`
+  - Claude Code and Claude Desktop still duplicate some MCP server definitions by design
+
+## 2026-03-09 — Instruction hierarchy cleanup
+
+- Made repo `AGENTS.md` the explicit master instruction file for this repo across tools instead of telling sessions to load home-directory Claude/Codex instruction files as extra project canon.
+- Added the "recommend 2-3 concrete next steps" behavior to repo `AGENTS.md` so it now lives in the project master file instead of global Codex prompt text.
+- Removed the large global Codex `developer_instructions` block from `C:\Users\treyt\.codex\config.toml`.
+- Trimmed `C:\Users\treyt\.codex\AGENTS.md` to a thin precedence-only fallback note.
+- Trimmed `C:\Users\treyt\.claude\CLAUDE.md` to a thin fallback note so Claude does not act like a second cross-tool control plane when a repo root `AGENTS.md` exists.
+- Updated `docs/root/AGENT_SETUP.md`, `docs/root/TUTOR_TODO.md`, and `docs/root/AGENT_BOARD.md` to reflect the simplified hierarchy and validation trail.
+- Validation:
+  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync_agent_config.ps1 -Mode Check` -> `RESULT PASS`
+  - `codex mcp list` -> config loaded successfully after removing global `developer_instructions`
+  - `git diff --check -- AGENTS.md docs/root/AGENT_SETUP.md docs/root/TUTOR_TODO.md docs/root/AGENT_BOARD.md conductor/tracks/GENERAL/log.md` -> no whitespace errors; only CRLF normalization warnings on existing markdown files
+
+## 2026-03-10 — Codex Playwright MCP startup timeout
+
+- Added `startup_timeout_sec = 90` to `[mcp_servers.playwright]` in `C:\Users\treyt\.codex\config.toml` so the Playwright MCP client no longer uses the default 10-second startup window.
+- Confirmed no other active Playwright MCP runtime definition is shadowing that global Codex config entry.
+- Validation:
+  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync_agent_config.ps1 -Mode Check` -> `RESULT PASS`
+
+## 2026-03-10 — User-directed collaboration rule
+
+- Updated repo `AGENTS.md` to make user intent the default collaboration stance for this project.
+- Added an explicit rule to start from the user's stated objective and preferred operating model, surface tradeoffs without substituting agent preference, and avoid assuming the user does not understand the tradeoffs they are choosing.
+
+## 2026-03-10 — User-intent fallback reinforcement
+
+- Tightened the repo `AGENTS.md` rule to explicitly say "default to user intent first" and added a concrete first-response example block.
+- Mirrored the same fallback stance into `C:\Users\treyt\.codex\AGENTS.md` and `C:\Users\treyt\.claude\CLAUDE.md` without turning those files into second policy surfaces.
+- Updated `docs/root/AGENT_SETUP.md` so the precedence doc now states that global fallbacks should still start from user intent first when they apply.
+
+## 2026-03-10 — User-intent inheritance cleanup
+
+- Updated all repo-local Claude agent headers under `.claude/agents/` to explicitly inherit the root `AGENTS.md` user-directed collaboration rule and first-response pattern.
+- Added the collaboration default to `C:\Users\treyt\.claude\rules\agents.md` as the shared home-directory inheritance source.
+- Trimmed duplicate fallback wording from `C:\Users\treyt\.claude\CLAUDE.md` and kept repo compatibility shims pointing back to root `AGENTS.md`.
+
+## 2026-03-10 — Dashboard startup refresh
+
+- Removed the outdated `brain\sync_all.ps1` step from `Start_Dashboard.bat` so normal dashboard launch no longer runs legacy log-ingest and resume-generation work.
+- Kept the canonical Flask startup path on port `5000`, preserved the force-kill behavior for any existing `5000` listener, and improved console output to show killed and remaining PIDs.
+- Changed frontend startup behavior to rebuild only when `brain\static\dist\index.html` is missing or the `dashboard_rebuild` source/config files are newer than the current build output.
+- Replaced the fixed startup sleep with readiness polling against `http://127.0.0.1:5000/api/brain/status` before opening `/brain`.
+
+## 2026-03-10 â€” Vault stabilization + health truthfulness
+
+- Rebuilt the Obsidian course-map contract around the live `Treys School` vault: canonical root `Courses`, deprecated root `Study Notes`, live course aliases, and special-unit support for current exam/quiz folders.
+- Updated the Obsidian config/API surfaces so the frontend now receives `vaultName: Treys School`, `canonicalRoot`, and `deprecatedRoots` instead of stale defaults.
+- Reworked `brain/obsidian_index.py` and `brain/vault_janitor.py` so scan accounting is file-based, wikilinks resolve through aliases and strip heading/block anchors before note resolution, and duplicate note names no longer collapse the scan count.
+- Replaced the janitor's one-size-fits-all frontmatter policy with family-aware rules for course command-center notes, concept notes, and session notes while excluding system/template files from the main health score.
+- Hardened Tutor routing to fail clearly on unmapped course/unit writes and removed the `OBJ-UNMAPPED` fallback behavior from week-page sync and follow-up target generation.
+- Rebuilt the Vault Health frontend to explain `Full Scan`, `Batch Enrich`, `Fix`, and `AI Fix`, show scan accounting and vault-contract context, group issues by note, and distinguish real breakage from advisory/system noise.
+- Added focused regression coverage for the new course-map, path-generation, and janitor contracts.
+- Validation:
+  - `pytest brain/tests/test_course_map.py brain/tests/test_path_generation.py brain/tests/test_vault_janitor.py -q`
+  - `python -c "import sys; sys.path.insert(0, 'brain'); from vault_janitor import scan_vault; ..."` -> live scan returned `74` markdown files, `55` health-scanned notes, `19` excluded system files, and reconciled counts
+  - `npm run build` in `dashboard_rebuild/`
+
+## 2026-03-11 — Vault remediation completion pass
+
+- Moved the fake `Courses/General Class/Test Module/Reconcile One` and `Reconcile Two` artifacts into `Study System/Sandbox/Reconcile/` so `Courses/` now contains only real active units.
+- Resynced the live `Courses/*/<unit>` command-center pages so active units now have canonical `Learning Objectives & To Do.md` and `_Map of Contents.md` pairs without `General Class`, `OBJ-UNMAPPED`, or raw `[[OBJ-*]]` placeholders.
+- Added the missing embryology, anatomy, and pathology concept notes needed by the active neuroscience week pages and normalized concept-note aliases so the remaining concept warnings are advisory-only.
+- Hardened Tutor vault objective persistence so shared `OBJ-*` codes are reconciled by mapped module scope instead of colliding across units, restored generic Tutor session finalization without weakening strict course routing, and added regression coverage in `brain/tests/test_tutor_audit_remediation.py`.
+- Updated `brain/tests/test_vault_janitor_live.py` into a manual-only live harness so the default `pytest brain/tests/` suite reflects the supported automated checks instead of trying to collect a vault-mutating script.
+- Validation:
+  - `pytest brain/tests/ -q` -> `1066 passed`
+  - `cmd /c Start_Dashboard.bat` -> readiness succeeded on `http://127.0.0.1:5000`
+  - `GET /api/brain/status` -> `{"ok": true, ...}`
+  - `GET /api/janitor/health` -> `102` markdown files, `78` health-scanned notes, `24` excluded system files, `31` advisory-only files, `33` affected notes, `46` issue instances, `0` routing-drift issues
+  - Playwright verification of `http://127.0.0.1:5000/vault-health` confirmed the new explanation panel, scan accounting, canonical/deprecated root display, and note-grouped issue list render in the app
+
+## 2026-03-11 — Movement Science Construct 2 live preflight recovery
+
+- Recovered the interrupted Sprint 22 work from the saved diff and kept the live scope anchored to `Movement Science -> Construct 2 - Lower Quarter`.
+- Confirmed the canonical vault path `Courses/Movement Science/Construct 2 - Lower Quarter/` already contains the shared hub notes `_Map of Contents.md` and `Learning Objectives & To Do.md`.
+- Hardened Tutor session cleanup so deleting a session only removes session-owned artifacts and no longer deletes the shared `_Map of Contents.md` study infrastructure note.
+- Confirmed the live `PHYT 6314` DB rows contain approved objectives `OBJ-001` through `OBJ-028` plus the imported Construct 2 material corpus, with the baseline preflight payload using material ids `535`, `536`, and `537`.
+- Ran a real Tutor preflight against `http://127.0.0.1:5000/api/tutor/session/preflight` for course `4` / `Construct 2 - Lower Quarter`; it returned `ok=true`, `vault_ready=true`, no blockers, and both canonical pages in `reviewed` status.
+- Validation:
+  - `pytest brain/tests/test_tutor_audit_remediation.py -q` -> `18 passed`
+  - `npm run build` in `dashboard_rebuild/` -> PASS
+  - `cmd /c Start_Dashboard.bat` -> readiness succeeded on `http://127.0.0.1:5000`
+  - live `POST /api/tutor/session/preflight` for course `4` with material ids `535,536,537` -> `ok=true`, `vault_ready=true`, `blockers=[]`
+
+## 2026-03-12 — Tutor dive readiness audit
+
+- Audited the next Tutor wave across frontend flow, backend/session lifecycle, retrieval/runtime truthfulness, and shell/docs/test hygiene.
+- Kept `gemini-embedding-2-preview` as the intended embedding default per owner direction and did not reopen any task to switch back to OpenAI embeddings.
+- Converted the follow-on improvements plus new confirmed blockers into a concrete pre-Tutor hardening backlog in:
+  - `docs/root/TUTOR_TODO.md`
+  - `docs/root/TUTOR_DIVE_READINESS_AUDIT_2026-03-12.md`
+- Highest-priority blockers before new Tutor feature work:
+  - preflight/start contract mismatch
+  - Brain handoff versus stale active-session restore precedence
+  - underdeclared Tutor retrieval runtime and deprecated Chroma adapter usage
+  - SQLite-only embed skip logic that can lie about Chroma readiness
+  - replayable preflight bundles and missing session-create numeric validation
+  - post-end artifact mutation still allowed
+  - missing direct-load Flask routes for live support pages
+- The pre-Tutor hardening backlog now carries explicit task gates for each item, including targeted `pytest`, targeted `vitest`, `npm run check`, `npm run build`, `git diff --check`, route smoke, and a final live Tutor lifecycle sweep before the next Tutor sprint opens.
+
+## 2026-03-12 — Canon collapse + pre-Tutor hardening closeout
+
+- Closed the canon-collapse wave by making `docs/root/TUTOR_STUDY_BUDDY_CANON.md` the enforced product/page-ownership source and reducing the live execution board to status/reporting instead of parallel truth.
+- Finished the Brain/Tutor shell recenter so Brain is the public home + profile surface, Tutor owns the live workspace tools, and Scholar remains the system-facing investigation console.
+- Cleaned the remaining live docs drift in `docs/root/GUIDE_TUTOR_FLOW.md`, `docs/root/GUIDE_USER.md`, and `docs/root/PROJECT_ARCHITECTURE.md`, then hard-marked the older `brain-scholar-tutor-realignment_20260311` track docs as historical so they stop competing in repo search.
+- Ran the final live Tutor lifecycle smoke on the fresh `Start_Dashboard.bat` server using the real Movement Science Construct 2 scope (`course_id=4`, `study_unit=Construct 2 - Lower Quarter`, material ids `535,536,537`): preflight -> create -> restore -> end -> rejected post-end artifact mutation -> delete.
+- Validation:
+  - `python scripts/check_docs_sync.py` -> PASS
+  - `cd dashboard_rebuild && npm run check` -> PASS
+  - `cd dashboard_rebuild && npm run test` -> `457 passed`
   - `cd dashboard_rebuild && npm run build` -> PASS
-## 2026-02-27 - Obsidian preview/apply gate + async vault-wide janitor
-- Implemented preview-then-apply write flow for Tutor Obsidian tool saves:
-  - `save_to_obsidian` now prepares and stores a pending preview instead of writing immediately.
-  - Added `apply_obsidian_write_preview` tool to apply pending preview (by `preview_id` or latest for session).
-- Added async vault-wide janitor orchestration:
-  - applying a preview enqueues a full-vault janitor scan job (`missing_frontmatter`, `orphan`, `broken_link`, `duplicate`).
-  - ending a tutor session now also enqueues async vault-wide janitor scan.
-  - added status endpoint: `GET /api/tutor/janitor/jobs/<job_id>`.
-- Obsidian-first retrieval behavior when toggle is ON:
-  - notes retrieval runs first; materials retrieval is optional secondary when materials toggle is also ON.
-  - notes-only mode suppresses course-map routing context to avoid non-note routing artifacts.
-- Deterministic vault listing hardening updates:
-  - tightened vault-listing intent regex to reduce false positives.
-  - folder hint extraction now accepts single-segment folder names (e.g., `Study Notes`).
-  - fixed shortcut turn persistence so deterministic listing turns are logged and increment `turn_count`.
-- Tests:
-  - `brain/tests/test_tutor_obsidian_tools.py` expanded for apply tool routing + legacy arg handling.
-  - `brain/tests/test_api_tutor_mode_flags.py` expanded for deterministic shortcut persistence and single-segment folder hint.
+  - `pytest brain/tests/ -q` -> `978 passed`
+  - live `GET /api/tutor/embed/status` -> `provider=gemini`, `model=gemini-embedding-2-preview`
+  - live Tutor lifecycle smoke -> `preflight=200`, `create=201`, `restore=200`, `end=200`, post-end artifact mutation blocked with `SESSION_NOT_ACTIVE`, `delete=200`
+- Non-blocking follow-up notes captured during closeout:
+  - dormant Brain-only workspace components still exist under `dashboard_rebuild/client/src/components/brain/**`, but they are no longer mounted by the public Brain route
+  - Tutor still needs tighter direct regression coverage around bounded Scholar strategy behavior before the next deeper Tutor feature wave
+
+## 2026-03-12 — Agent canon next-step priority rule
+
+- Tightened the root agent canon in `AGENTS.md` so end-of-task replies must name one explicit `Recommended next step` when there is a clear highest-leverage follow-up.
+- Kept the existing requirement to offer 2-3 actionable next-step options, but removed ambiguity about priority ordering so the user does not have to infer the best move from an unordered list.
+- Scope: instruction-only change; no code/runtime behavior changed.
+
+## 2026-03-12 — Local Windows AI-tool stability cleanup
+
+- Audited the Windows baseline behind repeated Claude/Codex slowdowns and confirmed the primary issue was memory/process pressure rather than disk health or Defender malfunction.
+- Reclaimed stale local agent data earlier in the session, then disabled persistent Lenovo Now scheduled tasks plus Intel Driver & Support Assistant services with admin access.
+- Verified Windows Search was not the main active bottleneck for `.claude` / `.codex` because those hidden tool folders were already excluded from the indexer on this machine.
+- Verified Defender stayed healthy and enabled, captured a short Defender performance trace, and found no meaningful active scan hotspot during the sample window.
+- Removed the current-user `AppUp.IntelConnectivityPerformanceSuite` package after reboot because `ICPS.exe` was still being relaunched by Intel connectivity services and consuming substantial memory.
+- Post-cleanup baseline improved to roughly `59%` RAM used with about `6.45 GB` free immediately after the `ICPS` removal check.
+- Followed with removal of the current-user `Microsoft.YourPhone` and `MicrosoftWindows.CrossDevice` packages after their background COM processes (`PhoneExperienceHost.exe`, `CrossDeviceService.exe`) continued respawning despite disabled startup-task state.
+- Verified both packages were no longer present for the current user and both background processes stayed down after termination.
+- Disabled four remaining low-risk startup items: removed `LenovoVantageToolbar` and `Microsoft.Lists` from `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, moved `AVG Secure VPN.lnk` and `Send to OneNote.lnk` out of the active startup folders into `C:\Users\treyt\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\Disabled_PT_Tune\`, and saved a small registry restore file there for the removed `Run` values.
+- Verified a separate `OpenAI.ChatGPT-Desktop` app instance was auto-starting alongside Codex, then disabled its packaged startup task via `HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\SystemAppData\OpenAI.ChatGPT-Desktop_2p2nqsd0c76g0\ChatGPT` (`State=1`) and stopped the live `ChatGPT.exe` processes.
+
+## 2026-03-12 — Anti-drift topic reset guardrail
+
+- Diagnosed a conversation drift failure where a stale queued task resumed after the user had already switched to a different question (`BirdAuth.bat`), causing the assistant to answer the wrong thread.
+- Root cause was not a conflicting repo-vs-global instruction file; the stronger contributors were aggressive persistence/runtime pressure plus repo closeout rules that encouraged momentum toward prior "next steps" unless a hard reset rule existed.
+- Added explicit repo-canon guardrails in `AGENTS.md` requiring new user questions/topics to act as hard task-boundary resets, stale background work to be canceled or ignored after such a reset, old recommendations not to be resumed without re-request, and direct file/script questions to stay scoped unless the user asks to broaden the task.
+
+## 2026-03-13 — Sprint 26 frontend/live proof closeout
+
+- Closed the remaining Sprint 26 frontend proof gap by fixing the Tutor workspace integration harness instead of weakening product coverage.
+- Stabilized the mocked `Excalidraw` API in `dashboard_rebuild/client/src/components/__tests__/TutorWorkspaceSurface.integration.test.tsx` so the real canvas-mode integration proof no longer self-triggers a render loop.
+- Aligned the table-surface expectation with the current accessible control label (`Save to vault`) so the integration suite verifies the shipped UI contract rather than a stale button name.
+- Closed the live-readiness loop with the rebuilt `scripts/live_tutor_smoke.py` flow (`preflight -> create -> turn -> restore -> summary -> end -> delete`) plus browser smoke on `/tutor` workspace and `/methods`.
 - Validation:
-  - `python -m py_compile brain/tutor_tools.py brain/dashboard/api_tutor.py` -> PASS
-  - `pytest brain/tests/test_tutor_obsidian_tools.py -q` -> 8 passed
-  - `pytest brain/tests/test_api_tutor_mode_flags.py -q` -> blocked in this shell (`ModuleNotFoundError: flask`)
+  - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/brain.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorWorkspaceSurface.test.tsx client/src/components/__tests__/TutorWorkspaceSurface.integration.test.tsx client/src/pages/__tests__/methods.test.tsx` -> `43 passed`
+  - `pytest brain/tests/test_tutor_turn_stream_contract.py brain/tests/test_e2e_study_session.py brain/tests/test_tutor_session_linking.py brain/tests/test_tutor_artifact_certification.py -q` -> `54 passed`
+  - `Start_Dashboard.bat` -> local dashboard ready on `http://127.0.0.1:5000`
+  - `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5000` -> PASS
+  - Playwright smoke on `http://127.0.0.1:5000/tutor` and `http://127.0.0.1:5000/methods` -> PASS
+
+## 2026-03-13 — Tutor launch / shell realignment kickoff
+
+- Opened `conductor/tracks/tutor-launch-shell-realignment_20260313/` as the new durable Tutor cleanup track.
+- Registered the track in `conductor/tracks.md`, added the claim to `docs/root/TUTOR_TODO.md`, and claimed the live board row in `docs/root/AGENT_BOARD.md`.
+- Locked the next active cleanup direction around Brain-owned launch, `/tutor` as the course-keyed shell, and a thin Tutor start/resume surface instead of the legacy step wizard.
+- Preserved older sprint wording in `docs/root/TUTOR_TODO.md` as history while adding an explicit top-level note that those `wizard` references are no longer the active product model.

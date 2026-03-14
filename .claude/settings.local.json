@@ -61,5 +61,13 @@
       "Bash(git commit:*)"
     ],
     "defaultMode": "bypassPermissions"
-  }
+  },
+  "enabledMcpjsonServers": [
+    "filesystem",
+    "github",
+    "memory",
+    "codex-cli",
+    "stitch"
+  ],
+  "enableAllProjectMcpServers": true
 }

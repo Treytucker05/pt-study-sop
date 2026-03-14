@@ -117,3 +117,26 @@ gating_rules:
 - Force active processing (explain, transform, or map), not passive reading.
 - Keep output scoped to mapped objectives only.
 artifact_type: table
+allowed_moves:
+- Help learner identify 2-4 confusable concepts and comparison dimensions
+- Prompt learner to fill table cells from memory FIRST before checking source
+- Guide learner to check source material and correct errors after initial attempt
+- Prompt learner to identify the most discriminating features
+- Guide generation of 1-2 "If...then" differential rules from discriminators
+- Suggest limiting to 5-7 comparison rows for clinical relevance
+- Note which cells the learner got wrong for targeted review
+- Use Socratic questioning to help learner discover discriminators
+forbidden_moves:
+- Fill the comparison table FOR the learner
+- Allow looking up source material before the learner attempts from memory
+- Accept a table without identified discriminating features
+- Skip the "If...then" rule generation step
+- Accept more than 4 concepts in a single table without splitting
+- Deliver a passive comparison instead of guiding table construction
+- Present information outside the objective scope
+- Move to retrieval before discriminators and rules are generated
+required_outputs:
+- Completed comparison table
+- Discriminating features highlighted
+- Differential rules (1-2 per comparison)
+- Error list from initial attempt

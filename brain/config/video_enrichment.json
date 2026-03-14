@@ -8,14 +8,14 @@
   },
   "models": {
     "flash": {
-      "name": "gemini-2.5-flash",
+      "name": "gemini-3-flash-preview",
       "input_cost_per_1m_tokens": 0.10,
       "est_tokens_per_hour_video": 1040000,
       "est_cost_per_hour_video": 0.10,
       "free_tier_rpd": 500
     },
     "pro": {
-      "name": "gemini-2.5-pro",
+      "name": "gemini-3.1-pro-preview",
       "input_cost_per_1m_tokens": 1.25,
       "est_tokens_per_hour_video": 1040000,
       "est_cost_per_hour_video": 1.30,

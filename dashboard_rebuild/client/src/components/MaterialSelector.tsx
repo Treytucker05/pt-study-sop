@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Material } from "@/lib/api";
+import type { Material, TutorVideoEnrichmentStatus } from "@/lib/api";
 import {
   TEXT_BODY,
   TEXT_MUTED,
@@ -67,6 +67,8 @@ export function MaterialSelector({
   const [processingVideos, setProcessingVideos] = useState(false);
   const [enrichingVideos, setEnrichingVideos] = useState(false);
   const [videoJobsByMaterial, setVideoJobsByMaterial] = useState<Record<number, MaterialVideoJobState>>({});
+  const [videoPollingPaused, setVideoPollingPaused] = useState(false);
+  const consecutiveVideoPollErrorsRef = useRef(0);
 
   const { data: courses = [] } = useQuery<Course[]>({
     queryKey: ["courses-active"],
@@ -80,8 +82,6 @@ export function MaterialSelector({
 
   // Server returns filtered materials when courseId is provided
   const courseMaterials = useMemo(() => materials, [materials]);
-  const otherMaterials = useMemo(() => [], [materials]);
-  const [showOther, setShowOther] = useState(false);
 
   // Checksums that appear on more than one material
   const dupeChecksums = useMemo(() => {
@@ -109,6 +109,18 @@ export function MaterialSelector({
       (id) => videoJobsByMaterial[id]?.status === "completed",
     );
   }, [selectedVideoIds, videoJobsByMaterial]);
+
+  const enrichmentStatusMaterialId = useMemo(
+    () => (selectedVideoIds.length > 0 ? selectedVideoIds[0] : undefined),
+    [selectedVideoIds],
+  );
+
+  const { data: videoEnrichmentStatus } = useQuery<TutorVideoEnrichmentStatus>({
+    queryKey: ["tutor-video-enrichment-status", enrichmentStatusMaterialId],
+    queryFn: () => api.tutor.getVideoEnrichmentStatus(enrichmentStatusMaterialId),
+    enabled: selectedVideoIds.length > 0,
+    refetchInterval: 15000,
+  });
 
   const handleUpload = useCallback(async (files: File[]) => {
     if (files.length === 0) return;
@@ -191,6 +203,8 @@ export function MaterialSelector({
     }
 
     setProcessingVideos(true);
+    setVideoPollingPaused(false);
+    consecutiveVideoPollErrorsRef.current = 0;
     let started = 0;
     for (const materialId of selectedVideoIds) {
       try {
@@ -248,6 +262,8 @@ export function MaterialSelector({
   }, [enrichableVideoIds, queryClient]);
 
   useEffect(() => {
+    if (videoPollingPaused) return;
+
     const activeEntries = Object.entries(videoJobsByMaterial).filter(
       ([, job]) => job.status === "pending" || job.status === "running",
     );
@@ -272,6 +288,7 @@ export function MaterialSelector({
         );
 
         if (cancelled) return;
+        consecutiveVideoPollErrorsRef.current = 0;
 
         setVideoJobsByMaterial((prev) => {
           const next = { ...prev };
@@ -309,7 +326,12 @@ export function MaterialSelector({
           return next;
         });
       } catch {
-        // ignore transient polling errors
+        // Back off when localhost socket binding fails repeatedly (e.g. ERR_ADDRESS_IN_USE).
+        consecutiveVideoPollErrorsRef.current += 1;
+        if (consecutiveVideoPollErrorsRef.current >= 5) {
+          setVideoPollingPaused(true);
+          toast.error("Video status polling paused (network/socket conflict). Restart Dashboard and refresh this page.");
+        }
       } finally {
         polling = false;
       }
@@ -321,7 +343,7 @@ export function MaterialSelector({
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [videoJobsByMaterial, queryClient]);
+  }, [videoJobsByMaterial, queryClient, videoPollingPaused]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -404,7 +426,7 @@ export function MaterialSelector({
     );
   }
 
-  if (courseMaterials.length === 0 && otherMaterials.length === 0) {
+  if (courseMaterials.length === 0) {
     return (
       <div className="space-y-2">
         {uploadZone}
@@ -551,6 +573,47 @@ export function MaterialSelector({
         )}
       </div>
 
+      {selectedVideoIds.length > 0 && videoEnrichmentStatus && (
+        <div className="px-1 py-1 border-b border-muted-foreground/10">
+          <div className="flex flex-wrap items-center gap-2 font-terminal text-xs">
+            <Badge
+              variant="outline"
+              className={`${TEXT_BADGE} h-4 px-1 ${
+                videoEnrichmentStatus.mode === "off"
+                  ? "border-muted-foreground/40 text-muted-foreground"
+                  : videoEnrichmentStatus.allowed
+                    ? "border-green-500/60 text-green-400"
+                    : "border-yellow-500/60 text-yellow-300"
+              }`}
+            >
+              Enrich {videoEnrichmentStatus.mode.toUpperCase()}
+            </Badge>
+            <span className={TEXT_MUTED}>
+              Monthly ${videoEnrichmentStatus.budget.monthly_spend.toFixed(2)} / ${videoEnrichmentStatus.budget.monthly_cap.toFixed(2)}
+            </span>
+            {typeof videoEnrichmentStatus.budget.video_spend === "number" && (
+              <span className={TEXT_MUTED}>
+                Video ${videoEnrichmentStatus.budget.video_spend.toFixed(2)} / ${videoEnrichmentStatus.budget.per_video_cap.toFixed(2)}
+              </span>
+            )}
+            {!videoEnrichmentStatus.api_key_configured && (
+              <span className="text-red-300">Gemini key missing</span>
+            )}
+            {videoEnrichmentStatus.key_sources_configured && videoEnrichmentStatus.key_sources_configured.length > 0 && (
+              <span className={TEXT_MUTED}>
+                Keys: {videoEnrichmentStatus.key_sources_configured.join(" -> ")}
+              </span>
+            )}
+            {!videoEnrichmentStatus.allowed && videoEnrichmentStatus.reason && (
+              <span className="text-yellow-200">{videoEnrichmentStatus.reason}</span>
+            )}
+            {videoEnrichmentStatus.local_only_fallback && (
+              <span className={TEXT_MUTED}>Fallback: local-only</span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Course-matched materials */}
       {courseMaterials.length > 0 ? (
         courseMaterials.map(renderRow)
@@ -560,19 +623,6 @@ export function MaterialSelector({
         </div>
       ) : null}
 
-      {/* Other materials (collapsed by default) */}
-      {otherMaterials.length > 0 && (
-        <details open={showOther} onToggle={(e) => setShowOther((e.target as HTMLDetailsElement).open)}>
-          <summary className={`${TEXT_BODY} px-1 py-0.5 text-muted-foreground hover:text-foreground cursor-pointer border-t border-muted-foreground/10 mt-1 pt-1`}>
-            <span className="font-terminal text-xs">
-              Other materials ({otherMaterials.length})
-            </span>
-          </summary>
-          <div className="mt-0.5">
-            {otherMaterials.map(renderRow)}
-          </div>
-        </details>
-      )}
     </div>
   );
 }

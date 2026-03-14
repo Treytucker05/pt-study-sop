@@ -2,342 +2,156 @@
 
 Owner: Trey.
 
-Personal study OS that captures sessions, produces metrics and Anki-ready outputs, keeps Obsidian as the primary knowledge base, and drives improvement via Scholar research. Flask dashboard on port 5000.
+Personal study OS that captures sessions, produces metrics and Anki-ready outputs, keeps Obsidian as the primary knowledge base, and improves over time through Scholar research.
 
 Response style: straight to the point, no fluff.
 
-Onboarding order:
-1. Start with this `AGENTS.md` for project-specific rules.
-2. Then read `C:\Users\treyt\.claude\CLAUDE.md` for global preferences.
+## User-Directed Collaboration
 
-## Current Plan (as of 2026-02-24)
+- Default to user intent first. Start from the user's stated objective and preferred operating model.
+- Find the best way to accomplish what the user wants in the way they want it done.
+- Present tradeoffs, risks, and alternatives when relevant, but do not substitute the agent's own preference for the user's stated intent.
+- Do not assume the user is unaware of the tradeoffs they are choosing; only push for clarification when requirements are ambiguous, contradictory, or materially risky.
 
-Active execution plan: `docs/root/TUTOR_TODO.md`
+### First-Response Pattern
 
-Recently completed:
-- TutorChat Speed Tiers (2026-02-24) — mode toggles, parallel RAG, model/reasoning per tier. Plan: `docs/plans/2026-02-24-tutor-chat-speed-tiers.md`
+- Lead with how to make the user's requested outcome work.
+- Then add pros, cons, constraints, or safer variants as decision support.
+- Do not reframe the task around what the agent would prefer the user to want.
 
-Primary active workstream:
-- Tutor PRIME hardening and transfer-integrity checks before broader scope expansion.
+Example:
 
-Current priority order in `TUTOR_TODO.md`:
-1. PRIME method policy and knob hardening.
-2. PRIME runtime chain and transfer integrity checks.
-3. Completion and hardening of MP4/video workflow in normal study sessions.
-
-Execution rule:
-- Do not begin major work until the task is listed in the `Current Sprint` section of `docs/root/TUTOR_TODO.md`.
-- If work is not listed there, add it to `docs/root/TUTOR_TODO.md` first, then execute.
-
----
-
-## How To Run The Server (DO NOT SKIP)
-
-**NEVER** use `npm run dev` or `vite dev` for this project.
-
-**ALWAYS** use the batch file:
-```batch
-C:\pt-study-sop\Start_Dashboard.bat
+```text
+User: "I want full access to these tools."
+Preferred response shape: "Here is the best way to give you full access in one setup. The main tradeoffs are X and Y. If you still want full power, this is the cleanest implementation."
 ```
 
-This will:
-1. Build the UI directly to `brain/static/dist/` (one step!)
-2. Start Python Flask server on **port 5000**
-3. Open browser to `http://127.0.0.1:5000/brain`
+## Onboarding Order
 
----
+1. Read this `AGENTS.md` first.
+2. Read `docs/root/AGENT_SETUP.md` for exact agent precedence, repo/global boundaries, and maintenance rules.
+3. Read `docs/root/TUTOR_STUDY_BUDDY_CANON.md` for the overall product contract.
+4. Use `docs/root/GUIDE_DEV.md` for canonical run/build/test commands.
+5. Do not load home-directory Claude/Codex instruction files as extra project canon for this repo.
+   - Root `AGENTS.md` is the master instruction file for all LLM tools here.
+   - Home-directory tool files may still provide fallback/runtime defaults, but they must not be treated as additional project policy when this repo is active.
 
-## Environment
-- Repo root: C:\pt-study-sop
-- Obsidian vault: C:\Users\treyt\Desktop\Treys School
-- Editor: Codex CLI / Claude Code (no default GUI editor).
+## Instruction Canon
 
-## Git Identity
-- Name: TreyT
-- Email: Treytucker05@yahoo.com
+- This file is the only project-specific policy source for `C:\pt-study-sop`.
+- Repo compatibility entrypoints (`CLAUDE.md`, `.claude/AGENTS.md`, `.claude/CLAUDE.md`) must defer to this file and must not carry independent project policy.
+- Repo-local Claude agents (`.claude/agents/*`) and command shims (`.claude/commands/*`) must read this file first, then apply only their role-specific delta.
+- Global home-directory tool files (`C:\Users\treyt\.claude\CLAUDE.md`, `C:\Users\treyt\.claude\rules\*`, `C:\Users\treyt\.claude\agents\*`, `C:\Users\treyt\.codex\AGENTS.md`, `C:\Users\treyt\.codex\config.toml`, `C:\Users\treyt\.codex\agents\*.toml`, `C:\Users\treyt\.codex\rules\default.rules`) stay cross-project only and must defer to repo canon when this repo is active.
+- Tool/runtime settings may still live in tool-specific config files, but instruction authority for this repo stays in root `AGENTS.md`.
+- If a repo-local agent name overlaps with a home-directory agent name, the repo-local agent wins for this project.
+- If nested/module `AGENTS.md` files are added later, they override this root file only for their own subtree and still stay above home-directory defaults because they are repo-local canon.
 
-## Core Commands
-Canonical run/build/test commands live in `docs/root/GUIDE_DEV.md`.
+## Live Sources Of Truth
 
-- Start dashboard: `Start_Dashboard.bat`
-- Run tests: `pytest brain/tests/`
-- Frontend build (direct to Flask static): see `docs/root/GUIDE_DEV.md` (required for UI changes)
+- Product/system contract: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- Active execution board: `docs/root/TUTOR_TODO.md`
+- Multi-agent live handoff board: `docs/root/AGENT_BOARD.md`
+- Agent precedence and machine setup: `docs/root/AGENT_SETUP.md`
+- Developer commands and build/test workflow: `docs/root/GUIDE_DEV.md`
+- Technical architecture: `docs/root/PROJECT_ARCHITECTURE.md`
+- Detailed incident learnings and troubleshooting: `docs/root/AGENT_GUARDRAILS.md`
 
----
+## Non-Negotiable Run Rules
 
-## Quick Development Workflow
+- **NEVER** use `npm run dev` or `vite dev` for this project.
+- **ALWAYS** use `C:\pt-study-sop\Start_Dashboard.bat` to run the dashboard.
+- Flask runs on port `5000`; use `http://127.0.0.1:5000`.
+- If you change anything under `dashboard_rebuild/`, run `npm run build` in `dashboard_rebuild/`.
+- `brain/static/dist/` is build output only. Do not hand-edit it.
+- Default backend validation command: `pytest brain/tests/`
 
-The build outputs **directly** to `brain/static/dist` — no copy/sync step needed!
+## Environment And Identity
 
-### Option 1: Double-click (Easiest)
-```
-C:\pt-study-sop\dashboard_rebuild\build-and-sync.bat
-```
+- Repo root: `C:\pt-study-sop`
+- Obsidian vault: `C:\Users\treyt\Desktop\Treys School`
+- Editor: Codex CLI / Claude Code
+- Git identity:
+  - Name: `TreyT`
+  - Email: `Treytucker05@yahoo.com`
 
-### Option 2: NPM Script
-```powershell
-cd C:\pt-study-sop\dashboard_rebuild
-npm run deploy        # Build only
-npm run deploy:open   # Build + open browser
-```
+## Critical Paths
 
-### Option 3: PowerShell
-```powershell
-cd C:\pt-study-sop\dashboard_rebuild
-.\build-and-sync.ps1          # Build
-.\build-and-sync.ps1 -Reload  # Build + open browser
-```
+- Database: `brain/data/pt_study.db`
+- Session logs: `brain/session_logs/`
+- Tutor API: `brain/dashboard/api_tutor.py`
+- Frontend source: `dashboard_rebuild/`
+- Frontend build output: `brain/static/dist/`
+- Study materials storage: `brain/data/uploads/` + `brain/data/chroma_tutor/`
+- SOP methodology: `sop/library/`
+- Scholar outputs: `scholar/outputs/`
+- Conductor: `conductor/`
 
----
+## Critical Disambiguations
 
-## Key Paths
-- Database: brain/data/pt_study.db
-- Session logs: brain/session_logs/
-- API: brain/dashboard/api_adapter.py
-- Frontend source: dashboard_rebuild/
-- Frontend build output: brain/static/dist/
-- SOP canon: sop/library/
-- Scholar outputs: scholar/outputs/
-- Docs index (canonical): docs/README.md
-- Architecture doc: docs/root/PROJECT_ARCHITECTURE.md
-- SOP manifest: (archived — replaced by sop/library/00-overview.md file map)
-- Google Calendar credentials: docs/GoogleCalendarTasksAPI.json (handle as sensitive; do not modify unless asked).
-- Conductor: conductor/ (product def, tech stack, tracks, workflow)
+### "Library"
 
-## Project Structure
+- **SOP Library**: `sop/library/`
+  - Defines how Tutor teaches.
+  - Contains methods, chains, and control-plane rules.
+- **Study Materials Library**: `/library` route + `brain/data/`
+  - Defines what Tutor teaches.
+  - Contains the learner's PDFs, notes, slides, vectors, and material metadata.
 
-```
-C:\pt-study-sop\
-├── dashboard_rebuild\          # React frontend source
-│   ├── client\src\             # All React components
-│   ├── build-and-sync.ps1      # Build script (outputs to brain/)
-│   ├── build-and-sync.bat      # Double-click version
-│   └── BUILD.md                # Build instructions
-├── brain\                       # Python Flask server
-│   ├── static\dist\            # ★ BUILD OUTPUT GOES HERE
-│   ├── dashboard_web.py        # Flask server entry
-│   └── ...
-├── conductor\                   # Product def, tech stack, tracks
-│   ├── tracks.md               # ★ CHECK BEFORE MAJOR WORK
-│   └── workflow.md
-├── sop\library\                 # SOP source of truth
-├── scholar\                     # Scholar research
-├── Start_Dashboard.bat          # ★ USE THIS TO START SERVER
-└── AGENTS.md                    # ★ THIS FILE — single source of truth
-```
+Rule: when someone says "library" in this repo, determine which of those two they mean before editing or answering.
 
-## System Modules
-- Dashboard, Brain, Calendar (Flask): brain/
-- Frontend UI: dashboard_rebuild/
-- Scholar research: scholar/
-- SOP definitions: sop/
-- Adaptive Tutor (Built-in Native):
-  - `dashboard_rebuild/client/src/pages/tutor.tsx` (Frontend UI Chat & Controls)
-  - `brain/dashboard/api_tutor.py` (Flask endpoints & streaming orchestration)
-  - `brain/tutor_rag.py` (Document retrieval, dual-context search)
-  - `brain/tutor_chains.py` (Method chain block progression)
-  - `brain/tutor_streaming.py` (SSE response formatting & citations)
-- Tutor logs: brain/session_logs/
+### Source-Of-Truth Order
 
-## Control Plane Architecture (CP-MSS v1.0) - CURRENT
+- Overall product truth: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- Active work/status truth: `docs/root/TUTOR_TODO.md`
+- Track registry/history: `conductor/tracks.md`
+- Pedagogy truth: `sop/library/`
 
-The system now uses the **Control Plane Modular Study System** (CP-MSS v1.0):
+## Post-Implementation Checklist
 
-### 6-Stage Pipeline
-```
-PRIME → CALIBRATE → ENCODE → REFERENCE → RETRIEVE → OVERLEARN
-```
+1. Build the frontend if `dashboard_rebuild/` changed.
+2. Run relevant checks. Default to `pytest brain/tests/`.
+3. Update the active track plan if the work is track-scoped.
+4. If the work is not track-scoped, append a dated entry to `conductor/tracks/GENERAL/log.md`.
+5. Update `conductor/tracks.md` if track status changed.
+6. Push after changes.
 
-### Key Components
-| Component | File | Purpose |
-|-----------|------|---------|
-| Constitution | `sop/library/17-control-plane.md` | Source of truth for CP-MSS v1.0 |
-| Selector | `brain/selector.py` | 7 Knobs router (assessment_mode, time, energy, etc.) |
-| Bridge | `brain/selector_bridge.py` | API adapter for tutor integration |
-| Error Telemetry | `brain/db_setup.py` | `error_logs` table for HCWR, dominant_error |
-| Chains | `sop/library/chains/C-FE-*.yaml` | Dependency-safe chains (REF before RET) |
+## Working Rules
 
-### The Dependency Law
-**No retrieval without targets.** Every RETRIEVE stage must be preceded by REFERENCE (target generation). This is enforced in all chains:
-- `C-FE-STD`: Standard First Exposure (35 min)
-- `C-FE-MIN`: Minimal/Low Energy (20 min)  
-- `C-FE-PRO`: Procedure/Lab (45 min)
+1. Plan before any non-trivial change.
+2. Do not begin major work until it is listed in the `Current Sprint` section of `docs/root/TUTOR_TODO.md`. If missing, add it first.
+3. `dashboard_rebuild/` is frontend-only. API/runtime logic lives in `brain/`.
+4. Do not edit `archive/` unless explicitly asked.
+5. Safe-by-default git:
+   - inspect status/diff before edits
+   - do not use destructive commands like `reset --hard`, `clean`, or `rm` unless explicitly asked
+6. Clean up scratch files, temp scripts, and one-off extraction outputs.
+7. For multi-step work, keep a task list and complete one step at a time.
+8. Use subagents for exploration, testing, and review when that reduces drift or keeps write scopes separate.
+9. After completing any task, recommend 2-3 concrete next steps as actionable options, not obligations.
+10. When there is a clear highest-leverage follow-up, explicitly label it as `Recommended next step` before listing other options.
+11. Do not make the user infer priority from an unordered option list when the agent can reasonably rank the choices.
+12. Treat a new user question, file path, or topic as a hard task-boundary reset unless the user explicitly says to continue the previous task too.
+13. When a hard task-boundary reset happens, cancel or ignore stale background work, pending subagent threads, queued waits, and previously suggested follow-ups from the old task.
+14. Do not resume an earlier recommendation or side quest after a topic switch unless the user explicitly re-requests it.
+15. For direct file/function/script questions, answer the question first and stay scoped to that artifact unless the user asks for broader cleanup or follow-on action.
 
-### Database Schema
-- `method_blocks.control_stage`: PRIME, CALIBRATE, ENCODE, REFERENCE, RETRIEVE, OVERLEARN
-- `error_logs`: Tracks error_type, stage_detected, confidence, active_knobs, fix_applied
+## Critical Guardrails
 
-### Frontend Support
-- Control Plane colors in `dashboard_rebuild/client/src/lib/colors.ts`
-- Category mapping in `dashboard_rebuild/client/src/lib/displayStage.ts`
-- Type definitions in `dashboard_rebuild/client/src/api.ts`
+- When initializing React state from `localStorage`, wrap parsing in `try/catch` and validate the parsed shape.
+- Destructive async UI flows must disable repeat actions, normalize optional payloads, and centralize close/reset behavior.
+- Let shared dialog primitives handle centering. Do not hardcode modal `top/left/transform` positioning.
+- If backend behavior looks unchanged after a fix, verify which PID is actually listening on port `5000` before trusting the result.
+- Tutor scoped retrieval must carry explicit `content_filter.material_ids` and `accuracy_profile` when selected-material scope matters.
+- Session delete should preserve best-effort Obsidian cleanup behavior plus persistent delete telemetry.
 
-## External Systems (from docs)
-- Anki (AnkiConnect): in active use; syncs card_drafts to Anki Desktop.
-- Google Calendar/Tasks: in active use; OAuth via Calendar page; config in brain/data/api_config.json.
+For the full incident log, troubleshooting snippets, and detailed guardrails, use `docs/root/AGENT_GUARDRAILS.md`.
 
----
+## Reference Docs
 
-## UI/UX (Retro Arcade)
-- Theme: high-contrast red and black, no glow, consistent across pages.
-- Typography: font-arcade headers, font-terminal body.
-- Components: 2px solid red borders; semi-transparent black backgrounds.
-
----
-
-## Key Files By Feature
-
-| Feature | Source Location |
-|---------|-----------------|
-| Brain Page | `dashboard_rebuild/client/src/pages/brain.tsx` |
-| Brain Components | `dashboard_rebuild/client/src/components/brain/` |
-| BrainChat | `dashboard_rebuild/client/src/components/BrainChat/` |
-| Layout/Footer | `dashboard_rebuild/client/src/components/layout.tsx` |
-| Course Config | `dashboard_rebuild/client/src/config/courses.ts` |
-| Error Boundaries | `dashboard_rebuild/client/src/components/ErrorBoundary.tsx` |
-
----
-
-## Post-Implementation Checklist (MANDATORY after any code change)
-
-Canonical steps: `docs/root/GUIDE_DEV.md` section "Frontend Build".
-
-Quick summary:
-1. Build: `cd dashboard_rebuild && npm run build` (outputs directly to brain/static/dist/)
-2. Never use dev server. Dashboard served via Start_Dashboard.bat on port 5000.
-3. Tests: `pytest brain/tests/`
-4. Update active track's plan.md (task status + commit SHA).
-   For non-track changes, append to `conductor/tracks/GENERAL/log.md`.
-5. Update `conductor/tracks.md` if track-level status changed.
-
-Skip step 1 for backend-only changes.
-
----
-
-## Rules
-
-1. Plan before coding for any non-trivial change.
-2. dashboard_rebuild is frontend-only; API lives in brain/.
-3. Only serve the dashboard via Start_Dashboard.bat on port 5000. Do not run a separate dev server or python brain/dashboard_web.py directly.
-4. After frontend changes: run `npm run build` in `dashboard_rebuild` (Vite writes directly to `brain/static/dist`). (See Post-Implementation Checklist above.)
-5. Check `.claude/permissions.json` before executing new shell commands.
-6. After every significant change: update the active conductor track's plan.md
-   (mark tasks complete, add commit SHA). For changes outside a named track,
-   append a dated entry to `conductor/tracks/GENERAL/log.md`.
-7. Push to remote after every change (auto).
-8. After code changes, run relevant checks by default (pytest brain/tests/; frontend build already required).
-9. Do not edit archive/ unless explicitly requested.
-10. Do not hand-edit `brain/static/dist/`; update it via frontend build commands only.
-11. No destructive commands (e.g., reset --hard, clean, rm) unless explicitly requested.
-12. Auto-commit after changes; use a conventional commit message if none is provided.
-13. Safe-by-default git: check status/diff before edits.
-14. Check conductor/tracks.md before starting major work — active tracks take priority.
-15. After every significant change, update `conductor/tracks.md` with current status/progress before finishing.
-16. **Clean up after yourself.** Do not leave scratch files, temp scripts, or
-    subagent output at the repo root. If you create a temporary file (tmp_*,
-    extract_*, parse_*, method_*.json, *_prompt.txt, etc.), delete it before
-    committing or ensure it matches a .gitignore rule. Never commit generated
-    JSON blobs, one-off extraction scripts, or subagent prompt/output files.
-17. Default multi-agent execution model:
-   - Assign work by file ownership to minimize overlap:
-     - Backend/runtime: `brain/`, `scripts/`
-     - Frontend: `dashboard_rebuild/`
-     - Canon/process/docs: `conductor/`, `docs/`, `sop/library/`, `obsidian/`
-   - For each agent task, claim one primary artifact scope in `docs/root/TUTOR_TODO.md` before editing.
-   - Keep edits non-overlapping unless the file is intentionally shared.
-   - After each agent pass:
-     - update `conductor/tracks/GENERAL/log.md` (or active plan)
-     - update `conductor/tracks.md` if status changes
-     - include a short completion note in `docs/root/TUTOR_TODO.md`.
-
----
-
-## Common Mistakes To Avoid
-
-| Mistake | Why It Fails |
-|---------|--------------|
-| `npm run dev` | Opens port 3000, doesn't serve Python API |
-| Forgetting hard refresh | Browser shows old cached build |
-| Multiple servers | Port conflicts — use `Start_Dashboard.bat` only |
-
----
-
-## Learnings
-
-### Project Location
-The project root is `C:\pt-study-sop`. All dashboard_rebuild/ and brain/ paths are relative to this root.
-
-### React Hooks in calendar.tsx
-Never place `useSensors`, `useSensor`, or any `use*` hook inside JSX or callbacks. Always declare at the top level of `CalendarPage()`. This was a bug introduced when adding DnD to the manage calendars dialog.
-
-### Calendar Filtering
-When filtering Google events by `selectedCalendars`, always use `event.calendarId || ''` — never rely on a truthy check on `calendarId` since some events have undefined/empty calendarId and would bypass the filter.
-
-### Build & Deploy
-After frontend changes, run `npm run build` in `dashboard_rebuild/`. Vite writes directly to `brain/static/dist/`, which Flask serves. Without this step, changes won't appear in the browser. NEVER run `npm run dev` or `vite dev` — always run the build path. See Post-Implementation Checklist above.
-
-### localStorage in React useState Initializers
-When initializing state from `localStorage` with `JSON.parse`, always wrap in try/catch and validate the parsed type (e.g. `Array.isArray`). Corrupted or stale localStorage data will crash the component on mount otherwise.
-```ts
-const [state, setState] = useState<T>(() => {
-  try {
-    const saved = localStorage.getItem("key");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) return new Set(parsed); // validate shape
-    }
-  } catch { /* corrupted — fall through */ }
-  return defaultValue;
-});
-```
-
-### Persist Actions Need Visual Feedback
-Any button that saves state without navigating or closing a modal MUST have visual feedback: (1) a toast notification confirming the action, and (2) a status indicator (green dot = saved, red dot = unsaved changes) using a dirty state flag.
-
-### SOP Library Is Source of Truth
-The 75 original SOP files were consolidated into library files at `sop/library/` (00-14). Originals were archived to `sop/archive/`. The library is the sole source of truth for SOP content. `sop/runtime/` exists but is generated output (do not edit it directly). Do not reference `sop/src/` or `sop/examples/` (archived Jan 2026).
-
-### Codex MCP Cannot Review Inline Diffs
-Codex MCP's `ask-codex` ignores full diff/code embedded in the prompt and asks for a repo path instead. When the repo isn't reachable by Codex, do the code review manually using the standard checklist (bugs, edge cases, security, performance, type correctness).
-
-### Tutor RAG "6 Files" Symptom Diagnosis
-
-**Problem:** Tutor appeared to pull only ~6 files even when ~30 files were selected.
-**Cause:** Usually not preloading. This is typically turn-level scope loss or relevance narrowing. If a turn payload misses `content_filter.material_ids`, retrieval falls back to low default depth and appears constrained.
-**Solution:** Ensure every turn sends `content_filter.material_ids` plus `accuracy_profile`. Validate in browser Network on the `turn` request and in `retrieval_debug` (`material_ids_count`, `material_k`, `retrieved_material_unique_sources`).
-
-### Scoped Retrieval Tuning Rule (Latency vs Breadth)
-
-**Problem:** High per-turn latency in large selected-file scope.
-**Cause:** Over-fetch in MMR candidate fetch inflated rerank pools (`candidate_k * 4`, cap 2000), then many chunks were dropped by cap.
-**Solution:** Keep scoped candidate breadth policy and tune MMR fetch budget moderately:
-- `mmr_fetch_k = min(max(candidate_k * 3, candidate_k + 40), 1600)` in `brain/tutor_rag.py`.
-- Avoid aggressive candidate-pool cuts that reduce source breadth/confidence.
-
----
-
-## Troubleshooting
-
-Run these in browser console (F12):
-
-```javascript
-// Check viewport width
-window.innerWidth
-
-// See all fixed positioned elements
-Array.from(document.querySelectorAll('.fixed')).map(e => ({
-  class: e.className.slice(0, 50),
-  bottom: getComputedStyle(e).bottom,
-  zIndex: getComputedStyle(e).zIndex
-}))
-```
-
----
-
-## Detailed Guidelines
-- Project Workflow: conductor/workflow.md
-- Conductor Tracks: conductor/tracks.md
-- Parallel agent workflow: Open multiple terminals and coordinate tasks using Conductor Tracks.
-
-*Full dev guide: `docs/root/GUIDE_DEV.md`*
-*Build details: `dashboard_rebuild/BUILD.md`*
+- Agent setup: `docs/root/AGENT_SETUP.md`
+- Developer guide: `docs/root/GUIDE_DEV.md`
+- Technical architecture: `docs/root/PROJECT_ARCHITECTURE.md`
+- Product canon: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- Active workboard: `docs/root/TUTOR_TODO.md`
+- Multi-agent handoff board: `docs/root/AGENT_BOARD.md`
+- Guardrails and troubleshooting: `docs/root/AGENT_GUARDRAILS.md`

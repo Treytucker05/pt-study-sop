@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from datetime import datetime, timedelta, timezone
+import hashlib
 import sqlite3
 import json
 import os
@@ -7,6 +8,7 @@ import logging
 import re
 import shutil
 import requests
+import warnings
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 from urllib.parse import quote
@@ -331,6 +333,9 @@ def obsidian_list_files(folder: str = "") -> dict:
 
 def obsidian_get_file(path: str) -> dict:
     """Get content of a file from Obsidian vault."""
+    warnings.warn(
+        "Use ObsidianVault.read_note() instead", DeprecationWarning, stacklevel=2
+    )
     try:
         rel_path = _normalize_obsidian_rel_path(path)
         encoded = _encode_vault_rel_path(rel_path)
@@ -354,6 +359,11 @@ def obsidian_get_file(path: str) -> dict:
 
 def obsidian_save_file(path: str, content: str) -> dict:
     """Save/overwrite a file in Obsidian vault."""
+    warnings.warn(
+        "Use ObsidianVault.create_note() or replace_content() instead",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     try:
         rel_path = _normalize_obsidian_rel_path(path)
         encoded = _encode_vault_rel_path(rel_path)
@@ -378,6 +388,9 @@ def obsidian_save_file(path: str, content: str) -> dict:
 
 def obsidian_create_folder(path: str) -> dict:
     """Create a folder in Obsidian vault via local filesystem path."""
+    warnings.warn(
+        "Use ObsidianVault.create_folder() instead", DeprecationWarning, stacklevel=2
+    )
     try:
         rel_path = _normalize_obsidian_rel_path(path, expect_folder=True)
         target = _resolve_vault_fs_path(rel_path)
@@ -389,6 +402,9 @@ def obsidian_create_folder(path: str) -> dict:
 
 def obsidian_delete_file(path: str) -> dict:
     """Delete a file in Obsidian vault."""
+    warnings.warn(
+        "Use ObsidianVault.delete_note() instead", DeprecationWarning, stacklevel=2
+    )
     try:
         rel_path = _normalize_obsidian_rel_path(path)
         encoded = _encode_vault_rel_path(rel_path)
@@ -2658,6 +2674,72 @@ def update_proposal(prop_id):
         return jsonify({"error": str(e)}), 500
 
 
+@adapter_bp.route("/scholar/proposals/<int:prop_id>/approve", methods=["POST"])
+def approve_scholar_proposal(prop_id):
+    """Approve a Scholar proposal via explicit action endpoint."""
+    data = request.get_json(silent=True) or {}
+    reviewer_notes = (
+        str(data.get("notes") or data.get("reason") or "").strip() or None
+    )
+    reviewed_at = _utc_iso_now()
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            UPDATE scholar_proposals
+            SET status = 'approved',
+                reviewed_at = ?,
+                reviewer_notes = COALESCE(?, reviewer_notes)
+            WHERE id = ?
+            """,
+            (reviewed_at, reviewer_notes, prop_id),
+        )
+        if cur.rowcount == 0:
+            conn.close()
+            return jsonify({"error": "Proposal not found"}), 404
+        conn.commit()
+        conn.close()
+        return jsonify(
+            {"success": True, "id": prop_id, "status": "approved", "reviewed_at": reviewed_at}
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/scholar/proposals/<int:prop_id>/reject", methods=["POST"])
+def reject_scholar_proposal(prop_id):
+    """Reject a Scholar proposal via explicit action endpoint."""
+    data = request.get_json(silent=True) or {}
+    reviewer_notes = (
+        str(data.get("reason") or data.get("notes") or "").strip() or None
+    )
+    reviewed_at = _utc_iso_now()
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            UPDATE scholar_proposals
+            SET status = 'rejected',
+                reviewed_at = ?,
+                reviewer_notes = COALESCE(?, reviewer_notes)
+            WHERE id = ?
+            """,
+            (reviewed_at, reviewer_notes, prop_id),
+        )
+        if cur.rowcount == 0:
+            conn.close()
+            return jsonify({"error": "Proposal not found"}), 404
+        conn.commit()
+        conn.close()
+        return jsonify(
+            {"success": True, "id": prop_id, "status": "rejected", "reviewed_at": reviewed_at}
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @adapter_bp.route("/proposals/<int:prop_id>", methods=["DELETE"])
 def delete_proposal(prop_id):
     """Delete a proposal."""
@@ -3176,6 +3258,161 @@ def update_planner_task(task_id):
 # SCHOLAR AGENT CONTROL
 # ==============================================================================
 
+SCHOLAR_RUN_TIMEOUT_SECONDS = max(
+    300, int(os.environ.get("SCHOLAR_RUN_TIMEOUT_SECONDS", "1200"))
+)
+SCHOLAR_RUN_STALL_SECONDS = max(
+    60, int(os.environ.get("SCHOLAR_RUN_STALL_SECONDS", "180"))
+)
+_SCHOLAR_RUNNING_STATUSES = {"running", "in_progress"}
+_SCHOLAR_SUCCESS_STATUSES = {"success", "complete", "completed"}
+_SCHOLAR_FAILURE_STATUSES = {"failed", "error"}
+
+
+def _parse_utc_timestamp(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        dt = datetime.fromisoformat(text)
+    except Exception:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _cleanup_scholar_run_markers(run_dir: Path) -> int:
+    removed = 0
+    for marker in list(run_dir.glob("*.pid")) + list(run_dir.glob("*.running")):
+        try:
+            marker.unlink()
+            removed += 1
+        except Exception:
+            pass
+    return removed
+
+
+def _mark_latest_scholar_run_failed(reason: str) -> dict | None:
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT id, status, started_at, ended_at
+            FROM scholar_runs
+            ORDER BY started_at DESC
+            LIMIT 1
+            """
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        run_id = row[0]
+        status = str(row[1] or "").strip().lower()
+        ended_at = row[3] if len(row) > 3 else None
+        if status not in _SCHOLAR_RUNNING_STATUSES or ended_at:
+            return {"run_id": run_id, "status": status}
+        failed_at = _utc_iso_now(timespec="seconds")
+        cur.execute(
+            """
+            UPDATE scholar_runs
+            SET status = 'failed',
+                ended_at = ?,
+                error_message = ?
+            WHERE id = ?
+            """,
+            (failed_at, reason[:500], run_id),
+        )
+        conn.commit()
+        return {"run_id": run_id, "status": "failed", "ended_at": failed_at}
+    except Exception:
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+
+def _sanitize_scholar_line(line: str, max_len: int = 220) -> str:
+    cleaned = re.sub(r"\s+", " ", (line or "")).strip(" \t-")
+    if not cleaned:
+        return ""
+    if len(cleaned) > max_len:
+        return cleaned[: max_len - 1] + "…"
+    return cleaned
+
+
+def _is_noisy_scholar_line(line: str) -> bool:
+    lower = line.lower()
+    return any(
+        token in lower
+        for token in (
+            "codex_core::",
+            "powershell",
+            " -command ",
+            "python -c ",
+            "select-object -skip",
+            "mcp startup",
+            "receivers:",
+        )
+    )
+
+
+def _extract_clean_scholar_step(lines: list[str]) -> str | None:
+    step_hint = re.compile(
+        r"(phase|step|progress|processing|analyz|collect|sync|build|run|complete|finish|waiting|starting|loading)",
+        re.IGNORECASE,
+    )
+    for raw in reversed(lines):
+        cleaned = _sanitize_scholar_line(raw)
+        if not cleaned or _is_noisy_scholar_line(cleaned):
+            continue
+        if step_hint.search(cleaned):
+            return cleaned
+    return None
+
+
+def _extract_clean_scholar_errors(lines: list[str]) -> list[str]:
+    extracted: list[str] = []
+    seen: set[str] = set()
+    for raw in lines:
+        lower = (raw or "").lower()
+        if any(
+            skip in lower
+            for skip in (
+                "error rate",
+                "error count",
+                "no error",
+                "0 error",
+                "without error",
+                "error-free",
+                "replication error",
+            )
+        ):
+            continue
+        if _is_noisy_scholar_line(raw):
+            continue
+        if not re.search(
+            r"(^(error|critical|fatal)\b|traceback|exception\s*:|unhandled|failed to)",
+            raw or "",
+            re.IGNORECASE,
+        ):
+            continue
+        cleaned = _sanitize_scholar_line(raw, max_len=260)
+        if not cleaned:
+            continue
+        key = cleaned.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        extracted.append(cleaned)
+    return extracted[-10:]
+
 
 def _scholar_status_payload() -> dict:
     """
@@ -3195,23 +3432,23 @@ def _scholar_status_payload() -> dict:
     run_dir = repo_root / "scholar" / "outputs" / "orchestrator_runs"
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    running = any(run_dir.glob("*.pid")) or any(run_dir.glob("*.running"))
+    marker_running = any(run_dir.glob("*.pid")) or any(run_dir.glob("*.running"))
 
     last_run: str | None = None
     current_step: str | None = None
     progress: float | None = None
-    errors: list[str] = []
+    errors_from_logs: list[str] = []
+    latest_log_mtime_utc: datetime | None = None
 
     # Prefer latest log file for timestamps + step/error hints
     log_files = list(run_dir.glob("*.log"))
     if log_files:
         latest_log = max(log_files, key=lambda f: f.stat().st_mtime)
         try:
-            last_run = (
-                datetime.fromtimestamp(latest_log.stat().st_mtime, timezone.utc)
-                .isoformat()
-                .replace("+00:00", "Z")
+            latest_log_mtime_utc = datetime.fromtimestamp(
+                latest_log.stat().st_mtime, timezone.utc
             )
+            last_run = latest_log_mtime_utc.isoformat().replace("+00:00", "Z")
         except Exception:
             last_run = None
 
@@ -3219,33 +3456,8 @@ def _scholar_status_payload() -> dict:
             content = latest_log.read_text(encoding="utf-8", errors="ignore")
             tail = [ln.strip() for ln in content.splitlines()[-120:] if ln.strip()]
             if tail:
-                # Best-effort: last non-empty line as "current step"
-                current_step = tail[-1][:200]
-
-            # Best-effort: surface explicit error lines (skip noisy matches)
-            for ln in tail[-120:]:
-                lower = ln.lower()
-                # Skip lines that merely mention error in passing
-                if any(
-                    skip in lower
-                    for skip in [
-                        "error rate",
-                        "error count",
-                        "no error",
-                        "0 error",
-                        "without error",
-                        "error-free",
-                        "replication error",
-                    ]
-                ):
-                    continue
-                if re.search(
-                    r"(^(ERROR|CRITICAL|FATAL)\b|traceback|raise \w+error|exception\s*:|unhandled|failed to)",
-                    ln,
-                    re.IGNORECASE,
-                ):
-                    errors.append(ln[:300])
-            errors = errors[-10:]
+                current_step = _extract_clean_scholar_step(tail)
+                errors_from_logs = _extract_clean_scholar_errors(tail)
 
             # Best-effort progress parsing: look for "Progress: NN%" in tail
             for ln in reversed(tail):
@@ -3266,20 +3478,97 @@ def _scholar_status_payload() -> dict:
             latest_final = max(final_files, key=lambda f: f.stat().st_mtime)
             try:
                 last_run = (
-                    datetime.fromtimestamp(
-                        latest_final.stat().st_mtime, timezone.utc
-                    )
+                    datetime.fromtimestamp(latest_final.stat().st_mtime, timezone.utc)
                     .isoformat()
                     .replace("+00:00", "Z")
                 )
             except Exception:
                 last_run = None
 
+    run_id: str | None = None
+    started_at: str | None = None
+    finished_at: str | None = None
+    phase: str | None = None
+    error: str | None = None
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT id, status, started_at, ended_at, error_message
+            FROM scholar_runs
+            ORDER BY started_at DESC
+            LIMIT 1
+            """
+        )
+        row = cur.fetchone()
+        if row:
+            run_id = str(row[0]) if row[0] is not None else None
+            phase = row[1] if len(row) > 1 else None
+            started_at = row[2] if len(row) > 2 else None
+            finished_at = row[3] if len(row) > 3 else None
+            error = row[4] if len(row) > 4 else None
+        conn.close()
+    except Exception:
+        pass
+
+    phase_lower = (phase or "").strip().lower()
+    started_dt = _parse_utc_timestamp(started_at)
+    finished_dt = _parse_utc_timestamp(finished_at)
+    db_running = phase_lower in _SCHOLAR_RUNNING_STATUSES and finished_dt is None
+    running = bool(marker_running or db_running)
+
+    # If DB says terminal but stale markers still exist, clear markers and propagate terminal status.
+    if marker_running and phase_lower in (_SCHOLAR_SUCCESS_STATUSES | _SCHOLAR_FAILURE_STATUSES):
+        _cleanup_scholar_run_markers(run_dir)
+        marker_running = False
+        running = db_running
+
+    # Hard-stop runs that exceed timeout or stall with no log activity.
+    if running and db_running:
+        now_utc = datetime.now(timezone.utc)
+        timeout_reason: str | None = None
+
+        if started_dt:
+            elapsed = (now_utc - started_dt).total_seconds()
+            if elapsed >= SCHOLAR_RUN_TIMEOUT_SECONDS:
+                timeout_reason = (
+                    f"Scholar run timed out after {int(elapsed)}s "
+                    f"(limit {SCHOLAR_RUN_TIMEOUT_SECONDS}s)."
+                )
+
+        if timeout_reason is None and latest_log_mtime_utc is not None:
+            stalled = (now_utc - latest_log_mtime_utc).total_seconds()
+            if stalled >= SCHOLAR_RUN_STALL_SECONDS:
+                timeout_reason = (
+                    f"Scholar run stalled: no log activity for {int(stalled)}s "
+                    f"(limit {SCHOLAR_RUN_STALL_SECONDS}s)."
+                )
+
+        if timeout_reason:
+            _mark_latest_scholar_run_failed(timeout_reason)
+            _cleanup_scholar_run_markers(run_dir)
+            running = False
+            phase = "failed"
+            phase_lower = "failed"
+            finished_at = _utc_iso_now(timespec="seconds")
+            error = timeout_reason
+            current_step = "Scholar run failed."
+            errors_from_logs = []
+            last_run = finished_at
+
+    # If markers remain but DB has no active run record, clear stale markers.
+    if running and marker_running and not db_running and not phase_lower:
+        _cleanup_scholar_run_markers(run_dir)
+        marker_running = False
+        running = False
+
     if running:
         status = "running"
-    elif errors:
+    elif phase_lower in _SCHOLAR_FAILURE_STATUSES:
         status = "error"
-    elif last_run:
+    elif phase_lower in _SCHOLAR_SUCCESS_STATUSES or last_run:
         status = "complete"
     else:
         status = "idle"
@@ -3289,12 +3578,42 @@ def _scholar_status_payload() -> dict:
         "status": status,
         "last_run": last_run,
     }
+    if run_id:
+        payload["run_id"] = run_id
+    if phase:
+        payload["phase"] = phase
+    if started_at:
+        payload["started_at"] = started_at
+    if finished_at:
+        payload["finished_at"] = finished_at
+    if error:
+        payload["error"] = _sanitize_scholar_line(error, max_len=260)
+    if not current_step:
+        if status == "running":
+            current_step = "Scholar run in progress."
+        elif status == "error":
+            current_step = "Scholar run failed."
+        elif status == "complete":
+            current_step = "Scholar run completed."
     if current_step:
         payload["current_step"] = current_step
     if progress is not None:
         payload["progress"] = progress
-    if errors:
-        payload["errors"] = errors
+    if status == "error":
+        combined_errors: list[str] = []
+        if error:
+            combined_errors.append(_sanitize_scholar_line(error, max_len=260))
+        combined_errors.extend(errors_from_logs)
+        deduped: list[str] = []
+        seen: set[str] = set()
+        for item in combined_errors:
+            key = item.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(item)
+        if deduped:
+            payload["errors"] = deduped[:10]
 
     return payload
 
@@ -3326,20 +3645,17 @@ def run_scholar():
     Uses the in-app orchestrator runner so the button actually starts
     the Codex-powered Scholar workflow and writes outputs.
     """
-    from pathlib import Path
-
     try:
-        from dashboard.scholar import cleanup_stale_pids, run_scholar_orchestrator
+        from dashboard.scholar import run_scholar_orchestrator
 
-        repo_root = Path(__file__).parent.parent.parent.resolve()
-        run_dir = repo_root / "scholar" / "outputs" / "orchestrator_runs"
-        run_dir.mkdir(parents=True, exist_ok=True)
-
-        cleanup_stale_pids()
-        is_running = any(run_dir.glob("*.pid")) or any(run_dir.glob("*.running"))
-        if is_running:
+        status = _scholar_status_payload()
+        if status.get("running"):
             return jsonify(
-                {"success": False, "message": "Scholar run already in progress"}
+                {
+                    "success": False,
+                    "message": "Scholar run already in progress",
+                    "status": status,
+                }
             ), 409
 
         data = request.get_json() or {}
@@ -3477,7 +3793,11 @@ def chat_message_stream(session_id):
             _sys.path.append(str(brain_dir))
 
         from brain.tutor_engine import process_tutor_turn_preamble, log_tutor_turn
-        from brain.tutor_api_types import TutorQueryV1, TutorSourceSelector, TutorTurnResponse
+        from brain.tutor_api_types import (
+            TutorQueryV1,
+            TutorSourceSelector,
+            TutorTurnResponse,
+        )
 
         data = request.json
         user_message = data.get("content")
@@ -3550,6 +3870,7 @@ def chat_message_stream(session_id):
     except Exception as e:
         print(f"Tutor Stream Error: {e}")
         import traceback
+
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
@@ -4485,7 +4806,11 @@ def undo_calendar_action_endpoint():
         elif action == "create_task":
             # Inverse: Delete the created task
             post_state = json.loads(post_json) if post_json else None
-            if post_state and post_state.get("tasklist_id") and post_state.get("task_id"):
+            if (
+                post_state
+                and post_state.get("tasklist_id")
+                and post_state.get("task_id")
+            ):
                 service = gcal.get_tasks_service()
                 if service:
                     service.tasks().delete(
@@ -4498,7 +4823,10 @@ def undo_calendar_action_endpoint():
             if pre_state and pre_state.get("tasklist_id"):
                 service = gcal.get_tasks_service()
                 if service:
-                    body = {"title": pre_state.get("title", ""), "status": "needsAction"}
+                    body = {
+                        "title": pre_state.get("title", ""),
+                        "status": "needsAction",
+                    }
                     if pre_state.get("notes"):
                         body["notes"] = pre_state["notes"]
                     if pre_state.get("due"):
@@ -5461,6 +5789,8 @@ def serialize_learning_objective_row(row):
         "lastSessionId": row["last_session_id"],
         "lastSessionDate": row["last_session_date"],
         "nextAction": row["next_action"],
+        "groupName": row["group_name"] if "group_name" in row.keys() else None,
+        "managedByTutor": bool(row["managed_by_tutor"]) if "managed_by_tutor" in row.keys() else False,
         "createdAt": row["created_at"],
         "updatedAt": row["updated_at"] or row["created_at"],
     }
@@ -5479,7 +5809,7 @@ def get_learning_objectives():
         if course_id:
             cur.execute(
                 """
-                SELECT id, course_id, module_id, lo_code, title, status, last_session_id, last_session_date, next_action, created_at, updated_at
+                SELECT id, course_id, module_id, lo_code, title, status, last_session_id, last_session_date, next_action, group_name, managed_by_tutor, created_at, updated_at
                 FROM learning_objectives WHERE course_id = ?
                 ORDER BY lo_code ASC
             """,
@@ -5488,7 +5818,7 @@ def get_learning_objectives():
         else:
             cur.execute(
                 """
-                SELECT id, course_id, module_id, lo_code, title, status, last_session_id, last_session_date, next_action, created_at, updated_at
+                SELECT id, course_id, module_id, lo_code, title, status, last_session_id, last_session_date, next_action, group_name, managed_by_tutor, created_at, updated_at
                 FROM learning_objectives WHERE module_id = ?
                 ORDER BY lo_code ASC
             """,
@@ -5509,7 +5839,7 @@ def get_learning_objective(lo_id):
         cur = conn.cursor()
         cur.execute(
             """
-            SELECT id, course_id, module_id, lo_code, title, status, last_session_id, last_session_date, next_action, created_at, updated_at
+            SELECT id, course_id, module_id, lo_code, title, status, last_session_id, last_session_date, next_action, group_name, managed_by_tutor, created_at, updated_at
             FROM learning_objectives WHERE id = ?
         """,
             (lo_id,),
@@ -5567,7 +5897,7 @@ def create_learning_objective():
         lo_id = cur.lastrowid
         cur.execute(
             """
-            SELECT id, course_id, module_id, lo_code, title, status, last_session_id, last_session_date, next_action, created_at, updated_at
+            SELECT id, course_id, module_id, lo_code, title, status, last_session_id, last_session_date, next_action, group_name, managed_by_tutor, created_at, updated_at
             FROM learning_objectives WHERE id = ?
         """,
             (lo_id,),
@@ -5680,7 +6010,7 @@ def update_learning_objective(lo_id):
         conn.commit()
         cur.execute(
             """
-            SELECT id, course_id, module_id, lo_code, title, status, last_session_id, last_session_date, next_action, created_at, updated_at
+            SELECT id, course_id, module_id, lo_code, title, status, last_session_id, last_session_date, next_action, group_name, managed_by_tutor, created_at, updated_at
             FROM learning_objectives WHERE id = ?
         """,
             (lo_id,),
@@ -6532,6 +6862,7 @@ def get_llm_status():
     """Check whether an LLM provider is available for chat endpoints."""
     try:
         from llm_provider import _load_codex_auth
+
         auth = _load_codex_auth()
         connected = auth is not None
         model = "codex (OAuth)"
@@ -8639,56 +8970,266 @@ def toggle_academic_deadline(deadline_id):
 # =============================================================================
 
 
-@adapter_bp.route("/scholar/questions", methods=["GET"])
-def get_scholar_questions():
-    """Get open questions from Scholar outputs."""
-    from pathlib import Path
+def _normalize_scholar_question_text(raw_text: str) -> str:
+    return re.sub(r"\s+", " ", (raw_text or "").strip())
 
-    questions = []
+
+def _ensure_scholar_questions_schema(conn: sqlite3.Connection) -> None:
+    cur = conn.cursor()
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS scholar_questions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            question_id TEXT NOT NULL UNIQUE,
+            question_hash TEXT NOT NULL UNIQUE,
+            question_text TEXT NOT NULL,
+            source TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            answered_at TEXT,
+            answer_text TEXT,
+            answer_source TEXT,
+            status_updated_at TEXT,
+            status_reason TEXT
+        )
+        """
+    )
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_scholar_questions_question_id ON scholar_questions(question_id)"
+    )
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_scholar_questions_hash ON scholar_questions(question_hash)"
+    )
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_scholar_questions_status ON scholar_questions(status)"
+    )
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_scholar_questions_updated ON scholar_questions(updated_at DESC)"
+    )
+    cur.execute("PRAGMA table_info(scholar_questions)")
+    existing_cols = {c[1] for c in cur.fetchall()}
+    required_cols = {
+        "question_id": "TEXT",
+        "question_hash": "TEXT",
+        "question_text": "TEXT",
+        "source": "TEXT",
+        "status": "TEXT",
+        "created_at": "TEXT",
+        "updated_at": "TEXT",
+        "answered_at": "TEXT",
+        "answer_text": "TEXT",
+        "answer_source": "TEXT",
+        "status_updated_at": "TEXT",
+        "status_reason": "TEXT",
+    }
+    for col_name, col_type in required_cols.items():
+        if col_name in existing_cols:
+            continue
+        cur.execute(f"ALTER TABLE scholar_questions ADD COLUMN {col_name} {col_type}")
+
+
+def _load_scholar_question_rows() -> List[Dict[str, str]]:
     scholar_outputs = Path(__file__).parent.parent.parent / "scholar" / "outputs"
+    rows: List[Dict[str, str]] = []
 
-    # Check questions_dashboard.md
-    questions_file = scholar_outputs / "questions_dashboard.md"
-    if questions_file.exists():
-        content = questions_file.read_text(encoding="utf-8", errors="ignore")
+    def _append_from_content(content: str, source_name: str) -> None:
         for line in content.splitlines():
             stripped = line.strip()
-            if stripped.startswith("- ") or stripped.startswith("* "):
-                question_text = stripped[2:].strip()
-                if question_text and len(question_text) > 5:
-                    questions.append(
-                        {
-                            "id": len(questions) + 1,
-                            "question": question_text,
-                            "context": "",
-                            "dataInsufficient": "",
-                            "researchAttempted": "",
-                            "source": "questions_dashboard.md",
-                        }
-                    )
+            if not (stripped.startswith("- ") or stripped.startswith("* ")):
+                continue
+            question_text = _normalize_scholar_question_text(stripped[2:])
+            if not question_text or len(question_text) <= 5:
+                continue
+            rows.append({"question_text": question_text, "source": source_name})
 
-    # Also check orchestrator runs for questions_needed files
+    questions_file = scholar_outputs / "questions_dashboard.md"
+    if questions_file.exists():
+        _append_from_content(
+            questions_file.read_text(encoding="utf-8", errors="ignore"),
+            "questions_dashboard.md",
+        )
+
     orchestrator_dir = scholar_outputs / "orchestrator_runs"
     if orchestrator_dir.exists():
-        for qfile in orchestrator_dir.glob("questions_needed_*.md"):
-            content = qfile.read_text(encoding="utf-8", errors="ignore")
-            for line in content.splitlines():
-                stripped = line.strip()
-                if stripped.startswith("- ") or stripped.startswith("* "):
-                    question_text = stripped[2:].strip()
-                    if question_text:
-                        questions.append(
-                            {
-                                "id": len(questions) + 1,
-                                "question": question_text,
-                                "context": "",
-                                "dataInsufficient": "",
-                                "researchAttempted": "",
-                                "source": qfile.name,
-                            }
-                        )
+        for qfile in sorted(orchestrator_dir.glob("questions_needed_*.md")):
+            _append_from_content(
+                qfile.read_text(encoding="utf-8", errors="ignore"),
+                qfile.name,
+            )
 
-    return jsonify(questions[:20])
+    deduped: Dict[str, Dict[str, str]] = {}
+    for row in rows:
+        identity = f"{row['source']}|{row['question_text']}"
+        question_hash = hashlib.sha256(identity.encode("utf-8")).hexdigest()
+        deduped[question_hash] = {
+            "question_id": question_hash[:24],
+            "question_hash": question_hash,
+            "question_text": row["question_text"],
+            "source": row["source"],
+        }
+    return list(deduped.values())
+
+
+def _upsert_scholar_questions(
+    conn: sqlite3.Connection, question_rows: List[Dict[str, str]]
+) -> None:
+    if not question_rows:
+        return
+    now = _utc_iso_now()
+    cur = conn.cursor()
+    for row in question_rows:
+        cur.execute(
+            """
+            INSERT INTO scholar_questions (
+                question_id,
+                question_hash,
+                question_text,
+                source,
+                status,
+                created_at,
+                updated_at
+            )
+            VALUES (?, ?, ?, ?, 'pending', ?, ?)
+            ON CONFLICT(question_hash) DO UPDATE SET
+                question_text = excluded.question_text,
+                source = excluded.source,
+                updated_at = excluded.updated_at
+            """,
+            (
+                row["question_id"],
+                row["question_hash"],
+                row["question_text"],
+                row["source"],
+                now,
+                now,
+            ),
+        )
+
+
+def _scholar_question_payload_from_row(row: Any) -> Dict[str, Any]:
+    question_text = row[3] or ""
+    return {
+        "id": row[0],
+        "question_id": row[1],
+        "question_hash": row[2],
+        "question_text": question_text,
+        "question": question_text,
+        "status": row[5] or "pending",
+        "source": row[4] or "",
+        "created_at": row[6],
+        "updated_at": row[7],
+        "answered_at": row[8],
+        "answer_text": row[9],
+        "context": "",
+        "dataInsufficient": "",
+        "researchAttempted": "",
+    }
+
+
+@adapter_bp.route("/scholar/questions", methods=["GET"])
+def get_scholar_questions():
+    """Get Scholar questions with deterministic IDs and persisted lifecycle state."""
+    conn = get_connection()
+    try:
+        _ensure_scholar_questions_schema(conn)
+        question_rows = _load_scholar_question_rows()
+        _upsert_scholar_questions(conn, question_rows)
+        conn.commit()
+
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT
+                id,
+                question_id,
+                question_hash,
+                question_text,
+                source,
+                status,
+                created_at,
+                updated_at,
+                answered_at,
+                answer_text,
+                answer_source
+            FROM scholar_questions
+            ORDER BY
+                CASE status WHEN 'pending' THEN 0 WHEN 'answered' THEN 1 ELSE 2 END,
+                updated_at DESC,
+                created_at DESC
+            LIMIT 200
+            """
+        )
+        rows = cur.fetchall()
+        return jsonify([_scholar_question_payload_from_row(r) for r in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
+
+@adapter_bp.route("/scholar/questions/<string:question_id>/answer", methods=["POST"])
+def answer_scholar_question(question_id: str):
+    """Persist a human answer and close a Scholar question."""
+    data = request.get_json(silent=True) or {}
+    answer = str(data.get("answer") or "").strip()
+    if not answer:
+        return jsonify({"error": "answer is required"}), 400
+
+    answer_source = str(data.get("source") or "user").strip() or "user"
+    now = _utc_iso_now()
+
+    conn = get_connection()
+    try:
+        _ensure_scholar_questions_schema(conn)
+        cur = conn.cursor()
+        cur.execute(
+            """
+            UPDATE scholar_questions
+            SET answer_text = ?,
+                answer_source = ?,
+                status = 'answered',
+                answered_at = ?,
+                status_updated_at = ?,
+                updated_at = ?
+            WHERE question_id = ? OR CAST(id AS TEXT) = ?
+            """,
+            (answer, answer_source, now, now, now, question_id, question_id),
+        )
+        if cur.rowcount == 0:
+            return jsonify({"error": "Question not found"}), 404
+
+        conn.commit()
+        cur.execute(
+            """
+            SELECT
+                id,
+                question_id,
+                question_hash,
+                question_text,
+                source,
+                status,
+                created_at,
+                updated_at,
+                answered_at,
+                answer_text,
+                answer_source
+            FROM scholar_questions
+            WHERE question_id = ? OR CAST(id AS TEXT) = ?
+            LIMIT 1
+            """,
+            (question_id, question_id),
+        )
+        row = cur.fetchone()
+        if not row:
+            return jsonify({"success": True, "status": "answered"}), 200
+        payload = _scholar_question_payload_from_row(row)
+        payload["success"] = True
+        return jsonify(payload), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
 
 
 @adapter_bp.route("/scholar/chat", methods=["POST"])
@@ -9044,11 +9585,16 @@ def get_obsidian_graph():
 @adapter_bp.route("/obsidian/config", methods=["GET"])
 def get_obsidian_config():
     """Get Obsidian configuration for frontend."""
-    vault_name = os.environ.get("OBSIDIAN_VAULT_NAME", "PT School Semester 2")
+    from course_map import load_course_map
+
+    course_map = load_course_map()
+    vault_name = os.environ.get("OBSIDIAN_VAULT_NAME", "Treys School")
     return jsonify(
         {
             "vaultName": vault_name,
             "apiUrl": OBSIDIAN_API_URL,
+            "canonicalRoot": course_map.vault_root,
+            "deprecatedRoots": course_map.deprecated_roots,
         }
     )
 

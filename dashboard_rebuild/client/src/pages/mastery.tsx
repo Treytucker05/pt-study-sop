@@ -202,7 +202,12 @@ export default function MasteryPage() {
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="font-arcade text-2xl text-primary">MASTERY</h1>
+          <div>
+            <h1 className="font-arcade text-2xl text-primary">MASTERY</h1>
+            <p className="font-terminal text-xs text-muted-foreground">
+              Support system for Brain's mastery map, locked-skill diagnostics, and intervention signals.
+            </p>
+          </div>
           <div className="flex items-center gap-4 font-terminal text-xs">
             <span className="text-muted-foreground">
               SKILLS: <span className="text-white">{skills.length}</span>

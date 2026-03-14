@@ -540,8 +540,7 @@ export function DataTablesSection() {
 
       <AlertDialog open={!!bulkDelete} onOpenChange={(open) => !open && setBulkDelete(null)}>
         <AlertDialogContent
-          className="bg-black border-[3px] border-double border-primary rounded-none font-terminal text-primary shadow-none max-w-md translate-y-0"
-          style={{ zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" }}
+          className="bg-black border-[3px] border-double border-primary rounded-none font-terminal text-primary shadow-none max-w-md"
         >
           <AlertDialogHeader className="text-left">
             <AlertDialogTitle className="font-arcade text-destructive">CONFIRM_DELETE</AlertDialogTitle>

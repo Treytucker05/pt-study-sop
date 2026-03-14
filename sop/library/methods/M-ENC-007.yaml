@@ -127,3 +127,26 @@ gating_rules:
 - Force active processing (explain, transform, or map), not passive reading.
 - Keep output scoped to mapped objectives only.
 artifact_type: notes
+allowed_moves:
+- Present one paragraph or concept unit at a time for processing
+- Prompt learner to explain WHY current content follows from previous content
+- Require prediction of what comes next before reading on
+- Ask learner to express explanation in their chosen verbalization mode
+- Require causal connectors (because, therefore, this leads to) in explanations
+- Identify inference gaps and prompt learner to flag them
+- Prompt learner to note confusion points for follow-up
+- Adjust pacing based on verbalization mode (written requires more time)
+forbidden_moves:
+- Explain the reasoning FOR the learner instead of prompting self-explanation
+- Allow the learner to just restate facts without causal reasoning
+- Skip the prediction step before moving to next content unit
+- Batch multiple paragraphs instead of processing one unit at a time
+- Accept silent reading without explanation in spoken mode
+- Skip "obvious" sections without explanation
+- Deliver a passive summary instead of facilitating self-explanation
+- Move to retrieval before all paragraphs are processed
+required_outputs:
+- Self-explanation notes or think-aloud log (per paragraph)
+- Inference gap list
+- Confusion points flagged
+- Comprehension checkpoints

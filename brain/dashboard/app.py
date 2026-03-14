@@ -28,6 +28,9 @@ def create_app():
     from dashboard.api_data import data_bp
     from dashboard.api_mastery import mastery_bp
     from dashboard.api_janitor import janitor_bp
+    from dashboard.api_brain_profile import brain_profile_bp
+    from dashboard.api_product import product_bp
+    from dashboard.api_scholar_research import scholar_research_bp
 
     app.register_blueprint(adapter_bp)  # /api/* routes - must be first
     app.register_blueprint(methods_bp)  # /api/methods, /api/chains
@@ -36,6 +39,9 @@ def create_app():
     app.register_blueprint(data_bp)  # /api/data/*
     app.register_blueprint(mastery_bp)  # /api/mastery/*
     app.register_blueprint(janitor_bp)  # /api/janitor/*
+    app.register_blueprint(brain_profile_bp)  # /api/brain/profile/*
+    app.register_blueprint(product_bp)  # /api/product/*
+    app.register_blueprint(scholar_research_bp)  # /api/scholar/investigations + research/*
     app.register_blueprint(dashboard_bp)
 
     # DEBUG: Print all registered routes
@@ -101,5 +107,22 @@ def create_app():
     @app.context_processor
     def inject_cache_buster():
         return dict(cache_bust=int(time.time()))
+
+    # Check Obsidian CLI availability on startup (warning only, don't block).
+    # Skip this probe under pytest because some local Obsidian CLI installs can
+    # wake the desktop app during backend test app construction.
+    import sys
+
+    if "pytest" not in sys.modules:
+        from obsidian_vault import ObsidianVault
+
+        vault = ObsidianVault()
+        if not vault.is_available():
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "Obsidian CLI not available on startup. "
+                "Vault operations will fail. Ensure Obsidian is running and 'obsidian' is on PATH."
+            )
 
     return app

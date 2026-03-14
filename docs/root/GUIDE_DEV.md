@@ -1,18 +1,31 @@
 # PT Study System — Developer Guide
 
+Reference-only run/build/test guide.
+
+- Product/page ownership authority: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+
 ## Overview
 This guide covers how to run the stack, update docs, and extend the system safely.
 
 ## Stack
-- Backend: Python + Flask (Brain/Dashboard)
+- Backend: Python + Flask (Brain + app shell APIs)
 - DB: SQLite (`brain/data/pt_study.db`)
 - Frontend: React build served from `brain/static/dist/`
-- Knowledge base: Obsidian vault at `C:\Users\treyt\Desktop\PT School Semester 2` (notes under `projects/pt-study-sop/`)
+- Knowledge base: Obsidian vault at `C:\Users\treyt\Desktop\Treys School` (notes under `projects/pt-study-sop/`)
 
 ## Run Locally
-1. Install Python deps (first time): `python -m pip install -r requirements.txt`
+1. Install Python deps (first time): `python -m pip install -r brain/requirements.txt`
 2. Launch dashboard: `Start_Dashboard.bat`
 3. Open: `http://127.0.0.1:5000`
+
+## Live Tutor Smoke
+Use this when validating the real Tutor session path against the local dashboard.
+
+1. Start the app with `Start_Dashboard.bat`.
+2. Run `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5000`.
+3. Do the thin browser smoke:
+   - `/tutor`: verify the Tutor shell loads, Studio workspace controls render (`NOTES`, `CANVAS`, `GRAPH`, `TABLE`), and the selected material viewer appears without getting stuck on `Loading...`.
+   - `/methods`: verify the Method Library loads, the `LIBRARY` / `CHAINS` / `ANALYTICS` controls render, and method cards populate without getting stuck on `Loading...`.
 
 ## Frontend Build (Required For UI Changes)
 The Flask app serves the built frontend from `brain/static/dist/`. Vite is configured to output directly to this folder.
@@ -32,6 +45,7 @@ Skip this section only for backend-only changes under `brain/`.
 - Calendar/Tasks: `brain/data/api_config.json`
 - OAuth tokens: `brain/data/gcal_token.json`
 - System rules: `sop/library/` (canonical)
+- Tutor embeddings default to Gemini Embedding 2 preview via `GEMINI_API_KEY`, `TUTOR_RAG_EMBEDDING_PROVIDER=gemini`, and `TUTOR_RAG_GEMINI_EMBEDDING_MODEL=gemini-embedding-2-preview`
 
 ## Contracts (Do Not Drift)
 - WRAP schema: `docs/contracts/wrap_schema.md`
@@ -43,7 +57,7 @@ Skip this section only for backend-only changes under `brain/`.
 ## Data Flow (Developer Summary)
 - Tutor WRAP logs → `brain/session_logs/`
 - Brain ingestion → `brain/data/pt_study.db`
-- Dashboard reads metrics via API
+- Brain/app shell reads metrics via API
 - Scholar reads DB + SOP, writes to `scholar/outputs/`
 
 ## Adaptive Mastery System (`brain/adaptive/`)

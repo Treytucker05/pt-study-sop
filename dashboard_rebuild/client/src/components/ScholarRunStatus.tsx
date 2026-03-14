@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Play, RefreshCw, CheckCircle, XCircle, Clock, Brain, BookOpen } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, type ScholarRunStatus as ScholarRunStatusPayload } from "@/lib/api";
 import {
   CARD_BORDER_SECONDARY,
   ICON_SM,
@@ -14,48 +14,19 @@ import {
   STATUS_ERROR,
 } from "@/lib/theme";
 
-interface ScholarStatus {
-  running: boolean;
-  last_run?: string;
-  status?: string;
-  progress?: number;
-  current_step?: string;
-  errors?: string[];
-}
-
 export function ScholarRunStatus() {
   const queryClient = useQueryClient();
   const [pollingEnabled, setPollingEnabled] = useState(false);
   const [studyMode, setStudyMode] = useState<"brain" | "tutor">("brain");
 
-  const { data: status, isLoading } = useQuery<ScholarStatus>({
+  const { data: status, isLoading } = useQuery<ScholarRunStatusPayload>({
     queryKey: ["scholarStatus"],
-    queryFn: async () => {
-      const response = await fetch("/api/scholar/status");
-      if (!response.ok) throw new Error("Failed to fetch Scholar status");
-      return response.json();
-    },
+    queryFn: () => api.scholar.runStatus(),
     refetchInterval: pollingEnabled ? 2000 : false,
   });
 
   const runMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch("/api/scholar/run", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ triggered_by: "ui", mode: studyMode }),
-      });
-      const payload = await response
-        .json()
-        .catch(() => ({ message: response.statusText }));
-      if (!response.ok) {
-        const msg =
-          (payload && (payload.message || payload.error)) ||
-          `Failed to start Scholar run (${response.status})`;
-        throw new Error(msg);
-      }
-      return payload;
-    },
+    mutationFn: () => api.scholar.run({ triggered_by: "ui", mode: studyMode }),
     onSuccess: () => {
       setPollingEnabled(true);
       queryClient.invalidateQueries({ queryKey: ["scholarStatus"] });

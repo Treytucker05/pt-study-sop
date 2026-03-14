@@ -1,0 +1,49 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.0, pytest-9.0.2, pluggy-1.6.0 -- C:\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\pt-study-sop
+plugins: anyio-4.11.0, Faker-40.4.0, langsmith-0.6.9, asyncio-1.3.0, timeout-2.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 39 items
+
+brain/tests/test_obsidian_vault.py::test_run_calls_subprocess_with_correct_args PASSED [  2%]
+brain/tests/test_obsidian_vault.py::test_run_returns_empty_string_on_nonzero_exit PASSED [  5%]
+brain/tests/test_obsidian_vault.py::test_run_returns_empty_string_on_timeout PASSED [  7%]
+brain/tests/test_obsidian_vault.py::test_run_json_parses_when_requested PASSED [ 10%]
+brain/tests/test_obsidian_vault.py::test_eval_wraps_code_in_obsidian_eval PASSED [ 12%]
+brain/tests/test_obsidian_vault.py::test_is_available_returns_true_on_success PASSED [ 15%]
+brain/tests/test_obsidian_vault.py::test_is_available_returns_false_on_failure PASSED [ 17%]
+brain/tests/test_obsidian_vault.py::test_create_note_calls_cli_with_correct_args PASSED [ 20%]
+brain/tests/test_obsidian_vault.py::test_create_note_with_content PASSED [ 23%]
+brain/tests/test_obsidian_vault.py::test_read_note_returns_content PASSED [ 25%]
+brain/tests/test_obsidian_vault.py::test_read_note_returns_empty_on_missing PASSED [ 28%]
+brain/tests/test_obsidian_vault.py::test_append_note_calls_cli PASSED    [ 30%]
+brain/tests/test_obsidian_vault.py::test_prepend_note_calls_cli PASSED   [ 33%]
+brain/tests/test_obsidian_vault.py::test_delete_note_calls_cli PASSED    [ 35%]
+brain/tests/test_obsidian_vault.py::test_delete_note_permanent_flag PASSED [ 38%]
+brain/tests/test_obsidian_vault.py::test_search_returns_list PASSED      [ 41%]
+brain/tests/test_obsidian_vault.py::test_search_returns_empty_on_error PASSED [ 43%]
+brain/tests/test_obsidian_vault.py::test_list_files_returns_json PASSED  [ 46%]
+brain/tests/test_obsidian_vault.py::test_list_folders_returns_json PASSED [ 48%]
+brain/tests/test_obsidian_vault.py::test_get_backlinks_returns_json PASSED [ 51%]
+brain/tests/test_obsidian_vault.py::test_get_tags_returns_json PASSED    [ 53%]
+brain/tests/test_obsidian_vault.py::test_set_property_calls_cli PASSED   [ 56%]
+brain/tests/test_obsidian_vault.py::test_remove_property_calls_cli PASSED [ 58%]
+brain/tests/test_obsidian_vault.py::test_move_note_calls_cli PASSED      [ 61%]
+brain/tests/test_obsidian_vault.py::test_create_folder_uses_eval PASSED  [ 64%]
+brain/tests/test_obsidian_vault.py::test_replace_section_uses_eval_with_process PASSED [ 66%]
+brain/tests/test_obsidian_vault.py::test_run_retries_on_timeout PASSED   [ 69%]
+brain/tests/test_obsidian_vault.py::test_run_retries_on_nonzero_exit PASSED [ 71%]
+brain/tests/test_obsidian_vault.py::test_run_exhausts_retries_and_returns_empty PASSED [ 74%]
+brain/tests/test_obsidian_vault.py::test_run_exhausts_retries_json_returns_empty_list PASSED [ 76%]
+brain/tests/test_obsidian_vault.py::test_is_available_caches_result PASSED [ 79%]
+brain/tests/test_obsidian_vault.py::test_is_available_cache_expires_after_ttl PASSED [ 82%]
+brain/tests/test_obsidian_vault.py::test_daily_read_returns_dict PASSED  [ 84%]
+brain/tests/test_obsidian_vault.py::test_daily_read_returns_empty_dict_on_error PASSED [ 87%]
+brain/tests/test_obsidian_vault.py::test_daily_append_calls_cli PASSED   [ 89%]
+brain/tests/test_obsidian_vault.py::test_insert_template_calls_cli PASSED [ 92%]
+brain/tests/test_obsidian_vault.py::test_get_outline_returns_list PASSED [ 94%]
+brain/tests/test_obsidian_vault.py::test_get_outline_returns_empty_on_error PASSED [ 97%]
+brain/tests/test_obsidian_vault.py::test_read_property_calls_cli PASSED  [100%]
+
+============================= 39 passed in 18.19s =============================

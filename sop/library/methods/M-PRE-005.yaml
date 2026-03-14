@@ -106,3 +106,22 @@ gating_rules:
 - Do not assess or score the learner in PRIME.
 - Stay at orientation level and avoid full solution reveal.
 artifact_type: concept-map
+allowed_moves:
+- Generate a bare concept hierarchy with central topic node
+- Derive 4-6 first-ring categories that are mutually distinct
+- Attach 1-2 descriptor tokens (labels, not explanations) under each category
+- Add cross-links between categories with short relation labels
+- Orient the learner to the topic's conceptual structure
+- Use the configured map_format (ascii_tree default)
+forbidden_moves:
+- Score, grade, or assess the learner
+- Turn the map into paragraph notes or explanations
+- Teach new detailed content beyond structural labels
+- Exceed max depth of 2 levels
+- Exceed node_count_cap (6 default)
+- Run quizzes or retrieval prompts
+- Add explanation paragraphs instead of descriptor tokens
+required_outputs:
+- SkeletonMap (central topic + 4-6 categories + descriptors)
+- CategoryLabels list
+- CrossLinks list

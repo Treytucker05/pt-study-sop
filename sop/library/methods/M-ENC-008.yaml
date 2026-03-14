@@ -115,3 +115,26 @@ gating_rules:
 - Force active processing (explain, transform, or map), not passive reading.
 - Keep output scoped to mapped objectives only.
 artifact_type: notes
+allowed_moves:
+- Help learner identify the trigger (initial cause or stimulus) of the mechanism
+- Prompt "What happens next as a direct result?" at each step
+- Require "because" statements at every causal arrow
+- Guide learner to look for branch points where mechanisms diverge
+- Prompt verification of chain against source material
+- Flag vague "because" statements and ask for specific molecular/cellular detail
+- Require explicit intermediate steps (A to B to C, not A to C)
+- Use Socratic questioning to help learner discover missing links
+forbidden_moves:
+- Trace the mechanism chain FOR the learner
+- Accept vague "because" statements without specific mechanism detail
+- Allow skipping intermediate steps in the causal chain
+- Skip source verification of the completed chain
+- Deliver a passive explanation of the pathway instead of guiding the trace
+- Accept linear-only thinking without exploring branch points
+- Present information outside the objective scope
+- Move to retrieval before the mechanism trace is complete
+required_outputs:
+- Complete mechanism chain (trigger to outcome)
+- Because statements for each step
+- Branch points identified
+- Verification status

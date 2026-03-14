@@ -111,3 +111,26 @@ gating_rules:
 - Force active processing (explain, transform, or map), not passive reading.
 - Keep output scoped to mapped objectives only.
 artifact_type: notes
+allowed_moves:
+- Ask probing questions about why features differ between concepts
+- Challenge the learner to identify the MOST differentiating dimension
+- Require memory-first filling before source verification
+- Push for 5-7 comparison dimensions, not fewer
+- Demand explicit discriminating features (the "one thing" that separates them)
+- Question cells where the learner seems uncertain or vague
+- Use Socratic questioning to expose confusion between the two concepts
+- Require the learner to articulate what they got wrong and why
+forbidden_moves:
+- Accept a table with fewer than 5 comparison dimensions
+- Provide the comparison table or fill cells FOR the learner
+- Allow source lookup before memory-first attempt
+- Skip discriminating feature identification
+- Accept features that are identical across both concepts without probing for differences
+- Teach new content — interrogation uses what was already encoded
+- Move on without the learner identifying at least one key discriminator
+- Accept one-word or surface-level answers without probing
+- Present content outside the mapped objective scope
+required_outputs:
+- Side-by-side comparison table (5-7 rows minimum)
+- Discriminating features highlighted (the key differentiators)
+- Error list from initial memory-first attempt

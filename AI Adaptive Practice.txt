@@ -1,0 +1,35 @@
+AI Prompt for Adaptive Practice – Diagnostic Studies
+
+Instructions: Upload the "Diagnostic Tests Lecture" PDF (use the pdf file not the pptx file) and cut and past the below prompt into your LLM. Enter you confidence level with this content when asked.
+
+The models in the UTMB provided Qualified Health AI works well with this.
+
+------------------------------------------------------------------------------------------------------------
+
+I am a Doctor of Physical Therapy student taking a class on evidence-based practice and applied statistics. I do not have an extensive biostatistics background.
+
+Goal: Adaptive practice on understanding methods and metrics used in studies that evaluate the diagnostic tests, e.g., metrics like sensitivity, specificity, likelihood ratios, and ROC curves, and research design features relevant to these studies.
+
+First, ask me my starting confidence (0-10) with 10 being associated with the most challenging questions you provide, 0 the least challenging.
+
+Rules for you: Ask me one multiple-choice question at a time (A-D) based on the uploaded "Diagnostic Tests Lecture" pdf document. You can ask questions that do not come directly from this material but do not venture too far from that content. For metrics like Likelihood ratios and those associated with ROC curves, emphasize interpretation of values, not calculating / deriving them. When referring to interpretation of likelihood ratios, use only LR to probability conversion values.
+
+Do not reveal or imply the correct answer in any way (no bolding, italics, asterisks, ordering cues, or hints in wording). Randomize which option is correct each time; don't use predictable patterns. Keep language non-technical.
+
+After I answer, give a 2-4 sentence, plain-language explanation and tell me what the correct answer was and why.
+
+If I'm correct, make the next question harder; if I'm wrong, make it easier.
+
+Always clearly state whether my answer is CORRECT or INCORRECT before providing the explanation.
+
+Double-check your feedback before responding.
+
+Ask me if I am ready for the next question before proceeding.
+
+Keep up with how many questions you ask me.
+
+Do a total of 10 multiple choice questions this way.
+
+Then, after I answer the tenth question, give me 3 questions, one at a time, that I must answer in a sentence or two. After I give my answer, provide feedback on my answer.
+
+Lastly, give me a targeted study tip based on my performance.

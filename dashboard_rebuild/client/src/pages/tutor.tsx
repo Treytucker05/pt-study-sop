@@ -1,22 +1,39 @@
 import Layout from "@/components/layout";
-import { Card } from "@/components/ui/card";
-import { useState, useCallback, useEffect, useRef } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type {
+  AppLearningObjective,
   Material,
+  TutorBoardScope,
   TutorAccuracyProfile,
-  TutorMode,
   TutorObjectiveScope,
+  TutorProjectShellResponse,
+  TutorShellMode,
   TutorSessionSummary,
   TutorTemplateChain,
   TutorSessionWithTurns,
   TutorConfigCheck,
+  TutorSessionPreflightResponse,
+  TutorScholarStrategy,
+  TutorStrategyFeedback,
 } from "@/lib/api";
-import { ContentFilter } from "@/components/ContentFilter";
-import { TutorStartPanel } from "@/components/TutorStartPanel";
+import { fetchCourseMap } from "@/lib/api";
+import {
+  normalizeTutorAccuracyProfile,
+  readTutorSelectedMaterialIds,
+  TUTOR_SELECTED_MATERIAL_IDS_KEY,
+  writeTutorSelectedMaterialIds,
+} from "@/lib/tutorClientState";
+import { COURSE_FOLDERS } from "@/config/courses";
+import { TutorWizard } from "@/components/TutorWizard";
 import { TutorChat } from "@/components/TutorChat";
 import { TutorArtifacts, type TutorArtifact } from "@/components/TutorArtifacts";
+import { TutorWorkspaceSurface } from "@/components/TutorWorkspaceSurface";
+import { TutorStudioMode } from "@/components/TutorStudioMode";
+import { TutorScheduleMode } from "@/components/TutorScheduleMode";
+import { TutorPublishMode } from "@/components/TutorPublishMode";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,13 +45,13 @@ import {
   PanelRightOpen,
   Clock,
   MessageSquare,
+  PenTool,
   Eye,
   EyeOff,
   Settings2,
   ListChecks,
   FileText,
   CreditCard,
-  Map,
   FolderOpen,
   Check,
   X,
@@ -42,6 +59,7 @@ import {
   Square,
   Send,
   Loader2,
+  Download,
   AlertTriangle,
   Timer,
   SkipForward,
@@ -55,15 +73,72 @@ import {
   TEXT_MUTED,
   TEXT_BADGE,
   ICON_SM,
+  ICON_MD,
+  BTN_TOOLBAR,
+  BTN_TOOLBAR_ACTIVE,
+  BTN_PRIMARY,
+  CARD_BORDER,
 } from "@/lib/theme";
-import {
-  clearTutorWizardProgress,
-  parseTutorCourseIdFromSearch,
-  readTutorSelectedMaterialIds,
-  readTutorStartState,
-  writeTutorSelectedMaterialIds,
-  writeTutorStartState,
-} from "@/lib/tutorClientState";
+import { CONTROL_PLANE_COLORS } from "@/lib/colors";
+
+type TutorBrainLaunchContext = {
+  source?: string;
+  itemId?: string;
+  title?: string;
+  reason?: string;
+  courseName?: string;
+  dueDate?: string;
+  investigationId?: string;
+  questionId?: string;
+};
+
+type TutorShellQuery = {
+  courseId?: number;
+  sessionId?: string;
+  mode?: TutorShellMode;
+  boardScope?: TutorBoardScope;
+  boardId?: number;
+};
+
+function readTutorShellQuery(): TutorShellQuery {
+  if (typeof window === "undefined") return {};
+  const params = new URLSearchParams(window.location.search);
+  const parsedCourseId = Number.parseInt(params.get("course_id") || "", 10);
+  const parsedBoardId = Number.parseInt(params.get("board_id") || "", 10);
+  const rawMode = params.get("mode");
+  const rawBoardScope = params.get("board_scope");
+  return {
+    courseId: Number.isFinite(parsedCourseId) ? parsedCourseId : undefined,
+    sessionId: params.get("session_id") || undefined,
+    mode:
+      rawMode === "studio" || rawMode === "tutor" || rawMode === "schedule" || rawMode === "publish"
+        ? rawMode
+        : undefined,
+    boardScope:
+      rawBoardScope === "session" || rawBoardScope === "project" || rawBoardScope === "overall"
+        ? rawBoardScope
+        : undefined,
+    boardId: Number.isFinite(parsedBoardId) ? parsedBoardId : undefined,
+  };
+}
+
+function writeTutorShellQuery(query: TutorShellQuery) {
+  if (typeof window === "undefined") return;
+  const params = new URLSearchParams(window.location.search);
+  if (typeof query.courseId === "number") params.set("course_id", String(query.courseId));
+  else params.delete("course_id");
+  if (query.sessionId) params.set("session_id", query.sessionId);
+  else params.delete("session_id");
+  if (query.mode) params.set("mode", query.mode);
+  else params.delete("mode");
+  if (query.boardScope) params.set("board_scope", query.boardScope);
+  else params.delete("board_scope");
+  if (typeof query.boardId === "number") params.set("board_id", String(query.boardId));
+  else params.delete("board_id");
+
+  const next = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`;
+  window.history.replaceState({}, "", next);
+}
 
 function parseFacilitationSteps(prompt: string | undefined | null): string[] {
   if (!prompt) return [];
@@ -73,11 +148,20 @@ function parseFacilitationSteps(prompt: string | undefined | null): string[] {
     .filter(Boolean);
 }
 
-function normalizeAccuracyProfile(value: unknown): TutorAccuracyProfile {
-  if (value === "strict" || value === "coverage" || value === "balanced") {
+function normalizeArtifactType(
+  value: unknown,
+): "note" | "card" | "map" | "structured_notes" | null {
+  if (value === "table") return "note";
+  if (value === "structured_map") return "map";
+  if (
+    value === "note" ||
+    value === "card" ||
+    value === "map" ||
+    value === "structured_notes"
+  ) {
     return value;
   }
-  return "strict";
+  return null;
 }
 
 function normalizeObjectiveScope(value: unknown): TutorObjectiveScope {
@@ -87,25 +171,137 @@ function normalizeObjectiveScope(value: unknown): TutorObjectiveScope {
   return "module_all";
 }
 
+function sanitizeVaultSegment(value: string): string {
+  return value.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function normalizeStudyUnitLabel(value: string): string {
+  const clean = sanitizeVaultSegment(value)
+    .replace(/\s*-\s*/g, " - ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const numbered = clean.match(
+    /^(Week|Module|Construct|Topic)\s+0*([0-9]+)(?:\s*-\s*|\s+)?(.+)?$/i,
+  );
+  if (!numbered) {
+    return clean;
+  }
+  const [, prefix, num, suffix] = numbered;
+  const tail = String(suffix || "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return tail ? `${prefix} ${Number(num)} - ${tail}` : `${prefix} ${Number(num)}`;
+}
+
+function deriveVaultFolder(courseName: string, objectiveGroup: string): string {
+  const safeCourse = sanitizeVaultSegment(courseName || "General");
+  const normalizedGroup = normalizeStudyUnitLabel(objectiveGroup || "");
+  if (!normalizedGroup) return `Courses/${safeCourse}`;
+  return `Courses/${safeCourse}/${normalizedGroup}`;
+}
+
+function scoreStudyUnitCandidate(rawSegment: string): number {
+  const segment = normalizeStudyUnitLabel(rawSegment);
+  if (!segment || !/^(Week|Module|Construct|Topic)\s*0*\d+/i.test(segment)) {
+    return Number.NEGATIVE_INFINITY;
+  }
+  let score = 1;
+  if (/\s-\s.+/.test(segment)) score += 6;
+  if (/\b(lecture|slides?|transcript|practice|todo|to do|notes?|objectives?|lo)\b/i.test(rawSegment)) {
+    score -= 5;
+  }
+  if (/^(Week|Module|Construct|Topic)\s+\d+$/i.test(segment)) {
+    score += 1;
+  }
+  return score;
+}
+
+function inferStudyUnitFromMaterial(material: Material): string {
+  let bestUnit = "";
+  let bestScore = Number.NEGATIVE_INFINITY;
+  const folderSegments: string[] = [];
+  if (material.folder_path) {
+    folderSegments.push(...String(material.folder_path).split(/[\\/]/));
+  }
+  const sourceParentSegments: string[] = [];
+  if (material.source_path) {
+    const parts = String(material.source_path).split(/[\\/]/);
+    sourceParentSegments.push(...parts.slice(0, -1));
+  }
+
+  const candidateGroups = [folderSegments, sourceParentSegments];
+  for (const segments of candidateGroups) {
+    const cleaned = segments
+      .map((segment) => segment.trim())
+      .filter(Boolean)
+      .map((segment) => segment.replace(/\.[A-Za-z0-9]+$/, ""));
+
+    for (let index = cleaned.length - 1; index >= 0; index -= 1) {
+      const segment = cleaned[index];
+      const score = scoreStudyUnitCandidate(segment);
+      if (score > bestScore) {
+        bestUnit = normalizeStudyUnitLabel(segment);
+        bestScore = score;
+      }
+    }
+  }
+
+  const fileNameCandidates = [material.title || "", material.source_path || ""]
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .map((segment) => String(segment).split(/[\\/]/).pop() || "")
+    .map((segment) => segment.replace(/\.[A-Za-z0-9]+$/, ""));
+  for (const segment of fileNameCandidates) {
+    const score = scoreStudyUnitCandidate(segment);
+    if (score > bestScore) {
+      bestUnit = normalizeStudyUnitLabel(segment);
+      bestScore = score;
+    }
+  }
+  return bestUnit;
+}
+
 export default function Tutor() {
   const queryClient = useQueryClient();
+  const initialRouteQuery = useMemo(() => readTutorShellQuery(), []);
+  const tutorMaterialStorageKey = TUTOR_SELECTED_MATERIAL_IDS_KEY;
   const tutorAccuracyProfileKey = "tutor.accuracy_profile.v1";
   const tutorObjectiveScopeKey = "tutor.objective_scope.v1";
+  const tutorWizardStorageKey = "tutor.wizard.state.v1";
   const tutorActiveSessionKey = "tutor.active_session.v1";
-  const prevCourseRef = useRef<number | undefined>(undefined);
+  const tutorLibraryHandoffKey = "tutor.open_from_library.v1";
+  const tutorBrainHandoffKey = "tutor.open_from_brain.v1";
 
   // Session state
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(
+    initialRouteQuery.sessionId || null,
+  );
   const [isStarting, setIsStarting] = useState(false);
   const [hasRestored, setHasRestored] = useState(false);
   const [restoredTurns, setRestoredTurns] = useState<{ question: string; answer: string | null }[] | undefined>();
+  const [shellMode, setShellMode] = useState<TutorShellMode>(initialRouteQuery.mode || "studio");
+  const [activeBoardScope, setActiveBoardScope] = useState<TutorBoardScope>(
+    initialRouteQuery.boardScope || "project",
+  );
+  const [activeBoardId, setActiveBoardId] = useState<number | null>(
+    initialRouteQuery.boardId ?? null,
+  );
+  const [viewerState, setViewerState] = useState<Record<string, unknown> | null>(null);
+  const [shellRevision, setShellRevision] = useState(0);
+  const [shellHydratedCourseId, setShellHydratedCourseId] = useState<number | null>(null);
+  const lastPersistedShellKeyRef = useRef("");
+  const resumedFromProjectShellRef = useRef(false);
 
   // Filter state
-  const [courseId, setCourseId] = useState<number | undefined>();
-  const [selectedMaterials, setSelectedMaterials] = useState<number[]>([]);
+  const [courseId, setCourseId] = useState<number | undefined>(initialRouteQuery.courseId);
+  const [selectedMaterials, setSelectedMaterials] = useState<number[]>(() =>
+    readTutorSelectedMaterialIds()
+  );
   const [accuracyProfile, setAccuracyProfile] = useState<TutorAccuracyProfile>(() => {
     try {
-      return normalizeAccuracyProfile(localStorage.getItem(tutorAccuracyProfileKey));
+      return normalizeTutorAccuracyProfile(
+        localStorage.getItem(tutorAccuracyProfileKey)
+      );
     } catch {
       return "strict";
     }
@@ -118,7 +314,11 @@ export default function Tutor() {
   const [topic, setTopic] = useState("");
 
   // Vault save folder
-  const [vaultFolder, setVaultFolder] = useState<string>("");
+  const [vaultFolder, setVaultFolder] = useState<string>(() => {
+    try {
+      return localStorage.getItem("tutor.vault_folder.v1") || "";
+    } catch { return ""; }
+  });
 
   // Vault file picker
   const [selectedPaths, setSelectedPaths] = useState<string[]>(() => {
@@ -137,7 +337,14 @@ export default function Tutor() {
   const [turnCount, setTurnCount] = useState(0);
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [showArtifacts, setShowArtifacts] = useState(false);
-  const [showSetup, setShowSetup] = useState<boolean>(true);
+  const [showSetup, setShowSetup] = useState<boolean>(() => {
+    try {
+      return !Boolean(localStorage.getItem(tutorActiveSessionKey));
+    } catch {
+      return true;
+    }
+  });
+  const [brainLaunchContext, setBrainLaunchContext] = useState<TutorBrainLaunchContext | null>(null);
   const [objectiveScope, setObjectiveScope] = useState<TutorObjectiveScope>(() => {
     try {
       return normalizeObjectiveScope(localStorage.getItem(tutorObjectiveScopeKey));
@@ -145,34 +352,29 @@ export default function Tutor() {
       return "module_all";
     }
   });
-  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
-  const [showRightSidebar, setShowRightSidebar] = useState(true);
+  const [selectedObjectiveId, setSelectedObjectiveId] = useState("");
+  const [selectedObjectiveGroup, setSelectedObjectiveGroup] = useState("");
   const [showEndConfirm, setShowEndConfirm] = useState(false);
   const [isShipping, setIsShipping] = useState(false);
 
   // Block timer
   const [blockTimerSeconds, setBlockTimerSeconds] = useState<number | null>(null);
   const [timerWarningShown, setTimerWarningShown] = useState(false);
+  const [timerPaused, setTimerPaused] = useState(false);
 
   // Settings dialog
   const [showSettings, setShowSettings] = useState(false);
   const [customInstructions, setCustomInstructions] = useState("");
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsSaving, setSettingsSaving] = useState(false);
+  const [scholarStrategy, setScholarStrategy] = useState<TutorScholarStrategy | null>(null);
+  const [strategyFeedback, setStrategyFeedback] = useState<TutorStrategyFeedback | null>(null);
+  const [strategyNotes, setStrategyNotes] = useState("");
+  const [savingStrategyFeedback, setSavingStrategyFeedback] = useState(false);
 
   useEffect(() => {
-    if (!hasRestored) {
-      return;
-    }
-    if (
-      typeof courseId === "number" &&
-      typeof prevCourseRef.current === "number" &&
-      prevCourseRef.current !== courseId
-    ) {
-      return;
-    }
     writeTutorSelectedMaterialIds(selectedMaterials);
-  }, [courseId, hasRestored, selectedMaterials]);
+  }, [tutorMaterialStorageKey, selectedMaterials]);
 
   useEffect(() => {
     try {
@@ -196,35 +398,28 @@ export default function Tutor() {
     } catch { /* ignore */ }
   }, [vaultFolder]);
 
-  // Clear material selection when course changes after initial hydration.
   useEffect(() => {
-    if (typeof prevCourseRef.current === "undefined") {
-      prevCourseRef.current = courseId;
-      return;
+    try {
+      localStorage.setItem(
+        tutorWizardStorageKey,
+        JSON.stringify({
+          courseId,
+          topic,
+          selectedMaterials,
+          chainId,
+          customBlockIds,
+          accuracyProfile,
+          objectiveScope,
+          selectedObjectiveId,
+          selectedObjectiveGroup,
+          selectedPaths,
+        }),
+      );
+    } catch {
+      /* localStorage write failed — ignore */
     }
-    if (prevCourseRef.current === courseId) return;
-    prevCourseRef.current = courseId;
-    setSelectedMaterials([]);
-  }, [courseId]);
-
-  useEffect(() => {
-    if (typeof courseId !== "number") return;
-    if (
-      typeof prevCourseRef.current === "number" &&
-      prevCourseRef.current !== courseId
-    ) {
-      return;
-    }
-    writeTutorStartState(courseId, {
-      topic,
-      selectedMaterialIds: selectedMaterials,
-      chainId,
-      customBlockIds,
-      accuracyProfile,
-      objectiveScope,
-      selectedPaths,
-    });
   }, [
+    tutorWizardStorageKey,
     courseId,
     topic,
     selectedMaterials,
@@ -232,13 +427,217 @@ export default function Tutor() {
     customBlockIds,
     accuracyProfile,
     objectiveScope,
+    selectedObjectiveId,
+    selectedObjectiveGroup,
     selectedPaths,
   ]);
+
+  const { data: chatMaterials = [] } = useQuery<Material[]>({
+    queryKey: ["tutor-chat-materials-all-enabled"],
+    queryFn: () => api.tutor.getMaterials({ enabled: true }),
+    staleTime: 60 * 1000,
+  });
+
+  const { data: availableObjectives = [] } = useQuery<AppLearningObjective[]>({
+    queryKey: ["learning-objectives", courseId],
+    queryFn: () =>
+      typeof courseId === "number"
+        ? api.learningObjectives.getByCourse(courseId)
+        : Promise.resolve([]),
+    enabled: typeof courseId === "number",
+    staleTime: 60 * 1000,
+  });
+
+  const { data: tutorContentSources } = useQuery({
+    queryKey: ["tutor-content-sources"],
+    queryFn: () => api.tutor.getContentSources(),
+    staleTime: 60 * 1000,
+  });
+
+  const courseLabel = useMemo(
+    () =>
+      typeof courseId === "number"
+        ? tutorContentSources?.courses.find((course) => course.id === courseId)?.name || ""
+        : "",
+    [courseId, tutorContentSources],
+  );
+
+  const scopedObjectives = useMemo(
+    () =>
+      selectedObjectiveGroup
+        ? availableObjectives.filter(
+            (objective) =>
+              String(objective.groupName || "").trim() === selectedObjectiveGroup,
+          )
+        : availableObjectives,
+    [availableObjectives, selectedObjectiveGroup],
+  );
+
+  const studyUnitOptions = useMemo(() => {
+    const unitMap = new Map<
+      string,
+      { value: string; objectiveCount: number; materialCount: number }
+    >();
+
+    for (const objective of availableObjectives) {
+      const group = normalizeStudyUnitLabel(String(objective.groupName || ""));
+      if (!group) continue;
+      const entry = unitMap.get(group) || {
+        value: group,
+        objectiveCount: 0,
+        materialCount: 0,
+      };
+      entry.objectiveCount += 1;
+      unitMap.set(group, entry);
+    }
+
+    for (const material of chatMaterials) {
+      if (typeof courseId !== "number" || material.course_id !== courseId) continue;
+      const unit = inferStudyUnitFromMaterial(material);
+      if (!unit) continue;
+      const entry = unitMap.get(unit) || {
+        value: unit,
+        objectiveCount: 0,
+        materialCount: 0,
+      };
+      entry.materialCount += 1;
+      unitMap.set(unit, entry);
+    }
+
+    return Array.from(unitMap.values()).sort((a, b) =>
+      a.value.localeCompare(b.value, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      }),
+    );
+  }, [availableObjectives, chatMaterials, courseId]);
+
+  const selectedObjectiveRecord = useMemo(
+    () =>
+      availableObjectives.find(
+        (objective) => String(objective.loCode || "") === selectedObjectiveId,
+      ),
+    [availableObjectives, selectedObjectiveId],
+  );
+
+  const derivedVaultFolder = useMemo(
+    () =>
+      vaultFolder.trim() ||
+      (courseLabel && selectedObjectiveGroup
+        ? deriveVaultFolder(courseLabel, selectedObjectiveGroup)
+        : ""),
+    [vaultFolder, courseLabel, selectedObjectiveGroup],
+  );
+
+  const effectiveTopic = useMemo(
+    () =>
+      selectedObjectiveRecord?.title ||
+      selectedObjectiveGroup ||
+      topic.trim() ||
+      "",
+    [topic, selectedObjectiveRecord, selectedObjectiveGroup],
+  );
+
+  const preflightPayload = useMemo(() => {
+    if (typeof courseId !== "number") return null;
+    return {
+      course_id: courseId,
+      topic: effectiveTopic || undefined,
+      study_unit: selectedObjectiveGroup || undefined,
+      module_name: selectedObjectiveGroup || undefined,
+      objective_scope: objectiveScope,
+      focus_objective_id: selectedObjectiveId || undefined,
+      learning_objectives:
+        scopedObjectives.length > 0
+          ? scopedObjectives.map((objective) => ({
+              ...(objective.loCode ? { lo_code: objective.loCode } : {}),
+              title: objective.title,
+              status: objective.status,
+              group: objective.groupName || undefined,
+            }))
+          : undefined,
+      content_filter: {
+        ...(selectedPaths.length > 0 ? { folders: selectedPaths } : {}),
+        material_ids: selectedMaterials,
+        ...(derivedVaultFolder ? { vault_folder: derivedVaultFolder } : {}),
+        accuracy_profile: accuracyProfile,
+        objective_scope: objectiveScope,
+        ...(selectedObjectiveId ? { focus_objective_id: selectedObjectiveId } : {}),
+        web_search: false,
+      },
+    };
+  }, [
+    accuracyProfile,
+    courseId,
+    derivedVaultFolder,
+    effectiveTopic,
+    objectiveScope,
+    scopedObjectives,
+    selectedMaterials,
+    selectedObjectiveGroup,
+    selectedObjectiveId,
+    selectedPaths,
+  ]);
+
+  const {
+    data: preflight,
+    isFetching: preflightLoading,
+    error: preflightError,
+  } = useQuery<TutorSessionPreflightResponse>({
+    queryKey: [
+      "tutor-session-preflight",
+      JSON.stringify(preflightPayload || {}),
+    ],
+    queryFn: () => api.tutor.preflightSession(preflightPayload!),
+    enabled:
+      showSetup &&
+      !!preflightPayload &&
+      selectedMaterials.length > 0 &&
+      !!selectedObjectiveGroup,
+    staleTime: 30 * 1000,
+  });
+
+  // Filter out stale/deleted material IDs from localStorage
+  useEffect(() => {
+    if (chatMaterials.length === 0) return;
+    const validIds = new Set(chatMaterials.map((m) => m.id));
+    setSelectedMaterials((prev) => {
+      const filtered = prev.filter((id) => validIds.has(id));
+      // Only update if something was filtered out
+      if (filtered.length < prev.length) {
+        return filtered;
+      }
+      return prev;
+    });
+  }, [chatMaterials]);
 
   // Recent sessions
   const { data: recentSessions = [] } = useQuery<TutorSessionSummary[]>({
     queryKey: ["tutor-sessions"],
     queryFn: () => api.tutor.listSessions({ limit: 10 }),
+  });
+
+  const { data: projectShell } = useQuery<TutorProjectShellResponse>({
+    queryKey: ["tutor-project-shell", courseId, activeSessionId],
+    queryFn: () =>
+      api.tutor.getProjectShell({
+        course_id: courseId!,
+        ...(activeSessionId ? { session_id: activeSessionId } : {}),
+      }),
+    enabled: hasRestored && typeof courseId === "number",
+    staleTime: 30 * 1000,
+  });
+
+  const { data: projectStudioItems } = useQuery({
+    queryKey: ["tutor-studio-restore", "project", courseId, activeSessionId],
+    queryFn: () =>
+      api.tutor.restoreStudioItems({
+        course_id: courseId!,
+        tutor_session_id: activeSessionId || undefined,
+        scope: "project",
+      }),
+    enabled: hasRestored && typeof courseId === "number",
+    staleTime: 15 * 1000,
   });
 
   // Config check (runs once on mount)
@@ -248,20 +647,25 @@ export default function Tutor() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: chatMaterials = [] } = useQuery<Material[]>({
-    queryKey: ["tutor-chat-materials-all-enabled"],
-    queryFn: () => api.tutor.getMaterials({ enabled: true }),
-    staleTime: 60 * 1000,
+  const { data: courseMapData } = useQuery({
+    queryKey: ["course-map"],
+    queryFn: fetchCourseMap,
+    staleTime: 5 * 60 * 1000,
   });
+
+  const apiCourses = courseMapData?.courses.map((c) => ({
+    id: c.code.toLowerCase().replace("phyt_", ""),
+    name: c.label,
+    path: c.label,
+  })) ?? [];
+
+  const courseFolders = apiCourses.length > 0 ? apiCourses : COURSE_FOLDERS;
 
   const refreshChatMaterials = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ["tutor-chat-materials-all-enabled"] });
   }, [queryClient]);
 
   const applySessionState = useCallback((session: TutorSessionWithTurns) => {
-    const sessionMaterialIds = Array.isArray(session.content_filter?.material_ids)
-      ? session.content_filter.material_ids.filter((value) => typeof value === "number")
-      : [];
     setActiveSessionId(session.session_id);
     setTurnCount(session.turn_count);
     setStartedAt(session.started_at);
@@ -279,35 +683,53 @@ export default function Tutor() {
         facilitation_prompt: block.facilitation_prompt || "",
       }))
     );
-    setSelectedMaterials(sessionMaterialIds);
-    writeTutorSelectedMaterialIds(sessionMaterialIds);
-    setAccuracyProfile(normalizeAccuracyProfile(session.content_filter?.accuracy_profile));
+    const materialIds = session.content_filter?.material_ids || [];
+    setSelectedMaterials(materialIds);
+    writeTutorSelectedMaterialIds(materialIds);
+    setAccuracyProfile(
+      normalizeTutorAccuracyProfile(session.content_filter?.accuracy_profile)
+    );
     setObjectiveScope(normalizeObjectiveScope(session.content_filter?.objective_scope));
-    if (typeof session.course_id === "number") {
-      writeTutorStartState(session.course_id, {
-        topic: session.topic || "",
-        selectedMaterialIds: sessionMaterialIds,
-        chainId: session.method_chain_id ?? undefined,
-        accuracyProfile: normalizeAccuracyProfile(session.content_filter?.accuracy_profile),
-        objectiveScope: normalizeObjectiveScope(session.content_filter?.objective_scope),
-      });
+    setSelectedObjectiveId(String(session.content_filter?.focus_objective_id || ""));
+    setSelectedObjectiveGroup(
+      String(
+        session.content_filter?.map_of_contents?.module_name ||
+          session.content_filter?.module_name ||
+          ""
+      )
+    );
+    if (typeof session.content_filter?.vault_folder === "string") {
+      setVaultFolder(session.content_filter.vault_folder);
     }
+    setScholarStrategy(session.scholar_strategy || null);
+    setStrategyFeedback(session.strategy_feedback || null);
+    setStrategyNotes(session.strategy_feedback?.notes || "");
     if (session.artifacts_json) {
       try {
         const parsed = JSON.parse(session.artifacts_json);
         if (Array.isArray(parsed)) {
           setArtifacts(
-            parsed.map((a: { type: string; title: string; content?: string; created_at: string }) => ({
-              type: a.type as "note" | "card" | "map",
-              title: a.title,
-              content: a.content || "",
-              createdAt: a.created_at,
-            }))
+            parsed
+              .map((a: { type?: string; title?: string; content?: string; created_at?: string }) => {
+                const type = normalizeArtifactType(a.type);
+                if (!type) return null;
+                return {
+                  type,
+                  title: a.title || "",
+                  content: a.content || "",
+                  createdAt: a.created_at || new Date().toISOString(),
+                };
+              })
+              .filter((artifact): artifact is TutorArtifact => artifact !== null)
           );
+        } else {
+          setArtifacts([]);
         }
       } catch {
         setArtifacts([]);
       }
+    } else {
+      setArtifacts([]);
     }
     // Hydrate chat messages from server turns so navigation doesn't lose history
     if (session.turns && session.turns.length > 0) {
@@ -320,7 +742,7 @@ export default function Tutor() {
     } catch {
       /* localStorage write failed — ignore */
     }
-  }, [tutorActiveSessionKey]);
+  }, [tutorMaterialStorageKey, tutorActiveSessionKey]);
 
   const openSettings = useCallback(async () => {
     setShowSettings(true);
@@ -362,61 +784,83 @@ export default function Tutor() {
     }
   }, []);
 
+  const saveScholarStrategyFeedback = useCallback(async (
+    field: "pacing" | "scaffolds" | "retrievalPressure" | "explanationDensity",
+    value: string,
+  ) => {
+    if (!activeSessionId) return;
+    const nextFeedback: TutorStrategyFeedback = {
+      ...(strategyFeedback || {}),
+      [field]: value,
+      notes: strategyNotes || null,
+    };
+    setSavingStrategyFeedback(true);
+    try {
+      const result = await api.tutor.saveStrategyFeedback(activeSessionId, nextFeedback);
+      setStrategyFeedback(result.strategy_feedback);
+      setStrategyNotes(result.strategy_feedback.notes || "");
+    } catch {
+      toast.error("Failed to save Scholar strategy feedback");
+    } finally {
+      setSavingStrategyFeedback(false);
+    }
+  }, [activeSessionId, strategyFeedback, strategyNotes]);
+
+  const saveScholarStrategyNotes = useCallback(async () => {
+    if (!activeSessionId) return;
+    const nextFeedback: TutorStrategyFeedback = {
+      ...(strategyFeedback || {}),
+      notes: strategyNotes || null,
+    };
+    setSavingStrategyFeedback(true);
+    try {
+      const result = await api.tutor.saveStrategyFeedback(activeSessionId, nextFeedback);
+      setStrategyFeedback(result.strategy_feedback);
+      toast.success("Scholar strategy feedback saved");
+    } catch {
+      toast.error("Failed to save Scholar strategy notes");
+    } finally {
+      setSavingStrategyFeedback(false);
+    }
+  }, [activeSessionId, strategyFeedback, strategyNotes]);
+
   const startSession = useCallback(async () => {
     setIsStarting(true);
     try {
+      if (objectiveScope === "single_focus" && !selectedObjectiveId) {
+        toast.error("Choose a focus objective before starting a single-focus Tutor session.");
+        return;
+      }
+      if (!preflightPayload) {
+        toast.error("Select a course, objective scope, and materials before starting the Tutor.");
+        return;
+      }
       let resolvedChainId = chainId;
       if (!resolvedChainId && customBlockIds.length > 0) {
-        const customChain = await api.tutor.createCustomChain(customBlockIds, `Custom ${topic || "Chain"}`);
+        const customChain = await api.tutor.createCustomChain(
+          customBlockIds,
+          `Custom ${effectiveTopic || "Chain"}`,
+        );
         resolvedChainId = customChain.id;
+      }
+      const preflightResult = await api.tutor.preflightSession(preflightPayload);
+      if (preflightResult.blockers.length > 0) {
+        toast.error(preflightResult.blockers[0].message);
+        return;
       }
 
       const session = await api.tutor.createSession({
-        course_id: courseId,
+        preflight_id: preflightResult.preflight_id,
         phase: "first_pass",
         mode: "Core",
-        topic: topic || undefined,
-        objective_scope: objectiveScope,
-        content_filter: {
-          ...(selectedPaths.length > 0 ? { folders: selectedPaths } : {}),
-          ...(selectedMaterials.length > 0 ? { material_ids: selectedMaterials } : {}),
-          ...(vaultFolder.trim() ? { vault_folder: vaultFolder.trim() } : {}),
-          accuracy_profile: accuracyProfile,
-          objective_scope: objectiveScope,
-          web_search: true,
-        },
         method_chain_id: resolvedChainId,
       });
-      setActiveSessionId(session.session_id);
-      try {
-        localStorage.setItem(tutorActiveSessionKey, session.session_id);
-      } catch {
-        /* localStorage write failed — ignore */
-      }
-      setStartedAt(session.started_at);
-      setRestoredTurns(undefined);
-      setArtifacts([]);
-      setTurnCount(0);
+      const full = await api.tutor.getSession(session.session_id);
+      applySessionState(full);
       // Force-refresh materials list so chat sidebar is up-to-date
       queryClient.invalidateQueries({ queryKey: ["tutor-chat-materials-all-enabled"] });
-      setCurrentBlockIndex(session.current_block_index ?? 0);
       setShowSetup(false);
-
-      if (resolvedChainId) {
-        const full = await api.tutor.getSession(session.session_id);
-        if (full.chain_blocks) {
-          setChainBlocks(full.chain_blocks.map((b) => ({
-            id: b.id,
-            name: b.name,
-            category: b.category,
-            description: b.description || "",
-            duration: b.default_duration_min,
-            facilitation_prompt: b.facilitation_prompt || "",
-          })));
-        }
-      } else {
-        setChainBlocks([]);
-      }
+      setShellMode("tutor");
 
       toast.success("Tutor session started");
       queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
@@ -425,7 +869,7 @@ export default function Tutor() {
     } finally {
       setIsStarting(false);
     }
-  }, [courseId, topic, selectedPaths, selectedMaterials, vaultFolder, accuracyProfile, objectiveScope, chainId, customBlockIds, queryClient]);
+  }, [preflightPayload, objectiveScope, selectedObjectiveId, chainId, customBlockIds, topic, preflight, queryClient, applySessionState]);
 
   const clearActiveSessionState = useCallback(() => {
     setActiveSessionId(null);
@@ -435,9 +879,19 @@ export default function Tutor() {
     setStartedAt(null);
     setCurrentBlockIndex(0);
     setChainBlocks([]);
+    setScholarStrategy(null);
+    setStrategyFeedback(null);
+    setStrategyNotes("");
     setShowSetup(true);
     setShowArtifacts(false);
-  }, []);
+    setShowEndConfirm(false);
+    setShellMode("studio");
+    try {
+      localStorage.removeItem(tutorActiveSessionKey);
+    } catch (error) {
+      void error;
+    }
+  }, [tutorActiveSessionKey]);
 
   const endSessionById = useCallback(async (sessionId: string) => {
     await api.tutor.endSession(sessionId);
@@ -495,39 +949,90 @@ export default function Tutor() {
       setTimeout(() => {
         toast.success("Session shipped to Brain");
       }, 100);
+      await endSession();
     } catch (err) {
       toast.error(`Ship failed: ${err instanceof Error ? err.message : "Unknown"}`);
     } finally {
       setIsShipping(false);
+      setShowEndConfirm(false);
     }
-    await endSession();
-    setShowEndConfirm(false);
   }, [activeSessionId, topic, startedAt, turnCount, artifacts.length, endSession]);
 
   const handleArtifactCreated = useCallback(
     async (artifact: { type: string; content: string; title?: string }) => {
       if (!activeSessionId) return;
+      const artifactType = normalizeArtifactType(artifact.type);
+      if (!artifactType) {
+        toast.error(`Unsupported artifact type: ${artifact.type}`);
+        return;
+      }
       try {
         const result = await api.tutor.createArtifact(activeSessionId, {
-          type: artifact.type as "note" | "card" | "map",
+          type: artifactType,
           content: artifact.content,
           title: artifact.title,
         });
         const newArtifact: TutorArtifact = {
-          type: artifact.type as "note" | "card" | "map",
-          title: artifact.title || `${artifact.type} #${artifacts.length + 1}`,
+          type: artifactType,
+          title: artifact.title || `${artifactType} #${artifacts.length + 1}`,
           content: artifact.content,
           createdAt: new Date().toISOString(),
           cardId: result.card_id,
         };
         setArtifacts((prev) => [...prev, newArtifact]);
         setShowArtifacts(true);
-        toast.success(`${artifact.type.charAt(0).toUpperCase() + artifact.type.slice(1)} created`);
+        toast.success(
+          `${artifactType.charAt(0).toUpperCase() + artifactType.slice(1)} created`
+        );
       } catch (err) {
         toast.error(`Failed to create artifact: ${err instanceof Error ? err.message : "Unknown"}`);
       }
     },
     [activeSessionId, artifacts.length]
+  );
+
+  const handleStudioCapture = useCallback(
+    async (capture: {
+      content: string;
+      title?: string;
+      itemType?: string;
+      target: "note" | "summary_board";
+      sourceKind?: string;
+      sourcePath?: string;
+      sourceLocator?: Record<string, unknown>;
+    }) => {
+      if (typeof courseId !== "number") {
+        toast.error("Select a course before sending items to Studio.");
+        return;
+      }
+      try {
+        await api.tutor.captureStudioItem({
+          course_id: courseId,
+          tutor_session_id: activeSessionId,
+          scope: activeSessionId ? "session" : "project",
+          item_type: capture.itemType || "note",
+          title: capture.title,
+          body_markdown: capture.content,
+          source_kind: capture.sourceKind || "tutor_chat",
+          source_path: capture.sourcePath,
+          source_locator: capture.sourceLocator,
+          status: capture.target === "summary_board" ? "boarded" : "captured",
+        });
+        setShellMode("studio");
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["tutor-studio-restore"] }),
+          queryClient.invalidateQueries({ queryKey: ["tutor-project-shell"] }),
+        ]);
+        toast.success(
+          capture.target === "summary_board"
+            ? "Sent to Studio Summary Board"
+            : "Sent to Studio Note",
+        );
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to send item to Studio");
+      }
+    },
+    [activeSessionId, courseId, queryClient],
   );
 
   const advanceBlock = useCallback(async () => {
@@ -536,6 +1041,7 @@ export default function Tutor() {
       const result = await api.tutor.advanceBlock(activeSessionId);
       setCurrentBlockIndex(result.block_index);
       setTimerWarningShown(false);
+      setTimerPaused(false);
       // Reset timer for new block
       if (result.block_duration) {
         setBlockTimerSeconds(result.block_duration * 60);
@@ -548,6 +1054,12 @@ export default function Tutor() {
       } else {
         toast.success(`Advanced to: ${result.block_name}`);
       }
+      if (result.vault_write_status === "success") {
+        toast.success("Note saved", { duration: 2000 });
+      } else if (result.vault_write_status === "failed" || result.vault_write_status === "unavailable") {
+        toast.warning("Vault note failed — Obsidian may not be running", { duration: 5000 });
+      }
+      // "skipped" → silent (no toast)
     } catch (err) {
       toast.error(`Failed to advance block: ${err instanceof Error ? err.message : "Unknown"}`);
     }
@@ -555,7 +1067,7 @@ export default function Tutor() {
 
   // Block timer countdown
   useEffect(() => {
-    if (blockTimerSeconds === null || blockTimerSeconds <= 0) return;
+    if (blockTimerSeconds === null || blockTimerSeconds <= 0 || timerPaused) return;
     const interval = setInterval(() => {
       setBlockTimerSeconds((prev) => {
         if (prev === null) return null;
@@ -568,7 +1080,7 @@ export default function Tutor() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [blockTimerSeconds, timerWarningShown]);
+  }, [blockTimerSeconds, timerWarningShown, timerPaused]);
 
   // Start timer when session begins with a chain
   useEffect(() => {
@@ -582,11 +1094,13 @@ export default function Tutor() {
 
   const handleDeleteArtifacts = useCallback(
     async (sid: string, indexes: number[]) => {
-      await api.tutor.deleteArtifacts(sid, indexes);
+      const result = await api.tutor.deleteArtifacts(sid, indexes);
+      const skippedIndexes = new Set(result.skipped_indexes || []);
+      const deletedIndexes = indexes.filter((index) => !skippedIndexes.has(index));
       // Only update local artifacts state if deleting from the active session
       if (sid === activeSessionId) {
         setArtifacts((prev) => {
-          const sorted = [...indexes].sort((a, b) => b - a);
+          const sorted = [...deletedIndexes].sort((a, b) => b - a);
           const next = [...prev];
           for (const i of sorted) {
             if (i >= 0 && i < next.length) next.splice(i, 1);
@@ -596,6 +1110,7 @@ export default function Tutor() {
       }
       // Refresh session list so old session artifact counts update
       queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
+      return result;
     },
     [activeSessionId, queryClient]
   );
@@ -605,7 +1120,7 @@ export default function Tutor() {
       try {
         const session = await api.tutor.getSession(sessionId);
         applySessionState(session);
-        setShowSetup(false);
+        setShellMode("tutor");
         toast.success("Session resumed");
       } catch (err) {
         toast.error(`Failed to resume session: ${err instanceof Error ? err.message : "Unknown"}`);
@@ -619,53 +1134,44 @@ export default function Tutor() {
     setHasRestored(true);
 
     const restore = async () => {
-      const routeCourseId = parseTutorCourseIdFromSearch(window.location.search);
-      let launchedFromLibrary = false;
-      try {
-        launchedFromLibrary =
-          sessionStorage.getItem("tutor.open_from_library.v1") === "1";
-        sessionStorage.removeItem("tutor.open_from_library.v1");
-      } catch {
-        launchedFromLibrary = false;
-      }
-      const explicitLaunch = typeof routeCourseId === "number" || launchedFromLibrary;
-
-      if (typeof routeCourseId === "number") {
-        const scopedStartState = readTutorStartState(routeCourseId);
-        setCourseId(routeCourseId);
-        setTopic(scopedStartState.topic);
-        setSelectedMaterials(scopedStartState.selectedMaterialIds);
-        setChainId(scopedStartState.chainId);
-        setCustomBlockIds(scopedStartState.customBlockIds);
-        setAccuracyProfile(scopedStartState.accuracyProfile);
-        setObjectiveScope(scopedStartState.objectiveScope);
-        setSelectedPaths(scopedStartState.selectedPaths);
-        clearTutorWizardProgress();
-      } else if (launchedFromLibrary) {
-        setSelectedMaterials(readTutorSelectedMaterialIds());
-        clearTutorWizardProgress();
-      }
-
       let resumed = false;
-      if (!explicitLaunch) {
-        try {
-          const savedSessionId = localStorage.getItem(tutorActiveSessionKey);
-          if (savedSessionId) {
-            const session = await api.tutor.getSession(savedSessionId);
-            if (session.status === "active") {
-              applySessionState(session);
-              resumed = true;
-            } else {
-              localStorage.removeItem(tutorActiveSessionKey);
-            }
+      let restoredCourseId = false;
+      let fromLibraryHandoff = false;
+      let fromBrainHandoff = false;
+      try {
+        fromLibraryHandoff = sessionStorage.getItem(tutorLibraryHandoffKey) === "1";
+        if (fromLibraryHandoff) {
+          sessionStorage.removeItem(tutorLibraryHandoffKey);
+        }
+        const rawBrainHandoff = sessionStorage.getItem(tutorBrainHandoffKey);
+        if (rawBrainHandoff) {
+          const parsed = JSON.parse(rawBrainHandoff);
+          if (parsed && typeof parsed === "object") {
+            setBrainLaunchContext(parsed as TutorBrainLaunchContext);
+            fromBrainHandoff = true;
           }
-        } catch {
-          /* session restore failed — clear stale key */
-          try {
+          sessionStorage.removeItem(tutorBrainHandoffKey);
+        }
+      } catch {
+        /* sessionStorage unavailable — ignore */
+      }
+      try {
+        const savedSessionId = localStorage.getItem(tutorActiveSessionKey);
+        if (savedSessionId) {
+          const session = await api.tutor.getSession(savedSessionId);
+          if (session.status === "active") {
+            applySessionState(session);
+            resumed = true;
+          } else {
             localStorage.removeItem(tutorActiveSessionKey);
-          } catch {
-            /* localStorage remove failed — ignore */
           }
+        }
+      } catch {
+        /* session restore failed — clear stale key */
+        try {
+          localStorage.removeItem(tutorActiveSessionKey);
+        } catch {
+          /* localStorage remove failed — ignore */
         }
       }
 
@@ -675,30 +1181,79 @@ export default function Tutor() {
       }
       setShowSetup(true);
 
-      if (typeof routeCourseId === "number" || launchedFromLibrary) return;
+      if (fromLibraryHandoff) {
+        const canonicalMaterialSelection = readTutorSelectedMaterialIds();
+        if (canonicalMaterialSelection.length > 0) {
+          setSelectedMaterials(canonicalMaterialSelection);
+        }
+        return;
+      }
+
+      if (fromBrainHandoff) {
+        const canonicalMaterialSelection = readTutorSelectedMaterialIds();
+        if (canonicalMaterialSelection.length > 0) {
+          setSelectedMaterials(canonicalMaterialSelection);
+        }
+        try {
+          const { currentCourse } = await api.studyWheel.getCurrentCourse();
+          if (typeof currentCourse?.id === "number") {
+            setCourseId((prev) => (typeof prev === "number" ? prev : currentCourse.id));
+          }
+        } catch {
+          /* current course fetch failed — ignore */
+        }
+        return;
+      }
+
+      try {
+        const saved = localStorage.getItem(tutorWizardStorageKey);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          const hasCanonicalMaterialSelection =
+            localStorage.getItem(tutorMaterialStorageKey) !== null;
+          const canonicalMaterialSelection = readTutorSelectedMaterialIds();
+          const wizardSelectedMaterials = Array.isArray(parsed?.selectedMaterials)
+            ? parsed.selectedMaterials.filter((v: unknown) => typeof v === "number")
+            : null;
+          if (typeof parsed?.courseId === "number") {
+            setCourseId(parsed.courseId);
+            restoredCourseId = true;
+          }
+          if (typeof parsed?.topic === "string") setTopic(parsed.topic);
+          if (hasCanonicalMaterialSelection) {
+            setSelectedMaterials(canonicalMaterialSelection);
+          } else if (wizardSelectedMaterials) {
+            setSelectedMaterials(wizardSelectedMaterials);
+          }
+          if (typeof parsed?.chainId === "number") setChainId(parsed.chainId);
+          if (Array.isArray(parsed?.customBlockIds)) {
+            setCustomBlockIds(parsed.customBlockIds.filter((v: unknown) => typeof v === "number"));
+          }
+          setAccuracyProfile(normalizeTutorAccuracyProfile(parsed?.accuracyProfile));
+          setObjectiveScope(normalizeObjectiveScope(parsed?.objectiveScope));
+          if (typeof parsed?.selectedObjectiveId === "string") {
+            setSelectedObjectiveId(parsed.selectedObjectiveId);
+          }
+          if (typeof parsed?.selectedObjectiveGroup === "string") {
+            setSelectedObjectiveGroup(parsed.selectedObjectiveGroup);
+          }
+          if (Array.isArray(parsed?.selectedPaths)) {
+            setSelectedPaths(parsed.selectedPaths.filter((v: unknown) => typeof v === "string"));
+          }
+        }
+      } catch {
+        /* wizard state restore failed — ignore */
+      }
+
+      if (restoredCourseId) return;
 
       try {
         const { currentCourse } = await api.studyWheel.getCurrentCourse();
         if (typeof currentCourse?.id === "number") {
-          const fallbackCourseId = currentCourse.id;
-          const fallbackState = readTutorStartState(fallbackCourseId);
-          setCourseId((prev) => (typeof prev === "number" ? prev : fallbackCourseId));
-          setTopic(fallbackState.topic);
-          setSelectedMaterials(
-            fallbackState.selectedMaterialIds.length > 0
-              ? fallbackState.selectedMaterialIds
-              : readTutorSelectedMaterialIds(),
-          );
-          setChainId(fallbackState.chainId);
-          setCustomBlockIds(fallbackState.customBlockIds);
-          setAccuracyProfile(fallbackState.accuracyProfile);
-          setObjectiveScope(fallbackState.objectiveScope);
-          setSelectedPaths(fallbackState.selectedPaths);
-          clearTutorWizardProgress();
+          setCourseId((prev) => (typeof prev === "number" ? prev : currentCourse.id));
         }
       } catch {
         /* current course fetch failed — ignore */
-        setSelectedMaterials(readTutorSelectedMaterialIds());
       }
     };
 
@@ -706,23 +1261,159 @@ export default function Tutor() {
   }, [
     applySessionState,
     hasRestored,
+    tutorAccuracyProfileKey,
+    tutorObjectiveScopeKey,
     tutorActiveSessionKey,
+    tutorBrainHandoffKey,
+    tutorLibraryHandoffKey,
+    tutorWizardStorageKey,
+  ]);
+
+  useEffect(() => {
+    if (!projectShell || typeof courseId !== "number") return;
+
+    if (shellHydratedCourseId !== courseId) {
+      setShellHydratedCourseId(courseId);
+      setShellRevision(projectShell.workspace_state.revision || 0);
+
+      if (
+        !initialRouteQuery.mode &&
+        shellMode === "studio" &&
+        projectShell.workspace_state.last_mode
+      ) {
+        setShellMode(projectShell.workspace_state.last_mode);
+      }
+      if (
+        !initialRouteQuery.boardScope &&
+        activeBoardScope === "project" &&
+        projectShell.workspace_state.active_board_scope
+      ) {
+        setActiveBoardScope(projectShell.workspace_state.active_board_scope);
+      }
+      if (
+        initialRouteQuery.boardId === undefined &&
+        typeof projectShell.workspace_state.active_board_id === "number"
+      ) {
+        setActiveBoardId(projectShell.workspace_state.active_board_id);
+      }
+      if (projectShell.workspace_state.viewer_state) {
+        setViewerState(projectShell.workspace_state.viewer_state);
+      } else {
+        setViewerState(null);
+      }
+      if (
+        selectedMaterials.length === 0 &&
+        Array.isArray(projectShell.workspace_state.selected_material_ids) &&
+        projectShell.workspace_state.selected_material_ids.length > 0
+      ) {
+        setSelectedMaterials(
+          writeTutorSelectedMaterialIds(projectShell.workspace_state.selected_material_ids),
+        );
+      }
+    }
+
+    if (
+      !resumedFromProjectShellRef.current &&
+      !activeSessionId &&
+      projectShell.active_session?.session_id
+    ) {
+      resumedFromProjectShellRef.current = true;
+      void api.tutor
+        .getSession(projectShell.active_session.session_id)
+        .then((session) => {
+          applySessionState(session);
+          setShowSetup(false);
+        })
+        .catch(() => {
+          resumedFromProjectShellRef.current = false;
+        });
+    }
+  }, [
+    activeSessionId,
+    activeBoardScope,
+    applySessionState,
+    courseId,
+    initialRouteQuery.boardScope,
+    initialRouteQuery.mode,
+    projectShell,
+    selectedMaterials.length,
+    shellMode,
+  ]);
+
+  useEffect(() => {
+    writeTutorShellQuery({
+      courseId,
+      sessionId: activeSessionId || undefined,
+      mode: shellMode,
+      boardScope: activeBoardScope,
+      boardId: activeBoardId ?? undefined,
+    });
+  }, [activeBoardId, activeBoardScope, activeSessionId, courseId, shellMode]);
+
+  useEffect(() => {
+    if (!hasRestored || typeof courseId !== "number") return;
+    const persistKey = JSON.stringify({
+      courseId,
+      activeSessionId,
+      shellMode,
+      activeBoardScope,
+      activeBoardId,
+      viewerState,
+      selectedMaterialIds: selectedMaterials,
+    });
+    if (persistKey === lastPersistedShellKeyRef.current) return;
+
+    const timeoutId = window.setTimeout(async () => {
+      lastPersistedShellKeyRef.current = persistKey;
+      try {
+        const result = await api.tutor.saveProjectShellState({
+          course_id: courseId,
+          active_tutor_session_id: activeSessionId,
+          last_mode: shellMode,
+          active_board_scope: activeBoardScope,
+          active_board_id: activeBoardId,
+          viewer_state: viewerState,
+          selected_material_ids: selectedMaterials,
+          revision: shellRevision,
+        });
+        setShellRevision(result.workspace_state.revision);
+        await queryClient.invalidateQueries({ queryKey: ["tutor-project-shell", courseId] });
+      } catch {
+        // Best-effort shell persistence; do not interrupt the Tutor flow.
+        lastPersistedShellKeyRef.current = "";
+      }
+    }, 250);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    activeBoardId,
+    activeBoardScope,
+    activeSessionId,
+    courseId,
+    hasRestored,
+    queryClient,
+    selectedMaterials,
+    shellMode,
+    shellRevision,
+    viewerState,
   ]);
 
   const toggleMaterial = useCallback((id: number) => {
     setSelectedMaterials((prev) => {
-      return prev.includes(id) ? prev.filter((mid) => mid !== id) : [...prev, id];
+      const next = prev.includes(id) ? prev.filter((mid) => mid !== id) : [...prev, id];
+      return writeTutorSelectedMaterialIds(next);
     });
-  }, []);
+  }, [tutorMaterialStorageKey]);
 
   const selectAllMaterials = useCallback(() => {
     const allIds = chatMaterials.map((m) => m.id);
-    setSelectedMaterials(allIds);
-  }, [chatMaterials]);
+    setSelectedMaterials(writeTutorSelectedMaterialIds(allIds));
+  }, [chatMaterials, tutorMaterialStorageKey]);
 
   const clearMaterialSelection = useCallback(() => {
     setSelectedMaterials([]);
-  }, []);
+    writeTutorSelectedMaterialIds([]);
+  }, [tutorMaterialStorageKey]);
 
   const getFileName = (path: string) => {
     return path.split(/[/\\]/).pop() || path;
@@ -744,115 +1435,472 @@ export default function Tutor() {
   const isChainComplete = hasChain && currentBlockIndex >= chainBlocks.length;
   const progressCount = hasChain ? Math.min(currentBlockIndex + 1, chainBlocks.length) : 0;
   const facilitationSteps = parseFacilitationSteps(currentBlock?.facilitation_prompt);
+  const promotedStudioItems =
+    projectStudioItems?.items.filter((item) => item.status === "promoted") || [];
+
+  const handlePublishRecorded = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["tutor-project-shell"] }),
+      queryClient.invalidateQueries({ queryKey: ["tutor-studio-restore"] }),
+      queryClient.invalidateQueries({ queryKey: ["obsidian"] }),
+    ]);
+  }, [queryClient]);
 
   return (
     <Layout>
       <div className="flex flex-col h-full min-h-0">
         {/* ─── Main Content Area ─── */}
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex-none bg-black/40 border-b-2 border-primary/20 p-2">
-            {/* Top Toolbar Area */}
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-              {activeSessionId && (
-                <>
-                  <Badge variant="outline" className={`${TEXT_BADGE} h-7 px-2 shrink-0 border-primary/30`}>
-                    <span className="text-muted-foreground mr-1">TOPIC:</span>
-                    <span className="text-foreground">{topic || "Freeform"}</span>
-                  </Badge>
-                  <div className={`flex items-center gap-3 px-2 ${TEXT_MUTED} text-xs border-r border-primary/20 shrink-0`}>
-                    <span className="flex items-center gap-1" title="Turns">
-                      <MessageSquare className={ICON_SM} />
-                      {turnCount}
+          <div className="flex-none bg-black/40 border-b-2 border-primary/20 px-2 py-1.5">
+            <div className="mb-1.5 flex items-center justify-between gap-3 border-b border-primary/10 pb-1.5">
+              <div>
+                <div className="font-arcade text-xs text-primary">TUTOR</div>
+                <div className="font-terminal text-[11px] text-muted-foreground">
+                  Brain's default live study surface for guided sessions, artifacts, and next-step handoff.
+                </div>
+              </div>
+              {!activeSessionId ? (
+                <Badge variant="outline" className={`${TEXT_BADGE} h-6 px-2 shrink-0 border-primary/30`}>
+                  BRAIN TO TUTOR LIVE SURFACE
+                </Badge>
+              ) : null}
+            </div>
+            {!activeSessionId && brainLaunchContext?.title ? (
+              <div
+                data-testid="tutor-brain-handoff"
+                className="mb-1.5 border border-primary/20 bg-primary/10 px-2 py-1.5"
+              >
+                <div className="font-arcade text-[10px] text-primary">OPENED FROM BRAIN</div>
+                <div className="font-terminal text-xs text-white">{brainLaunchContext.title}</div>
+                {brainLaunchContext.reason ? (
+                  <div className="font-terminal text-[11px] text-muted-foreground">
+                    {brainLaunchContext.reason}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            {/* ─── Row 1: Session Context ─── */}
+            {activeSessionId && (
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar mb-1.5">
+                <Badge variant="outline" className={`${TEXT_BADGE} h-7 px-2 shrink-0 border-primary/30`}>
+                  <span className="text-muted-foreground mr-1">TOPIC:</span>
+                  <span className="text-foreground">{topic || "Freeform"}</span>
+                </Badge>
+                <div className={`flex items-center gap-3 px-2 ${TEXT_MUTED} text-xs shrink-0`}>
+                  <span className="flex items-center gap-1" title="Turns">
+                    <MessageSquare className={ICON_SM} />
+                    {turnCount}
+                  </span>
+                  {startedAt && (
+                    <span className="flex items-center gap-1" title="Started At">
+                      <Clock className={ICON_SM} />
+                      {new Date(startedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </span>
-                    {startedAt && (
-                      <span className="flex items-center gap-1" title="Started At">
-                        <Clock className={ICON_SM} />
-                        {new Date(startedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  )}
+                </div>
+
+                {/* ─── Block Timer Widget ─── */}
+                {hasChain && currentBlock && !isChainComplete && (
+                  <div className="flex items-center gap-2 px-2 shrink-0 border-l border-primary/20">
+                    <Badge
+                      variant="outline"
+                      className={`h-6 px-1.5 text-[10px] rounded-none font-arcade uppercase ${
+                        CONTROL_PLANE_COLORS[currentBlock.control_stage?.toUpperCase?.() || currentBlock.category?.toUpperCase?.() || ""]?.badge
+                        || "bg-secondary/20 text-muted-foreground"
+                      }`}
+                    >
+                      {currentBlock.control_stage || currentBlock.category || "BLOCK"}
+                    </Badge>
+                    <span className="text-xs font-terminal text-foreground truncate max-w-[120px]" title={currentBlock.name}>
+                      {currentBlock.name}
+                    </span>
+                    {blockTimerSeconds !== null && (
+                      <span
+                        className={`text-sm font-arcade tabular-nums ${
+                          blockTimerSeconds <= 0
+                            ? "text-destructive animate-pulse"
+                            : blockTimerSeconds <= 60
+                              ? "text-destructive"
+                              : blockTimerSeconds <= 120
+                                ? "text-warning"
+                                : "text-foreground"
+                        }`}
+                      >
+                        {formatTimer(Math.max(0, blockTimerSeconds))}
                       </span>
                     )}
+                    <span className="text-[10px] text-muted-foreground font-terminal">
+                      {progressCount}/{chainBlocks.length}
+                    </span>
+                    {blockTimerSeconds !== null && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setTimerPaused((p) => !p)}
+                        className="h-6 w-6 p-0 rounded-none text-muted-foreground hover:text-primary"
+                        title={timerPaused ? "Resume timer" : "Pause timer"}
+                      >
+                        {timerPaused ? <Timer className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={advanceBlock}
+                      className="h-6 px-1.5 rounded-none text-muted-foreground hover:text-primary font-arcade text-[10px]"
+                      title="Skip to next block"
+                    >
+                      <SkipForward className="w-3 h-3" />
+                    </Button>
                   </div>
-                </>
-              )}
-
-              <div className="flex items-center gap-1 shrink-0 ml-auto">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowSetup(true)}
-                  className={`h-8 rounded-none font-arcade text-xs px-3 ${showSetup
-                    ? "text-primary bg-primary/15 border-2 border-primary/40"
-                    : "text-muted-foreground hover:text-primary border-2 border-transparent"
-                    }`}
-                >
-                  <Settings2 className="w-3.5 h-3.5 mr-1" />
-                  START
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={openSettings}
-                  className="h-8 rounded-none font-arcade text-xs px-3 text-muted-foreground hover:text-primary border-2 border-transparent"
-                >
-                  <SlidersHorizontal className="w-3.5 h-3.5 mr-1" />
-                  SETTINGS
-                </Button>
-                {activeSessionId && (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowSetup(false)}
-                      className={`h-8 rounded-none font-arcade text-xs px-3 ${!showSetup
-                        ? "text-primary bg-primary/15 border-2 border-primary/40"
-                        : "text-muted-foreground hover:text-primary border-2 border-transparent"
-                        }`}
-                    >
-                      <MessageSquare className="w-3.5 h-3.5 mr-1" />
-                      CHAT
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowArtifacts((prev) => !prev)}
-                      className={`h-8 rounded-none font-arcade text-xs px-3 ml-1 ${showArtifacts
-                        ? "text-primary bg-primary/10 border-2 border-primary/40"
-                        : "text-muted-foreground hover:text-primary border-2 border-transparent"
-                        }`}
-                    >
-                      {showArtifacts ? (
-                        <PanelRightClose className="w-3.5 h-3.5 mr-1" />
-                      ) : (
-                        <PanelRightOpen className="w-3.5 h-3.5 mr-1" />
-                      )}
-                      ARTIFACTS
-                      {artifacts.length > 0 && (
-                        <Badge variant="outline" className="h-4 px-1 ml-1 text-[10px] rounded-none border-primary/40">
-                          {artifacts.length}
-                        </Badge>
-                      )}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowEndConfirm(true)}
-                      className="h-8 rounded-none font-arcade text-xs px-3 text-red-400/70 hover:text-red-400 hover:bg-red-400/10 border-2 border-transparent"
-                      title="End session"
-                    >
-                      <Square className="w-3.5 h-3.5 mr-1" />
-                      END
-                    </Button>
-                  </>
                 )}
               </div>
-            </div>
+            )}
+
+            {/* ─── Row 2: Navigation Actions ─── */}
+          <div className="flex flex-wrap items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShellMode("studio")}
+              className={shellMode === "studio" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+            >
+              <PenTool className={`${ICON_MD} mr-1`} />
+              STUDIO
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setShellMode("tutor");
+                if (!activeSessionId) {
+                  setShowSetup(true);
+                }
+              }}
+              className={shellMode === "tutor" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+            >
+              <MessageSquare className={`${ICON_MD} mr-1`} />
+              TUTOR
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShellMode("schedule")}
+              className={shellMode === "schedule" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+            >
+              <Clock className={`${ICON_MD} mr-1`} />
+              SCHEDULE
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShellMode("publish")}
+              className={shellMode === "publish" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+            >
+              <FolderOpen className={`${ICON_MD} mr-1`} />
+              PUBLISH
+            </Button>
+            {shellMode === "tutor" ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSetup((prev) => !prev || !activeSessionId)}
+                className={showSetup ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+              >
+                <Settings2 className={`${ICON_MD} mr-1`} />
+                SETUP
+              </Button>
+            ) : null}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={openSettings}
+              className={BTN_TOOLBAR}
+            >
+              <SlidersHorizontal className={`${ICON_MD} mr-1`} />
+              SETTINGS
+            </Button>
+
+            {activeSessionId && shellMode === "tutor" ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowArtifacts((prev) => !prev)}
+                  className={`ml-1 ${showArtifacts ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}`}
+                >
+                  {showArtifacts ? (
+                    <PanelRightClose className={`${ICON_MD} mr-1`} />
+                  ) : (
+                    <PanelRightOpen className={`${ICON_MD} mr-1`} />
+                  )}
+                  ARTIFACTS
+                  {artifacts.length > 0 && (
+                    <Badge variant="outline" className="h-4 px-1 ml-1 text-[10px] rounded-none border-primary/40">
+                      {artifacts.length}
+                    </Badge>
+                  )}
+                </Button>
+                <div className="ml-auto flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (activeSessionId) {
+                        api.tutor.exportSession(activeSessionId).catch(() => {
+                          toast.error("Failed to export session");
+                        });
+                      }
+                    }}
+                    className={BTN_TOOLBAR}
+                    title="Export conversation as Markdown"
+                  >
+                    <Download className={`${ICON_MD} mr-1`} />
+                    EXPORT
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowEndConfirm(true)}
+                    className="h-8 rounded-none font-arcade text-xs px-3 text-destructive/70 hover:text-destructive hover:bg-destructive/10 border-2 border-transparent"
+                    title="End session"
+                  >
+                    <Square className={`${ICON_MD} mr-1`} />
+                    END
+                  </Button>
+                </div>
+              </>
+            ) : null}
           </div>
+          </div>
+
+          {activeSessionId && scholarStrategy && (
+            <Card className={`mx-4 mt-3 rounded-none ${CARD_BORDER} bg-black/55 border-primary/30`}>
+              <div className="p-3 space-y-3">
+                <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="space-y-1">
+                    <div className={TEXT_BADGE}>SCHOLAR STRATEGY</div>
+                    <div className="font-terminal text-xs text-muted-foreground max-w-3xl">
+                      {scholarStrategy.summary}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline" className="rounded-none text-[10px] border-primary/40">
+                        BRAIN SNAPSHOT {scholarStrategy.profileSnapshotId ?? "N/A"}
+                      </Badge>
+                      <Badge variant="outline" className="rounded-none text-[10px] border-primary/40">
+                        {scholarStrategy.hybridArchetype?.label || "EMERGING PATTERN"}
+                      </Badge>
+                      {scholarStrategy.activeInvestigation?.title && (
+                        <Badge variant="outline" className="rounded-none text-[10px] border-secondary/40">
+                          RESEARCH: {scholarStrategy.activeInvestigation.title}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="font-terminal text-[11px] text-muted-foreground max-w-sm">
+                    {scholarStrategy.boundedBy?.note}
+                  </div>
+                </div>
+
+                <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+                  {Object.entries(scholarStrategy.fields || {}).map(([fieldKey, field]) => (
+                    <div key={fieldKey} className="border border-primary/20 bg-black/40 p-2 rounded-none space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-arcade text-[10px] text-primary/80">{fieldKey}</span>
+                        <Badge variant="outline" className="rounded-none text-[10px] border-primary/30">
+                          {field.value}
+                        </Badge>
+                      </div>
+                      <div className="font-terminal text-[11px] text-muted-foreground">
+                        {field.rationale}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid gap-3 xl:grid-cols-[1.2fr_0.8fr]">
+                  <div className="space-y-2">
+                    <div className={TEXT_BADGE}>LEARNER FIT FEEDBACK</div>
+                    <div className="grid gap-2 md:grid-cols-2">
+                      {[
+                        { key: "pacing", label: "PACING", options: ["slower", "good", "faster"] },
+                        { key: "scaffolds", label: "SCAFFOLDS", options: ["less", "good", "more"] },
+                        { key: "retrievalPressure", label: "RETRIEVAL", options: ["lighter", "good", "harder"] },
+                        { key: "explanationDensity", label: "EXPLANATIONS", options: ["leaner", "good", "denser"] },
+                      ].map((control) => (
+                        <div key={control.key} className="border border-primary/20 bg-black/40 p-2 rounded-none space-y-2">
+                          <div className="font-arcade text-[10px] text-primary/80">{control.label}</div>
+                          <div className="flex flex-wrap gap-1">
+                            {control.options.map((option) => {
+                              const active = (strategyFeedback?.[control.key as keyof TutorStrategyFeedback] || "") === option;
+                              return (
+                                <Button
+                                  key={option}
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={savingStrategyFeedback}
+                                  onClick={() => {
+                                    void saveScholarStrategyFeedback(
+                                      control.key as "pacing" | "scaffolds" | "retrievalPressure" | "explanationDensity",
+                                      option,
+                                    );
+                                  }}
+                                  className={active ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+                                >
+                                  {option.toUpperCase()}
+                                </Button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="space-y-2">
+                      <Textarea
+                        value={strategyNotes}
+                        onChange={(event) => setStrategyNotes(event.target.value)}
+                        placeholder="What about the strategy is helping or hurting right now?"
+                        className="rounded-none bg-black/40 border-primary/20 min-h-[90px]"
+                      />
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="font-terminal text-[11px] text-muted-foreground">
+                          Feedback is stored on the Tutor session so Brain and Scholar can inspect it later.
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={savingStrategyFeedback}
+                          onClick={() => {
+                            void saveScholarStrategyNotes();
+                          }}
+                          className={BTN_TOOLBAR}
+                        >
+                          SAVE FEEDBACK
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 border border-secondary/20 bg-black/40 p-3 rounded-none">
+                    <div className={TEXT_BADGE}>BOUNDARIES</div>
+                    <div className="font-terminal text-[11px] text-muted-foreground space-y-2">
+                      <div>
+                        Allowed: {scholarStrategy.boundedBy?.allowedFields?.join(", ")}
+                      </div>
+                      <div>
+                        Fixed: {scholarStrategy.boundedBy?.forbiddenFields?.join(", ")}
+                      </div>
+                      {scholarStrategy.activeInvestigation?.topFinding && (
+                        <div>
+                          Latest finding: {scholarStrategy.activeInvestigation.topFinding}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
 
           <div className="flex-1 flex min-h-0 relative">
             <div className="flex-1 bg-black/40 flex flex-col min-w-0">
-              {showSetup ? (
-                <div className="flex-1 min-h-0 overflow-y-auto w-full p-4">
+              {shellMode === "studio" ? (
+                <div key="studio" className="flex-1 min-h-0 animate-fade-slide-in">
+                  <TutorStudioMode
+                    courseId={courseId}
+                    activeSessionId={activeSessionId}
+                    availableMaterials={chatMaterials}
+                  selectedMaterialIds={selectedMaterials}
+                  activeBoardScope={activeBoardScope}
+                  activeBoardId={activeBoardId}
+                  viewerState={viewerState}
+                  onBoardScopeChange={(scope) => {
+                    setActiveBoardScope(scope);
+                    setActiveBoardId(null);
+                  }}
+                  onActiveBoardIdChange={setActiveBoardId}
+                  onViewerStateChange={setViewerState}
+                />
+                </div>
+              ) : shellMode === "schedule" ? (
+                <div key="schedule" className="flex-1 min-h-0 overflow-y-auto p-4 animate-fade-slide-in">
+                  <div className="mx-auto h-full w-full max-w-7xl">
+                    <TutorScheduleMode
+                      courseId={courseId ?? null}
+                      courseName={courseLabel || null}
+                      focusTopic={topic || null}
+                    />
+                  </div>
+                </div>
+              ) : shellMode === "publish" ? (
+                <div key="publish" className="flex-1 min-h-0 overflow-y-auto p-4 animate-fade-slide-in">
+                  <div className="mx-auto grid w-full max-w-7xl gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+                    <TutorPublishMode
+                      activeSessionId={activeSessionId}
+                      courseName={courseLabel || null}
+                      topic={topic || null}
+                      noteMarkdown={promotedStudioItems[0]?.body_markdown || null}
+                      defaultVaultPath={
+                        courseLabel
+                          ? `Tutor Studio/${sanitizeVaultSegment(courseLabel)}/${sanitizeVaultSegment(
+                              topic || promotedStudioItems[0]?.title || "Tutor Session",
+                            ) || "Tutor Session"}.md`
+                          : null
+                      }
+                      onPublished={() => {
+                        void handlePublishRecorded();
+                      }}
+                    />
+
+                    <Card className={`rounded-none ${CARD_BORDER} bg-black/45 border-primary/20`}>
+                      <CardHeader className="border-b border-primary/15 pb-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <CardTitle className="font-arcade text-xs text-primary">
+                            PROJECT RESOURCES
+                          </CardTitle>
+                          <Badge variant="outline" className="rounded-none border-primary/30 text-[10px]">
+                            {promotedStudioItems.length} PROMOTED
+                          </Badge>
+                        </div>
+                        <div className="font-terminal text-xs text-muted-foreground">
+                          Publish acts only on promoted project resources. Review the promoted set here while the publish workspace stages vault and Anki output.
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3 p-4">
+                        {promotedStudioItems.length === 0 ? (
+                          <div className="border border-primary/20 bg-black/35 px-4 py-6 font-terminal text-sm text-muted-foreground">
+                            No promoted Studio resources yet. Use Studio to review captures, then copy or move the useful pieces up to the project layer.
+                          </div>
+                        ) : (
+                          promotedStudioItems.map((item) => (
+                            <div key={item.id} className="border border-primary/20 bg-black/35 p-3">
+                              <div className="flex flex-wrap items-start justify-between gap-2">
+                                <div>
+                                  <div className="font-arcade text-[10px] text-primary">
+                                    {item.title || `${item.item_type.toUpperCase()} ${item.id}`}
+                                  </div>
+                                  <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
+                                    {item.item_type.toUpperCase()} • promoted from {item.scope}
+                                  </div>
+                                </div>
+                                <Badge variant="outline" className="rounded-none border-green-500/30 text-[10px] text-green-300">
+                                  READY TO PUBLISH
+                                </Badge>
+                              </div>
+                              <div className="mt-2 whitespace-pre-wrap font-terminal text-xs text-zinc-200">
+                                {(item.body_markdown || JSON.stringify(item.payload || {}, null, 2)).slice(0, 420)}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              ) : showSetup ? (
+                <div key="wizard" className="flex-1 min-h-0 overflow-y-auto w-full p-4 animate-fade-slide-in">
                   <div className="w-full max-w-4xl mx-auto">
-                    <TutorStartPanel
+                    <TutorWizard
                       courseId={courseId}
                       setCourseId={setCourseId}
                       selectedMaterials={selectedMaterials}
@@ -865,13 +1913,24 @@ export default function Tutor() {
                       setCustomBlockIds={setCustomBlockIds}
                       objectiveScope={objectiveScope}
                       setObjectiveScope={setObjectiveScope}
-                      vaultFolder={vaultFolder}
-                      setVaultFolder={setVaultFolder}
+                      selectedObjectiveId={selectedObjectiveId}
+                      setSelectedObjectiveId={setSelectedObjectiveId}
+                      selectedObjectiveGroup={selectedObjectiveGroup}
+                      setSelectedObjectiveGroup={setSelectedObjectiveGroup}
+                      availableObjectives={availableObjectives}
+                      studyUnitOptions={studyUnitOptions}
+                      vaultFolderPreview={derivedVaultFolder}
+                      preflight={preflight}
+                      preflightLoading={preflightLoading}
+                      preflightError={preflightError instanceof Error ? preflightError.message : null}
                       onStartSession={startSession}
                       isStarting={isStarting}
                       recentSessions={recentSessions}
-                      configStatus={configStatus}
-                      onResumeSession={resumeSession}
+                      onResumeSession={(id) => {
+                        resumeSession(id);
+                        setShowSetup(false);
+                        setShellMode("tutor");
+                      }}
                       onDeleteSession={async (id) => {
                         try {
                           await api.tutor.deleteSession(id);
@@ -885,7 +1944,7 @@ export default function Tutor() {
                   </div>
                 </div>
               ) : (
-                <>
+                <div key="chat" className="flex-1 flex flex-col min-h-0 animate-fade-slide-in">
                   {activeSessionId ? (
                     <TutorChat
                       sessionId={activeSessionId}
@@ -897,6 +1956,7 @@ export default function Tutor() {
                       onSelectedMaterialIdsChange={setSelectedMaterials}
                       onMaterialsChanged={refreshChatMaterials}
                       onArtifactCreated={handleArtifactCreated}
+                      onStudioCapture={handleStudioCapture}
                       initialTurns={restoredTurns}
                       onTurnComplete={(masteryUpdate) => {
                         setTurnCount((prev) => prev + 1);
@@ -909,38 +1969,62 @@ export default function Tutor() {
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center space-y-3">
                         <div className="font-arcade text-sm text-primary">
-                          READY TO LEARN
+                          READY TO RUN A STUDY SESSION
                         </div>
                         <div className="font-terminal text-sm text-muted-foreground max-w-sm">
-                          Click START to configure your session, or select a recent session to resume.
+                          Tutor is the live study surface. Open SETUP to scope a session, or switch to STUDIO to prepare notes and captures before studying.
+                        </div>
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            type="button"
+                            className={BTN_PRIMARY}
+                            onClick={() => setShowSetup(true)}
+                          >
+                            <Settings2 className={`${ICON_MD} mr-1`} />
+                            OPEN SETUP
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className={BTN_TOOLBAR}
+                            onClick={() => setShellMode("studio")}
+                          >
+                            <PenTool className={`${ICON_MD} mr-1`} />
+                            GO TO STUDIO
+                          </Button>
                         </div>
                       </div>
                     </div>
                   )}
 
                   {showEndConfirm && (
-                    <div className="absolute inset-x-0 bottom-0 z-50 bg-black/95 border-t-2 border-primary/50 p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
+                    <div className="absolute inset-x-0 bottom-0 z-50 bg-black/95 border-t-2 border-primary/50 p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] animate-fade-slide-in">
                       <div className="max-w-md mx-auto space-y-3">
-                        <div className="font-arcade text-sm text-primary tracking-wider">SESSION COMPLETE</div>
-                        <div className="flex items-center gap-4 font-terminal text-xs text-muted-foreground">
+                        <div className="section-header">SESSION COMPLETE</div>
+                        <div className={`flex items-center gap-4 ${TEXT_MUTED} text-xs`}>
                           <span className="text-foreground">{topic || "No topic"}</span>
                           <span>{turnCount} turns</span>
+                          {startedAt && (
+                            <span>
+                              {Math.round((Date.now() - new Date(startedAt).getTime()) / 60000)} min
+                            </span>
+                          )}
                           {artifacts.length > 0 && <span>{artifacts.length} artifacts</span>}
                         </div>
                         <div className="flex items-center gap-2 pt-1">
                           <Button
                             onClick={shipToBrainAndEnd}
                             disabled={isShipping}
-                            className="rounded-none font-arcade text-xs bg-primary/10 hover:bg-primary/20 border-2 border-primary text-primary gap-1.5 h-9 px-4"
+                            className={`${BTN_PRIMARY} w-auto gap-1.5 h-9 px-4`}
                           >
-                            {isShipping ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                            {isShipping ? <Loader2 className={`${ICON_MD} animate-spin`} /> : <Send className={ICON_MD} />}
                             {isShipping ? "SHIPPING..." : "SHIP TO BRAIN"}
                           </Button>
                           <Button
                             variant="ghost"
                             onClick={() => { endSession(); setShowEndConfirm(false); }}
                             disabled={isShipping}
-                            className="rounded-none font-arcade text-xs text-muted-foreground hover:text-foreground h-9 px-3 border-2 border-transparent hover:border-primary/40 shadow-none"
+                            className={BTN_TOOLBAR}
                           >
                             END WITHOUT SAVING
                           </Button>
@@ -948,7 +2032,7 @@ export default function Tutor() {
                             variant="ghost"
                             onClick={() => setShowEndConfirm(false)}
                             disabled={isShipping}
-                            className="rounded-none font-arcade text-xs text-muted-foreground hover:text-foreground h-9 px-3 ml-auto border-2 border-transparent hover:border-primary/40 shadow-none"
+                            className={`${BTN_TOOLBAR} ml-auto`}
                           >
                             CANCEL
                           </Button>
@@ -956,55 +2040,63 @@ export default function Tutor() {
                       </div>
                     </div>
                   )}
-                </>
+                </div>
               )}
             </div>
 
             {/* Right side panels overlaid when toggle is ON */}
-            {activeSessionId && !showSetup && showArtifacts && (
-              <div className="w-[320px] shrink-0 border-l-2 border-primary/30 bg-black/90 absolute right-0 inset-y-0 z-30 flex flex-col shadow-[-10px_0_20px_rgba(0,0,0,0.5)]">
-                <div className="flex items-center justify-between p-2 border-b-2 border-primary/20 bg-primary/5">
-                  <span className="font-arcade text-xs text-primary px-2">ARTIFACTS</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 text-muted-foreground hover:text-primary rounded-none"
-                    onClick={() => setShowArtifacts(false)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
+            {activeSessionId && shellMode === "tutor" && !showSetup && showArtifacts && (
+              <>
+                {/* Mobile backdrop — click to close */}
+                <div
+                  className="fixed inset-0 z-20 bg-black/60 lg:hidden"
+                  onClick={() => setShowArtifacts(false)}
+                  aria-hidden="true"
+                />
+                <div className="absolute lg:static right-0 inset-y-0 z-30 w-[320px] shrink-0 border-l-2 border-primary/30 bg-black/90 flex flex-col shadow-[-10px_0_20px_rgba(0,0,0,0.5)] lg:shadow-none animate-fade-slide-in">
+                  <div className="flex items-center justify-between p-2 border-b-2 border-primary/20 bg-primary/5">
+                    <span className="section-header px-2">ARTIFACTS</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-muted-foreground hover:text-primary rounded-none"
+                      onClick={() => setShowArtifacts(false)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="flex-1 min-h-0 overflow-y-auto">
+                    <TutorArtifacts
+                      sessionId={activeSessionId}
+                      artifacts={artifacts}
+                      turnCount={turnCount}
+                      topic={topic}
+                      startedAt={startedAt}
+                      onCreateArtifact={handleArtifactCreated}
+                      recentSessions={recentSessions}
+                      onResumeSession={resumeSession}
+                      onDeleteArtifacts={handleDeleteArtifacts}
+                      onEndSession={endSessionById}
+                      onClearActiveSession={clearActiveSessionState}
+                    />
+                  </div>
                 </div>
-                <div className="flex-1 min-h-0 overflow-y-auto">
-                  <TutorArtifacts
-                    sessionId={activeSessionId}
-                    artifacts={artifacts}
-                    turnCount={turnCount}
-                    topic={topic}
-                    startedAt={startedAt}
-                    onCreateArtifact={handleArtifactCreated}
-                    recentSessions={recentSessions}
-                    onResumeSession={resumeSession}
-                    onDeleteArtifacts={handleDeleteArtifacts}
-                    onEndSession={endSessionById}
-                    onClearActiveSession={clearActiveSessionState}
-                  />
-                </div>
-              </div>
+              </>
             )}
           </div>
         </div>
       </div>
       {/* ── Settings Dialog ── */}
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent className="bg-black border-2 border-primary rounded-none max-w-lg">
-          <DialogTitle className="font-arcade text-primary text-sm tracking-wider">
+        <DialogContent className={`bg-black ${CARD_BORDER} max-w-lg`}>
+          <DialogTitle className="section-header">
             TUTOR SETTINGS
           </DialogTitle>
           <DialogDescription className="sr-only">
             Configure tutor model, speed tier, and custom instructions
           </DialogDescription>
           <div className="space-y-3 mt-2">
-            <label className="font-arcade text-xs text-muted-foreground">
+            <label className="section-header text-muted-foreground">
               Custom Instructions
             </label>
             {settingsLoading ? (
@@ -1027,7 +2119,7 @@ export default function Tutor() {
                 size="sm"
                 onClick={restoreDefaultInstructions}
                 disabled={settingsLoading || settingsSaving}
-                className="h-8 rounded-none font-arcade text-xs text-muted-foreground hover:text-primary border-2 border-transparent"
+                className={BTN_TOOLBAR}
               >
                 RESTORE DEFAULTS
               </Button>
@@ -1036,7 +2128,7 @@ export default function Tutor() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowSettings(false)}
-                  className="h-8 rounded-none font-arcade text-xs text-muted-foreground hover:text-primary border-2 border-transparent"
+                  className={BTN_TOOLBAR}
                 >
                   CANCEL
                 </Button>
@@ -1109,7 +2201,7 @@ function RecentSessionCard({
           lines.push("");
         }
       }
-      const filename = `Tutor - ${(s.topic || s.mode).replace(/[^a-zA-Z0-9 ]/g, "").trim()}`;
+      const filename = `Tutor - ${(s.topic || s.mode || "Session").replace(/[^a-zA-Z0-9 ]/g, "").trim()}`;
       await api.obsidian.append(`Study Sessions/${filename}.md`, lines.join("\n"));
       toast.success("Saved to Obsidian");
     } catch (err) {

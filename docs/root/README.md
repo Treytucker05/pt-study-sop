@@ -1,17 +1,19 @@
-# Root Docs (Moved)
+# Root Docs
 
-This folder holds documentation that was previously in the repo root.
-Canonical learning/runtime model for this project is CP-MSS v1.0 (`PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
+Reference-only documentation moved from the repo root.
+
+- Product/page ownership authority: `C:/pt-study-sop/docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- Execution queue: `C:/pt-study-sop/docs/root/TUTOR_TODO.md`
+- Run/build/test guide: `C:/pt-study-sop/docs/root/GUIDE_DEV.md`
+- Canonical runtime architecture: CP-MSS v1.0 in `C:/pt-study-sop/sop/library/17-control-plane.md`
 
 ## Contents
-- `ARCHITECTURE_CONTEXT.md`
+
 - `GUIDE_ARCHITECTURE.md`
 - `GUIDE_DEV.md`
 - `GUIDE_USER.md`
 - `PROJECT_ARCHITECTURE.md`
-- `ROLE.md`
-- `SYSTEM_INVENTORY.md`
-- `VISION_PPFW.md`
+- `TUTOR_STUDY_BUDDY_CANON.md`
+- `TUTOR_TODO.md`
 
-## Entry points
-- `C:/pt-study-sop/docs/README.md` (canonical docs index)
+If another file here restates product ownership differently from the canon, the canon wins.

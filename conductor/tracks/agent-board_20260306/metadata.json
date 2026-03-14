@@ -1,0 +1,16 @@
+{
+  "id": "agent-board_20260306",
+  "title": "Repo-Native Agent Board",
+  "type": "docs",
+  "status": "complete",
+  "created": "2026-03-06T00:00:00Z",
+  "updated": "2026-03-06T00:00:00Z",
+  "phases": {
+    "total": 3,
+    "completed": 3
+  },
+  "tasks": {
+    "total": 9,
+    "completed": 9
+  }
+}

@@ -311,7 +311,7 @@ class TestFacilitationPromptInjection:
 
     def test_tutor_prompt_builder_uses_facilitation_prompt(self):
         """tutor_prompt_builder._build_block_section returns facilitation_prompt."""
-        from tutor_prompt_builder import build_tutor_system_prompt
+        from tutor_prompt_builder import build_tutor_system_prompt, build_prompt_with_contexts
         block_info = {
             "name": "Brain Dump",
             "category": "prepare",
@@ -323,6 +323,63 @@ class TestFacilitationPromptInjection:
         prompt = build_tutor_system_prompt(mode="Core", current_block=block_info)
         assert "## Current Activity Block: Brain Dump" in prompt
         assert "### Steps (follow in order)" in prompt
+
+        block_info["chain_override"] = {
+            "allowed_moves": ["Explain first", "Use analogies as teaching bridges"],
+            "forbidden_moves": ["Do not present analogies as evidence"],
+            "chain_specific_prompt": "Delay retrieval until learner says ready.",
+        }
+        chain_info = {
+            "name": "Top-Down Narrative Mastery",
+            "blocks": ["Brain Dump"],
+            "current_index": 0,
+            "total": 1,
+            "runtime_profile": {
+                "teaching_style": "explanation-first, big-picture narrative",
+                "analogy_policy": "analogies encouraged as teaching bridges",
+            },
+            "gates": ["learner_confirms_ready_before_retrieve"],
+            "failure_actions": ["if_recall_poor_return_to_encode"],
+            "tier_exits": {
+                "tier_1": {
+                    "after_block": "Brain Dump",
+                    "min_duration_min": 20,
+                    "description": "Safe to stop.",
+                }
+            },
+            "requires_reference_targets": True,
+        }
+        rich_prompt = build_prompt_with_contexts(
+            current_block=block_info,
+            chain_info=chain_info,
+            course_id=1,
+            topic="Week 7",
+        )
+        assert "## Chain Runtime Profile" in rich_prompt
+        assert "Teaching style: explanation-first, big-picture narrative" in rich_prompt
+        assert "## Chain Guardrails" in rich_prompt
+        assert "learner_confirms_ready_before_retrieve" in rich_prompt
+        assert "if_recall_poor_return_to_encode" in rich_prompt
+        assert "Reference targets are required before retrieval-grade moves" in rich_prompt
+        assert "## Chain-Specific Block Rules" in rich_prompt
+        assert "Do not present analogies as evidence" in rich_prompt
+
+    def test_tutor_prompt_builder_preserves_default_rules_with_custom_instructions(self, monkeypatch):
+        """Custom instructions append to, but do not replace, core tutor rules."""
+        import tutor_prompt_builder as prompt_builder
+
+        monkeypatch.setattr(
+            "dashboard.utils.load_api_config",
+            lambda: {"tutor_custom_instructions": "Always reflect the learner's last sentence before teaching."},
+        )
+
+        prompt = prompt_builder.build_tutor_system_prompt(mode="Core", topic="Week 7", course_id=1)
+        assert "Hybrid Teaching Mode" in prompt
+        assert "Objective Lock" in prompt
+        assert "No Answer Leakage" in prompt
+        assert "No Phantom Outputs" in prompt
+        assert "Additional Custom Instructions" in prompt
+        assert "Always reflect the learner's last sentence before teaching." in prompt
 
     def test_load_chain_includes_facilitation_prompt(self):
         """_load_chain selects facilitation_prompt from DB."""

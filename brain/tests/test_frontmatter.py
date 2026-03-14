@@ -69,3 +69,144 @@ def test_frontmatter_defaults_when_no_course_fields() -> None:
         module_name="General Module",
     )
     assert "note_type: tutor_session" in md
+
+
+def test_learning_objectives_sync_sections_render_expected_contract() -> None:
+    from tutor_templates import render_learning_objectives_todo_sections
+
+    sections = render_learning_objectives_todo_sections(
+        {
+            "module_name": "Week 8 - Brain Structure",
+            "course_name": "Neuroscience",
+            "topic": "Week 8 - Brain Structure",
+            "objective_scope": "module_all",
+            "objectives": [
+                {"objective_id": "OBJ-6", "title": "Explain the major brain divisions.", "status": "active"},
+                {"objective_id": "OBJ-6A", "title": "Identify telencephalon structures.", "status": "active"},
+                {"objective_id": "OBJ-6B", "title": "Identify diencephalon structures.", "status": "active"},
+            ],
+            "materials": [
+                {"id": 527, "title": "Week 8 LO and To Do", "file_type": "txt", "source_path": "Week 8 LO and To Do.txt"},
+            ],
+        }
+    )
+
+    assert "Learning Objectives" in sections
+    assert "Parent Objectives" in sections
+    assert "Child Objectives / Atomic Targets" in sections
+    assert "Hierarchical ASCII Chapter Map" in sections
+    assert "### OBJ-6 — Explain the major brain divisions." in sections["Parent Objectives"]
+    assert "#### OBJ-6A — Identify telencephalon structures." in sections["Child Objectives / Atomic Targets"]
+    assert "| Resource | Type | Location |" in sections["Source Materials"]
+    assert sections["Hierarchical ASCII Chapter Map"].count("Source Materials") == 1
+
+
+def test_learning_objectives_sync_extracts_todos_and_reading_lines() -> None:
+    from tutor_templates import render_learning_objectives_todo_sections
+
+    sections = render_learning_objectives_todo_sections(
+        {
+            "module_name": "Week 8 - Brain Structure",
+            "course_name": "Neuroscience",
+            "topic": "Week 8 - Brain Structure",
+            "objective_scope": "module_all",
+            "objectives": [
+                {"objective_id": "OBJ-6", "title": "Explain the major brain divisions.", "status": "active"},
+            ],
+            "materials": [
+                {
+                    "id": 527,
+                    "title": "Week 8 LO and To Do",
+                    "file_type": "txt",
+                    "source_path": "Week 8 LO and To Do.txt",
+                    "content_text": "\n".join(
+                        [
+                            "To-do list",
+                            "",
+                            "• Label lobes on a blank brain diagram",
+                            "• Trace CSF flow",
+                            "",
+                            "Reading: Lundy-Ekmark Ch 9",
+                        ]
+                    ),
+                },
+            ],
+        }
+    )
+
+    assert "Label lobes on a blank brain diagram" in sections["To Do"]
+    assert "Trace CSF flow" in sections["To Do"]
+    assert "Lundy-Ekmark Ch 9" in sections["Assigned Chapters / Reading"]
+
+
+def test_map_of_contents_sync_sections_render_expected_contract() -> None:
+    from tutor_templates import render_map_of_contents_sections
+
+    sections = render_map_of_contents_sections(
+        {
+            "module_name": "Week 8 - Brain Structure",
+            "course_name": "Neuroscience",
+            "topic": "Week 8 - Brain Structure",
+            "learning_objectives_page_name": "Learning Objectives & To Do",
+            "objectives": [
+                {"objective_id": "OBJ-6", "title": "Explain the major brain divisions.", "status": "active"},
+                {"objective_id": "OBJ-6A", "title": "Identify telencephalon structures.", "status": "active"},
+            ],
+            "materials": [],
+        }
+    )
+
+    assert "[[Learning Objectives & To Do]]" in sections["Module Spine"]
+    assert "Tutor First Objective: [[Learning Objectives & To Do#OBJ-6A|OBJ-6A]]" in sections["Module Spine"]
+    assert "[[Learning Objectives & To Do#OBJ-6A|OBJ-6A]]" in sections["Objective Index"]
+    assert "Follow-up targets: [[Learning Objectives & To Do#OBJ-6A|OBJ-6A]]" in sections["Session Notes"]
+    assert "Hierarchical ASCII Chapter Map" not in sections["Objective Index"]
+
+
+def test_map_of_contents_sync_dedupes_material_root_and_surfaces_reading() -> None:
+    from tutor_templates import render_map_of_contents_sections
+
+    sections = render_map_of_contents_sections(
+        {
+            "module_name": "Week 8 - Brain Structure",
+            "course_name": "Neuroscience",
+            "topic": "Week 8 - Brain Structure",
+            "learning_objectives_page_name": "Learning Objectives & To Do",
+            "objectives": [
+                {"objective_id": "OBJ-6", "title": "Explain the major brain divisions.", "status": "active"},
+                {"objective_id": "OBJ-6A", "title": "Identify telencephalon structures.", "status": "active"},
+            ],
+            "materials": [
+                {
+                    "id": 527,
+                    "title": "Week 8 LO and To Do",
+                    "file_type": "txt",
+                    "source_path": "Week 8 LO and To Do.txt",
+                    "content_text": "Reading: Lundy-Ekmark Ch 9",
+                },
+                {
+                    "id": 529,
+                    "title": "Week 8 LO and To Do.txt",
+                    "file_type": "txt",
+                    "source_path": "Week 8 LO and To Do.txt",
+                    "content_text": "Reading: Lundy-Ekmark Ch 9",
+                },
+            ],
+        }
+    )
+
+    assert sections["Hierarchical ASCII Chapter Map"].count("Source Materials") == 1
+    assert "Reading: Lundy-Ekmark Ch 9" in sections["Schedule Context"]
+
+
+def test_parse_existing_map_of_contents_objectives_accepts_lo_anchor_links() -> None:
+    from dashboard.api_tutor_vault import _parse_existing_map_of_contents_objectives
+
+    content = (
+        "1. [[Learning Objectives & To Do#OBJ-6|OBJ-6]] Explain the major brain divisions.\n"
+        "2. [[Learning Objectives & To Do#OBJ-6A|OBJ-6A]] Identify telencephalon structures.\n"
+    )
+
+    parsed = _parse_existing_map_of_contents_objectives(content)
+
+    assert parsed == {"OBJ-6": "active", "OBJ-6A": "active"}

@@ -1,0 +1,28 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.0, pytest-9.0.2, pluggy-1.6.0 -- C:\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\pt-study-sop
+plugins: anyio-4.11.0, Faker-40.4.0, langsmith-0.6.9, asyncio-1.3.0, timeout-2.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 18 items
+
+brain/tests/test_path_generation.py::test_study_notes_base_path_topic_unit_type PASSED [  5%]
+brain/tests/test_path_generation.py::test_study_notes_base_path_week_unit_type PASSED [ 11%]
+brain/tests/test_path_generation.py::test_study_notes_base_path_construct_unit_type PASSED [ 16%]
+brain/tests/test_path_generation.py::test_study_notes_base_path_module_unit_type PASSED [ 22%]
+brain/tests/test_path_generation.py::test_study_notes_base_path_deduplication_when_subtopic_equals_unit PASSED [ 27%]
+brain/tests/test_path_generation.py::test_study_notes_base_path_unmapped_course_fallback PASSED [ 33%]
+brain/tests/test_path_generation.py::test_canonical_moc_path_ends_with_map_of_contents PASSED [ 38%]
+brain/tests/test_path_generation.py::test_canonical_moc_path_includes_base_path PASSED [ 44%]
+brain/tests/test_path_generation.py::test_canonical_moc_path_deduplication PASSED [ 50%]
+brain/tests/test_path_generation.py::test_get_course_map_returns_200 PASSED [ 55%]
+brain/tests/test_path_generation.py::test_get_course_map_returns_json PASSED [ 61%]
+brain/tests/test_path_generation.py::test_get_course_map_has_vault_root PASSED [ 66%]
+brain/tests/test_path_generation.py::test_get_course_map_has_courses_list PASSED [ 72%]
+brain/tests/test_path_generation.py::test_get_course_map_returns_5_courses PASSED [ 77%]
+brain/tests/test_path_generation.py::test_get_course_map_courses_have_unit_type PASSED [ 83%]
+brain/tests/test_path_generation.py::test_get_course_map_unit_types_match_expected PASSED [ 88%]
+brain/tests/test_path_generation.py::test_get_course_map_courses_have_required_fields PASSED [ 94%]
+brain/tests/test_path_generation.py::test_get_course_map_units_have_required_fields PASSED [100%]
+
+============================= 18 passed in 6.18s ==============================

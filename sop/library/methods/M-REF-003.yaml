@@ -16,6 +16,9 @@ tags:
 mechanisms:
 - elaboration
 - discrimination
+stipulations:
+- Preserve the concept or narrative spine of the topic rather than producing disconnected bullets.
+- Keep the artifact compact enough to support later retrieval, not as a substitute for all notes.
 knobs:
   artifact_depth: standard
   link_density: medium
@@ -58,6 +61,7 @@ facilitation_prompt: 'You are running M-REF-003 (One-Page Anchor) in REFERENCE s
   - Map concept to applied context.
 
   - Do not skip artifact creation.
+  - Preserve the main concept spine so the anchor supports later recall, not just storage.
 
 
   Required outputs:
@@ -74,6 +78,8 @@ facilitation_prompt: 'You are running M-REF-003 (One-Page Anchor) in REFERENCE s
 
   If required inputs are missing, request only the minimum needed input and continue.
 
+  Keep the anchor compact, retrieval-ready, and explicitly scoped to the active objective.
+
   '
 gating_rules:
 - Produce structured targets that RETRIEVE can directly test.
@@ -83,3 +89,24 @@ failure_modes:
   mitigation: Rewrite targets into explicit prompts/answers.
 - mode: Reference bloat
   mitigation: Trim to objective-critical content only.
+allowed_moves:
+- Guide the learner to capture minimal definitions (high-value distinctions only)
+- Enforce one-page constraint ruthlessly — trim anything that exceeds it
+- Require decision rules and rapid discrimination cues
+- Push for 3 canonical examples AND 3 near-miss examples
+- Require trap notes for common errors
+- Preserve the concept spine/narrative structure (not disconnected bullets)
+- Help the learner prioritize which content is objective-critical
+- Build discrimination cues for confusable items
+forbidden_moves:
+- Accept a bloated artifact that exceeds one page — enforce the constraint
+- Accept vague or retrieval-unfriendly targets (must be explicit prompt/answer pairs)
+- Generate the One-Page Anchor FOR the learner without their active construction
+- Skip any required section (definitions, decision rules, examples, near-misses, traps)
+- Introduce entirely new content not yet encoded
+- Skip artifact creation — the One-Page Anchor IS the output
+- Accept disconnected bullet lists without narrative spine
+- Rush through consolidation without all sections present
+required_outputs:
+- One-Page Anchor (definitions, decision rules, examples, near-misses, traps — all present)
+- Trap list and near-miss set (3 canonical + 3 near-miss examples minimum)

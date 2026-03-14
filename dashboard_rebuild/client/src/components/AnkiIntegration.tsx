@@ -99,14 +99,21 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
     onSettled: () => refetchDrafts(),
   });
 
-  const updateDraftMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: { front?: string; back?: string; deckName?: string } }) =>
-      api.anki.updateDraft(id, data),
-    onSuccess: () => {
-      refetchDrafts();
-      setEditingDraft(null);
-    },
-  });
+const updateDraftMutation = useMutation({
+  mutationFn: ({ id, data }: { id: number; data: { front?: string; back?: string; deckName?: string } }) =>
+    api.anki.updateDraft(id, data),
+  onSuccess: () => {
+    refetchDrafts();
+    setEditingDraft(null);
+  },
+  onError: (err: Error) => {
+    toast({
+      title: "Failed to update draft",
+      description: err.message,
+      variant: "destructive",
+    });
+  },
+});
 
   const handleEditDraft = (draft: typeof pendingDrafts[0]) => {
     setEditingDraft(draft.id);
@@ -197,9 +204,11 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
                         size="sm"
                         className="h-6 px-2 text-xs font-terminal bg-success hover:bg-success/80"
                         onClick={() => {
+                          if (selectedDrafts.size === 0 || approveDraftMutation.isPending || deleteDraftMutation.isPending) return;
                           selectedDrafts.forEach(id => approveDraftMutation.mutate(id));
                           setSelectedDrafts(new Set());
                         }}
+                        disabled={selectedDrafts.size === 0 || approveDraftMutation.isPending || deleteDraftMutation.isPending}
                       >
                         <Check className="w-3 h-3 mr-1" />
                         Approve ({selectedDrafts.size})
@@ -209,9 +218,11 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
                         variant="destructive"
                         className="h-6 px-2 text-xs font-terminal"
                         onClick={() => {
+                          if (selectedDrafts.size === 0 || deleteDraftMutation.isPending || approveDraftMutation.isPending) return;
                           selectedDrafts.forEach(id => deleteDraftMutation.mutate(id));
                           setSelectedDrafts(new Set());
                         }}
+                        disabled={selectedDrafts.size === 0 || deleteDraftMutation.isPending || approveDraftMutation.isPending}
                       >
                         <Trash2 className="w-3 h-3 mr-1" />
                         Delete ({selectedDrafts.size})
@@ -258,6 +269,7 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
                                   className="h-5 w-5 shrink-0 border-success/50 text-success hover:bg-success/20"
                                   onClick={() => approveDraftMutation.mutate(draft.id)}
                                   title="Approve card"
+                                  disabled={approveDraftMutation.isPending || deleteDraftMutation.isPending}
                                 >
                                   <Check className="w-3 h-3" />
                                 </Button>
@@ -267,6 +279,7 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
                                   className="h-5 w-5 shrink-0 border-destructive/50 text-destructive hover:bg-destructive/20"
                                   onClick={() => deleteDraftMutation.mutate(draft.id)}
                                   title="Delete card"
+                                  disabled={approveDraftMutation.isPending || deleteDraftMutation.isPending}
                                 >
                                   <Trash2 className="w-3 h-3" />
                                 </Button>
@@ -332,8 +345,7 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
       >
         <DialogContent
           data-modal="brain-edit-draft"
-          className="bg-black border-[3px] border-double border-primary rounded-none max-w-lg translate-y-0"
-          style={{ zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" }}
+          className="bg-black border-[3px] border-double border-primary rounded-none max-w-lg"
         >
           <DialogHeader>
             <DialogTitle className="font-arcade text-primary flex items-center gap-2">

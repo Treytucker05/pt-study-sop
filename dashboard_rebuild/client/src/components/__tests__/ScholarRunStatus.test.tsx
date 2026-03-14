@@ -3,9 +3,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ScholarRunStatus } from "@/components/ScholarRunStatus";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-// Mock fetch for the inline queryFn
-const mockFetch = vi.fn();
-vi.stubGlobal("fetch", mockFetch);
+const mockRunStatus = vi.fn();
+const mockRun = vi.fn();
 
 // Mock theme constants
 vi.mock("@/lib/theme", () => ({
@@ -15,9 +14,14 @@ vi.mock("@/lib/theme", () => ({
   STATUS_ERROR: "text-red-400",
 }));
 
-// Mock api (not used directly but imported)
+// Mock api client used by the component
 vi.mock("@/lib/api", () => ({
-  api: {},
+  api: {
+    scholar: {
+      runStatus: (...args: unknown[]) => mockRunStatus(...args),
+      run: (...args: unknown[]) => mockRun(...args),
+    },
+  },
 }));
 
 function createWrapper() {
@@ -30,14 +34,12 @@ function createWrapper() {
 }
 
 function mockStatus(data: Record<string, unknown>) {
-  mockFetch.mockResolvedValue({
-    ok: true,
-    json: () => Promise.resolve(data),
-  });
+  mockRunStatus.mockResolvedValue(data);
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockRun.mockResolvedValue({ ok: true });
 });
 
 describe("ScholarRunStatus", () => {

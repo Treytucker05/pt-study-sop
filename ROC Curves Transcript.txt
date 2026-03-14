@@ -1,0 +1,28 @@
+How to Interpret ROC Curves (Dr. Terry Shaneyfelt - UAB School of Medicine)
+YouTube URL: https://www.youtube.com/watch?v=egTNM8NSa2k
+
+Transcript:
+
+Hi there, I'm Dr. Terry Shaneyfelt for the Critical Appraisal Institute for Librarians in UAB School of Medicine. In this video I'm going to talk about how you interpret receiver operator characteristic curves, also called ROC curves. These are often used in diagnostic test studies to demonstrate the trade-offs between sensitivity and specificity at various cut-offs. The diagnostic test also can tell you about the overall accuracy of a diagnostic test and can be used to compare multiple diagnostic tests for a given disorder. So I think it's useful to understand how to interpret these curves.
+
+So ultimately, think about diagnostic tests. We tend to think about them as just being positive or negative. A chest X-ray just shows pneumonia or doesn't. A chest CT shows a pulmonary embolus or doesn't. But what about tests that are on a continuum, like blood glucose? They can be positive and negative depending on where we put our cutoff. Then this graph tries to show that, and often is the case with diseases. We often see this overlap, depending on the cutoff point. They're not perfect tests for two indiscriminating patients who have and don't have disease. As often, some false positives and false negatives. And where we move this cutoff point can change our false positive rates and our false negative rates.
+
+So if I want to reduce my false positives and move this cutoff point over to the right, I'll increase my false negatives. Likewise, if I want to minimize false negatives and move my cutoff point to the left, well, I'm going to increase my false positives. So you have to understand that different cutoff points have different sensitivities and specificities and hence have different false positive and false negative rates.
+
+So an ROC curve can be used to help determine the cutoff point which optimizes sensitivity and specificity for a given test. It can also be used to assess the overall diagnostic accuracy of a test. And then finally, it can be used to compare a couple of or more diagnostic tests for the same disorders. I'll show you in a minute.
+
+So how do we construct an ROC curve? Well, on one axis we plot the sensitivity of a diagnostic test at a given cutoff points versus one minus specificity. So we plot the true positive rate versus the false positive rate. There's a diagonal line that cuts across the middle that indicates where a useless test would fall, and I'll talk a little bit more about that in just a second. A perfect test is going to hug along the left-hand side and perfectly horizontally across the top. It has 100% sensitivity and high percent specificity pretty much at every cutoff point. It's rare that you see a perfect test.
+
+So how we construct an ROC curve? We take all the individual cutoff points of a given test and we recalculate sensitivity and specificity for each of these cutoff points and we plot them on this curve. So we'll plot all the individual points and draw a line through them, as we see here, and that's our ROC curve.
+
+And now I mentioned a minute ago that we can calculate or determine the overall diagnostic accuracy of a test. So we call this the area under the ROC curve. And a best test is the whole curve is colored in and it gives an overall accuracy of 100%. And as we get less and less and we get close to 50% of an area under the ROC curve, and 50% accuracy is useless—it's basically a coin flip, but not a useful test. So what we want our area under the ROC curve or diagnostic accuracy to be as high as possible.
+
+Let's look at a test or an ROC curve with some real data. So this is data published in the Emergency Medicine Journal in 2005. The authors looked at different various white blood cell count cut-offs for detecting bacterial infection in febrile neonates. And a see over here you can see the different white blood cell cut-offs, and for each of these it has a corresponding sensitivity and specificity. And when you plot these on an ROC curve, you get a graph that looks like this.
+
+So each of this curve is all the individual points of different cutoff values of white blood cell count, as you saw on the slide before this. And the area under the ROC curve—the overall accuracy in this particular study for white blood elevated white blood cell count for diagnosing bacterial infection in febrile neonates was 72.3%.
+
+Now I mentioned also earlier that we can compare multiple diagnostic tests to each other using ROC curve methodology. So this is a study published in Archives of Diseases of Children in 1999. And it looked at the same thing as our last study—looked at different tests for detecting bacterial infection in febrile neonates. And it looked at white blood cell counts, CRP, and procalcitonin. And you just do like we did earlier in that example. You, for all the different cutoff points, you plot the corresponding sensitivities and specificities. In this case, you get three ROC curves.
+
+And the best test will be the one that clusters further up to this left-hand shoulder, and it makes sense because the areas under the ROC curve, which is shown here: procalcitonin has an overall accuracy of 96%; CRP is next at 83%; and in this particular study, the elevated white blood cell count was useless. It had an accuracy of 51%, essentially a coin flip.
+
+So I hope this video has helped you understand how ROC curves are constructed and also how to interpret them. If you have any questions, you can contact me at teri.s at UAB dot edu.

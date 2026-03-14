@@ -117,3 +117,26 @@ gating_rules:
 - Produce structured targets that RETRIEVE can directly test.
 - No retrieval drills until reference targets are explicit.
 artifact_type: notes
+allowed_moves:
+- Identify missed items from retrieval practice and create mastery targets
+- Enforce brief re-study windows (30-60 seconds per item) before re-testing
+- Immediately re-test after re-study without delay
+- Track loop counts per item as a diagnostic metric
+- Flag weak anchors (items needing 3+ loops) for earlier spacing
+- Enforce mastery criterion (correct recall at least once, ideally twice for weak items)
+- Generate updated spacing recommendations based on loop data
+- Route persistently missed items back to ENCODE
+forbidden_moves:
+- Allow extended re-study sessions (must be 30-60 seconds, not lengthy review)
+- Skip re-testing after re-study — the test is where learning happens
+- Accept a single correct recall as mastery for items that needed 3+ loops (require 2)
+- Skip tracking loop counts — they are essential diagnostic data
+- Generate the mastery loop FOR the learner without their active recall
+- Skip artifact creation — loop counts and weak anchor list ARE the output
+- Introduce entirely new content not yet encoded
+- Stop the loop before all items are recalled correctly (unless time budget exhausted)
+required_outputs:
+- Mastery achieved on all targeted items (or partial progress with time noted)
+- Loop count per item (difficulty metric)
+- Weak anchor list (items needing 3+ loops)
+- Updated spacing recommendations based on loop performance

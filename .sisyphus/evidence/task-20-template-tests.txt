@@ -1,0 +1,40 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.0, pytest-9.0.2, pluggy-1.6.0 -- C:\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\pt-study-sop
+plugins: anyio-4.11.0, Faker-40.4.0, langsmith-0.6.9, asyncio-1.3.0, timeout-2.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 30 items
+
+brain/tests/test_tutor_templates.py::test_render_session_note_markdown_includes_sections PASSED [  3%]
+brain/tests/test_tutor_templates.py::test_render_concept_note_markdown_includes_relationships PASSED [  6%]
+brain/tests/test_tutor_templates.py::test_render_template_artifact_requires_payload_shape PASSED [ 10%]
+brain/tests/test_tutor_templates.py::TestSafeFormatDict::test_missing_key_returns_empty_string PASSED [ 13%]
+brain/tests/test_tutor_templates.py::TestSafeFormatDict::test_format_map_with_missing_keys PASSED [ 16%]
+brain/tests/test_tutor_templates.py::TestSafeFormatDict::test_safe_format_dict_is_dict_subclass PASSED [ 20%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactNotes::test_notes_artifact_includes_frontmatter PASSED [ 23%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactNotes::test_notes_artifact_includes_content PASSED [ 26%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactNotes::test_notes_artifact_with_optional_paths PASSED [ 30%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactNotes::test_notes_artifact_returns_string PASSED [ 33%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactConceptMap::test_concept_map_artifact_includes_frontmatter PASSED [ 36%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactConceptMap::test_concept_map_artifact_includes_mermaid_diagram PASSED [ 40%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactConceptMap::test_concept_map_artifact_returns_string PASSED [ 43%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactComparisonTable::test_comparison_table_artifact_includes_frontmatter PASSED [ 46%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactComparisonTable::test_comparison_table_artifact_includes_table_content PASSED [ 50%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactComparisonTable::test_comparison_table_artifact_returns_string PASSED [ 53%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactRecall::test_recall_artifact_includes_frontmatter PASSED [ 56%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactRecall::test_recall_artifact_includes_recall_content PASSED [ 60%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactRecall::test_recall_artifact_returns_string PASSED [ 63%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactCards::test_cards_artifact_includes_frontmatter PASSED [ 66%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactCards::test_cards_artifact_includes_cards_content PASSED [ 70%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactCards::test_cards_artifact_returns_string PASSED [ 73%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactFallback::test_unknown_artifact_type_falls_back_to_notes PASSED [ 76%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactFallback::test_empty_artifact_type_falls_back_to_notes PASSED [ 80%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactAllTypes::test_all_artifact_types_render_correctly[notes-block_notes-## Notes] PASSED [ 83%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactAllTypes::test_all_artifact_types_render_correctly[concept-map-block_diagram-## Concept Diagram] PASSED [ 86%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactAllTypes::test_all_artifact_types_render_correctly[comparison-table-block_comparison-## Comparison Table] PASSED [ 90%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactAllTypes::test_all_artifact_types_render_correctly[recall-block_recall-## Recall Output] PASSED [ 93%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactAllTypes::test_all_artifact_types_render_correctly[cards-block_cards-## Anki Card Drafts] PASSED [ 96%]
+brain/tests/test_tutor_templates.py::TestRenderBlockArtifactAllTypes::test_all_artifact_types_include_frontmatter_and_links PASSED [100%]
+
+============================= 30 passed in 0.15s ==============================

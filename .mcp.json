@@ -3,44 +3,6 @@
     "filesystem": {
       "command": "cmd",
       "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-filesystem", "."]
-    },
-    "github": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-github"]
-    },
-    "memory": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-memory"]
-    },
-    "codex-cli": {
-      "command": "codex-mcp",
-      "args": [],
-      "env": {
-        "MCP_TOOL_TIMEOUT": "36000000"
-      }
-    },
-    "stitch": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "@_davideast/stitch-mcp", "proxy"],
-      "env": {
-        "STITCH_API_KEY": "AQ.Ab8RN6KbQ9kwkEBoB99ilag-pk1Gt-uCHIBf3uoMpSziCaT4PQ"
-      }
-    },
-    "shadcn": {
-      "command": "cmd",
-      "args": ["/c", "npx", "shadcn@latest", "mcp"]
-    },
-    "context7": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "@upstash/context7-mcp"]
-    },
-    "gemini": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "gemini-mcp-tool"]
-    },
-    "claude": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "claude-mcp"]
     }
   }
 }

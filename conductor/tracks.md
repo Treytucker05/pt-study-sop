@@ -2,21 +2,123 @@
 
 This file tracks all major tracks for the project. Each track has its own detailed plan in its respective folder.
 
-Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
+Execution registry only. Product or subsystem truth does not live here.
 
-Active status: 1 active workstream.
+- Product/ownership authority lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+- Active execution board lives in `docs/root/TUTOR_TODO.md`.
+- Track documents are implementation evidence and status history; if they conflict with the canon, the canon wins.
 
-Latest update: 2026-03-14 Trey Agent Repo Readiness completed `T6` isolated startup. Operator launch on `5000` and hermetic harness launch on a second port now coexist; `T7` is next.
+Update policy: after every significant change, update this file with status changes and point active execution back to `docs/root/TUTOR_TODO.md`.
 
----
+Active execution priority is tracked in `docs/root/TUTOR_TODO.md`.
+
+Active status: 2 active workstreams.
+
+Latest update: 2026-03-14, Trey Agent Repo Readiness completed `T6` isolated startup while `Tutor Launch / Shell Realignment Cleanup` remains the active Tutor workstream.
 
 - [~] **Track: Trey Agent Repo Readiness** (active — created 2026-03-13; resumed 2026-03-14; `T1`-`T6` complete)
   Shared repo-local harness contract, env/bootstrap contract, tiered agent matrix, isolated startup implementation, and pending work for harness bootstrap, hermetic Tutor validation, artifacts, CI, and cross-agent proof.
   *Link: [./tracks/trey-agent-repo-readiness_20260313/](./tracks/trey-agent-repo-readiness_20260313/)*
 
-- [x] **Track: Tutor Launch / Shell Realignment** (complete — created 2026-03-13; closed 2026-03-13)
-  Brain-owned launch, explicit Tutor course scoping, thin Tutor start/resume surface, wizard retirement, and branch-grounded final validation.
-  *Link: [./tracks/tutor_launch_shell_realignment_20260313/](./tracks/tutor_launch_shell_realignment_20260313/)*
+---
+
+- [ ] **Track: Tutor Launch / Shell Realignment Cleanup** (active — created 2026-03-13; scope: durable track bootstrap, stale planning/doc sync, Tutor launch-state authority, start-panel replacement, shell UX cleanup, active-doc rewrite, integrated validation)
+  *Link: [./tracks/tutor-launch-shell-realignment_20260313/](./tracks/tutor-launch-shell-realignment_20260313/)*
+
+---
+
+- [x] **Track: Agent Ecosystem Hygiene** (complete — created 2026-03-13; closed 2026-03-13; scope: supported skill-topology freeze, sync-script repair, supported-root cleanup, Gemini/Antigravity drift resolution, config secret hardening, docs/fallback alignment)
+  *Link: [./tracks/agent-ecosystem-hygiene_20260313/](./tracks/agent-ecosystem-hygiene_20260313/)*
+
+---
+
+- [x] **Track: Course-Keyed Tutor Shell + Studio Foundation** (complete — created 2026-03-13; closed 2026-03-13; scope: course-keyed Tutor shell contract, durable track bootstrap, project workspace state, normalized Studio foundation tables, Tutor shell summary/state APIs)
+  *Link: [./tracks/course-keyed-tutor-shell_20260313/](./tracks/course-keyed-tutor-shell_20260313/)*
+
+---
+
+- [x] **Track: Brain-Centered Triad Reframe** (complete — created 2026-03-12; closed 2026-03-12; scope: corrected one-student Brain / Scholar / Tutor end-state, Tutor-centered value framing, PRD, route/shell recenter, mastery/API follow-up, Gemini embedding migration hardening, and closeout verification)
+  *Link: [./tracks/brain-centered-triad_20260312/](./tracks/brain-centered-triad_20260312/)*
+
+---
+
+- [x] **Track: Brain / Scholar / Tutor Realignment** (complete — created 2026-03-11; closed 2026-03-11; scope: contract freeze, Brain learner model, Scholar research partner, bounded Tutor mediation, premium-individual shell)
+  *Link: [./tracks/brain-scholar-tutor-realignment_20260311/](./tracks/brain-scholar-tutor-realignment_20260311/)*
+
+---
+
+- [x] **Track: Tutor 10/10 Certification** (complete — created 2026-03-07; closed 2026-03-13; scope: scorecard, fixtures, chain dispositions, certification harness, release gate)
+  *Link: [./tracks/tutor-10-certification_20260307/](./tracks/tutor-10-certification_20260307/)*
+
+---
+
+- [x] **Track: Top-Down Tutor Hardening** (complete — created 2026-03-07; closed 2026-03-13 after Week 7 live comparison; scope: runtime rule stack, top-down chains, confidence/provenance UX)
+  *Link: [./tracks/topdown-tutor-hardening_20260307/](./tracks/topdown-tutor-hardening_20260307/)*
+
+---
+
+- [x] **Track: Tutor Vision Lock** (complete — created 2026-03-01; closed 2026-03-13; scope: instruction contract, chain/runtime ownership, notes model, validation gate)
+  *Link: [./tracks/tutor_vision_lock_20260301/](./tracks/tutor_vision_lock_20260301/)*
+
+---
+
+- [x] **Track: Tutor Artifact Ownership Hardening** (complete — created 2026-03-13; closed 2026-03-13; scope: note/card/map session ownership, delete cleanup, artifact contract sync)
+  *Link: [./tracks/tutor-artifact-ownership-hardening_20260313/](./tracks/tutor-artifact-ownership-hardening_20260313/)*
+
+---
+
+- [x] **Track: Neuroscience Exam Intake + First Tutor Run** (complete — created 2026-03-07; closed 2026-03-13; scope: Week 7 live intake, Obsidian scaffold bridge, first exam-scoped Tutor run)
+  *Link: [./tracks/neuroscience-exam-intake_20260307/](./tracks/neuroscience-exam-intake_20260307/)*
+
+---
+
+- [x] **Track: Skills Catalog Review** (complete — created 2026-03-06; closed 2026-03-06; scope: full skill catalog, decision fields, seeded planning review)
+  *Link: [./tracks/skills-catalog-review_20260306/](./tracks/skills-catalog-review_20260306/)*
+
+---
+
+- [x] **Track: Skills Hygiene** (complete — created 2026-03-06; closed 2026-03-06; scope: shared skill inventory, grouping, safe first cleanup of broken skill links)
+  *Link: [./tracks/skills-hygiene_20260306/](./tracks/skills-hygiene_20260306/)*
+
+---
+
+- [x] **Track: Repo-Native Agent Board** (complete — created 2026-03-06; closed 2026-03-06; scope: shared handoff board, canon/setup wiring, multi-agent coordination rules)
+  *Link: [./tracks/agent-board_20260306/](./tracks/agent-board_20260306/)*
+
+---
+
+- [x] **Track: Root AGENTS Canon Trim** (complete — created 2026-03-06; closed 2026-03-06; scope: root canon trim, guardrails extraction, linked-doc cleanup)
+  *Link: [./tracks/agents-root-trim_20260306/](./tracks/agents-root-trim_20260306/)*
+
+---
+
+- [x] **Track: Agent Canon Follow-Up** (complete — created 2026-03-06; closed 2026-03-06; scope: global Claude redundancy cleanup, sync-agent-config summary output, setup optimization)
+  *Link: [./tracks/agent-canon-followup_20260306/](./tracks/agent-canon-followup_20260306/)*
+
+---
+
+- [x] **Track: Agent Canon Alignment and Subagent Reliability** (complete — created 2026-03-06; closed 2026-03-06; scope: Codex subagent mismatch repair, repo/global agent canon alignment, operator walkthrough)
+  *Link: [./tracks/agent-canon-alignment_20260306/](./tracks/agent-canon-alignment_20260306/)*
+
+---
+
+- [x] **Track: Tutor / Study Buddy Canon Audit** (complete — created 2026-03-06; closed 2026-03-06; scope: master canon, evidence audit, active-doc truth-path rewiring, archive-as-history boundary)
+  *Link: [./tracks/study-buddy-canon-audit_20260306/](./tracks/study-buddy-canon-audit_20260306/)*
+
+---
+
+- [x] **Track: Tutor Audit Hardening** (complete — created 2026-03-05; closed 2026-03-06; scope: objective lifecycle, retrieval debug, materials handoff, artifact restore/delete telemetry, SSE hardening)
+  *Link: [./tracks/tutor-audit-hardening_20260305/](./tracks/tutor-audit-hardening_20260305/)*
+
+---
+
+- [x] **Track: Vault Redesign (Obsidian CLI Migration)** (complete — created 2026-03-01; closed 2026-03-03; 27 tasks across 5 waves, 141 targeted tests)
+  Full CLI migration (REST -> CLI), 5 block artifact templates, Map of Contents renderer, LO extraction pipeline, vault_write_status toasts, fire-and-forget block writes. 916 tests passing.
+  *Plan: `.sisyphus/plans/vault-redesign.md`*
+
+- [x] **Track: Tutor Audit Remediation (P0/P1)** (complete — created 2026-03-02; closed 2026-03-02; 10 tasks, 10 tests)
+  Fix save-wrap URL, session summary contract, chain progress shape, artifact type mapping.
+  *Link: [./tracks/tutor-audit-remediation_20260302/](./tracks/tutor-audit-remediation_20260302/)*
 
 - [x] **Track: TutorChat Speed Tiers** (complete — created 2026-02-24; closed 2026-02-24; 4 tasks, 766 tests)
   UI mode toggles gate expensive pipeline stages. Parallel RAG. Model/reasoning per tier.
@@ -61,4 +163,3 @@ Latest update: 2026-03-14 Trey Agent Repo Readiness completed `T6` isolated star
 - [x] **Track: UI/UX Professional Audit** (complete — created 2026-02-20; closed 2026-02-21; 3 phases, 11 tasks)
   Systematic professional-grade QA and UI/UX review tailored to the Retro Arcade design system.
   *Link: [./tracks/ui_ux_audit_20260220/](./tracks/ui_ux_audit_20260220/)*
-

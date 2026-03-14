@@ -81,6 +81,26 @@ primary_citations:
 - Rawson and Dunlosky (2011)
 - Bjork and Bjork (2011)
 evidence_raw: Focused relearning based on diagnosed weaknesses improves long-term retention.
+allowed_moves:
+- Aggregate misses by error type (Recall, Confusion, Rule, Representation, Procedure, Computation, Speed)
+- Score weakness impact using weighting profile (frequency, confidence mismatch, latency)
+- Rank weaknesses deterministically and emit exactly top 3
+- Apply deterministic tie-breaks (high-confidence misses first, then frequency)
+- Map each weakness to an ENCODE method-family seed
+- Keep ranking scoped to current objective telemetry only
+- Trigger micro-recalibration if too little data for stable ranking
+forbidden_moves:
+- Teach or explain content (routing and ranking only)
+- Emit more or fewer than exactly 3 weaknesses
+- Use non-deterministic ranking (must be reproducible)
+- Provide full lesson plans or deep explanations
+- Include items outside current objective scope
+- Skip tie-break resolution (all ties must be resolved)
+- Allow ranking to drift into teaching mode
+required_outputs:
+- PrioritySet (exactly 3 ranked weaknesses)
+- WeaknessScoreTable (scoring breakdown per weakness)
+- EncodeRoutingSeed (one ENCODE method-family recommendation per weakness)
 facilitation_prompt: 'You are running M-CAL-003 (Priority Set) in CALIBRATE stage.
 
   Build a deterministic ranked weakness set for ENCODE routing.

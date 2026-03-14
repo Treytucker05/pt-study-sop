@@ -398,10 +398,10 @@ describe("api.brain", () => {
 });
 
 describe("api.scholar", () => {
-  it("getQuestions fetches /scholar/questions", async () => {
+  it("getInvestigations fetches /scholar/investigations", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse([]));
-    await api.scholar.getQuestions();
-    expect(mockFetch).toHaveBeenCalledWith("/api/scholar/questions", expect.anything());
+    await api.scholar.getInvestigations();
+    expect(mockFetch).toHaveBeenCalledWith("/api/scholar/investigations?limit=20", expect.anything());
   });
 
   it("chat sends POST", async () => {
@@ -426,6 +426,24 @@ describe("api.scholar", () => {
     mockFetch.mockResolvedValueOnce(jsonResponse([]));
     await api.scholar.runHistory(5);
     expect(mockFetch).toHaveBeenCalledWith("/api/scholar/run/history?limit=5", expect.anything());
+  });
+
+  it("createInvestigation sends POST", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ investigation_id: "scholar-inv-1" }));
+    await api.scholar.createInvestigation({ query_text: "Retention drift", rationale: "Need cited answer" });
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/scholar/investigations",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("getInvestigation fetches detail by id", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ investigation_id: "scholar-inv-1" }));
+    await api.scholar.getInvestigation("scholar-inv-1");
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/scholar/investigations/scholar-inv-1",
+      expect.anything(),
+    );
   });
 });
 
@@ -551,6 +569,24 @@ describe("api.tutor", () => {
     );
   });
 
+  it("getProjectShell builds course query", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ course: { id: 1 }, workspace_state: {} }));
+    await api.tutor.getProjectShell({ course_id: 1, session_id: "tutor-123" });
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).toContain("/api/tutor/project-shell?");
+    expect(url).toContain("course_id=1");
+    expect(url).toContain("session_id=tutor-123");
+  });
+
+  it("saveProjectShellState sends PUT", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ course_id: 1, workspace_state: { revision: 1 } }));
+    await api.tutor.saveProjectShellState({ course_id: 1, revision: 0 });
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/tutor/project-shell/state",
+      expect.objectContaining({ method: "PUT" })
+    );
+  });
+
   it("endSession sends POST", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse({ ended: true }));
     await api.tutor.endSession("tutor-123");
@@ -581,13 +617,55 @@ describe("api.tutor", () => {
     expect(mockFetch).toHaveBeenCalledWith("/api/tutor/content-sources", expect.anything());
   });
 
+  it("captureStudioItem sends POST", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ request_id: "req-1", item: { id: 1 } }));
+    await api.tutor.captureStudioItem({ course_id: 1, item_type: "note" });
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/tutor/studio/capture",
+      expect.objectContaining({ method: "POST" })
+    );
+  });
+
+  it("getMaterialFileUrl returns the direct material file route", () => {
+    expect(api.tutor.getMaterialFileUrl(42)).toBe("/api/tutor/materials/42/file");
+  });
+
+  it("restoreStudioItems builds query string", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ items: [], counts: { total: 0, captured: 0, promoted: 0 } }));
+    await api.tutor.restoreStudioItems({ course_id: 1, tutor_session_id: "tutor-123", scope: "session" });
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).toContain("/api/tutor/studio/restore?");
+    expect(url).toContain("course_id=1");
+    expect(url).toContain("tutor_session_id=tutor-123");
+    expect(url).toContain("scope=session");
+  });
+
+  it("promoteStudioItem sends POST", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ request_id: "req-1", item: { id: 1 } }));
+    await api.tutor.promoteStudioItem({ item_id: 1, promotion_mode: "copy" });
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/tutor/studio/promote",
+      expect.objectContaining({ method: "POST" })
+    );
+  });
+
   it("triggerEmbed sends POST", async () => {
-    mockFetch.mockResolvedValueOnce(jsonResponse({}));
-    await api.tutor.triggerEmbed({ course_id: 1 });
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({
+        embedded: 1,
+        skipped: 0,
+        total_chunks: 1,
+        provider: "gemini",
+        model: "text-embedding-004",
+        auto_selected_provider: true,
+      })
+    );
+    const result = await api.tutor.triggerEmbed({ course_id: 1 });
     expect(mockFetch).toHaveBeenCalledWith(
       "/api/tutor/embed",
       expect.objectContaining({ method: "POST" })
     );
+    expect(result.provider).toBe("gemini");
   });
 
   it("getMaterials builds query string", async () => {
@@ -770,7 +848,7 @@ describe("api.scholar extended", () => {
   it("getFindings fetches", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse([]));
     await api.scholar.getFindings();
-    expect(mockFetch).toHaveBeenCalledWith("/api/scholar/findings", expect.anything());
+    expect(mockFetch).toHaveBeenCalledWith("/api/scholar/research/findings?limit=50", expect.anything());
   });
 
   it("getTutorAudit fetches", async () => {
@@ -794,7 +872,25 @@ describe("api.scholar extended", () => {
   it("runStatus fetches", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse({}));
     await api.scholar.runStatus();
-    expect(mockFetch).toHaveBeenCalledWith("/api/scholar/run/status", expect.anything());
+    expect(mockFetch).toHaveBeenCalledWith("/api/scholar/status", expect.anything());
+  });
+
+  it("getQuestions fetches new research question path", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse([]));
+    await api.scholar.getQuestions();
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/scholar/research/questions?status=all&limit=100",
+      expect.anything(),
+    );
+  });
+
+  it("answerQuestion uses new research answer path", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ status: "answered" }));
+    await api.scholar.answerQuestion("q-1", "answer");
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/scholar/research/questions/q-1/answer",
+      expect.objectContaining({ method: "POST" }),
+    );
   });
 });
 
@@ -930,6 +1026,15 @@ describe("api.tutor extended", () => {
     expect(mockFetch).toHaveBeenCalledWith("/api/tutor/session/tutor-123", expect.anything());
   });
 
+  it("saveStrategyFeedback sends POST", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ session_id: "tutor-123", strategy_feedback: {} }));
+    await api.tutor.saveStrategyFeedback("tutor-123", { pacing: "good", notes: "steady" });
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/tutor/session/tutor-123/strategy-feedback",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
   it("deleteSession sends DELETE", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse({ deleted: true }));
     await api.tutor.deleteSession("tutor-123");
@@ -1018,9 +1123,22 @@ describe("api.tutor extended", () => {
   });
 
   it("embedStatus fetches", async () => {
-    mockFetch.mockResolvedValueOnce(jsonResponse({}));
-    await api.tutor.embedStatus();
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({
+        materials: [],
+        total: 0,
+        embedded: 0,
+        pending: 0,
+        stale: 0,
+        provider: "gemini",
+        model: "gemini-embedding-2-preview",
+        collection: "tutor_materials_gemini_gemini-embedding-2-preview",
+        auto_selected_provider: true,
+      })
+    );
+    const response = await api.tutor.embedStatus();
     expect(mockFetch).toHaveBeenCalledWith("/api/tutor/embed/status", expect.anything());
+    expect(response.provider).toBe("gemini");
   });
 
   it("createCustomChain sends POST", async () => {
@@ -1045,6 +1163,54 @@ describe("api.tutor extended", () => {
     mockFetch.mockResolvedValueOnce(jsonResponse([]));
     await api.tutor.getMaterials();
     expect(mockFetch).toHaveBeenCalledWith("/api/tutor/materials", expect.anything());
+  });
+});
+
+describe("api.brain exports", () => {
+  it("exportProfile fetches export payload", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ exportedAt: "now" }));
+    await api.brain.exportProfile();
+    expect(mockFetch).toHaveBeenCalledWith("/api/brain/profile/export", expect.anything());
+  });
+});
+
+describe("api.scholar exports", () => {
+  it("exportResearch fetches export payload", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ exportedAt: "now" }));
+    await api.scholar.exportResearch();
+    expect(mockFetch).toHaveBeenCalledWith("/api/scholar/export", expect.anything());
+  });
+});
+
+describe("api.product", () => {
+  it("getAnalytics fetches product analytics", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ generatedAt: "now" }));
+    await api.product.getAnalytics();
+    expect(mockFetch).toHaveBeenCalledWith("/api/product/analytics", expect.anything());
+  });
+
+  it("updatePrivacySettings sends POST", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ retentionDays: 365 }));
+    await api.product.updatePrivacySettings({ retentionDays: 365 } as any);
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/product/privacy",
+      expect.objectContaining({ method: "POST" })
+    );
+  });
+
+  it("resetPersonalization sends POST", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ ok: true }));
+    await api.product.resetPersonalization();
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/product/privacy/reset-personalization",
+      expect.objectContaining({ method: "POST" })
+    );
+  });
+
+  it("getOutcomeReport fetches product report", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ generatedAt: "now" }));
+    await api.product.getOutcomeReport();
+    expect(mockFetch).toHaveBeenCalledWith("/api/product/outcome-report", expect.anything());
   });
 });
 

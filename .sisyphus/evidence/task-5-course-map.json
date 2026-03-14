@@ -1,0 +1,272 @@
+{
+  "courses": [
+    {
+      "code": "PHYT_6216",
+      "label": "Exercise Physiology",
+      "term": "Spring 2026",
+      "unit_type": "topic",
+      "units": [
+        {
+          "id": "topic_1",
+          "name": "Topic 1 - Introduction to Exercise Physiology",
+          "topics": []
+        },
+        {
+          "id": "topic_2",
+          "name": "Topic 2 - Training Principles and Adaptations",
+          "topics": []
+        },
+        {
+          "id": "topic_3",
+          "name": "Topic 3 - Energy Expenditure During Exercise",
+          "topics": []
+        },
+        {
+          "id": "topic_4",
+          "name": "Topic 4 - Energy Intake and Body Composition",
+          "topics": []
+        },
+        {
+          "id": "topic_5",
+          "name": "Topic 5 - Cardiovascular System Response",
+          "topics": []
+        },
+        {
+          "id": "topic_6",
+          "name": "Topic 6 - Respiratory System Response",
+          "topics": []
+        },
+        {
+          "id": "topic_7",
+          "name": "Topic 7 - Neuromuscular System Response",
+          "topics": []
+        },
+        {
+          "id": "topic_8",
+          "name": "Topic 8 - Immersion 1",
+          "topics": []
+        }
+      ]
+    },
+    {
+      "code": "PHYT_6220",
+      "label": "Evidence-Based Practice",
+      "term": "Spring 2026",
+      "unit_type": "week",
+      "units": [
+        {
+          "id": "week_01",
+          "name": "Week 01",
+          "topics": []
+        },
+        {
+          "id": "week_02",
+          "name": "Week 02",
+          "topics": []
+        },
+        {
+          "id": "week_03",
+          "name": "Week 03",
+          "topics": []
+        },
+        {
+          "id": "week_04",
+          "name": "Week 04",
+          "topics": []
+        },
+        {
+          "id": "week_05",
+          "name": "Week 05",
+          "topics": []
+        },
+        {
+          "id": "week_06",
+          "name": "Week 06",
+          "topics": []
+        },
+        {
+          "id": "week_07",
+          "name": "Week 07",
+          "topics": []
+        },
+        {
+          "id": "week_08",
+          "name": "Week 08",
+          "topics": []
+        },
+        {
+          "id": "week_09",
+          "name": "Week 09",
+          "topics": []
+        },
+        {
+          "id": "week_10",
+          "name": "Week 10",
+          "topics": []
+        },
+        {
+          "id": "week_11",
+          "name": "Week 11",
+          "topics": []
+        },
+        {
+          "id": "week_12",
+          "name": "Week 12",
+          "topics": []
+        },
+        {
+          "id": "week_13",
+          "name": "Week 13",
+          "topics": []
+        },
+        {
+          "id": "week_14",
+          "name": "Week 14",
+          "topics": []
+        },
+        {
+          "id": "week_15",
+          "name": "Week 15",
+          "topics": []
+        }
+      ]
+    },
+    {
+      "code": "PHYT_6313",
+      "label": "Neuroscience",
+      "term": "Spring 2026",
+      "unit_type": "week",
+      "units": [
+        {
+          "id": "week_1",
+          "name": "Week 1",
+          "topics": [
+            "Cell properties and transmission"
+          ]
+        },
+        {
+          "id": "week_2",
+          "name": "Week 2",
+          "topics": [
+            "Spinal Cord",
+            "PNS"
+          ]
+        },
+        {
+          "id": "week_3",
+          "name": "Week 3",
+          "topics": [
+            "Autonomic Nerve System"
+          ]
+        },
+        {
+          "id": "week_4",
+          "name": "Week 4",
+          "topics": [
+            "Somatosensory System"
+          ]
+        },
+        {
+          "id": "week_5",
+          "name": "Week 5",
+          "topics": [
+            "Motor System"
+          ]
+        },
+        {
+          "id": "week_6",
+          "name": "Week 6",
+          "topics": [
+            "Cerebellum",
+            "Basal Ganglia"
+          ]
+        },
+        {
+          "id": "week_7",
+          "name": "Week 7",
+          "topics": [
+            "Higher Cortical Functions"
+          ]
+        },
+        {
+          "id": "week_8",
+          "name": "Week 8",
+          "topics": [
+            "Special Senses"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "PHYT_6314",
+      "label": "Movement Science",
+      "term": "Spring 2026",
+      "unit_type": "construct",
+      "units": [
+        {
+          "id": "construct_1",
+          "name": "Construct 1 - Movement Foundations",
+          "topics": []
+        },
+        {
+          "id": "construct_2",
+          "name": "Construct 2 - Lower Quarter",
+          "topics": [
+            "Hip and Pelvis Complex",
+            "Knee Complex",
+            "Foot and Ankle Complex"
+          ]
+        },
+        {
+          "id": "construct_3",
+          "name": "Construct 3 - Spine and Core",
+          "topics": []
+        },
+        {
+          "id": "construct_4",
+          "name": "Construct 4 - Upper Quarter",
+          "topics": []
+        },
+        {
+          "id": "construct_5",
+          "name": "Construct 5 - Movement Integrations",
+          "topics": []
+        }
+      ]
+    },
+    {
+      "code": "PHYT_6443",
+      "label": "Therapeutic Interventions",
+      "term": "Spring 2026",
+      "unit_type": "module",
+      "units": [
+        {
+          "id": "module_1",
+          "name": "Module 1 - Health Promotion and Wellness",
+          "topics": []
+        },
+        {
+          "id": "module_2",
+          "name": "Module 2 - Therapeutic Exercise and Tissue Healing",
+          "topics": []
+        },
+        {
+          "id": "module_3",
+          "name": "Module 3 - Primary Mobility Impairments",
+          "topics": []
+        },
+        {
+          "id": "immersion_1",
+          "name": "Immersion 1",
+          "topics": []
+        },
+        {
+          "id": "module_4",
+          "name": "Module 4 - Motor Control",
+          "topics": []
+        }
+      ]
+    }
+  ],
+  "vault_root": "Study Notes"
+}

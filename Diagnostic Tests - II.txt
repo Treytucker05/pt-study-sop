@@ -1,0 +1,64 @@
+So diagnostic tests to sensitivity and specificity.
+So we ended the last section recognizing that the 2x2 table is the engine behind almost
+every diagnostic accuracy measure.
+From it, we're going to calculate sensitivity and specificity, which are the core concepts.
+And then from sensitivity and specificity, we'll calculate likelihood ratios and receiver
+operating characteristics curves.
+So the definitions of sensitivity and specificity is just really straightforward.
+So sensitivity is a test's ability to correctly identify people who really have the condition
+as positive.
+Specificity is a test's ability to correctly identify people who really do not have the
+condition as negative.
+So basically, sensitivity, you just divide the people with the condition, who tests positive,
+divided by all the people with the condition.
+So recall from the way these studies are conducted that you have a sample of people who are clinically
+potentially able to have the condition under study.
+Some of them do, some of them don't.
+Everyone in that sample is going to get the index test, which is the test being studied.
+Everyone is going to get a gold standard, which is some already established way of identifying
+whether the person really has it or really does not.
+And then once the study, and then once they, you know, everybody undergoes both of those
+tests, the investigators will sit down with the data and they'll divide people into those
+who really have the condition because we have this gold standard as part of the design.
+We'll divide the people that we know really have the condition from those who really
+don't have the condition.
+And when we're talking about sensitivity, we're only looking at people who have the condition,
+who we know has the condition, and then we're going to see what's the number of people
+who tested positive with that index test and what were the number of people who tested
+negative with that index test.
+The people who test positive with the test under study, those are true positives because
+we know they really have it.
+When we're talking about sensitivity, we're only talking about people who have the condition.
+If someone tests negative with this index test, that's a false negative because, again,
+we're only looking at the people who actually have the condition.
+And so in regard to sensitivity, the two options for the test result is a true positive
+or a false negative.
+So here's this little hypothetical study with 10 people who actually have the condition in
+this study.
+They had, you know, 10 really do have it.
+And so the index test, eight of them tested positive with this new test under study, two
+of them tested negative.
+So the eight are the true positives because they really have it, you know.
+The two that tested negative are false negatives because they really have it.
+The test is wrong.
+And sensitivity, very simply, is just 8 divided by 10, 0.8 or 80%.
+That's straightforward.
+Specificity is now looking at those people who do not have the condition.
+So it's the proportion of people without the condition who will have a negative test, the
+true negatives.
+So specificity is the number of patients without the condition who test negative divided by
+the number of patients without the condition.
+Just like sensitivity, it ranges from 0 to 100%.
+And so in this case, in this study, we have, there were 90 people in the total sample
+that did not have the condition.
+The index test said 85 of those 90 was negative, it came back negative.
+That's correct.
+Those are true negatives because they don't have it.
+It came back as saying it was positive on 5 of that 90 without the condition.
+So that's a false positive.
+Specificity is now just 85 divided by 90, 94%.
+The fraction of subjects without the condition will get a negative test result.
+So that is pretty straightforward math, pretty straightforward concepts.
+But now we're going to talk about, or next we're going to talk about this kind of how
+to use that in clinical decision making sort of based on the results of the test in the
+context of that test's sensitivity and specificity.

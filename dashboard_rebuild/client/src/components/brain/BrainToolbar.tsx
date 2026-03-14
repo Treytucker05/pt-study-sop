@@ -1,12 +1,11 @@
-import { Pencil, Network, Table2, Layers } from "lucide-react";
+import { BrainCircuit, House } from "lucide-react";
 import { COURSE_FOLDERS } from "@/config/courses";
 import { cn } from "@/lib/utils";
 import type { BrainWorkspace, MainMode } from "./useBrainWorkspace";
 
-const MODES: { id: MainMode; label: string; icon: typeof Pencil }[] = [
-  { id: "edit", label: "NOTES", icon: Pencil },
-  { id: "graph", label: "GRAPH", icon: Network },
-  { id: "table", label: "TABLE", icon: Table2 },
+const MODES: { id: MainMode; label: string; icon: typeof House }[] = [
+  { id: "home", label: "HOME", icon: House },
+  { id: "profile", label: "PROFILE", icon: BrainCircuit },
 ];
 
 interface BrainToolbarProps {

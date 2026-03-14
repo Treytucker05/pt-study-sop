@@ -2,37 +2,71 @@ param(
     [ValidateSet("DryRun", "Apply", "Check")]
     [string]$Mode = "DryRun",
     [string]$CanonicalRoot = "$env:USERPROFILE\.agents\skills",
-    [string[]]$AdditionalSourceRoots = @(
-        "$env:USERPROFILE\.codex\skills",
-        "$env:USERPROFILE\.claude\skills",
-        "$env:USERPROFILE\.kimi\skills",
-        "$env:USERPROFILE\.cursor\skills",
-        "$env:USERPROFILE\.cursor\skills-cursor",
-        "$env:USERPROFILE\.antigravity\skills"
-    )
+    [string[]]$AdditionalSourceRoots = @()
 )
 
 $ErrorActionPreference = "Stop"
 
+$results = New-Object System.Collections.Generic.List[string]
+$statusCounts = @{}
+$backupRoot = $null
+$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+
 $TargetRoots = [ordered]@{
     codex       = "$env:USERPROFILE\.codex\skills"
     claude      = "$env:USERPROFILE\.claude\skills"
-    kimi        = "$env:USERPROFILE\.kimi\skills"
     cursor      = "$env:USERPROFILE\.cursor\skills"
+    opencode    = "$env:USERPROFILE\.opencode\skills"
+    gemini      = "$env:USERPROFILE\.gemini\skills"
     antigravity = "$env:USERPROFILE\.antigravity\skills"
 }
 
+$LocalOnlyNames = @{
+    codex       = @(".system", "agent-skills", "dev-browser")
+    claude      = @("continuous-learning", "learned")
+    cursor      = @()
+    opencode    = @("agent-strategy", "ensure-agent-workflow")
+    gemini      = @()
+    antigravity = @()
+}
+
 function Write-PlanLine([string]$status, [string]$message) {
-    Write-Output ("{0,-11} {1}" -f $status, $message)
+    if (-not $statusCounts.ContainsKey($status)) {
+        $statusCounts[$status] = 0
+    }
+    $statusCounts[$status] += 1
+    $results.Add(("{0,-12} {1}" -f $status, $message))
 }
 
 function Normalize-PathOrEmpty([string]$path) {
-    if (-not $path) { return "" }
+    if (-not $path) {
+        return ""
+    }
     try {
         return [System.IO.Path]::GetFullPath($path).TrimEnd('\').ToLowerInvariant()
     } catch {
         return ""
     }
+}
+
+function Ensure-Directory([string]$path) {
+    if (Test-Path -LiteralPath $path) {
+        return $true
+    }
+
+    if ($Mode -eq "Apply") {
+        New-Item -ItemType Directory -Path $path -Force | Out-Null
+        Write-PlanLine "CREATE" $path
+        return $true
+    }
+
+    if ($Mode -eq "DryRun") {
+        Write-PlanLine "WOULD_MKDIR" $path
+        return $true
+    }
+
+    Write-PlanLine "MISSING" $path
+    return $false
 }
 
 function Get-SkillEntries([string]$root) {
@@ -41,189 +75,269 @@ function Get-SkillEntries([string]$root) {
     }
 
     $entries = @()
-    Get-ChildItem -LiteralPath $root -Directory -Force | ForEach-Object {
-        $skillPath = $_.FullName
-        $skillFile = Join-Path $skillPath "SKILL.md"
+    foreach ($item in (Get-ChildItem -LiteralPath $root -Directory -Force)) {
+        $skillFile = Join-Path $item.FullName "SKILL.md"
         if (Test-Path -LiteralPath $skillFile) {
             $entries += [pscustomobject]@{
-                Name = $_.Name
-                Path = $skillPath
+                Name = $item.Name
+                Path = $item.FullName
             }
         }
     }
     return $entries
 }
 
-function Ensure-Directory([string]$path) {
-    if (Test-Path -LiteralPath $path) {
-        return
+function Get-RootEntries([string]$root) {
+    if (-not (Test-Path -LiteralPath $root)) {
+        return @()
     }
-    if ($Mode -eq "Apply") {
-        New-Item -ItemType Directory -Path $path -Force | Out-Null
-        Write-PlanLine "CREATE" $path
-    } elseif ($Mode -eq "DryRun") {
-        Write-PlanLine "WOULD_MKDIR" $path
-    } else {
-        throw "Missing required directory: $path"
-    }
-}
 
-function Get-ReparseTargetOrEmpty([string]$path) {
-    try {
-        $item = Get-Item -LiteralPath $path -Force
-        if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0) {
-            return ""
-        }
-        $target = $item.Target
-        if ($target -is [array]) {
-            if ($target.Count -gt 0) {
-                return [string]$target[0]
+    $entries = @()
+    foreach ($item in (Get-ChildItem -LiteralPath $root -Directory -Force)) {
+        $isLink = ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0
+        $target = ""
+        $targetExists = $true
+        if ($isLink) {
+            $resolved = Get-Item -LiteralPath $item.FullName -Force
+            $rawTarget = $resolved.Target
+            if ($rawTarget -is [array]) {
+                if ($rawTarget.Count -gt 0) {
+                    $target = [string]$rawTarget[0]
+                }
+            } else {
+                $target = [string]$rawTarget
             }
-            return ""
+            $targetExists = if ($target) { Test-Path -LiteralPath $target } else { $false }
         }
-        return [string]$target
-    } catch {
-        return ""
+
+        $entries += [pscustomobject]@{
+            Name = $item.Name
+            FullName = $item.FullName
+            IsLink = $isLink
+            LinkType = if ($isLink) { $item.LinkType } else { "" }
+            Target = $target
+            TargetExists = $targetExists
+            HasSkillFile = Test-Path -LiteralPath (Join-Path $item.FullName "SKILL.md")
+        }
+    }
+    return $entries
+}
+
+function Ensure-BackupRoot() {
+    if ($backupRoot) {
+        return $backupRoot
+    }
+    $backupRoot = Join-Path "$env:USERPROFILE\.agents" ("skill_backups\" + $timestamp)
+    if (-not (Test-Path -LiteralPath $backupRoot)) {
+        New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
+    }
+    return $backupRoot
+}
+
+function Move-ToBackup([string]$targetName, [string]$path, [string]$name) {
+    $root = Ensure-BackupRoot
+    $backupTargetDir = Join-Path $root $targetName
+    if (-not (Test-Path -LiteralPath $backupTargetDir)) {
+        New-Item -ItemType Directory -Path $backupTargetDir -Force | Out-Null
+    }
+    $backupPath = Join-Path $backupTargetDir $name
+    Move-Item -LiteralPath $path -Destination $backupPath -Force
+    return $backupPath
+}
+
+function Write-Summary([bool]$success, [int]$canonicalCount) {
+    $orderedStatuses = @(
+        "OK",
+        "SKIP",
+        "CREATE",
+        "LINK",
+        "RELINK",
+        "REMOVE",
+        "COPY",
+        "WOULD_MKDIR",
+        "WOULD_LINK",
+        "WOULD_RELINK",
+        "WOULD_REMOVE",
+        "WOULD_COPY",
+        "MISSING",
+        "DRIFT",
+        "EXTRA",
+        "CONFLICT",
+        "ERROR"
+    )
+
+    $summaryParts = @()
+    foreach ($status in $orderedStatuses) {
+        if ($statusCounts.ContainsKey($status) -and $statusCounts[$status] -gt 0) {
+            $summaryParts += ("{0}={1}" -f $status.ToLower(), $statusCounts[$status])
+        }
+    }
+
+    if ($summaryParts.Count -eq 0) {
+        $summaryParts += "no_checks=0"
+    }
+
+    $results.Add("")
+    $results.Add(("MODE    {0}" -f $Mode))
+    $results.Add(("CANON   {0}" -f $CanonicalRoot))
+    $results.Add(("COUNT   {0}" -f $canonicalCount))
+    if ($backupRoot) {
+        $results.Add(("BACKUP  {0}" -f $backupRoot))
+    }
+    $results.Add(("SUMMARY {0}" -f ($summaryParts -join " ")))
+    $results.Add(("RESULT  {0}" -f ($(if ($success) { "PASS" } else { "FAIL" }))))
+
+    Write-Output ($results -join "`n")
+}
+
+$allOk = $true
+$flatLocalOnlyNames = New-Object System.Collections.Generic.HashSet[string] ([StringComparer]::OrdinalIgnoreCase)
+foreach ($targetName in $LocalOnlyNames.Keys) {
+    foreach ($skillName in $LocalOnlyNames[$targetName]) {
+        [void]$flatLocalOnlyNames.Add($skillName)
     }
 }
 
-$allRoots = @($CanonicalRoot) + $AdditionalSourceRoots + @($TargetRoots.Values)
-$allRoots = $allRoots | Where-Object { $_ } | Select-Object -Unique
+$allOk = (Ensure-Directory $CanonicalRoot) -and $allOk
 
-$skillSource = @{}
-foreach ($root in $allRoots) {
-    if (-not (Test-Path -LiteralPath $root)) { continue }
-    foreach ($entry in (Get-SkillEntries $root)) {
-        if (-not $skillSource.ContainsKey($entry.Name)) {
-            $skillSource[$entry.Name] = $entry.Path
-        }
+$canonicalEntries = Get-SkillEntries $CanonicalRoot
+$canonicalMap = @{}
+foreach ($entry in $canonicalEntries) {
+    $canonicalMap[$entry.Name] = $entry.Path
+}
+
+foreach ($sourceRoot in $AdditionalSourceRoots) {
+    if (-not $sourceRoot) {
+        continue
     }
-}
-
-if ($skillSource.Count -eq 0) {
-    throw "No skills detected in any configured roots."
-}
-
-Ensure-Directory $CanonicalRoot
-
-$copiedToCanonical = 0
-$canonicalMissing = @()
-
-foreach ($name in ($skillSource.Keys | Sort-Object)) {
-    $canonicalSkillPath = Join-Path $CanonicalRoot $name
-    $canonicalSkillFile = Join-Path $canonicalSkillPath "SKILL.md"
-    if (Test-Path -LiteralPath $canonicalSkillFile) {
+    if (-not (Test-Path -LiteralPath $sourceRoot)) {
+        Write-PlanLine "SKIP" "$sourceRoot (missing optional source root)"
         continue
     }
 
-    $sourcePath = [string]$skillSource[$name]
-    if (-not (Test-Path -LiteralPath (Join-Path $sourcePath "SKILL.md"))) {
-        $canonicalMissing += $name
-        Write-PlanLine "ERROR" "Missing source SKILL.md for '$name' at $sourcePath"
-        continue
-    }
-
-    if ($Mode -eq "Apply") {
-        Copy-Item -LiteralPath $sourcePath -Destination $canonicalSkillPath -Recurse -Force
-        $copiedToCanonical++
-        Write-PlanLine "COPY" "$name -> $canonicalSkillPath"
-    } elseif ($Mode -eq "DryRun") {
-        Write-PlanLine "WOULD_COPY" "$name -> $canonicalSkillPath"
-    } else {
-        Write-PlanLine "MISSING" "Canonical skill missing: $name"
-        $canonicalMissing += $name
-    }
-}
-
-$canonicalSkills = Get-SkillEntries $CanonicalRoot
-$canonicalNames = @($canonicalSkills | Select-Object -ExpandProperty Name | Sort-Object -Unique)
-
-if ($canonicalNames.Count -eq 0) {
-    throw "Canonical root has zero skills after sync attempt: $CanonicalRoot"
-}
-
-$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-$backupRoot = Join-Path "$env:USERPROFILE\.agents" ("skill_backups\" + $timestamp)
-$linksCreated = 0
-$linksReplaced = 0
-$driftFound = 0
-
-foreach ($targetName in $TargetRoots.Keys) {
-    $targetRoot = $TargetRoots[$targetName]
-    Ensure-Directory $targetRoot
-
-    foreach ($skillName in $canonicalNames) {
-        $desiredPath = Join-Path $CanonicalRoot $skillName
-        $desiredFile = Join-Path $desiredPath "SKILL.md"
-        if (-not (Test-Path -LiteralPath $desiredFile)) {
-            Write-PlanLine "ERROR" "Canonical skill missing SKILL.md: $skillName"
-            $driftFound++
+    foreach ($entry in (Get-SkillEntries $sourceRoot)) {
+        if ($flatLocalOnlyNames.Contains($entry.Name)) {
+            Write-PlanLine "SKIP" "$($entry.Name) stays local-only and is not promoted to canonical"
+            continue
+        }
+        if ($canonicalMap.ContainsKey($entry.Name)) {
             continue
         }
 
-        $targetPath = Join-Path $targetRoot $skillName
-        $targetFile = Join-Path $targetPath "SKILL.md"
+        $canonicalSkillPath = Join-Path $CanonicalRoot $entry.Name
+        if ($Mode -eq "Apply") {
+            Copy-Item -LiteralPath $entry.Path -Destination $canonicalSkillPath -Recurse -Force
+            Write-PlanLine "COPY" "$($entry.Name) -> $canonicalSkillPath"
+        } elseif ($Mode -eq "DryRun") {
+            Write-PlanLine "WOULD_COPY" "$($entry.Name) -> $canonicalSkillPath"
+        } else {
+            Write-PlanLine "MISSING" "Canonical skill missing: $($entry.Name)"
+            $allOk = $false
+        }
 
-        if (-not (Test-Path -LiteralPath $targetPath)) {
+        $canonicalMap[$entry.Name] = $canonicalSkillPath
+    }
+}
+
+$canonicalNames = @($canonicalMap.Keys | Sort-Object -Unique)
+if ($canonicalNames.Count -eq 0) {
+    throw "Canonical root has zero skills: $CanonicalRoot"
+}
+
+foreach ($targetName in $TargetRoots.Keys) {
+    $targetRoot = $TargetRoots[$targetName]
+    $allowedLocalNames = @($LocalOnlyNames[$targetName])
+    $allowedLookup = New-Object System.Collections.Generic.HashSet[string] ([StringComparer]::OrdinalIgnoreCase)
+    foreach ($name in $allowedLocalNames) {
+        [void]$allowedLookup.Add($name)
+    }
+
+    $allOk = (Ensure-Directory $targetRoot) -and $allOk
+    $existingMap = @{}
+    foreach ($entry in (Get-RootEntries $targetRoot)) {
+        $existingMap[$entry.Name] = $entry
+    }
+
+    foreach ($skillName in $canonicalNames) {
+        $desiredPath = Join-Path $CanonicalRoot $skillName
+        $desiredSkillFile = Join-Path $desiredPath "SKILL.md"
+        if (-not (Test-Path -LiteralPath $desiredSkillFile)) {
+            Write-PlanLine "ERROR" "Canonical skill missing SKILL.md: $skillName"
+            $allOk = $false
+            continue
+        }
+
+        if (-not $existingMap.ContainsKey($skillName)) {
+            $targetPath = Join-Path $targetRoot $skillName
             if ($Mode -eq "Apply") {
                 New-Item -ItemType Junction -Path $targetPath -Target $desiredPath | Out-Null
-                $linksCreated++
                 Write-PlanLine "LINK" "$targetPath -> $desiredPath"
             } elseif ($Mode -eq "DryRun") {
                 Write-PlanLine "WOULD_LINK" "$targetPath -> $desiredPath"
             } else {
-                $driftFound++
                 Write-PlanLine "MISSING" "$targetPath"
+                $allOk = $false
             }
             continue
         }
 
-        $reparseTarget = Get-ReparseTargetOrEmpty $targetPath
-        $normalizedReparseTarget = Normalize-PathOrEmpty $reparseTarget
+        $entry = $existingMap[$skillName]
+        $normalizedTarget = Normalize-PathOrEmpty $entry.Target
         $normalizedDesired = Normalize-PathOrEmpty $desiredPath
+        $matchesCanonical = $entry.IsLink -and $normalizedTarget -eq $normalizedDesired -and $entry.TargetExists
 
-        if ($normalizedReparseTarget -eq $normalizedDesired) {
+        if ($matchesCanonical) {
+            Write-PlanLine "OK" "$($entry.FullName) -> $desiredPath"
             continue
         }
 
-        $targetLooksLikeSkill = Test-Path -LiteralPath $targetFile
-        if (-not $targetLooksLikeSkill -and -not $reparseTarget) {
-            # Unknown directory/file occupying the name, but not a skill folder.
-            $driftFound++
-            Write-PlanLine "CONFLICT" "$targetPath exists and is not a skill directory"
+        if ($allowedLookup.Contains($skillName)) {
+            Write-PlanLine "CONFLICT" "$($entry.FullName) is a local-only name that collides with canonical skill '$skillName'"
+            $allOk = $false
             continue
         }
 
         if ($Mode -eq "Apply") {
-            $backupTargetDir = Join-Path $backupRoot $targetName
-            if (-not (Test-Path -LiteralPath $backupTargetDir)) {
-                New-Item -ItemType Directory -Path $backupTargetDir -Force | Out-Null
-            }
-            $backupPath = Join-Path $backupTargetDir $skillName
-            Move-Item -LiteralPath $targetPath -Destination $backupPath -Force
-            New-Item -ItemType Junction -Path $targetPath -Target $desiredPath | Out-Null
-            $linksReplaced++
-            Write-PlanLine "RELINK" "$targetPath -> $desiredPath (backup: $backupPath)"
+            $backupPath = Move-ToBackup -targetName $targetName -path $entry.FullName -name $skillName
+            New-Item -ItemType Junction -Path $entry.FullName -Target $desiredPath | Out-Null
+            Write-PlanLine "RELINK" "$($entry.FullName) -> $desiredPath (backup: $backupPath)"
         } elseif ($Mode -eq "DryRun") {
-            Write-PlanLine "WOULD_RELINK" "$targetPath -> $desiredPath"
+            Write-PlanLine "WOULD_RELINK" "$($entry.FullName) -> $desiredPath"
         } else {
-            $driftFound++
-            Write-PlanLine "DRIFT" "$targetPath does not point to canonical $desiredPath"
+            Write-PlanLine "DRIFT" "$($entry.FullName) does not point to canonical $desiredPath"
+            $allOk = $false
+        }
+    }
+
+    foreach ($entry in ($existingMap.Values | Sort-Object Name)) {
+        if ($canonicalMap.ContainsKey($entry.Name)) {
+            continue
+        }
+
+        if ($allowedLookup.Contains($entry.Name)) {
+            Write-PlanLine "SKIP" "$($entry.FullName) preserved as local-only"
+            continue
+        }
+
+        if ($Mode -eq "Apply") {
+            $backupPath = Move-ToBackup -targetName $targetName -path $entry.FullName -name $entry.Name
+            Write-PlanLine "REMOVE" "$($entry.FullName) moved to $backupPath"
+        } elseif ($Mode -eq "DryRun") {
+            Write-PlanLine "WOULD_REMOVE" $entry.FullName
+        } else {
+            Write-PlanLine "EXTRA" $entry.FullName
+            $allOk = $false
         }
     }
 }
 
-Write-Output ""
-Write-Output "Summary"
-Write-Output "-------"
-Write-Output ("Canonical root: {0}" -f $CanonicalRoot)
-Write-Output ("Canonical skills: {0}" -f $canonicalNames.Count)
-Write-Output ("Copied to canonical: {0}" -f $copiedToCanonical)
-Write-Output ("Links created: {0}" -f $linksCreated)
-Write-Output ("Links replaced: {0}" -f $linksReplaced)
-Write-Output ("Drift/conflicts found: {0}" -f $driftFound)
+Write-Summary -success $allOk -canonicalCount $canonicalNames.Count
 
-if ($Mode -eq "Check" -and ($driftFound -gt 0 -or $canonicalMissing.Count -gt 0)) {
+if ($Mode -eq "Check" -and (-not $allOk)) {
+    exit 1
+}
+
+if (-not $allOk) {
     exit 1
 }
 

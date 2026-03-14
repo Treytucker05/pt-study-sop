@@ -10,15 +10,23 @@ has_outputs_or_artifacts: Y
 outputs_summary: Concept map (nodes + labeled links); Mermaid code
 knobs:
   diagram_format: mermaid
+stipulations:
+- The concept map must be learner-usable, not decorative.
+- The learner must be able to explain the map structure after it is built.
+- Start with a short top-down verbal frame before drawing the map.
+- Treat generated structure as teaching support, not source evidence, unless specific sources are cited.
 facilitation_prompt: 'Analyze the skeleton outline just provided and generate a concept map visualizing the relationships
   between the core components. You MUST format your visual output strictly using {diagram_format}.
 
   You are running M-ENC-009 (Concept Map) in ENCODE stage.
 
   Stage boundary: - ENCODE requires active processing. Do not passively summarize. - Keep map scoped to the current objective
-  only.
+  only. - The map must stay learner-usable and explanation-ready. - Prefer clarity and relationship structure over visual flourish.
 
-  Build and return exactly: 1) ConceptMapNodes 2) ConceptMapLinks 3) MermaidOrAsciiMap 4) One-ParagraphLearnerExplanation
+  Build and return exactly: 1) BriefTopDownFrame 2) ConceptMapNodes 3) ConceptMapLinks 4) MermaidOrAsciiMap 5) One-ParagraphLearnerExplanation
+
+  Provenance rule: if you add structure or phrasing that comes from your own teaching synthesis rather than a cited course source,
+  mark it as teaching support, not source evidence.
 
   Stop condition: - End when the learner can explain the concept map structure in their own words with minimal support.
 
@@ -53,4 +61,25 @@ failure_modes:
 - mode: Overload
   mitigation: Lower complexity and continue with one concept at a time.
 artifact_type: concept-map
+allowed_moves:
+- Provide a brief top-down verbal frame before map building begins
+- Guide learner to identify core concept nodes from the objective scope
+- Prompt learner to create labeled links showing relationships between nodes
+- Use Socratic questioning to help learner discover missing connections
+- Suggest Mermaid or ASCII format for digital map output
+- Ask learner to explain the map structure in their own words
+- Review learner's map for missing relationships and prompt additions
+- Mark any tutor-added structure as teaching support, not source evidence
+forbidden_moves:
+- Build the concept map FOR the learner
+- Add nodes or links without learner involvement
+- Accept a map the learner cannot explain in their own words
+- Skip the top-down verbal frame before map construction
+- Create decorative maps that are not learner-usable
+- Deliver a passive summary instead of facilitating map building
+- Present tutor-generated structure as source evidence without citation
+- Move to retrieval before the learner can explain the map
+required_outputs:
+- Learner-generated explanation or structured encoding artifact
+- Concept map with nodes and labeled links
 evidence_raw: Novak & Canas (2008); concept mapping promotes meaningful learning through explicit relationship encoding

@@ -116,3 +116,25 @@ gating_rules:
 - Force active processing (explain, transform, or map), not passive reading.
 - Keep output scoped to mapped objectives only.
 artifact_type: decision-tree
+allowed_moves:
+- Help learner identify the chief complaint as the tree root
+- Prompt learner to choose key discriminating questions at each branch point
+- Guide learner to add most likely diagnoses at terminal branches
+- Prompt learner to specify confirmatory test or finding for each diagnosis
+- Ask learner to identify red flags that skip the tree (emergencies)
+- Prompt verification of each branch against clinical guidelines
+- Suggest limiting to 2-3 branches per decision point to avoid complexity
+- Provide Mermaid syntax guidance if using dashboard editor
+forbidden_moves:
+- Build the decision tree FOR the learner
+- Provide diagnoses or branch questions without learner involvement
+- Accept non-discriminating questions at decision points
+- Allow more than 3 branches at a single node without justification
+- Skip the red flag / emergency pathway identification
+- Skip source verification against clinical guidelines
+- Deliver a passive differential diagnosis instead of guiding tree construction
+- Move to retrieval before the tree is verified against guidelines
+required_outputs:
+- Clinical decision tree
+- Red flag list
+- Confirmatory test per diagnosis

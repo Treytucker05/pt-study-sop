@@ -23,6 +23,7 @@ def format_sse_done(
     summary: Optional[str] = None,
     model: Optional[str] = None,
     retrieval_debug: Optional[dict] = None,
+    timing: Optional[dict] = None,
     behavior_override: Optional[str] = None,
     verdict: Optional[dict] = None,
     concept_map: Optional[dict] = None,
@@ -41,6 +42,8 @@ def format_sse_done(
         payload["model"] = model
     if retrieval_debug:
         payload["retrieval_debug"] = retrieval_debug
+    if timing:
+        payload["timing"] = timing
     if behavior_override:
         payload["behavior_override"] = behavior_override
     if verdict:
@@ -76,7 +79,7 @@ def _map_error_to_actionable(error: str) -> str:
         )
     if "timeout" in low or "timed out" in low:
         return (
-            "Response timed out. Try a shorter question, "
+            "Response timed out. Try a shorter question, disable Deep Think/Web Search for this turn, "
             "or switch to a faster model in settings."
         )
     if "rate limit" in low or "429" in low:

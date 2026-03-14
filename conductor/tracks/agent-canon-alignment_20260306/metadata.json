@@ -1,0 +1,16 @@
+{
+  "id": "agent-canon-alignment_20260306",
+  "title": "Agent Canon Alignment and Subagent Reliability",
+  "type": "infra",
+  "status": "complete",
+  "created": "2026-03-06T00:00:00Z",
+  "updated": "2026-03-06T00:00:00Z",
+  "phases": {
+    "total": 5,
+    "completed": 5
+  },
+  "tasks": {
+    "total": 19,
+    "completed": 19
+  }
+}

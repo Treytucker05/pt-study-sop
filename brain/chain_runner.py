@@ -454,11 +454,11 @@ def _write_artifacts(
         )
         note_content = _build_obsidian_note(chain_name, topic, steps)
         try:
-            from dashboard.api_adapter import obsidian_append
+            from obsidian_vault import ObsidianVault
 
-            result = obsidian_append(obsidian_path, note_content)
-            if result.get("success"):
-                artifacts["obsidian_path"] = obsidian_path
+            vault = ObsidianVault()
+            vault.append_note(obsidian_path, note_content)
+            artifacts["obsidian_path"] = obsidian_path
         except Exception:
             artifacts["obsidian_path"] = None
 

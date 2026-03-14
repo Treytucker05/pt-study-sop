@@ -18,16 +18,6 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
   FileText,
   CreditCard,
   Map,
@@ -39,7 +29,6 @@ import {
   Check,
   X,
   Loader2,
-  Table2,
   Network,
   ExternalLink,
   BarChart3,
@@ -48,7 +37,7 @@ import { toast } from "sonner";
 import type { TutorSessionSummary, TutorSessionWrapSummary } from "@/lib/api";
 
 export interface TutorArtifact {
-  type: "note" | "card" | "map" | "table" | "structured_map";
+  type: "note" | "card" | "map" | "structured_notes";
   title: string;
   content: string;
   createdAt: string;
@@ -61,31 +50,54 @@ interface TutorArtifactsProps {
   turnCount: number;
   topic: string;
   startedAt: string | null;
-  onCreateArtifact: (artifact: { type: "note" | "card" | "map" | "table" | "structured_map"; content: string; title: string }) => void;
+  onCreateArtifact: (artifact: { type: "note" | "card" | "map" | "structured_notes"; content: string; title: string }) => void;
   isSessionCompleted?: boolean;
   recentSessions: TutorSessionSummary[];
   onResumeSession: (sessionId: string) => void;
   /** Delete selected artifact entries by index (persists to session). Called after API success. */
-  onDeleteArtifacts?: (sessionId: string, indexes: number[]) => Promise<void>;
+  onDeleteArtifacts?: (
+    sessionId: string,
+    indexes: number[]
+  ) => Promise<ArtifactDeleteResult | void>;
   onEndSession?: (sessionId: string) => Promise<void> | void;
   /** Clear active session UI state without calling the API (for bulk ops that already ended via API). */
   onClearActiveSession?: () => void;
+}
+
+interface BulkDeleteFailureDetail {
+  sessionId: string;
+  reason: string;
+}
+
+interface BulkActionReport {
+  title: string;
+  requested: number;
+  deleted: number;
+  skipped: number;
+  requestId?: string;
+  skippedIndexes?: number[];
+  failures: BulkDeleteFailureDetail[];
+}
+
+interface ArtifactDeleteResult {
+  request_id?: string;
+  requested_count?: number;
+  applied_count?: number;
+  skipped_indexes?: number[];
 }
 
 const ARTIFACT_ICONS: Record<string, typeof FileText> = {
   note: FileText,
   card: CreditCard,
   map: Map,
-  table: Table2,
-  structured_map: Network,
+  structured_notes: FileText,
 };
 
 const ARTIFACT_COLORS: Record<string, string> = {
   note: "text-blue-400",
   card: "text-yellow-400",
   map: "text-green-400",
-  table: "text-cyan-400",
-  structured_map: "text-purple-400",
+  structured_notes: "text-cyan-400",
 };
 
 const VISIBLE_SESSIONS_LIMIT = 8;
@@ -159,6 +171,10 @@ function ArtifactTable({ content }: { content: string }) {
       </table>
     </div>
   );
+}
+
+function isMarkdownTable(content: string): boolean {
+  return Boolean(parseMarkdownTable(content));
 }
 
 // ---------------------------------------------------------------------------
@@ -283,7 +299,7 @@ function ArtifactStructuredMap({ content, title }: { content: string; title: str
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 font-terminal text-sm text-purple-400 hover:text-purple-300 border border-purple-400/40 px-2 py-0.5"
           >
-            <ExternalLink className="w-3 h-3" />
+            <ExternalLink className={ICON_SM} />
             Open in Figma
           </a>
         )}
@@ -295,7 +311,7 @@ function ArtifactStructuredMap({ content, title }: { content: string; title: str
             disabled={saving}
             onClick={handleSaveCanvas}
           >
-            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <FolderOpen className="w-3 h-3" />}
+            {saving ? <Loader2 className={`${ICON_SM} animate-spin`} /> : <FolderOpen className={ICON_SM} />}
             {saving ? "Saving..." : "Save as Canvas"}
           </Button>
         )}
@@ -351,7 +367,7 @@ function SessionWrapPanel({
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.tutor.getSessionSummary(`${sessionId}?save=true`);
+      await api.tutor.getSessionSummary(sessionId, { save: true });
       toast.success("Summary saved to Obsidian");
     } catch (err) {
       toast.error(`Save failed: ${err instanceof Error ? err.message : "Unknown"}`);
@@ -449,7 +465,7 @@ function SessionWrapPanel({
             disabled={saving}
             onClick={handleSave}
           >
-            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <FolderOpen className="w-3 h-3" />}
+            {saving ? <Loader2 className={`${ICON_SM} animate-spin`} /> : <FolderOpen className={ICON_SM} />}
             {saving ? "Saving..." : "Save to Obsidian"}
           </Button>
         </>
@@ -481,7 +497,8 @@ export function TutorArtifacts({
   const [deletingSessions, setDeletingSessions] = useState(false);
   const [deletingArtifacts, setDeletingArtifacts] = useState(false);
   const [endingSessions, setEndingSessions] = useState(false);
-  const [bulkConfirm, setBulkConfirm] = useState<
+  const [bulkActionReport, setBulkActionReport] = useState<BulkActionReport | null>(null);
+  const [bulkPrompt, setBulkPrompt] = useState<
     null | { type: "sessions"; action: "delete" | "end"; count: number } | { type: "artifacts"; count: number }
   >(null);
 
@@ -568,48 +585,53 @@ export function TutorArtifacts({
     }
   }, [artifacts.length, selectedArtifactIndices.size]);
 
-  const handleBulkDeleteSessionsClick = useCallback(() => {
-    const count = selectedSessionIds.size;
-    if (count === 0) return;
-    setEndConfirm(null);
-    setBulkConfirm({ type: "sessions", action: "delete", count });
-  }, [selectedSessionIds.size]);
-
-  const handleBulkEndSessionsClick = useCallback(() => {
-    if (selectedActiveVisibleSessionsCount === 0) return;
-    setDeleteConfirm(null);
-    setEndConfirm(null);
-    setBulkConfirm({ type: "sessions", action: "end", count: selectedActiveVisibleSessionsCount });
-  }, [selectedActiveVisibleSessionsCount]);
-
   const handleBulkDeleteSessionsConfirm = useCallback(async () => {
     const ids = Array.from(selectedSessionIds);
     if (ids.length === 0) return;
-    setBulkConfirm(null);
+    setBulkActionReport(null);
     setDeletingSessions(true);
     let deleted = 0;
-    let failed = 0;
+    let skipped = 0;
+    const failures: BulkDeleteFailureDetail[] = [];
     try {
       for (const sid of ids) {
         try {
-          await api.tutor.deleteSession(sid);
-          deleted++;
+          const result = await api.tutor.deleteSession(sid);
+          if (result.deleted) {
+            deleted++;
+          } else {
+            skipped++;
+          }
           setSelectedSessionIds((prev) => {
             const next = new Set(prev);
             next.delete(sid);
             return next;
           });
         } catch (err) {
-          failed++;
-          toast.error(`Delete failed: ${err instanceof Error ? err.message : "Unknown"}`);
+          failures.push({
+            sessionId: sid,
+            reason: err instanceof Error ? err.message : "Unknown",
+          });
         }
       }
-      if (deleted > 0) {
-        toast.success(`${deleted} session${deleted > 1 ? "s" : ""} deleted${failed > 0 ? ` (${failed} failed)` : ""}`);
+      await queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
+      const failed = failures.length;
+      if (deleted > 0 && failed === 0 && skipped === 0) {
+        toast.success(`${deleted} session${deleted > 1 ? "s" : ""} deleted`);
+      } else {
+        toast.error(`Delete finished: ${deleted} deleted, ${skipped} already gone, ${failed} failed`);
+      }
+      if (failed > 0 || skipped > 0) {
+        setBulkActionReport({
+          title: "Bulk delete completed with issues",
+          requested: ids.length,
+          deleted,
+          skipped,
+          failures,
+        });
       }
     } finally {
       setDeletingSessions(false);
-      queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
       if (deleted > 0 && sessionId && ids.includes(sessionId) && onClearActiveSession) {
         onClearActiveSession();
       }
@@ -620,7 +642,6 @@ export function TutorArtifacts({
     if (selectedActiveSessionIds.length === 0) return;
     const ids = [...selectedActiveSessionIds];
     const hadActiveSession = sessionId && ids.includes(sessionId);
-    setBulkConfirm(null);
     setEndingSessions(true);
     let ended = 0;
     let failed = 0;
@@ -655,18 +676,28 @@ export function TutorArtifacts({
     }
   }, [selectedActiveSessionIds, sessionId, onClearActiveSession, queryClient]);
 
-  const handleBulkDeleteArtifactsClick = useCallback(() => {
-    if (!sessionId || selectedArtifactIndices.size === 0 || !onDeleteArtifacts) return;
-    setBulkConfirm({ type: "artifacts", count: selectedArtifactIndices.size });
-  }, [sessionId, selectedArtifactIndices.size, onDeleteArtifacts]);
-
   const handleBulkDeleteArtifactsConfirm = useCallback(async () => {
     if (!sessionId || selectedArtifactIndices.size === 0 || !onDeleteArtifacts) return;
     const indexes = Array.from(selectedArtifactIndices).sort((a, b) => a - b);
-    setBulkConfirm(null);
     setDeletingArtifacts(true);
     try {
-      await onDeleteArtifacts(sessionId, indexes);
+      const result = await onDeleteArtifacts(sessionId, indexes);
+      if (result) {
+        const requested = result.requested_count ?? indexes.length;
+        const deleted = result.applied_count ?? indexes.length;
+        const skipped = Math.max(requested - deleted, 0);
+        if (result.request_id || skipped > 0) {
+          setBulkActionReport({
+            title: "Artifact delete completed",
+            requested,
+            deleted,
+            skipped,
+            requestId: result.request_id,
+            skippedIndexes: result.skipped_indexes,
+            failures: [],
+          });
+        }
+      }
       setSelectedArtifactIndices(new Set());
       toast.success(`${indexes.length} artifact${indexes.length > 1 ? "s" : ""} deleted`);
     } catch (err) {
@@ -676,11 +707,69 @@ export function TutorArtifacts({
     }
   }, [sessionId, selectedArtifactIndices, onDeleteArtifacts]);
 
+  const handleBulkDeleteSessionsClick = useCallback(() => {
+    const count = selectedSessionIds.size;
+    if (count === 0 || deletingSessions) return;
+    setBulkActionReport(null);
+    setEndConfirm(null);
+    setBulkPrompt({ type: "sessions", action: "delete", count });
+  }, [selectedSessionIds.size, deletingSessions]);
+
+  const handleBulkEndSessionsClick = useCallback(() => {
+    const count = selectedActiveVisibleSessionsCount;
+    if (count === 0 || endingSessions) return;
+    setDeleteConfirm(null);
+    setEndConfirm(null);
+    setBulkPrompt({ type: "sessions", action: "end", count });
+  }, [selectedActiveVisibleSessionsCount, endingSessions]);
+
+  const handleBulkDeleteArtifactsClick = useCallback(() => {
+    const count = selectedArtifactIndices.size;
+    if (!sessionId || count === 0 || !onDeleteArtifacts || deletingArtifacts) return;
+    setBulkPrompt({ type: "artifacts", count });
+  }, [sessionId, selectedArtifactIndices.size, onDeleteArtifacts, deletingArtifacts]);
+
+  const handleBulkPromptConfirm = useCallback(() => {
+    if (!bulkPrompt) return;
+    const prompt = bulkPrompt;
+    setBulkPrompt(null);
+    if (prompt.type === "sessions" && prompt.action === "delete") {
+      void handleBulkDeleteSessionsConfirm();
+      return;
+    }
+    if (prompt.type === "sessions" && prompt.action === "end") {
+      void handleBulkEndSessionsConfirm();
+      return;
+    }
+    if (prompt.type === "artifacts") {
+      void handleBulkDeleteArtifactsConfirm();
+    }
+  }, [bulkPrompt, handleBulkDeleteSessionsConfirm, handleBulkEndSessionsConfirm, handleBulkDeleteArtifactsConfirm]);
+
+  const bulkPromptBusy = deletingSessions || deletingArtifacts || endingSessions;
+  const bulkDeleteIncludesActive = Boolean(
+    bulkPrompt &&
+      bulkPrompt.type === "sessions" &&
+      bulkPrompt.action === "delete" &&
+      sessionId &&
+      selectedSessionIds.has(sessionId)
+  );
+
   const handleDelete = async (sid: string) => {
+    if (deletingSessions || endingSessions) return;
+    setBulkActionReport(null);
+    setDeletingSessions(true);
     try {
-      await api.tutor.deleteSession(sid);
-      toast.success("Session deleted");
-      queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
+      const result = await api.tutor.deleteSession(sid);
+      await queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
+      if (result.deleted) {
+        toast.success("Session deleted");
+      } else {
+        toast.success("Session already deleted");
+      }
+      if (sid === sessionId && onClearActiveSession) {
+        onClearActiveSession();
+      }
       setDeleteConfirm(null);
       setSelectedSessionIds((prev) => {
         const next = new Set(prev);
@@ -689,6 +778,8 @@ export function TutorArtifacts({
       });
     } catch (err) {
       toast.error(`Delete failed: ${err instanceof Error ? err.message : "Unknown"}`);
+    } finally {
+      setDeletingSessions(false);
     }
   };
 
@@ -779,48 +870,95 @@ export function TutorArtifacts({
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Themed bulk delete confirmation */}
-      <AlertDialog open={bulkConfirm !== null} onOpenChange={(open) => !open && setBulkConfirm(null)}>
-        <AlertDialogContent className="bg-black border-[3px] border-double border-primary rounded-none gap-4 p-4">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="font-arcade text-primary tracking-wider text-sm">
-              {bulkConfirm?.type === "sessions" && bulkConfirm.action === "end" ? "END?" : "CONFIRM?"}
-            </AlertDialogTitle>
-            <AlertDialogDescription className={`${TEXT_BODY} font-terminal text-muted-foreground`}>
-              {bulkConfirm?.type === "sessions" &&
-                `${bulkConfirm.action === "end" ? "End" : "Delete"} ${bulkConfirm.count} selected active session${bulkConfirm.count > 1 ? "s" : ""}? ${
-                  bulkConfirm.action === "end" ? "This will complete" : "This cannot be undone."
-                }.`}
-              {bulkConfirm?.type === "artifacts" &&
-                `Delete ${bulkConfirm.count} selected artifact${bulkConfirm.count > 1 ? "s" : ""}? This cannot be undone.`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-row gap-2 sm:justify-end">
-            <AlertDialogCancel
-              className="rounded-none font-terminal text-xs border-2 border-primary/50 bg-transparent text-muted-foreground hover:bg-primary/10 hover:text-foreground"
-              onClick={() => setBulkConfirm(null)}
-            >
-              CANCEL
-            </AlertDialogCancel>
-              <AlertDialogAction
-              className="rounded-none font-arcade text-xs bg-primary/20 text-primary border-2 border-primary hover:bg-primary/30"
-              onClick={() => {
-                if (bulkConfirm?.type === "sessions" && bulkConfirm.action === "delete") handleBulkDeleteSessionsConfirm();
-                if (bulkConfirm?.type === "sessions" && bulkConfirm.action === "end") handleBulkEndSessionsConfirm();
-                if (bulkConfirm?.type === "artifacts") handleBulkDeleteArtifactsConfirm();
-              }}
-            >
-              {bulkConfirm?.type === "sessions" && bulkConfirm.action === "end" ? "END" : "DELETE"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+    <div className="relative flex flex-col h-full overflow-hidden">
+      {bulkPrompt && (
+        <div className="absolute inset-0 z-40 bg-black/75 flex items-center justify-center p-3">
+          <div className="w-full max-w-sm border-[3px] border-double border-primary bg-black p-3 space-y-3 shadow-[0_0_0_1px_rgba(255,0,0,0.25)]">
+            <div className="font-arcade text-xs tracking-wider text-primary">
+              {bulkPrompt.type === "sessions" && bulkPrompt.action === "end" ? "END SESSIONS?" : "CONFIRM DELETE"}
+            </div>
+            <div className="font-terminal text-sm text-muted-foreground">
+              {bulkPrompt.type === "sessions" && (
+                <>
+                  {`${bulkPrompt.action === "end" ? "End" : "Delete"} ${bulkPrompt.count} selected session${bulkPrompt.count > 1 ? "s" : ""}? ${bulkPrompt.action === "end" ? "This will complete them." : "This cannot be undone."}`}
+                  {bulkDeleteIncludesActive && (
+                    <span className="block mt-2 text-yellow-300">
+                      Warning: your active session is selected. You will be returned to WIZARD after delete.
+                    </span>
+                  )}
+                </>
+              )}
+              {bulkPrompt.type === "artifacts" &&
+                `Delete ${bulkPrompt.count} selected artifact${bulkPrompt.count > 1 ? "s" : ""}? This cannot be undone.`}
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 rounded-none font-terminal text-xs border-2 border-primary/50 bg-transparent text-muted-foreground hover:bg-primary/10 hover:text-foreground"
+                disabled={bulkPromptBusy}
+                onClick={() => setBulkPrompt(null)}
+              >
+                CANCEL
+              </Button>
+              <Button
+                size="sm"
+                className="h-8 rounded-none font-arcade text-xs bg-primary/20 text-primary border-2 border-primary hover:bg-primary/30"
+                disabled={bulkPromptBusy}
+                onClick={handleBulkPromptConfirm}
+              >
+                {bulkPromptBusy ? <Loader2 className={`${ICON_SM} animate-spin`} /> : (bulkPrompt.type === "sessions" && bulkPrompt.action === "end" ? "END" : "DELETE")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className={`shrink-0 ${PANEL_PADDING} pb-2 border-b-[3px] border-double border-primary/30`}>
         <div className={TEXT_PANEL_TITLE}>ARTIFACTS</div>
       </div>
+
+      {bulkActionReport && (
+        <div className={`${PANEL_PADDING} pt-2 pb-0 shrink-0`}>
+          <div className="border-[3px] border-double border-yellow-500/50 bg-black/70 p-2 space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="font-arcade text-[10px] tracking-wider text-yellow-300">
+                {bulkActionReport.title}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-5 w-5 p-0 rounded-none text-muted-foreground hover:text-foreground"
+                onClick={() => setBulkActionReport(null)}
+              >
+                <X className={ICON_SM} />
+              </Button>
+            </div>
+            <div className="font-terminal text-xs text-muted-foreground">
+              Requested {bulkActionReport.requested} · Deleted {bulkActionReport.deleted} · Already gone {bulkActionReport.skipped} · Failed {bulkActionReport.failures.length}
+              {bulkActionReport.requestId ? ` · request_id ${bulkActionReport.requestId}` : ""}
+              {bulkActionReport.skippedIndexes && bulkActionReport.skippedIndexes.length > 0
+                ? ` · skipped indexes ${bulkActionReport.skippedIndexes.join(",")}`
+                : ""}
+            </div>
+            {bulkActionReport.failures.length > 0 && (
+              <div className="font-terminal text-xs text-red-300 space-y-0.5 max-h-20 overflow-auto">
+                {bulkActionReport.failures.slice(0, 5).map((failure) => (
+                  <div key={failure.sessionId}>
+                    {failure.sessionId}: {failure.reason}
+                  </div>
+                ))}
+                {bulkActionReport.failures.length > 5 && (
+                  <div className="text-muted-foreground">
+                    ...and {bulkActionReport.failures.length - 5} more
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <ScrollArea className="flex-1 min-h-0">
         <div className={`${PANEL_PADDING} space-y-3`}>
@@ -913,20 +1051,35 @@ export function TutorArtifacts({
                           onClick={async (e) => {
                             e.stopPropagation();
                             try {
-                              await onDeleteArtifacts(sessionId, [i]);
+                              const result = await onDeleteArtifacts(sessionId, [i]);
+                              if (result) {
+                                const requested = result.requested_count ?? 1;
+                                const deleted = result.applied_count ?? 1;
+                                if (result.request_id || deleted < requested) {
+                                  setBulkActionReport({
+                                    title: "Artifact delete completed",
+                                    requested,
+                                    deleted,
+                                    skipped: Math.max(requested - deleted, 0),
+                                    requestId: result.request_id,
+                                    skippedIndexes: result.skipped_indexes,
+                                    failures: [],
+                                  });
+                                }
+                              }
                               toast.success("Artifact deleted");
                             } catch {
                               toast.error("Delete failed");
                             }
                           }}
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 className={ICON_SM} />
                         </Button>
                       )}
                     </div>
-                    {a.type === "table" && a.content ? (
+                    {a.type === "note" && a.content && isMarkdownTable(a.content) ? (
                       <ArtifactTable content={a.content} />
-                    ) : a.type === "structured_map" && a.content ? (
+                    ) : a.type === "map" && a.content && a.content.trimStart().startsWith("```mermaid") ? (
                       <ArtifactStructuredMap content={a.content} title={a.title || ""} />
                     ) : a.content ? (
                       <div className={`${TEXT_MUTED} mt-1 line-clamp-2`}>
@@ -934,19 +1087,6 @@ export function TutorArtifacts({
                       </div>
                     ) : null}
                     {a.type === "map" && a.content && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className={`${BTN_OUTLINE} mt-1`}
-                        onClick={() => {
-                          localStorage.setItem("tutor-mermaid-import", a.content);
-                          window.location.href = "/brain";
-                        }}
-                      >
-                        <Map className={ICON_SM} /> Send to Brain
-                      </Button>
-                    )}
-                    {a.type === "structured_map" && a.content && a.content.trimStart().startsWith("```mermaid") && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -1141,7 +1281,7 @@ export function TutorArtifacts({
                           variant="ghost"
                           size="sm"
                           className="h-6 px-2 rounded-none text-muted-foreground hover:text-red-400"
-                          disabled={endingSession === s.session_id}
+                          disabled={endingSession === s.session_id || deletingSessions || endingSessions}
                           onClick={(e) => {
                             e.stopPropagation();
                             setDeleteConfirm(null);
@@ -1161,6 +1301,7 @@ export function TutorArtifacts({
                             variant="ghost"
                             size="sm"
                             className="h-6 w-6 p-0 rounded-none text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                            disabled={deletingSessions || endingSessions}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDelete(s.session_id);
@@ -1185,8 +1326,10 @@ export function TutorArtifacts({
                           variant="ghost"
                           size="sm"
                           className="h-6 w-6 p-0 rounded-none text-muted-foreground hover:text-red-400"
+                          disabled={deletingSessions || endingSessions}
                           onClick={(e) => {
                             e.stopPropagation();
+                            if (deletingSessions || endingSessions) return;
                             setDeleteConfirm(s.session_id);
                           }}
                         >

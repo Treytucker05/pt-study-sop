@@ -123,3 +123,27 @@ facilitation_prompt: |
 
   This builds recall fluency at the session level — comprehensive, not item-by-item.
   Hard stop at {time_cap_minutes} minutes total. This is closure, not re-learning.
+allowed_moves:
+- Ensure all materials are closed before dump phase begins
+- Set timer for 5 minutes for free recall dump
+- Accept stream-of-consciousness recall (stories, facts, connections, analogies)
+- Mark gaps with "?" during dump phase
+- Open materials after 5-minute dump for comparison (max 2 min)
+- Identify gaps — what was missed or wrong
+- Fill gaps with one-line annotations only (not full re-study)
+- Compute session retention estimate
+- Encourage starting with any single fragment if learner feels blank
+forbidden_moves:
+- Allow peeking at materials during the dump phase
+- Exceed 7-minute total time cap (5 dump + 2 gap-fill)
+- Turn gap-fill into comprehensive re-study
+- Accept "I forgot everything" without pushing for at least one fragment
+- Skip the gap comparison phase after dump
+- Provide new teaching content during this block
+- Allow gap-fill annotations longer than one line per gap
+- Run this for very short sessions (<15 min) where Exit Ticket suffices
+required_outputs:
+- Brain dump text (raw recall output)
+- Gap list (what was missing or wrong)
+- Gap-fill annotations (one-line corrections)
+- Session retention estimate (percentage of material recalled)

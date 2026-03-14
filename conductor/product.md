@@ -1,21 +1,40 @@
-# Product Definition (PT Study OS)
+# Conductor Product Context
 
-PT Study OS is a local-first, single-user study system that turns each study session into structured evidence (WRAP logs) and a continuous improvement loop:
+Historical filename retained for Conductor compatibility.
 
-Tutor (Custom GPT) -> WRAP output -> Brain ingests + stores -> Dashboard surfaces metrics/issues -> Scholar audits + proposes improvements -> you accept/edit/deny -> repeat.
+This file is not product authority.
 
-## Key components
+- Product/ownership authority lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+- Technical/runtime support lives in `docs/root/PROJECT_ARCHITECTURE.md` and `docs/root/GUIDE_DEV.md`.
+- Execution status lives in `docs/root/TUTOR_TODO.md` and `conductor/tracks.md`.
 
-- Tutor: Runs the tutoring session (external: Custom GPT). Outputs WRAP.
-- Brain: Source-of-truth SQLite DB + ingestion + metrics + artifact generation.
-- Dashboard: Flask-served UI for ingest, metrics, issues, proposals.
-- Scholar: Manual-run auditor that proposes improvements based on evidence.
-- Calendar/Tasks: Downstream projection of Brain state into Google Calendar/Tasks (preview-first).
-- Methods: Composable study method blocks and chains. Library of 18 blocks across 6 categories, chainable into session workflows. Ratings feed into Scholar for optimization.
+## Purpose
 
-## Canonical docs
+Use this file only to explain how Conductor fits into this repo's execution workflow.
+Do not freeze or reinterpret subsystem roles here.
 
-- PRD: `docs/prd/PT_STUDY_OS_PRD_v1.0.md`
-- Architecture: `docs/root/PROJECT_ARCHITECTURE.md`
-- Docs index: `docs/README.md`
+## Conductor Role In This Repo
 
+- Conductor is execution-only in this repo.
+- Tracks, plans, and logs exist to sequence work, record status, and preserve implementation history.
+- Conductor docs may summarize the current product shape, but if they conflict with the canon they are wrong.
+
+## Allowed Content Here
+
+- links to canonical docs
+- execution-oriented summaries of active work
+- reminders about track lifecycle and status surfaces
+
+## Not Allowed Here
+
+- independent product definitions
+- competing subsystem ownership maps
+- alternate Brain / Scholar / Tutor role statements
+- any claim that this file is a source of truth for product behavior
+
+## Canon Pointers
+
+- Master product canon: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- Execution board: `docs/root/TUTOR_TODO.md`
+- Track registry: `conductor/tracks.md`
+- Workflow instructions: `conductor/workflow.md`

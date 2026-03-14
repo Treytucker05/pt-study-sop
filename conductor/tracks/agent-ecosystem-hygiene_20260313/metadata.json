@@ -1,0 +1,18 @@
+{
+  "id": "agent-ecosystem-hygiene_20260313",
+  "title": "Agent Ecosystem Hygiene",
+  "type": "infra",
+  "status": "complete",
+  "created": "2026-03-13T00:00:00Z",
+  "updated": "2026-03-13T05:00:00Z",
+  "current_phase": 5,
+  "current_task": "5.3",
+  "phases": {
+    "total": 6,
+    "completed": 6
+  },
+  "tasks": {
+    "total": 15,
+    "completed": 15
+  }
+}

@@ -104,3 +104,25 @@ gating_rules:
 - Force active processing (explain, transform, or map), not passive reading.
 - Keep output scoped to mapped objectives only.
 artifact_type: notes
+allowed_moves:
+- Ask probing questions about why connections exist (demand "because" statements)
+- Challenge vague or superficial connections — require specific shared mechanisms
+- Push for cross-course connections, not just within-course links
+- Require identification of the underlying shared principle
+- Use Socratic questioning to help learner discover deeper connections
+- Suggest alternative connection dimensions if learner is stuck (shared structure, cause-effect, shared mechanism)
+- Demand the learner explain HOW the connection operates, not just that it exists
+forbidden_moves:
+- Accept connections without explanatory "because" statements
+- Accept only within-course connections (at least one must be cross-course)
+- Provide the connections FOR the learner
+- Accept listing without explanation of shared principles
+- Skip the shared principle identification step
+- Teach new content — interrogation uses what was already encoded
+- Move on with fewer than 2 connections identified
+- Accept one-word or surface-level answers without probing
+- Present content outside the mapped objective scope
+required_outputs:
+- Cross-topic connection list (2-3 connections)
+- Explanatory sentences (each with a "because" clause)
+- Shared principles identified for each connection

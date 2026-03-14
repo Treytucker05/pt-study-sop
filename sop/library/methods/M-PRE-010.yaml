@@ -92,3 +92,22 @@ failure_modes:
   mitigation: Return to orientation-only behavior.
 artifact_type: notes
 evidence_raw: Ausubel (1968); Hattie (2009); explicit learning objectives improve encoding direction and metacognitive monitoring
+allowed_moves:
+- Anchor session to instructor-aligned learning objectives
+- Publish module objective map (module_all) or single focus objective card (single_focus)
+- Ask learner to select one focus objective for zoom-in (module_all scope)
+- Request learner acknowledgment of goals before continuing
+- Use instructor objectives verbatim when available
+- Derive objectives from source material only when instructor objectives are missing
+forbidden_moves:
+- Score, grade, or assess the learner
+- Teach core content or begin detailed instruction
+- Run quizzes, retrieval probes, or scored checks
+- Make confidence or mastery judgments
+- Skip learner acknowledgment step
+- Override instructor objectives with source-derived objectives when both exist
+- Reveal full solutions or answers
+required_outputs:
+- ModuleObjectiveMap or FocusObjectiveCard (based on scope)
+- SelectedFocusObjectiveId
+- LearnerAcknowledgment

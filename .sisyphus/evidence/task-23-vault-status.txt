@@ -1,0 +1,35 @@
+T23: vault_write_status display in tutor.tsx — Build Evidence
+=============================================================
+Date: 2026-03-03
+
+## Changes Made
+
+1. api.ts — Added vault_write_status to TutorBlockProgress interface:
+   vault_write_status?: "success" | "skipped" | "failed" | "unavailable";
+
+2. tutor.tsx — Added vault_write_status handling in advanceBlock callback (line ~575):
+   - "success"   → toast.success("Note saved", { duration: 2000 })
+   - "failed"    → toast.warning("Vault note failed — Obsidian may not be running", { duration: 5000 })
+   - "unavailable" → same warning as "failed"
+   - "skipped"   → silent (no toast)
+
+## Build Output
+
+> rest-express@1.0.0 build
+> tsx build.ts
+
+building client...
+vite v7.1.12 building for production...
+transforming...
+✓ 4649 modules transformed.
+✓ built in 49.73s
+
+Exit code: 0
+TypeScript errors: 0
+Only pre-existing chunk size warnings (mindmap, flowchart-elk, etc.) — no new issues.
+
+## Toast System
+
+- Library: sonner ^2.0.7
+- Import: `import { toast } from "sonner";` (already in tutor.tsx)
+- toast.warning() is available in sonner v2.x

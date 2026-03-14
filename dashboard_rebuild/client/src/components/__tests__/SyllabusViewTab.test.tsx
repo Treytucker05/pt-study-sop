@@ -29,7 +29,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockFetch.mockResolvedValue({
     ok: true,
-    json: () => Promise.resolve([]),
+    json: () => Promise.resolve([{ id: 7, name: "Neuro" }]),
   });
 });
 
@@ -47,5 +47,12 @@ describe("SyllabusViewTab", () => {
   it("renders course selector placeholder", () => {
     render(<SyllabusViewTab />, { wrapper: createWrapper() });
     expect(screen.getByText("Choose a course...")).toBeInTheDocument();
+  });
+
+  it("shows a locked course header when course selection is owned by the shell", async () => {
+    render(<SyllabusViewTab lockedCourseId={7} />, { wrapper: createWrapper() });
+    expect(await screen.findByText("COURSE SYLLABUS")).toBeInTheDocument();
+    expect(screen.getByText("Neuro")).toBeInTheDocument();
+    expect(screen.queryByText("SELECT COURSE")).not.toBeInTheDocument();
   });
 });

@@ -1,0 +1,28 @@
+**APPROVED**
+- T0 — Track artifacts exist and are linked in `conductor/tracks/course-keyed-tutor-shell_20260313/index.md:1-34`.
+- T4 — Course-keyed shell summary API is implemented in `brain/dashboard/api_tutor_projects.py:1-233` and exercised in `brain/tests/test_tutor_project_shell.py:118-207`.
+- T5 — Shell state separation is in `brain/db_setup.py:2094-2121` and persisted via `brain/dashboard/api_tutor_projects.py:237-377`.
+- T6 — Studio persistence + commands are implemented (`brain/db_setup.py:2123-2263`, `brain/dashboard/api_tutor_studio.py:157-442`) with coverage in `brain/tests/test_tutor_project_shell.py:227-317`.
+- T7 — Schedule and publish component slices are wired and tested (`dashboard_rebuild/client/src/components/TutorScheduleMode.tsx:37-298`, `dashboard_rebuild/client/src/components/TutorPublishMode.tsx:70-322`, tests in `dashboard_rebuild/client/src/components/__tests__/TutorScheduleMode.test.tsx:89-118` and `dashboard_rebuild/client/src/components/__tests__/TutorPublishMode.test.tsx:68-167`).
+- T8 — Brain Projects Dashboard and Tutor deep-links are implemented in `dashboard_rebuild/client/src/components/brain/BrainHome.tsx:1017-1119` and tested in `dashboard_rebuild/client/src/pages/__tests__/brain.test.tsx:728-774`.
+- T9 — `/tutor` shell modes + query params are implemented (`dashboard_rebuild/client/src/pages/tutor.tsx:95-141`, `dashboard_rebuild/client/src/pages/tutor.tsx:1562-1835`) with mode restoration tests in `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx:339-365`.
+- T10 — Studio mode UI and restore/promote wiring in `dashboard_rebuild/client/src/components/TutorStudioMode.tsx:85-583`, tested in `dashboard_rebuild/client/src/components/__tests__/TutorStudioMode.test.tsx:132-165`.
+- T11 — Capture flows (To Studio note + summary board) are wired in `dashboard_rebuild/client/src/components/MessageList.tsx:195-425` and `dashboard_rebuild/client/src/pages/tutor.tsx:994-1034`, tested in `dashboard_rebuild/client/src/components/__tests__/TutorChat.test.tsx:296-379`.
+- T12 — MaterialViewer + dictation are implemented (`dashboard_rebuild/client/src/components/MaterialViewer.tsx:98-145`, `dashboard_rebuild/client/src/lib/materialViewer.ts:47-78`, `dashboard_rebuild/client/src/lib/useChromiumDictation.ts:100-241`) with tests in `dashboard_rebuild/client/src/components/__tests__/MaterialViewer.test.tsx:7-67`, `dashboard_rebuild/client/src/lib/__tests__/useChromiumDictation.test.tsx:50-109`, and integration in `dashboard_rebuild/client/src/components/TutorWorkspaceSurface.tsx:111-119,463-476`.
+- T13 — Schedule mode implemented and tested (`dashboard_rebuild/client/src/components/TutorScheduleMode.tsx:37-298`, `dashboard_rebuild/client/src/components/__tests__/TutorScheduleMode.test.tsx:89-118`).
+- T14 — Publish mode implemented and tested (`dashboard_rebuild/client/src/components/TutorPublishMode.tsx:70-322`, `dashboard_rebuild/client/src/components/__tests__/TutorPublishMode.test.tsx:68-167`).
+- T15 — Popout transport is implemented (`dashboard_rebuild/client/src/lib/popoutSync.ts:1-206`, `dashboard_rebuild/client/src/lib/tutorWorkspacePopout.ts:1-267`, `dashboard_rebuild/client/src/components/TutorWorkspaceSurface.tsx:148-305`) and tested (`dashboard_rebuild/client/src/lib/__tests__/popoutSync.test.ts:48-127`, `dashboard_rebuild/client/src/components/__tests__/TutorWorkspaceSurface.notes.test.tsx:207-271`).
+
+**GAPS FOUND**
+- T6 — `restore_studio_items` filters out project-scoped items with `tutor_session_id IS NULL` when a session id is provided (`brain/dashboard/api_tutor_studio.py:293-300`), so the project board can silently drop course-level items while a session is active. Suggested fix: only apply the `tutor_session_id` condition when `scope == "session"` or include `tutor_session_id IS NULL` for project scope.
+- T1-T3 — Migration proof isn’t test-covered; the only migration logic is the best-effort drop of `tutor_sessions.mode` in `brain/db_setup.py:2266-2274`, with no regression test validating old-schema upgrades. Suggested fix: add a migration test in `brain/tests/test_tutor_project_shell.py` (or new file) that seeds a legacy `tutor_sessions` schema and asserts a clean init/migration.
+- T9 — Query-param handling for `board_scope` and `board_id` is implemented (`dashboard_rebuild/client/src/pages/tutor.tsx:103-141`) but untested; existing coverage only asserts `mode` restoration (`dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx:339-365`). Suggested fix: add a test that boots `/tutor?course_id=...&board_scope=overall&board_id=...` and confirms state hydration + write-back.
+
+**OVERALL verdict: NEEDS_WORK**
+
+Tests not run (review only).
+
+Recommended next step: Fix `restore_studio_items` filtering for project scope and add a regression test in `brain/tests/test_tutor_project_shell.py`.
+
+1. Add a `board_scope`/`board_id` query param test in `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`.
+2. Add a migration-proof test for legacy `tutor_sessions` schema handling in `brain/tests/`.

@@ -86,3 +86,24 @@ failure_modes:
 - mode: Speed over accuracy collapse
   mitigation: Reduce time pressure and recover accuracy first.
 artifact_type: notes
+allowed_moves:
+- Assemble 30-60 interleaved timed drill items
+- Include weak objectives and prior misses in item pool
+- Interleave across objectives (not blocked by topic)
+- Define two-session validation criteria (same objective passed across two sessions)
+- Attach objective IDs to each drill item
+- Store drill sheet and validation checklist as artifacts
+- Stop loop early on fatigue signals
+- Reduce time pressure if accuracy drops below threshold
+forbidden_moves:
+- Accept fewer than 30 or more than 60 items in drill sheet
+- Create blocked (non-interleaved) drill sequences
+- Skip objective-ID tagging on any item
+- Run beyond burnout cap (3 rounds max)
+- Prioritize speed over accuracy when accuracy drops below 80%
+- Include items from objectives not yet encoded
+- Skip cross-session validation criteria definition
+- Teach or explain content during drill assembly
+required_outputs:
+- DrillSheet (30-60 interleaved items, objective-tagged)
+- CrossSessionValidation checklist (two-session pass criteria)

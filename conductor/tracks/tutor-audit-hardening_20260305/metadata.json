@@ -1,0 +1,16 @@
+{
+  "id": "tutor-audit-hardening_20260305",
+  "title": "Tutor Audit Hardening",
+  "type": "bug",
+  "status": "complete",
+  "created": "2026-03-05T00:00:00Z",
+  "updated": "2026-03-06T00:00:00Z",
+  "phases": {
+    "total": 5,
+    "completed": 5
+  },
+  "tasks": {
+    "total": 42,
+    "completed": 42
+  }
+}

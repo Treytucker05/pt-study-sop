@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, fetchCourseMap } from "@/lib/api";
 import { COURSE_FOLDERS } from "@/config/courses";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -198,6 +198,20 @@ export function VaultPicker({ selectedPaths, onSelectedPathsChange }: VaultPicke
     enabled: connected,
   });
 
+  const { data: courseMapData } = useQuery({
+    queryKey: ["course-map"],
+    queryFn: fetchCourseMap,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const apiCourses = courseMapData?.courses.map((c) => ({
+    id: c.code.toLowerCase().replace("phyt_", ""),
+    name: c.label,
+    path: c.label,
+  })) ?? [];
+
+  const activeCourses = apiCourses.length > 0 ? apiCourses : COURSE_FOLDERS;
+
   const toggleFolder = useCallback((path: string) => {
     setExpandedFolders((prev) => {
       const next = new Set(prev);
@@ -236,7 +250,7 @@ export function VaultPicker({ selectedPaths, onSelectedPathsChange }: VaultPicke
   const summary = useMemo(() => {
     const folders = selectedPaths.filter((p) => {
       // A path is a "folder" if it matches a course folder or was a folder in the tree
-      return COURSE_FOLDERS.some((c) => c.path === p) ||
+      return activeCourses.some((c) => c.path === p) ||
         (!p.includes(".") && !p.endsWith(".md"));
     });
     const files = selectedPaths.length - folders.length;
@@ -267,7 +281,7 @@ export function VaultPicker({ selectedPaths, onSelectedPathsChange }: VaultPicke
     <div className="flex flex-col h-full overflow-hidden">
       {/* Course chips + search — single compact row */}
       <div className="shrink-0 px-3 py-2 flex items-center gap-2 border-b border-primary/10">
-        {COURSE_FOLDERS.map((course) => {
+        {activeCourses.map((course) => {
           const active = selectedPaths.includes(course.path);
           return (
             <button
