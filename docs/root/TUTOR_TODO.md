@@ -11,6 +11,25 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
   - `docs/root/TUTOR_TODO.md` (active workboard)
   - `docs/root/TUTOR_TRUTH_PATH.md` (document read order)
   - `conductor/tracks.md` (completed tracks / archival)
+- Current launch cleanup track:
+  - `conductor/tracks/tutor_launch_shell_realignment_20260313/plan.md`
+- Current product-direction note:
+  - Brain owns Tutor launch context.
+  - `/tutor` remains the live Tutor workspace.
+  - Older `wizard` wording below is historical execution language unless a queue item explicitly re-opens it.
+
+## Active Sprint 2026-03-13
+
+### Sprint: Tutor Launch / Shell Realignment
+- [x] TLR-001. Lay the launch realignment plan out durably in the repo.
+- [x] TLR-100. Lock launch authority in the current frontend.
+  - Added course-scoped Tutor start state.
+  - Library launch now prefers explicit `course_id` handoff.
+  - Ambiguous multi-course Tutor launch from Library now blocks with an explicit error.
+  - Legacy wizard progress is no longer trusted as startup authority.
+- [ ] TLR-110. Replace the broad Tutor wizard with a thin Tutor start/resume panel.
+- [ ] TLR-120. Rework Tutor launch tests around the start-panel model.
+- [ ] TLR-300. Rewrite active docs so they stop describing Tutor as wizard-led.
 
 ## Active Sprint 2026-02-23
 

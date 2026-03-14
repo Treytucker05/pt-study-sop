@@ -4,11 +4,15 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Active status: No active workstream. All tracks complete.
+Active status: 1 active workstream.
 
-Latest update: 2026-02-24 Completed TutorChat Speed Tiers — 4 tasks done (766 tests passing). UI pill toggles, parallel RAG, mode-gated model/reasoning. Default ~1-2s, full pipeline ~5-8s (was 20+s).
+Latest update: 2026-03-13 Opened Tutor Launch / Shell Realignment. TLR-100 complete and pushed: launch-state resolver added, Library now launches Tutor with explicit course scope, and stale wizard startup authority was reduced.
 
 ---
+
+- [ ] **Track: Tutor Launch / Shell Realignment** (active — created 2026-03-13)
+  Brain-owned launch, explicit Tutor course scoping, thin Tutor start/resume surface, and retirement of wizard-era startup authority.
+  *Link: [./tracks/tutor_launch_shell_realignment_20260313/](./tracks/tutor_launch_shell_realignment_20260313/)*
 
 - [x] **Track: TutorChat Speed Tiers** (complete — created 2026-02-24; closed 2026-02-24; 4 tasks, 766 tests)
   UI mode toggles gate expensive pipeline stages. Parallel RAG. Model/reasoning per tier.
