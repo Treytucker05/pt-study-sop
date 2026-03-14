@@ -36,7 +36,10 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 - [x] TLR-110. Replace the broad Tutor wizard with a thin Tutor start/resume panel.
   - Replaced `TutorWizard` with `TutorStartPanel`.
   - The start surface now uses launch summary, recent-session resume, readiness, and collapsible launch options instead of a stepper.
-- [ ] TLR-120. Rework Tutor launch tests around the start-panel model.
+- [x] TLR-120. Rework Tutor launch tests around the start-panel model.
+  - Added page-level Tutor launch-precedence coverage in `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`.
+  - Fixed Library handoff hydration so selected materials are not wiped before launch restore completes.
+  - Fixed resume behavior so setup closes only after the session payload loads successfully.
 - [x] TLR-300. Rewrite active docs so they stop describing Tutor as wizard-led.
   - `GUIDE_TUTOR_FLOW.md`, `PROJECT_ARCHITECTURE.md`, and `GUIDE_USER.md` now describe the start-panel model.
 

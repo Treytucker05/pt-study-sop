@@ -48,7 +48,19 @@ Create one clear current Tutor launch model:
     - `npm run test -- client/src/components/__tests__/TutorStartPanel.test.tsx client/src/lib/__tests__/tutorClientState.test.ts client/src/components/__tests__/TutorChat.test.tsx`
     - `npm run build`
 
-- [ ] TLR-120 Rework Tutor launch tests around the start-panel model.
+- [x] TLR-120 Rework Tutor launch tests around the start-panel model.
+  - Added page-level launch-precedence coverage in `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+  - Covered:
+    - explicit `course_id` launch beats stale active-session restore
+    - Library handoff beats stale active-session restore
+    - active-session restore without explicit launch enters chat
+    - current-course fallback hydrates the start surface
+  - Fixed two runtime behaviors exposed by the new tests:
+    - selected-material persistence now waits until launch hydration completes
+    - successful resume hides setup only after the session payload loads
+  - Validation:
+    - `npm run test -- client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorStartPanel.test.tsx client/src/components/__tests__/TutorChat.test.tsx client/src/lib/__tests__/tutorClientState.test.ts`
+    - `npm run build`
 
 - [ ] TLR-200 Make Tutor startup and surrounding UI more trustworthy and learner-first.
 

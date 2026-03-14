@@ -161,6 +161,9 @@ export default function Tutor() {
   const [settingsSaving, setSettingsSaving] = useState(false);
 
   useEffect(() => {
+    if (!hasRestored) {
+      return;
+    }
     if (
       typeof courseId === "number" &&
       typeof prevCourseRef.current === "number" &&
@@ -169,7 +172,7 @@ export default function Tutor() {
       return;
     }
     writeTutorSelectedMaterialIds(selectedMaterials);
-  }, [courseId, selectedMaterials]);
+  }, [courseId, hasRestored, selectedMaterials]);
 
   useEffect(() => {
     try {
@@ -602,6 +605,7 @@ export default function Tutor() {
       try {
         const session = await api.tutor.getSession(sessionId);
         applySessionState(session);
+        setShowSetup(false);
         toast.success("Session resumed");
       } catch (err) {
         toast.error(`Failed to resume session: ${err instanceof Error ? err.message : "Unknown"}`);
@@ -868,7 +872,7 @@ export default function Tutor() {
                       isStarting={isStarting}
                       recentSessions={recentSessions}
                       configStatus={configStatus}
-                      onResumeSession={(id) => { resumeSession(id); setShowSetup(false); }}
+                      onResumeSession={resumeSession}
                       onDeleteSession={async (id) => {
                         try {
                           await api.tutor.deleteSession(id);

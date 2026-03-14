@@ -36,6 +36,18 @@
   - `npm run build`
   - Result: success
 
+## TLR-120 completed
+
+- Page-level Tutor launch tests:
+  - `npm run test -- client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorStartPanel.test.tsx client/src/components/__tests__/TutorChat.test.tsx client/src/lib/__tests__/tutorClientState.test.ts`
+  - Result: `17 passed`
+- Frontend build:
+  - `npm run build`
+  - Result: success
+- Runtime hardening folded into the same step:
+  - delayed selected-material persistence until launch hydration completes
+  - delayed setup close on resume until session payload load succeeds
+
 ## TLR-300 completed
 
 - Active-doc stale wording grep:
