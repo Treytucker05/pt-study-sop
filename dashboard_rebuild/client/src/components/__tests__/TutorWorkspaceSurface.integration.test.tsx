@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { useEffect } from "react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useEffect, useRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createBroadcastChannelTransport,
@@ -123,15 +123,15 @@ vi.mock("@/components/brain/UnifiedBrainCanvas", () => ({
 
 vi.mock("@excalidraw/excalidraw", () => ({
   Excalidraw: ({ excalidrawAPI }: { excalidrawAPI?: (api: unknown) => void }) => {
-    const api = {
+    const apiRef = useRef({
       getSceneElements: () => [],
       getAppState: () => ({ viewBackgroundColor: "#000", gridSize: 16 }),
       getFiles: () => ({}),
       updateScene: vi.fn(),
       scrollToContent: vi.fn(),
-    };
+    });
     useEffect(() => {
-      excalidrawAPI?.(api);
+      excalidrawAPI?.(apiRef.current);
     }, [excalidrawAPI]);
     return <div data-testid="excalidraw-stage">canvas stage</div>;
   },
@@ -141,6 +141,8 @@ vi.mock("@excalidraw/excalidraw", () => ({
 
 import { TutorWorkspaceSurface } from "@/components/TutorWorkspaceSurface";
 
+const queryClients: QueryClient[] = [];
+
 function renderSurface() {
   const client = new QueryClient({
     defaultOptions: {
@@ -148,6 +150,7 @@ function renderSurface() {
       mutations: { retry: false },
     },
   });
+  queryClients.push(client);
   return render(
     <QueryClientProvider client={client}>
       <TutorWorkspaceSurface />
@@ -193,6 +196,11 @@ describe("TutorWorkspaceSurface integration", () => {
   });
 
   afterEach(() => {
+    cleanup();
+    for (const client of queryClients) {
+      client.clear();
+    }
+    queryClients.length = 0;
     Reflect.deleteProperty(
       window as Window & {
         webkitSpeechRecognition?: typeof window.webkitSpeechRecognition;
@@ -249,7 +257,7 @@ describe("TutorWorkspaceSurface integration", () => {
     fireEvent.click(screen.getByTestId("tutor-workspace-tab-table"));
     expect(await screen.findByDisplayValue("Untitled Comparison")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /copy/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^save$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /save to vault/i })).toBeInTheDocument();
   });
 
   it("appends dictated text into the current note", async () => {

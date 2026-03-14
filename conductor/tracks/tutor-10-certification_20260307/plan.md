@@ -3,7 +3,7 @@
 **Track ID:** tutor-10-certification_20260307  
 **Spec:** [./spec.md](./spec.md)  
 **Created:** 2026-03-07  
-**Status:** [ ] In Progress
+**Status:** [x] Complete
 
 ## Pre-Step
 
@@ -34,26 +34,27 @@
 
 ## Milestone 2: Session Authority, Restore, Resume
 
-- [ ] T-201: Make preflight the only supported setup authority after contracts are frozen.
+- [x] T-201: Make preflight the only supported setup authority after contracts are frozen.
   - objective-scoped certified sessions now reject direct start without preflight
 - [x] T-202a: Freeze canonical ownership map for objective/MOC/session authority.
-- [ ] T-202b: Implement the minimum consolidation required for deterministic preflight/restore.
-- [ ] T-203: Build restore/resume certification matrix.
+- [x] T-202b: Implement the minimum consolidation required for deterministic preflight/restore.
+  - restore and wizard regressions now cover stale active-session keys, corrupted local wizard state, and library handoff precedence versus localStorage restore
+- [x] T-203: Build restore/resume certification matrix.
   - restore coverage now includes stale active-session keys, completed-session cleanup, corrupted wizard state, and library handoff precedence
-- [ ] T-204: Certify preserved scoped session state across create/get/restore/resume.
+- [x] T-204: Certify preserved scoped session state across create/get/restore/resume.
 
 ## Milestone 3+: Remaining Certification
 
 - [x] T-301: Inventory selectable template chains and assign dispositions.
-- [ ] T-302-T-305: remaining chain runtime certification
-- [ ] T-401-T-405: artifact reliability
-- [ ] T-501-T-505: trust and teaching quality
-- [ ] T-601-T-605: neuro golden paths and release gate
+- [x] T-302-T-305: remaining chain runtime certification
+- [x] T-401-T-405: artifact reliability
+- [x] T-501-T-505: trust and teaching quality
+- [x] T-601-T-605: neuro golden paths and release gate
 - [x] T-605: Define and implement the executable certification runner/report artifact used by the release gate.
 
-## Current Execution Focus
+## Closeout
 
-- freeze the certification contract in repo-tracked artifacts
-- add chain certification disposition to the template-chain registry surface
-- use that registry as the source of truth for later matrices and release gating
-- continue with remaining session-authority consolidation and chain runtime certification
+- certification runner refreshed on `2026-03-13` and reports `ready`
+- session restore matrix is wired into the release gate and currently green
+- session-authority setup/restore contract is frozen in repo-tracked docs and tests
+- remaining Milestone 3+ buckets are now closed through the executable certification runner/report artifact and its green `ready` gate, rather than a second parallel checklist

@@ -108,16 +108,21 @@ def create_app():
     def inject_cache_buster():
         return dict(cache_bust=int(time.time()))
 
-    # Check Obsidian CLI availability on startup (warning only, don't block)
-    from obsidian_vault import ObsidianVault
+    # Check Obsidian CLI availability on startup (warning only, don't block).
+    # Skip this probe under pytest because some local Obsidian CLI installs can
+    # wake the desktop app during backend test app construction.
+    import sys
 
-    vault = ObsidianVault()
-    if not vault.is_available():
-        import logging
+    if "pytest" not in sys.modules:
+        from obsidian_vault import ObsidianVault
 
-        logging.getLogger(__name__).warning(
-            "Obsidian CLI not available on startup. "
-            "Vault operations will fail. Ensure Obsidian is running and 'obsidian' is on PATH."
-        )
+        vault = ObsidianVault()
+        if not vault.is_available():
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "Obsidian CLI not available on startup. "
+                "Vault operations will fail. Ensure Obsidian is running and 'obsidian' is on PATH."
+            )
 
     return app

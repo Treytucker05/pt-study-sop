@@ -18,6 +18,15 @@ This guide covers how to run the stack, update docs, and extend the system safel
 2. Launch dashboard: `Start_Dashboard.bat`
 3. Open: `http://127.0.0.1:5000`
 
+## Live Tutor Smoke
+Use this when validating the real Tutor session path against the local dashboard.
+
+1. Start the app with `Start_Dashboard.bat`.
+2. Run `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5000`.
+3. Do the thin browser smoke:
+   - `/tutor`: verify the Tutor shell loads, Studio workspace controls render (`NOTES`, `CANVAS`, `GRAPH`, `TABLE`), and the selected material viewer appears without getting stuck on `Loading...`.
+   - `/methods`: verify the Method Library loads, the `LIBRARY` / `CHAINS` / `ANALYTICS` controls render, and method cards populate without getting stuck on `Loading...`.
+
 ## Frontend Build (Required For UI Changes)
 The Flask app serves the built frontend from `brain/static/dist/`. Vite is configured to output directly to this folder.
 

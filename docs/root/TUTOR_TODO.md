@@ -24,6 +24,55 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 
 ## Active Sprint 2026-03-13
 
+### Sprint 29: Agent Ecosystem Hygiene (2026-03-13)
+- [x] Claim scope: normalize multi-CLI skill topology, repair supported active roots, remove plaintext secrets from supported active config, and close the related operator-doc drift
+  - `conductor/tracks/agent-ecosystem-hygiene_20260313/`
+  - `docs/root/TUTOR_TODO.md`
+  - `docs/root/AGENT_BOARD.md`
+  - `conductor/tracks.md`
+  - `conductor/tracks/GENERAL/log.md`
+  - `docs/root/SKILLS_INVENTORY.md`
+  - `docs/root/AGENT_SETUP.md`
+  - `scripts/sync_agent_skills.ps1`
+  - `C:\Users\treyt\.agents\README.md`
+  - supported home roots under `C:\Users\treyt\.claude\`, `C:\Users\treyt\.codex\`, `C:\Users\treyt\.cursor\`, `C:\Users\treyt\.gemini\`, `C:\Users\treyt\.antigravity\`, `C:\Users\treyt\.opencode\`, and `C:\Users\treyt\.kimi\`
+  - Completed 2026-03-13: opened `conductor/tracks/agent-ecosystem-hygiene_20260313/`, registered the track, claimed the live agent board, and appended the kickoff log entry.
+- [ ] Wave A: track bootstrap + topology proof
+  - claim the work on the sprint/board/track surfaces
+  - capture runtime evidence for each CLI
+  - freeze supported roots, legacy roots, and local exceptions before mutation
+- [ ] Wave B: rollback + sync harness hardening
+  - create rollback artifacts before any home-directory change
+  - repair `scripts/sync_agent_skills.ps1`
+  - prove `DryRun -> Apply -> Check -> Check` against the frozen topology
+- [ ] Wave C: supported root repair + Gemini branch resolution
+  - normalize supported non-embedded roots
+  - either normalize or quarantine the embedded Gemini Antigravity subtree based on runtime proof
+- [ ] Wave D: config secret hardening
+  - audit supported and legacy configs
+  - remove plaintext secrets from supported active config
+  - capture rotation evidence or an explicit blocker
+- [ ] Wave E: docs, fallback alignment, and close-out
+  - update repo/operator docs and conditional fallback docs
+  - run the final validation set and close the track
+- [ ] Validation
+  - `scripts/sync_agent_skills.ps1 -Mode DryRun`
+  - `scripts/sync_agent_skills.ps1 -Mode Apply`
+  - `scripts/sync_agent_skills.ps1 -Mode Check`
+  - supported-root broken-junction scan
+  - redacted secret scan over supported active config
+  - `scripts/sync_agent_config.ps1 -Mode Check`
+  - `git diff --check`
+
+### Carry-Forward Tutor Closeouts (2026-03-13)
+- [x] Close `tutor_vision_lock_20260301` with the locked contract package, dual review fold-in, automated validation (`64 passed`), and live Tutor smoke.
+  - `conductor/tracks/tutor_vision_lock_20260301/`
+  - `brain/tutor_prompt_builder.py`
+  - `brain/tests/test_chain_runner.py`
+  - `conductor/tracks.md`
+  - `docs/root/AGENT_BOARD.md`
+  - `docs/root/TUTOR_TODO.md`
+
 ### Sprint 28: Course-Keyed Tutor Shell + Studio Foundation (2026-03-13) — COMPLETE
 - [x] Claim scope: open the durable track for the course-keyed Tutor shell plan and land the first backend foundation slice for course-keyed shell state and summary APIs
   - `conductor/tracks/course-keyed-tutor-shell_20260313/`
@@ -90,8 +139,8 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - both packages require multi-review audit and revised final plan before acceptance
     - task-conversion guidance supports flat markdown output and queue-backed planner output
 
-### Sprint 26: Gap Hardening Before Tutor Deep Dive (2026-03-12)
-- [ ] Claim scope: tighten shell/workspace proof, Methods/chains page-level proof, and one true full-circle Tutor session proof before deeper Tutor feature work
+### Sprint 26: Gap Hardening Before Tutor Deep Dive (2026-03-12) — COMPLETE
+- [x] Claim scope: tighten shell/workspace proof, Methods/chains page-level proof, and one true full-circle Tutor session proof before deeper Tutor feature work
   - `docs/root/TUTOR_TODO.md`
   - `docs/root/GUIDE_DEV.md`
   - `dashboard_rebuild/client/src/pages/__tests__/brain.test.tsx`
@@ -101,23 +150,35 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - `brain/dashboard/api_tutor_turns.py`
   - `brain/tests/`
   - `scripts/live_tutor_smoke.py`
-- [ ] Wave A: frontend proof hardening
+- [x] Wave A: frontend proof hardening
   - Add route-ready shell assertions and isolate full-App test state.
   - Add non-mocked Tutor workspace integration proof for notes/canvas/graph/table.
   - Add page-level `/methods` regression coverage plus Tutor/Methods chain consistency proof.
-- [ ] Wave B: backend streaming proof hardening
+  - Completed 2026-03-13: stabilized the Excalidraw integration mock so the real Tutor workspace canvas proof stops self-triggering render loops, and aligned the table-surface save assertion with the current accessible label (`Save to vault`).
+- [x] Wave B: backend streaming proof hardening
   - Add explicit turn-stream contract coverage.
   - Add first-chunk / retrieval / tool-round timing visibility.
   - Add SSE heartbeat support without changing the JSON `data:` frame contract.
-- [ ] Wave C: live readiness check
+  - Completed 2026-03-13: added `brain/tests/test_tutor_turn_stream_contract.py`, wired timing metadata (`retrieval_ms`, `first_chunk_ms`, `tool_rounds`, `total_ms`) into Tutor SSE `done` frames, and added comment-frame heartbeat support on the streaming response wrapper.
+  - Validation:
+    - `pytest brain/tests/test_tutor_turn_stream_contract.py brain/tests/test_tutor_session_linking.py -q`
+- [x] Wave C: live readiness check
   - Add `scripts/live_tutor_smoke.py` for `preflight -> create -> turn -> restore/summary -> end -> delete`.
   - Document the thin browser smoke checklist for `/tutor` workspace and `/methods`.
-- [ ] Validation
+  - Progress 2026-03-13: rewrote `scripts/live_tutor_smoke.py` onto the current `/api/tutor/session*` contract and real preflight flow using course materials + learning objectives.
+  - Completed 2026-03-13: live `Start_Dashboard.bat` smoke passed with `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5000`, and thin browser smoke passed on `/tutor` workspace plus `/methods`.
+- [x] Validation
   - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/brain.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorWorkspaceSurface.test.tsx client/src/components/__tests__/TutorWorkspaceSurface.integration.test.tsx client/src/pages/__tests__/methods.test.tsx`
   - `pytest brain/tests/test_tutor_turn_stream_contract.py brain/tests/test_e2e_study_session.py brain/tests/test_tutor_session_linking.py brain/tests/test_tutor_artifact_certification.py -q`
   - `Start_Dashboard.bat`
   - `python scripts/live_tutor_smoke.py`
   - live browser smoke on `/tutor` workspace and `/methods`
+  - Completed 2026-03-13:
+    - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/brain.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorWorkspaceSurface.test.tsx client/src/components/__tests__/TutorWorkspaceSurface.integration.test.tsx client/src/pages/__tests__/methods.test.tsx` -> `43 passed`
+    - `pytest brain/tests/test_tutor_turn_stream_contract.py brain/tests/test_e2e_study_session.py brain/tests/test_tutor_session_linking.py brain/tests/test_tutor_artifact_certification.py -q` -> `54 passed`
+    - `Start_Dashboard.bat`
+    - `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5000`
+    - live browser smoke on `/tutor` workspace and `/methods`
 
 ### Sprint 25: Canon Collapse + Pre-Tutor Hardening Program (2026-03-12)
 - [x] Claim scope: collapse repo truth into one canon, remove active drift between Brain / Scholar / Tutor docs and shell behavior, then finish the remaining pre-Tutor hardening work before new Tutor feature development
@@ -422,9 +483,9 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - [x] Phase 2: certify session authority, preflight, restore, and resume.
   - Added restore coverage for stale active-session keys, completed-session cleanup, corrupted wizard state, and library handoff precedence.
   - Added backend safeguard: objective-scoped certified sessions now require preflight instead of direct start.
-  - In progress: Obsidian-backed week-page preflight sync for `Learning Objectives & To Do.md` plus `_Map of Contents.md` patching, `page_sync_result`, and Wizard readiness surfacing for the Week 8 proof.
-  - Week 8 follow-up hardening: duplicate note creation is now blocked on bridge/read failures, the live Week 8 numbered duplicates were cleaned, and the synced page layout now tracks the Week 7 study-note shape more closely.
-  - Week 9 follow-up hardening: fix study-unit inference/title leakage in the Tutor Wizard and simplify the Library ingest vs Tutor-handoff UX so the selected path is obvious.
+  - Session restore matrix now covers preflight-authoritative create and deterministic create/get round-trip restore; certification runner refreshed to `ready` on `2026-03-13`.
+  - Week 8 page-sync hardening and Wizard readiness surfacing landed under `CERT-002`.
+  - Week 9 wizard/library handoff cleanup landed in the restore/handoff regression surface and no longer blocks certification closeout.
 - [x] Phase 3: certify all selectable template chains at baseline/strict bars. (2026-03-09, `5250b4a1`)
 - [x] Phase 4: certify artifact reliability for notes and card drafts. (2026-03-09, `5250b4a1`)
 - [x] Phase 5: certify trust, provenance, and requested-reference behavior. (2026-03-09, `5250b4a1`)
@@ -461,7 +522,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - [x] Phase 1: rewrite global runtime tutor rules for hybrid teaching + honest provenance. (2026-03-09, `0bbbade2`)
 - [x] Phase 2: add chain runtime profiles and block overrides for `C-TRY-001` and `C-TRY-002`. (2026-03-09, `0bbbade2`)
 - [x] Phase 3: improve qualitative confidence/provenance signaling in Tutor replies. (2026-03-09, `0bbbade2`)
-- [ ] Phase 4: compare live Week 7 Tutor behavior on `C-TRY-001` vs `C-TRY-002`.
+- [x] Phase 4: compare live Week 7 Tutor behavior on `C-TRY-001` vs `C-TRY-002`. (2026-03-13)
 
 ### Sprint 14: Neuroscience Exam Intake + First Tutor Run (2026-03-07)
 - [ ] Claim scope: live neuroscience exam prep

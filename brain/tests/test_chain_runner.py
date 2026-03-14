@@ -376,6 +376,8 @@ class TestFacilitationPromptInjection:
         prompt = prompt_builder.build_tutor_system_prompt(mode="Core", topic="Week 7", course_id=1)
         assert "Hybrid Teaching Mode" in prompt
         assert "Objective Lock" in prompt
+        assert "No Answer Leakage" in prompt
+        assert "No Phantom Outputs" in prompt
         assert "Additional Custom Instructions" in prompt
         assert "Always reflect the learner's last sentence before teaching." in prompt
 

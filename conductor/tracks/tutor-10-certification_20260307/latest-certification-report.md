@@ -1,6 +1,6 @@
 # Tutor Certification Report
 
-- Generated: `2026-03-07T04:55:35.155140`
+- Generated: `2026-03-13T16:59:53.027745`
 - Overall status: `ready`
 
 ## Chain Summary
@@ -23,10 +23,10 @@
   - Command: `pytest -q brain/tests/test_tutor_artifact_certification.py brain/tests/test_tutor_templates.py`
 - `PASS` `Session authority and selected-material scope`
   - Command: `pytest -q brain/tests/test_tutor_session_linking.py`
+- `PASS` `Session restore matrix`
+  - Command: `pytest -q brain/tests/test_tutor_session_linking.py -k session_restore_matrix`
 - `PASS` `Trust and restore UI`
   - Command: `npx vitest run client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorChat.test.tsx`
-- `PASS` `Frontend build`
-  - Command: `npm run build`
 
 ## Pending Manual Gates
 

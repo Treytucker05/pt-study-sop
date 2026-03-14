@@ -18,11 +18,14 @@ from __future__ import annotations
 
 import json
 import logging
+import queue
 import sqlite3
+import time
 from datetime import datetime
+from threading import Thread
 from typing import Any, Optional
 
-from flask import Response, jsonify, request
+from flask import Response, current_app, jsonify, request
 
 from db_setup import get_connection, ensure_method_library_seeded
 from tutor_behavior_directives import get_directive
@@ -63,6 +66,41 @@ from dashboard.api_tutor_utils import (
 import llm_provider as _llm_provider
 
 _LOG = logging.getLogger(__name__)
+
+
+def _stream_with_heartbeats(
+    iterable,
+    *,
+    interval_seconds: float,
+):
+    """Yield SSE comment heartbeats while a blocking generator is waiting."""
+
+    items: queue.Queue[tuple[str, Any]] = queue.Queue()
+
+    def _worker() -> None:
+        try:
+            for chunk in iterable:
+                items.put(("chunk", chunk))
+        except Exception as exc:  # pragma: no cover - defensive wrapper
+            items.put(("error", exc))
+        finally:
+            items.put(("done", None))
+
+    Thread(target=_worker, daemon=True).start()
+
+    while True:
+        try:
+            kind, payload = items.get(timeout=interval_seconds)
+        except queue.Empty:
+            yield ":\n\n"
+            continue
+
+        if kind == "chunk":
+            yield payload
+            continue
+        if kind == "error":
+            raise payload
+        return
 
 
 # ---------------------------------------------------------------------------
@@ -699,6 +737,9 @@ def send_turn(session_id: str):
             session_id,
             session["turn_count"] + 1,
         )
+        turn_started_at = time.perf_counter()
+        retrieval_completed_at: float | None = None
+        first_visible_chunk_at: float | None = None
         full_response = ""
         citations = []
         parsed_verdict = None
@@ -713,6 +754,29 @@ def send_turn(session_id: str):
             format_sse_error,
             extract_citations,
         )
+
+        def _mark_first_visible_chunk() -> None:
+            nonlocal first_visible_chunk_at
+            if first_visible_chunk_at is None:
+                first_visible_chunk_at = time.perf_counter()
+
+        def _build_timing_payload(*, tool_rounds: int = 0) -> dict[str, int]:
+            payload = {
+                "tool_rounds": int(tool_rounds),
+                "total_ms": max(
+                    0, int(round((time.perf_counter() - turn_started_at) * 1000))
+                ),
+            }
+            if retrieval_completed_at is not None:
+                payload["retrieval_ms"] = max(
+                    0, int(round((retrieval_completed_at - turn_started_at) * 1000))
+                )
+            if first_visible_chunk_at is not None:
+                payload["first_chunk_ms"] = max(
+                    0,
+                    int(round((first_visible_chunk_at - turn_started_at) * 1000)),
+                )
+            return payload
 
         try:
             from llm_provider import call_codex_json
@@ -745,6 +809,7 @@ def send_turn(session_id: str):
                 k_materials=effective_material_k,
                 force_full_docs=force_full_docs,
             )
+            retrieval_completed_at = time.perf_counter()
             rag_debug = ctx["debug"]
 
             material_text = ctx["materials"]
@@ -1122,12 +1187,14 @@ def send_turn(session_id: str):
                     turn_number,
                     json.dumps(retrieval_debug_payload, ensure_ascii=True),
                 )
+                _mark_first_visible_chunk()
                 yield format_sse_chunk(full_response)
                 yield format_sse_done(
                     citations=citations,
                     model=api_model,
                     artifacts=artifact_payload,
                     retrieval_debug=retrieval_debug_payload,
+                    timing=_build_timing_payload(),
                 )
             elif selected_material_count > 0 and _is_selected_scope_listing_question(
                 question
@@ -1163,12 +1230,14 @@ def send_turn(session_id: str):
                     turn_number,
                     json.dumps(retrieval_debug_payload, ensure_ascii=True),
                 )
+                _mark_first_visible_chunk()
                 yield format_sse_chunk(full_response)
                 yield format_sse_done(
                     citations=citations,
                     model=api_model,
                     artifacts=artifact_payload,
                     retrieval_debug=retrieval_debug_payload,
+                    timing=_build_timing_payload(),
                 )
             elif force_insufficient_evidence:
                 used_scope_shortcut = True
@@ -1203,12 +1272,14 @@ def send_turn(session_id: str):
                     turn_number,
                     json.dumps(retrieval_debug_payload, ensure_ascii=True),
                 )
+                _mark_first_visible_chunk()
                 yield format_sse_chunk(full_response)
                 yield format_sse_done(
                     citations=citations,
                     model=api_model,
                     artifacts=artifact_payload,
                     retrieval_debug=retrieval_debug_payload,
+                    timing=_build_timing_payload(),
                 )
             else:
                 from tutor_tools import (
@@ -1282,8 +1353,10 @@ def send_turn(session_id: str):
                         ):
                             if chunk.get("type") == "delta":
                                 full_response += chunk.get("text", "")
+                                _mark_first_visible_chunk()
                                 yield format_sse_chunk(chunk.get("text", ""))
                             elif chunk.get("type") == "web_search":
+                                _mark_first_visible_chunk()
                                 yield format_sse_chunk(
                                     "", chunk_type=f"web_search_{chunk['status']}"
                                 )
@@ -1313,6 +1386,7 @@ def send_turn(session_id: str):
 
                         tool_round += 1
                         if tool_round > max_tool_rounds:
+                            _mark_first_visible_chunk()
                             yield format_sse_chunk("", chunk_type="tool_limit_reached")
                             break
 
@@ -1324,6 +1398,7 @@ def send_turn(session_id: str):
                             except _json.JSONDecodeError:
                                 args = {}
 
+                            _mark_first_visible_chunk()
                             yield format_sse_chunk(
                                 _json.dumps({"tool": tool_name, "arguments": args}),
                                 chunk_type="tool_call",
@@ -1333,6 +1408,7 @@ def send_turn(session_id: str):
                                 tool_name, args, session_id=session_id
                             )
 
+                            _mark_first_visible_chunk()
                             yield format_sse_chunk(
                                 _json.dumps(
                                     {
@@ -1386,6 +1462,7 @@ def send_turn(session_id: str):
                         full_response = (result.get("content") or "").strip()
                         max_chars = 220
                         for i in range(0, len(full_response), max_chars):
+                            _mark_first_visible_chunk()
                             yield format_sse_chunk(full_response[i : i + max_chars])
                     else:
                         raise stream_err
@@ -1417,6 +1494,7 @@ def send_turn(session_id: str):
                                         content_filter.update(_fresh)
                             except Exception:
                                 pass
+                            _mark_first_visible_chunk()
                             yield format_sse_chunk(
                                 "\n\n---\n*Learning objectives saved automatically.*\n",
                             )
@@ -1622,6 +1700,7 @@ def send_turn(session_id: str):
                     model=api_model,
                     artifacts=artifact_payload,
                     retrieval_debug=retrieval_debug_payload,
+                    timing=_build_timing_payload(tool_rounds=tool_round),
                     behavior_override=behavior_override,
                     verdict=parsed_verdict,
                     concept_map=parsed_concept_map,
@@ -1758,8 +1837,19 @@ def send_turn(session_id: str):
         except Exception:
             pass
 
+    heartbeat_seconds = current_app.config.get("TUTOR_SSE_HEARTBEAT_SECONDS", 15.0)
+    try:
+        heartbeat_seconds = float(heartbeat_seconds)
+    except (TypeError, ValueError):
+        heartbeat_seconds = 15.0
+    if heartbeat_seconds <= 0:
+        heartbeat_seconds = 15.0
+
     return Response(
-        generate(),
+        _stream_with_heartbeats(
+            generate(),
+            interval_seconds=heartbeat_seconds,
+        ),
         mimetype="text/event-stream",
         headers={
             "Cache-Control": "no-cache, no-store",

@@ -1,7 +1,7 @@
 # Track: Top-Down Tutor Hardening
 
 **ID:** topdown-tutor-hardening_20260307
-**Status:** Active
+**Status:** Complete
 
 ## Documents
 
@@ -21,7 +21,7 @@
 - Top-down weak method cards were hardened, including explanation-first/provenance rules for concept mapping.
 - Tutor replies now show qualitative provenance plus qualitative confidence labels, while keeping the existing citation/debug footer.
 - Targeted backend/frontend validation and production build are green.
-- Remaining track item: rerun a clean Week 7 live comparison after the latest prompt/guardrail changes.
+- Week 7 live comparison rerun completed on `2026-03-13` against `C-TRY-001` and `C-TRY-002`; the chains now show intentionally different post-PRIME progression under the same Week 7 scope.
 
 ## Quick Links
 

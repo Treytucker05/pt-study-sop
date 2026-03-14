@@ -10,9 +10,14 @@ Execution registry only. Product or subsystem truth does not live here.
 
 Update policy: after every significant change, update this file with status changes and point active execution back to `docs/root/TUTOR_TODO.md`.
 
-Active execution priority is tracked in `docs/root/TUTOR_TODO.md` under Sprint 26 (`Gap Hardening Before Tutor Deep Dive`).
+Active execution priority is tracked in `docs/root/TUTOR_TODO.md`.
 
-Latest update: 2026-03-13, closed the `Course-Keyed Tutor Shell + Studio Foundation` track after all 17 tasks completed.
+Latest update: 2026-03-13, opened the `Agent Ecosystem Hygiene` track to normalize shared skill topology and config secret handling across the local CLI stack.
+
+- [ ] **Track: Agent Ecosystem Hygiene** (active — created 2026-03-13; scope: supported skill-topology freeze, sync-script repair, supported-root cleanup, Gemini/Antigravity drift resolution, config secret hardening, docs/fallback alignment)
+  *Link: [./tracks/agent-ecosystem-hygiene_20260313/](./tracks/agent-ecosystem-hygiene_20260313/)*
+
+---
 
 - [x] **Track: Course-Keyed Tutor Shell + Studio Foundation** (complete — created 2026-03-13; closed 2026-03-13; scope: course-keyed Tutor shell contract, durable track bootstrap, project workspace state, normalized Studio foundation tables, Tutor shell summary/state APIs)
   *Link: [./tracks/course-keyed-tutor-shell_20260313/](./tracks/course-keyed-tutor-shell_20260313/)*
@@ -29,13 +34,18 @@ Latest update: 2026-03-13, closed the `Course-Keyed Tutor Shell + Studio Foundat
 
 ---
 
-- [ ] **Track: Tutor 10/10 Certification** (active — created 2026-03-07; scope: scorecard, fixtures, chain dispositions, certification harness, release gate)
+- [x] **Track: Tutor 10/10 Certification** (complete — created 2026-03-07; closed 2026-03-13; scope: scorecard, fixtures, chain dispositions, certification harness, release gate)
   *Link: [./tracks/tutor-10-certification_20260307/](./tracks/tutor-10-certification_20260307/)*
 
 ---
 
-- [ ] **Track: Top-Down Tutor Hardening** (active — created 2026-03-07; scope: runtime rule stack, top-down chains, confidence/provenance UX)
+- [x] **Track: Top-Down Tutor Hardening** (complete — created 2026-03-07; closed 2026-03-13 after Week 7 live comparison; scope: runtime rule stack, top-down chains, confidence/provenance UX)
   *Link: [./tracks/topdown-tutor-hardening_20260307/](./tracks/topdown-tutor-hardening_20260307/)*
+
+---
+
+- [x] **Track: Tutor Vision Lock** (complete — created 2026-03-01; closed 2026-03-13; scope: instruction contract, chain/runtime ownership, notes model, validation gate)
+  *Link: [./tracks/tutor_vision_lock_20260301/](./tracks/tutor_vision_lock_20260301/)*
 
 ---
 
@@ -135,4 +145,3 @@ Latest update: 2026-03-13, closed the `Course-Keyed Tutor Shell + Studio Foundat
 - [x] **Track: UI/UX Professional Audit** (complete — created 2026-02-20; closed 2026-02-21; 3 phases, 11 tasks)
   Systematic professional-grade QA and UI/UX review tailored to the Retro Arcade design system.
   *Link: [./tracks/ui_ux_audit_20260220/](./tracks/ui_ux_audit_20260220/)*
-

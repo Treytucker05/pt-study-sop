@@ -36,7 +36,8 @@ Fix save-wrap URL construction and consume new backend fields.
 ### Verification
 
 - [x] Frontend build succeeds (`npm run build` in dashboard_rebuild/)
-- [ ] Manual smoke test: save-wrap URL no longer 404s
+- [x] Manual smoke test: save-wrap URL no longer 404s
+  - verified live on `2026-03-13` via `GET /api/tutor/session/<id>/summary?save=true` -> `200` with `wrap_saved.saved=true`
 
 ## Phase 3: Regression Tests + Final Verification
 

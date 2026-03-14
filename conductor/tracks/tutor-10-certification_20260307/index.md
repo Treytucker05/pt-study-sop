@@ -1,7 +1,7 @@
 # Track: Tutor 10/10 Certification
 
 **ID:** tutor-10-certification_20260307  
-**Status:** Active
+**Status:** Complete
 
 ## Documents
 
@@ -11,6 +11,7 @@
 - [Chain Dispositions](./chain-dispositions.md)
 - [Fixture Plan](./fixtures.md)
 - [Material Matrix](./material-matrix.md)
+- [Session Matrix](./session-matrix.md)
 - [Session Authority](./session-authority.md)
 - [Latest Certification Report](./latest-certification-report.md)
 
@@ -28,8 +29,8 @@
 - material certification matrix published and first upload/sync regression coverage added
 - session-authority ownership map frozen for the certified setup/restore path
 - strict-certification chains now have a registry-backed runtime-contract regression guardrail
-- executable certification runner/report artifact now exists and currently reports `not_ready`
-- latest full certification run now reports `ready`
+- session restore matrix added and wired into the certification runner
+- latest full certification run reports `ready`
 
 ## Quick Links
 

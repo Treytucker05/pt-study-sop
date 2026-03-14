@@ -3,15 +3,15 @@
 **Track ID:** tutor_vision_lock_20260301  
 **Type:** Alignment / Hardening  
 **Created:** 2026-03-01  
-**Status:** Active (Provisional / Not Finished)
+**Status:** Complete
 
 ## Summary
 
-Lock Tutor behavior to product vision by auditing startup, instructions, chains, notes model, retrieval, tooling, artifacts, and session lifecycle. Document decisions and enforceable rules to prevent future drift.
+Lock Tutor behavior to product vision by auditing instructions, chains, notes/artifacts, retrieval, tooling, and session lifecycle. Record the intended Tutor-specific contract, map current runtime behavior to it with evidence, and keep only the minimal fixes that real drift requires.
 
 ## Context
 
-The system has evolved quickly and behavior drift has accumulated. The immediate goal is to establish one intended-behavior baseline for Tutor, then verify runtime alignment.
+Tutor evolved quickly and accumulated behavioral drift risk across prompt assembly, chain/runtime ownership, retrieval/provenance, and artifact/session lifecycle. The goal of this track was to replace implied behavior with one explicit contract plus a lean rerunnable validation gate.
 
 ## User Story
 
@@ -19,57 +19,57 @@ As the product owner, I want a clear, durable map of how Tutor should behave and
 
 ## Acceptance Criteria
 
-- [ ] Vision is explicitly defined for all readiness checklist areas.
-- [ ] Item 1 (Tutor instructions loading/usage) is validated with pass/fail evidence.
-- [ ] Item 2 (Chain instructions loading/usage) is validated with pass/fail evidence.
-- [ ] Notes operating model is defined: chain responsibilities vs template responsibilities.
-- [ ] Track artifacts capture decisions so a new session can resume without ambiguity.
+- [x] Vision is explicitly defined for global Tutor instructions, chain/block behavior, notes/artifacts, retrieval/tooling, and session lifecycle.
+- [x] Tutor instruction loading/usage is validated with pass/fail evidence.
+- [x] Chain instruction loading/usage and PRIME/runtime guardrails are validated with pass/fail evidence.
+- [x] Notes/artifact operating model is defined, including session wraps and sidecar-vs-session-owned ownership boundaries.
+- [x] Retrieval provenance, selected-material scope, and reference-bounds behavior are captured with evidence and disposition.
+- [x] Track artifacts capture decisions so a new session can resume without ambiguity.
+- [x] A locked validation gate exists and has passing automated plus live evidence.
 
-## Current Snapshot (2026-03-01)
+## Scope Decisions
 
-### A) Rule Source Findings
-- Active Tutor instruction sources:
-  - `brain/tutor_prompt_builder.py` (global defaults + config-loaded custom instructions)
-  - `brain/dashboard/api_tutor.py` (runtime guardrail appends)
-  - `brain/tutor_context.py` (materials/notes context builder)
-- Archived SOP bundles are not directly loaded by Tutor runtime prompt assembly:
-  - `sop/runtime/custom_instructions.md`
-  - `sop/library/13-custom-gpt-system-instructions.md`
-  - `sop/archive/custom_instructions.md`
-  - `sop/archive/runtime_rules.md`
+### In scope
 
-### B) Current Enforced Runtime Guardrails
-- Chain must start with PRIME (`CHAIN_PRIME_REQUIRED`).
-- PRIME assessment blocking (`PRIME_ASSESSMENT_BLOCKED`).
-- Reference bounds enforcement:
-  - `REFERENCE_TARGETS_MISSING`
-  - `REFERENCE_BOUNDS_VIOLATION`
-- North Star/objective scope runtime contracts.
+- Tutor prompt contract
+- chain/block ownership boundaries
+- notes/artifact ownership boundaries
+- retrieval/provenance contract
+- session restore/summary/end/delete contract
+- regression gate for the locked behavior
 
-### C) Instruction Model (Implemented)
-- Global instructions:
-  - Editable via `/api/tutor/settings` (`tutor_custom_instructions`).
-  - Falls back to canonical default rules from `brain/tutor_prompt_builder.py`.
-- Session-only rules:
-  - `content_filter.session_rules`
-  - appended in prompt as `Session Rules (Current Session Only)`.
+### Out of scope
 
-### D) Owner-Approved Provisional Global Defaults (Keep)
-1. Source-Lock baseline.
-2. Session guardrails (chain/method/stage; PRIME non-assessment).
-3. No Answer Leakage.
-4. No Phantom Outputs.
-5. Abbreviation first-use expansion.
-6. Interactive cadence (short, one-step, clear next action).
-7. Uncertainty handling (`UNKNOWN` + request sources/clarification).
+- Tutor UX redesign
+- broad Tutor runtime refactors without evidence
+- new artifact ownership models beyond the minimal contract clarifications needed for closure
 
-### E) Freeze Policy Until Stability Gate
-- Ruleset is intentionally not finalized.
-- Immediate goal: complete one full end-to-end study session with current simplified setup.
-- Archive-rule promotion is paused until that session is completed and reviewed with owner.
+## Outcome Summary
 
-## Out of Scope
+### Keep
 
-- Immediate large refactors.
-- New UI redesign.
-- Non-Tutor subsystem changes unless required for Tutor correctness.
+- prompt-builder default/core rule preservation under custom instructions
+- truthful provenance and broader-knowledge labeling
+- PRIME-first runtime enforcement
+- reference bounds enforcement
+- selected-material scope persistence through restore
+- structured-notes, cards, wraps, and session-owned delete behavior
+
+### Change
+
+- added explicit `No Answer Leakage` to the default Tutor rule stack
+- added explicit `No Phantom Outputs` to the default Tutor rule stack
+- added prompt-builder test coverage for those rules
+
+### Retire
+
+- archived instruction bundles as live runtime prompt sources
+- quick-note sidecars as part of the locked session-delete ownership contract
+
+## Final Artifacts
+
+- `owner-vision.md`
+- `notes-model.md`
+- `current-vs-vision-gap.md`
+- `validation-gate.md`
+- `closeout.md`

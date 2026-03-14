@@ -647,6 +647,183 @@ def test_create_session_uses_preflight_bundle(client):
     assert "[[OBJ-UNMAPPED]]" not in saved_filter["follow_up_targets"]
 
 
+def test_session_restore_matrix_01_preflight_scope_is_authoritative_for_create(client):
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        """
+        INSERT INTO courses (id, name, code, color, created_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+        """,
+        (14, "Neuroscience", "PHYT 6313", "#ff0000"),
+    )
+    conn.commit()
+    conn.close()
+
+    preflight_resp = client.post(
+        "/api/tutor/session/preflight",
+        json={
+            "course_id": 14,
+            "study_unit": "Week 7 - Development of Nervous System",
+            "topic": "Week 7 - Development of Nervous System",
+            "objective_scope": "single_focus",
+            "focus_objective_id": "OBJ-6",
+            "learning_objectives": [
+                {"lo_code": "OBJ-1", "title": "Describe neurulation.", "group": "Week 7 - Development of Nervous System"},
+                {"lo_code": "OBJ-6", "title": "Differentiate neural tube and neural crest derivatives.", "group": "Week 7 - Development of Nervous System"},
+            ],
+            "content_filter": {
+                "material_ids": [11, 12],
+                "vault_folder": "Courses/Neuroscience/Week 7",
+                "accuracy_profile": "strict",
+            },
+        },
+    )
+    assert preflight_resp.status_code == 200
+    preflight = preflight_resp.get_json()
+    assert preflight["ok"] is True
+
+    session_resp = client.post(
+        "/api/tutor/session",
+        json={
+            "preflight_id": preflight["preflight_id"],
+            "topic": "Injected topic should be ignored",
+            "course_id": 999,
+            "objective_scope": "module_all",
+            "focus_objective_id": "OBJ-FAKE",
+            "content_filter": {
+                "accuracy_profile": "rapid",
+                "vault_folder": "Injected/Week 7",
+                "material_ids": [999, 998],
+                "objective_scope": "module_all",
+                "focus_objective_id": "OBJ-FAKE",
+            },
+            "module_name": "Injected Module",
+        },
+    )
+    assert session_resp.status_code == 201
+    body = session_resp.get_json()
+    assert body["topic"] == "Week 7 - Development of Nervous System"
+    assert body["objective_scope"] == "single_focus"
+    assert body["focus_objective_id"] == "OBJ-6"
+    assert body["map_of_contents"]["path"] == "Courses/Neuroscience/Week 7/_Map of Contents.md"
+
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT content_filter_json FROM tutor_sessions WHERE session_id = ?",
+        (body["session_id"],),
+    ).fetchone()
+    conn.close()
+
+    saved_filter = json.loads(row["content_filter_json"] or "{}")
+    assert saved_filter["objective_scope"] == "single_focus"
+    assert saved_filter["focus_objective_id"] == "OBJ-6"
+    assert saved_filter["material_ids"] == [11, 12]
+    assert saved_filter["vault_folder"] == "Courses/Neuroscience/Week 7"
+    assert saved_filter["accuracy_profile"] == "strict"
+    assert saved_filter["follow_up_targets"][0] == "[[OBJ-6]]"
+    assert "[[OBJ-UNMAPPED]]" not in saved_filter["follow_up_targets"]
+    assert saved_filter.get("map_of_contents", {}).get("path") == "Courses/Neuroscience/Week 7/_Map of Contents.md"
+
+
+def test_session_restore_matrix_02_get_session_round_trip_preserves_scoped_state(client, monkeypatch):
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        """
+        INSERT INTO courses (id, name, code, color, created_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+        """,
+        (15, "Neuroscience", "PHYT 6313", "#ff0000"),
+    )
+    conn.commit()
+    conn.close()
+
+    preflight_resp = client.post(
+        "/api/tutor/session/preflight",
+        json={
+            "course_id": 15,
+            "study_unit": "Week 7 - Development of Nervous System",
+            "topic": "Week 7 - Development of Nervous System",
+            "objective_scope": "single_focus",
+            "focus_objective_id": "OBJ-6",
+            "learning_objectives": [
+                {"lo_code": "OBJ-1", "title": "Describe neurulation.", "group": "Week 7 - Development of Nervous System"},
+                {"lo_code": "OBJ-6", "title": "Differentiate neural tube and neural crest derivatives.", "group": "Week 7 - Development of Nervous System"},
+            ],
+            "content_filter": {
+                "material_ids": [11, 12],
+                "vault_folder": "Courses/Neuroscience/Week 7",
+                "accuracy_profile": "strict",
+            },
+        },
+    )
+    assert preflight_resp.status_code == 200
+    preflight = preflight_resp.get_json()
+    assert preflight["ok"] is True
+
+    session_resp = client.post(
+        "/api/tutor/session",
+        json={"preflight_id": preflight["preflight_id"], "mode": "Core"},
+    )
+    assert session_resp.status_code == 201
+    session = session_resp.get_json()
+    assert isinstance(session.get("session_id"), str) and session["session_id"]
+
+    monkeypatch.setattr(
+        tutor_context,
+        "build_context",
+        lambda *_a, **_k: {
+            "materials": "",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        },
+    )
+    monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
+    monkeypatch.setattr(
+        tutor_tools,
+        "execute_tool",
+        lambda *_a, **_k: {"success": True},
+    )
+
+    def fake_stream(_system_prompt, _user_prompt, **_kwargs):
+        yield {"type": "delta", "text": "ok"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-restore",
+            "thread_id": "thread-restore",
+        }
+
+    monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
+
+    turn_resp = client.post(
+        f"/api/tutor/session/{session['session_id']}/turn",
+        json={"message": "Continue with the derivative map"},
+    )
+    assert turn_resp.status_code == 200
+    _ = turn_resp.get_data(as_text=True)
+
+    restored_resp = client.get(f"/api/tutor/session/{session['session_id']}")
+    assert restored_resp.status_code == 200
+    restored = restored_resp.get_json()
+    restored_filter = restored["content_filter"]
+
+    assert restored["session_id"] == session["session_id"]
+    assert restored["status"] == "active"
+    assert restored["turn_count"] == 1
+    assert restored_filter["vault_folder"] == "Courses/Neuroscience/Week 7"
+    assert restored_filter["objective_scope"] == "single_focus"
+    assert restored_filter["focus_objective_id"] == "OBJ-6"
+    assert restored_filter["material_ids"] == [11, 12]
+    assert restored_filter["accuracy_profile"] == "strict"
+    assert restored_filter["map_of_contents"]["path"] == "Courses/Neuroscience/Week 7/_Map of Contents.md"
+    assert len(restored["turns"]) == 1
+    assert restored["turns"][0]["question"] == "Continue with the derivative map"
+    assert restored["turns"][0]["response_id"] == "resp-restore"
+
+
 def test_create_session_rejects_non_object_content_filter(client):
     resp = client.post(
         "/api/tutor/session",

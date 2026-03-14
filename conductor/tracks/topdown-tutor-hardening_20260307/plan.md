@@ -3,7 +3,7 @@
 **Track ID:** topdown-tutor-hardening_20260307
 **Spec:** [./spec.md](./spec.md)
 **Created:** 2026-03-07
-**Status:** [ ] In Progress
+**Status:** [x] Complete
 
 ## Phase 0: Track + Scope Lock
 
@@ -35,7 +35,11 @@
 - [x] Task 4.1: Add prompt/chain tests for runtime profile composition.
 - [x] Task 4.2: Add tests for weak top-down method cards.
 - [x] Task 4.3: Run targeted backend + frontend tests and build.
-- [ ] Task 4.4: Run a Week 7 live comparison on `C-TRY-001` and `C-TRY-002`.
+- [x] Task 4.4: Run a Week 7 live comparison on `C-TRY-001` and `C-TRY-002`.
+  - Verified live on `2026-03-13` against `course_id=3` / `Week 7 - Development of Nervous System`.
+  - `C-TRY-001` (`Top-Down Narrative Mastery`) remained on the narrative-first path after PRIME: `Hand-Draw Map -> Story Confidence Tag -> KWIK Hook -> Analogy Bridge`.
+  - `C-TRY-002` (`Top-Down Forward Progress`) diverged into the more structured comparison path after PRIME: `Hand-Draw Map -> Micro Precheck -> One-Page Anchor -> KWIK Hook`.
+  - Both live turns completed under strict selected-material scope with SSE `done` frames and medium-confidence retrieval.
 
 ---
 

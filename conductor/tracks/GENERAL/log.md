@@ -2,6 +2,16 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-13 - Agent Ecosystem Hygiene kickoff
+
+- Created new infra track `agent-ecosystem-hygiene_20260313`.
+- Added `Agent Ecosystem Hygiene` to the active sprint in `docs/root/TUTOR_TODO.md` and to `docs/root/AGENT_BOARD.md`.
+- Scope:
+  - capture runtime truth for Claude, Codex, Cursor, OpenCode, Gemini, Antigravity, Kimi, and Conduit
+  - freeze supported versus legacy skill roots and local exceptions before mutation
+  - repair shared-skill sync plus supported broken junctions with rollback artifacts and idempotence checks
+  - harden active config secret handling and align the operator docs/fallback notes
+
 ## 2026-03-13 - Shared skill cleanup batch 1
 
 - Removed 9 low-priority shared skills from `C:\Users\treyt\.agents\skills` and cleaned their projected junctions from Codex, Claude, Cursor, and OpenCode where present:
@@ -1241,7 +1251,8 @@ px vitest run --reporter=verbose (341 passed)
 
 - Root cause fixed: when explicit material_ids were selected, tutor retrieval still AND-filtered by session course_id, collapsing results to a small subset (often ~6 files).
 - Updated tutor turn retrieval to treat explicit selected files as authoritative scope:
-  - etrieval_course_id = None when material_ids are present
+  - 
+etrieval_course_id = None when material_ids are present
   - pass that through to both embedding and keyword dual search paths
 - Updated 	utor_rag filters so material_ids override course_id in both embedding and keyword fallback queries.
 - Increased selected-material retrieval cap from 30 to 60 chunks for broader coverage on larger selections.
@@ -1766,7 +1777,8 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
 ## 2026-02-23 - A1.4 PRIME runtime non-assessment enforcement
 - Added hard PRIME runtime guardrails in rain/dashboard/api_tutor.py:
   - blocks ehavior_override=evaluate|teach_back while active stage is PRIME (returns PRIME_ASSESSMENT_BLOCKED).
-  - validates artifact/finalize payload trees for assessment fields (score, grade, confidence, ccuracy, calibration, mastery, erdict, ubric) when stage is PRIME.
+  - validates artifact/finalize payload trees for assessment fields (score, grade, confidence, ccuracy, calibration, mastery, erdict, 
+ubric) when stage is PRIME.
   - rejects PRIME artifacts that include RETRIEVE/OVERLEARN in session.stage_flow.
 - Added regression tests in rain/tests/test_tutor_session_linking.py:
   - 	est_finalize_rejects_prime_confidence_fields`n  - 	est_send_turn_blocks_prime_evaluate_mode`n- Updated board status in docs/root/TUTOR_TODO.md (A1.4 checked).
@@ -2275,3 +2287,16 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
 - Diagnosed a conversation drift failure where a stale queued task resumed after the user had already switched to a different question (`BirdAuth.bat`), causing the assistant to answer the wrong thread.
 - Root cause was not a conflicting repo-vs-global instruction file; the stronger contributors were aggressive persistence/runtime pressure plus repo closeout rules that encouraged momentum toward prior "next steps" unless a hard reset rule existed.
 - Added explicit repo-canon guardrails in `AGENTS.md` requiring new user questions/topics to act as hard task-boundary resets, stale background work to be canceled or ignored after such a reset, old recommendations not to be resumed without re-request, and direct file/script questions to stay scoped unless the user asks to broaden the task.
+
+## 2026-03-13 — Sprint 26 frontend/live proof closeout
+
+- Closed the remaining Sprint 26 frontend proof gap by fixing the Tutor workspace integration harness instead of weakening product coverage.
+- Stabilized the mocked `Excalidraw` API in `dashboard_rebuild/client/src/components/__tests__/TutorWorkspaceSurface.integration.test.tsx` so the real canvas-mode integration proof no longer self-triggers a render loop.
+- Aligned the table-surface expectation with the current accessible control label (`Save to vault`) so the integration suite verifies the shipped UI contract rather than a stale button name.
+- Closed the live-readiness loop with the rebuilt `scripts/live_tutor_smoke.py` flow (`preflight -> create -> turn -> restore -> summary -> end -> delete`) plus browser smoke on `/tutor` workspace and `/methods`.
+- Validation:
+  - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/brain.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorWorkspaceSurface.test.tsx client/src/components/__tests__/TutorWorkspaceSurface.integration.test.tsx client/src/pages/__tests__/methods.test.tsx` -> `43 passed`
+  - `pytest brain/tests/test_tutor_turn_stream_contract.py brain/tests/test_e2e_study_session.py brain/tests/test_tutor_session_linking.py brain/tests/test_tutor_artifact_certification.py -q` -> `54 passed`
+  - `Start_Dashboard.bat` -> local dashboard ready on `http://127.0.0.1:5000`
+  - `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5000` -> PASS
+  - Playwright smoke on `http://127.0.0.1:5000/tutor` and `http://127.0.0.1:5000/methods` -> PASS

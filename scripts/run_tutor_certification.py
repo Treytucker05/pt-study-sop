@@ -190,6 +190,20 @@ def main() -> int:
     )
     checks.append(
         {
+            "name": "Session restore matrix",
+            **_run_command(
+                [
+                    "pytest",
+                    "-q",
+                    "brain/tests/test_tutor_session_linking.py",
+                    "-k",
+                    "session_restore_matrix",
+                ]
+            ),
+        }
+    )
+    checks.append(
+        {
             "name": "Trust and restore UI",
             **_run_command(
                 [
