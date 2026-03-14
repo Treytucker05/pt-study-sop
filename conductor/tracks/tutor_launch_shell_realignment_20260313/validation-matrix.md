@@ -14,6 +14,19 @@
 - Full backend pre-push gate after blocker fix:
   - Result: `847 passed, 1 skipped`
 
+## TLR-010 completed
+
+- Grounding check:
+  - Result: several later-branch track/doc paths named in the original plan do not exist in this repo slice, so this track remains the durable source for shell/start-panel cleanup.
+- Active-board wording cleanup:
+  - Result: older `wizard` references in the active board now read as legacy/start-surface terminology instead of current runtime authority.
+
+## TLR-020 completed
+
+- Historical/superseded wording grep:
+  - `rg -n "TutorStartPanel|legacy start surface|historical|superseded" docs/dashboard/DASHBOARD_WINDOW_INVENTORY.md docs/root/TUTOR_CONTROL_PLANE_CANON.md docs/root/TUTOR_TODO.md`
+  - Result: remaining surviving wizard-era inventory/canon references were updated to historical or current start-surface wording.
+
 ## TLR-110 completed
 
 - Frontend focused tests:

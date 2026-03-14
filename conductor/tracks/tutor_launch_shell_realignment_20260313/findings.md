@@ -7,6 +7,7 @@
 - `dashboard_rebuild/client/src/pages/library.tsx` was opening bare `/tutor` without authoritative course launch context.
 - The repo did not contain the expected durable Tutor shell realignment track from the earlier handoff.
 - The repo also does not yet contain the later shell-mode files that existed in prior planning context.
+- Several stale track/doc paths named in the original cleanup plan are absent on disk in this branch, so the cleanup has to target the actual surviving sources of wizard-era drift.
 
 ## Main problems to fix
 
@@ -15,3 +16,5 @@
 - `tutor.wizard.progress.v1` and `tutor.wizard.state.v1` were still shaping startup behavior.
 - Vault folder persistence could override current launch context.
 - The durable plan for this cleanup was missing from the repo.
+- Active board and canon wording still used `wizard` as if it were a current runtime surface.
+- `docs/dashboard/DASHBOARD_WINDOW_INVENTORY.md` still described `/tutor` as defaulting to the old three-step `WIZARD` flow.

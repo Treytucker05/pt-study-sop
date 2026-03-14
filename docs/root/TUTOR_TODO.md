@@ -22,6 +22,12 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 
 ### Sprint: Tutor Launch / Shell Realignment
 - [x] TLR-001. Lay the launch realignment plan out durably in the repo.
+- [x] TLR-010. Sync stale planning references to the actual current repo slice.
+  - The later-branch track/doc paths named in the original cleanup plan are absent in this branch.
+  - This repo now treats `conductor/tracks/tutor_launch_shell_realignment_20260313/` plus this board as the durable source for launch cleanup.
+- [x] TLR-020. Mark surviving wizard-era inventory/canon wording as historical or superseded.
+  - `docs/dashboard/DASHBOARD_WINDOW_INVENTORY.md` now reflects the `TutorStartPanel` shell instead of a default `WIZARD` flow.
+  - Active board/canon wording now uses `legacy launch surface` / `start surface` terminology where older queues still need historical references.
 - [x] TLR-100. Lock launch authority in the current frontend.
   - Added course-scoped Tutor start state.
   - Library launch now prefers explicit `course_id` handoff.
@@ -50,7 +56,7 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
   - otherwise module_all-first path
 
 ### Sprint 2: Transfer Integrity (Blocking)
-- [ ] B1. Verify method mapping parity across YAML, DB seed, wizard, and runtime.
+- [ ] B1. Verify method mapping parity across YAML, DB seed, legacy launch surface, and runtime.
 - [ ] B2. Add one-pass drift check for method-stage mismatch and missing critical knobs.
 - [ ] B3. Add one-page smoke report (`method_id -> stage -> artifact_type -> required knobs`).
 
@@ -125,7 +131,7 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 - [ ] Verify methods/chains are consistently represented across:
   - YAML source
   - DB seed/runtime
-  - Tutor wizard
+  - legacy Tutor launch surface
   - Tutor chat execution
 - [ ] Add drift checks for method-stage mismatch and missing knob defaults.
 
@@ -183,7 +189,7 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 
 ### Queue B — Chain/Method Transfer Integrity
 
-- [x] B1.1 Add parity check for method metadata across YAML, DB seed, runtime, and wizard/editor.
+- [x] B1.1 Add parity check for method metadata across YAML, DB seed, runtime, and launch-surface/editor compatibility layers.
   - Files: `scripts/`, `brain/data/seed_methods.py`, `brain/db_setup.py`, `dashboard_rebuild/client/src/pages/methods.tsx`
   - Done when: a single command shows zero mismatched `control_stage`, `artifact_type`, or `best_stage` between YAML and DB cache.
   - Completed via: `python scripts/method_integrity_smoke.py` (`Failures: 0`; warnings currently only on missing DB knob cache fields for older DBs).

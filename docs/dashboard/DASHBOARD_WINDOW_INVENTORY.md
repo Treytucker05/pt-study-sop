@@ -4,6 +4,10 @@ Date: 2026-01-27
 Scope: dashboard_rebuild client routes in `dashboard_rebuild/client/src/App.tsx`.
 Definition: A "window" is a visible card/panel/major section within a page.
 
+> Status: partially historical on 2026-03-13.
+> The `/tutor` section below has been updated to the current start-panel shell.
+> Older wizard-era Tutor descriptions elsewhere in repo history are superseded by `docs/root/GUIDE_TUTOR_FLOW.md` and `conductor/tracks/tutor_launch_shell_realignment_20260313/plan.md`.
+
 ## Routes and pages
 - `/` -> `dashboard_rebuild/client/src/pages/dashboard.tsx`
 - `/brain` -> `dashboard_rebuild/client/src/pages/brain.tsx`
@@ -187,16 +191,17 @@ Source: `dashboard_rebuild/client/src/pages/scholar.tsx`
 ## Page: Tutor (/tutor)
 Source: `dashboard_rebuild/client/src/pages/tutor.tsx`
 
-### Adaptive Tutor (3-panel)
-- Purpose: run an interactive study session with optional Method Chain guidance and RAG over uploaded materials.
+### Adaptive Tutor shell (start/resume + live session)
+- Purpose: launch or resume an interactive study session, then run the live Tutor chat workspace with RAG over uploaded materials.
 - UI/Components:
-  - Left: Content Filter (`dashboard_rebuild/client/src/components/ContentFilter.tsx`)
-  - Center: Chat (`dashboard_rebuild/client/src/components/TutorChat.tsx`)
-  - Right: Artifacts + resume (`dashboard_rebuild/client/src/components/TutorArtifacts.tsx`)
+  - Start/resume shell: `dashboard_rebuild/client/src/components/TutorStartPanel.tsx`
+  - Center/live chat: `dashboard_rebuild/client/src/components/TutorChat.tsx`
+  - Right/live artifacts and recent sessions: `dashboard_rebuild/client/src/components/TutorArtifacts.tsx`
 - Flow model:
   - Click **TUTOR** in nav to open `/tutor`.
   - If there is a live session in `tutor.active_session.v1`, default view is **CHAT**.
-  - If there is no live session, default view is **WIZARD** (3-page setup flow: Materials, Chain, Start).
+  - If there is no live session, `/tutor` shows `TutorStartPanel` rather than the legacy three-step `WIZARD` flow.
+  - The start surface is a thin shell with launch summary, recent-session resume, readiness, and collapsible launch options.
   - Starting a session creates it from `POST /api/tutor/session` and switches to **CHAT**.
 - Reads: `api.tutor.getContentSources`, `api.tutor.getTemplateChains`, `api.tutor.getMaterials`, `api.tutor.listSessions`.
 - Writes: `api.tutor.createSession`, `api.tutor.sendTurn` (SSE), `api.tutor.advanceBlock`, `api.tutor.createArtifact`, `api.tutor.endSession`, `api.tutor.uploadMaterial`.

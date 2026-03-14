@@ -11,6 +11,7 @@
 This track is being executed against the actual current repo:
 
 - step 1: restore the missing durable track artifacts
-- step 2: lock launch authority in the existing wizard-first page
-- step 3: replace the wizard with a thin start panel
-- step 4: update docs and remaining UI surfaces
+- step 2: collapse stale planning references into this track because the later-branch artifacts named in the plan are not present here
+- step 3: lock launch authority in the existing wizard-first page
+- step 4: replace the wizard with a thin start panel
+- step 5: update docs and remaining UI surfaces

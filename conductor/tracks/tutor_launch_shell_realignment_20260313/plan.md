@@ -14,6 +14,20 @@ Create one clear current Tutor launch model:
 ## Tasks
 
 - [x] TLR-001 Lay the plan out durably in the repo.
+- [x] TLR-010 Sync stale planning references to the actual current repo slice.
+  - The later-branch track files named in the original shell-realignment plan are absent in this branch.
+  - Durable planning authority for this cleanup is therefore:
+    - `conductor/tracks/tutor_launch_shell_realignment_20260313/*`
+    - `docs/root/TUTOR_TODO.md`
+  - Updated active board wording so older `wizard` references read as legacy/start-surface language instead of current runtime authority.
+
+- [x] TLR-020 Mark the remaining wizard-era inventory references as historical or superseded.
+  - Updated:
+    - `docs/dashboard/DASHBOARD_WINDOW_INVENTORY.md`
+    - `docs/root/TUTOR_CONTROL_PLANE_CANON.md`
+  - Validation:
+    - `rg -n "TutorStartPanel|legacy start surface|historical|superseded" docs/dashboard/DASHBOARD_WINDOW_INVENTORY.md docs/root/TUTOR_CONTROL_PLANE_CANON.md docs/root/TUTOR_TODO.md`
+
 - [x] TLR-100 Lock launch authority in the current frontend.
   - Added `dashboard_rebuild/client/src/lib/tutorClientState.ts`
   - Added course-scoped Tutor start state
@@ -56,4 +70,5 @@ Create one clear current Tutor launch model:
 ## Notes
 
 - This repo does not currently contain the later shell-mode component set from the prior transcript.
+- This repo also does not contain several stale track/doc paths named in the original cleanup plan; this track records the grounded replacements used on disk.
 - Execution order therefore follows current on-disk code reality, not the stale later branch shape.

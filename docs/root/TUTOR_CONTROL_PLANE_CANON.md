@@ -9,7 +9,7 @@ This file is the canonical reference for how the 6 control-plane categories are 
 
 Primary goal:
 - keep one straight path to truth for category semantics
-- prevent prompt drift across YAML, DB, API, wizard, and runtime chat
+- prevent prompt drift across YAML, DB, API, launch/start surfaces, and runtime chat
 
 ## 2) Canonical Terms
 - `Category`: one of `PRIME`, `CALIBRATE`, `ENCODE`, `REFERENCE`, `RETRIEVE`, `OVERLEARN`.
