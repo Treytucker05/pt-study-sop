@@ -107,7 +107,10 @@ $preCommitBody = @'
 __MARKER__
 set -e
 HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$HOOK_DIR/../.." && pwd)"
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -z "$REPO_ROOT" ]; then
+  REPO_ROOT="$(cd "$HOOK_DIR/../.." && pwd)"
+fi
 cd "$REPO_ROOT"
 if [ -f "$HOOK_DIR/pre-commit.local-agent-guard" ]; then
   sh "$HOOK_DIR/pre-commit.local-agent-guard"
@@ -129,7 +132,10 @@ $prePushBody = @'
 __MARKER__
 set -e
 HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$HOOK_DIR/../.." && pwd)"
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -z "$REPO_ROOT" ]; then
+  REPO_ROOT="$(cd "$HOOK_DIR/../.." && pwd)"
+fi
 cd "$REPO_ROOT"
 if [ -f "$HOOK_DIR/pre-push.local-agent-guard" ]; then
   sh "$HOOK_DIR/pre-push.local-agent-guard"
