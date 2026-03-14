@@ -1,6 +1,6 @@
 # Tutor TODO (Execution Tracker)
 
-Date: 2026-03-12
+Date: 2026-03-13
 Owner: Trey
 Authority: execution-only sprint and backlog tracker. Product/page ownership lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
 Purpose: keep implementation work ordered, visible, and tied to tests and verification gates without redefining the product.
@@ -21,8 +21,33 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - `docs/root/TUTOR_TODO.md` (active execution board)
   - `conductor/tracks.md` (track registry / archival)
 - Historical note: completed sprint entries below remain as execution history. If any older wording conflicts with the canon, the canon wins.
+- Launch-model note: the active Tutor direction is Brain-owned launch plus the `/tutor` shell with a thin Tutor start/resume surface. Older `wizard` wording below is historical execution language unless explicitly re-opened by a new active sprint.
 
 ## Active Sprint 2026-03-13
+
+### Sprint 31: Tutor Launch / Shell Realignment Cleanup (2026-03-13)
+- [ ] Claim scope: create the durable track, make the Brain launch + `/tutor` shell + thin Tutor start/resume model the only active planning path, and explicitly demote wizard-era plans/docs to historical status.
+  - `conductor/tracks/tutor-launch-shell-realignment_20260313/`
+  - `conductor/tracks.md`
+  - `docs/root/TUTOR_TODO.md`
+  - `docs/root/AGENT_BOARD.md`
+  - `conductor/tracks/GENERAL/log.md`
+  - stale/synced Tutor planning and doc surfaces listed in the track plan
+- [ ] Wave A: durable track bootstrap and active-board registration
+  - create `spec.md`, `plan.md`, `findings.md`, `validation-matrix.md`, `review.md`, and `index.md`
+  - register the track in `conductor/tracks.md`
+  - claim the work in `docs/root/AGENT_BOARD.md`
+- [ ] Wave B: stale planning/doc sync
+  - sync forward active Tutor planning artifacts that still present the wizard as current
+  - mark pre-shell docs historical instead of letting them compete in repo search
+- [ ] Wave C: launch-state authority and Tutor start-panel refactor
+  - replace wizard-era startup authority with shell-context precedence
+  - replace `TutorWizard` with a thin `TutorStartPanel`
+- [ ] Wave D: shell UX cleanup and active-doc rewrite
+  - make Studio, Schedule, and Publish learner-first
+  - rewrite active docs to the Brain launch + `/tutor` shell + start-panel model
+- [ ] Validation
+  - see `conductor/tracks/tutor-launch-shell-realignment_20260313/validation-matrix.md`
 
 ### Sprint 29: Agent Ecosystem Hygiene (2026-03-13)
 - [x] Claim scope: normalize multi-CLI skill topology, repair supported active roots, remove plaintext secrets from supported active config, and close the related operator-doc drift

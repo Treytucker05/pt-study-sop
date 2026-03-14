@@ -12,7 +12,12 @@ Update policy: after every significant change, update this file with status chan
 
 Active execution priority is tracked in `docs/root/TUTOR_TODO.md`.
 
-Latest update: 2026-03-13, closed the `Agent Ecosystem Hygiene` track after supported-root repair, secret removal from config, doc/fallback alignment, and final validation; manual credential rotation remains tracked in the track blocker note.
+Latest update: 2026-03-13, opened the `Tutor Launch / Shell Realignment Cleanup` track to make the Brain launch + `/tutor` shell + thin start-panel model the only active Tutor planning surface, while demoting older wizard-era docs and plans to historical status.
+
+- [ ] **Track: Tutor Launch / Shell Realignment Cleanup** (active — created 2026-03-13; scope: durable track bootstrap, stale planning/doc sync, Tutor launch-state authority, start-panel replacement, shell UX cleanup, active-doc rewrite, integrated validation)
+  *Link: [./tracks/tutor-launch-shell-realignment_20260313/](./tracks/tutor-launch-shell-realignment_20260313/)*
+
+---
 
 - [x] **Track: Agent Ecosystem Hygiene** (complete — created 2026-03-13; closed 2026-03-13; scope: supported skill-topology freeze, sync-script repair, supported-root cleanup, Gemini/Antigravity drift resolution, config secret hardening, docs/fallback alignment)
   *Link: [./tracks/agent-ecosystem-hygiene_20260313/](./tracks/agent-ecosystem-hygiene_20260313/)*

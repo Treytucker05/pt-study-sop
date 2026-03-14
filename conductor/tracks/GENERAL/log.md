@@ -2338,3 +2338,10 @@ ubric) when stage is PRIME.
   - `Start_Dashboard.bat` -> local dashboard ready on `http://127.0.0.1:5000`
   - `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5000` -> PASS
   - Playwright smoke on `http://127.0.0.1:5000/tutor` and `http://127.0.0.1:5000/methods` -> PASS
+
+## 2026-03-13 — Tutor launch / shell realignment kickoff
+
+- Opened `conductor/tracks/tutor-launch-shell-realignment_20260313/` as the new durable Tutor cleanup track.
+- Registered the track in `conductor/tracks.md`, added the claim to `docs/root/TUTOR_TODO.md`, and claimed the live board row in `docs/root/AGENT_BOARD.md`.
+- Locked the next active cleanup direction around Brain-owned launch, `/tutor` as the course-keyed shell, and a thin Tutor start/resume surface instead of the legacy step wizard.
+- Preserved older sprint wording in `docs/root/TUTOR_TODO.md` as history while adding an explicit top-level note that those `wizard` references are no longer the active product model.
