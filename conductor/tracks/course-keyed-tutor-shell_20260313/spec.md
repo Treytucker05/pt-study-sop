@@ -6,7 +6,7 @@
 **Track ID:** course-keyed-tutor-shell_20260313  
 **Type:** roadmap  
 **Created:** 2026-03-13  
-**Status:** Draft
+**Status:** Complete
 
 ## Summary
 
@@ -14,7 +14,7 @@ Turn `/tutor` into the single course-keyed shell for the new Studio/Tutor/Schedu
 
 ## Goal
 
-Ship the backend and execution foundation that lets the frontend move to a course-keyed Tutor shell with explicit shell state, normalized Studio persistence, and safe compatibility with existing Tutor session, note, card, and vault behavior.
+Shipped. This track landed the course-keyed Tutor shell foundation, the four shell modes, Studio persistence, and the live shell path. Remaining launch-surface cleanup now lives in `conductor/tracks/tutor-launch-shell-realignment_20260313/`.
 
 ## Locked decisions
 
@@ -29,16 +29,20 @@ Ship the backend and execution foundation that lets the frontend move to a cours
 
 ## Acceptance criteria
 
-- [ ] A durable Conductor track exists for the full initiative.
-- [ ] The execution board lists the work before implementation continues.
-- [ ] The DB has course-keyed shell and Studio foundation tables.
-- [ ] Tutor exposes course-keyed shell summary/state APIs without breaking existing session routes.
-- [ ] Targeted backend tests prove the new tables and APIs behave as expected.
+- [x] A durable Conductor track exists for the full initiative.
+- [x] The execution board lists the work before implementation continues.
+- [x] The DB has course-keyed shell and Studio foundation tables.
+- [x] Tutor exposes course-keyed shell summary/state APIs without breaking existing session routes.
+- [x] Targeted backend tests prove the new tables and APIs behave as expected.
 
 ## Out of scope for this first implementation pass
 
-- Full frontend Tutor shell UI
-- Viewer popouts
-- Dictation UI
-- Publish and Schedule UI modes
+- Remaining Tutor launch/start-panel cleanup after the shell landed
+- Wizard removal/demotion follow-through
 - Cross-project raw Studio items
+
+## Follow-on ownership
+
+The remaining work to fully replace the legacy Tutor wizard and sync active docs now belongs to:
+
+- `conductor/tracks/tutor-launch-shell-realignment_20260313/`

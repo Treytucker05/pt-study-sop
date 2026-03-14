@@ -27,7 +27,11 @@ These questions remain open after the current repo audit and product discussion.
 ## Tutor-Specific Follow-On Questions
 
 10. Does the current Tutor page fully match the updated role of "bread-and-butter live study engine + live workspace," or are more structural changes needed beyond copy and shell framing?
+   - Status: superseded.
+   - Resolution path: the shell track and recovered transcript established the answer: more structural change was needed, and that follow-through now lives in `conductor/tracks/tutor-launch-shell-realignment_20260313/`.
 11. How much of the current Tutor wizard should expose Brain-owned Library concepts vs Tutor-only session setup?
+   - Status: superseded.
+   - Resolution path: Brain owns launch context; `/tutor` remains the shell; the remaining Tutor-owned setup is a thin start/resume surface rather than the legacy broad wizard. Implementation now lives in `conductor/tracks/tutor-launch-shell-realignment_20260313/`.
 12. What exact durable Tutor note contract should replace the current split between generic `session_wrap` saves and the richer `tutor_session` note path?
 
 ## Decision Order
@@ -37,3 +41,8 @@ These questions remain open after the current repo audit and product discussion.
 3. Freeze the Tutor workspace migration target list before moving any Brain tools.
 4. Audit Tutor against the new contract before implementation reaches the Tutor migration wave.
 5. Freeze the durable Tutor note contract before any deep Tutor/vault write refactor starts.
+
+## Superseded by later tracks
+
+- Tutor launch/shell follow-through: `conductor/tracks/course-keyed-tutor-shell_20260313/`
+- Tutor launch/start-panel cleanup and active-doc sync: `conductor/tracks/tutor-launch-shell-realignment_20260313/`

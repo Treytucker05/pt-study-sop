@@ -51,13 +51,13 @@ Rule:
 - restore/resume must hydrate from persisted session state first
 - local UI storage may help seed the Wizard, but it must not override active certified session truth
 
-### Wizard and localStorage own
+### Tutor start surface and localStorage own
 
 - UI convenience state only:
   - last selected materials
   - last topic draft
   - last accuracy profile
-  - wizard progress
+  - start-panel draft state
 
 Rule:
 - localStorage is not scope authority
