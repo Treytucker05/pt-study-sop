@@ -42,13 +42,13 @@ Latest update: 2026-03-14, Repo Truth Surface Pruning completed after the README
 
 ---
 
-- [x] **Track: Brain-Centered Triad Reframe** (complete — created 2026-03-12; closed 2026-03-12; scope: corrected one-student Brain / Scholar / Tutor end-state, Tutor-centered value framing, PRD, route/shell recenter, mastery/API follow-up, Gemini embedding migration hardening, and closeout verification)
-  *Link: [./tracks/brain-centered-triad_20260312/](./tracks/brain-centered-triad_20260312/)*
+- [x] **Track: Brain-Centered Triad Reframe** (complete — created 2026-03-12; closed 2026-03-12; archived 2026-03-14 to reduce active search noise from retired truth-file references)
+  *Link: [./tracks/_archive/brain-centered-triad_20260312/](./tracks/_archive/brain-centered-triad_20260312/)*
 
 ---
 
-- [x] **Track: Brain / Scholar / Tutor Realignment** (complete — created 2026-03-11; closed 2026-03-11; scope: contract freeze, Brain learner model, Scholar research partner, bounded Tutor mediation, premium-individual shell)
-  *Link: [./tracks/brain-scholar-tutor-realignment_20260311/](./tracks/brain-scholar-tutor-realignment_20260311/)*
+- [x] **Track: Brain / Scholar / Tutor Realignment** (complete — created 2026-03-11; closed 2026-03-11; archived 2026-03-14 to reduce active search noise from retired truth-file references)
+  *Link: [./tracks/_archive/brain-scholar-tutor-realignment_20260311/](./tracks/_archive/brain-scholar-tutor-realignment_20260311/)*
 
 ---
 
@@ -62,8 +62,8 @@ Latest update: 2026-03-14, Repo Truth Surface Pruning completed after the README
 
 ---
 
-- [x] **Track: Tutor Vision Lock** (complete — created 2026-03-01; closed 2026-03-13; scope: instruction contract, chain/runtime ownership, notes model, validation gate)
-  *Link: [./tracks/tutor_vision_lock_20260301/](./tracks/tutor_vision_lock_20260301/)*
+- [x] **Track: Tutor Vision Lock** (complete — created 2026-03-01; closed 2026-03-13; archived 2026-03-14 to reduce active search noise from retired truth-file references)
+  *Link: [./tracks/_archive/tutor_vision_lock_20260301/](./tracks/_archive/tutor_vision_lock_20260301/)*
 
 ---
 
@@ -92,8 +92,8 @@ Latest update: 2026-03-14, Repo Truth Surface Pruning completed after the README
 
 ---
 
-- [x] **Track: Root AGENTS Canon Trim** (complete — created 2026-03-06; closed 2026-03-06; scope: root canon trim, guardrails extraction, linked-doc cleanup)
-  *Link: [./tracks/agents-root-trim_20260306/](./tracks/agents-root-trim_20260306/)*
+- [x] **Track: Root AGENTS Canon Trim** (complete — created 2026-03-06; closed 2026-03-06; archived 2026-03-14 to reduce active search noise from retired truth-file references)
+  *Link: [./tracks/_archive/agents-root-trim_20260306/](./tracks/_archive/agents-root-trim_20260306/)*
 
 ---
 
@@ -107,8 +107,8 @@ Latest update: 2026-03-14, Repo Truth Surface Pruning completed after the README
 
 ---
 
-- [x] **Track: Tutor / Study Buddy Canon Audit** (complete — created 2026-03-06; closed 2026-03-06; scope: master canon, evidence audit, active-doc truth-path rewiring, archive-as-history boundary)
-  *Link: [./tracks/study-buddy-canon-audit_20260306/](./tracks/study-buddy-canon-audit_20260306/)*
+- [x] **Track: Tutor / Study Buddy Canon Audit** (complete — created 2026-03-06; closed 2026-03-06; archived 2026-03-14 to reduce active search noise from retired truth-file references)
+  *Link: [./tracks/_archive/study-buddy-canon-audit_20260306/](./tracks/_archive/study-buddy-canon-audit_20260306/)*
 
 ---
 

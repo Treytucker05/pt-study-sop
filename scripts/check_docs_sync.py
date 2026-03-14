@@ -334,10 +334,10 @@ def main() -> None:
                             failures.append(f"{md_file}:{i}: contains unauthorized product-truth phrase '{pat}'.")
 
     historical_required_markers = [
-        ROOT / "conductor" / "tracks" / "brain-centered-triad_20260312" / "spec.md",
-        ROOT / "conductor" / "tracks" / "brain-centered-triad_20260312" / "decision-record.md",
-        ROOT / "conductor" / "tracks" / "brain-centered-triad_20260312" / "index.md",
-        ROOT / "conductor" / "tracks" / "brain-scholar-tutor-realignment_20260311" / "spec.md",
+        ROOT / "conductor" / "tracks" / "_archive" / "brain-centered-triad_20260312" / "spec.md",
+        ROOT / "conductor" / "tracks" / "_archive" / "brain-centered-triad_20260312" / "decision-record.md",
+        ROOT / "conductor" / "tracks" / "_archive" / "brain-centered-triad_20260312" / "index.md",
+        ROOT / "conductor" / "tracks" / "_archive" / "brain-scholar-tutor-realignment_20260311" / "spec.md",
     ]
     historical_marker = "Historical track artifact. Product/ownership authority lives only in `README.md`."
     for path in historical_required_markers:
