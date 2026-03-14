@@ -42,7 +42,14 @@ Create one clear current Tutor launch model:
 
 - [ ] TLR-220 Rework Publish mode to be readiness-first if/when that surface exists in this repo slice.
 
-- [ ] TLR-300 Rewrite active docs so they stop describing Tutor as wizard-led.
+- [x] TLR-300 Rewrite active docs so they stop describing Tutor as wizard-led.
+  - Updated:
+    - `docs/root/GUIDE_TUTOR_FLOW.md`
+    - `docs/root/PROJECT_ARCHITECTURE.md`
+    - `docs/root/GUIDE_USER.md`
+  - Validation:
+    - `rg -n "Tutor Wizard|wizard, chat, artifacts|return to wizard|Wizard page|Chain page|Start page" docs/root/GUIDE_TUTOR_FLOW.md docs/root/PROJECT_ARCHITECTURE.md docs/root/GUIDE_USER.md`
+    - `rg -n "Brain.*launch|/tutor|start/resume surface|TutorStartPanel|start surface" docs/root/GUIDE_TUTOR_FLOW.md docs/root/PROJECT_ARCHITECTURE.md docs/root/GUIDE_USER.md`
 
 - [ ] TLR-900 Run the integrated gate, close the track, and leave one clear current plan.
 

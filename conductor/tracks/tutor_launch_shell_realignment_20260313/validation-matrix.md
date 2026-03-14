@@ -23,6 +23,13 @@
   - `npm run build`
   - Result: success
 
+## TLR-300 completed
+
+- Active-doc stale wording grep:
+  - Result: no matches for old wizard-led phrasing in the active doc set
+- Active-doc current-model grep:
+  - Result: active docs now point at Brain/Library launch, `/tutor`, and `TutorStartPanel`
+
 ## Remaining validation
 
 - Broader Tutor UI regression checks after wizard replacement

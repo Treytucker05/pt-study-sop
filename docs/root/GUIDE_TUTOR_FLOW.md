@@ -1,117 +1,108 @@
-# Tutor Flow Guide (Interactive Walkthrough)
+# Tutor Flow Guide
 
-Last updated: 2026-02-22
+Last updated: 2026-03-13
 
-This document captures the tutor-side setup/session flow and the expected behavior as we validate the system.
+This document describes the current Tutor launch and session flow in the repo.
 
-## Current State (live)
+## Current Tutor model
 
-- Wizard/Chat defaults:
-  - If active session exists in `tutor.active_session.v1`, tutor entry defaults to chat.
-  - If no active session exists, tutor entry defaults to wizard.
-- Header wording:
-  - “Setup” is now labeled “Wizard”.
-- Recent sessions sidebar:
-  - Save and delete actions are present.
-  - Per-session **END** and multi-select bulk **END** actions are added and wired to session-end behavior.
-- Persistence behavior:
-  - Stale active-session pointers are cleared when session status is not active.
+- Brain and Library are the intended launch owners.
+- `/tutor` remains the live Tutor workspace.
+- Tutor startup uses a thin start surface, not the old three-step wizard.
+- The start surface is `TutorStartPanel`.
+- Active sessions still run through `TutorChat` and `TutorArtifacts`.
 
-## Next Step (this pass)
+## Current launch flow
 
-- Verify header copy + default behavior still match docs after any routing/path changes.
-- Capture edge-case notes from actual use (especially active-session pointer behavior after ending sessions).
+1. Brain or Library launches `/tutor`, preferably with explicit course context.
+2. Tutor resolves launch authority in this order:
+   - explicit query params
+   - Brain or Library handoff
+   - same-course active session
+   - course-scoped Tutor start state
+   - current-course fallback
+3. Tutor opens the start surface.
+4. The learner can:
+   - review launch summary
+   - resume a recent session
+   - start a new session
+   - expand advanced launch options when needed
+5. Starting a session opens live chat and artifact flows.
 
----
+## Start surface structure
 
-## Current Tutor Flow (as implemented)
+The start surface has four sections:
 
-1. **Wizard page**
-   - User selects:
-     - Course
-     - Topic
-     - Study materials
-   - User selects chain type:
-     - Pre-built
-     - Custom
-     - Auto
-   - User clicks **Start**.
+1. `Launch Summary`
+   - course
+   - topic
+   - selected materials count
+   - PRIME scope
+   - selected chain mode
 
-2. **Chain page**
-   - User confirms/adjusts chain selections.
-   - User clicks **Next**.
+2. `Recent Sessions`
+   - resume live or completed sessions
+   - optional delete action
 
-3. **Start page**
-   - Page shows:
-     - Course
-     - Topic
-     - Materials
-     - Chain
-   - User clicks **Start** to create the tutor session.
+3. `Readiness`
+   - launch scope visibility
+   - material-scope visibility
+   - tutor config check summary
 
-4. **Chat page**
-   - Tutor conversation begins.
-   - Sidebar includes:
-     - Artifacts
-     - Recent sessions list
-     - Save and delete controls
-
----
+4. `Adjust Launch Options`
+   - course selection
+   - topic
+   - PRIME scope
+   - material selection
+   - chain choice
+   - optional vault save folder
 
 ## Session status model
 
-- `active` (live session)
-  - Backend: `tutor_sessions.status = "active"`
-  - UI: treated as **LIVE**
-  - Can accept turns / messages
+- `active`
+  - session can accept Tutor turns
+  - `/tutor` restores into live chat when resume is chosen or same-course auto-resume applies
 
-- `completed` (finished session)
-  - Backend: set by `/api/tutor/session/<id>/end`
-  - UI: treated as **DONE**
-  - Ends live turn flow for that session
+- `completed`
+  - session no longer accepts live turns
+  - remains available in recent-session history
 
----
+## Persistence rules
 
-## Default entry behavior
+- `tutor.active_session.v1`
+  - tracks the active Tutor session id
 
-- If `tutor.active_session.v1` exists and points to an active session:
-  - Tutor header default opens **Chat** for that session.
-- If there is no active session:
-  - Tutor header default opens **Wizard**.
-- If stored session id exists but is no longer active:
-  - Key is cleared and flow returns to **Wizard**.
+- `tutor.start_state.v1`
+  - stores course-scoped Tutor launch state
+  - replaces wizard-state authority for startup
 
----
+- `tutor.wizard.progress.v1`
+  - legacy key only
+  - cleared during launch-state normalization
 
-## Sidebar Recent Sessions controls
+- `tutor.vault_folder.v1`
+  - convenience persistence only
+  - not trusted as launch authority
 
-### Existing
-- **SAVE**: export selected session data to Obsidian.
-- **DELETE**: remove selected session(s) or one session.
+## Current user-visible behavior
 
-### Requested updates
-- Added **END** per session for active sessions.
-- Added **END** for multi-select bulk action on selected active sessions.
+- Header button is `START`, not `WIZARD`.
+- If there is no active session, Tutor opens the start surface.
+- If an explicit Brain or Library handoff is present, that handoff beats stale wizard-era startup state.
+- Library launch blocks ambiguous multi-course Tutor selection instead of opening a contradictory Tutor state.
 
-Expected behavior:
-- End an active session = mark session completed (same as single-end flow).
-- End action should not hard-delete session data.
-- Bulk end should only affect active sessions in the current visible recent list.
+## Key files
 
----
+- `dashboard_rebuild/client/src/pages/tutor.tsx`
+- `dashboard_rebuild/client/src/components/TutorStartPanel.tsx`
+- `dashboard_rebuild/client/src/components/TutorChat.tsx`
+- `dashboard_rebuild/client/src/components/TutorArtifacts.tsx`
+- `dashboard_rebuild/client/src/lib/tutorClientState.ts`
 
-## Open items to implement
+## Validation reference
 
-- [x] Add per-session END action in recent sessions list row.
-- [x] Add bulk END action in recent sessions multi-select.
-- [x] Validate UX copy for Wizard/Chat header label and default behavior.
-
----
-
-## Notes
-
-- Session state used across restart/resume:
-  - backend endpoint: `POST /api/tutor/session/<id>/end`
-  - backend endpoint: `GET /api/tutor/session/<id>`
-  - backend endpoint: `DELETE /api/tutor/session/<id>`
-- The system currently has only `active` vs `completed` as practical runtime states in frontend behavior.
+- Focused frontend tests:
+  - `client/src/components/__tests__/TutorStartPanel.test.tsx`
+  - `client/src/lib/__tests__/tutorClientState.test.ts`
+- Frontend build:
+  - `cd dashboard_rebuild && npm run build`

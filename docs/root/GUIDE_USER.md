@@ -36,6 +36,9 @@ Optional later:
 ## Tutor Sessions
 - Tutor follows the SOP (M0–M6) and ends with WRAP output.
 - If no sources are provided, outputs are marked **unverified**.
+- The app route for live Tutor study is `/tutor`.
+- Tutor now opens on a start/resume surface before live chat.
+- Brain or Library should provide the preferred launch context when possible.
 - For the step-by-step tutor interaction flow and session-state behavior, see [`GUIDE_TUTOR_FLOW.md`](./GUIDE_TUTOR_FLOW.md).
 
 ## Where Your Data Lives

@@ -291,9 +291,10 @@ These scripts populate the database:
 
 The Dashboard is a single-page Flask web application (`web aspect`) serving as the UI for the Brain.
 
-**Tech Stack:** Flask (Backend), Vanilla JS + Chart.js (Frontend), SQLite (DB).
+**Tech Stack:** Flask (Backend), React + Vite source in `dashboard_rebuild/`, SQLite (DB).
 **Entry Point:** `brain/dashboard/app.py`
-**Frontend Logic:** `brain/static/app.js` (~6,300 lines)
+**Frontend Source:** `dashboard_rebuild/client/src/`
+**Frontend Build Output:** `brain/static/dist/`
 
 ### 5.1 Route Registry
 
@@ -308,21 +309,22 @@ Full map of the ~70 API endpoints defined in `routes.py`:
 |  | POST | `/api/syllabus/import` | Import course schedules. |
 | **Scholar** | POST | `/api/scholar/run` | Trigger Scholar orchestrator. |
 |  | GET | `/api/scholar/status` | Polling run status/logs. |
+| **Tutor** | GET | `/tutor` | Tutor workspace route with start/resume surface and live chat workspace. |
 | **Tutor** | POST | `/api/tutor/session/<session_id>/turn` | Chat turn (SSE) with AI Tutor (Codex CLI by default; OpenRouter/OpenAI optional). |
 | **Cards** | POST | `/api/cards/sync` | Push drafts to Anki. |
 | **Sync** | POST | `/api/sync/scraper` | Trigger Blackboard scraper. |
 
 ### 5.2 JavaScript Architecture (`app.js`)
 
-The frontend is a monolothic vanilla JS file organized into functional blocks:
+The active dashboard frontend is built from the React app in `dashboard_rebuild/client/src/`.
 
-- **Navigation:** `showTab(tabId)`, `updateMobileNav()`
-- **Overview Tab:** `loadStats()`, `renderTrends()`
-- **Brain Tab:** `renderSessionsTable()`, `openEditSessionModal()`
-- **Syllabus Tab:** `renderCalendar()`, `renderEventList()`
-- **Scholar Tab:** `startScholarRun()`, `pollScholarStatus()`
-- **Tutor Tab:** `sendTutorMessage()`, `syncStudyContext()`
-- **Sync Tab:** `loadSyncInbox()`, `approveScrapedEvent()`
+Key Tutor surfaces:
+
+- `pages/tutor.tsx`
+- `components/TutorStartPanel.tsx`
+- `components/TutorChat.tsx`
+- `components/TutorArtifacts.tsx`
+- `lib/tutorClientState.ts`
 
 ### 5.3 Page-by-Page Breakdown
 
@@ -330,7 +332,7 @@ The frontend is a monolothic vanilla JS file organized into functional blocks:
 2. **Brain:** Session log management, "Fast Entry" form.
 3. **Syllabus:** Calendar/List view of deadlines and study plans.
 4. **Scholar:** Orchestrator control panel, Proposal approvals.
-5. **Tutor:** AI chat interface with RAG source selection.
+5. **Tutor:** start/resume surface plus live AI Tutor chat and artifact workflow on `/tutor`.
 6. **Data:** Raw database inspector.
 7. **Sync:** Inbox for scraped events (Blackboard/GCal) waiting for approval.
 
@@ -425,7 +427,7 @@ python -m pytest brain/tests
 python scripts/release_check.py
 
 # 3. Start Dashboard
-python brain/dashboard_web.py
+Start_Dashboard.bat
 ```
 
 ## Appendix A: Dashboard Technical Reference

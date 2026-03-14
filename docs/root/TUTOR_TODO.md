@@ -31,7 +31,8 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
   - Replaced `TutorWizard` with `TutorStartPanel`.
   - The start surface now uses launch summary, recent-session resume, readiness, and collapsible launch options instead of a stepper.
 - [ ] TLR-120. Rework Tutor launch tests around the start-panel model.
-- [ ] TLR-300. Rewrite active docs so they stop describing Tutor as wizard-led.
+- [x] TLR-300. Rewrite active docs so they stop describing Tutor as wizard-led.
+  - `GUIDE_TUTOR_FLOW.md`, `PROJECT_ARCHITECTURE.md`, and `GUIDE_USER.md` now describe the start-panel model.
 
 ## Active Sprint 2026-02-23
 
