@@ -1664,6 +1664,8 @@ def delete_session(session_id: str):
 
     try:
         cur = conn.cursor()
+        cur.execute("DELETE FROM quick_notes WHERE tutor_session_id = ?", (session_id,))
+        cur.execute("DELETE FROM card_drafts WHERE tutor_session_id = ?", (session_id,))
         cur.execute("DELETE FROM tutor_turns WHERE tutor_session_id = ?", (session_id,))
         cur.execute(
             "DELETE FROM tutor_block_transitions WHERE tutor_session_id = ?",

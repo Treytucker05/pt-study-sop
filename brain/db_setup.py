@@ -1689,6 +1689,7 @@ def init_database():
             title TEXT,
             content TEXT NOT NULL,
             note_type TEXT NOT NULL DEFAULT 'notes',
+            tutor_session_id TEXT,
             position INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
@@ -1705,11 +1706,22 @@ def init_database():
             )
         except Exception:
             pass
+    if "tutor_session_id" not in quick_notes_cols:
+        try:
+            cursor.execute("ALTER TABLE quick_notes ADD COLUMN tutor_session_id TEXT")
+        except Exception:
+            pass
     cursor.execute("UPDATE quick_notes SET note_type = COALESCE(note_type, 'notes')")
     cursor.execute(
         """
         CREATE INDEX IF NOT EXISTS idx_quick_notes_position
         ON quick_notes(position)
+    """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_quick_notes_tutor_session
+        ON quick_notes(tutor_session_id)
     """
     )
 

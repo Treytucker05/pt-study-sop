@@ -193,6 +193,14 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Closed `neuroscience-exam-intake_20260307` after syncing the remaining metadata and close-out notes.
 - The Week 7 intake-first proof is now superseded operationally by the certified preflight/session flow and the locked Tutor contract package.
 - Future Week 8 or broader Exam 2 expansion should open a fresh track instead of reusing this one-off intake proof.
+
+---
+
+## 2026-03-13 - Tutor Artifact Ownership Hardening
+
+- Opened and closed `tutor-artifact-ownership-hardening_20260313` to make `note`, `card`, and `map` cleanup ownership explicit.
+- Added Tutor-session ownership metadata to `quick_notes`, artifact-entry ids for note/card cleanup, and delete-path cleanup for artifact delete + session delete.
+- Updated Tutor artifact certification coverage and the reusable vision-lock package to the new artifact-ownership baseline.
   - `521` — `PHYT 6313 Developmental_Disorders1_week 7` (`pdf`)
   - `522` — `Week 7 To Do Neuro` (`txt`)
 - Follow-up: keep the first Tutor run scoped to Week 7 and objective `W7-OBJ-6` before loading more of Exam 2.

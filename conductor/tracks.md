@@ -49,6 +49,11 @@ Latest update: 2026-03-13, closed the `Agent Ecosystem Hygiene` track after supp
 
 ---
 
+- [x] **Track: Tutor Artifact Ownership Hardening** (complete — created 2026-03-13; closed 2026-03-13; scope: note/card/map session ownership, delete cleanup, artifact contract sync)
+  *Link: [./tracks/tutor-artifact-ownership-hardening_20260313/](./tracks/tutor-artifact-ownership-hardening_20260313/)*
+
+---
+
 - [x] **Track: Neuroscience Exam Intake + First Tutor Run** (complete — created 2026-03-07; closed 2026-03-13; scope: Week 7 live intake, Obsidian scaffold bridge, first exam-scoped Tutor run)
   *Link: [./tracks/neuroscience-exam-intake_20260307/](./tracks/neuroscience-exam-intake_20260307/)*
 

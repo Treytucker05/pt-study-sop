@@ -74,6 +74,59 @@ def _session_not_active_response(session: dict):
         400,
     )
 
+
+def _delete_session_owned_artifact_rows(conn, *, session_id: str, artifact: dict) -> None:
+    if not isinstance(artifact, dict):
+        return
+
+    art_type = str(artifact.get("type") or "").strip().lower()
+    cur = conn.cursor()
+
+    if art_type == "note":
+        raw_quick_note_id = artifact.get("quick_note_id")
+        quick_note_id = None
+        try:
+            if raw_quick_note_id is not None:
+                quick_note_id = int(raw_quick_note_id)
+        except (TypeError, ValueError):
+            quick_note_id = None
+
+        if quick_note_id is not None:
+            cur.execute(
+                "DELETE FROM quick_notes WHERE id = ? AND tutor_session_id = ?",
+                (quick_note_id, session_id),
+            )
+            return
+
+        cur.execute(
+            """
+            DELETE FROM quick_notes
+            WHERE tutor_session_id = ?
+              AND note_type = 'tutor'
+              AND title = ?
+              AND content = ?
+            """,
+            (
+                session_id,
+                str(artifact.get("title") or ""),
+                str(artifact.get("content") or ""),
+            ),
+        )
+        return
+
+    if art_type == "card":
+        raw_card_id = artifact.get("card_id")
+        try:
+            card_id = int(raw_card_id)
+        except (TypeError, ValueError):
+            return
+
+        cur.execute(
+            "DELETE FROM card_drafts WHERE id = ? AND tutor_session_id = ?",
+            (card_id, session_id),
+        )
+
+
 # ---------------------------------------------------------------------------
 # Route handlers -- registered on tutor_bp from the main api_tutor module.
 # ---------------------------------------------------------------------------
@@ -191,10 +244,12 @@ def create_artifact(session_id: str):
             max_pos = cur.fetchone()[0] or 0
             now_str = datetime.now().isoformat()
             cur.execute(
-                """INSERT INTO quick_notes (title, content, note_type, position, created_at, updated_at)
-                   VALUES (?, ?, 'tutor', ?, ?, ?)""",
-                (title, content, max_pos + 1, now_str, now_str),
+                """INSERT INTO quick_notes (title, content, note_type, tutor_session_id, position, created_at, updated_at)
+                   VALUES (?, ?, 'tutor', ?, ?, ?, ?)""",
+                (title, content, session_id, max_pos + 1, now_str, now_str),
             )
+            result["quick_note_id"] = cur.lastrowid
+            result["session_owned"] = True
             conn.commit()
         except Exception:
             pass
@@ -202,6 +257,7 @@ def create_artifact(session_id: str):
     elif artifact_type == "map":
         result["mermaid"] = content
         result["status"] = "created"
+        result["session_owned"] = True
 
     cur = conn.cursor()
     existing_artifacts = session.get("artifacts_json")
@@ -217,8 +273,14 @@ def create_artifact(session_id: str):
         "title": title,
         "created_at": datetime.now().isoformat(),
     }
+    if artifact_type in ("note", "card", "map"):
+        artifact_entry["session_owned"] = True
     if artifact_type in ("note", "map"):
         artifact_entry["content"] = content
+    if artifact_type == "note" and result.get("quick_note_id") is not None:
+        artifact_entry["quick_note_id"] = result["quick_note_id"]
+    if artifact_type == "card" and result.get("card_id") is not None:
+        artifact_entry["card_id"] = result["card_id"]
     artifacts.append(artifact_entry)
 
     cur.execute(
@@ -434,6 +496,9 @@ def delete_artifacts(session_id: str):
             valid_indexes.append(i)
             art = artifacts[i]
             if isinstance(art, dict):
+                _delete_session_owned_artifact_rows(
+                    conn, session_id=session_id, artifact=art
+                )
                 deleted_paths.extend(_mp("_delete_artifact_obsidian_files")(art))
         else:
             skipped_indexes.append(i)

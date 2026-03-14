@@ -101,15 +101,16 @@
 
 ### Session-owned runtime artifacts
 
-- structured notes
+- quick notes created through the Tutor `note` artifact path
 - note cards
+- map artifacts recorded in the Tutor session ledger
+- structured notes
 - session wraps when summary save is explicitly requested
 - session-owned Obsidian files derived from structured-note and concept-note paths
 
 ### Sidecar artifacts outside the delete-ownership contract
 
-- quick-note captures created through the `note` artifact path remain global note captures with session history attached, not session-owned cleanup targets
-- map artifacts remain session-recorded outputs unless and until a runtime-owned save/delete contract is defined for them
+- none by default for current Tutor artifact types; any future sidecar-only artifact must be declared explicitly before implementation
 
 ### Must
 

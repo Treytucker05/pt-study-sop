@@ -195,12 +195,13 @@ def test_note_card_and_structured_notes_persist_across_end_session(client, app, 
     cur = conn.cursor()
 
     cur.execute(
-        "SELECT title, content, note_type FROM quick_notes WHERE title = ?",
+        "SELECT title, content, note_type, tutor_session_id FROM quick_notes WHERE title = ?",
         ("Tutor Note",),
     )
     note_row = cur.fetchone()
     assert note_row is not None
     assert note_row["note_type"] == "tutor"
+    assert note_row["tutor_session_id"] == tutor_sid
     assert "persist to Brain" in note_row["content"]
 
     cur.execute(
@@ -230,6 +231,117 @@ def test_note_card_and_structured_notes_persist_across_end_session(client, app, 
     store = app.config["TEST_OBSIDIAN_STORE"]
     assert finalize_data["session_path"] in store
     assert finalize_data["concept_paths"][0] in store
+
+
+def test_delete_artifacts_removes_session_owned_note_card_and_map_side_effects(client):
+    tutor_sid = _create_tutor_session(client, topic="Artifact Cleanup")
+
+    note_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/artifact",
+        json={
+            "type": "note",
+            "title": "Cleanup Note",
+            "content": "Delete me with the session artifact cleanup route.",
+        },
+    )
+    assert note_resp.status_code == 201
+    quick_note_id = note_resp.get_json()["quick_note_id"]
+
+    card_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/artifact",
+        json={
+            "type": "card",
+            "title": "Cleanup Card",
+            "front": "Cleanup front",
+            "back": "Cleanup back",
+            "tags": "cleanup",
+        },
+    )
+    assert card_resp.status_code == 201
+    card_id = card_resp.get_json()["card_id"]
+
+    map_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/artifact",
+        json={
+            "type": "map",
+            "title": "Cleanup Map",
+            "content": "graph TD; A-->B;",
+        },
+    )
+    assert map_resp.status_code == 201
+
+    delete_resp = client.delete(
+        f"/api/tutor/session/{tutor_sid}/artifacts",
+        json={"indexes": [0, 1, 2]},
+    )
+    assert delete_resp.status_code == 200
+
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute("SELECT 1 FROM quick_notes WHERE id = ?", (quick_note_id,))
+    assert cur.fetchone() is None
+    cur.execute("SELECT 1 FROM card_drafts WHERE id = ?", (card_id,))
+    assert cur.fetchone() is None
+    cur.execute(
+        "SELECT artifacts_json FROM tutor_sessions WHERE session_id = ?",
+        (tutor_sid,),
+    )
+    session_row = cur.fetchone()
+    conn.close()
+
+    artifacts = json.loads(session_row["artifacts_json"] or "[]")
+    assert artifacts == []
+
+
+def test_delete_session_cleans_session_owned_note_and_card_rows(client):
+    tutor_sid = _create_tutor_session(client, topic="Session Delete Cleanup")
+
+    note_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/artifact",
+        json={
+            "type": "note",
+            "title": "Delete Session Note",
+            "content": "Owned by this Tutor session.",
+        },
+    )
+    assert note_resp.status_code == 201
+
+    card_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/artifact",
+        json={
+            "type": "card",
+            "title": "Delete Session Card",
+            "front": "Delete me",
+            "back": "with the Tutor session",
+            "tags": "cleanup",
+        },
+    )
+    assert card_resp.status_code == 201
+
+    delete_resp = client.delete(f"/api/tutor/session/{tutor_sid}")
+    assert delete_resp.status_code == 200
+    assert delete_resp.get_json()["deleted"] is True
+
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT COUNT(*) AS c FROM quick_notes WHERE tutor_session_id = ?",
+        (tutor_sid,),
+    )
+    assert cur.fetchone()["c"] == 0
+    cur.execute(
+        "SELECT COUNT(*) AS c FROM card_drafts WHERE tutor_session_id = ?",
+        (tutor_sid,),
+    )
+    assert cur.fetchone()["c"] == 0
+    cur.execute(
+        "SELECT COUNT(*) AS c FROM tutor_sessions WHERE session_id = ?",
+        (tutor_sid,),
+    )
+    assert cur.fetchone()["c"] == 0
+    conn.close()
 
 
 def test_artifact_mutations_are_blocked_after_session_end(client):

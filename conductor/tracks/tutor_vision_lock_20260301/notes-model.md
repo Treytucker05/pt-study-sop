@@ -21,9 +21,9 @@
 
 ### `note`
 
-- Global quick-note sidecar with session history attached.
-- Not part of the locked session-delete ownership contract.
-- Future work can promote it into session-owned lifecycle only with explicit schema/delete-path work.
+- Session-owned quick note with explicit `quick_notes.tutor_session_id` ownership metadata.
+- Deleted by artifact-delete and full session-delete through the Tutor cleanup contract.
+- Still stored in `quick_notes`, but no longer treated as a lifecycle sidecar outside Tutor ownership.
 
 ### `card`
 
@@ -33,9 +33,9 @@
 
 ### `map`
 
-- Session-recorded output.
-- Not currently part of the locked save/delete ownership contract beyond truthful session recording.
-- Any stronger ownership rule requires explicit runtime work first.
+- Session-owned record in the session artifact ledger.
+- Cleaned by artifact-delete and full session-delete through artifact-ledger removal.
+- Does not imply new external persistence beyond the Tutor session ledger unless a future runtime save path is added explicitly.
 
 ### `structured_notes`
 
@@ -75,9 +75,9 @@
 ### Delete
 
 - Delete removes session rows and session-owned artifact files.
+- Delete removes session-owned quick-note rows and card rows in addition to session rows and session-owned artifact files.
 - Delete must preserve shared course-unit infrastructure such as map-of-contents and learning-objective hub pages.
 - Delete telemetry is part of the locked contract.
-- Delete does not currently own cleanup of quick-note sidecars created through the `note` artifact path.
 
 ## Drift-Prevention Rules
 

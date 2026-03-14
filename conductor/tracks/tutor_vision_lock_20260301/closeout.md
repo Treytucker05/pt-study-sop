@@ -14,9 +14,9 @@
    - `notes-model.md`
    - `current-vs-vision-gap.md`
    - `validation-gate.md`
-5. Retired two stale expectations instead of forcing unnecessary runtime changes:
+5. Retired one stale expectation instead of forcing unnecessary runtime changes:
    - archived instruction bundles are not active prompt sources
-   - quick-note sidecars are not part of the locked session-delete ownership contract
+6. Same-day follow-on hardening (`tutor-artifact-ownership-hardening_20260313`) promoted `note`, `card`, and `map` artifacts into the explicit session-owned cleanup contract.
 
 ## Audit Results Folded In
 
@@ -33,8 +33,8 @@ Findings resolved:
 
 Findings resolved:
 
-- quick-note `note` artifacts were overclaimed as session-owned lifecycle artifacts -> narrowed the contract to reflect actual runtime ownership
-- validation gate overstated artifact coverage -> narrowed automated guarantees and added explicit non-coverage notes plus optional note/map follow-up checks
+- quick-note `note` artifacts were overclaimed as session-owned lifecycle artifacts -> initially narrowed the contract, then replaced that caveat with explicit runtime ownership wiring in `tutor-artifact-ownership-hardening_20260313`
+- validation gate overstated artifact coverage -> artifact cleanup coverage was added so the gate now matches the runtime contract
 - closeout artifact was missing -> created here
 
 ## Validation Evidence
@@ -55,17 +55,16 @@ Findings resolved:
 - Keep broader model knowledge as an allowed teaching aid, but require truthful provenance labeling.
 - Change the base prompt contract to state no-answer-leakage and no-phantom-output explicitly.
 - Retire the expectation that archived SOP instruction bundles drive live prompt assembly.
-- Retire the expectation that quick-note sidecars are part of session-delete ownership without explicit future runtime work.
+- Change artifact ownership so `note`, `card`, and `map` cleanup is explicit instead of implied.
 
 ## Residual Risks
 
-- Quick-note sidecars remain globally stored and outside session-delete cleanup.
-- Map artifacts are still only weakly owned at the runtime layer.
-- If future work wants either surface to become session-owned, that work needs explicit schema, persistence, and delete-path design rather than silent contract creep.
+- Map artifacts are session-owned only inside the Tutor artifact ledger; they still do not imply external persistence beyond the session ledger.
+- Any future artifact type still needs explicit schema, persistence, and delete-path design rather than silent contract creep.
 
 ## Maintenance Rules
 
 - Update this track package before changing Tutor instruction defaults, artifact ownership rules, or session lifecycle guarantees.
 - Re-run the locked validation gate whenever Tutor instructions, retrieval scope, artifact ownership, or session lifecycle behavior changes.
 - Do not treat archived instruction bundles or chat history as live contract sources.
-- Any future artifact type must declare whether it is session-owned, sidecar-only, or template-shaped before implementation starts.
+- Any future artifact type must declare whether it is session-owned, externally persisted, or template-shaped before implementation starts.

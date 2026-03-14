@@ -78,6 +78,19 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - `docs/root/AGENT_BOARD.md`
   - `docs/root/TUTOR_TODO.md`
 
+### Sprint 30: Tutor Artifact Ownership Hardening (2026-03-13) — COMPLETE
+- [x] Claim scope: promote `note`/`card`/`map` artifacts into an explicit session-owned cleanup contract and sync the reusable Tutor contract docs.
+  - `conductor/tracks/tutor-artifact-ownership-hardening_20260313/`
+  - `brain/db_setup.py`
+  - `brain/dashboard/api_tutor_artifacts.py`
+  - `brain/dashboard/api_tutor_sessions.py`
+  - `brain/tests/test_tutor_artifact_certification.py`
+  - `conductor/tracks/tutor_vision_lock_20260301/`
+- [x] Phase 1: add ownership metadata and delete-path cleanup for session-owned note/card artifacts.
+- [x] Phase 2: mark map artifacts as session-owned records in the session ledger and sync the contract docs.
+- [x] Validation:
+  - `pytest brain/tests/test_tutor_artifact_certification.py -q`
+
 ### Sprint 28: Course-Keyed Tutor Shell + Studio Foundation (2026-03-13) — COMPLETE
 - [x] Claim scope: open the durable track for the course-keyed Tutor shell plan and land the first backend foundation slice for course-keyed shell state and summary APIs
   - `conductor/tracks/course-keyed-tutor-shell_20260313/`

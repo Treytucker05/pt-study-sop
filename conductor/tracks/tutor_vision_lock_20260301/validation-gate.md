@@ -18,13 +18,11 @@ pytest brain/tests/test_chain_runner.py brain/tests/test_tutor_turn_stream_contr
 - PRIME guardrails remain enforced
 - reference-bounds behavior remains enforced
 - selected-material scope and restore matrix behavior remain stable
-- structured-notes, cards, wraps, and session-owned artifact persistence remain stable
+- note/card/map cleanup plus structured-notes and wrap persistence remain stable
 - SSE stream contract still emits `done` frames, timing metadata, tool-round metadata, and heartbeat comments
 
 ### What this suite does not prove
 
-- quick-note sidecar cleanup after session delete
-- map-artifact save/delete ownership beyond truthful session recording
 - frontend rendering behavior when no frontend files changed
 
 ### Failure meanings
@@ -32,7 +30,7 @@ pytest brain/tests/test_chain_runner.py brain/tests/test_tutor_turn_stream_contr
 - `test_chain_runner.py` failure: the global instruction contract or chain prompt assembly drifted
 - `test_tutor_turn_stream_contract.py` failure: SSE contract or turn metadata drifted
 - `test_tutor_session_linking.py` failure: session scope, PRIME, reference bounds, restore, or lifecycle behavior drifted
-- `test_tutor_artifact_certification.py` failure: structured-notes, cards, or wrap behavior drifted
+- `test_tutor_artifact_certification.py` failure: artifact ownership, cleanup, structured-notes, cards, or wrap behavior drifted
 
 ## Live/Manual Gate
 
@@ -79,10 +77,10 @@ Expected evidence in the Tutor response itself:
 - mixed teaching uses `[Mixed: <source> + general knowledge]`
 - the response does not fabricate a citation, save, sync, or objective-update claim that the runtime did not emit
 
-### Optional manual follow-up when note/map artifact behavior changes
+### Optional manual follow-up when artifact ownership changes again
 
-- create a `note` artifact and confirm the product still treats it as a quick-note sidecar, not as a session-owned delete target
-- create a `map` artifact and confirm the session records it truthfully without implying stronger save/delete guarantees than the runtime actually provides
+- create a `note` artifact and confirm it is deleted by both artifact-delete and full session-delete
+- create a `map` artifact and confirm it disappears with artifact-delete / session-delete without implying external persistence
 
 ## Validation Run Recorded For Track Closeout
 
@@ -110,6 +108,7 @@ The March 13, 2026 baseline for this track is:
 - live Tutor smoke through the dashboard startup path
 - save-wrap success path
 - existing session restore matrix and SSE timing contract coverage
+- artifact ownership cleanup coverage for `note`, `card`, and `map`
 - explicit provenance markers for source-backed, general-knowledge, and mixed claims
 
 Any future Tutor work that changes instructions, lifecycle behavior, or artifact ownership must rerun this gate before the track can be considered preserved.
