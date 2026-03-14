@@ -235,13 +235,36 @@ def _ensure_selector_columns(conn: sqlite3.Connection) -> None:
     manual migration step before first request.
     """
     global _SELECTOR_COLS_ENSURED
-    if _SELECTOR_COLS_ENSURED:
-        return
+    required_tutor_session_cols = {
+        "selector_chain_id",
+        "selector_score_json",
+        "selector_policy_version",
+        "selector_dependency_fix",
+        "codex_thread_id",
+        "last_response_id",
+    }
+    required_tutor_turn_cols = {"response_id", "model_id"}
+    required_session_cols = {"selector_chain_id", "selector_policy_version"}
     try:
         cur = conn.cursor()
         # tutor_sessions columns
         cur.execute("PRAGMA table_info(tutor_sessions)")
         ts_cols = {row[1] for row in cur.fetchall()}
+        # tutor_turns continuity columns
+        cur.execute("PRAGMA table_info(tutor_turns)")
+        tt_cols = {row[1] for row in cur.fetchall()}
+        # sessions columns
+        cur.execute("PRAGMA table_info(sessions)")
+        s_cols = {row[1] for row in cur.fetchall()}
+
+        if (
+            _SELECTOR_COLS_ENSURED
+            and required_tutor_session_cols.issubset(ts_cols)
+            and required_tutor_turn_cols.issubset(tt_cols)
+            and required_session_cols.issubset(s_cols)
+        ):
+            return
+
         for col, typedef in (
             ("selector_chain_id", "TEXT"),
             ("selector_score_json", "TEXT"),
@@ -253,9 +276,6 @@ def _ensure_selector_columns(conn: sqlite3.Connection) -> None:
             if col not in ts_cols:
                 cur.execute(f"ALTER TABLE tutor_sessions ADD COLUMN {col} {typedef}")
 
-        # tutor_turns continuity columns
-        cur.execute("PRAGMA table_info(tutor_turns)")
-        tt_cols = {row[1] for row in cur.fetchall()}
         for col, typedef in (
             ("response_id", "TEXT"),
             ("model_id", "TEXT"),
@@ -263,9 +283,6 @@ def _ensure_selector_columns(conn: sqlite3.Connection) -> None:
             if col not in tt_cols:
                 cur.execute(f"ALTER TABLE tutor_turns ADD COLUMN {col} {typedef}")
 
-        # sessions columns
-        cur.execute("PRAGMA table_info(sessions)")
-        s_cols = {row[1] for row in cur.fetchall()}
         for col, typedef in (
             ("selector_chain_id", "TEXT"),
             ("selector_policy_version", "TEXT"),
