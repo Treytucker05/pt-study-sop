@@ -26,6 +26,12 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 
 ## Active Sprint 2026-03-13
 
+### Sprint: Tutor Shell Cleanup Packaging (2026-03-14)
+- [x] TSC-200. Remove transient design artifacts, keep only intentional Tutor shell source changes, and package the repo for push.
+  - Scope: repo-root screenshots/prototypes, active Tutor shell frontend files under `dashboard_rebuild/`, `README.md` sync, validation, and push prep.
+  - Done when: disposable artifacts are gone, the remaining source/docs changes build and test cleanly, the work is logged, and `main` is pushed.
+  - Completed 2026-03-14: removed root prototype captures, added ignore coverage for the scratch pattern, kept the intentional Tutor shell source additions intact, and passed `npm run build`, `npx vitest run client/src/components/__tests__/TutorStudioMode.test.tsx client/src/components/__tests__/StudioPrepMode.test.tsx`, and `pytest brain/tests/`.
+
 ### Sprint: README-First Truth Compression (2026-03-14)
 - [x] RTC-001. Compress repo truth surfaces down to the minimum active set and make `README.md` the only top-level repo truth file.
   - `conductor/tracks/repo-truth-surface-pruning_20260314/`

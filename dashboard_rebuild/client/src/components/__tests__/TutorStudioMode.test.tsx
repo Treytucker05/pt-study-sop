@@ -10,11 +10,13 @@ const {
   promoteStudioItemMock,
   getMaterialContentMock,
   getMaterialFileUrlMock,
+  getContentSourcesMock,
 } = vi.hoisted(() => ({
   restoreStudioItemsMock: vi.fn(),
   promoteStudioItemMock: vi.fn(),
   getMaterialContentMock: vi.fn(),
   getMaterialFileUrlMock: vi.fn((id: number) => `/api/tutor/materials/${id}/file`),
+  getContentSourcesMock: vi.fn(),
 }));
 
 vi.mock("@/lib/api", () => ({
@@ -24,6 +26,10 @@ vi.mock("@/lib/api", () => ({
       promoteStudioItem: promoteStudioItemMock,
       getMaterialContent: getMaterialContentMock,
       getMaterialFileUrl: getMaterialFileUrlMock,
+      getContentSources: getContentSourcesMock,
+    },
+    chains: {
+      getOne: vi.fn(),
     },
   },
 }));
@@ -37,6 +43,24 @@ vi.mock("sonner", () => ({
 
 vi.mock("@/components/TutorWorkspaceSurface", () => ({
   TutorWorkspaceSurface: () => <div data-testid="tutor-workspace-surface">workspace surface</div>,
+}));
+
+vi.mock("@/components/StudioBreadcrumb", () => ({
+  StudioBreadcrumb: ({ level }: { level: number }) => (
+    <nav data-testid="studio-breadcrumb">Level {level}</nav>
+  ),
+}));
+
+vi.mock("@/components/StudioClassPicker", () => ({
+  StudioClassPicker: () => <div data-testid="studio-class-picker">class picker</div>,
+}));
+
+vi.mock("@/components/StudioClassDetail", () => ({
+  StudioClassDetail: () => <div data-testid="studio-class-detail">class detail</div>,
+}));
+
+vi.mock("@/components/StudioPrepMode", () => ({
+  StudioPrepMode: () => <div data-testid="studio-prep-mode">prep mode</div>,
 }));
 
 vi.mock("@/components/ui/scroll-area", () => ({
@@ -102,6 +126,13 @@ describe("TutorStudioMode", () => {
     vi.clearAllMocks();
     restoreStudioItemsMock.mockResolvedValue({ items: [] });
     promoteStudioItemMock.mockResolvedValue({ ok: true });
+    getContentSourcesMock.mockResolvedValue({
+      courses: [{ id: 4, name: "Test Course", code: "TC-100", doc_count: 2 }],
+      total_materials: 2,
+      total_instructions: 0,
+      total_docs: 2,
+      openrouter_enabled: false,
+    });
     getMaterialContentMock.mockImplementation(async (id: number) => {
       if (id === 22) {
         return {
@@ -129,13 +160,21 @@ describe("TutorStudioMode", () => {
     });
   });
 
-  it("renders a live MaterialViewer pane from selected materials while keeping the workbench shell active", async () => {
+  it("renders 3-column L3 workspace with viewer pane, workbench, and source/workbench tabs", async () => {
     renderStudio();
 
-    expect(await screen.findByTestId("studio-material-viewer-pane")).toBeInTheDocument();
+    // Breadcrumb at level 3 (courseId is set)
+    expect(screen.getByTestId("studio-breadcrumb")).toBeInTheDocument();
+
+    // Workbench surface is always mounted (even when source tab is active)
     expect(screen.getByTestId("tutor-workspace-surface")).toBeInTheDocument();
-    expect(screen.getByText("SUMMARY BOARD")).toBeInTheDocument();
+
+    // Right panel has SOURCE and WORKBENCH sub-tabs
+    expect(screen.getByText("SOURCE")).toBeInTheDocument();
     expect(screen.getByText("WORKBENCH")).toBeInTheDocument();
+
+    // Source tab is default — viewer pane should be visible
+    expect(await screen.findByTestId("studio-material-viewer-pane")).toBeInTheDocument();
 
     await waitFor(() => {
       expect(getMaterialContentMock).toHaveBeenCalledWith(22);
@@ -144,6 +183,7 @@ describe("TutorStudioMode", () => {
     const pdfViewer = await screen.findByTestId("material-viewer-pdf");
     expect(pdfViewer).toHaveAttribute("src", "/api/tutor/materials/22/file#toolbar=0&navpanes=0&view=FitH");
 
+    // Switch material via picker
     fireEvent.click(screen.getByTestId("studio-material-picker-11"));
 
     await waitFor(() => {
@@ -154,15 +194,28 @@ describe("TutorStudioMode", () => {
     expect(screen.getByTestId("material-viewer-text-preview")).toHaveTextContent("Worksheet extracted text");
   });
 
-  it("shows a Studio source empty state when no Tutor materials are selected", async () => {
+  it("shows empty state when no materials are selected", async () => {
     renderStudio({
       availableMaterials: [],
       selectedMaterialIds: [],
     });
 
-    expect(await screen.findByText("NO SELECTED SOURCES")).toBeInTheDocument();
-    expect(screen.getByText("SOURCE VIEWER READY")).toBeInTheDocument();
+    // Source viewer shows empty guidance text
+    expect(await screen.findByText(/Select materials/i)).toBeInTheDocument();
+    // Workbench surface still mounted
     expect(screen.getByTestId("tutor-workspace-surface")).toBeInTheDocument();
     expect(getMaterialContentMock).not.toHaveBeenCalled();
+  });
+
+  it("renders L1 class picker when no courseId is provided", () => {
+    renderStudio({ courseId: undefined });
+    expect(screen.getByTestId("studio-class-picker")).toBeInTheDocument();
+  });
+
+  it("renders prep mode when no active session at L3", () => {
+    renderStudio({ activeSessionId: null });
+    expect(screen.getByTestId("studio-prep-mode")).toBeInTheDocument();
+    // Board layout elements should NOT be present
+    expect(screen.queryByText("SESSION BOARD")).not.toBeInTheDocument();
   });
 });

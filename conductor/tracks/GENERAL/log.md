@@ -211,3 +211,13 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - hermetic `Run -> Eval tutor-hermetic-smoke -> Report`
   - live/operator `Run -Profile Live -> Eval app-live-golden-path`
   - `python -m pytest brain/tests -q --timeout=60`
+
+## 2026-03-14 - Tutor shell cleanup packaging
+
+- Removed disposable root-level Tutor shell prototype captures and the tracked `tmp_tutor_wizard.png` scratch asset.
+- Added root `.gitignore` coverage for the local-only Tutor prototype screenshot and HTML patterns so the repo stays clean after future UI passes.
+- Kept the intentional Tutor shell source/docs changes in place, including the new Studio subcomponents and material viewer popout support.
+- Validation passed:
+  - `npm run build` in `dashboard_rebuild/`
+  - `npx vitest run client/src/components/__tests__/TutorStudioMode.test.tsx client/src/components/__tests__/StudioPrepMode.test.tsx`
+  - `pytest brain/tests/` -> `1063 passed, 1 skipped`

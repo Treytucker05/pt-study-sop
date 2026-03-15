@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Brain, Calendar, GraduationCap, Bot, Blocks, TrendingUp, BookOpen, Shield, Save, Trash2, GripVertical, Pencil, X, Check, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
@@ -63,6 +63,60 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [dragOverCategory, setDragOverCategory] = useState<NoteCategory | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
+
+  // ─── Adaptive header state ───
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  const [headerHovered, setHeaderHovered] = useState(false);
+  const lastScrollY = useRef(0);
+  const scrollAccumulator = useRef(0);
+  const SCROLL_DOWN_THRESHOLD = 40;
+  const SCROLL_UP_THRESHOLD = 20;
+  const TOP_ZONE = 80;
+
+  const handleScroll = useCallback(() => {
+    // Find the scrollable element — main content area
+    const main = document.querySelector("main");
+    if (!main) return;
+    const y = main.scrollTop;
+    const delta = y - lastScrollY.current;
+    lastScrollY.current = y;
+
+    // Near the top — always expand
+    if (y <= TOP_ZONE) {
+      setHeaderCollapsed(false);
+      scrollAccumulator.current = 0;
+      return;
+    }
+
+    // Accumulate scroll in the current direction; reset on direction change
+    if (delta > 0) {
+      scrollAccumulator.current = Math.max(0, scrollAccumulator.current) + delta;
+      if (scrollAccumulator.current > SCROLL_DOWN_THRESHOLD) {
+        setHeaderCollapsed(true);
+      }
+    } else if (delta < 0) {
+      scrollAccumulator.current = Math.min(0, scrollAccumulator.current) + delta;
+      if (scrollAccumulator.current < -SCROLL_UP_THRESHOLD) {
+        setHeaderCollapsed(false);
+        scrollAccumulator.current = 0;
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const main = document.querySelector("main");
+    if (!main) return;
+    main.addEventListener("scroll", handleScroll, { passive: true });
+    // Also listen on window for pages that scroll the body
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      main.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [handleScroll]);
+
+  // The header is visually expanded when: not collapsed, OR hovered while collapsed
+  const headerExpanded = !headerCollapsed || headerHovered;
 
   useEffect(() => {
     const updateTime = () => {
@@ -325,9 +379,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* CRT Scanlines */}
       <div className="crt-scanlines" />
 
-      {/* Top Nav */}
-      <header className="relative z-20 bg-black/80 backdrop-blur-sm sticky top-0" style={{ borderBottom: '4px double hsl(350 63% 49%)' }}>
-        <div className="w-full px-3 py-2 flex flex-wrap items-center justify-between gap-2">
+      {/* Top Nav — adaptive header */}
+      <header
+        className={cn(
+          "relative z-20 bg-black/80 backdrop-blur-sm sticky top-0 transition-all duration-300 ease-out",
+          "motion-reduce:transition-none",
+        )}
+        style={{ borderBottom: '4px double hsl(350 63% 49%)' }}
+        onMouseEnter={() => setHeaderHovered(true)}
+        onMouseLeave={() => setHeaderHovered(false)}
+        onTouchStart={() => {
+          if (headerCollapsed) {
+            setHeaderHovered(true);
+            // Auto-dismiss after 3s on touch
+            setTimeout(() => setHeaderHovered(false), 3000);
+          }
+        }}
+      >
+        <div className={cn(
+          "w-full px-3 flex flex-wrap items-center justify-between gap-2 transition-all duration-300 ease-out",
+          "motion-reduce:transition-none",
+          headerExpanded ? "py-2" : "py-1",
+        )}>
           <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-4">
             <Button
               variant="ghost"
@@ -341,8 +414,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
             <Link href="/">
               <div className="flex items-center gap-2 cursor-pointer group">
-                <img src={logoImg} alt="Logo" className="w-8 h-8 object-cover" />
-                <span className="hidden lg:block font-arcade text-xs text-white group-hover:text-primary transition-colors whitespace-nowrap phosphor-flicker">TREY'S STUDY SYSTEM</span>
+                <img
+                  src={logoImg}
+                  alt="Logo"
+                  className={cn(
+                    "object-cover transition-all duration-300 ease-out motion-reduce:transition-none",
+                    headerExpanded ? "w-8 h-8" : "w-5 h-5",
+                  )}
+                />
+                <span className={cn(
+                  "font-arcade text-white group-hover:text-primary transition-all duration-300 ease-out whitespace-nowrap phosphor-flicker motion-reduce:transition-none",
+                  headerExpanded
+                    ? "hidden lg:block text-xs"
+                    : "hidden xl:block text-[10px] text-white/70",
+                )}>TREY'S STUDY SYSTEM</span>
               </div>
             </Link>
 
@@ -351,7 +436,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             data-testid="nav-desktop-groups"
           >
             <div
-              className="flex min-w-0 flex-wrap items-center gap-1"
+              className={cn(
+                "flex min-w-0 flex-wrap items-center transition-all duration-300 ease-out motion-reduce:transition-none",
+                headerExpanded ? "gap-1" : "gap-0.5",
+              )}
               data-testid="nav-core-group"
               aria-label="Core triad navigation"
             >
@@ -363,21 +451,37 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       data-testid={`nav-${item.testId}`}
                       variant="ghost"
                       size="sm"
-                      className={cn("nav-btn font-arcade whitespace-nowrap", isActive && "active")}
+                      className={cn(
+                        "nav-btn font-arcade whitespace-nowrap transition-all duration-300 ease-out motion-reduce:transition-none",
+                        isActive && "active",
+                        !headerExpanded && "h-7 px-2 text-[10px]",
+                      )}
                     >
-                      <item.icon className="w-3 h-3 lg:mr-1" />
+                      <item.icon className={cn(
+                        "transition-all duration-300 ease-out motion-reduce:transition-none",
+                        headerExpanded ? "w-3 h-3 lg:mr-1" : "w-3 h-3 lg:mr-0.5",
+                      )} />
                       <span className="hidden lg:inline">{item.label}</span>
                     </Button>
                   </Link>
                 );
               })}
             </div>
-            <div className="hidden lg:flex flex-shrink-0 items-center gap-2 px-1 text-[10px] font-arcade text-primary/60" data-testid="nav-core-label">
+            <div
+              className={cn(
+                "flex-shrink-0 items-center gap-2 px-1 text-[10px] font-arcade text-primary/60 transition-all duration-300 ease-out motion-reduce:transition-none",
+                headerExpanded ? "hidden lg:flex" : "hidden",
+              )}
+              data-testid="nav-core-label"
+            >
               <span>STUDY TRIAD</span>
               <span className="text-primary/30">|</span>
             </div>
             <div
-              className="flex min-w-0 flex-wrap items-center gap-1"
+              className={cn(
+                "flex min-w-0 flex-wrap items-center transition-all duration-300 ease-out motion-reduce:transition-none",
+                headerExpanded ? "gap-1" : "gap-0.5",
+              )}
               data-testid="nav-support-group"
               aria-label="Support systems navigation"
             >
@@ -389,16 +493,32 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       data-testid={`nav-${item.testId}`}
                       variant="ghost"
                       size="sm"
-                      className={cn("nav-btn font-arcade whitespace-nowrap", isActive && "active")}
+                      className={cn(
+                        "nav-btn font-arcade whitespace-nowrap transition-all duration-300 ease-out motion-reduce:transition-none",
+                        isActive && "active",
+                        !headerExpanded && "h-7 px-2 text-[10px]",
+                      )}
                     >
-                      <item.icon className="w-3 h-3 lg:mr-1" />
-                      <span className="hidden lg:inline">{item.label}</span>
+                      <item.icon className={cn(
+                        "transition-all duration-300 ease-out motion-reduce:transition-none",
+                        headerExpanded ? "w-3 h-3 lg:mr-1" : "w-3 h-3 lg:mr-0.5",
+                      )} />
+                      <span className={cn(
+                        "hidden transition-all duration-300 ease-out motion-reduce:transition-none",
+                        headerExpanded ? "lg:inline" : "xl:inline",
+                      )}>{item.label}</span>
                     </Button>
                   </Link>
                 );
               })}
             </div>
-            <div className="hidden lg:flex flex-shrink-0 items-center gap-2 px-1 text-[10px] font-arcade text-primary/50" data-testid="nav-support-label">
+            <div
+              className={cn(
+                "flex-shrink-0 items-center gap-2 px-1 text-[10px] font-arcade text-primary/50 transition-all duration-300 ease-out motion-reduce:transition-none",
+                headerExpanded ? "hidden lg:flex" : "hidden",
+              )}
+              data-testid="nav-support-label"
+            >
               <span>SUPPORT SYSTEMS</span>
               <span className="text-primary/30">|</span>
             </div>

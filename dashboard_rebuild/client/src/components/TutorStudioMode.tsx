@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   FileStack,
@@ -9,21 +9,36 @@ import {
   Copy,
   MoveRight,
   BookOpenText,
+  Eye,
+  Wrench,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { api } from "@/lib/api";
 import type { Material, MaterialContent, TutorBoardScope, TutorStudioItem } from "@/lib/api";
 import { MaterialViewer } from "@/components/MaterialViewer";
-import { TutorWorkspaceSurface } from "@/components/TutorWorkspaceSurface";
+import { TutorWorkspaceSurface, type TutorWorkspaceSurfaceHandle } from "@/components/TutorWorkspaceSurface";
+import {
+  buildMaterialViewerPopoutHtml,
+  STUDIO_MATERIAL_VIEWER_POPOUT_CHANNEL,
+  type MaterialViewerPopoutSnapshot,
+} from "@/lib/materialViewerPopout";
+import { createBroadcastChannelTransport, createStateSnapshot } from "@/lib/popoutSync";
+import { StudioBreadcrumb, type StudioLevel } from "@/components/StudioBreadcrumb";
+import { StudioClassPicker } from "@/components/StudioClassPicker";
+import { StudioClassDetail } from "@/components/StudioClassDetail";
+import { StudioPrepMode } from "@/components/StudioPrepMode";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { BTN_TOOLBAR, BTN_TOOLBAR_ACTIVE } from "@/lib/theme";
 
 type TutorStudioModeProps = {
   courseId?: number;
+  chainId?: number;
   activeSessionId: string | null;
   availableMaterials: Material[];
   selectedMaterialIds: number[];
@@ -33,6 +48,8 @@ type TutorStudioModeProps = {
   onBoardScopeChange: (scope: TutorBoardScope) => void;
   onActiveBoardIdChange?: (boardId: number | null) => void;
   onViewerStateChange?: (state: Record<string, unknown> | null) => void;
+  onCourseChange?: (courseId: number | undefined) => void;
+  onLaunchSession?: () => void;
 };
 
 const BOARD_OPTIONS: Array<{
@@ -40,9 +57,9 @@ const BOARD_OPTIONS: Array<{
   label: string;
   description: string;
 }> = [
-  { id: "session", label: "SESSION BOARD", description: "Raw captures and compacted notes from the current session." },
-  { id: "project", label: "PROJECT BOARD", description: "Promoted project resources that are worth keeping." },
-  { id: "overall", label: "OVERALL BOARD", description: "Aggregated promoted resources across the current project shell." },
+  { id: "session", label: "SESSION BOARD", description: "Raw captures from the current session." },
+  { id: "project", label: "PROJECT BOARD", description: "Promoted resources worth keeping." },
+  { id: "overall", label: "OVERALL BOARD", description: "Aggregated promoted resources." },
 ];
 
 function itemLabel(item: TutorStudioItem): string {
@@ -75,15 +92,17 @@ function statusClass(status: TutorStudioItem["status"]) {
 function getMaterialLabel(material: Material): string {
   const explicitTitle = String(material.title || "").trim();
   if (explicitTitle) return explicitTitle;
-
   const normalizedPath = String(material.source_path || "").replace(/\\/g, "/").trim();
   if (!normalizedPath) return `Material ${material.id}`;
   const segments = normalizedPath.split("/");
   return segments[segments.length - 1] || `Material ${material.id}`;
 }
 
+type RightPanelTab = "source" | "workbench";
+
 export function TutorStudioMode({
   courseId,
+  chainId,
   activeSessionId,
   availableMaterials,
   selectedMaterialIds,
@@ -93,11 +112,46 @@ export function TutorStudioMode({
   onBoardScopeChange,
   onActiveBoardIdChange,
   onViewerStateChange,
+  onCourseChange,
+  onLaunchSession,
 }: TutorStudioModeProps) {
   const queryClient = useQueryClient();
+
+  // Studio drill-down level
+  const [studioLevel, setStudioLevel] = useState<StudioLevel>(() =>
+    typeof courseId === "number" ? 3 : 1,
+  );
+  const [rightTab, setRightTab] = useState<RightPanelTab>("source");
+
+  // L3 workspace state
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [selectedViewerMaterialId, setSelectedViewerMaterialId] = useState<number | null>(null);
 
+  // Popout refs
+  const workspaceSurfaceRef = useRef<TutorWorkspaceSurfaceHandle>(null);
+  const materialPopoutRef = useRef<Window | null>(null);
+  const materialPopoutChannelRef = useRef<ReturnType<typeof createBroadcastChannelTransport> | null>(null);
+
+  // Sync studioLevel when courseId changes externally
+  useEffect(() => {
+    if (typeof courseId !== "number" && studioLevel !== 1) {
+      setStudioLevel(1);
+    }
+  }, [courseId, studioLevel]);
+
+  // Fetch course name for breadcrumb
+  const { data: contentSources } = useQuery({
+    queryKey: ["tutor-content-sources"],
+    queryFn: () => api.tutor.getContentSources(),
+    staleTime: 60 * 1000,
+  });
+
+  const courseName = useMemo(() => {
+    if (typeof courseId !== "number") return "";
+    return contentSources?.courses.find((c) => c.id === courseId)?.name || "";
+  }, [courseId, contentSources]);
+
+  // ─── L3 Data ───
   const { data: sessionRestore } = useQuery({
     queryKey: ["tutor-studio-restore", "session", courseId, activeSessionId],
     queryFn: () =>
@@ -106,7 +160,7 @@ export function TutorStudioMode({
         tutor_session_id: activeSessionId || undefined,
         scope: "session",
       }),
-    enabled: typeof courseId === "number" && Boolean(activeSessionId),
+    enabled: typeof courseId === "number" && Boolean(activeSessionId) && studioLevel === 3,
   });
 
   const { data: projectRestore } = useQuery({
@@ -117,7 +171,7 @@ export function TutorStudioMode({
         tutor_session_id: activeSessionId || undefined,
         scope: "project",
       }),
-    enabled: typeof courseId === "number",
+    enabled: typeof courseId === "number" && studioLevel === 3,
   });
 
   const promoteMutation = useMutation({
@@ -143,12 +197,8 @@ export function TutorStudioMode({
   const projectItems = projectRestore?.items || [];
 
   const visibleItems = useMemo(() => {
-    if (activeBoardScope === "session") {
-      return sessionItems;
-    }
-    if (activeBoardScope === "project") {
-      return projectItems;
-    }
+    if (activeBoardScope === "session") return sessionItems;
+    if (activeBoardScope === "project") return projectItems;
     return [...projectItems, ...sessionItems]
       .filter((item) => item.status === "promoted")
       .sort((left, right) => right.id - left.id);
@@ -164,14 +214,9 @@ export function TutorStudioMode({
       setSelectedItemId(null);
       return;
     }
-
     setSelectedItemId((current) => {
-      if (current && visibleItems.some((item) => item.id === current)) {
-        return current;
-      }
-      if (activeBoardId && visibleItems.some((item) => item.id === activeBoardId)) {
-        return activeBoardId;
-      }
+      if (current && visibleItems.some((item) => item.id === current)) return current;
+      if (activeBoardId && visibleItems.some((item) => item.id === activeBoardId)) return activeBoardId;
       return visibleItems[0].id;
     });
   }, [activeBoardId, visibleItems]);
@@ -179,40 +224,31 @@ export function TutorStudioMode({
   const selectedMaterials = useMemo(
     () =>
       selectedMaterialIds
-        .map((id) => availableMaterials.find((material) => material.id === id) || null)
-        .filter((material): material is Material => material !== null),
+        .map((id) => availableMaterials.find((m) => m.id === id) || null)
+        .filter((m): m is Material => m !== null),
     [availableMaterials, selectedMaterialIds],
   );
   const viewerMaterial = useMemo(
-    () => selectedMaterials.find((material) => material.id === selectedViewerMaterialId) || selectedMaterials[0] || null,
+    () => selectedMaterials.find((m) => m.id === selectedViewerMaterialId) || selectedMaterials[0] || null,
     [selectedMaterials, selectedViewerMaterialId],
   );
   const { data: viewerMaterialContent, isLoading: viewerMaterialLoading } = useQuery<MaterialContent>({
     queryKey: ["tutor-studio", "material-content", viewerMaterial?.id],
     queryFn: () => api.tutor.getMaterialContent(viewerMaterial!.id),
-    enabled: viewerMaterial !== null,
+    enabled: viewerMaterial !== null && studioLevel === 3,
     staleTime: 60 * 1000,
   });
 
   useEffect(() => {
     const persistedMaterialId =
       typeof viewerState?.material_id === "number" ? viewerState.material_id : null;
-
     if (!selectedMaterials.length) {
       setSelectedViewerMaterialId(null);
       return;
     }
-
     setSelectedViewerMaterialId((current) => {
-      if (current && selectedMaterials.some((material) => material.id === current)) {
-        return current;
-      }
-      if (
-        persistedMaterialId &&
-        selectedMaterials.some((material) => material.id === persistedMaterialId)
-      ) {
-        return persistedMaterialId;
-      }
+      if (current && selectedMaterials.some((m) => m.id === current)) return current;
+      if (persistedMaterialId && selectedMaterials.some((m) => m.id === persistedMaterialId)) return persistedMaterialId;
       return selectedMaterials[0].id;
     });
   }, [selectedMaterials, viewerState]);
@@ -221,11 +257,7 @@ export function TutorStudioMode({
     if (!onViewerStateChange) return;
     onViewerStateChange(
       viewerMaterial
-        ? {
-            material_id: viewerMaterial.id,
-            source_path: viewerMaterial.source_path,
-            file_type: viewerMaterial.file_type,
-          }
+        ? { material_id: viewerMaterial.id, source_path: viewerMaterial.source_path, file_type: viewerMaterial.file_type }
         : null,
     );
   }, [onViewerStateChange, viewerMaterial]);
@@ -234,148 +266,268 @@ export function TutorStudioMode({
     onActiveBoardIdChange?.(selectedItem?.id ?? null);
   }, [onActiveBoardIdChange, selectedItem?.id]);
 
-  if (typeof courseId !== "number") {
+  // ─── Navigation handlers ───
+  const handleSelectCourse = (id: number) => {
+    onCourseChange?.(id);
+    setStudioLevel(2);
+  };
+
+  const handleBreadcrumbNavigate = (level: StudioLevel) => {
+    if (level === 1) {
+      setStudioLevel(1);
+    } else {
+      setStudioLevel(level);
+    }
+  };
+
+  const handleDrillToWorkspace = () => {
+    setStudioLevel(3);
+  };
+
+  const handleLaunchSession = () => {
+    onLaunchSession?.();
+  };
+
+  // ─── Popout handlers ───
+  const openMaterialViewerPopout = useCallback(() => {
+    if (materialPopoutRef.current && !materialPopoutRef.current.closed) {
+      materialPopoutRef.current.focus();
+      return;
+    }
+
+    const snapshot: MaterialViewerPopoutSnapshot = {
+      title: viewerMaterialContent?.title || (viewerMaterial ? getMaterialLabel(viewerMaterial) : "Material Viewer"),
+      url: viewerMaterial ? api.tutor.getMaterialFileUrl(viewerMaterial.id) : null,
+      fileType: viewerMaterialContent?.file_type || viewerMaterial?.file_type || null,
+      textContent: viewerMaterialContent?.content || null,
+    };
+
+    const transport = createBroadcastChannelTransport(STUDIO_MATERIAL_VIEWER_POPOUT_CHANNEL);
+    materialPopoutChannelRef.current = transport;
+
+    const html = buildMaterialViewerPopoutHtml({
+      channelName: STUDIO_MATERIAL_VIEWER_POPOUT_CHANNEL,
+      initialSnapshot: snapshot,
+      liveSyncAvailable: transport.available,
+    });
+
+    const popup = window.open("", "_blank", "width=800,height=900,menubar=no,toolbar=no");
+    if (!popup) {
+      toast.error("Popup blocked — allow popups for this site");
+      transport.close();
+      materialPopoutChannelRef.current = null;
+      return;
+    }
+
+    popup.document.write(html);
+    popup.document.close();
+    materialPopoutRef.current = popup;
+
+    const checkClosed = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(checkClosed);
+        materialPopoutRef.current = null;
+        transport.close();
+        materialPopoutChannelRef.current = null;
+      }
+    }, 1000);
+  }, [viewerMaterial, viewerMaterialContent]);
+
+  // Send updated material to popout when selection changes
+  useEffect(() => {
+    const transport = materialPopoutChannelRef.current;
+    if (!transport?.available || !materialPopoutRef.current || materialPopoutRef.current.closed) return;
+
+    const snapshot: MaterialViewerPopoutSnapshot = {
+      title: viewerMaterialContent?.title || (viewerMaterial ? getMaterialLabel(viewerMaterial) : "Material Viewer"),
+      url: viewerMaterial ? api.tutor.getMaterialFileUrl(viewerMaterial.id) : null,
+      fileType: viewerMaterialContent?.file_type || viewerMaterial?.file_type || null,
+      textContent: viewerMaterialContent?.content || null,
+    };
+
+    transport.postMessage(createStateSnapshot(snapshot, Date.now(), true));
+  }, [viewerMaterial, viewerMaterialContent]);
+
+  const openWorkbenchPopout = useCallback(() => {
+    workspaceSurfaceRef.current?.openPopout("viewer");
+  }, []);
+
+  // Cleanup popouts on unmount
+  useEffect(() => {
+    return () => {
+      materialPopoutChannelRef.current?.close();
+    };
+  }, []);
+
+  // ─── Render ───
+
+  // L1: Class Picker
+  if (studioLevel === 1 || typeof courseId !== "number") {
     return (
-      <div className="flex h-full items-center justify-center bg-black/30 p-6">
-        <Card className="w-full max-w-2xl rounded-none border-primary/30 bg-black/40">
-          <CardContent className="space-y-3 p-6 text-center">
-            <div className="font-arcade text-sm text-primary">STUDIO NEEDS A COURSE</div>
-            <p className="font-terminal text-sm text-muted-foreground">
-              Select a course or launch Tutor from Brain so Studio can restore the right Inbox,
-              boards, schedule, and publish resources.
-            </p>
-          </CardContent>
-        </Card>
+      <div className="flex h-full flex-col min-h-0">
+        <StudioBreadcrumb level={1} onNavigate={handleBreadcrumbNavigate} />
+        <div className="flex-1 min-h-0 overflow-y-auto p-4">
+          <div className="mx-auto w-full max-w-5xl">
+            <StudioClassPicker
+              onSelectCourse={handleSelectCourse}
+              activeSessionId={activeSessionId}
+            />
+          </div>
+        </div>
       </div>
     );
   }
 
+  // L2: Class Detail
+  if (studioLevel === 2) {
+    return (
+      <div className="flex h-full flex-col min-h-0">
+        <StudioBreadcrumb level={2} courseName={courseName} onNavigate={handleBreadcrumbNavigate} />
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <StudioClassDetail
+            courseId={courseId}
+            onLaunchSession={handleLaunchSession}
+            onDrillToWorkspace={handleDrillToWorkspace}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // L3: Workspace — prep mode (no session) vs board mode (active session)
+  if (!activeSessionId) {
+    return (
+      <div className="flex h-full flex-col min-h-0">
+        <StudioBreadcrumb level={3} courseName={courseName} onNavigate={handleBreadcrumbNavigate} />
+        <StudioPrepMode
+          chainId={chainId}
+          availableMaterials={selectedMaterials}
+          viewerMaterial={viewerMaterial}
+          viewerMaterialContent={viewerMaterialContent ?? undefined}
+          viewerMaterialLoading={viewerMaterialLoading}
+          onSelectMaterial={setSelectedViewerMaterialId}
+          onOpenMaterialPopout={openMaterialViewerPopout}
+          onOpenWorkbenchPopout={openWorkbenchPopout}
+          onLaunchSession={handleLaunchSession}
+          workspaceSurfaceRef={workspaceSurfaceRef}
+        />
+      </div>
+    );
+  }
+
+  // L3: Active session — 3-column board layout
   return (
-    <div className="grid h-full min-h-0 gap-0 lg:grid-cols-[340px_1fr]">
-      <div className="flex min-h-0 flex-col border-r border-primary/20 bg-black/40">
-        <div className="border-b border-primary/20 p-4">
-          <div className="font-arcade text-xs text-primary">STUDIO</div>
-          <div className="mt-1 font-terminal text-xs text-muted-foreground">
-            Session captures land in Inbox first. Promote the useful pieces upward after cleanup.
-          </div>
-          <div className="mt-3 grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
-            {BOARD_OPTIONS.map((option) => {
-              const active = option.id === activeBoardScope;
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => onBoardScopeChange(option.id)}
-                  className={cn(
-                    "border px-3 py-2 text-left transition-colors",
-                    active
-                      ? "border-primary/50 bg-primary/10"
-                      : "border-primary/15 bg-black/35 hover:border-primary/35",
-                  )}
-                >
-                  <div className="font-arcade text-[10px] text-primary">{option.label}</div>
-                  <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-                    {option.description}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-2 border-b border-primary/20 px-4 py-3">
-          <div className="border border-primary/20 bg-black/35 px-2 py-2">
-            <div className="font-arcade text-[10px] text-primary">SESSION</div>
-            <div className="mt-1 font-terminal text-sm text-white">{sessionItems.length}</div>
-          </div>
-          <div className="border border-primary/20 bg-black/35 px-2 py-2">
-            <div className="font-arcade text-[10px] text-primary">PROJECT</div>
-            <div className="mt-1 font-terminal text-sm text-white">{projectItems.length}</div>
-          </div>
-          <div className="border border-primary/20 bg-black/35 px-2 py-2">
-            <div className="font-arcade text-[10px] text-primary">MATERIALS</div>
-            <div className="mt-1 font-terminal text-sm text-white">{selectedMaterials.length}</div>
-          </div>
-        </div>
-
-        <ScrollArea className="min-h-0 flex-1">
-          <div className="space-y-3 p-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 font-arcade text-[10px] text-primary">
-                <FileStack className="h-3.5 w-3.5" />
-                INBOX / BOARD ITEMS
-              </div>
-              <div className="font-terminal text-[11px] text-muted-foreground">
-                {activeBoardScope === "overall"
-                  ? "Aggregated promoted items only."
-                  : "Pick an item to review or promote."}
-              </div>
-            </div>
-
-            {visibleItems.length === 0 ? (
-              <Card className="rounded-none border-primary/20 bg-black/35">
-                <CardContent className="space-y-2 p-4">
-                  <div className="font-arcade text-[10px] text-primary">NO ITEMS YET</div>
-                  <div className="font-terminal text-xs text-muted-foreground">
-                    Send items from Tutor with the new Studio actions or use the workbench tools on
-                    the right to start building.
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              visibleItems.map((item) => {
-                const active = selectedItem?.id === item.id;
+    <div className="flex h-full flex-col min-h-0">
+      <StudioBreadcrumb level={3} courseName={courseName} onNavigate={handleBreadcrumbNavigate} />
+      <div className="flex-1 min-h-0 grid gap-0 lg:grid-cols-[250px_1fr_320px]">
+        {/* ─── Left: Board sidebar ─── */}
+        <div className="flex min-h-0 flex-col border-r border-primary/20 bg-black/40">
+          <div className="border-b border-primary/20 p-2">
+            <div className="grid gap-1">
+              {BOARD_OPTIONS.map((option) => {
+                const active = option.id === activeBoardScope;
                 return (
                   <button
-                    key={item.id}
+                    key={option.id}
                     type="button"
-                    onClick={() => setSelectedItemId(item.id)}
+                    onClick={() => onBoardScopeChange(option.id)}
                     className={cn(
-                      "block w-full border px-3 py-3 text-left transition-colors",
+                      "border px-2.5 py-1 text-left transition-colors",
                       active
-                        ? "border-primary/45 bg-primary/10"
-                        : "border-primary/15 bg-black/30 hover:border-primary/35",
+                        ? "border-primary/50 bg-primary/10"
+                        : "border-primary/15 bg-black/35 hover:border-primary/35",
                     )}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="font-arcade text-[10px] text-primary">
-                          {itemLabel(item)}
-                        </div>
-                        <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-                          {item.scope.toUpperCase()} • {item.item_type.toUpperCase()}
-                        </div>
-                      </div>
-                      <Badge variant="outline" className={cn("rounded-none text-[10px]", statusClass(item.status))}>
-                        {item.status.toUpperCase()}
-                      </Badge>
-                    </div>
-                    <div className="mt-2 font-terminal text-xs text-muted-foreground">
-                      {itemExcerpt(item)}
+                    <div className="font-arcade text-[10px] text-primary">{option.label}</div>
+                    <div className="mt-0.5 font-terminal text-[11px] text-muted-foreground">
+                      {option.description}
                     </div>
                   </button>
                 );
-              })
-            )}
-          </div>
-        </ScrollArea>
-      </div>
-
-      <div className="grid min-h-0 gap-0 xl:grid-cols-[320px_1fr]">
-        <div className="flex min-h-0 flex-col border-b border-primary/20 xl:border-b-0 xl:border-r xl:border-primary/20 bg-black/30">
-          <div className="border-b border-primary/20 p-4">
-            <div className="flex items-center gap-2 font-arcade text-[10px] text-primary">
-              <Layers3 className="h-3.5 w-3.5" />
-              SUMMARY BOARD
-            </div>
-            <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-              Review one item at a time, then copy or move it upward when it becomes project-worthy.
+              })}
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 p-4">
+          <div className="grid grid-cols-3 gap-1 border-b border-primary/20 px-2 py-1.5">
+            <div className="border border-primary/20 bg-black/35 px-2 py-1">
+              <div className="font-arcade text-[10px] text-primary">SESSION</div>
+              <div className="mt-0.5 font-terminal text-sm text-white">{sessionItems.length}</div>
+            </div>
+            <div className="border border-primary/20 bg-black/35 px-2 py-1">
+              <div className="font-arcade text-[10px] text-primary">PROJECT</div>
+              <div className="mt-0.5 font-terminal text-sm text-white">{projectItems.length}</div>
+            </div>
+            <div className="border border-primary/20 bg-black/35 px-2 py-1">
+              <div className="font-arcade text-[10px] text-primary">SOURCES</div>
+              <div className="mt-0.5 font-terminal text-sm text-white">{selectedMaterials.length}</div>
+            </div>
+          </div>
+
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="space-y-1.5 p-2">
+              <div className="flex items-center gap-2 font-arcade text-[10px] text-primary">
+                <FileStack className="h-3.5 w-3.5" />
+                BOARD ITEMS
+              </div>
+
+              {visibleItems.length === 0 ? (
+                <div className="border border-primary/20 bg-black/35 p-3">
+                  <div className="font-arcade text-[10px] text-primary">EMPTY</div>
+                  <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
+                    Send items from Tutor or use the workbench to start building.
+                  </div>
+                </div>
+              ) : (
+                visibleItems.map((item) => {
+                  const active = selectedItem?.id === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setSelectedItemId(item.id)}
+                      className={cn(
+                        "block w-full border px-2.5 py-1.5 text-left transition-colors",
+                        active
+                          ? "border-primary/45 bg-primary/10"
+                          : "border-primary/15 bg-black/30 hover:border-primary/35",
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="font-arcade text-[10px] text-primary truncate">
+                            {itemLabel(item)}
+                          </div>
+                          <div className="mt-0.5 font-terminal text-[11px] text-muted-foreground">
+                            {item.scope.toUpperCase()} • {item.item_type.toUpperCase()}
+                          </div>
+                        </div>
+                        <Badge variant="outline" className={cn("rounded-none text-[10px] shrink-0", statusClass(item.status))}>
+                          {item.status.toUpperCase()}
+                        </Badge>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+
+        {/* ─── Center: Summary panel (always visible) ─── */}
+        <div className="flex min-h-0 flex-col border-r border-primary/20 bg-black/20">
+          <div className="flex items-center gap-1 border-b border-primary/20 px-3 py-1.5 bg-black/30">
+            <Layers3 className="h-3 w-3 text-primary" />
+            <span className="font-arcade text-[10px] text-primary">SUMMARY</span>
+            <div className="ml-auto">
+              <Badge variant="outline" className="rounded-none text-[10px] border-primary/30 text-muted-foreground">
+                <Sparkles className="mr-1 h-3 w-3" />
+                {activeSessionId ? "SESSION" : "PROJECT"}
+              </Badge>
+            </div>
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto p-4">
             {selectedItem ? (
-              <Card className="h-full rounded-none border-primary/20 bg-black/35">
+              <Card className="rounded-none border-primary/20 bg-black/35">
                 <CardHeader className="space-y-2 border-b border-primary/15 pb-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <CardTitle className="font-arcade text-xs text-primary">
@@ -389,8 +541,8 @@ export function TutorStudioMode({
                     {selectedItem.source_kind || "studio"} • {selectedItem.scope} scope
                   </div>
                 </CardHeader>
-                <CardContent className="flex h-full flex-col gap-3 p-4">
-                  <ScrollArea className="min-h-0 flex-1 border border-primary/15 bg-black/40 p-3">
+                <CardContent className="flex flex-col gap-3 p-4">
+                  <ScrollArea className="max-h-[60vh] border border-primary/15 bg-black/40 p-3">
                     <div className="whitespace-pre-wrap font-terminal text-sm text-zinc-200">
                       {selectedItem.body_markdown || JSON.stringify(selectedItem.payload || {}, null, 2)}
                     </div>
@@ -425,8 +577,8 @@ export function TutorStudioMode({
                       MOVE TO PROJECT
                     </Button>
                     {selectedItem.source_path ? (
-                      <Badge variant="outline" className="rounded-none text-[10px] border-primary/30 text-muted-foreground">
-                        <FolderOpen className="mr-1 h-3 w-3" />
+                      <Badge variant="outline" className="rounded-none text-[10px] border-primary/30 text-muted-foreground truncate max-w-xs">
+                        <FolderOpen className="mr-1 h-3 w-3 shrink-0" />
                         {selectedItem.source_path}
                       </Badge>
                     ) : null}
@@ -434,62 +586,92 @@ export function TutorStudioMode({
                 </CardContent>
               </Card>
             ) : (
-              <Card className="rounded-none border-primary/20 bg-black/35">
-                <CardContent className="space-y-2 p-4">
-                  <div className="font-arcade text-[10px] text-primary">SUMMARY BOARD IS EMPTY</div>
-                  <div className="font-terminal text-xs text-muted-foreground">
-                    Use Tutor capture actions or promote items from a session once something is worth keeping.
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="border border-primary/20 bg-black/35 p-6 text-center">
+                <div className="font-arcade text-[10px] text-primary">NO ITEM SELECTED</div>
+                <div className="mt-2 font-terminal text-xs text-muted-foreground">
+                  Select an item from the board sidebar, or use Tutor to capture new content.
+                </div>
+              </div>
             )}
           </div>
         </div>
 
-        <div className="grid min-h-0 grid-rows-[minmax(320px,0.75fr)_minmax(0,1fr)] bg-black/20">
-          <div className="flex min-h-0 flex-col border-b border-primary/20">
-            <div className="border-b border-primary/20 px-4 py-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <div>
-                  <div className="font-arcade text-[10px] text-primary">SOURCE VIEWER</div>
-                  <div className="font-terminal text-[11px] text-muted-foreground">
-                    Keep the selected course materials visible while Studio sorts captures on the board.
-                  </div>
-                </div>
-                <div className="ml-auto flex items-center gap-2">
-                  {selectedMaterials.length > 0 ? (
-                    <Badge variant="outline" className="rounded-none text-[10px] border-primary/30 text-muted-foreground">
-                      <ArrowUpRight className="mr-1 h-3 w-3" />
-                      {selectedMaterials.length} MATERIALS SELECTED
-                    </Badge>
-                  ) : null}
-                </div>
-              </div>
+        {/* ─── Right: Tabbed panel (SOURCE / WORKBENCH) ─── */}
+        <div className="flex min-h-0 flex-col bg-black/20">
+          {/* Sub-tab bar */}
+          <div className="flex items-center gap-1 border-b border-primary/20 px-2 py-1.5 bg-black/30">
+            <button
+              type="button"
+              onClick={() => setRightTab("source")}
+              className={cn(
+                "flex items-center gap-1 px-2 py-1 font-arcade text-[10px] transition-colors",
+                rightTab === "source"
+                  ? "text-primary border-b border-primary"
+                  : "text-muted-foreground hover:text-primary",
+              )}
+            >
+              <Eye className="h-3 w-3" />
+              SOURCE
+              {selectedMaterials.length > 0 && (
+                <Badge variant="outline" className="ml-1 h-4 px-1 text-[10px] rounded-none border-primary/40">
+                  {selectedMaterials.length}
+                </Badge>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={openMaterialViewerPopout}
+              className="text-muted-foreground hover:text-primary p-1"
+              title="Open viewer in new window"
+            >
+              <ExternalLink className="h-3 w-3" />
+            </button>
+
+            <div className="mx-1 h-4 w-px bg-primary/20" />
+
+            <button
+              type="button"
+              onClick={() => setRightTab("workbench")}
+              className={cn(
+                "flex items-center gap-1 px-2 py-1 font-arcade text-[10px] transition-colors",
+                rightTab === "workbench"
+                  ? "text-primary border-b border-primary"
+                  : "text-muted-foreground hover:text-primary",
+              )}
+            >
+              <Wrench className="h-3 w-3" />
+              WORKBENCH
+            </button>
+            <button
+              type="button"
+              onClick={openWorkbenchPopout}
+              className="text-muted-foreground hover:text-primary p-1"
+              title="Open workbench in new window"
+            >
+              <ExternalLink className="h-3 w-3" />
+            </button>
+          </div>
+
+          {/* Right panel content — workbench always mounted, toggled via CSS */}
+          <div className="flex-1 min-h-0 relative">
+            <div className={cn("absolute inset-0", rightTab === "workbench" ? "" : "hidden")}>
+              <TutorWorkspaceSurface ref={workspaceSurfaceRef} />
             </div>
-
-            <div className="grid min-h-0 gap-0 xl:grid-cols-[220px_1fr]">
-              <div className="flex min-h-0 flex-col border-b border-primary/20 xl:border-b-0 xl:border-r xl:border-primary/20 bg-black/25">
-                <div className="border-b border-primary/15 px-4 py-3">
-                  <div className="flex items-center gap-2 font-arcade text-[10px] text-primary">
-                    <BookOpenText className="h-3.5 w-3.5" />
-                    MATERIAL SOURCES
-                  </div>
-                  <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-                    Pick which selected source stays open while you work the Studio shell.
+            <div className={cn("absolute inset-0 flex min-h-0", rightTab === "source" ? "" : "hidden")}>
+              {/* Material list */}
+              <div className="w-[160px] shrink-0 border-r border-primary/20 bg-black/25 flex flex-col min-h-0">
+                <div className="border-b border-primary/15 px-2 py-1.5">
+                  <div className="flex items-center gap-1.5 font-arcade text-[10px] text-primary">
+                    <BookOpenText className="h-3 w-3" />
+                    SOURCES
                   </div>
                 </div>
-
                 <ScrollArea className="min-h-0 flex-1">
-                  <div className="space-y-2 p-3">
+                  <div className="space-y-1.5 p-2">
                     {selectedMaterials.length === 0 ? (
-                      <Card className="rounded-none border-primary/20 bg-black/35">
-                        <CardContent className="space-y-2 p-4">
-                          <div className="font-arcade text-[10px] text-primary">NO SELECTED SOURCES</div>
-                          <div className="font-terminal text-xs text-muted-foreground">
-                            Select Tutor materials to unlock a live source viewer inside Studio.
-                          </div>
-                        </CardContent>
-                      </Card>
+                      <div className="p-2 font-terminal text-[11px] text-muted-foreground">
+                        Select materials via the Start Panel to see them here.
+                      </div>
                     ) : (
                       selectedMaterials.map((material) => {
                         const active = viewerMaterial?.id === material.id;
@@ -500,14 +682,14 @@ export function TutorStudioMode({
                             data-testid={`studio-material-picker-${material.id}`}
                             onClick={() => setSelectedViewerMaterialId(material.id)}
                             className={cn(
-                              "block w-full border px-3 py-3 text-left transition-colors",
+                              "block w-full border px-2 py-1.5 text-left transition-colors",
                               active
                                 ? "border-primary/45 bg-primary/10"
                                 : "border-primary/15 bg-black/30 hover:border-primary/35",
                             )}
                           >
-                            <div className="font-arcade text-[10px] text-primary">{getMaterialLabel(material)}</div>
-                            <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
+                            <div className="font-arcade text-[10px] text-primary truncate">{getMaterialLabel(material)}</div>
+                            <div className="mt-0.5 font-terminal text-[11px] text-muted-foreground">
                               {(material.file_type || "file").toUpperCase()}
                             </div>
                           </button>
@@ -518,17 +700,14 @@ export function TutorStudioMode({
                 </ScrollArea>
               </div>
 
-              <div className="min-h-0 p-4">
+              {/* Viewer content */}
+              <div className="flex-1 min-h-0 p-3">
                 {viewerMaterial ? (
                   <div className="flex h-full min-h-0 flex-col gap-3" data-testid="studio-material-viewer-pane">
                     {viewerMaterialLoading ? (
-                      <Card className="h-full rounded-none border-primary/20 bg-black/35">
-                        <CardContent className="flex h-full items-center justify-center p-4">
-                          <div className="font-terminal text-sm text-muted-foreground">
-                            Loading selected material...
-                          </div>
-                        </CardContent>
-                      </Card>
+                      <div className="flex h-full items-center justify-center">
+                        <div className="font-terminal text-sm text-muted-foreground">Loading material...</div>
+                      </div>
                     ) : (
                       <MaterialViewer
                         source={{
@@ -544,37 +723,17 @@ export function TutorStudioMode({
                     )}
                   </div>
                 ) : (
-                  <Card className="h-full rounded-none border-primary/20 bg-black/35">
-                    <CardContent className="space-y-2 p-4">
-                      <div className="font-arcade text-[10px] text-primary">SOURCE VIEWER READY</div>
-                      <div className="font-terminal text-xs text-muted-foreground">
-                        Choose materials in Tutor and Studio will keep a real source pane open here.
+                  <div className="flex h-full items-center justify-center">
+                    <div className="text-center">
+                      <div className="font-arcade text-[10px] text-primary">SOURCE VIEWER</div>
+                      <div className="mt-2 font-terminal text-xs text-muted-foreground max-w-xs">
+                        Choose materials in the Start Panel to view them here while working.
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
-          </div>
-
-          <div className="min-h-0">
-            <div className="border-b border-primary/20 px-4 py-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <div>
-                  <div className="font-arcade text-[10px] text-primary">WORKBENCH</div>
-                  <div className="font-terminal text-[11px] text-muted-foreground">
-                    Notes, canvas, graph, and table tools stay live while you sort captures.
-                  </div>
-                </div>
-                <div className="ml-auto flex items-center gap-2">
-                  <Badge variant="outline" className="rounded-none text-[10px] border-primary/30 text-muted-foreground">
-                    <Sparkles className="mr-1 h-3 w-3" />
-                    {activeSessionId ? "SESSION-LINKED" : "PROJECT-LEVEL"}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-            <TutorWorkspaceSurface />
           </div>
         </div>
       </div>

@@ -169,6 +169,14 @@ audit-*.html
 /scholar-*.png
 /tutor-*.png
 
+# Tutor shell prototype captures (local only)
+/l*-screenshot.png
+/proto-*.png
+/real-*-page.png
+/v2-*.png
+/studio-prototype.html
+/tmp_tutor_wizard.png
+
 # Debug/scratch scripts (relocated, not tracked)
 brain/scratch/
 

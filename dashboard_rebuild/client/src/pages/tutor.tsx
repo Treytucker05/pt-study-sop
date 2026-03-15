@@ -268,6 +268,7 @@ export default function Tutor() {
   const [hasRestored, setHasRestored] = useState(false);
   const [restoredTurns, setRestoredTurns] = useState<{ question: string; answer: string | null }[] | undefined>();
   const [shellMode, setShellMode] = useState<TutorShellMode>(initialRouteQuery.mode || "studio");
+  const [showStartFromL2, setShowStartFromL2] = useState(false);
   const [activeBoardScope, setActiveBoardScope] = useState<TutorBoardScope>(
     initialRouteQuery.boardScope || "project",
   );
@@ -1160,7 +1161,8 @@ export default function Tutor() {
       if (
         !initialRouteQuery.mode &&
         shellMode === "studio" &&
-        projectShell.workspace_state.last_mode
+        projectShell.workspace_state.last_mode &&
+        projectShell.workspace_state.last_mode !== "publish"
       ) {
         setShellMode(projectShell.workspace_state.last_mode);
       }
@@ -1333,6 +1335,8 @@ export default function Tutor() {
         {/* ─── Main Content Area ─── */}
         <div className="flex-1 flex flex-col min-h-0">
           <div className="flex-none bg-black/40 border-b-2 border-primary/20 px-2 py-1.5">
+            {/* Title row — collapsed to inline when in studio mode */}
+            {shellMode !== "studio" && (
             <div className="mb-1.5 flex items-center justify-between gap-3 border-b border-primary/10 pb-1.5">
               <div>
                 <div className="font-arcade text-xs text-primary">TUTOR</div>
@@ -1346,7 +1350,8 @@ export default function Tutor() {
                 </Badge>
               ) : null}
             </div>
-            {!activeSessionId && brainLaunchContext?.title ? (
+            )}
+            {!activeSessionId && brainLaunchContext?.title && shellMode !== "studio" ? (
               <div
                 data-testid="tutor-brain-handoff"
                 className="mb-1.5 border border-primary/20 bg-primary/10 px-2 py-1.5"
@@ -1689,6 +1694,7 @@ export default function Tutor() {
                 <div key="studio" className="flex-1 min-h-0 animate-fade-slide-in">
                   <TutorStudioMode
                     courseId={courseId}
+                    chainId={chainId}
                     activeSessionId={activeSessionId}
                     availableMaterials={chatMaterials}
                   selectedMaterialIds={selectedMaterials}
@@ -1701,6 +1707,11 @@ export default function Tutor() {
                   }}
                   onActiveBoardIdChange={setActiveBoardId}
                   onViewerStateChange={setViewerState}
+                  onCourseChange={(id) => setCourseId(id)}
+                  onLaunchSession={() => {
+                    setShellMode("tutor");
+                    setShowSetup(true);
+                  }}
                 />
                 </div>
               ) : shellMode === "schedule" ? (

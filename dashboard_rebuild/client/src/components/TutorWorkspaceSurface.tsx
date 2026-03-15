@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Network, PenTool, Table2, FilePlus2 } from "lucide-react";
 
@@ -66,7 +66,12 @@ function appendDictatedText(existing: string, dictated: string) {
   return `${existing}${separator}${normalized}`;
 }
 
-export function TutorWorkspaceSurface() {
+export interface TutorWorkspaceSurfaceHandle {
+  openPopout: (mode: "viewer" | "note") => void;
+}
+
+export const TutorWorkspaceSurface = forwardRef<TutorWorkspaceSurfaceHandle>(
+  function TutorWorkspaceSurface(_props, ref) {
   const [mode, setMode] = useState<TutorWorkspaceMode>("notes");
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState("");
@@ -305,6 +310,10 @@ export function TutorWorkspaceSurface() {
     [buildSnapshot, currentFile, handlePopoutMessage, publishPopoutSnapshots],
   );
 
+  useImperativeHandle(ref, () => ({
+    openPopout,
+  }), [openPopout]);
+
   const handleWikilinkClick = useCallback(
     async (noteName: string, shiftKey: boolean) => {
       if (shiftKey) {
@@ -503,4 +512,5 @@ export function TutorWorkspaceSurface() {
       ) : null}
     </div>
   );
-}
+  },
+);

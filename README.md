@@ -15,6 +15,11 @@ If another active doc disagrees with this file on product meaning, route ownersh
 - [Repo Truth Order](#repo-truth-order)
 - [Core Identity](#core-identity)
 - [Ownership And Routes](#ownership-and-routes)
+- [Tutor Page — Complete Reference](#tutor-page--complete-reference)
+  - [Product Model](#product-model)
+  - [Screen Inventory (7 screens)](#screen-inventory-7-screens)
+  - [Shell Infrastructure](#shell-infrastructure)
+  - [Landed vs Planned — Full Status](#landed-vs-planned--full-status)
 - [Locked Operating Laws](#locked-operating-laws)
 - [System Overview](#system-overview)
 - [Architecture](#architecture)
@@ -72,13 +77,323 @@ The system is not a generic chatbot, not a set of equal peer pages fighting for 
 | Route | Meaning |
 |------|---------|
 | `/` and `/brain` | Brain home |
-| `/tutor` | Tutor live workspace shell |
+| `/tutor` | Tutor project/session shell (4 modes: Studio, Tutor, Schedule, Publish) |
+| `/tutor?course_id=&session_id=&mode=&board_scope=` | Deep-link into specific project/session/mode state |
 | `/scholar` | Scholar investigation console |
 | `/library` | Library support system |
-| `/calendar` | Calendar support system |
+| `/calendar` | Calendar support system (cross-project aggregate) |
 | `/mastery` | Mastery support system |
 | `/methods` | Methods support system |
 | `/vault-health` | Vault Health support system |
+
+## Tutor Page — Complete Reference
+
+> **Maintenance rule:** Any change to the Tutor page — code, API, UI, or plan — must be reflected here. This section is the single source of truth for what the Tutor page is, what it contains, and what state each piece is in.
+
+### Product Model
+
+Tutor is **not a setup wizard**. It is a **Brain-launched, course-backed study workspace shell**.
+
+| Principle | Detail |
+|-----------|--------|
+| **Brain owns launch context** | Brain decides "what am I working on and why am I entering Tutor" — course, project context, entry point |
+| **Tutor owns the workspace** | Tutor handles "now I am studying inside this workspace" — session execution, artifacts, resume/restore |
+| **No wizard funnel** | Tutor should not force the user through a large multi-step launch wizard every time. The old TutorWizard is demoted to a thin start panel. |
+| **Project == Course** | In v1, every project is a thin wrapper around an existing `course_id`. No freeform projects. |
+| **Bidirectional flow** | Studio preloads and organizes material → transfers to Tutor for study. Tutor sends notes and artifacts back → Studio captures and organizes them. They feed each other. |
+
+**System boundary:**
+- **Brain owns:** broad launch orchestration, course/project selection, pre-launch context
+- **Tutor owns:** live study workspace, session execution, notes/artifacts, resume/restore, last-mile launch validation, shell mode switching
+- **Library owns:** what Tutor can teach (material scope)
+- **SOP owns:** how Tutor teaches (stages, methods, chains, rules)
+
+### Screen Inventory (7 screens)
+
+The Tutor page contains **7 distinct screens** across 1 entry gate + 4 shell modes + 1 settings modal. Every screen is listed here with its name, goal, content, and build status.
+
+**Mode tab bar:** STUDIO | TUTOR | SCHEDULE | PUBLISH | **START** (shortcut button, pink) | **SETTINGS** (opens modal)
+
+The START button in the tab bar is a shortcut to the Start Panel. SETTINGS opens a modal dialog, not a separate mode view.
+
+---
+
+#### Screen 1: START PANEL
+
+| Field | Value |
+|-------|-------|
+| **Component** | `TutorStartPanel.tsx` (878 lines) |
+| **When shown** | No active session. Disappears once a session starts or resumes. |
+| **Goal** | Get the learner into a workspace fast. Thin launch/resume — not a wizard. |
+| **Status** | LANDED |
+
+**Content (top to bottom):**
+
+| Section | What it shows | Interactive? |
+|---------|--------------|-------------|
+| **Launch Summary** | Read-only card: current course, study unit, topic, materials count, prime scope, chain name. "TUTOR START" button top-right. | TUTOR START button launches session directly |
+| **Readiness Checklist** | 5 items with ✓ or ⏰: Materials, Study unit, Objective scope, Session preflight, Tutor config | No — computed from state |
+| **Recent Sessions** | Active session (green border) with RESUME + DELETE buttons. Past sessions list with date, topic, duration, turn count. | Yes — click Resume or Delete |
+| **Adjust Launch Options** | Collapsible section. Course dropdown, study unit selector, objective scope toggle (module_all/single_focus), focus objective picker, topic input, materials multi-select, chain mode tabs (AUTO/TEMPLATE/CUSTOM), vault folder path | Yes — full form, but collapsed by default |
+| **Start New Session** | Full-width primary button. Disabled until readiness passes. | Yes — calls `createSession()` |
+
+**Key behaviors:**
+- Changing course clears materials, objectives, and topic
+- Preflight validation runs on every config change
+- TEMPLATE tab shows 19 chain cards (click to select/deselect)
+- CUSTOM tab embeds `<TutorChainBuilder>` for composing blocks
+- START button disabled if `requiresFocusObjective && !selectedObjectiveId`
+
+---
+
+#### Screen 2: STUDIO — L1 Class Picker
+
+| Field | Value |
+|-------|-------|
+| **Component** | New (inside `TutorStudioMode.tsx`) |
+| **When shown** | Studio mode active, no class selected |
+| **Goal** | Pick which class to work in. Top of the 3-level drill-down. |
+| **Status** | PLANNED — not yet in code |
+
+**Content:**
+
+| Element | Detail |
+|---------|--------|
+| **Course card grid** | Responsive grid of cards, one per enrolled course |
+| **Each card shows** | Course code (e.g. DPT-710), course name, material count, session count, last studied date, status badge (ACTIVE/REVIEW) |
+| **Click behavior** | Clicking a card drills into L2 for that class |
+| **Auto-land** | On page load, auto-navigates to last selected class (stored in localStorage). User can click back to see L1 grid. |
+
+---
+
+#### Screen 3: STUDIO — L2 Class Detail
+
+| Field | Value |
+|-------|-------|
+| **Component** | New (inside `TutorStudioMode.tsx`) |
+| **When shown** | Studio mode active, class selected, not in workspace |
+| **Goal** | See everything about one class. Prepare for a study session. |
+| **Status** | PLANNED — not yet in code |
+
+**Layout:** Breadcrumb (`Studio > Neuroscience`) + class header with LAUNCH SESSION button + 6-tab bar + tab content area.
+
+**Tab bar: MATERIALS | OBJECTIVES | CARDS & TESTS | VAULT | CHAINS | STATS**
+
+| Tab | Content | Data source | Goal |
+|-----|---------|-------------|------|
+| **MATERIALS** | List of PDFs, slides, docs, links for the class. File icon + name + type badge + page/slide count. | `api.tutor.getContentSources()` | View/manage what Tutor can teach from |
+| **OBJECTIVES** | Numbered learning objectives by study unit. Objective code + description. | `api.brain.getCourseObjectives(courseId)` | Track what needs to be learned |
+| **CARDS & TESTS** | Flashcard drafts grid. Each card: type badge (RECALL/CONCEPT/APPLICATION), question preview, due date, interval. | `api.anki.getDrafts()` + card_drafts table | Review/approve cards before Anki sync |
+| **VAULT** | Saved session artifacts. List with type, title, date created. Obsidian file viewer. | `api.obsidian.getFiles()` + studio_items | Browse saved notes, maps, brain dumps |
+| **CHAINS** | Method chain cards. Name, block count, estimated time, rating. Click to expand and see block sequence. | `api.methods.getChains()` | Pick/preview study chains before launch |
+| **STATS** | Stat cards: total cards, due today, retention %, sessions, total time, artifacts. Recent activity log. | `api.tutor.getProjectShell()` | Track progress for this class |
+
+**LAUNCH SESSION button:** Pinned top-right. Opens Start Panel with the selected class pre-filled.
+
+**Navigation:** Breadcrumb back to L1. Clicking into the workspace goes to L3.
+
+---
+
+#### Screen 4: STUDIO — L3 Workspace
+
+| Field | Value |
+|-------|-------|
+| **Component** | `TutorStudioMode.tsx` (584 lines) |
+| **When shown** | Studio mode active, inside a class workspace |
+| **Goal** | Organize session captures. Promote good items to project board. Review materials alongside notes. |
+| **Status** | LANDED |
+
+**Layout:** `grid-cols-[340px_1fr]` — left sidebar + right main. Right splits into `grid-cols-[320px_1fr]` then `grid-rows-[0.75fr_1fr]`.
+
+| Panel | Content | Interactive |
+|-------|---------|------------|
+| **Left sidebar — Board** | Board scope buttons (SESSION/PROJECT/OVERALL), item count stats, scrollable item list (inbox/boarded/promoted items). Click item to select. | Yes — scope switch, item select |
+| **Right top-left — Summary** | Selected item detail card. Status badge. COPY TO PROJECT / MOVE TO PROJECT buttons. | Yes — promote actions |
+| **Right top-right — Source Viewer** | Material picker dropdown + `<MaterialViewer>` (PDF iframe, HTML5 video, or text preview) | Yes — material selection |
+| **Right bottom — Workbench** | `<TutorWorkspaceSurface>` with 4 tabs: NOTES (VaultEditor + pinned notes sidebar), CANVAS (ExcalidrawCanvas), GRAPH (GraphPanel), TABLE (ComparisonTableEditor) | Yes — full editing |
+
+**Studio pipeline:**
+```
+Tutor Chat generates artifacts
+    ↓ (Save Note / To Studio buttons)
+Capture → Studio Inbox (status: captured)
+    ↓ (user reviews in L3)
+Board → Summary Board (status: boarded)
+    ↓ (COPY or MOVE)
+Promote → Project Board (status: promoted)
+    ↓ (Publish mode)
+Publish → Obsidian / Anki / Brain
+```
+
+**Board scopes:** Session Board (current session captures) → Project Board (promoted across sessions) → Overall Board (aggregated rollup of promoted items only — not a separate workspace with its own raw items).
+
+**Persistence:** 5 normalized tables: `studio_items`, `studio_item_revisions`, `studio_boards`, `studio_board_entries`, `studio_actions` (audit trail with idempotency keys).
+
+---
+
+#### Screen 5: TUTOR — Live Chat
+
+| Field | Value |
+|-------|-------|
+| **Component** | `TutorChat.tsx` (426 lines) + `TutorArtifacts.tsx` (1350 lines) + `ContentFilter.tsx` (394 lines) |
+| **When shown** | Tutor mode active, session running |
+| **Goal** | The live study session. This is where learning happens. |
+| **Status** | LANDED |
+
+**Layout:** `grid-cols-[1fr_320px]` — main chat area (left) + sidebar (right).
+
+**Main chat area (left):**
+
+| Section | Content |
+|---------|---------|
+| **Message list** | Scrollable chat history. User messages + assistant responses with SSE streaming. |
+| **After each assistant message** | Verdict badge (PASS/FAIL/PARTIAL with confidence %), Teach-Back badge (accuracy/breadth/synthesis scores), Provenance badge (source citations). All expandable. |
+| **Action buttons per message** | See Chat Action Buttons table below. |
+| **Input bar row 1** | SOURCES button (opens slide-in panel), Accuracy dropdown (balanced/strict/coverage), Behavior mode buttons (ASK/SOCRATIC, EVALUATE, CONCEPT_MAP, TEACH-BACK) |
+| **Input bar row 2** | Speed tier pills: 📚 Materials, 🗂️ Obsidian, 🎬 Gemini Vision, 🔍 Web Search, 🧠 Deep Think (each toggleable) |
+| **Input bar row 3** | Text input + SEND button (or STOP button while streaming) |
+
+**Sources panel (slide-in from left when SOURCES clicked):**
+- Selected materials list
+- Vault folder paths
+- North star summary (module content map)
+- File upload button
+
+**Right sidebar:**
+- During active chat: `<ContentFilter>` (material/chain selection, compact or full mode)
+- When viewing artifacts: `<TutorArtifacts>` (artifact list + detail viewer + create/edit/delete)
+
+**Chat action buttons (per assistant message):**
+
+| Button | Action | Icon | Detection |
+|--------|--------|------|-----------|
+| **Save Note** | Instant capture as note artifact | FileText | Always shown |
+| **Create Card** | Create Anki card draft from response | CreditCard | Always shown |
+| **Create Map** | Generate concept map artifact | Map | Always shown |
+| **Save Table** | Capture markdown table as structured artifact | Table2 | Auto-detected: only appears if response contains a markdown table |
+| **Save Map** | Capture Mermaid diagram as artifact | Network | Auto-detected: only appears if response contains a Mermaid code block |
+| **To Studio** | Dropdown submenu: **NOTE** (capture to inbox) or **SUMMARY** (auto-compact and capture to board) | StickyNote | Always shown |
+
+Implementation: `MessageList.tsx` lines 298-421.
+
+**Artifact sidebar (`TutorArtifacts.tsx`):**
+
+| Section | Content |
+|---------|---------|
+| **Tab filter** | NOTE, CARD, MAP, STRUCTURED NOTES (filter artifact list by type) |
+| **Artifact list** | Scrollable list with icon, title, timestamp per artifact |
+| **Detail view** | Full artifact content: markdown editor for notes, card form for flashcards, mermaid viewer for maps |
+| **Create form** | Type dropdown + title input + content textarea |
+| **Edit/Delete** | Inline edit, delete with toast confirmation |
+| **Wrap Session** | Appears at session end: summary stats (duration, turns, artifacts, objectives, chain progress) |
+
+---
+
+#### Screen 6: SCHEDULE — Events & Planner
+
+| Field | Value |
+|-------|-------|
+| **Component** | `TutorScheduleMode.tsx` (300 lines) |
+| **When shown** | Schedule mode active |
+| **Goal** | See what's coming up for this class. Manage study tasks. |
+| **Status** | LANDED (stub — event list works, not wired to Calendar for creation or ship-to-calendar) |
+
+**Layout:** 2-column.
+
+| Panel | Content | Interactive |
+|-------|---------|------------|
+| **Left column** | SCHEDULE MODE stats card with course name + "Local planner" or "Google Calendar" badge (top-right). Stats: PENDING EVENTS, PLANNER QUEUE, RECENT SESSIONS (each with count). Buttons: Generate Review Tasks, Toggle Source, Refresh. UPCOMING COURSE EVENTS list (max 6, sorted by due date, with type badges: EXAM/QUIZ/LECTURE/LAB). COURSE SYLLABUS section (shows course name). | Yes — generate tasks, toggle source |
+| **Right column** | `<PlannerKanban>` — task board with TODO/IN PROGRESS/DONE columns | Yes — view tasks |
+
+**Planned but not wired:**
+- Ship-to-calendar: push schedule items to the cross-project Calendar page
+- Syllabus import: pull syllabus-derived due dates into schedule
+- Event creation from within Schedule mode (currently must use Calendar page)
+
+---
+
+#### Screen 7: PUBLISH — Export & Sync
+
+| Field | Value |
+|-------|-------|
+| **Component** | `TutorPublishMode.tsx` (324 lines) |
+| **When shown** | Publish mode active |
+| **Goal** | Export session output to durable homes. Compile, review, publish. |
+| **Status** | LANDED (basic — load/edit/publish works, no readiness workflow) |
+
+**Layout:** 2-column.
+
+| Panel | Content | Interactive |
+|-------|---------|------------|
+| **Top — Publish Mode card** | "PUBLISH MODE" header with connection badge (🟢 "Obsidian online" or 🔴 "Obsidian offline"). Description: "Stage a session summary or workspace note for the vault, then clear pending Anki drafts." Stats: ACTIVE SESSION (name or "No active session"), PENDING ANKI DRAFTS (count), VAULT (vault name). Buttons: Load Current Session, Reset Draft. VAULT PATH input (editable, computed default like `Tutor Studio/Exercise Physiology/Tutor Session.md`). Markdown draft textarea (large, editable). PUBLISH TO OBSIDIAN button. | Yes — load, edit, publish |
+| **Middle — Anki section** | Anki connection status ("Anki not running" with Retry button, or card draft list with APPROVE/EDIT buttons + SYNC TO ANKI). | Yes — retry, approve, edit, sync |
+| **Bottom — Project Resources** | "PROJECT RESOURCES" header with "0 PROMOTED" badge. Text: "Publish acts only on promoted project resources. Review the promoted set here while the publish workspace stages vault and Anki output." Empty state: "No promoted Studio resources yet. Use Studio to review captures, then copy or move the useful pieces up to the project layer." | Readiness gate — partially implemented |
+
+**Planned but not fully built:**
+- Partial-failure handling and retry for publish actions
+- Brain as a publish target (not just Obsidian and Anki)
+- Publish audit trail
+- Note: promoted-only publish gate IS partially landed (UI shows the section, enforces "0 promoted" empty state)
+
+#### SETTINGS Modal
+
+| Field | Value |
+|-------|-------|
+| **Component** | Modal dialog inside `tutor.tsx` |
+| **When shown** | Click SETTINGS in the mode tab bar. Opens as overlay, not a separate page. |
+| **Goal** | Configure tutor behavior and custom instructions. |
+| **Status** | LANDED |
+
+**Content:**
+
+| Section | What it shows | Interactive |
+|---------|--------------|------------|
+| **TUTOR SETTINGS** header | Modal title with X close button | Yes — close |
+| **CUSTOM INSTRUCTIONS** | Large textarea with the tutor's system prompt rules (Hybrid Teaching Mode, Truthful Provenance, source citation rules, etc.) | Yes — editable |
+| **Footer buttons** | RESTORE DEFAULTS (left), CANCEL + SAVE (right) | Yes — restore, cancel, save |
+
+---
+
+### Shell Infrastructure
+
+| Feature | Detail | Status |
+|---------|--------|--------|
+| **Shell state separation** | `project_workspace_state` table (keyed by `course_id`) persists mode, board selection, viewer state. Teaching turns persist separately in `tutor_sessions`. Mode switching never mutates the teaching loop. | LANDED |
+| **URL deep-linking** | Query params: `course_id`, `session_id`, `mode`, `board_scope`, `board_id`. Precedence: query params → persisted shell state → last valid course + mode fallback. Functions: `readTutorShellQuery()`, `writeTutorShellQuery()`. | LANDED |
+| **Popouts** | Viewer popout (read-only, one-way sync). Current Note popout (editable after BroadcastChannel handshake, two-way sync via `popoutSync.ts`). Edit lease + heartbeat prevents silent state forks. If handshake fails, editable popout disabled. | LANDED |
+| **Dictation** | Browser-native into current note via `useChromiumDictation` hook. Chromium-first best-effort. Feature-detected at runtime with unsupported/permission-denied states. No server-side transcription in v1. | LANDED (partial — voice recording works, speech-to-text incomplete) |
+| **Speed tiers** | 5 toggleable pills per chat turn: Materials, Obsidian, Gemini Vision, Web Search, Deep Think. Each controls what context the LLM receives. | LANDED |
+| **Behavior modes** | 4 override modes: Socratic (questioning), Evaluate (testing), Concept Map (diagram-first), Teach-Back (learner teaches back). Toggle buttons in chat input bar. | LANDED |
+| **Message badges** | Verdict (PASS/FAIL/PARTIAL + confidence %), Teach-Back (accuracy/breadth/synthesis scores), Provenance (source citations). All expandable. | LANDED |
+
+### Landed vs Planned — Full Status
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| 4-mode shell (Studio/Tutor/Schedule/Publish) | LANDED | Mode switching, toolbar, URL params |
+| Start Panel (thin launch/resume) | LANDED | Replaces old wizard |
+| Shell state separation (`project_workspace_state`) | LANDED | `db_setup.py` line 2111 |
+| URL deep-linking with query params | LANDED | `tutor.tsx` lines 105-143 |
+| Studio L3 Workspace (boards + workbench) | LANDED | `TutorStudioMode.tsx` |
+| Studio normalized persistence (5 tables) | LANDED | `db_setup.py` lines 2137-2275 |
+| Studio capture/promote/restore API | LANDED | `api_tutor_studio.py` |
+| Chat action buttons (Save Note/Card/Map/Table/To Studio) | LANDED | `MessageList.tsx` lines 298-421 |
+| Verdict + Teach-Back + Provenance badges | LANDED | `MessageList.tsx` lines 14-200+ |
+| Speed tier toggles (5 pills) | LANDED | `TutorChat.tsx` lines 64-70 |
+| Behavior modes (4 types) | LANDED | `TutorChat.tsx` lines 72-73 |
+| Popouts (viewer + current note) | LANDED | `popoutSync.ts`, `tutorWorkspacePopout.ts` |
+| Dictation hook | LANDED (partial) | Voice recording works, speech-to-text incomplete |
+| Studio L1 Class Picker | PLANNED | Not yet in code |
+| Studio L2 Class Detail (6 tabs) | PLANNED | Not yet in code |
+| Note compaction (SUMMARY auto-compact) | PLANNED | UI button exists in MessageList, backend not wired |
+| Publish readiness workflow | PARTIAL | Project Resources section with promoted-only gate landed; partial-failure retry and Brain target not built |
+| Settings modal (custom instructions) | LANDED | Modal with editable system prompt, restore defaults, save |
+| Schedule ↔ Calendar wiring | PLANNED | Mode exists, not connected to Calendar for creation or ship-to-calendar |
+| Source clipping with provenance | PLANNED | PDF page / video timestamp → Studio capture with file/page/time metadata |
+| Brain-to-Tutor deep-link launch | PLANNED | Brain should launch directly into correct project/session/mode |
+| OpenRouter direct API | PLANNED | Replace Codex CLI subprocess, -2-4s per turn |
+| Cross-encoder preload | PLANNED | Background load at startup, -500ms cold start |
+| Rich session restore | PLANNED | Serialize full ChatMessage (citations, verdict, toolActions) into `tutor_turns.artifacts_json` |
 
 ## Locked Operating Laws
 
@@ -541,6 +856,19 @@ SQLite at `brain/data/pt_study.db`. Schema managed in `brain/db_setup.py`.
 +------------------+     +------------------+     +------------------+
 |  error_logs      |     |  calendar_action |     |  scraped_events  |
 |  (CP telemetry)  |     |  _ledger         |     |  (staging)       |
++------------------+     +------------------+     +------------------+
+
++------------------+     +------------------+     +------------------+
+| project_workspace|     |  studio_items    |     |  studio_item_    |
+| _state           |     |  (captures,      |     |  revisions       |
+| (shell state per |     |   scope, status)  |     |  (version hist)  |
+|  course_id)      |     |                  |     |                  |
++------------------+     +------------------+     +------------------+
+
++------------------+     +------------------+     +------------------+
+|  studio_boards   |     |  studio_board_   |     |  studio_actions  |
+|  (session/project|     |  entries         |     |  (audit trail +  |
+|   /overall scope)|     |  (item placement)|     |  idempotency)    |
 +------------------+     +------------------+     +------------------+
 ```
 
