@@ -221,3 +221,18 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `npm run build` in `dashboard_rebuild/`
   - `npx vitest run client/src/components/__tests__/TutorStudioMode.test.tsx client/src/components/__tests__/StudioPrepMode.test.tsx`
   - `pytest brain/tests/` -> `1063 passed, 1 skipped`
+
+## 2026-03-14 - Root hygiene sweep
+
+- Removed leftover root-level review artifacts and stale study-text files that had zero repo references.
+- Deleted tracked CSV exports and obsolete tracked export reports that no longer participate in the active drift checks.
+- Cleared ignored local scratch files and cache directories:
+  - planning scratch (`findings.md`, `progress.md`, `task_plan.md`)
+  - subagent prompt/review text files
+  - Playwright MCP screenshots/logs
+  - local temp/cache directories (`.codex_tmp`, `.tmp`, `.pytest_cache`, `.ruff_cache`, `logs`, `tasks`, `tmp`)
+- Tightened `.gitignore` for `.playwright-mcp/*.md` and `tmp_thread_talk*.csv`.
+- Validation passed:
+  - `python scripts/check_docs_sync.py`
+  - `python scripts/check_exports_drift.py`
+  - `git diff --check`

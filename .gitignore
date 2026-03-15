@@ -147,6 +147,7 @@ scripts/_ai_config_backups/
 
 # Playwright MCP screenshots (local only)
 .playwright-mcp/*.png
+.playwright-mcp/*.md
 
 # Large generated files
 /filetree.txt
@@ -176,6 +177,7 @@ audit-*.html
 /v2-*.png
 /studio-prototype.html
 /tmp_tutor_wizard.png
+/tmp_thread_talk*.csv
 
 # Debug/scratch scripts (relocated, not tracked)
 brain/scratch/

@@ -1,7 +1,0 @@
-**Review**
-- `restore_studio_items` now treats project scope items whose `tutor_session_id` is NULL as restoreable when a session filter is applied, via `(scope = 'project' AND tutor_session_id IS NULL)` in the WHERE clause, so promoted project content surfaces from any session’s restore view (`brain/dashboard/api_tutor_studio.py:269-320`).
-- The copy promotion path explicitly writes `None` for `tutor_session_id`, keeping the new project item session-independent (`brain/dashboard/api_tutor_studio.py:354-402`).
-- The move promotion path updates the existing row with `tutor_session_id = NULL`, ensuring the same cross-session visibility (`brain/dashboard/api_tutor_studio.py:403-420`).
-- `test_promoted_project_item_visible_from_different_session` captures under session A, promotes via both copy and move, and then restores using session B to confirm both project items are visible, covering the full promotion matrix the reviewer asked about (`brain/tests/test_tutor_project_shell.py:369-448`).
-
-Verdict: **APPROVED** — all required behaviors are implemented and exercised by the tests.
