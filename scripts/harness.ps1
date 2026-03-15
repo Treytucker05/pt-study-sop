@@ -1290,7 +1290,23 @@ function Invoke-HarnessEval {
     if ($runner.expects_json) {
         $payload = ConvertFrom-HarnessJson -JsonText $stdoutText
         if (-not $payload) {
-            throw "Eval scenario '$Scenario' did not emit JSON output."
+            $failureText = if ($processResult.stderr_text) {
+                [string]$processResult.stderr_text
+            } elseif ($stdoutText) {
+                [string]$stdoutText
+            } else {
+                "Eval scenario '$Scenario' did not emit JSON output."
+            }
+
+            $payload = [ordered]@{
+                ok = $false
+                error = Redact-HarnessText -Text $failureText
+                summary = [ordered]@{
+                    pass_count = 0
+                    fail_count = 1
+                    check_count = 1
+                }
+            }
         }
     } else {
         $payload = [ordered]@{
