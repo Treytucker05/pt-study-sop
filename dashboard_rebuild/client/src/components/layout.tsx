@@ -1,8 +1,8 @@
 import { Link, useLocation } from "wouter";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Brain, Calendar, GraduationCap, Bot, Blocks, TrendingUp, BookOpen, Shield, Save, Trash2, GripVertical, Pencil, X, Check, Menu } from "lucide-react";
+import { Brain, Calendar, GraduationCap, Bot, Blocks, TrendingUp, BookOpen, Shield, Save, Trash2, GripVertical, Pencil, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -36,6 +36,20 @@ const NOTE_CATEGORIES: { value: NoteCategory; label: string; tabLabel: string }[
   { value: "ideas", label: "IDEAS", tabLabel: "IDEAS" },
 ];
 
+const NOTES_DOCK_STORAGE_KEY = "layout.notesDockTop.v1";
+const NOTES_DOCK_MARGIN = 16;
+const NOTES_DOCK_MIN_TOP = 96;
+const NAV_BUTTON_ACCENTS: Record<string, string> = {
+  brain: "from-cyan-400/35 via-sky-500/20 to-cyan-950/70 border-cyan-300/45 text-cyan-100",
+  scholar: "from-amber-300/35 via-orange-500/20 to-amber-950/70 border-amber-300/45 text-amber-100",
+  tutor: "from-rose-400/35 via-fuchsia-500/20 to-rose-950/70 border-rose-300/45 text-rose-100",
+  library: "from-emerald-400/35 via-green-500/20 to-emerald-950/70 border-emerald-300/45 text-emerald-100",
+  mastery: "from-violet-400/35 via-indigo-500/20 to-violet-950/70 border-violet-300/45 text-violet-100",
+  calendar: "from-blue-300/35 via-cyan-500/20 to-blue-950/70 border-blue-300/45 text-blue-100",
+  methods: "from-red-400/35 via-orange-500/20 to-red-950/70 border-red-300/45 text-red-100",
+  vault: "from-slate-300/35 via-zinc-500/20 to-slate-950/70 border-slate-200/45 text-slate-100",
+};
+
 const resolveNoteType = (note: Note): NoteCategory => {
   const raw = (note as Note & { noteType?: string }).noteType;
   if (raw === "planned" || raw === "ideas" || raw === "notes") {
@@ -43,6 +57,28 @@ const resolveNoteType = (note: Note): NoteCategory => {
   }
   return "notes";
 };
+
+const navButtonClass = (
+  isActive: boolean,
+  headerExpanded: boolean,
+) =>
+  cn(
+    "nav-btn group relative h-11 min-w-[44px] overflow-hidden rounded-full border-2 border-zinc-700/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.03)_40%,rgba(0,0,0,0.34)_100%)] px-3 font-arcade text-[0.65rem] whitespace-nowrap text-zinc-100 shadow-[0_5px_0_rgba(15,15,15,0.85),0_10px_24px_rgba(0,0,0,0.28)] transition-all duration-150 ease-out motion-reduce:transition-none sm:text-xs",
+    "before:absolute before:inset-x-[10%] before:top-1 before:h-px before:rounded-full before:bg-white/40 before:content-['']",
+    "after:absolute after:inset-x-2 after:bottom-1 after:h-1.5 after:rounded-full after:bg-black/25 after:blur-[1px] after:content-['']",
+    "hover:-translate-y-0.5 hover:border-white/50 hover:shadow-[0_7px_0_rgba(15,15,15,0.85),0_12px_28px_rgba(0,0,0,0.34)] hover:text-white",
+    "focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-0",
+    "active:translate-y-[2px] active:shadow-[0_2px_0_rgba(15,15,15,0.82),0_6px_16px_rgba(0,0,0,0.28)]",
+    isActive && "active border-primary/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.2),rgba(255,77,109,0.18)_45%,rgba(32,8,16,0.9)_100%)] text-white shadow-[0_4px_0_rgba(72,15,28,0.95),0_0_20px_rgba(255,77,109,0.24)]",
+    !headerExpanded && "h-10 px-2.5 text-[0.62rem]",
+  );
+
+const navIconPadClass = (testId: string, isActive: boolean) =>
+  cn(
+    "mr-1.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(255,255,255,0.02)_48%,rgba(0,0,0,0.32)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_2px_6px_rgba(0,0,0,0.32)] transition-all duration-150 ease-out motion-reduce:transition-none group-hover:scale-[1.06] group-hover:border-white/70",
+    NAV_BUTTON_ACCENTS[testId] ?? "from-primary/30 via-primary/10 to-primary/5 border-primary/40 text-primary-foreground",
+    isActive && "border-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.32),0_0_14px_rgba(255,255,255,0.12)]",
+  );
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
@@ -53,6 +89,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       : "/" + location.split("/")[1];
   const isBrainPage = currentPath === "/";
   const isTutorPage = currentPath === "/tutor";
+  const isWorkspaceRoute = isBrainPage || isTutorPage;
   const [newNote, setNewNote] = useState("");
   const [newNoteType, setNewNoteType] = useState<NoteCategory>("notes");
   const [activeTab, setActiveTab] = useState<"all" | NoteCategory>("all");
@@ -61,8 +98,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [draggedNote, setDraggedNote] = useState<{ id: number; type: NoteCategory } | null>(null);
   const [dragOverNote, setDragOverNote] = useState<{ id: number; type: NoteCategory } | null>(null);
   const [dragOverCategory, setDragOverCategory] = useState<NoteCategory | null>(null);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [notesDockTop, setNotesDockTop] = useState<number | null>(null);
+  const [isDraggingNotesDock, setIsDraggingNotesDock] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const notesDockRef = useRef<HTMLButtonElement | null>(null);
+  const notesDockDragRef = useRef<{ pointerId: number; offsetY: number; moved: boolean } | null>(null);
+  const headerRef = useRef<HTMLElement | null>(null);
 
   // ─── Adaptive header state ───
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
@@ -72,6 +115,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const SCROLL_DOWN_THRESHOLD = 40;
   const SCROLL_UP_THRESHOLD = 20;
   const TOP_ZONE = 80;
+  const HEADER_REVEAL_ZONE = 24;
+
+  const clampNotesDockTop = useCallback((top: number) => {
+    if (typeof window === "undefined") {
+      return top;
+    }
+    const dockHeight = notesDockRef.current?.offsetHeight ?? 116;
+    const maxTop = Math.max(NOTES_DOCK_MIN_TOP, window.innerHeight - dockHeight - NOTES_DOCK_MARGIN);
+    return Math.min(Math.max(top, NOTES_DOCK_MIN_TOP), maxTop);
+  }, []);
 
   const handleScroll = useCallback(() => {
     // Find the scrollable element — main content area
@@ -117,6 +170,48 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   // The header is visually expanded when: not collapsed, OR hovered while collapsed
   const headerExpanded = !headerCollapsed || headerHovered;
+  const headerVisible = !headerCollapsed || headerHovered;
+
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) {
+      return;
+    }
+
+    const updateHeaderHeight = () => {
+      const nextHeight = Math.round(header.getBoundingClientRect().height);
+      setHeaderHeight((current) => (current === nextHeight ? current : nextHeight));
+    };
+
+    updateHeaderHeight();
+
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver(() => updateHeaderHeight());
+      observer.observe(header);
+      return () => observer.disconnect();
+    }
+
+    window.addEventListener("resize", updateHeaderHeight);
+    return () => window.removeEventListener("resize", updateHeaderHeight);
+  }, [headerExpanded]);
+
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      const target = event.target;
+      if (headerRef.current && target instanceof Node && headerRef.current.contains(target)) {
+        setHeaderHovered(true);
+        return;
+      }
+      if (event.clientY <= HEADER_REVEAL_ZONE) {
+        setHeaderHovered(true);
+        return;
+      }
+      setHeaderHovered(false);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   useEffect(() => {
     const updateTime = () => {
@@ -133,8 +228,52 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    setMobileNavOpen(false);
-  }, [location]);
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const defaultTop = Math.round(window.innerHeight * 0.34);
+    let storedTop = defaultTop;
+    try {
+      const raw = window.localStorage.getItem(NOTES_DOCK_STORAGE_KEY);
+      if (raw !== null) {
+        const parsed = Number(raw);
+        if (Number.isFinite(parsed)) {
+          storedTop = parsed;
+        }
+      }
+    } catch {
+      storedTop = defaultTop;
+    }
+    setNotesDockTop(clampNotesDockTop(storedTop));
+  }, [clampNotesDockTop]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || notesDockTop === null) {
+      return;
+    }
+    try {
+      window.localStorage.setItem(NOTES_DOCK_STORAGE_KEY, String(Math.round(notesDockTop)));
+    } catch {
+      // ignore localStorage write failures
+    }
+  }, [notesDockTop]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const handleResize = () => {
+      setNotesDockTop((current) => {
+        if (current === null) {
+          return current;
+        }
+        return clampNotesDockTop(current);
+      });
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [clampNotesDockTop]);
 
   useEffect(() => {
     (window as typeof window & { openTutor?: () => void }).openTutor = () => setLocation("/tutor");
@@ -356,24 +495,117 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setDragOverCategory(null);
   };
 
+  const handleNotesDockPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (notesDockTop === null) {
+      return;
+    }
+    const nextOffset = event.clientY - notesDockTop;
+    notesDockDragRef.current = {
+      pointerId: event.pointerId,
+      offsetY: nextOffset,
+      moved: false,
+    };
+    if (typeof event.currentTarget.setPointerCapture === "function") {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    setIsDraggingNotesDock(true);
+  };
+
+  const handleNotesDockPointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const dragState = notesDockDragRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) {
+      return;
+    }
+    const nextTop = clampNotesDockTop(event.clientY - dragState.offsetY);
+    if (notesDockTop !== null && Math.abs(nextTop - notesDockTop) > 3) {
+      dragState.moved = true;
+    }
+    setNotesDockTop(nextTop);
+  };
+
+  const handleNotesDockPointerUp = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const dragState = notesDockDragRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) {
+      return;
+    }
+    notesDockDragRef.current = dragState;
+    if (typeof event.currentTarget.releasePointerCapture === "function") {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    setIsDraggingNotesDock(false);
+  };
+
+  const handleNotesDockClick = () => {
+    const dragState = notesDockDragRef.current;
+    if (dragState?.moved) {
+      notesDockDragRef.current = null;
+      return;
+    }
+    notesDockDragRef.current = null;
+    setNotesOpen(true);
+  };
+
   return (
     <div
       className={cn(
-        "h-[100dvh] bg-background text-foreground relative font-terminal overflow-hidden",
+        "relative h-[100dvh] overflow-hidden bg-transparent font-terminal text-foreground",
         "grid grid-rows-[auto_1fr_auto]",
       )}
     >
-      {/* Background with overlay */}
-      <div
-        className="fixed inset-0 z-0 pointer-events-none"
-        style={{
-          backgroundImage: `linear-gradient(rgba(10, 10, 10, 0.25), rgba(10, 10, 10, 0.25)), url(${arcadeBg})`,
-          backgroundRepeat: "no-repeat",
-          backgroundPosition: "center",
-          backgroundSize: "cover",
-          opacity: 0.55,
-        }}
-      />
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_8%,rgba(255,58,98,0.22),transparent_24%),linear-gradient(180deg,rgba(15,0,4,0.72),rgba(0,0,0,0.18)_28%,rgba(0,0,0,0.82)_100%)]" />
+        <div
+          className="absolute left-1/2 top-[10vh] h-72 w-72 -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,65,105,0.4),rgba(255,65,105,0.14)_42%,transparent_72%)] blur-3xl md:h-[26rem] md:w-[26rem]"
+          aria-hidden="true"
+        />
+        <img
+          src={logoImg}
+          alt=""
+          aria-hidden="true"
+          className="absolute left-1/2 top-[8vh] w-[min(70vw,20rem)] -translate-x-1/2 opacity-30 mix-blend-screen saturate-0 md:w-[min(34vw,28rem)]"
+          style={{
+            filter:
+              "brightness(0) saturate(100%) invert(18%) sepia(90%) saturate(4232%) hue-rotate(339deg) brightness(123%) contrast(119%) drop-shadow(0 0 24px rgba(255,64,102,0.48))",
+          }}
+        />
+        <div
+          className="absolute left-[-8%] top-[10vh] hidden h-[34vh] w-[48vw] opacity-10 mix-blend-screen md:block"
+          style={{
+            backgroundImage: `url(${arcadeBg})`,
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "center",
+            backgroundSize: "cover",
+            transform: "scaleX(-1)",
+            filter: "brightness(0.85) saturate(0) sepia(1) hue-rotate(-25deg) saturate(8)",
+            maskImage: "linear-gradient(90deg, transparent 0, black 28%, black 78%, transparent 100%)",
+          }}
+          aria-hidden="true"
+        />
+        <div
+          className="absolute right-[-8%] top-[10vh] hidden h-[34vh] w-[48vw] opacity-10 mix-blend-screen md:block"
+          style={{
+            backgroundImage: `url(${arcadeBg})`,
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "center",
+            backgroundSize: "cover",
+            filter: "brightness(0.85) saturate(0) sepia(1) hue-rotate(-25deg) saturate(8)",
+            maskImage: "linear-gradient(90deg, transparent 0, black 22%, black 72%, transparent 100%)",
+          }}
+          aria-hidden="true"
+        />
+        <div className="absolute inset-x-[-8%] bottom-[28vh] h-px bg-[linear-gradient(90deg,transparent_0,rgba(255,74,110,0.8)_18%,rgba(255,255,255,0.92)_50%,rgba(255,74,110,0.8)_82%,transparent_100%)] shadow-[0_0_18px_rgba(255,74,110,0.7)]" />
+        <div
+          className="absolute inset-x-[-12%] bottom-[-8vh] h-[44vh] opacity-70"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255, 54, 96, 0.28) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 54, 96, 0.28) 1px, transparent 1px)",
+            backgroundSize: "64px 64px",
+            transform: "perspective(1200px) rotateX(78deg)",
+            transformOrigin: "bottom center",
+          }}
+          aria-hidden="true"
+        />
+      </div>
       <div className="fixed inset-0 z-10 crt-overlay pointer-events-none" />
 
       {/* CRT Scanlines */}
@@ -381,11 +613,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Top Nav — adaptive header */}
       <header
+        ref={headerRef}
         className={cn(
-          "relative z-20 bg-black/80 backdrop-blur-sm sticky top-0 transition-all duration-300 ease-out",
+          "relative z-20 sticky top-0 transition-[transform,margin,opacity] duration-300 ease-out will-change-transform",
+          "bg-[linear-gradient(180deg,rgba(5,5,5,0.92),rgba(12,6,8,0.82)_100%)] backdrop-blur-xl shadow-[0_14px_32px_rgba(0,0,0,0.35)]",
           "motion-reduce:transition-none",
+          headerVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0",
         )}
-        style={{ borderBottom: '4px double hsl(350 63% 49%)' }}
+        style={{
+          borderBottom: "1px solid rgba(255, 67, 102, 0.35)",
+          marginBottom: headerVisible ? 0 : `${-headerHeight}px`,
+        }}
         onMouseEnter={() => setHeaderHovered(true)}
         onMouseLeave={() => setHeaderHovered(false)}
         onTouchStart={() => {
@@ -396,146 +634,120 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           }
         }}
       >
-        <div className={cn(
-          "w-full px-3 flex flex-wrap items-center justify-between gap-2 transition-all duration-300 ease-out",
-          "motion-reduce:transition-none",
-          headerExpanded ? "py-2" : "py-1",
-        )}>
-          <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="md:hidden nav-btn p-1"
-              onClick={() => setMobileNavOpen(!mobileNavOpen)}
-              aria-label="Toggle navigation"
-            >
-              <Menu className="w-5 h-5" />
-            </Button>
-
-            <Link href="/">
-              <div className="flex items-center gap-2 cursor-pointer group">
-                <img
-                  src={logoImg}
-                  alt="Logo"
-                  className={cn(
-                    "object-cover transition-all duration-300 ease-out motion-reduce:transition-none",
-                    headerExpanded ? "w-8 h-8" : "w-5 h-5",
-                  )}
-                />
-                <span className={cn(
-                  "font-arcade text-white group-hover:text-primary transition-all duration-300 ease-out whitespace-nowrap phosphor-flicker motion-reduce:transition-none",
-                  headerExpanded
-                    ? "hidden lg:block text-xs"
-                    : "hidden xl:block text-[10px] text-white/70",
-                )}>TREY'S STUDY SYSTEM</span>
-              </div>
-            </Link>
-
-          <nav
-            className="hidden md:flex min-w-0 flex-1 items-center gap-2 overflow-x-auto overflow-y-hidden"
-            data-testid="nav-desktop-groups"
-          >
-            <div
-              className={cn(
-                "flex min-w-0 flex-wrap items-center transition-all duration-300 ease-out motion-reduce:transition-none",
-                headerExpanded ? "gap-1" : "gap-0.5",
-              )}
-              data-testid="nav-core-group"
-              aria-label="Core triad navigation"
-            >
-              {PRIMARY_NAV_ITEMS.map((item) => {
-                const isActive = currentPath === item.path;
-                return (
-                  <Link key={item.path} href={item.path}>
-                    <Button
-                      data-testid={`nav-${item.testId}`}
-                      variant="ghost"
-                      size="sm"
+        <div
+          className={cn(
+            "w-full px-2 sm:px-3 md:px-4 transition-all duration-300 ease-out motion-reduce:transition-none",
+            headerExpanded ? "py-3.5" : "py-2.5",
+          )}
+        >
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+              <Link href="/">
+                <div className="group flex cursor-pointer items-center gap-3 rounded-[1.25rem] border border-primary/20 bg-black/30 px-3 py-2 shadow-[0_12px_26px_rgba(0,0,0,0.24)] backdrop-blur-sm">
+                  <img
+                    src={logoImg}
+                    alt="Logo"
+                    className={cn(
+                      "rounded-full border border-primary/30 object-cover transition-all duration-300 ease-out motion-reduce:transition-none",
+                      headerExpanded ? "h-14 w-14 sm:h-16 sm:w-16" : "h-10 w-10 sm:h-11 sm:w-11",
+                    )}
+                  />
+                  <div className="min-w-0">
+                    <span
                       className={cn(
-                        "nav-btn font-arcade whitespace-nowrap transition-all duration-300 ease-out motion-reduce:transition-none",
-                        isActive && "active",
-                        !headerExpanded && "h-7 px-2 text-[10px]",
+                        "block whitespace-nowrap font-arcade text-white transition-all duration-300 ease-out group-hover:text-primary phosphor-flicker motion-reduce:transition-none",
+                        headerExpanded ? "text-[0.72rem] sm:text-[0.8rem]" : "text-[0.62rem] sm:text-[0.68rem] text-white/80",
                       )}
                     >
-                      <item.icon className={cn(
-                        "transition-all duration-300 ease-out motion-reduce:transition-none",
-                        headerExpanded ? "w-3 h-3 lg:mr-1" : "w-3 h-3 lg:mr-0.5",
-                      )} />
-                      <span className="hidden lg:inline">{item.label}</span>
-                    </Button>
-                  </Link>
-                );
-              })}
+                      TREY'S STUDY SYSTEM
+                    </span>
+                    <span className="block font-terminal text-[0.68rem] text-primary/80 sm:text-sm">
+                      Neural command deck
+                    </span>
+                  </div>
+                </div>
+              </Link>
             </div>
-            <div
-              className={cn(
-                "flex-shrink-0 items-center gap-2 px-1 text-[10px] font-arcade text-primary/60 transition-all duration-300 ease-out motion-reduce:transition-none",
-                headerExpanded ? "hidden lg:flex" : "hidden",
-              )}
-              data-testid="nav-core-label"
-            >
-              <span>STUDY TRIAD</span>
-              <span className="text-primary/30">|</span>
-            </div>
-            <div
-              className={cn(
-                "flex min-w-0 flex-wrap items-center transition-all duration-300 ease-out motion-reduce:transition-none",
-                headerExpanded ? "gap-1" : "gap-0.5",
-              )}
-              data-testid="nav-support-group"
-              aria-label="Support systems navigation"
-            >
-              {SUPPORT_NAV_ITEMS.map((item) => {
-                const isActive = currentPath === item.path;
-                return (
-                  <Link key={item.path} href={item.path}>
-                    <Button
-                      data-testid={`nav-${item.testId}`}
-                      variant="ghost"
-                      size="sm"
-                      className={cn(
-                        "nav-btn font-arcade whitespace-nowrap transition-all duration-300 ease-out motion-reduce:transition-none",
-                        isActive && "active",
-                        !headerExpanded && "h-7 px-2 text-[10px]",
-                      )}
-                    >
-                      <item.icon className={cn(
-                        "transition-all duration-300 ease-out motion-reduce:transition-none",
-                        headerExpanded ? "w-3 h-3 lg:mr-1" : "w-3 h-3 lg:mr-0.5",
-                      )} />
-                      <span className={cn(
-                        "hidden transition-all duration-300 ease-out motion-reduce:transition-none",
-                        headerExpanded ? "lg:inline" : "xl:inline",
-                      )}>{item.label}</span>
-                    </Button>
-                  </Link>
-                );
-              })}
-            </div>
-            <div
-              className={cn(
-                "flex-shrink-0 items-center gap-2 px-1 text-[10px] font-arcade text-primary/50 transition-all duration-300 ease-out motion-reduce:transition-none",
-                headerExpanded ? "hidden lg:flex" : "hidden",
-              )}
-              data-testid="nav-support-label"
-            >
-              <span>SUPPORT SYSTEMS</span>
-              <span className="text-primary/30">|</span>
-            </div>
-          </nav>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="nav-btn font-arcade border-primary/40 text-xs px-3">
-                  NOTES
-                </Button>
-              </SheetTrigger>
-              <SheetContent
-                className="bg-black border-l-4 border-t-[3px] border-b-[3px] border-double border-primary w-[340px] sm:w-[480px] lg:w-[520px] shadow-2xl overflow-y-auto z-[100001] inset-y-3 h-auto [&>button]:hidden"
-                style={{ zIndex: 100001 }}
+            <nav
+              className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:gap-2 md:justify-end"
+              data-testid="nav-desktop-groups"
+            >
+              <div
+                className={cn(
+                  "flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2 transition-all duration-300 ease-out motion-reduce:transition-none",
+                  !headerExpanded && "gap-1",
+                )}
+                data-testid="nav-core-group"
+                aria-label="Core triad navigation"
               >
+                {PRIMARY_NAV_ITEMS.map((item) => {
+                  const isActive = currentPath === item.path;
+                  return (
+                    <Link key={item.path} href={item.path}>
+                    <Button
+                      data-testid={`nav-${item.testId}`}
+                      variant="ghost"
+                      size="sm"
+                      className={navButtonClass(isActive, headerExpanded)}
+                    >
+                        <span className={navIconPadClass(item.testId, isActive)}>
+                          <item.icon
+                            className={cn(
+                              "h-3.5 w-3.5 shrink-0 transition-all duration-300 ease-out motion-reduce:transition-none",
+                              !headerExpanded && "h-3 w-3",
+                            )}
+                          />
+                        </span>
+                        <span>{item.label}</span>
+                      </Button>
+                    </Link>
+                  );
+                })}
+              </div>
+
+              <div
+                className={cn(
+                  "flex min-w-0 flex-wrap items-center gap-1.5 border-l border-primary/25 pl-2 sm:gap-2 md:pl-3 transition-all duration-300 ease-out motion-reduce:transition-none",
+                  !headerExpanded && "gap-1",
+                )}
+                data-testid="nav-support-group"
+                aria-label="Support systems navigation"
+              >
+                {SUPPORT_NAV_ITEMS.map((item) => {
+                  const isActive = currentPath === item.path;
+                  return (
+                    <Link key={item.path} href={item.path}>
+                    <Button
+                      data-testid={`nav-${item.testId}`}
+                      variant="ghost"
+                      size="sm"
+                      className={navButtonClass(isActive, headerExpanded)}
+                    >
+                        <span className={navIconPadClass(item.testId, isActive)}>
+                          <item.icon
+                            className={cn(
+                              "h-3.5 w-3.5 shrink-0 transition-all duration-300 ease-out motion-reduce:transition-none",
+                              !headerExpanded && "h-3 w-3",
+                            )}
+                          />
+                        </span>
+                        <span>{item.label}</span>
+                      </Button>
+                    </Link>
+                  );
+                })}
+              </div>
+            </nav>
+          </div>
+        </div>
+      </header>
+
+      <Sheet open={notesOpen} onOpenChange={setNotesOpen}>
+        <SheetContent
+          className="bg-black border-l-4 border-t-[3px] border-b-[3px] border-double border-primary w-[min(92vw,32rem)] sm:w-[30rem] lg:w-[34rem] shadow-2xl overflow-y-auto z-[100001] inset-y-3 h-auto [&>button]:hidden"
+          style={{ zIndex: 100001 }}
+        >
                 <div className="flex items-center gap-2 mb-4">
                   <SheetClose asChild>
                     <Button
@@ -719,67 +931,46 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     </ScrollArea>
                   </div>
                 </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-        </div>
+        </SheetContent>
+      </Sheet>
 
-        {/* Mobile nav dropdown */}
-        {mobileNavOpen && (
-          <nav className="md:hidden border-t border-primary/30 bg-black/95 px-3 py-2 space-y-2">
-            <div className="text-[10px] font-arcade text-primary/70">STUDY TRIAD</div>
-            <div className="flex flex-wrap gap-1">
-              {PRIMARY_NAV_ITEMS.map((item) => {
-                const isActive = currentPath === item.path;
-                return (
-                  <Link key={item.path} href={item.path}>
-                    <Button
-                      data-testid={`nav-${item.testId}`}
-                      variant="ghost"
-                      size="sm"
-                      className={cn("nav-btn font-arcade whitespace-nowrap", isActive && "active")}
-                      onClick={() => setMobileNavOpen(false)}
-                    >
-                      <item.icon className="w-3 h-3 mr-1" />
-                      <span className="text-xs">{item.label}</span>
-                    </Button>
-                  </Link>
-                );
-              })}
-            </div>
-            <div className="text-[10px] font-arcade text-primary/50">SUPPORT</div>
-            <div className="flex flex-wrap gap-1">
-              {SUPPORT_NAV_ITEMS.map((item) => {
-                const isActive = currentPath === item.path;
-                return (
-                  <Link key={item.path} href={item.path}>
-                    <Button
-                      data-testid={`nav-${item.testId}`}
-                      variant="ghost"
-                      size="sm"
-                      className={cn("nav-btn font-arcade whitespace-nowrap", isActive && "active")}
-                      onClick={() => setMobileNavOpen(false)}
-                    >
-                      <item.icon className="w-3 h-3 mr-1" />
-                      <span className="text-xs">{item.label}</span>
-                    </Button>
-                  </Link>
-                );
-              })}
-            </div>
-          </nav>
+      <button
+        ref={notesDockRef}
+        type="button"
+        className={cn(
+          "fixed right-0 z-40 flex min-h-[44px] min-w-[44px] -translate-y-1/2 rounded-l-none border-2 border-r-0 border-primary/60 bg-black/90 px-3 py-3 font-arcade text-xs text-primary shadow-xl backdrop-blur-sm transition-colors md:items-center md:gap-2",
+          notesOpen && "pointer-events-none opacity-0",
+          isDraggingNotesDock && "cursor-grabbing border-primary bg-primary/10",
         )}
-      </header>
+        style={{ top: notesDockTop === null ? "34%" : `${notesDockTop}px` }}
+        onPointerDown={handleNotesDockPointerDown}
+        onPointerMove={handleNotesDockPointerMove}
+        onPointerUp={handleNotesDockPointerUp}
+        onPointerCancel={handleNotesDockPointerUp}
+        onClick={handleNotesDockClick}
+        data-testid="notes-dock"
+        aria-label="Open notes panel"
+      >
+        <GripVertical className="h-4 w-4 shrink-0 text-primary/70" />
+        <span className="[writing-mode:vertical-rl] rotate-180 tracking-[0.3em]">NOTES</span>
+      </button>
 
       <main
         className={cn(
-          "relative z-10 w-full bg-grid h-full min-h-0",
-          isBrainPage || isTutorPage
+          "relative z-10 h-full min-h-0 w-full",
+          isWorkspaceRoute
             ? "overflow-hidden"
-            : "overflow-y-auto px-3 md:px-6 py-3"
+            : "overflow-y-auto px-2 py-3 sm:px-3 md:px-5 md:py-4"
         )}
       >
-        <div className={cn("page-enter", (isBrainPage || isTutorPage) && "h-full")}>{children}</div>
+        <div
+          className={cn(
+            "page-enter",
+            isWorkspaceRoute ? "h-full" : "app-route-shell min-h-full",
+          )}
+        >
+          {children}
+        </div>
       </main>
 
       {/* Footer */}

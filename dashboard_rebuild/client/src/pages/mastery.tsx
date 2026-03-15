@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Lock, Unlock, Trophy, ChevronDown, ChevronRight, AlertTriangle, ArrowRight } from "lucide-react";
 import Layout from "@/components/layout";
+import { PageScaffold } from "@/components/PageScaffold";
 import { api } from "@/lib/api";
 import type { MasterySkill, WhyLockedResponse } from "@/api";
 import { cn } from "@/lib/utils";
@@ -199,30 +200,19 @@ export default function MasteryPage() {
 
   return (
     <Layout>
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="font-arcade text-2xl text-primary">MASTERY</h1>
-            <p className="font-terminal text-xs text-muted-foreground">
-              Support system for Brain's mastery map, locked-skill diagnostics, and intervention signals.
-            </p>
-          </div>
-          <div className="flex items-center gap-4 font-terminal text-xs">
-            <span className="text-muted-foreground">
-              SKILLS: <span className="text-white">{skills.length}</span>
-            </span>
-            <span className="text-red-400">
-              <Lock className="w-3 h-3 inline mr-0.5" />{statusCounts.locked}
-            </span>
-            <span className="text-yellow-400">
-              <Unlock className="w-3 h-3 inline mr-0.5" />{statusCounts.available}
-            </span>
-            <span className="text-green-400">
-              <Trophy className="w-3 h-3 inline mr-0.5" />{statusCounts.mastered}
-            </span>
-          </div>
-        </div>
+      <PageScaffold
+        eyebrow="Brain Support System"
+        title="Mastery"
+        subtitle="Track the live skill graph, see what is still gated, and understand exactly why Brain has locked or unlocked each study path."
+        className="mx-auto max-w-6xl"
+        contentClassName="space-y-6"
+        stats={[
+          { label: "Skills", value: String(skills.length) },
+          { label: "Locked", value: String(statusCounts.locked), tone: "danger" },
+          { label: "Available", value: String(statusCounts.available), tone: "warn" },
+          { label: "Mastered", value: String(statusCounts.mastered), tone: "success" },
+        ]}
+      >
 
         {/* Loading */}
         {isLoading && (
@@ -267,7 +257,7 @@ export default function MasteryPage() {
         {selectedSkillId && whyLocked && (
           <WhyLockedPanel data={whyLocked} />
         )}
-      </div>
+      </PageScaffold>
     </Layout>
   );
 }

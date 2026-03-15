@@ -15,6 +15,7 @@ import {
   Zap,
 } from "lucide-react";
 import Layout from "@/components/layout";
+import { PageScaffold } from "@/components/PageScaffold";
 import { api } from "@/lib/api";
 import type {
   AiFieldSuggestion,
@@ -596,25 +597,19 @@ export default function VaultHealth() {
 
   return (
     <Layout>
-      <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-6">
-        <div className="flex flex-col gap-4 border-2 border-primary/20 bg-black/30 p-5 md:flex-row md:items-start md:justify-between">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <Shield className="h-6 w-6 text-primary" />
-              <h1 className="font-arcade text-lg tracking-[0.18em] text-primary">VAULT HEALTH</h1>
-            </div>
-            <p className="max-w-3xl font-terminal text-xs leading-6 text-muted-foreground">
-              Support system for Brain's Obsidian knowledge base. Full Scan checks routing, metadata, backlinks, and
-              unresolved wikilinks against the live vault contract. Batch Enrich only targets underlinked notes. Fix
-              applies deterministic patches. AI Fix proposes a change before anything is written to the support system.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
+      <PageScaffold
+        eyebrow="Brain Support System"
+        title="Vault Health"
+        subtitle="Monitor the live Obsidian contract, find routing or metadata drift fast, and repair underlinked notes without losing control of the support system."
+        className="mx-auto max-w-6xl"
+        contentClassName="space-y-6"
+        actions={
+          <>
             <button
               type="button"
               onClick={() => scanQuery.refetch()}
               disabled={scanQuery.isFetching}
-              className="border-2 border-primary/40 px-4 py-2 font-arcade text-xs text-primary hover:bg-primary/10 disabled:opacity-50"
+              className="rounded-[1rem] border border-primary/40 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.22)_100%)] px-4 py-2 font-arcade text-xs text-primary hover:-translate-y-0.5 hover:bg-primary/10 disabled:opacity-50"
             >
               {scanQuery.isFetching ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Shield className="mr-2 inline h-4 w-4" />}
               FULL SCAN
@@ -622,13 +617,14 @@ export default function VaultHealth() {
             <button
               type="button"
               onClick={handleBatchEnrich}
-              className="border-2 border-violet-400/50 px-4 py-2 font-arcade text-xs text-violet-300 hover:bg-violet-400/10"
+              className="rounded-[1rem] border border-violet-400/50 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.22)_100%)] px-4 py-2 font-arcade text-xs text-violet-300 hover:-translate-y-0.5 hover:bg-violet-400/10"
             >
               <Zap className="mr-2 inline h-4 w-4" />
               BATCH ENRICH
             </button>
-          </div>
-        </div>
+          </>
+        }
+      >
 
         <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
           <StatCard label="Markdown files" value={scanData?.total_markdown_files ?? 0} />
@@ -805,7 +801,7 @@ export default function VaultHealth() {
             onCancel={() => setAiModal(null)}
           />
         ) : null}
-      </div>
+      </PageScaffold>
     </Layout>
   );
 }

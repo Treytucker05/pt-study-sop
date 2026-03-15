@@ -1538,10 +1538,10 @@ export default function Tutor() {
 
   return (
     <Layout>
-      <div className="flex flex-col h-full min-h-0">
+      <div className="app-workspace-shell flex h-full min-h-0 flex-col">
         {/* ─── Main Content Area ─── */}
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex-none bg-black/40 border-b-2 border-primary/20 px-2 py-1.5">
+          <div className="flex-none border-b border-primary/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01)_18%,rgba(0,0,0,0.22)_100%)] px-2 py-1.5 backdrop-blur-sm">
             <div className="mb-1.5 flex items-center justify-between gap-3 border-b border-primary/10 pb-1.5">
               <div>
                 <div className="font-arcade text-xs text-primary">TUTOR</div>

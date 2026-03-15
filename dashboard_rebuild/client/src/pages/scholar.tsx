@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import Layout from "@/components/layout";
+import { PageScaffold } from "@/components/PageScaffold";
 import { ScholarRunStatus } from "@/components/ScholarRunStatus";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -256,38 +257,35 @@ export default function ScholarPage() {
 
   return (
     <Layout>
-      <div className="min-h-[calc(100vh-140px)] flex flex-col gap-6">
+      <PageScaffold
+        eyebrow="System Research Console"
+        title="Scholar"
+        subtitle="Investigate assumptions, gather external evidence, and record questions, findings, and uncertainty without turning this route into a teaching surface."
+        className="min-h-[calc(100vh-140px)]"
+        contentClassName="gap-6"
+        stats={[
+          { label: "Investigations", value: String(investigations.length) },
+          { label: "Open Questions", value: String(openQuestions.length), tone: "warn" },
+          { label: "Findings", value: String(findings.length), tone: "info" },
+        ]}
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            className="font-arcade text-xs border-primary/40"
+            onClick={() => {
+              queryClient.invalidateQueries({ queryKey: ["scholar-investigations"] });
+              queryClient.invalidateQueries({ queryKey: ["scholar-investigation"] });
+              queryClient.invalidateQueries({ queryKey: ["scholar-research-findings"] });
+              queryClient.invalidateQueries({ queryKey: ["scholar-research-questions"] });
+              queryClient.invalidateQueries({ queryKey: ["brain", "profile", "scholar-bridge"] });
+            }}
+          >
+            <RefreshCw className="w-3 h-3 mr-2" /> REFRESH
+          </Button>
+        }
+      >
         <div className="space-y-4 shrink-0">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-3">
-              <Search className="w-6 h-6 text-primary" />
-              <div>
-                <h1 className="font-arcade text-lg text-primary">SCHOLAR</h1>
-                <p className="font-terminal text-xs text-muted-foreground">
-                  Scholar is the system-facing investigation console behind Brain and Tutor. It challenges assumptions,
-                  researches external evidence, and records questions, findings, and uncertainty without turning into a
-                  teaching surface.
-                </p>
-              </div>
-              <Badge variant="outline" className="rounded-none text-xs font-terminal border-primary/50">
-                SYSTEM INVESTIGATION CONSOLE
-              </Badge>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-none font-arcade text-xs border-primary/40"
-              onClick={() => {
-                queryClient.invalidateQueries({ queryKey: ["scholar-investigations"] });
-                queryClient.invalidateQueries({ queryKey: ["scholar-investigation"] });
-                queryClient.invalidateQueries({ queryKey: ["scholar-research-findings"] });
-                queryClient.invalidateQueries({ queryKey: ["scholar-research-questions"] });
-                queryClient.invalidateQueries({ queryKey: ["brain", "profile", "scholar-bridge"] });
-              }}
-            >
-              <RefreshCw className="w-3 h-3 mr-2" /> REFRESH
-            </Button>
-          </div>
 
           {brainLaunchContext?.title ? (
             <div
@@ -846,7 +844,7 @@ export default function ScholarPage() {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
+      </PageScaffold>
     </Layout>
   );
 }

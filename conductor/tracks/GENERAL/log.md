@@ -259,3 +259,24 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - moved legacy root state folders `.agent/` and `.sisyphus/` to `docs/archive/root_state/agent_legacy_20260314/` and `docs/archive/root_state/sisyphus_legacy_20260314/`
   - updated active references in `conductor/tracks.md`, `conductor/product-guidelines.md`, `docs/project/REPO_HYGIENE.md`, and `scripts/audit_repo_hygiene.py`
   - confirmed `python scripts/audit_repo_hygiene.py` still exits cleanly with only pre-existing warning classes
+
+## 2026-03-15 - Cyber-brain theme unification
+
+- Shipped a shared holographic shell backdrop in `dashboard_rebuild/client/src/components/layout.tsx` and `dashboard_rebuild/client/src/index.css` using a red brain silhouette, horizon line, and perspective grid floor inspired by the reference image.
+- Upgraded the shared visual primitives in:
+  - `dashboard_rebuild/client/src/components/ui/button.tsx`
+  - `dashboard_rebuild/client/src/components/ui/card.tsx`
+  - `dashboard_rebuild/client/src/components/ui/input.tsx`
+  - `dashboard_rebuild/client/src/components/ui/textarea.tsx`
+  - `dashboard_rebuild/client/src/lib/theme.ts`
+- Added `dashboard_rebuild/client/src/components/PageScaffold.tsx` and aligned the top-level route headers across:
+  - `dashboard_rebuild/client/src/pages/calendar.tsx`
+  - `dashboard_rebuild/client/src/pages/library.tsx`
+  - `dashboard_rebuild/client/src/pages/mastery.tsx`
+  - `dashboard_rebuild/client/src/pages/methods.tsx`
+  - `dashboard_rebuild/client/src/pages/scholar.tsx`
+  - `dashboard_rebuild/client/src/pages/vault-health.tsx`
+  - plus workspace-shell framing updates in `brain.tsx` and `tutor.tsx`
+- Validation passed:
+  - `npm run test -- client/src/components/__tests__/layout.test.tsx`
+  - `cd dashboard_rebuild && npm run build`

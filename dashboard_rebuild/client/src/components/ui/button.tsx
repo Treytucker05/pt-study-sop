@@ -4,23 +4,23 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-none border-2 font-arcade text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[1rem] border font-arcade text-sm transition-[transform,box-shadow,background-color,border-color,color] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 shadow-[0_10px_20px_rgba(0,0,0,0.24)]",
   {
     variants: {
       variant: {
         default:
-          "border-primary bg-primary text-black hover:bg-primary/85",
+          "border-primary/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.2),rgba(255,86,120,0.2)_44%,rgba(26,4,10,0.92)_100%)] text-white hover:-translate-y-0.5 hover:border-primary/80 hover:shadow-[0_12px_26px_rgba(0,0,0,0.28),0_0_18px_rgba(255,86,120,0.2)] active:translate-y-[1px]",
         outline:
-          "border-primary/40 bg-black/40 text-primary hover:border-primary hover:bg-primary/10",
+          "border-primary/30 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.22)_100%)] text-primary hover:-translate-y-0.5 hover:border-primary/60 hover:bg-primary/12 hover:text-white",
         ghost:
-          "border-transparent bg-transparent text-muted-foreground hover:border-primary/30 hover:bg-primary/10 hover:text-primary",
+          "border-transparent bg-transparent text-muted-foreground shadow-none hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/10 hover:text-primary",
         destructive:
-          "border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/85",
+          "border-destructive/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(248,113,113,0.16)_44%,rgba(32,6,6,0.9)_100%)] text-destructive-foreground hover:-translate-y-0.5 hover:bg-destructive/80",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 px-3 text-xs",
-        icon: "h-9 w-9 p-0",
+        default: "h-11 min-h-[44px] px-4 py-2",
+        sm: "h-10 min-h-[44px] px-3 text-xs",
+        icon: "h-11 w-11 min-h-[44px] min-w-[44px] p-0",
       },
     },
     defaultVariants: {

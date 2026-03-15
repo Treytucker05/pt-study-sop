@@ -1,4 +1,5 @@
 import Layout from "@/components/layout";
+import { PageScaffold } from "@/components/PageScaffold";
 import { useState, useEffect, useMemo, type ReactElement } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -1165,53 +1166,28 @@ export default function Library() {
 
   return (
     <Layout>
-      <div className="space-y-3 h-full min-h-[72vh] flex flex-col">
-        <div className="flex items-center justify-between">
-          <div className="flex items-start gap-2">
-            <BookOpen className={`${ICON_MD} mt-1`} />
-            <div>
-              <h1 className={TEXT_PAGE_TITLE}>MATERIALS LIBRARY</h1>
-              <p className="font-terminal text-xs text-muted-foreground">
-                Support system for Brain-owned study materials, Tutor scope, and clean handoff into live study.
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <Badge
-                  variant="outline"
-                  className={`${TEXT_BADGE} h-5 px-2`}
-                  data-testid="library-embed-provider"
-                >
-                  Tutor embeddings: {(embedStatus?.provider || "unknown").toUpperCase()} · {embedStatus?.model || "unknown"}
-                </Badge>
-                <Badge variant="outline" className={`${TEXT_BADGE} h-5 px-2`}>
-                  {embedStatus?.embedded ?? 0}/{embedStatus?.total ?? 0} materials live
-                </Badge>
-                {(embedStatus?.stale ?? 0) > 0 ? (
-                  <Badge
-                    variant="outline"
-                    className={`${TEXT_BADGE} h-5 px-2 border-yellow-500/40 text-yellow-300`}
-                    data-testid="library-embed-stale"
-                  >
-                    {embedStatus?.stale} material{embedStatus?.stale === 1 ? "" : "s"} need re-embed
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className={`${TEXT_BADGE} h-5 px-2`}>
-                    No stale embeddings
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className={`${TEXT_BADGE} h-5 px-2`}>
-              {materials.length} files
-            </Badge>
-            <Badge variant="outline" className={`${TEXT_BADGE} h-5 px-2`}>
-              {folderItems.length} folders
-            </Badge>
-          </div>
-        </div>
-
-        <div className="brain-workspace brain-workspace--ready relative flex-1 min-h-[70vh] w-full overflow-hidden">
+      <PageScaffold
+        eyebrow="Library Support System"
+        title="Materials Library"
+        subtitle="Brain-owned study materials, Tutor scope, and clean handoff into live study all run through one intake surface."
+        className="flex h-full min-h-[72vh] flex-col"
+        contentClassName="flex-1 min-h-0"
+        stats={[
+          {
+            label: "Embeddings",
+            value: `${(embedStatus?.provider || "unknown").toUpperCase()} · ${embedStatus?.model || "unknown"}`,
+            tone: "info",
+          },
+          { label: "Materials", value: `${materials.length} files` },
+          { label: "Folders", value: `${folderItems.length} folders` },
+          {
+            label: "Re-embed",
+            value: (embedStatus?.stale ?? 0) > 0 ? `${embedStatus?.stale} pending` : "None",
+            tone: (embedStatus?.stale ?? 0) > 0 ? "warn" : "success",
+          },
+        ]}
+      >
+        <div className="brain-workspace brain-workspace--ready app-workspace-shell relative flex-1 min-h-[70vh] w-full overflow-hidden">
           <div className="flex flex-col lg:flex-row h-full min-h-0">
             <aside className="brain-workspace__sidebar-wrap w-full lg:w-80 shrink-0 border-b lg:border-b-0 lg:border-r border-primary/30 bg-black/40 flex flex-col min-h-0 max-h-[40vh] lg:max-h-none">
               <div className={`${PANEL_PADDING} border-b border-primary/20`}>
@@ -1796,7 +1772,6 @@ export default function Library() {
             </section>
           </div>
         </div>
-      </div>
 
       <Dialog open={viewingMaterialId !== null} onOpenChange={(open) => { if (!open) setViewingMaterialId(null); }}>
         <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col gap-0">
@@ -1909,6 +1884,7 @@ export default function Library() {
           </div>
         </DialogContent>
       </Dialog>
+      </PageScaffold>
     </Layout>
   );
 }

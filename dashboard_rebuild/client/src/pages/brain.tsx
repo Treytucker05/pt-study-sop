@@ -21,10 +21,10 @@ export default function Brain() {
   return (
     <Layout>
       <div
-        className={`relative z-30 flex h-full min-h-0 w-full flex-col overflow-hidden ${ready ? "brain-workspace--ready" : ""}`}
+        className={`app-workspace-shell relative z-30 flex h-full min-h-0 w-full flex-col overflow-hidden ${ready ? "brain-workspace--ready" : ""}`}
         data-active-tab={workspace.mainMode}
       >
-        <div className="flex-1 min-h-0 border border-primary/20 bg-black/35">
+        <div className="flex-1 min-h-0 bg-black/25">
           <MainContent workspace={workspace} />
         </div>
       </div>

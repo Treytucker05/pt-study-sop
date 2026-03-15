@@ -14,7 +14,12 @@ Active execution priority is tracked in `docs/root/TUTOR_TODO.md`.
 
 Active status: 0 active workstreams.
 
-Latest update: 2026-03-15, Tutor Page 1 Command Deck closed after shipping the `DashBoard`-first shell correction, Tutor hub aggregate contract, and cross-surface launch wiring.
+Latest update: 2026-03-15, Cyber-Brain Theme Unification closed after shipping the holographic shell backdrop, shared page scaffold, and top-level route alignment.
+
+- [x] **Track: Cyber-Brain Theme Unification** (complete — created 2026-03-15; closed 2026-03-15; scope: shared shell/background refresh, shared visual primitives, and top-level route alignment around the cyber-brain reference)
+  *Link: [./tracks/cyber-brain-theme-unification_20260315/](./tracks/cyber-brain-theme-unification_20260315/)*
+
+---
 
 - [x] **Track: Tutor Page 1 Command Deck** (complete — created 2026-03-15; closed 2026-03-15; scope: `DashBoard`-first command deck, Tutor hub aggregate API, schedule/library handoff wiring, Studio L2 project entry, targeted tests and validation)
   *Link: [./tracks/tutor-page1-command-deck_20260315/](./tracks/tutor-page1-command-deck_20260315/)*

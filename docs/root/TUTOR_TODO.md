@@ -26,6 +26,31 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 
 ## Active Sprint 2026-03-13
 
+### Sprint: Cyber-Brain Theme Unification (2026-03-15)
+- [x] CBTU-100. Unify the shared shell and top-level support pages under a responsive cyber-brain visual system inspired by the red holographic brain reference.
+  - Track: `conductor/tracks/cyber-brain-theme-unification_20260315/`
+  - Scope:
+    - `dashboard_rebuild/client/src/index.css`
+    - `dashboard_rebuild/client/src/components/layout.tsx`
+    - `dashboard_rebuild/client/src/components/ui/button.tsx`
+    - `dashboard_rebuild/client/src/components/ui/card.tsx`
+    - `dashboard_rebuild/client/src/lib/theme.ts`
+    - `dashboard_rebuild/client/src/pages/brain.tsx`
+    - `dashboard_rebuild/client/src/pages/scholar.tsx`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/pages/library.tsx`
+    - `dashboard_rebuild/client/src/pages/calendar.tsx`
+    - `dashboard_rebuild/client/src/pages/mastery.tsx`
+    - `dashboard_rebuild/client/src/pages/methods.tsx`
+    - `dashboard_rebuild/client/src/pages/vault-health.tsx`
+    - targeted layout/frontend tests
+  - Done when:
+    - the shared shell/background carries the cyber-brain grid/hologram look
+    - page headers and content frames use one consistent responsive visual system
+    - top-level support pages visually align with the same theme instead of ad-hoc layouts
+    - the nav/header still behaves correctly and required frontend validation passes
+  - Completed 2026-03-15: shipped the holographic shell backdrop, upgraded shared panel/button/input primitives, added a reusable `PageScaffold`, aligned Brain/Tutor workspaces plus the Calendar/Library/Mastery/Methods/Scholar/Vault Health route headers to the same responsive theme, and passed `npm run test -- client/src/components/__tests__/layout.test.tsx` plus `cd dashboard_rebuild && npm run build`.
+
 ### Sprint: Tutor Page 1 Command Deck (2026-03-15)
 - [x] TPCD-100. Ship the responsive `DashBoard` command deck as the first Tutor shell page and wire its CTAs into the existing Tutor, Schedule, Studio, and Library surfaces.
   - Track: `conductor/tracks/tutor-page1-command-deck_20260315/`

@@ -12,6 +12,7 @@ import MethodBlockCard from "@/components/MethodBlockCard";
 import ChainBuilder from "@/components/ChainBuilder";
 import MethodAnalytics from "@/components/MethodAnalytics";
 import RatingDialog from "@/components/RatingDialog";
+import { PageScaffold } from "@/components/PageScaffold";
 import { api } from "@/lib/api";
 import { DISPLAY_STAGE_LABELS, getDisplayStage, type DisplayStage } from "@/lib/displayStage";
 import type { MethodBlock, MethodChain, MethodChainExpanded, ChainRunResult, ChainRunSummary, MethodCategory } from "@/api";
@@ -230,16 +231,19 @@ export default function MethodsPage() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-arcade text-xl text-primary">METHOD_LIBRARY</h1>
-            <p className="font-terminal text-base text-muted-foreground">
-              Support system for Tutor's method library, chains, ratings, and control-plane optimization.
-            </p>
-          </div>
-        </div>
+      <PageScaffold
+        eyebrow="Tutor Support System"
+        title="Method Library"
+        subtitle="Control the building blocks, chains, and ratings that shape how Tutor teaches, evaluates, and sequences study moves."
+        className="mx-auto max-w-7xl"
+        contentClassName="space-y-6"
+        stats={[
+          { label: "Blocks", value: String(blocks.length) },
+          { label: "Chains", value: String(chains.length), tone: "info" },
+          { label: "Favorites", value: String(favoriteMethodIds.length), tone: "warn" },
+          { label: "Runs", value: String(runHistory.length), tone: "success" },
+        ]}
+      >
 
         {/* Tabs */}
         <div className="flex gap-1 border-b-2 border-primary/30 pb-0">
@@ -618,7 +622,7 @@ export default function MethodsPage() {
             targetType={ratingTarget.type}
           />
         )}
-      </div>
+      </PageScaffold>
     </Layout>
   );
 }

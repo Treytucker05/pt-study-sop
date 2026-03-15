@@ -1,4 +1,5 @@
 import Layout from "@/components/layout";
+import { PageScaffold } from "@/components/PageScaffold";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useState, useMemo, useEffect } from "react";
@@ -1468,7 +1469,18 @@ export default function CalendarPage() {
         </div>
       )}
 
-      <div className="h-[calc(100vh-80px)]">
+      <PageScaffold
+        eyebrow="Schedule Support System"
+        title="Calendar"
+        subtitle="Keep the schedule truth, deadlines, and Tutor-adjacent planning surfaces aligned in one cybernetic timeline."
+        className="h-[calc(100vh-80px)]"
+        contentClassName="h-full min-h-0"
+        stats={[
+          { label: "Visible", value: String(filteredEvents.length) },
+          { label: "Local", value: String(localEvents.length), tone: "info" },
+          { label: "Google", value: String(googleEvents.length), tone: googleConnected ? "success" : "warn" },
+        ]}
+      >
 
         {/* Main Calendar - Full Width */}
         <div className="flex flex-col h-full">
@@ -1857,7 +1869,7 @@ export default function CalendarPage() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </PageScaffold>
 
       {/* Create Modal */}
       <Dialog open={showEventModal} onOpenChange={setShowEventModal}>

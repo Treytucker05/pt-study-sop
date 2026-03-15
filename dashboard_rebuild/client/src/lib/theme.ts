@@ -15,14 +15,14 @@
 // ---------------------------------------------------------------------------
 
 /** Page-level header: "DASHBOARD", "TUTOR", etc. */
-export const TEXT_PAGE_TITLE = "font-arcade text-xl text-primary tracking-widest";
+export const TEXT_PAGE_TITLE = "font-arcade text-xl text-primary tracking-[0.22em] uppercase";
 
 /** Panel/card header: "CONTENT FILTER", "ARTIFACTS" */
-export const TEXT_PANEL_TITLE = "font-arcade text-base text-primary tracking-widest";
+export const TEXT_PANEL_TITLE = "font-arcade text-base text-primary tracking-[0.18em] uppercase";
 
 /** Section label: "MODE", "TOPIC", "COURSE" */
 export const TEXT_SECTION_LABEL =
-  "font-arcade text-sm text-primary/70 uppercase tracking-widest";
+  "font-arcade text-sm text-primary/70 uppercase tracking-[0.18em]";
 
 /** Primary body text (lists, names, content) */
 export const TEXT_BODY = "font-terminal text-lg text-foreground";
@@ -57,19 +57,19 @@ export const SELECT_BASE =
 
 /** Primary action button */
 export const BTN_PRIMARY =
-  "w-full rounded-none border-2 border-primary font-arcade text-sm h-10 bg-primary/10 hover:bg-primary/20";
+  "w-full min-h-[44px] rounded-[1rem] border border-primary/50 bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(255,86,120,0.16)_44%,rgba(26,4,10,0.92)_100%)] font-arcade text-sm text-white shadow-[0_12px_26px_rgba(0,0,0,0.28)] hover:-translate-y-0.5 hover:border-primary/80";
 
 /** Secondary/outline button */
 export const BTN_OUTLINE =
-  "rounded-none border border-muted-foreground/30 font-arcade text-sm h-9 hover:border-muted-foreground/50";
+  "min-h-[44px] rounded-[1rem] border border-muted-foreground/30 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.2)_100%)] font-arcade text-sm hover:-translate-y-0.5 hover:border-primary/50";
 
 /** Toolbar toggle button (inactive) */
 export const BTN_TOOLBAR =
-  "h-8 rounded-none font-arcade text-xs px-3 text-muted-foreground hover:text-primary border-2 border-transparent";
+  "min-h-[44px] rounded-[0.95rem] font-arcade text-xs px-3 text-muted-foreground hover:text-primary border border-transparent";
 
 /** Toolbar toggle button (active) */
 export const BTN_TOOLBAR_ACTIVE =
-  "h-8 rounded-none font-arcade text-xs px-3 text-primary bg-primary/15 border-2 border-primary/40";
+  "min-h-[44px] rounded-[0.95rem] font-arcade text-xs px-3 text-primary bg-primary/15 border border-primary/40 shadow-[0_0_18px_rgba(255,86,120,0.16)]";
 
 // ---------------------------------------------------------------------------
 // Layout
@@ -82,10 +82,10 @@ export const PANEL_PADDING = "p-3";
 export const SECTION_GAP = "space-y-3";
 
 /** Card border style */
-export const CARD_BORDER = "border-2 border-primary rounded-none";
+export const CARD_BORDER = "app-panel border border-primary/30 rounded-[1.35rem]";
 
 /** Card border (secondary) */
-export const CARD_BORDER_SECONDARY = "border-2 border-primary/40 rounded-none";
+export const CARD_BORDER_SECONDARY = "app-panel border border-primary/20 rounded-[1.35rem]";
 
 // ---------------------------------------------------------------------------
 // Icons
