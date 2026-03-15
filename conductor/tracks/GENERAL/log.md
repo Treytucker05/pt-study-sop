@@ -236,3 +236,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `python scripts/check_docs_sync.py`
   - `python scripts/check_exports_drift.py`
   - `git diff --check`
+- Follow-up archive pass:
+  - moved legacy root state folders `.agent/` and `.sisyphus/` to `docs/archive/root_state/agent_legacy_20260314/` and `docs/archive/root_state/sisyphus_legacy_20260314/`
+  - updated active references in `conductor/tracks.md`, `conductor/product-guidelines.md`, `docs/project/REPO_HYGIENE.md`, and `scripts/audit_repo_hygiene.py`
+  - confirmed `python scripts/audit_repo_hygiene.py` still exits cleanly with only pre-existing warning classes

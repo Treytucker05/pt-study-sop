@@ -28,7 +28,7 @@ These guidelines constrain decisions, implementation, and manual verification pl
   and validation checks (e.g. validate_project_hub.py REQUIRED_FILES) in the
   same commit.
 - When deprecating a tool or workflow, grep for all references across docs/,
-  scripts/, and .agent/ and update or remove them.
+  scripts/, and conductor/ and update or remove them.
 - Generated context dumps (ARCHITECTURE_CONTEXT.md) are gitignored.
   Regenerate on demand with `generate_architecture_dump.ps1`.
 

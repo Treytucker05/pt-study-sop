@@ -30,7 +30,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - [x] RHS-210. Remove leftover root-level scratch files, caches, and stale review artifacts that no longer belong in the active repo workspace.
   - Scope: ignored scratch outputs, temp caches, root-level review/prompts, duplicate leftover data exports, and any tracked leftovers proven unused by repo search.
   - Done when: obvious junk is removed, tracked deletions are reference-checked first, validation stays green, and the cleanup is logged and pushed.
-  - Completed 2026-03-14: removed root review artifacts, obsolete study-text leftovers, stale CSV exports, Playwright snapshot debris, ignored local scratch files/directories, and unused tracked export reports; passed `python scripts/check_docs_sync.py`, `python scripts/check_exports_drift.py`, and `git diff --check`.
+  - Completed 2026-03-14: removed root review artifacts, obsolete study-text leftovers, stale CSV exports, Playwright snapshot debris, ignored local scratch files/directories, and unused tracked export reports; archived legacy `.agent/` and `.sisyphus/` root state under `docs/archive/root_state/`; passed `python scripts/check_docs_sync.py`, `python scripts/check_exports_drift.py`, `python scripts/audit_repo_hygiene.py`, and `git diff --check`.
 
 ### Sprint: Tutor Shell Cleanup Packaging (2026-03-14)
 - [x] TSC-200. Remove transient design artifacts, keep only intentional Tutor shell source changes, and package the repo for push.

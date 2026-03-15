@@ -9,7 +9,7 @@
 - Stub "moved to ..." README files or placeholders.
 
 ## Audit enforcement
-- Planning-keyword warnings ignore `.agent/`, `.sisyphus/`, `archive/`.
+- Planning-keyword warnings ignore archived legacy state under `docs/archive/` and `archive/`.
 - Disallowed-name patterns are fatal only in `docs/project/`, `docs/prd/`, and `conductor/tracks/`.
 
 ## Hygiene audit exemptions

@@ -18,7 +18,6 @@ IGNORE_DIRS = {
 }
 
 PLANNING_IGNORE_PREFIXES = [
-    ROOT / ".agent",
     ROOT / "JANUARY_26_PLAN",
     ROOT / "scripts" / "ralph",
     ROOT / "scripts" / "_ai_config_backups",

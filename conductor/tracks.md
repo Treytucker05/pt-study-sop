@@ -119,7 +119,7 @@ Latest update: 2026-03-14, Trey Agent Repo Readiness closed after cross-agent pr
 
 - [x] **Track: Vault Redesign (Obsidian CLI Migration)** (complete — created 2026-03-01; closed 2026-03-03; 27 tasks across 5 waves, 141 targeted tests)
   Full CLI migration (REST -> CLI), 5 block artifact templates, Map of Contents renderer, LO extraction pipeline, vault_write_status toasts, fire-and-forget block writes. 916 tests passing.
-  *Plan: `.sisyphus/plans/vault-redesign.md`*
+  *Plan: [./../docs/archive/root_state/sisyphus_legacy_20260314/plans/vault-redesign.md](./../docs/archive/root_state/sisyphus_legacy_20260314/plans/vault-redesign.md)*
 
 - [x] **Track: Tutor Audit Remediation (P0/P1)** (complete — created 2026-03-02; closed 2026-03-02; 10 tasks, 10 tests)
   Fix save-wrap URL, session summary contract, chain progress shape, artifact type mapping.
