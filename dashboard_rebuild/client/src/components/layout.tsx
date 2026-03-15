@@ -171,18 +171,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [currentTime, setCurrentTime] = useState("");
   const notesDockRef = useRef<HTMLButtonElement | null>(null);
   const notesDockDragRef = useRef<{ pointerId: number; offsetY: number; moved: boolean } | null>(null);
-  const headerRef = useRef<HTMLElement | null>(null);
-
   // ─── Adaptive header state ───
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
-  const [headerHovered, setHeaderHovered] = useState(false);
   const lastScrollY = useRef(0);
   const lastScrollSource = useRef<EventTarget | null>(null);
   const scrollAccumulator = useRef(0);
   const SCROLL_DOWN_THRESHOLD = 40;
   const SCROLL_UP_THRESHOLD = 20;
   const TOP_ZONE = 80;
-  const HEADER_REVEAL_ZONE = 24;
 
   const clampNotesDockTop = useCallback((top: number) => {
     if (typeof window === "undefined") {
@@ -257,26 +253,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     };
   }, [handleScroll]);
 
-  // The header is visually expanded when: not compact, OR hovered while compact.
-  const headerExpanded = !headerCollapsed || headerHovered;
-
-  useEffect(() => {
-    const handleMouseMove = (event: MouseEvent) => {
-      const target = event.target;
-      if (headerRef.current && target instanceof Node && headerRef.current.contains(target)) {
-        setHeaderHovered(true);
-        return;
-      }
-      if (event.clientY <= HEADER_REVEAL_ZONE) {
-        setHeaderHovered(true);
-        return;
-      }
-      setHeaderHovered(false);
-    };
-
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
+  const headerExpanded = !headerCollapsed;
 
   useEffect(() => {
     const updateTime = () => {
@@ -637,7 +614,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Top Nav — adaptive header */}
       <header
-        ref={headerRef}
         className={cn(
           "relative z-20 sticky top-0 transition-[padding,box-shadow,background-color,opacity] duration-300 ease-out will-change-transform",
           "bg-[linear-gradient(180deg,rgba(5,5,5,0.92),rgba(12,6,8,0.82)_100%)] backdrop-blur-xl shadow-[0_14px_32px_rgba(0,0,0,0.35)]",
@@ -648,15 +624,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         )}
         style={{ borderBottom: "1px solid rgba(255, 67, 102, 0.35)" }}
         data-header-state={headerExpanded ? "expanded" : "compact"}
-        onMouseEnter={() => setHeaderHovered(true)}
-        onMouseLeave={() => setHeaderHovered(false)}
-        onTouchStart={() => {
-          if (headerCollapsed) {
-            setHeaderHovered(true);
-            // Auto-dismiss after 3s on touch
-            setTimeout(() => setHeaderHovered(false), 3000);
-          }
-        }}
       >
         <div
           className={cn(
