@@ -11,9 +11,9 @@ import {
   Send,
 } from "lucide-react";
 
+import { CoreWorkspaceFrame } from "@/components/CoreWorkspaceFrame";
 import Layout from "@/components/layout";
 import { PageScaffold } from "@/components/PageScaffold";
-import { SupportWorkspaceFrame } from "@/components/SupportWorkspaceFrame";
 import { ScholarRunStatus } from "@/components/ScholarRunStatus";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -412,10 +412,10 @@ export default function ScholarPage() {
         }
       >
         <Tabs value={activeTab} onValueChange={setActiveTab} className="min-h-[70vh]">
-          <SupportWorkspaceFrame
+          <CoreWorkspaceFrame
             sidebar={scholarSidebar}
-            commandBand={scholarCommandBand}
-            contentClassName="gap-4"
+            topBar={scholarCommandBand}
+            contentClassName="gap-4 p-3 md:p-4"
           >
           <TabsContent value="workspace" className="mt-0">
             <div className="grid gap-4 xl:grid-cols-[430px_minmax(0,1fr)]">
@@ -845,7 +845,7 @@ export default function ScholarPage() {
               </CardContent>
             </Card>
           </TabsContent>
-          </SupportWorkspaceFrame>
+          </CoreWorkspaceFrame>
         </Tabs>
       </PageScaffold>
     </Layout>

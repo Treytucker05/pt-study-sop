@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
+import { CoreWorkspaceFrame } from "@/components/CoreWorkspaceFrame";
+import { PageScaffold } from "@/components/PageScaffold";
 import Layout from "@/components/layout";
 import { MainContent } from "@/components/brain/MainContent";
 import { useBrainWorkspace } from "@/components/brain/useBrainWorkspace";
@@ -20,14 +22,40 @@ export default function Brain() {
 
   return (
     <Layout>
-      <div
-        className={`app-workspace-shell relative z-30 flex h-full min-h-0 w-full flex-col overflow-hidden ${ready ? "brain-workspace--ready" : ""}`}
-        data-active-tab={workspace.mainMode}
+      <PageScaffold
+        eyebrow="System Command Core"
+        title="Brain"
+        subtitle="Run the primary operating surface for focus, course routing, profile state, and downstream study-system handoff without breaking the central command deck feel."
+        className="min-h-[calc(100vh-140px)]"
+        contentClassName="gap-6"
+        stats={[
+          { label: "Mode", value: String(workspace.mainMode).toUpperCase() },
+          {
+            label: "Obsidian",
+            value: workspace.obsidianStatus?.connected ? "Connected" : "Offline",
+            tone: workspace.obsidianStatus?.connected ? "success" : "warn",
+          },
+          {
+            label: "Anki",
+            value: workspace.ankiStatus?.connected ? "Connected" : "Offline",
+            tone: workspace.ankiStatus?.connected ? "success" : "warn",
+          },
+          {
+            label: "Drafts",
+            value: String(workspace.pendingDrafts.length),
+            tone: workspace.pendingDrafts.length > 0 ? "info" : "default",
+          },
+        ]}
       >
-        <div className="flex-1 min-h-0 bg-black/25">
+        <CoreWorkspaceFrame
+          ready={ready}
+          className="relative z-30"
+          mainClassName="bg-black/25"
+          contentClassName="min-h-0 bg-black/25"
+        >
           <MainContent workspace={workspace} />
-        </div>
-      </div>
+        </CoreWorkspaceFrame>
+      </PageScaffold>
     </Layout>
   );
 }

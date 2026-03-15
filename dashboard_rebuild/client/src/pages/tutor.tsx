@@ -1,4 +1,6 @@
 import Layout from "@/components/layout";
+import { CoreWorkspaceFrame } from "@/components/CoreWorkspaceFrame";
+import { PageScaffold } from "@/components/PageScaffold";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -86,6 +88,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
+  RefreshCw,
   SlidersHorizontal,
 } from "lucide-react";
 import {
@@ -1536,247 +1539,285 @@ export default function Tutor() {
     ]);
   }, [queryClient]);
 
-  return (
-    <Layout>
-      <div className="app-workspace-shell flex h-full min-h-0 flex-col">
-        {/* ─── Main Content Area ─── */}
-        <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex-none border-b border-primary/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01)_18%,rgba(0,0,0,0.22)_100%)] px-2 py-1.5 backdrop-blur-sm">
-            <div className="mb-1.5 flex items-center justify-between gap-3 border-b border-primary/10 pb-1.5">
-              <div>
-                <div className="font-arcade text-xs text-primary">TUTOR</div>
-                <div className="font-terminal text-[11px] text-muted-foreground">
-                  Brain's default live study surface for guided sessions, artifacts, and next-step handoff.
-                </div>
-              </div>
-              {!activeSessionId ? (
-                <Badge variant="outline" className={`${TEXT_BADGE} h-6 px-2 shrink-0 border-primary/30`}>
-                  BRAIN TO TUTOR LIVE SURFACE
-                </Badge>
-              ) : null}
+  const tutorHeroStats = [
+    { label: "Mode", value: shellMode.toUpperCase() },
+    {
+      label: "Session",
+      value: activeSessionId ? "LIVE" : "READY",
+      tone: activeSessionId ? "success" : "info",
+    } as const,
+    {
+      label: "Course",
+      value: courseLabel || "UNSCOPED",
+      tone: courseLabel ? "default" : "warn",
+    } as const,
+    {
+      label: "Materials",
+      value: String(selectedMaterials.length),
+      tone: selectedMaterials.length > 0 ? "info" : "default",
+    } as const,
+  ];
+
+  const tutorShellTopBar = (
+    <div className="px-2 py-1.5">
+      <div className="mb-1.5 flex items-center justify-between gap-3 border-b border-primary/10 pb-1.5">
+        <div>
+          <div className="font-arcade text-xs text-primary">TUTOR</div>
+          <div className="font-terminal text-[11px] text-muted-foreground">
+            Brain&apos;s default live study surface for guided sessions, artifacts, and next-step handoff.
+          </div>
+        </div>
+        {!activeSessionId ? (
+          <Badge variant="outline" className={`${TEXT_BADGE} h-6 px-2 shrink-0 border-primary/30`}>
+            BRAIN TO TUTOR LIVE SURFACE
+          </Badge>
+        ) : null}
+      </div>
+      {!activeSessionId && brainLaunchContext?.title ? (
+        <div
+          data-testid="tutor-brain-handoff"
+          className="mb-1.5 border border-primary/20 bg-primary/10 px-2 py-1.5"
+        >
+          <div className="font-arcade text-[10px] text-primary">OPENED FROM BRAIN</div>
+          <div className="font-terminal text-xs text-white">{brainLaunchContext.title}</div>
+          {brainLaunchContext.reason ? (
+            <div className="font-terminal text-[11px] text-muted-foreground">
+              {brainLaunchContext.reason}
             </div>
-            {!activeSessionId && brainLaunchContext?.title ? (
-              <div
-                data-testid="tutor-brain-handoff"
-                className="mb-1.5 border border-primary/20 bg-primary/10 px-2 py-1.5"
-              >
-                <div className="font-arcade text-[10px] text-primary">OPENED FROM BRAIN</div>
-                <div className="font-terminal text-xs text-white">{brainLaunchContext.title}</div>
-                {brainLaunchContext.reason ? (
-                  <div className="font-terminal text-[11px] text-muted-foreground">
-                    {brainLaunchContext.reason}
-                  </div>
-                ) : null}
-              </div>
+          ) : null}
+        </div>
+      ) : null}
+      {activeSessionId ? (
+        <div className="mb-1.5 flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <Badge variant="outline" className={`${TEXT_BADGE} h-7 px-2 shrink-0 border-primary/30`}>
+            <span className="text-muted-foreground mr-1">TOPIC:</span>
+            <span className="text-foreground">{topic || "Freeform"}</span>
+          </Badge>
+          <div className={`flex items-center gap-3 px-2 ${TEXT_MUTED} text-xs shrink-0`}>
+            <span className="flex items-center gap-1" title="Turns">
+              <MessageSquare className={ICON_SM} />
+              {turnCount}
+            </span>
+            {startedAt ? (
+              <span className="flex items-center gap-1" title="Started At">
+                <Clock className={ICON_SM} />
+                {new Date(startedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </span>
             ) : null}
-            {/* ─── Row 1: Session Context ─── */}
-            {activeSessionId && (
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar mb-1.5">
-                <Badge variant="outline" className={`${TEXT_BADGE} h-7 px-2 shrink-0 border-primary/30`}>
-                  <span className="text-muted-foreground mr-1">TOPIC:</span>
-                  <span className="text-foreground">{topic || "Freeform"}</span>
-                </Badge>
-                <div className={`flex items-center gap-3 px-2 ${TEXT_MUTED} text-xs shrink-0`}>
-                  <span className="flex items-center gap-1" title="Turns">
-                    <MessageSquare className={ICON_SM} />
-                    {turnCount}
-                  </span>
-                  {startedAt && (
-                    <span className="flex items-center gap-1" title="Started At">
-                      <Clock className={ICON_SM} />
-                      {new Date(startedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  )}
-                </div>
+          </div>
 
-                {/* ─── Block Timer Widget ─── */}
-                {hasChain && currentBlock && !isChainComplete && (
-                  <div className="flex items-center gap-2 px-2 shrink-0 border-l border-primary/20">
-                    <Badge
-                      variant="outline"
-                      className={`h-6 px-1.5 text-[10px] rounded-none font-arcade uppercase ${
-                        CONTROL_PLANE_COLORS[currentBlock.control_stage?.toUpperCase?.() || currentBlock.category?.toUpperCase?.() || ""]?.badge
-                        || "bg-secondary/20 text-muted-foreground"
-                      }`}
-                    >
-                      {currentBlock.control_stage || currentBlock.category || "BLOCK"}
-                    </Badge>
-                    <span className="text-xs font-terminal text-foreground truncate max-w-[120px]" title={currentBlock.name}>
-                      {currentBlock.name}
-                    </span>
-                    {blockTimerSeconds !== null && (
-                      <span
-                        className={`text-sm font-arcade tabular-nums ${
-                          blockTimerSeconds <= 0
-                            ? "text-destructive animate-pulse"
-                            : blockTimerSeconds <= 60
-                              ? "text-destructive"
-                              : blockTimerSeconds <= 120
-                                ? "text-warning"
-                                : "text-foreground"
-                        }`}
-                      >
-                        {formatTimer(Math.max(0, blockTimerSeconds))}
-                      </span>
-                    )}
-                    <span className="text-[10px] text-muted-foreground font-terminal">
-                      {progressCount}/{chainBlocks.length}
-                    </span>
-                    {blockTimerSeconds !== null && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setTimerPaused((p) => !p)}
-                        className="h-6 w-6 p-0 rounded-none text-muted-foreground hover:text-primary"
-                        title={timerPaused ? "Resume timer" : "Pause timer"}
-                      >
-                        {timerPaused ? <Timer className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={advanceBlock}
-                      className="h-6 px-1.5 rounded-none text-muted-foreground hover:text-primary font-arcade text-[10px]"
-                      title="Skip to next block"
-                    >
-                      <SkipForward className="w-3 h-3" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ─── Row 2: Navigation Actions ─── */}
-          <div className="flex flex-wrap items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setStudioEntryRequest(null);
-                setScheduleLaunchIntent(null);
-                setShellMode("dashboard");
-              }}
-              className={shellMode === "dashboard" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
-            >
-              <ListChecks className={`${ICON_MD} mr-1`} />
-              DASHBOARD
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setStudioEntryRequest(null);
-                setScheduleLaunchIntent(null);
-                setShellMode("studio");
-              }}
-              className={shellMode === "studio" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
-            >
-              <PenTool className={`${ICON_MD} mr-1`} />
-              STUDIO
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setStudioEntryRequest(null);
-                setScheduleLaunchIntent(null);
-                setShellMode("tutor");
-              }}
-              className={shellMode === "tutor" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
-            >
-              <MessageSquare className={`${ICON_MD} mr-1`} />
-              TUTOR
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setStudioEntryRequest(null);
-                setScheduleLaunchIntent(null);
-                setShellMode("schedule");
-              }}
-              className={shellMode === "schedule" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
-            >
-              <Clock className={`${ICON_MD} mr-1`} />
-              SCHEDULE
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setStudioEntryRequest(null);
-                setScheduleLaunchIntent(null);
-                setShellMode("publish");
-              }}
-              className={shellMode === "publish" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
-            >
-              <FolderOpen className={`${ICON_MD} mr-1`} />
-              PUBLISH
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={openSettings}
-              className={BTN_TOOLBAR}
-            >
-              <SlidersHorizontal className={`${ICON_MD} mr-1`} />
-              SETTINGS
-            </Button>
-
-            {activeSessionId && shellMode === "tutor" ? (
-              <>
+          {hasChain && currentBlock && !isChainComplete ? (
+            <div className="flex items-center gap-2 px-2 shrink-0 border-l border-primary/20">
+              <Badge
+                variant="outline"
+                className={`h-6 px-1.5 text-[10px] rounded-none font-arcade uppercase ${
+                  CONTROL_PLANE_COLORS[currentBlock.control_stage?.toUpperCase?.() || currentBlock.category?.toUpperCase?.() || ""]?.badge
+                  || "bg-secondary/20 text-muted-foreground"
+                }`}
+              >
+                {currentBlock.control_stage || currentBlock.category || "BLOCK"}
+              </Badge>
+              <span className="text-xs font-terminal text-foreground truncate max-w-[120px]" title={currentBlock.name}>
+                {currentBlock.name}
+              </span>
+              {blockTimerSeconds !== null ? (
+                <span
+                  className={`text-sm font-arcade tabular-nums ${
+                    blockTimerSeconds <= 0
+                      ? "text-destructive animate-pulse"
+                      : blockTimerSeconds <= 60
+                        ? "text-destructive"
+                        : blockTimerSeconds <= 120
+                          ? "text-warning"
+                          : "text-foreground"
+                  }`}
+                >
+                  {formatTimer(Math.max(0, blockTimerSeconds))}
+                </span>
+              ) : null}
+              <span className="text-[10px] text-muted-foreground font-terminal">
+                {progressCount}/{chainBlocks.length}
+              </span>
+              {blockTimerSeconds !== null ? (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setShowArtifacts((prev) => !prev)}
-                  className={`ml-1 ${showArtifacts ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}`}
+                  onClick={() => setTimerPaused((p) => !p)}
+                  className="h-6 w-6 p-0 rounded-none text-muted-foreground hover:text-primary"
+                  title={timerPaused ? "Resume timer" : "Pause timer"}
                 >
-                  {showArtifacts ? (
-                    <PanelRightClose className={`${ICON_MD} mr-1`} />
-                  ) : (
-                    <PanelRightOpen className={`${ICON_MD} mr-1`} />
-                  )}
-                  ARTIFACTS
-                  {artifacts.length > 0 && (
-                    <Badge variant="outline" className="h-4 px-1 ml-1 text-[10px] rounded-none border-primary/40">
-                      {artifacts.length}
-                    </Badge>
-                  )}
+                  {timerPaused ? <Timer className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
                 </Button>
-                <div className="ml-auto flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      if (activeSessionId) {
-                        api.tutor.exportSession(activeSessionId).catch(() => {
-                          toast.error("Failed to export session");
-                        });
-                      }
-                    }}
-                    className={BTN_TOOLBAR}
-                    title="Export conversation as Markdown"
-                  >
-                    <Download className={`${ICON_MD} mr-1`} />
-                    EXPORT
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowEndConfirm(true)}
-                    className="h-8 rounded-none font-arcade text-xs px-3 text-destructive/70 hover:text-destructive hover:bg-destructive/10 border-2 border-transparent"
-                    title="End session"
-                  >
-                    <Square className={`${ICON_MD} mr-1`} />
-                    END
-                  </Button>
-                </div>
-              </>
-            ) : null}
-          </div>
-          </div>
+              ) : null}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={advanceBlock}
+                className="h-6 px-1.5 rounded-none text-muted-foreground hover:text-primary font-arcade text-[10px]"
+                title="Skip to next block"
+              >
+                <SkipForward className="w-3 h-3" />
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
+      <div className="flex flex-wrap items-center gap-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setStudioEntryRequest(null);
+            setScheduleLaunchIntent(null);
+            setShellMode("dashboard");
+          }}
+          className={shellMode === "dashboard" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+        >
+          <ListChecks className={`${ICON_MD} mr-1`} />
+          DASHBOARD
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setStudioEntryRequest(null);
+            setScheduleLaunchIntent(null);
+            setShellMode("studio");
+          }}
+          className={shellMode === "studio" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+        >
+          <PenTool className={`${ICON_MD} mr-1`} />
+          STUDIO
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setStudioEntryRequest(null);
+            setScheduleLaunchIntent(null);
+            setShellMode("tutor");
+          }}
+          className={shellMode === "tutor" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+        >
+          <MessageSquare className={`${ICON_MD} mr-1`} />
+          TUTOR
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setStudioEntryRequest(null);
+            setScheduleLaunchIntent(null);
+            setShellMode("schedule");
+          }}
+          className={shellMode === "schedule" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+        >
+          <Clock className={`${ICON_MD} mr-1`} />
+          SCHEDULE
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setStudioEntryRequest(null);
+            setScheduleLaunchIntent(null);
+            setShellMode("publish");
+          }}
+          className={shellMode === "publish" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+        >
+          <FolderOpen className={`${ICON_MD} mr-1`} />
+          PUBLISH
+        </Button>
+        <Button variant="ghost" size="sm" onClick={openSettings} className={BTN_TOOLBAR}>
+          <SlidersHorizontal className={`${ICON_MD} mr-1`} />
+          SETTINGS
+        </Button>
+
+        {activeSessionId && shellMode === "tutor" ? (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowArtifacts((prev) => !prev)}
+              className={`ml-1 ${showArtifacts ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}`}
+            >
+              {showArtifacts ? (
+                <PanelRightClose className={`${ICON_MD} mr-1`} />
+              ) : (
+                <PanelRightOpen className={`${ICON_MD} mr-1`} />
+              )}
+              ARTIFACTS
+              {artifacts.length > 0 ? (
+                <Badge variant="outline" className="h-4 px-1 ml-1 text-[10px] rounded-none border-primary/40">
+                  {artifacts.length}
+                </Badge>
+              ) : null}
+            </Button>
+            <div className="ml-auto flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (activeSessionId) {
+                    api.tutor.exportSession(activeSessionId).catch(() => {
+                      toast.error("Failed to export session");
+                    });
+                  }
+                }}
+                className={BTN_TOOLBAR}
+                title="Export conversation as Markdown"
+              >
+                <Download className={`${ICON_MD} mr-1`} />
+                EXPORT
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowEndConfirm(true)}
+                className="h-8 rounded-none font-arcade text-xs px-3 text-destructive/70 hover:text-destructive hover:bg-destructive/10 border-2 border-transparent"
+                title="End session"
+              >
+                <Square className={`${ICON_MD} mr-1`} />
+                END
+              </Button>
+            </div>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+
+  return (
+    <Layout>
+      <PageScaffold
+        eyebrow="Live Study Core"
+        title="Tutor"
+        subtitle="Guide live study sessions, keep Brain handoff context visible, and move between dashboard, studio, schedule, and publish without breaking the core workspace rhythm."
+        className="min-h-[calc(100vh-140px)]"
+        contentClassName="gap-6"
+        stats={tutorHeroStats}
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            className="font-arcade text-xs border-primary/40"
+            onClick={() => {
+              void Promise.all([
+                queryClient.invalidateQueries({ queryKey: ["tutor-hub"] }),
+                queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] }),
+                queryClient.invalidateQueries({ queryKey: ["tutor-project-shell"] }),
+                queryClient.invalidateQueries({ queryKey: ["tutor-studio-restore"] }),
+                queryClient.invalidateQueries({ queryKey: ["tutor-chat-materials-all-enabled"] }),
+                queryClient.invalidateQueries({ queryKey: ["obsidian"] }),
+              ]);
+            }}
+          >
+            <RefreshCw className="w-3 h-3 mr-2" /> REFRESH
+          </Button>
+        }
+      >
+        <CoreWorkspaceFrame topBar={tutorShellTopBar} contentClassName="relative min-h-0">
           {activeSessionId && scholarStrategy && (
             <div className="flex-none">
             <button
@@ -2225,71 +2266,72 @@ export default function Tutor() {
               </>
             )}
           </div>
-        </div>
-      </div>
-      {/* ── Settings Dialog ── */}
-      <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent className={`bg-black ${CARD_BORDER} max-w-lg`}>
-          <DialogTitle className="section-header">
-            TUTOR SETTINGS
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            Configure tutor model, speed tier, and custom instructions
-          </DialogDescription>
-          <div className="space-y-3 mt-2">
-            <label className="section-header text-muted-foreground">
-              Custom Instructions
-            </label>
-            {settingsLoading ? (
-              <div className="flex items-center justify-center py-8 text-muted-foreground">
-                <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                Loading...
-              </div>
-            ) : (
-              <Textarea
-                value={customInstructions}
-                onChange={(e) => setCustomInstructions(e.target.value)}
-                rows={10}
-                className="bg-black border-2 border-primary/40 rounded-none font-terminal text-sm resize-y"
-                placeholder="Enter custom instructions for the tutor..."
-              />
-            )}
-            <div className="flex items-center justify-between pt-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={restoreDefaultInstructions}
-                disabled={settingsLoading || settingsSaving}
-                className={BTN_TOOLBAR}
-              >
-                RESTORE DEFAULTS
-              </Button>
-              <div className="flex items-center gap-2">
+        </CoreWorkspaceFrame>
+        {/* ── Settings Dialog ── */}
+        <Dialog open={showSettings} onOpenChange={setShowSettings}>
+          <DialogContent className={`bg-black ${CARD_BORDER} max-w-lg`}>
+            <DialogTitle className="section-header">
+              TUTOR SETTINGS
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Configure tutor model, speed tier, and custom instructions
+            </DialogDescription>
+            <div className="space-y-3 mt-2">
+              <label htmlFor="tutor-custom-instructions" className="section-header text-muted-foreground">
+                Custom Instructions
+              </label>
+              {settingsLoading ? (
+                <div className="flex items-center justify-center py-8 text-muted-foreground">
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  Loading...
+                </div>
+              ) : (
+                <Textarea
+                  id="tutor-custom-instructions"
+                  value={customInstructions}
+                  onChange={(e) => setCustomInstructions(e.target.value)}
+                  rows={10}
+                  className="bg-black border-2 border-primary/40 rounded-none font-terminal text-sm resize-y"
+                  placeholder="Enter custom instructions for the tutor..."
+                />
+              )}
+              <div className="flex items-center justify-between pt-2">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setShowSettings(false)}
+                  onClick={restoreDefaultInstructions}
+                  disabled={settingsLoading || settingsSaving}
                   className={BTN_TOOLBAR}
                 >
-                  CANCEL
+                  RESTORE DEFAULTS
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={saveSettings}
-                  disabled={settingsLoading || settingsSaving}
-                  className="h-8 rounded-none font-arcade text-xs bg-primary text-primary-foreground hover:bg-primary/80 border-2 border-primary"
-                >
-                  {settingsSaving ? (
-                    <><Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> SAVING...</>
-                  ) : (
-                    "SAVE"
-                  )}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowSettings(false)}
+                    className={BTN_TOOLBAR}
+                  >
+                    CANCEL
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={saveSettings}
+                    disabled={settingsLoading || settingsSaving}
+                    className="h-8 rounded-none font-arcade text-xs bg-primary text-primary-foreground hover:bg-primary/80 border-2 border-primary"
+                  >
+                    {settingsSaving ? (
+                      <><Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> SAVING...</>
+                    ) : (
+                      "SAVE"
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      </PageScaffold>
     </Layout>
   );
 }
