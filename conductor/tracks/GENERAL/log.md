@@ -309,3 +309,12 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Validation passed:
   - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/layout.test.tsx`
   - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-15 - Production shell header compaction
+
+- Added a new active sprint item in `docs/root/TUTOR_TODO.md` for production UI standardization using the Material Library page as the structural reference for the support pages.
+- Changed the shared shell header in `dashboard_rebuild/client/src/components/layout.tsx` so downward scroll compacts the header instead of translating it off-screen.
+- Added an explicit header state attribute and updated `dashboard_rebuild/client/src/components/__tests__/layout.test.tsx` to lock the intended `expanded -> compact -> expanded` behavior.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/layout.test.tsx`
+  - `cd dashboard_rebuild && npm run build`

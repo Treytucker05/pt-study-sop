@@ -47,10 +47,6 @@ type NavItem = {
 const NOTES_DOCK_STORAGE_KEY = "layout.notesDockTop.v1";
 const NOTES_DOCK_MARGIN = 16;
 const NOTES_DOCK_MIN_TOP = 96;
-const NAV_BUTTON_CLIP_PATH =
-  "polygon(18px 0%, calc(100% - 18px) 0%, 100% 18px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0% calc(100% - 18px), 0% 18px)";
-const NOTES_DOCK_CLIP_PATH =
-  "polygon(20px 0%, 100% 0%, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0% 100%, 0% 20px)";
 
 const resolveNoteType = (note: Note): NoteCategory => {
   const raw = (note as Note & { noteType?: string }).noteType;
@@ -60,42 +56,58 @@ const resolveNoteType = (note: Note): NoteCategory => {
   return "notes";
 };
 
+/* Shared chrome: same frame + inner glow for all nav buttons; active only brightens */
+const NAV_CHROME_BEFORE =
+  "before:absolute before:inset-[1px] before:rounded-[1.4rem] before:border before:border-[#4f141e] before:bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.18),transparent_32%),radial-gradient(circle_at_80%_120%,rgba(0,0,0,0.9),rgba(0,0,0,1)_78%)] before:content-['']";
+const NAV_CHROME_AFTER_BASE =
+  "after:pointer-events-none after:absolute after:inset-[3px] after:rounded-[1.3rem] after:border after:border-[rgba(255,96,128,0.5)] after:shadow-[0_0_12px_rgba(255,96,128,0.45),inset_0_0_14px_rgba(255,60,108,0.4)] after:content-['']";
+const NAV_CHROME_AFTER_ACTIVE =
+  "after:border-[rgba(255,118,146,0.85)] after:shadow-[0_0_18px_rgba(255,118,146,0.7),inset_0_0_20px_rgba(255,74,120,0.7)]";
+
 const navButtonClass = (isActive: boolean, headerExpanded: boolean) =>
   cn(
-    "nav-btn group relative isolate flex h-[3.5rem] min-w-[9.75rem] items-center justify-start overflow-hidden border border-[#7f444d]/95 bg-transparent px-3 py-0 font-arcade uppercase text-[#ffe5e8] shadow-[0_0_0_1px_rgba(255,138,146,0.16),0_8px_18px_rgba(0,0,0,0.42),0_0_24px_rgba(255,87,112,0.16)] transition-all duration-150 ease-out motion-reduce:transition-none hover:bg-transparent active:bg-transparent",
-    "before:absolute before:inset-[2px] before:border before:border-[#ffb3ba]/34 before:bg-[linear-gradient(180deg,rgba(96,18,28,0.96),rgba(42,6,11,0.98))] before:content-['']",
-    "after:absolute after:inset-[7px] after:border after:border-[#ff8f97]/18 after:content-['']",
-    "hover:-translate-y-0.5 hover:border-[#ffc0c6]/85 hover:text-white hover:shadow-[0_0_0_1px_rgba(255,168,175,0.26),0_10px_22px_rgba(0,0,0,0.44),0_0_28px_rgba(255,108,128,0.22)]",
-    "focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-0",
-    "active:translate-y-[2px] active:shadow-[0_0_0_1px_rgba(255,138,146,0.18),0_4px_12px_rgba(0,0,0,0.3),0_0_18px_rgba(255,87,112,0.12)]",
+    "nav-btn group relative isolate flex h-[3.5rem] min-w-[9.75rem] items-center justify-start overflow-hidden px-3 py-0 font-arcade uppercase tracking-[0.24em] text-[#ff9caa]",
+    "rounded-[1.5rem] border border-transparent transition-all duration-200 ease-out motion-reduce:transition-none",
+    NAV_CHROME_BEFORE,
+    NAV_CHROME_AFTER_BASE,
+    "shadow-[0_12px_28px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,100,120,0.4)]",
+    "text-[0.78rem] sm:text-[0.8rem] [text-shadow:0_1px_2px_rgba(0,0,0,0.85),0_0_6px_rgba(255,80,110,0.45)]",
+    "hover:-translate-y-0.5 hover:shadow-[0_16px_32px_rgba(0,0,0,0.65),0_0_0_1px_rgba(255,140,155,0.55)] hover:text-[#ffdfe5]",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-0",
+    "active:translate-y-[1px] active:shadow-[0_8px_18px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,100,120,0.5)]",
     isActive &&
-      "border-[#ffd0d5]/95 text-white shadow-[0_0_0_1px_rgba(255,193,198,0.32),0_8px_18px_rgba(0,0,0,0.45),0_0_30px_rgba(255,110,132,0.28)] before:border-[#ffd7dc]/48 before:bg-[linear-gradient(180deg,rgba(116,24,36,0.98),rgba(54,8,14,0.98))] after:border-[#ffb2ba]/26",
+      "text-[#ffeef2] shadow-[0_14px_30px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,160,175,0.55)] " + NAV_CHROME_AFTER_ACTIVE +
+      " [text-shadow:0_1px_2px_rgba(0,0,0,0.8),0_0_10px_rgba(255,90,120,0.6)]",
     !headerExpanded && "h-[3.2rem] min-w-[8.85rem] px-2.5",
   );
 
 const navIconPadClass = (_testId: string, isActive: boolean) =>
   cn(
-    "relative z-10 mr-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#ffd7da]/72 bg-[radial-gradient(circle_at_32%_28%,rgba(255,255,255,0.34),rgba(255,183,188,0.2)_18%,rgba(114,16,28,0.98)_52%,rgba(46,5,11,0.98)_100%)] shadow-[inset_0_0_18px_rgba(255,104,124,0.28),0_0_14px_rgba(255,98,118,0.22)] transition-all duration-150 ease-out motion-reduce:transition-none group-hover:scale-[1.05] group-hover:border-[#fff1f3]",
-    isActive && "border-[#fff1f3] shadow-[inset_0_0_20px_rgba(255,130,142,0.34),0_0_18px_rgba(255,115,130,0.28)]",
+    "relative z-10 mr-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[rgba(255,120,140,0.65)]",
+    "bg-[radial-gradient(circle_at_30%_0%,rgba(255,255,255,0.35),transparent_40%),radial-gradient(circle_at_80%_110%,rgba(40,4,12,0.95),rgba(4,0,2,1)_80%)]",
+    "shadow-[0_0_12px_rgba(255,120,140,0.6),inset_0_0_14px_rgba(255,80,120,0.7)] transition-all duration-200 ease-out motion-reduce:transition-none",
+    "group-hover:scale-[1.05] group-hover:shadow-[0_0_18px_rgba(255,140,158,0.75),inset_0_0_18px_rgba(255,96,132,0.8)]",
+    isActive &&
+      "border-[rgba(255,200,212,0.9)] shadow-[0_0_20px_rgba(255,180,200,0.8),inset_0_0_22px_rgba(255,110,150,0.85)]",
   );
 
-const navButtonStyle = (testId: string, isActive: boolean): CSSProperties => ({
-  clipPath: NAV_BUTTON_CLIP_PATH,
-  backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(122,18,28,0.08) 24%, rgba(0,0,0,0) 100%), linear-gradient(90deg, rgba(255,112,124,${isActive ? "0.14" : "0.1"}) 0%, rgba(255,112,124,0.02) 46%, rgba(255,112,124,0.08) 100%), url(${brainButton})`,
-  backgroundPosition: `center center, center center, center center`,
+const navButtonStyle = (_testId: string, isActive: boolean): CSSProperties => ({
+  borderRadius: "1.5rem",
+  backgroundImage:
+    "linear-gradient(135deg, rgba(255,128,148,0.24) 0%, rgba(72,10,22,0.96) 38%, rgba(4,0,4,1) 100%)",
+  backgroundPosition: "center center",
   backgroundRepeat: "no-repeat",
-  backgroundSize: "auto, auto, 135% 150%",
-  backgroundBlendMode: "screen, normal, soft-light",
+  backgroundSize: "cover",
 });
 
 const notesDockStyle = (top: number | null): CSSProperties => ({
   top: top === null ? "34%" : `${top}px`,
-  clipPath: NOTES_DOCK_CLIP_PATH,
-  backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(122,18,28,0.1) 24%, rgba(0,0,0,0) 100%), linear-gradient(180deg, rgba(255,112,124,0.16) 0%, rgba(255,112,124,0.03) 56%, rgba(255,112,124,0.08) 100%), url(${brainButton})`,
-  backgroundPosition: "center center, center center, center center",
+  borderRadius: "1rem 0 0 1rem",
+  backgroundImage:
+    "linear-gradient(135deg, rgba(255,128,148,0.22) 0%, rgba(72,10,22,0.96) 38%, rgba(4,0,4,1) 100%)",
+  backgroundPosition: "center center",
   backgroundRepeat: "no-repeat",
-  backgroundSize: "auto, auto, 205% 145%",
-  backgroundBlendMode: "screen, normal, soft-light",
+  backgroundSize: "cover",
 });
 
 function ShellNavButton({
@@ -115,25 +127,17 @@ function ShellNavButton({
       className={navButtonClass(isActive, headerExpanded)}
       style={navButtonStyle(item.testId, isActive)}
     >
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute left-[4.2rem] right-3 top-[0.72rem] h-px bg-[linear-gradient(90deg,transparent_0,rgba(255,188,193,0.24)_42%,transparent_100%)]"
-      />
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute left-[4.2rem] right-3 bottom-[0.72rem] h-px bg-[linear-gradient(90deg,transparent_0,rgba(255,124,135,0.16)_42%,transparent_100%)]"
-      />
       <span className={navIconPadClass(item.testId, isActive)}>
         <item.icon
           className={cn(
-            "h-4.5 w-4.5 shrink-0 text-[#fff1f3] drop-shadow-[0_0_8px_rgba(255,120,132,0.44)] transition-all duration-300 ease-out motion-reduce:transition-none",
+            "h-4.5 w-4.5 shrink-0 text-[#ffe8ec] drop-shadow-[0_0_6px_rgba(255,120,132,0.5)] transition-all duration-200 ease-out motion-reduce:transition-none",
             !headerExpanded && "h-4 w-4",
           )}
         />
       </span>
       <span
         className={cn(
-          "relative z-10 mt-px text-[0.78rem] tracking-[0.24em] text-[#ffe3e6] [text-shadow:0_0_10px_rgba(255,124,136,0.26)]",
+          "relative z-10 mt-px text-[0.78rem] tracking-[0.24em]",
           !headerExpanded && "text-[0.68rem]",
         )}
       >
@@ -165,7 +169,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [notesDockTop, setNotesDockTop] = useState<number | null>(null);
   const [isDraggingNotesDock, setIsDraggingNotesDock] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
-  const [headerHeight, setHeaderHeight] = useState(0);
   const notesDockRef = useRef<HTMLButtonElement | null>(null);
   const notesDockDragRef = useRef<{ pointerId: number; offsetY: number; moved: boolean } | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
@@ -184,7 +187,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") {
       return top;
     }
-    const dockHeight = notesDockRef.current?.offsetHeight ?? 116;
+    const dockHeight = notesDockRef.current?.offsetHeight ?? 88;
     const maxTop = Math.max(NOTES_DOCK_MIN_TOP, window.innerHeight - dockHeight - NOTES_DOCK_MARGIN);
     return Math.min(Math.max(top, NOTES_DOCK_MIN_TOP), maxTop);
   }, []);
@@ -231,32 +234,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     };
   }, [handleScroll]);
 
-  // The header is visually expanded when: not collapsed, OR hovered while collapsed
+  // The header is visually expanded when: not compact, OR hovered while compact.
   const headerExpanded = !headerCollapsed || headerHovered;
-  const headerVisible = !headerCollapsed || headerHovered;
-
-  useEffect(() => {
-    const header = headerRef.current;
-    if (!header) {
-      return;
-    }
-
-    const updateHeaderHeight = () => {
-      const nextHeight = Math.round(header.getBoundingClientRect().height);
-      setHeaderHeight((current) => (current === nextHeight ? current : nextHeight));
-    };
-
-    updateHeaderHeight();
-
-    if (typeof ResizeObserver !== "undefined") {
-      const observer = new ResizeObserver(() => updateHeaderHeight());
-      observer.observe(header);
-      return () => observer.disconnect();
-    }
-
-    window.addEventListener("resize", updateHeaderHeight);
-    return () => window.removeEventListener("resize", updateHeaderHeight);
-  }, [headerExpanded]);
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
@@ -637,15 +616,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <header
         ref={headerRef}
         className={cn(
-          "relative z-20 sticky top-0 transition-[transform,margin,opacity] duration-300 ease-out will-change-transform",
+          "relative z-20 sticky top-0 transition-[padding,box-shadow,background-color,opacity] duration-300 ease-out will-change-transform",
           "bg-[linear-gradient(180deg,rgba(5,5,5,0.92),rgba(12,6,8,0.82)_100%)] backdrop-blur-xl shadow-[0_14px_32px_rgba(0,0,0,0.35)]",
           "motion-reduce:transition-none",
-          headerVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0",
+          headerExpanded
+            ? "opacity-100 shadow-[0_14px_32px_rgba(0,0,0,0.35)]"
+            : "opacity-100 shadow-[0_10px_22px_rgba(0,0,0,0.28)]",
         )}
-        style={{
-          borderBottom: "1px solid rgba(255, 67, 102, 0.35)",
-          marginBottom: headerVisible ? 0 : `${-headerHeight}px`,
-        }}
+        style={{ borderBottom: "1px solid rgba(255, 67, 102, 0.35)" }}
+        data-header-state={headerExpanded ? "expanded" : "compact"}
         onMouseEnter={() => setHeaderHovered(true)}
         onMouseLeave={() => setHeaderHovered(false)}
         onTouchStart={() => {
@@ -930,9 +909,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         ref={notesDockRef}
         type="button"
         className={cn(
-          "fixed right-0 z-40 flex min-h-[148px] min-w-[64px] -translate-y-1/2 items-center justify-center overflow-hidden border border-r-0 border-[#7f444d]/95 px-2 py-3 font-arcade text-[0.64rem] tracking-[0.18em] text-[#ffe5e8] shadow-[0_0_0_1px_rgba(255,138,146,0.16),0_10px_22px_rgba(0,0,0,0.42),0_0_28px_rgba(255,87,112,0.16)] backdrop-blur-md transition-all duration-150 ease-out before:absolute before:inset-[2px_0_2px_2px] before:border before:border-[#ffb3ba]/34 before:bg-[linear-gradient(180deg,rgba(96,18,28,0.96),rgba(42,6,11,0.98))] before:content-[''] after:absolute after:inset-[8px_0_8px_8px] after:border after:border-[#ff8f97]/18 after:content-['']",
+          "fixed right-0 z-40 flex min-h-[88px] min-w-[40px] w-10 -translate-y-1/2 items-center justify-center overflow-hidden rounded-l-xl border border-r-0 border-transparent px-1.5 py-2 font-arcade text-[#ff9caa] shadow-[0_10px_24px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,100,120,0.35)] transition-all duration-200 ease-out",
+          "before:absolute before:inset-[1px_1px_1px_0] before:rounded-l-[0.85rem] before:border before:border-[#4f141e] before:bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.18),transparent_32%),radial-gradient(circle_at_80%_120%,rgba(0,0,0,0.9),rgba(0,0,0,1)_78%)] before:content-['']",
+          "after:pointer-events-none after:absolute after:inset-[3px_3px_3px_0] after:rounded-l-[0.7rem] after:border after:border-[rgba(255,96,128,0.5)] after:shadow-[0_0_10px_rgba(255,96,128,0.4),inset_0_0_12px_rgba(255,60,108,0.35)] after:content-['']",
+          "hover:text-[#ffdfe5] hover:shadow-[0_12px_28px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,140,155,0.5)]",
           notesOpen && "pointer-events-none opacity-0",
-          isDraggingNotesDock && "cursor-grabbing border-[#ffd0d5]/88 shadow-[0_0_0_1px_rgba(255,188,193,0.28),0_6px_16px_rgba(0,0,0,0.34),0_0_24px_rgba(255,118,132,0.24)]",
+          isDraggingNotesDock && "cursor-grabbing",
         )}
         style={notesDockStyle(notesDockTop)}
         onPointerDown={handleNotesDockPointerDown}
@@ -943,20 +925,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         data-testid="notes-dock"
         aria-label="Open notes panel"
       >
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute top-[4.3rem] left-2 right-2 h-px bg-[linear-gradient(90deg,transparent_0,rgba(255,188,193,0.26)_50%,transparent_100%)]"
-        />
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute bottom-[4.3rem] left-2 right-2 h-px bg-[linear-gradient(90deg,transparent_0,rgba(255,124,135,0.18)_50%,transparent_100%)]"
-        />
-        <div className="relative z-10 flex flex-col items-center gap-2">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full border border-[#ffd7da]/72 bg-[radial-gradient(circle_at_32%_28%,rgba(255,255,255,0.34),rgba(255,183,188,0.2)_18%,rgba(114,16,28,0.98)_52%,rgba(46,5,11,0.98)_100%)] shadow-[inset_0_0_18px_rgba(255,104,124,0.28),0_0_14px_rgba(255,98,118,0.22)]">
-            <BookOpen className="h-4 w-4 shrink-0 text-[#fff1f3] drop-shadow-[0_0_8px_rgba(255,120,132,0.44)]" />
+        <div className="relative z-10 flex flex-col items-center gap-1.5">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[rgba(255,120,140,0.6)] bg-[radial-gradient(circle_at_30%_0%,rgba(255,255,255,0.35),transparent_40%),radial-gradient(circle_at_80%_110%,rgba(40,4,12,0.95),rgba(4,0,2,1)_80%)] shadow-[0_0_8px_rgba(255,120,140,0.5),inset_0_0_10px_rgba(255,80,120,0.6)]">
+            <BookOpen className="h-3.5 w-3.5 shrink-0 text-[#ffe8ec] drop-shadow-[0_0_4px_rgba(255,120,132,0.5)]" />
           </span>
-          <GripVertical className="h-4 w-4 shrink-0 text-[#ffd3d7]/70" />
-          <span className="[writing-mode:vertical-rl] rotate-180 text-[0.72rem] tracking-[0.24em] text-[#ffe3e6] [text-shadow:0_0_10px_rgba(255,124,136,0.26)]">NOTES</span>
+          <span className="[writing-mode:vertical-rl] rotate-180 text-[0.6rem] tracking-[0.2em] [text-shadow:0_1px_2px_rgba(0,0,0,0.8),0_0_4px_rgba(255,80,110,0.4)]">
+            NOTES
+          </span>
         </div>
       </button>
 

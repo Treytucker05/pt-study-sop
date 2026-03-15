@@ -51,6 +51,24 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - the nav/header still behaves correctly and required frontend validation passes
   - Completed 2026-03-15: shipped the holographic shell backdrop, upgraded shared panel/button/input primitives, added a reusable `PageScaffold`, aligned Brain/Tutor workspaces plus the Calendar/Library/Mastery/Methods/Scholar/Vault Health route headers to the same responsive theme, and passed `npm run test -- client/src/components/__tests__/layout.test.tsx` plus `cd dashboard_rebuild && npm run build`.
 
+### Sprint: Production UI Standardization (2026-03-15)
+- [ ] PUI-100. Standardize the sellable product shell and support-page layout system around the Material Library operating model, starting with a compact-on-scroll header and reusable page-structure rules.
+  - Scope:
+    - `dashboard_rebuild/client/src/components/layout.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/layout.test.tsx`
+    - `dashboard_rebuild/client/src/pages/library.tsx`
+    - `dashboard_rebuild/client/src/pages/calendar.tsx`
+    - `dashboard_rebuild/client/src/pages/methods.tsx`
+    - `dashboard_rebuild/client/src/pages/mastery.tsx`
+    - `dashboard_rebuild/client/src/pages/scholar.tsx`
+    - `dashboard_rebuild/client/src/pages/vault-health.tsx`
+    - shared shell/page CSS as needed
+  - Done when:
+    - the header compacts instead of disappearing on downward scroll
+    - the Library page is the explicit structural reference for the top-level support pages
+    - reusable layout rules are clear enough that support pages converge toward one production-ready operating model
+    - required frontend validation passes
+
 ### Sprint: Tutor Page 1 Command Deck (2026-03-15)
 - [x] TPCD-100. Ship the responsive `DashBoard` command deck as the first Tutor shell page and wire its CTAs into the existing Tutor, Schedule, Studio, and Library surfaces.
   - Track: `conductor/tracks/tutor-page1-command-deck_20260315/`

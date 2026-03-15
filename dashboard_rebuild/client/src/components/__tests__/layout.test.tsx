@@ -136,7 +136,7 @@ describe("Layout nav and notes dock", () => {
     expect(Number(window.localStorage.getItem("layout.notesDockTop.v1"))).toBeGreaterThan(0);
   });
 
-  it("rolls the header away on scroll down and reveals it from the top edge", async () => {
+  it("compacts the header on scroll down and expands it from the top edge", async () => {
     render(
       <Layout>
         <div>page</div>
@@ -149,6 +149,7 @@ describe("Layout nav and notes dock", () => {
 
     expect(header).not.toBeNull();
     expect(main).not.toBeNull();
+    expect(header).toHaveAttribute("data-header-state", "expanded");
 
     Object.defineProperty(main as HTMLElement, "scrollTop", {
       configurable: true,
@@ -159,13 +160,13 @@ describe("Layout nav and notes dock", () => {
     fireEvent.scroll(main as HTMLElement);
 
     await waitFor(() => {
-      expect(header?.className).toContain("-translate-y-full");
+      expect(header).toHaveAttribute("data-header-state", "compact");
     });
 
     fireEvent.mouseMove(window, { clientY: 0 });
 
     await waitFor(() => {
-      expect(header?.className).toContain("translate-y-0");
+      expect(header).toHaveAttribute("data-header-state", "expanded");
     });
   });
 });
