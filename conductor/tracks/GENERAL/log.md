@@ -296,3 +296,16 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Validation passed:
   - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/layout.test.tsx`
   - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-15 - Frame-style nav button rebuild
+
+- Reworked the shell nav buttons in `dashboard_rebuild/client/src/components/layout.tsx` from rounded control pills into clipped-corner red panel buttons that more closely match the provided visual reference.
+- Added a shared `ShellNavButton` renderer with:
+  - left icon medallion
+  - double frame lines
+  - red holographic label treatment
+  - unified red chrome instead of multi-color accents
+- Updated the notes dock to use the same framed panel language so it visually belongs to the nav system instead of looking like a separate widget.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/layout.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
