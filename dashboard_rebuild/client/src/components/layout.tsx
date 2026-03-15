@@ -177,6 +177,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [headerHovered, setHeaderHovered] = useState(false);
   const lastScrollY = useRef(0);
+  const lastScrollSource = useRef<EventTarget | null>(null);
   const scrollAccumulator = useRef(0);
   const SCROLL_DOWN_THRESHOLD = 40;
   const SCROLL_UP_THRESHOLD = 20;
@@ -192,11 +193,35 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return Math.min(Math.max(top, NOTES_DOCK_MIN_TOP), maxTop);
   }, []);
 
-  const handleScroll = useCallback(() => {
-    // Find the scrollable element — main content area
+  const resolveScrollPosition = useCallback((target?: EventTarget | null) => {
+    if (target instanceof HTMLElement) {
+      if (target === document.body || target === document.documentElement) {
+        return { source: window, y: window.scrollY || document.documentElement.scrollTop || 0 };
+      }
+      return { source: target, y: target.scrollTop };
+    }
+
     const main = document.querySelector("main");
-    if (!main) return;
-    const y = main.scrollTop;
+    if (main instanceof HTMLElement) {
+      return { source: main, y: main.scrollTop };
+    }
+
+    return { source: window, y: window.scrollY || document.documentElement.scrollTop || 0 };
+  }, []);
+
+  const handleScroll = useCallback((event?: Event) => {
+    const { source, y } = resolveScrollPosition(event?.target ?? null);
+
+    if (lastScrollSource.current !== source) {
+      lastScrollSource.current = source;
+      lastScrollY.current = y;
+      scrollAccumulator.current = 0;
+      if (y <= TOP_ZONE) {
+        setHeaderCollapsed(false);
+      }
+      return;
+    }
+
     const delta = y - lastScrollY.current;
     lastScrollY.current = y;
 
@@ -220,16 +245,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         scrollAccumulator.current = 0;
       }
     }
-  }, []);
+  }, [resolveScrollPosition]);
 
   useEffect(() => {
-    const main = document.querySelector("main");
-    if (!main) return;
-    main.addEventListener("scroll", handleScroll, { passive: true });
-    // Also listen on window for pages that scroll the body
+    document.addEventListener("scroll", handleScroll, { passive: true, capture: true });
     window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
     return () => {
-      main.removeEventListener("scroll", handleScroll);
+      document.removeEventListener("scroll", handleScroll, true);
       window.removeEventListener("scroll", handleScroll);
     };
   }, [handleScroll]);
@@ -939,14 +962,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         className={cn(
           "relative z-10 h-full min-h-0 w-full",
           isWorkspaceRoute
-            ? "overflow-hidden"
+            ? "overflow-y-auto overscroll-y-contain"
             : "overflow-y-auto px-2 py-3 sm:px-3 md:px-5 md:py-4"
         )}
       >
         <div
           className={cn(
             "page-enter",
-            isWorkspaceRoute ? "h-full" : "app-route-shell min-h-full",
+            isWorkspaceRoute ? "min-h-full" : "app-route-shell min-h-full",
           )}
         >
           {children}
