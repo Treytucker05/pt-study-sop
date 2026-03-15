@@ -288,6 +288,18 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Validation passed:
   - `cd dashboard_rebuild && npm run build`
 
+## 2026-03-15 - Calendar support-page standardization
+
+- Added `dashboard_rebuild/client/src/components/SupportWorkspaceFrame.tsx` so support pages can share the same internal operating model that makes the Materials Library feel production-ready.
+- Refactored `dashboard_rebuild/client/src/pages/calendar.tsx` away from the old single-card layout into a Library-style workspace:
+  - left scope rail for view modes, source selection, and system status
+  - top command band for date navigation, search, sync, and create actions
+  - status strip plus active-source strip above the main timeline canvas
+- Kept the existing event, Google sync, and modal logic intact while making the page read as a cleaner production surface.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run build`
+  - live browser check at `http://127.0.0.1:5000/calendar`
+
 ## 2026-03-15 - Brain-button shell polish
 
 - Updated the shell navigation buttons in `dashboard_rebuild/client/src/components/layout.tsx` to use a framed red-panel style inspired by the provided `BrainButton.jpg` reference.
@@ -318,3 +330,9 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Validation passed:
   - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/layout.test.tsx`
   - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-15 - React Doctor install
+
+- Installed `react-doctor` as a frontend dev dependency in `dashboard_rebuild/package.json` and refreshed `dashboard_rebuild/package-lock.json`.
+- Verified the local CLI resolves with `cd dashboard_rebuild && npx react-doctor --version` (`0.0.30`).
+- Ran a local scan with `cd dashboard_rebuild && npx react-doctor -y . --score`, which completed and returned a score of `96`.

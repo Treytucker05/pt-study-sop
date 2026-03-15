@@ -56,6 +56,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Scope:
     - `dashboard_rebuild/client/src/components/layout.tsx`
     - `dashboard_rebuild/client/src/components/__tests__/layout.test.tsx`
+    - `dashboard_rebuild/client/src/components/SupportWorkspaceFrame.tsx`
     - `dashboard_rebuild/client/src/pages/library.tsx`
     - `dashboard_rebuild/client/src/pages/calendar.tsx`
     - `dashboard_rebuild/client/src/pages/methods.tsx`
@@ -68,6 +69,10 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - the Library page is the explicit structural reference for the top-level support pages
     - reusable layout rules are clear enough that support pages converge toward one production-ready operating model
     - required frontend validation passes
+  - Progress 2026-03-15:
+    - compact-on-scroll header is shipped
+    - Calendar now uses a Library-style support workspace with a scope rail, command band, status strip, and main timeline canvas via `SupportWorkspaceFrame`
+    - remaining standardization targets are `methods`, `mastery`, `scholar`, and `vault-health`
 
 ### Sprint: Tutor Page 1 Command Deck (2026-03-15)
 - [x] TPCD-100. Ship the responsive `DashBoard` command deck as the first Tutor shell page and wire its CTAs into the existing Tutor, Schedule, Studio, and Library surfaces.

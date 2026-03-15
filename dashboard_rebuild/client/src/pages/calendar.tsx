@@ -1,18 +1,15 @@
 import Layout from "@/components/layout";
 import { PageScaffold } from "@/components/PageScaffold";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SupportWorkspaceFrame } from "@/components/SupportWorkspaceFrame";
 import { Button } from "@/components/ui/button";
 import { useState, useMemo, useEffect } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CheckCircle2, Circle, Plus, ChevronLeft, ChevronRight, RefreshCw, Calendar as CalendarIcon, Trash2, Search, ExternalLink, Pin, PinOff, ChevronDown, GripVertical } from "lucide-react";
+import { CheckCircle2, Circle, Plus, ChevronLeft, ChevronRight, RefreshCw, Calendar as CalendarIcon, Search, Pin, PinOff, ChevronDown, GripVertical } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, type GoogleTask } from "@/lib/api";
 import { useToast } from "@/use-toast";
@@ -49,6 +46,15 @@ import {
   addWeeks, subWeeks, setHours, setMinutes, differenceInMinutes, addHours, startOfDay
 } from "date-fns";
 import { cn } from "@/lib/utils";
+import {
+  BTN_PRIMARY,
+  BTN_TOOLBAR,
+  BTN_TOOLBAR_ACTIVE,
+  ICON_SM,
+  PANEL_PADDING,
+  TEXT_MUTED,
+  TEXT_PANEL_TITLE,
+} from "@/lib/theme";
 
 type ViewMode = "month" | "week" | "day" | "tasks";
 
@@ -146,6 +152,7 @@ const parseCalendarReminders = (value?: string | null): CalendarReminders | unde
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const HOUR_HEIGHT = 60;
+const CALENDAR_VIEW_MODES: ViewMode[] = ["month", "week", "day", "tasks"];
 
 // -----------------------------------------------------------------------------
 // Google Tasks Board
@@ -1340,6 +1347,10 @@ export default function CalendarPage() {
   const pendingLocalTasks = tasks.filter(t => t.status === "pending").length;
   const pendingGoogleTasks = googleTasks.filter(t => t.status === "needsAction").length;
   const pendingTasks = pendingLocalTasks + pendingGoogleTasks;
+  const pinnedVisibleCalendarCount = visibleCalendars.filter((cal) => pinnedCalendars.includes(cal.id)).length;
+  const activeSourceCount = (showLocalEvents ? 1 : 0) + selectedCalendars.size;
+  const googleConnectionLabel = googleConnected ? "CONNECTED" : "NOT CONNECTED";
+  const googleHealthTone = googleConnected ? "text-emerald-300" : "text-amber-200";
 
   const getHeaderTitle = () => {
     if (viewMode === 'month') return format(currentDate, 'MMMM yyyy').toUpperCase();
@@ -1473,175 +1484,361 @@ export default function CalendarPage() {
         eyebrow="Schedule Support System"
         title="Calendar"
         subtitle="Keep the schedule truth, deadlines, and Tutor-adjacent planning surfaces aligned in one cybernetic timeline."
-        className="h-[calc(100vh-80px)]"
-        contentClassName="h-full min-h-0"
+        className="flex h-full min-h-[72vh] flex-col"
+        contentClassName="flex-1 min-h-0"
         stats={[
           { label: "Visible", value: String(filteredEvents.length) },
           { label: "Local", value: String(localEvents.length), tone: "info" },
           { label: "Google", value: String(googleEvents.length), tone: googleConnected ? "success" : "warn" },
         ]}
       >
+        <SupportWorkspaceFrame
+          sidebar={
+            <>
+              <div className={`${PANEL_PADDING} border-b border-primary/20`}>
+                <div className={TEXT_PANEL_TITLE}>CALENDAR OPERATING MODEL</div>
+                <div className={`${TEXT_MUTED} mt-1 text-xs`}>
+                  Choose the timeline mode, choose the active sources, then work the schedule in the main canvas.
+                </div>
+              </div>
 
-        {/* Main Calendar - Full Width */}
-        <div className="flex flex-col h-full">
-          <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none flex-1 flex flex-col overflow-hidden">
-            {/* Header */}
-            <CardHeader className="border-b border-primary/30 p-4 flex flex-row justify-between items-center shrink-0">
-              <div className="flex items-center gap-4">
-                <div className="hidden xl:block pr-2 border-r border-primary/20">
-                  <div className="font-arcade text-xs text-primary">CALENDAR</div>
-                  <div className="font-terminal text-[11px] text-muted-foreground">
-                    Support system for schedule truth, deadlines, and Tutor-adjacent planning.
+              <div className="flex-1 overflow-y-auto p-2 space-y-3">
+                <section className="border border-primary/20 bg-black/25 p-3 space-y-2">
+                  <div className={TEXT_PANEL_TITLE}>VIEW MODE</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {CALENDAR_VIEW_MODES.map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        className={cn(viewMode === mode ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR, "justify-center")}
+                        onClick={() => setViewMode(mode)}
+                        data-testid={`button-${mode}-view`}
+                      >
+                        {mode.toUpperCase()}
+                      </button>
+                    ))}
                   </div>
-                  {brainLaunchContext?.title ? (
-                    <div
-                      data-testid="calendar-brain-handoff"
-                      className="mt-2 border border-primary/20 bg-primary/10 px-2 py-1.5"
+                  <div className={`${TEXT_MUTED} text-xs`}>
+                    Month and week keep the schedule truth visible. Day is for precise edits. Tasks is the action backlog.
+                  </div>
+                </section>
+
+                {brainLaunchContext?.title ? (
+                  <section
+                    data-testid="calendar-brain-handoff"
+                    className="border border-primary/30 bg-primary/10 p-3 space-y-1"
+                  >
+                    <div className="font-arcade text-[10px] text-primary">OPENED FROM BRAIN</div>
+                    <div className="font-terminal text-sm text-white">{brainLaunchContext.title}</div>
+                    {brainLaunchContext.courseName ? (
+                      <div className={`${TEXT_MUTED} text-xs`}>
+                        Course: <span className="text-white">{brainLaunchContext.courseName}</span>
+                      </div>
+                    ) : null}
+                    {brainLaunchContext.reason ? (
+                      <div className={`${TEXT_MUTED} text-xs`}>{brainLaunchContext.reason}</div>
+                    ) : null}
+                  </section>
+                ) : null}
+
+                <section className="border border-primary/20 bg-black/25 p-3 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-1">
+                      <div className={TEXT_PANEL_TITLE}>CALENDAR SOURCES</div>
+                      <div className={`${TEXT_MUTED} text-xs`}>
+                        {activeSourceCount} active source{activeSourceCount === 1 ? "" : "s"} feeding this canvas.
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-none h-8 px-3 font-arcade text-[10px]"
+                      onClick={() => {
+                        if (debugModals) {
+                          console.info("[ModalDebug][Calendar] MANAGE click");
+                        }
+                        setShowCalendarSettings(true);
+                      }}
                     >
-                      <div className="font-arcade text-[10px] text-primary">OPENED FROM BRAIN</div>
-                      <div className="font-terminal text-[11px] text-white">{brainLaunchContext.title}</div>
+                      MANAGE
+                    </Button>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={cn(
+                      "w-full min-h-[44px] rounded-[1rem] border px-3 py-2 text-left transition-colors flex items-center justify-between gap-3",
+                      showLocalEvents
+                        ? "border-primary/55 bg-primary/15 text-primary"
+                        : "border-primary/20 text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                    )}
+                    onClick={() => setShowLocalEvents(!showLocalEvents)}
+                  >
+                    <div className="flex items-center gap-2">
+                      {showLocalEvents ? <CheckCircle2 className={ICON_SM} /> : <Circle className={ICON_SM} />}
+                      <span className="font-terminal text-sm">Local timeline</span>
+                    </div>
+                    <span className="font-terminal text-xs">{localEvents.length}</span>
+                  </button>
+
+                  <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+                    {visibleCalendars.length ? (
+                      visibleCalendars.map((cal) => {
+                        const isSelected = selectedCalendars.has(cal.id);
+                        const isPinned = pinnedCalendars.includes(cal.id);
+                        return (
+                          <div
+                            key={cal.id}
+                            className={cn(
+                              "flex items-center gap-2 rounded-[1rem] border px-2 py-2 transition-colors",
+                              isSelected
+                                ? "border-primary/55 bg-primary/10"
+                                : "border-primary/20 bg-black/15",
+                            )}
+                          >
+                            <button
+                              type="button"
+                              className="flex min-h-[44px] flex-1 items-center gap-2 text-left"
+                              onClick={() => toggleCalendar(cal.id)}
+                            >
+                              <div
+                                className={cn(
+                                  "h-3 w-3 rounded-full border border-white/20",
+                                  !isSelected && "opacity-35",
+                                )}
+                                style={{ backgroundColor: cal.color }}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className={cn("font-terminal text-sm truncate", isSelected ? "text-white" : "text-muted-foreground")}>
+                                  {cal.name}
+                                </div>
+                                <div className={`${TEXT_MUTED} text-[11px]`}>
+                                  {isSelected ? "Live in canvas" : "Hidden from current canvas"}
+                                </div>
+                              </div>
+                            </button>
+                            <button
+                              type="button"
+                              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-primary/20 bg-black/20 text-primary/80 transition-colors hover:border-primary/50 hover:text-primary"
+                              onClick={() => togglePin(cal.id)}
+                              aria-label={isPinned ? "Unpin calendar" : "Pin calendar"}
+                              title={isPinned ? "Unpin calendar" : "Pin calendar"}
+                            >
+                              {isPinned ? <Pin className={ICON_SM} /> : <PinOff className={ICON_SM} />}
+                            </button>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className={`${TEXT_MUTED} text-xs border border-primary/15 bg-black/20 p-2`}>
+                        Connect Google to load external calendars. Local events still work without it.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <Button
+                      variant="outline"
+                      className="rounded-none min-h-[44px] font-arcade text-xs"
+                      onClick={() => {
+                        localStorage.setItem("selectedCalendars", JSON.stringify(Array.from(selectedCalendars)));
+                        setCalendarSelectionDirty(false);
+                        toast({ title: "SAVED", description: `${selectedCalendars.size} calendar(s) saved` });
+                      }}
+                    >
+                      {calendarSelectionDirty ? "SAVE CHANGES" : "SELECTION SAVED"}
+                    </Button>
+                    {googleConnected ? (
+                      <Button
+                        variant="outline"
+                        className="rounded-none min-h-[44px] font-arcade text-xs"
+                        onClick={handleSync}
+                        disabled={isLoadingGoogle || isSyncing}
+                        data-testid="button-sync"
+                      >
+                        <RefreshCw className={cn(`${ICON_SM} mr-1`, (isLoadingGoogle || isSyncing) && "animate-spin")} />
+                        {isSyncing ? "SYNCING..." : "SYNC GOOGLE"}
+                      </Button>
+                    ) : (
+                      <Button
+                        className={cn(BTN_PRIMARY, "!min-h-[44px]")}
+                        onClick={() => connectGoogleMutation.mutate()}
+                        disabled={connectGoogleMutation.isPending}
+                      >
+                        {connectGoogleMutation.isPending ? "CONNECTING..." : "CONNECT GOOGLE"}
+                      </Button>
+                    )}
+                  </div>
+
+                  {googleConnected ? (
+                    <Button
+                      variant="outline"
+                      className="rounded-none min-h-[44px] w-full font-arcade text-xs"
+                      onClick={() => disconnectGoogleMutation.mutate()}
+                      disabled={disconnectGoogleMutation.isPending}
+                    >
+                      {disconnectGoogleMutation.isPending ? "DISCONNECTING..." : "DISCONNECT GOOGLE"}
+                    </Button>
+                  ) : null}
+
+                  {hiddenCalendars.length > 0 ? (
+                    <div className={`${TEXT_MUTED} text-xs`}>
+                      {hiddenCalendars.length} calendar{hiddenCalendars.length === 1 ? "" : "s"} hidden from this view.
                     </div>
                   ) : null}
+                </section>
+
+                <section className="border border-primary/20 bg-black/25 p-3 space-y-2">
+                  <div className={TEXT_PANEL_TITLE}>SYSTEM STATUS</div>
+                  <div className="space-y-2 font-terminal text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-muted-foreground">Google link</span>
+                      <span className={cn("text-right", googleHealthTone)}>{googleConnectionLabel}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-muted-foreground">Pending tasks</span>
+                      <span className="text-white">{pendingTasks}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-muted-foreground">Pinned calendars</span>
+                      <span className="text-white">{pinnedVisibleCalendarCount}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-muted-foreground">Active study courses</span>
+                      <span className="text-white">{studyWheelCourses.length}</span>
+                    </div>
+                  </div>
+                  {isGoogleStatusLoading ? (
+                    <div className={`${TEXT_MUTED} text-xs`}>Checking Google status...</div>
+                  ) : googleStatusError ? (
+                    <div className="text-xs text-amber-200">
+                      Google status could not be loaded. Calendar still works with local events.
+                    </div>
+                  ) : null}
+                  {isLoadingTasks ? (
+                    <div className={`${TEXT_MUTED} text-xs`}>Loading task mirrors...</div>
+                  ) : isTasksError ? (
+                    <div className="text-xs text-amber-200">
+                      Google Tasks failed to load. The timeline still works, but the task board may be incomplete.
+                    </div>
+                  ) : null}
+                </section>
+              </div>
+            </>
+          }
+          commandBand={
+            <div className={`${PANEL_PADDING} grid gap-3 xl:grid-cols-[minmax(320px,1fr)_minmax(360px,1.15fr)]`}>
+              <div className="border border-primary/25 bg-black/30 p-3 space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="outline"
+                    className="rounded-none min-h-[44px] px-3 font-arcade text-xs"
+                    onClick={goToToday}
+                    data-testid="button-today"
+                  >
+                    TODAY
+                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-11 w-11 rounded-none hover:bg-primary/20"
+                      onClick={() => navigate("prev")}
+                      data-testid="button-prev"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-11 w-11 rounded-none hover:bg-primary/20"
+                      onClick={() => navigate("next")}
+                      data-testid="button-next"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <Button size="sm" variant="outline" className="rounded-none border-primary text-primary hover:bg-primary hover:text-black font-arcade text-xs" onClick={goToToday} data-testid="button-today">TODAY</Button>
-                <div className="flex items-center gap-1">
-                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-none hover:bg-primary/20" onClick={() => navigate('prev')} data-testid="button-prev"><ChevronLeft className="h-4 w-4" /></Button>
-                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-none hover:bg-primary/20" onClick={() => navigate('next')} data-testid="button-next"><ChevronRight className="h-4 w-4" /></Button>
-                </div>
-                {/* Clickable Title with Mini-Calendar Dropdown */}
+
                 <div className="relative">
                   <button
-                    className="font-arcade text-sm md:text-lg text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
+                    className="flex items-center gap-2 font-arcade text-base text-primary transition-colors hover:text-primary/80 md:text-lg"
                     onClick={() => setShowMiniCalendar(!showMiniCalendar)}
                     data-testid="text-header-title"
                   >
                     {getHeaderTitle()}
-                    <ChevronDown className={cn("w-4 h-4 transition-transform", showMiniCalendar && "rotate-180")} />
+                    <ChevronDown className={cn("h-4 w-4 transition-transform", showMiniCalendar && "rotate-180")} />
                   </button>
+                  <div className={`${TEXT_MUTED} mt-1 text-xs`}>
+                    Jump the schedule window first, then open or create the exact event inside the main canvas.
+                  </div>
                   {showMiniCalendar && (
-                    <div className="absolute top-full left-0 mt-2 z-50 bg-black border-[3px] border-double border-primary p-2">
-                      <div className="grid grid-cols-7 gap-1 text-center min-w-[200px]">
-                        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (<div key={i} className="font-arcade text-[8px] text-muted-foreground p-1">{d}</div>))}
-                        {eachDayOfInterval({ start: startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 }), end: endOfWeek(endOfMonth(currentDate), { weekStartsOn: 0 }) }).slice(0, 42).map((day, i) => (
-                          <button key={i} onClick={() => { goToDay(day); setShowMiniCalendar(false); }} className={cn("font-terminal text-xs p-1 hover:bg-primary/20 transition-colors", !isSameMonth(day, currentDate) && "text-muted-foreground/50", isToday(day) && "bg-primary text-black", isSameDay(day, currentDate) && !isToday(day) && "ring-1 ring-primary")}>{format(day, 'd')}</button>
+                    <div className="absolute left-0 top-full z-50 mt-2 border-[3px] border-double border-primary bg-black p-2">
+                      <div className="grid min-w-[200px] grid-cols-7 gap-1 text-center">
+                        {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+                          <div key={i} className="p-1 font-arcade text-[8px] text-muted-foreground">{d}</div>
+                        ))}
+                        {eachDayOfInterval({
+                          start: startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 }),
+                          end: endOfWeek(endOfMonth(currentDate), { weekStartsOn: 0 }),
+                        }).slice(0, 42).map((day, i) => (
+                          <button
+                            key={i}
+                            onClick={() => {
+                              goToDay(day);
+                              setShowMiniCalendar(false);
+                            }}
+                            className={cn(
+                              "p-1 font-terminal text-xs transition-colors hover:bg-primary/20",
+                              !isSameMonth(day, currentDate) && "text-muted-foreground/50",
+                              isToday(day) && "bg-primary text-black",
+                              isSameDay(day, currentDate) && !isToday(day) && "ring-1 ring-primary",
+                            )}
+                          >
+                            {format(day, "d")}
+                          </button>
                         ))}
                       </div>
                     </div>
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                {/* Search in header */}
-                <div className="relative hidden md:block">
-                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+
+              <div className="border border-primary/25 bg-black/30 p-3 space-y-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    className="rounded-none bg-black/60 border-secondary pl-7 pr-2 font-terminal text-xs h-8 w-40"
-                    placeholder="Search..."
+                    className="h-11 rounded-none border-secondary bg-black/60 pl-9 pr-3 font-terminal text-sm"
+                    placeholder="Search events, tasks, or course labels..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     data-testid="input-search-events"
                   />
                 </div>
-                <CalendarAssistantButton onClick={() => setShowAssistant(true)} />
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="rounded-none hover:bg-primary/20"
-                  onClick={handleSync}
-                  disabled={isLoadingGoogle || isSyncing}
-                  data-testid="button-sync"
-                >
-                  <RefreshCw className={cn("h-4 w-4", (isLoadingGoogle || isSyncing) && "animate-spin")} />
-                </Button>
-                <div className="flex border border-secondary rounded-none">
-                  {(['month', 'week', 'day', 'tasks'] as ViewMode[]).map((mode) => (
-                    <Button key={mode} size="sm" variant={viewMode === mode ? "default" : "ghost"} className={cn("rounded-none font-arcade text-xs px-3", viewMode === mode ? "bg-primary text-black" : "")} onClick={() => setViewMode(mode)} data-testid={`button-${mode}-view`}>
-                      {mode.toUpperCase()}
-                    </Button>
-                  ))}
-                </div>
-                {/* CREATE_EVENT button in header */}
-                <Button size="sm" className="rounded-none font-arcade text-xs bg-primary text-black hover:bg-primary/90" onClick={() => openCreateModal(currentDate)} data-testid="button-create-event-header">
-                  <Plus className="w-4 h-4 mr-1" /> CREATE
-                </Button>
-              </div>
-            </CardHeader>
-
-            {/* Calendar Legend - Compact inline */}
-            <div className="px-4 py-1.5 border-b border-primary/20 bg-black/60 flex items-center gap-3 shrink-0">
-              {/* Left: Scrollable calendar list */}
-              <div className="flex items-center gap-4 overflow-x-auto flex-1 min-w-0">
-                <span className="font-arcade text-xs text-muted-foreground shrink-0">CALENDARS:</span>
-                <div
-                  className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity shrink-0"
-                  onClick={() => setShowLocalEvents(!showLocalEvents)}
-                >
-                  <div className={cn("w-3 h-3 rounded-sm", showLocalEvents ? "bg-primary" : "bg-muted-foreground/30")} />
-                  <span className={cn("font-terminal text-sm", showLocalEvents ? "text-primary" : "text-muted-foreground")}>Local</span>
-                </div>
-                {visibleCalendars.map((cal) => (
-                  <div
-                    key={cal.id}
-                    className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity shrink-0"
-                    onClick={() => toggleCalendar(cal.id)}
-                  >
-                    <div
-                      className="w-3 h-3 rounded-sm"
-                      style={{ backgroundColor: selectedCalendars.has(cal.id) ? cal.color : 'rgba(100,100,100,0.3)' }}
-                    />
-                    <span className={cn("font-terminal text-sm truncate max-w-[100px]", selectedCalendars.has(cal.id) ? "" : "text-muted-foreground")}>{cal.name}</span>
-                  </div>
-                ))}
-                {hiddenCalendars.length > 0 && (
-                  <span className="font-terminal text-xs text-muted-foreground shrink-0">+{hiddenCalendars.length} hidden</span>
-                )}
-              </div>
-              {/* Right: Fixed buttons - always visible */}
-              <div className="flex items-center gap-2 shrink-0">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 px-2 rounded-none hover:bg-primary/20 font-arcade text-xs flex items-center gap-1.5"
-                  onClick={() => {
-                    localStorage.setItem("selectedCalendars", JSON.stringify(Array.from(selectedCalendars)));
-                    setCalendarSelectionDirty(false);
-                    toast({ title: "SAVED", description: `${selectedCalendars.size} calendar(s) saved` });
-                  }}
-                >
-                  <div className={cn("w-2 h-2 rounded-full", calendarSelectionDirty ? "bg-destructive" : "bg-success")} />
-                  SAVE
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 px-2 rounded-none hover:bg-primary/20 font-arcade text-xs"
-                  onClick={() => {
-                    if (debugModals) {
-                      console.info("[ModalDebug][Calendar] MANAGE click");
-                    }
-                    setShowCalendarSettings(true);
-                  }}
-                >
-                  MANAGE
-                </Button>
-                {googleStatus?.connected ? (
-                  <div className="flex items-center gap-1 text-success">
-                    <div className="w-2 h-2 rounded-full bg-current" />
-                    <span className="font-terminal text-xs">SYNCED</span>
-                  </div>
-                ) : (
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                  <CalendarAssistantButton onClick={() => setShowAssistant(true)} />
                   <Button
-                    size="sm"
                     variant="outline"
-                    className="h-6 px-2 rounded-none border-warning text-warning hover:bg-warning/20 font-arcade text-xs"
-                    onClick={() => connectGoogleMutation.mutate()}
-                    disabled={connectGoogleMutation.isPending}
+                    className="rounded-none min-h-[44px] px-3 font-arcade text-xs"
+                    onClick={handleSync}
+                    disabled={isLoadingGoogle || isSyncing}
                   >
-                    {connectGoogleMutation.isPending ? 'CONNECTING...' : 'CONNECT GOOGLE'}
+                    <RefreshCw className={cn(`${ICON_SM} mr-1`, (isLoadingGoogle || isSyncing) && "animate-spin")} />
+                    {isSyncing ? "SYNCING..." : "REFRESH"}
                   </Button>
-                )}
+                  <Button
+                    className={cn(BTN_PRIMARY, "sm:w-auto")}
+                    onClick={() => openCreateModal(currentDate)}
+                    data-testid="button-create-event-header"
+                  >
+                    <Plus className={`${ICON_SM} mr-1`} />
+                    CREATE EVENT
+                  </Button>
+                </div>
               </div>
             </div>
+          }
+        >
 
             {/* Calendar Settings Modal */}
             <Dialog
@@ -1696,9 +1893,76 @@ export default function CalendarPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+          <div className="grid gap-3 xl:grid-cols-3">
+            <div className="border border-primary/20 bg-black/20 p-3">
+              <div className={TEXT_PANEL_TITLE}>CURRENT WINDOW</div>
+              <div className={`${TEXT_MUTED} mt-1 text-xs`}>
+                Mode: <span className="text-white">{viewMode.toUpperCase()}</span> • {getHeaderTitle()}
+              </div>
+            </div>
+            <div className="border border-primary/20 bg-black/20 p-3">
+              <div className={TEXT_PANEL_TITLE}>TASK LOAD</div>
+              <div className={`${TEXT_MUTED} mt-1 text-xs`}>
+                {pendingLocalTasks} local pending • {pendingGoogleTasks} Google pending • {pendingTasks} total queued actions
+              </div>
+            </div>
+            <div className="border border-primary/20 bg-black/20 p-3">
+              <div className={TEXT_PANEL_TITLE}>SYNC HEALTH</div>
+              <div className={`${TEXT_MUTED} mt-1 text-xs`}>
+                {googleConnected
+                  ? `${selectedCalendars.size} Google calendar${selectedCalendars.size === 1 ? "" : "s"} selected with live sync available.`
+                  : "Local-only mode is active until Google is connected."}
+              </div>
+            </div>
+          </div>
 
-            {/* Content */}
-            <CardContent className="p-0 flex-1 overflow-hidden flex flex-col">
+          <div className="border border-primary/20 bg-black/20 p-3">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+              <div className="space-y-1">
+                <div className={TEXT_PANEL_TITLE}>ACTIVE SOURCES</div>
+                <div className={`${TEXT_MUTED} text-xs`}>
+                  {filteredEvents.length} visible event{filteredEvents.length === 1 ? "" : "s"} across {activeSourceCount} active source{activeSourceCount === 1 ? "" : "s"}.
+                </div>
+              </div>
+              {calendarSelectionDirty ? (
+                <div className="text-xs font-terminal text-amber-200">
+                  Selection changed. Save from the left rail when you want this source mix to persist.
+                </div>
+              ) : null}
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <div
+                className={cn(
+                  "min-h-[44px] rounded-[1rem] border px-3 py-2 flex items-center gap-2 font-terminal text-sm",
+                  showLocalEvents
+                    ? "border-primary/45 bg-primary/12 text-primary"
+                    : "border-primary/15 text-muted-foreground",
+                )}
+              >
+                <CalendarIcon className={ICON_SM} />
+                Local
+              </div>
+              {visibleCalendars
+                .filter((cal) => selectedCalendars.has(cal.id))
+                .map((cal) => (
+                  <div
+                    key={cal.id}
+                    className="min-h-[44px] rounded-[1rem] border border-primary/20 bg-black/25 px-3 py-2 flex items-center gap-2 font-terminal text-sm text-white"
+                  >
+                    <div className="h-3 w-3 rounded-full border border-white/20" style={{ backgroundColor: cal.color }} />
+                    <span className="max-w-[12rem] truncate">{cal.name}</span>
+                    {pinnedCalendars.includes(cal.id) ? <Pin className="h-3 w-3 text-primary/80" /> : null}
+                  </div>
+                ))}
+              {hiddenCalendars.length > 0 ? (
+                <div className="min-h-[44px] rounded-[1rem] border border-primary/15 bg-black/15 px-3 py-2 flex items-center font-terminal text-sm text-muted-foreground">
+                  +{hiddenCalendars.length} hidden
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="flex-1 min-h-0 overflow-hidden rounded-[1.1rem] border border-primary/25 bg-black/30 flex flex-col">
               {/* MONTH VIEW */}
               {viewMode === 'month' && (
                 <>
@@ -1866,9 +2130,8 @@ export default function CalendarPage() {
                   <GoogleTasksBoard tasks={googleTasks} taskLists={googleTaskLists} />
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </div>
+          </div>
+        </SupportWorkspaceFrame>
       </PageScaffold>
 
       {/* Create Modal */}
