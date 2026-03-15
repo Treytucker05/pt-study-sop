@@ -254,6 +254,35 @@ def test_tutor_hub_buckets_events_and_builds_class_cards(client):
     )
     conn.commit()
     conn.close()
+
+
+def _insert_studio_item(
+    course_id: int,
+    *,
+    tutor_session_id: str | None = None,
+    scope: str = "session",
+    status: str = "captured",
+    item_type: str = "note",
+) -> None:
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        """
+        INSERT INTO studio_items (
+            course_id,
+            tutor_session_id,
+            scope,
+            item_type,
+            status,
+            version,
+            created_at,
+            updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))
+        """,
+        (course_id, tutor_session_id, scope, item_type, status),
+    )
+    conn.commit()
+    conn.close()
     _insert_tutor_session(201, "hub-session-201", "Brainstem")
     _insert_workspace_state(201, session_id="hub-session-201", last_mode="tutor")
     _insert_material(
@@ -262,6 +291,8 @@ def test_tutor_hub_buckets_events_and_builds_class_cards(client):
         source_path="Uploads/neuro-packet.pdf",
         course_id=201,
     )
+    _insert_studio_item(201, tutor_session_id="hub-session-201", status="captured")
+    _insert_studio_item(201, scope="project", status="promoted")
     _insert_wheel_course(201, position=0, total_sessions=3, total_minutes=90)
     _insert_wheel_course(202, position=1, total_sessions=2, total_minutes=55)
 
@@ -277,6 +308,11 @@ def test_tutor_hub_buckets_events_and_builds_class_cards(client):
     assert body["study_wheel"]["next_course_id"] == 202
     neuro_card = next(item for item in body["class_projects"] if item["course_id"] == 201)
     assert neuro_card["material_count"] == 1
+    assert neuro_card["recent_session_count"] == 1
+    assert neuro_card["last_studied_at"] == neuro_card["active_session"]["started_at"]
+    assert neuro_card["pending_event_count"] == 2
+    assert neuro_card["captured_item_count"] == 1
+    assert neuro_card["promoted_item_count"] == 1
     assert neuro_card["active_session"]["session_id"] == "hub-session-201"
     assert neuro_card["next_due_event"]["title"] == "Quiz 1"
 

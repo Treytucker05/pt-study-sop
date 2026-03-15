@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Handle, Position, type NodeProps, NodeResizer } from "@xyflow/react";
 import { cn } from "@/lib/utils";
 import { CONCEPT_NODE_COLORS } from "@/lib/colors";
@@ -77,13 +77,6 @@ export function StructuredShapeNode({ data, selected }: NodeProps) {
   const [editValue, setEditValue] = useState(label);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (editing) {
-      setEditValue(label);
-      setTimeout(() => inputRef.current?.select(), 0);
-    }
-  }, [editing, label]);
-
   const commitEdit = useCallback(() => {
     setEditing(false);
     const trimmed = editValue.trim();
@@ -107,6 +100,11 @@ export function StructuredShapeNode({ data, selected }: NodeProps) {
     },
     [commitEdit]
   );
+  const startEditing = useCallback(() => {
+    setEditValue(label);
+    setEditing(true);
+    requestAnimationFrame(() => inputRef.current?.select());
+  }, [label]);
 
   const handleClass = "!bg-primary !border-primary !w-3 !h-3 !z-10";
 
@@ -131,10 +129,9 @@ export function StructuredShapeNode({ data, selected }: NodeProps) {
             onBlur={commitEdit}
             onKeyDown={handleKeyDown}
             className="bg-transparent border-b border-primary text-primary text-xs font-terminal text-center w-full outline-none"
-            autoFocus
           />
         ) : (
-          <span onDoubleClick={() => setEditing(true)}>{label}</span>
+          <span onDoubleClick={startEditing}>{label}</span>
         )}
       </ShapeWrapper>
       <Handle type="source" position={Position.Bottom} className={handleClass} />

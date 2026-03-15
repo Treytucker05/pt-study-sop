@@ -584,6 +584,15 @@ describe("api.tutor", () => {
     expect(mockFetch).toHaveBeenCalledWith("/api/tutor/hub", expect.anything());
   });
 
+  it("getStudioOverview builds the course query", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ course: { id: 7 }, shell: {}, materials: [] }));
+    await api.tutor.getStudioOverview(7);
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/tutor/studio/overview?course_id=7",
+      expect.anything(),
+    );
+  });
+
   it("saveProjectShellState sends PUT", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse({ course_id: 1, workspace_state: { revision: 1 } }));
     await api.tutor.saveProjectShellState({ course_id: 1, revision: 0 });

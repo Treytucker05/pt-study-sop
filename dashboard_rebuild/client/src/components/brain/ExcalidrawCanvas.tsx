@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
+import { useState, useCallback, useRef, useEffect, forwardRef, useImperativeHandle, useId } from "react";
 import { Excalidraw, exportToBlob, convertToExcalidrawElements } from "@excalidraw/excalidraw";
 import type { ExcalidrawImperativeAPI, AppState, BinaryFiles } from "@excalidraw/excalidraw/types";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
@@ -20,7 +20,7 @@ import { TEMPLATES, type LayoutTemplate } from "./excalidraw-templates";
 import type { BrainWorkspace } from "./useBrainWorkspace";
 
 /* ─── public imperative handle ─── */
-export interface ExcalidrawCanvasHandle {
+interface ExcalidrawCanvasHandle {
   getAPI: () => ExcalidrawImperativeAPI | null;
   exportPNG: () => Promise<Blob | null>;
   getSceneData: () => {
@@ -80,7 +80,7 @@ const mapUnloadListener = (
 };
 
 const installUnloadListenerShim = () => {
-  if (typeof window === "undefined") return () => { };
+  if (typeof window === "undefined") return () => {};
 
   const win = window as WindowWithUnloadShim;
   win.__ptUnloadShimRefCount = (win.__ptUnloadShimRefCount ?? 0) + 1;
@@ -130,6 +130,7 @@ export const ExcalidrawCanvas = forwardRef<
   ExcalidrawCanvasHandle,
   ExcalidrawCanvasProps
 >(function ExcalidrawCanvas({ workspace, onChange }, ref) {
+  const filePickerPathId = useId();
   const [excalidrawAPI, setExcalidrawAPI] =
     useState<ExcalidrawImperativeAPI | null>(null);
 
@@ -517,10 +518,11 @@ export const ExcalidrawCanvas = forwardRef<
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="font-arcade text-[7px] text-muted-foreground">
+                <label htmlFor={filePickerPathId} className="font-arcade text-[7px] text-muted-foreground">
                   FILE PATH
                 </label>
                 <input
+                  id={filePickerPathId}
                   type="text"
                   value={filePickerPath}
                   onChange={(e) => setFilePickerPath(e.target.value)}
@@ -537,9 +539,9 @@ export const ExcalidrawCanvas = forwardRef<
 
               {showFilePicker === "load" && (
                 <div className="flex flex-col gap-1 min-h-0">
-                  <label className="font-arcade text-[7px] text-muted-foreground">
+                  <div className="font-arcade text-[7px] text-muted-foreground">
                     EXISTING FILES
-                  </label>
+                  </div>
                   <div className="flex-1 overflow-y-auto max-h-[200px] border-[3px] border-double border-secondary/30 bg-black/60">
                     {loadingFiles ? (
                       <div className="p-3 font-terminal text-xs text-muted-foreground text-center">

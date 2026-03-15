@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useReducer, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Blocks, Link2, BarChart3, Plus, Star, Play, Loader2, ChevronDown, ChevronRight, Pencil, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,138 @@ const TAB_ITEMS = [
 
 type TabId = (typeof TAB_ITEMS)[number]["id"];
 
-export default function MethodsPage() {
+type AddBlockDialogState = {
+  name: string;
+  category: MethodCategory;
+  description: string;
+  duration: number;
+  energyCost: string;
+  bestStage: string;
+};
+
+type EditBlockDialogState = {
+  name: string;
+  category: MethodCategory;
+  description: string;
+  facilitationPrompt: string;
+  knobsJson: string;
+  knobError: string | null;
+  fullScreenText: boolean;
+  templateLoading: boolean;
+  duration: number;
+  energyCost: string;
+  bestStage: string;
+};
+
+type ChainRunDialogState = {
+  topic: string;
+  courseId: string;
+  writeObsidian: boolean;
+  draftCards: boolean;
+  running: boolean;
+  error: string | null;
+};
+
+function createAddBlockDialogState(): AddBlockDialogState {
+  return {
+    name: "",
+    category: "PRIME",
+    description: "",
+    duration: 5,
+    energyCost: "medium",
+    bestStage: "",
+  };
+}
+
+function addBlockDialogReducer(
+  state: AddBlockDialogState,
+  patch: Partial<AddBlockDialogState>,
+): AddBlockDialogState {
+  return { ...state, ...patch };
+}
+
+function createChainRunDialogState(): ChainRunDialogState {
+  return {
+    topic: "",
+    courseId: "",
+    writeObsidian: true,
+    draftCards: true,
+    running: false,
+    error: null,
+  };
+}
+
+function chainRunDialogReducer(
+  state: ChainRunDialogState,
+  patch: Partial<ChainRunDialogState>,
+): ChainRunDialogState {
+  return { ...state, ...patch };
+}
+
+function createEditBlockDialogState(): EditBlockDialogState {
+  return {
+    name: "",
+    category: "PRIME",
+    description: "",
+    facilitationPrompt: "",
+    knobsJson: "{}",
+    knobError: null,
+    fullScreenText: false,
+    templateLoading: false,
+    duration: 5,
+    energyCost: "medium",
+    bestStage: "",
+  };
+}
+
+function normalizeBlockCategory(block: MethodBlock): MethodCategory {
+  const categoryOptions: MethodCategory[] = [
+    "PRIME",
+    "CALIBRATE",
+    "ENCODE",
+    "REFERENCE",
+    "RETRIEVE",
+    "OVERLEARN",
+  ];
+  const legacyToControl: Record<string, MethodCategory> = {
+    PREPARE: "PRIME",
+    ENCODE: "ENCODE",
+    INTERROGATE: "REFERENCE",
+    RETRIEVE: "RETRIEVE",
+    REFINE: "OVERLEARN",
+    OVERLEARN: "OVERLEARN",
+  };
+  const control = String(block.control_stage ?? "").toUpperCase();
+  if (categoryOptions.includes(control as MethodCategory)) return control as MethodCategory;
+  const raw = String(block.category ?? "").toUpperCase();
+  if (categoryOptions.includes(raw as MethodCategory)) return raw as MethodCategory;
+  return legacyToControl[raw] ?? "PRIME";
+}
+
+function editBlockDialogReducer(
+  state: EditBlockDialogState,
+  patch: Partial<EditBlockDialogState>,
+): EditBlockDialogState {
+  return { ...state, ...patch };
+}
+
+function hydrateEditBlockDialogState(block: MethodBlock): EditBlockDialogState {
+  return {
+    name: block.name ?? "",
+    category: normalizeBlockCategory(block),
+    description: block.description ?? "",
+    facilitationPrompt: block.facilitation_prompt ?? "",
+    knobsJson: JSON.stringify(block.knobs ?? {}, null, 2),
+    knobError: null,
+    fullScreenText: false,
+    templateLoading: false,
+    duration: block.default_duration_min ?? 5,
+    energyCost: block.energy_cost ?? "medium",
+    bestStage: block.best_stage ?? "",
+  };
+}
+
+function useMethodsPageController() {
   const [activeTab, setActiveTab] = useState<TabId>("library");
   const [stageFilter, setStageFilter] = useState<DisplayStage | "all" | "favorites">("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -495,6 +626,15 @@ export default function MethodsPage() {
                     <div
                       key={chain.id}
                       onClick={() => handleSelectChain(chain)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          handleSelectChain(chain);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={selectedChain?.id === chain.id}
                       className={`border-[3px] border-double p-3 rounded-none cursor-pointer transition-colors ${
                         selectedChain?.id === chain.id
                           ? "border-primary bg-primary/10"
@@ -751,12 +891,12 @@ function AddBlockDialog({
   onClose: () => void;
   onSubmit: (data: Omit<MethodBlock, "id" | "created_at">) => void;
 }) {
-  const [name, setName] = useState("");
-  const [category, setCategory] = useState<MethodCategory>("PRIME");
-  const [description, setDescription] = useState("");
-  const [duration, setDuration] = useState(5);
-  const [energyCost, setEnergyCost] = useState("medium");
-  const [bestStage, setBestStage] = useState("");
+  const idBase = useId();
+  const [state, updateState] = useReducer(
+    addBlockDialogReducer,
+    undefined,
+    createAddBlockDialogState,
+  );
   // Control Plane categories (CP-MSS v1.0)
   const categoryOptions: MethodCategory[] = [
     "PRIME",
@@ -768,19 +908,18 @@ function AddBlockDialog({
   ];
 
   const handleSubmit = () => {
-    if (!name.trim()) return;
+    if (!state.name.trim()) return;
     onSubmit({
-      name: name.trim(),
-      category,
-      description: description.trim() || null,
-      default_duration_min: duration,
-      energy_cost: energyCost,
-      best_stage: bestStage || null,
+      name: state.name.trim(),
+      category: state.category,
+      description: state.description.trim() || null,
+      default_duration_min: state.duration,
+      energy_cost: state.energyCost,
+      best_stage: state.bestStage || null,
       tags: [],
       evidence: null,
     });
-    setName("");
-    setDescription("");
+    updateState(createAddBlockDialogState());
   };
 
   return (
@@ -791,13 +930,13 @@ function AddBlockDialog({
         <div className="space-y-3 mt-2">
           <Input
             placeholder="Method name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={state.name}
+            onChange={(e) => updateState({ name: e.target.value })}
             className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base"
           />
           <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value as MethodCategory)}
+            value={state.category}
+            onChange={(e) => updateState({ category: e.target.value as MethodCategory })}
             className="h-9 w-full rounded-none border-2 border-primary/40 bg-black/60 px-3 py-2 font-terminal text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           >
             {categoryOptions.map((c) => (
@@ -808,25 +947,27 @@ function AddBlockDialog({
           </select>
           <Textarea
             placeholder="Description (optional)"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            value={state.description}
+            onChange={(e) => updateState({ description: e.target.value })}
             className="h-16 rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base resize-none"
           />
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="font-arcade text-xs text-muted-foreground">DURATION</label>
+              <label htmlFor={`${idBase}-add-duration`} className="font-arcade text-xs text-muted-foreground">DURATION</label>
               <Input
+                id={`${idBase}-add-duration`}
                 type="number"
-                value={duration}
-                onChange={(e) => setDuration(Number(e.target.value))}
+                value={state.duration}
+                onChange={(e) => updateState({ duration: Number(e.target.value) })}
                 className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base"
               />
             </div>
             <div>
-              <label className="font-arcade text-xs text-muted-foreground">ENERGY</label>
+              <label htmlFor={`${idBase}-add-energy`} className="font-arcade text-xs text-muted-foreground">ENERGY</label>
               <select
-                value={energyCost}
-                onChange={(e) => setEnergyCost(e.target.value)}
+                id={`${idBase}-add-energy`}
+                value={state.energyCost}
+                onChange={(e) => updateState({ energyCost: e.target.value })}
                 className="h-9 w-full rounded-none border-2 border-primary/40 bg-black/60 px-3 py-2 font-terminal text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 {["low", "medium", "high"].map((e) => (
@@ -838,10 +979,11 @@ function AddBlockDialog({
             </div>
           </div>
           <div>
-            <label className="font-arcade text-xs text-muted-foreground">BEST STAGE</label>
+            <label htmlFor={`${idBase}-add-best-stage`} className="font-arcade text-xs text-muted-foreground">BEST STAGE</label>
             <select
-              value={bestStage}
-              onChange={(e) => setBestStage(e.target.value)}
+              id={`${idBase}-add-best-stage`}
+              value={state.bestStage}
+              onChange={(e) => updateState({ bestStage: e.target.value })}
               className="h-9 w-full rounded-none border-2 border-primary/40 bg-black/60 px-3 py-2 font-terminal text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="" className="bg-black text-white">Any</option>
@@ -854,7 +996,7 @@ function AddBlockDialog({
           <Button
             className="w-full font-arcade rounded-none text-xs"
             onClick={handleSubmit}
-            disabled={!name.trim()}
+            disabled={!state.name.trim()}
           >
             CREATE BLOCK
           </Button>
@@ -942,17 +1084,12 @@ function EditBlockDialog({
   onSave: (id: number, data: Partial<MethodBlock>) => void;
   onDelete: (id: number) => void;
 }) {
-  const [name, setName] = useState("");
-  const [category, setCategory] = useState<MethodCategory>("PRIME");
-  const [description, setDescription] = useState("");
-  const [facilitationPrompt, setFacilitationPrompt] = useState("");
-  const [knobsJson, setKnobsJson] = useState("{}");
-  const [knobError, setKnobError] = useState<string | null>(null);
-  const [fullScreenText, setFullScreenText] = useState(false);
-  const [templateLoading, setTemplateLoading] = useState(false);
-  const [duration, setDuration] = useState(5);
-  const [energyCost, setEnergyCost] = useState("medium");
-  const [bestStage, setBestStage] = useState("");
+  const idBase = useId();
+  const [state, updateState] = useReducer(
+    editBlockDialogReducer,
+    undefined,
+    createEditBlockDialogState,
+  );
 
   const categoryOptions: MethodCategory[] = [
     "PRIME",
@@ -970,66 +1107,42 @@ function EditBlockDialog({
     RETRIEVE: "RETRIEVAL",
     OVERLEARN: "OVERLEARNING",
   };
-  const legacyToControl: Record<string, MethodCategory> = {
-    PREPARE: "PRIME",
-    ENCODE: "ENCODE",
-    INTERROGATE: "REFERENCE",
-    RETRIEVE: "RETRIEVE",
-    REFINE: "OVERLEARN",
-    OVERLEARN: "OVERLEARN",
-  };
-  const normalizeCategory = (b: MethodBlock): MethodCategory => {
-    const control = String(b.control_stage ?? "").toUpperCase();
-    if (categoryOptions.includes(control as MethodCategory)) return control as MethodCategory;
-    const raw = String(b.category ?? "").toUpperCase();
-    if (categoryOptions.includes(raw as MethodCategory)) return raw as MethodCategory;
-    return legacyToControl[raw] ?? "PRIME";
-  };
 
   useEffect(() => {
     if (!block) return;
-    setName(block.name ?? "");
-    setCategory(normalizeCategory(block));
-    setDescription(block.description ?? "");
-    setFacilitationPrompt(block.facilitation_prompt ?? "");
-    setDuration(block.default_duration_min ?? 5);
-    setEnergyCost(block.energy_cost ?? "medium");
-    setBestStage(block.best_stage ?? "");
-    setKnobsJson(JSON.stringify(block.knobs ?? {}, null, 2));
-    setKnobError(null);
-    setFullScreenText(false);
+    updateState(hydrateEditBlockDialogState(block));
   }, [block]);
 
   const handleSave = () => {
-    if (!block || !name.trim()) return;
+    if (!block || !state.name.trim()) return;
     let parsedKnobs: Record<string, unknown> = {};
     try {
-      const parsed = JSON.parse(knobsJson || "{}");
+      const parsed = JSON.parse(state.knobsJson || "{}");
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-        setKnobError("Knobs must be a JSON object.");
+        updateState({ knobError: "Knobs must be a JSON object." });
         return;
       }
       parsedKnobs = parsed as Record<string, unknown>;
-      setKnobError(null);
+      updateState({ knobError: null });
     } catch {
-      setKnobError("Invalid knobs JSON. Fix syntax before saving.");
+      updateState({ knobError: "Invalid knobs JSON. Fix syntax before saving." });
       return;
     }
     onSave(block.id, {
-      name: name.trim(),
-      category,
-      description: description.trim() || null,
-      default_duration_min: duration,
-      energy_cost: energyCost,
-      best_stage: bestStage || null,
-      facilitation_prompt: facilitationPrompt.trim() || null,
+      name: state.name.trim(),
+      category: state.category,
+      description: state.description.trim() || null,
+      default_duration_min: state.duration,
+      energy_cost: state.energyCost,
+      best_stage: state.bestStage || null,
+      facilitation_prompt: state.facilitationPrompt.trim() || null,
       knobs: parsedKnobs,
     });
   };
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className={`bg-black border-[3px] border-double border-primary rounded-none ${fullScreenText ? "max-w-[96vw] w-[96vw] h-[92vh]" : "max-w-lg"}`}>
+      <DialogContent className={`bg-black border-[3px] border-double border-primary rounded-none ${state.fullScreenText ? "max-w-[96vw] w-[96vw] h-[92vh]" : "max-w-lg"}`}>
         <div className="flex items-center justify-between">
           <DialogTitle className="font-arcade text-sm text-primary">EDIT METHOD BLOCK</DialogTitle>
           <Button
@@ -1037,22 +1150,22 @@ function EditBlockDialog({
             variant="outline"
             size="sm"
             className="h-7 px-2 rounded-none border-[3px] border-double font-arcade text-[10px]"
-            onClick={() => setFullScreenText((v) => !v)}
+            onClick={() => updateState({ fullScreenText: !state.fullScreenText })}
           >
-            {fullScreenText ? "EXIT FULL" : "FULL TEXT"}
+            {state.fullScreenText ? "EXIT FULL" : "FULL TEXT"}
           </Button>
         </div>
         <DialogDescription className="sr-only">Edit method block settings</DialogDescription>
-        <div className={`space-y-3 mt-2 ${fullScreenText ? "h-[calc(92vh-7rem)] overflow-y-auto pr-1" : ""}`}>
+        <div className={`space-y-3 mt-2 ${state.fullScreenText ? "h-[calc(92vh-7rem)] overflow-y-auto pr-1" : ""}`}>
           <Input
             placeholder="Method name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={state.name}
+            onChange={(e) => updateState({ name: e.target.value })}
             className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base"
           />
           <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value as MethodCategory)}
+            value={state.category}
+            onChange={(e) => updateState({ category: e.target.value as MethodCategory })}
             className="h-9 w-full rounded-none border-2 border-primary/40 bg-black/60 px-3 py-2 font-terminal text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           >
             {categoryOptions.map((c) => (
@@ -1063,99 +1176,107 @@ function EditBlockDialog({
           </select>
           <Textarea
             placeholder="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className={`${fullScreenText ? "h-32" : "h-16"} rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base resize-y`}
+            value={state.description}
+            onChange={(e) => updateState({ description: e.target.value })}
+            className={`${state.fullScreenText ? "h-32" : "h-16"} rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base resize-y`}
           />
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="font-arcade text-xs text-muted-foreground">TUTOR PROMPT</label>
+              <label htmlFor={`${idBase}-edit-tutor-prompt`} className="font-arcade text-xs text-muted-foreground">TUTOR PROMPT</label>
               <div className="flex items-center gap-1">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-6 px-2 rounded-none border-[3px] border-double font-arcade text-[10px]"
-                  onClick={() => setFacilitationPrompt(block?.facilitation_prompt ?? "")}
-                >
-                  UNDO EDITS
-                </Button>
+                className="h-6 px-2 rounded-none border-[3px] border-double font-arcade text-[10px]"
+                onClick={() => updateState({ facilitationPrompt: block?.facilitation_prompt ?? "" })}
+              >
+                UNDO EDITS
+              </Button>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   className="h-6 px-2 rounded-none border-[3px] border-double border-warning/50 text-warning font-arcade text-[10px]"
-                  disabled={templateLoading || !block}
+                  disabled={state.templateLoading || !block}
                   onClick={async () => {
                     if (!block) return;
-                    setTemplateLoading(true);
+                    updateState({ templateLoading: true });
                     try {
                       const res = await api.methods.getTemplatePrompt(block.id);
-                      setFacilitationPrompt(res.facilitation_prompt);
+                      updateState({ facilitationPrompt: res.facilitation_prompt });
                     } catch {
                       // Silently fall back to current DB value if API unavailable
-                      setFacilitationPrompt(block.facilitation_prompt ?? "");
+                      updateState({ facilitationPrompt: block.facilitation_prompt ?? "" });
                     } finally {
-                      setTemplateLoading(false);
+                      updateState({ templateLoading: false });
                     }
                   }}
                 >
-                  {templateLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3 mr-0.5" />}
+                  {state.templateLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3 mr-0.5" />}
                   RESET TO TEMPLATE
                 </Button>
               </div>
             </div>
             <Textarea
+              id={`${idBase}-edit-tutor-prompt`}
               placeholder="Facilitation prompt used by the tutor for this method..."
-              value={facilitationPrompt}
-              onChange={(e) => setFacilitationPrompt(e.target.value)}
-              className={`${fullScreenText ? "h-[42vh]" : "h-32"} rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-sm resize-y`}
+              value={state.facilitationPrompt}
+              onChange={(e) => updateState({ facilitationPrompt: e.target.value })}
+              className={`${state.fullScreenText ? "h-[42vh]" : "h-32"} rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-sm resize-y`}
             />
           </div>
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="font-arcade text-xs text-muted-foreground">KNOBS JSON</label>
+              <label htmlFor={`${idBase}-edit-knobs`} className="font-arcade text-xs text-muted-foreground">KNOBS JSON</label>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 className="h-6 px-2 rounded-none border-[3px] border-double font-arcade text-[10px]"
                 onClick={() => {
-                  setKnobsJson(JSON.stringify(block?.knobs ?? {}, null, 2));
-                  setKnobError(null);
+                  updateState({
+                    knobsJson: JSON.stringify(block?.knobs ?? {}, null, 2),
+                    knobError: null,
+                  });
                 }}
               >
                 RESET KNOBS
               </Button>
             </div>
             <Textarea
+              id={`${idBase}-edit-knobs`}
               placeholder="Per-method knobs JSON (validated on save)"
-              value={knobsJson}
+              value={state.knobsJson}
               onChange={(e) => {
-                setKnobsJson(e.target.value);
-                if (knobError) setKnobError(null);
+                updateState({
+                  knobsJson: e.target.value,
+                  knobError: null,
+                });
               }}
-              className={`${fullScreenText ? "h-40" : "h-28"} rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-xs resize-y`}
+              className={`${state.fullScreenText ? "h-40" : "h-28"} rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-xs resize-y`}
             />
-            {knobError && (
-              <p className="mt-1 font-terminal text-xs text-destructive">{knobError}</p>
+            {state.knobError && (
+              <p className="mt-1 font-terminal text-xs text-destructive">{state.knobError}</p>
             )}
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="font-arcade text-xs text-muted-foreground">DURATION</label>
+              <label htmlFor={`${idBase}-edit-duration`} className="font-arcade text-xs text-muted-foreground">DURATION</label>
               <Input
+                id={`${idBase}-edit-duration`}
                 type="number"
-                value={duration}
-                onChange={(e) => setDuration(Number(e.target.value))}
+                value={state.duration}
+                onChange={(e) => updateState({ duration: Number(e.target.value) })}
                 className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base"
               />
             </div>
             <div>
-              <label className="font-arcade text-xs text-muted-foreground">ENERGY</label>
+              <label htmlFor={`${idBase}-edit-energy`} className="font-arcade text-xs text-muted-foreground">ENERGY</label>
               <select
-                value={energyCost}
-                onChange={(e) => setEnergyCost(e.target.value)}
+                id={`${idBase}-edit-energy`}
+                value={state.energyCost}
+                onChange={(e) => updateState({ energyCost: e.target.value })}
                 className="h-9 w-full rounded-none border-2 border-primary/40 bg-black/60 px-3 py-2 font-terminal text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 {["low", "medium", "high"].map((e) => (
@@ -1167,10 +1288,11 @@ function EditBlockDialog({
             </div>
           </div>
           <div>
-            <label className="font-arcade text-xs text-muted-foreground">BEST STAGE</label>
+            <label htmlFor={`${idBase}-edit-best-stage`} className="font-arcade text-xs text-muted-foreground">BEST STAGE</label>
             <select
-              value={bestStage}
-              onChange={(e) => setBestStage(e.target.value)}
+              id={`${idBase}-edit-best-stage`}
+              value={state.bestStage}
+              onChange={(e) => updateState({ bestStage: e.target.value })}
               className="h-9 w-full rounded-none border-2 border-primary/40 bg-black/60 px-3 py-2 font-terminal text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="" className="bg-black text-white">Any</option>
@@ -1191,7 +1313,7 @@ function EditBlockDialog({
             <Button
               className="w-full font-arcade rounded-none text-xs"
               onClick={handleSave}
-              disabled={!name.trim()}
+              disabled={!state.name.trim()}
             >
               SAVE
             </Button>
@@ -1225,33 +1347,34 @@ function ChainRunDialog({
   onClose: () => void;
   onComplete: (result: ChainRunResult) => void;
 }) {
-  const [topic, setTopic] = useState("");
-  const [courseId, setCourseId] = useState<string>("");
-  const [writeObsidian, setWriteObsidian] = useState(true);
-  const [draftCards, setDraftCards] = useState(true);
-  const [running, setRunning] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const idBase = useId();
+  const [state, updateState] = useReducer(
+    chainRunDialogReducer,
+    undefined,
+    createChainRunDialogState,
+  );
 
   const handleStart = async () => {
-    if (!topic.trim()) return;
-    setRunning(true);
-    setError(null);
+    if (!state.topic.trim()) return;
+    updateState({ running: true, error: null });
     try {
       const result = await api.chainRun.start({
         chain_id: chainId,
-        topic: topic.trim(),
-        course_id: courseId && courseId !== "__none__" ? Number(courseId) : undefined,
-        options: { write_obsidian: writeObsidian, draft_cards: draftCards },
+        topic: state.topic.trim(),
+        course_id: state.courseId && state.courseId !== "__none__" ? Number(state.courseId) : undefined,
+        options: { write_obsidian: state.writeObsidian, draft_cards: state.draftCards },
       });
       onComplete(result);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Chain run failed");
-      setRunning(false);
+      updateState({
+        error: e instanceof Error ? e.message : "Chain run failed",
+        running: false,
+      });
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && !running && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => !v && !state.running && onClose()}>
       <DialogContent className="bg-black border-[3px] border-double border-primary rounded-none max-w-md">
         <DialogTitle className="font-arcade text-sm text-primary">
           RUN: {chainName}
@@ -1259,19 +1382,20 @@ function ChainRunDialog({
         <DialogDescription className="sr-only">Configure and run a method chain</DialogDescription>
         <div className="space-y-3 mt-2">
           <div>
-            <label className="font-arcade text-xs text-muted-foreground">TOPIC</label>
+            <label htmlFor={`${idBase}-run-topic`} className="font-arcade text-xs text-muted-foreground">TOPIC</label>
             <Input
+              id={`${idBase}-run-topic`}
               placeholder="e.g., Glenohumeral Joint Ligaments"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              disabled={running}
+              value={state.topic}
+              onChange={(e) => updateState({ topic: e.target.value })}
+              disabled={state.running}
               className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base"
             />
           </div>
           <div>
-            <label className="font-arcade text-xs text-muted-foreground">COURSE (OPTIONAL)</label>
-            <Select value={courseId} onValueChange={setCourseId} disabled={running}>
-              <SelectTrigger className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base">
+            <label htmlFor={`${idBase}-run-course`} className="font-arcade text-xs text-muted-foreground">COURSE (OPTIONAL)</label>
+            <Select value={state.courseId} onValueChange={(courseId) => updateState({ courseId })} disabled={state.running}>
+              <SelectTrigger id={`${idBase}-run-course`} className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base">
                 <SelectValue placeholder="None" />
               </SelectTrigger>
               <SelectContent className="bg-black border-2 border-primary rounded-none">
@@ -1290,9 +1414,9 @@ function ChainRunDialog({
             <label className="flex items-center gap-2 font-terminal text-base cursor-pointer">
               <input
                 type="checkbox"
-                checked={writeObsidian}
-                onChange={(e) => setWriteObsidian(e.target.checked)}
-                disabled={running}
+                checked={state.writeObsidian}
+                onChange={(e) => updateState({ writeObsidian: e.target.checked })}
+                disabled={state.running}
                 className="accent-primary"
               />
               Write to Obsidian
@@ -1300,23 +1424,23 @@ function ChainRunDialog({
             <label className="flex items-center gap-2 font-terminal text-base cursor-pointer">
               <input
                 type="checkbox"
-                checked={draftCards}
-                onChange={(e) => setDraftCards(e.target.checked)}
-                disabled={running}
+                checked={state.draftCards}
+                onChange={(e) => updateState({ draftCards: e.target.checked })}
+                disabled={state.running}
                 className="accent-primary"
               />
               Draft Anki cards
             </label>
           </div>
-          {error && (
-            <p className="font-terminal text-base text-destructive">{error}</p>
+          {state.error && (
+            <p className="font-terminal text-base text-destructive">{state.error}</p>
           )}
           <Button
             className="w-full font-arcade rounded-none text-xs"
             onClick={handleStart}
-            disabled={!topic.trim() || running}
+            disabled={!state.topic.trim() || state.running}
           >
-            {running ? (
+            {state.running ? (
               <>
                 <Loader2 className="w-3 h-3 mr-2 animate-spin" />
                 RUNNING...
@@ -1327,7 +1451,7 @@ function ChainRunDialog({
               </>
             )}
           </Button>
-          {running && (
+          {state.running && (
             <p className="font-terminal text-sm text-muted-foreground text-center">
               This may take 15-45 seconds depending on chain length.
             </p>
@@ -1448,4 +1572,8 @@ function ChainRunResultDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+export default function MethodsPage() {
+  return useMethodsPageController();
 }

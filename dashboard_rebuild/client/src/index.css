@@ -532,24 +532,13 @@
     @apply text-muted-foreground;
   }
 
-  /* Nav button (header): tight spacing, pixel double, CRT Flicker */
+  /* Nav button (header): shared base layout only
+     Heavy visuals (gradients, bevels, glow) live in layout.tsx so the shell stays in one place. */
   .nav-btn {
     min-height: var(--control-h-sm);
-    @apply font-arcade rounded-none px-2 lg:px-3 text-xs;
-    border: var(--ds-border-width) var(--ds-border-style) transparent;
+    @apply font-arcade px-2 lg:px-3 text-xs;
+    border-radius: 1.5rem;
     transition: all var(--ds-transition) ease;
-  }
-  .nav-btn.active {
-    @apply bg-primary text-primary-foreground;
-    border-color: hsl(var(--primary));
-  }
-  .nav-btn:not(.active):hover {
-    border-color: hsl(var(--primary));
-    color: hsl(var(--primary));
-    box-shadow: var(--ds-hover-shadow);
-  }
-  .nav-btn:not(.active) {
-    border-color: hsl(var(--border));
   }
 
   /* --- Brain tab: retro-futuristic "cabinet terminal" --- */

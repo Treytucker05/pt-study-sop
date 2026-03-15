@@ -457,7 +457,6 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
                 onChange={(e) => setNewTaskTitle(e.target.value)}
                 className="rounded-none border-secondary bg-black font-terminal"
                 placeholder="Enter task text"
-                autoFocus
               />
             </div>
 

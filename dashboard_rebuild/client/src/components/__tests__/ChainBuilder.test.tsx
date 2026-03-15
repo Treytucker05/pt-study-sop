@@ -5,13 +5,14 @@ import type { MethodBlock, MethodChain } from "@/api";
 
 vi.mock("@/components/MethodBlockCard", () => ({
   default: ({ block, onClick, compact }: { block: MethodBlock; onClick?: () => void; compact?: boolean }) => (
-    <div
+    <button
+      type="button"
       data-testid={`block-${block.id}`}
       data-compact={compact}
       onClick={onClick}
     >
       {block.name}
-    </div>
+    </button>
   ),
 }));
 

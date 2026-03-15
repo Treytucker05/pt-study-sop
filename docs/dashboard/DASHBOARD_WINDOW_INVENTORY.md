@@ -77,22 +77,6 @@ Source: `dashboard_rebuild/client/src/pages/brain.tsx`
 - Reads: `api.obsidian.getStatus`, `api.anki.getStatus`, `api.anki.getDrafts`, `api.brain.getMetrics`.
 - Backend: `brain/dashboard/api_adapter.py` routes `/obsidian/status`, `/anki/status`, `/brain/metrics`.
 
-### Tabs: INGESTION
-Source: `dashboard_rebuild/client/src/components/IngestionTab.tsx`
-- Purpose: ingest syllabus, learning objectives, and WRAP; import modules/events into DB.
-- UI/Components: Accordion sections: Syllabus Import, WRAP Import, Learning Objectives Import.
-- Reads: `api.courses.getActive`, `api.modules.getByCourse`, `api.learningObjectives.getByCourse`.
-- Writes: `api.syllabus.importBulk`, `api.learningObjectives.createBulk`, `api.brain.ingest`.
-- Backend: `brain/dashboard/api_adapter.py` routes `/syllabus/import-bulk`, `/learning-objectives/bulk`, `/brain/ingest`.
-
-### Tabs: DATA
-Source: `dashboard_rebuild/client/src/components/DataTablesSection.tsx`
-- Purpose: view/edit modules and schedule events per course.
-- UI/Components: course selector, modules table, schedule events table, bulk delete dialog.
-- Reads: `api.courses.getActive`, `api.modules.getByCourse`, `api.scheduleEvents.getByCourse`.
-- Writes: `api.modules.update/delete/deleteMany`, `api.scheduleEvents.update/delete/deleteMany`.
-- Backend: `brain/dashboard/api_adapter.py` routes `/modules`, `/modules/<id>`, `/modules/bulk-delete`, `/schedule-events`, `/schedule-events/<id>`, `/schedule-events/bulk-delete`.
-
 ### Tabs: INTEGRATIONS
 Source: `dashboard_rebuild/client/src/pages/brain.tsx`
 

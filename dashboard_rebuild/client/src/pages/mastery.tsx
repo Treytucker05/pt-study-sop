@@ -113,8 +113,8 @@ function WhyLockedPanel({ data }: { data: WhyLockedResponse }) {
             {data.flagged_prereqs.map((fp) => (
               <div key={fp.skill_id} className="bg-black/40 border border-primary/20 p-2">
                 <span className="font-terminal text-xs text-white">{fp.skill_id}</span>
-                {fp.flags.map((flag, i) => (
-                  <div key={i} className="flex items-center gap-2 mt-1">
+                {fp.flags.map((flag) => (
+                  <div key={`${flag.error_type}-${flag.evidence_ref ?? "none"}`} className="flex items-center gap-2 mt-1">
                     <SeverityBadge severity={flag.severity} />
                     <span className="font-terminal text-[10px] text-muted-foreground">{flag.error_type}</span>
                   </div>
@@ -129,8 +129,8 @@ function WhyLockedPanel({ data }: { data: WhyLockedResponse }) {
         <div>
           <h4 className="font-arcade text-[10px] text-yellow-400 mb-2">RECENT ERROR FLAGS</h4>
           <div className="space-y-1">
-            {data.recent_error_flags.map((flag, i) => (
-              <div key={i} className="flex items-center gap-2 bg-black/40 border border-primary/20 p-2">
+            {data.recent_error_flags.map((flag) => (
+              <div key={`${flag.error_type}-${flag.evidence_ref ?? "none"}`} className="flex items-center gap-2 bg-black/40 border border-primary/20 p-2">
                 <SeverityBadge severity={flag.severity} />
                 <span className="font-terminal text-xs text-white">{flag.error_type}</span>
                 {flag.evidence_ref && (
@@ -148,8 +148,8 @@ function WhyLockedPanel({ data }: { data: WhyLockedResponse }) {
         <div>
           <h4 className="font-arcade text-[10px] text-green-400 mb-2">REMEDIATION PATH</h4>
           <ol className="space-y-1">
-            {data.remediation_path.map((step, i) => (
-              <li key={i} className="flex items-center gap-2 font-terminal text-xs text-white">
+            {data.remediation_path.map((step) => (
+              <li key={step} className="flex items-center gap-2 font-terminal text-xs text-white">
                 <ArrowRight className="w-3 h-3 text-green-400 shrink-0" />
                 <span>{step}</span>
               </li>

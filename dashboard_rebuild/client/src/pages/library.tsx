@@ -290,6 +290,35 @@ function collectSyncPreviewFilePaths(
   return files;
 }
 
+type InitialLibraryLaunchState = {
+  sidebarMode: "folders" | "courses";
+  selectedCourseId: number | "unlinked" | null;
+  uploadCourseTarget: string;
+  syncCourseTarget: string;
+  selectedFolderPath: string;
+};
+
+function readInitialLibraryLaunchState(): InitialLibraryLaunchState {
+  const handoff = consumeLibraryLaunchFromTutor();
+  if (!handoff || typeof handoff.courseId !== "number") {
+    return {
+      sidebarMode: "folders",
+      selectedCourseId: null,
+      uploadCourseTarget: "",
+      syncCourseTarget: "",
+      selectedFolderPath: ALL_FOLDERS_KEY,
+    };
+  }
+  const courseId = String(handoff.courseId);
+  return {
+    sidebarMode: "courses",
+    selectedCourseId: handoff.courseId,
+    uploadCourseTarget: courseId,
+    syncCourseTarget: courseId,
+    selectedFolderPath: ALL_FOLDERS_KEY,
+  };
+}
+
 function renderMaterialRow(
   mat: Material,
   isDuplicate: boolean,
@@ -322,13 +351,14 @@ function renderMaterialRow(
       className={`grid gap-2 px-2 py-1.5 items-center border-b border-primary/10 hover:bg-primary/5 transition-colors ${!mat.enabled ? "opacity-50" : ""}`}
       style={{ gridTemplateColumns: "28px minmax(210px,1.6fr) minmax(140px,1fr) 64px 72px 84px 116px" }}
     >
-      <label className="flex items-center justify-center">
+      <div className="flex items-center justify-center">
         <Checkbox
           checked={selectedForTutor.includes(mat.id)}
           onCheckedChange={() => toggleMaterialForTutor(mat.id)}
           disabled={!mat.enabled}
+          aria-label={`Select ${displayTitle} for tutor`}
         />
-      </label>
+      </div>
 
       {/* Title */}
       <div className="min-w-0">
@@ -338,7 +368,6 @@ function renderMaterialRow(
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
               className={`${INPUT_BASE} flex-1 h-9 py-1 text-base`}
-              autoFocus
               onKeyDown={(e) => {
                 if (e.key === "Enter") saveEdit();
                 if (e.key === "Escape") setEditingId(null);
@@ -468,15 +497,101 @@ function renderMaterialRow(
   );
 }
 
-export default function Library() {
+function SyncPreviewTreeNode({
+  node,
+  depth = 0,
+  selectedSyncFiles,
+  expandedSyncFolders,
+  onToggleFile,
+  onToggleFolder,
+}: {
+  node: TutorSyncPreviewNode;
+  depth?: number;
+  selectedSyncFiles: Set<string>;
+  expandedSyncFolders: Set<string>;
+  onToggleFile: (path: string) => void;
+  onToggleFolder: (path: string) => void;
+}): ReactElement | null {
+  if (node.type === "file") {
+    const isChecked = selectedSyncFiles.has(node.path);
+    return (
+      <div
+        className="w-full rounded-none border border-primary/10 px-2 py-1 text-left text-xs font-terminal flex items-center gap-2 text-muted-foreground hover:text-foreground"
+        style={{ paddingLeft: `${0.6 + depth * 0.8}rem` }}
+        title={node.path}
+      >
+        <Checkbox
+          checked={isChecked}
+          onCheckedChange={() => onToggleFile(node.path)}
+        />
+        <FileText className={`${ICON_SM} shrink-0`} />
+        <span className="truncate flex-1">{node.name}</span>
+        <span className="text-[11px]">{formatSize(node.size)}</span>
+      </div>
+    );
+  }
+
+  const children = Array.isArray(node.children) ? node.children : [];
+  const isRoot = node.path === "";
+  const isExpanded = isRoot || expandedSyncFolders.has(node.path);
+
+  return (
+    <div>
+      {!isRoot && (
+        <div
+          className="w-full rounded-none border border-primary/15 pr-2 py-1 text-left text-xs font-terminal flex items-center gap-1 text-muted-foreground hover:text-foreground"
+          style={{ paddingLeft: `${0.45 + depth * 0.8}rem` }}
+          title={node.path}
+        >
+          {children.length > 0 ? (
+            <button
+              type="button"
+              className="p-0.5 hover:text-primary transition-colors"
+              onClick={() => onToggleFolder(node.path)}
+              aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
+            >
+              <ChevronRight
+                className={`${ICON_SM} transition-transform ${isExpanded ? "rotate-90" : "rotate-0"}`}
+              />
+            </button>
+          ) : (
+            <span className="w-4" />
+          )}
+          {isExpanded ? (
+            <FolderOpen className={`${ICON_SM} shrink-0`} />
+          ) : (
+            <Folder className={`${ICON_SM} shrink-0`} />
+          )}
+          <span className="truncate flex-1">{node.name}</span>
+          <span className="text-[11px]">{children.length}</span>
+        </div>
+      )}
+      {isExpanded &&
+        children.map((child) => (
+          <SyncPreviewTreeNode
+            key={child.path}
+            node={child}
+            depth={isRoot ? depth : depth + 1}
+            selectedSyncFiles={selectedSyncFiles}
+            expandedSyncFolders={expandedSyncFolders}
+            onToggleFile={onToggleFile}
+            onToggleFolder={onToggleFolder}
+          />
+        ))}
+    </div>
+  );
+}
+
+function useLibraryPageController() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
+  const initialLaunchState = useMemo(() => readInitialLibraryLaunchState(), []);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [materialsFolder, setMaterialsFolder] = useState("C:\\Users\\treyt\\OneDrive\\Desktop\\PT School");
-  const [uploadCourseTarget, setUploadCourseTarget] = useState<string>("");
-  const [syncCourseTarget, setSyncCourseTarget] = useState<string>("");
+  const [uploadCourseTarget, setUploadCourseTarget] = useState<string>(initialLaunchState.uploadCourseTarget);
+  const [syncCourseTarget, setSyncCourseTarget] = useState<string>(initialLaunchState.syncCourseTarget);
   const [syncJobId, setSyncJobId] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<TutorSyncJobStatus | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -486,26 +601,16 @@ export default function Library() {
   const [selectedSyncFiles, setSelectedSyncFiles] = useState<Set<string>>(new Set());
   const [expandedSyncFolders, setExpandedSyncFolders] = useState<Set<string>>(new Set([""]));
   const [reextractingMaterialIds, setReextractingMaterialIds] = useState<number[]>([]);
-  const [selectedFolderPath, setSelectedFolderPath] = useState<string>(ALL_FOLDERS_KEY);
+  const [selectedFolderPath, setSelectedFolderPath] = useState<string>(initialLaunchState.selectedFolderPath);
   const [expandedFolderPaths, setExpandedFolderPaths] = useState<Set<string>>(new Set());
   const [initializedFolderExpansion, setInitializedFolderExpansion] = useState(false);
   const [courseLinkTarget, setCourseLinkTarget] = useState<string>("");
-  const [sidebarMode, setSidebarMode] = useState<"folders" | "courses">("folders");
-  const [selectedCourseId, setSelectedCourseId] = useState<number | "unlinked" | null>(null);
+  const [sidebarMode, setSidebarMode] = useState<"folders" | "courses">(initialLaunchState.sidebarMode);
+  const [selectedCourseId, setSelectedCourseId] = useState<number | "unlinked" | null>(initialLaunchState.selectedCourseId);
   const [viewingMaterialId, setViewingMaterialId] = useState<number | null>(null);
   const [selectedForTutor, setSelectedForTutor] = useState<number[]>(() =>
     readTutorSelectedMaterialIds()
   );
-
-  useEffect(() => {
-    const handoff = consumeLibraryLaunchFromTutor();
-    if (!handoff || typeof handoff.courseId !== "number") return;
-    setSidebarMode("courses");
-    setSelectedCourseId(handoff.courseId);
-    setUploadCourseTarget(String(handoff.courseId));
-    setSyncCourseTarget(String(handoff.courseId));
-    setSelectedFolderPath(ALL_FOLDERS_KEY);
-  }, []);
 
   const { data: materials = [], isLoading } = useQuery<Material[]>({
     queryKey: ["tutor-materials"],
@@ -544,10 +649,7 @@ export default function Library() {
     () => getFolderNode(folderTree, selectedFolderPath),
     [folderTree, selectedFolderPath],
   );
-  const unlinkedCount = useMemo(
-    () => materials.filter((m) => m.course_id === null).length,
-    [materials],
-  );
+  const unlinkedCount = materials.filter((m) => m.course_id === null).length;
   const visibleMaterials = useMemo(() => {
     if (sidebarMode === "courses") {
       let filtered: Material[];
@@ -575,12 +677,30 @@ export default function Library() {
     return selectedFolderPath || "All Materials";
   }, [sidebarMode, selectedCourseId, contentSources, selectedFolderPath]);
 
+  const selectFolderPath = (path: string) => {
+    setSelectedFolderPath(path);
+    const ancestors = getFolderAncestorPaths(path);
+    if (!ancestors.length) return;
+    setExpandedFolderPaths((prev) => {
+      const next = new Set(prev);
+      for (const ancestor of ancestors) next.add(ancestor);
+      return next;
+    });
+  };
+
+  const resetSyncPreviewState = (errorMessage: string | null) => {
+    setSyncPreview(null);
+    setSelectedSyncFiles(new Set());
+    setExpandedSyncFolders(new Set([""]));
+    setSyncPreviewError(errorMessage);
+  };
+
   const handleSidebarModeChange = (mode: "folders" | "courses") => {
     setSidebarMode(mode);
     if (mode === "folders") {
       setSelectedCourseId(null);
     } else {
-      setSelectedFolderPath(ALL_FOLDERS_KEY);
+      selectFolderPath(ALL_FOLDERS_KEY);
     }
   };
 
@@ -674,7 +794,7 @@ export default function Library() {
     if (isLoading) return;
     setSelectedForTutor((ids) => ids.filter((id) => materials.some((m) => m.id === id)));
     if (selectedFolderPath !== ALL_FOLDERS_KEY && !getFolderNode(folderTree, selectedFolderPath)) {
-      setSelectedFolderPath(ALL_FOLDERS_KEY);
+      selectFolderPath(ALL_FOLDERS_KEY);
     }
   }, [isLoading, materials, selectedFolderPath, folderTree]);
 
@@ -691,27 +811,50 @@ export default function Library() {
     setInitializedFolderExpansion(true);
   }, [folderItems, initializedFolderExpansion]);
 
-  useEffect(() => {
-    if (!selectedFolderPath) return;
-    const ancestors = getFolderAncestorPaths(selectedFolderPath);
-    if (!ancestors.length) return;
-    setExpandedFolderPaths((prev) => {
-      const next = new Set(prev);
-      for (const path of ancestors) next.add(path);
-      return next;
-    });
-  }, [selectedFolderPath]);
-
-  useEffect(() => {
+  const handleMaterialsFolderChange = (value: string) => {
+    setMaterialsFolder(value);
     if (!syncPreview) return;
     const normalizedPreview = normalizePathForCompare(syncPreview.folder || "");
-    const normalizedCurrent = normalizePathForCompare(materialsFolder.trim());
+    const normalizedCurrent = normalizePathForCompare(value.trim());
     if (!normalizedCurrent || normalizedPreview === normalizedCurrent) return;
-    setSyncPreview(null);
-    setSelectedSyncFiles(new Set());
-    setExpandedSyncFolders(new Set([""]));
-    setSyncPreviewError("Folder path changed. Scan the folder again.");
-  }, [materialsFolder, syncPreview]);
+    resetSyncPreviewState("Folder path changed. Scan the folder again.");
+  };
+
+  const finalizeSyncStatus = (status: TutorSyncJobStatus) => {
+    setSyncing(false);
+    setSyncJobId(null);
+    queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
+    queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
+
+    if (status.status === "completed") {
+      const syncCount = Number(status.sync_result?.processed ?? status.processed ?? 0);
+      const failedCount = Number(status.sync_result?.failed ?? status.errors ?? 0);
+      const embedResult = status.embed_result as { embedded?: number } | null | undefined;
+      const embedCount = Number(embedResult?.embedded ?? 0);
+      const embedErrorResult = status.embed_result as { error?: string } | null | undefined;
+      const embedError = (embedErrorResult?.error || "").trim();
+      if (embedError) {
+        toast.warning(
+          `Sync complete: ${syncCount} processed, ${failedCount} failed. Embedding error: ${embedError}`,
+        );
+      } else if (failedCount > 0) {
+        toast.warning(
+          `Sync complete: ${syncCount} processed, ${failedCount} failed${embedCount > 0 ? `, ${embedCount} embedded` : ""}`,
+        );
+      } else {
+        toast.success(`Synced ${syncCount} materials, embedded ${embedCount}`);
+      }
+      return;
+    }
+
+    toast.error(`Sync failed: ${status.last_error || "Unknown error"}`);
+  };
+
+  const handleSyncPollingFailure = (errorMessage: string) => {
+    setSyncing(false);
+    setSyncJobId(null);
+    toast.error(`Sync status failed after retries: ${errorMessage}`);
+  };
 
   useEffect(() => {
     if (!syncJobId) return;
@@ -736,32 +879,7 @@ export default function Library() {
         setSyncStatus(status);
 
         if (status.status === "completed" || status.status === "failed") {
-          setSyncing(false);
-          setSyncJobId(null);
-          queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
-          queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
-
-          if (status.status === "completed") {
-            const syncCount = Number(status.sync_result?.processed ?? status.processed ?? 0);
-            const failedCount = Number(status.sync_result?.failed ?? status.errors ?? 0);
-            const embedResult = status.embed_result as { embedded?: number } | null | undefined;
-            const embedCount = Number(embedResult?.embedded ?? 0);
-            const embedErrorResult = status.embed_result as { error?: string } | null | undefined;
-            const embedError = (embedErrorResult?.error || "").trim();
-            if (embedError) {
-              toast.warning(
-                `Sync complete: ${syncCount} processed, ${failedCount} failed. Embedding error: ${embedError}`,
-              );
-            } else if (failedCount > 0) {
-              toast.warning(
-                `Sync complete: ${syncCount} processed, ${failedCount} failed${embedCount > 0 ? `, ${embedCount} embedded` : ""}`,
-              );
-            } else {
-              toast.success(`Synced ${syncCount} materials, embedded ${embedCount}`);
-            }
-          } else {
-            toast.error(`Sync failed: ${status.last_error || "Unknown error"}`);
-          }
+          finalizeSyncStatus(status);
           return;
         }
       } catch (err) {
@@ -771,9 +889,7 @@ export default function Library() {
           scheduleNextPoll();
           return;
         }
-        setSyncing(false);
-        setSyncJobId(null);
-        toast.error(`Sync status failed after retries: ${err instanceof Error ? err.message : "Unknown"}`);
+        handleSyncPollingFailure(err instanceof Error ? err.message : "Unknown");
         return;
       }
 
@@ -826,7 +942,7 @@ export default function Library() {
       return next;
     });
     if (isCollapsing && (selectedFolderPath === path || selectedFolderPath.startsWith(`${path}/`))) {
-      setSelectedFolderPath(ALL_FOLDERS_KEY);
+      selectFolderPath(ALL_FOLDERS_KEY);
     }
   };
 
@@ -1015,73 +1131,6 @@ export default function Library() {
     }
   };
 
-  const renderSyncPreviewNode = (
-    node: TutorSyncPreviewNode,
-    depth = 0,
-  ): ReactElement | null => {
-    if (node.type === "file") {
-      const isChecked = selectedSyncFiles.has(node.path);
-      return (
-        <div
-          key={node.path}
-          className="w-full rounded-none border border-primary/10 px-2 py-1 text-left text-xs font-terminal flex items-center gap-2 text-muted-foreground hover:text-foreground"
-          style={{ paddingLeft: `${0.6 + depth * 0.8}rem` }}
-          title={node.path}
-        >
-          <Checkbox
-            checked={isChecked}
-            onCheckedChange={() => toggleSyncFile(node.path)}
-          />
-          <FileText className={`${ICON_SM} shrink-0`} />
-          <span className="truncate flex-1">{node.name}</span>
-          <span className="text-[11px]">{formatSize(node.size)}</span>
-        </div>
-      );
-    }
-
-    const children = Array.isArray(node.children) ? node.children : [];
-    const isRoot = node.path === "";
-    const isExpanded = isRoot || expandedSyncFolders.has(node.path);
-
-    return (
-      <div key={isRoot ? "__sync-root" : node.path}>
-        {!isRoot && (
-          <div
-            className="w-full rounded-none border border-primary/15 pr-2 py-1 text-left text-xs font-terminal flex items-center gap-1 text-muted-foreground hover:text-foreground"
-            style={{ paddingLeft: `${0.45 + depth * 0.8}rem` }}
-            title={node.path}
-          >
-            {children.length > 0 ? (
-              <button
-                type="button"
-                className="p-0.5 hover:text-primary transition-colors"
-                onClick={() => toggleSyncFolderExpanded(node.path)}
-                aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
-              >
-                <ChevronRight
-                  className={`${ICON_SM} transition-transform ${isExpanded ? "rotate-90" : "rotate-0"}`}
-                />
-              </button>
-            ) : (
-              <span className="w-4" />
-            )}
-            {isExpanded ? (
-              <FolderOpen className={`${ICON_SM} shrink-0`} />
-            ) : (
-              <Folder className={`${ICON_SM} shrink-0`} />
-            )}
-            <span className="truncate flex-1">{node.name}</span>
-            <span className="text-[11px]">{children.length}</span>
-          </div>
-        )}
-        {isExpanded &&
-          children.map((child) =>
-            renderSyncPreviewNode(child, isRoot ? depth : depth + 1),
-          )}
-      </div>
-    );
-  };
-
   const startSync = async () => {
     const trimmedFolder = materialsFolder.trim();
     if (!trimmedFolder || syncing || syncPreviewLoading) return;
@@ -1230,7 +1279,7 @@ export default function Library() {
                           ? "border-primary/60 bg-primary/20 text-primary"
                           : "border-primary/15 text-muted-foreground hover:text-foreground hover:border-primary/40"
                       }`}
-                      onClick={() => setSelectedFolderPath(ALL_FOLDERS_KEY)}
+                      onClick={() => selectFolderPath(ALL_FOLDERS_KEY)}
                       type="button"
                     >
                       <FolderOpen className={ICON_SM} />
@@ -1254,14 +1303,14 @@ export default function Library() {
                             role="button"
                             tabIndex={0}
                             onClick={() => {
-                              setSelectedFolderPath(folder.path);
+                              selectFolderPath(folder.path);
                               if (hasChildren && !isExpanded) toggleFolderExpanded(folder.path);
                             }}
                             onKeyDown={(e) => {
                               if (e.target !== e.currentTarget) return;
                               if (e.key === "Enter" || e.key === " ") {
                                 e.preventDefault();
-                                setSelectedFolderPath(folder.path);
+                                selectFolderPath(folder.path);
                                 if (hasChildren && !isExpanded) toggleFolderExpanded(folder.path);
                               }
                             }}
@@ -1398,7 +1447,7 @@ export default function Library() {
                     </div>
                     <input
                       value={materialsFolder}
-                      onChange={(e) => setMaterialsFolder(e.target.value)}
+                      onChange={(e) => handleMaterialsFolderChange(e.target.value)}
                       className={INPUT_BASE}
                       placeholder="C:\\Users\\...\\PT School"
                     />
@@ -1470,7 +1519,13 @@ export default function Library() {
                           </div>
                         </div>
                         <div className="max-h-48 overflow-auto border border-primary/15 bg-black/30 p-1 space-y-1">
-                          {renderSyncPreviewNode(syncPreview.tree)}
+                          <SyncPreviewTreeNode
+                            node={syncPreview.tree}
+                            selectedSyncFiles={selectedSyncFiles}
+                            expandedSyncFolders={expandedSyncFolders}
+                            onToggleFile={toggleSyncFile}
+                            onToggleFolder={toggleSyncFolderExpanded}
+                          />
                         </div>
                       </div>
                     ) : (
@@ -1517,8 +1572,8 @@ export default function Library() {
                               {(syncStatus!.sync_result!.errors as string[]).length} file error{(syncStatus!.sync_result!.errors as string[]).length > 1 ? "s" : ""} — click to expand
                             </summary>
                             <ul className="mt-1 text-red-300 text-xs font-terminal list-disc pl-4 max-h-32 overflow-y-auto">
-                              {(syncStatus!.sync_result!.errors as string[]).map((err: string, i: number) => (
-                                <li key={i} className="break-all">{err}</li>
+                              {(syncStatus!.sync_result!.errors as string[]).map((err: string) => (
+                                <li key={err} className="break-all">{err}</li>
                               ))}
                             </ul>
                             {Number((syncStatus?.sync_result as { errors_total?: number } | undefined)?.errors_total || 0) > (syncStatus!.sync_result!.errors as string[]).length ? (
@@ -1723,9 +1778,8 @@ export default function Library() {
                           className="grid gap-2 px-2 py-1 border-b border-primary/20 bg-black/60 sticky top-0 z-10"
                           style={{ gridTemplateColumns: "28px minmax(210px,1.6fr) minmax(140px,1fr) 64px 72px 84px 116px" }}
                         >
-                          <label
-                            className="flex items-center justify-center cursor-pointer"
-                            onClick={toggleAllMaterialsForTutor}
+                          <div
+                            className="flex items-center justify-center"
                             title={
                               allTutorMaterialsSelected ? "Unselect all visible tutor materials" : "Select all visible tutor materials"
                             }
@@ -1734,8 +1788,13 @@ export default function Library() {
                               checked={allTutorMaterialsSelected}
                               onCheckedChange={toggleAllMaterialsForTutor}
                               disabled={selectableVisibleMaterialIds.length === 0}
+                              aria-label={
+                                allTutorMaterialsSelected
+                                  ? "Unselect all visible tutor materials"
+                                  : "Select all visible tutor materials"
+                              }
                             />
-                          </label>
+                          </div>
                           <div className={TEXT_MUTED}>Title</div>
                           <div className={TEXT_MUTED}>Folder</div>
                           <div className={TEXT_MUTED}>Type</div>
@@ -1887,4 +1946,8 @@ export default function Library() {
       </PageScaffold>
     </Layout>
   );
+}
+
+export default function Library() {
+  return useLibraryPageController();
 }

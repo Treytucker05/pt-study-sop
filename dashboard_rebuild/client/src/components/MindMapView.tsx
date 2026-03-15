@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo, useId } from "react";
 import {
   ReactFlow,
   Background,
@@ -58,6 +58,10 @@ interface CurriculumLink {
   target: string;
 }
 
+function sanitizeDomIdPart(value: string) {
+  return value.replace(/[^a-zA-Z0-9_-]/g, "-");
+}
+
 export function MindMapView({
   hideToolbar = false,
   externalCommand,
@@ -74,6 +78,7 @@ export function MindMapView({
   const [mermaidInput, setMermaidInput] = useState("");
   const reactFlowRef = useRef<HTMLDivElement>(null);
   const lastCommandIdRef = useRef(0);
+  const checkboxIdBase = useId();
   const { toast } = useToast();
 
   // --- Vault-driven sidebar state ---
@@ -614,9 +619,11 @@ export function MindMapView({
     });
 
     try {
-      await api.obsidian.saveFile(layoutPath, layoutPayload);
-      await api.obsidian.saveFile(strokesPath, strokesPayload);
-      await api.obsidian.saveFile(markdownPath, markdown);
+      await Promise.all([
+        api.obsidian.saveFile(layoutPath, layoutPayload),
+        api.obsidian.saveFile(strokesPath, strokesPayload),
+        api.obsidian.saveFile(markdownPath, markdown),
+      ]);
       toast({ title: "Saved to vault", description: markdownPath });
       setIsDirty(false);
     } catch (err) {
@@ -719,8 +726,13 @@ export function MindMapView({
             <div>
               <div className="font-arcade text-xs text-primary mb-2">COURSES</div>
               {COURSE_FOLDERS.map((c) => (
-                <label key={c.id} className="flex items-center gap-2 py-1 cursor-pointer">
+                <label
+                  key={c.id}
+                  htmlFor={`${checkboxIdBase}-course-${c.id}`}
+                  className="flex items-center gap-2 py-1 cursor-pointer"
+                >
                   <Checkbox
+                    id={`${checkboxIdBase}-course-${c.id}`}
                     checked={selectedCourses.has(c.id)}
                     onCheckedChange={() => toggleCourse(c.id)}
                     className="border-cyan-500 data-[state=checked]:bg-cyan-500"
@@ -738,30 +750,39 @@ export function MindMapView({
             {visibleSubfolders.length > 0 && (
               <div>
                 <div className="font-arcade text-xs text-yellow-400 mb-2">SUBFOLDERS</div>
-                <label className="flex items-center gap-2 py-1 cursor-pointer mb-1">
+                <label
+                  htmlFor={`${checkboxIdBase}-subfolders-all`}
+                  className="flex items-center gap-2 py-1 cursor-pointer mb-1"
+                >
                   <Checkbox
+                    id={`${checkboxIdBase}-subfolders-all`}
                     checked={selectedSubfolders.size === 0}
                     onCheckedChange={() => setSelectedSubfolders(new Set())}
                     className="border-yellow-500 data-[state=checked]:bg-yellow-500"
                   />
                   <span className="font-terminal text-xs text-yellow-200">All</span>
                 </label>
-                {visibleSubfolders.map((sf) => (
-                  <label key={sf.key} className="flex items-center gap-2 py-0.5 cursor-pointer">
-                    <Checkbox
-                      checked={selectedSubfolders.size === 0 || selectedSubfolders.has(sf.key)}
-                      onCheckedChange={() => toggleSubfolder(sf.key)}
-                      className="border-yellow-500 data-[state=checked]:bg-yellow-500"
-                    />
-                    <span className="font-terminal text-xs text-yellow-100 truncate">{sf.name}</span>
-                  </label>
-                ))}
+                {visibleSubfolders.map((sf) => {
+                  const subfolderCheckboxId = `${checkboxIdBase}-subfolder-${sanitizeDomIdPart(sf.key)}`;
+                  return (
+                    <label key={sf.key} htmlFor={subfolderCheckboxId} className="flex items-center gap-2 py-0.5 cursor-pointer">
+                      <Checkbox
+                        id={subfolderCheckboxId}
+                        checked={selectedSubfolders.size === 0 || selectedSubfolders.has(sf.key)}
+                        onCheckedChange={() => toggleSubfolder(sf.key)}
+                        className="border-yellow-500 data-[state=checked]:bg-yellow-500"
+                      />
+                      <span className="font-terminal text-xs text-yellow-100 truncate">{sf.name}</span>
+                    </label>
+                  );
+                })}
               </div>
             )}
 
             <div>
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label htmlFor={`${checkboxIdBase}-show-notes`} className="flex items-center gap-2 cursor-pointer">
                 <Checkbox
+                  id={`${checkboxIdBase}-show-notes`}
                   checked={showNotes}
                   onCheckedChange={(checked) => setShowNotes(!!checked)}
                   className="border-green-500 data-[state=checked]:bg-green-500"

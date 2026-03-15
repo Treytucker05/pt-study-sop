@@ -1,10 +1,6 @@
 import { MarkerType } from "@xyflow/react";
-import { CONCEPT_NODE_COLORS, CONCEPT_EDGE_COLORS } from "@/lib/colors";
 import { StructuredShapeNode } from "./StructuredShapeNode";
 import { StructuredEdge } from "./StructuredEdge";
-
-export const NODE_COLORS = CONCEPT_NODE_COLORS;
-export const EDGE_COLORS = CONCEPT_EDGE_COLORS;
 
 // "arcade" kept as alias so saved canvases with type:"arcade" still render
 export const NODE_TYPES = {

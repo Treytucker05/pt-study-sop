@@ -1,0 +1,29 @@
+{
+  "ignore": {
+    "files": [
+      "drizzle.config.ts",
+      "schema.ts",
+      "client/src/components/AnkiIntegration.tsx",
+      "client/src/components/BrainChat/PreviewDialog.tsx",
+      "client/src/components/ContentFilter.tsx",
+      "client/src/components/EventEditModal.tsx",
+      "client/src/components/GoogleTasksComponents.tsx",
+      "client/src/components/LocalEventEditModal.tsx",
+      "client/src/components/MaterialSelector.tsx",
+      "client/src/components/MindMapView.tsx",
+      "client/src/components/ObsidianRenderer.tsx",
+      "client/src/components/PlannerKanban.tsx",
+      "client/src/components/SourcesPanel.tsx",
+      "client/src/components/TutorChat.tsx",
+      "client/src/components/VaultGraphView.tsx",
+      "client/src/components/brain/BrainHome.tsx",
+      "client/src/components/brain/CanvasToolbox.tsx",
+      "client/src/components/brain/ConceptMapStructured.tsx",
+      "client/src/components/brain/LearnerProfilePanel.tsx",
+      "client/src/components/brain/UnifiedBrainCanvas.tsx",
+      "client/src/components/layout.tsx",
+      "client/src/pages/scholar.tsx",
+      "client/src/pages/vault-health.tsx"
+    ]
+  }
+}

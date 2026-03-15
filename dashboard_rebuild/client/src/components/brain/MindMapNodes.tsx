@@ -1,4 +1,4 @@
-import { useState, useCallback, type KeyboardEvent } from "react";
+import { useState, useCallback, useEffect, useRef, type KeyboardEvent } from "react";
 import { Handle, NodeResizer, Position, MarkerType, type NodeProps } from "@xyflow/react";
 import { cn } from "@/lib/utils";
 import { CONCEPT_NODE_COLORS } from "@/lib/colors";
@@ -6,14 +6,14 @@ import { CONCEPT_NODE_COLORS } from "@/lib/colors";
 export const MIND_MAP_SHAPES = ["rectangle", "circle", "diamond", "hexagon"] as const;
 export type MindMapShape = (typeof MIND_MAP_SHAPES)[number];
 
-export interface MindMapShapeData {
+interface MindMapShapeData {
   label: string;
   colorIdx: number;
   shape: MindMapShape;
   [key: string]: unknown;
 }
 
-export interface MindMapImageData {
+interface MindMapImageData {
   src: string;
   [key: string]: unknown;
 }
@@ -71,11 +71,19 @@ function ShapeWrapper({
   );
 }
 
-export function MindMapShapeNode({ data, selected, id }: NodeProps) {
+function MindMapShapeNode({ data, selected, id }: NodeProps) {
   const { label, colorIdx = 0, shape = "rectangle" } = data as MindMapShapeData;
   const color = NODE_COLORS[colorIdx] || NODE_COLORS[0];
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(label);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!editing) return;
+    setEditValue(label);
+    const timer = setTimeout(() => inputRef.current?.select(), 0);
+    return () => clearTimeout(timer);
+  }, [editing, label]);
 
   const commitEdit = useCallback(() => {
     setEditing(false);
@@ -124,7 +132,7 @@ export function MindMapShapeNode({ data, selected, id }: NodeProps) {
       >
         {editing ? (
           <input
-            autoFocus
+            ref={inputRef}
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onBlur={commitEdit}
@@ -143,7 +151,7 @@ export function MindMapShapeNode({ data, selected, id }: NodeProps) {
   );
 }
 
-export function MindMapImageNode({ data, selected }: NodeProps) {
+function MindMapImageNode({ data, selected }: NodeProps) {
   const { src } = data as MindMapImageData;
   const handleStyle = "!bg-primary !border-primary !w-2 !h-2";
 

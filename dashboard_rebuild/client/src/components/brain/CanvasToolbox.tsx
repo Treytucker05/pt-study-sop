@@ -24,7 +24,7 @@ import { STRUCTURED_SHAPES } from "./StructuredShapeNode";
 
 // ─── Tool definitions ────────────────────────────────────────────────────────
 
-export interface ToolDef {
+interface ToolDef {
   id: string;
   label: string;
   icon: React.ReactNode;
@@ -33,7 +33,7 @@ export interface ToolDef {
 
 const ICON = "w-3.5 h-3.5";
 
-export const ALL_TOOLS: ToolDef[] = [
+const ALL_TOOLS: ToolDef[] = [
   { id: "add_node", label: "Add Node", icon: <Plus className={ICON} />, defaultOn: true },
   { id: "delete", label: "Delete", icon: <Trash2 className={ICON} />, defaultOn: true },
   { id: "node_color", label: "Node Color", icon: <Palette className={ICON} />, defaultOn: true },
@@ -101,7 +101,7 @@ function savePos(p: { x: number; y: number }): void {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export interface CanvasToolboxProps {
+interface CanvasToolboxProps {
   onAction: (id: string) => void;
   edgeType: EdgeType;
   onEdgeTypeChange: (t: EdgeType) => void;
@@ -219,23 +219,30 @@ export function CanvasToolbox({
         <div
           className="flex items-center gap-1 px-1.5 py-0.5 bg-primary/10 cursor-grab active:cursor-grabbing border-b border-primary/30"
           onMouseDown={onMouseDown}
+          role="button"
+          tabIndex={0}
+          aria-label="Move toolbox"
         >
           <GripHorizontal className="w-3 h-3 text-primary/60" />
           <span className="text-[10px] font-arcade text-primary/70 uppercase tracking-wider flex-1">
             Tools
           </span>
           <button
+            type="button"
             className="text-primary/60 hover:text-primary p-0.5"
             onClick={() => setCollapsed(!collapsed)}
             title={collapsed ? "Expand" : "Collapse"}
+            aria-label={collapsed ? "Expand toolbox" : "Collapse toolbox"}
           >
             {collapsed ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
           </button>
           <div className="relative" ref={settingsRef}>
             <button
+              type="button"
               className="text-primary/60 hover:text-primary p-0.5"
               onClick={() => setShowSettings(!showSettings)}
               title="Configure tools"
+              aria-label="Configure visible tools"
             >
               <Settings className="w-3 h-3" />
             </button>
@@ -267,6 +274,7 @@ export function CanvasToolbox({
             {ALL_TOOLS.filter((t) => visibleTools.has(t.id)).map((tool) => (
               <div key={tool.id} className="relative">
                 <button
+                  type="button"
                   className={cn(
                     btn,
                     tool.id === "snap_grid" && snapToGrid && "bg-primary/20 ring-1 ring-primary",
@@ -275,24 +283,24 @@ export function CanvasToolbox({
                   )}
                   onClick={() => handleToolClick(tool.id)}
                   title={tool.label}
+                  aria-label={tool.label}
                 >
                   {tool.icon}
                 </button>
 
                 {/* Submenus */}
                 {openSubmenu === tool.id && tool.id === "node_color" && (
-                  <div
-                    className="absolute left-0 top-full mt-1 bg-black border-2 border-primary/50 p-2 z-[60] min-w-[120px]"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <div className="absolute left-0 top-full mt-1 bg-black border-2 border-primary/50 p-2 z-[60] min-w-[120px]">
                     <p className="text-[10px] font-arcade text-primary/60 mb-1">NODE COLOR</p>
                     <div className="flex flex-wrap gap-1">
                       {CONCEPT_NODE_COLORS.map((c, i) => (
                         <button
+                          type="button"
                           key={c.name}
                           onClick={() => { onNodeColorChange(i); setOpenSubmenu(null); }}
                           className={cn("w-5 h-5 border-2 rounded-none", c.border, c.bg)}
                           title={c.name}
+                          aria-label={`Set node color to ${c.name}`}
                         />
                       ))}
                     </div>
@@ -300,19 +308,18 @@ export function CanvasToolbox({
                 )}
 
                 {openSubmenu === tool.id && tool.id === "edge_color" && (
-                  <div
-                    className="absolute left-0 top-full mt-1 bg-black border-2 border-primary/50 p-2 z-[60] min-w-[120px]"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <div className="absolute left-0 top-full mt-1 bg-black border-2 border-primary/50 p-2 z-[60] min-w-[120px]">
                     <p className="text-[10px] font-arcade text-primary/60 mb-1">EDGE COLOR</p>
                     <div className="flex flex-wrap gap-1">
                       {CONCEPT_EDGE_COLORS.map((c) => (
                         <button
+                          type="button"
                           key={c.name}
                           onClick={() => { onEdgeColorChange(c.stroke); setOpenSubmenu(null); }}
                           className="w-5 h-5 border-2 border-secondary/50 rounded-none"
                           style={{ backgroundColor: c.stroke }}
                           title={c.name}
+                          aria-label={`Set edge color to ${c.name}`}
                         />
                       ))}
                     </div>
@@ -320,19 +327,18 @@ export function CanvasToolbox({
                 )}
 
                 {openSubmenu === tool.id && tool.id === "node_shape" && (
-                  <div
-                    className="absolute left-0 top-full mt-1 bg-black border-2 border-primary/50 p-2 z-[60] min-w-[100px]"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <div className="absolute left-0 top-full mt-1 bg-black border-2 border-primary/50 p-2 z-[60] min-w-[100px]">
                     <p className="text-[10px] font-arcade text-primary/60 mb-1">NEW NODE SHAPE</p>
                     {STRUCTURED_SHAPES.map((s) => (
                       <button
+                        type="button"
                         key={s}
                         onClick={() => { onNodeShapeChange(s); setOpenSubmenu(null); }}
                         className={cn(
                           "block w-full text-left text-xs font-terminal px-2 py-0.5 hover:bg-primary/20 text-primary/80",
                           nodeShape === s && "bg-primary/20 text-primary"
                         )}
+                        aria-label={`Set node shape to ${SHAPE_LABELS[s]}`}
                       >
                         {SHAPE_LABELS[s]}
                       </button>
@@ -341,19 +347,18 @@ export function CanvasToolbox({
                 )}
 
                 {openSubmenu === tool.id && tool.id === "edge_type" && (
-                  <div
-                    className="absolute left-0 top-full mt-1 bg-black border-2 border-primary/50 p-2 z-[60] min-w-[100px]"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <div className="absolute left-0 top-full mt-1 bg-black border-2 border-primary/50 p-2 z-[60] min-w-[100px]">
                     <p className="text-[10px] font-arcade text-primary/60 mb-1">EDGE STYLE</p>
                     {EDGE_TYPES.map((et) => (
                       <button
+                        type="button"
                         key={et.value}
                         onClick={() => { onEdgeTypeChange(et.value); setOpenSubmenu(null); }}
                         className={cn(
                           "block w-full text-left text-xs font-terminal px-2 py-0.5 hover:bg-primary/20 text-primary/80",
                           edgeType === et.value && "bg-primary/20 text-primary"
                         )}
+                        aria-label={`Set edge style to ${et.label}`}
                       >
                         {et.label}
                       </button>

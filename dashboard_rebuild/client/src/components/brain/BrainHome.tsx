@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { differenceInCalendarDays, format, isToday, isTomorrow } from "date-fns";
@@ -278,6 +278,7 @@ function buildTutorPath(courseId?: number | null, mode?: TutorLaunchMode): strin
 }
 
 export function BrainHome({ workspace }: { workspace: BrainWorkspace }) {
+  const idBase = useId();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -1269,8 +1270,9 @@ async function handleDownloadJson(
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div>
-              <label className="mb-1 block font-terminal text-xs text-muted-foreground">Main goal</label>
+              <label htmlFor={`${idBase}-onboarding-goal`} className="mb-1 block font-terminal text-xs text-muted-foreground">Main goal</label>
               <Input
+                id={`${idBase}-onboarding-goal`}
                 value={onboardingGoal}
                 onChange={(event) => setOnboardingGoal(event.target.value)}
                 placeholder="What are you trying to get better at right now?"
@@ -1278,8 +1280,9 @@ async function handleDownloadJson(
               />
             </div>
             <div>
-              <label className="mb-1 block font-terminal text-xs text-muted-foreground">Biggest friction</label>
+              <label htmlFor={`${idBase}-onboarding-friction`} className="mb-1 block font-terminal text-xs text-muted-foreground">Biggest friction</label>
               <Textarea
+                id={`${idBase}-onboarding-friction`}
                 value={onboardingFriction}
                 onChange={(event) => setOnboardingFriction(event.target.value)}
                 placeholder="What usually breaks your learning loop?"
@@ -1287,10 +1290,11 @@ async function handleDownloadJson(
               />
             </div>
             <div>
-              <label className="mb-1 block font-terminal text-xs text-muted-foreground">
+              <label htmlFor={`${idBase}-onboarding-tools`} className="mb-1 block font-terminal text-xs text-muted-foreground">
                 Current tools / workflow
               </label>
               <Input
+                id={`${idBase}-onboarding-tools`}
                 value={onboardingTools}
                 onChange={(event) => setOnboardingTools(event.target.value)}
                 placeholder="Obsidian, Anki, lecture PDFs, Blackboard, handwritten notes..."
@@ -1326,7 +1330,7 @@ async function handleDownloadJson(
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="grid gap-3 md:grid-cols-2">
-              <label className="flex items-center justify-between gap-3 border border-primary/10 bg-black/30 p-3">
+              <label htmlFor={`${idBase}-tier2-signals`} className="flex items-center justify-between gap-3 border border-primary/10 bg-black/30 p-3">
                 <div className="space-y-1">
                   <div className="font-terminal text-xs text-white">Tier 2 personalization</div>
                   <div className="font-terminal text-[11px] text-muted-foreground">
@@ -1334,13 +1338,14 @@ async function handleDownloadJson(
                   </div>
                 </div>
                 <Switch
+                  id={`${idBase}-tier2-signals`}
                   checked={privacyDraft.allowTier2Signals}
                   onCheckedChange={(checked) =>
                     setPrivacyDraft((prev) => ({ ...prev, allowTier2Signals: checked }))
                   }
                 />
               </label>
-              <label className="flex items-center justify-between gap-3 border border-primary/10 bg-black/30 p-3">
+              <label htmlFor={`${idBase}-vault-signals`} className="flex items-center justify-between gap-3 border border-primary/10 bg-black/30 p-3">
                 <div className="space-y-1">
                   <div className="font-terminal text-xs text-white">Vault signals</div>
                   <div className="font-terminal text-[11px] text-muted-foreground">
@@ -1348,13 +1353,14 @@ async function handleDownloadJson(
                   </div>
                 </div>
                 <Switch
+                  id={`${idBase}-vault-signals`}
                   checked={privacyDraft.allowVaultSignals}
                   onCheckedChange={(checked) =>
                     setPrivacyDraft((prev) => ({ ...prev, allowVaultSignals: checked }))
                   }
                 />
               </label>
-              <label className="flex items-center justify-between gap-3 border border-primary/10 bg-black/30 p-3">
+              <label htmlFor={`${idBase}-calendar-signals`} className="flex items-center justify-between gap-3 border border-primary/10 bg-black/30 p-3">
                 <div className="space-y-1">
                   <div className="font-terminal text-xs text-white">Calendar signals</div>
                   <div className="font-terminal text-[11px] text-muted-foreground">
@@ -1362,13 +1368,14 @@ async function handleDownloadJson(
                   </div>
                 </div>
                 <Switch
+                  id={`${idBase}-calendar-signals`}
                   checked={privacyDraft.allowCalendarSignals}
                   onCheckedChange={(checked) =>
                     setPrivacyDraft((prev) => ({ ...prev, allowCalendarSignals: checked }))
                   }
                 />
               </label>
-              <label className="flex items-center justify-between gap-3 border border-primary/10 bg-black/30 p-3">
+              <label htmlFor={`${idBase}-scholar-personalization`} className="flex items-center justify-between gap-3 border border-primary/10 bg-black/30 p-3">
                 <div className="space-y-1">
                   <div className="font-terminal text-xs text-white">Scholar personalization</div>
                   <div className="font-terminal text-[11px] text-muted-foreground">
@@ -1376,6 +1383,7 @@ async function handleDownloadJson(
                   </div>
                 </div>
                 <Switch
+                  id={`${idBase}-scholar-personalization`}
                   checked={privacyDraft.allowScholarPersonalization}
                   onCheckedChange={(checked) =>
                     setPrivacyDraft((prev) => ({ ...prev, allowScholarPersonalization: checked }))
@@ -1384,8 +1392,9 @@ async function handleDownloadJson(
               </label>
             </div>
             <div className="space-y-2">
-              <label className="block font-terminal text-xs text-white">Retention window (days)</label>
+              <label htmlFor={`${idBase}-retention-days`} className="block font-terminal text-xs text-white">Retention window (days)</label>
               <Input
+                id={`${idBase}-retention-days`}
                 type="number"
                 min={30}
                 max={3650}

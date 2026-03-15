@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -49,6 +49,14 @@ export function ComparisonTableEditor({ className }: { className?: string }) {
   }));
   const tableRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const columnEntries = useMemo(
+    () =>
+      table.columns.map((col, columnIndex) => ({
+        label: col,
+        key: `${col}-${table.rows.map((row) => row.values[columnIndex] ?? "").join("|")}`,
+      })),
+    [table.columns, table.rows]
+  );
 
   const updateTitle = useCallback((title: string) => {
     setTable((t) => ({ ...t, title }));
@@ -241,10 +249,10 @@ export function ComparisonTableEditor({ className }: { className?: string }) {
             <div className="w-28 shrink-0 p-1 border-r border-secondary/30 bg-black/60">
               <span className="font-arcade text-xs text-muted-foreground">FEATURE</span>
             </div>
-            {table.columns.map((col, i) => (
-              <div key={i} className="flex-1 min-w-[100px] p-1 border-r border-secondary/30 bg-black/60 flex items-center gap-1">
+            {columnEntries.map(({ label, key }, i) => (
+              <div key={key} className="flex-1 min-w-[100px] p-1 border-r border-secondary/30 bg-black/60 flex items-center gap-1">
                 <Input
-                  value={col}
+                  value={label}
                   onChange={(e) => updateColumn(i, e.target.value)}
                   className="h-5 text-xs font-arcade bg-transparent border-none px-0 text-primary focus-visible:ring-0 flex-1"
                 />

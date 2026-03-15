@@ -57,7 +57,7 @@ export default function ChainBuilder({ chain, allBlocks, onSave, readOnly }: Cha
 
       <div className="space-y-2">
         {orderedBlocks.map((block, index) => (
-          <div key={`${block.id}-${index}`} className="flex items-center gap-2">
+          <div key={block.id} className="flex items-center gap-2">
             {!readOnly && (
               <button
                 className="text-muted-foreground hover:text-primary cursor-grab"

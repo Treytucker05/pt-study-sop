@@ -24,7 +24,6 @@ import {
 } from "@/lib/theme";
 
 import type { TutorChatProps, NorthStarSummary } from "./TutorChat.types";
-export type { ChainBlock } from "./TutorChat.types";
 import { useSSEStream } from "./useSSEStream";
 import { MessageList } from "./MessageList";
 import { SourcesPanel } from "./SourcesPanel";

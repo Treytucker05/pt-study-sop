@@ -152,8 +152,8 @@ export function ScholarRunStatus() {
                 Errors:
               </div>
               <div className="space-y-1 p-2 bg-destructive/10 border border-destructive/50 rounded-none">
-                {status.errors.map((error, idx) => (
-                  <div key={idx} className={`font-terminal text-xs ${STATUS_ERROR}`}>
+                {status.errors.map((error) => (
+                  <div key={error} className={`font-terminal text-xs ${STATUS_ERROR}`}>
                     • {error}
                   </div>
                 ))}

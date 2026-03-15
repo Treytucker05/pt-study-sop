@@ -12,9 +12,14 @@ Update policy: after every significant change, update this file with status chan
 
 Active execution priority is tracked in `docs/root/TUTOR_TODO.md`.
 
-Active status: 0 active workstreams.
+Active status: 1 active workstream.
 
-Latest update: 2026-03-15, Cyber-Brain Theme Unification closed after shipping the holographic shell backdrop, shared page scaffold, and top-level route alignment.
+Latest update: 2026-03-15, Studio L2 landed on the overview contract and the active track rolled forward to the L3 review-loop wave.
+
+- [ ] **Track: Studio L2/L3 Hub + Review Loop** (active — created 2026-03-15; scope: Studio-native overview API, Studio L2 course hub refactor, and L3 review-loop hardening with edit/archive/history)
+  *Link: [./tracks/studio-l2-l3-hub-review-loop_20260315/](./tracks/studio-l2-l3-hub-review-loop_20260315/)*
+
+---
 
 - [x] **Track: Cyber-Brain Theme Unification** (complete — created 2026-03-15; closed 2026-03-15; scope: shared shell/background refresh, shared visual primitives, and top-level route alignment around the cyber-brain reference)
   *Link: [./tracks/cyber-brain-theme-unification_20260315/](./tracks/cyber-brain-theme-unification_20260315/)*

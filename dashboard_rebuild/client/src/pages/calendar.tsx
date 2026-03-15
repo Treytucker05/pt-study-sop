@@ -2,7 +2,7 @@ import Layout from "@/components/layout";
 import { PageScaffold } from "@/components/PageScaffold";
 import { SupportWorkspaceFrame } from "@/components/SupportWorkspaceFrame";
 import { Button } from "@/components/ui/button";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -118,6 +118,16 @@ interface NormalizedLocalEvent extends NormalizedEventBase {
 
 type NormalizedEvent = NormalizedGoogleEvent | NormalizedLocalEvent;
 
+function handleKeyboardActivation(
+  event: ReactKeyboardEvent<HTMLElement>,
+  action: () => void,
+) {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    action();
+  }
+}
+
 interface CourseOption {
   id: number;
   name: string;
@@ -130,6 +140,56 @@ const parseDateOnly = (value?: string) => {
   if (!year || !month || !day) return new Date(value);
   return new Date(year, month - 1, day);
 };
+
+function readInitialCalendarLaunchState(): {
+  brainLaunchContext: CalendarBrainLaunchContext | null;
+  currentDate: Date;
+  viewMode: ViewMode;
+} {
+  if (typeof window === "undefined") {
+    return {
+      brainLaunchContext: null,
+      currentDate: new Date(),
+      viewMode: "month",
+    };
+  }
+
+  try {
+    const raw = sessionStorage.getItem("calendar.open_from_brain.v1");
+    if (!raw) {
+      return {
+        brainLaunchContext: null,
+        currentDate: new Date(),
+        viewMode: "month",
+      };
+    }
+    const parsed = JSON.parse(raw);
+    sessionStorage.removeItem("calendar.open_from_brain.v1");
+    if (parsed && typeof parsed === "object") {
+      const launchContext = parsed as CalendarBrainLaunchContext;
+      if (typeof launchContext.dueDate === "string" && launchContext.dueDate.trim()) {
+        return {
+          brainLaunchContext: launchContext,
+          currentDate: parseDateOnly(launchContext.dueDate),
+          viewMode: "day",
+        };
+      }
+      return {
+        brainLaunchContext: launchContext,
+        currentDate: new Date(),
+        viewMode: "month",
+      };
+    }
+  } catch {
+    // ignore sessionStorage failures
+  }
+
+  return {
+    brainLaunchContext: null,
+    currentDate: new Date(),
+    viewMode: "month",
+  };
+}
 
 const parseCalendarAttendees = (value?: string | null): CalendarAttendee[] | undefined => {
   if (!value) return undefined;
@@ -152,6 +212,7 @@ const parseCalendarReminders = (value?: string | null): CalendarReminders | unde
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const HOUR_HEIGHT = 60;
+const MINI_CALENDAR_DAY_LABELS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"] as const;
 const CALENDAR_VIEW_MODES: ViewMode[] = ["month", "week", "day", "tasks"];
 
 // -----------------------------------------------------------------------------
@@ -384,23 +445,33 @@ function SortableCalendarRow({ cal, isHidden, onToggle }: { cal: { id: string; n
         <GripVertical className="w-4 h-4" />
       </div>
       <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: cal.color }} />
-      <span className="font-terminal text-sm flex-1 cursor-pointer" onClick={onToggle}>{cal.name}</span>
-      <span
-        className={cn("font-arcade text-xs px-2 py-0.5 cursor-pointer", isHidden ? "text-destructive" : "text-success")}
+      <button
+        type="button"
+        className="font-terminal text-sm flex-1 bg-transparent border-0 p-0 text-left"
         onClick={onToggle}
       >
+        {cal.name}
+      </button>
+      <button
+        type="button"
+        className={cn("font-arcade text-xs px-2 py-0.5 bg-transparent border-0", isHidden ? "text-destructive" : "text-success")}
+        onClick={onToggle}
+        aria-pressed={!isHidden}
+        aria-label={`${isHidden ? "Show" : "Hide"} ${cal.name} calendar`}
+      >
         {isHidden ? 'HIDDEN' : 'VISIBLE'}
-      </span>
+      </button>
     </div>
   );
 }
 
-export default function CalendarPage() {
+function useCalendarPageController() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<ViewMode>("month");
-  const [brainLaunchContext, setBrainLaunchContext] = useState<CalendarBrainLaunchContext | null>(null);
+  const initialLaunchState = useMemo(() => readInitialCalendarLaunchState(), []);
+  const [currentDate, setCurrentDate] = useState(initialLaunchState.currentDate);
+  const [viewMode, setViewMode] = useState<ViewMode>(initialLaunchState.viewMode);
+  const [brainLaunchContext] = useState<CalendarBrainLaunchContext | null>(initialLaunchState.brainLaunchContext);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<LocalCalendarEvent | null>(null);
@@ -438,24 +509,6 @@ export default function CalendarPage() {
   const debugModals =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).has("debugModals");
-
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem("calendar.open_from_brain.v1");
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === "object") {
-        setBrainLaunchContext(parsed as CalendarBrainLaunchContext);
-        if (typeof parsed.dueDate === "string" && parsed.dueDate.trim()) {
-          setCurrentDate(parseDateOnly(parsed.dueDate));
-          setViewMode("day");
-        }
-      }
-      sessionStorage.removeItem("calendar.open_from_brain.v1");
-    } catch {
-      // ignore sessionStorage failures
-    }
-  }, []);
 
   // Calendar Organization State
   const [pinnedCalendars, setPinnedCalendars] = useState<string[]>(() => {
@@ -1775,15 +1828,15 @@ export default function CalendarPage() {
                   {showMiniCalendar && (
                     <div className="absolute left-0 top-full z-50 mt-2 border-[3px] border-double border-primary bg-black p-2">
                       <div className="grid min-w-[200px] grid-cols-7 gap-1 text-center">
-                        {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-                          <div key={i} className="p-1 font-arcade text-[8px] text-muted-foreground">{d}</div>
+                        {MINI_CALENDAR_DAY_LABELS.map((label) => (
+                          <div key={label} className="p-1 font-arcade text-[8px] text-muted-foreground">{label.slice(0, 1)}</div>
                         ))}
                         {eachDayOfInterval({
                           start: startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 }),
                           end: endOfWeek(endOfMonth(currentDate), { weekStartsOn: 0 }),
-                        }).slice(0, 42).map((day, i) => (
+                        }).slice(0, 42).map((day) => (
                           <button
-                            key={i}
+                            key={day.toISOString()}
                             onClick={() => {
                               goToDay(day);
                               setShowMiniCalendar(false);
@@ -1977,14 +2030,34 @@ export default function CalendarPage() {
                       const isCurrentMonth = isSameMonth(day, currentDate);
                       const isTodayDate = isToday(day);
                       return (
-                        <div key={index} onClick={() => goToDay(day)} className={cn("min-h-[180px] border-r border-b border-secondary p-1.5 cursor-pointer transition-colors hover:bg-secondary/30", !isCurrentMonth && "bg-secondary/10 text-muted-foreground", index % 7 === 6 && "border-r-0")} data-testid={`day-cell-${format(day, 'yyyy-MM-dd')}`}>
+                        <div
+                          key={day.toISOString()}
+                          onClick={() => goToDay(day)}
+                          onKeyDown={(event) => {
+                            if (event.currentTarget !== event.target) return;
+                            handleKeyboardActivation(event, () => goToDay(day));
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Open ${format(day, "MMMM d, yyyy")}`}
+                          className={cn("min-h-[180px] border-r border-b border-secondary p-1.5 cursor-pointer transition-colors hover:bg-secondary/30", !isCurrentMonth && "bg-secondary/10 text-muted-foreground", index % 7 === 6 && "border-r-0")}
+                          data-testid={`day-cell-${format(day, 'yyyy-MM-dd')}`}
+                        >
                           <div className={cn("text-right font-terminal text-sm w-6 h-6 flex items-center justify-center ml-auto", isTodayDate && "bg-red-500 text-white rounded-none font-bold")}>{format(day, 'd')}</div>
                           <div className="space-y-0.5 mt-1">
-                            {dayEvents.slice(0, 3).map((event, i) => (
-                              <div key={`${event.id}-${i}`} className={cn("text-xs font-terminal truncate px-1.5 py-1 rounded cursor-pointer hover:brightness-110", getEventColor(event))} style={getEventInlineStyle(event)} title={event.title} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>
+                            {dayEvents.slice(0, 3).map((event) => (
+                              <button
+                                key={`${event.id}-${event.start.toISOString()}`}
+                                type="button"
+                                className={cn("block w-full text-left text-xs font-terminal truncate px-1.5 py-1 rounded cursor-pointer hover:brightness-110", getEventColor(event))}
+                                style={getEventInlineStyle(event)}
+                                title={event.title}
+                                aria-label={`Open event ${event.title}`}
+                                onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}
+                              >
                                 {event.eventType === 'online' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/60 mr-1 align-middle" title="Online" />}
                                 {event.title}
-                              </div>
+                              </button>
                             ))}
                             {dayEvents.length > 3 && <div className="text-xs font-terminal text-zinc-400 px-1 mt-0.5">+{dayEvents.length - 3} more</div>}
                           </div>
@@ -2001,10 +2074,16 @@ export default function CalendarPage() {
                   <div className="grid grid-cols-8 border-b border-secondary bg-secondary/20 shrink-0">
                     <div className="p-2 w-16 border-r border-secondary"></div>
                     {weekDays.map((day) => (
-                      <div key={day.toISOString()} className="p-2 text-center border-r border-secondary last:border-r-0 cursor-pointer hover:bg-secondary/30" onClick={() => goToDay(day)}>
+                      <button
+                        key={day.toISOString()}
+                        type="button"
+                        className="p-2 text-center border-r border-secondary last:border-r-0 cursor-pointer hover:bg-secondary/30 bg-transparent"
+                        onClick={() => goToDay(day)}
+                        aria-label={`Open ${format(day, "EEEE, MMMM d")}`}
+                      >
                         <div className="font-arcade text-xs text-zinc-400">{format(day, 'EEE').toUpperCase()}</div>
                         <div className={cn("font-terminal text-lg mt-1 w-8 h-8 flex items-center justify-center mx-auto", isToday(day) && "bg-red-500 text-white rounded-none font-bold")}>{format(day, 'd')}</div>
-                      </div>
+                      </button>
                     ))}
                   </div>
 
@@ -2015,8 +2094,17 @@ export default function CalendarPage() {
                       const allDayEvents = getEventsForDay(day).filter(e => e.allDay);
                       return (
                         <div key={`allday-${day.toISOString()}`} className="border-r border-secondary last:border-r-0 p-0.5 min-h-[28px]">
-                          {allDayEvents.map((event, i) => (
-                            <div key={i} className={cn("text-xs font-terminal truncate px-1.5 py-0.5 rounded cursor-pointer hover:brightness-110", getEventColor(event))} style={getEventInlineStyle(event)} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>{event.title}</div>
+                          {allDayEvents.map((event) => (
+                            <button
+                              key={`${event.id}-${event.start.toISOString()}`}
+                              type="button"
+                              className={cn("block w-full text-left text-xs font-terminal truncate px-1.5 py-0.5 rounded cursor-pointer hover:brightness-110", getEventColor(event))}
+                              style={getEventInlineStyle(event)}
+                              aria-label={`Open event ${event.title}`}
+                              onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}
+                            >
+                              {event.title}
+                            </button>
                           ))}
                         </div>
                       );
@@ -2042,16 +2130,30 @@ export default function CalendarPage() {
                         return (
                           <div key={day.toISOString()} className="relative border-r border-secondary/50 last:border-r-0">
                             {HOURS.map((hour) => (
-                              <div key={hour} className="border-b border-secondary/30 cursor-pointer hover:bg-secondary/20" style={{ height: `${HOUR_HEIGHT}px` }} onClick={() => openCreateModal(day, hour)}></div>
+                              <button
+                                key={hour}
+                                type="button"
+                                className="block w-full border-b border-secondary/30 cursor-pointer hover:bg-secondary/20 bg-transparent"
+                                style={{ height: `${HOUR_HEIGHT}px` }}
+                                onClick={() => openCreateModal(day, hour)}
+                                aria-label={`Create event on ${format(day, "EEEE, MMMM d")} at ${hour === 0 ? "12 AM" : hour < 12 ? `${hour} AM` : hour === 12 ? "12 PM" : `${hour - 12} PM`}`}
+                              ></button>
                             ))}
-                            {timedEvents.map((event, i) => {
+                            {timedEvents.map((event) => {
                               const colInfo = eventColumns.get(event.id) || { column: 0, totalColumns: 1 };
                               const style = { ...getEventStyle(event, dayStart, colInfo.column, colInfo.totalColumns), ...getEventInlineStyle(event) };
                               return (
-                                <div key={i} className={cn("absolute rounded p-1 cursor-pointer overflow-hidden", getEventColor(event))} style={style} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>
+                                <button
+                                  key={`${event.id}-${event.start.toISOString()}`}
+                                  type="button"
+                                  className={cn("absolute rounded p-1 cursor-pointer overflow-hidden text-left", getEventColor(event))}
+                                  style={style}
+                                  aria-label={`Open event ${event.title}`}
+                                  onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}
+                                >
                                   <div className="text-xs font-terminal font-medium truncate">{event.title}</div>
                                   <div className="text-xs opacity-80 font-terminal">{format(event.start, 'h:mma')}</div>
-                                </div>
+                                </button>
                               );
                             })}
                           </div>
@@ -2082,8 +2184,17 @@ export default function CalendarPage() {
                     return (
                       <div className="p-3 border-b border-secondary/50 bg-black/40 shrink-0 flex gap-2 flex-wrap items-center">
                         <span className="font-terminal text-sm text-muted-foreground">ALL DAY:</span>
-                        {allDayEvents.map((event, i) => (
-                          <div key={i} className={cn("text-sm font-terminal px-3 py-1 rounded cursor-pointer hover:brightness-110", getEventColor(event))} style={getEventInlineStyle(event)} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>{event.title}</div>
+                        {allDayEvents.map((event) => (
+                          <button
+                            key={`${event.id}-${event.start.toISOString()}`}
+                            type="button"
+                            className={cn("text-sm font-terminal px-3 py-1 rounded cursor-pointer hover:brightness-110", getEventColor(event))}
+                            style={getEventInlineStyle(event)}
+                            aria-label={`Open event ${event.title}`}
+                            onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}
+                          >
+                            {event.title}
+                          </button>
                         ))}
                       </div>
                     );
@@ -2092,12 +2203,19 @@ export default function CalendarPage() {
                   <ScrollArea className="flex-1">
                     <div className="relative" style={{ height: `${24 * HOUR_HEIGHT}px` }}>
                       {HOURS.map((hour) => (
-                        <div key={hour} className="flex border-b border-secondary/30 cursor-pointer hover:bg-secondary/20" style={{ height: `${HOUR_HEIGHT}px` }} onClick={() => openCreateModal(currentDate, hour)}>
+                        <button
+                          key={hour}
+                          type="button"
+                          className="flex w-full border-b border-secondary/30 cursor-pointer hover:bg-secondary/20 bg-transparent text-left"
+                          style={{ height: `${HOUR_HEIGHT}px` }}
+                          onClick={() => openCreateModal(currentDate, hour)}
+                          aria-label={`Create event on ${format(currentDate, "EEEE, MMMM d")} at ${hour === 0 ? "12 AM" : hour < 12 ? `${hour} AM` : hour === 12 ? "12 PM" : `${hour - 12} PM`}`}
+                        >
                           <div className="w-20 text-right pr-2 font-terminal text-xs text-muted-foreground shrink-0 pt-1">
                             {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
                           </div>
                           <div className="flex-1 border-l border-secondary/50"></div>
-                        </div>
+                        </button>
                       ))}
 
                       {/* Positioned events */}
@@ -2107,14 +2225,21 @@ export default function CalendarPage() {
                         const dayStart = setHours(setMinutes(currentDate, 0), 0);
                         return (
                           <div className="absolute top-0 left-20 right-0">
-                            {timedEvents.map((event, i) => {
+                            {timedEvents.map((event) => {
                               const colInfo = eventColumns.get(event.id) || { column: 0, totalColumns: 1 };
                               const style = { ...getEventStyle(event, dayStart, colInfo.column, colInfo.totalColumns), ...getEventInlineStyle(event) };
                               return (
-                                <div key={i} className={cn("absolute rounded p-2 cursor-pointer", getEventColor(event))} style={style} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>
+                                <button
+                                  key={`${event.id}-${event.start.toISOString()}`}
+                                  type="button"
+                                  className={cn("absolute rounded p-2 cursor-pointer text-left", getEventColor(event))}
+                                  style={style}
+                                  aria-label={`Open event ${event.title}`}
+                                  onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}
+                                >
                                   <div className="font-bold text-sm font-terminal truncate">{event.title}</div>
                                   <div className="text-xs font-terminal opacity-80">{format(event.start, 'h:mm a')} - {format(event.end, 'h:mm a')}</div>
-                                </div>
+                                </button>
                               );
                             })}
                           </div>
@@ -2316,4 +2441,8 @@ export default function CalendarPage() {
       <CalendarAssistant isOpen={showAssistant} onClose={() => setShowAssistant(false)} />
     </Layout>
   );
+}
+
+export default function CalendarPage() {
+  return useCalendarPageController();
 }

@@ -26,12 +26,14 @@ export default function MethodBlockCard({
   const badgeClass = stageColors.badge;
   const stageLabel = DISPLAY_STAGE_LABELS[stage] || stage.toUpperCase();
   const energyClass = ENERGY_COLORS[block.energy_cost] || ENERGY_DEFAULT;
+  const isInteractive = Boolean(onClick || draggable);
+  const Wrapper = isInteractive ? "button" : "div";
 
   if (compact) {
     return (
-      <div
-        className={`border-2 ${colorClass} p-2 rounded-none cursor-pointer hover:opacity-80 transition-opacity`}
-        onClick={onClick}
+      <Wrapper
+        {...(isInteractive ? { type: "button" as const, onClick } : {})}
+        className={`border-2 ${colorClass} p-2 rounded-none transition-opacity ${isInteractive ? "w-full cursor-pointer text-left hover:opacity-80" : ""}`}
         draggable={draggable}
         onDragStart={onDragStart}
       >
@@ -44,14 +46,14 @@ export default function MethodBlockCard({
         {showLegacyCategory && (
           <div className="text-[10px] font-terminal text-muted-foreground/70">legacy: {block.category}</div>
         )}
-      </div>
+      </Wrapper>
     );
   }
 
   return (
-    <div
-      className={`border-2 ${colorClass} p-3 rounded-none cursor-pointer hover:opacity-80 transition-opacity`}
-      onClick={onClick}
+    <Wrapper
+      {...(isInteractive ? { type: "button" as const, onClick } : {})}
+      className={`border-2 ${colorClass} p-3 rounded-none transition-opacity ${isInteractive ? "w-full cursor-pointer text-left hover:opacity-80" : ""}`}
       draggable={draggable}
       onDragStart={onDragStart}
     >
@@ -96,6 +98,6 @@ export default function MethodBlockCard({
           ))}
         </div>
       )}
-    </div>
+    </Wrapper>
   );
 }

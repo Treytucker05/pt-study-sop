@@ -9,7 +9,7 @@ type StudioBreadcrumbProps = {
 };
 
 export function StudioBreadcrumb({ level, courseName, onNavigate }: StudioBreadcrumbProps) {
-  const clickable = "font-arcade text-[10px] text-primary/70 hover:text-primary cursor-pointer transition-colors";
+  const clickable = "font-arcade text-[10px] text-primary/70 hover:text-primary transition-colors bg-transparent border-0 p-0";
   const active = "font-arcade text-[10px] text-primary";
   const separator = "h-3 w-3 text-primary/30";
 
@@ -19,15 +19,15 @@ export function StudioBreadcrumb({ level, courseName, onNavigate }: StudioBreadc
         <span className={active}>STUDIO</span>
       ) : (
         <>
-          <span className={clickable} onClick={() => onNavigate(1)}>STUDIO</span>
+          <button type="button" className={clickable} onClick={() => onNavigate(1)}>STUDIO</button>
           <ChevronRight className={separator} />
           {level === 2 ? (
             <span className={active}>{courseName ?? "COURSE"}</span>
           ) : (
             <>
-              <span className={clickable} onClick={() => onNavigate(2)}>
+              <button type="button" className={clickable} onClick={() => onNavigate(2)}>
                 {courseName ?? "COURSE"}
-              </span>
+              </button>
               <ChevronRight className={separator} />
               <span className={active}>WORKSPACE</span>
             </>

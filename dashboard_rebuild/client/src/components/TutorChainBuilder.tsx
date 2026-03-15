@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { MethodBlock, MethodCategory } from "@/lib/api";
-import { CATEGORY_COLORS, CATEGORY_LABELS } from "@/lib/api";
+import { CATEGORY_COLORS, CATEGORY_LABELS } from "@/api.types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -227,7 +227,7 @@ export function TutorChainBuilder({
               const color = CATEGORY_COLORS[(b.control_stage || b.category) as MethodCategory] || "#888";
               return (
                 <div
-                  key={`${b.id}-${idx}`}
+                  key={b.id}
                   draggable
                   onDragStart={() => handleDragStart(idx)}
                   onDragOver={(e) => handleDragOver(e, idx)}
@@ -294,8 +294,8 @@ export function TutorChainBuilder({
           {/* PEIRRO order warnings */}
           {chainWarnings.length > 0 && (
             <div className="space-y-1">
-              {chainWarnings.map((w, i) => (
-                <div key={i} className="flex items-start gap-1.5 text-xs font-terminal text-yellow-400/80">
+              {chainWarnings.map((w) => (
+                <div key={w} className="flex items-start gap-1.5 text-xs font-terminal text-yellow-400/80">
                   <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
                   <span>{w}</span>
                 </div>

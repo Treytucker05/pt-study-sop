@@ -73,6 +73,8 @@ interface EventEditModalProps {
   courseOptions?: CourseOption[];
 }
 
+const EMPTY_COURSE_OPTIONS: CourseOption[] = [];
+
 export function EventEditModal({
   open,
   onOpenChange,
@@ -83,7 +85,7 @@ export function EventEditModal({
   onDeleteSeries,
   onEditSeries,
   mode = "series",
-  courseOptions = [],
+  courseOptions = EMPTY_COURSE_OPTIONS,
 }: EventEditModalProps) {
   const [activeTab, setActiveTab] = useState<Tab>("details");
   const [newAttendee, setNewAttendee] = useState("");
@@ -611,8 +613,8 @@ export function EventEditModal({
                       <p className="text-xs text-blue-400 font-terminal">
                         {event.conferenceData?.conferenceSolution?.name || "Google Meet"}
                       </p>
-                      {event.conferenceData?.entryPoints?.map((ep, i) => (
-                        <a key={i} href={ep.uri} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-300 hover:underline block mt-1 font-terminal">
+                      {event.conferenceData?.entryPoints?.map((ep) => (
+                        <a key={`${ep.entryPointType ?? "entry"}-${ep.uri ?? ""}`} href={ep.uri} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-300 hover:underline block mt-1 font-terminal">
                           {ep.uri}
                         </a>
                       ))}

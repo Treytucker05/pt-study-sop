@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { CalendarDays, Clock3, RefreshCw, Sparkles } from "lucide-react";
 
 import { PlannerKanban } from "@/components/PlannerKanban";
@@ -7,9 +7,10 @@ import { SyllabusViewTab } from "@/components/SyllabusViewTab";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { api, type PlannerTask, type ScheduleEvent } from "@/lib/api";
+import { api, type PlannerTask } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/use-toast";
+import type { ScheduleEvent } from "@shared/schema";
 
 interface TutorScheduleModeProps {
   courseId?: number | null;
@@ -25,6 +26,38 @@ export type TutorScheduleLaunchIntent = {
   courseId: number;
   courseEventId?: number | null;
 };
+
+type EventHighlight = {
+  eventId: number | null;
+  eventType: string | null;
+};
+
+interface ScheduleOverviewCardProps {
+  calendarSource: "google" | "local";
+  displayCourse: string | null;
+  focusTopic: string | null;
+  launchIntent: TutorScheduleLaunchIntent | null;
+  pendingEventCount: number;
+  queueCount: number;
+  sessionCount: number;
+  isGenerating: boolean;
+  isUpdatingSource: boolean;
+  onGenerateReviewTasks: () => void;
+  onToggleSource: () => void;
+  onRefresh: () => void;
+}
+
+interface UpcomingEventsCardProps {
+  events: ScheduleEvent[];
+  highlightedEventId: number | null;
+  highlightedEventType: string | null;
+  isLoading: boolean;
+}
+
+interface PlannerQueueCardProps {
+  isLoading: boolean;
+  queue: PlannerTask[];
+}
 
 function formatEventDate(value?: string | null): string {
   if (!value) return "Unscheduled";
@@ -43,6 +76,222 @@ function eventTone(type?: string | null): string {
   return "border-cyan-500/40 bg-cyan-500/10 text-cyan-200";
 }
 
+function deriveEventHighlight(
+  courseId: number | null,
+  launchIntent: TutorScheduleLaunchIntent | null,
+): EventHighlight {
+  if (!launchIntent || courseId !== launchIntent.courseId) {
+    return { eventId: null, eventType: null };
+  }
+  if (launchIntent.kind === "open_event") {
+    return { eventId: launchIntent.courseEventId ?? null, eventType: null };
+  }
+  return {
+    eventId: null,
+    eventType: launchIntent.kind === "manage_exam" ? "exam" : null,
+  };
+}
+
+function ScheduleOverviewCard({
+  calendarSource,
+  displayCourse,
+  focusTopic,
+  launchIntent,
+  pendingEventCount,
+  queueCount,
+  sessionCount,
+  isGenerating,
+  isUpdatingSource,
+  onGenerateReviewTasks,
+  onToggleSource,
+  onRefresh,
+}: ScheduleOverviewCardProps) {
+  return (
+    <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
+      <CardHeader className="border-b border-primary/40">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-2">
+            <CardTitle className="font-arcade text-sm flex items-center gap-2">
+              <CalendarDays className="h-4 w-4" />
+              SCHEDULE MODE
+            </CardTitle>
+            <div className="font-terminal text-xs text-muted-foreground">
+              {displayCourse || "Course schedule"}
+            </div>
+          </div>
+          <Badge variant="outline" className="rounded-none border-primary/40 text-primary">
+            {calendarSource === "google" ? "Google calendar" : "Local planner"}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="p-4 space-y-4">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="border border-secondary/30 bg-black/30 p-3">
+            <div className="font-terminal text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+              Pending events
+            </div>
+            <div className="mt-2 font-arcade text-lg text-primary">{pendingEventCount}</div>
+          </div>
+          <div className="border border-secondary/30 bg-black/30 p-3">
+            <div className="font-terminal text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+              Planner queue
+            </div>
+            <div className="mt-2 font-arcade text-lg text-primary">{queueCount}</div>
+          </div>
+          <div className="border border-secondary/30 bg-black/30 p-3">
+            <div className="font-terminal text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+              Recent sessions
+            </div>
+            <div className="mt-2 font-arcade text-lg text-primary">{sessionCount}</div>
+          </div>
+        </div>
+
+        {focusTopic ? (
+          <div className="border border-primary/30 bg-primary/10 p-3">
+            <div className="font-terminal text-[11px] uppercase tracking-[0.18em] text-primary/80">
+              Current focus
+            </div>
+            <div className="mt-1 font-terminal text-sm text-foreground">{focusTopic}</div>
+          </div>
+        ) : null}
+
+        {launchIntent ? (
+          <div className="border border-primary/30 bg-primary/10 p-3">
+            <div className="font-terminal text-[11px] uppercase tracking-[0.18em] text-primary/80">
+              Launch focus
+            </div>
+            <div className="mt-1 font-terminal text-sm text-foreground">
+              {launchIntent.kind === "manage_exam"
+                ? "Exam management focus"
+                : launchIntent.kind === "manage_event"
+                  ? "Course event management focus"
+                  : "Focused event opened from Tutor Page 1"}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            className="rounded-none font-arcade text-xs"
+            onClick={onGenerateReviewTasks}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="mr-2 h-3.5 w-3.5" />
+            )}
+            Generate Review Tasks
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="rounded-none font-terminal text-xs"
+            onClick={onToggleSource}
+            disabled={isUpdatingSource}
+          >
+            Toggle Source
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="rounded-none font-terminal text-xs"
+            onClick={onRefresh}
+          >
+            Refresh
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function UpcomingEventsCard({
+  events,
+  highlightedEventId,
+  highlightedEventType,
+  isLoading,
+}: UpcomingEventsCardProps) {
+  return (
+    <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
+      <CardHeader className="border-b border-primary/40">
+        <CardTitle className="font-arcade text-sm flex items-center gap-2">
+          <Clock3 className="h-4 w-4" />
+          UPCOMING COURSE EVENTS
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-4">
+        {isLoading ? (
+          <div className="font-terminal text-xs text-muted-foreground">Loading course events...</div>
+        ) : events.length === 0 ? (
+          <div className="font-terminal text-xs text-muted-foreground">
+            No linked schedule events yet for this course.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {events.map((event) => (
+              <div
+                key={event.id}
+                className={cn(
+                  "flex items-start justify-between gap-3 border bg-black/30 p-3",
+                  highlightedEventId === event.id
+                    ? "border-primary/50 bg-primary/10"
+                    : highlightedEventType && event.type === highlightedEventType
+                      ? "border-primary/30"
+                      : "border-secondary/30",
+                )}
+              >
+                <div className="min-w-0">
+                  <div className="font-terminal text-sm text-foreground">{event.title}</div>
+                  <div className="mt-1 font-terminal text-xs text-muted-foreground">
+                    {formatEventDate(event.dueDate)}
+                  </div>
+                </div>
+                <Badge
+                  variant="outline"
+                  className={cn("rounded-none text-[11px] uppercase", eventTone(event.type))}
+                >
+                  {event.type}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function PlannerQueueCard({ isLoading, queue }: PlannerQueueCardProps) {
+  return (
+    <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
+      <CardHeader className="border-b border-primary/40">
+        <div className="flex items-center justify-between gap-3">
+          <CardTitle className="font-arcade text-sm">PLANNER QUEUE</CardTitle>
+          <Badge variant="outline" className="rounded-none border-secondary/40 text-muted-foreground">
+            {isLoading ? "Loading..." : `${queue.length} task${queue.length === 1 ? "" : "s"}`}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="p-4">
+        {isLoading ? (
+          <div className="font-terminal text-xs text-muted-foreground">Loading planner queue...</div>
+        ) : queue.length === 0 ? (
+          <div className="font-terminal text-xs text-muted-foreground">
+            No pending planner tasks for this course yet.
+          </div>
+        ) : (
+          <PlannerKanban tasks={queue} />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function TutorScheduleMode({
   courseId = null,
   courseName = null,
@@ -52,8 +301,6 @@ export function TutorScheduleMode({
 }: TutorScheduleModeProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [highlightedEventId, setHighlightedEventId] = useState<number | null>(null);
-  const [highlightedEventType, setHighlightedEventType] = useState<string | null>(null);
 
   const { data: shell } = useQuery({
     queryKey: ["tutor", "project-shell", courseId],
@@ -111,38 +358,38 @@ export function TutorScheduleMode({
   });
 
   const filteredQueue = queue.filter((task) =>
-    courseId === null || courseId === undefined ? true : task.course_id === courseId
+    courseId === null || courseId === undefined ? true : task.course_id === courseId,
   );
 
-  useEffect(() => {
-    if (!launchIntent || courseId !== launchIntent.courseId) return;
-    if (launchIntent.kind === "open_event") {
-      setHighlightedEventId(launchIntent.courseEventId ?? null);
-      setHighlightedEventType(null);
-      return;
-    }
-    setHighlightedEventId(null);
-    setHighlightedEventType(launchIntent.kind === "manage_exam" ? "exam" : null);
-  }, [courseId, launchIntent]);
+  const highlight = useMemo(
+    () => deriveEventHighlight(courseId, launchIntent),
+    [courseId, launchIntent],
+  );
 
   const upcomingEvents = useMemo(
     () =>
       [...events]
         .sort((a, b) => {
-          const aFocused = highlightedEventId !== null && a.id === highlightedEventId ? 0 : 1;
-          const bFocused = highlightedEventId !== null && b.id === highlightedEventId ? 0 : 1;
+          const aFocused = highlight.eventId !== null && a.id === highlight.eventId ? 0 : 1;
+          const bFocused = highlight.eventId !== null && b.id === highlight.eventId ? 0 : 1;
           if (aFocused !== bFocused) return aFocused - bFocused;
-          const aType = highlightedEventType && a.type === highlightedEventType ? 0 : 1;
-          const bType = highlightedEventType && b.type === highlightedEventType ? 0 : 1;
+          const aType = highlight.eventType && a.type === highlight.eventType ? 0 : 1;
+          const bType = highlight.eventType && b.type === highlight.eventType ? 0 : 1;
           if (aType !== bType) return aType - bType;
           return String(a.dueDate || "").localeCompare(String(b.dueDate || ""));
         })
         .slice(0, 6),
-    [events, highlightedEventId, highlightedEventType],
+    [events, highlight.eventId, highlight.eventType],
   );
 
   const calendarSource = settings?.calendar_source === "google" ? "google" : "local";
   const displayCourse = courseName || shell?.course?.name || (courseId ? `Course ${courseId}` : null);
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["planner-queue"] });
+    queryClient.invalidateQueries({ queryKey: ["schedule-events", courseId] });
+    queryClient.invalidateQueries({ queryKey: ["tutor", "project-shell", courseId] });
+  };
 
   if (courseId === null || courseId === undefined) {
     return (
@@ -165,192 +412,34 @@ export function TutorScheduleMode({
   return (
     <div className={cn("grid gap-4 xl:grid-cols-[1.05fr_1.45fr]", className)} data-testid="tutor-schedule-mode">
       <div className="space-y-4">
-        <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
-          <CardHeader className="border-b border-primary/40">
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-2">
-                <CardTitle className="font-arcade text-sm flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4" />
-                  SCHEDULE MODE
-                </CardTitle>
-                <div className="font-terminal text-xs text-muted-foreground">
-                  {displayCourse || "Course schedule"}
-                </div>
-              </div>
-              <Badge variant="outline" className="rounded-none border-primary/40 text-primary">
-                {calendarSource === "google" ? "Google calendar" : "Local planner"}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 space-y-4">
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="border border-secondary/30 bg-black/30 p-3">
-                <div className="font-terminal text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                  Pending events
-                </div>
-                <div className="mt-2 font-arcade text-lg text-primary">
-                  {shell?.counts.pending_schedule_events ?? upcomingEvents.length}
-                </div>
-              </div>
-              <div className="border border-secondary/30 bg-black/30 p-3">
-                <div className="font-terminal text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                  Planner queue
-                </div>
-                <div className="mt-2 font-arcade text-lg text-primary">
-                  {filteredQueue.length}
-                </div>
-              </div>
-              <div className="border border-secondary/30 bg-black/30 p-3">
-                <div className="font-terminal text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                  Recent sessions
-                </div>
-                <div className="mt-2 font-arcade text-lg text-primary">
-                  {shell?.counts.session_count ?? 0}
-                </div>
-              </div>
-            </div>
-
-            {focusTopic ? (
-              <div className="border border-primary/30 bg-primary/10 p-3">
-                <div className="font-terminal text-[11px] uppercase tracking-[0.18em] text-primary/80">
-                  Current focus
-                </div>
-                <div className="mt-1 font-terminal text-sm text-foreground">{focusTopic}</div>
-              </div>
-            ) : null}
-
-            {launchIntent ? (
-              <div className="border border-primary/30 bg-primary/10 p-3">
-                <div className="font-terminal text-[11px] uppercase tracking-[0.18em] text-primary/80">
-                  Launch focus
-                </div>
-                <div className="mt-1 font-terminal text-sm text-foreground">
-                  {launchIntent.kind === "manage_exam"
-                    ? "Exam management focus"
-                    : launchIntent.kind === "manage_event"
-                      ? "Course event management focus"
-                      : "Focused event opened from Tutor Page 1"}
-                </div>
-              </div>
-            ) : null}
-
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                size="sm"
-                className="rounded-none font-arcade text-xs"
-                onClick={() => generateMutation.mutate()}
-                disabled={generateMutation.isPending}
-              >
-                {generateMutation.isPending ? (
-                  <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Sparkles className="mr-2 h-3.5 w-3.5" />
-                )}
-                Generate Review Tasks
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="rounded-none font-terminal text-xs"
-                onClick={() =>
-                  settingsMutation.mutate({
-                    calendar_source: calendarSource === "google" ? "local" : "google",
-                  })
-                }
-                disabled={settingsMutation.isPending}
-              >
-                Toggle Source
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="rounded-none font-terminal text-xs"
-                onClick={() => {
-                  queryClient.invalidateQueries({ queryKey: ["planner-queue"] });
-                  queryClient.invalidateQueries({ queryKey: ["schedule-events", courseId] });
-                  queryClient.invalidateQueries({ queryKey: ["tutor", "project-shell", courseId] });
-                }}
-              >
-                Refresh
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
-          <CardHeader className="border-b border-primary/40">
-            <CardTitle className="font-arcade text-sm flex items-center gap-2">
-              <Clock3 className="h-4 w-4" />
-              UPCOMING COURSE EVENTS
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            {eventsLoading ? (
-              <div className="font-terminal text-xs text-muted-foreground">Loading course events...</div>
-            ) : upcomingEvents.length === 0 ? (
-              <div className="font-terminal text-xs text-muted-foreground">
-                No linked schedule events yet for this course.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {upcomingEvents.map((event) => (
-                  <div
-                    key={event.id}
-                    className={cn(
-                      "flex items-start justify-between gap-3 border bg-black/30 p-3",
-                      highlightedEventId === event.id
-                        ? "border-primary/50 bg-primary/10"
-                        : highlightedEventType && event.type === highlightedEventType
-                          ? "border-primary/30"
-                          : "border-secondary/30",
-                    )}
-                  >
-                    <div className="min-w-0">
-                      <div className="font-terminal text-sm text-foreground">{event.title}</div>
-                      <div className="mt-1 font-terminal text-xs text-muted-foreground">
-                        {formatEventDate(event.dueDate)}
-                      </div>
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className={cn("rounded-none text-[11px] uppercase", eventTone(event.type))}
-                    >
-                      {event.type}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
+        <ScheduleOverviewCard
+          calendarSource={calendarSource}
+          displayCourse={displayCourse}
+          focusTopic={focusTopic}
+          launchIntent={launchIntent}
+          pendingEventCount={shell?.counts.pending_schedule_events ?? upcomingEvents.length}
+          queueCount={filteredQueue.length}
+          sessionCount={shell?.counts.session_count ?? 0}
+          isGenerating={generateMutation.isPending}
+          isUpdatingSource={settingsMutation.isPending}
+          onGenerateReviewTasks={() => generateMutation.mutate()}
+          onToggleSource={() =>
+            settingsMutation.mutate({
+              calendar_source: calendarSource === "google" ? "local" : "google",
+            })
+          }
+          onRefresh={handleRefresh}
+        />
+        <UpcomingEventsCard
+          events={upcomingEvents}
+          highlightedEventId={highlight.eventId}
+          highlightedEventType={highlight.eventType}
+          isLoading={eventsLoading}
+        />
         <SyllabusViewTab lockedCourseId={courseId} />
       </div>
 
-      <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
-        <CardHeader className="border-b border-primary/40">
-          <div className="flex items-center justify-between gap-3">
-            <CardTitle className="font-arcade text-sm">PLANNER QUEUE</CardTitle>
-            <Badge variant="outline" className="rounded-none border-secondary/40 text-muted-foreground">
-              {queueLoading ? "Loading..." : `${filteredQueue.length} task${filteredQueue.length === 1 ? "" : "s"}`}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="p-4">
-          {queueLoading ? (
-            <div className="font-terminal text-xs text-muted-foreground">Loading planner queue...</div>
-          ) : filteredQueue.length === 0 ? (
-            <div className="font-terminal text-xs text-muted-foreground">
-              No pending planner tasks for this course yet.
-            </div>
-          ) : (
-            <PlannerKanban tasks={filteredQueue} />
-          )}
-        </CardContent>
-      </Card>
+      <PlannerQueueCard isLoading={queueLoading} queue={filteredQueue} />
     </div>
   );
 }

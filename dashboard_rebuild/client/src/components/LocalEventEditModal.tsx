@@ -69,6 +69,7 @@ interface LocalEventEditModalProps {
 }
 
 const COLOR_PALETTE = EVENT_COLOR_PALETTE;
+const EMPTY_COURSE_OPTIONS: CourseOption[] = [];
 
 const tabs: { id: Tab; label: string }[] = [
   { id: "details", label: "DETAILS" },
@@ -85,7 +86,7 @@ export function LocalEventEditModal({
   onEventChange,
   onSave,
   onDelete,
-  courseOptions = [],
+  courseOptions = EMPTY_COURSE_OPTIONS,
 }: LocalEventEditModalProps) {
   const [activeTab, setActiveTab] = useState<Tab>("details");
   const [newAttendee, setNewAttendee] = useState("");

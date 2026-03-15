@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import {
@@ -80,6 +80,16 @@ export function MaterialUploader({ courseId, onUploadComplete }: MaterialUploade
     [handleFiles]
   );
 
+  const onDropZoneKeyDown = useCallback(
+    (e: ReactKeyboardEvent<HTMLDivElement>) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        fileRef.current?.click();
+      }
+    },
+    []
+  );
+
   return (
     <div className="space-y-2">
       {/* Drop zone */}
@@ -88,6 +98,10 @@ export function MaterialUploader({ courseId, onUploadComplete }: MaterialUploade
         onDragLeave={() => setDragOver(false)}
         onDrop={onDrop}
         onClick={() => fileRef.current?.click()}
+        onKeyDown={onDropZoneKeyDown}
+        role="button"
+        tabIndex={0}
+        aria-label="Select study materials to upload"
         className={`border-2 border-dashed px-3 py-4 text-center cursor-pointer transition-colors ${
           dragOver
             ? "border-primary bg-primary/10"
@@ -116,7 +130,7 @@ export function MaterialUploader({ courseId, onUploadComplete }: MaterialUploade
         <div className="space-y-1">
           {queue.map((file, idx) => (
             <div
-              key={`${file.name}-${idx}`}
+              key={`${file.name}-${file.size}-${file.lastModified}`}
               className={`flex items-center gap-1.5 px-2 py-0.5 bg-black/40 border border-muted-foreground/10 ${TEXT_BODY}`}
             >
               <FileText className={`${ICON_SM} text-primary shrink-0`} />

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   BaseEdge,
   EdgeLabelRenderer,
@@ -59,13 +59,6 @@ export function StructuredEdge({
   const [editValue, setEditValue] = useState(label);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (editing) {
-      setEditValue(label);
-      setTimeout(() => inputRef.current?.select(), 0);
-    }
-  }, [editing, label]);
-
   const commitEdit = useCallback(() => {
     setEditing(false);
     const trimmed = editValue.trim();
@@ -88,6 +81,11 @@ export function StructuredEdge({
     },
     [commitEdit]
   );
+  const startEditing = useCallback(() => {
+    setEditValue(label);
+    setEditing(true);
+    requestAnimationFrame(() => inputRef.current?.select());
+  }, [label]);
 
   return (
     <>
@@ -107,18 +105,17 @@ export function StructuredEdge({
               onBlur={commitEdit}
               onKeyDown={handleKeyDown}
               className="bg-black border border-primary text-primary text-[10px] font-terminal text-center px-1 py-0.5 outline-none min-w-[60px]"
-              autoFocus
             />
           ) : label ? (
             <span
-              onDoubleClick={() => setEditing(true)}
+              onDoubleClick={startEditing}
               className="bg-black/90 border border-primary/40 text-primary/80 text-[10px] font-terminal px-1.5 py-0.5 cursor-pointer hover:border-primary hover:text-primary"
             >
               {label}
             </span>
           ) : selected ? (
             <button
-              onClick={() => setEditing(true)}
+              onClick={startEditing}
               className="bg-black/80 border border-dashed border-primary/30 text-primary/40 text-[10px] font-terminal px-1.5 py-0.5 hover:border-primary/60 hover:text-primary/60"
             >
               + label

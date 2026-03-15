@@ -21,6 +21,8 @@ interface PageScaffoldProps {
   contentClassName?: string;
 }
 
+const EMPTY_PAGE_STATS: PageScaffoldStat[] = [];
+
 function statToneClass(tone: PageScaffoldTone | undefined) {
   switch (tone) {
     case "info":
@@ -40,7 +42,7 @@ export function PageScaffold({
   title,
   subtitle,
   eyebrow,
-  stats = [],
+  stats = EMPTY_PAGE_STATS,
   actions,
   children,
   className,

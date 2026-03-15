@@ -1,5 +1,4 @@
-// Re-export all types so existing imports from "@/api" continue to work
-export * from "./api.types";
+export type * from "./api.types";
 
 import type {
   Session, InsertSession,
@@ -37,6 +36,7 @@ import type {
   TutorCreateSessionRequest,
   TutorSession, TutorSessionWithTurns, TutorSessionEndResult, TutorSessionSummary,
   TutorHubResponse,
+  TutorStudioOverviewResponse,
   TutorProjectShellResponse, TutorProjectShellState, TutorProjectShellStateRequest,
   TutorStudioCaptureRequest, TutorStudioCaptureResponse, TutorStudioRestoreResponse,
   TutorStudioPromoteRequest,
@@ -706,6 +706,8 @@ export const api = {
       return request<TutorProjectShellResponse>(`/tutor/project-shell?${qs.toString()}`);
     },
     getHub: () => request<TutorHubResponse>("/tutor/hub"),
+    getStudioOverview: (courseId: number) =>
+      request<TutorStudioOverviewResponse>(`/tutor/studio/overview?course_id=${courseId}`),
     saveProjectShellState: (data: TutorProjectShellStateRequest) =>
       request<{ course_id: number; workspace_state: TutorProjectShellState }>(
         "/tutor/project-shell/state",

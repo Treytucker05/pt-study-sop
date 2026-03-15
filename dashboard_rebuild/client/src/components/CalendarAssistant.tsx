@@ -9,6 +9,7 @@ import { Loader2, Send, X, Bot, Link } from "lucide-react";
 import { api } from "@/lib/api";
 
 interface Message {
+    id: string;
     role: 'user' | 'assistant' | 'system';
     content: string;
     isError?: boolean;
@@ -23,6 +24,13 @@ interface CalendarAssistantResponse {
 interface CalendarAssistantProps {
     isOpen: boolean;
     onClose: () => void;
+}
+
+function createMessageKey(prefix: string) {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+        return `${prefix}-${crypto.randomUUID()}`;
+    }
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 export function CalendarAssistantButton({ onClick }: { onClick: () => void }) {
@@ -62,14 +70,6 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
         },
     });
 
-
-    // Refresh Google status when assistant opens
-    useEffect(() => {
-        if (isOpen) {
-            refetchGoogleStatus();
-        }
-    }, [isOpen, refetchGoogleStatus]);
-
     // Scroll to bottom
     useEffect(() => {
         if (scrollRef.current) {
@@ -84,6 +84,7 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
         },
         onSuccess: (data: CalendarAssistantResponse) => {
             setMessages(prev => [...prev, {
+                id: createMessageKey('assistant'),
                 role: 'assistant',
                 content: data.response,
                 isError: !data.success
@@ -95,13 +96,13 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
             queryClient.refetchQueries({ queryKey: ['google-calendar'] });
         },
         onError: (err) => {
-            setMessages(prev => [...prev, { role: 'assistant', content: `Network Error: ${err}`, isError: true }]);
+            setMessages(prev => [...prev, { id: createMessageKey('assistant'), role: 'assistant', content: `Network Error: ${err}`, isError: true }]);
         }
     });
 
     const handleSend = () => {
         if (!inputValue.trim()) return;
-        const newMsg: Message = { role: 'user', content: inputValue };
+        const newMsg: Message = { id: createMessageKey('user'), role: 'user', content: inputValue };
         setMessages(prev => [...prev, newMsg]);
         setInputValue("");
         chatMutation.mutate(inputValue);
@@ -163,8 +164,8 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
                     )}
 
 
-                    {messages.map((m, i) => (
-                        <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    {messages.map((m) => (
+                        <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                             <div
                                 className={`max-w-[85%] px-3 py-2 text-xs font-terminal whitespace-pre-wrap ${m.role === 'user'
                                     ? 'bg-primary text-black'

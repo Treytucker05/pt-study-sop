@@ -11,6 +11,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchCourseMap } from "@/api";
 import { api } from "@/lib/api";
 import type {
   AppLearningObjective,
@@ -32,7 +33,6 @@ import type {
   TutorScholarStrategy,
   TutorStrategyFeedback,
 } from "@/lib/api";
-import { fetchCourseMap } from "@/lib/api";
 import {
   clearTutorActiveSessionId,
   consumeTutorLaunchHandoff,
@@ -279,27 +279,21 @@ function inferStudyUnitFromMaterial(material: Material): string {
   return bestUnit;
 }
 
-export default function Tutor() {
-  const [, setLocation] = useLocation();
-  const queryClient = useQueryClient();
-  const initialRouteQuery = useMemo(() => readTutorShellQuery(), []);
-  const navigationTokenRef = useRef(0);
-  const explicitShellModeRef = useRef<{ courseId: number; mode: TutorShellMode } | null>(null);
-
-  // Session state
+function useTutorShellState(initialRouteQuery: TutorShellQuery) {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(
     initialRouteQuery.sessionId || readTutorActiveSessionId(),
   );
-  const [isStarting, setIsStarting] = useState(false);
   const [hasRestored, setHasRestored] = useState(false);
-  const [restoredTurns, setRestoredTurns] = useState<{ question: string; answer: string | null }[] | undefined>();
+  const [restoredTurns, setRestoredTurns] = useState<
+    { question: string; answer: string | null }[] | undefined
+  >();
   const [shellMode, setShellMode] = useState<TutorPageMode>(
     initialRouteQuery.mode ||
       (initialRouteQuery.sessionId || readTutorActiveSessionId() ? "tutor" : "dashboard"),
   );
-  const [showStartFromL2, setShowStartFromL2] = useState(false);
   const [studioEntryRequest, setStudioEntryRequest] = useState<TutorStudioEntryRequest | null>(null);
-  const [scheduleLaunchIntent, setScheduleLaunchIntent] = useState<TutorScheduleLaunchIntent | null>(null);
+  const [scheduleLaunchIntent, setScheduleLaunchIntent] =
+    useState<TutorScheduleLaunchIntent | null>(null);
   const [activeBoardScope, setActiveBoardScope] = useState<TutorBoardScope>(
     initialRouteQuery.boardScope || "project",
   );
@@ -309,71 +303,72 @@ export default function Tutor() {
   const [viewerState, setViewerState] = useState<Record<string, unknown> | null>(null);
   const [shellRevision, setShellRevision] = useState(0);
   const [shellHydratedCourseId, setShellHydratedCourseId] = useState<number | null>(null);
-  const lastPersistedShellKeyRef = useRef("");
-  const resumedFromProjectShellRef = useRef(false);
+  const [showSetup, setShowSetup] = useState<boolean>(
+    () => !Boolean(initialRouteQuery.sessionId || readTutorActiveSessionId()),
+  );
+  const [brainLaunchContext, setBrainLaunchContext] = useState<TutorBrainLaunchContext | null>(
+    null,
+  );
 
-  // Filter state
+  return {
+    activeSessionId,
+    setActiveSessionId,
+    hasRestored,
+    setHasRestored,
+    restoredTurns,
+    setRestoredTurns,
+    shellMode,
+    setShellMode,
+    studioEntryRequest,
+    setStudioEntryRequest,
+    scheduleLaunchIntent,
+    setScheduleLaunchIntent,
+    activeBoardScope,
+    setActiveBoardScope,
+    activeBoardId,
+    setActiveBoardId,
+    viewerState,
+    setViewerState,
+    shellRevision,
+    setShellRevision,
+    shellHydratedCourseId,
+    setShellHydratedCourseId,
+    showSetup,
+    setShowSetup,
+    brainLaunchContext,
+    setBrainLaunchContext,
+  };
+}
+
+function useTutorLaunchConfig(initialRouteQuery: TutorShellQuery) {
   const [courseId, setCourseId] = useState<number | undefined>(initialRouteQuery.courseId);
   const [selectedMaterials, setSelectedMaterials] = useState<number[]>(() =>
-    readTutorSelectedMaterialIds()
+    readTutorSelectedMaterialIds(),
   );
   const [accuracyProfile, setAccuracyProfile] = useState<TutorAccuracyProfile>(() =>
     readTutorAccuracyProfile(),
   );
   const [chainId, setChainId] = useState<number | undefined>();
-  const [showMaterials, setShowMaterials] = useState(false);
-  const [currentBlockIndex, setCurrentBlockIndex] = useState(0);
-  const [chainBlocks, setChainBlocks] = useState<TutorTemplateChain["blocks"]>([]);
   const [customBlockIds, setCustomBlockIds] = useState<number[]>([]);
   const [topic, setTopic] = useState("");
-
-  // Vault save folder
   const [vaultFolder, setVaultFolder] = useState<string>(() => readTutorVaultFolder());
-
-  // Vault file picker
   const [selectedPaths, setSelectedPaths] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem("tutor.vault_selected.v1");
       if (saved) {
-        const p = JSON.parse(saved);
-        if (Array.isArray(p)) return p;
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
       }
-    } catch { /* corrupted */ }
+    } catch {
+      /* corrupted */
+    }
     return [];
   });
-
-  // Artifacts
-  const [artifacts, setArtifacts] = useState<TutorArtifact[]>([]);
-  const [turnCount, setTurnCount] = useState(0);
-  const [startedAt, setStartedAt] = useState<string | null>(null);
-  const [showArtifacts, setShowArtifacts] = useState(false);
-  const [, setShowSetup] = useState<boolean>(
-    () => !Boolean(initialRouteQuery.sessionId || readTutorActiveSessionId()),
-  );
-  const [brainLaunchContext, setBrainLaunchContext] = useState<TutorBrainLaunchContext | null>(null);
-  const [scholarStrategyExpanded, setScholarStrategyExpanded] = useState(false);
   const [objectiveScope, setObjectiveScope] = useState<TutorObjectiveScope>(() =>
     readTutorObjectiveScope(),
   );
   const [selectedObjectiveId, setSelectedObjectiveId] = useState("");
   const [selectedObjectiveGroup, setSelectedObjectiveGroup] = useState("");
-  const [showEndConfirm, setShowEndConfirm] = useState(false);
-  const [isShipping, setIsShipping] = useState(false);
-
-  // Block timer
-  const [blockTimerSeconds, setBlockTimerSeconds] = useState<number | null>(null);
-  const [timerWarningShown, setTimerWarningShown] = useState(false);
-  const [timerPaused, setTimerPaused] = useState(false);
-
-  // Settings dialog
-  const [showSettings, setShowSettings] = useState(false);
-  const [customInstructions, setCustomInstructions] = useState("");
-  const [settingsLoading, setSettingsLoading] = useState(false);
-  const [settingsSaving, setSettingsSaving] = useState(false);
-  const [scholarStrategy, setScholarStrategy] = useState<TutorScholarStrategy | null>(null);
-  const [strategyFeedback, setStrategyFeedback] = useState<TutorStrategyFeedback | null>(null);
-  const [strategyNotes, setStrategyNotes] = useState("");
-  const [savingStrategyFeedback, setSavingStrategyFeedback] = useState(false);
 
   useEffect(() => {
     writeTutorSelectedMaterialIds(selectedMaterials);
@@ -405,17 +400,220 @@ export default function Tutor() {
       selectedPaths,
     });
   }, [
-    courseId,
-    topic,
-    selectedMaterials,
-    chainId,
-    customBlockIds,
     accuracyProfile,
+    chainId,
+    courseId,
+    customBlockIds,
     objectiveScope,
-    selectedObjectiveId,
+    selectedMaterials,
     selectedObjectiveGroup,
+    selectedObjectiveId,
     selectedPaths,
+    topic,
   ]);
+
+  return {
+    courseId,
+    setCourseId,
+    selectedMaterials,
+    setSelectedMaterials,
+    accuracyProfile,
+    setAccuracyProfile,
+    chainId,
+    setChainId,
+    customBlockIds,
+    setCustomBlockIds,
+    topic,
+    setTopic,
+    vaultFolder,
+    setVaultFolder,
+    selectedPaths,
+    setSelectedPaths,
+    objectiveScope,
+    setObjectiveScope,
+    selectedObjectiveId,
+    setSelectedObjectiveId,
+    selectedObjectiveGroup,
+    setSelectedObjectiveGroup,
+  };
+}
+
+function useTutorSessionState() {
+  const [currentBlockIndex, setCurrentBlockIndex] = useState(0);
+  const [chainBlocks, setChainBlocks] = useState<TutorTemplateChain["blocks"]>([]);
+  const [artifacts, setArtifacts] = useState<TutorArtifact[]>([]);
+  const [turnCount, setTurnCount] = useState(0);
+  const [startedAt, setStartedAt] = useState<string | null>(null);
+  const [showArtifacts, setShowArtifacts] = useState(false);
+  const [scholarStrategyExpanded, setScholarStrategyExpanded] = useState(false);
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
+  const [isShipping, setIsShipping] = useState(false);
+  const [blockTimerSeconds, setBlockTimerSeconds] = useState<number | null>(null);
+  const [timerWarningShown, setTimerWarningShown] = useState(false);
+  const [timerPaused, setTimerPaused] = useState(false);
+  const [scholarStrategy, setScholarStrategy] = useState<TutorScholarStrategy | null>(null);
+  const [strategyFeedback, setStrategyFeedback] = useState<TutorStrategyFeedback | null>(null);
+  const [strategyNotes, setStrategyNotes] = useState("");
+  const [savingStrategyFeedback, setSavingStrategyFeedback] = useState(false);
+
+  return {
+    currentBlockIndex,
+    setCurrentBlockIndex,
+    chainBlocks,
+    setChainBlocks,
+    artifacts,
+    setArtifacts,
+    turnCount,
+    setTurnCount,
+    startedAt,
+    setStartedAt,
+    showArtifacts,
+    setShowArtifacts,
+    scholarStrategyExpanded,
+    setScholarStrategyExpanded,
+    showEndConfirm,
+    setShowEndConfirm,
+    isShipping,
+    setIsShipping,
+    blockTimerSeconds,
+    setBlockTimerSeconds,
+    timerWarningShown,
+    setTimerWarningShown,
+    timerPaused,
+    setTimerPaused,
+    scholarStrategy,
+    setScholarStrategy,
+    strategyFeedback,
+    setStrategyFeedback,
+    strategyNotes,
+    setStrategyNotes,
+    savingStrategyFeedback,
+    setSavingStrategyFeedback,
+  };
+}
+
+function useTutorSettingsState() {
+  const [showSettings, setShowSettings] = useState(false);
+  const [customInstructions, setCustomInstructions] = useState("");
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+
+  return {
+    showSettings,
+    setShowSettings,
+    customInstructions,
+    setCustomInstructions,
+    settingsLoading,
+    setSettingsLoading,
+    settingsSaving,
+    setSettingsSaving,
+  };
+}
+
+function useTutorPageController() {
+  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+  const initialRouteQuery = useMemo(() => readTutorShellQuery(), []);
+  const navigationTokenRef = useRef(0);
+  const explicitShellModeRef = useRef<{ courseId: number; mode: TutorShellMode } | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
+  const lastPersistedShellKeyRef = useRef("");
+  const resumedFromProjectShellRef = useRef(false);
+  const {
+    activeSessionId,
+    setActiveSessionId,
+    hasRestored,
+    setHasRestored,
+    restoredTurns,
+    setRestoredTurns,
+    shellMode,
+    setShellMode,
+    studioEntryRequest,
+    setStudioEntryRequest,
+    scheduleLaunchIntent,
+    setScheduleLaunchIntent,
+    activeBoardScope,
+    setActiveBoardScope,
+    activeBoardId,
+    setActiveBoardId,
+    viewerState,
+    setViewerState,
+    shellRevision,
+    setShellRevision,
+    shellHydratedCourseId,
+    setShellHydratedCourseId,
+    setShowSetup,
+    brainLaunchContext,
+    setBrainLaunchContext,
+  } = useTutorShellState(initialRouteQuery);
+  const {
+    courseId,
+    setCourseId,
+    selectedMaterials,
+    setSelectedMaterials,
+    accuracyProfile,
+    setAccuracyProfile,
+    chainId,
+    setChainId,
+    customBlockIds,
+    setCustomBlockIds,
+    topic,
+    setTopic,
+    vaultFolder,
+    setVaultFolder,
+    selectedPaths,
+    setSelectedPaths,
+    objectiveScope,
+    setObjectiveScope,
+    selectedObjectiveId,
+    setSelectedObjectiveId,
+    selectedObjectiveGroup,
+    setSelectedObjectiveGroup,
+  } = useTutorLaunchConfig(initialRouteQuery);
+  const {
+    currentBlockIndex,
+    setCurrentBlockIndex,
+    chainBlocks,
+    setChainBlocks,
+    artifacts,
+    setArtifacts,
+    turnCount,
+    setTurnCount,
+    startedAt,
+    setStartedAt,
+    showArtifacts,
+    setShowArtifacts,
+    scholarStrategyExpanded,
+    setScholarStrategyExpanded,
+    showEndConfirm,
+    setShowEndConfirm,
+    isShipping,
+    setIsShipping,
+    blockTimerSeconds,
+    setBlockTimerSeconds,
+    timerWarningShown,
+    setTimerWarningShown,
+    timerPaused,
+    setTimerPaused,
+    scholarStrategy,
+    setScholarStrategy,
+    strategyFeedback,
+    setStrategyFeedback,
+    strategyNotes,
+    setStrategyNotes,
+    savingStrategyFeedback,
+    setSavingStrategyFeedback,
+  } = useTutorSessionState();
+  const {
+    showSettings,
+    setShowSettings,
+    customInstructions,
+    setCustomInstructions,
+    settingsLoading,
+    setSettingsLoading,
+    settingsSaving,
+    setSettingsSaving,
+  } = useTutorSettingsState();
 
   const { data: chatMaterials = [] } = useQuery<Material[]>({
     queryKey: ["tutor-chat-materials-all-enabled"],
@@ -1053,18 +1251,16 @@ export default function Tutor() {
   useEffect(() => {
     if (blockTimerSeconds === null || blockTimerSeconds <= 0 || timerPaused) return;
     const interval = setInterval(() => {
-      setBlockTimerSeconds((prev) => {
-        if (prev === null) return null;
-        const next = prev - 1;
-        if (next === 60 && !timerWarningShown) {
-          toast.info("1 minute remaining on this block", { duration: 5000 });
-          setTimerWarningShown(true);
-        }
-        return next;
-      });
+      setBlockTimerSeconds((prev) => (prev === null ? null : prev - 1));
     }, 1000);
     return () => clearInterval(interval);
-  }, [blockTimerSeconds, timerWarningShown, timerPaused]);
+  }, [blockTimerSeconds, timerPaused]);
+
+  useEffect(() => {
+    if (blockTimerSeconds !== 60 || timerPaused || timerWarningShown) return;
+    toast.info("1 minute remaining on this block", { duration: 5000 });
+    setTimerWarningShown(true);
+  }, [blockTimerSeconds, timerPaused, timerWarningShown]);
 
   // Start timer when session begins with a chain
   useEffect(() => {
@@ -1174,7 +1370,7 @@ export default function Tutor() {
       writeLibraryLaunchFromTutor({
         source: params.source,
         courseId: params.courseId,
-        courseName: params.courseName || null,
+        courseName: params.courseName || undefined,
         courseEventId: params.courseEventId,
         eventType: params.eventType || null,
         target: "load_materials",
@@ -1277,88 +1473,179 @@ export default function Tutor() {
     ],
   );
 
+  const applyStoredStartState = useCallback(
+    (
+      savedStartState: ReturnType<typeof readTutorStoredStartState>,
+      canonicalMaterialSelection: number[],
+    ) => {
+      if (!savedStartState) return false;
+
+      let restoredCourseId = false;
+      if (typeof savedStartState.courseId === "number") {
+        setCourseId(savedStartState.courseId);
+        restoredCourseId = true;
+      }
+      setTopic(savedStartState.topic);
+      if (canonicalMaterialSelection.length === 0) {
+        setSelectedMaterials(savedStartState.selectedMaterials);
+      }
+      setChainId(savedStartState.chainId);
+      setCustomBlockIds(savedStartState.customBlockIds);
+      setAccuracyProfile(savedStartState.accuracyProfile);
+      setObjectiveScope(savedStartState.objectiveScope);
+      setSelectedObjectiveId(savedStartState.selectedObjectiveId);
+      setSelectedObjectiveGroup(savedStartState.selectedObjectiveGroup);
+      setSelectedPaths(savedStartState.selectedPaths);
+      return restoredCourseId;
+    },
+    [
+      setAccuracyProfile,
+      setChainId,
+      setCourseId,
+      setCustomBlockIds,
+      setObjectiveScope,
+      setSelectedMaterials,
+      setSelectedObjectiveGroup,
+      setSelectedObjectiveId,
+      setSelectedPaths,
+      setTopic,
+    ],
+  );
+
+  const hydrateProjectShellState = useCallback(
+    (
+      nextProjectShell: TutorProjectShellResponse,
+      nextCourseId: number,
+      hasExplicitModeOverride: boolean,
+    ) => {
+      setShellHydratedCourseId(nextCourseId);
+      setShellRevision(nextProjectShell.workspace_state.revision || 0);
+
+      if (
+        !hasExplicitModeOverride &&
+        !initialRouteQuery.mode &&
+        shellMode === "studio" &&
+        nextProjectShell.workspace_state.last_mode &&
+        nextProjectShell.workspace_state.last_mode !== "publish"
+      ) {
+        setShellMode(nextProjectShell.workspace_state.last_mode);
+      }
+      if (
+        !initialRouteQuery.boardScope &&
+        activeBoardScope === "project" &&
+        nextProjectShell.workspace_state.active_board_scope
+      ) {
+        setActiveBoardScope(nextProjectShell.workspace_state.active_board_scope);
+      }
+      if (
+        initialRouteQuery.boardId === undefined &&
+        typeof nextProjectShell.workspace_state.active_board_id === "number"
+      ) {
+        setActiveBoardId(nextProjectShell.workspace_state.active_board_id);
+      }
+      setViewerState(nextProjectShell.workspace_state.viewer_state || null);
+      if (
+        selectedMaterials.length === 0 &&
+        Array.isArray(nextProjectShell.workspace_state.selected_material_ids) &&
+        nextProjectShell.workspace_state.selected_material_ids.length > 0
+      ) {
+        setSelectedMaterials(
+          writeTutorSelectedMaterialIds(nextProjectShell.workspace_state.selected_material_ids),
+        );
+      }
+    },
+    [
+      activeBoardScope,
+      initialRouteQuery.boardId,
+      initialRouteQuery.boardScope,
+      initialRouteQuery.mode,
+      selectedMaterials.length,
+      setActiveBoardId,
+      setActiveBoardScope,
+      setSelectedMaterials,
+      setShellHydratedCourseId,
+      setShellMode,
+      setShellRevision,
+      setViewerState,
+      shellMode,
+    ],
+  );
+
+  const restoreTutorShellState = useCallback(async () => {
+    let restoredCourseId = false;
+    const { fromLibraryHandoff, brainLaunchContext: nextBrainLaunchContext } =
+      consumeTutorLaunchHandoff();
+    const fromBrainHandoff = Boolean(nextBrainLaunchContext);
+    if (nextBrainLaunchContext) {
+      setBrainLaunchContext(nextBrainLaunchContext);
+    }
+
+    const resumeCandidateSessionId = initialRouteQuery.sessionId || readTutorActiveSessionId();
+    try {
+      if (resumeCandidateSessionId) {
+        const session = await api.tutor.getSession(resumeCandidateSessionId);
+        if (session.status === "active") {
+          applySessionState(session);
+          setShowSetup(false);
+          return;
+        }
+
+        clearTutorActiveSessionId();
+        if (!initialRouteQuery.mode) {
+          setShellMode("dashboard");
+        }
+      }
+    } catch {
+      if (!initialRouteQuery.sessionId) {
+        clearTutorActiveSessionId();
+        if (!initialRouteQuery.mode) {
+          setShellMode("dashboard");
+        }
+      }
+    }
+
+    setShowSetup(true);
+
+    const canonicalMaterialSelection = readTutorSelectedMaterialIds();
+    if (canonicalMaterialSelection.length > 0) {
+      setSelectedMaterials(canonicalMaterialSelection);
+    }
+
+    if (!fromLibraryHandoff && !fromBrainHandoff) {
+      restoredCourseId = applyStoredStartState(
+        readTutorStoredStartState(),
+        canonicalMaterialSelection,
+      );
+    }
+
+    if (fromLibraryHandoff || fromBrainHandoff || !restoredCourseId) {
+      try {
+        const { currentCourse } = await api.studyWheel.getCurrentCourse();
+        if (typeof currentCourse?.id === "number") {
+          setCourseId((prev) => (typeof prev === "number" ? prev : currentCourse.id));
+        }
+      } catch {
+        /* current course fetch failed — ignore */
+      }
+    }
+  }, [
+    applySessionState,
+    applyStoredStartState,
+    initialRouteQuery.mode,
+    initialRouteQuery.sessionId,
+    setBrainLaunchContext,
+    setCourseId,
+    setSelectedMaterials,
+    setShellMode,
+    setShowSetup,
+  ]);
+
   useEffect(() => {
     if (hasRestored) return;
     setHasRestored(true);
 
-    const restore = async () => {
-      let restoredCourseId = false;
-      const { fromLibraryHandoff, brainLaunchContext: nextBrainLaunchContext } =
-        consumeTutorLaunchHandoff();
-      const fromBrainHandoff = Boolean(nextBrainLaunchContext);
-      if (nextBrainLaunchContext) {
-        setBrainLaunchContext(nextBrainLaunchContext);
-      }
-
-      const resumeCandidateSessionId =
-        initialRouteQuery.sessionId || readTutorActiveSessionId();
-      try {
-        if (resumeCandidateSessionId) {
-          const session = await api.tutor.getSession(resumeCandidateSessionId);
-          if (session.status === "active") {
-            applySessionState(session);
-            setShowSetup(false);
-            return;
-          } else {
-            clearTutorActiveSessionId();
-            if (!initialRouteQuery.mode) {
-              setShellMode("dashboard");
-            }
-          }
-        }
-      } catch {
-        if (!initialRouteQuery.sessionId) {
-          clearTutorActiveSessionId();
-          if (!initialRouteQuery.mode) {
-            setShellMode("dashboard");
-          }
-        }
-      }
-
-      setShowSetup(true);
-
-      const canonicalMaterialSelection = readTutorSelectedMaterialIds();
-      if (canonicalMaterialSelection.length > 0) {
-        setSelectedMaterials(canonicalMaterialSelection);
-      }
-
-      if (!fromLibraryHandoff && !fromBrainHandoff) {
-        const savedStartState = readTutorStoredStartState();
-        if (savedStartState) {
-          if (typeof savedStartState.courseId === "number") {
-            setCourseId(savedStartState.courseId);
-            restoredCourseId = true;
-          }
-          setTopic(savedStartState.topic);
-          if (canonicalMaterialSelection.length === 0) {
-            setSelectedMaterials(savedStartState.selectedMaterials);
-          }
-          setChainId(savedStartState.chainId);
-          setCustomBlockIds(savedStartState.customBlockIds);
-          setAccuracyProfile(savedStartState.accuracyProfile);
-          setObjectiveScope(savedStartState.objectiveScope);
-          setSelectedObjectiveId(savedStartState.selectedObjectiveId);
-          setSelectedObjectiveGroup(savedStartState.selectedObjectiveGroup);
-          setSelectedPaths(savedStartState.selectedPaths);
-        }
-      }
-
-      if (fromLibraryHandoff || fromBrainHandoff || !restoredCourseId) {
-        try {
-          const { currentCourse } = await api.studyWheel.getCurrentCourse();
-          if (typeof currentCourse?.id === "number") {
-            setCourseId((prev) =>
-              typeof prev === "number" ? prev : currentCourse.id,
-            );
-          }
-        } catch {
-          /* current course fetch failed — ignore */
-        }
-      }
-    };
-
-    void restore();
-  }, [applySessionState, hasRestored, initialRouteQuery.sessionId]);
+    void restoreTutorShellState();
+  }, [hasRestored, restoreTutorShellState]);
 
   useEffect(() => {
     if (!projectShell || typeof courseId !== "number") return;
@@ -1367,45 +1654,7 @@ export default function Tutor() {
       explicitShellMode?.courseId === courseId;
 
     if (shellHydratedCourseId !== courseId) {
-      setShellHydratedCourseId(courseId);
-      setShellRevision(projectShell.workspace_state.revision || 0);
-
-      if (
-        !hasExplicitModeOverride &&
-        !initialRouteQuery.mode &&
-        shellMode === "studio" &&
-        projectShell.workspace_state.last_mode &&
-        projectShell.workspace_state.last_mode !== "publish"
-      ) {
-        setShellMode(projectShell.workspace_state.last_mode);
-      }
-      if (
-        !initialRouteQuery.boardScope &&
-        activeBoardScope === "project" &&
-        projectShell.workspace_state.active_board_scope
-      ) {
-        setActiveBoardScope(projectShell.workspace_state.active_board_scope);
-      }
-      if (
-        initialRouteQuery.boardId === undefined &&
-        typeof projectShell.workspace_state.active_board_id === "number"
-      ) {
-        setActiveBoardId(projectShell.workspace_state.active_board_id);
-      }
-      if (projectShell.workspace_state.viewer_state) {
-        setViewerState(projectShell.workspace_state.viewer_state);
-      } else {
-        setViewerState(null);
-      }
-      if (
-        selectedMaterials.length === 0 &&
-        Array.isArray(projectShell.workspace_state.selected_material_ids) &&
-        projectShell.workspace_state.selected_material_ids.length > 0
-      ) {
-        setSelectedMaterials(
-          writeTutorSelectedMaterialIds(projectShell.workspace_state.selected_material_ids),
-        );
-      }
+      hydrateProjectShellState(projectShell, courseId, hasExplicitModeOverride);
 
       if (hasExplicitModeOverride) {
         explicitShellModeRef.current = null;
@@ -1433,12 +1682,11 @@ export default function Tutor() {
     activeBoardScope,
     applySessionState,
     courseId,
+    hydrateProjectShellState,
     shellHydratedCourseId,
     initialRouteQuery.boardScope,
     initialRouteQuery.mode,
     projectShell,
-    selectedMaterials.length,
-    shellMode,
   ]);
 
   useEffect(() => {
@@ -2347,139 +2595,6 @@ export default function Tutor() {
   );
 }
 
-// ─── Recent Session Card (for setup view) ───
-
-function RecentSessionCard({
-  session: s,
-  onResume,
-}: {
-  session: TutorSessionSummary;
-  onResume: (id: string) => void;
-}) {
-  const queryClient = useQueryClient();
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  const handleDelete = async () => {
-    try {
-      await api.tutor.deleteSession(s.session_id);
-      toast.success("Session deleted");
-      queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
-    } catch (err) {
-      toast.error(`Delete failed: ${err instanceof Error ? err.message : "Unknown"}`);
-    }
-    setDeleteConfirm(false);
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const full = await api.tutor.getSession(s.session_id);
-      if (!full.turns || full.turns.length === 0) {
-        toast.error("No turns to save");
-        return;
-      }
-      const lines: string[] = [
-        `# Tutor: ${s.topic || s.mode}`,
-        `**Date:** ${new Date(s.started_at).toLocaleDateString()}`,
-        `**Mode:** ${s.mode} | **Turns:** ${s.turn_count}`,
-        "", "---", "",
-      ];
-      for (const turn of full.turns) {
-        lines.push(`## Q${turn.turn_number}`);
-        lines.push(turn.question);
-        lines.push("");
-        if (turn.answer) {
-          lines.push(`**Answer:**`);
-          lines.push(turn.answer);
-          lines.push("");
-        }
-      }
-      const filename = `Tutor - ${(s.topic || s.mode || "Session").replace(/[^a-zA-Z0-9 ]/g, "").trim()}`;
-      await api.obsidian.append(`Study Sessions/${filename}.md`, lines.join("\n"));
-      toast.success("Saved to Obsidian");
-    } catch (err) {
-      toast.error(`Save failed: ${err instanceof Error ? err.message : "Unknown"}`);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="border-[3px] border-double border-muted-foreground/10 hover:border-muted-foreground/30 transition-colors">
-      <button
-        onClick={() => onResume(s.session_id)}
-        className="w-full text-left px-3 py-2.5"
-      >
-        <div className="flex items-center gap-2">
-          <Badge
-            variant="outline"
-            className={`${TEXT_BADGE} h-5 px-1.5 shrink-0 ${s.status === "active" ? "text-green-400 border-green-400/50" : "text-muted-foreground"
-              }`}
-          >
-            {s.status === "active" ? "LIVE" : "DONE"}
-          </Badge>
-          <span className="font-terminal text-sm truncate flex-1">{s.topic || s.mode}</span>
-        </div>
-        <div className={`flex items-center gap-2 mt-1.5 ${TEXT_MUTED}`}>
-          <span className="flex items-center gap-1">
-            <MessageSquare className={ICON_SM} />
-            {s.turn_count}
-          </span>
-          <span className="flex items-center gap-1">
-            <Clock className={ICON_SM} />
-            {new Date(s.started_at).toLocaleDateString()}
-          </span>
-          <Badge variant="outline" className={`${TEXT_BADGE} h-4 px-1 ml-auto`}>
-            {s.mode}
-          </Badge>
-        </div>
-      </button>
-
-      <div className="flex items-center border-t border-primary/20 px-2 py-1">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 px-3 rounded-none text-muted-foreground hover:text-primary font-terminal text-sm"
-          disabled={saving}
-          onClick={handleSave}
-        >
-          <FolderOpen className={`${ICON_SM} mr-1`} />
-          {saving ? "SAVING..." : "SAVE"}
-        </Button>
-        <div className="ml-auto">
-          {deleteConfirm ? (
-            <div className="flex items-center gap-0.5">
-              <span className="font-terminal text-sm text-red-400 mr-1">Delete?</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 rounded-none text-red-400 hover:text-red-300 hover:bg-red-400/10"
-                onClick={handleDelete}
-              >
-                <Check className={ICON_SM} />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 rounded-none text-muted-foreground hover:text-foreground"
-                onClick={() => setDeleteConfirm(false)}
-              >
-                <X className={ICON_SM} />
-              </Button>
-            </div>
-          ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0 rounded-none text-muted-foreground hover:text-red-400"
-              onClick={() => setDeleteConfirm(true)}
-            >
-              <Trash2 className={ICON_SM} />
-            </Button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+export default function Tutor() {
+  return useTutorPageController();
 }

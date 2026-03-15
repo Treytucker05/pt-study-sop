@@ -7,34 +7,7 @@
  * Import pattern: consumers should import from "@/api" or "@/lib/api" as before.
  */
 
-import type {
-  Session, InsertSession,
-  CalendarEvent, InsertCalendarEvent,
-  Task, InsertTask,
-  Proposal, InsertProposal,
-  ChatMessage, InsertChatMessage,
-  Note, InsertNote,
-  Course, InsertCourse,
-  ScheduleEvent, InsertScheduleEvent,
-  Module, InsertModule,
-  LearningObjective, InsertLearningObjective,
-  LoSession, InsertLoSession
-} from "@shared/schema";
-
-// Re-export schema types so consumers can get everything from one place
-export type {
-  Session, InsertSession,
-  CalendarEvent, InsertCalendarEvent,
-  Task, InsertTask,
-  Proposal, InsertProposal,
-  ChatMessage, InsertChatMessage,
-  Note, InsertNote,
-  Course, InsertCourse,
-  ScheduleEvent, InsertScheduleEvent,
-  Module, InsertModule,
-  LearningObjective, InsertLearningObjective,
-  LoSession, InsertLoSession,
-};
+import type { LearningObjective } from "@shared/schema";
 
 // ── App-level type extensions ───────────────────────────────────────────────
 
@@ -318,7 +291,7 @@ export interface TutorAuditItem {
   courses?: string[];
 }
 
-export interface ScholarClusterItem {
+interface ScholarClusterItem {
   title: string;
   source: string;
 }
@@ -442,7 +415,7 @@ export interface ObsidianAppendResult {
   error?: string;
 }
 
-export interface ObsidianFile {
+interface ObsidianFile {
   path: string;
   name: string;
   type: 'file' | 'folder';
@@ -1108,7 +1081,7 @@ export interface TutorTemplateChain {
   runtime_profile?: Record<string, unknown> | null;
 }
 
-export interface TutorMethodBlock {
+interface TutorMethodBlock {
   id: number;
   name: string;
   category: string;
@@ -1130,7 +1103,7 @@ export interface TutorBlockProgress {
   vault_write_status?: "success" | "skipped" | "failed" | "unavailable";
 }
 
-export interface TutorScholarStrategyField {
+interface TutorScholarStrategyField {
   field: string;
   value: string;
   rationale: string;
@@ -1418,6 +1391,10 @@ export interface TutorHubClassProject {
   course_code: string | null;
   material_count: number;
   recent_session_count: number;
+  last_studied_at: string | null;
+  pending_event_count: number;
+  captured_item_count: number;
+  promoted_item_count: number;
   wheel_linked: boolean;
   wheel_active: boolean;
   wheel_position: number | null;
@@ -1451,6 +1428,60 @@ export interface TutorHubResponse {
   upcoming_tests: TutorHubEventSummary[];
   class_projects: TutorHubClassProject[];
   study_wheel: TutorHubStudyWheelSnapshot;
+}
+
+export interface TutorStudioOverviewCardDraft {
+  id: number;
+  sessionId: string | null;
+  tutorSessionId: string | null;
+  courseId: number | null;
+  deckName: string;
+  cardType: string;
+  front: string;
+  back: string;
+  tags: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface TutorStudioActivityItem {
+  id: string;
+  kind: "session" | "studio_action";
+  title: string;
+  subtitle: string | null;
+  status: string | null;
+  created_at: string;
+  tutor_session_id: string | null;
+}
+
+export interface TutorStudioOverviewResponse {
+  course: TutorProjectShellResponse["course"];
+  shell: {
+    workspace_state: TutorProjectShellState;
+    continuation: TutorProjectShellResponse["continuation"];
+    active_session: TutorProjectShellResponse["active_session"];
+    recent_sessions: TutorProjectShellResponse["recent_sessions"];
+    counts: TutorProjectShellResponse["counts"];
+  };
+  materials: Material[];
+  objectives: AppLearningObjective[];
+  card_drafts: {
+    items: TutorStudioOverviewCardDraft[];
+    counts: {
+      total: number;
+      draft: number;
+      approved: number;
+      synced: number;
+      rejected: number;
+    };
+  };
+  vault_resources: {
+    items: TutorStudioItem[];
+    counts: {
+      total: number;
+    };
+  };
+  recent_activity: TutorStudioActivityItem[];
 }
 
 export interface TutorStudioItem {
@@ -1763,7 +1794,7 @@ export interface DataRowsResponse {
 
 // ── Tutor Verdict / Teach-Back ──────────────────────────────────────────────
 
-export interface TutorVerdictErrorLocation {
+interface TutorVerdictErrorLocation {
   type: "concept" | "prerequisite" | "reasoning" | "recall";
   node: string | null;
   prereq_from: string | null;
@@ -1782,7 +1813,7 @@ export interface TutorVerdict {
   _validation_issues?: string[];
 }
 
-export interface TeachBackRubricGap {
+interface TeachBackRubricGap {
   skill_id: string;
   edge_id?: string | null;
 }

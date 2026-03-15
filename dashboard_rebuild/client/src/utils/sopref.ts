@@ -5,7 +5,7 @@
  * Format: SOPRef[path/to/file.md] or SOPRef[path/to/file.md#section]
  */
 
-export interface SOPRefLink {
+interface SOPRefLink {
   raw: string;
   path: string;
   section?: string;

@@ -22,7 +22,7 @@ import {
 import {
   Layers, RefreshCw, Check, X, Trash2, Pencil, Save, Loader2,
 } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -33,9 +33,13 @@ interface AnkiIntegrationProps {
 }
 
 export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
+  const idBase = useId();
   const [selectedDrafts, setSelectedDrafts] = useState<Set<number>>(new Set());
   const [editingDraft, setEditingDraft] = useState<number | null>(null);
   const [editDraftData, setEditDraftData] = useState({ front: "", back: "", deckName: "" });
+  const editFrontId = `${idBase}-edit-front`;
+  const editBackId = `${idBase}-edit-back`;
+  const editDeckId = `${idBase}-edit-deck`;
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -359,8 +363,9 @@ const updateDraftMutation = useMutation({
 
           <div className="space-y-4 font-terminal">
             <div>
-              <label className="text-sm text-muted-foreground">Front (Question)</label>
+              <label htmlFor={editFrontId} className="text-sm text-muted-foreground">Front (Question)</label>
               <Textarea
+                id={editFrontId}
                 value={editDraftData.front}
                 onChange={(e) => setEditDraftData(prev => ({ ...prev, front: e.target.value }))}
                 placeholder="Card front..."
@@ -368,8 +373,9 @@ const updateDraftMutation = useMutation({
               />
             </div>
             <div>
-              <label className="text-sm text-muted-foreground">Back (Answer)</label>
+              <label htmlFor={editBackId} className="text-sm text-muted-foreground">Back (Answer)</label>
               <Textarea
+                id={editBackId}
                 value={editDraftData.back}
                 onChange={(e) => setEditDraftData(prev => ({ ...prev, back: e.target.value }))}
                 placeholder="Card back..."
@@ -377,12 +383,12 @@ const updateDraftMutation = useMutation({
               />
             </div>
             <div>
-              <label className="text-sm text-muted-foreground">Target Deck</label>
+              <label htmlFor={editDeckId} className="text-sm text-muted-foreground">Target Deck</label>
               <Select
                 value={editDraftData.deckName}
                 onValueChange={(value) => setEditDraftData(prev => ({ ...prev, deckName: value }))}
               >
-                <SelectTrigger className="rounded-none border-secondary">
+                <SelectTrigger id={editDeckId} className="rounded-none border-secondary">
                   <SelectValue placeholder="Select deck" />
                 </SelectTrigger>
                 <SelectContent className="rounded-none border-secondary bg-black max-h-[200px]">

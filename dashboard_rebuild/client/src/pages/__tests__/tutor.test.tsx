@@ -395,6 +395,10 @@ function makeTutorHub() {
         course_code: "NEU-7",
         material_count: 2,
         recent_session_count: 1,
+        last_studied_at: "2026-03-14T15:00:00Z",
+        pending_event_count: 1,
+        captured_item_count: 0,
+        promoted_item_count: 1,
         active_session: null,
         next_due_event: {
           id: 41,

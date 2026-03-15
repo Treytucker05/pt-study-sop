@@ -20,6 +20,11 @@ from flask import jsonify, request
 from db_setup import get_connection
 
 from dashboard.api_tutor import tutor_bp  # noqa: E402
+from dashboard.api_tutor_projects import (  # noqa: E402
+    _require_course as _require_project_course,
+    _require_course_session,
+    _serialize_workspace_state,
+)
 
 VALID_ITEM_SCOPES = {"session", "project"}
 VALID_ITEM_STATUSES = {"captured", "boarded", "promoted", "archived"}
@@ -27,26 +32,7 @@ VALID_PROMOTION_MODES = {"copy", "move"}
 
 
 def _require_course(conn: sqlite3.Connection, course_id: int) -> sqlite3.Row | None:
-    cur = conn.cursor()
-    cur.execute("SELECT id, name, code FROM courses WHERE id = ?", (course_id,))
-    return cur.fetchone()
-
-
-def _require_course_session(
-    conn: sqlite3.Connection,
-    course_id: int,
-    session_id: str,
-) -> sqlite3.Row | None:
-    cur = conn.cursor()
-    cur.execute(
-        """
-        SELECT id, session_id, course_id, topic, status, started_at, ended_at
-        FROM tutor_sessions
-        WHERE session_id = ? AND course_id = ?
-        """,
-        (session_id, course_id),
-    )
-    return cur.fetchone()
+    return _require_project_course(conn, course_id)
 
 
 def _serialize_item(row: sqlite3.Row) -> dict[str, Any]:
@@ -152,6 +138,328 @@ def _insert_revision(
             datetime.now(timezone.utc).isoformat(),
         ),
     )
+
+
+def _serialize_learning_objective(row: sqlite3.Row) -> dict[str, Any]:
+    return {
+        "id": int(row["id"]),
+        "courseId": int(row["course_id"]),
+        "moduleId": row["module_id"],
+        "loCode": row["lo_code"],
+        "title": row["title"],
+        "status": row["status"],
+        "lastSessionId": row["last_session_id"],
+        "lastSessionDate": row["last_session_date"],
+        "nextAction": row["next_action"],
+        "groupName": row["group_name"],
+        "managedByTutor": bool(row["managed_by_tutor"]) if row["managed_by_tutor"] is not None else False,
+        "createdAt": row["created_at"],
+        "updatedAt": row["updated_at"],
+    }
+
+
+def _serialize_card_draft(row: sqlite3.Row) -> dict[str, Any]:
+    return {
+        "id": int(row["id"]),
+        "sessionId": row["session_id"],
+        "tutorSessionId": row["tutor_session_id"],
+        "courseId": int(row["resolved_course_id"]) if row["resolved_course_id"] is not None else None,
+        "deckName": row["deck_name"],
+        "cardType": row["card_type"],
+        "front": row["front"],
+        "back": row["back"],
+        "tags": row["tags"] or "",
+        "status": row["status"],
+        "createdAt": row["created_at"],
+    }
+
+
+def _serialize_activity_item(record: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": record["id"],
+        "kind": record["kind"],
+        "title": record["title"],
+        "subtitle": record.get("subtitle"),
+        "status": record.get("status"),
+        "created_at": record["created_at"],
+        "tutor_session_id": record.get("tutor_session_id"),
+    }
+
+
+def _build_shell_snapshot(
+    conn: sqlite3.Connection,
+    *,
+    course_id: int,
+) -> dict[str, Any]:
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM project_workspace_state WHERE course_id = ?", (course_id,))
+    state_row = cur.fetchone()
+    workspace_state = _serialize_workspace_state(state_row)
+
+    active_session = None
+    resolved_session_id = workspace_state["active_tutor_session_id"]
+    if resolved_session_id:
+        session_row = _require_course_session(conn, course_id, str(resolved_session_id))
+        if session_row is not None:
+            active_session = dict(session_row)
+
+    cur.execute(
+        """
+        SELECT session_id, course_id, phase, topic, status, turn_count, started_at, ended_at
+        FROM tutor_sessions
+        WHERE course_id = ?
+        ORDER BY datetime(started_at) DESC, id DESC
+        LIMIT 10
+        """,
+        (course_id,),
+    )
+    recent_sessions = [dict(row) for row in cur.fetchall()]
+
+    cur.execute(
+        """
+        SELECT
+            COUNT(*) AS total_items,
+            SUM(CASE WHEN status = 'captured' THEN 1 ELSE 0 END) AS captured_items,
+            SUM(CASE WHEN status = 'promoted' THEN 1 ELSE 0 END) AS promoted_items
+        FROM studio_items
+        WHERE course_id = ? AND deleted_at IS NULL
+        """,
+        (course_id,),
+    )
+    studio_counts = cur.fetchone()
+
+    cur.execute(
+        """
+        SELECT
+            SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) AS active_sessions,
+            COUNT(*) AS session_count
+        FROM tutor_sessions
+        WHERE course_id = ?
+        """,
+        (course_id,),
+    )
+    session_counts = cur.fetchone()
+
+    cur.execute(
+        """
+        SELECT COUNT(*) AS pending_events
+        FROM course_events
+        WHERE course_id = ? AND COALESCE(status, 'pending') = 'pending'
+        """,
+        (course_id,),
+    )
+    pending_events = cur.fetchone()
+
+    return {
+        "workspace_state": workspace_state,
+        "continuation": {
+            "can_resume": active_session is not None,
+            "active_tutor_session_id": active_session["session_id"] if active_session else None,
+            "last_mode": workspace_state["last_mode"],
+        },
+        "active_session": active_session,
+        "recent_sessions": recent_sessions,
+        "counts": {
+            "active_sessions": int((session_counts["active_sessions"] or 0) if session_counts else 0),
+            "session_count": int((session_counts["session_count"] or 0) if session_counts else 0),
+            "studio_total_items": int((studio_counts["total_items"] or 0) if studio_counts else 0),
+            "studio_captured_items": int((studio_counts["captured_items"] or 0) if studio_counts else 0),
+            "studio_promoted_items": int((studio_counts["promoted_items"] or 0) if studio_counts else 0),
+            "pending_schedule_events": int((pending_events["pending_events"] or 0) if pending_events else 0),
+        },
+    }
+
+
+@tutor_bp.route("/studio/overview", methods=["GET"])
+def get_studio_overview():
+    raw_course_id = request.args.get("course_id")
+    if raw_course_id is None:
+        return jsonify({"error": "course_id is required"}), 400
+    try:
+        course_id = int(raw_course_id)
+    except (TypeError, ValueError):
+        return jsonify({"error": "course_id must be an integer"}), 400
+
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    try:
+        course_row = _require_course(conn, course_id)
+        if course_row is None:
+            return jsonify({"error": "course not found"}), 404
+
+        cur = conn.cursor()
+        shell = _build_shell_snapshot(conn, course_id=course_id)
+
+        cur.execute(
+            """
+            SELECT
+                id,
+                title,
+                source_path,
+                folder_path,
+                file_type,
+                file_size,
+                course_id,
+                COALESCE(enabled, 1) AS enabled,
+                extraction_error,
+                checksum,
+                created_at,
+                updated_at
+            FROM rag_docs
+            WHERE course_id = ?
+              AND COALESCE(enabled, 1) = 1
+              AND COALESCE(corpus, 'materials') = 'materials'
+            ORDER BY LOWER(COALESCE(title, source_path, '')), id
+            """,
+            (course_id,),
+        )
+        materials = [dict(row) for row in cur.fetchall()]
+
+        cur.execute(
+            """
+            SELECT
+                id,
+                course_id,
+                module_id,
+                lo_code,
+                title,
+                status,
+                last_session_id,
+                last_session_date,
+                next_action,
+                group_name,
+                managed_by_tutor,
+                created_at,
+                updated_at
+            FROM learning_objectives
+            WHERE course_id = ?
+            ORDER BY LOWER(COALESCE(group_name, '')), LOWER(COALESCE(lo_code, '')), id
+            """,
+            (course_id,),
+        )
+        objectives = [_serialize_learning_objective(row) for row in cur.fetchall()]
+
+        cur.execute("PRAGMA table_info(card_drafts)")
+        card_draft_columns = {str(row[1]) for row in cur.fetchall()}
+        tutor_session_column = "cd.tutor_session_id AS tutor_session_id," if "tutor_session_id" in card_draft_columns else "NULL AS tutor_session_id,"
+        session_join_ref = "COALESCE(NULLIF(cd.tutor_session_id, ''), cd.session_id)" if "tutor_session_id" in card_draft_columns else "cd.session_id"
+        cur.execute(
+            f"""
+            SELECT
+                cd.id,
+                cd.session_id,
+                {tutor_session_column}
+                COALESCE(cd.course_id, ts.course_id) AS resolved_course_id,
+                cd.deck_name,
+                cd.card_type,
+                cd.front,
+                cd.back,
+                cd.tags,
+                cd.status,
+                cd.created_at
+            FROM card_drafts cd
+            LEFT JOIN tutor_sessions ts
+              ON ts.session_id = {session_join_ref}
+            WHERE COALESCE(cd.course_id, ts.course_id) = ?
+            ORDER BY datetime(cd.created_at) DESC, cd.id DESC
+            LIMIT 50
+            """,
+            (course_id,),
+        )
+        draft_items = [_serialize_card_draft(row) for row in cur.fetchall()]
+        draft_counts: dict[str, int] = {
+            "total": len(draft_items),
+            "draft": 0,
+            "approved": 0,
+            "synced": 0,
+            "rejected": 0,
+        }
+        for item in draft_items:
+            status = str(item["status"] or "").lower()
+            if status in draft_counts:
+                draft_counts[status] += 1
+
+        cur.execute(
+            """
+            SELECT *
+            FROM studio_items
+            WHERE course_id = ?
+              AND scope = 'project'
+              AND status = 'promoted'
+              AND deleted_at IS NULL
+            ORDER BY datetime(COALESCE(updated_at, created_at)) DESC, id DESC
+            LIMIT 25
+            """,
+            (course_id,),
+        )
+        vault_items = [_serialize_item(row) for row in cur.fetchall()]
+
+        cur.execute(
+            """
+            SELECT id, action_type, destination_kind, tutor_session_id, status, created_at
+            FROM studio_actions
+            WHERE course_id = ?
+            ORDER BY datetime(created_at) DESC, id DESC
+            LIMIT 10
+            """,
+            (course_id,),
+        )
+        studio_activity = [
+            _serialize_activity_item(
+                {
+                    "id": f"action:{row['id']}",
+                    "kind": "studio_action",
+                    "title": str(row["action_type"] or "").replace("_", " ").upper(),
+                    "subtitle": row["destination_kind"],
+                    "status": row["status"],
+                    "created_at": row["created_at"],
+                    "tutor_session_id": row["tutor_session_id"],
+                }
+            )
+            for row in cur.fetchall()
+        ]
+
+        session_activity = [
+            _serialize_activity_item(
+                {
+                    "id": f"session:{session['session_id']}",
+                    "kind": "session",
+                    "title": session["topic"] or "Tutor Session",
+                    "subtitle": str(session["phase"] or "").replace("_", " ").upper(),
+                    "status": session["status"],
+                    "created_at": session["started_at"],
+                    "tutor_session_id": session["session_id"],
+                }
+            )
+            for session in shell["recent_sessions"][:10]
+        ]
+        recent_activity = sorted(
+            [*studio_activity, *session_activity],
+            key=lambda item: item["created_at"] or "",
+            reverse=True,
+        )[:20]
+
+        return jsonify(
+            {
+                "course": dict(course_row),
+                "shell": shell,
+                "materials": materials,
+                "objectives": objectives,
+                "card_drafts": {
+                    "items": draft_items,
+                    "counts": draft_counts,
+                },
+                "vault_resources": {
+                    "items": vault_items,
+                    "counts": {
+                        "total": len(vault_items),
+                    },
+                },
+                "recent_activity": recent_activity,
+            }
+        )
+    finally:
+        conn.close()
 
 
 @tutor_bp.route("/studio/capture", methods=["POST"])

@@ -150,17 +150,17 @@ The START button in the tab bar is a shortcut to the Start Panel. SETTINGS opens
 
 | Field | Value |
 |-------|-------|
-| **Component** | New (inside `TutorStudioMode.tsx`) |
+| **Component** | `StudioClassPicker.tsx` |
 | **When shown** | Studio mode active, no class selected |
 | **Goal** | Pick which class to work in. Top of the 3-level drill-down. |
-| **Status** | PLANNED — not yet in code |
+| **Status** | LANDED |
 
 **Content:**
 
 | Element | Detail |
 |---------|--------|
 | **Course card grid** | Responsive grid of cards, one per enrolled course |
-| **Each card shows** | Course code (e.g. DPT-710), course name, material count, session count, last studied date, status badge (ACTIVE/REVIEW) |
+| **Each card shows** | Course code (e.g. DPT-710), course name, material count, session count, last studied date, promoted resource count, pending/captured counts, and a status badge (ACTIVE/REVIEW/READY/EMPTY) |
 | **Click behavior** | Clicking a card drills into L2 for that class |
 | **Auto-land** | On page load, auto-navigates to last selected class (stored in localStorage). User can click back to see L1 grid. |
 
@@ -170,10 +170,10 @@ The START button in the tab bar is a shortcut to the Start Panel. SETTINGS opens
 
 | Field | Value |
 |-------|-------|
-| **Component** | New (inside `TutorStudioMode.tsx`) |
+| **Component** | `StudioClassDetail.tsx` |
 | **When shown** | Studio mode active, class selected, not in workspace |
 | **Goal** | See everything about one class. Prepare for a study session. |
-| **Status** | PLANNED — not yet in code |
+| **Status** | LANDED |
 
 **Layout:** Breadcrumb (`Studio > Neuroscience`) + class header with LAUNCH SESSION button + 6-tab bar + tab content area.
 
@@ -181,12 +181,12 @@ The START button in the tab bar is a shortcut to the Start Panel. SETTINGS opens
 
 | Tab | Content | Data source | Goal |
 |-----|---------|-------------|------|
-| **MATERIALS** | List of PDFs, slides, docs, links for the class. File icon + name + type badge + page/slide count. | `api.tutor.getContentSources()` | View/manage what Tutor can teach from |
-| **OBJECTIVES** | Numbered learning objectives by study unit. Objective code + description. | `api.brain.getCourseObjectives(courseId)` | Track what needs to be learned |
-| **CARDS & TESTS** | Flashcard drafts grid. Each card: type badge (RECALL/CONCEPT/APPLICATION), question preview, due date, interval. | `api.anki.getDrafts()` + card_drafts table | Review/approve cards before Anki sync |
-| **VAULT** | Saved session artifacts. List with type, title, date created. Obsidian file viewer. | `api.obsidian.getFiles()` + studio_items | Browse saved notes, maps, brain dumps |
+| **MATERIALS** | List of PDFs, slides, docs, and links for the class. File icon + name + type badge. | `api.tutor.getStudioOverview(courseId)` | View/manage what Tutor can teach from |
+| **OBJECTIVES** | Learning objectives grouped by study unit. Objective code + description + status badge. | `api.tutor.getStudioOverview(courseId)` | Track what needs to be learned |
+| **CARDS & TESTS** | Course-scoped flashcard draft list with deck name, card type, and status badge. | `api.tutor.getStudioOverview(courseId)` + `card_drafts` | Review card output for this class without client-side deck-name heuristics |
+| **VAULT** | Promoted Studio resources for the class with source/date metadata and publish-readiness context. | `api.tutor.getStudioOverview(courseId)` + `studio_items` | Review what is ready to move into Publish / Vault workflows |
 | **CHAINS** | Method chain cards. Name, block count, estimated time, rating. Click to expand and see block sequence. | `api.methods.getChains()` | Pick/preview study chains before launch |
-| **STATS** | Stat cards: total cards, due today, retention %, sessions, total time, artifacts. Recent activity log. | `api.tutor.getProjectShell()` | Track progress for this class |
+| **STATS** | Class stat cards plus recent Tutor / Studio activity. | `api.tutor.getStudioOverview(courseId)` | Track progress for this class |
 
 **LAUNCH SESSION button:** Pinned top-right. Opens Start Panel with the selected class pre-filled.
 
@@ -383,8 +383,8 @@ Implementation: `MessageList.tsx` lines 298-421.
 | Behavior modes (4 types) | LANDED | `TutorChat.tsx` lines 72-73 |
 | Popouts (viewer + current note) | LANDED | `popoutSync.ts`, `tutorWorkspacePopout.ts` |
 | Dictation hook | LANDED (partial) | Voice recording works, speech-to-text incomplete |
-| Studio L1 Class Picker | PLANNED | Not yet in code |
-| Studio L2 Class Detail (6 tabs) | PLANNED | Not yet in code |
+| Studio L1 Class Picker | LANDED | `StudioClassPicker.tsx` |
+| Studio L2 Class Detail (6 tabs) | LANDED | `StudioClassDetail.tsx` |
 | Note compaction (SUMMARY auto-compact) | PLANNED | UI button exists in MessageList, backend not wired |
 | Publish readiness workflow | PARTIAL | Project Resources section with promoted-only gate landed; partial-failure retry and Brain target not built |
 | Settings modal (custom instructions) | LANDED | Modal with editable system prompt, restore defaults, save |

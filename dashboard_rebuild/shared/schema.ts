@@ -1,2 +1,24 @@
-﻿// Re-export everything from the root schema
-export * from "../schema";
+export type {
+  Session,
+  InsertSession,
+  CalendarEvent,
+  InsertCalendarEvent,
+  Task,
+  InsertTask,
+  Proposal,
+  InsertProposal,
+  ChatMessage,
+  InsertChatMessage,
+  Note,
+  InsertNote,
+  Course,
+  InsertCourse,
+  ScheduleEvent,
+  InsertScheduleEvent,
+  Module,
+  InsertModule,
+  LearningObjective,
+  InsertLearningObjective,
+  LoSession,
+  InsertLoSession,
+} from "../schema";

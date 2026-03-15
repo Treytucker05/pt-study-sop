@@ -176,22 +176,24 @@ export function VaultGraphView({ onNodeClick }: VaultGraphViewProps) {
         <ScrollArea className="h-full">
           <div className="p-3 space-y-3">
             <div className="font-arcade text-xs text-primary mb-2">FOLDERS</div>
-            <label className="flex items-center gap-2 py-1 cursor-pointer">
+            <div className="flex items-center gap-2 py-1">
               <Checkbox
                 checked={selectedFolders.size === folders.length}
                 onCheckedChange={(checked) => {
                   setSelectedFolders(checked ? new Set(folders) : new Set());
                 }}
                 className="border-primary data-[state=checked]:bg-primary"
+                aria-label="Toggle all folders"
               />
               <span className="font-terminal text-xs text-primary">All Folders</span>
-            </label>
+            </div>
             {folders.map((folder) => (
-              <label key={folder} className="flex items-center gap-2 py-0.5 cursor-pointer">
+              <div key={folder} className="flex items-center gap-2 py-0.5">
                 <Checkbox
                   checked={selectedFolders.has(folder)}
                   onCheckedChange={() => toggleFolder(folder)}
                   className="border-primary data-[state=checked]:bg-primary"
+                  aria-label={`Toggle folder ${folder}`}
                 />
                 <span
                   className="font-terminal text-xs truncate"
@@ -199,7 +201,7 @@ export function VaultGraphView({ onNodeClick }: VaultGraphViewProps) {
                 >
                   {folder}
                 </span>
-              </label>
+              </div>
             ))}
 
             {/* Legend */}

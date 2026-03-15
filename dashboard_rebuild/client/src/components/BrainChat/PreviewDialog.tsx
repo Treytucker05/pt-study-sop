@@ -15,7 +15,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ObsidianRenderer } from "@/components/ObsidianRenderer";
 import { FileText, CheckCircle } from "lucide-react";
 import type { BrainOrganizePreviewResponse } from "@/lib/api";
-import type { ChecklistState } from "./types";
+import { useId } from "react";
+
+interface ChecklistState {
+  [key: string]: boolean;
+}
 
 interface PreviewDialogProps {
   open: boolean;
@@ -73,6 +77,7 @@ export function PreviewDialog({
   onConfirm,
   onCancel,
 }: PreviewDialogProps) {
+  const idBase = useId();
   const allChecklistChecked =
     Object.values(checklistState).length === 0
       ? true
@@ -176,9 +181,14 @@ export function PreviewDialog({
                 {(destination?.options || []).map((opt) => (
                   <label
                     key={opt.id}
+                    htmlFor={`${idBase}-destination-${opt.id}`}
                     className="flex items-start gap-2 cursor-pointer"
                   >
-                    <RadioGroupItem value={opt.id} className="mt-1" />
+                    <RadioGroupItem
+                      id={`${idBase}-destination-${opt.id}`}
+                      value={opt.id}
+                      className="mt-1"
+                    />
                     <div className="space-y-1">
                       <div className="font-terminal text-sm text-foreground flex items-center gap-1">
                         {opt.label}

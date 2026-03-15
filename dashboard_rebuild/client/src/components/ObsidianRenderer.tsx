@@ -27,19 +27,39 @@ function renderWikilinks(text: string, onClick?: (name: string, shiftKey: boolea
     if (match) {
       const display = match[1].includes("|") ? match[1].split("|")[1] : match[1];
       const target = match[1].includes("|") ? match[1].split("|")[0] : match[1];
+      if (!onClick) {
+        return (
+          <span key={j} className="text-blue-400 underline decoration-dotted">
+            {display}
+          </span>
+        );
+      }
       return (
-        <span
+        <button
           key={j}
-          className="text-blue-400 hover:text-blue-300 cursor-pointer underline decoration-dotted"
+          type="button"
+          className="inline rounded-none border-0 bg-transparent p-0 text-blue-400 underline decoration-dotted transition-colors hover:text-blue-300"
           onClick={(e) => onClick?.(target, e.shiftKey)}
           title={`${target} (Shift+click for Obsidian app)`}
         >
           {display}
-        </span>
+        </button>
       );
     }
     return <span key={j}>{part}</span>;
   });
+}
+
+function WikilinkText({
+  text,
+  onClick,
+  className,
+}: {
+  text: string;
+  onClick?: (name: string, shiftKey: boolean) => void;
+  className: string;
+}) {
+  return <span className={className}>{renderWikilinks(text, onClick)}</span>;
 }
 
 /**
@@ -132,7 +152,7 @@ export function ObsidianRenderer({ content, onWikilinkClick }: ObsidianRendererP
     p: ({ children }) => {
       // Render wikilinks inside paragraphs
       if (typeof children === "string") {
-        return <p className="mb-2 leading-relaxed">{renderWikilinks(children, onWikilinkClick)}</p>;
+        return <WikilinkText className="mb-2 leading-relaxed block" text={children} onClick={onWikilinkClick} />;
       }
       return <p className="mb-2 leading-relaxed">{children}</p>;
     },
@@ -142,7 +162,7 @@ export function ObsidianRenderer({ content, onWikilinkClick }: ObsidianRendererP
     ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-0.5 ml-2">{children}</ol>,
     li: ({ children }) => {
       if (typeof children === "string") {
-        return <li className="leading-relaxed">{renderWikilinks(children, onWikilinkClick)}</li>;
+        return <li className="leading-relaxed"><WikilinkText className="inline" text={children} onClick={onWikilinkClick} /></li>;
       }
       return <li className="leading-relaxed">{children}</li>;
     },
@@ -183,7 +203,7 @@ export function ObsidianRenderer({ content, onWikilinkClick }: ObsidianRendererP
     ),
     td: ({ children }) => {
       if (typeof children === "string") {
-        return <td className="border border-secondary/40 px-2 py-1">{renderWikilinks(children, onWikilinkClick)}</td>;
+        return <td className="border border-secondary/40 px-2 py-1"><WikilinkText className="inline" text={children} onClick={onWikilinkClick} /></td>;
       }
       return <td className="border border-secondary/40 px-2 py-1">{children}</td>;
     },

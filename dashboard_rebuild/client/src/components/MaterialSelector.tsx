@@ -81,7 +81,7 @@ export function MaterialSelector({
   });
 
   // Server returns filtered materials when courseId is provided
-  const courseMaterials = useMemo(() => materials, [materials]);
+  const courseMaterials = materials;
 
   // Checksums that appear on more than one material
   const dupeChecksums = useMemo(() => {

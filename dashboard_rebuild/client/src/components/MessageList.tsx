@@ -206,6 +206,19 @@ interface MessageListProps {
   }) => void;
 }
 
+function getChatMessageKey(msg: ChatMessage) {
+  return [
+    msg.role,
+    msg.model ?? "",
+    msg.content,
+    msg.isStreaming ? "streaming" : "static",
+    JSON.stringify(msg.citations ?? []),
+    JSON.stringify(msg.toolActions ?? []),
+    msg.verdict?.verdict ?? "",
+    msg.teachBackRubric?.overall_rating ?? "",
+  ].join("::");
+}
+
 export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
   function MessageList({ messages, onArtifactCreated, onStudioCapture }, ref) {
     const [openStudioMenuIndex, setOpenStudioMenuIndex] = useState<number | null>(null);
@@ -225,7 +238,7 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
 
         {messages.map((msg, i) => (
           <div
-            key={i}
+            key={getChatMessageKey(msg)}
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div

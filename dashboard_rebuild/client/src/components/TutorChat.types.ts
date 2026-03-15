@@ -27,15 +27,6 @@ export interface ChatMessage {
   teachBackRubric?: TeachBackRubric;
 }
 
-export interface ChainBlock {
-  id: number;
-  name: string;
-  category: string;
-  description?: string;
-  duration: number;
-  facilitation_prompt?: string;
-}
-
 export interface TutorChatProps {
   sessionId: string | null;
   courseId?: number;
@@ -60,7 +51,7 @@ export interface TutorChatProps {
   initialTurns?: { question: string; answer: string | null }[];
 }
 
-export type ArtifactType = "note" | "card" | "map";
+type ArtifactType = "note" | "card" | "map";
 export type SourceTab = "materials" | "vault" | "map_of_contents";
 
 export interface NorthStarSummary {
@@ -89,16 +80,16 @@ export interface VaultEditorState {
   saving: boolean;
 }
 
-export type ProvenanceTone = "source" | "notes" | "mixed" | "general";
-export type ConfidenceTone = "high" | "medium" | "low";
+type ProvenanceTone = "source" | "notes" | "mixed" | "general";
+type ConfidenceTone = "high" | "medium" | "low";
 
-export interface ProvenanceSummary {
+interface ProvenanceSummary {
   label: string;
   tone: ProvenanceTone;
   details: string[];
 }
 
-export interface ConfidenceSummary {
+interface ConfidenceSummary {
   label: string;
   tone: ConfidenceTone;
   details: string[];
@@ -210,7 +201,7 @@ export function detectMermaidBlock(text: string): string | null {
   return match ? match[1].trim() : null;
 }
 
-export function isNoteLikeSource(source: string): boolean {
+function isNoteLikeSource(source: string): boolean {
   const value = String(source || "").toLowerCase();
   return value.endsWith(".md") || value.includes("map of contents") || value.includes("learning objectives");
 }

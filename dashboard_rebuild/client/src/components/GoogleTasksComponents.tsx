@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useSortable, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +12,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Trash2, Plus, Calendar as CalendarIcon, AlignLeft, ChevronRight, ChevronDown, Clock } from "lucide-react";
 import type { GoogleTask } from "@/lib/api";
 import { format, parseISO, isPast, isToday, isTomorrow, isValid } from "date-fns";
+
+const EMPTY_TASK_LISTS: { id: string; title: string }[] = [];
 
 // -----------------------------------------------------------------------------
 // Helper: Format Due Date
@@ -62,6 +63,19 @@ export function SortableTaskItem({ task, onToggle, onDelete, onEdit }: {
         opacity: isDragging ? 0.5 : 1,
     };
 
+    const handleItemKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+        if (event.currentTarget !== event.target) return;
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onEdit(task);
+        }
+    };
+
+    const handleToggleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
+        onToggle(task);
+    };
+
     return (
         <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="mb-2 touch-none select-none relative group">
             <div
@@ -71,16 +85,22 @@ export function SortableTaskItem({ task, onToggle, onDelete, onEdit }: {
             ${isDragging ? 'ring-2 ring-primary/50 bg-primary/10 z-50' : ''}
         `}
                 onClick={() => onEdit(task)}
+                onKeyDown={handleItemKeyDown}
+                role="button"
+                tabIndex={0}
             >
-                <div
-                    onClick={(e) => { e.stopPropagation(); onToggle(task); }}
+                <button
+                    type="button"
+                    onClick={handleToggleClick}
                     className={`
                 mt-0.5 w-5 h-5 rounded-none border-2 flex items-center justify-center cursor-pointer transition-colors
                 ${task.status === 'completed' ? 'bg-primary border-primary' : 'border-muted-foreground/60 hover:border-primary'}
             `}
+                    aria-label={task.status === "completed" ? "Mark task incomplete" : "Mark task complete"}
+                    aria-pressed={task.status === "completed"}
                 >
                     {task.status === 'completed' && <div className="w-2.5 h-1.5 border-b-2 border-l-2 border-black rotate-[-45deg] mb-0.5" />}
-                </div>
+                </button>
 
                 <div className="flex-1 min-w-0 space-y-1">
                     <div className={`text-sm font-terminal leading-tight truncate ${task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
@@ -107,7 +127,7 @@ export function SortableTaskItem({ task, onToggle, onDelete, onEdit }: {
 // -----------------------------------------------------------------------------
 // Task Dialog
 // -----------------------------------------------------------------------------
-export function TaskDialog({ task, isOpen, onClose, onSave, onDelete, isCreating, activeListId, availableLists = [] }: {
+export function TaskDialog({ task, isOpen, onClose, onSave, onDelete, isCreating, activeListId, availableLists = EMPTY_TASK_LISTS }: {
     task: GoogleTask | null;
     isOpen: boolean;
     onClose: () => void;
@@ -122,6 +142,7 @@ export function TaskDialog({ task, isOpen, onClose, onSave, onDelete, isCreating
     const [date, setDate] = useState("");
     const [time, setTime] = useState("");
     const [listId, setListId] = useState("");
+    const titleInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -148,6 +169,14 @@ export function TaskDialog({ task, isOpen, onClose, onSave, onDelete, isCreating
             }
         }
     }, [isOpen, task, isCreating, activeListId]);
+
+    useEffect(() => {
+        if (!isOpen || !isCreating) return;
+        const frame = requestAnimationFrame(() => {
+            titleInputRef.current?.focus();
+        });
+        return () => cancelAnimationFrame(frame);
+    }, [isOpen, isCreating]);
 
     const handleSave = () => {
         if (!title) return;
@@ -178,11 +207,11 @@ export function TaskDialog({ task, isOpen, onClose, onSave, onDelete, isCreating
                 {/* Header / Title Input */}
                 <div className="p-6 pb-2">
                     <Input
+                        ref={titleInputRef}
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         placeholder="Add title"
                         className="text-2xl font-terminal bg-transparent border-0 border-b border-primary/30 rounded-none px-0 py-2 focus-visible:ring-0 focus-visible:border-primary placeholder:text-muted-foreground/50 h-auto"
-                        autoFocus={isCreating}
                     />
                 </div>
 

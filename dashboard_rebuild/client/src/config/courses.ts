@@ -3,7 +3,7 @@
  * Centralized to avoid duplication across components.
  */
 
-export interface Course {
+interface Course {
   id: string;
   name: string;
   path: string;
@@ -16,27 +16,6 @@ export const COURSE_FOLDERS: Course[] = [
   { id: "neuro", name: "Neuro", path: "Neuroscience" },
   { id: "ti", name: "TI", path: "Therapeutic Intervention" },
 ];
-
-/**
- * Get course by ID
- */
-export function getCourseById(id: string): Course | undefined {
-  return COURSE_FOLDERS.find((c) => c.id === id);
-}
-
-/**
- * Get course by path
- */
-export function getCourseByPath(path: string): Course | undefined {
-  return COURSE_FOLDERS.find((c) => c.path === path);
-}
-
-/**
- * Check if a path is within any course folder
- */
-export function isInCourseFolder(path: string): boolean {
-  return COURSE_FOLDERS.some((c) => path.startsWith(c.path));
-}
 
 /**
  * Get all course paths as array of strings

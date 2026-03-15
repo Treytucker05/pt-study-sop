@@ -289,11 +289,13 @@ def get_tutor_hub():
         )
         pending_event_rows = list(cur.fetchall())
         next_due_by_course: dict[int, dict[str, Any]] = {}
+        pending_event_count_by_course: dict[int, int] = {}
         assignments: list[dict[str, Any]] = []
         tests: list[dict[str, Any]] = []
         for row in pending_event_rows:
             course_id = int(row["course_id"])
             next_due_by_course.setdefault(course_id, dict(row))
+            pending_event_count_by_course[course_id] = pending_event_count_by_course.get(course_id, 0) + 1
             event_type = str(row["type"] or "").strip().lower()
             serialized = _serialize_hub_event(row)
             if event_type in {"assignment", "project"} and len(assignments) < 2:
@@ -302,6 +304,27 @@ def get_tutor_hub():
                 tests.append(serialized)
             if len(assignments) >= 2 and len(tests) >= 2:
                 continue
+
+        cur.execute(
+            """
+            SELECT
+                course_id,
+                SUM(CASE WHEN status = 'captured' THEN 1 ELSE 0 END) AS captured_item_count,
+                SUM(CASE WHEN status = 'promoted' THEN 1 ELSE 0 END) AS promoted_item_count
+            FROM studio_items
+            WHERE course_id IS NOT NULL
+              AND deleted_at IS NULL
+            GROUP BY course_id
+            """
+        )
+        studio_counts_by_course = {
+            int(row["course_id"]): {
+                "captured_item_count": int(row["captured_item_count"] or 0),
+                "promoted_item_count": int(row["promoted_item_count"] or 0),
+            }
+            for row in cur.fetchall()
+            if row["course_id"] is not None
+        }
 
         cur.execute(
             """
@@ -491,7 +514,12 @@ def get_tutor_hub():
         for course_row in course_rows:
             course_id = int(course_row["id"])
             active_session = active_session_by_course.get(course_id)
+            latest_session = latest_session_by_course.get(course_id)
             next_due = next_due_by_course.get(course_id)
+            studio_counts = studio_counts_by_course.get(
+                course_id,
+                {"captured_item_count": 0, "promoted_item_count": 0},
+            )
             class_projects.append(
                 {
                     "course_id": course_id,
@@ -499,6 +527,10 @@ def get_tutor_hub():
                     "course_code": course_row["code"],
                     "material_count": int(course_row["material_count"] or 0),
                     "recent_session_count": int(session_counts.get(course_id, 0)),
+                    "last_studied_at": latest_session["started_at"] if latest_session else None,
+                    "pending_event_count": int(pending_event_count_by_course.get(course_id, 0)),
+                    "captured_item_count": int(studio_counts["captured_item_count"]),
+                    "promoted_item_count": int(studio_counts["promoted_item_count"]),
                     "wheel_linked": bool(course_row["wheel_linked"]),
                     "wheel_active": bool(course_row["wheel_active"]),
                     "wheel_position": course_row["wheel_position"],

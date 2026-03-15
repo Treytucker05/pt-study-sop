@@ -112,10 +112,8 @@ export function CardReviewTabs({
     );
   };
 
-  const renderBulkActions = (count: number) => {
-    if (count === 0) return null;
-
-    return (
+  const bulkActions =
+    selectedDrafts.size === 0 ? null : (
       <div className="flex gap-1 mb-2">
         <Button
           size="sm"
@@ -126,7 +124,7 @@ export function CardReviewTabs({
           }}
         >
           <Check className="w-3 h-3 mr-1" />
-          Approve ({count})
+          Approve ({selectedDrafts.size})
         </Button>
         <Button
           size="sm"
@@ -138,11 +136,10 @@ export function CardReviewTabs({
           }}
         >
           <Trash2 className="w-3 h-3 mr-1" />
-          Reject ({count})
+          Reject ({selectedDrafts.size})
         </Button>
       </div>
     );
-  };
 
   return (
     <Tabs defaultValue="high" className="w-full">
@@ -188,7 +185,7 @@ export function CardReviewTabs({
               {selectedDrafts.size === highConfidence.length ? "None" : "All"}
             </Button>
           </div>
-          {renderBulkActions(selectedDrafts.size)}
+          {bulkActions}
           <ScrollArea className="h-[200px]">
             <div className="space-y-2">
               {highConfidence.map(draft => renderDraftCard(draft, true))}
@@ -223,7 +220,7 @@ export function CardReviewTabs({
               {selectedDrafts.size === lowConfidence.length ? "None" : "All"}
             </Button>
           </div>
-          {renderBulkActions(selectedDrafts.size)}
+          {bulkActions}
           <ScrollArea className="h-[200px]">
             <div className="space-y-2">
               {lowConfidence.map(draft => renderDraftCard(draft, true))}
@@ -258,7 +255,7 @@ export function CardReviewTabs({
               {selectedDrafts.size === regularDrafts.length ? "None" : "All"}
             </Button>
           </div>
-          {renderBulkActions(selectedDrafts.size)}
+          {bulkActions}
           <ScrollArea className="h-[200px]">
             <div className="space-y-2">
               {regularDrafts.map(draft => renderDraftCard(draft, false))}
