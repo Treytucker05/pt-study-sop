@@ -386,11 +386,11 @@ describe("Brain home recenter", () => {
   it("routes both / and /brain to Brain home and highlights Brain in nav", async () => {
     await import("@/pages/brain");
     await renderAppAtRoute("/", "brain-home");
-    expect(screen.getByTestId("nav-brain").className).toContain("active");
+    expect(screen.getByTestId("nav-brain")).toHaveAttribute("aria-current", "page");
 
     cleanup();
     await renderAppAtRoute("/brain", "brain-home");
-    expect(screen.getByTestId("nav-brain").className).toContain("active");
+    expect(screen.getByTestId("nav-brain")).toHaveAttribute("aria-current", "page");
   }, 15000);
 
   it("treats / and /brain as one canonical Brain instance inside the live shell", async () => {
@@ -407,7 +407,7 @@ describe("Brain home recenter", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId("nav-brain").className).toContain("active");
+      expect(screen.getByTestId("nav-brain")).toHaveAttribute("aria-current", "page");
     });
     expect(screen.getAllByTestId("brain-home")).toHaveLength(1);
   });
@@ -582,8 +582,8 @@ describe("Brain home recenter", () => {
     const supportGroup = screen.getByTestId("nav-support-group");
     expect(coreGroup).toBeInTheDocument();
     expect(supportGroup).toBeInTheDocument();
-    expect(within(coreGroup).getAllByRole("button").map((button) => button).length).toBe(3);
-    expect(within(supportGroup).getAllByRole("button").map((button) => button).length).toBe(5);
+    expect(within(coreGroup).getAllByRole("link").length).toBe(3);
+    expect(within(supportGroup).getAllByRole("link").length).toBe(5);
 
     const desktopNav = screen.getByTestId("nav-desktop-groups");
     expect(desktopNav).toBeInTheDocument();

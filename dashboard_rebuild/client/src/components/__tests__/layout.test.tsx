@@ -22,7 +22,6 @@ const {
 }));
 
 vi.mock("wouter", () => ({
-  Link: ({ children, href }: { children: ReactNode; href: string }) => <a href={href}>{children}</a>,
   useLocation: () => ["/", setLocationMock],
 }));
 

@@ -1,5 +1,5 @@
-import { Link, useLocation } from "wouter";
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useLocation } from "wouter";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import { Brain, Calendar, GraduationCap, Bot, Blocks, TrendingUp, BookOpen, Shield, Save, Trash2, GripVertical, Pencil, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
@@ -7,7 +7,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import brainBackground from "@assets/BrainBackground.jpg";
-import brainButton from "@assets/BrainButton.jpg";
 import logoImg from "@assets/StudyBrainIMAGE_1768640444498.jpg";
 import {
   CONTROL_COPY,
@@ -64,138 +63,126 @@ const resolveNoteType = (note: Note): NoteCategory => {
   return "notes";
 };
 
-const NAV_RAIL_STYLE: CSSProperties = {
-  backgroundImage: `linear-gradient(180deg, rgba(6, 4, 7, 0.2) 0%, rgba(0, 0, 0, 0.52) 100%), radial-gradient(circle at 22% 50%, rgba(255, 100, 126, 0.2), transparent 24%), url(${brainButton})`,
-  backgroundPosition: "center center",
-  backgroundRepeat: "no-repeat",
-  backgroundSize: "cover",
-};
-
-const navButtonClass = (tier: NavTier, isActive: boolean, headerExpanded: boolean) =>
+const railShellClass = (tier: NavTier, headerExpanded: boolean) =>
   cn(
-    "group relative isolate flex items-center justify-start overflow-hidden px-2.5 py-0 font-arcade uppercase transition-all duration-200 ease-out motion-reduce:transition-none",
+    "relative overflow-hidden border backdrop-blur-xl shadow-[0_18px_36px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,86,118,0.12)]",
+    "before:pointer-events-none before:absolute before:inset-[1px] before:rounded-[inherit] before:border before:border-[rgba(255,190,206,0.08)] before:content-['']",
+    "after:pointer-events-none after:absolute after:inset-x-5 after:top-0 after:h-[2px] after:bg-gradient-to-r after:from-transparent after:via-[rgba(255,106,136,0.6)] after:to-transparent after:content-['']",
     tier === "primary"
-      ? "h-[3.55rem] min-w-[10.5rem] rounded-[1.3rem]"
-      : "h-[3.2rem] min-w-[9.2rem] rounded-[1.15rem]",
-    !headerExpanded &&
+      ? cn(
+          "rounded-[1.9rem] border-[rgba(255,118,146,0.3)] bg-[linear-gradient(180deg,rgba(18,12,14,0.92),rgba(6,6,8,0.96)_100%)]",
+          headerExpanded ? "px-3 py-3" : "px-2.5 py-2.5",
+        )
+      : cn(
+          "rounded-[1.45rem] border-[rgba(255,118,146,0.22)] bg-[linear-gradient(180deg,rgba(16,10,12,0.92),rgba(6,6,8,0.95)_100%)]",
+          headerExpanded ? "px-2.5 py-2" : "px-2 py-1.5",
+        ),
+  );
+
+const railCoreClass = (tier: NavTier) =>
+  cn(
+    "relative z-10 grid items-stretch",
+    tier === "primary" ? "grid-cols-3 gap-2.5" : "min-w-[34rem] grid-cols-5 gap-1.5 sm:min-w-0",
+  );
+
+const navLinkClass = (tier: NavTier, isActive: boolean, headerExpanded: boolean) =>
+  cn(
+    "group relative flex min-w-0 overflow-hidden border text-[#f7dbe2] transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-0 motion-reduce:transition-none",
+    "before:pointer-events-none before:absolute before:inset-[1px] before:rounded-[inherit] before:border before:border-[rgba(255,214,224,0.08)] before:content-['']",
+    "after:pointer-events-none after:absolute after:inset-x-3 after:bottom-[5px] after:h-[2px] after:rounded-full after:bg-gradient-to-r after:from-transparent after:via-[rgba(255,110,140,0.9)] after:to-transparent after:opacity-0 after:transition-opacity after:duration-200 after:content-['']",
+    tier === "primary"
+      ? cn(
+          "items-center gap-3 rounded-[1.35rem] px-4 text-left",
+          headerExpanded ? "h-[4.15rem]" : "h-[3.55rem]",
+          "border-[rgba(255,132,160,0.28)] bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.01)_18%,rgba(8,8,10,0.92)_100%),linear-gradient(135deg,rgba(118,18,34,0.56),rgba(10,8,12,0.96)_60%,rgba(0,0,0,0.98)_100%)]",
+          "shadow-[0_10px_22px_rgba(0,0,0,0.34),inset_0_0_0_1px_rgba(255,62,94,0.12)]",
+        )
+      : cn(
+          "items-center justify-center rounded-[1rem] px-2 text-center",
+          headerExpanded ? "h-[2.95rem]" : "h-[2.55rem]",
+          "border-[rgba(255,132,160,0.18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(10,8,10,0.96)_100%)] shadow-[0_8px_18px_rgba(0,0,0,0.28)]",
+        ),
+    "hover:-translate-y-[1px] hover:border-[rgba(255,162,184,0.42)] hover:text-white hover:after:opacity-80",
+    "active:translate-y-[1px]",
+    isActive &&
       (tier === "primary"
-        ? "h-[3.05rem] min-w-[9rem] px-2"
-        : "h-[2.8rem] min-w-[8rem] px-2"),
-    "border border-[rgba(255,122,146,0.16)] bg-transparent shadow-[0_10px_22px_rgba(0,0,0,0.34)]",
-    "text-[#ffbcc8] [text-shadow:0_1px_2px_rgba(0,0,0,0.78)]",
-    "hover:-translate-y-[1px] hover:border-[rgba(255,150,170,0.34)] hover:text-[#fff1f4] hover:shadow-[0_14px_26px_rgba(0,0,0,0.4)]",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-0",
-    "active:translate-y-[1px] active:shadow-[0_6px_14px_rgba(0,0,0,0.36)]",
-    isActive &&
-      "border-[rgba(255,180,196,0.48)] text-[#fff7f9] shadow-[0_14px_28px_rgba(0,0,0,0.5),0_0_14px_rgba(255,104,136,0.18)] [text-shadow:0_0_10px_rgba(255,108,140,0.44)]",
+        ? "border-[rgba(255,186,204,0.56)] text-white shadow-[0_14px_28px_rgba(0,0,0,0.45),0_0_18px_rgba(255,92,120,0.18),inset_0_0_0_1px_rgba(255,126,156,0.22)] after:opacity-100"
+        : "border-[rgba(255,170,192,0.36)] text-white shadow-[0_10px_20px_rgba(0,0,0,0.34),0_0_14px_rgba(255,82,110,0.12)] after:opacity-100"),
   );
 
-const navButtonSurfaceClass = (tier: NavTier, isActive: boolean) =>
+const navIconWrapClass = (isActive: boolean, headerExpanded: boolean) =>
   cn(
-    "pointer-events-none absolute inset-[1px] rounded-[inherit] border border-[rgba(255,128,152,0.14)]",
-    "bg-[linear-gradient(180deg,rgba(255,255,255,0.09),rgba(255,255,255,0.02)_18%,rgba(0,0,0,0.52)_100%),linear-gradient(135deg,rgba(115,12,34,0.82),rgba(12,4,7,0.92)_54%,rgba(0,0,0,0.98)_100%)]",
-    tier === "primary" ? "shadow-[inset_0_0_0_1px_rgba(255,86,118,0.22)]" : "shadow-[inset_0_0_0_1px_rgba(255,86,118,0.14)]",
-    isActive &&
-      "border-[rgba(255,186,202,0.38)] shadow-[inset_0_0_0_1px_rgba(255,128,158,0.26),0_0_16px_rgba(255,96,126,0.16)]",
+    "relative z-10 flex shrink-0 items-center justify-center rounded-[0.95rem] border border-[rgba(255,138,166,0.24)] bg-[radial-gradient(circle_at_30%_0%,rgba(255,255,255,0.18),transparent_42%),linear-gradient(180deg,rgba(255,108,136,0.18),rgba(10,6,8,0.95))] shadow-[inset_0_0_0_1px_rgba(255,214,224,0.06)]",
+    headerExpanded ? "h-9.5 w-9.5" : "h-8 w-8",
+    isActive && "border-[rgba(255,196,208,0.48)] shadow-[inset_0_0_0_1px_rgba(255,214,224,0.12),0_0_10px_rgba(255,94,122,0.16)]",
   );
 
-const navIconPadClass = (tier: NavTier, isActive: boolean, headerExpanded: boolean) =>
+const navLabelClass = (tier: NavTier, headerExpanded: boolean) =>
   cn(
-    "relative z-10 flex shrink-0 items-center justify-center overflow-hidden border transition-all duration-200 ease-out motion-reduce:transition-none",
-    tier === "primary" ? "mr-3 rounded-[1rem]" : "mr-2.5 rounded-[0.9rem]",
+    "relative z-10 font-arcade uppercase text-[#ffeef2] [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]",
     tier === "primary"
       ? headerExpanded
-        ? "h-10 w-10"
-        : "h-8.5 w-8.5"
+        ? "text-[0.76rem] tracking-[0.16em]"
+        : "text-[0.68rem] tracking-[0.14em]"
       : headerExpanded
-        ? "h-8.5 w-8.5"
-        : "h-7.5 w-7.5",
-    "border-[rgba(255,124,146,0.34)] bg-[radial-gradient(circle_at_30%_0%,rgba(255,255,255,0.22),transparent_36%),linear-gradient(180deg,rgba(255,123,150,0.22),rgba(20,4,8,0.92))]",
-    "shadow-[inset_0_0_0_1px_rgba(255,170,190,0.08),0_0_0_1px_rgba(0,0,0,0.16)]",
-    "group-hover:border-[rgba(255,170,188,0.54)] group-hover:shadow-[inset_0_0_0_1px_rgba(255,212,222,0.12),0_0_10px_rgba(255,100,136,0.16)]",
-    isActive &&
-      "border-[rgba(255,196,208,0.68)] bg-[radial-gradient(circle_at_30%_0%,rgba(255,255,255,0.3),transparent_32%),linear-gradient(180deg,rgba(255,134,160,0.32),rgba(28,5,10,0.94))] shadow-[inset_0_0_0_1px_rgba(255,220,228,0.14),0_0_12px_rgba(255,116,148,0.2)]",
+        ? "text-[0.62rem] tracking-[0.14em] sm:text-[0.68rem]"
+        : "text-[0.56rem] tracking-[0.12em] sm:text-[0.62rem]",
   );
 
 const notesDockStyle = (top: number | null): CSSProperties => ({
   top: top === null ? "34%" : `${top}px`,
-  backgroundImage: `linear-gradient(180deg, rgba(8, 4, 6, 0.18) 0%, rgba(0, 0, 0, 0.42) 100%), url(${brainButton})`,
-  backgroundPosition: "center center",
-  backgroundRepeat: "no-repeat",
-  backgroundSize: "cover",
 });
 
-function ShellNavButton({
+function ShellNavLink({
   item,
   isActive,
   headerExpanded,
   tier,
+  onNavigate,
 }: {
   item: NavItem;
   isActive: boolean;
   headerExpanded: boolean;
   tier: NavTier;
+  onNavigate: (event: MouseEvent<HTMLAnchorElement>, path: string) => void;
 }) {
+  const showIcon = tier === "primary";
   return (
-    <Button
+    <a
+      href={item.path}
       data-testid={`nav-${item.testId}`}
-      variant="ghost"
-      size="sm"
-      className={navButtonClass(tier, isActive, headerExpanded)}
+      className={navLinkClass(tier, isActive, headerExpanded)}
       aria-current={isActive ? "page" : undefined}
+      onClick={(event) => onNavigate(event, item.path)}
     >
-      <span className={navButtonSurfaceClass(tier, isActive)} />
-      <span className="pointer-events-none absolute inset-x-3 top-[2px] h-px bg-gradient-to-r from-transparent via-white/18 to-transparent" />
+      <span className="pointer-events-none absolute inset-x-4 top-[2px] h-px bg-gradient-to-r from-transparent via-[rgba(255,208,216,0.28)] to-transparent" />
       <span
         className={cn(
-          "pointer-events-none absolute inset-x-3 bottom-[5px] h-[2px] rounded-full bg-[linear-gradient(90deg,transparent,rgba(255,124,146,0.2),transparent)] transition-opacity duration-200 ease-out",
+          "pointer-events-none absolute inset-x-4 bottom-[4px] h-[1px] bg-gradient-to-r from-transparent via-[rgba(255,88,118,0.5)] to-transparent",
           isActive
-            ? "opacity-100 shadow-[0_0_10px_rgba(255,120,146,0.52)]"
-            : "opacity-45 group-hover:opacity-80",
+            ? "opacity-100 shadow-[0_0_10px_rgba(255,110,140,0.42)]"
+            : "opacity-35 group-hover:opacity-65",
         )}
       />
-      <span className={navIconPadClass(tier, isActive, headerExpanded)}>
-        <item.icon
-          className={cn(
-            "shrink-0 text-[#ffe8ec] drop-shadow-[0_0_6px_rgba(255,120,132,0.42)] transition-all duration-200 ease-out motion-reduce:transition-none",
-            tier === "primary"
-              ? headerExpanded
-                ? "h-4.5 w-4.5"
-                : "h-4 w-4"
-              : headerExpanded
-                ? "h-4 w-4"
-                : "h-3.5 w-3.5",
-          )}
-        />
-      </span>
-      <span className="relative z-10 flex min-w-0 flex-col items-start gap-0.5">
-        <span
-          className={cn(
-            "truncate text-left tracking-[0.22em]",
-            tier === "primary"
-              ? headerExpanded
-                ? "text-[0.78rem]"
-                : "text-[0.68rem]"
-              : headerExpanded
-                ? "text-[0.72rem]"
-                : "text-[0.64rem]",
-          )}
-        >
-          {item.label}
-        </span>
-        {headerExpanded ? (
-          <span
-            aria-hidden="true"
+      {showIcon ? (
+        <span className={navIconWrapClass(isActive, headerExpanded)}>
+          <item.icon
             className={cn(
-              "font-terminal text-[0.54rem] uppercase tracking-[0.28em]",
-              tier === "primary" ? "text-[#ff9daf]/72" : "text-[#ff9daf]/56",
+              "shrink-0 text-[#fff3f6] drop-shadow-[0_0_6px_rgba(255,120,132,0.42)]",
+              headerExpanded ? "h-4.5 w-4.5" : "h-4 w-4",
             )}
-          >
-            {tier === "primary" ? "Core" : "Support"}
-          </span>
-        ) : null}
+          />
+        </span>
+      ) : null}
+      <span
+        className={cn(
+          navLabelClass(tier, headerExpanded),
+          tier === "primary" ? "text-left" : "text-center",
+        )}
+      >
+        {item.label}
       </span>
-    </Button>
+    </a>
   );
 }
 
@@ -648,6 +635,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setNotesOpen(true);
   };
 
+  const handleNavActivate = useCallback(
+    (event: MouseEvent<HTMLAnchorElement>, path: string) => {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
+      event.preventDefault();
+      setLocation(path);
+    },
+    [setLocation],
+  );
+
   return (
     <div
       className={cn(
@@ -657,16 +662,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     >
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 scale-[1.04] blur-[2px] opacity-30"
           style={{
-            backgroundImage: `linear-gradient(180deg, rgba(0, 0, 0, 0.44) 0%, rgba(0, 0, 0, 0.18) 22%, rgba(0, 0, 0, 0.38) 58%, rgba(0, 0, 0, 0.84) 100%), url(${brainBackground})`,
-            backgroundPosition: "center calc(50% + 48px)",
+            backgroundImage: `url(${brainBackground})`,
+            backgroundPosition: "center calc(56% + 56px)",
             backgroundRepeat: "no-repeat",
             backgroundSize: "cover",
           }}
           aria-hidden="true"
         />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_16%,rgba(255,78,116,0.16),transparent_22%),radial-gradient(circle_at_50%_60%,rgba(255,64,105,0.12),transparent_36%),linear-gradient(180deg,rgba(0,0,0,0.08),rgba(0,0,0,0.38)_68%,rgba(0,0,0,0.66)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(255,78,116,0.1),transparent_18%),radial-gradient(circle_at_50%_62%,rgba(255,64,105,0.08),transparent_28%),linear-gradient(180deg,rgba(0,0,0,0.7),rgba(0,0,0,0.42)_18%,rgba(0,0,0,0.58)_60%,rgba(0,0,0,0.88)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,5,8,0.76),rgba(5,5,8,0.22)_24%,rgba(5,5,8,0.48)_72%,rgba(5,5,8,0.84)_100%)]" />
       </div>
       <div className="fixed inset-0 z-10 crt-overlay pointer-events-none" />
 
@@ -692,85 +698,92 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             headerExpanded ? "py-3.5" : "py-2.5",
           )}
         >
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-              <Link href="/">
-                <div className="group flex cursor-pointer items-center gap-3 rounded-[1.25rem] border border-primary/20 bg-black/30 px-3 py-2 shadow-[0_12px_26px_rgba(0,0,0,0.24)] backdrop-blur-sm">
-                  <img
-                    src={logoImg}
-                    alt="Logo"
-                    className={cn(
-                      "rounded-full border border-primary/30 object-cover transition-all duration-300 ease-out motion-reduce:transition-none",
-                      headerExpanded ? "h-14 w-14 sm:h-16 sm:w-16" : "h-10 w-10 sm:h-11 sm:w-11",
-                    )}
-                  />
-                  <div className="min-w-0">
-                    <span
-                      className={cn(
-                        "block whitespace-nowrap font-arcade text-white transition-all duration-300 ease-out group-hover:text-primary phosphor-flicker motion-reduce:transition-none",
-                        headerExpanded ? "text-[0.72rem] sm:text-[0.8rem]" : "text-[0.62rem] sm:text-[0.68rem] text-white/80",
-                      )}
-                    >
-                      TREY'S STUDY SYSTEM
-                    </span>
-                    <span className="block font-terminal text-[0.68rem] text-primary/80 sm:text-sm">
-                      Neural command deck
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            </div>
-
-            <nav
-              className={cn(
-                "relative min-w-0 flex-1 overflow-hidden rounded-[1.75rem] border border-[rgba(255,120,148,0.24)] p-2.5 shadow-[0_16px_32px_rgba(0,0,0,0.34),0_0_0_1px_rgba(255,102,130,0.16)] backdrop-blur-xl",
-                headerExpanded ? "md:p-3" : "md:p-2.5",
-              )}
-              style={NAV_RAIL_STYLE}
-              data-testid="nav-desktop-groups"
+          <div className="grid gap-3 lg:grid-cols-[minmax(15rem,22rem)_minmax(0,1fr)] lg:items-start lg:gap-5">
+            <a
+              href="/"
+              onClick={(event) => handleNavActivate(event, "/")}
+              className="group flex min-w-0 items-center gap-3 rounded-[1.35rem] border border-[rgba(255,122,146,0.24)] bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.01)_20%,rgba(0,0,0,0.28)_100%),linear-gradient(135deg,rgba(18,12,14,0.96),rgba(8,8,10,0.96))] px-3 py-2 shadow-[0_16px_30px_rgba(0,0,0,0.28)] backdrop-blur-sm"
             >
-              <div className="pointer-events-none absolute inset-[1px] rounded-[1.65rem] border border-[rgba(255,180,198,0.08)] bg-[linear-gradient(180deg,rgba(8,6,7,0.78),rgba(0,0,0,0.7)_44%,rgba(0,0,0,0.82)_100%)]" />
-              <div className="pointer-events-none absolute inset-x-4 top-3 h-px bg-gradient-to-r from-transparent via-[rgba(255,176,196,0.48)] to-transparent opacity-70" />
-              <div className="pointer-events-none absolute inset-x-5 bottom-3 h-px bg-gradient-to-r from-transparent via-[rgba(255,92,120,0.44)] to-transparent opacity-85" />
-              <div className="pointer-events-none absolute inset-y-4 left-[38%] hidden w-px bg-gradient-to-b from-transparent via-[rgba(255,136,160,0.22)] to-transparent xl:block" />
-              <div className="relative z-10 flex min-w-0 flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
-              <div
+              <img
+                src={logoImg}
+                alt="Logo"
                 className={cn(
-                  "flex min-w-0 flex-wrap items-center gap-2 transition-all duration-300 ease-out motion-reduce:transition-none",
-                  !headerExpanded && "gap-1.5",
+                  "rounded-full border border-primary/30 object-cover transition-all duration-300 ease-out motion-reduce:transition-none",
+                  headerExpanded ? "h-14 w-14 sm:h-15 sm:w-15" : "h-10 w-10 sm:h-11 sm:w-11",
                 )}
-                data-testid="nav-core-group"
-                aria-label="Core triad navigation"
-              >
-                {PRIMARY_NAV_ITEMS.map((item) => {
-                  const isActive = currentPath === item.path;
-                  return (
-                    <Link key={item.path} href={item.path}>
-                      <ShellNavButton item={item} isActive={isActive} headerExpanded={headerExpanded} tier="primary" />
-                    </Link>
-                  );
-                })}
+              />
+              <div className="min-w-0">
+                <span
+                  className={cn(
+                    "block whitespace-nowrap font-arcade text-white transition-all duration-300 ease-out group-hover:text-primary phosphor-flicker motion-reduce:transition-none",
+                    headerExpanded ? "text-[0.72rem] sm:text-[0.8rem]" : "text-[0.62rem] sm:text-[0.68rem] text-white/80",
+                  )}
+                >
+                  TREY'S STUDY SYSTEM
+                </span>
+                <span className="block font-terminal text-[0.68rem] text-primary/80 sm:text-sm">
+                  neural command deck
+                </span>
               </div>
+            </a>
 
-              <div
-                className={cn(
-                  "flex min-w-0 flex-wrap items-center gap-2 xl:justify-end xl:pl-5 transition-all duration-300 ease-out motion-reduce:transition-none",
-                  !headerExpanded && "gap-1.5",
-                )}
-                data-testid="nav-support-group"
-                aria-label="Support systems navigation"
+            <div className="flex min-w-0 flex-col gap-2.5" data-testid="nav-desktop-groups">
+              <nav
+                className={cn("mx-auto w-full max-w-[60rem]", railShellClass("primary", headerExpanded))}
+                aria-label="Primary study navigation"
+                data-testid="nav-primary-rail"
               >
-                {SUPPORT_NAV_ITEMS.map((item) => {
-                  const isActive = currentPath === item.path;
-                  return (
-                    <Link key={item.path} href={item.path}>
-                      <ShellNavButton item={item} isActive={isActive} headerExpanded={headerExpanded} tier="support" />
-                    </Link>
-                  );
-                })}
+                <div className="pointer-events-none absolute inset-x-6 top-[10px] h-[1px] bg-gradient-to-r from-transparent via-[rgba(255,84,118,0.8)] to-transparent" />
+                <div
+                  className={railCoreClass("primary")}
+                  data-testid="nav-core-group"
+                  aria-label="Core triad navigation"
+                >
+                  {PRIMARY_NAV_ITEMS.map((item) => {
+                    const isActive = currentPath === item.path;
+                    return (
+                      <ShellNavLink
+                        key={item.path}
+                        item={item}
+                        isActive={isActive}
+                        headerExpanded={headerExpanded}
+                        tier="primary"
+                        onNavigate={handleNavActivate}
+                      />
+                    );
+                  })}
+                </div>
+              </nav>
+
+              <div className="mx-auto w-full max-w-[52rem] overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <nav
+                  className={railShellClass("support", headerExpanded)}
+                  aria-label="Secondary study navigation"
+                  data-testid="nav-secondary-rail"
+                >
+                  <div className="pointer-events-none absolute inset-x-7 top-[7px] h-[1px] bg-gradient-to-r from-transparent via-[rgba(255,84,118,0.42)] to-transparent" />
+                  <div
+                    className={railCoreClass("support")}
+                    data-testid="nav-support-group"
+                    aria-label="Support systems navigation"
+                  >
+                    {SUPPORT_NAV_ITEMS.map((item) => {
+                      const isActive = currentPath === item.path;
+                      return (
+                        <ShellNavLink
+                          key={item.path}
+                          item={item}
+                          isActive={isActive}
+                          headerExpanded={headerExpanded}
+                          tier="support"
+                          onNavigate={handleNavActivate}
+                        />
+                      );
+                    })}
+                  </div>
+                </nav>
               </div>
-              </div>
-            </nav>
+            </div>
           </div>
         </div>
       </header>
