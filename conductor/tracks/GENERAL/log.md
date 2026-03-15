@@ -280,3 +280,10 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Validation passed:
   - `npm run test -- client/src/components/__tests__/layout.test.tsx`
   - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-15 - Exact brain background image swap
+
+- Replaced the shell's composed cyber-brain backdrop in `dashboard_rebuild/client/src/components/layout.tsx` with the exact provided image asset (`dashboard_rebuild/attached_assets/BrainBackground.jpg`) as the full-bleed background.
+- Kept only a light readability overlay so the UI preserves the supplied image instead of reconstructing it from separate logo/grid layers.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run build`

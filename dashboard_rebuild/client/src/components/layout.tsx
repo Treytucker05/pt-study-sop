@@ -6,7 +6,7 @@ import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import arcadeBg from "@assets/generated_images/arcade_tutor_chat_interface.png";
+import brainBackground from "@assets/BrainBackground.jpg";
 import logoImg from "@assets/StudyBrainIMAGE_1768640444498.jpg";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -553,58 +553,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       )}
     >
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_8%,rgba(255,58,98,0.22),transparent_24%),linear-gradient(180deg,rgba(15,0,4,0.72),rgba(0,0,0,0.18)_28%,rgba(0,0,0,0.82)_100%)]" />
         <div
-          className="absolute left-1/2 top-[10vh] h-72 w-72 -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,65,105,0.4),rgba(255,65,105,0.14)_42%,transparent_72%)] blur-3xl md:h-[26rem] md:w-[26rem]"
-          aria-hidden="true"
-        />
-        <img
-          src={logoImg}
-          alt=""
-          aria-hidden="true"
-          className="absolute left-1/2 top-[8vh] w-[min(70vw,20rem)] -translate-x-1/2 opacity-30 mix-blend-screen saturate-0 md:w-[min(34vw,28rem)]"
+          className="absolute inset-0"
           style={{
-            filter:
-              "brightness(0) saturate(100%) invert(18%) sepia(90%) saturate(4232%) hue-rotate(339deg) brightness(123%) contrast(119%) drop-shadow(0 0 24px rgba(255,64,102,0.48))",
-          }}
-        />
-        <div
-          className="absolute left-[-8%] top-[10vh] hidden h-[34vh] w-[48vw] opacity-10 mix-blend-screen md:block"
-          style={{
-            backgroundImage: `url(${arcadeBg})`,
+            backgroundImage: `linear-gradient(180deg, rgba(0, 0, 0, 0.44) 0%, rgba(0, 0, 0, 0.18) 22%, rgba(0, 0, 0, 0.38) 58%, rgba(0, 0, 0, 0.84) 100%), url(${brainBackground})`,
+            backgroundPosition: "center center",
             backgroundRepeat: "no-repeat",
-            backgroundPosition: "center",
             backgroundSize: "cover",
-            transform: "scaleX(-1)",
-            filter: "brightness(0.85) saturate(0) sepia(1) hue-rotate(-25deg) saturate(8)",
-            maskImage: "linear-gradient(90deg, transparent 0, black 28%, black 78%, transparent 100%)",
           }}
           aria-hidden="true"
         />
-        <div
-          className="absolute right-[-8%] top-[10vh] hidden h-[34vh] w-[48vw] opacity-10 mix-blend-screen md:block"
-          style={{
-            backgroundImage: `url(${arcadeBg})`,
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center",
-            backgroundSize: "cover",
-            filter: "brightness(0.85) saturate(0) sepia(1) hue-rotate(-25deg) saturate(8)",
-            maskImage: "linear-gradient(90deg, transparent 0, black 22%, black 72%, transparent 100%)",
-          }}
-          aria-hidden="true"
-        />
-        <div className="absolute inset-x-[-8%] bottom-[28vh] h-px bg-[linear-gradient(90deg,transparent_0,rgba(255,74,110,0.8)_18%,rgba(255,255,255,0.92)_50%,rgba(255,74,110,0.8)_82%,transparent_100%)] shadow-[0_0_18px_rgba(255,74,110,0.7)]" />
-        <div
-          className="absolute inset-x-[-12%] bottom-[-8vh] h-[44vh] opacity-70"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255, 54, 96, 0.28) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 54, 96, 0.28) 1px, transparent 1px)",
-            backgroundSize: "64px 64px",
-            transform: "perspective(1200px) rotateX(78deg)",
-            transformOrigin: "bottom center",
-          }}
-          aria-hidden="true"
-        />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_16%,rgba(255,78,116,0.16),transparent_22%),radial-gradient(circle_at_50%_60%,rgba(255,64,105,0.12),transparent_36%),linear-gradient(180deg,rgba(0,0,0,0.08),rgba(0,0,0,0.38)_68%,rgba(0,0,0,0.66)_100%)]" />
       </div>
       <div className="fixed inset-0 z-10 crt-overlay pointer-events-none" />
 
