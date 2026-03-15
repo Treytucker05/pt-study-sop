@@ -331,6 +331,22 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/layout.test.tsx`
   - `cd dashboard_rebuild && npm run build`
 
+## 2026-03-15 - Support-page workspace rollout
+
+- Finished the production UI standardization wave by applying the shared `SupportWorkspaceFrame` pattern across the remaining top-level support pages:
+  - `dashboard_rebuild/client/src/pages/methods.tsx`
+  - `dashboard_rebuild/client/src/pages/mastery.tsx`
+  - `dashboard_rebuild/client/src/pages/scholar.tsx`
+  - `dashboard_rebuild/client/src/pages/vault-health.tsx`
+- Kept each route's domain-specific logic intact, but moved the structure toward one sellable operating model:
+  - left scope / status rail
+  - top command band
+  - dominant main work canvas
+- Preserved the Materials Library and Calendar as the reference shape rather than forcing Brain or Tutor into the same frame.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run build`
+  - live browser checks at `http://127.0.0.1:5000/methods` and `http://127.0.0.1:5000/scholar`
+
 ## 2026-03-15 - React Doctor install
 
 - Installed `react-doctor` as a frontend dev dependency in `dashboard_rebuild/package.json` and refreshed `dashboard_rebuild/package-lock.json`.

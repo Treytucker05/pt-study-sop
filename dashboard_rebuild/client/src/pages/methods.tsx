@@ -13,6 +13,7 @@ import ChainBuilder from "@/components/ChainBuilder";
 import MethodAnalytics from "@/components/MethodAnalytics";
 import RatingDialog from "@/components/RatingDialog";
 import { PageScaffold } from "@/components/PageScaffold";
+import { SupportWorkspaceFrame } from "@/components/SupportWorkspaceFrame";
 import { api } from "@/lib/api";
 import { DISPLAY_STAGE_LABELS, getDisplayStage, type DisplayStage } from "@/lib/displayStage";
 import type { MethodBlock, MethodChain, MethodChainExpanded, ChainRunResult, ChainRunSummary, MethodCategory } from "@/api";
@@ -229,6 +230,179 @@ export default function MethodsPage() {
     }
   };
 
+  const selectedStageLabel =
+    stageFilter === "all"
+      ? "ALL STAGES"
+      : stageFilter === "favorites"
+        ? "FAVORITES"
+        : DISPLAY_STAGE_LABELS[stageFilter];
+  const methodsSidebar = (
+    <div className="flex h-full min-h-0 flex-col gap-4 p-3 md:p-4 overflow-auto">
+      <div className="space-y-2">
+        <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
+          Workspace
+        </div>
+        <div className="grid gap-2">
+          {TAB_ITEMS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`min-h-[44px] rounded-[1rem] border px-3 py-2 text-left transition ${
+                activeTab === tab.id
+                  ? "border-primary/45 bg-primary/12 text-primary shadow-[0_0_18px_rgba(255,86,86,0.12)]"
+                  : "border-primary/15 bg-black/20 text-muted-foreground hover:border-primary/30 hover:text-white"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <tab.icon className="h-4 w-4" />
+                <span className="font-arcade text-xs">{tab.label}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-3 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+        <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
+          Current Focus
+        </div>
+        <div className="font-terminal text-sm text-white">
+          {activeTab === "library" ? "Method block library" : activeTab === "chains" ? "Tutor chains" : "Method analytics"}
+        </div>
+        <div className="font-terminal text-xs text-muted-foreground">
+          {activeTab === "library"
+            ? `${filteredBlocks.length} visible block${filteredBlocks.length === 1 ? "" : "s"} in ${selectedStageLabel}.`
+            : activeTab === "chains"
+              ? `${chains.length} chain${chains.length === 1 ? "" : "s"}, ${chains.filter((chain) => chain.is_template).length} template${chains.filter((chain) => chain.is_template).length === 1 ? "" : "s"}, ${runHistory.length} run${runHistory.length === 1 ? "" : "s"} logged.`
+              : "Review usage, ratings, and adoption before changing Tutor defaults."}
+        </div>
+      </div>
+
+      {activeTab === "library" ? (
+        <div className="space-y-2 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+          <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
+            Stage Filter
+          </div>
+          <div className="grid gap-2">
+            {DISPLAY_STAGES.map((stage) => (
+              <button
+                key={stage}
+                type="button"
+                onClick={() => setStageFilter(stage)}
+                className={`min-h-[42px] rounded-[0.95rem] border px-3 py-2 text-left transition ${
+                  stageFilter === stage
+                    ? "border-primary/45 bg-primary/12 text-primary"
+                    : "border-primary/15 bg-black/10 text-muted-foreground hover:border-primary/25 hover:text-white"
+                }`}
+              >
+                <div className="font-arcade text-[11px]">
+                  {stage === "all"
+                    ? "ALL"
+                    : stage === "favorites"
+                      ? "FAVORITES"
+                      : DISPLAY_STAGE_LABELS[stage]}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {activeTab === "chains" ? (
+        <div className="space-y-2 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+          <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
+            Chain Snapshot
+          </div>
+          {selectedChain ? (
+            <>
+              <div className="font-terminal text-sm text-white">{selectedChain.name}</div>
+              <div className="font-terminal text-xs text-muted-foreground">
+                {(selectedChain.block_ids || []).length} block{(selectedChain.block_ids || []).length === 1 ? "" : "s"}
+                {selectedChain.is_template ? " • template" : " • editable"}
+              </div>
+              {selectedChain.description ? (
+                <div className="font-terminal text-xs text-muted-foreground">
+                  {selectedChain.description}
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <div className="font-terminal text-xs text-muted-foreground">
+              Select a chain to inspect the sequence, rate it, or launch a run.
+            </div>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+  const methodsCommandBand = (
+    <div className="flex flex-col gap-3 p-3 md:p-4">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div className="space-y-1">
+          <div className="font-arcade text-xs text-primary">
+            {activeTab === "library" ? "Method library" : activeTab === "chains" ? "Chains" : "Analytics"}
+          </div>
+          <div className="font-terminal text-sm text-muted-foreground">
+            {activeTab === "library"
+              ? "Search blocks, narrow to the right stage, and keep the catalog clean."
+              : activeTab === "chains"
+                ? "Review templates, edit chain order, and keep run history visible."
+                : "Check the system-level signal before promoting or retiring a method."}
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {activeTab === "library" ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-none border-[3px] border-double font-arcade text-sm h-10"
+              onClick={() => setShowAddBlock(true)}
+            >
+              <Plus className="w-3 h-3 mr-1" /> ADD BLOCK
+            </Button>
+          ) : null}
+          {activeTab === "chains" ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-none border-[3px] border-double font-arcade text-sm h-10"
+              onClick={() => setShowAddChain(true)}
+            >
+              <Plus className="w-3 h-3 mr-1" /> NEW CHAIN
+            </Button>
+          ) : null}
+        </div>
+      </div>
+
+      {activeTab === "library" ? (
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <Input
+            placeholder="Search methods..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full lg:max-w-sm bg-black/40"
+          />
+          <div className="flex flex-wrap items-center gap-2 text-xs font-terminal text-muted-foreground">
+            <span className="rounded-full border border-primary/20 px-2 py-1">{selectedStageLabel}</span>
+            <span className="rounded-full border border-primary/20 px-2 py-1">{filteredBlocks.length} visible</span>
+            <span className="rounded-full border border-primary/20 px-2 py-1">{favoriteMethodIds.length} favorites</span>
+          </div>
+        </div>
+      ) : null}
+
+      {activeTab === "chains" ? (
+        <div className="flex flex-wrap items-center gap-2 text-xs font-terminal text-muted-foreground">
+          <span className="rounded-full border border-primary/20 px-2 py-1">{chains.length} chains</span>
+          <span className="rounded-full border border-primary/20 px-2 py-1">
+            {chains.filter((chain) => chain.is_template).length} templates
+          </span>
+          <span className="rounded-full border border-primary/20 px-2 py-1">{runHistory.length} recorded runs</span>
+        </div>
+      ) : null}
+    </div>
+  );
+
   return (
     <Layout>
       <PageScaffold
@@ -244,64 +418,15 @@ export default function MethodsPage() {
           { label: "Runs", value: String(runHistory.length), tone: "success" },
         ]}
       >
-
-        {/* Tabs */}
-        <div className="flex gap-1 border-b-2 border-primary/30 pb-0">
-          {TAB_ITEMS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 font-arcade text-sm border-b-2 -mb-[2px] transition-colors ${
-                activeTab === tab.id
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <tab.icon className="w-3 h-3" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <SupportWorkspaceFrame
+          sidebar={methodsSidebar}
+          commandBand={methodsCommandBand}
+          contentClassName="gap-4"
+        >
 
         {/* Library Tab */}
         {activeTab === "library" && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Input
-                placeholder="Search methods..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-64 bg-black/40"
-              />
-              <div className="flex gap-1">
-                {DISPLAY_STAGES.map((stage) => (
-                    <button
-                      key={stage}
-                      onClick={() => setStageFilter(stage)}
-                      className={`px-3 py-1.5 font-arcade text-xs border-[3px] border-double rounded-none transition-colors ${
-                        stageFilter === stage
-                          ? "border-primary bg-primary/20 text-primary"
-                          : "border-muted-foreground/30 text-muted-foreground hover:text-foreground hover:border-muted-foreground/50 hover:bg-black/30"
-                      }`}
-                    >
-                    {stage === "all"
-                      ? "ALL"
-                      : stage === "favorites"
-                        ? "FAVORITES"
-                        : DISPLAY_STAGE_LABELS[stage]}
-                  </button>
-                ))}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="ml-auto rounded-none border-[3px] border-double font-arcade text-sm h-10"
-                onClick={() => setShowAddBlock(true)}
-              >
-                <Plus className="w-3 h-3 mr-1" /> ADD BLOCK
-              </Button>
-            </div>
-
             {blocksLoading ? (
               <p className="font-terminal text-base text-muted-foreground">Loading methods...</p>
             ) : (
@@ -356,20 +481,6 @@ export default function MethodsPage() {
         {/* Chains Tab */}
         {activeTab === "chains" && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="font-arcade text-sm text-muted-foreground">
-                {chains.length} CHAINS ({chains.filter((c) => c.is_template).length} templates)
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-none border-[3px] border-double font-arcade text-sm h-10"
-                onClick={() => setShowAddChain(true)}
-              >
-                <Plus className="w-3 h-3 mr-1" /> NEW CHAIN
-              </Button>
-            </div>
-
             {chainsLoading ? (
               <p className="font-terminal text-base text-muted-foreground">Loading chains...</p>
             ) : chains.length === 0 ? (
@@ -557,6 +668,7 @@ export default function MethodsPage() {
             )}
           </div>
         )}
+        </SupportWorkspaceFrame>
 
         {/* Add Block Dialog */}
         <AddBlockDialog

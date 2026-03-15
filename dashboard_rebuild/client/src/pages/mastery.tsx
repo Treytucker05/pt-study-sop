@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Lock, Unlock, Trophy, ChevronDown, ChevronRight, AlertTriangle, ArrowRight } from "lucide-react";
 import Layout from "@/components/layout";
 import { PageScaffold } from "@/components/PageScaffold";
+import { SupportWorkspaceFrame } from "@/components/SupportWorkspaceFrame";
 import { api } from "@/lib/api";
 import type { MasterySkill, WhyLockedResponse } from "@/api";
 import { cn } from "@/lib/utils";
@@ -193,6 +194,7 @@ export default function MasteryPage() {
     available: skills.filter((s) => s.status === "available").length,
     mastered: skills.filter((s) => s.status === "mastered").length,
   };
+  const selectedSkill = skills.find((skill) => skill.skill_id === selectedSkillId) ?? null;
 
   const handleSelect = (skillId: string) => {
     setSelectedSkillId((prev) => (prev === skillId ? null : skillId));
@@ -213,50 +215,119 @@ export default function MasteryPage() {
           { label: "Mastered", value: String(statusCounts.mastered), tone: "success" },
         ]}
       >
-
-        {/* Loading */}
-        {isLoading && (
-          <div className="text-center py-12 font-terminal text-sm text-muted-foreground">
-            Loading mastery data...
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!isLoading && skills.length === 0 && (
-          <div
-            data-testid="mastery-empty"
-            className="text-center py-16 border-2 border-primary/20 bg-black/40"
-          >
-            <Trophy className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-            <p className="font-arcade text-sm text-muted-foreground">NO SKILLS TRACKED YET</p>
-            <p className="font-terminal text-xs text-muted-foreground mt-1">
-              Skills will appear as you study and the adaptive engine tracks your progress.
-            </p>
-          </div>
-        )}
-
-        {/* Skill Grid */}
-        {!isLoading && skills.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {skills.map((skill) => {
-              const isSelected = selectedSkillId === skill.skill_id;
-              return (
-                <div key={skill.skill_id} className="contents">
-                  <SkillCard
-                    skill={skill}
-                    isSelected={isSelected}
-                    onSelect={() => handleSelect(skill.skill_id)}
-                  />
+        <SupportWorkspaceFrame
+          sidebar={
+            <div className="flex h-full min-h-0 flex-col gap-4 overflow-auto p-3 md:p-4">
+              <div className="space-y-2">
+                <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
+                  Skill Status
                 </div>
-              );
-            })}
-          </div>
-        )}
+                <div className="grid gap-2">
+                  {Object.entries(STATUS_CONFIG).map(([key, config]) => (
+                    <div key={key} className={cn("rounded-[1rem] border bg-black/20 p-3", config.border)}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={cn("flex items-center gap-2 font-arcade text-xs", config.color)}>
+                          <config.Icon className="h-3.5 w-3.5" />
+                          {config.label}
+                        </span>
+                        <span className="font-arcade text-sm text-white">
+                          {statusCounts[key as keyof typeof statusCounts]}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-        {/* Why-Locked Panel (below grid) */}
-        {selectedSkillId && whyLocked && (
-          <WhyLockedPanel data={whyLocked} />
-        )}
+              <div className="space-y-2 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+                <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
+                  Selected Skill
+                </div>
+                {selectedSkill ? (
+                  <>
+                    <div className="font-terminal text-sm text-white">{selectedSkill.name}</div>
+                    <div className="font-terminal text-xs text-muted-foreground">
+                      {STATUS_CONFIG[selectedSkill.status].label} • {Math.round(selectedSkill.effective_mastery * 100)}% mastery
+                    </div>
+                    <MasteryBar value={selectedSkill.effective_mastery} />
+                  </>
+                ) : (
+                  <div className="font-terminal text-xs text-muted-foreground">
+                    Select a locked skill to inspect the exact prerequisite and error-state reasons behind the gate.
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+                <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
+                  How To Read This
+                </div>
+                <div className="font-terminal text-xs text-muted-foreground">
+                  Locked cards are clickable. Available and mastered skills stay visible so you can see the full map, but only locked skills open the diagnostic panel.
+                </div>
+              </div>
+            </div>
+          }
+          commandBand={
+            <div className="flex flex-col gap-3 p-3 md:p-4">
+              <div className="space-y-1">
+                <div className="font-arcade text-xs text-primary">Mastery Map</div>
+                <div className="font-terminal text-sm text-muted-foreground">
+                  {selectedSkill
+                    ? `Inspecting ${selectedSkill.name}. Use the why-locked panel to see exactly what is blocking progress.`
+                    : "Scan the skill map, then click a locked skill to see the remediation path and missing prerequisites."}
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-xs font-terminal text-muted-foreground">
+                <span className="rounded-full border border-primary/20 px-2 py-1">{skills.length} tracked skills</span>
+                <span className="rounded-full border border-primary/20 px-2 py-1">{statusCounts.locked} locked</span>
+                <span className="rounded-full border border-primary/20 px-2 py-1">{statusCounts.available} available</span>
+                <span className="rounded-full border border-primary/20 px-2 py-1">{statusCounts.mastered} mastered</span>
+              </div>
+            </div>
+          }
+          contentClassName="gap-4"
+        >
+          {isLoading && (
+            <div className="text-center py-12 font-terminal text-sm text-muted-foreground">
+              Loading mastery data...
+            </div>
+          )}
+
+          {!isLoading && skills.length === 0 && (
+            <div
+              data-testid="mastery-empty"
+              className="text-center py-16 border-2 border-primary/20 bg-black/40"
+            >
+              <Trophy className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+              <p className="font-arcade text-sm text-muted-foreground">NO SKILLS TRACKED YET</p>
+              <p className="font-terminal text-xs text-muted-foreground mt-1">
+                Skills will appear as you study and the adaptive engine tracks your progress.
+              </p>
+            </div>
+          )}
+
+          {!isLoading && skills.length > 0 && (
+            <div className={cn("grid gap-4", selectedSkillId && whyLocked ? "xl:grid-cols-[minmax(0,1fr)_360px]" : "")}>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {skills.map((skill) => {
+                  const isSelected = selectedSkillId === skill.skill_id;
+                  return (
+                    <div key={skill.skill_id} className="contents">
+                      <SkillCard
+                        skill={skill}
+                        isSelected={isSelected}
+                        onSelect={() => handleSelect(skill.skill_id)}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {selectedSkillId && whyLocked ? <WhyLockedPanel data={whyLocked} /> : null}
+            </div>
+          )}
+        </SupportWorkspaceFrame>
       </PageScaffold>
     </Layout>
   );

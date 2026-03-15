@@ -3,9 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
   AlertCircle,
-  Brain,
   CheckCircle2,
-  FileSearch,
   HelpCircle,
   Link2,
   RefreshCw,
@@ -15,6 +13,7 @@ import {
 
 import Layout from "@/components/layout";
 import { PageScaffold } from "@/components/PageScaffold";
+import { SupportWorkspaceFrame } from "@/components/SupportWorkspaceFrame";
 import { ScholarRunStatus } from "@/components/ScholarRunStatus";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -254,6 +253,133 @@ export default function ScholarPage() {
         },
       ]
     : [];
+  const scholarSidebar = (
+    <div className="flex h-full min-h-0 flex-col gap-4 overflow-auto p-3 md:p-4">
+      <TabsList className="grid h-auto gap-2 bg-transparent p-0">
+        <TabsTrigger value="workspace" className="min-h-[44px] justify-start rounded-[1rem] border border-primary/15 bg-black/20 px-3 py-2 font-arcade text-xs text-muted-foreground data-[state=active]:border-primary/45 data-[state=active]:bg-primary/12 data-[state=active]:text-primary">
+          WORKSPACE
+        </TabsTrigger>
+        <TabsTrigger value="questions" className="min-h-[44px] justify-start rounded-[1rem] border border-primary/15 bg-black/20 px-3 py-2 font-arcade text-xs text-muted-foreground data-[state=active]:border-primary/45 data-[state=active]:bg-primary/12 data-[state=active]:text-primary">
+          QUESTIONS
+        </TabsTrigger>
+        <TabsTrigger value="findings" className="min-h-[44px] justify-start rounded-[1rem] border border-primary/15 bg-black/20 px-3 py-2 font-arcade text-xs text-muted-foreground data-[state=active]:border-primary/45 data-[state=active]:bg-primary/12 data-[state=active]:text-primary">
+          FINDINGS
+        </TabsTrigger>
+        <TabsTrigger value="history" className="min-h-[44px] justify-start rounded-[1rem] border border-primary/15 bg-black/20 px-3 py-2 font-arcade text-xs text-muted-foreground data-[state=active]:border-primary/45 data-[state=active]:bg-primary/12 data-[state=active]:text-primary">
+          HISTORY
+        </TabsTrigger>
+      </TabsList>
+
+      {brainLaunchContext?.title ? (
+        <div
+          data-testid="scholar-brain-handoff"
+          className="rounded-[1rem] border border-primary/20 bg-primary/10 px-3 py-3"
+        >
+          <div className="font-arcade text-[10px] text-primary">OPENED FROM BRAIN</div>
+          <div className="font-terminal text-sm text-white">{brainLaunchContext.title}</div>
+          {brainLaunchContext.reason ? (
+            <div className="font-terminal text-[11px] text-muted-foreground">
+              {brainLaunchContext.reason}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div className="space-y-3 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+        <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
+          Brain Context
+        </div>
+        {profile ? (
+          <>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline" className={`rounded-none text-[10px] ${confidenceTone(profileConfidence)}`}>
+                {profileConfidence?.toUpperCase() || "LOW"} CONFIDENCE
+              </Badge>
+              <span className="font-terminal text-sm text-foreground">
+                {profile.hybridArchetype?.label || "No active Brain archetype yet"}
+              </span>
+            </div>
+            <div className="font-terminal text-xs text-muted-foreground">
+              {profile.hybridArchetype?.summary || "Brain has not derived a stable learner-pattern summary yet."}
+            </div>
+            <div className="space-y-2">
+              {profileCards.map((card) => (
+                <div key={card.key} className="rounded-[0.95rem] border border-primary/15 bg-black/20 p-3">
+                  <div className="font-terminal text-[11px] uppercase tracking-wide text-primary">{card.label}</div>
+                  <div className="font-terminal text-sm text-foreground">{card.value}</div>
+                  <div className="font-terminal text-[11px] text-muted-foreground">{card.helper}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="font-terminal text-xs text-muted-foreground">Brain context is still loading.</p>
+        )}
+      </div>
+
+      <div className="space-y-3 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+        <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
+          Selected Investigation
+        </div>
+        {detail ? (
+          <>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className={`rounded-none text-[10px] ${statusTone(detail.status)}`}>
+                {detail.status.toUpperCase()}
+              </Badge>
+              <Badge variant="outline" className={`rounded-none text-[10px] ${confidenceTone(detail.confidence)}`}>
+                {(detail.confidence || "low").toUpperCase()} CONFIDENCE
+              </Badge>
+            </div>
+            <div className="font-terminal text-sm text-foreground">{detail.title}</div>
+            <div className="font-terminal text-xs text-muted-foreground">{detail.rationale}</div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-[0.85rem] border border-primary/15 bg-black/20 p-2">
+                <div className="font-terminal text-[10px] text-primary">FINDINGS</div>
+                <div className="font-terminal text-sm text-foreground">{detail.findings_count ?? 0}</div>
+              </div>
+              <div className="rounded-[0.85rem] border border-primary/15 bg-black/20 p-2">
+                <div className="font-terminal text-[10px] text-primary">OPEN QS</div>
+                <div className="font-terminal text-sm text-foreground">{detail.open_question_count ?? 0}</div>
+              </div>
+              <div className="rounded-[0.85rem] border border-primary/15 bg-black/20 p-2">
+                <div className="font-terminal text-[10px] text-primary">SOURCES</div>
+                <div className="font-terminal text-sm text-foreground">{detail.sources?.length ?? 0}</div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="font-terminal text-xs text-muted-foreground">
+            Start or select an investigation to make the active research goal, findings count, and uncertainty visible here.
+          </div>
+        )}
+      </div>
+
+      <ScholarRunStatus />
+    </div>
+  );
+  const scholarCommandBand = (
+    <div className="flex flex-col gap-3 p-3 md:p-4">
+      <div className="space-y-1">
+        <div className="font-arcade text-xs text-primary">Scholar Research Console</div>
+        <div className="font-terminal text-sm text-muted-foreground">
+          {detail
+            ? `Focused on ${detail.title}. Keep the current question, findings, and uncertainty visible while Scholar runs.`
+            : "Start an investigation, answer blocking questions, and keep the cited research lane visible."}
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 text-xs font-terminal text-muted-foreground">
+        <span className="rounded-full border border-primary/20 px-2 py-1">{investigations.length} investigations</span>
+        <span className="rounded-full border border-primary/20 px-2 py-1">{openQuestions.length} open questions</span>
+        <span className="rounded-full border border-primary/20 px-2 py-1">{findings.length} findings</span>
+        {selectedInvestigation ? (
+          <span className="rounded-full border border-primary/20 px-2 py-1">
+            Active: {selectedInvestigation.title}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
 
   return (
     <Layout>
@@ -285,137 +411,13 @@ export default function ScholarPage() {
           </Button>
         }
       >
-        <div className="space-y-4 shrink-0">
-
-          {brainLaunchContext?.title ? (
-            <div
-              data-testid="scholar-brain-handoff"
-              className="border border-primary/20 bg-primary/10 px-3 py-2"
-            >
-              <div className="font-arcade text-[10px] text-primary">OPENED FROM BRAIN</div>
-              <div className="font-terminal text-sm text-white">{brainLaunchContext.title}</div>
-              {brainLaunchContext.reason ? (
-                <div className="font-terminal text-[11px] text-muted-foreground">
-                  {brainLaunchContext.reason}
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_380px]">
-            <Card className="bg-black/40 border border-primary/30">
-              <CardHeader className="border-b border-primary/20">
-                <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                  <Brain className="w-4 h-4" /> BRAIN CONTEXT
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 p-4">
-                {profile ? (
-                  <>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="outline" className={`rounded-none text-[10px] ${confidenceTone(profileConfidence)}`}>
-                        {profileConfidence?.toUpperCase() || "LOW"} CONFIDENCE
-                      </Badge>
-                      <span className="font-terminal text-sm text-foreground">
-                        {profile.hybridArchetype?.label || "No active Brain archetype yet"}
-                      </span>
-                    </div>
-                    <p className="font-terminal text-xs text-muted-foreground">
-                      {profile.hybridArchetype?.summary || "Brain has not derived a stable learner-pattern summary yet."}
-                    </p>
-                    <div className="grid gap-2 md:grid-cols-3">
-                      {profileCards.map((card) => (
-                        <div key={card.key} className="border border-primary/20 bg-black/30 p-3">
-                          <div className="font-terminal text-[11px] uppercase tracking-wide text-primary">
-                            {card.label}
-                          </div>
-                          <div className="font-terminal text-sm text-foreground">{card.value}</div>
-                          <div className="font-terminal text-[11px] text-muted-foreground">{card.helper}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <p className="font-terminal text-xs text-muted-foreground">
-                    Brain context is still loading.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="bg-black/40 border border-primary/30">
-              <CardHeader className="border-b border-primary/20">
-                <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                  <FileSearch className="w-4 h-4" /> WHAT SCHOLAR IS INVESTIGATING
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 p-4">
-                {detail ? (
-                  <>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline" className={`rounded-none text-[10px] ${statusTone(detail.status)}`}>
-                        {detail.status.toUpperCase()}
-                      </Badge>
-                      <Badge variant="outline" className={`rounded-none text-[10px] ${confidenceTone(detail.confidence)}`}>
-                        {(detail.confidence || "low").toUpperCase()} CONFIDENCE
-                      </Badge>
-                    </div>
-                    <div>
-                      <div className="font-terminal text-sm text-foreground">{detail.title}</div>
-                      <p className="font-terminal text-xs text-muted-foreground mt-1">
-                        {detail.rationale}
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="border border-primary/20 bg-black/30 p-2">
-                        <div className="font-terminal text-[11px] text-primary">FINDINGS</div>
-                        <div className="font-terminal text-sm text-foreground">{detail.findings_count ?? 0}</div>
-                      </div>
-                      <div className="border border-primary/20 bg-black/30 p-2">
-                        <div className="font-terminal text-[11px] text-primary">OPEN QS</div>
-                        <div className="font-terminal text-sm text-foreground">{detail.open_question_count ?? 0}</div>
-                      </div>
-                      <div className="border border-primary/20 bg-black/30 p-2">
-                        <div className="font-terminal text-[11px] text-primary">SOURCES</div>
-                        <div className="font-terminal text-sm text-foreground">{detail.sources?.length ?? 0}</div>
-                      </div>
-                    </div>
-                    <div className="border border-yellow-500/20 bg-yellow-500/5 p-3">
-                      <div className="font-terminal text-[11px] uppercase tracking-wide text-yellow-300">Uncertainty</div>
-                      <p className="font-terminal text-xs text-muted-foreground mt-1">
-                        {detail.uncertainty_summary || "Scholar has not posted an uncertainty summary yet."}
-                      </p>
-                    </div>
-                  </>
-                ) : (
-                  <p className="font-terminal text-xs text-muted-foreground">
-                    Start an investigation to make the research goal, rationale, and uncertainty visible.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <ScholarRunStatus />
-          </div>
-        </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-          <TabsList className="bg-black/60 border-2 border-primary/40 rounded-none p-1 w-full justify-start overflow-x-auto">
-            <TabsTrigger value="workspace" className="rounded-none font-arcade text-xs data-[state=active]:bg-primary data-[state=active]:text-black">
-              WORKSPACE
-            </TabsTrigger>
-            <TabsTrigger value="questions" className="rounded-none font-arcade text-xs data-[state=active]:bg-primary data-[state=active]:text-black">
-              QUESTIONS
-            </TabsTrigger>
-            <TabsTrigger value="findings" className="rounded-none font-arcade text-xs data-[state=active]:bg-primary data-[state=active]:text-black">
-              FINDINGS
-            </TabsTrigger>
-            <TabsTrigger value="history" className="rounded-none font-arcade text-xs data-[state=active]:bg-primary data-[state=active]:text-black">
-              HISTORY
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="workspace" className="mt-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="min-h-[70vh]">
+          <SupportWorkspaceFrame
+            sidebar={scholarSidebar}
+            commandBand={scholarCommandBand}
+            contentClassName="gap-4"
+          >
+          <TabsContent value="workspace" className="mt-0">
             <div className="grid gap-4 xl:grid-cols-[430px_minmax(0,1fr)]">
               <Card className="bg-black/40 border border-primary/30">
                 <CardHeader className="border-b border-primary/20">
@@ -843,6 +845,7 @@ export default function ScholarPage() {
               </CardContent>
             </Card>
           </TabsContent>
+          </SupportWorkspaceFrame>
         </Tabs>
       </PageScaffold>
     </Layout>

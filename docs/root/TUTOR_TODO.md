@@ -52,7 +52,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Completed 2026-03-15: shipped the holographic shell backdrop, upgraded shared panel/button/input primitives, added a reusable `PageScaffold`, aligned Brain/Tutor workspaces plus the Calendar/Library/Mastery/Methods/Scholar/Vault Health route headers to the same responsive theme, and passed `npm run test -- client/src/components/__tests__/layout.test.tsx` plus `cd dashboard_rebuild && npm run build`.
 
 ### Sprint: Production UI Standardization (2026-03-15)
-- [ ] PUI-100. Standardize the sellable product shell and support-page layout system around the Material Library operating model, starting with a compact-on-scroll header and reusable page-structure rules.
+- [x] PUI-100. Standardize the sellable product shell and support-page layout system around the Material Library operating model, starting with a compact-on-scroll header and reusable page-structure rules.
   - Scope:
     - `dashboard_rebuild/client/src/components/layout.tsx`
     - `dashboard_rebuild/client/src/components/__tests__/layout.test.tsx`
@@ -69,10 +69,11 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - the Library page is the explicit structural reference for the top-level support pages
     - reusable layout rules are clear enough that support pages converge toward one production-ready operating model
     - required frontend validation passes
-  - Progress 2026-03-15:
-    - compact-on-scroll header is shipped
-    - Calendar now uses a Library-style support workspace with a scope rail, command band, status strip, and main timeline canvas via `SupportWorkspaceFrame`
-    - remaining standardization targets are `methods`, `mastery`, `scholar`, and `vault-health`
+  - Completed 2026-03-15:
+    - compact-on-scroll header is shipped in `dashboard_rebuild/client/src/components/layout.tsx`
+    - `SupportWorkspaceFrame` now standardizes the internal operating model for `calendar`, `methods`, `mastery`, `scholar`, and `vault-health`
+    - the remaining support pages now follow the Library-style production pattern with a left scope rail, top command band, and dominant working canvas while preserving each route's specific workflow
+    - validation passed with `cd dashboard_rebuild && npm run build` plus live browser checks on `http://127.0.0.1:5000/methods` and `http://127.0.0.1:5000/scholar`
 
 ### Sprint: Tutor Page 1 Command Deck (2026-03-15)
 - [x] TPCD-100. Ship the responsive `DashBoard` command deck as the first Tutor shell page and wire its CTAs into the existing Tutor, Schedule, Studio, and Library surfaces.

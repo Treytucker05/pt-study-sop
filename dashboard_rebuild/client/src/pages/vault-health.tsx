@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Layout from "@/components/layout";
 import { PageScaffold } from "@/components/PageScaffold";
+import { SupportWorkspaceFrame } from "@/components/SupportWorkspaceFrame";
 import { api } from "@/lib/api";
 import type {
   AiFieldSuggestion,
@@ -594,6 +595,103 @@ export default function VaultHealth() {
   const issueTypeCounts = Object.entries(scanData?.counts ?? {});
   const issueClassCounts = Object.entries(scanData?.issueClassCounts ?? {});
   const familyCounts = Object.entries(scanData?.familyCounts ?? {});
+  const vaultSidebar = (
+    <div className="flex h-full min-h-0 flex-col gap-4 overflow-auto p-3 md:p-4">
+      <div className="space-y-2">
+        <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
+          Actions
+        </div>
+        <button
+          type="button"
+          onClick={() => scanQuery.refetch()}
+          disabled={scanQuery.isFetching}
+          className="min-h-[44px] rounded-[1rem] border border-primary/40 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.22)_100%)] px-4 py-2 text-left font-arcade text-xs text-primary hover:-translate-y-0.5 hover:bg-primary/10 disabled:opacity-50"
+        >
+          {scanQuery.isFetching ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Shield className="mr-2 inline h-4 w-4" />}
+          FULL SCAN
+        </button>
+        <button
+          type="button"
+          onClick={handleBatchEnrich}
+          className="min-h-[44px] rounded-[1rem] border border-violet-400/50 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.22)_100%)] px-4 py-2 text-left font-arcade text-xs text-violet-300 hover:-translate-y-0.5 hover:bg-violet-400/10"
+        >
+          <Zap className="mr-2 inline h-4 w-4" />
+          BATCH ENRICH
+        </button>
+      </div>
+
+      <div className="space-y-3 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+        <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
+          Health Snapshot
+        </div>
+        <div className="grid gap-2">
+          <div className="rounded-[0.95rem] border border-primary/15 bg-black/20 p-3">
+            <div className="font-terminal text-[11px] uppercase tracking-wide text-muted-foreground">Affected notes</div>
+            <div className="font-arcade text-lg text-white">{scanData?.affected_notes ?? 0}</div>
+          </div>
+          <div className="rounded-[0.95rem] border border-primary/15 bg-black/20 p-3">
+            <div className="font-terminal text-[11px] uppercase tracking-wide text-muted-foreground">Issue instances</div>
+            <div className="font-arcade text-lg text-white">{scanData?.issue_instances ?? 0}</div>
+          </div>
+          <div className="rounded-[0.95rem] border border-primary/15 bg-black/20 p-3">
+            <div className="font-terminal text-[11px] uppercase tracking-wide text-muted-foreground">Scan time</div>
+            <div className="font-arcade text-lg text-white">{scanData?.scan_time_ms ?? 0} ms</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-2 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+        <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
+          Issue Classes
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {issueClassCounts.length > 0 ? issueClassCounts.map(([issueClass, count]) => (
+            <span key={issueClass} className={cn("border px-2 py-1 font-terminal text-[11px] uppercase", ISSUE_CLASS_COPY[issueClass]?.className ?? ISSUE_CLASS_COPY["advisory/system"].className)}>
+              {ISSUE_CLASS_COPY[issueClass]?.label ?? issueClass}: {count}
+            </span>
+          )) : (
+            <span className="font-terminal text-xs text-muted-foreground">No issue classes reported yet.</span>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-2 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+        <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
+          Vault Contract
+        </div>
+        <div className="font-terminal text-xs text-muted-foreground">
+          Canonical root: <span className="text-white">{obsidianConfigQuery.data?.canonicalRoot ?? "Not reported"}</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {(obsidianConfigQuery.data?.deprecatedRoots ?? []).length > 0 ? (
+            (obsidianConfigQuery.data?.deprecatedRoots ?? []).map((root) => (
+              <span key={root} className="border border-yellow-400/30 px-2 py-1 text-[11px] text-yellow-300">
+                {root}
+              </span>
+            ))
+          ) : (
+            <span className="font-terminal text-xs text-muted-foreground">No deprecated roots reported.</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+  const vaultCommandBand = (
+    <div className="flex flex-col gap-3 p-3 md:p-4">
+      <div className="space-y-1">
+        <div className="font-arcade text-xs text-primary">Vault Janitor Console</div>
+        <div className="font-terminal text-sm text-muted-foreground">
+          Monitor note health, repair deterministic metadata drift, and keep low-link notes enriched without rewriting the vault blindly.
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 text-xs font-terminal text-muted-foreground">
+        <span className="rounded-full border border-primary/20 px-2 py-1">{scanData?.notes_scanned ?? 0} scanned</span>
+        <span className="rounded-full border border-primary/20 px-2 py-1">{scanData?.affected_notes ?? 0} affected</span>
+        <span className="rounded-full border border-primary/20 px-2 py-1">{scanData?.issue_instances ?? 0} issues</span>
+        <span className="rounded-full border border-primary/20 px-2 py-1">{scanData?.advisory_only_files ?? 0} advisory</span>
+      </div>
+    </div>
+  );
 
   return (
     <Layout>
@@ -603,29 +701,12 @@ export default function VaultHealth() {
         subtitle="Monitor the live Obsidian contract, find routing or metadata drift fast, and repair underlinked notes without losing control of the support system."
         className="mx-auto max-w-6xl"
         contentClassName="space-y-6"
-        actions={
-          <>
-            <button
-              type="button"
-              onClick={() => scanQuery.refetch()}
-              disabled={scanQuery.isFetching}
-              className="rounded-[1rem] border border-primary/40 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.22)_100%)] px-4 py-2 font-arcade text-xs text-primary hover:-translate-y-0.5 hover:bg-primary/10 disabled:opacity-50"
-            >
-              {scanQuery.isFetching ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Shield className="mr-2 inline h-4 w-4" />}
-              FULL SCAN
-            </button>
-            <button
-              type="button"
-              onClick={handleBatchEnrich}
-              className="rounded-[1rem] border border-violet-400/50 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.22)_100%)] px-4 py-2 font-arcade text-xs text-violet-300 hover:-translate-y-0.5 hover:bg-violet-400/10"
-            >
-              <Zap className="mr-2 inline h-4 w-4" />
-              BATCH ENRICH
-            </button>
-          </>
-        }
       >
-
+        <SupportWorkspaceFrame
+          sidebar={vaultSidebar}
+          commandBand={vaultCommandBand}
+          contentClassName="gap-4"
+        >
         <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
           <StatCard label="Markdown files" value={scanData?.total_markdown_files ?? 0} />
           <StatCard label="Health-scanned notes" value={scanData?.notes_scanned ?? 0} />
@@ -801,6 +882,7 @@ export default function VaultHealth() {
             onCancel={() => setAiModal(null)}
           />
         ) : null}
+        </SupportWorkspaceFrame>
       </PageScaffold>
     </Layout>
   );
