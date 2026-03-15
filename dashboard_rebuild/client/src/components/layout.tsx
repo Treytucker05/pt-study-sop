@@ -44,6 +44,8 @@ type NavItem = {
   testId: string;
 };
 
+type NavTier = "primary" | "support";
+
 const NOTES_DOCK_STORAGE_KEY = "layout.notesDockTop.v1";
 const NOTES_DOCK_MARGIN = 16;
 const NOTES_DOCK_MIN_TOP = 96;
@@ -56,55 +58,62 @@ const resolveNoteType = (note: Note): NoteCategory => {
   return "notes";
 };
 
-/* Shared chrome: same frame + inner glow for all nav buttons; active only brightens */
-const NAV_CHROME_BEFORE =
-  "before:absolute before:inset-[1px] before:rounded-[1.4rem] before:border before:border-[#4f141e] before:bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.18),transparent_32%),radial-gradient(circle_at_80%_120%,rgba(0,0,0,0.9),rgba(0,0,0,1)_78%)] before:content-['']";
-const NAV_CHROME_AFTER_BASE =
-  "after:pointer-events-none after:absolute after:inset-[3px] after:rounded-[1.3rem] after:border after:border-[rgba(255,96,128,0.5)] after:shadow-[0_0_12px_rgba(255,96,128,0.45),inset_0_0_14px_rgba(255,60,108,0.4)] after:content-['']";
-const NAV_CHROME_AFTER_ACTIVE =
-  "after:border-[rgba(255,118,146,0.85)] after:shadow-[0_0_18px_rgba(255,118,146,0.7),inset_0_0_20px_rgba(255,74,120,0.7)]";
-
-const navButtonClass = (isActive: boolean, headerExpanded: boolean) =>
-  cn(
-    "nav-btn group relative isolate flex h-[3.5rem] min-w-[9.75rem] items-center justify-start overflow-hidden px-3 py-0 font-arcade uppercase tracking-[0.24em] text-[#ff9caa]",
-    "rounded-[1.5rem] border border-transparent transition-all duration-200 ease-out motion-reduce:transition-none",
-    NAV_CHROME_BEFORE,
-    NAV_CHROME_AFTER_BASE,
-    "shadow-[0_12px_28px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,100,120,0.4)]",
-    "text-[0.78rem] sm:text-[0.8rem] [text-shadow:0_1px_2px_rgba(0,0,0,0.85),0_0_6px_rgba(255,80,110,0.45)]",
-    "hover:-translate-y-0.5 hover:shadow-[0_16px_32px_rgba(0,0,0,0.65),0_0_0_1px_rgba(255,140,155,0.55)] hover:text-[#ffdfe5]",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-0",
-    "active:translate-y-[1px] active:shadow-[0_8px_18px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,100,120,0.5)]",
-    isActive &&
-      "text-[#ffeef2] shadow-[0_14px_30px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,160,175,0.55)] " + NAV_CHROME_AFTER_ACTIVE +
-      " [text-shadow:0_1px_2px_rgba(0,0,0,0.8),0_0_10px_rgba(255,90,120,0.6)]",
-    !headerExpanded && "h-[3.2rem] min-w-[8.85rem] px-2.5",
-  );
-
-const navIconPadClass = (_testId: string, isActive: boolean) =>
-  cn(
-    "relative z-10 mr-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[rgba(255,120,140,0.65)]",
-    "bg-[radial-gradient(circle_at_30%_0%,rgba(255,255,255,0.35),transparent_40%),radial-gradient(circle_at_80%_110%,rgba(40,4,12,0.95),rgba(4,0,2,1)_80%)]",
-    "shadow-[0_0_12px_rgba(255,120,140,0.6),inset_0_0_14px_rgba(255,80,120,0.7)] transition-all duration-200 ease-out motion-reduce:transition-none",
-    "group-hover:scale-[1.05] group-hover:shadow-[0_0_18px_rgba(255,140,158,0.75),inset_0_0_18px_rgba(255,96,132,0.8)]",
-    isActive &&
-      "border-[rgba(255,200,212,0.9)] shadow-[0_0_20px_rgba(255,180,200,0.8),inset_0_0_22px_rgba(255,110,150,0.85)]",
-  );
-
-const navButtonStyle = (_testId: string, isActive: boolean): CSSProperties => ({
-  borderRadius: "1.5rem",
-  backgroundImage:
-    "linear-gradient(135deg, rgba(255,128,148,0.24) 0%, rgba(72,10,22,0.96) 38%, rgba(4,0,4,1) 100%)",
+const NAV_RAIL_STYLE: CSSProperties = {
+  backgroundImage: `linear-gradient(180deg, rgba(6, 4, 7, 0.2) 0%, rgba(0, 0, 0, 0.52) 100%), radial-gradient(circle at 22% 50%, rgba(255, 100, 126, 0.2), transparent 24%), url(${brainButton})`,
   backgroundPosition: "center center",
   backgroundRepeat: "no-repeat",
   backgroundSize: "cover",
-});
+};
+
+const navButtonClass = (tier: NavTier, isActive: boolean, headerExpanded: boolean) =>
+  cn(
+    "group relative isolate flex items-center justify-start overflow-hidden px-2.5 py-0 font-arcade uppercase transition-all duration-200 ease-out motion-reduce:transition-none",
+    tier === "primary"
+      ? "h-[3.55rem] min-w-[10.5rem] rounded-[1.3rem]"
+      : "h-[3.2rem] min-w-[9.2rem] rounded-[1.15rem]",
+    !headerExpanded &&
+      (tier === "primary"
+        ? "h-[3.05rem] min-w-[9rem] px-2"
+        : "h-[2.8rem] min-w-[8rem] px-2"),
+    "border border-[rgba(255,122,146,0.16)] bg-transparent shadow-[0_10px_22px_rgba(0,0,0,0.34)]",
+    "text-[#ffbcc8] [text-shadow:0_1px_2px_rgba(0,0,0,0.78)]",
+    "hover:-translate-y-[1px] hover:border-[rgba(255,150,170,0.34)] hover:text-[#fff1f4] hover:shadow-[0_14px_26px_rgba(0,0,0,0.4)]",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-0",
+    "active:translate-y-[1px] active:shadow-[0_6px_14px_rgba(0,0,0,0.36)]",
+    isActive &&
+      "border-[rgba(255,180,196,0.48)] text-[#fff7f9] shadow-[0_14px_28px_rgba(0,0,0,0.5),0_0_14px_rgba(255,104,136,0.18)] [text-shadow:0_0_10px_rgba(255,108,140,0.44)]",
+  );
+
+const navButtonSurfaceClass = (tier: NavTier, isActive: boolean) =>
+  cn(
+    "pointer-events-none absolute inset-[1px] rounded-[inherit] border border-[rgba(255,128,152,0.14)]",
+    "bg-[linear-gradient(180deg,rgba(255,255,255,0.09),rgba(255,255,255,0.02)_18%,rgba(0,0,0,0.52)_100%),linear-gradient(135deg,rgba(115,12,34,0.82),rgba(12,4,7,0.92)_54%,rgba(0,0,0,0.98)_100%)]",
+    tier === "primary" ? "shadow-[inset_0_0_0_1px_rgba(255,86,118,0.22)]" : "shadow-[inset_0_0_0_1px_rgba(255,86,118,0.14)]",
+    isActive &&
+      "border-[rgba(255,186,202,0.38)] shadow-[inset_0_0_0_1px_rgba(255,128,158,0.26),0_0_16px_rgba(255,96,126,0.16)]",
+  );
+
+const navIconPadClass = (tier: NavTier, isActive: boolean, headerExpanded: boolean) =>
+  cn(
+    "relative z-10 flex shrink-0 items-center justify-center overflow-hidden border transition-all duration-200 ease-out motion-reduce:transition-none",
+    tier === "primary" ? "mr-3 rounded-[1rem]" : "mr-2.5 rounded-[0.9rem]",
+    tier === "primary"
+      ? headerExpanded
+        ? "h-10 w-10"
+        : "h-8.5 w-8.5"
+      : headerExpanded
+        ? "h-8.5 w-8.5"
+        : "h-7.5 w-7.5",
+    "border-[rgba(255,124,146,0.34)] bg-[radial-gradient(circle_at_30%_0%,rgba(255,255,255,0.22),transparent_36%),linear-gradient(180deg,rgba(255,123,150,0.22),rgba(20,4,8,0.92))]",
+    "shadow-[inset_0_0_0_1px_rgba(255,170,190,0.08),0_0_0_1px_rgba(0,0,0,0.16)]",
+    "group-hover:border-[rgba(255,170,188,0.54)] group-hover:shadow-[inset_0_0_0_1px_rgba(255,212,222,0.12),0_0_10px_rgba(255,100,136,0.16)]",
+    isActive &&
+      "border-[rgba(255,196,208,0.68)] bg-[radial-gradient(circle_at_30%_0%,rgba(255,255,255,0.3),transparent_32%),linear-gradient(180deg,rgba(255,134,160,0.32),rgba(28,5,10,0.94))] shadow-[inset_0_0_0_1px_rgba(255,220,228,0.14),0_0_12px_rgba(255,116,148,0.2)]",
+  );
 
 const notesDockStyle = (top: number | null): CSSProperties => ({
   top: top === null ? "34%" : `${top}px`,
-  borderRadius: "1rem 0 0 1rem",
-  backgroundImage:
-    "linear-gradient(135deg, rgba(255,128,148,0.22) 0%, rgba(72,10,22,0.96) 38%, rgba(4,0,4,1) 100%)",
+  backgroundImage: `linear-gradient(180deg, rgba(8, 4, 6, 0.18) 0%, rgba(0, 0, 0, 0.42) 100%), url(${brainButton})`,
   backgroundPosition: "center center",
   backgroundRepeat: "no-repeat",
   backgroundSize: "cover",
@@ -114,34 +123,71 @@ function ShellNavButton({
   item,
   isActive,
   headerExpanded,
+  tier,
 }: {
   item: NavItem;
   isActive: boolean;
   headerExpanded: boolean;
+  tier: NavTier;
 }) {
   return (
     <Button
       data-testid={`nav-${item.testId}`}
       variant="ghost"
       size="sm"
-      className={navButtonClass(isActive, headerExpanded)}
-      style={navButtonStyle(item.testId, isActive)}
+      className={navButtonClass(tier, isActive, headerExpanded)}
+      aria-current={isActive ? "page" : undefined}
     >
-      <span className={navIconPadClass(item.testId, isActive)}>
+      <span className={navButtonSurfaceClass(tier, isActive)} />
+      <span className="pointer-events-none absolute inset-x-3 top-[2px] h-px bg-gradient-to-r from-transparent via-white/18 to-transparent" />
+      <span
+        className={cn(
+          "pointer-events-none absolute inset-x-3 bottom-[5px] h-[2px] rounded-full bg-[linear-gradient(90deg,transparent,rgba(255,124,146,0.2),transparent)] transition-opacity duration-200 ease-out",
+          isActive
+            ? "opacity-100 shadow-[0_0_10px_rgba(255,120,146,0.52)]"
+            : "opacity-45 group-hover:opacity-80",
+        )}
+      />
+      <span className={navIconPadClass(tier, isActive, headerExpanded)}>
         <item.icon
           className={cn(
-            "h-4.5 w-4.5 shrink-0 text-[#ffe8ec] drop-shadow-[0_0_6px_rgba(255,120,132,0.5)] transition-all duration-200 ease-out motion-reduce:transition-none",
-            !headerExpanded && "h-4 w-4",
+            "shrink-0 text-[#ffe8ec] drop-shadow-[0_0_6px_rgba(255,120,132,0.42)] transition-all duration-200 ease-out motion-reduce:transition-none",
+            tier === "primary"
+              ? headerExpanded
+                ? "h-4.5 w-4.5"
+                : "h-4 w-4"
+              : headerExpanded
+                ? "h-4 w-4"
+                : "h-3.5 w-3.5",
           )}
         />
       </span>
-      <span
-        className={cn(
-          "relative z-10 mt-px text-[0.78rem] tracking-[0.24em]",
-          !headerExpanded && "text-[0.68rem]",
-        )}
-      >
-        {item.label}
+      <span className="relative z-10 flex min-w-0 flex-col items-start gap-0.5">
+        <span
+          className={cn(
+            "truncate text-left tracking-[0.22em]",
+            tier === "primary"
+              ? headerExpanded
+                ? "text-[0.78rem]"
+                : "text-[0.68rem]"
+              : headerExpanded
+                ? "text-[0.72rem]"
+                : "text-[0.64rem]",
+          )}
+        >
+          {item.label}
+        </span>
+        {headerExpanded ? (
+          <span
+            aria-hidden="true"
+            className={cn(
+              "font-terminal text-[0.54rem] uppercase tracking-[0.28em]",
+              tier === "primary" ? "text-[#ff9daf]/72" : "text-[#ff9daf]/56",
+            )}
+          >
+            {tier === "primary" ? "Core" : "Support"}
+          </span>
+        ) : null}
       </span>
     </Button>
   );
@@ -162,6 +208,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [activeTab, setActiveTab] = useState<"all" | NoteCategory>("all");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingContent, setEditingContent] = useState("");
+  const editingInputRef = useRef<HTMLInputElement>(null);
   const [draggedNote, setDraggedNote] = useState<{ id: number; type: NoteCategory } | null>(null);
   const [dragOverNote, setDragOverNote] = useState<{ id: number; type: NoteCategory } | null>(null);
   const [dragOverCategory, setDragOverCategory] = useState<NoteCategory | null>(null);
@@ -334,6 +381,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     planned: notes.filter((note) => resolveNoteType(note) === "planned"),
     ideas: notes.filter((note) => resolveNoteType(note) === "ideas"),
   };
+
+  useEffect(() => {
+    if (editingId === null) return;
+    const frame = requestAnimationFrame(() => {
+      editingInputRef.current?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [editingId]);
 
   const sortedNotesByType: Record<NoteCategory, Note[]> = {
     notes: [...notesByType.notes].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
@@ -661,13 +716,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
 
             <nav
-              className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:gap-2 md:justify-end"
+              className={cn(
+                "relative min-w-0 flex-1 overflow-hidden rounded-[1.75rem] border border-[rgba(255,120,148,0.24)] p-2.5 shadow-[0_16px_32px_rgba(0,0,0,0.34),0_0_0_1px_rgba(255,102,130,0.16)] backdrop-blur-xl",
+                headerExpanded ? "md:p-3" : "md:p-2.5",
+              )}
+              style={NAV_RAIL_STYLE}
               data-testid="nav-desktop-groups"
             >
+              <div className="pointer-events-none absolute inset-[1px] rounded-[1.65rem] border border-[rgba(255,180,198,0.08)] bg-[linear-gradient(180deg,rgba(8,6,7,0.78),rgba(0,0,0,0.7)_44%,rgba(0,0,0,0.82)_100%)]" />
+              <div className="pointer-events-none absolute inset-x-4 top-3 h-px bg-gradient-to-r from-transparent via-[rgba(255,176,196,0.48)] to-transparent opacity-70" />
+              <div className="pointer-events-none absolute inset-x-5 bottom-3 h-px bg-gradient-to-r from-transparent via-[rgba(255,92,120,0.44)] to-transparent opacity-85" />
+              <div className="pointer-events-none absolute inset-y-4 left-[38%] hidden w-px bg-gradient-to-b from-transparent via-[rgba(255,136,160,0.22)] to-transparent xl:block" />
+              <div className="relative z-10 flex min-w-0 flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
               <div
                 className={cn(
-                  "flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2 transition-all duration-300 ease-out motion-reduce:transition-none",
-                  !headerExpanded && "gap-1",
+                  "flex min-w-0 flex-wrap items-center gap-2 transition-all duration-300 ease-out motion-reduce:transition-none",
+                  !headerExpanded && "gap-1.5",
                 )}
                 data-testid="nav-core-group"
                 aria-label="Core triad navigation"
@@ -676,7 +740,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   const isActive = currentPath === item.path;
                   return (
                     <Link key={item.path} href={item.path}>
-                      <ShellNavButton item={item} isActive={isActive} headerExpanded={headerExpanded} />
+                      <ShellNavButton item={item} isActive={isActive} headerExpanded={headerExpanded} tier="primary" />
                     </Link>
                   );
                 })}
@@ -684,8 +748,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
               <div
                 className={cn(
-                  "flex min-w-0 flex-wrap items-center gap-1.5 border-l border-primary/25 pl-2 sm:gap-2 md:pl-3 transition-all duration-300 ease-out motion-reduce:transition-none",
-                  !headerExpanded && "gap-1",
+                  "flex min-w-0 flex-wrap items-center gap-2 xl:justify-end xl:pl-5 transition-all duration-300 ease-out motion-reduce:transition-none",
+                  !headerExpanded && "gap-1.5",
                 )}
                 data-testid="nav-support-group"
                 aria-label="Support systems navigation"
@@ -694,10 +758,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   const isActive = currentPath === item.path;
                   return (
                     <Link key={item.path} href={item.path}>
-                      <ShellNavButton item={item} isActive={isActive} headerExpanded={headerExpanded} />
+                      <ShellNavButton item={item} isActive={isActive} headerExpanded={headerExpanded} tier="support" />
                     </Link>
                   );
                 })}
+              </div>
               </div>
             </nav>
           </div>
@@ -823,10 +888,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                     {editingId === note.id ? (
                                       <div className="space-y-2">
                                         <Input
+                                          ref={editingInputRef}
                                           value={editingContent}
                                           onChange={(e) => setEditingContent(e.target.value)}
                                           className="bg-black border-primary rounded-none text-sm font-terminal"
-                                          autoFocus
                                         />
                                         <div className="flex gap-1">
                                           <Button
@@ -899,10 +964,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         ref={notesDockRef}
         type="button"
         className={cn(
-          "fixed right-0 z-40 flex min-h-[88px] min-w-[40px] w-10 -translate-y-1/2 items-center justify-center overflow-hidden rounded-l-xl border border-r-0 border-transparent px-1.5 py-2 font-arcade text-[#ff9caa] shadow-[0_10px_24px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,100,120,0.35)] transition-all duration-200 ease-out",
-          "before:absolute before:inset-[1px_1px_1px_0] before:rounded-l-[0.85rem] before:border before:border-[#4f141e] before:bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.18),transparent_32%),radial-gradient(circle_at_80%_120%,rgba(0,0,0,0.9),rgba(0,0,0,1)_78%)] before:content-['']",
-          "after:pointer-events-none after:absolute after:inset-[3px_3px_3px_0] after:rounded-l-[0.7rem] after:border after:border-[rgba(255,96,128,0.5)] after:shadow-[0_0_10px_rgba(255,96,128,0.4),inset_0_0_12px_rgba(255,60,108,0.35)] after:content-['']",
-          "hover:text-[#ffdfe5] hover:shadow-[0_12px_28px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,140,155,0.5)]",
+          "fixed right-0 z-40 flex min-h-[96px] min-w-[52px] w-[3.35rem] -translate-y-1/2 items-center justify-center overflow-hidden rounded-l-[1.15rem] border border-r-0 border-[rgba(255,122,146,0.28)] px-1.5 py-2 font-arcade text-[#ffd6dd] shadow-[0_14px_28px_rgba(0,0,0,0.48),0_0_0_1px_rgba(255,108,138,0.2)] transition-all duration-200 ease-out",
+          "before:absolute before:inset-[1px_1px_1px_0] before:rounded-l-[1rem] before:border before:border-[rgba(255,184,204,0.12)] before:bg-[linear-gradient(180deg,rgba(8,6,7,0.74),rgba(0,0,0,0.76)_100%)] before:content-['']",
+          "after:pointer-events-none after:absolute after:inset-x-2 after:bottom-2 after:h-[2px] after:rounded-full after:bg-[linear-gradient(90deg,transparent,rgba(255,122,146,0.8),transparent)] after:shadow-[0_0_10px_rgba(255,102,132,0.42)] after:content-['']",
+          "hover:text-white hover:shadow-[0_18px_32px_rgba(0,0,0,0.56),0_0_12px_rgba(255,102,132,0.16)]",
           notesOpen && "pointer-events-none opacity-0",
           isDraggingNotesDock && "cursor-grabbing",
         )}
@@ -916,10 +981,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         aria-label="Open notes panel"
       >
         <div className="relative z-10 flex flex-col items-center gap-1.5">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[rgba(255,120,140,0.6)] bg-[radial-gradient(circle_at_30%_0%,rgba(255,255,255,0.35),transparent_40%),radial-gradient(circle_at_80%_110%,rgba(40,4,12,0.95),rgba(4,0,2,1)_80%)] shadow-[0_0_8px_rgba(255,120,140,0.5),inset_0_0_10px_rgba(255,80,120,0.6)]">
-            <BookOpen className="h-3.5 w-3.5 shrink-0 text-[#ffe8ec] drop-shadow-[0_0_4px_rgba(255,120,132,0.5)]" />
+          <span className="flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-[0.95rem] border border-[rgba(255,164,184,0.42)] bg-[radial-gradient(circle_at_30%_0%,rgba(255,255,255,0.22),transparent_40%),linear-gradient(180deg,rgba(255,112,140,0.2),rgba(12,4,6,0.96))] shadow-[inset_0_0_0_1px_rgba(255,214,224,0.08),0_0_12px_rgba(255,96,128,0.16)]">
+            <BookOpen className="h-4 w-4 shrink-0 text-[#fff2f5] drop-shadow-[0_0_4px_rgba(255,120,132,0.42)]" />
           </span>
-          <span className="[writing-mode:vertical-rl] rotate-180 text-[0.6rem] tracking-[0.2em] [text-shadow:0_1px_2px_rgba(0,0,0,0.8),0_0_4px_rgba(255,80,110,0.4)]">
+          <span className="[writing-mode:vertical-rl] rotate-180 text-[0.6rem] tracking-[0.26em] [text-shadow:0_1px_2px_rgba(0,0,0,0.8),0_0_4px_rgba(255,80,110,0.4)]">
             NOTES
           </span>
         </div>
