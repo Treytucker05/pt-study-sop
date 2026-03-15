@@ -3,6 +3,15 @@ import { House, BrainCircuit } from "lucide-react";
 import { BrainHome } from "./BrainHome";
 import { LearnerProfilePanel } from "./LearnerProfilePanel";
 import { ErrorBoundary, TabErrorFallback } from "@/components/ErrorBoundary";
+import {
+  CONTROL_CHIP,
+  CONTROL_DECK,
+  CONTROL_DECK_BODY,
+  CONTROL_DECK_BOTTOMLINE,
+  CONTROL_DECK_INSET,
+  CONTROL_DECK_TOPLINE,
+  controlToggleButton,
+} from "@/components/shell/controlStyles";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { BrainWorkspace } from "./useBrainWorkspace";
@@ -60,63 +69,83 @@ export function MainContent({ workspace }: MainContentProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Tab list with status indicators */}
       <div
         role="tablist"
         aria-label="Main content view"
-        className="tab-bar"
+        className={cn(CONTROL_DECK, "mx-3 mt-3 p-2.5")}
       >
-        {TABS.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = currentTab === tab.id;
-          const tabId = `brain-tab-${tab.id}`;
-          const panelId = `brain-tabpanel-${tab.id}`;
-          return (
-            <button
-              key={tab.id}
-              id={tabId}
-              role="tab"
-              aria-selected={isActive}
-              aria-controls={panelId}
-              tabIndex={isActive ? 0 : -1}
-              onClick={() => workspace.setMainMode(tab.id)}
-              onKeyDown={handleTabKeyDown}
-              className={cn("tab-item", isActive && "active")}
-              title={tab.hint}
-            >
-              <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-              {tab.label}
-            </button>
-          );
-        })}
+        <div className={CONTROL_DECK_INSET} />
+        <div className={CONTROL_DECK_TOPLINE} />
+        <div className={CONTROL_DECK_BOTTOMLINE} />
+        <div className={cn(CONTROL_DECK_BODY, "gap-3 xl:flex-row xl:items-center xl:justify-between")}>
+          <div className="flex flex-wrap items-center gap-2">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = currentTab === tab.id;
+              const tabId = `brain-tab-${tab.id}`;
+              const panelId = `brain-tabpanel-${tab.id}`;
+              return (
+                <button
+                  key={tab.id}
+                  id={tabId}
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-controls={panelId}
+                  tabIndex={isActive ? 0 : -1}
+                  onClick={() => workspace.setMainMode(tab.id)}
+                  onKeyDown={handleTabKeyDown}
+                  className={controlToggleButton(isActive, "primary")}
+                  title={tab.hint}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
 
-        {/* Status dots — right side of tab bar */}
-        <div className="flex items-center gap-3 ml-auto pr-3 font-terminal text-xs" role="status" aria-label="Connection status">
-          <span
-            className="flex items-center gap-1"
-            aria-label={workspace.obsidianStatus?.connected ? "Obsidian: connected" : "Obsidian: disconnected"}
+          <div
+            className="flex flex-wrap items-center gap-2"
+            role="status"
+            aria-label="Connection status"
           >
-            <span className={cn(
-              "w-1.5 h-1.5 rounded-full",
-              workspace.obsidianStatus?.connected ? "bg-success" : "bg-destructive"
-            )} aria-hidden="true" />
-            <span className="text-muted-foreground hidden sm:inline">Obsidian</span>
-          </span>
-          <span
-            className="flex items-center gap-1"
-            aria-label={workspace.ankiStatus?.connected ? "Anki: connected" : "Anki: disconnected"}
-          >
-            <span className={cn(
-              "w-1.5 h-1.5 rounded-full",
-              workspace.ankiStatus?.connected ? "bg-success" : "bg-destructive"
-            )} aria-hidden="true" />
-            <span className="text-muted-foreground hidden sm:inline">Anki</span>
-          </span>
-          {workspace.pendingDrafts.length > 0 && (
-            <Badge variant="outline" className="h-5 px-1.5 text-xs rounded-none border-secondary/50 text-secondary">
-              {workspace.pendingDrafts.length} drafts
-            </Badge>
-          )}
+            <span
+              className={cn(CONTROL_CHIP, "min-h-[40px] px-2.5 text-[11px]")}
+              aria-label={
+                workspace.obsidianStatus?.connected ? "Obsidian: connected" : "Obsidian: disconnected"
+              }
+            >
+              <span
+                className={cn(
+                  "h-2 w-2 rounded-full",
+                  workspace.obsidianStatus?.connected ? "bg-success" : "bg-destructive",
+                )}
+                aria-hidden="true"
+              />
+              Obsidian
+            </span>
+            <span
+              className={cn(CONTROL_CHIP, "min-h-[40px] px-2.5 text-[11px]")}
+              aria-label={workspace.ankiStatus?.connected ? "Anki: connected" : "Anki: disconnected"}
+            >
+              <span
+                className={cn(
+                  "h-2 w-2 rounded-full",
+                  workspace.ankiStatus?.connected ? "bg-success" : "bg-destructive",
+                )}
+                aria-hidden="true"
+              />
+              Anki
+            </span>
+            {workspace.pendingDrafts.length > 0 && (
+              <Badge
+                variant="outline"
+                className="min-h-[40px] rounded-full border-secondary/50 px-3 font-terminal text-[11px] text-secondary"
+              >
+                {workspace.pendingDrafts.length} drafts
+              </Badge>
+            )}
+          </div>
         </div>
       </div>
 

@@ -16,6 +16,8 @@ const buttonVariants = cva(
           "border-transparent bg-transparent text-muted-foreground shadow-none hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/10 hover:text-primary",
         destructive:
           "border-destructive/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(248,113,113,0.16)_44%,rgba(32,6,6,0.9)_100%)] text-destructive-foreground hover:-translate-y-0.5 hover:bg-destructive/80",
+        shell:
+          "rounded-[1.4rem] border border-[rgba(255,120,140,0.7)] bg-[radial-gradient(circle_at_15%_0%,rgba(255,255,255,0.26),transparent_42%),radial-gradient(circle_at_82%_118%,rgba(40,6,14,0.98),rgba(2,0,4,1)_82%)] text-[#ff8a9a] shadow-[0_16px_32px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,120,140,0.4)] hover:-translate-y-0.5 hover:text-[#ffeef2] hover:shadow-[0_20px_40px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,150,170,0.7)] [text-shadow:0_1px_2px_rgba(0,0,0,0.9),0_0_8px_rgba(255,90,120,0.65)] active:translate-y-[1px]",
       },
       size: {
         default: "h-11 min-h-[44px] px-4 py-2",

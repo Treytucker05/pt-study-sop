@@ -1,5 +1,12 @@
 import type { ReactNode } from "react";
 
+import {
+  CONTROL_DECK,
+  CONTROL_DECK_BODY,
+  CONTROL_DECK_BOTTOMLINE,
+  CONTROL_DECK_INSET,
+  CONTROL_DECK_TOPLINE,
+} from "@/components/shell/controlStyles";
 import { cn } from "@/lib/utils";
 
 interface SupportWorkspaceFrameProps {
@@ -45,7 +52,14 @@ export function SupportWorkspaceFrame({
           )}
         >
           {commandBand ? (
-            <div className="border-b border-primary/20 bg-black/30">{commandBand}</div>
+            <div className="border-b border-primary/20 bg-transparent px-2 py-2 md:px-3">
+              <div className={cn(CONTROL_DECK, "min-h-[4.5rem] p-2.5")}>
+                <div className={CONTROL_DECK_INSET} />
+                <div className={CONTROL_DECK_TOPLINE} />
+                <div className={CONTROL_DECK_BOTTOMLINE} />
+                <div className={CONTROL_DECK_BODY}>{commandBand}</div>
+              </div>
+            </div>
           ) : null}
           <div className={cn("flex min-h-0 flex-1 flex-col gap-3 p-3 md:p-4", contentClassName)}>
             {children}

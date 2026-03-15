@@ -1,5 +1,12 @@
 import type { ReactNode } from "react";
 
+import {
+  CONTROL_DECK,
+  CONTROL_DECK_BODY,
+  CONTROL_DECK_BOTTOMLINE,
+  CONTROL_DECK_INSET,
+  CONTROL_DECK_TOPLINE,
+} from "@/components/shell/controlStyles";
 import { cn } from "@/lib/utils";
 
 interface CoreWorkspaceFrameProps {
@@ -37,11 +44,16 @@ export function CoreWorkspaceFrame({
         {topBar ? (
           <div
             className={cn(
-              "brain-workspace__top-bar shrink-0 border-b border-primary/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01)_18%,rgba(0,0,0,0.22)_100%)] backdrop-blur-sm",
+              "brain-workspace__top-bar shrink-0 border-b border-primary/20 bg-transparent px-2 py-2 md:px-3",
               topBarClassName,
             )}
           >
-            {topBar}
+            <div className={cn(CONTROL_DECK, "min-h-[5rem] p-2.5")}>
+              <div className={CONTROL_DECK_INSET} />
+              <div className={CONTROL_DECK_TOPLINE} />
+              <div className={CONTROL_DECK_BOTTOMLINE} />
+              <div className={CONTROL_DECK_BODY}>{topBar}</div>
+            </div>
           </div>
         ) : null}
 

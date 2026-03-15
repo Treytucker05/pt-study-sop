@@ -9,6 +9,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import brainBackground from "@assets/BrainBackground.jpg";
 import brainButton from "@assets/BrainButton.jpg";
 import logoImg from "@assets/StudyBrainIMAGE_1768640444498.jpg";
+import {
+  CONTROL_COPY,
+  CONTROL_DECK_SECTION,
+  CONTROL_KICKER,
+  controlToggleButton,
+} from "@/components/shell/controlStyles";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -774,32 +780,33 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           className="bg-black border-l-4 border-t-[3px] border-b-[3px] border-double border-primary w-[min(92vw,32rem)] sm:w-[30rem] lg:w-[34rem] shadow-2xl overflow-y-auto z-[100001] inset-y-3 h-auto [&>button]:hidden"
           style={{ zIndex: 100001 }}
         >
-                <div className="flex items-center gap-2 mb-4">
+                <div className="mb-4 flex items-center gap-2">
                   <SheetClose asChild>
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-7 w-7 rounded-none border-2 border-primary text-primary hover:bg-primary/20 hover:text-primary"
+                      className="h-9 w-9 rounded-[0.95rem] border-primary/40 text-primary hover:bg-primary/20 hover:text-primary"
                       aria-label="Close notes"
                     >
                       <X className="h-3 w-3" />
                     </Button>
                   </SheetClose>
-                  <SheetTitle className="font-arcade text-primary">QUICK_NOTES</SheetTitle>
+                  <div className="min-w-0">
+                    <SheetTitle className="font-arcade text-primary">QUICK_NOTES</SheetTitle>
+                    <div className={cn(CONTROL_COPY, "text-[11px]")}>
+                      Capture live notes, implementation ideas, and follow-ups without leaving the active route.
+                    </div>
+                  </div>
                 </div>
                 <SheetDescription className="sr-only">Quick notes panel</SheetDescription>
                 <div className="flex flex-col gap-4">
-                  <div className="space-y-2">
-                    <div className="flex gap-1">
+                  <div className={cn(CONTROL_DECK_SECTION, "space-y-3")}>
+                    <div className={CONTROL_KICKER}>Capture</div>
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         size="sm"
-                        variant={activeTab === "all" ? "default" : "ghost"}
-                        className={cn(
-                          "font-arcade rounded-none text-xs h-7 px-3 whitespace-nowrap",
-                          activeTab === "all"
-                            ? "bg-primary text-primary-foreground"
-                            : "border border-secondary text-muted-foreground hover:text-primary"
-                        )}
+                        variant="ghost"
+                        className={controlToggleButton(activeTab === "all", "primary", true)}
                         onClick={() => setActiveTab("all")}
                       >
                         ALL
@@ -808,13 +815,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         <Button
                           key={category.value}
                           size="sm"
-                          variant={activeTab === category.value ? "default" : "ghost"}
-                          className={cn(
-                            "font-arcade rounded-none text-xs h-7 px-3 whitespace-nowrap",
-                            activeTab === category.value
-                              ? "bg-primary text-primary-foreground"
-                              : "border border-secondary text-muted-foreground hover:text-primary"
-                          )}
+                          variant="ghost"
+                          className={controlToggleButton(activeTab === category.value, "secondary", true)}
                           onClick={() => { setActiveTab(category.value); setNewNoteType(category.value); }}
                         >
                           {category.tabLabel}
@@ -825,11 +827,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       placeholder="TYPE_NOTE_HERE..."
                       value={newNote}
                       onChange={(e) => setNewNote(e.target.value)}
-                      className="h-20 bg-secondary/20 border-2 border-secondary font-terminal text-sm rounded-none resize-none focus-visible:ring-primary"
+                      className="h-24 resize-none rounded-[1rem] border-primary/30 bg-black/45 font-terminal text-sm focus-visible:ring-primary"
                       data-testid="input-note-content"
                     />
                     <Button
-                      className="w-full font-arcade rounded-none text-xs"
+                      className="w-full rounded-[1rem] font-arcade text-xs"
                       size="sm"
                       onClick={handleSaveNote}
                       disabled={!newNote.trim() || createNoteMutation.isPending}
@@ -839,8 +841,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     </Button>
                   </div>
 
-                  <div className="border-t border-secondary pt-2">
-                    <div className="font-arcade text-xs text-muted-foreground mb-2">SAVED NOTES ({notes.length})</div>
+                  <div className={cn(CONTROL_DECK_SECTION, "border-t-0")}>
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <div className={CONTROL_KICKER}>Saved Notes</div>
+                      <div className={cn(CONTROL_COPY, "text-[11px]")}>{notes.length} total</div>
+                    </div>
                     <ScrollArea className="h-[calc(100vh-280px)]">
                       <div className="space-y-6 pr-2">
                         {NOTE_CATEGORIES.filter((c) => activeTab === "all" || c.value === activeTab).map((category) => {

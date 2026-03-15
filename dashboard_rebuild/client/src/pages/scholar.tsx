@@ -15,6 +15,12 @@ import { CoreWorkspaceFrame } from "@/components/CoreWorkspaceFrame";
 import Layout from "@/components/layout";
 import { PageScaffold } from "@/components/PageScaffold";
 import { ScholarRunStatus } from "@/components/ScholarRunStatus";
+import {
+  CONTROL_CHIP,
+  CONTROL_COPY,
+  CONTROL_DECK_SECTION,
+  CONTROL_KICKER,
+} from "@/components/shell/controlStyles";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { api, type ScholarInvestigation, type ScholarQuestion } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/use-toast";
 
 type ScholarBrainProfile = Awaited<ReturnType<typeof api.brain.getProfileSummary>> & {
@@ -255,17 +262,17 @@ export default function ScholarPage() {
     : [];
   const scholarSidebar = (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-auto p-3 md:p-4">
-      <TabsList className="grid h-auto gap-2 bg-transparent p-0">
-        <TabsTrigger value="workspace" className="min-h-[44px] justify-start rounded-[1rem] border border-primary/15 bg-black/20 px-3 py-2 font-arcade text-xs text-muted-foreground data-[state=active]:border-primary/45 data-[state=active]:bg-primary/12 data-[state=active]:text-primary">
+      <TabsList className="grid h-auto gap-2">
+        <TabsTrigger value="workspace" className="justify-start">
           WORKSPACE
         </TabsTrigger>
-        <TabsTrigger value="questions" className="min-h-[44px] justify-start rounded-[1rem] border border-primary/15 bg-black/20 px-3 py-2 font-arcade text-xs text-muted-foreground data-[state=active]:border-primary/45 data-[state=active]:bg-primary/12 data-[state=active]:text-primary">
+        <TabsTrigger value="questions" className="justify-start">
           QUESTIONS
         </TabsTrigger>
-        <TabsTrigger value="findings" className="min-h-[44px] justify-start rounded-[1rem] border border-primary/15 bg-black/20 px-3 py-2 font-arcade text-xs text-muted-foreground data-[state=active]:border-primary/45 data-[state=active]:bg-primary/12 data-[state=active]:text-primary">
+        <TabsTrigger value="findings" className="justify-start">
           FINDINGS
         </TabsTrigger>
-        <TabsTrigger value="history" className="min-h-[44px] justify-start rounded-[1rem] border border-primary/15 bg-black/20 px-3 py-2 font-arcade text-xs text-muted-foreground data-[state=active]:border-primary/45 data-[state=active]:bg-primary/12 data-[state=active]:text-primary">
+        <TabsTrigger value="history" className="justify-start">
           HISTORY
         </TabsTrigger>
       </TabsList>
@@ -285,10 +292,8 @@ export default function ScholarPage() {
         </div>
       ) : null}
 
-      <div className="space-y-3 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
-        <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
-          Brain Context
-        </div>
+      <div className={cn(CONTROL_DECK_SECTION, "space-y-3")}>
+        <div className={CONTROL_KICKER}>Brain Context</div>
         {profile ? (
           <>
             <div className="flex flex-wrap items-center gap-2">
@@ -317,10 +322,8 @@ export default function ScholarPage() {
         )}
       </div>
 
-      <div className="space-y-3 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
-        <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
-          Selected Investigation
-        </div>
+      <div className={cn(CONTROL_DECK_SECTION, "space-y-3")}>
+        <div className={CONTROL_KICKER}>Selected Investigation</div>
         {detail ? (
           <>
             <div className="flex flex-wrap gap-2">
@@ -359,21 +362,21 @@ export default function ScholarPage() {
     </div>
   );
   const scholarCommandBand = (
-    <div className="flex flex-col gap-3 p-3 md:p-4">
+    <div className="flex flex-col gap-3">
       <div className="space-y-1">
-        <div className="font-arcade text-xs text-primary">Scholar Research Console</div>
-        <div className="font-terminal text-sm text-muted-foreground">
+        <div className={CONTROL_KICKER}>Scholar Research Console</div>
+        <div className={cn(CONTROL_COPY, "text-sm")}>
           {detail
             ? `Focused on ${detail.title}. Keep the current question, findings, and uncertainty visible while Scholar runs.`
             : "Start an investigation, answer blocking questions, and keep the cited research lane visible."}
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2 text-xs font-terminal text-muted-foreground">
-        <span className="rounded-full border border-primary/20 px-2 py-1">{investigations.length} investigations</span>
-        <span className="rounded-full border border-primary/20 px-2 py-1">{openQuestions.length} open questions</span>
-        <span className="rounded-full border border-primary/20 px-2 py-1">{findings.length} findings</span>
+        <span className={cn(CONTROL_CHIP, "min-h-[40px] px-3 text-xs")}>{investigations.length} investigations</span>
+        <span className={cn(CONTROL_CHIP, "min-h-[40px] px-3 text-xs")}>{openQuestions.length} open questions</span>
+        <span className={cn(CONTROL_CHIP, "min-h-[40px] px-3 text-xs")}>{findings.length} findings</span>
         {selectedInvestigation ? (
-          <span className="rounded-full border border-primary/20 px-2 py-1">
+          <span className={cn(CONTROL_CHIP, "min-h-[40px] px-3 text-xs")}>
             Active: {selectedInvestigation.title}
           </span>
         ) : null}
@@ -396,9 +399,9 @@ export default function ScholarPage() {
         ]}
         actions={
           <Button
-            variant="outline"
+            variant="shell"
             size="sm"
-            className="font-arcade text-xs border-primary/40"
+            className="font-arcade text-xs"
             onClick={() => {
               queryClient.invalidateQueries({ queryKey: ["scholar-investigations"] });
               queryClient.invalidateQueries({ queryKey: ["scholar-investigation"] });

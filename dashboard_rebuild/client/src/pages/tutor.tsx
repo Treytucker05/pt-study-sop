@@ -1,6 +1,13 @@
 import Layout from "@/components/layout";
 import { CoreWorkspaceFrame } from "@/components/CoreWorkspaceFrame";
 import { PageScaffold } from "@/components/PageScaffold";
+import {
+  CONTROL_CHIP,
+  CONTROL_COPY,
+  CONTROL_DECK_SECTION,
+  CONTROL_KICKER,
+  controlToggleButton,
+} from "@/components/shell/controlStyles";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -102,6 +109,7 @@ import {
   CARD_BORDER,
 } from "@/lib/theme";
 import { CONTROL_PLANE_COLORS } from "@/lib/colors";
+import { cn } from "@/lib/utils";
 
 type TutorShellQuery = {
   courseId?: number;
@@ -1559,16 +1567,16 @@ export default function Tutor() {
   ];
 
   const tutorShellTopBar = (
-    <div className="px-2 py-1.5">
-      <div className="mb-1.5 flex items-center justify-between gap-3 border-b border-primary/10 pb-1.5">
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3 border-b border-primary/10 pb-2">
         <div>
-          <div className="font-arcade text-xs text-primary">TUTOR</div>
-          <div className="font-terminal text-[11px] text-muted-foreground">
+          <div className={CONTROL_KICKER}>Tutor</div>
+          <div className={cn(CONTROL_COPY, "text-[11px]")}>
             Brain&apos;s default live study surface for guided sessions, artifacts, and next-step handoff.
           </div>
         </div>
         {!activeSessionId ? (
-          <Badge variant="outline" className={`${TEXT_BADGE} h-6 px-2 shrink-0 border-primary/30`}>
+          <Badge variant="outline" className="shrink-0 rounded-full border-primary/30 px-3 py-1 font-terminal text-[10px]">
             BRAIN TO TUTOR LIVE SURFACE
           </Badge>
         ) : null}
@@ -1576,30 +1584,30 @@ export default function Tutor() {
       {!activeSessionId && brainLaunchContext?.title ? (
         <div
           data-testid="tutor-brain-handoff"
-          className="mb-1.5 border border-primary/20 bg-primary/10 px-2 py-1.5"
+          className={cn(CONTROL_DECK_SECTION, "space-y-1")}
         >
-          <div className="font-arcade text-[10px] text-primary">OPENED FROM BRAIN</div>
+          <div className={CONTROL_KICKER}>Opened From Brain</div>
           <div className="font-terminal text-xs text-white">{brainLaunchContext.title}</div>
           {brainLaunchContext.reason ? (
-            <div className="font-terminal text-[11px] text-muted-foreground">
+            <div className={cn(CONTROL_COPY, "text-[11px]")}>
               {brainLaunchContext.reason}
             </div>
           ) : null}
         </div>
       ) : null}
       {activeSessionId ? (
-        <div className="mb-1.5 flex items-center gap-2 overflow-x-auto no-scrollbar">
-          <Badge variant="outline" className={`${TEXT_BADGE} h-7 px-2 shrink-0 border-primary/30`}>
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <Badge variant="outline" className="min-h-[40px] shrink-0 rounded-full border-primary/30 px-3 font-terminal text-[11px]">
             <span className="text-muted-foreground mr-1">TOPIC:</span>
             <span className="text-foreground">{topic || "Freeform"}</span>
           </Badge>
-          <div className={`flex items-center gap-3 px-2 ${TEXT_MUTED} text-xs shrink-0`}>
-            <span className="flex items-center gap-1" title="Turns">
+          <div className="flex items-center gap-2 shrink-0">
+            <span className={cn(CONTROL_CHIP, "min-h-[40px] px-2.5 text-[11px]")} title="Turns">
               <MessageSquare className={ICON_SM} />
               {turnCount}
             </span>
             {startedAt ? (
-              <span className="flex items-center gap-1" title="Started At">
+              <span className={cn(CONTROL_CHIP, "min-h-[40px] px-2.5 text-[11px]")} title="Started At">
                 <Clock className={ICON_SM} />
                 {new Date(startedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               </span>
@@ -1610,7 +1618,7 @@ export default function Tutor() {
             <div className="flex items-center gap-2 px-2 shrink-0 border-l border-primary/20">
               <Badge
                 variant="outline"
-                className={`h-6 px-1.5 text-[10px] rounded-none font-arcade uppercase ${
+                className={`h-7 rounded-full px-2 text-[10px] font-arcade uppercase ${
                   CONTROL_PLANE_COLORS[currentBlock.control_stage?.toUpperCase?.() || currentBlock.category?.toUpperCase?.() || ""]?.badge
                   || "bg-secondary/20 text-muted-foreground"
                 }`}
@@ -1643,7 +1651,7 @@ export default function Tutor() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setTimerPaused((p) => !p)}
-                  className="h-6 w-6 p-0 rounded-none text-muted-foreground hover:text-primary"
+                  className={cn(controlToggleButton(false, "secondary", true), "h-8 w-8 p-0 text-muted-foreground")}
                   title={timerPaused ? "Resume timer" : "Pause timer"}
                 >
                   {timerPaused ? <Timer className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
@@ -1653,7 +1661,7 @@ export default function Tutor() {
                 variant="ghost"
                 size="sm"
                 onClick={advanceBlock}
-                className="h-6 px-1.5 rounded-none text-muted-foreground hover:text-primary font-arcade text-[10px]"
+                className={cn(controlToggleButton(false, "secondary", true), "h-8 px-2 text-[10px]")}
                 title="Skip to next block"
               >
                 <SkipForward className="w-3 h-3" />
@@ -1663,7 +1671,7 @@ export default function Tutor() {
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-1">
+      <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="ghost"
           size="sm"
@@ -1672,7 +1680,7 @@ export default function Tutor() {
             setScheduleLaunchIntent(null);
             setShellMode("dashboard");
           }}
-          className={shellMode === "dashboard" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+          className={controlToggleButton(shellMode === "dashboard", "primary")}
         >
           <ListChecks className={`${ICON_MD} mr-1`} />
           DASHBOARD
@@ -1685,7 +1693,7 @@ export default function Tutor() {
             setScheduleLaunchIntent(null);
             setShellMode("studio");
           }}
-          className={shellMode === "studio" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+          className={controlToggleButton(shellMode === "studio", "primary")}
         >
           <PenTool className={`${ICON_MD} mr-1`} />
           STUDIO
@@ -1698,7 +1706,7 @@ export default function Tutor() {
             setScheduleLaunchIntent(null);
             setShellMode("tutor");
           }}
-          className={shellMode === "tutor" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+          className={controlToggleButton(shellMode === "tutor", "primary")}
         >
           <MessageSquare className={`${ICON_MD} mr-1`} />
           TUTOR
@@ -1711,7 +1719,7 @@ export default function Tutor() {
             setScheduleLaunchIntent(null);
             setShellMode("schedule");
           }}
-          className={shellMode === "schedule" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+          className={controlToggleButton(shellMode === "schedule", "primary")}
         >
           <Clock className={`${ICON_MD} mr-1`} />
           SCHEDULE
@@ -1724,12 +1732,12 @@ export default function Tutor() {
             setScheduleLaunchIntent(null);
             setShellMode("publish");
           }}
-          className={shellMode === "publish" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+          className={controlToggleButton(shellMode === "publish", "primary")}
         >
           <FolderOpen className={`${ICON_MD} mr-1`} />
           PUBLISH
         </Button>
-        <Button variant="ghost" size="sm" onClick={openSettings} className={BTN_TOOLBAR}>
+        <Button variant="ghost" size="sm" onClick={openSettings} className={controlToggleButton(false)}>
           <SlidersHorizontal className={`${ICON_MD} mr-1`} />
           SETTINGS
         </Button>
@@ -1740,7 +1748,7 @@ export default function Tutor() {
               variant="ghost"
               size="sm"
               onClick={() => setShowArtifacts((prev) => !prev)}
-              className={`ml-1 ${showArtifacts ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}`}
+              className={cn(controlToggleButton(showArtifacts), "ml-1")}
             >
               {showArtifacts ? (
                 <PanelRightClose className={`${ICON_MD} mr-1`} />
@@ -1749,7 +1757,7 @@ export default function Tutor() {
               )}
               ARTIFACTS
               {artifacts.length > 0 ? (
-                <Badge variant="outline" className="h-4 px-1 ml-1 text-[10px] rounded-none border-primary/40">
+                <Badge variant="outline" className="ml-1 rounded-full border-primary/40 px-1.5 py-0.5 text-[10px]">
                   {artifacts.length}
                 </Badge>
               ) : null}
@@ -1765,7 +1773,7 @@ export default function Tutor() {
                     });
                   }
                 }}
-                className={BTN_TOOLBAR}
+                className={controlToggleButton(false)}
                 title="Export conversation as Markdown"
               >
                 <Download className={`${ICON_MD} mr-1`} />
@@ -1775,7 +1783,10 @@ export default function Tutor() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowEndConfirm(true)}
-                className="h-8 rounded-none font-arcade text-xs px-3 text-destructive/70 hover:text-destructive hover:bg-destructive/10 border-2 border-transparent"
+                className={cn(
+                  controlToggleButton(false),
+                  "h-11 border-destructive/18 text-destructive/80 hover:border-destructive/36 hover:text-destructive",
+                )}
                 title="End session"
               >
                 <Square className={`${ICON_MD} mr-1`} />
@@ -1799,9 +1810,9 @@ export default function Tutor() {
         stats={tutorHeroStats}
         actions={
           <Button
-            variant="outline"
+            variant="shell"
             size="sm"
-            className="font-arcade text-xs border-primary/40"
+            className="font-arcade text-xs"
             onClick={() => {
               void Promise.all([
                 queryClient.invalidateQueries({ queryKey: ["tutor-hub"] }),

@@ -164,11 +164,11 @@ describe("ScholarPage research workspace", () => {
     const { default: ScholarPage } = await import("@/pages/scholar");
     renderWithClient(<ScholarPage />);
 
-    expect(await screen.findByText("SYSTEM INVESTIGATION CONSOLE")).toBeInTheDocument();
-    expect(screen.getByText(/behind Brain and Tutor/i)).toBeInTheDocument();
+    expect(await screen.findByText("System Research Console")).toBeInTheDocument();
+    expect(screen.getByText(/Investigate assumptions, gather external evidence/i)).toBeInTheDocument();
     expect(screen.getByText("Calibration Builder")).toBeInTheDocument();
     expect(screen.getAllByText("Scaffold dependence investigation").length).toBeGreaterThan(0);
-    expect(screen.getByText("WHAT SCHOLAR IS INVESTIGATING")).toBeInTheDocument();
+    expect(screen.getByText("ACTIVE INVESTIGATIONS")).toBeInTheDocument();
     expect(screen.getByTestId("scholar-run-status")).toBeInTheDocument();
   }, 10000);
 
@@ -241,7 +241,7 @@ describe("ScholarPage research workspace", () => {
     const { default: ScholarPage } = await import("@/pages/scholar");
     renderWithClient(<ScholarPage />);
 
-    expect(await screen.findByText("SYSTEM INVESTIGATION CONSOLE")).toBeInTheDocument();
+    expect(await screen.findByText("System Research Console")).toBeInTheDocument();
     await waitFor(() => {
       expect(mockScholarGetQuestions).toHaveBeenCalledTimes(1);
     });

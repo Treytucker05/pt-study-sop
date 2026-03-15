@@ -1,6 +1,7 @@
 import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 
+import { controlTabsListClass, CONTROL_TABS_TRIGGER } from "@/components/shell/controlStyles";
 import { cn } from "@/lib/utils";
 
 const Tabs = TabsPrimitive.Root;
@@ -12,7 +13,7 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-10 items-center justify-center rounded-none border-2 border-primary/30 bg-black/50 p-1 text-muted-foreground",
+      controlTabsListClass,
       className,
     )}
     {...props}
@@ -27,7 +28,8 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-none px-3 py-1.5 font-arcade text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-primary data-[state=active]:text-black",
+      CONTROL_TABS_TRIGGER,
+      "whitespace-nowrap disabled:pointer-events-none disabled:opacity-50",
       className,
     )}
     {...props}
@@ -41,7 +43,7 @@ const TabsContent = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <TabsPrimitive.Content
     ref={ref}
-    className={cn("mt-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60", className)}
+    className={cn("mt-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60", className)}
     {...props}
   />
 ));

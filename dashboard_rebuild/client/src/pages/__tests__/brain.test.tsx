@@ -586,11 +586,12 @@ describe("Brain home recenter", () => {
     expect(within(supportGroup).getAllByRole("button").map((button) => button).length).toBe(5);
 
     const desktopNav = screen.getByTestId("nav-desktop-groups");
-    expect(within(desktopNav).getByText("STUDY TRIAD")).toBeInTheDocument();
-    expect(within(desktopNav).getByText("SUPPORT SYSTEMS")).toBeInTheDocument();
+    expect(desktopNav).toBeInTheDocument();
+    expect(coreGroup).toHaveAttribute("aria-label", "Core triad navigation");
+    expect(supportGroup).toHaveAttribute("aria-label", "Support systems navigation");
 
     expect(coreGroup.compareDocumentPosition(supportGroup) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByTestId("nav-brain").className).toContain("active");
+    expect(screen.getByTestId("nav-brain")).toHaveAttribute("aria-current", "page");
   });
 
   it("keeps Scholar active in the grouped shell nav once the Scholar route is ready", async () => {
@@ -599,22 +600,22 @@ describe("Brain home recenter", () => {
 
     expect(screen.getByTestId("nav-desktop-groups")).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getByTestId("nav-scholar").className).toContain("active");
+      expect(screen.getByTestId("nav-scholar")).toHaveAttribute("aria-current", "page");
     });
     expect(screen.queryByTestId("brain-home")).not.toBeInTheDocument();
   });
 
-  it("closes the mobile nav drawer when the route changes outside the drawer", async () => {
+  it("keeps the shell nav visible without a hamburger drawer when the route changes", async () => {
     const { default: App } = await import("@/App");
 
     queryClient.clear();
     render(<App />);
     await screen.findByTestId("brain-home");
 
-    await act(async () => {
-      fireEvent.click(screen.getByLabelText("Toggle navigation"));
-    });
-    expect(screen.getByText("SUPPORT")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Toggle navigation")).not.toBeInTheDocument();
+    expect(screen.getByTestId("nav-desktop-groups")).toBeInTheDocument();
+    expect(screen.getByTestId("nav-core-group")).toBeInTheDocument();
+    expect(screen.getByTestId("nav-support-group")).toBeInTheDocument();
 
     await act(async () => {
       window.history.pushState({}, "", "/scholar");
@@ -628,10 +629,10 @@ describe("Brain home recenter", () => {
       expect(
         screen
           .getAllByTestId("nav-scholar")
-          .some((button) => button.className.includes("active")),
+          .some((button) => button.getAttribute("aria-current") === "page"),
       ).toBe(true);
     });
-    expect(screen.queryByText("SUPPORT")).not.toBeInTheDocument();
+    expect(screen.getAllByTestId("nav-desktop-groups").length).toBeGreaterThan(0);
   });
 
   it("falls back to HOME when persisted main-mode state is invalid", async () => {
