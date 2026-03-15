@@ -287,3 +287,12 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Kept only a light readability overlay so the UI preserves the supplied image instead of reconstructing it from separate logo/grid layers.
 - Validation passed:
   - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-15 - Brain-button shell polish
+
+- Updated the shell navigation buttons in `dashboard_rebuild/client/src/components/layout.tsx` to use a framed red-panel style inspired by the provided `BrainButton.jpg` reference.
+- Added the provided button art as `dashboard_rebuild/attached_assets/BrainButton.jpg` and used it as a texture layer for the nav and notes dock chrome.
+- Restyled the draggable notes dock to match the new panel treatment and shifted the shell background image downward by roughly `48px` to improve the crop.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/layout.test.tsx`
+  - `cd dashboard_rebuild && npm run build`

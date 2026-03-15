@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { Brain, Calendar, GraduationCap, Bot, Blocks, TrendingUp, BookOpen, Shield, Save, Trash2, GripVertical, Pencil, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import brainBackground from "@assets/BrainBackground.jpg";
+import brainButton from "@assets/BrainButton.jpg";
 import logoImg from "@assets/StudyBrainIMAGE_1768640444498.jpg";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -50,6 +51,18 @@ const NAV_BUTTON_ACCENTS: Record<string, string> = {
   vault: "from-slate-300/35 via-zinc-500/20 to-slate-950/70 border-slate-200/45 text-slate-100",
 };
 
+const NAV_BUTTON_BACKGROUND_POSITIONS: Record<string, string> = {
+  brain: "28% 46%",
+  scholar: "44% 50%",
+  tutor: "58% 50%",
+  library: "64% 52%",
+  mastery: "72% 52%",
+  calendar: "56% 44%",
+  methods: "78% 56%",
+  vault: "84% 56%",
+  notes: "30% 50%",
+};
+
 const resolveNoteType = (note: Note): NoteCategory => {
   const raw = (note as Note & { noteType?: string }).noteType;
   if (raw === "planned" || raw === "ideas" || raw === "notes") {
@@ -58,27 +71,42 @@ const resolveNoteType = (note: Note): NoteCategory => {
   return "notes";
 };
 
-const navButtonClass = (
-  isActive: boolean,
-  headerExpanded: boolean,
-) =>
+const navButtonClass = (isActive: boolean, headerExpanded: boolean) =>
   cn(
-    "nav-btn group relative h-11 min-w-[44px] overflow-hidden rounded-full border-2 border-zinc-700/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.03)_40%,rgba(0,0,0,0.34)_100%)] px-3 font-arcade text-[0.65rem] whitespace-nowrap text-zinc-100 shadow-[0_5px_0_rgba(15,15,15,0.85),0_10px_24px_rgba(0,0,0,0.28)] transition-all duration-150 ease-out motion-reduce:transition-none sm:text-xs",
-    "before:absolute before:inset-x-[10%] before:top-1 before:h-px before:rounded-full before:bg-white/40 before:content-['']",
-    "after:absolute after:inset-x-2 after:bottom-1 after:h-1.5 after:rounded-full after:bg-black/25 after:blur-[1px] after:content-['']",
-    "hover:-translate-y-0.5 hover:border-white/50 hover:shadow-[0_7px_0_rgba(15,15,15,0.85),0_12px_28px_rgba(0,0,0,0.34)] hover:text-white",
+    "nav-btn group relative isolate h-12 min-w-[48px] overflow-hidden rounded-[1.2rem] border border-[#7b4249]/90 bg-[#2d0810]/90 px-3.5 font-arcade text-[0.68rem] tracking-[0.14em] whitespace-nowrap text-[#ffd7dc] shadow-[0_6px_0_rgba(39,8,14,0.92),0_16px_28px_rgba(0,0,0,0.34),0_0_18px_rgba(255,102,122,0.1)] transition-all duration-150 ease-out motion-reduce:transition-none sm:text-xs",
+    "before:absolute before:inset-[3px] before:rounded-[0.98rem] before:border before:border-[#ff9fa4]/40 before:shadow-[inset_0_0_16px_rgba(255,98,118,0.24),0_0_14px_rgba(255,96,118,0.14)] before:content-['']",
+    "after:absolute after:inset-x-[12%] after:top-[0.32rem] after:h-px after:rounded-full after:bg-white/38 after:content-['']",
+    "hover:-translate-y-0.5 hover:border-[#ff9ca2]/80 hover:text-white hover:shadow-[0_8px_0_rgba(39,8,14,0.92),0_18px_32px_rgba(0,0,0,0.36),0_0_22px_rgba(255,108,128,0.18)]",
     "focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-0",
-    "active:translate-y-[2px] active:shadow-[0_2px_0_rgba(15,15,15,0.82),0_6px_16px_rgba(0,0,0,0.28)]",
-    isActive && "active border-primary/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.2),rgba(255,77,109,0.18)_45%,rgba(32,8,16,0.9)_100%)] text-white shadow-[0_4px_0_rgba(72,15,28,0.95),0_0_20px_rgba(255,77,109,0.24)]",
-    !headerExpanded && "h-10 px-2.5 text-[0.62rem]",
+    "active:translate-y-[2px] active:shadow-[0_2px_0_rgba(39,8,14,0.92),0_8px_18px_rgba(0,0,0,0.28)]",
+    isActive &&
+      "border-[#ffc5cb]/90 text-white shadow-[0_4px_0_rgba(74,14,24,0.95),0_0_24px_rgba(255,95,119,0.26),0_18px_30px_rgba(0,0,0,0.36)] before:border-[#ffd8dc]/60 before:shadow-[inset_0_0_18px_rgba(255,120,136,0.34),0_0_16px_rgba(255,120,136,0.22)]",
+    !headerExpanded && "h-11 px-3 text-[0.62rem]",
   );
 
 const navIconPadClass = (testId: string, isActive: boolean) =>
   cn(
-    "mr-1.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(255,255,255,0.02)_48%,rgba(0,0,0,0.32)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_2px_6px_rgba(0,0,0,0.32)] transition-all duration-150 ease-out motion-reduce:transition-none group-hover:scale-[1.06] group-hover:border-white/70",
+    "relative z-10 mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-[0.82rem] border bg-[linear-gradient(180deg,rgba(255,255,255,0.22),rgba(255,255,255,0.04)_38%,rgba(0,0,0,0.4)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.32),0_3px_8px_rgba(0,0,0,0.34)] transition-all duration-150 ease-out motion-reduce:transition-none group-hover:scale-[1.05] group-hover:border-white/70",
     NAV_BUTTON_ACCENTS[testId] ?? "from-primary/30 via-primary/10 to-primary/5 border-primary/40 text-primary-foreground",
     isActive && "border-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.32),0_0_14px_rgba(255,255,255,0.12)]",
   );
+
+const navButtonStyle = (testId: string, isActive: boolean): CSSProperties => ({
+  backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(130,14,24,0.12) 18%, rgba(14,4,7,0.78) 100%), linear-gradient(135deg, rgba(255,98,118,${isActive ? "0.26" : "0.16"}) 0%, rgba(255,98,118,0.03) 48%, rgba(0,0,0,0.12) 100%), url(${brainButton})`,
+  backgroundPosition: `center center, center center, ${NAV_BUTTON_BACKGROUND_POSITIONS[testId] ?? "center center"}`,
+  backgroundRepeat: "no-repeat",
+  backgroundSize: "auto, auto, cover",
+  backgroundBlendMode: "screen, normal, normal",
+});
+
+const notesDockStyle = (top: number | null): CSSProperties => ({
+  top: top === null ? "34%" : `${top}px`,
+  backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(134,16,26,0.14) 18%, rgba(12,3,6,0.88) 100%), linear-gradient(135deg, rgba(255,98,118,0.22) 0%, rgba(255,98,118,0.04) 52%, rgba(0,0,0,0.2) 100%), url(${brainButton})`,
+  backgroundPosition: `center center, center center, ${NAV_BUTTON_BACKGROUND_POSITIONS.notes}`,
+  backgroundRepeat: "no-repeat",
+  backgroundSize: "auto, auto, cover",
+  backgroundBlendMode: "screen, normal, normal",
+});
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
@@ -557,7 +585,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           className="absolute inset-0"
           style={{
             backgroundImage: `linear-gradient(180deg, rgba(0, 0, 0, 0.44) 0%, rgba(0, 0, 0, 0.18) 22%, rgba(0, 0, 0, 0.38) 58%, rgba(0, 0, 0, 0.84) 100%), url(${brainBackground})`,
-            backgroundPosition: "center center",
+            backgroundPosition: "center calc(50% + 48px)",
             backgroundRepeat: "no-repeat",
             backgroundSize: "cover",
           }}
@@ -649,6 +677,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       variant="ghost"
                       size="sm"
                       className={navButtonClass(isActive, headerExpanded)}
+                      style={navButtonStyle(item.testId, isActive)}
                     >
                         <span className={navIconPadClass(item.testId, isActive)}>
                           <item.icon
@@ -682,6 +711,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       variant="ghost"
                       size="sm"
                       className={navButtonClass(isActive, headerExpanded)}
+                      style={navButtonStyle(item.testId, isActive)}
                     >
                         <span className={navIconPadClass(item.testId, isActive)}>
                           <item.icon
@@ -897,11 +927,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         ref={notesDockRef}
         type="button"
         className={cn(
-          "fixed right-0 z-40 flex min-h-[44px] min-w-[44px] -translate-y-1/2 rounded-l-none border-2 border-r-0 border-primary/60 bg-black/90 px-3 py-3 font-arcade text-xs text-primary shadow-xl backdrop-blur-sm transition-colors md:items-center md:gap-2",
+          "fixed right-0 z-40 flex min-h-[132px] min-w-[58px] -translate-y-1/2 items-center justify-center overflow-hidden rounded-l-[1.35rem] border border-r-0 border-[#7b4249]/90 px-2 py-3 font-arcade text-[0.64rem] tracking-[0.18em] text-[#ffd7dc] shadow-[0_8px_0_rgba(39,8,14,0.92),0_18px_30px_rgba(0,0,0,0.34),0_0_20px_rgba(255,102,122,0.14)] backdrop-blur-md transition-all duration-150 ease-out before:absolute before:inset-[4px_0_4px_4px] before:rounded-l-[1.05rem] before:border before:border-[#ff9fa4]/42 before:shadow-[inset_0_0_16px_rgba(255,98,118,0.24),0_0_12px_rgba(255,96,118,0.14)] before:content-[''] after:absolute after:left-2 after:right-3 after:top-2 after:h-px after:rounded-full after:bg-white/38 after:content-['']",
           notesOpen && "pointer-events-none opacity-0",
-          isDraggingNotesDock && "cursor-grabbing border-primary bg-primary/10",
+          isDraggingNotesDock && "cursor-grabbing border-[#ffb3ba]/85 shadow-[0_4px_0_rgba(39,8,14,0.92),0_12px_24px_rgba(0,0,0,0.26),0_0_22px_rgba(255,118,132,0.2)]",
         )}
-        style={{ top: notesDockTop === null ? "34%" : `${notesDockTop}px` }}
+        style={notesDockStyle(notesDockTop)}
         onPointerDown={handleNotesDockPointerDown}
         onPointerMove={handleNotesDockPointerMove}
         onPointerUp={handleNotesDockPointerUp}
@@ -910,8 +940,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         data-testid="notes-dock"
         aria-label="Open notes panel"
       >
-        <GripVertical className="h-4 w-4 shrink-0 text-primary/70" />
-        <span className="[writing-mode:vertical-rl] rotate-180 tracking-[0.3em]">NOTES</span>
+        <div className="relative z-10 flex flex-col items-center gap-2">
+          <GripVertical className="h-4 w-4 shrink-0 text-[#ffd3d7]/70" />
+          <BookOpen className="h-4 w-4 shrink-0 text-[#ffb4bc]" />
+          <span className="[writing-mode:vertical-rl] rotate-180 tracking-[0.26em]">NOTES</span>
+        </div>
       </button>
 
       <main
