@@ -2,6 +2,25 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-15 - Tutor Page 1 Command Deck closeout
+
+- Closed `conductor/tracks/tutor-page1-command-deck_20260315/` after shipping the responsive command deck and syncing the repo boards to the final IA.
+- Corrected the shell information architecture during implementation:
+  - `DashBoard` is now the first page under `/tutor`
+  - `Tutor` is now reserved for the live study surface only
+- Shipped the new aggregate hub API and Page 1 handoffs in:
+  - `brain/dashboard/api_tutor_projects.py`
+  - `dashboard_rebuild/client/src/pages/tutor.tsx`
+  - `dashboard_rebuild/client/src/components/TutorCommandDeck.tsx`
+  - `dashboard_rebuild/client/src/components/TutorScheduleMode.tsx`
+  - `dashboard_rebuild/client/src/components/TutorStudioMode.tsx`
+  - `dashboard_rebuild/client/src/pages/library.tsx`
+  - `dashboard_rebuild/client/src/lib/tutorClientState.ts`
+- Validation:
+  - `python -m pytest brain/tests/test_tutor_project_shell.py -q`
+  - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx client/src/pages/__tests__/library.test.tsx client/src/components/__tests__/TutorScheduleMode.test.tsx client/src/components/__tests__/TutorStudioMode.test.tsx client/src/lib/__tests__/tutorClientState.test.ts client/src/__tests__/api.test.ts`
+  - `cd dashboard_rebuild && npm run build`
+
 ## 2026-03-14 - Trey Agent Repo Readiness T10-T12 scenario registry, observability, and CI lane
 
 - Finished `T10` by normalizing the remaining shared harness scenarios through manifest v3:

@@ -1373,6 +1373,86 @@ export interface TutorProjectShellResponse {
   };
 }
 
+export interface TutorHubRecommendedAction {
+  kind: "resume_session" | "planner_task" | "exam" | "assignment" | "wheel_course";
+  title: string;
+  reason: string;
+  course_id: number | null;
+  course_name: string | null;
+  course_code: string | null;
+  session_id: string | null;
+  course_event_id: number | null;
+  event_type: string | null;
+  shell_mode: TutorShellMode;
+  action_label: string;
+}
+
+export interface TutorHubResumeCandidate {
+  can_resume: boolean;
+  course_id: number | null;
+  course_name: string | null;
+  course_code: string | null;
+  session_id: string | null;
+  last_mode: TutorShellMode | null;
+  board_scope: TutorBoardScope | null;
+  board_id: number | null;
+  topic: string | null;
+  updated_at: string | null;
+  action_label: string;
+}
+
+export interface TutorHubEventSummary {
+  id: number;
+  course_id: number;
+  course_name: string;
+  course_code: string | null;
+  title: string;
+  type: string;
+  scheduled_date: string | null;
+  status: string;
+}
+
+export interface TutorHubClassProject {
+  course_id: number;
+  course_name: string;
+  course_code: string | null;
+  material_count: number;
+  recent_session_count: number;
+  wheel_linked: boolean;
+  wheel_active: boolean;
+  wheel_position: number | null;
+  active_session: {
+    session_id: string;
+    topic: string | null;
+    status: string;
+    turn_count: number;
+    started_at: string;
+  } | null;
+  next_due_event: TutorHubEventSummary | null;
+}
+
+export interface TutorHubStudyWheelSnapshot {
+  current_course_id: number | null;
+  current_course_name: string | null;
+  current_course_code: string | null;
+  current_position: number | null;
+  total_sessions: number;
+  total_minutes: number;
+  total_active_courses: number;
+  next_course_id: number | null;
+  next_course_name: string | null;
+  next_course_code: string | null;
+}
+
+export interface TutorHubResponse {
+  recommended_action: TutorHubRecommendedAction | null;
+  resume_candidate: TutorHubResumeCandidate;
+  upcoming_assignments: TutorHubEventSummary[];
+  upcoming_tests: TutorHubEventSummary[];
+  class_projects: TutorHubClassProject[];
+  study_wheel: TutorHubStudyWheelSnapshot;
+}
+
 export interface TutorStudioItem {
   id: number;
   course_id: number;

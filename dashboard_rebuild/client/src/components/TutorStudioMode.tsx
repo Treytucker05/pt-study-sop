@@ -50,6 +50,12 @@ type TutorStudioModeProps = {
   onViewerStateChange?: (state: Record<string, unknown> | null) => void;
   onCourseChange?: (courseId: number | undefined) => void;
   onLaunchSession?: () => void;
+  entryRequest?: TutorStudioEntryRequest | null;
+};
+
+export type TutorStudioEntryRequest = {
+  level: StudioLevel;
+  token: number;
 };
 
 const BOARD_OPTIONS: Array<{
@@ -114,6 +120,7 @@ export function TutorStudioMode({
   onViewerStateChange,
   onCourseChange,
   onLaunchSession,
+  entryRequest = null,
 }: TutorStudioModeProps) {
   const queryClient = useQueryClient();
 
@@ -122,6 +129,7 @@ export function TutorStudioMode({
     typeof courseId === "number" ? 3 : 1,
   );
   const [rightTab, setRightTab] = useState<RightPanelTab>("source");
+  const lastEntryTokenRef = useRef<number | null>(null);
 
   // L3 workspace state
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
@@ -138,6 +146,13 @@ export function TutorStudioMode({
       setStudioLevel(1);
     }
   }, [courseId, studioLevel]);
+
+  useEffect(() => {
+    if (!entryRequest || typeof courseId !== "number") return;
+    if (lastEntryTokenRef.current === entryRequest.token) return;
+    lastEntryTokenRef.current = entryRequest.token;
+    setStudioLevel(entryRequest.level);
+  }, [courseId, entryRequest]);
 
   // Fetch course name for breadcrumb
   const { data: contentSources } = useQuery({

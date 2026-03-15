@@ -88,7 +88,7 @@ export function StudioPrepMode({
           <Layers3 className="mx-auto mb-3 h-8 w-8 text-primary/40" />
           <div className="font-arcade text-xs text-primary">NO CHAIN SELECTED</div>
           <div className="mt-2 font-terminal text-sm text-muted-foreground">
-            Pick a method chain from the Start Panel to guide your prep work.
+            Pick a method chain from DashBoard to guide your prep work.
           </div>
           <Button
             type="button"
@@ -96,7 +96,7 @@ export function StudioPrepMode({
             className="mt-4 rounded-none border-2 border-primary bg-primary/10 font-arcade text-[10px] text-primary hover:bg-primary/20"
           >
             <Play className="mr-1.5 h-3 w-3" />
-            OPEN START PANEL
+            OPEN DASHBOARD
           </Button>
         </div>
       </div>

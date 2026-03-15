@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, Clock3, RefreshCw, Sparkles } from "lucide-react";
 
 import { PlannerKanban } from "@/components/PlannerKanban";
@@ -15,7 +16,15 @@ interface TutorScheduleModeProps {
   courseName?: string | null;
   focusTopic?: string | null;
   className?: string;
+  launchIntent?: TutorScheduleLaunchIntent | null;
 }
+
+export type TutorScheduleLaunchIntent = {
+  token: number;
+  kind: "manage_event" | "manage_exam" | "open_event";
+  courseId: number;
+  courseEventId?: number | null;
+};
 
 function formatEventDate(value?: string | null): string {
   if (!value) return "Unscheduled";
@@ -39,9 +48,12 @@ export function TutorScheduleMode({
   courseName = null,
   focusTopic = null,
   className,
+  launchIntent = null,
 }: TutorScheduleModeProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [highlightedEventId, setHighlightedEventId] = useState<number | null>(null);
+  const [highlightedEventType, setHighlightedEventType] = useState<string | null>(null);
 
   const { data: shell } = useQuery({
     queryKey: ["tutor", "project-shell", courseId],
@@ -102,9 +114,32 @@ export function TutorScheduleMode({
     courseId === null || courseId === undefined ? true : task.course_id === courseId
   );
 
-  const upcomingEvents = [...events]
-    .sort((a, b) => String(a.dueDate || "").localeCompare(String(b.dueDate || "")))
-    .slice(0, 6);
+  useEffect(() => {
+    if (!launchIntent || courseId !== launchIntent.courseId) return;
+    if (launchIntent.kind === "open_event") {
+      setHighlightedEventId(launchIntent.courseEventId ?? null);
+      setHighlightedEventType(null);
+      return;
+    }
+    setHighlightedEventId(null);
+    setHighlightedEventType(launchIntent.kind === "manage_exam" ? "exam" : null);
+  }, [courseId, launchIntent]);
+
+  const upcomingEvents = useMemo(
+    () =>
+      [...events]
+        .sort((a, b) => {
+          const aFocused = highlightedEventId !== null && a.id === highlightedEventId ? 0 : 1;
+          const bFocused = highlightedEventId !== null && b.id === highlightedEventId ? 0 : 1;
+          if (aFocused !== bFocused) return aFocused - bFocused;
+          const aType = highlightedEventType && a.type === highlightedEventType ? 0 : 1;
+          const bType = highlightedEventType && b.type === highlightedEventType ? 0 : 1;
+          if (aType !== bType) return aType - bType;
+          return String(a.dueDate || "").localeCompare(String(b.dueDate || ""));
+        })
+        .slice(0, 6),
+    [events, highlightedEventId, highlightedEventType],
+  );
 
   const calendarSource = settings?.calendar_source === "google" ? "google" : "local";
   const displayCourse = courseName || shell?.course?.name || (courseId ? `Course ${courseId}` : null);
@@ -184,6 +219,21 @@ export function TutorScheduleMode({
               </div>
             ) : null}
 
+            {launchIntent ? (
+              <div className="border border-primary/30 bg-primary/10 p-3">
+                <div className="font-terminal text-[11px] uppercase tracking-[0.18em] text-primary/80">
+                  Launch focus
+                </div>
+                <div className="mt-1 font-terminal text-sm text-foreground">
+                  {launchIntent.kind === "manage_exam"
+                    ? "Exam management focus"
+                    : launchIntent.kind === "manage_event"
+                      ? "Course event management focus"
+                      : "Focused event opened from Tutor Page 1"}
+                </div>
+              </div>
+            ) : null}
+
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
@@ -249,7 +299,14 @@ export function TutorScheduleMode({
                 {upcomingEvents.map((event) => (
                   <div
                     key={event.id}
-                    className="flex items-start justify-between gap-3 border border-secondary/30 bg-black/30 p-3"
+                    className={cn(
+                      "flex items-start justify-between gap-3 border bg-black/30 p-3",
+                      highlightedEventId === event.id
+                        ? "border-primary/50 bg-primary/10"
+                        : highlightedEventType && event.type === highlightedEventType
+                          ? "border-primary/30"
+                          : "border-secondary/30",
+                    )}
                   >
                     <div className="min-w-0">
                       <div className="font-terminal text-sm text-foreground">{event.title}</div>

@@ -11,6 +11,7 @@ export const TUTOR_ACTIVE_SESSION_KEY = "tutor.active_session.v1";
 export const TUTOR_LIBRARY_HANDOFF_KEY = "tutor.open_from_library.v1";
 export const TUTOR_BRAIN_HANDOFF_KEY = "tutor.open_from_brain.v1";
 export const TUTOR_VAULT_FOLDER_KEY = "tutor.vault_folder.v1";
+export const LIBRARY_TUTOR_HANDOFF_KEY = "library.open_from_tutor.v1";
 
 export type TutorBrainLaunchContext = {
   source?: string;
@@ -21,6 +22,15 @@ export type TutorBrainLaunchContext = {
   dueDate?: string;
   investigationId?: string;
   questionId?: string;
+};
+
+export type LibraryTutorLaunchContext = {
+  source?: string;
+  courseId?: number;
+  courseName?: string;
+  courseEventId?: number;
+  eventType?: string | null;
+  target?: "load_materials";
 };
 
 export type TutorPersistedStartState = {
@@ -124,6 +134,33 @@ function normalizeTutorBrainLaunchContext(
     next.investigationId = record.investigationId;
   }
   if (typeof record.questionId === "string") next.questionId = record.questionId;
+  return Object.keys(next).length > 0 ? next : null;
+}
+
+function normalizeLibraryTutorLaunchContext(
+  value: unknown,
+): LibraryTutorLaunchContext | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  const next: LibraryTutorLaunchContext = {};
+  if (typeof record.source === "string") next.source = record.source;
+  if (
+    typeof record.courseId === "number" &&
+    Number.isInteger(record.courseId) &&
+    record.courseId > 0
+  ) {
+    next.courseId = record.courseId;
+  }
+  if (typeof record.courseName === "string") next.courseName = record.courseName;
+  if (
+    typeof record.courseEventId === "number" &&
+    Number.isInteger(record.courseEventId) &&
+    record.courseEventId > 0
+  ) {
+    next.courseEventId = record.courseEventId;
+  }
+  if (typeof record.eventType === "string") next.eventType = record.eventType;
+  if (record.target === "load_materials") next.target = "load_materials";
   return Object.keys(next).length > 0 ? next : null;
 }
 
@@ -377,4 +414,41 @@ export function consumeTutorLaunchHandoff(
   }
 
   return { fromLibraryHandoff, brainLaunchContext };
+}
+
+export function writeLibraryLaunchFromTutor(
+  value: LibraryTutorLaunchContext,
+  storage: Pick<Storage, "setItem"> = window.sessionStorage,
+): LibraryTutorLaunchContext {
+  const normalized = normalizeLibraryTutorLaunchContext(value) || {
+    source: "tutor-page1",
+    target: "load_materials",
+  };
+  try {
+    storage.setItem(LIBRARY_TUTOR_HANDOFF_KEY, JSON.stringify(normalized));
+  } catch {
+    // Ignore storage failures; callers still receive the normalized state.
+  }
+  return normalized;
+}
+
+export function consumeLibraryLaunchFromTutor(
+  storage: Pick<Storage, "getItem" | "removeItem"> = window.sessionStorage,
+): LibraryTutorLaunchContext | null {
+  const raw = storage.getItem(LIBRARY_TUTOR_HANDOFF_KEY);
+  if (raw === null) return null;
+
+  let parsed: LibraryTutorLaunchContext | null = null;
+  try {
+    parsed = normalizeLibraryTutorLaunchContext(JSON.parse(raw));
+  } catch {
+    parsed = null;
+  }
+
+  try {
+    storage.removeItem(LIBRARY_TUTOR_HANDOFF_KEY);
+  } catch {
+    // Ignore storage failures.
+  }
+  return parsed;
 }

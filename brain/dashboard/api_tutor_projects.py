@@ -121,6 +121,434 @@ def _serialize_workspace_state(row: sqlite3.Row | None) -> dict[str, Any]:
     }
 
 
+def _ensure_wheel_courses_schema(cur: sqlite3.Cursor) -> None:
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS wheel_courses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            course_id INTEGER,
+            name TEXT NOT NULL,
+            active INTEGER DEFAULT 1,
+            position INTEGER DEFAULT 0,
+            total_sessions INTEGER DEFAULT 0,
+            total_minutes INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    cur.execute("PRAGMA table_info(wheel_courses)")
+    columns = {row[1] for row in cur.fetchall()}
+    if "course_id" not in columns:
+        cur.execute("ALTER TABLE wheel_courses ADD COLUMN course_id INTEGER")
+
+
+def _event_scheduled_date(row: sqlite3.Row | dict[str, Any]) -> str | None:
+    if isinstance(row, sqlite3.Row):
+        due_date = row["due_date"] if "due_date" in row.keys() else None
+        base_date = row["date"] if "date" in row.keys() else None
+        scheduled_date = row["scheduled_date"] if "scheduled_date" in row.keys() else None
+    else:
+        due_date = row.get("due_date")
+        base_date = row.get("date")
+        scheduled_date = row.get("scheduled_date")
+    return str(scheduled_date or due_date or base_date or "").strip() or None
+
+
+def _event_sort_key(row: sqlite3.Row | dict[str, Any]) -> tuple[int, str]:
+    scheduled = _event_scheduled_date(row)
+    return (0 if scheduled else 1, scheduled or "9999-12-31")
+
+
+def _serialize_hub_event(row: sqlite3.Row | dict[str, Any]) -> dict[str, Any]:
+    if isinstance(row, sqlite3.Row):
+        record = dict(row)
+    else:
+        record = dict(row)
+    return {
+        "id": int(record["id"]),
+        "course_id": int(record["course_id"]),
+        "course_name": record.get("course_name") or record.get("course") or "",
+        "course_code": record.get("course_code"),
+        "title": record.get("title") or "",
+        "type": record.get("type") or "other",
+        "scheduled_date": _event_scheduled_date(record),
+        "status": record.get("status") or "pending",
+    }
+
+
+def _format_resume_label(last_mode: str | None, topic: str | None) -> str:
+    if last_mode == "studio":
+        return "Resume Studio Workspace"
+    if last_mode == "schedule":
+        return "Resume Schedule"
+    if last_mode == "publish":
+        return "Resume Publish"
+    if topic:
+        return "Resume Tutor Session"
+    return "Resume Tutor"
+
+
+def _format_action_label(kind: str) -> str:
+    if kind == "resume_session":
+        return "RESUME"
+    if kind == "planner_task":
+        return "OPEN SCHEDULE"
+    if kind == "exam":
+        return "OPEN EXAM"
+    if kind == "assignment":
+        return "OPEN EVENT"
+    if kind == "wheel_course":
+        return "OPEN PROJECT"
+    return "OPEN"
+
+
+@tutor_bp.route("/hub", methods=["GET"])
+def get_tutor_hub():
+    today = datetime.now(timezone.utc).date().isoformat()
+
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    try:
+        cur = conn.cursor()
+        _ensure_wheel_courses_schema(cur)
+        conn.commit()
+
+        cur.execute(
+            """
+            SELECT
+                c.id,
+                c.name,
+                c.code,
+                COUNT(DISTINCT r.id) AS material_count,
+                CASE WHEN w.id IS NULL THEN 0 ELSE 1 END AS wheel_linked,
+                COALESCE(w.active, 0) AS wheel_active,
+                w.position AS wheel_position
+            FROM courses c
+            LEFT JOIN wheel_courses w ON w.course_id = c.id
+            LEFT JOIN rag_docs r ON r.course_id = c.id
+                AND COALESCE(r.enabled, 1) = 1
+                AND COALESCE(r.corpus, 'materials') = 'materials'
+            WHERE c.term IS NOT NULL
+               OR c.id IN (SELECT DISTINCT course_id FROM rag_docs WHERE course_id IS NOT NULL)
+               OR c.id IN (SELECT DISTINCT course_id FROM wheel_courses WHERE course_id IS NOT NULL)
+            GROUP BY c.id, w.id
+            ORDER BY c.name
+            """
+        )
+        course_rows = list(cur.fetchall())
+
+        cur.execute(
+            """
+            SELECT
+                session_id,
+                course_id,
+                phase,
+                topic,
+                status,
+                turn_count,
+                started_at,
+                ended_at
+            FROM tutor_sessions
+            WHERE course_id IS NOT NULL
+            ORDER BY datetime(started_at) DESC, id DESC
+            """
+        )
+        latest_session_by_course: dict[int, dict[str, Any]] = {}
+        active_session_by_course: dict[int, dict[str, Any]] = {}
+        session_counts: dict[int, int] = {}
+        for row in cur.fetchall():
+            record = dict(row)
+            course_id = int(record["course_id"])
+            session_counts[course_id] = session_counts.get(course_id, 0) + 1
+            latest_session_by_course.setdefault(course_id, record)
+            if record.get("status") == "active" and course_id not in active_session_by_course:
+                active_session_by_course[course_id] = record
+
+        cur.execute(
+            """
+            SELECT
+                ce.id,
+                ce.course_id,
+                ce.course,
+                ce.type,
+                ce.title,
+                ce.date,
+                ce.due_date,
+                COALESCE(ce.status, 'pending') AS status,
+                c.name AS course_name,
+                c.code AS course_code
+            FROM course_events ce
+            LEFT JOIN courses c ON c.id = ce.course_id
+            WHERE ce.course_id IS NOT NULL
+              AND COALESCE(ce.status, 'pending') = 'pending'
+            ORDER BY
+                CASE WHEN COALESCE(ce.due_date, ce.date) IS NULL THEN 1 ELSE 0 END,
+                COALESCE(ce.due_date, ce.date) ASC,
+                ce.id ASC
+            """
+        )
+        pending_event_rows = list(cur.fetchall())
+        next_due_by_course: dict[int, dict[str, Any]] = {}
+        assignments: list[dict[str, Any]] = []
+        tests: list[dict[str, Any]] = []
+        for row in pending_event_rows:
+            course_id = int(row["course_id"])
+            next_due_by_course.setdefault(course_id, dict(row))
+            event_type = str(row["type"] or "").strip().lower()
+            serialized = _serialize_hub_event(row)
+            if event_type in {"assignment", "project"} and len(assignments) < 2:
+                assignments.append(serialized)
+            elif event_type in {"quiz", "exam"} and len(tests) < 2:
+                tests.append(serialized)
+            if len(assignments) >= 2 and len(tests) >= 2:
+                continue
+
+        cur.execute(
+            """
+            SELECT
+                p.course_id,
+                p.active_tutor_session_id,
+                p.last_mode,
+                p.active_board_scope,
+                p.active_board_id,
+                p.updated_at,
+                c.name AS course_name,
+                c.code AS course_code,
+                s.topic AS active_topic,
+                s.status AS active_status
+            FROM project_workspace_state p
+            LEFT JOIN courses c ON c.id = p.course_id
+            LEFT JOIN tutor_sessions s
+                ON s.session_id = p.active_tutor_session_id
+               AND s.course_id = p.course_id
+            ORDER BY
+                CASE WHEN s.status = 'active' THEN 0 ELSE 1 END,
+                datetime(COALESCE(p.updated_at, '1970-01-01T00:00:00')) DESC,
+                p.id DESC
+            """
+        )
+        workspace_rows = list(cur.fetchall())
+        resume_row = workspace_rows[0] if workspace_rows else None
+        fallback_session = None
+        if resume_row is not None:
+            fallback_session = latest_session_by_course.get(int(resume_row["course_id"]))
+        resume_candidate = {
+            "can_resume": bool(
+                resume_row
+                and resume_row["active_tutor_session_id"]
+                and resume_row["active_status"] == "active"
+            ),
+            "course_id": int(resume_row["course_id"]) if resume_row else None,
+            "course_name": resume_row["course_name"] if resume_row else None,
+            "course_code": resume_row["course_code"] if resume_row else None,
+            "session_id": resume_row["active_tutor_session_id"] if resume_row else None,
+            "last_mode": resume_row["last_mode"] if resume_row else None,
+            "board_scope": resume_row["active_board_scope"] if resume_row else None,
+            "board_id": resume_row["active_board_id"] if resume_row else None,
+            "topic": (
+                resume_row["active_topic"]
+                if resume_row and resume_row["active_topic"]
+                else (fallback_session["topic"] if fallback_session else None)
+            ),
+            "updated_at": resume_row["updated_at"] if resume_row else None,
+            "action_label": _format_resume_label(
+                resume_row["last_mode"] if resume_row else None,
+                (
+                    resume_row["active_topic"]
+                    if resume_row and resume_row["active_topic"]
+                    else (fallback_session["topic"] if fallback_session else None)
+                ),
+            ),
+        }
+
+        cur.execute(
+            """
+            SELECT
+                t.id,
+                t.course_id,
+                t.course_event_id,
+                t.scheduled_date,
+                t.status,
+                t.priority,
+                t.anchor_text,
+                c.name AS course_name,
+                c.code AS course_code,
+                ce.title AS event_title,
+                ce.type AS event_type
+            FROM study_tasks t
+            LEFT JOIN courses c ON c.id = t.course_id
+            LEFT JOIN course_events ce ON ce.id = t.course_event_id
+            WHERE COALESCE(t.status, 'pending') IN ('pending', 'in_progress')
+              AND t.scheduled_date IS NOT NULL
+              AND t.scheduled_date <= ?
+            ORDER BY
+                t.scheduled_date ASC,
+                COALESCE(t.priority, 0) DESC,
+                t.id ASC
+            LIMIT 1
+            """,
+            (today,),
+        )
+        planner_task = cur.fetchone()
+
+        cur.execute(
+            """
+            SELECT
+                w.course_id,
+                c.name AS course_name,
+                c.code AS course_code,
+                w.position,
+                w.total_sessions,
+                w.total_minutes
+            FROM wheel_courses w
+            LEFT JOIN courses c ON c.id = w.course_id
+            WHERE w.active = 1
+            ORDER BY w.position ASC
+            LIMIT 2
+            """
+        )
+        wheel_rows = list(cur.fetchall())
+        current_wheel = wheel_rows[0] if wheel_rows else None
+        next_wheel = wheel_rows[1] if len(wheel_rows) > 1 else None
+        cur.execute("SELECT COUNT(*) AS total_active FROM wheel_courses WHERE active = 1")
+        total_active_wheel = int((cur.fetchone()["total_active"] or 0))
+
+        recommended_action: dict[str, Any] | None = None
+        if resume_candidate["can_resume"] and resume_candidate["session_id"]:
+            recommended_action = {
+                "kind": "resume_session",
+                "title": resume_candidate["topic"] or "Resume Tutor Session",
+                "reason": f"Resume {resume_candidate['course_name'] or 'Tutor'} where you left off.",
+                "course_id": resume_candidate["course_id"],
+                "course_name": resume_candidate["course_name"],
+                "course_code": resume_candidate["course_code"],
+                "session_id": resume_candidate["session_id"],
+                "course_event_id": None,
+                "event_type": None,
+                "shell_mode": "tutor",
+                "action_label": _format_action_label("resume_session"),
+            }
+        elif planner_task is not None:
+            recommended_action = {
+                "kind": "planner_task",
+                "title": planner_task["event_title"] or planner_task["anchor_text"] or "Planner review",
+                "reason": f"Planner task due {planner_task['scheduled_date']}.",
+                "course_id": int(planner_task["course_id"]) if planner_task["course_id"] is not None else None,
+                "course_name": planner_task["course_name"],
+                "course_code": planner_task["course_code"],
+                "session_id": None,
+                "course_event_id": int(planner_task["course_event_id"]) if planner_task["course_event_id"] is not None else None,
+                "event_type": planner_task["event_type"],
+                "shell_mode": "schedule",
+                "action_label": _format_action_label("planner_task"),
+            }
+        elif tests:
+            top_test = tests[0]
+            recommended_action = {
+                "kind": "exam",
+                "title": top_test["title"],
+                "reason": f"Upcoming {top_test['type']} for {top_test['course_name']}.",
+                "course_id": top_test["course_id"],
+                "course_name": top_test["course_name"],
+                "course_code": top_test["course_code"],
+                "session_id": None,
+                "course_event_id": top_test["id"],
+                "event_type": top_test["type"],
+                "shell_mode": "schedule",
+                "action_label": _format_action_label("exam"),
+            }
+        elif assignments:
+            top_assignment = assignments[0]
+            recommended_action = {
+                "kind": "assignment",
+                "title": top_assignment["title"],
+                "reason": f"Upcoming {top_assignment['type']} for {top_assignment['course_name']}.",
+                "course_id": top_assignment["course_id"],
+                "course_name": top_assignment["course_name"],
+                "course_code": top_assignment["course_code"],
+                "session_id": None,
+                "course_event_id": top_assignment["id"],
+                "event_type": top_assignment["type"],
+                "shell_mode": "schedule",
+                "action_label": _format_action_label("assignment"),
+            }
+        elif current_wheel is not None:
+            recommended_action = {
+                "kind": "wheel_course",
+                "title": current_wheel["course_name"] or "Current wheel course",
+                "reason": "No active resume or urgent deadline is blocking the next study block.",
+                "course_id": int(current_wheel["course_id"]) if current_wheel["course_id"] is not None else None,
+                "course_name": current_wheel["course_name"],
+                "course_code": current_wheel["course_code"],
+                "session_id": None,
+                "course_event_id": None,
+                "event_type": None,
+                "shell_mode": "studio",
+                "action_label": _format_action_label("wheel_course"),
+            }
+
+        class_projects: list[dict[str, Any]] = []
+        for course_row in course_rows:
+            course_id = int(course_row["id"])
+            active_session = active_session_by_course.get(course_id)
+            next_due = next_due_by_course.get(course_id)
+            class_projects.append(
+                {
+                    "course_id": course_id,
+                    "course_name": course_row["name"],
+                    "course_code": course_row["code"],
+                    "material_count": int(course_row["material_count"] or 0),
+                    "recent_session_count": int(session_counts.get(course_id, 0)),
+                    "wheel_linked": bool(course_row["wheel_linked"]),
+                    "wheel_active": bool(course_row["wheel_active"]),
+                    "wheel_position": course_row["wheel_position"],
+                    "active_session": {
+                        "session_id": active_session["session_id"],
+                        "topic": active_session["topic"],
+                        "status": active_session["status"],
+                        "turn_count": int(active_session["turn_count"] or 0),
+                        "started_at": active_session["started_at"],
+                    }
+                    if active_session
+                    else None,
+                    "next_due_event": _serialize_hub_event(next_due) if next_due else None,
+                }
+            )
+
+        class_projects.sort(
+            key=lambda item: (
+                0 if item["active_session"] else 1,
+                _event_sort_key(item["next_due_event"] or {}),
+                0 if item["wheel_active"] else 1,
+                str(item["course_name"] or "").lower(),
+            )
+        )
+
+        return jsonify(
+            {
+                "recommended_action": recommended_action,
+                "resume_candidate": resume_candidate,
+                "upcoming_assignments": assignments,
+                "upcoming_tests": tests,
+                "class_projects": class_projects,
+                "study_wheel": {
+                    "current_course_id": int(current_wheel["course_id"]) if current_wheel and current_wheel["course_id"] is not None else None,
+                    "current_course_name": current_wheel["course_name"] if current_wheel else None,
+                    "current_course_code": current_wheel["course_code"] if current_wheel else None,
+                    "current_position": int(current_wheel["position"]) if current_wheel and current_wheel["position"] is not None else None,
+                    "total_sessions": int(current_wheel["total_sessions"] or 0) if current_wheel else 0,
+                    "total_minutes": int(current_wheel["total_minutes"] or 0) if current_wheel else 0,
+                    "total_active_courses": total_active_wheel,
+                    "next_course_id": int(next_wheel["course_id"]) if next_wheel and next_wheel["course_id"] is not None else None,
+                    "next_course_name": next_wheel["course_name"] if next_wheel else None,
+                    "next_course_code": next_wheel["course_code"] if next_wheel else None,
+                },
+            }
+        )
+    finally:
+        conn.close()
+
+
 @tutor_bp.route("/project-shell", methods=["GET"])
 def get_project_shell():
     raw_course_id = request.args.get("course_id")

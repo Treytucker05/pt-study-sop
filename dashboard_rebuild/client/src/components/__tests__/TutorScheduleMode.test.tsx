@@ -116,4 +116,31 @@ describe("TutorScheduleMode", () => {
       expect(updateSettingsMock).toHaveBeenCalledWith({ calendar_source: "local" })
     );
   });
+
+  it("surfaces an exam-management launch focus from Page 1", async () => {
+    renderMode(
+      <TutorScheduleMode
+        courseId={7}
+        launchIntent={{ token: 1, kind: "manage_exam", courseId: 7 }}
+      />,
+    );
+
+    expect(await screen.findByText("Launch focus")).toBeInTheDocument();
+    expect(screen.getByText("Exam management focus")).toBeInTheDocument();
+    const eventCards = screen.getAllByText(/Thorax Quiz|Neuro Exam/);
+    expect(eventCards[0]).toHaveTextContent("Neuro Exam");
+  });
+
+  it("highlights a focused course event opened from Page 1", async () => {
+    renderMode(
+      <TutorScheduleMode
+        courseId={7}
+        launchIntent={{ token: 2, kind: "open_event", courseId: 7, courseEventId: 2 }}
+      />,
+    );
+
+    expect(await screen.findByText("Focused event opened from Tutor Page 1")).toBeInTheDocument();
+    const examCard = screen.getByText("Neuro Exam").closest("div[class*='border']");
+    expect(examCard?.className).toContain("bg-primary/10");
+  });
 });

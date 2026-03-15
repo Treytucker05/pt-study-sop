@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 
 const {
+  consumeLibraryLaunchFromTutorMock,
   getMaterialsMock,
   getActiveCoursesMock,
   getContentSourcesMock,
@@ -18,6 +19,7 @@ const {
   readTutorSelectedMaterialIdsMock,
   writeTutorSelectedMaterialIdsMock,
 } = vi.hoisted(() => ({
+  consumeLibraryLaunchFromTutorMock: vi.fn(),
   getMaterialsMock: vi.fn(),
   getActiveCoursesMock: vi.fn(),
   getContentSourcesMock: vi.fn(),
@@ -42,6 +44,7 @@ vi.mock("@/components/MaterialUploader", () => ({
 }));
 
 vi.mock("@/lib/tutorClientState", () => ({
+  consumeLibraryLaunchFromTutor: consumeLibraryLaunchFromTutorMock,
   readTutorSelectedMaterialIds: readTutorSelectedMaterialIdsMock,
   writeTutorSelectedMaterialIds: writeTutorSelectedMaterialIdsMock,
 }));
@@ -85,6 +88,7 @@ describe("Library tutor handoff", () => {
     localStorage.clear();
     sessionStorage.clear();
 
+    consumeLibraryLaunchFromTutorMock.mockReturnValue(null);
     readTutorSelectedMaterialIdsMock.mockReturnValue([]);
     writeTutorSelectedMaterialIdsMock.mockImplementation(() => {});
 
@@ -169,5 +173,26 @@ describe("Library tutor handoff", () => {
     expect(writeTutorSelectedMaterialIdsMock).toHaveBeenCalledWith([1]);
     expect(localStorage.getItem("tutor.wizard.progress.v1")).toBeNull();
     expect(sessionStorage.getItem("tutor.open_from_library.v1")).toBe("1");
+  });
+
+  it("consumes Tutor Page 1 handoff and preselects the course intake target", async () => {
+    getActiveCoursesMock.mockResolvedValue([
+      { id: 9, name: "Neuro", code: "NEU-9" },
+    ]);
+    getContentSourcesMock.mockResolvedValue({
+      courses: [{ id: 9, name: "Neuro", code: "NEU-9", doc_count: 1 }],
+    });
+    consumeLibraryLaunchFromTutorMock.mockReturnValue({
+      source: "assignment",
+      courseId: 9,
+      courseName: "Neuro",
+      target: "load_materials",
+    });
+
+    renderLibrary();
+
+    expect(await screen.findByText("NEU-9")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: /upload course/i })).toHaveValue("9");
+    expect(screen.getByRole("combobox", { name: /sync course/i })).toHaveValue("9");
   });
 });

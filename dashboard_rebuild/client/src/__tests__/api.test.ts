@@ -578,6 +578,12 @@ describe("api.tutor", () => {
     expect(url).toContain("session_id=tutor-123");
   });
 
+  it("getHub fetches the Tutor command deck aggregate", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ class_projects: [] }));
+    await api.tutor.getHub();
+    expect(mockFetch).toHaveBeenCalledWith("/api/tutor/hub", expect.anything());
+  });
+
   it("saveProjectShellState sends PUT", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse({ course_id: 1, workspace_state: { revision: 1 } }));
     await api.tutor.saveProjectShellState({ course_id: 1, revision: 0 });

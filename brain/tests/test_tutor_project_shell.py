@@ -68,8 +68,8 @@ def _insert_course_event(course_id: int, title: str = "Quiz 1") -> None:
     conn = sqlite3.connect(config.DB_PATH)
     conn.execute(
         """
-        INSERT INTO course_events (course_id, course, type, title, date, status, created_at)
-        VALUES (?, ?, 'quiz', ?, '2026-03-20', 'pending', datetime('now'))
+        INSERT INTO course_events (course_id, course, type, title, date, due_date, status, created_at)
+        VALUES (?, ?, 'quiz', ?, '2026-03-20', '2026-03-20', 'pending', datetime('now'))
         """,
         (course_id, f"C-{course_id}", title),
     )
@@ -85,6 +85,96 @@ def _insert_tutor_session(course_id: int, session_id: str, topic: str = "Week 1 
         VALUES (?, ?, 'first_pass', ?, 'active', 0, datetime('now'))
         """,
         (session_id, course_id, topic),
+    )
+    conn.commit()
+    conn.close()
+
+
+def _insert_workspace_state(
+    course_id: int,
+    *,
+    session_id: str | None = None,
+    last_mode: str = "studio",
+) -> None:
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        """
+        INSERT INTO project_workspace_state (
+            course_id,
+            active_tutor_session_id,
+            last_mode,
+            active_board_scope,
+            selected_material_ids_json,
+            revision,
+            updated_at
+        )
+        VALUES (?, ?, ?, 'project', '[]', 1, datetime('now'))
+        """,
+        (course_id, session_id, last_mode),
+    )
+    conn.commit()
+    conn.close()
+
+
+def _insert_study_task(
+    course_id: int,
+    *,
+    course_event_id: int | None = None,
+    scheduled_date: str = "2026-03-15",
+    anchor_text: str = "Review block",
+) -> None:
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        """
+        INSERT INTO study_tasks (
+            course_id,
+            course_event_id,
+            scheduled_date,
+            planned_minutes,
+            status,
+            notes,
+            created_at,
+            source,
+            priority,
+            anchor_text
+        )
+        VALUES (?, ?, ?, 45, 'pending', '', datetime('now'), 'manual', 1, ?)
+        """,
+        (course_id, course_event_id, scheduled_date, anchor_text),
+    )
+    conn.commit()
+    conn.close()
+
+
+def _insert_wheel_course(
+    course_id: int,
+    *,
+    position: int = 0,
+    active: int = 1,
+    total_sessions: int = 0,
+    total_minutes: int = 0,
+) -> None:
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS wheel_courses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            course_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            active INTEGER NOT NULL DEFAULT 1,
+            position INTEGER,
+            total_sessions INTEGER NOT NULL DEFAULT 0,
+            total_minutes INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO wheel_courses (course_id, name, active, position, total_sessions, total_minutes, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+        """,
+        (course_id, f"Course {course_id}", active, position, total_sessions, total_minutes),
     )
     conn.commit()
     conn.close()
@@ -132,6 +222,85 @@ def test_project_shell_returns_defaults_and_counts(client):
     assert body["counts"]["pending_schedule_events"] == 1
     assert len(body["recent_sessions"]) == 1
     assert body["recent_sessions"][0]["session_id"] == "tutor-shell-101"
+
+
+def test_tutor_hub_buckets_events_and_builds_class_cards(client):
+    _insert_course(201, "Neuro")
+    _insert_course(202, "MSK")
+    _insert_course_event(201, "Quiz 1")
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        """
+        UPDATE course_events SET type = 'assignment', due_date = '2026-03-18', date = '2026-03-18' WHERE course_id = 201
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO course_events (course_id, course, type, title, date, due_date, status, created_at)
+        VALUES (201, 'C-201', 'project', 'Case Project', '2026-03-19', '2026-03-19', 'pending', datetime('now'))
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO course_events (course_id, course, type, title, date, due_date, status, created_at)
+        VALUES (202, 'C-202', 'quiz', 'MSK Quiz', '2026-03-20', '2026-03-20', 'pending', datetime('now'))
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO course_events (course_id, course, type, title, date, due_date, status, created_at)
+        VALUES (202, 'C-202', 'exam', 'MSK Exam', '2026-03-22', '2026-03-22', 'pending', datetime('now'))
+        """
+    )
+    conn.commit()
+    conn.close()
+    _insert_tutor_session(201, "hub-session-201", "Brainstem")
+    _insert_workspace_state(201, session_id="hub-session-201", last_mode="tutor")
+    _insert_material(
+        9001,
+        title="Neuro Packet",
+        source_path="Uploads/neuro-packet.pdf",
+        course_id=201,
+    )
+    _insert_wheel_course(201, position=0, total_sessions=3, total_minutes=90)
+    _insert_wheel_course(202, position=1, total_sessions=2, total_minutes=55)
+
+    response = client.get("/api/tutor/hub")
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert [item["type"] for item in body["upcoming_assignments"]] == ["assignment", "project"]
+    assert [item["type"] for item in body["upcoming_tests"]] == ["quiz", "exam"]
+    assert body["resume_candidate"]["can_resume"] is True
+    assert body["resume_candidate"]["session_id"] == "hub-session-201"
+    assert body["study_wheel"]["current_course_id"] == 201
+    assert body["study_wheel"]["next_course_id"] == 202
+    neuro_card = next(item for item in body["class_projects"] if item["course_id"] == 201)
+    assert neuro_card["material_count"] == 1
+    assert neuro_card["active_session"]["session_id"] == "hub-session-201"
+    assert neuro_card["next_due_event"]["title"] == "Quiz 1"
+
+
+def test_tutor_hub_recommendation_prefers_active_resume_over_tasks_and_wheel(client):
+    _insert_course(203, "Cardio")
+    _insert_tutor_session(203, "hub-session-203", "Cardiac Cycle")
+    _insert_workspace_state(203, session_id="hub-session-203", last_mode="tutor")
+    _insert_course_event(203, "Cardio Quiz")
+    conn = sqlite3.connect(config.DB_PATH)
+    course_event_id = conn.execute(
+        "SELECT id FROM course_events WHERE course_id = 203 LIMIT 1"
+    ).fetchone()[0]
+    conn.close()
+    _insert_study_task(203, course_event_id=course_event_id)
+    _insert_wheel_course(203, position=0, total_sessions=1, total_minutes=40)
+
+    response = client.get("/api/tutor/hub")
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["recommended_action"]["kind"] == "resume_session"
+    assert body["recommended_action"]["session_id"] == "hub-session-203"
+    assert body["recommended_action"]["action_label"] == "RESUME"
 
 
 def test_project_shell_state_persists_and_increments_revision(client):

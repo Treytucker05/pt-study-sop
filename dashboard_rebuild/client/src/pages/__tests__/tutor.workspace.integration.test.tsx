@@ -7,6 +7,7 @@ const {
   getSessionMock,
   getMaterialsMock,
   listSessionsMock,
+  getHubMock,
   configCheckMock,
   getContentSourcesMock,
   preflightSessionMock,
@@ -25,6 +26,7 @@ const {
   getSessionMock: vi.fn(),
   getMaterialsMock: vi.fn(),
   listSessionsMock: vi.fn(),
+  getHubMock: vi.fn(),
   configCheckMock: vi.fn(),
   getContentSourcesMock: vi.fn(),
   preflightSessionMock: vi.fn(),
@@ -51,6 +53,12 @@ vi.mock("@/components/ContentFilter", () => ({
 
 vi.mock("@/components/TutorStartPanel", () => ({
   TutorStartPanel: () => <div data-testid="tutor-start-panel">start panel</div>,
+}));
+
+vi.mock("@/components/TutorCommandDeck", () => ({
+  TutorCommandDeck: ({ launchSettings }: { launchSettings: ReactNode }) => (
+    <div data-testid="tutor-command-deck">{launchSettings}</div>
+  ),
 }));
 
 vi.mock("@/components/TutorChat", () => ({
@@ -106,6 +114,7 @@ vi.mock("@/lib/api", () => ({
     tutor: {
       getMaterials: getMaterialsMock,
       listSessions: listSessionsMock,
+      getHub: getHubMock,
       configCheck: configCheckMock,
       getContentSources: getContentSourcesMock,
       preflightSession: preflightSessionMock,
@@ -181,6 +190,17 @@ function makeProjectShell(courseId = 1) {
   };
 }
 
+function makeTutorHub() {
+  return {
+    recommended_action: null,
+    resume_candidate: null,
+    upcoming_assignments: [],
+    upcoming_tests: [],
+    class_projects: [],
+    study_wheel: null,
+  };
+}
+
 function renderTutor() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 }, mutations: { retry: false } },
@@ -192,7 +212,7 @@ function renderTutor() {
   );
 }
 
-describe("Tutor workspace route integration", () => {
+describe("Tutor studio route integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
@@ -200,6 +220,7 @@ describe("Tutor workspace route integration", () => {
     window.history.replaceState({}, "", "/tutor");
     getMaterialsMock.mockResolvedValue([]);
     listSessionsMock.mockResolvedValue([]);
+    getHubMock.mockResolvedValue(makeTutorHub());
     configCheckMock.mockResolvedValue({ ok: true });
     getContentSourcesMock.mockResolvedValue({ courses: [] });
     preflightSessionMock.mockResolvedValue({
@@ -247,20 +268,13 @@ describe("Tutor workspace route integration", () => {
     restoreStudioItemsMock.mockResolvedValue({ items: [] });
   });
 
-  it("renders the real Tutor workspace tools from Studio mode without reviving Brain chrome", async () => {
+  it("renders the Studio prep surface from Studio mode without reviving Brain chrome", async () => {
+    window.history.replaceState({}, "", "/tutor?course_id=1&mode=studio");
     renderTutor();
 
-    expect(await screen.findByTestId("tutor-workspace-surface")).toBeInTheDocument();
+    expect(await screen.findByText("NO CHAIN SELECTED")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /open dashboard/i })).toBeInTheDocument();
     expect(screen.queryByTestId("sidebar-rail")).not.toBeInTheDocument();
     expect(screen.queryByTestId("brain-tool-profile")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: /Tutor Note\.md/i }));
-    await waitFor(() => {
-      expect(getFileMock).toHaveBeenCalledWith("Tutor Workspace/Tutor Note.md");
-    });
-    expect(screen.getByDisplayValue("# Tutor Note")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByTestId("tutor-workspace-tab-graph"));
-    expect(await screen.findByTestId("page-graph-ready")).toBeInTheDocument();
   });
 });

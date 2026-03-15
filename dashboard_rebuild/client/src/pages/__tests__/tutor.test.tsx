@@ -7,6 +7,7 @@ const {
   getSessionMock,
   getMaterialsMock,
   listSessionsMock,
+  getHubMock,
   configCheckMock,
   getContentSourcesMock,
   preflightSessionMock,
@@ -27,6 +28,7 @@ const {
   getSessionMock: vi.fn(),
   getMaterialsMock: vi.fn(),
   listSessionsMock: vi.fn(),
+  getHubMock: vi.fn(),
   configCheckMock: vi.fn(),
   getContentSourcesMock: vi.fn(),
   preflightSessionMock: vi.fn(),
@@ -61,6 +63,128 @@ vi.mock("@/components/TutorStartPanel", () => ({
   }) => <div data-testid="tutor-start-panel">selected:{selectedMaterials.length}</div>,
 }));
 
+vi.mock("@/components/TutorCommandDeck", () => ({
+  TutorCommandDeck: ({
+    hub,
+    launchSettings,
+    onOpenProject,
+    onOpenScheduleCourse,
+    onOpenScheduleEvent,
+    onLoadMaterials,
+    onResumeCandidate,
+    onRunRecommendedAction,
+  }: {
+    hub?: {
+      recommended_action?: {
+        title?: string;
+      } | null;
+      resume_candidate?: unknown | null;
+      upcoming_assignments?: {
+        id: number;
+        course_id: number;
+        course_name: string;
+        course_code?: string | null;
+        title: string;
+        type: string;
+        scheduled_date?: string | null;
+        status?: string | null;
+      }[];
+    };
+    launchSettings: ReactNode;
+    onOpenProject: (courseId: number) => void;
+    onOpenScheduleCourse: (
+      courseId: number,
+      kind: "manage_event" | "manage_exam",
+    ) => void;
+    onOpenScheduleEvent: (
+      event: {
+        id: number;
+        course_id: number;
+        course_name: string;
+        course_code?: string | null;
+        title: string;
+        type: string;
+        scheduled_date?: string | null;
+        status?: string | null;
+      },
+      kind: "open_event",
+    ) => void;
+    onLoadMaterials: (params: {
+      source: "assignment" | "exam" | "course";
+      courseId: number;
+      courseName?: string | null;
+      courseEventId?: number;
+      eventType?: string | null;
+    }) => void;
+    onResumeCandidate: (candidate: unknown) => void;
+    onRunRecommendedAction: (action: unknown) => void;
+  }) => (
+    <div data-testid="tutor-command-deck">
+      <div data-testid="tutor-command-deck-title">
+        {hub?.recommended_action?.title || "No recommendation"}
+      </div>
+      <button type="button" onClick={() => onOpenProject(7)}>
+        Open Project
+      </button>
+      <button type="button" onClick={() => onOpenScheduleCourse(7, "manage_event")}>
+        Manage Events
+      </button>
+      <button type="button" onClick={() => onOpenScheduleCourse(7, "manage_exam")}>
+        Manage Exams
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          onOpenScheduleEvent(
+            hub?.upcoming_assignments?.[0] || {
+              id: 31,
+              course_id: 7,
+              course_name: "Neuro",
+              course_code: "NEU-7",
+              title: "Case Study",
+              type: "assignment",
+              scheduled_date: "2026-03-20",
+              status: "pending",
+            },
+            "open_event",
+          )
+        }
+      >
+        Open Event
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          onLoadMaterials({
+            source: "course",
+            courseId: 7,
+            courseName: "Neuro",
+          })
+        }
+      >
+        Load Materials
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          if (hub?.resume_candidate) onResumeCandidate(hub.resume_candidate);
+        }}
+      >
+        Resume Candidate
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          if (hub?.recommended_action) onRunRecommendedAction(hub.recommended_action);
+        }}
+      >
+        Run Recommended
+      </button>
+      {launchSettings}
+    </div>
+  ),
+}));
+
 vi.mock("@/components/TutorChat", () => ({
   TutorChat: () => <div data-testid="tutor-chat" />,
 }));
@@ -74,7 +198,21 @@ vi.mock("@/components/TutorArtifacts", () => ({
 }));
 
 vi.mock("@/components/TutorScheduleMode", () => ({
-  TutorScheduleMode: () => <div data-testid="tutor-schedule-mode">schedule mode</div>,
+  TutorScheduleMode: ({
+    launchIntent,
+  }: {
+    launchIntent?: {
+      kind?: string;
+      courseId?: number;
+      courseEventId?: number | null;
+    } | null;
+  }) => (
+    <div data-testid="tutor-schedule-mode">
+      {launchIntent
+        ? `${launchIntent.kind}:${launchIntent.courseId}:${launchIntent.courseEventId ?? ""}`
+        : "schedule mode"}
+    </div>
+  ),
 }));
 
 vi.mock("@/components/TutorPublishMode", () => ({
@@ -105,6 +243,7 @@ vi.mock("@/lib/api", () => ({
     tutor: {
       getMaterials: getMaterialsMock,
       listSessions: listSessionsMock,
+      getHub: getHubMock,
       configCheck: configCheckMock,
       getContentSources: getContentSourcesMock,
       preflightSession: preflightSessionMock,
@@ -201,6 +340,88 @@ function makeProjectShell(courseId = 1, overrides: Partial<{
   };
 }
 
+function makeTutorHub() {
+  return {
+    recommended_action: {
+      kind: "wheel_course",
+      title: "Open Neuro project",
+      reason: "Neuro is next on the study wheel.",
+      action_label: "OPEN PROJECT",
+      course_id: 7,
+      course_name: "Neuro",
+      course_code: "NEU-7",
+      session_id: null,
+      course_event_id: null,
+      event_type: null,
+    },
+    resume_candidate: {
+      can_resume: false,
+      session_id: null,
+      course_id: 7,
+      course_name: "Neuro",
+      course_code: "NEU-7",
+      topic: "Last Studio Workspace",
+      last_mode: "studio",
+      label: "Reopen Neuro workspace",
+    },
+    upcoming_assignments: [
+      {
+        id: 31,
+        course_id: 7,
+        course_name: "Neuro",
+        course_code: "NEU-7",
+        title: "Case Study",
+        type: "assignment",
+        scheduled_date: "2026-03-20",
+        status: "pending",
+      },
+    ],
+    upcoming_tests: [
+      {
+        id: 41,
+        course_id: 7,
+        course_name: "Neuro",
+        course_code: "NEU-7",
+        title: "Neuro Exam",
+        type: "exam",
+        scheduled_date: "2026-03-25",
+        status: "pending",
+      },
+    ],
+    class_projects: [
+      {
+        course_id: 7,
+        course_name: "Neuro",
+        course_code: "NEU-7",
+        material_count: 2,
+        recent_session_count: 1,
+        active_session: null,
+        next_due_event: {
+          id: 41,
+          course_id: 7,
+          course_name: "Neuro",
+          course_code: "NEU-7",
+          title: "Neuro Exam",
+          type: "exam",
+          scheduled_date: "2026-03-25",
+          status: "pending",
+        },
+      },
+    ],
+    study_wheel: {
+      current_course_id: 7,
+      current_course_name: "Neuro",
+      current_course_code: "NEU-7",
+      next_course_id: 8,
+      next_course_name: "Cardio",
+      next_course_code: "CARD-8",
+      total_active_courses: 3,
+      total_sessions: 6,
+      total_minutes: 180,
+    },
+  };
+}
+
 function renderTutor() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
@@ -220,6 +441,7 @@ describe("Tutor page restore", () => {
     window.history.replaceState({}, "", "/tutor");
     getMaterialsMock.mockResolvedValue([]);
     listSessionsMock.mockResolvedValue([]);
+    getHubMock.mockResolvedValue(makeTutorHub());
     configCheckMock.mockResolvedValue({ ok: true });
     getContentSourcesMock.mockResolvedValue({ courses: [] });
     preflightSessionMock.mockResolvedValue({
@@ -313,7 +535,7 @@ describe("Tutor page restore", () => {
     });
   });
 
-  it("shows Brain-to-Tutor framing while Studio is the default shell mode", async () => {
+  it("shows Brain-to-Tutor framing while DashBoard is the default shell page", async () => {
     renderTutor();
 
     expect(
@@ -321,19 +543,47 @@ describe("Tutor page restore", () => {
         "Brain's default live study surface for guided sessions, artifacts, and next-step handoff.",
       ),
     ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^dashboard$/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^studio$/i })).toBeInTheDocument();
-    expect(screen.getByText("STUDIO NEEDS A COURSE")).toBeInTheDocument();
+    expect(screen.getByTestId("tutor-command-deck")).toBeInTheDocument();
   });
 
-  it("defaults to Studio and keeps Tutor as the separate live study surface", async () => {
+  it("keeps Tutor as a separate live study surface from DashBoard", async () => {
     renderTutor();
 
-    expect(await screen.findByText("STUDIO NEEDS A COURSE")).toBeInTheDocument();
+    expect(await screen.findByTestId("tutor-command-deck")).toBeInTheDocument();
     expect(screen.queryByTestId("tutor-workspace-surface")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /^tutor$/i }));
-    expect(await screen.findByTestId("tutor-start-panel")).toBeInTheDocument();
-    expect(screen.queryByText("STUDIO NEEDS A COURSE")).not.toBeInTheDocument();
+    expect(await screen.findByText("READY TO RUN A STUDY SESSION")).toBeInTheDocument();
+    expect(screen.queryByTestId("tutor-command-deck")).not.toBeInTheDocument();
+  });
+
+  it("routes Page 1 schedule actions into Tutor Schedule with the intended focus", async () => {
+    renderTutor();
+
+    fireEvent.click(await screen.findByRole("button", { name: /manage exams/i }));
+
+    expect(await screen.findByTestId("tutor-schedule-mode")).toHaveTextContent("manage_exam:7:");
+  });
+
+  it("writes Library handoff state when Page 1 loads materials", async () => {
+    renderTutor();
+
+    fireEvent.click(await screen.findByRole("button", { name: /load materials/i }));
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe("/library");
+    });
+
+    const handoffRaw = sessionStorage.getItem("library.open_from_tutor.v1");
+    expect(handoffRaw).not.toBeNull();
+    expect(JSON.parse(handoffRaw || "{}")).toMatchObject({
+      source: "course",
+      courseId: 7,
+      courseName: "Neuro",
+      target: "load_materials",
+    });
   });
 
   it("restores an explicit session_id query before local startup state", async () => {
@@ -389,7 +639,7 @@ describe("Tutor page restore", () => {
     expect(screen.queryByTestId("tutor-start-panel")).not.toBeInTheDocument();
   });
 
-  it("restores publish mode from project shell when no explicit route mode is set", async () => {
+  it("keeps DashBoard as the root landing even when project shell last mode was publish", async () => {
     getProjectShellMock.mockResolvedValue(
       makeProjectShell(77, {
         last_mode: "publish",
@@ -399,8 +649,8 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    expect(await screen.findByTestId("tutor-publish-mode")).toBeInTheDocument();
-    expect(screen.queryByTestId("tutor-start-panel")).not.toBeInTheDocument();
+    expect(await screen.findByTestId("tutor-command-deck")).toBeInTheDocument();
+    expect(screen.queryByTestId("tutor-publish-mode")).not.toBeInTheDocument();
   });
 
   it("hydrates board_scope and board_id from query params and persists to shell state", async () => {
@@ -430,16 +680,16 @@ describe("Tutor page restore", () => {
     });
   });
 
-  it("can host the real rehomed workspace surface without leaking Brain chrome", async () => {
+  it("can enter the Studio prep surface without leaking Brain chrome", async () => {
     workspaceSurfaceMode.useReal = true;
+    window.history.replaceState({}, "", "/tutor?course_id=77&mode=studio");
     getCurrentCourseMock.mockResolvedValue({ currentCourse: { id: 77 } });
     getProjectShellMock.mockResolvedValue(makeProjectShell(77));
 
     renderTutor();
 
-    expect(await screen.findByTestId("tutor-workspace-surface")).toBeInTheDocument();
-    expect(screen.getByText("Quick vault picks")).toBeInTheDocument();
-    expect(screen.getByTestId("tutor-workspace-tab-canvas")).toBeInTheDocument();
+    expect(await screen.findByText("NO CHAIN SELECTED")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /open dashboard/i })).toBeInTheDocument();
     expect(screen.queryByTestId("brain-home")).not.toBeInTheDocument();
   });
 
@@ -484,10 +734,7 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    await waitFor(() => {
-      fireEvent.click(screen.getByRole("button", { name: /^tutor$/i }));
-      expect(screen.getByTestId("tutor-start-panel")).toHaveTextContent("selected:2");
-    });
+    expect(await screen.findByTestId("tutor-start-panel")).toHaveTextContent("selected:2");
     expect(getCurrentCourseMock).toHaveBeenCalledTimes(1);
   });
 
@@ -504,10 +751,7 @@ describe("Tutor page restore", () => {
     await waitFor(() => {
       expect(getCurrentCourseMock).toHaveBeenCalledTimes(1);
     });
-    fireEvent.click(screen.getByRole("button", { name: /^tutor$/i }));
-    await waitFor(() => {
-      expect(screen.getByTestId("tutor-start-panel")).toHaveTextContent("selected:1");
-    });
+    expect(await screen.findByTestId("tutor-start-panel")).toHaveTextContent("selected:1");
     expect(getCurrentCourseMock).toHaveBeenCalledTimes(1);
   });
 
@@ -519,10 +763,7 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    await waitFor(() => {
-      fireEvent.click(screen.getByRole("button", { name: /^tutor$/i }));
-      expect(screen.getByTestId("tutor-start-panel")).toHaveTextContent("selected:2");
-    });
+    expect(await screen.findByTestId("tutor-start-panel")).toHaveTextContent("selected:2");
     expect(localStorage.getItem("tutor.selected_material_ids.v2")).toBe(
       JSON.stringify([301, 302]),
     );
@@ -538,7 +779,6 @@ describe("Tutor page restore", () => {
     await waitFor(() => {
       expect(getSessionMock).toHaveBeenCalledWith("sess-stale");
     });
-    fireEvent.click(screen.getByRole("button", { name: /^tutor$/i }));
     expect(await screen.findByTestId("tutor-start-panel")).toBeInTheDocument();
     expect(localStorage.getItem("tutor.active_session.v1")).toBeNull();
   });
@@ -549,10 +789,7 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    await waitFor(() => {
-      fireEvent.click(screen.getByRole("button", { name: /^tutor$/i }));
-      expect(screen.getByTestId("tutor-start-panel")).toHaveTextContent("selected:1");
-    });
+    expect(await screen.findByTestId("tutor-start-panel")).toHaveTextContent("selected:1");
   });
 
   it("clears inactive restored sessions from localStorage", async () => {
@@ -581,7 +818,6 @@ describe("Tutor page restore", () => {
     await waitFor(() => {
       expect(getSessionMock).toHaveBeenCalledWith("sess-complete");
     });
-    fireEvent.click(screen.getByRole("button", { name: /^tutor$/i }));
     expect(await screen.findByTestId("tutor-start-panel")).toBeInTheDocument();
     expect(localStorage.getItem("tutor.active_session.v1")).toBeNull();
   });

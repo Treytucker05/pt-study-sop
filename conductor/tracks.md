@@ -14,7 +14,12 @@ Active execution priority is tracked in `docs/root/TUTOR_TODO.md`.
 
 Active status: 0 active workstreams.
 
-Latest update: 2026-03-14, Trey Agent Repo Readiness closed after cross-agent proof, final harness doc sync, execution-split closeout, and the integrated release gate all passed.
+Latest update: 2026-03-15, Tutor Page 1 Command Deck closed after shipping the `DashBoard`-first shell correction, Tutor hub aggregate contract, and cross-surface launch wiring.
+
+- [x] **Track: Tutor Page 1 Command Deck** (complete — created 2026-03-15; closed 2026-03-15; scope: `DashBoard`-first command deck, Tutor hub aggregate API, schedule/library handoff wiring, Studio L2 project entry, targeted tests and validation)
+  *Link: [./tracks/tutor-page1-command-deck_20260315/](./tracks/tutor-page1-command-deck_20260315/)*
+
+---
 
 - [x] **Track: Repo Truth Surface Pruning** (complete — created 2026-03-14; closed 2026-03-14; scope: README-first canon promotion, redundant truth-doc compression, repo-local planning-surface alignment, duplicate track cleanup, validator/drift-gate rewiring)
   *Link: [./tracks/repo-truth-surface-pruning_20260314/](./tracks/repo-truth-surface-pruning_20260314/)*

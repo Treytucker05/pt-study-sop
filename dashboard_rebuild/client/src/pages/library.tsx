@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo, type ReactElement } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import {
+  consumeLibraryLaunchFromTutor,
   readTutorSelectedMaterialIds,
   writeTutorSelectedMaterialIds,
 } from "@/lib/tutorClientState";
@@ -494,6 +495,16 @@ export default function Library() {
   const [selectedForTutor, setSelectedForTutor] = useState<number[]>(() =>
     readTutorSelectedMaterialIds()
   );
+
+  useEffect(() => {
+    const handoff = consumeLibraryLaunchFromTutor();
+    if (!handoff || typeof handoff.courseId !== "number") return;
+    setSidebarMode("courses");
+    setSelectedCourseId(handoff.courseId);
+    setUploadCourseTarget(String(handoff.courseId));
+    setSyncCourseTarget(String(handoff.courseId));
+    setSelectedFolderPath(ALL_FOLDERS_KEY);
+  }, []);
 
   const { data: materials = [], isLoading } = useQuery<Material[]>({
     queryKey: ["tutor-materials"],
@@ -1375,8 +1386,15 @@ export default function Library() {
                       Use this for one-off files from Downloads, email, or Blackboard. Upload puts the file into the Tutor library immediately.
                     </div>
                     <div className="flex items-center gap-2">
-                      <label className={`${TEXT_MUTED} text-xs whitespace-nowrap`}>Link uploads to course</label>
+                      <label
+                        htmlFor="library-upload-course-target"
+                        className={`${TEXT_MUTED} text-xs whitespace-nowrap`}
+                      >
+                        Link uploads to course
+                      </label>
                       <select
+                        id="library-upload-course-target"
+                        aria-label="Upload course"
                         value={uploadCourseTarget}
                         onChange={(e) => setUploadCourseTarget(e.target.value)}
                         className="h-8 rounded-none bg-black border border-primary/30 text-xs font-terminal px-2 text-white focus:outline-none focus:border-primary flex-1"
@@ -1436,8 +1454,15 @@ export default function Library() {
                       </Button>
                     </div>
                     <div className="flex items-center gap-2">
-                      <label className={`${TEXT_MUTED} text-xs whitespace-nowrap`}>Link synced files to course</label>
+                      <label
+                        htmlFor="library-sync-course-target"
+                        className={`${TEXT_MUTED} text-xs whitespace-nowrap`}
+                      >
+                        Link synced files to course
+                      </label>
                       <select
+                        id="library-sync-course-target"
+                        aria-label="Sync course"
                         value={syncCourseTarget}
                         onChange={(e) => setSyncCourseTarget(e.target.value)}
                         className="h-8 rounded-none bg-black border border-primary/30 text-xs font-terminal px-2 text-white focus:outline-none focus:border-primary flex-1"

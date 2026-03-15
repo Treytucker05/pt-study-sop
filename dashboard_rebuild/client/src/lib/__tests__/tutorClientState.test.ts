@@ -1,6 +1,8 @@
 import {
   clearTutorActiveSessionId,
+  consumeLibraryLaunchFromTutor,
   consumeTutorLaunchHandoff,
+  LIBRARY_TUTOR_HANDOFF_KEY,
   normalizeTutorAccuracyProfile,
   readTutorActiveSessionId,
   readTutorObjectiveScope,
@@ -14,6 +16,7 @@ import {
   TUTOR_START_STATE_KEY,
   TUTOR_START_STATE_LEGACY_KEY,
   writeTutorActiveSessionId,
+  writeLibraryLaunchFromTutor,
   writeTutorObjectiveScope,
   writeTutorSelectedMaterialIds,
 } from "@/lib/tutorClientState";
@@ -136,5 +139,26 @@ describe("tutorClientState", () => {
     });
     expect(sessionStorage.getItem(TUTOR_LIBRARY_HANDOFF_KEY)).toBeNull();
     expect(sessionStorage.getItem(TUTOR_BRAIN_HANDOFF_KEY)).toBeNull();
+  });
+
+  it("writes and consumes Tutor-to-Library launch context", () => {
+    writeLibraryLaunchFromTutor({
+      source: "assignment",
+      courseId: 42,
+      courseName: "Neuro",
+      courseEventId: 7,
+      eventType: "exam",
+      target: "load_materials",
+    });
+
+    expect(consumeLibraryLaunchFromTutor()).toEqual({
+      source: "assignment",
+      courseId: 42,
+      courseName: "Neuro",
+      courseEventId: 7,
+      eventType: "exam",
+      target: "load_materials",
+    });
+    expect(sessionStorage.getItem(LIBRARY_TUTOR_HANDOFF_KEY)).toBeNull();
   });
 });

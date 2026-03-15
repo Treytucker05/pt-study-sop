@@ -8,6 +8,10 @@ import type {
   Material,
   TutorBoardScope,
   TutorAccuracyProfile,
+  TutorHubEventSummary,
+  TutorHubRecommendedAction,
+  TutorHubResponse,
+  TutorHubResumeCandidate,
   TutorObjectiveScope,
   TutorProjectShellResponse,
   TutorShellMode,
@@ -33,6 +37,7 @@ import {
   readTutorVaultFolder,
   writeTutorAccuracyProfile,
   writeTutorActiveSessionId,
+  writeLibraryLaunchFromTutor,
   writeTutorObjectiveScope,
   writeTutorSelectedMaterialIds,
   writeTutorStoredStartState,
@@ -41,17 +46,19 @@ import {
 } from "@/lib/tutorClientState";
 import { COURSE_FOLDERS } from "@/config/courses";
 import { TutorStartPanel } from "@/components/TutorStartPanel";
+import { TutorCommandDeck } from "@/components/TutorCommandDeck";
 import { TutorChat } from "@/components/TutorChat";
 import { TutorArtifacts, type TutorArtifact } from "@/components/TutorArtifacts";
 import { TutorWorkspaceSurface } from "@/components/TutorWorkspaceSurface";
-import { TutorStudioMode } from "@/components/TutorStudioMode";
-import { TutorScheduleMode } from "@/components/TutorScheduleMode";
+import { TutorStudioMode, type TutorStudioEntryRequest } from "@/components/TutorStudioMode";
+import { TutorScheduleMode, type TutorScheduleLaunchIntent } from "@/components/TutorScheduleMode";
 import { TutorPublishMode } from "@/components/TutorPublishMode";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { useLocation } from "wouter";
 import {
   Bot,
   PanelRightClose,
@@ -61,7 +68,6 @@ import {
   PenTool,
   Eye,
   EyeOff,
-  Settings2,
   ListChecks,
   FileText,
   CreditCard,
@@ -97,10 +103,12 @@ import { CONTROL_PLANE_COLORS } from "@/lib/colors";
 type TutorShellQuery = {
   courseId?: number;
   sessionId?: string;
-  mode?: TutorShellMode;
+  mode?: TutorPageMode;
   boardScope?: TutorBoardScope;
   boardId?: number;
 };
+
+type TutorPageMode = TutorShellMode | "dashboard";
 
 function readTutorShellQuery(): TutorShellQuery {
   if (typeof window === "undefined") return {};
@@ -113,7 +121,11 @@ function readTutorShellQuery(): TutorShellQuery {
     courseId: Number.isFinite(parsedCourseId) ? parsedCourseId : undefined,
     sessionId: params.get("session_id") || undefined,
     mode:
-      rawMode === "studio" || rawMode === "tutor" || rawMode === "schedule" || rawMode === "publish"
+      rawMode === "dashboard" ||
+      rawMode === "studio" ||
+      rawMode === "tutor" ||
+      rawMode === "schedule" ||
+      rawMode === "publish"
         ? rawMode
         : undefined,
     boardScope:
@@ -257,8 +269,11 @@ function inferStudyUnitFromMaterial(material: Material): string {
 }
 
 export default function Tutor() {
+  const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const initialRouteQuery = useMemo(() => readTutorShellQuery(), []);
+  const navigationTokenRef = useRef(0);
+  const explicitShellModeRef = useRef<{ courseId: number; mode: TutorShellMode } | null>(null);
 
   // Session state
   const [activeSessionId, setActiveSessionId] = useState<string | null>(
@@ -267,8 +282,13 @@ export default function Tutor() {
   const [isStarting, setIsStarting] = useState(false);
   const [hasRestored, setHasRestored] = useState(false);
   const [restoredTurns, setRestoredTurns] = useState<{ question: string; answer: string | null }[] | undefined>();
-  const [shellMode, setShellMode] = useState<TutorShellMode>(initialRouteQuery.mode || "studio");
+  const [shellMode, setShellMode] = useState<TutorPageMode>(
+    initialRouteQuery.mode ||
+      (initialRouteQuery.sessionId || readTutorActiveSessionId() ? "tutor" : "dashboard"),
+  );
   const [showStartFromL2, setShowStartFromL2] = useState(false);
+  const [studioEntryRequest, setStudioEntryRequest] = useState<TutorStudioEntryRequest | null>(null);
+  const [scheduleLaunchIntent, setScheduleLaunchIntent] = useState<TutorScheduleLaunchIntent | null>(null);
   const [activeBoardScope, setActiveBoardScope] = useState<TutorBoardScope>(
     initialRouteQuery.boardScope || "project",
   );
@@ -316,10 +336,11 @@ export default function Tutor() {
   const [turnCount, setTurnCount] = useState(0);
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [showArtifacts, setShowArtifacts] = useState(false);
-  const [showSetup, setShowSetup] = useState<boolean>(
+  const [, setShowSetup] = useState<boolean>(
     () => !Boolean(initialRouteQuery.sessionId || readTutorActiveSessionId()),
   );
   const [brainLaunchContext, setBrainLaunchContext] = useState<TutorBrainLaunchContext | null>(null);
+  const [scholarStrategyExpanded, setScholarStrategyExpanded] = useState(false);
   const [objectiveScope, setObjectiveScope] = useState<TutorObjectiveScope>(() =>
     readTutorObjectiveScope(),
   );
@@ -543,7 +564,7 @@ export default function Tutor() {
     ],
     queryFn: () => api.tutor.preflightSession(preflightPayload!),
     enabled:
-      showSetup &&
+      shellMode === "dashboard" &&
       !!preflightPayload &&
       selectedMaterials.length > 0 &&
       !!selectedObjectiveGroup,
@@ -568,6 +589,13 @@ export default function Tutor() {
   const { data: recentSessions = [] } = useQuery<TutorSessionSummary[]>({
     queryKey: ["tutor-sessions"],
     queryFn: () => api.tutor.listSessions({ limit: 10 }),
+  });
+
+  const { data: tutorHub, isFetching: tutorHubLoading } = useQuery<TutorHubResponse>({
+    queryKey: ["tutor-hub", activeSessionId],
+    queryFn: () => api.tutor.getHub(),
+    enabled: hasRestored && shellMode === "dashboard",
+    staleTime: 15 * 1000,
   });
 
   const { data: projectShell } = useQuery<TutorProjectShellResponse>({
@@ -835,10 +863,10 @@ export default function Tutor() {
     setScholarStrategy(null);
     setStrategyFeedback(null);
     setStrategyNotes("");
-    setShowSetup(true);
+    setShowSetup(false);
     setShowArtifacts(false);
     setShowEndConfirm(false);
-    setShellMode("tutor");
+    setShellMode("dashboard");
     clearTutorActiveSessionId();
   }, []);
 
@@ -1074,6 +1102,170 @@ export default function Tutor() {
     [applySessionState]
   );
 
+  const nextNavigationToken = useCallback(() => {
+    navigationTokenRef.current += 1;
+    return navigationTokenRef.current;
+  }, []);
+
+  const openProjectFromHub = useCallback((nextCourseId: number) => {
+    explicitShellModeRef.current = { courseId: nextCourseId, mode: "studio" };
+    setCourseId(nextCourseId);
+    setShellMode("studio");
+    setShowSetup(false);
+    setScheduleLaunchIntent(null);
+    setStudioEntryRequest({ level: 2, token: nextNavigationToken() });
+  }, [nextNavigationToken]);
+
+  const openScheduleCourseFromHub = useCallback(
+    (
+      nextCourseId: number,
+      kind: "manage_event" | "manage_exam",
+    ) => {
+      explicitShellModeRef.current = { courseId: nextCourseId, mode: "schedule" };
+      setCourseId(nextCourseId);
+      setShellMode("schedule");
+      setShowSetup(false);
+      setStudioEntryRequest(null);
+      setScheduleLaunchIntent({
+        token: nextNavigationToken(),
+        kind,
+        courseId: nextCourseId,
+      });
+    },
+    [nextNavigationToken],
+  );
+
+  const openScheduleEventFromHub = useCallback(
+    (event: TutorHubEventSummary) => {
+      explicitShellModeRef.current = { courseId: event.course_id, mode: "schedule" };
+      setCourseId(event.course_id);
+      setShellMode("schedule");
+      setShowSetup(false);
+      setStudioEntryRequest(null);
+      setScheduleLaunchIntent({
+        token: nextNavigationToken(),
+        kind: "open_event",
+        courseId: event.course_id,
+        courseEventId: event.id,
+      });
+    },
+    [nextNavigationToken],
+  );
+
+  const openLibraryFromHub = useCallback(
+    (params: {
+      source: "assignment" | "exam" | "course";
+      courseId: number;
+      courseName?: string | null;
+      courseEventId?: number;
+      eventType?: string | null;
+    }) => {
+      writeLibraryLaunchFromTutor({
+        source: params.source,
+        courseId: params.courseId,
+        courseName: params.courseName || null,
+        courseEventId: params.courseEventId,
+        eventType: params.eventType || null,
+        target: "load_materials",
+      });
+      setLocation("/library");
+    },
+    [setLocation],
+  );
+
+  const resumeFromHubCandidate = useCallback(
+    async (candidate: TutorHubResumeCandidate) => {
+      if (candidate.can_resume && candidate.session_id) {
+        await resumeSession(candidate.session_id);
+        setShowSetup(false);
+        setShellMode("tutor");
+        return;
+      }
+
+      if (typeof candidate.course_id !== "number") return;
+
+      explicitShellModeRef.current = {
+        courseId: candidate.course_id,
+        mode: candidate.last_mode || "studio",
+      };
+      setCourseId(candidate.course_id);
+      setStudioEntryRequest(null);
+      setScheduleLaunchIntent(null);
+
+      if (!candidate.session_id) {
+        clearTutorActiveSessionId();
+        setActiveSessionId(null);
+      }
+
+      if (candidate.last_mode === "schedule") {
+        setShellMode("schedule");
+        setShowSetup(false);
+        return;
+      }
+
+      if (candidate.last_mode === "publish") {
+        setShellMode("publish");
+        setShowSetup(false);
+        return;
+      }
+
+      if (candidate.last_mode === "studio") {
+        setShellMode("studio");
+        setShowSetup(false);
+        return;
+      }
+
+      setShellMode("dashboard");
+      setShowSetup(false);
+    },
+    [resumeSession],
+  );
+
+  const runRecommendedAction = useCallback(
+    async (action: TutorHubRecommendedAction) => {
+      if (action.kind === "resume_session" && action.session_id) {
+        await resumeSession(action.session_id);
+        setShowSetup(false);
+        setShellMode("tutor");
+        return;
+      }
+
+      if (action.kind === "wheel_course" && typeof action.course_id === "number") {
+        openProjectFromHub(action.course_id);
+        return;
+      }
+
+      if (
+        (action.kind === "planner_task" || action.kind === "exam" || action.kind === "assignment") &&
+        typeof action.course_id === "number"
+      ) {
+        if (typeof action.course_event_id === "number") {
+          openScheduleEventFromHub({
+            id: action.course_event_id,
+            course_id: action.course_id,
+            course_name: action.course_name || action.course_code || "Course",
+            course_code: action.course_code,
+            title: action.title,
+            type: action.event_type || "other",
+            scheduled_date: null,
+            status: "pending",
+          });
+          return;
+        }
+        openScheduleCourseFromHub(
+          action.course_id,
+          action.kind === "exam" ? "manage_exam" : "manage_event",
+        );
+      }
+    },
+    [
+      openProjectFromHub,
+      openScheduleCourseFromHub,
+      openScheduleEventFromHub,
+      resumeSession,
+    ],
+  );
+
   useEffect(() => {
     if (hasRestored) return;
     setHasRestored(true);
@@ -1098,11 +1290,17 @@ export default function Tutor() {
             return;
           } else {
             clearTutorActiveSessionId();
+            if (!initialRouteQuery.mode) {
+              setShellMode("dashboard");
+            }
           }
         }
       } catch {
         if (!initialRouteQuery.sessionId) {
           clearTutorActiveSessionId();
+          if (!initialRouteQuery.mode) {
+            setShellMode("dashboard");
+          }
         }
       }
 
@@ -1153,12 +1351,16 @@ export default function Tutor() {
 
   useEffect(() => {
     if (!projectShell || typeof courseId !== "number") return;
+    const explicitShellMode = explicitShellModeRef.current;
+    const hasExplicitModeOverride =
+      explicitShellMode?.courseId === courseId;
 
     if (shellHydratedCourseId !== courseId) {
       setShellHydratedCourseId(courseId);
       setShellRevision(projectShell.workspace_state.revision || 0);
 
       if (
+        !hasExplicitModeOverride &&
         !initialRouteQuery.mode &&
         shellMode === "studio" &&
         projectShell.workspace_state.last_mode &&
@@ -1193,6 +1395,10 @@ export default function Tutor() {
           writeTutorSelectedMaterialIds(projectShell.workspace_state.selected_material_ids),
         );
       }
+
+      if (hasExplicitModeOverride) {
+        explicitShellModeRef.current = null;
+      }
     }
 
     if (
@@ -1216,6 +1422,7 @@ export default function Tutor() {
     activeBoardScope,
     applySessionState,
     courseId,
+    shellHydratedCourseId,
     initialRouteQuery.boardScope,
     initialRouteQuery.mode,
     projectShell,
@@ -1234,7 +1441,7 @@ export default function Tutor() {
   }, [activeBoardId, activeBoardScope, activeSessionId, courseId, shellMode]);
 
   useEffect(() => {
-    if (!hasRestored || typeof courseId !== "number") return;
+    if (!hasRestored || typeof courseId !== "number" || shellMode === "dashboard") return;
     const persistKey = JSON.stringify({
       courseId,
       activeSessionId,
@@ -1335,8 +1542,6 @@ export default function Tutor() {
         {/* ─── Main Content Area ─── */}
         <div className="flex-1 flex flex-col min-h-0">
           <div className="flex-none bg-black/40 border-b-2 border-primary/20 px-2 py-1.5">
-            {/* Title row — collapsed to inline when in studio mode */}
-            {shellMode !== "studio" && (
             <div className="mb-1.5 flex items-center justify-between gap-3 border-b border-primary/10 pb-1.5">
               <div>
                 <div className="font-arcade text-xs text-primary">TUTOR</div>
@@ -1350,8 +1555,7 @@ export default function Tutor() {
                 </Badge>
               ) : null}
             </div>
-            )}
-            {!activeSessionId && brainLaunchContext?.title && shellMode !== "studio" ? (
+            {!activeSessionId && brainLaunchContext?.title ? (
               <div
                 data-testid="tutor-brain-handoff"
                 className="mb-1.5 border border-primary/20 bg-primary/10 px-2 py-1.5"
@@ -1448,7 +1652,24 @@ export default function Tutor() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShellMode("studio")}
+              onClick={() => {
+                setStudioEntryRequest(null);
+                setScheduleLaunchIntent(null);
+                setShellMode("dashboard");
+              }}
+              className={shellMode === "dashboard" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+            >
+              <ListChecks className={`${ICON_MD} mr-1`} />
+              DASHBOARD
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setStudioEntryRequest(null);
+                setScheduleLaunchIntent(null);
+                setShellMode("studio");
+              }}
               className={shellMode === "studio" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
             >
               <PenTool className={`${ICON_MD} mr-1`} />
@@ -1458,10 +1679,9 @@ export default function Tutor() {
               variant="ghost"
               size="sm"
               onClick={() => {
+                setStudioEntryRequest(null);
+                setScheduleLaunchIntent(null);
                 setShellMode("tutor");
-                if (!activeSessionId) {
-                  setShowSetup(true);
-                }
               }}
               className={shellMode === "tutor" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
             >
@@ -1471,7 +1691,11 @@ export default function Tutor() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShellMode("schedule")}
+              onClick={() => {
+                setStudioEntryRequest(null);
+                setScheduleLaunchIntent(null);
+                setShellMode("schedule");
+              }}
               className={shellMode === "schedule" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
             >
               <Clock className={`${ICON_MD} mr-1`} />
@@ -1480,23 +1704,16 @@ export default function Tutor() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShellMode("publish")}
+              onClick={() => {
+                setStudioEntryRequest(null);
+                setScheduleLaunchIntent(null);
+                setShellMode("publish");
+              }}
               className={shellMode === "publish" ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
             >
               <FolderOpen className={`${ICON_MD} mr-1`} />
               PUBLISH
             </Button>
-            {shellMode === "tutor" ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowSetup((prev) => !prev || !activeSessionId)}
-                className={showSetup ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
-              >
-                <Settings2 className={`${ICON_MD} mr-1`} />
-                START
-              </Button>
-            ) : null}
             <Button
               variant="ghost"
               size="sm"
@@ -1561,11 +1778,23 @@ export default function Tutor() {
           </div>
 
           {activeSessionId && scholarStrategy && (
-            <Card className={`mx-4 mt-3 rounded-none ${CARD_BORDER} bg-black/55 border-primary/30`}>
+            <div className="flex-none">
+            <button
+              type="button"
+              onClick={() => setScholarStrategyExpanded((prev) => !prev)}
+              className="w-full flex items-center gap-2 px-4 py-1.5 bg-black/55 border-b border-primary/15 hover:bg-black/40 transition-colors text-left"
+            >
+              <ChevronDown className={`h-3 w-3 text-primary/60 transition-transform duration-200 ${scholarStrategyExpanded ? "" : "-rotate-90"}`} />
+              <span className={TEXT_BADGE}>SCHOLAR STRATEGY</span>
+              <span className="font-terminal text-[11px] text-muted-foreground truncate flex-1">
+                {scholarStrategy.hybridArchetype?.label || ""}
+              </span>
+            </button>
+            {scholarStrategyExpanded && (
+            <Card className={`mx-4 mt-1 mb-2 rounded-none ${CARD_BORDER} bg-black/55 border-primary/30`}>
               <div className="p-3 space-y-3">
                 <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
                   <div className="space-y-1">
-                    <div className={TEXT_BADGE}>SCHOLAR STRATEGY</div>
                     <div className="font-terminal text-xs text-muted-foreground max-w-3xl">
                       {scholarStrategy.summary}
                     </div>
@@ -1686,6 +1915,8 @@ export default function Tutor() {
                 </div>
               </div>
             </Card>
+            )}
+            </div>
           )}
 
           <div className="flex-1 flex min-h-0 relative">
@@ -1709,10 +1940,73 @@ export default function Tutor() {
                   onViewerStateChange={setViewerState}
                   onCourseChange={(id) => setCourseId(id)}
                   onLaunchSession={() => {
-                    setShellMode("tutor");
-                    setShowSetup(true);
+                    setShellMode("dashboard");
+                    setShowSetup(false);
                   }}
+                  entryRequest={studioEntryRequest}
                 />
+                </div>
+              ) : shellMode === "dashboard" ? (
+                <div key="dashboard-panel" className="flex-1 min-h-0 overflow-y-auto w-full p-4 animate-fade-slide-in">
+                  <TutorCommandDeck
+                    hub={tutorHub}
+                    hubLoading={tutorHubLoading}
+                    onRunRecommendedAction={(action) => {
+                      void runRecommendedAction(action);
+                    }}
+                    onResumeCandidate={(candidate) => {
+                      void resumeFromHubCandidate(candidate);
+                    }}
+                    onOpenProject={openProjectFromHub}
+                    onOpenScheduleCourse={openScheduleCourseFromHub}
+                    onOpenScheduleEvent={(event) => openScheduleEventFromHub(event)}
+                    onLoadMaterials={openLibraryFromHub}
+                    launchSettings={
+                      <TutorStartPanel
+                        courseId={courseId}
+                        setCourseId={setCourseId}
+                        selectedMaterials={selectedMaterials}
+                        setSelectedMaterials={setSelectedMaterials}
+                        topic={topic}
+                        setTopic={setTopic}
+                        chainId={chainId}
+                        setChainId={setChainId}
+                        customBlockIds={customBlockIds}
+                        setCustomBlockIds={setCustomBlockIds}
+                        objectiveScope={objectiveScope}
+                        setObjectiveScope={setObjectiveScope}
+                        selectedObjectiveId={selectedObjectiveId}
+                        setSelectedObjectiveId={setSelectedObjectiveId}
+                        selectedObjectiveGroup={selectedObjectiveGroup}
+                        setSelectedObjectiveGroup={setSelectedObjectiveGroup}
+                        availableObjectives={availableObjectives}
+                        studyUnitOptions={studyUnitOptions}
+                        vaultFolder={vaultFolder}
+                        setVaultFolder={setVaultFolder}
+                        vaultFolderPreview={derivedVaultFolder}
+                        preflight={preflight}
+                        preflightLoading={preflightLoading}
+                        preflightError={preflightError instanceof Error ? preflightError.message : null}
+                        onStartSession={startSession}
+                        isStarting={isStarting}
+                        recentSessions={recentSessions}
+                        onResumeSession={(id) => {
+                          void resumeSession(id);
+                          setShellMode("tutor");
+                        }}
+                        onDeleteSession={async (id) => {
+                          try {
+                            await api.tutor.deleteSession(id);
+                            queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
+                            queryClient.invalidateQueries({ queryKey: ["tutor-hub"] });
+                            toast.success("Session deleted");
+                          } catch {
+                            toast.error("Failed to delete session");
+                          }
+                        }}
+                      />
+                    }
+                  />
                 </div>
               ) : shellMode === "schedule" ? (
                 <div key="schedule" className="flex-1 min-h-0 overflow-y-auto p-4 animate-fade-slide-in">
@@ -1721,6 +2015,7 @@ export default function Tutor() {
                       courseId={courseId ?? null}
                       courseName={courseLabel || null}
                       focusTopic={topic || null}
+                      launchIntent={scheduleLaunchIntent}
                     />
                   </div>
                 </div>
@@ -1789,54 +2084,6 @@ export default function Tutor() {
                     </Card>
                   </div>
                 </div>
-              ) : showSetup ? (
-                <div key="start-panel" className="flex-1 min-h-0 overflow-y-auto w-full p-4 animate-fade-slide-in">
-                  <div className="w-full max-w-5xl mx-auto">
-                    <TutorStartPanel
-                      courseId={courseId}
-                      setCourseId={setCourseId}
-                      selectedMaterials={selectedMaterials}
-                      setSelectedMaterials={setSelectedMaterials}
-                      topic={topic}
-                      setTopic={setTopic}
-                      chainId={chainId}
-                      setChainId={setChainId}
-                      customBlockIds={customBlockIds}
-                      setCustomBlockIds={setCustomBlockIds}
-                      objectiveScope={objectiveScope}
-                      setObjectiveScope={setObjectiveScope}
-                      selectedObjectiveId={selectedObjectiveId}
-                      setSelectedObjectiveId={setSelectedObjectiveId}
-                      selectedObjectiveGroup={selectedObjectiveGroup}
-                      setSelectedObjectiveGroup={setSelectedObjectiveGroup}
-                      availableObjectives={availableObjectives}
-                      studyUnitOptions={studyUnitOptions}
-                      vaultFolder={vaultFolder}
-                      setVaultFolder={setVaultFolder}
-                      vaultFolderPreview={derivedVaultFolder}
-                      preflight={preflight}
-                      preflightLoading={preflightLoading}
-                      preflightError={preflightError instanceof Error ? preflightError.message : null}
-                      onStartSession={startSession}
-                      isStarting={isStarting}
-                      recentSessions={recentSessions}
-                      onResumeSession={(id) => {
-                        resumeSession(id);
-                        setShowSetup(false);
-                        setShellMode("tutor");
-                      }}
-                      onDeleteSession={async (id) => {
-                        try {
-                          await api.tutor.deleteSession(id);
-                          queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
-                          toast.success("Session deleted");
-                        } catch {
-                          toast.error("Failed to delete session");
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
               ) : (
                 <div key="chat" className="flex-1 flex flex-col min-h-0 animate-fade-slide-in">
                   {activeSessionId ? (
@@ -1866,16 +2113,16 @@ export default function Tutor() {
                           READY TO RUN A STUDY SESSION
                         </div>
                         <div className="font-terminal text-sm text-muted-foreground max-w-sm">
-                          Tutor is the live study surface. Open the start panel to scope a session, or switch to STUDIO to prepare notes and captures before studying.
+                          Tutor is the live study surface. Start or resume from DashBoard, or switch to STUDIO to prepare notes and captures before studying.
                         </div>
                         <div className="flex items-center justify-center gap-2">
                           <Button
                             type="button"
                             className={BTN_PRIMARY}
-                            onClick={() => setShowSetup(true)}
+                            onClick={() => setShellMode("dashboard")}
                           >
-                            <Settings2 className={`${ICON_MD} mr-1`} />
-                            OPEN START PANEL
+                            <ListChecks className={`${ICON_MD} mr-1`} />
+                            GO TO DASHBOARD
                           </Button>
                           <Button
                             type="button"
@@ -1939,7 +2186,7 @@ export default function Tutor() {
             </div>
 
             {/* Right side panels overlaid when toggle is ON */}
-            {activeSessionId && shellMode === "tutor" && !showSetup && showArtifacts && (
+            {activeSessionId && shellMode === "tutor" && showArtifacts && (
               <>
                 {/* Mobile backdrop — click to close */}
                 <div

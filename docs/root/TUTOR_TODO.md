@@ -22,9 +22,34 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - `conductor/tracks.md` (track registry / archival)
 - Historical archive: older completed sprint history now lives in `docs/archive/TUTOR_TODO_history_2026-03-14.md`.
 - Historical note: if any archived wording conflicts with the canon, the canon wins.
-- Launch-model note: the active Tutor direction is Brain-owned launch plus the `/tutor` shell with a thin Tutor start/resume surface. Older `wizard` wording below is historical execution language unless explicitly re-opened by a new active sprint.
+- Launch-model note: the active Tutor direction is Brain-owned launch plus the `/tutor` shell with `DashBoard` as the first page and `Tutor` reserved for live study. Older `start-panel` or `wizard` wording below is historical execution language unless explicitly re-opened by a new active sprint.
 
 ## Active Sprint 2026-03-13
+
+### Sprint: Tutor Page 1 Command Deck (2026-03-15)
+- [x] TPCD-100. Ship the responsive `DashBoard` command deck as the first Tutor shell page and wire its CTAs into the existing Tutor, Schedule, Studio, and Library surfaces.
+  - Track: `conductor/tracks/tutor-page1-command-deck_20260315/`
+  - Scope:
+    - `brain/dashboard/api_tutor_projects.py`
+    - `brain/tests/test_tutor_project_shell.py`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/components/TutorCommandDeck.tsx`
+    - `dashboard_rebuild/client/src/components/TutorScheduleMode.tsx`
+    - `dashboard_rebuild/client/src/components/TutorStudioMode.tsx`
+    - `dashboard_rebuild/client/src/pages/library.tsx`
+    - `dashboard_rebuild/client/src/lib/tutorClientState.ts`
+    - `dashboard_rebuild/client/src/api.ts`
+    - `dashboard_rebuild/client/src/api.types.ts`
+    - targeted Tutor frontend/backend tests
+  - Done when:
+    - `/api/tutor/hub` aggregates resume, deadlines, class cards, and study-wheel state
+    - `DashBoard` becomes the responsive command deck first page
+    - `Tutor` is live-study only
+    - `Open Project` lands in Studio L2
+    - Schedule CTAs focus the right event/course
+    - `Load Materials` opens Library with course-scoped intake preselected
+    - required build/tests pass and the track is closed
+  - Completed 2026-03-15: `/tutor` now lands on `DashBoard`; `Tutor` is the live study surface only; `/api/tutor/hub` backs the command deck; `Open Project` lands in Studio L2; schedule CTAs focus the intended course/event; `Load Materials` routes to Library with course-scoped intake preselected; `python -m pytest brain/tests/test_tutor_project_shell.py -q`, the targeted Tutor/frontend vitest matrix, and `cd dashboard_rebuild && npm run build` all passed.
 
 ### Sprint: Root Hygiene Sweep (2026-03-14)
 - [x] RHS-210. Remove leftover root-level scratch files, caches, and stale review artifacts that no longer belong in the active repo workspace.

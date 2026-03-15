@@ -218,4 +218,14 @@ describe("TutorStudioMode", () => {
     // Board layout elements should NOT be present
     expect(screen.queryByText("SESSION BOARD")).not.toBeInTheDocument();
   });
+
+  it("honors a shell entry request to land on Studio L2 class detail", () => {
+    renderStudio({
+      entryRequest: { level: 2, token: 1 },
+    });
+
+    expect(screen.getByTestId("studio-class-detail")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-breadcrumb")).toHaveTextContent("Level 2");
+    expect(screen.queryByTestId("tutor-workspace-surface")).not.toBeInTheDocument();
+  });
 });

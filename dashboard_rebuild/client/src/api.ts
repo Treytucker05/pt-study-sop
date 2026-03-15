@@ -36,6 +36,7 @@ import type {
   TutorSessionPreflightRequest, TutorSessionPreflightResponse,
   TutorCreateSessionRequest,
   TutorSession, TutorSessionWithTurns, TutorSessionEndResult, TutorSessionSummary,
+  TutorHubResponse,
   TutorProjectShellResponse, TutorProjectShellState, TutorProjectShellStateRequest,
   TutorStudioCaptureRequest, TutorStudioCaptureResponse, TutorStudioRestoreResponse,
   TutorStudioPromoteRequest,
@@ -704,6 +705,7 @@ export const api = {
       if (params.session_id) qs.set("session_id", params.session_id);
       return request<TutorProjectShellResponse>(`/tutor/project-shell?${qs.toString()}`);
     },
+    getHub: () => request<TutorHubResponse>("/tutor/hub"),
     saveProjectShellState: (data: TutorProjectShellStateRequest) =>
       request<{ course_id: number; workspace_state: TutorProjectShellState }>(
         "/tutor/project-shell/state",
