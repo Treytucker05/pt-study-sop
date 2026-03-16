@@ -28,6 +28,7 @@ Measure whether planner changes improve:
    changes.
 4. Keep the planner change only if the scores improve without regressing canon
    alignment or first-wave correctness.
+5. Mark any non-applicable category as `n/a` and exclude it from the case total.
 
 ## Baseline rules
 
@@ -35,3 +36,4 @@ Measure whether planner changes improve:
 - Do not change the rubric mid-comparison.
 - Record whether the planner stopped, downgraded, or escalated correctly.
 - Record whether queue conversion was withheld when it should have been.
+- Exclude `n/a` categories from totals instead of treating them as failures.

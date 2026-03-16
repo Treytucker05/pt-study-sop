@@ -14,7 +14,7 @@ Active execution priority is tracked in `docs/root/TUTOR_TODO.md`.
 
 Active status: 0 active workstreams.
 
-Latest update: 2026-03-15, Swarm Planner Hardening closed after the shared planner, PT adapter, eval kit, and skill-sync validation all landed.
+Latest update: 2026-03-16, Swarm Planner Hardening baseline scoring sweep landed and captured the first durable benchmark for future planner tuning.
 
 - [x] **Track: Swarm Planner Hardening** (complete — created 2026-03-15; closed 2026-03-15; scope: shared swarm planner mode-selection + validation hardening, PT repo adapter drift/queue gating, and repo-local planner eval kit)
   *Link: [./tracks/swarm-planner-hardening_20260315/](./tracks/swarm-planner-hardening_20260315/)*

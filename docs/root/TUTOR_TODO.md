@@ -27,6 +27,21 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Active execution note: the current dirty frontend Tutor/shared-page rewrite set is intentionally left in place during this cleanup pass. Treat those source edits as in-progress local work, not workspace noise.
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 
+### Sprint: Swarm Planner Baseline Sweep (2026-03-16)
+- [x] SPH-110. Run the new planner eval kit against the benchmark prompts and record a durable baseline scorecard for future `trey-autoresearch` tuning.
+  - Scope:
+    - `.codex/skills/treys-swarm-planner-repo/evals/`
+    - `conductor/tracks/swarm-planner-hardening_20260315/`
+    - `docs/root/TUTOR_TODO.md`
+    - `conductor/tracks.md`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - the eval kit defines how to handle non-applicable scorecard categories
+    - the six benchmark prompts are scored against the current planner skill pair
+    - a durable baseline artifact exists in the swarm-planner-hardening track
+    - `python scripts/check_docs_sync.py` and `git diff --check` pass
+  - Completed 2026-03-16: added explicit `n/a` score handling to the eval kit, scored all six benchmark prompts, stored a baseline scorecard plus summary in the existing swarm-planner-hardening track, and re-ran docs/diff validation.
+
 ### Sprint: Swarm Planner Hardening (2026-03-15)
 - [x] SPH-100. Harden the shared swarm planner and the PT repo adapter so they choose the right orchestration mode, separate validation from review, and gain an autoresearch-style tuning loop.
   - Scope:

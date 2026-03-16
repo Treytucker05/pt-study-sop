@@ -603,3 +603,15 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `powershell -ExecutionPolicy Bypass -File scripts/sync_agent_skills.ps1 -Mode Check`
   - `python scripts/check_docs_sync.py`
   - `git diff --check`
+
+## 2026-03-16 - Swarm planner baseline sweep
+- Extended the repo-local planner eval kit so non-applicable categories are scored as `n/a` and excluded from case totals instead of dragging down the baseline unfairly.
+- Ran the six benchmark prompts from `.codex/skills/treys-swarm-planner-repo/evals/benchmark-set.md` against the current shared planner plus PT adapter contract and recorded the first durable baseline under `conductor/tracks/swarm-planner-hardening_20260315/baseline-scorecard.md`.
+- Baseline result captured the current planner as strongest on:
+  - mode fit for small tasks
+  - canon-stop behavior
+  - execution-surface selection on broad repo tasks
+- The weakest current area is plan-review-only handling, where the planner contract is still more roadmap-shaped than critique-shaped.
+- Validation passed:
+  - `python scripts/check_docs_sync.py`
+  - `git diff --check`

@@ -5,6 +5,7 @@ Score each category from `0-2`.
 - `0` = failed or missing
 - `1` = partially correct
 - `2` = clearly correct
+- `n/a` = not relevant for this benchmark case; exclude from the total
 
 ## Categories
 
@@ -30,6 +31,7 @@ Score each category from `0-2`.
 For each planner revision, also record:
 
 - total score
+- eligible category count
 - biggest regression
 - biggest improvement
 - whether the revision should be kept or rolled back

@@ -128,3 +128,15 @@ Stop rules
 First unblocked wave
 - none until the canon conflict is resolved
 ```
+
+## Baseline Follow-Up
+
+- The first durable benchmark run is recorded in [baseline-scorecard.md](./baseline-scorecard.md).
+- Highest-scoring cases:
+  - cross-subsystem feature
+  - queue-conversion request
+  - canon-conflict request
+- Lowest-scoring case:
+  - plan-review-only request
+- Follow-on target:
+  - shorten the planner shape when the job is review/tightening rather than net-new execution planning

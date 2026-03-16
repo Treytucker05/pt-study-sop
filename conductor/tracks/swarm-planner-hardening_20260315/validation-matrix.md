@@ -29,3 +29,10 @@
 - PASS `python scripts/check_docs_sync.py`
 - PASS `git diff --check`
 - PASS manual artifact review of the updated templates, examples, and eval kit against the four smoke-scenario expectations above
+
+## Baseline Sweep Result (2026-03-16)
+
+- PASS `python scripts/check_docs_sync.py`
+- PASS `git diff --check`
+- PASS six-case benchmark baseline recorded in `baseline-scorecard.md`
+- PASS eval-kit rubric now defines `n/a` handling so totals exclude non-applicable categories
