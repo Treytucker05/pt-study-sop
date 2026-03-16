@@ -21,6 +21,25 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx client/src/pages/__tests__/library.test.tsx client/src/components/__tests__/TutorScheduleMode.test.tsx client/src/components/__tests__/TutorStudioMode.test.tsx client/src/lib/__tests__/tutorClientState.test.ts client/src/__tests__/api.test.ts`
   - `cd dashboard_rebuild && npm run build`
 
+## 2026-03-15 - Frontend validation script added
+
+- Added reusable validation script `scripts/verify_frontend_gate.ps1` and executed it locally.
+- The script runs `npm run check`, `npm run build`, and a strict React Doctor API probe (100/0 target) in one command path.
+- Verification:
+  - `& .\scripts\verify_frontend_gate.ps1`
+  - `npx react-doctor -y . --verbose` (via the script path)
+
+## 2026-03-15 - React Doctor closeout smoke pass
+
+- Per your requested recommended follow-up, performed a production-style smoke pass with `Start_Dashboard.bat` (UI build skipped via `SKIP_UI_BUILD=1`) and validated:
+  - backend readiness at `http://127.0.0.1:5000/api/brain/status`
+  - golden-path endpoints via `scripts/smoke_golden_path.ps1`
+  - route probes for `/tutor`, `/calendar`, `/scholar`, `/vault-health`, and `/brain`
+- Results were clean:
+  - `scripts/smoke_golden_path.ps1` returned 5/5 endpoints passed
+  - all route probes returned HTTP 200 with SPA index payloads
+- Server process on port `5000` was terminated after the pass.
+
 ## 2026-03-14 - Trey Agent Repo Readiness T10-T12 scenario registry, observability, and CI lane
 
 - Finished `T10` by normalizing the remaining shared harness scenarios through manifest v3:
