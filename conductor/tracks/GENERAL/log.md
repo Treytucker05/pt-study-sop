@@ -526,3 +526,41 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/StudioClassPicker.test.tsx client/src/components/__tests__/TutorStudioMode.test.tsx`
   - `cd dashboard_rebuild && npm run build`
   - live browser proof on `http://127.0.0.1:5000/tutor?mode=studio` against PID `30152` (`python dashboard_web.py`): Studio L1 rendered enriched cards and clicking `Movement Science` still opened the existing class detail flow
+
+## 2026-03-15 - React Doctor structural closeout
+- Finished `RDAH-182` and `RDAH-183` in one pass by clearing remaining active support-surface and Brain/shell structural findings.
+- `dashboard_rebuild/react-doctor.config.json` is now limited to runtime/tooling ignores:
+  - `drizzle.config.ts`
+  - `schema.ts`
+- Final diagnostics snapshot from the strict runtime-only probe (`diagnose('.', { diff: false, verbose: true })`) is `100/100` with `0` diagnostics.
+- `dashboard_rebuild` changes remain validated via `npm run check`, full `npm run build`, and the React Doctor scan in earlier passes after each major refactor wave.
+
+## 2026-03-15 - Workspace coordination cleanup
+- Compressed the live execution board in `docs/root/TUTOR_TODO.md` down to the active/deferred work only and moved the completed 2026-03-15 sprint history into `docs/archive/TUTOR_TODO_history_2026-03-15_workspace_cleanup.md`.
+- Reset `docs/root/AGENT_BOARD.md` after archiving the 23 completed ownership rows into `docs/archive/AGENT_BOARD_history_2026-03-15.md`.
+- Removed only safe ignored workspace debris:
+  - `.pytest_cache/`
+  - `brain/.pytest_cache/`
+  - Python `__pycache__/` trees under `brain/`, `scholar/`, `scripts/`, `sop/`, and `tools/`
+  - `logs/`
+  - `tmp_test_script.py`
+- Explicitly left the current dirty Tutor/shared frontend rewrite set alone because it is active local work rather than disposable repo noise.
+- Validation passed:
+  - `python scripts/check_docs_sync.py`
+  - `git diff --check`
+
+## 2026-03-15 - Runtime artifact prune and checkpoint split
+- Removed bulky ignored runtime debris without touching the active runtime DB or uploads:
+  - cleared `scholar/outputs/orchestrator_runs/`
+  - cleared `scholar/outputs/research_notebook/`
+  - cleared `scholar/outputs/plan_updates/`
+  - removed `brain/data/pt_study.db.bak.20260311-movement-science-preflight`
+  - removed zero-byte `brain/data/study.db`
+- Passed the pre-commit validation gate for the current frontend rewrite set:
+  - `python scripts/check_docs_sync.py`
+  - `git diff --check`
+  - `cd dashboard_rebuild && npm run build`
+- Split the tracked changes into three logical commits so the repo history now separates:
+  - workspace cleanup + board/archive compression
+  - shared frontend/support-surface rewrites
+  - Brain/Scholar workspace rewrites
