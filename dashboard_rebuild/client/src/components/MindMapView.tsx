@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useMemo, useId } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo, useId, useReducer, type Dispatch, type MutableRefObject, type RefObject } from "react";
 import {
   ReactFlow,
   Background,
@@ -58,57 +58,200 @@ interface CurriculumLink {
   target: string;
 }
 
+type MindMapUiState = {
+  direction: "TB" | "LR";
+  nodeCounter: number;
+  isDirty: boolean;
+  drawMode: boolean;
+  drawStrokes: DrawStroke[];
+  showMermaidImport: boolean;
+  mermaidInput: string;
+  selectedCourses: Set<string>;
+  selectedSubfolders: Set<string>;
+  showNotes: boolean;
+};
+
+type MindMapUiPatch =
+  | Partial<MindMapUiState>
+  | ((state: MindMapUiState) => Partial<MindMapUiState>);
+
+function createMindMapUiState(): MindMapUiState {
+  return {
+    direction: "LR",
+    nodeCounter: 0,
+    isDirty: false,
+    drawMode: false,
+    drawStrokes: [],
+    showMermaidImport: false,
+    mermaidInput: "",
+    selectedCourses: new Set(COURSE_FOLDERS.map((course) => course.id)),
+    selectedSubfolders: new Set(),
+    showNotes: true,
+  };
+}
+
+function mindMapUiReducer(state: MindMapUiState, patch: MindMapUiPatch): MindMapUiState {
+  const nextPatch = typeof patch === "function" ? patch(state) : patch;
+  return { ...state, ...nextPatch };
+}
+
 function sanitizeDomIdPart(value: string) {
   return value.replace(/[^a-zA-Z0-9_-]/g, "-");
 }
 
-export function MindMapView({
-  hideToolbar = false,
-  externalCommand,
-  onStatusChange,
-}: MindMapViewProps) {
-  const [nodes, setNodes, onNodesChangeBase] = useNodesState<Node>([]);
-  const [edges, setEdges, onEdgesChangeBase] = useEdgesState<Edge>([]);
-  const [direction, setDirection] = useState<"TB" | "LR">("LR");
-  const [nodeCounter, setNodeCounter] = useState(0);
-  const [isDirty, setIsDirty] = useState(false);
-  const [drawMode, setDrawMode] = useState(false);
-  const [drawStrokes, setDrawStrokes] = useState<DrawStroke[]>([]);
-  const [showMermaidImport, setShowMermaidImport] = useState(false);
-  const [mermaidInput, setMermaidInput] = useState("");
-  const reactFlowRef = useRef<HTMLDivElement>(null);
-  const lastCommandIdRef = useRef(0);
-  const checkboxIdBase = useId();
-  const { toast } = useToast();
+function MindMapSidebar({
+  checkboxIdBase,
+  courseNoteCounts,
+  graphNodeCount,
+  onResetSubfolders,
+  onSeedMap,
+  onToggleCourse,
+  onToggleShowNotes,
+  onToggleSubfolder,
+  selectedCourses,
+  selectedSubfolders,
+  showNotes,
+  vaultOnline,
+  visibleSubfolders,
+}: {
+  checkboxIdBase: string;
+  courseNoteCounts: Map<string, number>;
+  graphNodeCount: number;
+  onResetSubfolders: () => void;
+  onSeedMap: () => void;
+  onToggleCourse: (id: string) => void;
+  onToggleShowNotes: (checked: boolean) => void;
+  onToggleSubfolder: (key: string) => void;
+  selectedCourses: Set<string>;
+  selectedSubfolders: Set<string>;
+  showNotes: boolean;
+  vaultOnline: boolean;
+  visibleSubfolders: Array<{ key: string; name: string; courseId: string }>;
+}) {
+  return (
+    <div className="w-[160px] shrink-0 border-r border-secondary/30 bg-black/60">
+      <ScrollArea className="h-full">
+        <div className="p-3 space-y-4">
+          {!vaultOnline && (
+            <div className="font-arcade text-xs text-red-400 text-center py-1 border border-red-500/30 bg-red-500/10">
+              OBSIDIAN OFFLINE
+            </div>
+          )}
 
-  // --- Vault-driven sidebar state ---
-  const [selectedCourses, setSelectedCourses] = useState<Set<string>>(
-    () => new Set(COURSE_FOLDERS.map((c) => c.id))
+          <div>
+            <div className="font-arcade text-xs text-primary mb-2">COURSES</div>
+            {COURSE_FOLDERS.map((course) => (
+              <label
+                key={course.id}
+                htmlFor={`${checkboxIdBase}-course-${course.id}`}
+                className="flex items-center gap-2 py-1 cursor-pointer"
+              >
+                <Checkbox
+                  id={`${checkboxIdBase}-course-${course.id}`}
+                  checked={selectedCourses.has(course.id)}
+                  onCheckedChange={() => onToggleCourse(course.id)}
+                  className="border-cyan-500 data-[state=checked]:bg-cyan-500"
+                />
+                <span className="font-terminal text-xs text-cyan-300">
+                  {course.name}
+                  <span className="text-muted-foreground ml-1">
+                    ({courseNoteCounts.get(course.id) ?? 0})
+                  </span>
+                </span>
+              </label>
+            ))}
+          </div>
+
+          {visibleSubfolders.length > 0 && (
+            <div>
+              <div className="font-arcade text-xs text-yellow-400 mb-2">SUBFOLDERS</div>
+              <label
+                htmlFor={`${checkboxIdBase}-subfolders-all`}
+                className="flex items-center gap-2 py-1 cursor-pointer mb-1"
+              >
+                <Checkbox
+                  id={`${checkboxIdBase}-subfolders-all`}
+                  checked={selectedSubfolders.size === 0}
+                  onCheckedChange={onResetSubfolders}
+                  className="border-yellow-500 data-[state=checked]:bg-yellow-500"
+                />
+                <span className="font-terminal text-xs text-yellow-200">All</span>
+              </label>
+              {visibleSubfolders.map((subfolder) => {
+                const subfolderCheckboxId = `${checkboxIdBase}-subfolder-${sanitizeDomIdPart(subfolder.key)}`;
+                return (
+                  <label key={subfolder.key} htmlFor={subfolderCheckboxId} className="flex items-center gap-2 py-0.5 cursor-pointer">
+                    <Checkbox
+                      id={subfolderCheckboxId}
+                      checked={selectedSubfolders.size === 0 || selectedSubfolders.has(subfolder.key)}
+                      onCheckedChange={() => onToggleSubfolder(subfolder.key)}
+                      className="border-yellow-500 data-[state=checked]:bg-yellow-500"
+                    />
+                    <span className="font-terminal text-xs text-yellow-100 truncate">{subfolder.name}</span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+
+          <div>
+            <label htmlFor={`${checkboxIdBase}-show-notes`} className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                id={`${checkboxIdBase}-show-notes`}
+                checked={showNotes}
+                onCheckedChange={(checked) => onToggleShowNotes(!!checked)}
+                className="border-green-500 data-[state=checked]:bg-green-500"
+              />
+              <span className="font-terminal text-xs text-green-300">Show Notes</span>
+            </label>
+          </div>
+
+          <div className="pt-2 border-t border-secondary/30 space-y-1">
+            <div className="font-arcade text-xs text-muted-foreground mb-1">LEGEND</div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-sm border-2 border-cyan-400 bg-cyan-400/15" />
+              <span className="font-terminal text-xs text-cyan-300">Course</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-sm border border-yellow-400 bg-yellow-400/12" />
+              <span className="font-terminal text-xs text-yellow-300">Subfolder</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-sm border border-green-400 bg-green-400/8" />
+              <span className="font-terminal text-xs text-green-300">Note</span>
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-secondary/30">
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full h-7 text-xs font-terminal border-primary/50 text-primary"
+              onClick={onSeedMap}
+              disabled={!vaultOnline}
+            >
+              Seed Map ({graphNodeCount})
+            </Button>
+          </div>
+        </div>
+      </ScrollArea>
+    </div>
   );
-  const [selectedSubfolders, setSelectedSubfolders] = useState<Set<string>>(new Set());
-  const [showNotes, setShowNotes] = useState(true);
+}
 
-  const { data: obsidianStatus } = useQuery({
-    queryKey: ["obsidian", "status"],
-    queryFn: api.obsidian.getStatus,
-    refetchInterval: 30_000,
-  });
-
-  const { data: obsidianConfig } = useQuery({
-    queryKey: ["obsidian", "config"],
-    queryFn: api.obsidian.getConfig,
-  });
-
-  const vaultOnline = obsidianStatus?.status === "online";
-
-  const { data: vaultIndex } = useQuery({
-    queryKey: ["obsidian", "vaultIndex"],
-    queryFn: () => api.obsidian.getVaultIndex(),
-    enabled: vaultOnline,
-    staleTime: 5 * 60_000,
-  });
-
-  // --- Build vault tree from index ---
+function useMindMapVaultGraphData({
+  patchViewState,
+  selectedCourses,
+  selectedSubfolders,
+  showNotes,
+  vaultIndex,
+}: {
+  patchViewState: Dispatch<MindMapUiPatch>;
+  selectedCourses: Set<string>;
+  selectedSubfolders: Set<string>;
+  showNotes: boolean;
+  vaultIndex: Awaited<ReturnType<typeof api.obsidian.getVaultIndex>> | undefined;
+}) {
   const graphData = useMemo(() => {
     const gNodes: CurriculumNode[] = [];
     const gLinks: CurriculumLink[] = [];
@@ -129,55 +272,54 @@ export function MindMapView({
         if (segments.length === 1) {
           rootNotes.push({ name: noteName, path: fullPath });
         } else {
-          const sf = segments[0];
-          const list = subfolderNotes.get(sf) ?? [];
+          const subfolder = segments[0];
+          const list = subfolderNotes.get(subfolder) ?? [];
           list.push({ name: noteName, path: fullPath });
-          subfolderNotes.set(sf, list);
+          subfolderNotes.set(subfolder, list);
         }
       }
 
-      for (const [sfName, noteList] of subfolderNotes) {
-        const sfKey = `${course.id}/${sfName}`;
-        if (selectedSubfolders.size > 0 && !selectedSubfolders.has(sfKey)) continue;
-        const sfNodeId = `subfolder-${course.id}-${sfName}`;
+      for (const [subfolderName, noteList] of subfolderNotes) {
+        const subfolderKey = `${course.id}/${subfolderName}`;
+        if (selectedSubfolders.size > 0 && !selectedSubfolders.has(subfolderKey)) continue;
+        const subfolderNodeId = `subfolder-${course.id}-${subfolderName}`;
         gNodes.push({
-          id: sfNodeId,
-          name: `${sfName} (${noteList.length})`,
+          id: subfolderNodeId,
+          name: `${subfolderName} (${noteList.length})`,
           type: "subfolder",
         });
-        gLinks.push({ source: courseNodeId, target: sfNodeId });
+        gLinks.push({ source: courseNodeId, target: subfolderNodeId });
 
         if (showNotes) {
-          for (const n of noteList) {
-            const noteId = `note-${n.path}`;
+          for (const note of noteList) {
+            const noteId = `note-${note.path}`;
             gNodes.push({
               id: noteId,
-              name: n.name,
+              name: note.name,
               type: "note",
-              vaultPath: n.path,
+              vaultPath: note.path,
             });
-            gLinks.push({ source: sfNodeId, target: noteId });
+            gLinks.push({ source: subfolderNodeId, target: noteId });
           }
         }
       }
 
       if (showNotes) {
-        for (const rn of rootNotes) {
-          const noteId = `note-${rn.path}`;
+        for (const note of rootNotes) {
+          const noteId = `note-${note.path}`;
           gNodes.push({
             id: noteId,
-            name: rn.name,
+            name: note.name,
             type: "note",
-            vaultPath: rn.path,
+            vaultPath: note.path,
           });
           gLinks.push({ source: courseNodeId, target: noteId });
         }
       }
     }
     return { nodes: gNodes, links: gLinks };
-  }, [vaultIndex, selectedCourses, selectedSubfolders, showNotes]);
+  }, [selectedCourses, selectedSubfolders, showNotes, vaultIndex]);
 
-  // --- Sidebar helper data ---
   const visibleSubfolders = useMemo(() => {
     if (!vaultIndex?.paths) return [];
     const result: { key: string; name: string; courseId: string }[] = [];
@@ -198,7 +340,7 @@ export function MindMapView({
       }
     }
     return result;
-  }, [vaultIndex, selectedCourses]);
+  }, [selectedCourses, vaultIndex]);
 
   const courseNoteCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -213,240 +355,64 @@ export function MindMapView({
     return counts;
   }, [vaultIndex]);
 
-  const toggleCourse = (id: string) => {
-    setSelectedCourses((prev) => {
-      const next = new Set(prev);
+  const toggleCourse = useCallback((id: string) => {
+    patchViewState((prev) => {
+      const next = new Set(prev.selectedCourses);
       if (next.has(id)) next.delete(id);
       else next.add(id);
-      return next;
+      return { selectedCourses: next };
     });
-  };
+  }, [patchViewState]);
 
-  const toggleSubfolder = (key: string) => {
-    setSelectedSubfolders((prev) => {
-      const next = new Set(prev);
+  const toggleSubfolder = useCallback((key: string) => {
+    patchViewState((prev) => {
+      const next = new Set(prev.selectedSubfolders);
       if (next.has(key)) next.delete(key);
       else next.add(key);
-      return next;
+      return { selectedSubfolders: next };
     });
-  };
+  }, [patchViewState]);
 
-  // --- ReactFlow change wrappers (mark dirty) ---
-  const onNodesChange = useCallback(
-    (changes: any) => { setIsDirty(true); onNodesChangeBase(changes); },
-    [onNodesChangeBase]
-  );
-  const onEdgesChange = useCallback(
-    (changes: any) => { setIsDirty(true); onEdgesChangeBase(changes); },
-    [onEdgesChangeBase]
-  );
-  const onConnect = useCallback(
-    (connection: Connection) => {
-      setIsDirty(true);
-      setEdges((eds) => addEdge(connection, eds));
-    },
-    [setEdges]
-  );
+  return { courseNoteCounts, graphData, toggleCourse, toggleSubfolder, visibleSubfolders };
+}
 
-  // --- Listen for node label edits from MindMapShapeNode ---
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const { id, label } = (e as CustomEvent).detail;
-      setNodes((nds) =>
-        nds.map((n) => (n.id === id ? { ...n, data: { ...n.data, label } } : n))
-      );
-      setIsDirty(true);
-    };
-    window.addEventListener("mindmap:node-label", handler);
-    return () => window.removeEventListener("mindmap:node-label", handler);
-  }, [setNodes]);
+function useMindMapCanvasPersistence({
+  addNode,
+  autoLayout,
+  deleteSelected,
+  direction,
+  drawStrokes,
+  edges,
+  externalCommand,
+  importMermaid,
+  isDirty,
+  lastCommandIdRef,
+  nodes,
+  onStatusChange,
+  patchViewState,
+  reactFlowRef,
+  setNodes,
+  toggleDirection,
+}: {
+  addNode: (shape: MindMapShape) => void;
+  autoLayout: () => void;
+  deleteSelected: () => void;
+  direction: "TB" | "LR";
+  drawStrokes: DrawStroke[];
+  edges: Edge[];
+  externalCommand?: GraphCanvasCommand | null;
+  importMermaid: (code: string) => void;
+  isDirty: boolean;
+  lastCommandIdRef: MutableRefObject<number>;
+  nodes: Node[];
+  onStatusChange?: (status: GraphCanvasStatus) => void;
+  patchViewState: Dispatch<MindMapUiPatch>;
+  reactFlowRef: RefObject<HTMLDivElement | null>;
+  setNodes: ReturnType<typeof useNodesState<Node>>[1];
+  toggleDirection: () => void;
+}) {
+  const { toast } = useToast();
 
-  // --- Seed map from vault curriculum ---
-  const seedMap = useCallback(() => {
-    const { nodes: curNodes, links: curLinks } = graphData;
-    if (curNodes.length === 0) {
-      toast({ title: "No data", description: "Select courses first", variant: "destructive" });
-      return;
-    }
-
-    const existingCustomIds = new Set(
-      nodes.filter((n) =>
-        !String(n.id).startsWith("course-") &&
-        !String(n.id).startsWith("subfolder-") &&
-        !String(n.id).startsWith("note-")
-      ).map((n) => n.id)
-    );
-    const customNodes = nodes.filter((n) => existingCustomIds.has(n.id));
-    const customEdges = edges.filter(
-      (e) => existingCustomIds.has(e.source) || existingCustomIds.has(e.target)
-    );
-
-    const seedNodes: Node[] = curNodes.map((cn) => ({
-      id: cn.id,
-      type: "mindmapShape",
-      position: { x: 0, y: 0 },
-      data: (() => {
-        const shape = SEED_SHAPE[cn.type] ?? "rectangle";
-        return {
-          label: cn.name,
-          colorIdx: SEED_COLOR[cn.type] ?? 0,
-          shape,
-          ...(cn.vaultPath ? { vaultPath: cn.vaultPath } : {}),
-        };
-      })(),
-      style: getMindMapNodeStyle(SEED_SHAPE[cn.type] ?? "rectangle"),
-    }));
-
-    const seedEdges: Edge[] = curLinks.map((cl, i) => ({
-      id: `seed-e-${i}`,
-      source: cl.source,
-      target: cl.target,
-      ...MIND_MAP_DEFAULT_EDGE_OPTIONS,
-    }));
-
-    const allNodes = [...seedNodes, ...customNodes];
-    const allEdges = [...seedEdges, ...customEdges];
-    const laid = applyDagreLayout(allNodes, allEdges, { direction });
-    setNodes(laid);
-    setEdges(allEdges);
-    setNodeCounter(allNodes.length);
-    setIsDirty(true);
-    toast({ title: "Map seeded", description: `${curNodes.length} vault nodes` });
-  }, [graphData, nodes, edges, direction, setNodes, setEdges, toast]);
-
-  // --- Double-click node to open in Obsidian ---
-  const onNodeDoubleClick = useCallback(
-    (_event: React.MouseEvent, node: Node) => {
-      const vaultPath = (node.data as { vaultPath?: string })?.vaultPath;
-      if (!vaultPath) return;
-      const vaultName = obsidianConfig?.vaultName || "Treys School";
-      const filePath = vaultPath.replace(/\.md$/, "");
-      window.open(
-        `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}`,
-        "_blank"
-      );
-    },
-    [obsidianConfig]
-  );
-
-  // --- Add node ---
-  const addNode = useCallback(
-    (shape: MindMapShape) => {
-      const id = `mm-${nodeCounter + 1}`;
-      setNodeCounter((c) => c + 1);
-      const newNode: Node = {
-        id,
-        type: "mindmapShape",
-        position: { x: Math.random() * 300 + 50, y: Math.random() * 200 + 50 },
-        data: { label: `Node ${nodeCounter + 1}`, colorIdx: 0, shape },
-        style: getMindMapNodeStyle(shape),
-      };
-      setNodes((nds) => [...nds, newNode]);
-      setIsDirty(true);
-    },
-    [nodeCounter, setNodes]
-  );
-
-  // --- Delete selected ---
-  const deleteSelected = useCallback(() => {
-    setNodes((nds) => nds.filter((n) => !n.selected));
-    setEdges((eds) => eds.filter((e) => !e.selected));
-    setIsDirty(true);
-  }, [setNodes, setEdges]);
-
-  // --- Color / shape changes ---
-  const setSelectedNodeColor = useCallback(
-    (colorIdx: number) => {
-      setNodes((nds) =>
-        nds.map((n) => (n.selected ? { ...n, data: { ...n.data, colorIdx } } : n))
-      );
-      setIsDirty(true);
-    },
-    [setNodes]
-  );
-
-  const setSelectedEdgeColor = useCallback(
-    (stroke: string) => {
-      setEdges((eds) =>
-        eds.map((e) =>
-          e.selected
-            ? {
-                ...e,
-                style: { ...e.style, stroke, strokeWidth: 2.5 },
-                markerEnd: { type: MarkerType.ArrowClosed, color: stroke },
-              }
-            : e
-        )
-      );
-      setIsDirty(true);
-    },
-    [setEdges]
-  );
-
-  const setSelectedShape = useCallback(
-    (shape: MindMapShape) => {
-      setNodes((nds) =>
-        nds.map((n) =>
-          n.selected && n.type === "mindmapShape"
-            ? {
-                ...n,
-                data: { ...n.data, shape },
-                style: getMindMapNodeStyle(shape),
-              }
-            : n
-        )
-      );
-      setIsDirty(true);
-    },
-    [setNodes]
-  );
-
-  // --- Layout ---
-  const autoLayout = useCallback(() => {
-    const laid = applyDagreLayout(nodes, edges, { direction });
-    setNodes(laid);
-    setIsDirty(true);
-  }, [nodes, edges, direction, setNodes]);
-
-  const toggleDirection = useCallback(() => {
-    const newDir = direction === "TB" ? "LR" : "TB";
-    setDirection(newDir);
-    const laid = applyDagreLayout(nodes, edges, { direction: newDir });
-    setNodes(laid);
-    setIsDirty(true);
-  }, [direction, nodes, edges, setNodes]);
-
-  // --- Paste images ---
-  const handlePaste = useCallback(
-    (e: React.ClipboardEvent) => {
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      for (const item of items) {
-        if (!item.type.startsWith("image/")) continue;
-        const file = item.getAsFile();
-        if (!file) continue;
-        const reader = new FileReader();
-        reader.onload = () => {
-          const id = `mm-img-${nodeCounter + 1}`;
-          setNodeCounter((c) => c + 1);
-          const newNode: Node = {
-            id,
-            type: "mindmapImage",
-            position: { x: Math.random() * 300 + 50, y: Math.random() * 200 + 50 },
-            data: { src: reader.result as string },
-            style: { width: 200, height: 150 },
-          };
-          setNodes((nds) => [...nds, newNode]);
-          setIsDirty(true);
-        };
-        reader.readAsDataURL(file);
-        break;
-      }
-    },
-    [nodeCounter, setNodes]
-  );
-
-  // --- Export PNG ---
   const exportPng = useCallback(async () => {
     if (!reactFlowRef.current) return;
     try {
@@ -491,9 +457,8 @@ export function MindMapView({
     } catch (err) {
       toast({ title: "Export failed", description: String(err), variant: "destructive" });
     }
-  }, [toast]);
+  }, [reactFlowRef, toast]);
 
-  // --- Mermaid export/import ---
   const exportMermaid = useCallback(() => {
     if (nodes.length === 0) {
       toast({ title: "Nothing to export", description: "Add nodes first", variant: "destructive" });
@@ -524,57 +489,8 @@ export function MindMapView({
     const mermaid = toMermaid(normalizedNodes, normalizedEdges, direction);
     navigator.clipboard.writeText(mermaid);
     toast({ title: "Mermaid copied to clipboard" });
-  }, [nodes, edges, direction, toast]);
+  }, [direction, edges, nodes, toast]);
 
-  const importMermaid = useCallback((code: string) => {
-    const trimmed = code.trim();
-    if (!trimmed) return;
-
-    const parsed = parseMermaid(trimmed);
-    const mappedNodes: Node[] = parsed.nodes.map((node, idx) => ({
-      ...node,
-      id: `mm-import-${idx + 1}`,
-      type: "mindmapShape",
-      data: {
-        label: String((node.data as { label?: string })?.label || node.id),
-        colorIdx: 0,
-        shape: "rectangle",
-      },
-      style: getMindMapNodeStyle("rectangle"),
-    }));
-
-    const idBySource = new Map<string, string>();
-    parsed.nodes.forEach((node, idx) => {
-      idBySource.set(node.id, `mm-import-${idx + 1}`);
-    });
-
-    const mappedEdges = parsed.edges
-      .map((edge, idx) => {
-        const source = idBySource.get(edge.source);
-        const target = idBySource.get(edge.target);
-        if (!source || !target) return null;
-        return {
-          id: `mm-import-e-${idx + 1}`,
-          source,
-          target,
-          ...MIND_MAP_DEFAULT_EDGE_OPTIONS,
-        } as Edge;
-      })
-      .filter((edge): edge is Edge => edge !== null);
-
-    const laidOut = applyDagreLayout(mappedNodes, mappedEdges, {
-      direction: parsed.direction,
-    });
-
-    setDirection(parsed.direction);
-    setNodes(laidOut);
-    setEdges(mappedEdges);
-    setNodeCounter(mappedNodes.length);
-    setIsDirty(true);
-    toast({ title: "Mermaid imported", description: `${mappedNodes.length} nodes` });
-  }, [setNodes, setEdges, toast]);
-
-  // --- Save to Obsidian vault ---
   const saveToVault = useCallback(async () => {
     const title = sanitizeCanvasTitle((nodes[0]?.data as { label?: string })?.label || "Untitled Canvas");
     const basePath = `Brain Canvas/${title}`;
@@ -602,8 +518,8 @@ export function MindMapView({
     const mermaid = toMermaid(mermaidNodes, mermaidEdges, direction);
 
     const layoutPayload = JSON.stringify({
-      nodes: nodes.map((n) => ({ id: n.id, type: n.type, position: n.position, data: n.data, style: n.style })),
-      edges: edges.map((e) => ({ id: e.id, source: e.source, target: e.target, style: e.style, markerEnd: e.markerEnd })),
+      nodes: nodes.map((node) => ({ id: node.id, type: node.type, position: node.position, data: node.data, style: node.style })),
+      edges: edges.map((edge) => ({ id: edge.id, source: edge.source, target: edge.target, style: edge.style, markerEnd: edge.markerEnd })),
       meta: { direction, updated: new Date().toISOString() },
     }, null, 2);
     const strokesPayload = JSON.stringify({
@@ -625,17 +541,50 @@ export function MindMapView({
         api.obsidian.saveFile(markdownPath, markdown),
       ]);
       toast({ title: "Saved to vault", description: markdownPath });
-      setIsDirty(false);
+      patchViewState({ isDirty: false });
     } catch (err) {
       toast({ title: "Save failed", description: String(err), variant: "destructive" });
     }
-  }, [nodes, edges, drawStrokes, direction, toast]);
+  }, [direction, drawStrokes, edges, nodes, patchViewState, toast]);
 
-  // --- Draw layer ---
+  const handlePaste = useCallback(
+    (event: React.ClipboardEvent) => {
+      const items = event.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (!item.type.startsWith("image/")) continue;
+        const file = item.getAsFile();
+        if (!file) continue;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const nextCount = nodes.length + 1;
+          const id = `mm-img-${nextCount}`;
+          const newNode: Node = {
+            id,
+            type: "mindmapImage",
+            position: { x: Math.random() * 300 + 50, y: Math.random() * 200 + 50 },
+            data: { src: reader.result as string },
+            style: { width: 200, height: 150 },
+          };
+          setNodes((current) => [...current, newNode]);
+          patchViewState((prev) => ({
+            nodeCounter: Math.max(prev.nodeCounter + 1, nextCount),
+            isDirty: true,
+          }));
+        };
+        reader.readAsDataURL(file);
+        break;
+      }
+    },
+    [nodes.length, patchViewState, setNodes],
+  );
+
   const handleStrokeAdd = useCallback((stroke: DrawStroke) => {
-    setDrawStrokes((prev) => [...prev, stroke]);
-    setIsDirty(true);
-  }, []);
+    patchViewState((prev) => ({
+      drawStrokes: [...prev.drawStrokes, stroke],
+      isDirty: true,
+    }));
+  }, [patchViewState]);
 
   useEffect(() => {
     onStatusChange?.({
@@ -651,7 +600,7 @@ export function MindMapView({
         .filter((node) => node.selected)
         .map((node) => String((node.data as { label?: string })?.label || node.id)),
     });
-  }, [onStatusChange, isDirty, nodes, edges]);
+  }, [edges, isDirty, nodes, onStatusChange]);
 
   useEffect(() => {
     if (!externalCommand || externalCommand.target !== "mindmap") return;
@@ -674,10 +623,9 @@ export function MindMapView({
           : "";
         if (code) {
           importMermaid(code);
-          setMermaidInput(code);
-          setShowMermaidImport(false);
+          patchViewState({ mermaidInput: code, showMermaidImport: false });
         } else {
-          setShowMermaidImport(true);
+          patchViewState({ showMermaidImport: true });
         }
         break;
       }
@@ -694,134 +642,407 @@ export function MindMapView({
         toggleDirection();
         break;
       case "toggle_draw":
-        setDrawMode((prev) => !prev);
+        patchViewState((prev) => ({ drawMode: !prev.drawMode }));
         break;
       default:
         break;
     }
   }, [
-    externalCommand,
-    saveToVault,
-    exportPng,
-    exportMermaid,
-    importMermaid,
     addNode,
-    deleteSelected,
     autoLayout,
+    deleteSelected,
+    exportMermaid,
+    exportPng,
+    externalCommand,
+    importMermaid,
+    lastCommandIdRef,
+    patchViewState,
+    saveToVault,
     toggleDirection,
   ]);
 
+  return { exportPng, handlePaste, handleStrokeAdd, saveToVault };
+}
+
+function useMindMapCanvasModel({
+  direction,
+  edges,
+  graphData,
+  nodeCounter,
+  nodes,
+  obsidianConfig,
+  onEdgesChangeBase,
+  onNodesChangeBase,
+  patchViewState,
+  setEdges,
+  setNodes,
+}: {
+  direction: "TB" | "LR";
+  edges: Edge[];
+  graphData: { nodes: CurriculumNode[]; links: CurriculumLink[] };
+  nodeCounter: number;
+  nodes: Node[];
+  obsidianConfig: Awaited<ReturnType<typeof api.obsidian.getConfig>> | undefined;
+  onEdgesChangeBase: (changes: any) => void;
+  onNodesChangeBase: (changes: any) => void;
+  patchViewState: Dispatch<MindMapUiPatch>;
+  setEdges: ReturnType<typeof useEdgesState<Edge>>[1];
+  setNodes: ReturnType<typeof useNodesState<Node>>[1];
+}) {
+  const { toast } = useToast();
+
+  const onNodesChange = useCallback((changes: any) => {
+    patchViewState({ isDirty: true });
+    onNodesChangeBase(changes);
+  }, [onNodesChangeBase, patchViewState]);
+
+  const onEdgesChange = useCallback((changes: any) => {
+    patchViewState({ isDirty: true });
+    onEdgesChangeBase(changes);
+  }, [onEdgesChangeBase, patchViewState]);
+
+  const onConnect = useCallback((connection: Connection) => {
+    patchViewState({ isDirty: true });
+    setEdges((current) => addEdge(connection, current));
+  }, [patchViewState, setEdges]);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const { id, label } = (event as CustomEvent).detail;
+      setNodes((current) =>
+        current.map((node) =>
+          node.id === id ? { ...node, data: { ...node.data, label } } : node
+        )
+      );
+      patchViewState({ isDirty: true });
+    };
+    window.addEventListener("mindmap:node-label", handler);
+    return () => window.removeEventListener("mindmap:node-label", handler);
+  }, [patchViewState, setNodes]);
+
+  const seedMap = useCallback(() => {
+    const { nodes: graphNodes, links: graphLinks } = graphData;
+    if (graphNodes.length === 0) {
+      toast({ title: "No data", description: "Select courses first", variant: "destructive" });
+      return;
+    }
+
+    const existingCustomIds = new Set(
+      nodes
+        .filter((node) =>
+          !String(node.id).startsWith("course-")
+          && !String(node.id).startsWith("subfolder-")
+          && !String(node.id).startsWith("note-")
+        )
+        .map((node) => node.id)
+    );
+    const customNodes = nodes.filter((node) => existingCustomIds.has(node.id));
+    const customEdges = edges.filter(
+      (edge) => existingCustomIds.has(edge.source) || existingCustomIds.has(edge.target)
+    );
+
+    const seedNodes: Node[] = graphNodes.map((graphNode) => {
+      const shape = SEED_SHAPE[graphNode.type] ?? "rectangle";
+      return {
+        id: graphNode.id,
+        type: "mindmapShape",
+        position: { x: 0, y: 0 },
+        data: {
+          label: graphNode.name,
+          colorIdx: SEED_COLOR[graphNode.type] ?? 0,
+          shape,
+          ...(graphNode.vaultPath ? { vaultPath: graphNode.vaultPath } : {}),
+        },
+        style: getMindMapNodeStyle(shape),
+      };
+    });
+
+    const seedEdges: Edge[] = graphLinks.map((graphLink, index) => ({
+      id: `seed-e-${index}`,
+      source: graphLink.source,
+      target: graphLink.target,
+      ...MIND_MAP_DEFAULT_EDGE_OPTIONS,
+    }));
+
+    const allNodes = [...seedNodes, ...customNodes];
+    const allEdges = [...seedEdges, ...customEdges];
+    const laidOut = applyDagreLayout(allNodes, allEdges, { direction });
+    setNodes(laidOut);
+    setEdges(allEdges);
+    patchViewState({ nodeCounter: allNodes.length, isDirty: true });
+    toast({ title: "Map seeded", description: `${graphNodes.length} vault nodes` });
+  }, [direction, edges, graphData, nodes, patchViewState, setEdges, setNodes, toast]);
+
+  const onNodeDoubleClick = useCallback((_: React.MouseEvent, node: Node) => {
+    const vaultPath = (node.data as { vaultPath?: string })?.vaultPath;
+    if (!vaultPath) return;
+    const vaultName = obsidianConfig?.vaultName || "Treys School";
+    const filePath = vaultPath.replace(/\.md$/, "");
+    window.open(
+      `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}`,
+      "_blank"
+    );
+  }, [obsidianConfig]);
+
+  const addNode = useCallback((shape: MindMapShape) => {
+    const nextIndex = nodeCounter + 1;
+    const newNode: Node = {
+      id: `mm-${nextIndex}`,
+      type: "mindmapShape",
+      position: { x: Math.random() * 300 + 50, y: Math.random() * 200 + 50 },
+      data: { label: `Node ${nextIndex}`, colorIdx: 0, shape },
+      style: getMindMapNodeStyle(shape),
+    };
+    setNodes((current) => [...current, newNode]);
+    patchViewState((prev) => ({ nodeCounter: prev.nodeCounter + 1, isDirty: true }));
+  }, [nodeCounter, patchViewState, setNodes]);
+
+  const deleteSelected = useCallback(() => {
+    setNodes((current) => current.filter((node) => !node.selected));
+    setEdges((current) => current.filter((edge) => !edge.selected));
+    patchViewState({ isDirty: true });
+  }, [patchViewState, setEdges, setNodes]);
+
+  const setSelectedNodeColor = useCallback((colorIdx: number) => {
+    setNodes((current) =>
+      current.map((node) =>
+        node.selected ? { ...node, data: { ...node.data, colorIdx } } : node
+      )
+    );
+    patchViewState({ isDirty: true });
+  }, [patchViewState, setNodes]);
+
+  const setSelectedEdgeColor = useCallback((stroke: string) => {
+    setEdges((current) =>
+      current.map((edge) =>
+        edge.selected
+          ? {
+              ...edge,
+              style: { ...edge.style, stroke, strokeWidth: 2.5 },
+              markerEnd: { type: MarkerType.ArrowClosed, color: stroke },
+            }
+          : edge
+      )
+    );
+    patchViewState({ isDirty: true });
+  }, [patchViewState, setEdges]);
+
+  const setSelectedShape = useCallback((shape: MindMapShape) => {
+    setNodes((current) =>
+      current.map((node) =>
+        node.selected && node.type === "mindmapShape"
+          ? {
+              ...node,
+              data: { ...node.data, shape },
+              style: getMindMapNodeStyle(shape),
+            }
+          : node
+      )
+    );
+    patchViewState({ isDirty: true });
+  }, [patchViewState, setNodes]);
+
+  const autoLayout = useCallback(() => {
+    const laidOut = applyDagreLayout(nodes, edges, { direction });
+    setNodes(laidOut);
+    patchViewState({ isDirty: true });
+  }, [direction, edges, nodes, patchViewState, setNodes]);
+
+  const toggleDirection = useCallback(() => {
+    const nextDirection = direction === "TB" ? "LR" : "TB";
+    const laidOut = applyDagreLayout(nodes, edges, { direction: nextDirection });
+    setNodes(laidOut);
+    patchViewState({ direction: nextDirection, isDirty: true });
+  }, [direction, edges, nodes, patchViewState, setNodes]);
+
+  const importMermaid = useCallback((code: string) => {
+    const trimmed = code.trim();
+    if (!trimmed) return;
+
+    const parsed = parseMermaid(trimmed);
+    const mappedNodes: Node[] = parsed.nodes.map((node, index) => ({
+      ...node,
+      id: `mm-import-${index + 1}`,
+      type: "mindmapShape",
+      data: {
+        label: String((node.data as { label?: string })?.label || node.id),
+        colorIdx: 0,
+        shape: "rectangle",
+      },
+      style: getMindMapNodeStyle("rectangle"),
+    }));
+
+    const idBySource = new Map<string, string>();
+    parsed.nodes.forEach((node, index) => {
+      idBySource.set(node.id, `mm-import-${index + 1}`);
+    });
+
+    const mappedEdges = parsed.edges
+      .map((edge, index) => {
+        const source = idBySource.get(edge.source);
+        const target = idBySource.get(edge.target);
+        if (!source || !target) return null;
+        return {
+          id: `mm-import-e-${index + 1}`,
+          source,
+          target,
+          ...MIND_MAP_DEFAULT_EDGE_OPTIONS,
+        } as Edge;
+      })
+      .filter((edge): edge is Edge => edge !== null);
+
+    const laidOut = applyDagreLayout(mappedNodes, mappedEdges, {
+      direction: parsed.direction,
+    });
+
+    setNodes(laidOut);
+    setEdges(mappedEdges);
+    patchViewState({
+      direction: parsed.direction,
+      nodeCounter: mappedNodes.length,
+      isDirty: true,
+    });
+    toast({ title: "Mermaid imported", description: `${mappedNodes.length} nodes` });
+  }, [patchViewState, setEdges, setNodes, toast]);
+
+  return {
+    addNode,
+    autoLayout,
+    deleteSelected,
+    importMermaid,
+    onConnect,
+    onEdgesChange,
+    onNodeDoubleClick,
+    onNodesChange,
+    seedMap,
+    setSelectedEdgeColor,
+    setSelectedNodeColor,
+    setSelectedShape,
+    toggleDirection,
+  };
+}
+
+export function MindMapView({
+  hideToolbar = false,
+  externalCommand,
+  onStatusChange,
+}: MindMapViewProps) {
+  const [nodes, setNodes, onNodesChangeBase] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChangeBase] = useEdgesState<Edge>([]);
+  const [viewState, patchViewState] = useReducer(
+    mindMapUiReducer,
+    undefined,
+    createMindMapUiState,
+  );
+  const {
+    direction,
+    nodeCounter,
+    isDirty,
+    drawMode,
+    drawStrokes,
+    showMermaidImport,
+    mermaidInput,
+    selectedCourses,
+    selectedSubfolders,
+    showNotes,
+  } = viewState;
+  const reactFlowRef = useRef<HTMLDivElement>(null);
+  const lastCommandIdRef = useRef(0);
+  const checkboxIdBase = useId();
+
+  const { data: obsidianStatus } = useQuery({
+    queryKey: ["obsidian", "status"],
+    queryFn: api.obsidian.getStatus,
+    refetchInterval: 30_000,
+  });
+
+  const { data: obsidianConfig } = useQuery({
+    queryKey: ["obsidian", "config"],
+    queryFn: api.obsidian.getConfig,
+  });
+
+  const vaultOnline = obsidianStatus?.status === "online";
+
+  const { data: vaultIndex } = useQuery({
+    queryKey: ["obsidian", "vaultIndex"],
+    queryFn: () => api.obsidian.getVaultIndex(),
+    enabled: vaultOnline,
+    staleTime: 5 * 60_000,
+  });
+
+  const { courseNoteCounts, graphData, toggleCourse, toggleSubfolder, visibleSubfolders } =
+    useMindMapVaultGraphData({
+      patchViewState,
+      selectedCourses,
+      selectedSubfolders,
+      showNotes,
+      vaultIndex,
+    });
+  const {
+    addNode,
+    autoLayout,
+    deleteSelected,
+    importMermaid,
+    onConnect,
+    onEdgesChange,
+    onNodeDoubleClick,
+    onNodesChange,
+    seedMap,
+    setSelectedEdgeColor,
+    setSelectedNodeColor,
+    setSelectedShape,
+    toggleDirection,
+  } = useMindMapCanvasModel({
+    direction,
+    edges,
+    graphData,
+    nodeCounter,
+    nodes,
+    obsidianConfig,
+    onEdgesChangeBase,
+    onNodesChangeBase,
+    patchViewState,
+    setEdges,
+    setNodes,
+  });
+
+  const { exportPng, handlePaste, handleStrokeAdd, saveToVault } =
+    useMindMapCanvasPersistence({
+      addNode,
+      autoLayout,
+      deleteSelected,
+      direction,
+      drawStrokes,
+      edges,
+      externalCommand,
+      importMermaid,
+      isDirty,
+      lastCommandIdRef,
+      nodes,
+      onStatusChange,
+      patchViewState,
+      reactFlowRef,
+      setNodes,
+      toggleDirection,
+    });
+
   return (
     <div className="flex h-full" onPaste={handlePaste}>
-      {/* Sidebar */}
-      <div className="w-[160px] shrink-0 border-r border-secondary/30 bg-black/60">
-        <ScrollArea className="h-full">
-          <div className="p-3 space-y-4">
-            {!vaultOnline && (
-              <div className="font-arcade text-xs text-red-400 text-center py-1 border border-red-500/30 bg-red-500/10">
-                OBSIDIAN OFFLINE
-              </div>
-            )}
-
-            <div>
-              <div className="font-arcade text-xs text-primary mb-2">COURSES</div>
-              {COURSE_FOLDERS.map((c) => (
-                <label
-                  key={c.id}
-                  htmlFor={`${checkboxIdBase}-course-${c.id}`}
-                  className="flex items-center gap-2 py-1 cursor-pointer"
-                >
-                  <Checkbox
-                    id={`${checkboxIdBase}-course-${c.id}`}
-                    checked={selectedCourses.has(c.id)}
-                    onCheckedChange={() => toggleCourse(c.id)}
-                    className="border-cyan-500 data-[state=checked]:bg-cyan-500"
-                  />
-                  <span className="font-terminal text-xs text-cyan-300">
-                    {c.name}
-                    <span className="text-muted-foreground ml-1">
-                      ({courseNoteCounts.get(c.id) ?? 0})
-                    </span>
-                  </span>
-                </label>
-              ))}
-            </div>
-
-            {visibleSubfolders.length > 0 && (
-              <div>
-                <div className="font-arcade text-xs text-yellow-400 mb-2">SUBFOLDERS</div>
-                <label
-                  htmlFor={`${checkboxIdBase}-subfolders-all`}
-                  className="flex items-center gap-2 py-1 cursor-pointer mb-1"
-                >
-                  <Checkbox
-                    id={`${checkboxIdBase}-subfolders-all`}
-                    checked={selectedSubfolders.size === 0}
-                    onCheckedChange={() => setSelectedSubfolders(new Set())}
-                    className="border-yellow-500 data-[state=checked]:bg-yellow-500"
-                  />
-                  <span className="font-terminal text-xs text-yellow-200">All</span>
-                </label>
-                {visibleSubfolders.map((sf) => {
-                  const subfolderCheckboxId = `${checkboxIdBase}-subfolder-${sanitizeDomIdPart(sf.key)}`;
-                  return (
-                    <label key={sf.key} htmlFor={subfolderCheckboxId} className="flex items-center gap-2 py-0.5 cursor-pointer">
-                      <Checkbox
-                        id={subfolderCheckboxId}
-                        checked={selectedSubfolders.size === 0 || selectedSubfolders.has(sf.key)}
-                        onCheckedChange={() => toggleSubfolder(sf.key)}
-                        className="border-yellow-500 data-[state=checked]:bg-yellow-500"
-                      />
-                      <span className="font-terminal text-xs text-yellow-100 truncate">{sf.name}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            )}
-
-            <div>
-              <label htmlFor={`${checkboxIdBase}-show-notes`} className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  id={`${checkboxIdBase}-show-notes`}
-                  checked={showNotes}
-                  onCheckedChange={(checked) => setShowNotes(!!checked)}
-                  className="border-green-500 data-[state=checked]:bg-green-500"
-                />
-                <span className="font-terminal text-xs text-green-300">Show Notes</span>
-              </label>
-            </div>
-
-            {/* Legend */}
-            <div className="pt-2 border-t border-secondary/30 space-y-1">
-              <div className="font-arcade text-xs text-muted-foreground mb-1">LEGEND</div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-sm border-2 border-cyan-400 bg-cyan-400/15" />
-                <span className="font-terminal text-xs text-cyan-300">Course</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-sm border border-yellow-400 bg-yellow-400/12" />
-                <span className="font-terminal text-xs text-yellow-300">Subfolder</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-sm border border-green-400 bg-green-400/8" />
-                <span className="font-terminal text-xs text-green-300">Note</span>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-secondary/30">
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full h-7 text-xs font-terminal border-primary/50 text-primary"
-                onClick={seedMap}
-                disabled={!vaultOnline}
-              >
-                Seed Map ({graphData.nodes.length})
-              </Button>
-            </div>
-          </div>
-        </ScrollArea>
-      </div>
+      <MindMapSidebar
+        checkboxIdBase={checkboxIdBase}
+        courseNoteCounts={courseNoteCounts}
+        graphNodeCount={graphData.nodes.length}
+        onResetSubfolders={() => patchViewState({ selectedSubfolders: new Set() })}
+        onSeedMap={seedMap}
+        onToggleCourse={toggleCourse}
+        onToggleShowNotes={(checked) => patchViewState({ showNotes: checked })}
+        onToggleSubfolder={toggleSubfolder}
+        selectedCourses={selectedCourses}
+        selectedSubfolders={selectedSubfolders}
+        showNotes={showNotes}
+        vaultOnline={vaultOnline}
+        visibleSubfolders={visibleSubfolders}
+      />
 
       {/* Main canvas area */}
       <div className="flex-1 flex flex-col min-h-0">
@@ -837,7 +1058,7 @@ export function MindMapView({
             onToggleDirection={toggleDirection}
             direction={direction}
             drawMode={drawMode}
-            onToggleDraw={() => setDrawMode((d) => !d)}
+            onToggleDraw={() => patchViewState((prev) => ({ drawMode: !prev.drawMode }))}
             onExportPng={exportPng}
             onSaveToVault={saveToVault}
             nodeCount={nodes.length}
@@ -850,7 +1071,7 @@ export function MindMapView({
             <p className="font-arcade text-xs text-primary">PASTE MERMAID TO IMPORT</p>
             <textarea
               value={mermaidInput}
-              onChange={(e) => setMermaidInput(e.target.value)}
+              onChange={(e) => patchViewState({ mermaidInput: e.target.value })}
               placeholder="graph LR&#10;  A[Course] --> B[Module]"
               className="min-h-[64px] w-full px-2 py-1.5 font-terminal text-xs bg-black/60 border border-primary/30 rounded-none text-foreground placeholder:text-muted-foreground resize-y"
               rows={4}
@@ -862,7 +1083,7 @@ export function MindMapView({
                 disabled={!mermaidInput.trim()}
                 onClick={() => {
                   importMermaid(mermaidInput);
-                  setShowMermaidImport(false);
+                  patchViewState({ showMermaidImport: false });
                 }}
               >
                 Import
@@ -871,7 +1092,7 @@ export function MindMapView({
                 size="sm"
                 variant="outline"
                 className="rounded-none font-terminal text-xs border-primary/30"
-                onClick={() => setShowMermaidImport(false)}
+                onClick={() => patchViewState({ showMermaidImport: false })}
               >
                 Cancel
               </Button>

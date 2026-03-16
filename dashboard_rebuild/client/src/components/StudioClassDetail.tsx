@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -264,12 +263,10 @@ export function StudioClassDetail({
   const shellCounts = overview.shell.counts;
   const recentActivity = overview.recent_activity ?? [];
 
-  function renderMaterials() {
-    if (courseMaterials.length === 0) {
-      return <EmptyState text="No materials linked to this course." />;
-    }
-
-    return (
+  const materialsContent =
+    courseMaterials.length === 0 ? (
+      <EmptyState text="No materials linked to this course." />
+    ) : (
       <div className="space-y-1.5">
         {courseMaterials.map((material: Material) => {
           const { Icon: MaterialIcon, color } = getMaterialIcon(material.file_type);
@@ -291,51 +288,59 @@ export function StudioClassDetail({
         })}
       </div>
     );
-  }
 
-  function renderObjectives() {
-    if (courseObjectives.length === 0) {
-      return <EmptyState text="No objectives for this course yet." />;
-    }
-    return renderObjectivesList(courseObjectives);
-  }
-
-  function renderStats() {
-    const stats = [
-      { label: "SESSIONS", value: shellCounts.session_count },
-      { label: "ACTIVE", value: shellCounts.active_sessions },
-      { label: "CARD DRAFTS", value: cardDraftTotal },
-      { label: "PROMOTED", value: vaultResourceTotal },
-      { label: "CAPTURED", value: shellCounts.studio_captured_items },
-      { label: "SCHEDULE", value: shellCounts.pending_schedule_events },
-    ];
-
-    return (
-      <div className="space-y-5">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          {stats.map((stat) => (
-            <div key={stat.label} className="border border-primary/20 bg-black/35 px-3 py-3">
-              <div className="font-arcade text-[10px] text-primary/70">{stat.label}</div>
-              <div className="mt-1 font-terminal text-lg text-white">{stat.value}</div>
-            </div>
-          ))}
-        </div>
-        <div>
-          <div className="mb-2 font-arcade text-[10px] text-primary/70">RECENT ACTIVITY</div>
-          {renderActivity(recentActivity)}
-        </div>
-      </div>
+  const objectivesContent =
+    courseObjectives.length === 0 ? (
+      <EmptyState text="No objectives for this course yet." />
+    ) : (
+      renderObjectivesList(courseObjectives)
     );
-  }
 
-  const tabRenderers: Record<TabId, () => ReactNode> = {
-    materials: renderMaterials,
-    objectives: renderObjectives,
-    cards: () => renderCardDrafts(courseDrafts),
-    vault: () => renderVaultItems(vaultResources),
-    chains: () => renderChains(chains ?? []),
-    stats: renderStats,
-  };
+  const statsContent = (
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        {[
+          { label: "SESSIONS", value: shellCounts.session_count },
+          { label: "ACTIVE", value: shellCounts.active_sessions },
+          { label: "CARD DRAFTS", value: cardDraftTotal },
+          { label: "PROMOTED", value: vaultResourceTotal },
+          { label: "CAPTURED", value: shellCounts.studio_captured_items },
+          { label: "SCHEDULE", value: shellCounts.pending_schedule_events },
+        ].map((stat) => (
+          <div key={stat.label} className="border border-primary/20 bg-black/35 px-3 py-3">
+            <div className="font-arcade text-[10px] text-primary/70">{stat.label}</div>
+            <div className="mt-1 font-terminal text-lg text-white">{stat.value}</div>
+          </div>
+        ))}
+      </div>
+      <div>
+        <div className="mb-2 font-arcade text-[10px] text-primary/70">RECENT ACTIVITY</div>
+        {renderActivity(recentActivity)}
+      </div>
+    </div>
+  );
+
+  let activeTabContent;
+  switch (activeTab) {
+    case "materials":
+      activeTabContent = materialsContent;
+      break;
+    case "objectives":
+      activeTabContent = objectivesContent;
+      break;
+    case "cards":
+      activeTabContent = renderCardDrafts(courseDrafts);
+      break;
+    case "vault":
+      activeTabContent = renderVaultItems(vaultResources);
+      break;
+    case "chains":
+      activeTabContent = renderChains(chains ?? []);
+      break;
+    case "stats":
+      activeTabContent = statsContent;
+      break;
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -384,7 +389,7 @@ export function StudioClassDetail({
         })}
       </div>
 
-      <ScrollArea className="flex-1 px-4 py-3">{tabRenderers[activeTab]()}</ScrollArea>
+      <ScrollArea className="flex-1 px-4 py-3">{activeTabContent}</ScrollArea>
     </div>
   );
 }

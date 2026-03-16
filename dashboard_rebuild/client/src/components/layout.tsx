@@ -186,7 +186,7 @@ function ShellNavLink({
   );
 }
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+function useLayoutContent({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const currentPath =
@@ -1038,4 +1038,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </footer>
     </div>
   );
+}
+
+export default function Layout({ children }: { children: React.ReactNode }) {
+  const content = useLayoutContent({ children });
+  return content;
 }

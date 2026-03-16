@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useRef, useReducer, useCallback, useMemo } from "react";
 import ForceGraph2D from "react-force-graph-2d";
 import { api } from "@/lib/api";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -29,6 +29,39 @@ interface VaultGraphViewProps {
 
 const FOLDER_COLORS = VAULT_FOLDER_COLORS;
 
+type VaultGraphState = {
+  rawGraphData: GraphData;
+  loading: boolean;
+  error: string | null;
+  dimensions: { width: number; height: number } | null;
+  hoveredNode: GraphNode | null;
+  zoomLevel: number;
+  selectedFolders: Set<string>;
+  didInit: boolean;
+};
+
+type VaultGraphPatch =
+  | Partial<VaultGraphState>
+  | ((state: VaultGraphState) => Partial<VaultGraphState>);
+
+function createVaultGraphState(): VaultGraphState {
+  return {
+    rawGraphData: { nodes: [], links: [] },
+    loading: true,
+    error: null,
+    dimensions: null,
+    hoveredNode: null,
+    zoomLevel: 1,
+    selectedFolders: new Set(),
+    didInit: false,
+  };
+}
+
+function vaultGraphReducer(state: VaultGraphState, patch: VaultGraphPatch): VaultGraphState {
+  const nextPatch = typeof patch === "function" ? patch(state) : patch;
+  return { ...state, ...nextPatch };
+}
+
 function getFolderColor(folder: string): string {
   const top = folder.split("/")[0];
   return FOLDER_COLORS[top] || "#6366f1";
@@ -37,14 +70,21 @@ function getFolderColor(folder: string): string {
 export function VaultGraphView({ onNodeClick }: VaultGraphViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<any>(null);
-  const [rawGraphData, setRawGraphData] = useState<GraphData>({ nodes: [], links: [] });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
-  const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [selectedFolders, setSelectedFolders] = useState<Set<string>>(new Set());
-  const [didInit, setDidInit] = useState(false);
+  const [graphState, patchGraphState] = useReducer(
+    vaultGraphReducer,
+    undefined,
+    createVaultGraphState,
+  );
+  const {
+    rawGraphData,
+    loading,
+    error,
+    dimensions,
+    hoveredNode,
+    zoomLevel,
+    selectedFolders,
+    didInit,
+  } = graphState;
 
   useEffect(() => {
     const el = containerRef.current;
@@ -52,7 +92,12 @@ export function VaultGraphView({ onNodeClick }: VaultGraphViewProps) {
 
     const update = () => {
       const rect = el.getBoundingClientRect();
-      setDimensions({ width: Math.max(1, Math.floor(rect.width) - 2), height: Math.max(1, Math.floor(rect.height) - 2) });
+      patchGraphState({
+        dimensions: {
+          width: Math.max(1, Math.floor(rect.width) - 2),
+          height: Math.max(1, Math.floor(rect.height) - 2),
+        },
+      });
     };
     update();
     const obs = new ResizeObserver(update);
@@ -62,23 +107,27 @@ export function VaultGraphView({ onNodeClick }: VaultGraphViewProps) {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    api.obsidian.getGraph().then((data) => {
-      if (cancelled) return;
-      if (data.success) {
-        setRawGraphData({ nodes: data.nodes, links: data.links });
-      } else {
-        setError("Failed to load graph data");
-      }
-      setLoading(false);
-    }).catch(() => {
-      if (!cancelled) {
-        setError("Network error loading graph");
-        setLoading(false);
-      }
-    });
+    patchGraphState({ loading: true, error: null });
+    api.obsidian.getGraph()
+      .then((data) => {
+        if (cancelled) return;
+        if (data.success) {
+          patchGraphState({
+            rawGraphData: { nodes: data.nodes, links: data.links },
+            error: null,
+            loading: false,
+          });
+          return;
+        }
+        patchGraphState({ error: "Failed to load graph data", loading: false });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          patchGraphState({ error: "Network error loading graph", loading: false });
+        }
+      });
     return () => { cancelled = true; };
-  }, []);
+  }, [patchGraphState]);
 
   // Extract unique top-level folders
   const folders = useMemo(() => {
@@ -93,10 +142,12 @@ export function VaultGraphView({ onNodeClick }: VaultGraphViewProps) {
   // Auto-select all folders on first data load
   useEffect(() => {
     if (folders.length > 0 && !didInit) {
-      setDidInit(true);
-      setSelectedFolders(new Set(folders));
+      patchGraphState({
+        didInit: true,
+        selectedFolders: new Set(folders),
+      });
     }
-  }, [folders, didInit]);
+  }, [didInit, folders, patchGraphState]);
 
   // Filter graph data by selected folders
   const graphData = useMemo(() => {
@@ -119,11 +170,11 @@ export function VaultGraphView({ onNodeClick }: VaultGraphViewProps) {
   }, [rawGraphData, selectedFolders, folders.length]);
 
   const toggleFolder = (folder: string) => {
-    setSelectedFolders((prev) => {
-      const next = new Set(prev);
+    patchGraphState((prev) => {
+      const next = new Set(prev.selectedFolders);
       if (next.has(folder)) next.delete(folder);
       else next.add(folder);
-      return next;
+      return { selectedFolders: next };
     });
   };
 
@@ -133,12 +184,12 @@ export function VaultGraphView({ onNodeClick }: VaultGraphViewProps) {
 
   const handleZoom = useCallback((val: number) => {
     const clamped = Math.max(0.1, Math.min(10, val));
-    setZoomLevel(clamped);
+    patchGraphState({ zoomLevel: clamped });
     const fg = graphRef.current as any;
     if (fg?.zoom) {
       fg.zoom(clamped, 200);
     }
-  }, []);
+  }, [patchGraphState]);
 
   const nodeCanvasObject = useCallback((node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
     const label = node.name;
@@ -180,7 +231,7 @@ export function VaultGraphView({ onNodeClick }: VaultGraphViewProps) {
               <Checkbox
                 checked={selectedFolders.size === folders.length}
                 onCheckedChange={(checked) => {
-                  setSelectedFolders(checked ? new Set(folders) : new Set());
+                  patchGraphState({ selectedFolders: checked ? new Set(folders) : new Set() });
                 }}
                 className="border-primary data-[state=checked]:bg-primary"
                 aria-label="Toggle all folders"
@@ -244,7 +295,7 @@ export function VaultGraphView({ onNodeClick }: VaultGraphViewProps) {
                     (graphRef.current as any)?.zoomToFit?.(400, 40);
                     setTimeout(() => {
                       const fg = graphRef.current as any;
-                      if (fg?.zoom) setZoomLevel(fg.zoom());
+                      if (fg?.zoom) patchGraphState({ zoomLevel: fg.zoom() });
                     }, 450);
                   }}
                   className="px-2 py-0.5 text-xs font-terminal bg-primary/20 border border-primary/40 text-primary hover:bg-primary/30 rounded-none"
@@ -292,8 +343,8 @@ export function VaultGraphView({ onNodeClick }: VaultGraphViewProps) {
                 ctx.fill();
               }}
               onNodeClick={handleNodeClick}
-              onNodeHover={(node: GraphNode | null) => setHoveredNode(node)}
-              onZoom={({ k }: { k: number }) => setZoomLevel(k)}
+              onNodeHover={(node: GraphNode | null) => patchGraphState({ hoveredNode: node })}
+              onZoom={({ k }: { k: number }) => patchGraphState({ zoomLevel: k })}
               linkColor={() => "rgba(255, 80, 80, 0.35)"}
               linkWidth={1.5}
               backgroundColor="transparent"

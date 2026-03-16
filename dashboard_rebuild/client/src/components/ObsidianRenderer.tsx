@@ -21,33 +21,47 @@ const CALLOUT_RE = /^\[!([\w-]+)\]\s*(.*)?$/;
 
 const CALLOUT_COLORS = CALLOUT_STYLES;
 
-function renderWikilinks(text: string, onClick?: (name: string, shiftKey: boolean) => void) {
-  return text.split(WIKILINK_RE).map((part, j) => {
-    const match = part.match(/^\[\[(.*?)\]\]$/);
-    if (match) {
-      const display = match[1].includes("|") ? match[1].split("|")[1] : match[1];
-      const target = match[1].includes("|") ? match[1].split("|")[0] : match[1];
-      if (!onClick) {
-        return (
-          <span key={j} className="text-blue-400 underline decoration-dotted">
-            {display}
-          </span>
-        );
-      }
-      return (
-        <button
-          key={j}
-          type="button"
-          className="inline rounded-none border-0 bg-transparent p-0 text-blue-400 underline decoration-dotted transition-colors hover:text-blue-300"
-          onClick={(e) => onClick?.(target, e.shiftKey)}
-          title={`${target} (Shift+click for Obsidian app)`}
-        >
-          {display}
-        </button>
-      );
-    }
-    return <span key={j}>{part}</span>;
-  });
+function WikilinkContent({
+  text,
+  onClick,
+}: {
+  text: string;
+  onClick?: (name: string, shiftKey: boolean) => void;
+}) {
+  const partCounts = new Map<string, number>();
+  return (
+    <>
+      {text.split(WIKILINK_RE).map((part) => {
+        const nextCount = (partCounts.get(part) ?? 0) + 1;
+        partCounts.set(part, nextCount);
+        const key = `${part}-${nextCount}`;
+        const match = part.match(/^\[\[(.*?)\]\]$/);
+        if (match) {
+          const display = match[1].includes("|") ? match[1].split("|")[1] : match[1];
+          const target = match[1].includes("|") ? match[1].split("|")[0] : match[1];
+          if (!onClick) {
+            return (
+              <span key={key} className="text-blue-400 underline decoration-dotted">
+                {display}
+              </span>
+            );
+          }
+          return (
+            <button
+              key={key}
+              type="button"
+              className="inline rounded-none border-0 bg-transparent p-0 text-blue-400 underline decoration-dotted transition-colors hover:text-blue-300"
+              onClick={(e) => onClick(target, e.shiftKey)}
+              title={`${target} (Shift+click for Obsidian app)`}
+            >
+              {display}
+            </button>
+          );
+        }
+        return <span key={key}>{part}</span>;
+      })}
+    </>
+  );
 }
 
 function WikilinkText({
@@ -59,7 +73,11 @@ function WikilinkText({
   onClick?: (name: string, shiftKey: boolean) => void;
   className: string;
 }) {
-  return <span className={className}>{renderWikilinks(text, onClick)}</span>;
+  return (
+    <span className={className}>
+      <WikilinkContent text={text} onClick={onClick} />
+    </span>
+  );
 }
 
 /**

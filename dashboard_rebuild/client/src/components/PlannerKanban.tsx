@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useReducer, type ReactNode } from "react";
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, useDraggable, useDroppable, type DragEndEvent } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -17,6 +17,37 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 type PlannerKanbanColumnId = "pending" | "in_progress";
+
+type PlannerKanbanState = {
+  activeTaskId: string | null;
+  showAddTask: boolean;
+  newTaskTitle: string;
+  newTaskDueDate: string;
+  newTaskMinutes: string;
+  newTaskPriority: string;
+  newTaskNotes: string;
+};
+
+type PlannerKanbanPatch =
+  | Partial<PlannerKanbanState>
+  | ((state: PlannerKanbanState) => Partial<PlannerKanbanState>);
+
+function createPlannerKanbanState(): PlannerKanbanState {
+  return {
+    activeTaskId: null,
+    showAddTask: false,
+    newTaskTitle: "",
+    newTaskDueDate: "",
+    newTaskMinutes: "",
+    newTaskPriority: "",
+    newTaskNotes: "",
+  };
+}
+
+function plannerKanbanReducer(state: PlannerKanbanState, patch: PlannerKanbanPatch): PlannerKanbanState {
+  const nextPatch = typeof patch === "function" ? patch(state) : patch;
+  return { ...state, ...nextPatch };
+}
 
 const COLUMNS: { id: PlannerKanbanColumnId; label: string; hint: string }[] = [
   { id: "pending", label: "Queue", hint: "Drop here to keep it pending" },
@@ -211,10 +242,215 @@ function PlannerTaskCard({
   );
 }
 
-export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
+function PlannerKanbanHeader({
+  taskCount,
+  isUpdating,
+  isGenerating,
+  onAdd,
+  onGenerate,
+}: {
+  taskCount: number;
+  isUpdating: boolean;
+  isGenerating: boolean;
+  onAdd: () => void;
+  onGenerate: () => void;
+}) {
+  return (
+    <CardHeader className="border-b border-primary/50 p-4">
+      <CardTitle className="font-arcade text-sm flex items-center justify-between gap-3">
+        <span className="truncate">PLANNER_BOARD</span>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="rounded-none text-xs">
+            {taskCount} tasks
+          </Badge>
+          <Button
+            size="sm"
+            variant="outline"
+            className="rounded-none font-arcade text-xs border-primary"
+            onClick={onAdd}
+            disabled={isUpdating}
+            title="Add manual planner task"
+          >
+            <Plus className="w-3.5 h-3.5 mr-2" />
+            Add
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="rounded-none font-arcade text-xs border-primary"
+            onClick={onGenerate}
+            disabled={isGenerating || isUpdating}
+            title="Generate tasks from recent weak anchors"
+          >
+            <RefreshCw className={cn("w-3.5 h-3.5 mr-2", isGenerating && "animate-spin")} />
+            Refresh
+          </Button>
+        </div>
+      </CardTitle>
+    </CardHeader>
+  );
+}
+
+function PlannerAddTaskDialog({
+  open,
+  isUpdating,
+  title,
+  dueDate,
+  minutes,
+  priority,
+  notes,
+  onTitleChange,
+  onDueDateChange,
+  onMinutesChange,
+  onPriorityChange,
+  onNotesChange,
+  onCreate,
+  onCancel,
+  onOpenChange,
+}: {
+  open: boolean;
+  isUpdating: boolean;
+  title: string;
+  dueDate: string;
+  minutes: string;
+  priority: string;
+  notes: string;
+  onTitleChange: (value: string) => void;
+  onDueDateChange: (value: string) => void;
+  onMinutesChange: (value: string) => void;
+  onPriorityChange: (value: string) => void;
+  onNotesChange: (value: string) => void;
+  onCreate: () => void;
+  onCancel: () => void;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-black border-2 border-primary rounded-none">
+        <DialogHeader>
+          <DialogTitle className="font-arcade text-sm">ADD_PLANNER_TASK</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            Add a manual task to your planner queue.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 pt-2">
+          <div className="space-y-1">
+            <Label htmlFor="planner-task-title" className="font-arcade text-xs">
+              TASK TEXT
+            </Label>
+            <Input
+              id="planner-task-title"
+              value={title}
+              onChange={(e) => onTitleChange(e.target.value)}
+              className="rounded-none border-secondary bg-black font-terminal"
+              placeholder="Enter task text"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="planner-task-due-date" className="font-arcade text-xs">
+              DUE DATE
+            </Label>
+            <Input
+              id="planner-task-due-date"
+              type="date"
+              value={dueDate}
+              onChange={(e) => onDueDateChange(e.target.value)}
+              className="rounded-none border-secondary bg-black font-terminal"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="planner-task-minutes" className="font-arcade text-xs">
+                PLANNED MINUTES
+              </Label>
+              <Input
+                id="planner-task-minutes"
+                type="number"
+                min={0}
+                inputMode="numeric"
+                value={minutes}
+                onChange={(e) => onMinutesChange(e.target.value)}
+                className="rounded-none border-secondary bg-black font-terminal"
+                placeholder="45"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="planner-task-priority" className="font-arcade text-xs">
+                PRIORITY
+              </Label>
+              <Input
+                id="planner-task-priority"
+                type="number"
+                min={0}
+                inputMode="numeric"
+                value={priority}
+                onChange={(e) => onPriorityChange(e.target.value)}
+                className="rounded-none border-secondary bg-black font-terminal"
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="planner-task-notes" className="font-arcade text-xs">
+              NOTES
+            </Label>
+            <Textarea
+              id="planner-task-notes"
+              value={notes}
+              onChange={(e) => onNotesChange(e.target.value)}
+              className="rounded-none border-secondary bg-black font-terminal min-h-20"
+              placeholder="Optional notes"
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              className="rounded-none font-arcade text-xs"
+              onClick={onCreate}
+              disabled={!title.trim() || isUpdating}
+            >
+              CREATE
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-none font-arcade text-xs border-secondary"
+              onClick={onCancel}
+            >
+              CANCEL
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function usePlannerKanbanBoard(tasks: PlannerTask[]) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [plannerState, patchPlannerState] = useReducer(
+    plannerKanbanReducer,
+    undefined,
+    createPlannerKanbanState,
+  );
+  const {
+    activeTaskId,
+    showAddTask,
+    newTaskTitle,
+    newTaskDueDate,
+    newTaskMinutes,
+    newTaskPriority,
+    newTaskNotes,
+  } = plannerState;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -267,23 +503,18 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
     },
   });
 
-  const [showAddTask, setShowAddTask] = useState(false);
-  const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [newTaskDueDate, setNewTaskDueDate] = useState("");
-  const [newTaskMinutes, setNewTaskMinutes] = useState("");
-  const [newTaskPriority, setNewTaskPriority] = useState("");
-  const [newTaskNotes, setNewTaskNotes] = useState("");
-
   const createTaskMutation = useMutation({
     mutationFn: (data: PlannerTaskCreate) => api.planner.createTask(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["planner-queue"] });
-      setShowAddTask(false);
-      setNewTaskTitle("");
-      setNewTaskDueDate("");
-      setNewTaskMinutes("");
-      setNewTaskPriority("");
-      setNewTaskNotes("");
+      patchPlannerState({
+        showAddTask: false,
+        newTaskTitle: "",
+        newTaskDueDate: "",
+        newTaskMinutes: "",
+        newTaskPriority: "",
+        newTaskNotes: "",
+      });
       toast({ title: "Task added", description: "Planner task created." });
     },
     onError: (err) => {
@@ -339,12 +570,14 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
   };
 
   const resetNewTaskForm = () => {
-    setShowAddTask(false);
-    setNewTaskTitle("");
-    setNewTaskDueDate("");
-    setNewTaskMinutes("");
-    setNewTaskPriority("");
-    setNewTaskNotes("");
+    patchPlannerState({
+      showAddTask: false,
+      newTaskTitle: "",
+      newTaskDueDate: "",
+      newTaskMinutes: "",
+      newTaskPriority: "",
+      newTaskNotes: "",
+    });
   };
 
   const handleCreateTask = () => {
@@ -384,7 +617,7 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
   };
 
   const onDragEnd = (event: DragEndEvent) => {
-    setActiveTaskId(null);
+    patchPlannerState({ activeTaskId: null });
     const nextStatus = event.over?.data.current?.status as PlannerKanbanColumnId | undefined;
     const activeId = event.active?.id;
     if (!nextStatus || !activeId) return;
@@ -402,153 +635,93 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
   const activeTask = activeTaskId ? tasksById.get(activeTaskId) : null;
   const isUpdating = updateTaskMutation.isPending || createTaskMutation.isPending;
 
+  return {
+    activeTask,
+    generateMutation,
+    handleComplete,
+    handleCreateTask,
+    handleMove,
+    inProgress,
+    inProgressSorted,
+    isUpdating,
+    newTaskDueDate,
+    newTaskMinutes,
+    newTaskNotes,
+    newTaskPriority,
+    newTaskTitle,
+    onDragEnd,
+    patchPlannerState,
+    pending,
+    pendingSorted,
+    resetNewTaskForm,
+    sensors,
+    showAddTask,
+  };
+}
+
+export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
+  const {
+    activeTask,
+    generateMutation,
+    handleComplete,
+    handleCreateTask,
+    handleMove,
+    inProgress,
+    inProgressSorted,
+    isUpdating,
+    newTaskDueDate,
+    newTaskMinutes,
+    newTaskNotes,
+    newTaskPriority,
+    newTaskTitle,
+    onDragEnd,
+    patchPlannerState,
+    pending,
+    pendingSorted,
+    resetNewTaskForm,
+    sensors,
+    showAddTask,
+  } = usePlannerKanbanBoard(tasks);
+
   return (
     <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
-      <CardHeader className="border-b border-primary/50 p-4">
-        <CardTitle className="font-arcade text-sm flex items-center justify-between gap-3">
-          <span className="truncate">PLANNER_BOARD</span>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="rounded-none text-xs">
-              {tasks.length} tasks
-            </Badge>
-            <Button
-              size="sm"
-              variant="outline"
-              className="rounded-none font-arcade text-xs border-primary"
-              onClick={() => setShowAddTask(true)}
-              disabled={isUpdating}
-              title="Add manual planner task"
-            >
-              <Plus className="w-3.5 h-3.5 mr-2" />
-              Add
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="rounded-none font-arcade text-xs border-primary"
-              onClick={() => generateMutation.mutate()}
-              disabled={generateMutation.isPending || isUpdating}
-              title="Generate tasks from recent weak anchors"
-            >
-              <RefreshCw className={cn("w-3.5 h-3.5 mr-2", generateMutation.isPending && "animate-spin")} />
-              Refresh
-            </Button>
-          </div>
-        </CardTitle>
-      </CardHeader>
+      <PlannerKanbanHeader
+        taskCount={tasks.length}
+        isUpdating={isUpdating}
+        isGenerating={generateMutation.isPending}
+        onAdd={() => patchPlannerState({ showAddTask: true })}
+        onGenerate={() => generateMutation.mutate()}
+      />
 
-      <Dialog open={showAddTask} onOpenChange={(open) => (open ? setShowAddTask(open) : resetNewTaskForm())}>
-        <DialogContent className="bg-black border-2 border-primary rounded-none">
-          <DialogHeader>
-            <DialogTitle className="font-arcade text-sm">ADD_PLANNER_TASK</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Add a manual task to your planner queue.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 pt-2">
-            <div className="space-y-1">
-              <Label htmlFor="planner-task-title" className="font-arcade text-xs">
-                TASK TEXT
-              </Label>
-              <Input
-                id="planner-task-title"
-                value={newTaskTitle}
-                onChange={(e) => setNewTaskTitle(e.target.value)}
-                className="rounded-none border-secondary bg-black font-terminal"
-                placeholder="Enter task text"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="planner-task-due-date" className="font-arcade text-xs">
-                DUE DATE
-              </Label>
-              <Input
-                id="planner-task-due-date"
-                type="date"
-                value={newTaskDueDate}
-                onChange={(e) => setNewTaskDueDate(e.target.value)}
-                className="rounded-none border-secondary bg-black font-terminal"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="planner-task-minutes" className="font-arcade text-xs">
-                  PLANNED MINUTES
-                </Label>
-                <Input
-                  id="planner-task-minutes"
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  value={newTaskMinutes}
-                  onChange={(e) => setNewTaskMinutes(e.target.value)}
-                  className="rounded-none border-secondary bg-black font-terminal"
-                  placeholder="45"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="planner-task-priority" className="font-arcade text-xs">
-                  PRIORITY
-                </Label>
-                <Input
-                  id="planner-task-priority"
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  value={newTaskPriority}
-                  onChange={(e) => setNewTaskPriority(e.target.value)}
-                  className="rounded-none border-secondary bg-black font-terminal"
-                  placeholder="0"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="planner-task-notes" className="font-arcade text-xs">
-                NOTES
-              </Label>
-              <Textarea
-                id="planner-task-notes"
-                value={newTaskNotes}
-                onChange={(e) => setNewTaskNotes(e.target.value)}
-                className="rounded-none border-secondary bg-black font-terminal min-h-20"
-                placeholder="Optional notes"
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                size="sm"
-                className="rounded-none font-arcade text-xs"
-                onClick={handleCreateTask}
-                disabled={!newTaskTitle.trim() || isUpdating}
-              >
-                CREATE
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="rounded-none font-arcade text-xs border-secondary"
-                onClick={() => resetNewTaskForm()}
-              >
-                CANCEL
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <PlannerAddTaskDialog
+        open={showAddTask}
+        isUpdating={isUpdating}
+        title={newTaskTitle}
+        dueDate={newTaskDueDate}
+        minutes={newTaskMinutes}
+        priority={newTaskPriority}
+        notes={newTaskNotes}
+        onTitleChange={(value) => patchPlannerState({ newTaskTitle: value })}
+        onDueDateChange={(value) => patchPlannerState({ newTaskDueDate: value })}
+        onMinutesChange={(value) => patchPlannerState({ newTaskMinutes: value })}
+        onPriorityChange={(value) => patchPlannerState({ newTaskPriority: value })}
+        onNotesChange={(value) => patchPlannerState({ newTaskNotes: value })}
+        onCreate={handleCreateTask}
+        onCancel={resetNewTaskForm}
+        onOpenChange={(open) => {
+          if (open) {
+            patchPlannerState({ showAddTask: true });
+            return;
+          }
+          resetNewTaskForm();
+        }}
+      />
 
       <CardContent className="p-4">
         <DndContext
           sensors={sensors}
-          onDragStart={(e) => setActiveTaskId(String(e.active.id))}
-          onDragCancel={() => setActiveTaskId(null)}
+          onDragStart={(e) => patchPlannerState({ activeTaskId: String(e.active.id) })}
+          onDragCancel={() => patchPlannerState({ activeTaskId: null })}
           onDragEnd={onDragEnd}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

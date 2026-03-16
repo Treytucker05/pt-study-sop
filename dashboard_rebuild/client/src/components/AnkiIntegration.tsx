@@ -1,16 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useId, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -19,32 +13,537 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Layers, RefreshCw, Check, X, Trash2, Pencil, Save, Loader2,
-} from "lucide-react";
-import { useId, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Check,
+  Layers,
+  Loader2,
+  Pencil,
+  RefreshCw,
+  Save,
+  Trash2,
+  X,
+} from "lucide-react";
+
+type AnkiStatus = Awaited<ReturnType<typeof api.anki.getStatus>>;
+type AnkiDue = Awaited<ReturnType<typeof api.anki.getDue>>;
+type AnkiDraft = Awaited<ReturnType<typeof api.anki.getDrafts>>[number];
 
 interface AnkiIntegrationProps {
   totalCards: number;
   compact?: boolean;
 }
 
-export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
-  const idBase = useId();
-  const [selectedDrafts, setSelectedDrafts] = useState<Set<number>>(new Set());
-  const [editingDraft, setEditingDraft] = useState<number | null>(null);
-  const [editDraftData, setEditDraftData] = useState({ front: "", back: "", deckName: "" });
+interface EditDraftData {
+  front: string;
+  back: string;
+  deckName: string;
+}
+
+function AnkiShell({
+  compact,
+  connected,
+  children,
+}: {
+  compact?: boolean;
+  connected?: boolean;
+  children: ReactNode;
+}) {
+  if (compact) {
+    return <div className="flex h-full min-h-0 flex-col p-3">{children}</div>;
+  }
+
+  return (
+    <Card className="rounded-none border-[3px] border-double border-primary bg-black/40">
+      <CardHeader className="border-b border-primary/50 p-4">
+        <CardTitle className="flex items-center gap-3 font-arcade text-sm">
+          <Layers className="h-4 w-4" />
+          ANKI INTEGRATION
+          {connected ? (
+            <Check className="ml-auto h-3 w-3 text-success" />
+          ) : (
+            <X className="ml-auto h-3 w-3 text-destructive" />
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">{children}</CardContent>
+    </Card>
+  );
+}
+
+function AnkiStatusRow({
+  totalCards,
+  ankiStatus,
+  ankiDue,
+}: {
+  totalCards: number;
+  ankiStatus: AnkiStatus;
+  ankiDue?: AnkiDue;
+}) {
+  return (
+    <div className="flex shrink-0 flex-wrap items-center gap-4 font-terminal text-xs">
+      <Badge variant="outline" className="border-success bg-success/20 text-success">
+        Connected
+      </Badge>
+      <span className="text-muted-foreground">
+        Cards: <span className="font-arcade text-primary">{totalCards}</span>
+      </span>
+      <span className="text-muted-foreground">
+        Due: <span className="font-arcade text-secondary">{ankiDue?.dueCount || 0}</span>
+      </span>
+      <span className="text-muted-foreground">
+        Reviewed: <span className="font-arcade">{ankiStatus.reviewedToday || 0}</span>
+      </span>
+      <span className="text-muted-foreground">
+        Decks: <span className="font-arcade">{ankiStatus.decks?.length || 0}</span>
+      </span>
+    </div>
+  );
+}
+
+function AnkiActionRow({
+  onRefresh,
+  onSync,
+  syncPending,
+}: {
+  onRefresh: () => void;
+  onSync: () => void;
+  syncPending: boolean;
+}) {
+  return (
+    <div className="flex shrink-0 gap-2 pt-2">
+      <Button
+        size="sm"
+        variant="outline"
+        className="flex-1 font-terminal text-xs"
+        onClick={onRefresh}
+      >
+        <RefreshCw className="mr-1 h-3 w-3" />
+        Refresh
+      </Button>
+      <Button
+        size="sm"
+        className="flex-1 bg-secondary font-terminal text-xs hover:bg-secondary/80"
+        onClick={onSync}
+        disabled={syncPending}
+      >
+        {syncPending ? (
+          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+        ) : (
+          <RefreshCw className="mr-1 h-3 w-3" />
+        )}
+        {syncPending ? "Syncing..." : "Sync Cards"}
+      </Button>
+    </div>
+  );
+}
+
+function SyncErrorNotice({
+  message,
+  onRetry,
+  retrying,
+}: {
+  message: string;
+  onRetry: () => void;
+  retrying: boolean;
+}) {
+  return (
+    <div className="border border-destructive/30 bg-destructive/10 p-2 font-terminal text-xs text-destructive">
+      <span className="font-arcade">SYNC ERROR:</span> {message}
+      <Button
+        size="sm"
+        variant="outline"
+        className="ml-2 h-5 border-destructive/50 px-2 font-terminal text-xs text-destructive"
+        onClick={onRetry}
+        disabled={retrying}
+      >
+        Retry
+      </Button>
+    </div>
+  );
+}
+
+function PendingDraftsSection({
+  pendingDrafts,
+  selectedDrafts,
+  onToggleSelectAll,
+  onToggleDraft,
+  onEditDraft,
+  onApproveDraft,
+  onDeleteDraft,
+  onApproveSelected,
+  onDeleteSelected,
+  approvePending,
+  deletePending,
+}: {
+  pendingDrafts: AnkiDraft[];
+  selectedDrafts: Set<number>;
+  onToggleSelectAll: () => void;
+  onToggleDraft: (id: number, checked: boolean) => void;
+  onEditDraft: (draft: AnkiDraft) => void;
+  onApproveDraft: (id: number) => void;
+  onDeleteDraft: (id: number) => void;
+  onApproveSelected: () => void;
+  onDeleteSelected: () => void;
+  approvePending: boolean;
+  deletePending: boolean;
+}) {
+  if (pendingDrafts.length === 0) {
+    return null;
+  }
+
+  const hasSelection = selectedDrafts.size > 0;
+
+  return (
+    <div className="mt-3 flex min-h-0 flex-1 flex-col border-t border-secondary/30 pt-3">
+      <div className="mb-2 flex shrink-0 items-center justify-between">
+        <span className="font-arcade text-xs text-warning">
+          PENDING CARDS ({pendingDrafts.length})
+        </span>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-5 px-2 font-terminal text-xs"
+          onClick={onToggleSelectAll}
+        >
+          {selectedDrafts.size === pendingDrafts.length ? "None" : "All"}
+        </Button>
+      </div>
+
+      {hasSelection && (
+        <div className="mb-2 flex shrink-0 gap-1">
+          <Button
+            size="sm"
+            className="h-6 bg-success px-2 font-terminal text-xs hover:bg-success/80"
+            onClick={onApproveSelected}
+            disabled={!hasSelection || approvePending || deletePending}
+          >
+            <Check className="mr-1 h-3 w-3" />
+            Approve ({selectedDrafts.size})
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            className="h-6 px-2 font-terminal text-xs"
+            onClick={onDeleteSelected}
+            disabled={!hasSelection || deletePending || approvePending}
+          >
+            <Trash2 className="mr-1 h-3 w-3" />
+            Delete ({selectedDrafts.size})
+          </Button>
+        </div>
+      )}
+
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="space-y-2">
+          {pendingDrafts.map((draft) => (
+            <div
+              key={draft.id}
+              className={`border p-2 text-xs ${selectedDrafts.has(draft.id) ? "border-primary" : "border-secondary/30"} bg-black/40`}
+            >
+              <div className="flex items-start gap-2">
+                <Checkbox
+                  checked={selectedDrafts.has(draft.id)}
+                  onCheckedChange={(checked) => onToggleDraft(draft.id, checked === true)}
+                  className="mt-1 border-secondary data-[state=checked]:bg-primary"
+                />
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <div className="truncate font-terminal text-primary">{draft.front}</div>
+                  <div className="mt-1 truncate font-terminal text-muted-foreground">{draft.back}</div>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Badge
+                      variant="outline"
+                      className="shrink-0 border-info/50 text-info text-xs"
+                    >
+                      {draft.deckName}
+                    </Badge>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-5 w-5 shrink-0 border-warning/50 text-warning hover:bg-warning/20"
+                      onClick={() => onEditDraft(draft)}
+                      title="Edit card"
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-5 w-5 shrink-0 border-success/50 text-success hover:bg-success/20"
+                      onClick={() => onApproveDraft(draft.id)}
+                      title="Approve card"
+                      disabled={approvePending || deletePending}
+                    >
+                      <Check className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-5 w-5 shrink-0 border-destructive/50 text-destructive hover:bg-destructive/20"
+                      onClick={() => onDeleteDraft(draft.id)}
+                      title="Delete card"
+                      disabled={approvePending || deletePending}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}
+
+function AnkiConnectedView({
+  totalCards,
+  ankiStatus,
+  ankiDue,
+  pendingDrafts,
+  selectedDrafts,
+  onRefresh,
+  onSync,
+  syncPending,
+  syncError,
+  onToggleSelectAll,
+  onToggleDraft,
+  onEditDraft,
+  onApproveDraft,
+  onDeleteDraft,
+  onApproveSelected,
+  onDeleteSelected,
+  approvePending,
+  deletePending,
+}: {
+  totalCards: number;
+  ankiStatus: AnkiStatus;
+  ankiDue?: AnkiDue;
+  pendingDrafts: AnkiDraft[];
+  selectedDrafts: Set<number>;
+  onRefresh: () => void;
+  onSync: () => void;
+  syncPending: boolean;
+  syncError?: Error | null;
+  onToggleSelectAll: () => void;
+  onToggleDraft: (id: number, checked: boolean) => void;
+  onEditDraft: (draft: AnkiDraft) => void;
+  onApproveDraft: (id: number) => void;
+  onDeleteDraft: (id: number) => void;
+  onApproveSelected: () => void;
+  onDeleteSelected: () => void;
+  approvePending: boolean;
+  deletePending: boolean;
+}) {
+  return (
+    <>
+      <AnkiStatusRow totalCards={totalCards} ankiStatus={ankiStatus} ankiDue={ankiDue} />
+      <AnkiActionRow onRefresh={onRefresh} onSync={onSync} syncPending={syncPending} />
+      {syncError && (
+        <SyncErrorNotice
+          message={syncError.message || "Unknown error"}
+          onRetry={onSync}
+          retrying={syncPending}
+        />
+      )}
+      <PendingDraftsSection
+        pendingDrafts={pendingDrafts}
+        selectedDrafts={selectedDrafts}
+        onToggleSelectAll={onToggleSelectAll}
+        onToggleDraft={onToggleDraft}
+        onEditDraft={onEditDraft}
+        onApproveDraft={onApproveDraft}
+        onDeleteDraft={onDeleteDraft}
+        onApproveSelected={onApproveSelected}
+        onDeleteSelected={onDeleteSelected}
+        approvePending={approvePending}
+        deletePending={deletePending}
+      />
+    </>
+  );
+}
+
+function AnkiDisconnectedView({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="space-y-2 text-center">
+      <p className="font-terminal text-xs text-destructive">{message}</p>
+      <p className="font-terminal text-xs text-muted-foreground">
+        Open Anki with AnkiConnect plugin
+      </p>
+      <Button
+        size="sm"
+        variant="outline"
+        className="font-terminal text-xs"
+        onClick={onRetry}
+      >
+        <RefreshCw className="mr-1 h-3 w-3" />
+        Retry
+      </Button>
+    </div>
+  );
+}
+
+function DraftEditDialog({
+  open,
+  onOpenChange,
+  editDraftData,
+  setEditDraftData,
+  onSave,
+  savePending,
+  ankiStatus,
+  idBase,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  editDraftData: EditDraftData;
+  setEditDraftData: Dispatch<SetStateAction<EditDraftData>>;
+  onSave: () => void;
+  savePending: boolean;
+  ankiStatus?: AnkiStatus;
+  idBase: string;
+}) {
   const editFrontId = `${idBase}-edit-front`;
   const editBackId = `${idBase}-edit-back`;
   const editDeckId = `${idBase}-edit-deck`;
 
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        data-modal="brain-edit-draft"
+        className="max-w-lg rounded-none border-[3px] border-double border-primary bg-black"
+      >
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 font-arcade text-primary">
+            <Pencil className="h-5 w-5" />
+            EDIT CARD
+          </DialogTitle>
+          <DialogDescription className="font-terminal text-muted-foreground">
+            Edit card content and select target deck
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 font-terminal">
+          <div>
+            <label htmlFor={editFrontId} className="text-sm text-muted-foreground">
+              Front (Question)
+            </label>
+            <Textarea
+              id={editFrontId}
+              value={editDraftData.front}
+              onChange={(event) =>
+                setEditDraftData((prev) => ({ ...prev, front: event.target.value }))
+              }
+              placeholder="Card front..."
+              className="min-h-[80px] rounded-none border-secondary"
+            />
+          </div>
+          <div>
+            <label htmlFor={editBackId} className="text-sm text-muted-foreground">
+              Back (Answer)
+            </label>
+            <Textarea
+              id={editBackId}
+              value={editDraftData.back}
+              onChange={(event) =>
+                setEditDraftData((prev) => ({ ...prev, back: event.target.value }))
+              }
+              placeholder="Card back..."
+              className="min-h-[80px] rounded-none border-secondary"
+            />
+          </div>
+          <div>
+            <label htmlFor={editDeckId} className="text-sm text-muted-foreground">
+              Target Deck
+            </label>
+            <Select
+              value={editDraftData.deckName}
+              onValueChange={(value) =>
+                setEditDraftData((prev) => ({ ...prev, deckName: value }))
+              }
+            >
+              <SelectTrigger id={editDeckId} className="rounded-none border-secondary">
+                <SelectValue placeholder="Select deck" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[200px] rounded-none border-secondary bg-black">
+                <SelectItem value="PT::EBP">PT::EBP (Evidence Based Practice)</SelectItem>
+                <SelectItem value="PT::ExPhys">PT::ExPhys (Exercise Physiology)</SelectItem>
+                <SelectItem value="PT::MS1">PT::MS1 (Movement Science 1)</SelectItem>
+                <SelectItem value="PT::Neuro">PT::Neuro (Neuroscience)</SelectItem>
+                <SelectItem value="PT::TI">PT::TI (Therapeutic Intervention)</SelectItem>
+                <SelectItem value="PT::General">PT::General</SelectItem>
+                {ankiStatus?.decks
+                  ?.filter((deck) => !deck.startsWith("PT::"))
+                  .map((deck) => (
+                    <SelectItem key={deck} value={deck}>
+                      {deck}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Current: <span className="text-blue-400">{editDraftData.deckName}</span>
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="rounded-none border-secondary font-terminal hover:bg-secondary/20"
+          >
+            <X className="mr-2 h-4 w-4" />
+            Cancel
+          </Button>
+          <Button
+            onClick={onSave}
+            disabled={savePending}
+            className="rounded-none bg-primary font-terminal hover:bg-primary/80"
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {savePending ? "Saving..." : "Save"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
+  const idBase = useId();
+  const [selectedDrafts, setSelectedDrafts] = useState<Set<number>>(new Set());
+  const [editingDraft, setEditingDraft] = useState<number | null>(null);
+  const [editDraftData, setEditDraftData] = useState<EditDraftData>({
+    front: "",
+    back: "",
+    deckName: "",
+  });
+
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: ankiStatus, isLoading: ankiLoading, refetch: refetchAnki } = useQuery({
+  const {
+    data: ankiStatus,
+    isLoading: ankiLoading,
+    refetch: refetchAnki,
+  } = useQuery({
     queryKey: ["anki", "status"],
     queryFn: api.anki.getStatus,
     refetchInterval: 30000,
@@ -61,7 +560,7 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
     queryFn: api.anki.getDrafts,
   });
 
-  const pendingDrafts = ankiDrafts.filter(d => d.status === "pending");
+  const pendingDrafts = ankiDrafts.filter((draft) => draft.status === "pending");
 
   const syncAnkiMutation = useMutation({
     mutationFn: api.anki.sync,
@@ -73,10 +572,10 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
         description: data.output || "Cards synced successfully",
       });
     },
-    onError: (err: Error) => {
+    onError: (error: Error) => {
       toast({
         title: "Anki sync failed",
-        description: err.message,
+        description: error.message,
         variant: "destructive",
       });
     },
@@ -91,37 +590,43 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
     mutationFn: (id: number) => api.anki.deleteDraft(id),
     onMutate: async (id: number) => {
       await queryClient.cancelQueries({ queryKey: ["anki", "drafts"] });
-      const prev = queryClient.getQueryData(["anki", "drafts"]);
-      queryClient.setQueryData(["anki", "drafts"], (old: typeof ankiDrafts) =>
-        old ? old.filter((d) => d.id !== id) : []
+      const previousDrafts = queryClient.getQueryData(["anki", "drafts"]);
+      queryClient.setQueryData(["anki", "drafts"], (old: AnkiDraft[] | undefined) =>
+        old ? old.filter((draft) => draft.id !== id) : []
       );
-      return { prev };
+      return { previousDrafts };
     },
-    onError: (_err, _id, context) => {
-      if (context?.prev) queryClient.setQueryData(["anki", "drafts"], context.prev);
+    onError: (_error, _id, context) => {
+      if (context?.previousDrafts) {
+        queryClient.setQueryData(["anki", "drafts"], context.previousDrafts);
+      }
     },
     onSettled: () => refetchDrafts(),
   });
 
-const updateDraftMutation = useMutation({
-  mutationFn: ({ id, data }: { id: number; data: { front?: string; back?: string; deckName?: string } }) =>
-    api.anki.updateDraft(id, data),
-  onSuccess: () => {
-    refetchDrafts();
-    setEditingDraft(null);
-  },
-  onError: (err: Error) => {
-    toast({
-      title: "Failed to update draft",
-      description: err.message,
-      variant: "destructive",
-    });
-  },
-});
+  const updateDraftMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<EditDraftData> }) =>
+      api.anki.updateDraft(id, data),
+    onSuccess: () => {
+      refetchDrafts();
+      setEditingDraft(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update draft",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
-  const handleEditDraft = (draft: typeof pendingDrafts[0]) => {
+  const handleEditDraft = (draft: AnkiDraft) => {
     setEditingDraft(draft.id);
-    setEditDraftData({ front: draft.front, back: draft.back, deckName: draft.deckName });
+    setEditDraftData({
+      front: draft.front,
+      back: draft.back,
+      deckName: draft.deckName,
+    });
   };
 
   const handleSaveDraft = () => {
@@ -129,308 +634,97 @@ const updateDraftMutation = useMutation({
     updateDraftMutation.mutate({ id: editingDraft, data: editDraftData });
   };
 
-  const content = (
-        <div className={compact ? "p-3 flex flex-col h-full min-h-0" : "p-4 space-y-3"}>
-          {ankiLoading ? (
-            <p className="font-terminal text-xs text-muted-foreground">Checking Anki...</p>
-          ) : ankiStatus?.connected ? (
-            <>
-              <div className="flex flex-wrap items-center gap-4 font-terminal text-xs shrink-0">
-                <Badge variant="outline" className="bg-success/20 text-success border-success">Connected</Badge>
-                <span className="text-muted-foreground">Cards: <span className="text-primary font-arcade">{totalCards}</span></span>
-                <span className="text-muted-foreground">Due: <span className="text-secondary font-arcade">{ankiDue?.dueCount || 0}</span></span>
-                <span className="text-muted-foreground">Reviewed: <span className="font-arcade">{ankiStatus.reviewedToday || 0}</span></span>
-                <span className="text-muted-foreground">Decks: <span className="font-arcade">{ankiStatus.decks?.length || 0}</span></span>
-              </div>
-              <div className="pt-2 flex gap-2 shrink-0">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1 font-terminal text-xs"
-                  onClick={() => refetchAnki()}
-                >
-                  <RefreshCw className="w-3 h-3 mr-1" />
-                  Refresh
-                </Button>
-                <Button
-                  size="sm"
-                  className="flex-1 font-terminal text-xs bg-secondary hover:bg-secondary/80"
-                  onClick={() => syncAnkiMutation.mutate()}
-                  disabled={syncAnkiMutation.isPending}
-                >
-                  {syncAnkiMutation.isPending ? (
-                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-3 h-3 mr-1" />
-                  )}
-                  {syncAnkiMutation.isPending ? "Syncing..." : "Sync Cards"}
-                </Button>
-              </div>
-              {syncAnkiMutation.isError && (
-                <div className="p-2 bg-destructive/10 border border-destructive/30 text-destructive font-terminal text-xs">
-                  <span className="font-arcade">SYNC ERROR:</span>{" "}
-                  {(syncAnkiMutation.error as Error)?.message || "Unknown error"}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="ml-2 h-5 px-2 text-xs font-terminal border-destructive/50 text-destructive"
-                    onClick={() => syncAnkiMutation.mutate()}
-                    disabled={syncAnkiMutation.isPending}
-                  >
-                    Retry
-                  </Button>
-                </div>
-              )}
-              {pendingDrafts.length > 0 && (
-                <div className="pt-3 border-t border-secondary/30 flex-1 min-h-0 flex flex-col mt-3">
-                  <div className="flex justify-between items-center mb-2 shrink-0">
-                    <span className="font-arcade text-xs text-warning">PENDING CARDS ({pendingDrafts.length})</span>
-                    <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-5 px-2 text-xs font-terminal"
-                        onClick={() => {
-                          if (selectedDrafts.size === pendingDrafts.length) {
-                            setSelectedDrafts(new Set());
-                          } else {
-                            setSelectedDrafts(new Set(pendingDrafts.map(d => d.id)));
-                          }
-                        }}
-                      >
-                        {selectedDrafts.size === pendingDrafts.length ? "None" : "All"}
-                      </Button>
-                    </div>
-                  </div>
-                  {selectedDrafts.size > 0 && (
-                    <div className="flex gap-1 mb-2 shrink-0">
-                      <Button
-                        size="sm"
-                        className="h-6 px-2 text-xs font-terminal bg-success hover:bg-success/80"
-                        onClick={() => {
-                          if (selectedDrafts.size === 0 || approveDraftMutation.isPending || deleteDraftMutation.isPending) return;
-                          selectedDrafts.forEach(id => approveDraftMutation.mutate(id));
-                          setSelectedDrafts(new Set());
-                        }}
-                        disabled={selectedDrafts.size === 0 || approveDraftMutation.isPending || deleteDraftMutation.isPending}
-                      >
-                        <Check className="w-3 h-3 mr-1" />
-                        Approve ({selectedDrafts.size})
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="h-6 px-2 text-xs font-terminal"
-                        onClick={() => {
-                          if (selectedDrafts.size === 0 || deleteDraftMutation.isPending || approveDraftMutation.isPending) return;
-                          selectedDrafts.forEach(id => deleteDraftMutation.mutate(id));
-                          setSelectedDrafts(new Set());
-                        }}
-                        disabled={selectedDrafts.size === 0 || deleteDraftMutation.isPending || approveDraftMutation.isPending}
-                      >
-                        <Trash2 className="w-3 h-3 mr-1" />
-                        Delete ({selectedDrafts.size})
-                      </Button>
-                    </div>
-                  )}
-                  <ScrollArea className="flex-1 min-h-0">
-                    <div className="space-y-2">
-                      {pendingDrafts.map((draft) => (
-                        <div key={draft.id} className={`p-2 bg-black/40 border text-xs ${selectedDrafts.has(draft.id) ? 'border-primary' : 'border-secondary/30'}`}>
-                          <div className="flex items-start gap-2">
-                            <Checkbox
-                              checked={selectedDrafts.has(draft.id)}
-                              onCheckedChange={(checked) => {
-                                const newSet = new Set(selectedDrafts);
-                                if (checked) {
-                                  newSet.add(draft.id);
-                                } else {
-                                  newSet.delete(draft.id);
-                                }
-                                setSelectedDrafts(newSet);
-                              }}
-                              className="mt-1 border-secondary data-[state=checked]:bg-primary"
-                            />
-                            <div className="flex-1 min-w-0 overflow-hidden">
-                              <div className="font-terminal text-primary truncate">{draft.front}</div>
-                              <div className="font-terminal text-muted-foreground mt-1 truncate">{draft.back}</div>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-xs border-info/50 text-info shrink-0">
-                                  {draft.deckName}
-                                </Badge>
-                                <Button
-                                  size="icon"
-                                  variant="outline"
-                                  className="h-5 w-5 shrink-0 border-warning/50 text-warning hover:bg-warning/20"
-                                  onClick={() => handleEditDraft(draft)}
-                                  title="Edit card"
-                                >
-                                  <Pencil className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  size="icon"
-                                  variant="outline"
-                                  className="h-5 w-5 shrink-0 border-success/50 text-success hover:bg-success/20"
-                                  onClick={() => approveDraftMutation.mutate(draft.id)}
-                                  title="Approve card"
-                                  disabled={approveDraftMutation.isPending || deleteDraftMutation.isPending}
-                                >
-                                  <Check className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  size="icon"
-                                  variant="outline"
-                                  className="h-5 w-5 shrink-0 border-destructive/50 text-destructive hover:bg-destructive/20"
-                                  onClick={() => deleteDraftMutation.mutate(draft.id)}
-                                  title="Delete card"
-                                  disabled={approveDraftMutation.isPending || deleteDraftMutation.isPending}
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="text-center space-y-2">
-              <p className="font-terminal text-xs text-destructive">
-                {ankiStatus?.error || "Anki not connected"}
-              </p>
-              <p className="font-terminal text-xs text-muted-foreground">
-                Open Anki with AnkiConnect plugin
-              </p>
-              <Button
-                size="sm"
-                variant="outline"
-                className="font-terminal text-xs"
-                onClick={() => refetchAnki()}
-              >
-                <RefreshCw className="w-3 h-3 mr-1" />
-                Retry
-              </Button>
-            </div>
-          )}
-        </div>
-  );
+  const handleToggleDraft = (id: number, checked: boolean) => {
+    setSelectedDrafts((previous) => {
+      const next = new Set(previous);
+      if (checked) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  };
+
+  const handleToggleSelectAll = () => {
+    if (selectedDrafts.size === pendingDrafts.length) {
+      setSelectedDrafts(new Set());
+      return;
+    }
+    setSelectedDrafts(new Set(pendingDrafts.map((draft) => draft.id)));
+  };
+
+  const handleApproveSelected = () => {
+    if (selectedDrafts.size === 0 || approveDraftMutation.isPending || deleteDraftMutation.isPending) {
+      return;
+    }
+    selectedDrafts.forEach((id) => approveDraftMutation.mutate(id));
+    setSelectedDrafts(new Set());
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedDrafts.size === 0 || deleteDraftMutation.isPending || approveDraftMutation.isPending) {
+      return;
+    }
+    selectedDrafts.forEach((id) => deleteDraftMutation.mutate(id));
+    setSelectedDrafts(new Set());
+  };
+
+  let content: ReactNode;
+  if (ankiLoading) {
+    content = <p className="font-terminal text-xs text-muted-foreground">Checking Anki...</p>;
+  } else if (ankiStatus?.connected) {
+    content = (
+      <AnkiConnectedView
+        totalCards={totalCards}
+        ankiStatus={ankiStatus}
+        ankiDue={ankiDue}
+        pendingDrafts={pendingDrafts}
+        selectedDrafts={selectedDrafts}
+        onRefresh={() => refetchAnki()}
+        onSync={() => syncAnkiMutation.mutate()}
+        syncPending={syncAnkiMutation.isPending}
+        syncError={syncAnkiMutation.isError ? (syncAnkiMutation.error as Error) : null}
+        onToggleSelectAll={handleToggleSelectAll}
+        onToggleDraft={handleToggleDraft}
+        onEditDraft={handleEditDraft}
+        onApproveDraft={(id) => approveDraftMutation.mutate(id)}
+        onDeleteDraft={(id) => deleteDraftMutation.mutate(id)}
+        onApproveSelected={handleApproveSelected}
+        onDeleteSelected={handleDeleteSelected}
+        approvePending={approveDraftMutation.isPending}
+        deletePending={deleteDraftMutation.isPending}
+      />
+    );
+  } else {
+    content = (
+      <AnkiDisconnectedView
+        message={ankiStatus?.error || "Anki not connected"}
+        onRetry={() => refetchAnki()}
+      />
+    );
+  }
 
   return (
     <>
-      {compact ? content : (
-        <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
-          <CardHeader className="border-b border-primary/50 p-4">
-            <CardTitle className="font-arcade text-sm flex items-center gap-3">
-              <Layers className="w-4 h-4" />
-              ANKI INTEGRATION
-              {ankiStatus?.connected ? (
-                <Check className="w-3 h-3 text-success ml-auto" />
-              ) : (
-                <X className="w-3 h-3 text-destructive ml-auto" />
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {content}
-          </CardContent>
-        </Card>
-      )}
+      <AnkiShell compact={compact} connected={ankiStatus?.connected}>
+        {content}
+      </AnkiShell>
 
-      {/* Edit Card Draft Dialog */}
-      <Dialog
+      <DraftEditDialog
         open={editingDraft !== null}
         onOpenChange={(open) => {
-          if (!open) setEditingDraft(null);
+          if (!open) {
+            setEditingDraft(null);
+          }
         }}
-      >
-        <DialogContent
-          data-modal="brain-edit-draft"
-          className="bg-black border-[3px] border-double border-primary rounded-none max-w-lg"
-        >
-          <DialogHeader>
-            <DialogTitle className="font-arcade text-primary flex items-center gap-2">
-              <Pencil className="w-5 h-5" />
-              EDIT CARD
-            </DialogTitle>
-            <DialogDescription className="font-terminal text-muted-foreground">
-              Edit card content and select target deck
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 font-terminal">
-            <div>
-              <label htmlFor={editFrontId} className="text-sm text-muted-foreground">Front (Question)</label>
-              <Textarea
-                id={editFrontId}
-                value={editDraftData.front}
-                onChange={(e) => setEditDraftData(prev => ({ ...prev, front: e.target.value }))}
-                placeholder="Card front..."
-                className="rounded-none border-secondary min-h-[80px]"
-              />
-            </div>
-            <div>
-              <label htmlFor={editBackId} className="text-sm text-muted-foreground">Back (Answer)</label>
-              <Textarea
-                id={editBackId}
-                value={editDraftData.back}
-                onChange={(e) => setEditDraftData(prev => ({ ...prev, back: e.target.value }))}
-                placeholder="Card back..."
-                className="rounded-none border-secondary min-h-[80px]"
-              />
-            </div>
-            <div>
-              <label htmlFor={editDeckId} className="text-sm text-muted-foreground">Target Deck</label>
-              <Select
-                value={editDraftData.deckName}
-                onValueChange={(value) => setEditDraftData(prev => ({ ...prev, deckName: value }))}
-              >
-                <SelectTrigger id={editDeckId} className="rounded-none border-secondary">
-                  <SelectValue placeholder="Select deck" />
-                </SelectTrigger>
-                <SelectContent className="rounded-none border-secondary bg-black max-h-[200px]">
-                  <SelectItem value="PT::EBP">PT::EBP (Evidence Based Practice)</SelectItem>
-                  <SelectItem value="PT::ExPhys">PT::ExPhys (Exercise Physiology)</SelectItem>
-                  <SelectItem value="PT::MS1">PT::MS1 (Movement Science 1)</SelectItem>
-                  <SelectItem value="PT::Neuro">PT::Neuro (Neuroscience)</SelectItem>
-                  <SelectItem value="PT::TI">PT::TI (Therapeutic Intervention)</SelectItem>
-                  <SelectItem value="PT::General">PT::General</SelectItem>
-                  {ankiStatus?.decks?.filter(d => !d.startsWith("PT::")).map((deck) => (
-                    <SelectItem key={deck} value={deck}>
-                      {deck}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                Current: <span className="text-blue-400">{editDraftData.deckName}</span>
-              </p>
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setEditingDraft(null)}
-              className="font-terminal rounded-none border-secondary hover:bg-secondary/20"
-            >
-              <X className="w-4 h-4 mr-2" />
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSaveDraft}
-              disabled={updateDraftMutation.isPending}
-              className="font-terminal rounded-none bg-primary hover:bg-primary/80"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              {updateDraftMutation.isPending ? "Saving..." : "Save"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        editDraftData={editDraftData}
+        setEditDraftData={setEditDraftData}
+        onSave={handleSaveDraft}
+        savePending={updateDraftMutation.isPending}
+        ankiStatus={ankiStatus}
+        idBase={idBase}
+      />
     </>
   );
 }

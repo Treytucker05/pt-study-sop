@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useReducer, useRef } from "react";
 import { useSortable, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -137,38 +137,104 @@ export function TaskDialog({ task, isOpen, onClose, onSave, onDelete, isCreating
     activeListId?: string;
     availableLists?: { id: string, title: string }[];
 }) {
-    const [title, setTitle] = useState("");
-    const [notes, setNotes] = useState("");
-    const [date, setDate] = useState("");
-    const [time, setTime] = useState("");
-    const [listId, setListId] = useState("");
-    const titleInputRef = useRef<HTMLInputElement>(null);
+    const dialogKey = `${isCreating ? "new" : task?.id || "existing"}:${activeListId || "none"}`;
 
-    useEffect(() => {
-        if (isOpen) {
-            if (isCreating) {
-                setTitle("");
-                setNotes("");
-                setDate("");
-                setTime("");
-                setListId(activeListId || (availableLists[0]?.id) || "");
-            } else if (task) {
-                setTitle(task.title);
-                setNotes(task.notes || "");
-                setListId(task.listId);
-                if (task.due) {
-                    try {
-                        const iso = parseISO(task.due);
-                        if (isValid(iso)) {
-                            setDate(format(iso, "yyyy-MM-dd"));
-                        }
-                    } catch (e) { }
-                } else {
-                    setDate("");
-                }
+    return (
+        <Dialog open={isOpen} onOpenChange={(o) => !o && onClose()}>
+            <TaskDialogBody
+                key={dialogKey}
+                task={task}
+                isOpen={isOpen}
+                onClose={onClose}
+                onSave={onSave}
+                onDelete={onDelete}
+                isCreating={isCreating}
+                activeListId={activeListId}
+                availableLists={availableLists}
+            />
+        </Dialog>
+    );
+}
+
+type TaskDialogDraft = {
+    title: string;
+    notes: string;
+    date: string;
+    time: string;
+    listId: string;
+};
+
+type TaskDialogDraftPatch =
+    | Partial<TaskDialogDraft>
+    | ((state: TaskDialogDraft) => Partial<TaskDialogDraft>);
+
+function createTaskDialogDraft(
+    task: GoogleTask | null,
+    isCreating?: boolean,
+    activeListId?: string,
+    availableLists: { id: string; title: string }[] = EMPTY_TASK_LISTS,
+): TaskDialogDraft {
+    if (isCreating) {
+        return {
+            title: "",
+            notes: "",
+            date: "",
+            time: "",
+            listId: activeListId || availableLists[0]?.id || "",
+        };
+    }
+
+    if (!task) {
+        return {
+            title: "",
+            notes: "",
+            date: "",
+            time: "",
+            listId: activeListId || availableLists[0]?.id || "",
+        };
+    }
+
+    let date = "";
+    if (task.due) {
+        try {
+            const iso = parseISO(task.due);
+            if (isValid(iso)) {
+                date = format(iso, "yyyy-MM-dd");
             }
+        } catch {
+            date = "";
         }
-    }, [isOpen, task, isCreating, activeListId]);
+    }
+
+    return {
+        title: task.title,
+        notes: task.notes || "",
+        date,
+        time: "",
+        listId: task.listId,
+    };
+}
+
+function taskDialogDraftReducer(state: TaskDialogDraft, patch: TaskDialogDraftPatch): TaskDialogDraft {
+    const nextPatch = typeof patch === "function" ? patch(state) : patch;
+    return { ...state, ...nextPatch };
+}
+
+function TaskDialogBody({ task, isOpen, onClose, onSave, onDelete, isCreating, activeListId, availableLists = EMPTY_TASK_LISTS }: {
+    task: GoogleTask | null;
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (data: Partial<GoogleTask>) => void;
+    onDelete: (id: string, listId: string) => void;
+    isCreating?: boolean;
+    activeListId?: string;
+    availableLists?: { id: string, title: string }[];
+}) {
+    const titleInputRef = useRef<HTMLInputElement>(null);
+    const [draft, patchDraft] = useReducer(
+        taskDialogDraftReducer,
+        createTaskDialogDraft(task, isCreating, activeListId, availableLists),
+    );
 
     useEffect(() => {
         if (!isOpen || !isCreating) return;
@@ -176,120 +242,126 @@ export function TaskDialog({ task, isOpen, onClose, onSave, onDelete, isCreating
             titleInputRef.current?.focus();
         });
         return () => cancelAnimationFrame(frame);
-    }, [isOpen, isCreating]);
+    }, [isCreating, isOpen]);
 
     const handleSave = () => {
-        if (!title) return;
+        if (!draft.title) return;
 
         let due = undefined;
-        if (date) {
-            due = time ? `${date}T${time}:00Z` : `${date}T00:00:00Z`;
+        if (draft.date) {
+            due = draft.time ? `${draft.date}T${draft.time}:00Z` : `${draft.date}T00:00:00Z`;
         }
 
         onSave({
-            title,
-            notes,
+            title: draft.title,
+            notes: draft.notes,
             due,
-            listId
+            listId: draft.listId,
         });
         onClose();
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={(o) => !o && onClose()}>
-            <DialogContent className="sm:max-w-[500px] border-[3px] border-double border-primary bg-black text-foreground p-0 gap-0 overflow-hidden rounded-none">
-                <DialogTitle className="sr-only">
-                    {isCreating ? "Create New Task" : "Edit Task"}
-                </DialogTitle>
-                <DialogDescription className="sr-only">
-                    {isCreating ? "Enter task details to create a new task." : "Modify task details."}
-                </DialogDescription>
-                {/* Header / Title Input */}
-                <div className="p-6 pb-2">
-                    <Input
-                        ref={titleInputRef}
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        placeholder="Add title"
-                        className="text-2xl font-terminal bg-transparent border-0 border-b border-primary/30 rounded-none px-0 py-2 focus-visible:ring-0 focus-visible:border-primary placeholder:text-muted-foreground/50 h-auto"
+        <DialogContent className="sm:max-w-[500px] border-[3px] border-double border-primary bg-black text-foreground p-0 gap-0 overflow-hidden rounded-none">
+            <DialogTitle className="sr-only">
+                {isCreating ? "Create New Task" : "Edit Task"}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+                {isCreating ? "Enter task details to create a new task." : "Modify task details."}
+            </DialogDescription>
+            <div className="p-6 pb-2">
+                <Input
+                    ref={titleInputRef}
+                    value={draft.title}
+                    onChange={(e) => patchDraft({ title: e.target.value })}
+                    placeholder="Add title"
+                    className="text-2xl font-terminal bg-transparent border-0 border-b border-primary/30 rounded-none px-0 py-2 focus-visible:ring-0 focus-visible:border-primary placeholder:text-muted-foreground/50 h-auto"
+                />
+            </div>
+
+            <div className="p-6 pt-2 space-y-4">
+                <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-muted-foreground shrink-0" />
+                    <div className="flex-1 flex gap-2">
+                        <Input
+                            type="date"
+                            value={draft.date}
+                            onChange={(e) => patchDraft({ date: e.target.value })}
+                            className="bg-secondary/20 border-secondary text-sm w-[150px] rounded-none"
+                        />
+                        <Input
+                            type="time"
+                            value={draft.time}
+                            onChange={(e) => patchDraft({ time: e.target.value })}
+                            className="bg-secondary/20 border-secondary text-sm w-[120px] rounded-none"
+                        />
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2 pl-7">
+                    <div className="text-sm text-muted-foreground flex items-center gap-2 cursor-not-allowed opacity-70 font-terminal">
+                        <div className="w-4 h-4 rounded-none border border-current" />
+                        Does not repeat
+                    </div>
+                    <div className="text-sm text-muted-foreground flex items-center gap-2 ml-4 cursor-not-allowed opacity-70 font-terminal">
+                        <div className="w-4 h-4 border border-current rounded-none" />
+                        All day
+                    </div>
+                </div>
+
+                <div className="flex gap-2">
+                    <AlignLeft className="w-5 h-5 text-muted-foreground shrink-0 mt-2" />
+                    <Textarea
+                        value={draft.notes}
+                        onChange={(e) => patchDraft({ notes: e.target.value })}
+                        placeholder="Add description"
+                        className="bg-transparent border-0 resize-none min-h-[100px] focus-visible:ring-0 p-0 text-sm leading-relaxed placeholder:text-muted-foreground/50 font-terminal rounded-none"
                     />
                 </div>
 
-                <div className="p-6 pt-2 space-y-4">
-                    {/* Date & Time Row */}
-                    <div className="flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-muted-foreground shrink-0" />
-                        <div className="flex-1 flex gap-2">
-                            <Input
-                                type="date"
-                                value={date}
-                                onChange={(e) => setDate(e.target.value)}
-                                className="bg-secondary/20 border-secondary text-sm w-[150px] rounded-none"
-                            />
-                            <Input
-                                type="time"
-                                value={time}
-                                onChange={(e) => setTime(e.target.value)}
-                                className="bg-secondary/20 border-secondary text-sm w-[120px] rounded-none"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Recurrence (Visual Stub) */}
-                    <div className="flex items-center gap-2 pl-7">
-                        <div className="text-sm text-muted-foreground flex items-center gap-2 cursor-not-allowed opacity-70 font-terminal">
-                            <div className="w-4 h-4 rounded-none border border-current" />
-                            Does not repeat
-                        </div>
-                        <div className="text-sm text-muted-foreground flex items-center gap-2 ml-4 cursor-not-allowed opacity-70 font-terminal">
-                            <div className="w-4 h-4 border border-current rounded-none" />
-                            All day
-                        </div>
-                    </div>
-
-                    {/* Description */}
-                    <div className="flex gap-2">
-                        <AlignLeft className="w-5 h-5 text-muted-foreground shrink-0 mt-2" />
-                        <Textarea
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            placeholder="Add description"
-                            className="bg-transparent border-0 resize-none min-h-[100px] focus-visible:ring-0 p-0 text-sm leading-relaxed placeholder:text-muted-foreground/50 font-terminal rounded-none"
-                        />
-                    </div>
-
-                    {/* List Selector */}
-                    <div className="flex items-center gap-2">
-                        <div className="w-5 shrink-0" />
-                        <Select value={listId} onValueChange={setListId}>
-                            <SelectTrigger className="w-[150px] h-8 bg-secondary/20 border-secondary text-xs rounded-none">
-                                <SelectValue placeholder="Select List" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {availableLists.map(l => (
-                                    <SelectItem key={l.id} value={l.id}>{l.title}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-5 shrink-0" />
+                    <Select value={draft.listId} onValueChange={(value) => patchDraft({ listId: value })}>
+                        <SelectTrigger className="w-[150px] h-8 bg-secondary/20 border-secondary text-xs rounded-none">
+                            <SelectValue placeholder="Select List" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {availableLists.map((list) => (
+                                <SelectItem key={list.id} value={list.id}>
+                                    {list.title}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
+            </div>
 
-                <DialogFooter className="p-4 bg-secondary/10 flex justify-between items-center border-t border-secondary">
-                    {!isCreating && task ? (
-                        <Button variant="ghost" size="icon" onClick={() => { if (confirm("Delete?")) { onDelete(task.id, task.listId); onClose(); } }}>
-                            <Trash2 className="w-4 h-4 text-muted-foreground hover:text-primary" />
-                        </Button>
-                    ) : <div />}
+            <DialogFooter className="p-4 bg-secondary/10 flex justify-between items-center border-t border-secondary">
+                {!isCreating && task ? (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                            if (confirm("Delete?")) {
+                                onDelete(task.id, task.listId);
+                                onClose();
+                            }
+                        }}
+                    >
+                        <Trash2 className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                    </Button>
+                ) : <div />}
 
-                    <div className="flex gap-2">
-                        <Button variant="ghost" onClick={onClose} className="hover:bg-secondary/20 rounded-none font-terminal">Cancel</Button>
-                        <Button onClick={handleSave} disabled={!title} className="bg-primary hover:bg-primary/80 text-primary-foreground rounded-none px-6 font-terminal">
-                            Save
-                        </Button>
-                    </div>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                <div className="flex gap-2">
+                    <Button variant="ghost" onClick={onClose} className="hover:bg-secondary/20 rounded-none font-terminal">
+                        Cancel
+                    </Button>
+                    <Button onClick={handleSave} disabled={!draft.title} className="bg-primary hover:bg-primary/80 text-primary-foreground rounded-none px-6 font-terminal">
+                        Save
+                    </Button>
+                </div>
+            </DialogFooter>
+        </DialogContent>
     );
 }
 
