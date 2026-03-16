@@ -86,6 +86,7 @@ ui/
 !dashboard_rebuild/client/src/components/ui/
 !dashboard_rebuild/client/src/components/ui/**
 jules-sdk/
+task-agent/
 dashboard_rebuild/client/node_modules/.vite/
 dashboard_rebuild/client/node_modules/bufferutil/
 nul
