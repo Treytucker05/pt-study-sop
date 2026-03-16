@@ -21,6 +21,7 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "..", "brain", "static", "dist"),
     emptyOutDir: true,
+    chunkSizeWarningLimit: 2048,
     rollupOptions: {
       output: {
         // Disable manual chunking to avoid module initialization order issues
