@@ -5,6 +5,7 @@ If any precondition below is `no`, do not generate planner tasks yet.
 
 Preconditions:
 
+- Review-only request without explicit execution conversion: `yes|no`
 - Revised plan accepted: `yes|no`
 - Validation gate passed: `yes|no`
 - First unblocked wave explicitly selected: `yes|no`
@@ -45,3 +46,6 @@ Preconditions:
 
 If the execution surface is `markdown-only-no-queue` or `durable-track-only`,
 stop after recording the durable artifact path and the excluded blocked tasks.
+
+If `Review-only request without explicit execution conversion` is `yes`, stop
+after the revised first-wave verdict even if the rest of the preconditions pass.

@@ -65,3 +65,26 @@ Expected emphasis:
 
 - downgrade immediately
 - explain why swarm mode is overkill
+
+## Case 7: Review-only repo track tightening
+
+Prompt:
+
+`Review this existing PT track plan, keep the valid task graph, tighten only the weak parts, and tell me whether anything is truly execution-ready right now.`
+
+Expected emphasis:
+
+- stay review-shaped instead of rebuilding the full roadmap
+- default to `durable-track-only`
+- preserve valid task IDs
+
+## Case 8: Review-only queue-pressure request
+
+Prompt:
+
+`Review this accepted PT plan and tell me if any wave should actually become planner-backed tasks yet. Do not convert anything unless the plan is truly ready.`
+
+Expected emphasis:
+
+- validate before queue conversion
+- explicitly withhold queue conversion when readiness is weak or uncertain

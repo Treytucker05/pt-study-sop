@@ -33,6 +33,17 @@ Before planning proceeds, explicitly check for drift across:
 If those sources disagree on product behavior, ownership, or the execution
 surface, stop and surface the conflict before generating tasks.
 
+## Review-only repo path
+
+When the user provides an existing PT plan, track, or roadmap and asks for
+review/tightening:
+
+- do not regenerate the whole repo plan by default
+- preserve valid task IDs, track structure, and accepted canon decisions
+- emit a revised first unblocked wave and an execution readiness verdict
+- only escalate to a full rebuild when the current plan fails validation or
+  conflicts with repo canon
+
 ## Repo-specific planning rules
 
 - `Brain` is the home route unless canon says otherwise.
@@ -62,6 +73,11 @@ You must state:
 - why that surface fits this repo task
 - why the other two surfaces were rejected
 
+Default review-only bias:
+
+- choose `durable-track-only` unless the user explicitly asked for execution
+  conversion and the revised first wave is truly unblocked
+
 ## Required repo outputs
 
 Every accepted plan in this repo must state:
@@ -87,6 +103,12 @@ Keep the shared task contract and add repo-facing meaning to:
     ownership conflict, or new dependency discovered during execution
 - `expected_evidence`
   - use track docs, passing commands, task conversion artifacts, or live proof
+
+For review-only requests, `expected_evidence` should usually be:
+
+- revised track docs
+- a corrected first-wave verdict
+- a validation/readiness decision rather than new implementation tasks
 
 ## Required review bar
 

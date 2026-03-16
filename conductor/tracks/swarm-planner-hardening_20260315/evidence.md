@@ -3,6 +3,7 @@
 ## Shared Skill Backup
 
 - Backup path: `C:\Users\treyt\.agents\backups\swarm-planner-hardening_20260315\treys-swarm-planner`
+- Review-only experiment backup: `C:\Users\treyt\.agents\backups\swarm-planner-review-only_20260316\treys-swarm-planner`
 
 ## Benchmark Prompts Captured
 
@@ -140,3 +141,14 @@ First unblocked wave
   - plan-review-only request
 - Follow-on target:
   - shorten the planner shape when the job is review/tightening rather than net-new execution planning
+
+## Review-Only Experiment Follow-Up
+
+- The next measured experiment is recorded in [review-only-experiment-scorecard.md](./review-only-experiment-scorecard.md).
+- Core change:
+  - added an explicit review-only path so existing-plan critique requests stop behaving like blank-sheet roadmap generation
+- Supplemental benchmark additions:
+  - `Case 7: Review-only repo track tightening`
+  - `Case 8: Review-only queue-pressure request`
+- Expected win condition:
+  - improve `Case 3` from `6 / 10` to at least `8 / 10` without regressing the strongest existing cases

@@ -36,3 +36,13 @@
 - PASS `git diff --check`
 - PASS six-case benchmark baseline recorded in `baseline-scorecard.md`
 - PASS eval-kit rubric now defines `n/a` handling so totals exclude non-applicable categories
+
+## Review-Only Experiment Result (2026-03-16)
+
+- PASS `powershell -ExecutionPolicy Bypass -File scripts/sync_agent_skills.ps1 -Mode Check`
+- PASS `python scripts/check_docs_sync.py`
+- PASS `git diff --check`
+- PASS focused harness validation after the unrelated pre-push blocker fix:
+  - `pytest brain/tests/test_harness_eval.py::test_harness_eval_failed_live_scenario_writes_failure_artifacts -q`
+  - `pytest brain/tests/test_harness_eval.py -q`
+- PASS review-only experiment scorecard recorded in `review-only-experiment-scorecard.md`

@@ -6,6 +6,7 @@
 - Validation: [./validation-matrix.md](./validation-matrix.md)
 - Evidence: [./evidence.md](./evidence.md)
 - Baseline Scorecard: [./baseline-scorecard.md](./baseline-scorecard.md)
+- Review-Only Experiment: [./review-only-experiment-scorecard.md](./review-only-experiment-scorecard.md)
 
 ## Status
 
@@ -21,3 +22,4 @@
 - `trey-autoresearch` was used as the tuning model for the planner loop, but its own skill package stayed unchanged.
 - A filesystem backup of the pre-change shared planner skill was captured at `C:\Users\treyt\.agents\backups\swarm-planner-hardening_20260315\treys-swarm-planner`.
 - The first benchmark baseline was captured on 2026-03-16 and recorded in `baseline-scorecard.md`.
+- The next tuning experiment focused on review-only plan handling and is recorded in `review-only-experiment-scorecard.md`.

@@ -43,3 +43,14 @@ If the requested plan contradicts `README.md` or the active sprint board:
 1. stop at the canon-drift gate
 2. surface the conflicting sources
 3. do not produce execution tasks until the conflict is resolved
+
+## Example 5: Review-only repo track tightening
+
+If the user asks to review and tighten an existing PT track or roadmap:
+
+1. keep the request in the review-only path
+2. validate canon, task IDs, and first-wave readiness before rebuilding
+3. preserve valid track structure
+4. default to `durable-track-only`
+5. only produce queue-ready output if the user explicitly asks for it and the
+   revised first wave is truly unblocked

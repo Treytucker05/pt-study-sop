@@ -622,3 +622,17 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Focused validation passed:
   - `pytest brain/tests/test_harness_eval.py::test_harness_eval_failed_live_scenario_writes_failure_artifacts -q`
   - `pytest brain/tests/test_harness_eval.py -q`
+
+## 2026-03-16 - Swarm planner review-only experiment
+- Ran the next measured planner experiment against the swarm-planner-hardening track instead of broadening the planner again.
+- Shared planner changes:
+  - added a review-only path for tightening existing plans
+  - added a dedicated `review_only_plan_template.md`
+  - updated review/task-conversion templates so review-only requests do not default to execution conversion
+- Repo adapter changes:
+  - added repo-specific review-only guidance
+  - biased review-only requests toward `durable-track-only`
+  - tightened queue conversion rules so review-only requests stay durable unless execution conversion is explicitly requested
+- Eval-kit changes:
+  - added two supplemental critique-oriented benchmark prompts
+  - captured the resulting experiment in `conductor/tracks/swarm-planner-hardening_20260315/review-only-experiment-scorecard.md`

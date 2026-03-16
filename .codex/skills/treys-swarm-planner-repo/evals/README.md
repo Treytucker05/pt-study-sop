@@ -32,7 +32,10 @@ Measure whether planner changes improve:
 
 ## Baseline rules
 
-- Use the same six prompts each time.
+- Use the same six core prompts each time when comparing against the existing
+  baseline.
+- Treat critique-oriented prompts 7-8 as supplemental review-only cases until a
+  new full eight-case baseline is intentionally adopted.
 - Do not change the rubric mid-comparison.
 - Record whether the planner stopped, downgraded, or escalated correctly.
 - Record whether queue conversion was withheld when it should have been.

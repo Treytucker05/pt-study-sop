@@ -27,6 +27,16 @@ If these do not align:
 - stop and surface the conflict
 - do not plan through the disagreement
 
+## 2A. Review-only repo requests
+
+When the user asks to review or tighten an existing PT plan:
+
+- validate the current plan before rebuilding anything
+- preserve valid task IDs and existing track structure
+- default to `durable-track-only`
+- only allow `track-plus-wave-queue` if the user explicitly wants execution
+  conversion and the revised first wave passes validation
+
 ## 3. Durable plan vs executable tasks
 
 ### Durable plan
@@ -95,6 +105,8 @@ Only generate planner-backed tasks after:
 2. the first unblocked wave is explicit
 3. the queue item fields can be populated from real repo data
 4. the execution surface selector chose `track-plus-wave-queue`
+5. the request is not review-only unless execution conversion was explicitly
+   requested
 
 ## 7. study_tasks field mapping
 
@@ -152,6 +164,8 @@ Call for replanning when:
 
 In addition to the base planner rubric, every review should check:
 
+- whether review-only requests stayed review-shaped instead of turning into
+  unnecessary new roadmaps
 - canon drift
 - sprint-board compliance
 - Conductor/planner split quality
