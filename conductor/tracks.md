@@ -12,9 +12,14 @@ Update policy: after every significant change, update this file with status chan
 
 Active execution priority is tracked in `docs/root/TUTOR_TODO.md`.
 
-Active status: 0 active workstreams.
+Active status: 1 active workstream.
 
-Latest update: 2026-03-16, Swarm Planner Hardening baseline scoring sweep landed and captured the first durable benchmark for future planner tuning.
+Latest update: 2026-03-16, UI Production System opened as an active design/system track for the shared shell/page hierarchy rollout.
+
+- [ ] **Track: UI Production System** (active — created 2026-03-16; scope: flagship/support/utility hierarchy, asset-backed shell contract, shared control system rollout, support-page normalization, and responsive production polish)
+  *Link: [./tracks/ui-production-system_20260316/](./tracks/ui-production-system_20260316/)*
+
+---
 
 - [x] **Track: Swarm Planner Hardening** (complete — created 2026-03-15; closed 2026-03-15; scope: shared swarm planner mode-selection + validation hardening, PT repo adapter drift/queue gating, and repo-local planner eval kit)
   *Link: [./tracks/swarm-planner-hardening_20260315/](./tracks/swarm-planner-hardening_20260315/)*

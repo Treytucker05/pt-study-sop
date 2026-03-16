@@ -109,3 +109,18 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - support-page command bands inherit the new shell treatment through shared wrappers
     - the notes surface matches the refreshed shell control system
     - `npm run test -- client/src/components/__tests__/layout.test.tsx` and `cd dashboard_rebuild && npm run build` pass
+
+### Sprint: UI Production System (2026-03-16)
+- [x] UPS-100. Define the durable UI production system so the app can move from theme experiments into one sellable shell/page hierarchy with code-driven interaction over decorative rail art.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `conductor/tracks.md`
+    - `conductor/tracks/ui-production-system_20260316/`
+    - planning references only from the current shell/page wrappers and route hierarchy
+  - Done when:
+    - a durable Conductor track exists for the UI production system
+    - the track locks flagship/support/utility hierarchy and the “interactive code over decorative shell” rule
+    - phased rollout covers shared shell, flagship pages, support pages, shared controls, and responsive QA
+    - the plan explicitly avoids blind collision with the active Tutor workflow dirty set
+    - `python scripts/check_docs_sync.py` and `git diff --check` pass
+  - Completed 2026-03-16: opened the UI Production System track, locked the tier hierarchy and asset contract, and recorded a phased rollout plus validation matrix for future implementation waves.
