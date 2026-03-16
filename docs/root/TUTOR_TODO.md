@@ -27,6 +27,24 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Active execution note: the current dirty frontend Tutor/shared-page rewrite set is intentionally left in place during this cleanup pass. Treat those source edits as in-progress local work, not workspace noise.
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 
+### Sprint: Swarm Planner Hardening (2026-03-15)
+- [x] SPH-100. Harden the shared swarm planner and the PT repo adapter so they choose the right orchestration mode, separate validation from review, and gain an autoresearch-style tuning loop.
+  - Scope:
+    - `C:\Users\treyt\.agents\skills\treys-swarm-planner\`
+    - `.codex/skills/treys-swarm-planner-repo/`
+    - `docs/root/TUTOR_TODO.md`
+    - `conductor/tracks.md`
+    - `conductor/tracks/swarm-planner-hardening_20260315/`
+    - `conductor/tracks/GENERAL/log.md`
+    - `scripts/sync_agent_skills.ps1` validation only
+  - Done when:
+    - a new Conductor track captures the hardening spec, plan, review, validation, and evidence
+    - the shared planner adds planning-mode selection, validation gates, reviewer diversity, stop rules, and replan metadata
+    - the PT adapter adds canon-drift gating, execution-surface selection, duplicate-system checks, and repo-specific replan triggers
+    - a repo-local eval kit exists for future `trey-autoresearch` tuning loops
+    - `powershell -ExecutionPolicy Bypass -File scripts/sync_agent_skills.ps1 -Mode Check`, `python scripts/check_docs_sync.py`, and `git diff --check` pass
+  - Completed 2026-03-15: backed up the canonical shared planner skill, hardened both planner skills/templates/examples, added a repo-local eval kit plus benchmark scorecard, stored before/after planner evidence in a new Conductor track, and re-ran the shared-skill sync checks to confirm consumer roots still point at the canonical upstream.
+
 ### Sprint: Workspace Coordination Cleanup (2026-03-15)
 - [x] WCC-100. Reduce active workspace noise without touching the in-progress Tutor/shared frontend rewrites.
   - Scope:

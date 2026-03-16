@@ -583,3 +583,23 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - workspace cleanup + board/archive compression
   - shared frontend/support-surface rewrites
   - Brain/Scholar workspace rewrites
+
+## 2026-03-15 - Swarm planner hardening
+- Created the track `conductor/tracks/swarm-planner-hardening_20260315/` and registered `SPH-100` on the active sprint board before mutating the planner surfaces.
+- Backed up the canonical shared planner skill to `C:\Users\treyt\.agents\backups\swarm-planner-hardening_20260315\treys-swarm-planner` before editing the shared source-of-truth copy.
+- Hardened the shared planner skill under `C:\Users\treyt\.agents\skills\treys-swarm-planner\` with:
+  - explicit planning-mode selection
+  - validation-before-review gates
+  - reviewer diversity rules
+  - stop/downgrade rules
+  - richer task metadata for replan/evidence handling
+- Hardened the repo-local PT adapter under `.codex/skills/treys-swarm-planner-repo/` with:
+  - canon-drift gating
+  - execution-surface selection
+  - duplicate-system checks
+  - repo-specific replan triggers
+- Added a repo-local planner eval kit under `.codex/skills/treys-swarm-planner-repo/evals/` with a benchmark set, scorecard, and runner notes so future `trey-autoresearch` tuning can compare planner revisions empirically.
+- Validation passed:
+  - `powershell -ExecutionPolicy Bypass -File scripts/sync_agent_skills.ps1 -Mode Check`
+  - `python scripts/check_docs_sync.py`
+  - `git diff --check`

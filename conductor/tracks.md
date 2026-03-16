@@ -14,7 +14,12 @@ Active execution priority is tracked in `docs/root/TUTOR_TODO.md`.
 
 Active status: 0 active workstreams.
 
-Latest update: 2026-03-15, Studio L2/L3 Hub + Review Loop closed after the L3 review-loop wave passed backend/frontend/build/live validation.
+Latest update: 2026-03-15, Swarm Planner Hardening closed after the shared planner, PT adapter, eval kit, and skill-sync validation all landed.
+
+- [x] **Track: Swarm Planner Hardening** (complete — created 2026-03-15; closed 2026-03-15; scope: shared swarm planner mode-selection + validation hardening, PT repo adapter drift/queue gating, and repo-local planner eval kit)
+  *Link: [./tracks/swarm-planner-hardening_20260315/](./tracks/swarm-planner-hardening_20260315/)*
+
+---
 
 - [x] **Track: Studio L2/L3 Hub + Review Loop** (complete — created 2026-03-15; closed 2026-03-15; scope: Studio-native overview API, Studio L2 course hub refactor, and L3 review-loop hardening with edit/archive/history)
   *Link: [./tracks/studio-l2-l3-hub-review-loop_20260315/](./tracks/studio-l2-l3-hub-review-loop_20260315/)*

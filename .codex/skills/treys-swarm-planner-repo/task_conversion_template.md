@@ -6,7 +6,9 @@ If any precondition below is `no`, do not generate planner tasks yet.
 Preconditions:
 
 - Revised plan accepted: `yes|no`
+- Validation gate passed: `yes|no`
 - First unblocked wave explicitly selected: `yes|no`
+- Execution surface selector chose `track-plus-wave-queue`: `yes|no`
 - Queue item fields mappable to real `study_tasks` fields: `yes|no`
 - Every selected task has satisfied `depends_on`: `yes|no`
 
@@ -36,4 +38,10 @@ Preconditions:
 ## Required notes content
 - dependency notes when queue is flat
 - verification commands/checklists
+- `expected_evidence`
 - rollout or rollback caution when relevant
+
+## Stop Instead Of Convert
+
+If the execution surface is `markdown-only-no-queue` or `durable-track-only`,
+stop after recording the durable artifact path and the excluded blocked tasks.

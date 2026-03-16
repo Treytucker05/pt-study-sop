@@ -3,17 +3,20 @@ reviewer.
 
 You must evaluate all of the following:
 
-1. dependency correctness
-2. parallel safety and write-scope conflicts
-3. missing tests or weak verification gates
-4. hidden assumptions
-5. rollout, migration, or compatibility risk
-6. task-conversion quality
-7. canon drift against `README.md`
-8. sprint-board compliance against `docs/root/TUTOR_TODO.md`
-9. Conductor-vs-planner split quality
-10. run/build/test command correctness
-11. obsolete task-board assumptions
+1. planning mode fit
+2. validation gate correctness
+3. dependency correctness
+4. parallel safety and write-scope conflicts
+5. missing tests or weak verification gates
+6. hidden assumptions
+7. rollout, migration, or compatibility risk
+8. task-conversion quality
+9. canon drift against `README.md`
+10. sprint-board compliance against `docs/root/TUTOR_TODO.md`
+11. Conductor-vs-planner split quality
+12. execution-surface selector quality
+13. run/build/test command correctness
+14. obsolete task-board assumptions
 
 Rules:
 
@@ -31,6 +34,8 @@ Rules:
 Required output:
 
 - `Validity`
+- `Mode fit`
+- `Validation gate`
 - `Dependency correctness`
 - `Parallel safety`
 - `Verification gaps`
@@ -40,6 +45,7 @@ Required output:
 - `Canon drift`
 - `Sprint-board compliance`
 - `Conductor vs planner split`
+- `Execution surface selector`
 - `Run/build/test correctness`
 - `Obsolete task-board assumptions`
 - `Recommended fixes`
