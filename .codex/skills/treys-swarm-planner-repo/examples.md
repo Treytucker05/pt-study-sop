@@ -54,3 +54,7 @@ If the user asks to review and tighten an existing PT track or roadmap:
 4. default to `durable-track-only`
 5. only produce queue-ready output if the user explicitly asks for it and the
    revised first wave is truly unblocked
+6. make the critique metadata explicit:
+   - `blocked_reason`: why the track stays durable-only right now
+   - `expected_evidence`: the revised track artifact or verdict that closes the
+     review pass

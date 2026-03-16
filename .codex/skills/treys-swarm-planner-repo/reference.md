@@ -194,3 +194,17 @@ reviews so these checks are not left implicit.
 
 Use [task_conversion_template.md](task_conversion_template.md) when converting
 accepted repo plans into `study_tasks`-backed planner tasks.
+
+## 12. Review-only metadata examples
+
+When a repo plan is staying in critique mode, make the metadata read like
+critique state instead of execution state.
+
+- `blocked_reason`
+  - good: `await explicit execution request after review acceptance`
+  - good: `revised first wave still blocked by missing sprint item`
+  - weak: `not started`
+- `expected_evidence`
+  - good: `track docs updated with corrected first-wave verdict`
+  - good: `canon-aligned durable-only decision recorded in review artifact`
+  - weak: `implementation done`

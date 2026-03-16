@@ -98,6 +98,9 @@ Keep the shared task contract and add repo-facing meaning to:
 - `blocked_reason`
   - use concrete repo blockers such as `canon drift`, `missing sprint item`,
     `track not created`, `no queue field mapping`, or `shared surface conflict`
+  - for review-only requests, prefer critique-state blockers such as `await
+    explicit execution request`, `revised first wave still blocked`, or
+    `durable track remains the correct surface`
 - `replan_trigger`
   - use concrete repo triggers such as user scope change, canon change, route
     ownership conflict, or new dependency discovered during execution
@@ -109,6 +112,8 @@ For review-only requests, `expected_evidence` should usually be:
 - revised track docs
 - a corrected first-wave verdict
 - a validation/readiness decision rather than new implementation tasks
+- an explicit blocker description that explains why queue conversion is still
+  deferred
 
 ## Required review bar
 

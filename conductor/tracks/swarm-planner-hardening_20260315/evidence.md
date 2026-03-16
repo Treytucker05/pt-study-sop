@@ -21,9 +21,35 @@
 - Before:
   - planner often emitted the full swarm structure without first justifying whether a lighter mode was enough
 - After:
-  - planner must emit `Planning mode selection`
-  - planner must choose `single-pass` or `sequential`
-  - planner must explicitly reject full swarm mode as overkill
+  - planner explicitly defaults to `single-pass` or `sequential` when the task is too small for swarm coordination
+
+### Review-only critique path
+
+- Before:
+  - review-only outputs improved mode fit and over-planning control, but
+    `blocked_reason` and `expected_evidence` still sounded like generic task
+    metadata
+- After:
+  - review-only outputs call out why execution remains deferred
+  - critique metadata now points to proof such as corrected task IDs, revised
+    first-wave verdicts, and durable-only readiness decisions
+
+## Follow-up Experiment Notes
+
+- Shared planner files updated:
+  - `C:\Users\treyt\.agents\skills\treys-swarm-planner\SKILL.md`
+  - `C:\Users\treyt\.agents\skills\treys-swarm-planner\reference.md`
+  - `C:\Users\treyt\.agents\skills\treys-swarm-planner\examples.md`
+  - `C:\Users\treyt\.agents\skills\treys-swarm-planner\templates\review_only_plan_template.md`
+- Repo adapter files updated:
+  - `.codex/skills/treys-swarm-planner-repo/SKILL.md`
+  - `.codex/skills/treys-swarm-planner-repo/reference.md`
+  - `.codex/skills/treys-swarm-planner-repo/examples.md`
+  - `.codex/skills/treys-swarm-planner-repo/review_prompt_template.md`
+- Remeasurement result:
+  - core six-case aggregate improved from `68 / 74` to `69 / 74`
+  - `Case 3: Plan-review-only request` improved from `9 / 10` to `10 / 10`
+  - supplemental critique cases improved from `15 / 16` to `16 / 16`
 
 ### Broad repo task
 
