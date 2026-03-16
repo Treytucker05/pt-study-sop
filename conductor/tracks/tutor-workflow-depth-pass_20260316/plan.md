@@ -102,7 +102,7 @@ Execution rule:
 ### Phase 0 — Track and sprint alignment
 
 #### TDP-000
-- `status`: pending
+- `status`: completed
 - `depends_on`: []
 - `surfaces`:
   - `docs/root/TUTOR_TODO.md`
@@ -124,7 +124,7 @@ Execution rule:
 ### Phase 1 — Baseline and metric contract
 
 #### TDP-100
-- `status`: pending
+- `status`: completed
 - `depends_on`: [TDP-000]
 - `surfaces`:
   - Priming workflow surfaces
@@ -145,7 +145,7 @@ Execution rule:
 - `expected_evidence`: baseline scorecard with current-state measurements
 
 #### TDP-110
-- `status`: pending
+- `status`: completed
 - `depends_on`: [TDP-100]
 - `surfaces`:
   - `plan.md`
@@ -162,7 +162,7 @@ Execution rule:
 ### Phase 2 — Priming extraction depth
 
 #### TDP-200
-- `status`: pending
+- `status`: in_progress
 - `depends_on`: [TDP-110]
 - `surfaces`:
   - `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx`
@@ -178,7 +178,7 @@ Execution rule:
 - `expected_evidence`: saved workflow detail showing per-source priming objects
 
 #### TDP-210
-- `status`: pending
+- `status`: in_progress
 - `depends_on`: [TDP-200]
 - `surfaces`:
   - Priming UI
@@ -193,7 +193,7 @@ Execution rule:
 - `expected_evidence`: source-rerun proof note in track evidence
 
 #### TDP-220
-- `status`: pending
+- `status`: in_progress
 - `depends_on`: [TDP-210]
 - `surfaces`:
   - Priming assist UI/API
