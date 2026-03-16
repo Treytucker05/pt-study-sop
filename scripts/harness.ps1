@@ -1256,6 +1256,18 @@ function Invoke-HarnessEval {
         base_url = $effectiveBaseUrl
     })
 
+    $resultPath = Join-Path $scenarioArtifactRoot "result.json"
+    $defaultStdoutLog = Join-Path $scenarioArtifactRoot "script.stdout.log"
+    $defaultStderrLog = Join-Path $scenarioArtifactRoot "script.stderr.log"
+    $script:HarnessLastFailureDetails = [ordered]@{
+        artifacts = [ordered]@{
+            result = Resolve-ArtifactRelativePath -PathValue $resultPath -ResolvedArtifactRoot $resolvedArtifactRoot
+            stdout_log = Resolve-ArtifactRelativePath -PathValue $defaultStdoutLog -ResolvedArtifactRoot $resolvedArtifactRoot
+            stderr_log = Resolve-ArtifactRelativePath -PathValue $defaultStderrLog -ResolvedArtifactRoot $resolvedArtifactRoot
+        }
+        summary = [ordered]@{}
+    }
+
     $runner = $scenarioDefinition.runner
     $scriptPath = Resolve-HarnessScenarioScriptPath -ScriptValue ([string]$runner.script)
     $scriptArgs = Resolve-HarnessTemplateArgs -Templates @($runner.args_template) -Context $context
@@ -1351,7 +1363,6 @@ function Invoke-HarnessEval {
     if (@($scenarioDefinition.expected_artifacts).Count -gt 0) {
         $payload.expected_artifacts = @($scenarioDefinition.expected_artifacts)
     }
-    $resultPath = Join-Path $scenarioArtifactRoot "result.json"
     $payload | ConvertTo-Json -Depth 10 | Set-Content -Path $resultPath -Encoding UTF8
 
     if ($processResult.exit_code -ne 0 -or -not [bool]$payload.ok) {

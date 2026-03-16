@@ -615,3 +615,10 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Validation passed:
   - `python scripts/check_docs_sync.py`
   - `git diff --check`
+
+## 2026-03-16 - Harness pre-push failure-artifact stabilization
+- Fixed a pre-push blocker in `scripts/harness.ps1` by pre-seeding `HarnessLastFailureDetails` with deterministic `result/stdout/stderr` artifact paths before the eval runner starts.
+- This keeps the JSON failure payload stable even when `Eval` fails before the later result-write path populates the failure details, which is what was breaking `brain/tests/test_harness_eval.py::test_harness_eval_failed_live_scenario_writes_failure_artifacts` during full-suite pre-push runs.
+- Focused validation passed:
+  - `pytest brain/tests/test_harness_eval.py::test_harness_eval_failed_live_scenario_writes_failure_artifacts -q`
+  - `pytest brain/tests/test_harness_eval.py -q`
