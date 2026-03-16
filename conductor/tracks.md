@@ -12,9 +12,12 @@ Update policy: after every significant change, update this file with status chan
 
 Active execution priority is tracked in `docs/root/TUTOR_TODO.md`.
 
-Active status: 1 active workstream.
+Active status: 2 active workstreams.
 
-Latest update: 2026-03-16, closed Tutor Workflow Depth Pass after source-linked Priming depth, richer publishable Studio artifact flow, deeper Brain workflow analytics, full test/smoke validation, and a live enriched workflow proof while UI Production System remains active.
+Latest update: 2026-03-16, opened Tutor UI Stabilization Loop to run repeatable live audits and fix Tutor shell-state, handoff, and transition defects while UI Production System remains active.
+
+- [ ] **Track: Tutor UI Stabilization Loop** (active — created 2026-03-16; scope: repeatable live-page audits, Tutor shell-state stabilization, Brain launch handoff cleanup, stage transition fixes, and iterative re-audit until critical flows are clean twice in a row)
+  *Link: [./tracks/tutor-ui-stabilization-loop_20260316/](./tracks/tutor-ui-stabilization-loop_20260316/)*
 
 - [ ] **Track: UI Production System** (active — created 2026-03-16; scope: flagship/support/utility hierarchy, asset-backed shell contract, shared control system rollout, support-page normalization, and responsive production polish)
   *Link: [./tracks/ui-production-system_20260316/](./tracks/ui-production-system_20260316/)*
@@ -23,6 +26,8 @@ Latest update: 2026-03-16, closed Tutor Workflow Depth Pass after source-linked 
 
 - [x] **Track: Tutor Workflow Depth Pass** (complete — created 2026-03-16; closed 2026-03-16; scope: source-linked Priming extraction depth, richer Polish/Final Sync artifact publishing, Brain workflow analytics and learner-evidence depth, and end-to-end enriched validation on top of the completed staged workflow backbone)
   *Link: [./tracks/tutor-workflow-depth-pass_20260316/](./tracks/tutor-workflow-depth-pass_20260316/)*
+
+---
 
 ---
 

@@ -155,6 +155,27 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - run as one continuous execution pass after track bootstrap; do not reopen the closed Tutor Workflow Redesign track
   - Completed 2026-03-16: captured the depth baseline and metric contract, added source-linked Priming Assist with per-source rerun/write-back, promoted richer Studio artifact packages through Polish/Final Sync, expanded Brain workflow intelligence with source-link/re-prime/artifact/snapshot signals, passed `cd dashboard_rebuild && npm run build`, passed `pytest brain/tests/`, passed `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5000`, and passed a live enriched workflow proof on the restarted dashboard.
 
+### Sprint: Tutor UI Stabilization Loop (2026-03-16)
+- [ ] TUSL-100. Run a repeatable live-page stabilization loop over Brain handoff, Tutor shell transitions, and adjacent study surfaces until critical navigation, hydration, and shell-state regressions are cleared and the same audit passes twice in a row.
+  - Track:
+    - `conductor/tracks/tutor-ui-stabilization-loop_20260316/`
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `conductor/tracks.md`
+    - `conductor/tracks/tutor-ui-stabilization-loop_20260316/`
+    - `dashboard_rebuild/client/src/lib/tutorClientState.ts`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - any targeted Tutor shell support files needed by the active iteration
+  - Done when:
+    - a durable baseline scorecard and repeatable audit checklist exist for the stabilization loop
+    - the first live issue wave fixes stage-scroll retention, stale Brain -> Tutor auto-resume, and live Tutor chrome bleed on Launch/dashboard
+    - every iteration re-audits the same route set and checkpoints only after issue severity or counts improve
+    - the loop can stop once there are `0` P1 issues, `0` P2 issues, all critical flows pass, and that result holds for two consecutive audits
+  - Iteration 1 targets:
+    - stage switches preserve scroll position and land mid-page
+    - Brain -> Tutor handoff restores stale live session state instead of a clean launch shell
+    - Launch/dashboard surfaces still render live Tutor chrome when an active session exists
+
 ### Sprint: UI Production System (2026-03-16)
 - [x] UPS-100. Define the durable UI production system so the app can move from theme experiments into one sellable shell/page hierarchy with code-driven interaction over decorative rail art.
   - Scope:

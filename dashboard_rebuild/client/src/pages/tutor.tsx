@@ -40,6 +40,7 @@ import {
   consumeTutorLaunchHandoff,
   normalizeTutorAccuracyProfile,
   normalizeTutorObjectiveScope,
+  peekTutorLaunchHandoff,
   readTutorAccuracyProfile,
   readTutorActiveSessionId,
   readTutorObjectiveScope,
@@ -393,8 +394,16 @@ function formatElapsedDuration(totalSeconds: number) {
 }
 
 function useTutorShellState(initialRouteQuery: TutorShellQuery) {
+  const pendingLaunchHandoff = peekTutorLaunchHandoff();
+  const shouldSuppressStoredSessionResume =
+    !initialRouteQuery.sessionId &&
+    (pendingLaunchHandoff.fromLibraryHandoff ||
+      Boolean(pendingLaunchHandoff.brainLaunchContext));
+  const storedActiveSessionId = shouldSuppressStoredSessionResume
+    ? null
+    : readTutorActiveSessionId();
   const [activeSessionId, setActiveSessionId] = useState<string | null>(
-    initialRouteQuery.sessionId || readTutorActiveSessionId(),
+    initialRouteQuery.sessionId || storedActiveSessionId,
   );
   const [hasRestored, setHasRestored] = useState(false);
   const [restoredTurns, setRestoredTurns] = useState<
@@ -402,7 +411,7 @@ function useTutorShellState(initialRouteQuery: TutorShellQuery) {
   >();
   const [shellMode, setShellMode] = useState<TutorPageMode>(
     initialRouteQuery.mode ||
-      (initialRouteQuery.sessionId || readTutorActiveSessionId() ? "tutor" : "dashboard"),
+      (initialRouteQuery.sessionId || storedActiveSessionId ? "tutor" : "dashboard"),
   );
   const [studioEntryRequest, setStudioEntryRequest] = useState<TutorStudioEntryRequest | null>(null);
   const [scheduleLaunchIntent, setScheduleLaunchIntent] =
@@ -417,7 +426,7 @@ function useTutorShellState(initialRouteQuery: TutorShellQuery) {
   const [shellRevision, setShellRevision] = useState(0);
   const [shellHydratedCourseId, setShellHydratedCourseId] = useState<number | null>(null);
   const [showSetup, setShowSetup] = useState<boolean>(
-    () => !Boolean(initialRouteQuery.sessionId || readTutorActiveSessionId()),
+    () => !Boolean(initialRouteQuery.sessionId || storedActiveSessionId),
   );
   const [brainLaunchContext, setBrainLaunchContext] = useState<TutorBrainLaunchContext | null>(
     null,
@@ -2625,7 +2634,9 @@ function useTutorPageController() {
       setBrainLaunchContext(nextBrainLaunchContext);
     }
 
-    const resumeCandidateSessionId = initialRouteQuery.sessionId || readTutorActiveSessionId();
+    const resumeCandidateSessionId =
+      initialRouteQuery.sessionId ||
+      (fromBrainHandoff || fromLibraryHandoff ? null : readTutorActiveSessionId());
     try {
       if (resumeCandidateSessionId) {
         const session = await api.tutor.getSession(resumeCandidateSessionId);
@@ -2709,6 +2720,7 @@ function useTutorPageController() {
     if (
       !resumedFromProjectShellRef.current &&
       !activeSessionId &&
+      !brainLaunchContext &&
       projectShell.active_session?.session_id
     ) {
       resumedFromProjectShellRef.current = true;
@@ -2726,6 +2738,7 @@ function useTutorPageController() {
     activeSessionId,
     activeBoardScope,
     applySessionState,
+    brainLaunchContext,
     courseId,
     hydrateProjectShellState,
     shellHydratedCourseId,
@@ -2733,6 +2746,11 @@ function useTutorPageController() {
     initialRouteQuery.mode,
     projectShell,
   ]);
+
+  useEffect(() => {
+    if (!hasRestored) return;
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [activeSessionId, hasRestored, shellMode, workflowView]);
 
   useEffect(() => {
     writeTutorShellQuery({
@@ -2833,13 +2851,14 @@ function useTutorPageController() {
   const facilitationSteps = parseFacilitationSteps(currentBlock?.facilitation_prompt);
   const promotedStudioItems =
     projectStudioItems?.items.filter((item) => item.status === "promoted") || [];
+  const isTutorSessionView = shellMode === "tutor" && Boolean(activeSessionId);
 
   const tutorHeroStats = [
     { label: "Mode", value: shellMode.toUpperCase() },
     {
       label: "Session",
-      value: activeSessionId ? "LIVE" : "READY",
-      tone: activeSessionId ? "success" : "info",
+      value: isTutorSessionView ? "LIVE" : "READY",
+      tone: isTutorSessionView ? "success" : "info",
     } as const,
     {
       label: "Course",
@@ -2862,13 +2881,13 @@ function useTutorPageController() {
             Brain&apos;s default live study surface for guided sessions, artifacts, and next-step handoff.
           </div>
         </div>
-        {!activeSessionId ? (
+        {!isTutorSessionView ? (
           <Badge variant="outline" className="shrink-0 rounded-full border-primary/30 px-3 py-1 font-terminal text-[10px]">
             BRAIN TO TUTOR LIVE SURFACE
           </Badge>
         ) : null}
       </div>
-      {!activeSessionId && brainLaunchContext?.title ? (
+      {!isTutorSessionView && brainLaunchContext?.title ? (
         <div
           data-testid="tutor-brain-handoff"
           className={cn(CONTROL_DECK_SECTION, "space-y-1")}
@@ -2882,7 +2901,7 @@ function useTutorPageController() {
           ) : null}
         </div>
       ) : null}
-      {activeSessionId ? (
+      {isTutorSessionView ? (
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
           <Badge variant="outline" className="min-h-[40px] shrink-0 rounded-full border-primary/30 px-3 font-terminal text-[11px]">
             <span className="text-muted-foreground mr-1">TOPIC:</span>

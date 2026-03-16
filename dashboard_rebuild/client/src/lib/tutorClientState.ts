@@ -416,6 +416,27 @@ export function consumeTutorLaunchHandoff(
   return { fromLibraryHandoff, brainLaunchContext };
 }
 
+export function peekTutorLaunchHandoff(
+  storage: Pick<Storage, "getItem"> = window.sessionStorage,
+): {
+  fromLibraryHandoff: boolean;
+  brainLaunchContext: TutorBrainLaunchContext | null;
+} {
+  const fromLibraryHandoff = storage.getItem(TUTOR_LIBRARY_HANDOFF_KEY) === "1";
+  const rawBrainHandoff = storage.getItem(TUTOR_BRAIN_HANDOFF_KEY);
+  let brainLaunchContext: TutorBrainLaunchContext | null = null;
+  if (rawBrainHandoff !== null) {
+    try {
+      brainLaunchContext = normalizeTutorBrainLaunchContext(
+        JSON.parse(rawBrainHandoff),
+      );
+    } catch {
+      brainLaunchContext = null;
+    }
+  }
+  return { fromLibraryHandoff, brainLaunchContext };
+}
+
 export function writeLibraryLaunchFromTutor(
   value: LibraryTutorLaunchContext,
   storage: Pick<Storage, "setItem"> = window.sessionStorage,
