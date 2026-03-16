@@ -394,6 +394,12 @@ function useBrainHomeContent({ workspace }: { workspace: BrainWorkspace }) {
     staleTime: 60 * 1000,
   });
 
+  const { data: tutorWorkflowAnalytics } = useQuery({
+    queryKey: ["brain-home", "tutor-workflow-analytics"],
+    queryFn: () => api.tutor.getWorkflowAnalyticsSummary(),
+    staleTime: 60 * 1000,
+  });
+
   const { data: privacySettings } = useQuery({
     queryKey: ["brain-home", "product-privacy"],
     queryFn: () => api.product.getPrivacySettings(),
@@ -643,6 +649,10 @@ function useBrainHomeContent({ workspace }: { workspace: BrainWorkspace }) {
     : masteryHasError
       ? "Brain kept the home layout stable while the mastery API failed."
       : `${masteryDashboard?.count || 0} tracked skill(s)`;
+  const topWorkflowCourse = tutorWorkflowAnalytics?.top_courses?.[0];
+  const topPrimingMethod = tutorWorkflowAnalytics?.methods?.priming_methods?.[0];
+  const topPrimingChain = tutorWorkflowAnalytics?.methods?.priming_chains?.[0];
+  const workflowLearnerSnapshot = tutorWorkflowAnalytics?.learner_snapshot;
 
 async function handleDownloadJson(
     filename: string,
@@ -939,6 +949,64 @@ async function handleDownloadJson(
             </CardContent>
           </Card>
         </div>
+
+        <Card data-testid="brain-tutor-workflow-analytics" className="rounded-none border-primary/30 bg-black/45">
+          <CardHeader className="border-b border-primary/20">
+            <CardTitle className="font-arcade text-sm text-primary">TUTOR WORKFLOW INTELLIGENCE</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3 p-4 md:grid-cols-2">
+            <div className="border border-primary/15 bg-black/30 p-3">
+              <div className="font-arcade text-[11px] text-primary">WORKFLOW CLOSEOUT</div>
+              <div className="mt-2 font-terminal text-sm text-white">
+                {tutorWorkflowAnalytics?.totals?.stored || 0} stored / {tutorWorkflowAnalytics?.totals?.workflows || 0} total
+              </div>
+              <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
+                {tutorWorkflowAnalytics?.totals?.publish_successes || 0} publish success signal(s),
+                {" "}
+                {tutorWorkflowAnalytics?.totals?.publish_failures || 0} failure signal(s)
+              </div>
+            </div>
+            <div className="border border-primary/15 bg-black/30 p-3">
+              <div className="font-arcade text-[11px] text-primary">TOP COURSE LOAD</div>
+              <div className="mt-2 font-terminal text-sm text-white">
+                {topWorkflowCourse?.course_name || "No workflow course data yet"}
+              </div>
+              <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
+                {topWorkflowCourse
+                  ? `${topWorkflowCourse.workflow_count} workflows / ${Math.round((topWorkflowCourse.total_stage_seconds || 0) / 60)} min`
+                  : "Finish a workflow to start tracking course time."}
+              </div>
+            </div>
+            <div className="border border-primary/15 bg-black/30 p-3">
+              <div className="font-arcade text-[11px] text-primary">LEARNER SNAPSHOT</div>
+              <div className="mt-2 font-terminal text-sm text-white">
+                {workflowLearnerSnapshot?.label || "No workflow learner snapshot yet"}
+              </div>
+              <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
+                {workflowLearnerSnapshot?.confidence
+                  ? `${workflowLearnerSnapshot.confidence} confidence`
+                  : "Run Final Sync to save an archetype snapshot."}
+                {workflowLearnerSnapshot?.evidence?.[0]
+                  ? ` • ${workflowLearnerSnapshot.evidence[0]}`
+                  : ""}
+              </div>
+            </div>
+            <div className="border border-primary/15 bg-black/30 p-3">
+              <div className="font-arcade text-[11px] text-primary">METHOD SIGNALS</div>
+              <div className="mt-2 font-terminal text-sm text-white">
+                {topPrimingMethod?.label || "No priming method usage yet"}
+              </div>
+              <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
+                {topPrimingMethod
+                  ? `${topPrimingMethod.count} workflow(s) used this method`
+                  : "Brain is waiting on priming bundle history."}
+                {topPrimingChain?.label
+                  ? ` • top chain ${topPrimingChain.label} (${topPrimingChain.count})`
+                  : ""}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
           <Card data-testid="brain-course-breakdown" className="rounded-none border-primary/30 bg-black/45">

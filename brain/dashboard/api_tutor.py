@@ -15,6 +15,10 @@ Routes kept here (config & utilities):
   GET    /api/tutor/settings
   PUT    /api/tutor/settings
   GET    /api/tutor/course-map
+
+Additional sub-modules:
+  api_tutor_projects.py   — Tutor hub + project shell
+  api_tutor_workflows.py  — staged workflow persistence scaffold
 """
 
 from __future__ import annotations
@@ -270,6 +274,11 @@ import dashboard.api_tutor_sessions  # noqa: E402,F401 — registers routes on t
 # Tutor project shell routes  (extracted to api_tutor_projects.py)
 # ---------------------------------------------------------------------------
 import dashboard.api_tutor_projects  # noqa: E402,F401 — registers routes on tutor_bp
+
+# ---------------------------------------------------------------------------
+# Tutor workflow routes  (extracted to api_tutor_workflows.py)
+# ---------------------------------------------------------------------------
+import dashboard.api_tutor_workflows  # noqa: E402,F401 — registers routes on tutor_bp
 
 # ---------------------------------------------------------------------------
 # Tutor Studio routes  (extracted to api_tutor_studio.py)

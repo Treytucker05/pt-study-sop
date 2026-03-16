@@ -11,6 +11,10 @@ interface UseSSEStreamOptions {
   behaviorOverride: BehaviorOverride | null;
   onBehaviorOverrideReset: () => void;
   onArtifactCreated: (artifact: { type: string; content: string; title?: string }) => void;
+  onAssistantTurnCommitted?: (payload: {
+    userMessage: string;
+    assistantMessage: ChatMessage;
+  }) => void;
   onTurnComplete?: (masteryUpdate?: { skill_id: string; new_mastery: number; correct: boolean }) => void;
   initialTurns?: { question: string; answer: string | null }[];
   materialsOn: boolean;
@@ -39,6 +43,7 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
     behaviorOverride,
     onBehaviorOverrideReset,
     onArtifactCreated,
+    onAssistantTurnCommitted,
     onTurnComplete,
     initialTurns,
     materialsOn,
@@ -53,6 +58,13 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
   const [isStreaming, setIsStreaming] = useState(false);
   const streamAbortRef = useRef<AbortController | null>(null);
 
+  const createMessageId = useCallback((role: "user" | "assistant") => {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+    return `${role}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  }, []);
+
   // Reset transient chat state when session context changes.
   // If initialTurns are provided (session restore), hydrate messages from them.
   useEffect(() => {
@@ -62,17 +74,29 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
     setIsStreaming(false);
     if (initialTurns && initialTurns.length > 0) {
       const restored: ChatMessage[] = [];
-      for (const turn of initialTurns) {
-        restored.push({ role: "user", content: turn.question });
+      for (const [index, turn] of initialTurns.entries()) {
+        restored.push({
+          messageId: createMessageId("user"),
+          createdAt: new Date().toISOString(),
+          sessionTurnNumber: index + 1,
+          role: "user",
+          content: turn.question,
+        });
         if (turn.answer) {
-          restored.push({ role: "assistant", content: turn.answer });
+          restored.push({
+            messageId: createMessageId("assistant"),
+            createdAt: new Date().toISOString(),
+            sessionTurnNumber: index + 1,
+            role: "assistant",
+            content: turn.answer,
+          });
         }
       }
       setMessages(restored);
     } else {
       setMessages([]);
     }
-  }, [sessionId, initialTurns]);
+  }, [createMessageId, sessionId, initialTurns]);
 
   const sendMessage = useCallback(async () => {
     if (!input.trim() || !sessionId || isStreaming) return;
@@ -82,12 +106,30 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
     setInput("");
     const abortController = new AbortController();
     streamAbortRef.current = abortController;
+    const turnNumber =
+      messages.filter((message) => message.role === "user").length + 1;
+    const userMessageId = createMessageId("user");
+    const assistantMessageId = createMessageId("assistant");
+    const createdAt = new Date().toISOString();
 
     // Add user message and placeholder assistant message in one atomic update.
     setMessages((prev) => [
       ...prev,
-      { role: "user", content: userMessage },
-      { role: "assistant", content: "", isStreaming: true },
+      {
+        messageId: userMessageId,
+        createdAt,
+        sessionTurnNumber: turnNumber,
+        role: "user",
+        content: userMessage,
+      },
+      {
+        messageId: assistantMessageId,
+        createdAt,
+        sessionTurnNumber: turnNumber,
+        role: "assistant",
+        content: "",
+        isStreaming: true,
+      },
     ]);
     setIsStreaming(true);
     const activeBehavior = behaviorOverride;
@@ -329,22 +371,32 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
         return;
       }
 
+      const finalAssistantMessage: ChatMessage = {
+        messageId: assistantMessageId,
+        createdAt,
+        sessionTurnNumber: turnNumber,
+        role: "assistant",
+        content: fullText,
+        citations,
+        model: modelId,
+        retrievalDebug,
+        isStreaming: false,
+        toolActions: toolActions.length > 0 ? toolActions : undefined,
+        verdict: verdictData,
+        teachBackRubric: teachBackData,
+      };
+
       setMessages((prev) => {
         const updated = [...prev];
         const last = updated[updated.length - 1];
         if (!last || last.role !== "assistant") return prev;
-        updated[updated.length - 1] = {
-          role: "assistant",
-          content: fullText,
-          citations,
-          model: modelId,
-          retrievalDebug,
-          isStreaming: false,
-          toolActions: toolActions.length > 0 ? toolActions : undefined,
-          verdict: verdictData,
-          teachBackRubric: teachBackData,
-        };
+        updated[updated.length - 1] = finalAssistantMessage;
         return updated;
+      });
+
+      onAssistantTurnCommitted?.({
+        userMessage,
+        assistantMessage: finalAssistantMessage,
       });
 
       // Notify turn completion (with mastery update if present)
@@ -422,6 +474,7 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
     behaviorOverride,
     onBehaviorOverrideReset,
     onArtifactCreated,
+    onAssistantTurnCommitted,
     onTurnComplete,
     selectedMaterialIds,
     selectedVaultPaths,
@@ -431,6 +484,8 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
     webSearchOn,
     deepThinkOn,
     geminiVisionOn,
+    messages,
+    createMessageId,
   ]);
 
   return {

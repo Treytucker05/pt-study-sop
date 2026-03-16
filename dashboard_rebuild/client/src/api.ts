@@ -35,6 +35,12 @@ import type {
   TutorSessionPreflightRequest, TutorSessionPreflightResponse,
   TutorCreateSessionRequest,
   TutorSession, TutorSessionWithTurns, TutorSessionEndResult, TutorSessionSummary,
+  TutorWorkflowCreateRequest, TutorWorkflowDetailResponse, TutorWorkflowListResponse,
+  TutorPrimingAssistRequest, TutorPrimingAssistResponse, TutorPrimingBundle, TutorPrimingBundleRequest, TutorCapturedNote,
+  TutorCapturedNoteRequest, TutorFeedbackEvent, TutorFeedbackEventRequest,
+  TutorStageTimeLog, TutorStageTimeLogRequest, TutorMemoryCapsule,
+  TutorMemoryCapsuleRequest, TutorPolishBundle, TutorPolishBundleRequest,
+  TutorPublishResult, TutorPublishResultRequest, TutorWorkflowAnalyticsSummary,
   TutorHubResponse,
   TutorStudioOverviewResponse,
   TutorProjectShellResponse, TutorProjectShellState, TutorProjectShellStateRequest,
@@ -707,6 +713,144 @@ export const api = {
       return request<TutorProjectShellResponse>(`/tutor/project-shell?${qs.toString()}`);
     },
     getHub: () => request<TutorHubResponse>("/tutor/hub"),
+    listWorkflows: (params?: {
+      course_id?: number;
+      status?: string;
+      stage?: string;
+      limit?: number;
+    }) => {
+      const qs = new URLSearchParams();
+      if (params?.course_id) qs.set("course_id", String(params.course_id));
+      if (params?.status) qs.set("status", params.status);
+      if (params?.stage) qs.set("stage", params.stage);
+      if (params?.limit) qs.set("limit", String(params.limit));
+      const q = qs.toString();
+      return request<TutorWorkflowListResponse>(`/tutor/workflows${q ? `?${q}` : ""}`);
+    },
+    createWorkflow: (data: TutorWorkflowCreateRequest) =>
+      request<{ workflow: TutorWorkflowListResponse["items"][number] }>("/tutor/workflows", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    getWorkflowAnalyticsSummary: () =>
+      request<TutorWorkflowAnalyticsSummary>("/tutor/workflows/analytics/summary"),
+    getWorkflow: (workflowId: string) =>
+      request<TutorWorkflowDetailResponse>(`/tutor/workflows/${workflowId}`),
+    updateWorkflowStage: (
+      workflowId: string,
+      data: {
+        current_stage?: string;
+        status?: string;
+        active_tutor_session_id?: string | null;
+      },
+    ) =>
+      request<{ workflow: TutorWorkflowListResponse["items"][number] }>(
+        `/tutor/workflows/${workflowId}/stage`,
+        {
+          method: "PATCH",
+          body: JSON.stringify(data),
+        },
+      ),
+    savePrimingBundle: (workflowId: string, data: TutorPrimingBundleRequest) =>
+      request<{ priming_bundle: TutorPrimingBundle }>(
+        `/tutor/workflows/${workflowId}/priming-bundle`,
+        {
+          method: "PUT",
+          body: JSON.stringify(data),
+        },
+      ),
+    runPrimingAssist: (workflowId: string, data: TutorPrimingAssistRequest) =>
+      request<TutorPrimingAssistResponse>(`/tutor/workflows/${workflowId}/priming-assist`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    captureWorkflowNote: (workflowId: string, data: TutorCapturedNoteRequest) =>
+      request<{ note: TutorCapturedNote }>(`/tutor/workflows/${workflowId}/notes`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    saveWorkflowFeedback: (workflowId: string, data: TutorFeedbackEventRequest) =>
+      request<{ feedback: TutorFeedbackEvent }>(`/tutor/workflows/${workflowId}/feedback`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    logWorkflowStageTime: (workflowId: string, data: TutorStageTimeLogRequest) =>
+      request<{ stage_time_log: TutorStageTimeLog }>(
+        `/tutor/workflows/${workflowId}/stage-time`,
+        {
+          method: "POST",
+          body: JSON.stringify(data),
+        },
+      ),
+    createMemoryCapsule: (workflowId: string, data: TutorMemoryCapsuleRequest) =>
+      request<{ memory_capsule: TutorMemoryCapsule }>(
+        `/tutor/workflows/${workflowId}/memory-capsules`,
+        {
+          method: "POST",
+          body: JSON.stringify(data),
+        },
+      ),
+    savePolishBundle: (workflowId: string, data: TutorPolishBundleRequest) =>
+      request<{ polish_bundle: TutorPolishBundle }>(
+        `/tutor/workflows/${workflowId}/polish-bundle`,
+        {
+          method: "PUT",
+          body: JSON.stringify(data),
+        },
+      ),
+    runPolishAssist: (
+      workflowId: string,
+      data: {
+        action: "summarize" | "qa" | "rewrite_note" | "draft_cards";
+        input_text?: string;
+        question?: string;
+        max_cards?: number;
+      },
+    ) =>
+      request<{
+        result: {
+          text?: string | null;
+          cards?: Array<{
+            front: string;
+            back: string;
+            deck_name?: string;
+            tags?: string;
+            card_type?: string;
+          }>;
+          raw?: Record<string, unknown>;
+        };
+      }>(`/tutor/workflows/${workflowId}/polish-assist`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    createWorkflowCardDrafts: (
+      workflowId: string,
+      data: {
+        cards: Array<{
+          front: string;
+          back: string;
+          deck_name?: string;
+          tags?: string;
+          card_type?: string;
+          status?: string;
+        }>;
+      },
+    ) =>
+      request<{ drafts: CardDraft[]; errors?: Array<{ index: number; error: string }> }>(
+        `/tutor/workflows/${workflowId}/card-drafts`,
+        {
+          method: "POST",
+          body: JSON.stringify(data),
+        },
+      ),
+    createPublishResult: (workflowId: string, data: TutorPublishResultRequest) =>
+      request<{ publish_result: TutorPublishResult }>(
+        `/tutor/workflows/${workflowId}/publish-result`,
+        {
+          method: "POST",
+          body: JSON.stringify(data),
+        },
+      ),
     getStudioOverview: (courseId: number) =>
       request<TutorStudioOverviewResponse>(`/tutor/studio/overview?course_id=${courseId}`),
     saveProjectShellState: (data: TutorProjectShellStateRequest) =>

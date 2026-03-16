@@ -16,6 +16,10 @@ export interface ToolAction {
 }
 
 export interface ChatMessage {
+  messageId?: string;
+  turnId?: number | string;
+  createdAt?: string;
+  sessionTurnNumber?: number;
   role: "user" | "assistant";
   content: string;
   citations?: TutorCitation[];
@@ -46,6 +50,26 @@ export interface TutorChatProps {
     sourceKind?: string;
     sourcePath?: string;
     sourceLocator?: Record<string, unknown>;
+  }) => void;
+  onCaptureNote?: (payload: {
+    mode: "exact" | "editable";
+    message: ChatMessage;
+    index: number;
+  }) => void;
+  onFeedback?: (payload: {
+    sentiment: "liked" | "disliked";
+    message: ChatMessage;
+    index: number;
+  }) => void;
+  onCompact?: () => void;
+  timerState?: {
+    elapsedSeconds: number;
+    paused: boolean;
+  };
+  onToggleTimer?: () => void;
+  onAssistantTurnCommitted?: (payload: {
+    userMessage: string;
+    assistantMessage: ChatMessage;
   }) => void;
   onTurnComplete?: (masteryUpdate?: { skill_id: string; new_mastery: number; correct: boolean }) => void;
   initialTurns?: { question: string; answer: string | null }[];

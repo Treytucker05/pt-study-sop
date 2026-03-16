@@ -63,70 +63,41 @@ const resolveNoteType = (note: Note): NoteCategory => {
   return "notes";
 };
 
-const railShellClass = (tier: NavTier, headerExpanded: boolean) =>
+const railShellClass = (tier: NavTier) =>
   cn(
-    "relative overflow-hidden border backdrop-blur-xl shadow-[0_18px_36px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,86,118,0.12)]",
-    "before:pointer-events-none before:absolute before:inset-[1px] before:rounded-[inherit] before:border before:border-[rgba(255,190,206,0.08)] before:content-['']",
-    "after:pointer-events-none after:absolute after:inset-x-5 after:top-0 after:h-[2px] after:bg-gradient-to-r after:from-transparent after:via-[rgba(255,106,136,0.6)] after:to-transparent after:content-['']",
+    "relative overflow-hidden border-2 rounded-sm backdrop-blur-md",
     tier === "primary"
-      ? cn(
-          "rounded-[1.9rem] border-[rgba(255,118,146,0.3)] bg-[linear-gradient(180deg,rgba(18,12,14,0.92),rgba(6,6,8,0.96)_100%)]",
-          headerExpanded ? "px-3 py-3" : "px-2.5 py-2.5",
-        )
-      : cn(
-          "rounded-[1.45rem] border-[rgba(255,118,146,0.22)] bg-[linear-gradient(180deg,rgba(16,10,12,0.92),rgba(6,6,8,0.95)_100%)]",
-          headerExpanded ? "px-2.5 py-2" : "px-2 py-1.5",
-        ),
+      ? "border-red-600 bg-black/80 shadow-[0_0_15px_rgba(220,38,38,0.5)] p-2"
+      : "border-red-800 bg-black/80 shadow-[0_0_10px_rgba(153,27,27,0.5)] p-1.5",
   );
 
 const railCoreClass = (tier: NavTier) =>
   cn(
     "relative z-10 grid items-stretch",
-    tier === "primary" ? "grid-cols-3 gap-2.5" : "min-w-[34rem] grid-cols-5 gap-1.5 sm:min-w-0",
+    tier === "primary" ? "grid-cols-3 gap-2" : "min-w-[34rem] grid-cols-5 gap-1.5 sm:min-w-0",
   );
 
-const navLinkClass = (tier: NavTier, isActive: boolean, headerExpanded: boolean) =>
+const navLinkClass = (tier: NavTier, isActive: boolean) =>
   cn(
-    "group relative flex min-w-0 overflow-hidden border text-[#f7dbe2] transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-0 motion-reduce:transition-none",
-    "before:pointer-events-none before:absolute before:inset-[1px] before:rounded-[inherit] before:border before:border-[rgba(255,214,224,0.08)] before:content-['']",
-    "after:pointer-events-none after:absolute after:inset-x-3 after:bottom-[5px] after:h-[2px] after:rounded-full after:bg-gradient-to-r after:from-transparent after:via-[rgba(255,110,140,0.9)] after:to-transparent after:opacity-0 after:transition-opacity after:duration-200 after:content-['']",
+    "group relative flex items-center justify-center border-b-4 border-transparent font-arcade text-red-500 transition-all duration-100 uppercase overflow-hidden",
+    "hover:bg-red-950/50 hover:text-red-300 hover:border-red-500 hover:shadow-[inset_0_0_10px_rgba(220,38,38,0.4)]",
+    "active:scale-95",
     tier === "primary"
-      ? cn(
-          "items-center gap-3 rounded-[1.35rem] px-4 text-left",
-          headerExpanded ? "h-[4.15rem]" : "h-[3.55rem]",
-          "border-[rgba(255,132,160,0.28)] bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.01)_18%,rgba(8,8,10,0.92)_100%),linear-gradient(135deg,rgba(118,18,34,0.56),rgba(10,8,12,0.96)_60%,rgba(0,0,0,0.98)_100%)]",
-          "shadow-[0_10px_22px_rgba(0,0,0,0.34),inset_0_0_0_1px_rgba(255,62,94,0.12)]",
-        )
-      : cn(
-          "items-center justify-center rounded-[1rem] px-2 text-center",
-          headerExpanded ? "h-[2.95rem]" : "h-[2.55rem]",
-          "border-[rgba(255,132,160,0.18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(10,8,10,0.96)_100%)] shadow-[0_8px_18px_rgba(0,0,0,0.28)]",
-        ),
-    "hover:-translate-y-[1px] hover:border-[rgba(255,162,184,0.42)] hover:text-white hover:after:opacity-80",
-    "active:translate-y-[1px]",
-    isActive &&
-      (tier === "primary"
-        ? "border-[rgba(255,186,204,0.56)] text-white shadow-[0_14px_28px_rgba(0,0,0,0.45),0_0_18px_rgba(255,92,120,0.18),inset_0_0_0_1px_rgba(255,126,156,0.22)] after:opacity-100"
-        : "border-[rgba(255,170,192,0.36)] text-white shadow-[0_10px_20px_rgba(0,0,0,0.34),0_0_14px_rgba(255,82,110,0.12)] after:opacity-100"),
+      ? "gap-2 px-4 text-left items-center justify-start h-14 text-sm"
+      : "px-3 text-center h-10 text-xs",
+    isActive && "border-red-600 bg-red-900/30 text-white shadow-[inset_0_0_15px_rgba(220,38,38,0.6)]",
   );
 
-const navIconWrapClass = (isActive: boolean, headerExpanded: boolean) =>
+const navIconWrapClass = (isActive: boolean) =>
   cn(
-    "relative z-10 flex shrink-0 items-center justify-center rounded-[0.95rem] border border-[rgba(255,138,166,0.24)] bg-[radial-gradient(circle_at_30%_0%,rgba(255,255,255,0.18),transparent_42%),linear-gradient(180deg,rgba(255,108,136,0.18),rgba(10,6,8,0.95))] shadow-[inset_0_0_0_1px_rgba(255,214,224,0.06)]",
-    headerExpanded ? "h-9.5 w-9.5" : "h-8 w-8",
-    isActive && "border-[rgba(255,196,208,0.48)] shadow-[inset_0_0_0_1px_rgba(255,214,224,0.12),0_0_10px_rgba(255,94,122,0.16)]",
+    "relative z-10 flex shrink-0 items-center justify-center text-red-500 group-hover:text-red-300 transition-colors",
+    isActive && "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]",
+    "h-6 w-6"
   );
 
-const navLabelClass = (tier: NavTier, headerExpanded: boolean) =>
+const navLabelClass = (tier: NavTier) =>
   cn(
-    "relative z-10 font-arcade uppercase text-[#ffeef2] [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]",
-    tier === "primary"
-      ? headerExpanded
-        ? "text-[0.76rem] tracking-[0.16em]"
-        : "text-[0.68rem] tracking-[0.14em]"
-      : headerExpanded
-        ? "text-[0.62rem] tracking-[0.14em] sm:text-[0.68rem]"
-        : "text-[0.56rem] tracking-[0.12em] sm:text-[0.62rem]",
+    "relative z-10 tracking-[0.1em]",
   );
 
 const notesDockStyle = (top: number | null): CSSProperties => ({
@@ -136,13 +107,11 @@ const notesDockStyle = (top: number | null): CSSProperties => ({
 function ShellNavLink({
   item,
   isActive,
-  headerExpanded,
   tier,
   onNavigate,
 }: {
   item: NavItem;
   isActive: boolean;
-  headerExpanded: boolean;
   tier: NavTier;
   onNavigate: (event: MouseEvent<HTMLAnchorElement>, path: string) => void;
 }) {
@@ -151,7 +120,7 @@ function ShellNavLink({
     <a
       href={item.path}
       data-testid={`nav-${item.testId}`}
-      className={navLinkClass(tier, isActive, headerExpanded)}
+      className={navLinkClass(tier, isActive)}
       aria-current={isActive ? "page" : undefined}
       onClick={(event) => onNavigate(event, item.path)}
     >
@@ -165,18 +134,18 @@ function ShellNavLink({
         )}
       />
       {showIcon ? (
-        <span className={navIconWrapClass(isActive, headerExpanded)}>
+        <span className={navIconWrapClass(isActive)}>
           <item.icon
             className={cn(
               "shrink-0 text-[#fff3f6] drop-shadow-[0_0_6px_rgba(255,120,132,0.42)]",
-              headerExpanded ? "h-4.5 w-4.5" : "h-4 w-4",
+              "h-4.5 w-4.5"
             )}
           />
         </span>
       ) : null}
       <span
         className={cn(
-          navLabelClass(tier, headerExpanded),
+          navLabelClass(tier),
           tier === "primary" ? "text-left" : "text-center",
         )}
       >
@@ -662,74 +631,82 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
     >
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div
-          className="absolute inset-0 scale-[1.04] blur-[2px] opacity-30"
+          className="absolute inset-0 scale-[1.08] blur-[10px] opacity-[0.16]"
           style={{
             backgroundImage: `url(${brainBackground})`,
-            backgroundPosition: "center calc(56% + 56px)",
+            backgroundPosition: "center calc(60% + 76px)",
             backgroundRepeat: "no-repeat",
             backgroundSize: "cover",
           }}
           aria-hidden="true"
         />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(255,78,116,0.1),transparent_18%),radial-gradient(circle_at_50%_62%,rgba(255,64,105,0.08),transparent_28%),linear-gradient(180deg,rgba(0,0,0,0.7),rgba(0,0,0,0.42)_18%,rgba(0,0,0,0.58)_60%,rgba(0,0,0,0.88)_100%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,5,8,0.76),rgba(5,5,8,0.22)_24%,rgba(5,5,8,0.48)_72%,rgba(5,5,8,0.84)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,78,116,0.08),transparent_16%),radial-gradient(circle_at_50%_64%,rgba(255,64,105,0.05),transparent_24%),linear-gradient(180deg,rgba(0,0,0,0.82),rgba(0,0,0,0.56)_18%,rgba(0,0,0,0.64)_60%,rgba(0,0,0,0.92)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,5,8,0.86),rgba(5,5,8,0.4)_24%,rgba(5,5,8,0.58)_72%,rgba(5,5,8,0.9)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_12%,rgba(255,255,255,0.02),transparent_18%),linear-gradient(90deg,rgba(255,70,102,0.03),transparent_24%,transparent_76%,rgba(255,70,102,0.03))]" />
       </div>
       <div className="fixed inset-0 z-10 crt-overlay pointer-events-none" />
 
       {/* CRT Scanlines */}
       <div className="crt-scanlines" />
 
-      {/* Top Nav — adaptive header */}
+      {/* Top Nav — adaptive header with Retro-Futuristic Tactical Banner */}
       <header
         className={cn(
-          "relative z-20 sticky top-0 transition-[padding,box-shadow,background-color,opacity] duration-300 ease-out will-change-transform",
-          "bg-[linear-gradient(180deg,rgba(5,5,5,0.92),rgba(12,6,8,0.82)_100%)] backdrop-blur-xl shadow-[0_14px_32px_rgba(0,0,0,0.35)]",
-          "motion-reduce:transition-none",
+          "relative z-20 sticky top-0 transition-transform duration-300 ease-out will-change-transform border-b-4 border-red-700",
           headerExpanded
-            ? "opacity-100 shadow-[0_14px_32px_rgba(0,0,0,0.35)]"
-            : "opacity-100 shadow-[0_10px_22px_rgba(0,0,0,0.28)]",
+            ? "translate-y-0 shadow-[0_10px_30px_rgba(220,38,38,0.4)]"
+            : "-translate-y-full",
         )}
-        style={{ borderBottom: "1px solid rgba(255, 67, 102, 0.35)" }}
         data-header-state={headerExpanded ? "expanded" : "compact"}
       >
+        {/* Banner Image Background */}
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          <img
+            src="/nav-home.png"
+            alt="Nav Banner"
+            className="w-full h-full object-cover opacity-40 mix-blend-luminosity brightness-50 contrast-125"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-black/90" />
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(220,38,38,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.05)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
+        </div>
+
         <div
           className={cn(
-            "w-full px-2 sm:px-3 md:px-4 transition-all duration-300 ease-out motion-reduce:transition-none",
-            headerExpanded ? "py-3.5" : "py-2.5",
+            "relative z-10 w-full px-2 sm:px-3 md:px-4 py-3.5",
           )}
         >
           <div className="grid gap-3 lg:grid-cols-[minmax(15rem,22rem)_minmax(0,1fr)] lg:items-start lg:gap-5">
             <a
               href="/"
               onClick={(event) => handleNavActivate(event, "/")}
-              className="group flex min-w-0 items-center gap-3 rounded-[1.35rem] border border-[rgba(255,122,146,0.24)] bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.01)_20%,rgba(0,0,0,0.28)_100%),linear-gradient(135deg,rgba(18,12,14,0.96),rgba(8,8,10,0.96))] px-3 py-2 shadow-[0_16px_30px_rgba(0,0,0,0.28)] backdrop-blur-sm"
+              className="group flex min-w-0 items-center gap-3 border-2 border-red-800 bg-black/60 px-3 py-2 shadow-[0_0_15px_rgba(220,38,38,0.3)] backdrop-blur-sm hover:border-red-500 transition-colors"
             >
               <img
                 src={logoImg}
                 alt="Logo"
                 className={cn(
-                  "rounded-full border border-primary/30 object-cover transition-all duration-300 ease-out motion-reduce:transition-none",
-                  headerExpanded ? "h-14 w-14 sm:h-15 sm:w-15" : "h-10 w-10 sm:h-11 sm:w-11",
+                  "border-2 border-red-600 object-cover grayscale group-hover:grayscale-0",
+                  "h-14 w-14 sm:h-15 sm:w-15",
                 )}
               />
               <div className="min-w-0">
                 <span
                   className={cn(
-                    "block whitespace-nowrap font-arcade text-white transition-all duration-300 ease-out group-hover:text-primary phosphor-flicker motion-reduce:transition-none",
-                    headerExpanded ? "text-[0.72rem] sm:text-[0.8rem]" : "text-[0.62rem] sm:text-[0.68rem] text-white/80",
+                    "block whitespace-nowrap font-arcade text-red-500 group-hover:text-red-400 group-hover:drop-shadow-[0_0_8px_rgba(220,38,38,0.8)] motion-reduce:transition-none",
+                    "text-[0.72rem] sm:text-[0.8rem]",
                   )}
                 >
                   TREY'S STUDY SYSTEM
                 </span>
-                <span className="block font-terminal text-[0.68rem] text-primary/80 sm:text-sm">
-                  neural command deck
+                <span className="block font-terminal text-[0.68rem] text-red-700 sm:text-sm">
+                  NEURAL COMMAND DECK
                 </span>
               </div>
             </a>
 
             <div className="flex min-w-0 flex-col gap-2.5" data-testid="nav-desktop-groups">
               <nav
-                className={cn("mx-auto w-full max-w-[60rem]", railShellClass("primary", headerExpanded))}
+                className={cn("mx-auto w-full max-w-[60rem]", railShellClass("primary"))}
                 aria-label="Primary study navigation"
                 data-testid="nav-primary-rail"
               >
@@ -746,7 +723,6 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
                         key={item.path}
                         item={item}
                         isActive={isActive}
-                        headerExpanded={headerExpanded}
                         tier="primary"
                         onNavigate={handleNavActivate}
                       />
@@ -757,7 +733,7 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
 
               <div className="mx-auto w-full max-w-[52rem] overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <nav
-                  className={railShellClass("support", headerExpanded)}
+                  className={railShellClass("support")}
                   aria-label="Secondary study navigation"
                   data-testid="nav-secondary-rail"
                 >
@@ -774,7 +750,6 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
                           key={item.path}
                           item={item}
                           isActive={isActive}
-                          headerExpanded={headerExpanded}
                           tier="support"
                           onNavigate={handleNavActivate}
                         />

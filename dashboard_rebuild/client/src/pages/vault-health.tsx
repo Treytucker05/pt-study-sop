@@ -33,15 +33,15 @@ import { useToast } from "@/use-toast";
 const ISSUE_CONFIG: Record<string, { label: string; Icon: typeof AlertTriangle; color: string }> = {
   missing_frontmatter: { label: "Metadata", Icon: FileWarning, color: "text-yellow-300" },
   broken_link: { label: "Missing Link Target", Icon: Link2, color: "text-red-300" },
-  orphan: { label: "Unlinked Note", Icon: FolderOpen, color: "text-sky-300" },
+  orphan: { label: "Unlinked Note", Icon: FolderOpen, color: "text-info" },
   routing_drift: { label: "Routing Drift", Icon: AlertTriangle, color: "text-orange-300" },
   casing_mismatch: { label: "Casing Drift", Icon: AlertTriangle, color: "text-orange-300" },
-  duplicate: { label: "Duplicate Content", Icon: AlertTriangle, color: "text-fuchsia-300" },
+  duplicate: { label: "Duplicate Content", Icon: AlertTriangle, color: "text-warning" },
 };
 
 const ISSUE_CLASS_COPY: Record<string, { label: string; className: string }> = {
   real_breakage: { label: "Real breakage", className: "border-red-400/40 text-red-300" },
-  content_gap: { label: "Content gap", className: "border-cyan-400/40 text-cyan-300" },
+  content_gap: { label: "Content gap", className: "border-info/40 text-info" },
   routing_drift: { label: "Routing drift", className: "border-orange-400/40 text-orange-300" },
   "advisory/system": { label: "Advisory / system", className: "border-primary/30 text-primary/80" },
 };
@@ -204,9 +204,9 @@ function AiSuggestionPanel({
   }
 
   return (
-    <div className="border-2 border-violet-400/40 bg-black/40 p-4 font-terminal text-xs">
+    <div className="border-2 border-info/40 bg-black/40 p-4 font-terminal text-xs">
       <div className="flex items-center justify-between gap-3">
-        <div className="font-arcade text-violet-300">AI fix proposal</div>
+        <div className="font-arcade text-info">AI fix proposal</div>
         <button type="button" onClick={onCancel} className="text-muted-foreground hover:text-primary">
           Close
         </button>
@@ -253,7 +253,7 @@ function AiSuggestionPanel({
           type="button"
           onClick={handleApply}
           disabled={applying}
-          className="border border-violet-400/40 px-3 py-1 text-violet-300 hover:bg-violet-400/10 disabled:opacity-50"
+          className="border border-info/40 px-3 py-1 text-info hover:bg-info/10 disabled:opacity-50"
         >
           {applying ? <Loader2 className="mr-1 inline h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 inline h-3 w-3" />}
           Apply AI fix
@@ -343,7 +343,7 @@ function IssueLine({
               type="button"
               onClick={() => onEnrich(issue.path)}
               disabled={enriching}
-              className="border border-cyan-400/40 px-3 py-1 font-arcade text-[11px] text-cyan-300 hover:bg-cyan-400/10 disabled:opacity-50"
+              className="border border-info/40 px-3 py-1 font-arcade text-[11px] text-info hover:bg-info/10 disabled:opacity-50"
             >
               {enriching ? <Loader2 className="mr-1 inline h-3 w-3 animate-spin" /> : <Zap className="mr-1 inline h-3 w-3" />}
               Enrich
@@ -354,7 +354,7 @@ function IssueLine({
               type="button"
               onClick={() => onAiFix(issue)}
               disabled={aiFixing}
-              className="border border-violet-400/40 px-3 py-1 font-arcade text-[11px] text-violet-300 hover:bg-violet-400/10 disabled:opacity-50"
+              className="border border-info/40 px-3 py-1 font-arcade text-[11px] text-info hover:bg-info/10 disabled:opacity-50"
             >
               {aiFixing ? <Loader2 className="mr-1 inline h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 inline h-3 w-3" />}
               AI Fix
@@ -520,7 +520,7 @@ function VaultHealthOverviewPanels({
               content, and unresolved wikilinks.
             </div>
             <div className="border border-primary/10 bg-black/20 p-3">
-              <div className="font-arcade text-[11px] text-violet-300">Batch Enrich</div>
+              <div className="font-arcade text-[11px] text-info">Batch Enrich</div>
               Adds links only to low-link notes. It does not rewrite the whole vault
               or fix routing.
             </div>
@@ -530,7 +530,7 @@ function VaultHealthOverviewPanels({
               exact patch.
             </div>
             <div className="border border-primary/10 bg-black/20 p-3">
-              <div className="font-arcade text-[11px] text-violet-300">AI Fix</div>
+              <div className="font-arcade text-[11px] text-info">AI Fix</div>
               Produces a proposed repair for review. Nothing is applied until you
               accept it.
             </div>
@@ -636,8 +636,8 @@ function VaultHealthOverviewPanels({
                 link target is actually broken.
               </div>
             </div>
-            <div className="border border-cyan-400/15 bg-cyan-400/5 p-3">
-              <span className="font-arcade text-[11px] text-cyan-300">Content gap</span>
+            <div className="border border-info/15 bg-info/5 p-3">
+              <span className="font-arcade text-[11px] text-info">Content gap</span>
               <div className="mt-1">
                 The vault structure is valid, but a reusable concept or target note
                 is still missing.
@@ -705,8 +705,8 @@ function VaultHealthScanResults({
   return (
     <>
       {batchResult ? (
-        <div className="border-2 border-violet-400/30 bg-violet-400/5 p-4">
-          <div className="font-arcade text-xs text-violet-300">Last batch enrich run</div>
+        <div className="border-2 border-info/30 bg-info/5 p-4">
+          <div className="font-arcade text-xs text-info">Last batch enrich run</div>
           <div className="mt-2 font-terminal text-xs text-muted-foreground">
             {batchResult.total_processed} notes processed, {batchResult.total_links_added}{" "}
             links added.
@@ -715,9 +715,9 @@ function VaultHealthScanResults({
             {batchResult.results.map((result) => (
               <div
                 key={result.path}
-                className="border border-violet-400/15 px-3 py-2 font-terminal text-xs"
+                className="border border-info/15 px-3 py-2 font-terminal text-xs"
               >
-                <div className="text-violet-200">{result.path}</div>
+                <div className="text-info-foreground">{result.path}</div>
                 <div className="text-muted-foreground">{result.selection_reason}</div>
                 {result.error ? (
                   <div className="text-red-300">{result.error}</div>
@@ -1062,7 +1062,7 @@ export default function VaultHealth() {
         <button
           type="button"
           onClick={handleBatchEnrich}
-          className="min-h-[44px] rounded-[1rem] border border-violet-400/50 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.22)_100%)] px-4 py-2 text-left font-arcade text-xs text-violet-300 hover:-translate-y-0.5 hover:bg-violet-400/10"
+          className="min-h-[44px] rounded-[1rem] border border-info/50 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.22)_100%)] px-4 py-2 text-left font-arcade text-xs text-info hover:-translate-y-0.5 hover:bg-info/10"
         >
           <Zap className="mr-2 inline h-4 w-4" />
           BATCH ENRICH

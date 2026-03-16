@@ -110,6 +110,50 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - the notes surface matches the refreshed shell control system
     - `npm run test -- client/src/components/__tests__/layout.test.tsx` and `cd dashboard_rebuild && npm run build` pass
 
+### Sprint: Tutor Workflow Redesign (2026-03-16)
+- [x] TWR-100. Introduce the staged Tutor workflow foundation so `/tutor` can evolve from one mixed start/runtime surface into `Launch -> Priming -> Tutor -> Polish -> Final Sync` without duplicating existing Tutor, Studio, materials, card, or planner systems.
+  - Scope:
+    - `README.md`
+    - `docs/root/PROJECT_ARCHITECTURE.md`
+    - `docs/root/TUTOR_TODO.md`
+    - `conductor/tracks.md`
+    - `conductor/tracks/tutor-workflow-redesign_20260316/`
+    - `brain/db_setup.py`
+    - `brain/dashboard/api_tutor.py`
+    - `brain/dashboard/api_tutor_workflows.py`
+    - `dashboard_rebuild/client/src/api.ts`
+    - `dashboard_rebuild/client/src/api.types.ts`
+  - Done when:
+    - canon docs reflect Brain-owned launch plus Tutor-owned staged workflow execution
+    - a durable Conductor track exists for the redesign
+    - workflow, priming, memory capsule, Polish, publish, note-capture, timer, and feedback schema foundations exist on top of current Tutor primitives
+    - Tutor exposes workflow APIs without inventing a duplicate launch/session/task system
+    - frontend client types and methods exist for the new workflow surface
+  - Validation note: completed on 2026-03-16 with `cd dashboard_rebuild && npm run build`, `pytest brain/tests/`, `python -m pytest brain/tests/test_harness_eval.py::test_harness_eval_runs_live_golden_path_from_registry -q -s`, and `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5000`
+
+### Sprint: Tutor Workflow Depth Pass (2026-03-16)
+- [ ] TDP-000. Finish the original post-redesign Tutor depth work in one execution train by deepening Priming extraction, richer Polish/Final Sync artifact publishing, and Brain workflow analytics beyond the completed staged shell backbone.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `conductor/tracks.md`
+    - `conductor/tracks/tutor-workflow-depth-pass_20260316/`
+    - `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx`
+    - `dashboard_rebuild/client/src/components/TutorWorkflowPolishStudio.tsx`
+    - `dashboard_rebuild/client/src/components/TutorWorkflowFinalSync.tsx`
+    - `dashboard_rebuild/client/src/components/brain/BrainHome.tsx`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `brain/dashboard/api_tutor_workflows.py`
+    - related workflow types/tests/validation surfaces
+  - Done when:
+    - a durable Conductor track exists for the depth pass and the sprint item is active
+    - a baseline scorecard captures current source-link coverage, extraction automation coverage, publish artifact coverage, and analytics coverage
+    - Priming supports source-linked extraction objects and source-level rerun/assist depth on top of the current bundle model
+    - Polish / Final Sync can classify and carry at least one richer Studio artifact class in addition to notes/summaries/cards
+    - Brain exposes enriched workflow analytics and learner-archetype evidence on top of the richer workflow data
+    - `cd dashboard_rebuild && npm run build`, `pytest brain/tests/`, `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5000`, and an enriched manual workflow checklist all pass before closeout
+  - Execution note:
+    - run as one continuous execution pass after track bootstrap; do not reopen the closed Tutor Workflow Redesign track
+
 ### Sprint: UI Production System (2026-03-16)
 - [x] UPS-100. Define the durable UI production system so the app can move from theme experiments into one sellable shell/page hierarchy with code-driven interaction over decorative rail art.
   - Scope:
@@ -124,3 +168,21 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - the plan explicitly avoids blind collision with the active Tutor workflow dirty set
     - `python scripts/check_docs_sync.py` and `git diff --check` pass
   - Completed 2026-03-16: opened the UI Production System track, locked the tier hierarchy and asset contract, and recorded a phased rollout plus validation matrix for future implementation waves.
+- [x] UPS-110. Run the first theme-compliance implementation wave so the live shell and highest-drift route internals actually match the locked Neural Command Deck system.
+  - Scope:
+    - `dashboard_rebuild/client/src/components/layout.tsx`
+    - `dashboard_rebuild/client/src/index.css`
+    - `dashboard_rebuild/client/src/lib/theme.ts`
+    - `dashboard_rebuild/client/src/components/MessageList.tsx`
+    - `dashboard_rebuild/client/src/components/TutorArtifacts.tsx`
+    - `dashboard_rebuild/client/src/components/MaterialSelector.tsx`
+    - `dashboard_rebuild/client/src/pages/vault-health.tsx`
+    - `conductor/tracks/ui-production-system_20260316/plan.md`
+    - `docs/root/TUTOR_TODO.md`
+  - Done when:
+    - the shell background is quieter than the header chrome
+    - the brand/header copy matches the locked theme language
+    - the highest-drift blue/violet route internals are remapped to the locked crimson/info/warn/support palette
+    - the updated shell/components still build cleanly
+    - `cd dashboard_rebuild && npm run build` passes
+  - Completed 2026-03-16: quieted the shell/background intensity, aligned the brand copy to the Neural Command Deck language, remapped the highest-drift Tutor/Vault blue-violet surfaces to the locked crimson/info palette, passed `npm run test -- client/src/components/__tests__/layout.test.tsx`, and passed `cd dashboard_rebuild && npm run build`.

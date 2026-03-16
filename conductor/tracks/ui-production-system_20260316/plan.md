@@ -75,6 +75,10 @@ Ship a production-ready UI system that makes the app feel like one premium study
 - Keep the brand block, primary triad rail, secondary support rail, and notes dock as separate components.
 - Make the generated art decorative only and keep live labels, active state, focus state, and hit areas in code.
 - Keep the compact-on-scroll behavior minimal and low-jank.
+- First compliance wave:
+  - reduce shell/background intensity so page chrome stays dominant
+  - remap the highest-drift blue/violet internals in Tutor/Vault support surfaces back to the locked crimson/info/warn palette
+  - keep Brain/Tutor/Scholar and support wrappers on the shared shell without introducing route-specific mini-themes
 
 ### Phase 2: Normalize the flagship tier
 

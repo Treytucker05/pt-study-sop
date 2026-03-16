@@ -62,7 +62,7 @@ function VerdictBadge({ verdict }: { verdict: TutorVerdict }) {
           )}
           {verdict.next_hint && (
             <p>
-              <span className="text-blue-400">Hint:</span> {verdict.next_hint}
+              <span className="text-info">Hint:</span> {verdict.next_hint}
             </p>
           )}
           {verdict.next_question && (
@@ -148,7 +148,7 @@ function ProvenanceBadge({ msg }: { msg: ChatMessage }) {
     summary.tone === "source"
       ? "border-green-600 text-green-400 bg-green-950/30"
       : summary.tone === "notes"
-        ? "border-blue-600 text-blue-300 bg-blue-950/30"
+        ? "border-info/60 text-info bg-info/10"
         : summary.tone === "mixed"
           ? "border-yellow-600 text-yellow-300 bg-yellow-950/30"
           : "border-zinc-600 text-zinc-300 bg-zinc-950/30";
@@ -204,9 +204,20 @@ interface MessageListProps {
     sourcePath?: string;
     sourceLocator?: Record<string, unknown>;
   }) => void;
+  onCaptureNote?: (payload: {
+    mode: "exact" | "editable";
+    message: ChatMessage;
+    index: number;
+  }) => void;
+  onFeedback?: (payload: {
+    sentiment: "liked" | "disliked";
+    message: ChatMessage;
+    index: number;
+  }) => void;
 }
 
 function getChatMessageKey(msg: ChatMessage) {
+  if (msg.messageId) return msg.messageId;
   return [
     msg.role,
     msg.model ?? "",
@@ -220,7 +231,10 @@ function getChatMessageKey(msg: ChatMessage) {
 }
 
 export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
-  function MessageList({ messages, onArtifactCreated, onStudioCapture }, ref) {
+  function MessageList(
+    { messages, onArtifactCreated, onStudioCapture, onCaptureNote, onFeedback },
+    ref,
+  ) {
     const [openStudioMenuIndex, setOpenStudioMenuIndex] = useState<number | null>(null);
 
     return (
@@ -310,6 +324,62 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
 
               {msg.role === "assistant" && msg.content && !msg.isStreaming && (
                 <div className="flex flex-wrap items-center gap-1 mt-2 pt-2 border-t border-primary/20">
+                  {onCaptureNote ? (
+                    <>
+                      <button
+                        onClick={() =>
+                          onCaptureNote({
+                            mode: "exact",
+                            message: msg,
+                            index: i,
+                          })
+                        }
+                        className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
+                      >
+                        <FileText className={`${ICON_SM} text-primary/60`} /> Save Exact
+                      </button>
+                      <button
+                        onClick={() =>
+                          onCaptureNote({
+                            mode: "editable",
+                            message: msg,
+                            index: i,
+                          })
+                        }
+                        className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
+                      >
+                        <StickyNote className={`${ICON_SM} text-primary/60`} /> Save Editable
+                      </button>
+                    </>
+                  ) : null}
+                  {onFeedback ? (
+                    <>
+                      <button
+                        onClick={() =>
+                          onFeedback({
+                            sentiment: "liked",
+                            message: msg,
+                            index: i,
+                          })
+                        }
+                        className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-green-300 hover:bg-green-500/10 border-2 border-primary/20 hover:border-green-500/50 transition-colors shadow-none"
+                      >
+                        <CheckCircle2 className={`${ICON_SM} text-green-400`} /> Like
+                      </button>
+                      <button
+                        onClick={() =>
+                          onFeedback({
+                            sentiment: "disliked",
+                            message: msg,
+                            index: i,
+                          })
+                        }
+                        className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-red-300 hover:bg-red-500/10 border-2 border-primary/20 hover:border-red-500/50 transition-colors shadow-none"
+                      >
+                        <XCircle className={`${ICON_SM} text-red-400`} /> Dislike
+                      </button>
+                    </>
+                  ) : null}
                   <button
                     onClick={() =>
                       onArtifactCreated({

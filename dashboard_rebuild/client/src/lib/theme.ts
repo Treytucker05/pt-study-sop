@@ -1,9 +1,9 @@
 /**
- * Shared theme constants for the retro arcade UI.
+ * Shared theme constants for the Neural Command Deck UI.
  *
  * All pages MUST use these instead of ad-hoc Tailwind classes.
- * This keeps font sizes, spacing, and borders consistent
- * across Brain home, Calendar, Methods, Scholar, and Tutor.
+ * This keeps font sizes, spacing, borders, and shell hierarchy consistent
+ * across Brain home, Calendar, Methods, Scholar, Tutor, and support routes.
  *
  * Font families:
  *   font-arcade  — Press Start 2P (headers, labels, buttons)

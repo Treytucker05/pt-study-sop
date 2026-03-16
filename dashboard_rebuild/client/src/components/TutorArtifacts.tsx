@@ -93,10 +93,10 @@ const ARTIFACT_ICONS: Record<string, typeof FileText> = {
 };
 
 const ARTIFACT_COLORS: Record<string, string> = {
-  note: "text-blue-400",
+  note: "text-primary",
   card: "text-yellow-400",
   map: "text-green-400",
-  structured_notes: "text-cyan-400",
+  structured_notes: "text-info",
 };
 
 const VISIBLE_SESSIONS_LIMIT = 8;
@@ -279,7 +279,7 @@ function ArtifactStructuredMap({ content, title }: { content: string; title: str
     <div className="mt-1 relative">
       <Badge
         variant="outline"
-        className="absolute top-1 right-1 z-10 text-purple-400 border-purple-400/50 font-arcade text-[8px] px-1 h-4"
+        className="absolute top-1 right-1 z-10 border-primary/50 text-primary font-arcade text-[8px] px-1 h-4"
       >
         STRUCTURED MAP
       </Badge>
@@ -296,7 +296,7 @@ function ArtifactStructuredMap({ content, title }: { content: string; title: str
             href={figmaUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 font-terminal text-sm text-purple-400 hover:text-purple-300 border border-purple-400/40 px-2 py-0.5"
+            className="inline-flex items-center gap-1 font-terminal text-sm text-primary hover:text-white border border-primary/40 px-2 py-0.5"
           >
             <ExternalLink className={ICON_SM} />
             Open in Figma

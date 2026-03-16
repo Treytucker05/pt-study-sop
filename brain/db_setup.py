@@ -2275,6 +2275,243 @@ def init_database():
         """
     )
 
+    # ------------------------------------------------------------------
+    # Tutor workflow redesign: staged workflow persistence + telemetry
+    # ------------------------------------------------------------------
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS tutor_workflows (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            workflow_id TEXT NOT NULL UNIQUE,
+            course_id INTEGER,
+            course_event_id INTEGER,
+            assignment_title TEXT,
+            study_unit TEXT,
+            topic TEXT,
+            due_date TEXT,
+            current_stage TEXT NOT NULL DEFAULT 'launch',
+            status TEXT NOT NULL DEFAULT 'launch_ready',
+            active_tutor_session_id TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(course_id) REFERENCES courses(id),
+            FOREIGN KEY(course_event_id) REFERENCES course_events(id),
+            FOREIGN KEY(active_tutor_session_id) REFERENCES tutor_sessions(session_id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_tutor_workflows_course_stage
+        ON tutor_workflows(course_id, current_stage, status)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS tutor_priming_bundles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            workflow_id TEXT NOT NULL,
+            course_id INTEGER,
+            study_unit TEXT,
+            topic TEXT,
+            selected_material_ids_json TEXT NOT NULL DEFAULT '[]',
+            selected_paths_json TEXT NOT NULL DEFAULT '[]',
+            source_inventory_json TEXT NOT NULL DEFAULT '[]',
+            priming_method TEXT,
+            priming_chain_id TEXT,
+            learning_objectives_json TEXT NOT NULL DEFAULT '[]',
+            concepts_json TEXT NOT NULL DEFAULT '[]',
+            concept_graph_json TEXT,
+            terminology_json TEXT NOT NULL DEFAULT '[]',
+            root_explanations_json TEXT NOT NULL DEFAULT '[]',
+            summaries_json TEXT NOT NULL DEFAULT '[]',
+            identified_gaps_json TEXT NOT NULL DEFAULT '[]',
+            confidence_flags_json TEXT NOT NULL DEFAULT '{}',
+            readiness_status TEXT NOT NULL DEFAULT 'draft',
+            readiness_blockers_json TEXT NOT NULL DEFAULT '[]',
+            recommended_tutor_strategy_json TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(course_id) REFERENCES courses(id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_tutor_priming_bundles_workflow
+        ON tutor_priming_bundles(workflow_id)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS tutor_captured_notes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            workflow_id TEXT NOT NULL,
+            tutor_session_id TEXT,
+            stage TEXT NOT NULL DEFAULT 'tutor',
+            note_mode TEXT NOT NULL,
+            title TEXT,
+            content TEXT NOT NULL,
+            source_turn_id INTEGER,
+            status TEXT NOT NULL DEFAULT 'captured',
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(tutor_session_id) REFERENCES tutor_sessions(session_id),
+            FOREIGN KEY(source_turn_id) REFERENCES tutor_turns(id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_tutor_captured_notes_workflow
+        ON tutor_captured_notes(workflow_id, note_mode, stage, created_at DESC)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS tutor_feedback_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            workflow_id TEXT NOT NULL,
+            tutor_session_id TEXT,
+            stage TEXT NOT NULL DEFAULT 'tutor',
+            source_type TEXT NOT NULL,
+            source_id TEXT,
+            sentiment TEXT NOT NULL,
+            issue_type TEXT,
+            message TEXT,
+            handoff_to_polish INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(tutor_session_id) REFERENCES tutor_sessions(session_id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_tutor_feedback_events_workflow
+        ON tutor_feedback_events(workflow_id, stage, sentiment, created_at DESC)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS tutor_stage_time_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            workflow_id TEXT NOT NULL,
+            stage TEXT NOT NULL,
+            start_ts TEXT NOT NULL,
+            end_ts TEXT,
+            seconds_active INTEGER NOT NULL DEFAULT 0,
+            pause_count INTEGER NOT NULL DEFAULT 0,
+            notes_json TEXT NOT NULL DEFAULT '[]',
+            trigger_source TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_tutor_stage_time_logs_workflow
+        ON tutor_stage_time_logs(workflow_id, stage, created_at DESC)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS tutor_memory_capsules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            workflow_id TEXT NOT NULL,
+            tutor_session_id TEXT,
+            stage TEXT NOT NULL DEFAULT 'tutor',
+            capsule_version INTEGER NOT NULL,
+            summary_text TEXT,
+            current_objective TEXT,
+            study_unit TEXT,
+            concept_focus_json TEXT NOT NULL DEFAULT '[]',
+            weak_points_json TEXT NOT NULL DEFAULT '[]',
+            unresolved_questions_json TEXT NOT NULL DEFAULT '[]',
+            exact_notes_json TEXT NOT NULL DEFAULT '[]',
+            editable_notes_json TEXT NOT NULL DEFAULT '[]',
+            feedback_json TEXT NOT NULL DEFAULT '[]',
+            card_requests_json TEXT NOT NULL DEFAULT '[]',
+            artifact_refs_json TEXT NOT NULL DEFAULT '[]',
+            source_turn_ids_json TEXT NOT NULL DEFAULT '[]',
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(tutor_session_id) REFERENCES tutor_sessions(session_id),
+            UNIQUE(workflow_id, capsule_version)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_tutor_memory_capsules_workflow
+        ON tutor_memory_capsules(workflow_id, created_at DESC)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS tutor_polish_bundles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            workflow_id TEXT NOT NULL,
+            tutor_session_id TEXT,
+            priming_bundle_id INTEGER,
+            exact_notes_json TEXT NOT NULL DEFAULT '[]',
+            editable_notes_json TEXT NOT NULL DEFAULT '[]',
+            summaries_json TEXT NOT NULL DEFAULT '[]',
+            feedback_queue_json TEXT NOT NULL DEFAULT '[]',
+            card_requests_json TEXT NOT NULL DEFAULT '[]',
+            reprime_requests_json TEXT NOT NULL DEFAULT '[]',
+            studio_payload_json TEXT,
+            publish_targets_json TEXT,
+            status TEXT NOT NULL DEFAULT 'draft',
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(tutor_session_id) REFERENCES tutor_sessions(session_id),
+            FOREIGN KEY(priming_bundle_id) REFERENCES tutor_priming_bundles(id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_tutor_polish_bundles_workflow
+        ON tutor_polish_bundles(workflow_id)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS tutor_publish_results (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            workflow_id TEXT NOT NULL,
+            polish_bundle_id INTEGER,
+            obsidian_results_json TEXT NOT NULL DEFAULT '[]',
+            anki_results_json TEXT NOT NULL DEFAULT '[]',
+            brain_index_payload_json TEXT,
+            status TEXT NOT NULL DEFAULT 'pending',
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(polish_bundle_id) REFERENCES tutor_polish_bundles(id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_tutor_publish_results_workflow
+        ON tutor_publish_results(workflow_id, status, created_at DESC)
+        """
+    )
+
     # --- Migration to drop mode column if it still exists ---
     cursor.execute("PRAGMA table_info(tutor_sessions)")
     ts_cols = {col[1] for col in cursor.fetchall()}

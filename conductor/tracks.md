@@ -12,12 +12,20 @@ Update policy: after every significant change, update this file with status chan
 
 Active execution priority is tracked in `docs/root/TUTOR_TODO.md`.
 
-Active status: 1 active workstream.
+Active status: 2 active workstreams.
 
-Latest update: 2026-03-16, UI Production System opened as an active design/system track for the shared shell/page hierarchy rollout.
+Latest update: 2026-03-16, opened Tutor Workflow Depth Pass as the follow-on execution track for source-linked Priming depth, richer publishable Studio artifacts, and deeper Brain workflow analytics while UI Production System remains active.
+
+- [ ] **Track: Tutor Workflow Depth Pass** (active — created 2026-03-16; scope: source-linked Priming extraction depth, richer Polish/Final Sync artifact publishing, Brain workflow analytics and learner-evidence depth, and end-to-end enriched validation on top of the completed staged workflow backbone)
+  *Link: [./tracks/tutor-workflow-depth-pass_20260316/](./tracks/tutor-workflow-depth-pass_20260316/)*
 
 - [ ] **Track: UI Production System** (active — created 2026-03-16; scope: flagship/support/utility hierarchy, asset-backed shell contract, shared control system rollout, support-page normalization, and responsive production polish)
   *Link: [./tracks/ui-production-system_20260316/](./tracks/ui-production-system_20260316/)*
+
+---
+
+- [x] **Track: Tutor Workflow Redesign** (complete — created 2026-03-16; closed 2026-03-16; scope: canon alignment, workflow-native Tutor persistence, staged Launch/Priming/Tutor/Polish/Final Sync contracts, Brain telemetry/analytics expansion, client/API scaffolding, and final validation)
+  *Link: [./tracks/tutor-workflow-redesign_20260316/](./tracks/tutor-workflow-redesign_20260316/)*
 
 ---
 

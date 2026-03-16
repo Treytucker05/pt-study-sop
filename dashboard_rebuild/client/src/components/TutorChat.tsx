@@ -7,7 +7,7 @@ import {
   type RefObject,
 } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Send, SlidersHorizontal, Square } from "lucide-react";
+import { Archive, Clock3, Pause, Play, Send, SlidersHorizontal, Square } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -248,17 +248,26 @@ function TutorChatToolbar({
   accuracyProfile,
   isStreaming,
   behaviorOverride,
+  timerState,
   onToggleSources,
   onAccuracyProfileChange,
   onBehaviorSelect,
+  onToggleTimer,
+  onCompact,
 }: {
   isSourcesOpen: boolean;
   accuracyProfile: TutorAccuracyProfile;
   isStreaming: boolean;
   behaviorOverride: BehaviorOverride | null;
+  timerState?: {
+    elapsedSeconds: number;
+    paused: boolean;
+  };
   onToggleSources: () => void;
   onAccuracyProfileChange: (profile: TutorAccuracyProfile) => void;
   onBehaviorSelect: (mode: BehaviorOverride) => void;
+  onToggleTimer?: () => void;
+  onCompact?: () => void;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-4">
@@ -297,6 +306,42 @@ function TutorChatToolbar({
         disabled={isStreaming}
         onSelect={onBehaviorSelect}
       />
+      {timerState ? (
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <div className="inline-flex items-center gap-2 border-2 border-primary/20 px-3 py-1.5 font-terminal text-xs text-foreground">
+            <Clock3 className="h-3.5 w-3.5 text-primary/80" />
+            {Math.max(0, Math.floor(timerState.elapsedSeconds / 60))}m{" "}
+            {String(timerState.elapsedSeconds % 60).padStart(2, "0")}s
+          </div>
+          {onToggleTimer ? (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onToggleTimer}
+              className={BTN_TOOLBAR}
+            >
+              {timerState.paused ? (
+                <Play className={`${ICON_MD} mr-1.5`} />
+              ) : (
+                <Pause className={`${ICON_MD} mr-1.5`} />
+              )}
+              {timerState.paused ? "RESUME TIMER" : "PAUSE TIMER"}
+            </Button>
+          ) : null}
+          {onCompact ? (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onCompact}
+              className={BTN_TOOLBAR}
+              disabled={isStreaming}
+            >
+              <Archive className={`${ICON_MD} mr-1.5`} />
+              COMPACT
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -364,6 +409,12 @@ export function TutorChat({
   onMaterialsChanged,
   onArtifactCreated,
   onStudioCapture,
+  onCaptureNote,
+  onFeedback,
+  onCompact,
+  timerState,
+  onToggleTimer,
+  onAssistantTurnCommitted,
   onTurnComplete,
   initialTurns,
 }: TutorChatProps) {
@@ -406,6 +457,7 @@ export function TutorChat({
       [],
     ),
     onArtifactCreated,
+    onAssistantTurnCommitted,
     onTurnComplete,
     initialTurns,
     materialsOn: effectiveMaterialsOn,
@@ -574,6 +626,8 @@ export function TutorChat({
           messages={messages}
           onArtifactCreated={onArtifactCreated}
           onStudioCapture={onStudioCapture}
+          onCaptureNote={onCaptureNote}
+          onFeedback={onFeedback}
         />
 
         <div className="flex flex-col gap-3 p-4 lg:p-5 border-t-2 border-primary/20 bg-black/50">
@@ -589,11 +643,14 @@ export function TutorChat({
             accuracyProfile={accuracyProfile}
             isStreaming={isStreaming}
             behaviorOverride={chatState.behaviorOverride}
+            timerState={timerState}
             onToggleSources={() =>
               patchChatState((state) => ({ isSourcesOpen: !state.isSourcesOpen }))
             }
             onAccuracyProfileChange={onAccuracyProfileChange}
             onBehaviorSelect={handleBehaviorSelect}
+            onToggleTimer={onToggleTimer}
+            onCompact={onCompact}
           />
 
           <TutorSpeedTierRow controls={speedTiers} />

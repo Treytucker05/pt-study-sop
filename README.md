@@ -69,7 +69,7 @@ The system is not a generic chatbot, not a set of equal peer pages fighting for 
 | Surface | Owns | Must not own |
 |--------|------|--------------|
 | **Brain** | home/dashboard, learner profile, telemetry, mastery framing, support-system launch points | public study-workspace sprawl, direct pedagogy control |
-| **Tutor** | launch, live study workspace shell, notes/canvas/graph/table, artifacts, resume/restore, structured teaching flow | generic dashboard behavior, unbounded off-protocol teaching |
+| **Tutor** | workflow shell after Brain handoff, staged study execution, live workspace shell, notes/canvas/graph/table, artifacts, resume/restore, structured teaching flow | generic dashboard behavior, unbounded off-protocol teaching |
 | **Scholar** | investigations, focused learner questions when blocked, findings, bounded strategy proposals, system research | live course teaching, direct Tutor control, replacing Brain home |
 | **Library** | what Tutor can teach through material scope | how Tutor teaches |
 | **SOP library** | how Tutor teaches through stages, methods, chains, and rules | course-content truth |
@@ -77,7 +77,7 @@ The system is not a generic chatbot, not a set of equal peer pages fighting for 
 | Route | Meaning |
 |------|---------|
 | `/` and `/brain` | Brain home |
-| `/tutor` | Tutor project/session shell (4 modes: Studio, Tutor, Schedule, Publish) |
+| `/tutor` | Tutor workflow shell after Brain handoff. Migration target: Launch, Priming, Tutor, Polish, Final Sync while preserving the current Studio/Tutor/Schedule/Publish workspace surfaces during rollout. |
 | `/tutor?course_id=&session_id=&mode=&board_scope=` | Deep-link into specific project/session/mode state |
 | `/scholar` | Scholar investigation console |
 | `/library` | Library support system |
@@ -97,10 +97,19 @@ Tutor is **not a setup wizard**. It is a **Brain-launched, course-backed study w
 | Principle | Detail |
 |-----------|--------|
 | **Brain owns launch context** | Brain decides "what am I working on and why am I entering Tutor" — course, project context, entry point |
-| **Tutor owns the workspace** | Tutor handles "now I am studying inside this workspace" — session execution, artifacts, resume/restore |
-| **No wizard funnel** | Tutor should not force the user through a large multi-step launch wizard every time. The old TutorWizard is demoted to a thin start panel. |
+| **Tutor owns the staged workflow shell** | Tutor handles "now I am studying inside this workspace" — Launch, Priming, Tutor, Polish, Final Sync, plus session execution, artifacts, and resume/restore |
+| **No wizard funnel** | Tutor should not force the user through a large multi-step launch wizard every time. The old TutorWizard is demoted to a thin start panel, and setup work moves into explicit downstream stages instead of one mixed launch surface. |
 | **Project == Course** | In v1, every project is a thin wrapper around an existing `course_id`. No freeform projects. |
 | **Bidirectional flow** | Studio preloads and organizes material → transfers to Tutor for study. Tutor sends notes and artifacts back → Studio captures and organizes them. They feed each other. |
+
+**Workflow migration target:**
+- `Launch`: routing, resume, recents, due-date and study-wheel context
+- `Priming`: course selection, source ingestion, source-linked extraction, readiness gating
+- `Tutor`: live teaching against a primed bundle plus session-time capture and memory compaction
+- `Polish`: mandatory review, Studio organization, summarization, QA, and publish staging
+- `Final Sync`: publish approved notes to Obsidian, cards to Anki, and Brain telemetry/index saves
+
+Current shell modes remain during rollout. The staged workflow is the target execution model layered onto the existing Tutor shell rather than a second competing launch system.
 
 **System boundary:**
 - **Brain owns:** broad launch orchestration, course/project selection, pre-launch context

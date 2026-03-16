@@ -234,7 +234,7 @@ function MaterialSelectionToolbar({
               type="button"
               onClick={onProcessVideos}
               disabled={processingVideos}
-              className={`flex items-center gap-1 px-1.5 py-0.5 font-terminal text-xs text-blue-300 hover:text-blue-200 hover:bg-blue-500/10 border border-blue-500/30 transition-colors ${
+              className={`flex items-center gap-1 px-1.5 py-0.5 font-terminal text-xs text-info hover:text-info-foreground hover:bg-info/10 border border-info/40 transition-colors ${
                 processingVideos ? "opacity-50 cursor-wait" : ""
               }`}
             >
@@ -251,7 +251,7 @@ function MaterialSelectionToolbar({
               type="button"
               onClick={onEnrichVideos}
               disabled={enrichingVideos}
-              className={`flex items-center gap-1 px-1.5 py-0.5 font-terminal text-xs text-purple-300 hover:text-purple-200 hover:bg-purple-500/10 border border-purple-500/30 transition-colors ${
+              className={`flex items-center gap-1 px-1.5 py-0.5 font-terminal text-xs text-primary hover:text-white hover:bg-primary/10 border border-primary/40 transition-colors ${
                 enrichingVideos ? "opacity-50 cursor-wait" : ""
               }`}
             >
@@ -406,7 +406,7 @@ function MaterialRow({
               ? "border-green-500/60 text-green-400"
               : videoJob.status === "failed"
                 ? "border-red-500/60 text-red-400"
-                : "border-blue-500/60 text-blue-300"
+                : "border-primary/60 text-primary"
           }`}
         >
           {videoJob.status.toUpperCase()}

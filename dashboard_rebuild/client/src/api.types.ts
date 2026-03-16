@@ -1430,6 +1430,363 @@ export interface TutorHubResponse {
   study_wheel: TutorHubStudyWheelSnapshot;
 }
 
+export type TutorWorkflowStage = "launch" | "priming" | "tutor" | "polish" | "final_sync";
+export type TutorWorkflowStatus =
+  | "launch_ready"
+  | "priming_in_progress"
+  | "priming_complete"
+  | "tutor_in_progress"
+  | "tutor_complete"
+  | "polish_in_progress"
+  | "polish_complete"
+  | "stored"
+  | "abandoned"
+  | "error";
+export type TutorCapturedNoteMode = "exact" | "editable";
+export type TutorFeedbackSentiment = "liked" | "disliked";
+
+export interface TutorWorkflowSummary {
+  workflow_id: string;
+  course_id: number | null;
+  course_name: string | null;
+  course_code: string | null;
+  course_event_id: number | null;
+  assignment_title: string | null;
+  study_unit: string | null;
+  topic: string | null;
+  due_date: string | null;
+  current_stage: TutorWorkflowStage;
+  status: TutorWorkflowStatus;
+  active_tutor_session_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TutorWorkflowListResponse {
+  items: TutorWorkflowSummary[];
+  count: number;
+}
+
+export interface TutorWorkflowCreateRequest {
+  course_id?: number | null;
+  course_event_id?: number | null;
+  assignment_title?: string | null;
+  study_unit?: string | null;
+  topic?: string | null;
+  due_date?: string | null;
+  current_stage?: TutorWorkflowStage;
+  status?: TutorWorkflowStatus;
+  active_tutor_session_id?: string | null;
+}
+
+export interface TutorPrimingBundle {
+  id: number;
+  workflow_id: string;
+  course_id: number | null;
+  study_unit: string | null;
+  topic: string | null;
+  selected_material_ids: number[];
+  selected_paths: string[];
+  source_inventory: TutorPrimingSourceInventoryItem[];
+  priming_method: string | null;
+  priming_chain_id: string | null;
+  learning_objectives: Record<string, unknown>[];
+  concepts: Record<string, unknown>[];
+  concept_graph: Record<string, unknown>;
+  terminology: Record<string, unknown>[];
+  root_explanations: Record<string, unknown>[];
+  summaries: Record<string, unknown>[];
+  identified_gaps: Record<string, unknown>[];
+  confidence_flags: Record<string, unknown>;
+  readiness_status: string;
+  readiness_blockers: Record<string, unknown>[];
+  recommended_tutor_strategy: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TutorPrimingSourceOutputObjective {
+  title: string;
+  lo_code?: string | null;
+}
+
+export interface TutorPrimingSourceOutput {
+  material_id: number;
+  title: string;
+  source_path?: string | null;
+  summary?: string | null;
+  concepts: string[];
+  terminology: string[];
+  root_explanation?: string | null;
+  gaps: string[];
+  learning_objectives: TutorPrimingSourceOutputObjective[];
+  extraction_lossy?: boolean;
+  char_count?: number;
+  updated_at?: string | null;
+}
+
+export interface TutorPrimingSourceInventoryItem {
+  id: number;
+  title: string;
+  source_path?: string | null;
+  folder_path?: string | null;
+  course_id?: number | null;
+  content_type?: string | null;
+  priming_output?: TutorPrimingSourceOutput | null;
+}
+
+export interface TutorPrimingBundleRequest {
+  course_id?: number | null;
+  study_unit?: string | null;
+  topic?: string | null;
+  selected_material_ids?: number[];
+  selected_paths?: string[];
+  source_inventory?: TutorPrimingSourceInventoryItem[];
+  priming_method?: string | null;
+  priming_chain_id?: string | null;
+  learning_objectives?: Record<string, unknown>[];
+  concepts?: Record<string, unknown>[];
+  concept_graph?: Record<string, unknown>;
+  terminology?: Record<string, unknown>[];
+  root_explanations?: Record<string, unknown>[];
+  summaries?: Record<string, unknown>[];
+  identified_gaps?: Record<string, unknown>[];
+  confidence_flags?: Record<string, unknown>;
+  readiness_status?: string;
+  readiness_blockers?: Record<string, unknown>[];
+  recommended_tutor_strategy?: Record<string, unknown>;
+}
+
+export interface TutorPrimingAssistRequest {
+  material_ids: number[];
+  study_unit?: string | null;
+  topic?: string | null;
+  priming_method?: string | null;
+  priming_chain_id?: string | null;
+  source_inventory?: TutorPrimingSourceInventoryItem[];
+}
+
+export interface TutorPrimingAssistAggregate {
+  summaries: Array<{ material_id: number; title: string; summary: string }>;
+  concepts: Array<{ material_id: number; title: string; concept: string }>;
+  terminology: Array<{ material_id: number; title: string; term: string }>;
+  root_explanations: Array<{ material_id: number; title: string; text: string }>;
+  identified_gaps: Array<{ material_id: number; title: string; gap: string }>;
+  learning_objectives: Array<{ material_id: number; title: string; lo_code?: string | null }>;
+}
+
+export interface TutorPrimingAssistResponse {
+  source_inventory: TutorPrimingSourceInventoryItem[];
+  aggregate: TutorPrimingAssistAggregate;
+}
+
+export interface TutorCapturedNote {
+  id: number;
+  workflow_id: string;
+  tutor_session_id: string | null;
+  stage: TutorWorkflowStage;
+  note_mode: TutorCapturedNoteMode;
+  title: string | null;
+  content: string;
+  source_turn_id: number | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TutorCapturedNoteRequest {
+  tutor_session_id?: string | null;
+  stage?: TutorWorkflowStage;
+  note_mode: TutorCapturedNoteMode;
+  title?: string | null;
+  content: string;
+  source_turn_id?: number | null;
+  status?: string;
+}
+
+export interface TutorFeedbackEvent {
+  id: number;
+  workflow_id: string;
+  tutor_session_id: string | null;
+  stage: TutorWorkflowStage;
+  source_type: string;
+  source_id: string | null;
+  sentiment: TutorFeedbackSentiment;
+  issue_type: string | null;
+  message: string | null;
+  handoff_to_polish: boolean;
+  created_at: string;
+}
+
+export interface TutorFeedbackEventRequest {
+  tutor_session_id?: string | null;
+  stage?: TutorWorkflowStage;
+  source_type?: string;
+  source_id?: string | null;
+  sentiment: TutorFeedbackSentiment;
+  issue_type?: string | null;
+  message?: string | null;
+  handoff_to_polish?: boolean;
+}
+
+export interface TutorStageTimeLog {
+  id: number;
+  workflow_id: string;
+  stage: TutorWorkflowStage;
+  start_ts: string;
+  end_ts: string | null;
+  seconds_active: number;
+  pause_count: number;
+  notes: Record<string, unknown>[];
+  trigger_source: string | null;
+  created_at: string;
+}
+
+export interface TutorStageTimeLogRequest {
+  stage?: TutorWorkflowStage;
+  start_ts?: string;
+  end_ts?: string | null;
+  seconds_active?: number;
+  pause_count?: number;
+  notes?: Record<string, unknown>[];
+  trigger_source?: string | null;
+}
+
+export interface TutorMemoryCapsule {
+  id: number;
+  workflow_id: string;
+  tutor_session_id: string | null;
+  stage: TutorWorkflowStage;
+  capsule_version: number;
+  summary_text: string | null;
+  current_objective: string | null;
+  study_unit: string | null;
+  concept_focus: Record<string, unknown>[];
+  weak_points: Record<string, unknown>[];
+  unresolved_questions: Record<string, unknown>[];
+  exact_notes: Record<string, unknown>[];
+  editable_notes: Record<string, unknown>[];
+  feedback: Record<string, unknown>[];
+  card_requests: Record<string, unknown>[];
+  artifact_refs: Record<string, unknown>[];
+  source_turn_ids: number[];
+  created_at: string;
+}
+
+export interface TutorMemoryCapsuleRequest {
+  tutor_session_id?: string | null;
+  stage?: TutorWorkflowStage;
+  summary_text?: string | null;
+  current_objective?: string | null;
+  study_unit?: string | null;
+  concept_focus?: Record<string, unknown>[];
+  weak_points?: Record<string, unknown>[];
+  unresolved_questions?: Record<string, unknown>[];
+  exact_notes?: Record<string, unknown>[];
+  editable_notes?: Record<string, unknown>[];
+  feedback?: Record<string, unknown>[];
+  card_requests?: Record<string, unknown>[];
+  artifact_refs?: Record<string, unknown>[];
+  source_turn_ids?: number[];
+}
+
+export interface TutorPolishBundle {
+  id: number;
+  workflow_id: string;
+  tutor_session_id: string | null;
+  priming_bundle_id: number | null;
+  exact_notes: Record<string, unknown>[];
+  editable_notes: Record<string, unknown>[];
+  summaries: Record<string, unknown>[];
+  feedback_queue: Record<string, unknown>[];
+  card_requests: Record<string, unknown>[];
+  reprime_requests: Record<string, unknown>[];
+  studio_payload: Record<string, unknown>;
+  publish_targets: Record<string, unknown>;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TutorPolishBundleRequest {
+  tutor_session_id?: string | null;
+  priming_bundle_id?: number | null;
+  exact_notes?: Record<string, unknown>[];
+  editable_notes?: Record<string, unknown>[];
+  summaries?: Record<string, unknown>[];
+  feedback_queue?: Record<string, unknown>[];
+  card_requests?: Record<string, unknown>[];
+  reprime_requests?: Record<string, unknown>[];
+  studio_payload?: Record<string, unknown>;
+  publish_targets?: Record<string, unknown>;
+  status?: string;
+}
+
+export interface TutorPublishResult {
+  id: number;
+  workflow_id: string;
+  polish_bundle_id: number | null;
+  obsidian_results: Record<string, unknown>[];
+  anki_results: Record<string, unknown>[];
+  brain_index_payload: Record<string, unknown>;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TutorPublishResultRequest {
+  polish_bundle_id?: number | null;
+  obsidian_results?: Record<string, unknown>[];
+  anki_results?: Record<string, unknown>[];
+  brain_index_payload?: Record<string, unknown>;
+  status?: string;
+}
+
+export interface TutorWorkflowAnalyticsSummary {
+  totals: {
+    workflows: number;
+    stored: number;
+    active: number;
+    exact_notes: number;
+    editable_notes: number;
+    feedback_liked: number;
+    feedback_disliked: number;
+    memory_capsules: number;
+    publish_successes: number;
+    publish_failures: number;
+  };
+  stage_seconds: Record<string, number>;
+  top_courses: Array<{
+    course_id: number | null;
+    course_name: string;
+    workflow_count: number;
+    stored_count: number;
+    total_stage_seconds: number;
+  }>;
+  methods: {
+    priming_methods: Array<{ label: string; count: number }>;
+    priming_chains: Array<{ label: string; count: number }>;
+  };
+  learner_snapshot: {
+    label: string | null;
+    confidence: string | null;
+    evidence: string[];
+    source_workflow_id: string | null;
+    updated_at: string | null;
+  };
+}
+
+export interface TutorWorkflowDetailResponse {
+  workflow: TutorWorkflowSummary;
+  priming_bundle: TutorPrimingBundle | null;
+  captured_notes: TutorCapturedNote[];
+  feedback_events: TutorFeedbackEvent[];
+  stage_time_logs: TutorStageTimeLog[];
+  memory_capsules: TutorMemoryCapsule[];
+  polish_bundle: TutorPolishBundle | null;
+  publish_results: TutorPublishResult[];
+}
+
 export interface TutorStudioOverviewCardDraft {
   id: number;
   sessionId: string | null;

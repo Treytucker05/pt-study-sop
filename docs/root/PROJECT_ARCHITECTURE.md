@@ -1,7 +1,7 @@
 # PT Study System — Comprehensive Project Architecture
 
 **Version:** 4.3
-**Last Updated:** 2026-03-14
+**Last Updated:** 2026-03-16
 **Scope:** Entire repository (SOP, Brain, Scholar, Scripts)
 **Purpose:** Reference-only technical documentation for system architecture, dependencies, and integration. Top-level product/page ownership authority lives in `README.md`.
 
@@ -16,9 +16,9 @@
 The **PT Study System** is a personal AI study operating system for one DPT student. It is organized around three core systems, with Tutor as the main live value surface, Brain as the home and learner-model engine, and Scholar as the investigation layer. Legacy dashboard inventories remain historical reference only.
 
 Core product systems:
-1.  **Brain System (`brain/`)**: The home surface and learner-model engine; operational system for telemetry, evidence, mastery, and profile claims.
+1.  **Brain System (`brain/`)**: The home surface and learner-model engine; operational system for telemetry, evidence, mastery, learner archetype snapshots, and profile claims.
 2.  **Scholar System (`scholar/`)**: The system-facing research and investigation layer that interprets Brain evidence, asks focused questions, and proposes bounded improvements.
-3.  **Tutor System (`brain/dashboard/api_tutor.py` + `dashboard_rebuild/`)**: The bread-and-butter live protocol-led teaching engine and active workspace.
+3.  **Tutor System (`brain/dashboard/api_tutor.py` + `dashboard_rebuild/`)**: The bread-and-butter staged study workflow shell, live protocol-led teaching engine, and active workspace.
 
 Supporting systems:
 1.  **SOP System (`sop/`)**: The rigorous learning methodology (CP-MSS v1.0) consumed by the Tutor runtime.
@@ -32,10 +32,16 @@ The Study Buddy contract is:
 - SOP determines how Tutor teaches.
 - Brain is the home surface and captures telemetry, builds learner evidence, and maintains visible learner-model outputs.
 - Scholar interprets Brain outputs, can ask focused questions, and proposes approved changes through cited research and bounded findings.
-- Tutor is the only live course-content teaching and live workspace engine.
+- Tutor is the only live course-content teaching and live workflow engine after Brain handoff.
 - Brain does not directly steer Tutor; any live adaptation must pass through Scholar in a bounded envelope.
 - Obsidian is the primary notes home.
 - Anki output is chain-conditional.
+
+Tutor workflow migration target:
+- `Launch -> Priming -> Tutor -> Polish -> Final Sync`
+- Brain remains the home route and broad launch orchestrator.
+- Tutor owns stage execution after Brain handoff.
+- Brain stores telemetry, learner evidence, workflow analytics, compaction history, method/chain performance, and publish/index metadata rather than acting as the primary note/card store.
 
 ---
 

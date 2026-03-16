@@ -10,6 +10,7 @@
 
 - [Specification](./spec.md)
 - [Implementation Plan](./plan.md)
+- [Theme Lock](./theme-lock.md)
 - [Findings](./findings.md)
 - [Validation Matrix](./validation-matrix.md)
 - [Review Notes](./review.md)
