@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import {
   BookOpen,
   Download,
@@ -53,14 +53,47 @@ const TEMPLATES: { name: string; mermaid: string }[] = [
   },
 ];
 
+type UnifiedBrainCanvasState = {
+  mode: GraphCanvasMode;
+  command: GraphCanvasCommand | null;
+  statusByMode: Record<GraphCanvasMode, GraphCanvasStatus>;
+  showImport: boolean;
+  importText: string;
+  templateOpen: boolean;
+  studyBusy: boolean;
+};
+
+type UnifiedBrainCanvasPatch =
+  | Partial<UnifiedBrainCanvasState>
+  | ((state: UnifiedBrainCanvasState) => Partial<UnifiedBrainCanvasState>);
+
+function createUnifiedBrainCanvasState(): UnifiedBrainCanvasState {
+  return {
+    mode: "mindmap",
+    command: null,
+    statusByMode: EMPTY_BY_MODE,
+    showImport: false,
+    importText: "",
+    templateOpen: false,
+    studyBusy: false,
+  };
+}
+
+function unifiedBrainCanvasReducer(
+  state: UnifiedBrainCanvasState,
+  patch: UnifiedBrainCanvasPatch,
+): UnifiedBrainCanvasState {
+  const nextPatch = typeof patch === "function" ? patch(state) : patch;
+  return { ...state, ...nextPatch };
+}
+
 export function UnifiedBrainCanvas() {
-  const [mode, setMode] = useState<GraphCanvasMode>("mindmap");
-  const [command, setCommand] = useState<GraphCanvasCommand | null>(null);
-  const [statusByMode, setStatusByMode] = useState<Record<GraphCanvasMode, GraphCanvasStatus>>(EMPTY_BY_MODE);
-  const [showImport, setShowImport] = useState(false);
-  const [importText, setImportText] = useState("");
-  const [templateOpen, setTemplateOpen] = useState(false);
-  const [studyBusy, setStudyBusy] = useState(false);
+  const [canvasState, patchCanvasState] = useReducer(
+    unifiedBrainCanvasReducer,
+    undefined,
+    createUnifiedBrainCanvasState,
+  );
+  const { mode, command, statusByMode, showImport, importText, templateOpen, studyBusy } = canvasState;
   const seqRef = useRef(0);
   const { toast } = useToast();
 
@@ -68,11 +101,13 @@ export function UnifiedBrainCanvas() {
     const pending = localStorage.getItem("tutor-mermaid-import");
     if (pending) {
       localStorage.removeItem("tutor-mermaid-import");
-      setImportText(pending);
-      setShowImport(true);
-      if (mode === "vault") setMode("structured");
+      patchCanvasState((prev) => ({
+        importText: pending,
+        showImport: true,
+        mode: prev.mode === "vault" ? "structured" : prev.mode,
+      }));
     }
-  }, []);
+  }, [patchCanvasState]);
 
   const currentStatus = statusByMode[mode] || EMPTY_BY_MODE[mode];
 
@@ -83,17 +118,21 @@ export function UnifiedBrainCanvas() {
   ) => {
     const target = targetOverride || mode;
     seqRef.current += 1;
-    setCommand({
-      id: seqRef.current,
-      target,
-      type,
-      payload,
+    patchCanvasState({
+      command: {
+        id: seqRef.current,
+        target,
+        type,
+        payload,
+      },
     });
-  }, [mode]);
+  }, [mode, patchCanvasState]);
 
   const handleStatusChange = useCallback((status: GraphCanvasStatus) => {
-    setStatusByMode((prev) => ({ ...prev, [status.mode]: status }));
-  }, []);
+    patchCanvasState((prev) => ({
+      statusByMode: { ...prev.statusByMode, [status.mode]: status },
+    }));
+  }, [patchCanvasState]);
 
   const applyImport = useCallback(() => {
     const code = importText.trim();
@@ -103,9 +142,8 @@ export function UnifiedBrainCanvas() {
       return;
     }
     issueCommand("import_mermaid", code, mode);
-    setShowImport(false);
-    setImportText("");
-  }, [importText, mode, issueCommand, toast]);
+    patchCanvasState({ showImport: false, importText: "" });
+  }, [importText, issueCommand, mode, patchCanvasState, toast]);
 
   const saveStudyAction = useCallback(async (action: string) => {
     const labels = currentStatus.selectedLabels.length > 0
@@ -118,15 +156,15 @@ export function UnifiedBrainCanvas() {
       "",
     ];
     try {
-      setStudyBusy(true);
+      patchCanvasState({ studyBusy: true });
       await api.obsidian.append("Study Sessions/Brain Canvas Actions.md", `${lines.join("\n")}\n`);
       toast({ title: "Study action saved", description: action });
     } catch (err) {
       toast({ title: "Action failed", description: String(err), variant: "destructive" });
     } finally {
-      setStudyBusy(false);
+      patchCanvasState({ studyBusy: false });
     }
-  }, [currentStatus.selectedLabels, mode, toast]);
+  }, [currentStatus.selectedLabels, mode, patchCanvasState, toast]);
 
   const canUseGraphCommands = mode !== "vault";
   const canUseMermaid = currentStatus.supportsMermaid && mode !== "vault";
@@ -161,7 +199,7 @@ export function UnifiedBrainCanvas() {
             key={item.id}
             role="tab"
             aria-selected={mode === item.id}
-            onClick={() => setMode(item.id)}
+            onClick={() => patchCanvasState({ mode: item.id })}
             className={cn("tab-sub-item", mode === item.id && "active")}
           >
             {item.label}
@@ -180,7 +218,7 @@ export function UnifiedBrainCanvas() {
         <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-xs" onClick={() => issueCommand("save")} disabled={!canUseGraphCommands} title="Save">
           <Save className="w-3 h-3 mr-1" />Save
         </Button>
-        <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-xs" onClick={() => setShowImport((v) => !v)} disabled={!canUseMermaid} title="Import Mermaid">
+        <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-xs" onClick={() => patchCanvasState((prev) => ({ showImport: !prev.showImport }))} disabled={!canUseMermaid} title="Import Mermaid">
           <FileInput className="w-3 h-3 mr-1" />Import
         </Button>
         <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-xs" onClick={() => issueCommand("export_mermaid")} disabled={!canUseMermaid} title="Export Mermaid">
@@ -208,7 +246,7 @@ export function UnifiedBrainCanvas() {
           >
           <Search className="w-3 h-3 mr-1" />Search
         </Button>
-        <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-xs" onClick={() => setTemplateOpen((v) => !v)} disabled={!canUseMermaid} title="Templates">
+        <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-xs" onClick={() => patchCanvasState((prev) => ({ templateOpen: !prev.templateOpen }))} disabled={!canUseMermaid} title="Templates">
           <Workflow className="w-3 h-3 mr-1" />Templates
         </Button>
         <Button
@@ -235,7 +273,7 @@ export function UnifiedBrainCanvas() {
               <p className="font-arcade text-xs text-primary">IMPORT MERMAID</p>
               <textarea
                 value={importText}
-                onChange={(e) => setImportText(e.target.value)}
+                onChange={(e) => patchCanvasState({ importText: e.target.value })}
                 placeholder="graph TD&#10;  A[Topic] --> B[Branch]"
                 className="min-h-[72px] w-full px-2 py-1.5 font-terminal text-xs bg-black/60 border border-primary/30 rounded-none text-foreground placeholder:text-muted-foreground resize-y"
                 rows={4}
@@ -244,7 +282,7 @@ export function UnifiedBrainCanvas() {
                 <Button size="sm" className="rounded-none font-terminal text-xs" onClick={applyImport} disabled={!importText.trim()}>
                   Import
                 </Button>
-                <Button size="sm" variant="outline" className="rounded-none font-terminal text-xs border-primary/30" onClick={() => setShowImport(false)}>
+                <Button size="sm" variant="outline" className="rounded-none font-terminal text-xs border-primary/30" onClick={() => patchCanvasState({ showImport: false })}>
                   Cancel
                 </Button>
               </div>
@@ -261,7 +299,7 @@ export function UnifiedBrainCanvas() {
                     onClick={() => {
                       if (mode === "vault") return;
                       issueCommand("import_mermaid", template.mermaid, mode);
-                      setTemplateOpen(false);
+                      patchCanvasState({ templateOpen: false });
                     }}
                   >
                     <div className="font-arcade text-xs text-primary">{template.name}</div>

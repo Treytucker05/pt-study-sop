@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, type ReactNode } from "react";
 import {
   Plus,
   Trash2,
@@ -27,7 +27,7 @@ import { STRUCTURED_SHAPES } from "./StructuredShapeNode";
 interface ToolDef {
   id: string;
   label: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   defaultOn: boolean;
 }
 
@@ -99,6 +99,33 @@ function savePos(p: { x: number; y: number }): void {
   localStorage.setItem(`${LS_PREFIX}-pos`, JSON.stringify(p));
 }
 
+type CanvasToolboxState = {
+  visibleTools: Set<string>;
+  pos: { x: number; y: number };
+  collapsed: boolean;
+  showSettings: boolean;
+  openSubmenu: string | null;
+};
+
+type CanvasToolboxPatch =
+  | Partial<CanvasToolboxState>
+  | ((state: CanvasToolboxState) => Partial<CanvasToolboxState>);
+
+function createCanvasToolboxState(): CanvasToolboxState {
+  return {
+    visibleTools: loadSet("visible", DEFAULT_VISIBLE),
+    pos: loadPos(),
+    collapsed: false,
+    showSettings: false,
+    openSubmenu: null,
+  };
+}
+
+function canvasToolboxReducer(state: CanvasToolboxState, patch: CanvasToolboxPatch): CanvasToolboxState {
+  const nextPatch = typeof patch === "function" ? patch(state) : patch;
+  return { ...state, ...nextPatch };
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 interface CanvasToolboxProps {
@@ -124,16 +151,22 @@ export function CanvasToolbox({
   onNodeColorChange,
   onEdgeColorChange,
 }: CanvasToolboxProps) {
-  const [visibleTools, setVisibleTools] = useState(() => loadSet("visible", DEFAULT_VISIBLE));
-  const [pos, setPos] = useState(loadPos);
-  const [collapsed, setCollapsed] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+  const [toolboxState, patchToolboxState] = useReducer(
+    canvasToolboxReducer,
+    undefined,
+    createCanvasToolboxState,
+  );
+  const { visibleTools, pos, collapsed, showSettings, openSubmenu } = toolboxState;
 
   const dragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const boxRef = useRef<HTMLDivElement>(null);
   const settingsRef = useRef<HTMLDivElement>(null);
+  const toolboxStateRef = useRef(toolboxState);
+
+  useEffect(() => {
+    toolboxStateRef.current = toolboxState;
+  }, [toolboxState]);
 
   // Drag handlers
   const onMouseDown = useCallback((e: React.MouseEvent) => {
@@ -152,12 +185,12 @@ export function CanvasToolbox({
       const bh = boxRef.current?.offsetHeight ?? 40;
       const nx = Math.max(0, Math.min(e.clientX - dragOffset.current.x, bounds.width - bw));
       const ny = Math.max(0, Math.min(e.clientY - dragOffset.current.y, bounds.height - bh));
-      setPos({ x: nx, y: ny });
+      patchToolboxState({ pos: { x: nx, y: ny } });
     };
     const onUp = () => {
       if (dragging.current) {
         dragging.current = false;
-        setPos((p) => { savePos(p); return p; });
+        savePos(toolboxStateRef.current.pos);
       }
     };
     window.addEventListener("mousemove", onMove);
@@ -173,7 +206,7 @@ export function CanvasToolbox({
     if (!showSettings) return;
     const handler = (e: MouseEvent) => {
       if (settingsRef.current && !settingsRef.current.contains(e.target as HTMLElement)) {
-        setShowSettings(false);
+        patchToolboxState({ showSettings: false });
       }
     };
     document.addEventListener("mousedown", handler);
@@ -183,28 +216,28 @@ export function CanvasToolbox({
   // Close submenu on outside click
   useEffect(() => {
     if (!openSubmenu) return;
-    const handler = () => setOpenSubmenu(null);
+    const handler = () => patchToolboxState({ openSubmenu: null });
     const timer = setTimeout(() => document.addEventListener("click", handler), 0);
     return () => { clearTimeout(timer); document.removeEventListener("click", handler); };
-  }, [openSubmenu]);
+  }, [openSubmenu, patchToolboxState]);
 
   const toggleTool = useCallback((id: string) => {
-    setVisibleTools((prev) => {
-      const next = new Set(prev);
+    patchToolboxState((prev) => {
+      const next = new Set(prev.visibleTools);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       saveSet("visible", next);
-      return next;
+      return { visibleTools: next };
     });
-  }, []);
+  }, [patchToolboxState]);
 
   const handleToolClick = useCallback((id: string) => {
     if (id === "node_color" || id === "edge_color" || id === "node_shape" || id === "edge_type") {
-      setOpenSubmenu((prev) => (prev === id ? null : id));
+      patchToolboxState((prev) => ({ openSubmenu: prev.openSubmenu === id ? null : id }));
       return;
     }
     onAction(id);
-  }, [onAction]);
+  }, [onAction, patchToolboxState]);
 
   const btn = "h-7 w-7 flex items-center justify-center border border-primary/30 hover:bg-primary/20 text-primary transition-colors";
 
@@ -230,7 +263,7 @@ export function CanvasToolbox({
           <button
             type="button"
             className="text-primary/60 hover:text-primary p-0.5"
-            onClick={() => setCollapsed(!collapsed)}
+            onClick={() => patchToolboxState({ collapsed: !collapsed })}
             title={collapsed ? "Expand" : "Collapse"}
             aria-label={collapsed ? "Expand toolbox" : "Collapse toolbox"}
           >
@@ -240,7 +273,7 @@ export function CanvasToolbox({
             <button
               type="button"
               className="text-primary/60 hover:text-primary p-0.5"
-              onClick={() => setShowSettings(!showSettings)}
+              onClick={() => patchToolboxState({ showSettings: !showSettings })}
               title="Configure tools"
               aria-label="Configure visible tools"
             >
@@ -297,7 +330,7 @@ export function CanvasToolbox({
                         <button
                           type="button"
                           key={c.name}
-                          onClick={() => { onNodeColorChange(i); setOpenSubmenu(null); }}
+                          onClick={() => { onNodeColorChange(i); patchToolboxState({ openSubmenu: null }); }}
                           className={cn("w-5 h-5 border-2 rounded-none", c.border, c.bg)}
                           title={c.name}
                           aria-label={`Set node color to ${c.name}`}
@@ -315,7 +348,7 @@ export function CanvasToolbox({
                         <button
                           type="button"
                           key={c.name}
-                          onClick={() => { onEdgeColorChange(c.stroke); setOpenSubmenu(null); }}
+                          onClick={() => { onEdgeColorChange(c.stroke); patchToolboxState({ openSubmenu: null }); }}
                           className="w-5 h-5 border-2 border-secondary/50 rounded-none"
                           style={{ backgroundColor: c.stroke }}
                           title={c.name}
@@ -330,13 +363,13 @@ export function CanvasToolbox({
                   <div className="absolute left-0 top-full mt-1 bg-black border-2 border-primary/50 p-2 z-[60] min-w-[100px]">
                     <p className="text-[10px] font-arcade text-primary/60 mb-1">NEW NODE SHAPE</p>
                     {STRUCTURED_SHAPES.map((s) => (
-                      <button
-                        type="button"
-                        key={s}
-                        onClick={() => { onNodeShapeChange(s); setOpenSubmenu(null); }}
-                        className={cn(
-                          "block w-full text-left text-xs font-terminal px-2 py-0.5 hover:bg-primary/20 text-primary/80",
-                          nodeShape === s && "bg-primary/20 text-primary"
+                        <button
+                          type="button"
+                          key={s}
+                          onClick={() => { onNodeShapeChange(s); patchToolboxState({ openSubmenu: null }); }}
+                          className={cn(
+                            "block w-full text-left text-xs font-terminal px-2 py-0.5 hover:bg-primary/20 text-primary/80",
+                            nodeShape === s && "bg-primary/20 text-primary"
                         )}
                         aria-label={`Set node shape to ${SHAPE_LABELS[s]}`}
                       >
@@ -350,13 +383,13 @@ export function CanvasToolbox({
                   <div className="absolute left-0 top-full mt-1 bg-black border-2 border-primary/50 p-2 z-[60] min-w-[100px]">
                     <p className="text-[10px] font-arcade text-primary/60 mb-1">EDGE STYLE</p>
                     {EDGE_TYPES.map((et) => (
-                      <button
-                        type="button"
-                        key={et.value}
-                        onClick={() => { onEdgeTypeChange(et.value); setOpenSubmenu(null); }}
-                        className={cn(
-                          "block w-full text-left text-xs font-terminal px-2 py-0.5 hover:bg-primary/20 text-primary/80",
-                          edgeType === et.value && "bg-primary/20 text-primary"
+                        <button
+                          type="button"
+                          key={et.value}
+                          onClick={() => { onEdgeTypeChange(et.value); patchToolboxState({ openSubmenu: null }); }}
+                          className={cn(
+                            "block w-full text-left text-xs font-terminal px-2 py-0.5 hover:bg-primary/20 text-primary/80",
+                            edgeType === et.value && "bg-primary/20 text-primary"
                         )}
                         aria-label={`Set edge style to ${et.label}`}
                       >

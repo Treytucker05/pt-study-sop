@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useReducer } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { differenceInCalendarDays, format, isToday, isTomorrow } from "date-fns";
@@ -277,27 +277,68 @@ function buildTutorPath(courseId?: number | null, mode?: TutorLaunchMode): strin
   return query ? `/tutor?${query}` : "/tutor";
 }
 
-export function BrainHome({ workspace }: { workspace: BrainWorkspace }) {
+type BrainHomeUiState = {
+  showOnboarding: boolean;
+  showDataRights: boolean;
+  onboardingGoal: string;
+  onboardingFriction: string;
+  onboardingTools: string;
+  onboardingBusy: boolean;
+  privacyDraft: ProductPrivacySettings;
+};
+
+type BrainHomeUiPatch =
+  | Partial<BrainHomeUiState>
+  | ((state: BrainHomeUiState) => Partial<BrainHomeUiState>);
+
+function createBrainHomeUiState(): BrainHomeUiState {
+  return {
+    showOnboarding: false,
+    showDataRights: false,
+    onboardingGoal: "",
+    onboardingFriction: "",
+    onboardingTools: "",
+    onboardingBusy: false,
+    privacyDraft: {
+      userId: "trey",
+      workspaceId: "default",
+      retentionDays: 180,
+      allowTier2Signals: true,
+      allowVaultSignals: true,
+      allowCalendarSignals: true,
+      allowScholarPersonalization: true,
+      allowOutcomeReports: true,
+      updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
+function brainHomeUiReducer(
+  state: BrainHomeUiState,
+  patch: BrainHomeUiPatch,
+): BrainHomeUiState {
+  const nextPatch = typeof patch === "function" ? patch(state) : patch;
+  return { ...state, ...nextPatch };
+}
+
+function useBrainHomeContent({ workspace }: { workspace: BrainWorkspace }) {
   const idBase = useId();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showDataRights, setShowDataRights] = useState(false);
-  const [onboardingGoal, setOnboardingGoal] = useState("");
-  const [onboardingFriction, setOnboardingFriction] = useState("");
-  const [onboardingTools, setOnboardingTools] = useState("");
-  const [onboardingBusy, setOnboardingBusy] = useState(false);
-  const [privacyDraft, setPrivacyDraft] = useState<ProductPrivacySettings>({
-    userId: "trey",
-    workspaceId: "default",
-    retentionDays: 180,
-    allowTier2Signals: true,
-    allowVaultSignals: true,
-    allowCalendarSignals: true,
-    allowScholarPersonalization: true,
-    allowOutcomeReports: true,
-    updatedAt: new Date().toISOString(),
-  });
+  const [uiState, patchUiState] = useReducer(
+    brainHomeUiReducer,
+    undefined,
+    createBrainHomeUiState,
+  );
+  const {
+    showOnboarding,
+    showDataRights,
+    onboardingGoal,
+    onboardingFriction,
+    onboardingTools,
+    onboardingBusy,
+    privacyDraft,
+  } = uiState;
 
   const { data: currentCourseData } = useQuery({
     queryKey: ["brain-home", "study-wheel"],
@@ -374,9 +415,11 @@ export function BrainHome({ workspace }: { workspace: BrainWorkspace }) {
       const raw = localStorage.getItem("tss.onboarding.v1");
       if (!raw) return;
       const parsed = JSON.parse(raw);
-      setOnboardingGoal(parsed.goal || "");
-      setOnboardingFriction(parsed.friction || "");
-      setOnboardingTools(parsed.tools || "");
+      patchUiState({
+        onboardingGoal: parsed.goal || "",
+        onboardingFriction: parsed.friction || "",
+        onboardingTools: parsed.tools || "",
+      });
     } catch {
       // ignore corrupted onboarding cache
     }
@@ -384,7 +427,7 @@ export function BrainHome({ workspace }: { workspace: BrainWorkspace }) {
 
   useEffect(() => {
     if (!privacySettings) return;
-    setPrivacyDraft(privacySettings);
+    patchUiState({ privacyDraft: privacySettings });
   }, [privacySettings]);
 
   const updatePrivacyMutation = useMutation({
@@ -618,7 +661,7 @@ async function handleDownloadJson(
       toast.error("Add your goal and biggest friction first.");
       return;
     }
-    setOnboardingBusy(true);
+    patchUiState({ onboardingBusy: true });
     try {
       const payload = {
         goal: onboardingGoal.trim(),
@@ -641,7 +684,7 @@ async function handleDownloadJson(
       });
       queryClient.invalidateQueries({ queryKey: ["brain-home", "product-analytics"] });
       queryClient.invalidateQueries({ queryKey: ["brain-home", "scholar-investigations"] });
-      setShowOnboarding(false);
+      patchUiState({ showOnboarding: false });
       toast.success("Setup saved and Scholar started an investigation.");
     } catch (error) {
       toast.warning(
@@ -649,9 +692,9 @@ async function handleDownloadJson(
           ? error.message
           : "Setup saved locally, but Scholar could not start the investigation.",
       );
-      setShowOnboarding(false);
+      patchUiState({ showOnboarding: false });
     } finally {
-      setOnboardingBusy(false);
+      patchUiState({ onboardingBusy: false });
     }
   }
 
@@ -1181,7 +1224,7 @@ async function handleDownloadJson(
                   type="button"
                   variant="outline"
                   className="mt-3 rounded-none border-primary/40 font-arcade text-xs"
-                  onClick={() => setShowOnboarding(true)}
+                  onClick={() => patchUiState({ showOnboarding: true })}
                 >
                   OPEN SETUP
                 </Button>
@@ -1198,7 +1241,7 @@ async function handleDownloadJson(
                   type="button"
                   variant="outline"
                   className="mt-3 rounded-none border-primary/40 font-arcade text-xs"
-                  onClick={() => setShowDataRights(true)}
+                  onClick={() => patchUiState({ showDataRights: true })}
                 >
                   OPEN DATA RIGHTS
                 </Button>
@@ -1260,7 +1303,7 @@ async function handleDownloadJson(
         </Card>
       </div>
 
-      <Dialog open={showOnboarding} onOpenChange={setShowOnboarding}>
+      <Dialog open={showOnboarding} onOpenChange={(open) => patchUiState({ showOnboarding: open })}>
         <DialogContent className="rounded-none border-2 border-primary bg-black">
           <DialogHeader>
             <DialogTitle className="font-arcade text-primary">FIRST-RUN SETUP</DialogTitle>
@@ -1274,7 +1317,7 @@ async function handleDownloadJson(
               <Input
                 id={`${idBase}-onboarding-goal`}
                 value={onboardingGoal}
-                onChange={(event) => setOnboardingGoal(event.target.value)}
+                onChange={(event) => patchUiState({ onboardingGoal: event.target.value })}
                 placeholder="What are you trying to get better at right now?"
                 className="rounded-none border-secondary bg-black font-terminal"
               />
@@ -1284,7 +1327,7 @@ async function handleDownloadJson(
               <Textarea
                 id={`${idBase}-onboarding-friction`}
                 value={onboardingFriction}
-                onChange={(event) => setOnboardingFriction(event.target.value)}
+                onChange={(event) => patchUiState({ onboardingFriction: event.target.value })}
                 placeholder="What usually breaks your learning loop?"
                 className="min-h-[96px] rounded-none border-secondary bg-black font-terminal"
               />
@@ -1296,7 +1339,7 @@ async function handleDownloadJson(
               <Input
                 id={`${idBase}-onboarding-tools`}
                 value={onboardingTools}
-                onChange={(event) => setOnboardingTools(event.target.value)}
+                onChange={(event) => patchUiState({ onboardingTools: event.target.value })}
                 placeholder="Obsidian, Anki, lecture PDFs, Blackboard, handwritten notes..."
                 className="rounded-none border-secondary bg-black font-terminal"
               />
@@ -1320,7 +1363,7 @@ async function handleDownloadJson(
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showDataRights} onOpenChange={setShowDataRights}>
+      <Dialog open={showDataRights} onOpenChange={(open) => patchUiState({ showDataRights: open })}>
         <DialogContent className="max-w-2xl rounded-none border-2 border-primary bg-black">
           <DialogHeader>
             <DialogTitle className="font-arcade text-primary">DATA RIGHTS</DialogTitle>
@@ -1341,7 +1384,9 @@ async function handleDownloadJson(
                   id={`${idBase}-tier2-signals`}
                   checked={privacyDraft.allowTier2Signals}
                   onCheckedChange={(checked) =>
-                    setPrivacyDraft((prev) => ({ ...prev, allowTier2Signals: checked }))
+                    patchUiState((prev) => ({
+                      privacyDraft: { ...prev.privacyDraft, allowTier2Signals: checked },
+                    }))
                   }
                 />
               </label>
@@ -1356,7 +1401,9 @@ async function handleDownloadJson(
                   id={`${idBase}-vault-signals`}
                   checked={privacyDraft.allowVaultSignals}
                   onCheckedChange={(checked) =>
-                    setPrivacyDraft((prev) => ({ ...prev, allowVaultSignals: checked }))
+                    patchUiState((prev) => ({
+                      privacyDraft: { ...prev.privacyDraft, allowVaultSignals: checked },
+                    }))
                   }
                 />
               </label>
@@ -1371,7 +1418,9 @@ async function handleDownloadJson(
                   id={`${idBase}-calendar-signals`}
                   checked={privacyDraft.allowCalendarSignals}
                   onCheckedChange={(checked) =>
-                    setPrivacyDraft((prev) => ({ ...prev, allowCalendarSignals: checked }))
+                    patchUiState((prev) => ({
+                      privacyDraft: { ...prev.privacyDraft, allowCalendarSignals: checked },
+                    }))
                   }
                 />
               </label>
@@ -1386,7 +1435,9 @@ async function handleDownloadJson(
                   id={`${idBase}-scholar-personalization`}
                   checked={privacyDraft.allowScholarPersonalization}
                   onCheckedChange={(checked) =>
-                    setPrivacyDraft((prev) => ({ ...prev, allowScholarPersonalization: checked }))
+                    patchUiState((prev) => ({
+                      privacyDraft: { ...prev.privacyDraft, allowScholarPersonalization: checked },
+                    }))
                   }
                 />
               </label>
@@ -1400,9 +1451,11 @@ async function handleDownloadJson(
                 max={3650}
                 value={privacyDraft.retentionDays}
                 onChange={(event) =>
-                  setPrivacyDraft((prev) => ({
-                    ...prev,
-                    retentionDays: Math.max(30, Number(event.target.value || 180)),
+                  patchUiState((prev) => ({
+                    privacyDraft: {
+                      ...prev.privacyDraft,
+                      retentionDays: Math.max(30, Number(event.target.value || 180)),
+                    },
                   }))
                 }
                 className="rounded-none border-secondary bg-black font-terminal"
@@ -1437,4 +1490,9 @@ async function handleDownloadJson(
       </Dialog>
     </div>
   );
+}
+
+export function BrainHome({ workspace }: { workspace: BrainWorkspace }) {
+  const content = useBrainHomeContent({ workspace });
+  return content;
 }

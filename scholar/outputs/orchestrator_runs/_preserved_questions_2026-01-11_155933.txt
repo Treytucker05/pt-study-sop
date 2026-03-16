@@ -1,1 +1,0 @@
-- Is a minimal pre-probe required in Core Mode even with zero prior exposure?

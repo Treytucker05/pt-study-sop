@@ -1,2 +1,0 @@
-- Should audits fall back to the most recent prior session when the 7-day window is empty?
-- Is audit_manifest.json expected to exist, and should safe_mode default to false when it is missing?

@@ -1,3 +1,0 @@
-# Questions Needed - 2026-01-10_190911
-- Are recent Tutor session logs expected after 2025-12-11? If yes, confirm storage path.
-- Should audits fall back to the most recent prior log when the 7-day window is empty?

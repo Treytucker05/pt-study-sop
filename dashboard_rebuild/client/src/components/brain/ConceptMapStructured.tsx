@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState, type Dispatch, type MutableRefObject, type RefObject } from "react";
 import {
   ReactFlow,
   Background,
@@ -59,274 +59,185 @@ interface ConceptMapStructuredProps {
   className?: string;
 }
 
-export function ConceptMapStructured({
-  initialMermaid,
-  onSave,
-  onInitialMermaidConsumed,
-  hideToolbar = false,
-  externalCommand,
-  onStatusChange,
+type StructuredUiState = {
+  direction: "TB" | "LR";
+  showImport: boolean;
+  mermaidInput: string;
+  nodeCounter: number;
+  isFullscreen: boolean;
+  isDirty: boolean;
+  edgeType: EdgeType;
+  nodeShape: StructuredShape;
+  snapToGrid: boolean;
+  locked: boolean;
+};
+
+type StructuredUiPatch =
+  | Partial<StructuredUiState>
+  | ((state: StructuredUiState) => Partial<StructuredUiState>);
+
+function createStructuredUiState(initialMermaid?: string): StructuredUiState {
+  return {
+    direction: "TB",
+    showImport: !initialMermaid,
+    mermaidInput: initialMermaid || "",
+    nodeCounter: 0,
+    isFullscreen: false,
+    isDirty: false,
+    edgeType: lsGet("edgeType", "smoothstep"),
+    nodeShape: lsGet("nodeShape", "rectangle"),
+    snapToGrid: lsGet("snapToGrid", false),
+    locked: false,
+  };
+}
+
+function structuredUiReducer(
+  state: StructuredUiState,
+  patch: StructuredUiPatch,
+): StructuredUiState {
+  const nextPatch = typeof patch === "function" ? patch(state) : patch;
+  return { ...state, ...nextPatch };
+}
+
+function ConceptMapStructuredCanvas({
   className,
-}: ConceptMapStructuredProps) {
-  const [nodes, setNodes, onNodesChangeBase] = useNodesState<Node>([]);
-  const [edges, setEdges, onEdgesChangeBase] = useEdgesState<Edge>([]);
-  const [direction, setDirection] = useState<"TB" | "LR">("TB");
-  const [showImport, setShowImport] = useState(!initialMermaid && nodes.length === 0);
-  const [mermaidInput, setMermaidInput] = useState(initialMermaid || "");
-  const [nodeCounter, setNodeCounter] = useState(0);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isDirty, setIsDirty] = useState(false);
+  currentEdgeOptions,
+  edgeType,
+  edges,
+  handleEdgeTypeChange,
+  handleNodeShapeChange,
+  handleToolAction,
+  isDirty,
+  isFullscreen,
+  locked,
+  nodeShape,
+  nodes,
+  onConnect,
+  onEdgesChange,
+  onNodesChange,
+  onReconnect,
+  reactFlowRef,
+  setSelectedEdgeColor,
+  setSelectedNodeColor,
+  snapToGrid,
+}: {
+  className?: string;
+  currentEdgeOptions: Record<string, unknown>;
+  edgeType: EdgeType;
+  edges: Edge[];
+  handleEdgeTypeChange: (newType: EdgeType) => void;
+  handleNodeShapeChange: (shape: StructuredShape) => void;
+  handleToolAction: (id: string) => void;
+  isDirty: boolean;
+  isFullscreen: boolean;
+  locked: boolean;
+  nodeShape: StructuredShape;
+  nodes: Node[];
+  onConnect: (connection: Connection) => void;
+  onEdgesChange: (changes: any) => void;
+  onNodesChange: (changes: any) => void;
+  onReconnect: (oldEdge: Edge, newConnection: Connection) => void;
+  reactFlowRef: RefObject<HTMLDivElement | null>;
+  setSelectedEdgeColor: (stroke: string) => void;
+  setSelectedNodeColor: (colorIdx: number) => void;
+  snapToGrid: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col",
+        isFullscreen ? "fixed inset-0 z-[100010] bg-black" : "h-full",
+        className,
+      )}
+    >
+      <div className="flex-1 min-h-0 relative" ref={reactFlowRef}>
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          onReconnect={onReconnect}
+          edgesReconnectable={!locked}
+          nodeTypes={NODE_TYPES}
+          edgeTypes={EDGE_TYPES}
+          defaultEdgeOptions={currentEdgeOptions}
+          snapToGrid={snapToGrid}
+          snapGrid={[20, 20]}
+          nodesDraggable={!locked}
+          connectionMode={ConnectionMode.Loose}
+          fitView
+          className="bg-black/80"
+          proOptions={{ hideAttribution: true }}
+        >
+          <Background color="hsl(var(--primary) / 0.1)" gap={20} />
+          <Controls className="!bg-black !border-primary [&_button]:!bg-black/80 [&_button]:!border-primary/50 [&_button]:!text-primary" />
+          <MiniMap
+            className="!bg-black/80 !border-primary"
+            nodeColor="hsl(var(--primary))"
+            maskColor="rgba(0,0,0,0.5)"
+          />
+          <FitViewListener />
+        </ReactFlow>
 
-  // New toolbox state
-  const [edgeType, setEdgeType] = useState<EdgeType>(() => lsGet("edgeType", "smoothstep"));
-  const [nodeShape, setNodeShape] = useState<StructuredShape>(() => lsGet("nodeShape", "rectangle"));
-  const [snapToGrid, setSnapToGrid] = useState(() => lsGet("snapToGrid", false));
-  const [locked, setLocked] = useState(false);
+        <CanvasToolbox
+          onAction={handleToolAction}
+          edgeType={edgeType}
+          onEdgeTypeChange={handleEdgeTypeChange}
+          nodeShape={nodeShape}
+          onNodeShapeChange={handleNodeShapeChange}
+          snapToGrid={snapToGrid}
+          locked={locked}
+          onNodeColorChange={setSelectedNodeColor}
+          onEdgeColorChange={setSelectedEdgeColor}
+        />
+      </div>
 
-  const reactFlowRef = useRef<HTMLDivElement>(null);
-  const initialMermaidConsumedRef = useRef(false);
-  const lastCommandIdRef = useRef(0);
+      <div className="flex items-center gap-2 px-2 py-0.5 border-t border-secondary/30 bg-black/40 text-xs font-terminal text-muted-foreground">
+        <span>{nodes.length}N / {edges.length}E</span>
+        <span className={cn("w-2 h-2 rounded-full", isDirty ? "bg-destructive" : "bg-success")} />
+        <span>{isDirty ? "Unsaved" : "Saved"}</span>
+      </div>
+    </div>
+  );
+}
+
+function useStructuredCanvasActions({
+  addNode,
+  autoLayout,
+  deleteSelected,
+  direction,
+  edges,
+  exportOnSave,
+  externalCommand,
+  goBackToImport,
+  importMermaid,
+  isDirty,
+  lastCommandIdRef,
+  nodes,
+  onStatusChange,
+  patchUiState,
+  reactFlowRef,
+  toggleDirection,
+}: {
+  addNode: () => void;
+  autoLayout: () => void;
+  deleteSelected: () => void;
+  direction: "TB" | "LR";
+  edges: Edge[];
+  exportOnSave?: (mermaid: string) => void;
+  externalCommand?: GraphCanvasCommand | null;
+  goBackToImport: () => void;
+  importMermaid: (code: string) => void;
+  isDirty: boolean;
+  lastCommandIdRef: MutableRefObject<number>;
+  nodes: Node[];
+  onStatusChange?: (status: GraphCanvasStatus) => void;
+  patchUiState: Dispatch<StructuredUiPatch>;
+  reactFlowRef: RefObject<HTMLDivElement | null>;
+  toggleDirection: () => void;
+}) {
   const { toast } = useToast();
-
-  // ─── Label editing via custom event ──────────────────────────────────────
-
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { label: string };
-      setNodes((nds) =>
-        nds.map((n) =>
-          n.selected ? { ...n, data: { ...n.data, label: detail.label } } : n
-        )
-      );
-      setIsDirty(true);
-    };
-    window.addEventListener("structured:node-label", handler);
-    return () => window.removeEventListener("structured:node-label", handler);
-  }, [setNodes]);
-
-  // ─── Edge label editing via custom event ────────────────────────────────
-
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { edgeId: string; label: string };
-      setEdges((eds) =>
-        eds.map((edge) =>
-          edge.id === detail.edgeId
-            ? { ...edge, data: { ...edge.data, label: detail.label } }
-            : edge
-        )
-      );
-      setIsDirty(true);
-    };
-    window.addEventListener("structured:edge-label", handler);
-    return () => window.removeEventListener("structured:edge-label", handler);
-  }, [setEdges]);
-
-  // ─── Import & init ──────────────────────────────────────────────────────
-
-  const importMermaid = useCallback(
-    (code: string) => {
-      if (!code.trim()) return;
-      const result = parseMermaid(code);
-      setDirection(result.direction);
-      const layoutNodes = applyDagreLayout(result.nodes, result.edges, {
-        direction: result.direction,
-      });
-      setNodes(layoutNodes);
-      setEdges(result.edges);
-      setNodeCounter(result.nodes.length);
-      setShowImport(false);
-      setIsDirty(true);
-    },
-    [setNodes, setEdges]
-  );
-
-  useEffect(() => {
-    if (initialMermaid?.trim() && !initialMermaidConsumedRef.current) {
-      initialMermaidConsumedRef.current = true;
-      importMermaid(initialMermaid);
-      setMermaidInput(initialMermaid);
-      onInitialMermaidConsumed?.();
-    }
-  }, [initialMermaid, importMermaid, onInitialMermaidConsumed]);
-
-  useEffect(() => {
-    if (!isFullscreen) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsFullscreen(false);
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [isFullscreen]);
-
-  // ─── Node/edge change handlers ──────────────────────────────────────────
-
-  const onNodesChange = useCallback(
-    (changes: any) => {
-      setIsDirty(true);
-      onNodesChangeBase(changes);
-    },
-    [onNodesChangeBase]
-  );
-
-  const onEdgesChange = useCallback(
-    (changes: any) => {
-      setIsDirty(true);
-      onEdgesChangeBase(changes);
-    },
-    [onEdgesChangeBase]
-  );
-
-  const onConnect = useCallback(
-    (connection: Connection) => {
-      setIsDirty(true);
-      setEdges((eds) => addEdge(connection, eds));
-    },
-    [setEdges]
-  );
-
-  const onReconnect = useCallback(
-    (oldEdge: Edge, newConnection: Connection) => {
-      setIsDirty(true);
-      setEdges((eds) => reconnectEdge(oldEdge, newConnection, eds));
-    },
-    [setEdges]
-  );
-
-  // ─── Canvas actions ────────────────────────────────────────────────────
-
-  const autoLayout = useCallback(() => {
-    const layoutNodes = applyDagreLayout(nodes, edges, { direction });
-    setNodes(layoutNodes);
-    setIsDirty(true);
-  }, [nodes, edges, direction, setNodes]);
-
-  const toggleDirection = useCallback(() => {
-    const newDir = direction === "TB" ? "LR" : "TB";
-    setDirection(newDir);
-    const layoutNodes = applyDagreLayout(nodes, edges, { direction: newDir });
-    setNodes(layoutNodes);
-    setIsDirty(true);
-  }, [direction, nodes, edges, setNodes]);
-
-  const addNode = useCallback(() => {
-    const id = `N${nodeCounter + 1}`;
-    setNodeCounter((c) => c + 1);
-    const size = SHAPE_SIZES[nodeShape];
-    const newNode: Node = {
-      id,
-      type: "structured",
-      position: { x: Math.random() * 300 + 50, y: Math.random() * 200 + 50 },
-      data: { label: `New Node ${nodeCounter + 1}`, colorIdx: 0, shape: nodeShape },
-      style: { width: size.width, height: size.height },
-    };
-    setNodes((nds) => [...nds, newNode]);
-    setIsDirty(true);
-  }, [nodeCounter, nodeShape, setNodes]);
-
-  const deleteSelected = useCallback(() => {
-    setNodes((nds) => nds.filter((n) => !n.selected));
-    setEdges((eds) => eds.filter((e) => !e.selected));
-    setIsDirty(true);
-  }, [setNodes, setEdges]);
-
-  const setSelectedNodeColor = useCallback((colorIdx: number) => {
-    setNodes((nds) =>
-      nds.map((n) =>
-        n.selected ? { ...n, data: { ...n.data, colorIdx } } : n
-      )
-    );
-    setIsDirty(true);
-  }, [setNodes]);
-
-  const setSelectedEdgeColor = useCallback((stroke: string) => {
-    setEdges((eds) =>
-      eds.map((e) =>
-        e.selected
-          ? {
-              ...e,
-              style: { ...e.style, stroke, strokeWidth: 2 },
-              markerEnd: { type: MarkerType.ArrowClosed, color: stroke },
-            }
-          : e
-      )
-    );
-    setIsDirty(true);
-  }, [setEdges]);
-
-  const setSelectedNodeShape = useCallback((shape: StructuredShape) => {
-    const size = SHAPE_SIZES[shape];
-    setNodes((nds) =>
-      nds.map((n) =>
-        n.selected
-          ? {
-              ...n,
-              data: { ...n.data, shape },
-              style: { ...n.style, width: size.width, height: size.height },
-            }
-          : n
-      )
-    );
-    setIsDirty(true);
-  }, [setNodes]);
-
-  // ─── Edge type change — affects new AND existing edges ─────────────────
-
-  const handleEdgeTypeChange = useCallback((newType: EdgeType) => {
-    setEdgeType(newType);
-    lsSet("edgeType", newType);
-    setEdges((eds) =>
-      eds.map((e) => ({ ...e, data: { ...e.data, edgeType: newType } }))
-    );
-    setIsDirty(true);
-  }, [setEdges]);
-
-  const handleNodeShapeChange = useCallback((shape: StructuredShape) => {
-    setNodeShape(shape);
-    lsSet("nodeShape", shape);
-  }, []);
-
-  const handleSnapToggle = useCallback(() => {
-    setSnapToGrid((prev) => {
-      const next = !prev;
-      lsSet("snapToGrid", next);
-      return next;
-    });
-  }, []);
-
-  const handleLockToggle = useCallback(() => {
-    setLocked((prev) => !prev);
-  }, []);
-
-  // ─── Toolbox action dispatcher ─────────────────────────────────────────
-
-  const handleToolAction = useCallback((id: string) => {
-    switch (id) {
-      case "add_node": addNode(); break;
-      case "delete": deleteSelected(); break;
-      case "auto_layout": autoLayout(); break;
-      case "direction": toggleDirection(); break;
-      case "fit_view":
-        // handled via useReactFlow in inner component
-        window.dispatchEvent(new CustomEvent("structured:fit-view"));
-        break;
-      case "snap_grid": handleSnapToggle(); break;
-      case "lock": handleLockToggle(); break;
-      case "edge_label":
-        // Add empty label to selected edges so they enter edit mode
-        setEdges((eds) =>
-          eds.map((e) =>
-            e.selected && !(e.data as any)?.label
-              ? { ...e, data: { ...e.data, label: " " } }
-              : e
-          )
-        );
-        setIsDirty(true);
-        break;
-    }
-  }, [addNode, deleteSelected, autoLayout, toggleDirection, handleSnapToggle, handleLockToggle]);
-
-  // ─── Export / save ─────────────────────────────────────────────────────
 
   const exportPng = useCallback(async () => {
     if (!reactFlowRef.current) return;
@@ -370,13 +281,13 @@ export function ConceptMapStructured({
     } catch (err) {
       toast({ title: "Export failed", description: String(err), variant: "destructive" });
     }
-  }, [toast]);
+  }, [reactFlowRef, toast]);
 
   const exportMermaid = useCallback(() => {
     const code = toMermaid(nodes, edges, direction);
     navigator.clipboard.writeText(code);
     toast({ title: "Mermaid copied to clipboard" });
-  }, [nodes, edges, direction, toast]);
+  }, [direction, edges, nodes, toast]);
 
   const saveToVault = useCallback(async () => {
     const code = toMermaid(nodes, edges, direction);
@@ -386,21 +297,21 @@ export function ConceptMapStructured({
     const layoutPath = `${basePath}.layout.json`;
     const layoutJson = JSON.stringify({
       direction,
-      nodes: nodes.map((n) => ({
-        id: n.id,
-        type: n.type,
-        position: n.position,
-        data: n.data,
-        style: n.style,
+      nodes: nodes.map((node) => ({
+        id: node.id,
+        type: node.type,
+        position: node.position,
+        data: node.data,
+        style: node.style,
       })),
-      edges: edges.map((e) => ({
-        id: e.id,
-        source: e.source,
-        target: e.target,
-        label: e.label,
-        style: e.style,
-        markerEnd: e.markerEnd,
-        type: e.type,
+      edges: edges.map((edge) => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        label: edge.label,
+        style: edge.style,
+        markerEnd: edge.markerEnd,
+        type: edge.type,
       })),
       updated: new Date().toISOString(),
     }, null, 2);
@@ -414,19 +325,12 @@ export function ConceptMapStructured({
       await api.obsidian.saveFile(layoutPath, layoutJson);
       await api.obsidian.saveFile(markdownPath, markdown);
       toast({ title: "Saved to vault", description: markdownPath });
-      onSave?.(code);
-      setIsDirty(false);
+      exportOnSave?.(code);
+      patchUiState({ isDirty: false });
     } catch (err) {
       toast({ title: "Save failed", description: String(err), variant: "destructive" });
     }
-  }, [nodes, edges, direction, toast, onSave]);
-
-  const goBackToImport = useCallback(() => {
-    setShowImport(true);
-    setMermaidInput(nodes.length > 0 ? toMermaid(nodes, edges, direction) : "");
-  }, [nodes, edges, direction]);
-
-  // ─── Status reporting ──────────────────────────────────────────────────
+  }, [direction, edges, exportOnSave, nodes, patchUiState, toast]);
 
   useEffect(() => {
     onStatusChange?.({
@@ -439,12 +343,10 @@ export function ConceptMapStructured({
       supportsMermaid: true,
       supportsDraw: false,
       selectedLabels: nodes
-        .filter((n) => n.selected)
-        .map((n) => String((n.data as { label?: string })?.label || n.id)),
+        .filter((node) => node.selected)
+        .map((node) => String((node.data as { label?: string })?.label || node.id)),
     });
-  }, [onStatusChange, isDirty, nodes, edges]);
-
-  // ─── External commands ─────────────────────────────────────────────────
+  }, [edges, isDirty, nodes, onStatusChange]);
 
   useEffect(() => {
     if (!externalCommand || externalCommand.target !== "structured") return;
@@ -467,7 +369,7 @@ export function ConceptMapStructured({
           : "";
         if (code) {
           importMermaid(code);
-          setMermaidInput(code);
+          patchUiState({ mermaidInput: code });
         } else {
           goBackToImport();
         }
@@ -489,17 +391,319 @@ export function ConceptMapStructured({
         break;
     }
   }, [
-    externalCommand,
-    saveToVault,
-    exportPng,
-    exportMermaid,
-    importMermaid,
-    goBackToImport,
     addNode,
-    deleteSelected,
     autoLayout,
+    deleteSelected,
+    exportMermaid,
+    exportPng,
+    externalCommand,
+    goBackToImport,
+    importMermaid,
+    lastCommandIdRef,
+    patchUiState,
+    saveToVault,
     toggleDirection,
   ]);
+
+  return { exportMermaid, exportPng, saveToVault };
+}
+
+function useStructuredCanvasEditing({
+  onEdgesChangeBase,
+  onNodesChangeBase,
+  patchUiState,
+  setEdges,
+  setNodes,
+}: {
+  onEdgesChangeBase: (changes: any) => void;
+  onNodesChangeBase: (changes: any) => void;
+  patchUiState: Dispatch<StructuredUiPatch>;
+  setEdges: ReturnType<typeof useEdgesState<Edge>>[1];
+  setNodes: ReturnType<typeof useNodesState<Node>>[1];
+}) {
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent).detail as { label: string };
+      setNodes((current) =>
+        current.map((node) =>
+          node.selected ? { ...node, data: { ...node.data, label: detail.label } } : node
+        )
+      );
+      patchUiState({ isDirty: true });
+    };
+    window.addEventListener("structured:node-label", handler);
+    return () => window.removeEventListener("structured:node-label", handler);
+  }, [patchUiState, setNodes]);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent).detail as { edgeId: string; label: string };
+      setEdges((current) =>
+        current.map((edge) =>
+          edge.id === detail.edgeId ? { ...edge, data: { ...edge.data, label: detail.label } } : edge
+        )
+      );
+      patchUiState({ isDirty: true });
+    };
+    window.addEventListener("structured:edge-label", handler);
+    return () => window.removeEventListener("structured:edge-label", handler);
+  }, [patchUiState, setEdges]);
+
+  const onNodesChange = useCallback((changes: any) => {
+    patchUiState({ isDirty: true });
+    onNodesChangeBase(changes);
+  }, [onNodesChangeBase, patchUiState]);
+
+  const onEdgesChange = useCallback((changes: any) => {
+    patchUiState({ isDirty: true });
+    onEdgesChangeBase(changes);
+  }, [onEdgesChangeBase, patchUiState]);
+
+  const onConnect = useCallback((connection: Connection) => {
+    patchUiState({ isDirty: true });
+    setEdges((current) => addEdge(connection, current));
+  }, [patchUiState, setEdges]);
+
+  const onReconnect = useCallback((oldEdge: Edge, newConnection: Connection) => {
+    patchUiState({ isDirty: true });
+    setEdges((current) => reconnectEdge(oldEdge, newConnection, current));
+  }, [patchUiState, setEdges]);
+
+  return { onConnect, onEdgesChange, onNodesChange, onReconnect };
+}
+
+export function ConceptMapStructured({
+  initialMermaid,
+  onSave,
+  onInitialMermaidConsumed,
+  hideToolbar = false,
+  externalCommand,
+  onStatusChange,
+  className,
+}: ConceptMapStructuredProps) {
+  const [nodes, setNodes, onNodesChangeBase] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChangeBase] = useEdgesState<Edge>([]);
+  const [uiState, patchUiState] = useReducer(
+    structuredUiReducer,
+    initialMermaid,
+    createStructuredUiState,
+  );
+  const {
+    direction,
+    showImport,
+    mermaidInput,
+    nodeCounter,
+    isFullscreen,
+    isDirty,
+    edgeType,
+    nodeShape,
+    snapToGrid,
+    locked,
+  } = uiState;
+
+  const reactFlowRef = useRef<HTMLDivElement>(null);
+  const initialMermaidConsumedRef = useRef(false);
+  const lastCommandIdRef = useRef(0);
+  // ─── Import & init ──────────────────────────────────────────────────────
+  const importMermaid = useCallback(
+    (code: string) => {
+      if (!code.trim()) return;
+      const result = parseMermaid(code);
+      const layoutNodes = applyDagreLayout(result.nodes, result.edges, {
+        direction: result.direction,
+      });
+      setNodes(layoutNodes);
+      setEdges(result.edges);
+      patchUiState({
+        direction: result.direction,
+        nodeCounter: result.nodes.length,
+        showImport: false,
+        isDirty: true,
+      });
+    },
+    [setNodes, setEdges]
+  );
+
+  useEffect(() => {
+    if (initialMermaid?.trim() && !initialMermaidConsumedRef.current) {
+      initialMermaidConsumedRef.current = true;
+      importMermaid(initialMermaid);
+      patchUiState({ mermaidInput: initialMermaid });
+      onInitialMermaidConsumed?.();
+    }
+  }, [initialMermaid, importMermaid, onInitialMermaidConsumed]);
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") patchUiState({ isFullscreen: false });
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [isFullscreen]);
+  const { onConnect, onEdgesChange, onNodesChange, onReconnect } =
+    useStructuredCanvasEditing({
+      onEdgesChangeBase,
+      onNodesChangeBase,
+      patchUiState,
+      setEdges,
+      setNodes,
+    });
+
+  // ─── Canvas actions ────────────────────────────────────────────────────
+
+  const autoLayout = useCallback(() => {
+    const layoutNodes = applyDagreLayout(nodes, edges, { direction });
+    setNodes(layoutNodes);
+    patchUiState({ isDirty: true });
+  }, [nodes, edges, direction, setNodes]);
+
+  const toggleDirection = useCallback(() => {
+    const newDir = direction === "TB" ? "LR" : "TB";
+    const layoutNodes = applyDagreLayout(nodes, edges, { direction: newDir });
+    setNodes(layoutNodes);
+    patchUiState({ direction: newDir, isDirty: true });
+  }, [direction, nodes, edges, setNodes]);
+
+  const addNode = useCallback(() => {
+    const id = `N${nodeCounter + 1}`;
+    const size = SHAPE_SIZES[nodeShape];
+    const newNode: Node = {
+      id,
+      type: "structured",
+      position: { x: Math.random() * 300 + 50, y: Math.random() * 200 + 50 },
+      data: { label: `New Node ${nodeCounter + 1}`, colorIdx: 0, shape: nodeShape },
+      style: { width: size.width, height: size.height },
+    };
+    setNodes((nds) => [...nds, newNode]);
+    patchUiState((prev) => ({ nodeCounter: prev.nodeCounter + 1, isDirty: true }));
+  }, [nodeCounter, nodeShape, setNodes]);
+
+  const deleteSelected = useCallback(() => {
+    setNodes((nds) => nds.filter((n) => !n.selected));
+    setEdges((eds) => eds.filter((e) => !e.selected));
+    patchUiState({ isDirty: true });
+  }, [setNodes, setEdges]);
+
+  const setSelectedNodeColor = useCallback((colorIdx: number) => {
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.selected ? { ...n, data: { ...n.data, colorIdx } } : n
+      )
+    );
+    patchUiState({ isDirty: true });
+  }, [setNodes]);
+
+  const setSelectedEdgeColor = useCallback((stroke: string) => {
+    setEdges((eds) =>
+      eds.map((e) =>
+        e.selected
+          ? {
+              ...e,
+              style: { ...e.style, stroke, strokeWidth: 2 },
+              markerEnd: { type: MarkerType.ArrowClosed, color: stroke },
+            }
+          : e
+      )
+    );
+    patchUiState({ isDirty: true });
+  }, [setEdges]);
+
+  const setSelectedNodeShape = useCallback((shape: StructuredShape) => {
+    const size = SHAPE_SIZES[shape];
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.selected
+          ? {
+              ...n,
+              data: { ...n.data, shape },
+              style: { ...n.style, width: size.width, height: size.height },
+            }
+          : n
+      )
+    );
+    patchUiState({ isDirty: true });
+  }, [setNodes]);
+
+  // ─── Edge type change — affects new AND existing edges ─────────────────
+
+  const handleEdgeTypeChange = useCallback((newType: EdgeType) => {
+    lsSet("edgeType", newType);
+    setEdges((eds) =>
+      eds.map((e) => ({ ...e, data: { ...e.data, edgeType: newType } }))
+    );
+    patchUiState({ edgeType: newType, isDirty: true });
+  }, [setEdges]);
+
+  const handleNodeShapeChange = useCallback((shape: StructuredShape) => {
+    patchUiState({ nodeShape: shape });
+    lsSet("nodeShape", shape);
+  }, []);
+
+  const handleSnapToggle = useCallback(() => {
+    patchUiState((prev) => {
+      const next = !prev.snapToGrid;
+      lsSet("snapToGrid", next);
+      return { snapToGrid: next };
+    });
+  }, []);
+
+  const handleLockToggle = useCallback(() => {
+    patchUiState((prev) => ({ locked: !prev.locked }));
+  }, []);
+
+  // ─── Toolbox action dispatcher ─────────────────────────────────────────
+
+  const handleToolAction = useCallback((id: string) => {
+    switch (id) {
+      case "add_node": addNode(); break;
+      case "delete": deleteSelected(); break;
+      case "auto_layout": autoLayout(); break;
+      case "direction": toggleDirection(); break;
+      case "fit_view":
+        // handled via useReactFlow in inner component
+        window.dispatchEvent(new CustomEvent("structured:fit-view"));
+        break;
+      case "snap_grid": handleSnapToggle(); break;
+      case "lock": handleLockToggle(); break;
+      case "edge_label":
+        // Add empty label to selected edges so they enter edit mode
+        setEdges((eds) =>
+          eds.map((e) =>
+            e.selected && !(e.data as any)?.label
+              ? { ...e, data: { ...e.data, label: " " } }
+              : e
+          )
+        );
+        patchUiState({ isDirty: true });
+        break;
+    }
+  }, [addNode, deleteSelected, autoLayout, toggleDirection, handleSnapToggle, handleLockToggle]);
+
+  const goBackToImport = useCallback(() => {
+    patchUiState({
+      showImport: true,
+      mermaidInput: nodes.length > 0 ? toMermaid(nodes, edges, direction) : "",
+    });
+  }, [nodes, edges, direction]);
+
+  const { exportPng, saveToVault } = useStructuredCanvasActions({
+    addNode,
+    autoLayout,
+    deleteSelected,
+    direction,
+    edges,
+    exportOnSave: onSave,
+    externalCommand,
+    goBackToImport,
+    importMermaid,
+    isDirty,
+    lastCommandIdRef,
+    nodes,
+    onStatusChange,
+    patchUiState,
+    reactFlowRef,
+    toggleDirection,
+  });
 
   // ─── Computed edge options based on current edgeType ────────────────────
 
@@ -514,10 +718,10 @@ export function ConceptMapStructured({
     return (
       <ConceptMapStructuredImport
         mermaidInput={mermaidInput}
-        onMermaidInputChange={setMermaidInput}
+        onMermaidInputChange={(value) => patchUiState({ mermaidInput: value })}
         onImport={importMermaid}
         onBlank={() => {
-          setShowImport(false);
+          patchUiState({ showImport: false });
           addNode();
         }}
         className={className}
@@ -528,64 +732,28 @@ export function ConceptMapStructured({
   // ─── Render ────────────────────────────────────────────────────────────
 
   return (
-    <div
-      className={cn(
-        "flex flex-col",
-        isFullscreen ? "fixed inset-0 z-[100010] bg-black" : "h-full",
-        className
-      )}
-    >
-      <div className="flex-1 min-h-0 relative" ref={reactFlowRef}>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onReconnect={onReconnect}
-          edgesReconnectable={!locked}
-          nodeTypes={NODE_TYPES}
-          edgeTypes={EDGE_TYPES}
-          defaultEdgeOptions={currentEdgeOptions}
-          snapToGrid={snapToGrid}
-          snapGrid={[20, 20]}
-          nodesDraggable={!locked}
-          connectionMode={ConnectionMode.Loose}
-          fitView
-          className="bg-black/80"
-          proOptions={{ hideAttribution: true }}
-        >
-          <Background color="hsl(var(--primary) / 0.1)" gap={20} />
-          <Controls className="!bg-black !border-primary [&_button]:!bg-black/80 [&_button]:!border-primary/50 [&_button]:!text-primary" />
-          <MiniMap
-            className="!bg-black/80 !border-primary"
-            nodeColor="hsl(var(--primary))"
-            maskColor="rgba(0,0,0,0.5)"
-          />
-          <FitViewListener />
-        </ReactFlow>
-
-        {/* Floating toolbox */}
-        <CanvasToolbox
-          onAction={handleToolAction}
-          edgeType={edgeType}
-          onEdgeTypeChange={handleEdgeTypeChange}
-          nodeShape={nodeShape}
-          onNodeShapeChange={handleNodeShapeChange}
-          snapToGrid={snapToGrid}
-          locked={locked}
-          onNodeColorChange={setSelectedNodeColor}
-          onEdgeColorChange={setSelectedEdgeColor}
-        />
-      </div>
-
-      {/* Status bar */}
-      <div className="flex items-center gap-2 px-2 py-0.5 border-t border-secondary/30 bg-black/40 text-xs font-terminal text-muted-foreground">
-        <span>{nodes.length}N / {edges.length}E</span>
-        <span className={cn("w-2 h-2 rounded-full", isDirty ? "bg-destructive" : "bg-success")} />
-        <span>{isDirty ? "Unsaved" : "Saved"}</span>
-      </div>
-    </div>
+    <ConceptMapStructuredCanvas
+      className={className}
+      currentEdgeOptions={currentEdgeOptions}
+      edgeType={edgeType}
+      edges={edges}
+      handleEdgeTypeChange={handleEdgeTypeChange}
+      handleNodeShapeChange={handleNodeShapeChange}
+      handleToolAction={handleToolAction}
+      isDirty={isDirty}
+      isFullscreen={isFullscreen}
+      locked={locked}
+      nodeShape={nodeShape}
+      nodes={nodes}
+      onConnect={onConnect}
+      onEdgesChange={onEdgesChange}
+      onNodesChange={onNodesChange}
+      onReconnect={onReconnect}
+      reactFlowRef={reactFlowRef}
+      setSelectedEdgeColor={setSelectedEdgeColor}
+      setSelectedNodeColor={setSelectedNodeColor}
+      snapToGrid={snapToGrid}
+    />
   );
 }
 

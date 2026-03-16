@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useReducer, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -467,15 +467,464 @@ function NoteGroup({
   );
 }
 
+type VaultHealthConfigQuery = {
+  data?: Awaited<ReturnType<typeof api.obsidian.getConfig>>;
+};
+
+function VaultHealthOverviewPanels({
+  familyCounts,
+  issueClassCounts,
+  issueTypeCounts,
+  obsidianConfigQuery,
+  scanData,
+}: {
+  familyCounts: Array<[string, number]>;
+  issueClassCounts: Array<[string, number]>;
+  issueTypeCounts: Array<[string, number]>;
+  obsidianConfigQuery: VaultHealthConfigQuery;
+  scanData: JanitorScanResponse | undefined;
+}) {
+  return (
+    <>
+      <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+        <StatCard label="Markdown files" value={scanData?.total_markdown_files ?? 0} />
+        <StatCard label="Health-scanned notes" value={scanData?.notes_scanned ?? 0} />
+        <StatCard
+          label="Excluded system files"
+          value={scanData?.excluded_system_files ?? 0}
+          tone="info"
+        />
+        <StatCard
+          label="Advisory-only notes"
+          value={scanData?.advisory_only_files ?? 0}
+          tone="info"
+        />
+        <StatCard label="Affected notes" value={scanData?.affected_notes ?? 0} tone="warn" />
+        <StatCard
+          label="Issue instances"
+          value={scanData?.issue_instances ?? 0}
+          tone="danger"
+        />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
+        <div className="border-2 border-primary/20 bg-black/25 p-4">
+          <div className="mb-3 flex items-center gap-2 font-arcade text-xs text-primary">
+            <Info className="h-4 w-4" />
+            How this works
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 font-terminal text-xs text-muted-foreground">
+            <div className="border border-primary/10 bg-black/20 p-3">
+              <div className="font-arcade text-[11px] text-primary">Full Scan</div>
+              Checks live note files against metadata, routing, duplicate body
+              content, and unresolved wikilinks.
+            </div>
+            <div className="border border-primary/10 bg-black/20 p-3">
+              <div className="font-arcade text-[11px] text-violet-300">Batch Enrich</div>
+              Adds links only to low-link notes. It does not rewrite the whole vault
+              or fix routing.
+            </div>
+            <div className="border border-primary/10 bg-black/20 p-3">
+              <div className="font-arcade text-[11px] text-green-300">Fix</div>
+              Applies a deterministic change when the backend already knows the
+              exact patch.
+            </div>
+            <div className="border border-primary/10 bg-black/20 p-3">
+              <div className="font-arcade text-[11px] text-violet-300">AI Fix</div>
+              Produces a proposed repair for review. Nothing is applied until you
+              accept it.
+            </div>
+          </div>
+        </div>
+
+        <div className="border-2 border-primary/20 bg-black/25 p-4">
+          <div className="mb-3 font-arcade text-xs text-primary">Scan breakdown</div>
+          <div className="space-y-2">
+            {issueTypeCounts.length === 0 ? (
+              <div className="font-terminal text-xs text-muted-foreground">
+                No issue counts available yet.
+              </div>
+            ) : (
+              issueTypeCounts.map(([type, count]) => {
+                const config = ISSUE_CONFIG[type] ?? ISSUE_CONFIG.routing_drift;
+                return (
+                  <div
+                    key={type}
+                    className="flex items-center justify-between border border-primary/10 px-3 py-2 font-terminal text-xs"
+                  >
+                    <div className="flex items-center gap-2">
+                      <config.Icon className={cn("h-3.5 w-3.5", config.color)} />
+                      <span>{config.label}</span>
+                    </div>
+                    <span className="font-arcade text-primary">{count}</span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {issueClassCounts.map(([issueClass, count]) => (
+              <span
+                key={issueClass}
+                className={cn(
+                  "border px-2 py-1 font-terminal text-[11px] uppercase",
+                  ISSUE_CLASS_COPY[issueClass]?.className ??
+                    ISSUE_CLASS_COPY["advisory/system"].className,
+                )}
+              >
+                {ISSUE_CLASS_COPY[issueClass]?.label ?? issueClass}: {count}
+              </span>
+            ))}
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {familyCounts.map(([family, count]) => (
+              <span
+                key={family}
+                className="border border-primary/15 px-2 py-1 font-terminal text-[11px] uppercase text-primary/80"
+              >
+                {family.replace(/_/g, " ")}: {count}
+              </span>
+            ))}
+          </div>
+          <div className="mt-4 font-terminal text-[11px] text-muted-foreground">
+            Scan time: {scanData?.scan_time_ms ?? 0} ms
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+        <div className="border-2 border-primary/20 bg-black/25 p-4">
+          <div className="mb-3 font-arcade text-xs text-primary">Vault contract</div>
+          <div className="grid gap-3 md:grid-cols-2 font-terminal text-xs text-muted-foreground">
+            <div className="border border-primary/10 bg-black/20 p-3">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                Canonical root
+              </div>
+              <div className="mt-2 font-arcade text-sm text-primary">
+                {obsidianConfigQuery.data?.canonicalRoot ?? "Not reported"}
+              </div>
+            </div>
+            <div className="border border-primary/10 bg-black/20 p-3">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                Deprecated roots
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {(obsidianConfigQuery.data?.deprecatedRoots ?? []).length > 0 ? (
+                  (obsidianConfigQuery.data?.deprecatedRoots ?? []).map((root) => (
+                    <span
+                      key={root}
+                      className="border border-yellow-400/30 px-2 py-1 text-[11px] text-yellow-300"
+                    >
+                      {root}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-muted-foreground">None reported</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-2 border-primary/20 bg-black/25 p-4">
+          <div className="mb-3 font-arcade text-xs text-primary">Reading the results</div>
+          <div className="space-y-2 font-terminal text-xs text-muted-foreground">
+            <div className="border border-red-400/15 bg-red-400/5 p-3">
+              <span className="font-arcade text-[11px] text-red-300">Real breakage</span>
+              <div className="mt-1">
+                Counts toward health and should be fixed because a note, route, or
+                link target is actually broken.
+              </div>
+            </div>
+            <div className="border border-cyan-400/15 bg-cyan-400/5 p-3">
+              <span className="font-arcade text-[11px] text-cyan-300">Content gap</span>
+              <div className="mt-1">
+                The vault structure is valid, but a reusable concept or target note
+                is still missing.
+              </div>
+            </div>
+            <div className="border border-primary/10 bg-black/20 p-3">
+              <span className="font-arcade text-[11px] text-primary/80">
+                Advisory / system
+              </span>
+              <div className="mt-1">
+                These are templates, system docs, or warnings that do not count
+                against the main health score.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function VaultHealthScanResults({
+  aiFixingPaths,
+  batchResult,
+  enrichingPaths,
+  fixingKeys,
+  handleAiFix,
+  handleApplyAi,
+  handleEnrich,
+  handleFix,
+  issuesByPath,
+  manualFixKey,
+  onCancelManualFix,
+  onCloseAiModal,
+  onOpenManualFix,
+  options,
+  scanData,
+  scanQuery,
+  aiApplying,
+  aiModal,
+}: {
+  aiApplying: boolean;
+  aiFixingPaths: Set<string>;
+  batchResult: BatchEnrichResponse | null;
+  enrichingPaths: Set<string>;
+  fixingKeys: Set<string>;
+  handleAiFix: (issue: JanitorIssue) => Promise<void>;
+  handleApplyAi: (
+    path: string,
+    applyAction: string,
+    suggestion: Record<string, AiFieldSuggestion>,
+  ) => Promise<void>;
+  handleEnrich: (path: string) => Promise<void>;
+  handleFix: (issue: JanitorIssue, issueKey: string) => Promise<void>;
+  issuesByPath: Map<string, JanitorIssue[]>;
+  manualFixKey: string | null;
+  onCancelManualFix: () => void;
+  onCloseAiModal: () => void;
+  onOpenManualFix: (issueKey: string) => void;
+  options: JanitorOptions | undefined;
+  scanData: JanitorScanResponse | undefined;
+  scanQuery: ReturnType<typeof useQuery>;
+  aiModal: { path: string; data: AiResolveResponse } | null;
+}) {
+  return (
+    <>
+      {batchResult ? (
+        <div className="border-2 border-violet-400/30 bg-violet-400/5 p-4">
+          <div className="font-arcade text-xs text-violet-300">Last batch enrich run</div>
+          <div className="mt-2 font-terminal text-xs text-muted-foreground">
+            {batchResult.total_processed} notes processed, {batchResult.total_links_added}{" "}
+            links added.
+          </div>
+          <div className="mt-3 space-y-2">
+            {batchResult.results.map((result) => (
+              <div
+                key={result.path}
+                className="border border-violet-400/15 px-3 py-2 font-terminal text-xs"
+              >
+                <div className="text-violet-200">{result.path}</div>
+                <div className="text-muted-foreground">{result.selection_reason}</div>
+                {result.error ? (
+                  <div className="text-red-300">{result.error}</div>
+                ) : (
+                  <div className="text-green-300">{result.links_added} links added</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {scanQuery.isLoading ? (
+        <div className="border-2 border-primary/20 bg-black/25 p-6 text-center font-terminal text-sm text-muted-foreground">
+          <Loader2 className="mr-2 inline h-4 w-4 animate-spin text-primary" />
+          Running vault scan...
+        </div>
+      ) : scanQuery.error ? (
+        <div className="border-2 border-red-400/30 bg-red-400/5 p-4 font-terminal text-xs text-red-300">
+          Failed to load Vault Health: {(scanQuery.error as Error).message}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {(scanData?.note_summaries ?? []).map((note) => {
+            const noteIssues = issuesByPath.get(note.path) ?? [];
+            return (
+              <NoteGroup
+                key={note.path}
+                note={note}
+                issues={noteIssues}
+                options={options}
+                onFix={(issue) =>
+                  void handleFix(
+                    issue,
+                    `${issue.path}:${issue.field || issue.issue_type}:${noteIssues.indexOf(issue)}`,
+                  )
+                }
+                onManualFix={(issue) =>
+                  onOpenManualFix(
+                    `${issue.path}:${issue.field || issue.issue_type}:${noteIssues.indexOf(issue)}`,
+                  )
+                }
+                onAiFix={(issue) => void handleAiFix(issue)}
+                onEnrich={(path) => void handleEnrich(path)}
+                fixingKeys={fixingKeys}
+                enrichingPaths={enrichingPaths}
+                aiFixingPaths={aiFixingPaths}
+                manualFixKey={manualFixKey}
+                onApplyManual={(issue) =>
+                  void handleFix(issue, manualFixKey ?? `${issue.path}:${issue.field}`)
+                }
+                onCancelManual={onCancelManualFix}
+              />
+            );
+          })}
+          {(scanData?.note_summaries?.length ?? 0) === 0 ? (
+            <div className="border-2 border-green-400/20 bg-green-400/5 p-5 font-terminal text-sm text-green-300">
+              No note-level issues are currently being reported by the janitor.
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      {aiModal ? (
+        <AiSuggestionPanel
+          path={aiModal.path}
+          data={aiModal.data}
+          options={options}
+          applying={aiApplying}
+          onApply={(path, applyAction, suggestion) =>
+            void handleApplyAi(path, applyAction, suggestion)
+          }
+          onCancel={onCloseAiModal}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function VaultHealthBody({
+  aiApplying,
+  aiModal,
+  aiFixingPaths,
+  batchResult,
+  enrichingPaths,
+  familyCounts,
+  fixingKeys,
+  handleAiFix,
+  handleApplyAi,
+  handleBatchEnrich,
+  handleEnrich,
+  handleFix,
+  issueClassCounts,
+  issueTypeCounts,
+  issuesByPath,
+  manualFixKey,
+  obsidianConfigQuery,
+  onCancelManualFix,
+  onCloseAiModal,
+  onOpenManualFix,
+  options,
+  scanData,
+  scanQuery,
+}: {
+  aiApplying: boolean;
+  aiModal: { path: string; data: AiResolveResponse } | null;
+  aiFixingPaths: Set<string>;
+  batchResult: BatchEnrichResponse | null;
+  enrichingPaths: Set<string>;
+  familyCounts: Array<[string, number]>;
+  fixingKeys: Set<string>;
+  handleAiFix: (issue: JanitorIssue) => Promise<void>;
+  handleApplyAi: (
+    path: string,
+    applyAction: string,
+    suggestion: Record<string, AiFieldSuggestion>,
+  ) => Promise<void>;
+  handleBatchEnrich: () => Promise<void>;
+  handleEnrich: (path: string) => Promise<void>;
+  handleFix: (issue: JanitorIssue, issueKey: string) => Promise<void>;
+  issueClassCounts: Array<[string, number]>;
+  issueTypeCounts: Array<[string, number]>;
+  issuesByPath: Map<string, JanitorIssue[]>;
+  manualFixKey: string | null;
+  obsidianConfigQuery: {
+    data?: Awaited<ReturnType<typeof api.obsidian.getConfig>>;
+  };
+  onCancelManualFix: () => void;
+  onCloseAiModal: () => void;
+  onOpenManualFix: (issueKey: string) => void;
+  options: JanitorOptions | undefined;
+  scanData: JanitorScanResponse | undefined;
+  scanQuery: ReturnType<typeof useQuery>;
+}) {
+  return (
+    <>
+      <VaultHealthOverviewPanels
+        familyCounts={familyCounts}
+        issueClassCounts={issueClassCounts}
+        issueTypeCounts={issueTypeCounts}
+        obsidianConfigQuery={obsidianConfigQuery}
+        scanData={scanData}
+      />
+      <VaultHealthScanResults
+        aiApplying={aiApplying}
+        aiFixingPaths={aiFixingPaths}
+        aiModal={aiModal}
+        batchResult={batchResult}
+        enrichingPaths={enrichingPaths}
+        fixingKeys={fixingKeys}
+        handleAiFix={handleAiFix}
+        handleApplyAi={handleApplyAi}
+        handleEnrich={handleEnrich}
+        handleFix={handleFix}
+        issuesByPath={issuesByPath}
+        manualFixKey={manualFixKey}
+        onCancelManualFix={onCancelManualFix}
+        onCloseAiModal={onCloseAiModal}
+        onOpenManualFix={onOpenManualFix}
+        options={options}
+        scanData={scanData}
+        scanQuery={scanQuery}
+      />
+    </>
+  );
+}
+
+type VaultHealthState = {
+  manualFixKey: string | null;
+  fixingKeys: Set<string>;
+  enrichingPaths: Set<string>;
+  aiFixingPaths: Set<string>;
+  batchResult: BatchEnrichResponse | null;
+  aiModal: { path: string; data: AiResolveResponse } | null;
+  aiApplying: boolean;
+};
+
+type VaultHealthPatch =
+  | Partial<VaultHealthState>
+  | ((state: VaultHealthState) => Partial<VaultHealthState>);
+
+function createVaultHealthState(): VaultHealthState {
+  return {
+    manualFixKey: null,
+    fixingKeys: new Set(),
+    enrichingPaths: new Set(),
+    aiFixingPaths: new Set(),
+    batchResult: null,
+    aiModal: null,
+    aiApplying: false,
+  };
+}
+
+function vaultHealthReducer(state: VaultHealthState, patch: VaultHealthPatch): VaultHealthState {
+  const nextPatch = typeof patch === "function" ? patch(state) : patch;
+  return { ...state, ...nextPatch };
+}
+
 export default function VaultHealth() {
   const { toast } = useToast();
-  const [manualFixKey, setManualFixKey] = useState<string | null>(null);
-  const [fixingKeys, setFixingKeys] = useState<Set<string>>(new Set());
-  const [enrichingPaths, setEnrichingPaths] = useState<Set<string>>(new Set());
-  const [aiFixingPaths, setAiFixingPaths] = useState<Set<string>>(new Set());
-  const [batchResult, setBatchResult] = useState<BatchEnrichResponse | null>(null);
-  const [aiModal, setAiModal] = useState<{ path: string; data: AiResolveResponse } | null>(null);
-  const [aiApplying, setAiApplying] = useState(false);
+  const [vaultHealthState, patchVaultHealthState] = useReducer(
+    vaultHealthReducer,
+    undefined,
+    createVaultHealthState,
+  );
+  const { manualFixKey, fixingKeys, enrichingPaths, aiFixingPaths, batchResult, aiModal, aiApplying } =
+    vaultHealthState;
 
   const optionsQuery = useQuery({
     queryKey: ["janitor-options"],
@@ -506,27 +955,27 @@ export default function VaultHealth() {
   }, [scanQuery.data?.issues]);
 
   async function handleFix(issue: JanitorIssue, issueKey: string) {
-    setFixingKeys((current) => new Set(current).add(issueKey));
+    patchVaultHealthState((current) => ({ fixingKeys: new Set(current.fixingKeys).add(issueKey) }));
     try {
       const result = await api.janitor.fix([issue]);
       const fixResult = result.results[0];
       if (!fixResult?.success) throw new Error(fixResult?.detail || "Fix failed");
       toast({ title: "Fix applied", description: fixResult.detail });
-      setManualFixKey(null);
+      patchVaultHealthState({ manualFixKey: null });
       await scanQuery.refetch();
     } catch (error) {
       toast({ title: "Fix failed", description: (error as Error).message, variant: "destructive" });
     } finally {
-      setFixingKeys((current) => {
-        const next = new Set(current);
+      patchVaultHealthState((current) => {
+        const next = new Set(current.fixingKeys);
         next.delete(issueKey);
-        return next;
+        return { fixingKeys: next };
       });
     }
   }
 
   async function handleAiFix(issue: JanitorIssue) {
-    setAiFixingPaths((current) => new Set(current).add(issue.path));
+    patchVaultHealthState((current) => ({ aiFixingPaths: new Set(current.aiFixingPaths).add(issue.path) }));
     try {
       const context = issue.issue_type === "broken_link" ? { broken_target: issue.field } : undefined;
       const result = await api.janitor.aiResolve(issue.path, issue.issue_type, context);
@@ -535,20 +984,20 @@ export default function VaultHealth() {
         await handleEnrich(issue.path);
         return;
       }
-      setAiModal({ path: issue.path, data: result });
+      patchVaultHealthState({ aiModal: { path: issue.path, data: result } });
     } catch (error) {
       toast({ title: "AI fix failed", description: (error as Error).message, variant: "destructive" });
     } finally {
-      setAiFixingPaths((current) => {
-        const next = new Set(current);
+      patchVaultHealthState((current) => {
+        const next = new Set(current.aiFixingPaths);
         next.delete(issue.path);
-        return next;
+        return { aiFixingPaths: next };
       });
     }
   }
 
   async function handleEnrich(path: string) {
-    setEnrichingPaths((current) => new Set(current).add(path));
+    patchVaultHealthState((current) => ({ enrichingPaths: new Set(current.enrichingPaths).add(path) }));
     try {
       const result = await api.janitor.enrich(path);
       if (!result.success) throw new Error("Enrich failed");
@@ -557,10 +1006,10 @@ export default function VaultHealth() {
     } catch (error) {
       toast({ title: "Enrich failed", description: (error as Error).message, variant: "destructive" });
     } finally {
-      setEnrichingPaths((current) => {
-        const next = new Set(current);
+      patchVaultHealthState((current) => {
+        const next = new Set(current.enrichingPaths);
         next.delete(path);
-        return next;
+        return { enrichingPaths: next };
       });
     }
   }
@@ -568,7 +1017,7 @@ export default function VaultHealth() {
   async function handleBatchEnrich() {
     try {
       const result = await api.janitor.batchEnrich({ max_batch: 20 });
-      setBatchResult(result);
+      patchVaultHealthState({ batchResult: result });
       toast({ title: "Batch enrich complete", description: `${result.total_processed} notes processed, ${result.total_links_added} links added` });
       await scanQuery.refetch();
     } catch (error) {
@@ -577,17 +1026,17 @@ export default function VaultHealth() {
   }
 
   async function handleApplyAi(path: string, applyAction: string, suggestion: Record<string, AiFieldSuggestion>) {
-    setAiApplying(true);
+    patchVaultHealthState({ aiApplying: true });
     try {
       const result = await api.janitor.aiApply(path, applyAction, suggestion);
       if (!result.success) throw new Error(result.detail || "AI apply failed");
       toast({ title: "AI fix applied", description: result.detail });
-      setAiModal(null);
+      patchVaultHealthState({ aiModal: null });
       await scanQuery.refetch();
     } catch (error) {
       toast({ title: "AI fix failed", description: (error as Error).message, variant: "destructive" });
     } finally {
-      setAiApplying(false);
+      patchVaultHealthState({ aiApplying: false });
     }
   }
 
@@ -707,181 +1156,31 @@ export default function VaultHealth() {
           commandBand={vaultCommandBand}
           contentClassName="gap-4"
         >
-        <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
-          <StatCard label="Markdown files" value={scanData?.total_markdown_files ?? 0} />
-          <StatCard label="Health-scanned notes" value={scanData?.notes_scanned ?? 0} />
-          <StatCard label="Excluded system files" value={scanData?.excluded_system_files ?? 0} tone="info" />
-          <StatCard label="Advisory-only notes" value={scanData?.advisory_only_files ?? 0} tone="info" />
-          <StatCard label="Affected notes" value={scanData?.affected_notes ?? 0} tone="warn" />
-          <StatCard label="Issue instances" value={scanData?.issue_instances ?? 0} tone="danger" />
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
-          <div className="border-2 border-primary/20 bg-black/25 p-4">
-            <div className="mb-3 flex items-center gap-2 font-arcade text-xs text-primary">
-              <Info className="h-4 w-4" />
-              How this works
-            </div>
-            <div className="grid gap-3 md:grid-cols-2 font-terminal text-xs text-muted-foreground">
-              <div className="border border-primary/10 bg-black/20 p-3"><div className="font-arcade text-[11px] text-primary">Full Scan</div>Checks live note files against metadata, routing, duplicate body content, and unresolved wikilinks.</div>
-              <div className="border border-primary/10 bg-black/20 p-3"><div className="font-arcade text-[11px] text-violet-300">Batch Enrich</div>Adds links only to low-link notes. It does not rewrite the whole vault or fix routing.</div>
-              <div className="border border-primary/10 bg-black/20 p-3"><div className="font-arcade text-[11px] text-green-300">Fix</div>Applies a deterministic change when the backend already knows the exact patch.</div>
-              <div className="border border-primary/10 bg-black/20 p-3"><div className="font-arcade text-[11px] text-violet-300">AI Fix</div>Produces a proposed repair for review. Nothing is applied until you accept it.</div>
-            </div>
-          </div>
-
-          <div className="border-2 border-primary/20 bg-black/25 p-4">
-            <div className="mb-3 font-arcade text-xs text-primary">Scan breakdown</div>
-            <div className="space-y-2">
-              {issueTypeCounts.length === 0 ? (
-                <div className="font-terminal text-xs text-muted-foreground">No issue counts available yet.</div>
-              ) : (
-                issueTypeCounts.map(([type, count]) => {
-                  const config = ISSUE_CONFIG[type] ?? ISSUE_CONFIG.routing_drift;
-                  return (
-                    <div key={type} className="flex items-center justify-between border border-primary/10 px-3 py-2 font-terminal text-xs">
-                      <div className="flex items-center gap-2">
-                        <config.Icon className={cn("h-3.5 w-3.5", config.color)} />
-                        <span>{config.label}</span>
-                      </div>
-                      <span className="font-arcade text-primary">{count}</span>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {issueClassCounts.map(([issueClass, count]) => (
-                <span key={issueClass} className={cn("border px-2 py-1 font-terminal text-[11px] uppercase", ISSUE_CLASS_COPY[issueClass]?.className ?? ISSUE_CLASS_COPY["advisory/system"].className)}>
-                  {ISSUE_CLASS_COPY[issueClass]?.label ?? issueClass}: {count}
-                </span>
-              ))}
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {familyCounts.map(([family, count]) => (
-                <span key={family} className="border border-primary/15 px-2 py-1 font-terminal text-[11px] uppercase text-primary/80">
-                  {family.replace(/_/g, " ")}: {count}
-                </span>
-              ))}
-            </div>
-            <div className="mt-4 font-terminal text-[11px] text-muted-foreground">Scan time: {scanData?.scan_time_ms ?? 0} ms</div>
-          </div>
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="border-2 border-primary/20 bg-black/25 p-4">
-            <div className="mb-3 font-arcade text-xs text-primary">Vault contract</div>
-            <div className="grid gap-3 md:grid-cols-2 font-terminal text-xs text-muted-foreground">
-              <div className="border border-primary/10 bg-black/20 p-3">
-                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Canonical root</div>
-                <div className="mt-2 font-arcade text-sm text-primary">
-                  {obsidianConfigQuery.data?.canonicalRoot ?? "Not reported"}
-                </div>
-              </div>
-              <div className="border border-primary/10 bg-black/20 p-3">
-                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Deprecated roots</div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {(obsidianConfigQuery.data?.deprecatedRoots ?? []).length > 0 ? (
-                    (obsidianConfigQuery.data?.deprecatedRoots ?? []).map((root) => (
-                      <span key={root} className="border border-yellow-400/30 px-2 py-1 text-[11px] text-yellow-300">
-                        {root}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-muted-foreground">None reported</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-2 border-primary/20 bg-black/25 p-4">
-            <div className="mb-3 font-arcade text-xs text-primary">Reading the results</div>
-            <div className="space-y-2 font-terminal text-xs text-muted-foreground">
-              <div className="border border-red-400/15 bg-red-400/5 p-3">
-                <span className="font-arcade text-[11px] text-red-300">Real breakage</span>
-                <div className="mt-1">Counts toward health and should be fixed because a note, route, or link target is actually broken.</div>
-              </div>
-              <div className="border border-cyan-400/15 bg-cyan-400/5 p-3">
-                <span className="font-arcade text-[11px] text-cyan-300">Content gap</span>
-                <div className="mt-1">The vault structure is valid, but a reusable concept or target note is still missing.</div>
-              </div>
-              <div className="border border-primary/10 bg-black/20 p-3">
-                <span className="font-arcade text-[11px] text-primary/80">Advisory / system</span>
-                <div className="mt-1">These are templates, system docs, or warnings that do not count against the main health score.</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {batchResult ? (
-          <div className="border-2 border-violet-400/30 bg-violet-400/5 p-4">
-            <div className="font-arcade text-xs text-violet-300">Last batch enrich run</div>
-            <div className="mt-2 font-terminal text-xs text-muted-foreground">
-              {batchResult.total_processed} notes processed, {batchResult.total_links_added} links added.
-            </div>
-            <div className="mt-3 space-y-2">
-              {batchResult.results.map((result) => (
-                <div key={result.path} className="border border-violet-400/15 px-3 py-2 font-terminal text-xs">
-                  <div className="text-violet-200">{result.path}</div>
-                  <div className="text-muted-foreground">{result.selection_reason}</div>
-                  {result.error ? <div className="text-red-300">{result.error}</div> : <div className="text-green-300">{result.links_added} links added</div>}
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        {scanQuery.isLoading ? (
-          <div className="border-2 border-primary/20 bg-black/25 p-6 text-center font-terminal text-sm text-muted-foreground">
-            <Loader2 className="mr-2 inline h-4 w-4 animate-spin text-primary" />
-            Running vault scan...
-          </div>
-        ) : scanQuery.error ? (
-          <div className="border-2 border-red-400/30 bg-red-400/5 p-4 font-terminal text-xs text-red-300">
-            Failed to load Vault Health: {(scanQuery.error as Error).message}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {(scanData?.note_summaries ?? []).map((note) => {
-              const noteIssues = issuesByPath.get(note.path) ?? [];
-              return (
-                <NoteGroup
-                  key={note.path}
-                  note={note}
-                  issues={noteIssues}
-                  options={optionsQuery.data}
-                  onFix={(issue) => handleFix(issue, `${issue.path}:${issue.field || issue.issue_type}:${noteIssues.indexOf(issue)}`)}
-                  onManualFix={(issue) => setManualFixKey(`${issue.path}:${issue.field || issue.issue_type}:${noteIssues.indexOf(issue)}`)}
-                  onAiFix={handleAiFix}
-                  onEnrich={handleEnrich}
-                  fixingKeys={fixingKeys}
-                  enrichingPaths={enrichingPaths}
-                  aiFixingPaths={aiFixingPaths}
-                  manualFixKey={manualFixKey}
-                  onApplyManual={(issue) => handleFix(issue, manualFixKey ?? `${issue.path}:${issue.field}`)}
-                  onCancelManual={() => setManualFixKey(null)}
-                />
-              );
-            })}
-            {(scanData?.note_summaries?.length ?? 0) === 0 ? (
-              <div className="border-2 border-green-400/20 bg-green-400/5 p-5 font-terminal text-sm text-green-300">
-                No note-level issues are currently being reported by the janitor.
-              </div>
-            ) : null}
-          </div>
-        )}
-
-        {aiModal ? (
-          <AiSuggestionPanel
-            path={aiModal.path}
-            data={aiModal.data}
+          <VaultHealthBody
+            aiApplying={aiApplying}
+            aiModal={aiModal}
+            aiFixingPaths={aiFixingPaths}
+            batchResult={batchResult}
+            enrichingPaths={enrichingPaths}
+            familyCounts={familyCounts}
+            fixingKeys={fixingKeys}
+            handleAiFix={handleAiFix}
+            handleApplyAi={handleApplyAi}
+            handleBatchEnrich={handleBatchEnrich}
+            handleEnrich={handleEnrich}
+            handleFix={handleFix}
+            issueClassCounts={issueClassCounts}
+            issueTypeCounts={issueTypeCounts}
+            issuesByPath={issuesByPath}
+            manualFixKey={manualFixKey}
+            obsidianConfigQuery={obsidianConfigQuery}
+            onCancelManualFix={() => patchVaultHealthState({ manualFixKey: null })}
+            onCloseAiModal={() => patchVaultHealthState({ aiModal: null })}
+            onOpenManualFix={(issueKey) => patchVaultHealthState({ manualFixKey: issueKey })}
             options={optionsQuery.data}
-            applying={aiApplying}
-            onApply={handleApplyAi}
-            onCancel={() => setAiModal(null)}
+            scanData={scanData}
+            scanQuery={scanQuery}
           />
-        ) : null}
         </SupportWorkspaceFrame>
       </PageScaffold>
     </Layout>
