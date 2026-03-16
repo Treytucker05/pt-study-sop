@@ -13,8 +13,9 @@ Keep the current PT system visible first:
 
 Measure whether planner changes improve:
 
-- mode fit
-- over-planning control
+- backward-build integrity
+- scope discipline
+- task completion gates
 - first-wave correctness
 - canon alignment
 - queue/track correctness
@@ -36,7 +37,7 @@ Measure whether planner changes improve:
   baseline.
 - Treat critique-oriented prompts 7-8 as supplemental review-only cases until a
   new full eight-case baseline is intentionally adopted.
-- Do not change the rubric mid-comparison.
+- If the rubric changes, capture a new baseline before comparing revisions.
 - Record whether the planner stopped, downgraded, or escalated correctly.
 - Record whether queue conversion was withheld when it should have been.
 - Exclude `n/a` categories from totals instead of treating them as failures.

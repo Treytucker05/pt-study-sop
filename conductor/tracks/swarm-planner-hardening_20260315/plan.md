@@ -59,3 +59,4 @@ Make the shared and repo-local swarm planner skills mode-aware, validation-first
 - 2026-03-15: Re-ran shared-skill sync checks, docs sync, and diff hygiene checks before closing the track.
 - 2026-03-16: Added explicit `n/a` scoring semantics to the eval kit and recorded the first six-case baseline scorecard for future planner tuning.
 - 2026-03-16: Ran the next measured experiment by adding a review-only planner path, extending the benchmark set with two critique cases, and recording the resulting score improvement against the original six-case baseline.
+- 2026-03-16: Collapsed the shared planner to one backward-built operating mode, made per-task completion gates mandatory, updated the repo adapter/eval kit to match, and reset the benchmark rubric for future runs.

@@ -12,10 +12,11 @@
 ## Skill Smoke Scenarios
 
 - Small task:
-  - must choose `single-pass` or `sequential`
-  - must explicitly reject heavier swarm modes
+  - must keep the single backward-built planner compact
+  - must avoid fake extra phases or worker splits
 - Broad task:
-  - must emit planning mode, validation findings, review findings, and replan triggers
+  - must emit the operating model, validation findings, review findings, and
+    replan triggers
 - PT canon-conflict task:
   - must stop and surface the canon conflict instead of planning through it
 - Queue-conversion task:
@@ -54,3 +55,11 @@
 - PASS `git diff --check`
 - PASS manual benchmark rerun recorded in `review-only-metadata-refinement-scorecard.md`
 - PASS no regression across Cases `1-6`
+
+## Single-Mode Contract Reset Result (2026-03-16)
+
+- PASS shared planner backup created at `C:\Users\treyt\.agents\backups\swarm-planner-single-mode_20260316\treys-swarm-planner`
+- PASS shared-skill sync apply/check after the contract rewrite
+- PASS `python scripts/check_docs_sync.py`
+- PASS `git diff --check`
+- PASS transition artifact recorded in `single-mode-baseline-reset.md`

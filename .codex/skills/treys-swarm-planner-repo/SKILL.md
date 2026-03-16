@@ -3,8 +3,10 @@ name: treys-swarm-planner-repo
 description: >
   Apply treys-swarm-planner to the PT Study System by grounding in repo canon,
   the active execution board, Conductor tracks, planner APIs, and the
-  `study_tasks` schema. Use when planning significant work in this repo or when
-  converting a plan into Conductor and planner-backed execution tasks.
+  `study_tasks` schema. Use when planning significant work in this repo and
+  then executing it end-to-end with a backward-built wave/task graph until the
+  goal is complete, unless the user explicitly asks for plan-only or
+  review-only output.
 ---
 
 # Trey's Swarm Planner Repo Adapter
@@ -30,53 +32,66 @@ Before planning proceeds, explicitly check for drift across:
 - `conductor/tracks.md`
 - relevant code and route ownership
 
-If those sources disagree on product behavior, ownership, or the execution
-surface, stop and surface the conflict before generating tasks.
+If those sources disagree on product behavior, ownership, or execution shape:
+
+- do not stop in review mode by default
+- create an explicit `Phase 0: canon/sprint/track alignment` in the plan
+- make the required doc, track, and sprint updates part of execution
+- only stop when the conflict cannot be resolved safely from local repo truth or
+  requires a user product decision
 
 ## Review-only repo path
 
-When the user provides an existing PT plan, track, or roadmap and asks for
-review/tightening:
+Only stay review-only when the user explicitly asks for review, critique,
+tightening, or plan-only output.
 
-- do not regenerate the whole repo plan by default
+Otherwise:
+
+- treat invocation of this skill as permission to plan in depth and execute
 - preserve valid task IDs, track structure, and accepted canon decisions
-- emit a revised first unblocked wave and an execution readiness verdict
-- only escalate to a full rebuild when the current plan fails validation or
-  conflicts with repo canon
+- expand the plan into a full backward-built execution graph
+- keep executing waves until the requested goal is complete or a real blocker is hit
 
 ## Repo-specific planning rules
 
 - `Brain` is the home route unless canon says otherwise.
 - Do not start major implementation work until the scope is listed in the
-  current sprint section of `docs/root/TUTOR_TODO.md`.
+  current sprint section of `docs/root/TUTOR_TODO.md`. If it is missing, add
+  it as part of Phase 0 and then continue.
 - Prefer `conductor/tracks/` for the durable spec and plan.
-- Prefer the planner queue only for executable near-term tasks.
+- Prefer the planner queue for executable tasks and refresh it wave by wave.
 - Create or update a Conductor track before queue generation when the work is
   multi-phase, cross-subsystem, architecture-heavy, or explicitly track-scoped.
-- Generate planner-backed tasks only after the revised plan is accepted and only
-  for the first unblocked or near-term wave.
+- Treat explicit use of this skill as plan acceptance unless the user says
+  `plan only`, `review only`, or equivalent.
+- Generate planner-backed tasks for the current unblocked wave, execute them,
+  then replan the next wave until done.
 - Do not assume `scripts/agent_task_board.py` exists or is canonical.
 - Do not create duplicate course, session, calendar, task, or shell systems
   when existing primitives already exist.
 
-## Execution surface selector
+## Operating mode
 
-Every accepted repo plan must choose exactly one of:
+This adapter uses one default operating mode:
 
-- `markdown-only-no-queue`
-- `durable-track-only`
-- `track-plus-wave-queue`
+- `deep-plan-then-execute`
 
-You must state:
+That means:
 
-- selected execution surface
-- why that surface fits this repo task
-- why the other two surfaces were rejected
+- lock the goal and release proof first
+- build the full detailed backward-built plan
+- require a concrete completion gate for every task
+- create or update the Conductor track as the durable system of record
+- convert the first unblocked wave into executable tasks
+- execute that wave
+- refresh the dependency graph and execute the next unblocked wave
+- continue until the requested goal is complete
 
-Default review-only bias:
+Only deviate when the user explicitly asks for:
 
-- choose `durable-track-only` unless the user explicitly asked for execution
-  conversion and the revised first wave is truly unblocked
+- review-only
+- plan-only
+- partial execution
 
 ## Required repo outputs
 
@@ -84,45 +99,41 @@ Every accepted plan in this repo must state:
 
 - final goal
 - constraints and assumptions
-- files/surfaces touched
+- files and surfaces touched
 - dependency graph
 - validation gates
-- first unblocked wave
+- full phase and wave graph
+- current unblocked wave
 - Conductor vs planner split
-- execution surface selector outcome
+- execution-loop assumptions
+- concrete completion gates for every task
 
 ## Repo-specific task metadata
 
 Keep the shared task contract and add repo-facing meaning to:
 
+- `completion_gate`
+  - use a real command, test, smoke check, checklist, or artifact review
+  - do not leave it as `manual verification` without a named proof step
 - `blocked_reason`
   - use concrete repo blockers such as `canon drift`, `missing sprint item`,
-    `track not created`, `no queue field mapping`, or `shared surface conflict`
-  - for review-only requests, prefer critique-state blockers such as `await
-    explicit execution request`, `revised first wave still blocked`, or
-    `durable track remains the correct surface`
+    `track not created`, `no queue field mapping`, `shared surface conflict`,
+    or `await user product decision`
 - `replan_trigger`
   - use concrete repo triggers such as user scope change, canon change, route
     ownership conflict, or new dependency discovered during execution
 - `expected_evidence`
-  - use track docs, passing commands, task conversion artifacts, or live proof
-
-For review-only requests, `expected_evidence` should usually be:
-
-- revised track docs
-- a corrected first-wave verdict
-- a validation/readiness decision rather than new implementation tasks
-- an explicit blocker description that explains why queue conversion is still
-  deferred
+  - use track docs, passing commands, task conversion artifacts, live proof,
+    and completion evidence for each executed wave
 
 ## Required review bar
 
 - minimum 2 valid independent reviews
 - preferred 3 reviews for architecture, migrations, or broad product work
 - reviewer lenses should be diverse:
-  - dependency/parallel review
-  - validation/test review
-  - canon/product review
+  - dependency and parallel review
+  - validation and test review
+  - canon and product review
 - reject reviews that:
   - are vague or interrupted
   - ignore task IDs
@@ -130,21 +141,39 @@ For review-only requests, `expected_evidence` should usually be:
   - skip rollout or compatibility risk
   - rely on obsolete task-board assumptions
 
+## Execution loop
+
+After the plan is built and reviewed:
+
+1. Create or update the Conductor track if needed.
+2. Ensure the sprint board contains the work; if not, add it as part of Phase 0.
+3. Convert the first unblocked wave into executable tasks.
+4. Execute the wave directly or with subagents when that reduces drift.
+5. Record results in the track and refresh blockers and dependencies.
+6. Recompute the next unblocked wave.
+7. Continue until the goal is complete.
+
+Do not stop after the first wave unless:
+
+- the user explicitly asked for partial execution
+- a real blocker requires user input or a product decision
+- a safety or repo-truth conflict makes continued execution unsafe
+
 ## Eval kit
 
 Use the repo-local eval kit in [evals/](evals/) when tuning this adapter:
 
 - benchmark representative PT planning prompts
-- score mode fit, over-planning, first-wave correctness, canon alignment, and
+- score backward-build integrity, scope discipline, execution continuity, canon alignment, and
   queue/track correctness
-- preserve before/after examples in track evidence when the skill changes
+- preserve before and after examples in track evidence when the skill changes
 
 ## Use the references
 
 - Use [reference.md](reference.md) for PT-specific grounding, Conductor usage,
-  canon-drift gating, and planner field mapping.
-- Use [examples.md](examples.md) for repo-specific planning/output examples.
+  canon-drift resolution, execution-loop behavior, and planner field mapping.
+- Use [examples.md](examples.md) for repo-specific planning and output examples.
 - Use [review_prompt_template.md](review_prompt_template.md) for PT-specific
   review passes.
 - Use [task_conversion_template.md](task_conversion_template.md) when mapping an
-  accepted plan into `study_tasks`-backed planner tasks.
+  accepted plan into `study_tasks`-backed planner tasks wave by wave during execution.

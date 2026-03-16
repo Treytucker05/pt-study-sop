@@ -58,3 +58,5 @@ If the user asks to review and tighten an existing PT track or roadmap:
    - `blocked_reason`: why the track stays durable-only right now
    - `expected_evidence`: the revised track artifact or verdict that closes the
      review pass
+7. keep any task rewrites backward-built from the end goal and attach a
+   concrete completion gate to each revised task

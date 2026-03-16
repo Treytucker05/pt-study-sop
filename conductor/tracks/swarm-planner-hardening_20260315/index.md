@@ -8,6 +8,7 @@
 - Baseline Scorecard: [./baseline-scorecard.md](./baseline-scorecard.md)
 - Review-Only Experiment: [./review-only-experiment-scorecard.md](./review-only-experiment-scorecard.md)
 - Review-Only Metadata Refinement: [./review-only-metadata-refinement-scorecard.md](./review-only-metadata-refinement-scorecard.md)
+- Single-Mode Baseline Reset: [./single-mode-baseline-reset.md](./single-mode-baseline-reset.md)
 
 ## Status
 
@@ -25,3 +26,4 @@
 - The first benchmark baseline was captured on 2026-03-16 and recorded in `baseline-scorecard.md`.
 - The next tuning experiment focused on review-only plan handling and is recorded in `review-only-experiment-scorecard.md`.
 - A follow-up refinement tightened critique metadata wording and is recorded in `review-only-metadata-refinement-scorecard.md`.
+- A later contract change collapsed the planner to one backward-built operating mode and reset the benchmark rubric; that transition is recorded in `single-mode-baseline-reset.md`.

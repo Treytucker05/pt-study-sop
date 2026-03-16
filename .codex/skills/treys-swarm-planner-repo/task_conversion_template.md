@@ -1,22 +1,25 @@
 # PT Repo Task Conversion
 
-Only convert the first explicit unblocked wave. Stop after that wave.
-If any precondition below is `no`, do not generate planner tasks yet.
+Convert the current explicit unblocked wave into planner tasks, execute it,
+then repeat for the next wave until the goal is complete.
+If any precondition below is `no`, keep that work in the durable plan and do not
+queue it yet.
 
 Preconditions:
 
-- Review-only request without explicit execution conversion: `yes|no`
-- Revised plan accepted: `yes|no`
-- Validation gate passed: `yes|no`
-- First unblocked wave explicitly selected: `yes|no`
-- Execution surface selector chose `track-plus-wave-queue`: `yes|no`
+- Full revised plan exists: `yes|no`
+- Current unblocked wave explicitly selected: `yes|no`
+- Validation gate passed for this wave: `yes|no`
+- Every selected task has a concrete completion gate: `yes|no`
 - Queue item fields mappable to real `study_tasks` fields: `yes|no`
 - Every selected task has satisfied `depends_on`: `yes|no`
+- User explicitly requested plan-only or review-only: `yes|no`
 
 ## Durable plan context
 - Durable planning surface:
 - Durable artifact path:
 - Parent phase:
+- Parent wave:
 - Parent plan task ID:
 
 ## Planner queue output
@@ -38,14 +41,25 @@ Preconditions:
 
 ## Required notes content
 - dependency notes when queue is flat
-- verification commands/checklists
+- completion gates and named proof steps
 - `expected_evidence`
 - rollout or rollback caution when relevant
+- next-wave trigger when this task completes
+
+## Execute Then Recompute
+
+After the queued wave is executed:
+
+1. record completion evidence in the durable plan or track
+2. update blocked and unblocked task state
+3. identify the next executable wave
+4. convert the next wave into planner tasks
+5. continue until the goal is complete
 
 ## Stop Instead Of Convert
 
-If the execution surface is `markdown-only-no-queue` or `durable-track-only`,
-stop after recording the durable artifact path and the excluded blocked tasks.
+If `User explicitly requested plan-only or review-only` is `yes`, stop after the
+durable plan and wave breakdown.
 
-If `Review-only request without explicit execution conversion` is `yes`, stop
-after the revised first-wave verdict even if the rest of the preconditions pass.
+If any selected task still has an unsatisfied dependency, leave it in the
+durable plan and do not queue it yet.

@@ -4,12 +4,12 @@ reviewer.
 You must evaluate all of the following:
 
 1. request fit, including review-only handling when applicable
-2. planning mode fit
+2. backward-build integrity from goal to tasks
 3. validation gate correctness
-4. critique replan metadata quality when the request is review-only
-5. dependency correctness
-6. parallel safety and write-scope conflicts
-7. missing tests or weak verification gates
+4. task completion gate quality
+5. critique replan metadata quality when the request is review-only
+6. dependency correctness
+7. parallel safety and write-scope conflicts
 8. hidden assumptions
 9. rollout, migration, or compatibility risk
 10. task-conversion quality
@@ -37,12 +37,12 @@ Required output:
 
 - `Validity`
 - `Request fit`
-- `Mode fit`
+- `Backward-build integrity`
 - `Validation gate`
+- `Task completion gates`
 - `Critique replan metadata`
 - `Dependency correctness`
 - `Parallel safety`
-- `Verification gaps`
 - `Hidden assumptions`
 - `Rollout risk`
 - `Task conversion`

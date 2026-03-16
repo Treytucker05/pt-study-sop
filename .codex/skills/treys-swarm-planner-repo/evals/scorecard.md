@@ -9,12 +9,15 @@ Score each category from `0-2`.
 
 ## Categories
 
-- `mode_fit`
-  - did the planner choose the lightest viable mode?
-- `overplanning_control`
-  - did it avoid unnecessary swarm structure?
+- `backward_build_integrity`
+  - did the planner make the goal-to-task chain explicit?
+- `scope_discipline`
+  - did it avoid unnecessary planner ceremony?
 - `validation_gate`
   - did it separate executable validation from review?
+- `task_completion_gates`
+  - did every task include a concrete completion gate before it can count as
+    done?
 - `first_wave_correctness`
   - did it identify a truly unblocked first wave?
 - `canon_alignment`

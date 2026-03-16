@@ -8,8 +8,8 @@ Prompt:
 
 Expected emphasis:
 
-- choose `single-pass` or `sequential`
-- reject heavy swarm mode
+- keep the single backward-built planner compact
+- avoid fake extra phases or worker splits
 
 ## Case 2: Cross-subsystem feature
 
@@ -19,7 +19,7 @@ Prompt:
 
 Expected emphasis:
 
-- choose a heavier mode only if justified
+- full backward-built plan from goal to first wave
 - choose `track-plus-wave-queue`
 
 ## Case 3: Plan-review-only request
@@ -32,6 +32,7 @@ Expected emphasis:
 
 - no unnecessary new execution work
 - validation gate before critique
+- concrete completion gates on any revised tasks
 
 ## Case 4: Queue-conversion request
 
@@ -64,7 +65,7 @@ Prompt:
 Expected emphasis:
 
 - downgrade immediately
-- explain why swarm mode is overkill
+- explain why extra planner ceremony would be padding
 
 ## Case 7: Review-only repo track tightening
 

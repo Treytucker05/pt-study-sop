@@ -21,12 +21,13 @@
 - Before:
   - planner often emitted the full swarm structure without first justifying whether a lighter mode was enough
 - After:
-  - planner explicitly defaults to `single-pass` or `sequential` when the task is too small for swarm coordination
+  - planner keeps the same backward-built mode but stays compact when the task
+    is small
 
 ### Review-only critique path
 
 - Before:
-  - review-only outputs improved mode fit and over-planning control, but
+  - review-only outputs improved request fit and over-planning control, but
     `blocked_reason` and `expected_evidence` still sounded like generic task
     metadata
 - After:
@@ -51,6 +52,22 @@
   - `Case 3: Plan-review-only request` improved from `9 / 10` to `10 / 10`
   - supplemental critique cases improved from `15 / 16` to `16 / 16`
 
+## Single-Mode Contract Follow-Up
+
+- Shared planner contract changed again:
+  - removed explicit orchestration-mode selection
+  - made backward-built execution planning the only operating model
+  - replaced generic verification language with required task-level
+    `completion_gate` fields
+- Repo adapter changed to match:
+  - repo review now checks backward-build integrity and task completion gates
+  - repo task conversion requires a concrete completion gate before queueing
+  - eval kit rubric changed from mode-fit to single-mode backward-build
+    integrity and completion gates
+- Measurement note:
+  - this change resets the eval rubric, so future comparisons need a fresh
+    baseline instead of a direct delta against the older scorecards
+
 ### Broad repo task
 
 - Before:
@@ -59,7 +76,8 @@
 - After:
   - planner emits a `Validation gate` before review
   - repo adapter emits one explicit execution surface selector outcome
-  - task rows include `parallel_safety_class`, `blocked_reason`, `replan_trigger`, and `expected_evidence`
+  - task rows include `completion_gate`, `parallel_safety_class`,
+    `blocked_reason`, `replan_trigger`, and `expected_evidence`
 
 ### Canon-conflict task
 
@@ -95,12 +113,12 @@ Goal
 Constraints
 Out of scope
 Assumptions
-Planning mode selection
-- Mode: single-pass
-- Why lighter modes were rejected: n/a
+Operating model
+- backward-built execution planning
 Validation gate
 - First-wave truly unblocked: pass
 Phases and tasks
+- Completion gate: passing focused test
 - Parallel safety class: parallel-safe
 - Blocked reason: none
 - Replan trigger: user scope change
