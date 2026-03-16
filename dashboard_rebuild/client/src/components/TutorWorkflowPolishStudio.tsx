@@ -25,6 +25,7 @@ type ReviewQueueKey =
   | "editable_notes"
   | "memory_capsules"
   | "feedback"
+  | "studio_artifacts"
   | "card_requests"
   | "reprime";
 
@@ -50,6 +51,40 @@ function toLineItems(lines: string) {
       id: `line-${index}-${line}`,
       text: line,
     }));
+}
+
+function toArtifactItems(lines: string) {
+  return lines
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line, index) => {
+      const [rawType, rawTitle, ...rest] = line.split("::").map((part) => part.trim());
+      const title = rawTitle || rawType || `Artifact ${index + 1}`;
+      const content = rest.join(" :: ").trim();
+      return {
+        id: `artifact-${index}-${title}`,
+        type: rawType || "board",
+        title,
+        content,
+        text: line,
+      };
+    });
+}
+
+function artifactItemsToText(value: unknown) {
+  if (!Array.isArray(value)) return "";
+  return value
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return "";
+      const record = entry as Record<string, unknown>;
+      const type = String(record.type || "board").trim();
+      const title = String(record.title || "").trim();
+      const content = String(record.content || "").trim();
+      return [type, title, content].filter(Boolean).join(" :: ");
+    })
+    .filter(Boolean)
+    .join("\n");
 }
 
 function noteBadgeVariant(noteMode: TutorCapturedNote["note_mode"]) {
@@ -156,6 +191,7 @@ export function TutorWorkflowPolishStudio({
   const [selectedQueue, setSelectedQueue] = useState<ReviewQueueKey>("exact_notes");
   const [summaryDraft, setSummaryDraft] = useState("");
   const [assistantQuestion, setAssistantQuestion] = useState("");
+  const [studioArtifactText, setStudioArtifactText] = useState("");
   const [cardRequestText, setCardRequestText] = useState("");
   const [reprimeText, setReprimeText] = useState("");
   const [publishToObsidian, setPublishToObsidian] = useState(true);
@@ -178,6 +214,7 @@ export function TutorWorkflowPolishStudio({
     setAssistantQuestion(
       String(existingBundle?.studio_payload?.polish_question || defaultQuestion || ""),
     );
+    setStudioArtifactText(artifactItemsToText(existingBundle?.studio_payload?.artifacts));
     setCardRequestText(defaultCards);
     setReprimeText(defaultReprime);
     setPublishToObsidian(existingBundle?.publish_targets?.obsidian !== false);
@@ -200,6 +237,7 @@ export function TutorWorkflowPolishStudio({
     editable_notes: editableNotes.length,
     memory_capsules: memoryCapsules.length,
     feedback: feedbackQueue.length,
+    studio_artifacts: toArtifactItems(studioArtifactText).length,
     card_requests: toLineItems(cardRequestText).length,
     reprime: toLineItems(reprimeText).length,
   } satisfies Record<ReviewQueueKey, number>;
@@ -255,11 +293,13 @@ export function TutorWorkflowPolishStudio({
       selected_queue: selectedQueue,
       polish_question: assistantQuestion.trim(),
       classification_note: classificationNote.trim(),
+      artifacts: toArtifactItems(studioArtifactText),
     },
     publish_targets: {
       obsidian: publishToObsidian,
       anki: publishToAnki,
       brain: indexInBrain,
+      studio_artifacts: toArtifactItems(studioArtifactText).length > 0,
     },
     status,
   });
@@ -303,6 +343,7 @@ export function TutorWorkflowPolishStudio({
     { key: "editable_notes", label: "Editable notes", icon: ListTodo },
     { key: "memory_capsules", label: "Memory capsules", icon: Layers3 },
     { key: "feedback", label: "Feedback", icon: RefreshCw },
+    { key: "studio_artifacts", label: "Studio artifacts", icon: Layers3 },
     { key: "card_requests", label: "Card queue", icon: Sparkles },
     { key: "reprime", label: "Re-prime", icon: Brain },
   ];
@@ -455,6 +496,17 @@ export function TutorWorkflowPolishStudio({
             </div>
             <div className="space-y-2">
               <div className="text-[11px] font-terminal uppercase tracking-[0.2em] text-zinc-400">
+                Studio artifact package
+              </div>
+              <Textarea
+                value={studioArtifactText}
+                onChange={(event) => setStudioArtifactText(event.target.value)}
+                placeholder="One per line: board :: Cardiology concept board :: Link symptoms, preload, afterload"
+                className="min-h-[110px] rounded-none border-primary/20 bg-black/30"
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="text-[11px] font-terminal uppercase tracking-[0.2em] text-zinc-400">
                 Card requests
               </div>
               <Textarea
@@ -582,6 +634,18 @@ export function TutorWorkflowPolishStudio({
                     <div className="text-xs text-zinc-300">
                       {event.message || "No freeform message captured."}
                     </div>
+                  </div>
+                ))}
+              {selectedQueue === "studio_artifacts" &&
+                toArtifactItems(studioArtifactText).map((item) => (
+                  <div key={item.id} className="border border-primary/20 bg-black/20 p-3">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <div className="text-xs font-terminal text-zinc-100">{item.title}</div>
+                      <Badge variant="outline" className="rounded-none text-[10px]">
+                        {item.type}
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-zinc-300">{item.content || item.text}</div>
                   </div>
                 ))}
               {selectedQueue === "card_requests" &&

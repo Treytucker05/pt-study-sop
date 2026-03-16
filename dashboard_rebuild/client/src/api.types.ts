@@ -1754,6 +1754,9 @@ export interface TutorWorkflowAnalyticsSummary {
     memory_capsules: number;
     publish_successes: number;
     publish_failures: number;
+    source_linked_workflows: number;
+    reprime_requests: number;
+    studio_artifacts: number;
   };
   stage_seconds: Record<string, number>;
   top_courses: Array<{
@@ -1774,6 +1777,13 @@ export interface TutorWorkflowAnalyticsSummary {
     source_workflow_id: string | null;
     updated_at: string | null;
   };
+  learner_snapshot_history: Array<{
+    label: string | null;
+    confidence: string | null;
+    evidence: string[];
+    source_workflow_id: string | null;
+    updated_at: string | null;
+  }>;
 }
 
 export interface TutorWorkflowDetailResponse {

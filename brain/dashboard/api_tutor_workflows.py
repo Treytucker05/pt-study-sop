@@ -1454,12 +1454,21 @@ def get_tutor_workflow_analytics_summary():
 
         cur.execute(
             """
-            SELECT workflow_id, priming_method, priming_chain_id
+            SELECT workflow_id, priming_method, priming_chain_id, source_inventory_json
             FROM tutor_priming_bundles
             ORDER BY id ASC
             """
         )
         priming_rows = cur.fetchall()
+
+        cur.execute(
+            """
+            SELECT workflow_id, reprime_requests_json, studio_payload_json
+            FROM tutor_polish_bundles
+            ORDER BY id ASC
+            """
+        )
+        polish_rows = cur.fetchall()
 
         cur.execute(
             """
@@ -1483,6 +1492,9 @@ def get_tutor_workflow_analytics_summary():
         "memory_capsules": len(capsule_rows),
         "publish_successes": 0,
         "publish_failures": 0,
+        "source_linked_workflows": 0,
+        "reprime_requests": 0,
+        "studio_artifacts": 0,
     }
     stage_seconds: dict[str, int] = {
         "launch": 0,
@@ -1502,6 +1514,7 @@ def get_tutor_workflow_analytics_summary():
         "source_workflow_id": None,
         "updated_at": None,
     }
+    learner_snapshot_history: list[dict[str, Any]] = []
 
     for row in workflow_rows:
         status = str(row["status"] or "").strip().lower()
@@ -1561,6 +1574,23 @@ def get_tutor_workflow_analytics_summary():
             method_counts[method] = method_counts.get(method, 0) + 1
         if chain_id:
             chain_counts[chain_id] = chain_counts.get(chain_id, 0) + 1
+        source_inventory = _json_loads(row["source_inventory_json"], [])
+        if isinstance(source_inventory, list) and any(
+            isinstance(item, dict) and isinstance(item.get("priming_output"), dict)
+            for item in source_inventory
+        ):
+            totals["source_linked_workflows"] += 1
+
+    for row in polish_rows:
+        reprime_requests = _json_loads(row["reprime_requests_json"], [])
+        studio_payload = _json_loads(row["studio_payload_json"], {})
+        if isinstance(reprime_requests, list):
+            totals["reprime_requests"] += len(reprime_requests)
+        artifacts = studio_payload.get("artifacts") if isinstance(studio_payload, dict) else []
+        if isinstance(artifacts, list):
+            totals["studio_artifacts"] += len(
+                [item for item in artifacts if isinstance(item, dict) or isinstance(item, str)]
+            )
 
     for row in publish_rows:
         obsidian_results = _json_loads(row["obsidian_results_json"], [])
@@ -1575,21 +1605,23 @@ def get_tutor_workflow_analytics_summary():
             elif success is False or status in {"failed", "error", "partial_failure"}:
                 totals["publish_failures"] += 1
 
-        if learner_snapshot["label"] is None:
-            payload = _json_loads(row["brain_index_payload_json"], {})
-            snapshot = payload.get("learner_archetype_snapshot")
-            if isinstance(snapshot, dict):
-                evidence_value = snapshot.get("evidence")
-                evidence = []
-                if isinstance(evidence_value, list):
-                    evidence = [str(item) for item in evidence_value]
-                learner_snapshot = {
-                    "label": _normalize_text(snapshot.get("label")),
-                    "confidence": _normalize_text(snapshot.get("confidence")),
-                    "evidence": evidence,
-                    "source_workflow_id": row["workflow_id"],
-                    "updated_at": row["updated_at"],
-                }
+        payload = _json_loads(row["brain_index_payload_json"], {})
+        snapshot = payload.get("learner_archetype_snapshot")
+        if isinstance(snapshot, dict):
+            evidence_value = snapshot.get("evidence")
+            evidence = []
+            if isinstance(evidence_value, list):
+                evidence = [str(item) for item in evidence_value]
+            normalized_snapshot = {
+                "label": _normalize_text(snapshot.get("label")),
+                "confidence": _normalize_text(snapshot.get("confidence")),
+                "evidence": evidence,
+                "source_workflow_id": row["workflow_id"],
+                "updated_at": row["updated_at"],
+            }
+            learner_snapshot_history.append(normalized_snapshot)
+            if learner_snapshot["label"] is None:
+                learner_snapshot = normalized_snapshot
 
     top_courses = sorted(
         course_rollups.values(),
@@ -1615,5 +1647,6 @@ def get_tutor_workflow_analytics_summary():
                 "priming_chains": priming_chains,
             },
             "learner_snapshot": learner_snapshot,
+            "learner_snapshot_history": learner_snapshot_history[:5],
         }
     )

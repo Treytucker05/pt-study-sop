@@ -30,6 +30,13 @@ type FinalSyncCardCandidate = {
   card_type: string;
 };
 
+type FinalSyncStudioArtifact = {
+  id: string;
+  type: string;
+  title: string;
+  content: string;
+};
+
 function sanitizeSegment(value: string) {
   return value.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
 }
@@ -77,6 +84,25 @@ function extractCardCandidates(polishBundle: TutorPolishBundle | null): FinalSyn
   return cards;
 }
 
+function extractStudioArtifacts(polishBundle: TutorPolishBundle | null): FinalSyncStudioArtifact[] {
+  const raw = (polishBundle?.studio_payload?.artifacts || []) as unknown[];
+  return raw
+    .map((item, index) => {
+      if (!item || typeof item !== "object") return null;
+      const record = item as Record<string, unknown>;
+      const type = String(record.type || "board").trim() || "board";
+      const title = String(record.title || `Artifact ${index + 1}`).trim() || `Artifact ${index + 1}`;
+      const content = String(record.content || record.text || "").trim();
+      return {
+        id: String(record.id || `artifact-${index}`),
+        type,
+        title,
+        content,
+      };
+    })
+    .filter((item): item is FinalSyncStudioArtifact => Boolean(item));
+}
+
 function textFromUnknown(value: unknown) {
   if (typeof value === "string") {
     return value.trim();
@@ -94,6 +120,9 @@ function textFromUnknown(value: unknown) {
 function buildMarkdown(detail: TutorWorkflowDetailResponse | null) {
   const workflow = detail?.workflow;
   const polishBundle = detail?.polish_bundle;
+  const studioArtifacts = extractStudioArtifacts(polishBundle)
+    .map((item) => `### ${item.title} (${item.type})\n\n${item.content || "No artifact notes provided."}`)
+    .join("\n\n");
   const summaryBlock = (polishBundle?.summaries || [])
     .map((item) => {
       const record = item as Record<string, unknown>;
@@ -133,6 +162,7 @@ function buildMarkdown(detail: TutorWorkflowDetailResponse | null) {
     summaryBlock || "## Summary\n\nNo polished summary available yet.",
     exactNotes ? `## Exact Notes\n\n${exactNotes}` : "",
     editableNotes ? `## Editable Notes\n\n${editableNotes}` : "",
+    studioArtifacts ? `## Studio Artifacts\n\n${studioArtifacts}` : "",
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -178,6 +208,7 @@ function deriveLearnerSnapshot(detail: TutorWorkflowDetailResponse | null, cards
 function buildBrainIndexPayload(
   detail: TutorWorkflowDetailResponse | null,
   cards: FinalSyncCardCandidate[],
+  studioArtifacts: FinalSyncStudioArtifact[],
   obsidianResults: Record<string, unknown>[],
   ankiResults: Record<string, unknown>[],
 ) {
@@ -204,6 +235,12 @@ function buildBrainIndexPayload(
     },
     memory_capsule_count: detail?.memory_capsules.length || 0,
     card_candidate_count: cards.length,
+    studio_artifact_count: studioArtifacts.length,
+    studio_artifacts: studioArtifacts.map((item) => ({
+      id: item.id,
+      type: item.type,
+      title: item.title,
+    })),
     publish_targets: detail?.polish_bundle?.publish_targets || {},
     publish_results_snapshot: {
       obsidian: obsidianResults,
@@ -243,6 +280,7 @@ export function TutorWorkflowFinalSync({
   });
 
   const cardCandidates = useMemo(() => extractCardCandidates(polishBundle), [polishBundle]);
+  const studioArtifacts = useMemo(() => extractStudioArtifacts(polishBundle), [polishBundle]);
   const defaultVaultPath = useMemo(() => buildDefaultVaultPath(workflowDetail), [workflowDetail]);
 
   useEffect(() => {
@@ -334,6 +372,7 @@ export function TutorWorkflowFinalSync({
       const brainIndexPayload = buildBrainIndexPayload(
         workflowDetail,
         cardCandidates,
+        studioArtifacts,
         obsidianResults,
         ankiResults,
       );
@@ -461,6 +500,39 @@ export function TutorWorkflowFinalSync({
                         <div className="mt-1 text-muted-foreground">{card.back}</div>
                         <div className="mt-2 text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
                           {card.deck_name} / {card.card_type}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+          <Card className="rounded-none border-primary/30 bg-black/40">
+            <CardHeader className="pb-2">
+              <CardTitle className="font-arcade text-xs text-primary">STUDIO ARTIFACTS</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[220px] pr-2">
+                <div className="space-y-2">
+                  {studioArtifacts.length === 0 ? (
+                    <div className="border border-primary/20 bg-black/30 p-2 text-[10px] font-terminal text-muted-foreground">
+                      No richer Studio artifacts are staged yet.
+                    </div>
+                  ) : (
+                    studioArtifacts.map((item) => (
+                      <div
+                        key={item.id}
+                        className="border border-primary/20 bg-black/30 p-2 text-[10px] font-terminal"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="font-bold text-primary">{item.title}</div>
+                          <Badge variant="outline" className="rounded-none text-[9px] uppercase">
+                            {item.type}
+                          </Badge>
+                        </div>
+                        <div className="mt-1 text-muted-foreground">
+                          {item.content || "No artifact notes provided."}
                         </div>
                       </div>
                     ))
