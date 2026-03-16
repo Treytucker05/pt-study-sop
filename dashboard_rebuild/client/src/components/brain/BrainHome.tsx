@@ -653,6 +653,7 @@ function useBrainHomeContent({ workspace }: { workspace: BrainWorkspace }) {
   const topPrimingMethod = tutorWorkflowAnalytics?.methods?.priming_methods?.[0];
   const topPrimingChain = tutorWorkflowAnalytics?.methods?.priming_chains?.[0];
   const workflowLearnerSnapshot = tutorWorkflowAnalytics?.learner_snapshot;
+  const workflowLearnerSnapshotHistory = tutorWorkflowAnalytics?.learner_snapshot_history || [];
 
 async function handleDownloadJson(
     filename: string,
@@ -989,6 +990,9 @@ async function handleDownloadJson(
                 {workflowLearnerSnapshot?.evidence?.[0]
                   ? ` • ${workflowLearnerSnapshot.evidence[0]}`
                   : ""}
+                {workflowLearnerSnapshotHistory.length > 1
+                  ? ` • ${workflowLearnerSnapshotHistory.length} saved snapshots`
+                  : ""}
               </div>
             </div>
             <div className="border border-primary/15 bg-black/30 p-3">
@@ -1003,6 +1007,24 @@ async function handleDownloadJson(
                 {topPrimingChain?.label
                   ? ` • top chain ${topPrimingChain.label} (${topPrimingChain.count})`
                   : ""}
+              </div>
+            </div>
+            <div className="border border-primary/15 bg-black/30 p-3">
+              <div className="font-arcade text-[11px] text-primary">SOURCE-LINKED PRIMING</div>
+              <div className="mt-2 font-terminal text-sm text-white">
+                {tutorWorkflowAnalytics?.totals?.source_linked_workflows || 0} workflow(s)
+              </div>
+              <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
+                Workflows with persisted per-source priming outputs.
+              </div>
+            </div>
+            <div className="border border-primary/15 bg-black/30 p-3">
+              <div className="font-arcade text-[11px] text-primary">ARTIFACT + RE-PRIME SIGNALS</div>
+              <div className="mt-2 font-terminal text-sm text-white">
+                {tutorWorkflowAnalytics?.totals?.studio_artifacts || 0} artifact(s)
+              </div>
+              <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
+                {tutorWorkflowAnalytics?.totals?.reprime_requests || 0} re-prime request(s) captured
               </div>
             </div>
           </CardContent>

@@ -28,9 +28,27 @@
 - 2026-03-16: `TDP-220` bounded Priming Assist write-back landed
   - assist output rehydrates `summary`, `concepts`, `terminology`, `root explanations`, and `gaps`
   - traceability preserved through `source_inventory[].priming_output`
+- 2026-03-16: `TDP-300` richer Studio artifact packaging landed
+  - Polish now captures a first-class `studio artifact package` in `studio_payload.artifacts`
+  - artifact lines are reviewable in the Polish queue and survive into Final Sync
+- 2026-03-16: `TDP-310` richer artifact linkage landed in Final Sync + Brain payloads
+  - Final Sync previews Studio artifacts alongside cards and markdown export
+  - Brain index payload now records `studio_artifact_count` and artifact refs
+- 2026-03-16: `TDP-400` analytics depth landed in the Tutor workflow summary API
+  - added `source_linked_workflows`
+  - added `reprime_requests`
+  - added `studio_artifacts`
+  - added learner snapshot history
+- 2026-03-16: `TDP-410` Brain Home renders the new workflow intelligence signals
+  - source-linked priming count
+  - artifact + re-prime signals
+  - richer learner snapshot summary
 
 ## Validation evidence
 
 - 2026-03-16: `python scripts/check_docs_sync.py` passed after track bootstrap and baseline/metric updates
 - 2026-03-16: `python -m py_compile brain/dashboard/api_tutor_workflows.py` passed
 - 2026-03-16: `cd dashboard_rebuild && npm run build` passed after the Priming Assist implementation
+- 2026-03-16: `cd dashboard_rebuild && npm run build` passed after the richer Studio artifact publish slice
+- 2026-03-16: `python -m py_compile brain/dashboard/api_tutor_workflows.py` passed after the analytics-depth slice
+- 2026-03-16: `cd dashboard_rebuild && npm run build` passed after the Brain workflow intelligence UI slice

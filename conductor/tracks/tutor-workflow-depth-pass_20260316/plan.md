@@ -209,7 +209,7 @@ Execution rule:
 ### Phase 3 — Polish / Final Sync artifact depth
 
 #### TDP-300
-- `status`: pending
+- `status`: in_progress
 - `depends_on`: [TDP-110]
 - `surfaces`:
   - `dashboard_rebuild/client/src/components/TutorWorkflowPolishStudio.tsx`
@@ -225,7 +225,7 @@ Execution rule:
 - `expected_evidence`: Polish bundle and Final Sync preview with richer artifact data
 
 #### TDP-310
-- `status`: pending
+- `status`: in_progress
 - `depends_on`: [TDP-300]
 - `surfaces`:
   - Final Sync publish results
@@ -242,7 +242,7 @@ Execution rule:
 ### Phase 4 — Brain analytics and learner-evidence depth
 
 #### TDP-400
-- `status`: pending
+- `status`: in_progress
 - `depends_on`: [TDP-220, TDP-310]
 - `surfaces`:
   - `brain/dashboard/api_tutor_workflows.py`
@@ -261,7 +261,7 @@ Execution rule:
 - `expected_evidence`: enriched analytics response sample
 
 #### TDP-410
-- `status`: pending
+- `status`: in_progress
 - `depends_on`: [TDP-400]
 - `surfaces`:
   - Brain analytics UI rendering
