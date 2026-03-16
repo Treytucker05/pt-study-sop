@@ -36,3 +36,13 @@
 - Live proof:
   - verify edit, boarded/archive actions, and history work in Studio L3
   - verify existing promote flows still invalidate correctly
+
+### L3 Result (2026-03-15)
+
+- PASS `pytest brain/tests/test_tutor_studio.py -q`
+- PASS `cd dashboard_rebuild && npm run test -- client/src/__tests__/api.test.ts client/src/components/__tests__/TutorStudioMode.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+- PASS `cd dashboard_rebuild && npm run build`
+- PASS live proof at `http://127.0.0.1:5000/tutor?mode=studio`
+  - initial mutation check exposed a stale `dashboard_web.py` process on port 5000 that did not yet serve `PATCH /api/tutor/studio/items/<id>`
+  - restarting via `Start_Dashboard.bat` brought the update/history routes online
+  - final live proof verified inline edit, revision history, archive-with-pinned-history, and mark-boarded behavior in the real Studio L3 surface using disposable validation captures on course `3`

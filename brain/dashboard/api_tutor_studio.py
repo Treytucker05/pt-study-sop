@@ -5,6 +5,8 @@ This module provides the first normalized Studio commands:
   - POST /api/tutor/studio/capture
   - GET  /api/tutor/studio/restore
   - POST /api/tutor/studio/promote
+  - PATCH /api/tutor/studio/items/<item_id>
+  - GET  /api/tutor/studio/items/<item_id>/revisions
 """
 
 from __future__ import annotations
@@ -29,20 +31,32 @@ from dashboard.api_tutor_projects import (  # noqa: E402
 VALID_ITEM_SCOPES = {"session", "project"}
 VALID_ITEM_STATUSES = {"captured", "boarded", "promoted", "archived"}
 VALID_PROMOTION_MODES = {"copy", "move"}
+TRUTHY_QUERY_VALUES = {"1", "true", "yes", "on"}
 
 
 def _require_course(conn: sqlite3.Connection, course_id: int) -> sqlite3.Row | None:
     return _require_project_course(conn, course_id)
 
 
+def _load_json(raw: Any) -> Any:
+    if raw in (None, ""):
+        return None
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+
+
+def _dump_json(value: Any, *, field_name: str) -> str | None:
+    if value is None:
+        return None
+    try:
+        return json.dumps(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name} must be JSON serializable") from exc
+
+
 def _serialize_item(row: sqlite3.Row) -> dict[str, Any]:
-    def _load_json(raw: Any) -> Any:
-        if raw in (None, ""):
-            return None
-        try:
-            return json.loads(raw)
-        except json.JSONDecodeError:
-            return None
 
     return {
         "id": int(row["id"]),
@@ -138,6 +152,64 @@ def _insert_revision(
             datetime.now(timezone.utc).isoformat(),
         ),
     )
+
+
+def _ensure_revision_snapshot(conn: sqlite3.Connection, row: sqlite3.Row) -> None:
+    cur = conn.cursor()
+    revision = int(row["version"] or 1)
+    cur.execute(
+        """
+        SELECT 1
+        FROM studio_item_revisions
+        WHERE studio_item_id = ? AND revision = ?
+        LIMIT 1
+        """,
+        (int(row["id"]), revision),
+    )
+    if cur.fetchone() is not None:
+        return
+    _insert_revision(
+        conn,
+        studio_item_id=int(row["id"]),
+        revision=revision,
+        body_markdown=row["body_markdown"],
+        payload_json=row["payload_json"],
+        source_locator_json=row["source_locator_json"],
+    )
+
+
+def _serialize_revision(row: sqlite3.Row) -> dict[str, Any]:
+    return {
+        "revision": int(row["revision"]),
+        "body_markdown": row["body_markdown"],
+        "payload": _load_json(row["payload_json"]),
+        "source_locator": _load_json(row["source_locator_json"]),
+        "created_at": row["created_at"],
+    }
+
+
+def _resolve_update_action_type(current_status: str, next_status: str | None) -> str:
+    if next_status is None or next_status == current_status:
+        return "update"
+    if current_status == "archived" and next_status in {"captured", "boarded"}:
+        return "restore"
+    if next_status == "boarded":
+        return "board"
+    if next_status == "archived":
+        return "archive"
+    return "update"
+
+
+def _validate_status_transition(current_status: str, next_status: str) -> bool:
+    if next_status == current_status:
+        return True
+    allowed: dict[str, set[str]] = {
+        "captured": {"boarded", "archived"},
+        "boarded": {"archived"},
+        "archived": {"captured", "boarded"},
+        "promoted": set(),
+    }
+    return next_status in allowed.get(current_status, set())
 
 
 def _serialize_learning_objective(row: sqlite3.Row) -> dict[str, Any]:
@@ -589,6 +661,7 @@ def restore_studio_items():
         return jsonify({"error": f"scope must be one of {sorted(VALID_ITEM_SCOPES)}"}), 400
 
     tutor_session_id = request.args.get("tutor_session_id")
+    include_archived = str(request.args.get("include_archived") or "").strip().lower() in TRUTHY_QUERY_VALUES
 
     conn = get_connection()
     conn.row_factory = sqlite3.Row
@@ -600,6 +673,8 @@ def restore_studio_items():
 
         conditions = ["course_id = ?", "deleted_at IS NULL"]
         params: list[Any] = [course_id]
+        if not include_archived:
+            conditions.append("status != 'archived'")
         if scope:
             conditions.append("scope = ?")
             params.append(scope)
@@ -621,9 +696,164 @@ def restore_studio_items():
         counts = {
             "total": len(items),
             "captured": sum(1 for item in items if item["status"] == "captured"),
+            "boarded": sum(1 for item in items if item["status"] == "boarded"),
             "promoted": sum(1 for item in items if item["status"] == "promoted"),
+            "archived": sum(1 for item in items if item["status"] == "archived"),
         }
         return jsonify({"course_id": course_id, "items": items, "counts": counts})
+    finally:
+        conn.close()
+
+
+@tutor_bp.route("/studio/items/<int:item_id>", methods=["PATCH"])
+def update_studio_item(item_id: int):
+    data = request.get_json(silent=True) or {}
+    editable_fields = {"title", "body_markdown", "payload", "source_locator", "status"}
+    provided_fields = editable_fields.intersection(data.keys())
+    if not provided_fields:
+        return jsonify({"error": "at least one editable field is required"}), 400
+
+    request_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM studio_items WHERE id = ? AND deleted_at IS NULL", (item_id,))
+        current_row = cur.fetchone()
+        if current_row is None:
+            return jsonify({"error": "studio item not found"}), 404
+
+        updates: dict[str, Any] = {}
+
+        if "title" in data:
+            updates["title"] = None if data["title"] is None else str(data["title"])
+
+        if "body_markdown" in data:
+            updates["body_markdown"] = (
+                None if data["body_markdown"] is None else str(data["body_markdown"])
+            )
+
+        try:
+            if "payload" in data:
+                updates["payload_json"] = _dump_json(data.get("payload"), field_name="payload")
+            if "source_locator" in data:
+                updates["source_locator_json"] = _dump_json(
+                    data.get("source_locator"),
+                    field_name="source_locator",
+                )
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+
+        next_status: str | None = None
+        if "status" in data:
+            next_status = str(data.get("status") or "").strip().lower()
+            if next_status not in VALID_ITEM_STATUSES:
+                return jsonify({"error": f"status must be one of {sorted(VALID_ITEM_STATUSES)}"}), 400
+            current_status = str(current_row["status"] or "").strip().lower()
+            if not _validate_status_transition(current_status, next_status):
+                return (
+                    jsonify(
+                        {
+                            "error": "invalid status transition",
+                            "current_status": current_status,
+                            "next_status": next_status,
+                        }
+                    ),
+                    400,
+                )
+            updates["status"] = next_status
+
+        _ensure_revision_snapshot(conn, current_row)
+        next_version = int(current_row["version"] or 1) + 1
+        updates["version"] = next_version
+        updates["updated_at"] = now
+
+        columns = list(updates.keys())
+        values = [updates[column] for column in columns]
+        values.append(item_id)
+        cur.execute(
+            f"""
+            UPDATE studio_items
+            SET {', '.join(f"{column} = ?" for column in columns)}
+            WHERE id = ?
+            """,
+            tuple(values),
+        )
+
+        cur.execute("SELECT * FROM studio_items WHERE id = ?", (item_id,))
+        updated_row = cur.fetchone()
+        assert updated_row is not None
+
+        _insert_revision(
+            conn,
+            studio_item_id=item_id,
+            revision=next_version,
+            body_markdown=updated_row["body_markdown"],
+            payload_json=updated_row["payload_json"],
+            source_locator_json=updated_row["source_locator_json"],
+        )
+
+        _record_action(
+            conn,
+            course_id=int(updated_row["course_id"]),
+            tutor_session_id=updated_row["tutor_session_id"],
+            action_type=_resolve_update_action_type(str(current_row["status"] or ""), next_status),
+            destination_kind=updated_row["scope"],
+            request_id=request_id,
+            details={
+                "item_id": item_id,
+                "changed_fields": sorted(provided_fields),
+                "previous_status": current_row["status"],
+                "next_status": updated_row["status"],
+                "version": next_version,
+            },
+            idempotency_key=f"update:{request_id}",
+        )
+        conn.commit()
+
+        return jsonify({"request_id": request_id, "item": _serialize_item(updated_row)})
+    finally:
+        conn.close()
+
+
+@tutor_bp.route("/studio/items/<int:item_id>/revisions", methods=["GET"])
+def get_studio_item_revisions(item_id: int):
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM studio_items WHERE id = ? AND deleted_at IS NULL", (item_id,))
+        item_row = cur.fetchone()
+        if item_row is None:
+            return jsonify({"error": "studio item not found"}), 404
+
+        cur.execute(
+            """
+            SELECT id, revision, body_markdown, payload_json, source_locator_json, created_at
+            FROM studio_item_revisions
+            WHERE studio_item_id = ?
+            ORDER BY revision DESC, id DESC
+            """,
+            (item_id,),
+        )
+        revisions = [_serialize_revision(row) for row in cur.fetchall()]
+
+        current_revision = int(item_row["version"] or 1)
+        if not any(revision["revision"] == current_revision for revision in revisions):
+            revisions.insert(
+                0,
+                {
+                    "revision": current_revision,
+                    "body_markdown": item_row["body_markdown"],
+                    "payload": _load_json(item_row["payload_json"]),
+                    "source_locator": _load_json(item_row["source_locator_json"]),
+                    "created_at": item_row["updated_at"] or item_row["created_at"],
+                },
+            )
+
+        return jsonify({"item_id": item_id, "revisions": revisions})
     finally:
         conn.close()
 

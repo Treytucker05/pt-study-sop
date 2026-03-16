@@ -3,7 +3,7 @@
 **Track ID:** studio-l2-l3-hub-review-loop_20260315  
 **Spec:** [./spec.md](./spec.md)  
 **Created:** 2026-03-15  
-**Status:** Active
+**Status:** Complete
 
 ## Goal
 
@@ -33,14 +33,14 @@ Make Studio L2 a course-native prep hub backed by a dedicated overview API, then
 
 ## Phase 3: Studio L3 review loop
 
-- [ ] `SCLR-300` Add Studio item update/history endpoints and archived-item restore semantics in `brain/dashboard/api_tutor_studio.py`.
-- [ ] `SCLR-310` Extend Tutor client/types/contracts for Studio edit/history actions.
-- [ ] `SCLR-320` Refactor `TutorStudioMode.tsx` to support inline edit, boarded/archive actions, and revision history without changing the existing shell layout.
-- [ ] `SCLR-330` Add/update targeted L3 frontend/backend tests.
+- [x] `SCLR-300` Add Studio item update/history endpoints and archived-item restore semantics in `brain/dashboard/api_tutor_studio.py`.
+- [x] `SCLR-310` Extend Tutor client/types/contracts for Studio edit/history actions.
+- [x] `SCLR-320` Refactor `TutorStudioMode.tsx` to support inline edit, boarded/archive actions, and revision history without changing the existing shell layout.
+- [x] `SCLR-330` Add/update targeted L3 frontend/backend tests.
 
 ## Phase 4: Validation and closeout
 
-- [ ] `SCLR-900` Run validation, sync README/track docs, and close the track.
+- [x] `SCLR-900` Run validation, sync README/track docs, and close the track.
 
 ## Dependency Graph
 
@@ -65,3 +65,8 @@ Make Studio L2 a course-native prep hub backed by a dedicated overview API, then
   - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorStudioMode.test.tsx`
   - `cd dashboard_rebuild && npm run build`
 - 2026-03-15: Live `/tutor?mode=studio` proof initially failed because the stale `dashboard_web.py` process on port 5000 was still serving the old route map. Restarting via `Start_Dashboard.bat` fixed the live proof and confirmed the overview-backed L2 flow.
+- 2026-03-15: Phase 3 and Phase 4 shipped and validated. Studio items now support update/history/archive semantics, `TutorStudioMode.tsx` exposes inline edit plus board/archive/history actions, and the required checks passed:
+  - `pytest brain/tests/test_tutor_studio.py -q`
+  - `cd dashboard_rebuild && npm run test -- client/src/__tests__/api.test.ts client/src/components/__tests__/TutorStudioMode.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live `/tutor?mode=studio` proof after restarting the stale `dashboard_web.py` process, including real UI validation of edit, revision history, archive, and mark-boarded actions

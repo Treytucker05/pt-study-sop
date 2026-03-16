@@ -1530,7 +1530,9 @@ export interface TutorStudioRestoreResponse {
   counts: {
     total: number;
     captured: number;
+    boarded: number;
     promoted: number;
+    archived: number;
   };
 }
 
@@ -1539,6 +1541,32 @@ export interface TutorStudioPromoteRequest {
   promotion_mode?: "copy" | "move";
   target_scope?: "project";
   idempotency_key?: string;
+}
+
+export interface TutorStudioUpdateRequest {
+  title?: string | null;
+  body_markdown?: string | null;
+  payload?: unknown;
+  source_locator?: Record<string, unknown> | null;
+  status?: TutorStudioItemStatus;
+}
+
+export interface TutorStudioUpdateResponse {
+  request_id: string;
+  item: TutorStudioItem;
+}
+
+export interface TutorStudioItemRevision {
+  revision: number;
+  body_markdown: string | null;
+  payload: unknown;
+  source_locator: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface TutorStudioItemRevisionsResponse {
+  item_id: number;
+  revisions: TutorStudioItemRevision[];
 }
 
 export interface TutorArtifactRequest {

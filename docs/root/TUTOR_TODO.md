@@ -61,7 +61,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - Studio L2 renders from that overview payload instead of client-side endpoint stitching and deck-name heuristics
     - `pytest brain/tests/test_tutor_studio.py -q`, `cd dashboard_rebuild && npm run test -- client/src/__tests__/api.test.ts client/src/components/__tests__/StudioClassDetail.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`, and `cd dashboard_rebuild && npm run build` pass
   - Completed 2026-03-15: added `GET /api/tutor/studio/overview`, moved `StudioClassDetail` onto the overview payload for MATERIALS/OBJECTIVES/CARDS & TESTS/VAULT/STATS, passed the targeted backend/frontend/build gates, and live-verified `http://127.0.0.1:5000/tutor?mode=studio` after restarting the stale `dashboard_web.py` process so the new route was actually served.
-- [ ] SCL3-100. Harden Studio L3 into a real review loop with inline edit, boarded/archive lifecycle actions, and revision history without changing the shell's route model or board scopes.
+- [x] SCL3-100. Harden Studio L3 into a real review loop with inline edit, boarded/archive lifecycle actions, and revision history without changing the shell's route model or board scopes.
   - Track: `conductor/tracks/studio-l2-l3-hub-review-loop_20260315/`
   - Scope:
     - `brain/dashboard/api_tutor_studio.py`
@@ -78,6 +78,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - archived items fall out of default restore while promote flows remain intact
     - Studio L3 supports edit, board, archive, and history actions in the current workspace shell
     - targeted backend/frontend tests plus `cd dashboard_rebuild && npm run build` pass
+  - Completed 2026-03-15: added Studio item update/revision routes plus archived-item restore filtering, shipped inline edit / mark-boarded / archive / history controls in `TutorStudioMode.tsx`, passed the targeted backend/frontend/build gates, and live-verified the real L3 flow after restarting the stale `dashboard_web.py` listener on port `5000`.
 
 ### Sprint: Shell Control System Rollout (2026-03-15)
 - [ ] SCSR-100. Carry the new command-deck nav language through the rest of the shared control surfaces so flagship routes and support frames use one premium control system instead of mixed button/tab treatments.
@@ -403,7 +404,8 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
       - `cd dashboard_rebuild && npm run check`
       - `cd dashboard_rebuild && npm run build`
       - full React Doctor API rescan via `diagnose('.')` returned `100/100` and `0` diagnostics after removing the Tutor cluster entries from `dashboard_rebuild/react-doctor.config.json`
-- [ ] RDAH-182. Refactor the support-page structural hotspots starting with Methods, Calendar, and the remaining support surfaces.
+- [x] RDAH-182. Refactor the support-page structural hotspots starting with Methods, Calendar, and the remaining support surfaces.
+  - completed 2026-03-15 after structural refactors in `client/src/pages/library.tsx`, `client/src/pages/methods.tsx`, `client/src/pages/calendar.tsx`, and remaining support surfaces; then validated by strict runtime-only React Doctor probe.
   - Scope:
     - `dashboard_rebuild/client/src/pages/methods.tsx`
     - `dashboard_rebuild/client/src/pages/calendar.tsx`
@@ -435,7 +437,8 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
       - `dashboard_rebuild/client/src/components/SourcesPanel.tsx`
       - `dashboard_rebuild/client/src/components/ContentFilter.tsx`
       - `dashboard_rebuild/client/src/components/LocalEventEditModal.tsx`
-- [ ] RDAH-183. Refactor the Brain and shared-shell structural hotspots until the ignore list shrinks back to runtime or genuinely unmounted surfaces only.
+- [x] RDAH-183. Refactor the Brain and shared-shell structural hotspots until the ignore list shrinks back to runtime or genuinely unmounted surfaces only.
+  - completed 2026-03-15 by clearing `BrainHome`, `layout`, `ConceptMapStructured`, and `MindMapView` structural findings and removing active-file suppressions.
   - Scope:
     - `dashboard_rebuild/client/src/components/layout.tsx`
     - `dashboard_rebuild/client/src/components/MindMapView.tsx`

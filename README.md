@@ -200,7 +200,7 @@ The START button in the tab bar is a shortcut to the Start Panel. SETTINGS opens
 |-------|-------|
 | **Component** | `TutorStudioMode.tsx` (584 lines) |
 | **When shown** | Studio mode active, inside a class workspace |
-| **Goal** | Organize session captures. Promote good items to project board. Review materials alongside notes. |
+| **Goal** | Review, refine, and route Studio captures while keeping source material and the workbench visible. |
 | **Status** | LANDED |
 
 **Layout:** `grid-cols-[340px_1fr]` — left sidebar + right main. Right splits into `grid-cols-[320px_1fr]` then `grid-rows-[0.75fr_1fr]`.
@@ -208,7 +208,7 @@ The START button in the tab bar is a shortcut to the Start Panel. SETTINGS opens
 | Panel | Content | Interactive |
 |-------|---------|------------|
 | **Left sidebar — Board** | Board scope buttons (SESSION/PROJECT/OVERALL), item count stats, scrollable item list (inbox/boarded/promoted items). Click item to select. | Yes — scope switch, item select |
-| **Right top-left — Summary** | Selected item detail card. Status badge. COPY TO PROJECT / MOVE TO PROJECT buttons. | Yes — promote actions |
+| **Right top-left — Summary** | Selected item detail card. Status badge. Inline edit fields, MARK BOARDED, ARCHIVE, HISTORY, and promote actions. Archived selections pin their revision history even after they fall off the active board. | Yes — edit, board, archive, history, and promote actions |
 | **Right top-right — Source Viewer** | Material picker dropdown + `<MaterialViewer>` (PDF iframe, HTML5 video, or text preview) | Yes — material selection |
 | **Right bottom — Workbench** | `<TutorWorkspaceSurface>` with 4 tabs: NOTES (VaultEditor + pinned notes sidebar), CANVAS (ExcalidrawCanvas), GRAPH (GraphPanel), TABLE (ComparisonTableEditor) | Yes — full editing |
 
@@ -217,7 +217,7 @@ The START button in the tab bar is a shortcut to the Start Panel. SETTINGS opens
 Tutor Chat generates artifacts
     ↓ (Save Note / To Studio buttons)
 Capture → Studio Inbox (status: captured)
-    ↓ (user reviews in L3)
+    ↓ (user edits / boards / archives in L3)
 Board → Summary Board (status: boarded)
     ↓ (COPY or MOVE)
 Promote → Project Board (status: promoted)

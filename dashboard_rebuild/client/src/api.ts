@@ -39,7 +39,8 @@ import type {
   TutorStudioOverviewResponse,
   TutorProjectShellResponse, TutorProjectShellState, TutorProjectShellStateRequest,
   TutorStudioCaptureRequest, TutorStudioCaptureResponse, TutorStudioRestoreResponse,
-  TutorStudioPromoteRequest,
+  TutorStudioPromoteRequest, TutorStudioItemRevisionsResponse, TutorStudioUpdateRequest,
+  TutorStudioUpdateResponse,
   TutorArtifactRequest, TutorArtifactResult,
   TutorContentSources,
   TutorChainRequest, TutorChain, TutorChainWithSessions,
@@ -785,10 +786,16 @@ export const api = {
         method: "POST",
         body: JSON.stringify(data),
       }),
-    restoreStudioItems: (params: { course_id: number; tutor_session_id?: string; scope?: "session" | "project" }) => {
+    restoreStudioItems: (params: {
+      course_id: number;
+      tutor_session_id?: string;
+      scope?: "session" | "project";
+      include_archived?: boolean;
+    }) => {
       const qs = new URLSearchParams({ course_id: String(params.course_id) });
       if (params.tutor_session_id) qs.set("tutor_session_id", params.tutor_session_id);
       if (params.scope) qs.set("scope", params.scope);
+      if (params.include_archived) qs.set("include_archived", "1");
       return request<TutorStudioRestoreResponse>(`/tutor/studio/restore?${qs.toString()}`);
     },
     promoteStudioItem: (data: TutorStudioPromoteRequest) =>
@@ -796,6 +803,13 @@ export const api = {
         method: "POST",
         body: JSON.stringify(data),
       }),
+    updateStudioItem: (itemId: number, data: TutorStudioUpdateRequest) =>
+      request<TutorStudioUpdateResponse>(`/tutor/studio/items/${itemId}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    getStudioItemRevisions: (itemId: number) =>
+      request<TutorStudioItemRevisionsResponse>(`/tutor/studio/items/${itemId}/revisions`),
     getContentSources: () =>
       request<TutorContentSources>("/tutor/content-sources"),
     createChain: (data: TutorChainRequest) =>

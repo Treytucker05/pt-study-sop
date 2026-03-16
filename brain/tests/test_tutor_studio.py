@@ -353,3 +353,136 @@ def test_studio_overview_requires_existing_course(client):
 
     assert response.status_code == 404
     assert response.get_json()["error"] == "course not found"
+
+
+def test_restore_excludes_archived_items_by_default(client):
+    _insert_course(301, "Movement Science")
+    _insert_tutor_session(
+        301,
+        "tutor-move-1",
+        topic="Hip Review",
+        started_at="2026-03-15T11:00:00+00:00",
+    )
+    _insert_studio_item(
+        701,
+        course_id=301,
+        tutor_session_id="tutor-move-1",
+        scope="session",
+        status="captured",
+        title="Visible Capture",
+    )
+    _insert_studio_item(
+        702,
+        course_id=301,
+        tutor_session_id="tutor-move-1",
+        scope="session",
+        status="archived",
+        title="Archived Capture",
+    )
+
+    response = client.get("/api/tutor/studio/restore?course_id=301&scope=session&tutor_session_id=tutor-move-1")
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert [item["id"] for item in body["items"]] == [701]
+    assert body["counts"] == {
+        "total": 1,
+        "captured": 1,
+        "boarded": 0,
+        "promoted": 0,
+        "archived": 0,
+    }
+
+    archived_response = client.get(
+        "/api/tutor/studio/restore?course_id=301&scope=session&tutor_session_id=tutor-move-1&include_archived=1"
+    )
+    archived_body = archived_response.get_json()
+    assert archived_response.status_code == 200
+    assert [item["id"] for item in archived_body["items"]] == [702, 701]
+    assert archived_body["counts"]["archived"] == 1
+
+
+def test_update_item_writes_revisions_and_history(client):
+    _insert_course(302, "Therapeutic Intervention")
+    _insert_tutor_session(
+        302,
+        "tutor-ti-1",
+        topic="Lumbar Review",
+        started_at="2026-03-15T12:00:00+00:00",
+    )
+    _insert_studio_item(
+        801,
+        course_id=302,
+        tutor_session_id="tutor-ti-1",
+        scope="session",
+        status="captured",
+        title="Initial Summary",
+        body_markdown="Original body",
+    )
+
+    response = client.patch(
+        "/api/tutor/studio/items/801",
+        json={
+            "title": "Boarded Summary",
+            "body_markdown": "Updated body",
+            "payload": {"kind": "summary", "score": 4},
+            "source_locator": {"material_id": 11, "page": 3},
+            "status": "boarded",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["item"]["title"] == "Boarded Summary"
+    assert body["item"]["body_markdown"] == "Updated body"
+    assert body["item"]["payload"] == {"kind": "summary", "score": 4}
+    assert body["item"]["source_locator"] == {"material_id": 11, "page": 3}
+    assert body["item"]["status"] == "boarded"
+    assert body["item"]["version"] == 2
+
+    revisions_response = client.get("/api/tutor/studio/items/801/revisions")
+    assert revisions_response.status_code == 200
+    revisions = revisions_response.get_json()["revisions"]
+    assert [revision["revision"] for revision in revisions] == [2, 1]
+    assert revisions[0]["body_markdown"] == "Updated body"
+    assert revisions[0]["payload"] == {"kind": "summary", "score": 4}
+    assert revisions[0]["source_locator"] == {"material_id": 11, "page": 3}
+    assert revisions[1]["body_markdown"] == "Original body"
+    assert revisions[1]["payload"] is None
+    assert revisions[1]["source_locator"] is None
+
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.row_factory = sqlite3.Row
+    action_row = conn.execute(
+        """
+        SELECT action_type, details_json
+        FROM studio_actions
+        WHERE course_id = 302
+        ORDER BY id DESC
+        LIMIT 1
+        """
+    ).fetchone()
+    conn.close()
+    assert action_row is not None
+    assert action_row["action_type"] == "board"
+    assert "\"version\": 2" in action_row["details_json"]
+
+
+def test_update_item_rejects_invalid_status_transition(client):
+    _insert_course(303, "Exercise Physiology")
+    _insert_studio_item(
+        901,
+        course_id=303,
+        tutor_session_id=None,
+        scope="project",
+        status="promoted",
+        title="Promoted Resource",
+    )
+
+    response = client.patch("/api/tutor/studio/items/901", json={"status": "archived"})
+
+    assert response.status_code == 400
+    body = response.get_json()
+    assert body["error"] == "invalid status transition"
+    assert body["current_status"] == "promoted"
+    assert body["next_status"] == "archived"

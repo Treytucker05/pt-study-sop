@@ -1,9 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, type RefObject } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Archive,
   FileStack,
   FolderOpen,
+  History,
   Layers3,
+  PencilLine,
+  Save,
   Sparkles,
   ArrowUpRight,
   Copy,
@@ -12,6 +16,7 @@ import {
   Eye,
   Wrench,
   ExternalLink,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -32,7 +37,9 @@ import { StudioPrepMode } from "@/components/StudioPrepMode";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { BTN_TOOLBAR, BTN_TOOLBAR_ACTIVE } from "@/lib/theme";
 
@@ -106,6 +113,72 @@ function getMaterialLabel(material: Material): string {
 
 type RightPanelTab = "source" | "workbench";
 
+type HistoryItemSnapshot = {
+  id: number;
+  title: string;
+  status: TutorStudioItem["status"];
+};
+
+type StudioUiState = {
+  studioLevel: StudioLevel;
+  rightTab: RightPanelTab;
+  selectedItemId: number | null;
+  selectedViewerMaterialId: number | null;
+  isEditingItem: boolean;
+  draftTitle: string;
+  draftBody: string;
+  historyOpen: boolean;
+  historyItemId: number | null;
+  historyItemSnapshot: HistoryItemSnapshot | null;
+};
+
+type StudioUiPatch =
+  | Partial<StudioUiState>
+  | ((state: StudioUiState) => Partial<StudioUiState>);
+
+type StudioUiAction = {
+  type: "patch";
+  patch: StudioUiPatch;
+};
+
+function createHistorySnapshot(item: TutorStudioItem): HistoryItemSnapshot {
+  return {
+    id: item.id,
+    title: itemLabel(item),
+    status: item.status,
+  };
+}
+
+function createInitialStudioUiState(courseId?: number): StudioUiState {
+  return {
+    studioLevel: typeof courseId === "number" ? 3 : 1,
+    rightTab: "source",
+    selectedItemId: null,
+    selectedViewerMaterialId: null,
+    isEditingItem: false,
+    draftTitle: "",
+    draftBody: "",
+    historyOpen: false,
+    historyItemId: null,
+    historyItemSnapshot: null,
+  };
+}
+
+function studioUiReducer(state: StudioUiState, action: StudioUiAction): StudioUiState {
+  const patch = typeof action.patch === "function" ? action.patch(state) : action.patch;
+  const entries = Object.entries(patch) as Array<[keyof StudioUiState, StudioUiState[keyof StudioUiState]]>;
+  if (entries.length === 0) {
+    return state;
+  }
+
+  const hasChange = entries.some(([key, value]) => !Object.is(state[key], value));
+  if (!hasChange) {
+    return state;
+  }
+
+  return { ...state, ...patch };
+}
+
 function useMaterialViewerPopout(
   viewerMaterial: Material | null,
   viewerMaterialContent?: MaterialContent,
@@ -175,7 +248,7 @@ function useMaterialViewerPopout(
   return openMaterialViewerPopout;
 }
 
-export function TutorStudioMode({
+function useTutorStudioModeController({
   courseId,
   chainId,
   activeSessionId,
@@ -192,36 +265,42 @@ export function TutorStudioMode({
   entryRequest = null,
 }: TutorStudioModeProps) {
   const queryClient = useQueryClient();
-
-  // Studio drill-down level
-  const [studioLevel, setStudioLevel] = useState<StudioLevel>(() =>
-    typeof courseId === "number" ? 3 : 1,
+  const [studioState, dispatchStudioState] = useReducer(
+    studioUiReducer,
+    courseId,
+    createInitialStudioUiState,
   );
-  const [rightTab, setRightTab] = useState<RightPanelTab>("source");
   const lastEntryTokenRef = useRef<number | null>(null);
-
-  // L3 workspace state
-  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
-  const [selectedViewerMaterialId, setSelectedViewerMaterialId] = useState<number | null>(null);
-
-  // Popout refs
   const workspaceSurfaceRef = useRef<TutorWorkspaceSurfaceHandle>(null);
+  const {
+    studioLevel,
+    rightTab,
+    selectedItemId,
+    selectedViewerMaterialId,
+    isEditingItem,
+    draftTitle,
+    draftBody,
+    historyOpen,
+    historyItemId,
+    historyItemSnapshot,
+  } = studioState;
+  const patchStudioState = useCallback((patch: StudioUiPatch) => {
+    dispatchStudioState({ type: "patch", patch });
+  }, []);
 
-  // Sync studioLevel when courseId changes externally
   useEffect(() => {
     if (typeof courseId !== "number" && studioLevel !== 1) {
-      setStudioLevel(1);
+      patchStudioState({ studioLevel: 1 });
     }
-  }, [courseId, studioLevel]);
+  }, [courseId, patchStudioState, studioLevel]);
 
   useEffect(() => {
     if (!entryRequest || typeof courseId !== "number") return;
     if (lastEntryTokenRef.current === entryRequest.token) return;
     lastEntryTokenRef.current = entryRequest.token;
-    setStudioLevel(entryRequest.level);
-  }, [courseId, entryRequest]);
+    patchStudioState({ studioLevel: entryRequest.level });
+  }, [courseId, entryRequest, patchStudioState]);
 
-  // Fetch course name for breadcrumb
   const { data: contentSources } = useQuery({
     queryKey: ["tutor-content-sources"],
     queryFn: () => api.tutor.getContentSources(),
@@ -233,7 +312,6 @@ export function TutorStudioMode({
     return contentSources?.courses.find((c) => c.id === courseId)?.name || "";
   }, [courseId, contentSources]);
 
-  // ─── L3 Data ───
   const { data: sessionRestore } = useQuery({
     queryKey: ["tutor-studio-restore", "session", courseId, activeSessionId],
     queryFn: () =>
@@ -256,6 +334,22 @@ export function TutorStudioMode({
     enabled: typeof courseId === "number" && studioLevel === 3,
   });
 
+  const { data: revisionHistory, isLoading: revisionHistoryLoading } = useQuery({
+    queryKey: ["tutor-studio-revisions", historyItemId],
+    queryFn: () => api.tutor.getStudioItemRevisions(historyItemId!),
+    enabled: studioLevel === 3 && historyOpen && historyItemId !== null,
+    staleTime: 30 * 1000,
+  });
+
+  async function invalidateStudioState(itemId?: number) {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["tutor-studio-restore"] }),
+      queryClient.invalidateQueries({ queryKey: ["tutor-studio-overview"] }),
+      queryClient.invalidateQueries({ queryKey: ["tutor-project-shell"] }),
+      queryClient.invalidateQueries({ queryKey: ["tutor-studio-revisions", itemId] }),
+    ]);
+  }
+
   const promoteMutation = useMutation({
     mutationFn: (payload: { itemId: number; mode: "copy" | "move" }) =>
       api.tutor.promoteStudioItem({
@@ -265,13 +359,35 @@ export function TutorStudioMode({
       }),
     onSuccess: async () => {
       toast.success("Studio item promoted");
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["tutor-studio-restore"] }),
-        queryClient.invalidateQueries({ queryKey: ["tutor-project-shell"] }),
-      ]);
+      await invalidateStudioState();
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Failed to promote Studio item");
+    },
+  });
+
+  const updateItemMutation = useMutation({
+    mutationFn: (payload: {
+      itemId: number;
+      data: Parameters<typeof api.tutor.updateStudioItem>[1];
+      successMessage: string;
+      preserveHistory?: boolean;
+      historySnapshot?: { id: number; title: string; status: TutorStudioItem["status"] };
+    }) => api.tutor.updateStudioItem(payload.itemId, payload.data),
+    onSuccess: async (result, variables) => {
+      const nextPatch: Partial<StudioUiState> = { isEditingItem: false };
+      if (variables.preserveHistory) {
+        nextPatch.historyOpen = true;
+        nextPatch.historyItemId = result.item.id;
+        nextPatch.historyItemSnapshot =
+          variables.historySnapshot ?? createHistorySnapshot(result.item);
+      }
+      patchStudioState(nextPatch);
+      toast.success(variables.successMessage);
+      await invalidateStudioState(result.item.id);
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Failed to update Studio item");
     },
   });
 
@@ -292,16 +408,35 @@ export function TutorStudioMode({
     null;
 
   useEffect(() => {
+    if (!selectedItem) return;
+    patchStudioState({
+      isEditingItem: false,
+      draftTitle: selectedItem.title ?? "",
+      draftBody: selectedItem.body_markdown ?? "",
+      ...(historyOpen
+        ? {}
+        : {
+            historyItemId: selectedItem.id,
+            historyItemSnapshot: createHistorySnapshot(selectedItem),
+          }),
+    });
+  }, [historyOpen, patchStudioState, selectedItem]);
+
+  useEffect(() => {
     if (!visibleItems.length) {
-      setSelectedItemId(null);
+      patchStudioState({ selectedItemId: null });
       return;
     }
-    setSelectedItemId((current) => {
-      if (current && visibleItems.some((item) => item.id === current)) return current;
-      if (activeBoardId && visibleItems.some((item) => item.id === activeBoardId)) return activeBoardId;
-      return visibleItems[0].id;
+    patchStudioState((current) => {
+      if (current.selectedItemId && visibleItems.some((item) => item.id === current.selectedItemId)) {
+        return {};
+      }
+      if (activeBoardId && visibleItems.some((item) => item.id === activeBoardId)) {
+        return { selectedItemId: activeBoardId };
+      }
+      return { selectedItemId: visibleItems[0].id };
     });
-  }, [activeBoardId, visibleItems]);
+  }, [activeBoardId, patchStudioState, visibleItems]);
 
   const selectedMaterials = useMemo(
     () =>
@@ -329,15 +464,25 @@ export function TutorStudioMode({
     const persistedMaterialId =
       typeof viewerState?.material_id === "number" ? viewerState.material_id : null;
     if (!selectedMaterials.length) {
-      setSelectedViewerMaterialId(null);
+      patchStudioState({ selectedViewerMaterialId: null });
       return;
     }
-    setSelectedViewerMaterialId((current) => {
-      if (current && selectedMaterials.some((m) => m.id === current)) return current;
-      if (persistedMaterialId && selectedMaterials.some((m) => m.id === persistedMaterialId)) return persistedMaterialId;
-      return selectedMaterials[0].id;
+    patchStudioState((current) => {
+      if (
+        current.selectedViewerMaterialId &&
+        selectedMaterials.some((material) => material.id === current.selectedViewerMaterialId)
+      ) {
+        return {};
+      }
+      if (
+        persistedMaterialId &&
+        selectedMaterials.some((material) => material.id === persistedMaterialId)
+      ) {
+        return { selectedViewerMaterialId: persistedMaterialId };
+      }
+      return { selectedViewerMaterialId: selectedMaterials[0].id };
     });
-  }, [selectedMaterials, viewerState]);
+  }, [patchStudioState, selectedMaterials, viewerState]);
 
   useEffect(() => {
     if (!onViewerStateChange) return;
@@ -352,22 +497,66 @@ export function TutorStudioMode({
     onActiveBoardIdChange?.(selectedItem?.id ?? null);
   }, [onActiveBoardIdChange, selectedItem?.id]);
 
-  // ─── Navigation handlers ───
+  const handleToggleHistory = () => {
+    if (historyOpen) {
+      patchStudioState({ historyOpen: false });
+      return;
+    }
+    if (!selectedItem) return;
+    patchStudioState({
+      historyItemId: selectedItem.id,
+      historyItemSnapshot: createHistorySnapshot(selectedItem),
+      historyOpen: true,
+    });
+  };
+
+  const handleSaveItemEdit = () => {
+    if (!selectedItem) return;
+    updateItemMutation.mutate({
+      itemId: selectedItem.id,
+      data: {
+        title: draftTitle.trim() || null,
+        body_markdown: draftBody.trim() || null,
+      },
+      successMessage: "Studio item updated",
+    });
+  };
+
+  const handleMarkBoarded = () => {
+    if (!selectedItem) return;
+    updateItemMutation.mutate({
+      itemId: selectedItem.id,
+      data: { status: "boarded" },
+      successMessage: "Studio item marked boarded",
+    });
+  };
+
+  const handleArchiveItem = () => {
+    if (!selectedItem) return;
+    updateItemMutation.mutate({
+      itemId: selectedItem.id,
+      data: { status: "archived" },
+      successMessage: "Studio item archived",
+      preserveHistory: true,
+      historySnapshot: {
+        id: selectedItem.id,
+        title: itemLabel(selectedItem),
+        status: "archived",
+      },
+    });
+  };
+
   const handleSelectCourse = (id: number) => {
     onCourseChange?.(id);
-    setStudioLevel(2);
+    patchStudioState({ studioLevel: 2 });
   };
 
   const handleBreadcrumbNavigate = (level: StudioLevel) => {
-    if (level === 1) {
-      setStudioLevel(1);
-    } else {
-      setStudioLevel(level);
-    }
+    patchStudioState({ studioLevel: level === 1 ? 1 : level });
   };
 
   const handleDrillToWorkspace = () => {
-    setStudioLevel(3);
+    patchStudioState({ studioLevel: 3 });
   };
 
   const handleLaunchSession = () => {
@@ -378,9 +567,97 @@ export function TutorStudioMode({
     workspaceSurfaceRef.current?.openPopout("viewer");
   }, []);
 
-  // ─── Render ───
+  return {
+    activeBoardId,
+    activeBoardScope,
+    activeSessionId,
+    chainId,
+    courseId,
+    courseName,
+    draftBody,
+    draftTitle,
+    handleArchiveItem,
+    handleBreadcrumbNavigate,
+    handleDrillToWorkspace,
+    handleLaunchSession,
+    handleMarkBoarded,
+    handleSaveItemEdit,
+    handleSelectCourse,
+    handleToggleHistory,
+    historyItemSnapshot,
+    historyOpen,
+    isEditingItem,
+    openMaterialViewerPopout,
+    openWorkbenchPopout,
+    patchStudioState,
+    projectItems,
+    revisionHistory: revisionHistory?.revisions ?? [],
+    revisionHistoryLoading,
+    rightTab,
+    selectedItem,
+    selectedMaterials,
+    sessionItems,
+    studioLevel,
+    updateItemPending: updateItemMutation.isPending,
+    viewerMaterial,
+    viewerMaterialContent: viewerMaterialContent ?? undefined,
+    viewerMaterialLoading,
+    visibleItems,
+    workspaceSurfaceRef,
+    isPromoting: promoteMutation.isPending,
+    onActiveBoardIdChange,
+    onBoardScopeChange,
+    onLaunchSession,
+    onViewerStateChange,
+    promoteItem: (itemId: number, mode: "copy" | "move") => promoteMutation.mutate({ itemId, mode }),
+  };
+}
 
-  // L1: Class Picker
+export function TutorStudioMode(props: TutorStudioModeProps) {
+  const controller = useTutorStudioModeController(props);
+  const {
+    activeBoardId,
+    activeBoardScope,
+    activeSessionId,
+    chainId,
+    courseId,
+    courseName,
+    draftBody,
+    draftTitle,
+    handleArchiveItem,
+    handleBreadcrumbNavigate,
+    handleDrillToWorkspace,
+    handleLaunchSession,
+    handleMarkBoarded,
+    handleSaveItemEdit,
+    handleSelectCourse,
+    handleToggleHistory,
+    historyItemSnapshot,
+    historyOpen,
+    isEditingItem,
+    openMaterialViewerPopout,
+    openWorkbenchPopout,
+    patchStudioState,
+    projectItems,
+    revisionHistory,
+    revisionHistoryLoading,
+    rightTab,
+    selectedItem,
+    selectedMaterials,
+    sessionItems,
+    studioLevel,
+    updateItemPending,
+    viewerMaterial,
+    viewerMaterialContent,
+    viewerMaterialLoading,
+    visibleItems,
+    workspaceSurfaceRef,
+    isPromoting,
+    onActiveBoardIdChange,
+    onBoardScopeChange,
+    promoteItem,
+  } = controller;
+
   if (studioLevel === 1 || typeof courseId !== "number") {
     return (
       <StudioRootLevelView
@@ -391,7 +668,6 @@ export function TutorStudioMode({
     );
   }
 
-  // L2: Class Detail
   if (studioLevel === 2) {
     return (
       <StudioCourseLevelView
@@ -404,7 +680,6 @@ export function TutorStudioMode({
     );
   }
 
-  // L3: Workspace — prep mode (no session) vs board mode (active session)
   if (!activeSessionId) {
     return (
       <StudioPrepWorkspaceView
@@ -414,7 +689,7 @@ export function TutorStudioMode({
         onNavigate={handleBreadcrumbNavigate}
         onOpenMaterialPopout={openMaterialViewerPopout}
         onOpenWorkbenchPopout={openWorkbenchPopout}
-        onSelectMaterial={setSelectedViewerMaterialId}
+        onSelectMaterial={(materialId) => patchStudioState({ selectedViewerMaterialId: materialId })}
         selectedMaterials={selectedMaterials}
         viewerMaterial={viewerMaterial}
         viewerMaterialContent={viewerMaterialContent ?? undefined}
@@ -426,33 +701,55 @@ export function TutorStudioMode({
 
   // L3: Active session — 3-column board layout
   return (
-    <StudioActiveWorkspaceView
-      activeBoardId={activeBoardId}
-      activeBoardScope={activeBoardScope}
+      <StudioActiveWorkspaceView
+        activeBoardId={activeBoardId}
+        activeBoardScope={activeBoardScope}
       activeSessionId={activeSessionId}
       courseName={courseName}
-      onActiveBoardIdChange={onActiveBoardIdChange}
-      onBoardScopeChange={onBoardScopeChange}
-      onNavigate={handleBreadcrumbNavigate}
-      onOpenMaterialViewerPopout={openMaterialViewerPopout}
-      onOpenWorkbenchPopout={openWorkbenchPopout}
-      onPromoteItem={(itemId, mode) => promoteMutation.mutate({ itemId, mode })}
-      onSelectBoardItem={setSelectedItemId}
-      onSelectMaterial={setSelectedViewerMaterialId}
-      projectItems={projectItems}
-      selectedItem={selectedItem}
-      selectedMaterials={selectedMaterials}
-      sessionItems={sessionItems}
-      viewerMaterial={viewerMaterial}
-      viewerMaterialContent={viewerMaterialContent ?? undefined}
-      viewerMaterialLoading={viewerMaterialLoading}
-      visibleItems={visibleItems}
-      workspaceSurfaceRef={workspaceSurfaceRef}
-      rightTab={rightTab}
-      onRightTabChange={setRightTab}
-      isPromoting={promoteMutation.isPending}
-    />
-  );
+        onActiveBoardIdChange={onActiveBoardIdChange}
+        onArchiveItem={handleArchiveItem}
+        onBoardScopeChange={onBoardScopeChange}
+        onCancelEditing={() => {
+          patchStudioState({
+            isEditingItem: false,
+            draftTitle: selectedItem?.title ?? "",
+            draftBody: selectedItem?.body_markdown ?? "",
+          });
+        }}
+        onDraftBodyChange={(value) => patchStudioState({ draftBody: value })}
+        onDraftTitleChange={(value) => patchStudioState({ draftTitle: value })}
+        onMarkBoarded={handleMarkBoarded}
+        onNavigate={handleBreadcrumbNavigate}
+        onOpenMaterialViewerPopout={openMaterialViewerPopout}
+        onOpenWorkbenchPopout={openWorkbenchPopout}
+        onPromoteItem={promoteItem}
+        onSaveItemEdit={handleSaveItemEdit}
+        onSelectBoardItem={(selectedId) => patchStudioState({ selectedItemId: selectedId })}
+        onSelectMaterial={(materialId) => patchStudioState({ selectedViewerMaterialId: materialId })}
+        onStartEditing={() => patchStudioState({ isEditingItem: true })}
+        onToggleHistory={handleToggleHistory}
+        projectItems={projectItems}
+        draftBody={draftBody}
+        draftTitle={draftTitle}
+        historyItemSnapshot={historyItemSnapshot}
+        historyOpen={historyOpen}
+        isEditingItem={isEditingItem}
+        isHistoryLoading={revisionHistoryLoading}
+        isUpdatingItem={updateItemPending}
+        revisionHistory={revisionHistory}
+        selectedItem={selectedItem}
+        selectedMaterials={selectedMaterials}
+        sessionItems={sessionItems}
+        viewerMaterial={viewerMaterial}
+        viewerMaterialContent={viewerMaterialContent ?? undefined}
+        viewerMaterialLoading={viewerMaterialLoading}
+        visibleItems={visibleItems}
+        workspaceSurfaceRef={workspaceSurfaceRef}
+        rightTab={rightTab}
+        onRightTabChange={(tab) => patchStudioState({ rightTab: tab })}
+        isPromoting={isPromoting}
+      />
+    );
 }
 
 function StudioRootLevelView({
@@ -556,16 +853,32 @@ function StudioActiveWorkspaceView({
   activeBoardScope,
   activeSessionId,
   courseName,
+  draftBody,
+  draftTitle,
+  historyItemSnapshot,
+  historyOpen,
+  isEditingItem,
+  isHistoryLoading,
   onBoardScopeChange,
+  onArchiveItem,
+  onCancelEditing,
+  onDraftBodyChange,
+  onDraftTitleChange,
+  onMarkBoarded,
   onNavigate,
   onOpenMaterialViewerPopout,
   onOpenWorkbenchPopout,
   onPromoteItem,
+  onSaveItemEdit,
   onSelectBoardItem,
   onSelectMaterial,
+  onStartEditing,
+  onToggleHistory,
   projectItems,
+  revisionHistory,
   rightTab,
   onRightTabChange,
+  isUpdatingItem,
   selectedItem,
   selectedMaterials,
   sessionItems,
@@ -580,17 +893,39 @@ function StudioActiveWorkspaceView({
   activeBoardScope: TutorBoardScope;
   activeSessionId: string | null;
   courseName: string;
+  draftBody: string;
+  draftTitle: string;
+  historyItemSnapshot: { id: number; title: string; status: TutorStudioItem["status"] } | null;
+  historyOpen: boolean;
+  isEditingItem: boolean;
+  isHistoryLoading: boolean;
   onActiveBoardIdChange?: (boardId: number | null) => void;
   onBoardScopeChange: (scope: TutorBoardScope) => void;
+  onArchiveItem: () => void;
+  onCancelEditing: () => void;
+  onDraftBodyChange: (value: string) => void;
+  onDraftTitleChange: (value: string) => void;
+  onMarkBoarded: () => void;
   onNavigate: (level: StudioLevel) => void;
   onOpenMaterialViewerPopout: () => void;
   onOpenWorkbenchPopout: () => void;
   onPromoteItem: (itemId: number, mode: "copy" | "move") => void;
+  onSaveItemEdit: () => void;
   onSelectBoardItem: (itemId: number) => void;
   onSelectMaterial: (materialId: number) => void;
+  onStartEditing: () => void;
+  onToggleHistory: () => void;
   projectItems: TutorStudioItem[];
+  revisionHistory: Array<{
+    revision: number;
+    body_markdown: string | null;
+    payload: unknown;
+    source_locator: Record<string, unknown> | null;
+    created_at: string;
+  }>;
   rightTab: RightPanelTab;
   onRightTabChange: (tab: RightPanelTab) => void;
+  isUpdatingItem: boolean;
   selectedItem: TutorStudioItem | null;
   selectedMaterials: Material[];
   sessionItems: TutorStudioItem[];
@@ -617,8 +952,24 @@ function StudioActiveWorkspaceView({
         />
         <StudioSummaryPanel
           activeBoardScope={activeBoardScope}
+          draftBody={draftBody}
+          draftTitle={draftTitle}
+          historyItemSnapshot={historyItemSnapshot}
+          historyOpen={historyOpen}
+          isEditingItem={isEditingItem}
+          isHistoryLoading={isHistoryLoading}
           isPromoting={isPromoting}
+          isUpdatingItem={isUpdatingItem}
+          onArchiveItem={onArchiveItem}
+          onCancelEditing={onCancelEditing}
+          onDraftBodyChange={onDraftBodyChange}
+          onDraftTitleChange={onDraftTitleChange}
+          onMarkBoarded={onMarkBoarded}
           onPromoteItem={onPromoteItem}
+          onSaveItemEdit={onSaveItemEdit}
+          onStartEditing={onStartEditing}
+          onToggleHistory={onToggleHistory}
+          revisionHistory={revisionHistory}
           selectedItem={selectedItem}
         />
         <StudioRightPanel
@@ -752,17 +1103,377 @@ function StudioSidebarStat({ label, value }: { label: string; value: number }) {
   );
 }
 
-function StudioSummaryPanel({
+type StudioRevision = {
+  revision: number;
+  body_markdown: string | null;
+  payload: unknown;
+  source_locator: Record<string, unknown> | null;
+  created_at: string;
+};
+
+function StudioRevisionHistorySection({
+  historyTarget,
+  isHistoryLoading,
+  revisionHistory,
+}: {
+  historyTarget:
+    | { title: string; status: TutorStudioItem["status"] }
+    | HistoryItemSnapshot
+    | null;
+  isHistoryLoading: boolean;
+  revisionHistory: StudioRevision[];
+}) {
+  return (
+    <div className="space-y-2 border border-primary/15 bg-black/45 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <div className="font-arcade text-[10px] text-primary">REVISION HISTORY</div>
+          {historyTarget ? (
+            <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
+              {historyTarget.title} • {historyTarget.status.toUpperCase()}
+            </div>
+          ) : null}
+        </div>
+        <Badge variant="outline" className="rounded-none border-primary/30 text-[10px] text-muted-foreground">
+          {revisionHistory.length} REV
+        </Badge>
+      </div>
+      {isHistoryLoading ? (
+        <div className="font-terminal text-xs text-muted-foreground">Loading history...</div>
+      ) : revisionHistory.length === 0 ? (
+        <div className="font-terminal text-xs text-muted-foreground">No revisions recorded yet.</div>
+      ) : (
+        <div className="space-y-2">
+          {revisionHistory.map((revision) => (
+            <div key={revision.revision} className="border border-primary/15 bg-black/35 p-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="font-arcade text-[10px] text-primary">REV {revision.revision}</div>
+                <div className="font-terminal text-[11px] text-muted-foreground">
+                  {new Date(revision.created_at).toLocaleString()}
+                </div>
+              </div>
+              <div className="mt-2 whitespace-pre-wrap font-terminal text-xs text-zinc-300">
+                {revision.body_markdown ||
+                  JSON.stringify(revision.payload || revision.source_locator || {}, null, 2)}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StudioSelectedItemCard({
   activeBoardScope,
+  draftBody,
+  draftTitle,
+  historyOpen,
+  historyTarget,
+  isEditingItem,
+  isHistoryLoading,
   isPromoting,
+  isUpdatingItem,
+  onArchiveItem,
+  onCancelEditing,
+  onDraftBodyChange,
+  onDraftTitleChange,
+  onMarkBoarded,
   onPromoteItem,
+  onSaveItemEdit,
+  onStartEditing,
+  onToggleHistory,
+  revisionHistory,
   selectedItem,
 }: {
   activeBoardScope: TutorBoardScope;
+  draftBody: string;
+  draftTitle: string;
+  historyOpen: boolean;
+  historyTarget: { title: string; status: TutorStudioItem["status"] } | HistoryItemSnapshot | null;
+  isEditingItem: boolean;
+  isHistoryLoading: boolean;
   isPromoting: boolean;
+  isUpdatingItem: boolean;
+  onArchiveItem: () => void;
+  onCancelEditing: () => void;
+  onDraftBodyChange: (value: string) => void;
+  onDraftTitleChange: (value: string) => void;
+  onMarkBoarded: () => void;
   onPromoteItem: (itemId: number, mode: "copy" | "move") => void;
+  onSaveItemEdit: () => void;
+  onStartEditing: () => void;
+  onToggleHistory: () => void;
+  revisionHistory: StudioRevision[];
+  selectedItem: TutorStudioItem;
+}) {
+  const canEdit = true;
+  const canBoard = selectedItem.status === "captured";
+  const canArchive = selectedItem.status === "captured" || selectedItem.status === "boarded";
+  const lifecycleDisabled = isUpdatingItem || isPromoting;
+
+  return (
+    <Card className="rounded-none border-primary/20 bg-black/35">
+      <CardHeader className="space-y-2 border-b border-primary/15 pb-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <CardTitle className="font-arcade text-xs text-primary">{itemLabel(selectedItem)}</CardTitle>
+          <Badge variant="outline" className={cn("rounded-none text-[10px]", statusClass(selectedItem.status))}>
+            {selectedItem.status.toUpperCase()}
+          </Badge>
+        </div>
+        <div className="font-terminal text-[11px] text-muted-foreground">
+          {selectedItem.source_kind || "studio"} • {selectedItem.scope} scope
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3 p-4">
+        {isEditingItem ? (
+          <div className="space-y-3 border border-primary/15 bg-black/40 p-3">
+            <div className="space-y-1.5">
+              <div className="font-arcade text-[10px] text-primary/70">TITLE</div>
+              <Input
+                data-testid="studio-item-title-input"
+                value={draftTitle}
+                onChange={(event) => onDraftTitleChange(event.target.value)}
+                className="rounded-none border-primary/20 bg-black/50 font-terminal text-sm"
+                placeholder="Studio item title"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <div className="font-arcade text-[10px] text-primary/70">BODY</div>
+              <Textarea
+                data-testid="studio-item-body-input"
+                value={draftBody}
+                onChange={(event) => onDraftBodyChange(event.target.value)}
+                className="min-h-[220px] rounded-none border-primary/20 bg-black/50 font-terminal text-sm"
+                placeholder="Edit the Studio note body"
+              />
+            </div>
+          </div>
+        ) : (
+          <ScrollArea className="max-h-[60vh] border border-primary/15 bg-black/40 p-3">
+            <div className="whitespace-pre-wrap font-terminal text-sm text-zinc-200">
+              {selectedItem.body_markdown || JSON.stringify(selectedItem.payload || {}, null, 2)}
+            </div>
+          </ScrollArea>
+        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {isEditingItem ? (
+            <>
+              <Button
+                type="button"
+                data-testid="studio-item-save"
+                variant="outline"
+                disabled={lifecycleDisabled}
+                className="rounded-none border-primary/30 bg-black/50 font-arcade text-[10px]"
+                onClick={onSaveItemEdit}
+              >
+                <Save className="mr-1 h-3 w-3" />
+                SAVE
+              </Button>
+              <Button
+                type="button"
+                data-testid="studio-item-cancel"
+                variant="outline"
+                disabled={lifecycleDisabled}
+                className="rounded-none border-primary/30 bg-black/50 font-arcade text-[10px]"
+                onClick={onCancelEditing}
+              >
+                <X className="mr-1 h-3 w-3" />
+                CANCEL
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="button"
+              data-testid="studio-item-edit"
+              variant="outline"
+              disabled={!canEdit || lifecycleDisabled}
+              className="rounded-none border-primary/30 bg-black/50 font-arcade text-[10px]"
+              onClick={onStartEditing}
+            >
+              <PencilLine className="mr-1 h-3 w-3" />
+              EDIT
+            </Button>
+          )}
+          <Button
+            type="button"
+            data-testid="studio-item-board"
+            variant="outline"
+            disabled={!canBoard || lifecycleDisabled}
+            className="rounded-none border-primary/30 bg-black/50 font-arcade text-[10px]"
+            onClick={onMarkBoarded}
+          >
+            <ArrowUpRight className="mr-1 h-3 w-3" />
+            MARK BOARDED
+          </Button>
+          <Button
+            type="button"
+            data-testid="studio-item-archive"
+            variant="outline"
+            disabled={!canArchive || lifecycleDisabled}
+            className="rounded-none border-primary/30 bg-black/50 font-arcade text-[10px]"
+            onClick={onArchiveItem}
+          >
+            <Archive className="mr-1 h-3 w-3" />
+            ARCHIVE
+          </Button>
+          <Button
+            type="button"
+            data-testid="studio-item-history"
+            variant="outline"
+            disabled={lifecycleDisabled}
+            className="rounded-none border-primary/30 bg-black/50 font-arcade text-[10px]"
+            onClick={onToggleHistory}
+          >
+            <History className="mr-1 h-3 w-3" />
+            {historyOpen ? "HIDE HISTORY" : "HISTORY"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={lifecycleDisabled || selectedItem.status === "promoted" || activeBoardScope === "overall"}
+            className="rounded-none border-primary/30 bg-black/50 font-arcade text-[10px]"
+            onClick={() => onPromoteItem(selectedItem.id, "copy")}
+          >
+            <Copy className="mr-1 h-3 w-3" />
+            COPY TO PROJECT
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={lifecycleDisabled || selectedItem.status === "promoted" || activeBoardScope === "overall"}
+            className="rounded-none border-primary/30 bg-black/50 font-arcade text-[10px]"
+            onClick={() => onPromoteItem(selectedItem.id, "move")}
+          >
+            <MoveRight className="mr-1 h-3 w-3" />
+            MOVE TO PROJECT
+          </Button>
+          {selectedItem.source_path ? (
+            <Badge
+              variant="outline"
+              className="max-w-xs truncate rounded-none border-primary/30 text-[10px] text-muted-foreground"
+            >
+              <FolderOpen className="mr-1 h-3 w-3 shrink-0" />
+              {selectedItem.source_path}
+            </Badge>
+          ) : null}
+        </div>
+        {historyOpen ? (
+          <StudioRevisionHistorySection
+            historyTarget={historyTarget}
+            isHistoryLoading={isHistoryLoading}
+            revisionHistory={revisionHistory}
+          />
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function StudioPinnedHistoryCard({
+  historyItemSnapshot,
+  isHistoryLoading,
+  revisionHistory,
+}: {
+  historyItemSnapshot: HistoryItemSnapshot;
+  isHistoryLoading: boolean;
+  revisionHistory: StudioRevision[];
+}) {
+  return (
+    <Card className="rounded-none border-primary/20 bg-black/35">
+      <CardHeader className="space-y-2 border-b border-primary/15 pb-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <CardTitle className="font-arcade text-xs text-primary">{historyItemSnapshot.title}</CardTitle>
+          <Badge variant="outline" className={cn("rounded-none text-[10px]", statusClass(historyItemSnapshot.status))}>
+            {historyItemSnapshot.status.toUpperCase()}
+          </Badge>
+        </div>
+        <div className="font-terminal text-[11px] text-muted-foreground">
+          This item is no longer on the active board, but its revision history is still available.
+        </div>
+      </CardHeader>
+      <CardContent className="p-4">
+        <StudioRevisionHistorySection
+          historyTarget={historyItemSnapshot}
+          isHistoryLoading={isHistoryLoading}
+          revisionHistory={revisionHistory}
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+function StudioSummaryEmptyState() {
+  return (
+    <div className="border border-primary/20 bg-black/35 p-6 text-center">
+      <div className="font-arcade text-[10px] text-primary">NO ITEM SELECTED</div>
+      <div className="mt-2 font-terminal text-xs text-muted-foreground">
+        Select an item from the board sidebar, or use Tutor to capture new content.
+      </div>
+    </div>
+  );
+}
+
+function StudioSummaryPanel({
+  activeBoardScope,
+  draftBody,
+  draftTitle,
+  historyItemSnapshot,
+  historyOpen,
+  isEditingItem,
+  isHistoryLoading,
+  isPromoting,
+  isUpdatingItem,
+  onArchiveItem,
+  onCancelEditing,
+  onDraftBodyChange,
+  onDraftTitleChange,
+  onMarkBoarded,
+  onPromoteItem,
+  onSaveItemEdit,
+  onStartEditing,
+  onToggleHistory,
+  revisionHistory,
+  selectedItem,
+}: {
+  activeBoardScope: TutorBoardScope;
+  draftBody: string;
+  draftTitle: string;
+  historyItemSnapshot: { id: number; title: string; status: TutorStudioItem["status"] } | null;
+  historyOpen: boolean;
+  isEditingItem: boolean;
+  isHistoryLoading: boolean;
+  isPromoting: boolean;
+  isUpdatingItem: boolean;
+  onArchiveItem: () => void;
+  onCancelEditing: () => void;
+  onDraftBodyChange: (value: string) => void;
+  onDraftTitleChange: (value: string) => void;
+  onMarkBoarded: () => void;
+  onPromoteItem: (itemId: number, mode: "copy" | "move") => void;
+  onSaveItemEdit: () => void;
+  onStartEditing: () => void;
+  onToggleHistory: () => void;
+  revisionHistory: Array<{
+    revision: number;
+    body_markdown: string | null;
+    payload: unknown;
+    source_locator: Record<string, unknown> | null;
+    created_at: string;
+  }>;
   selectedItem: TutorStudioItem | null;
 }) {
+  const historyPinnedToHiddenItem =
+    historyOpen &&
+    historyItemSnapshot !== null &&
+    selectedItem?.id !== historyItemSnapshot.id;
+  const historyTarget = historyPinnedToHiddenItem
+    ? historyItemSnapshot
+    : selectedItem
+      ? { title: itemLabel(selectedItem), status: selectedItem.status }
+      : historyItemSnapshot;
+  const canEdit = selectedItem !== null;
+
   return (
     <div className="flex min-h-0 flex-col border-r border-primary/20 bg-black/20">
       <div className="flex items-center gap-1 border-b border-primary/20 px-3 py-1.5 bg-black/30">
@@ -776,64 +1487,37 @@ function StudioSummaryPanel({
         </div>
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto p-4">
-        {selectedItem ? (
-          <Card className="rounded-none border-primary/20 bg-black/35">
-            <CardHeader className="space-y-2 border-b border-primary/15 pb-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="font-arcade text-xs text-primary">
-                  {itemLabel(selectedItem)}
-                </CardTitle>
-                <Badge variant="outline" className={cn("rounded-none text-[10px]", statusClass(selectedItem.status))}>
-                  {selectedItem.status.toUpperCase()}
-                </Badge>
-              </div>
-              <div className="font-terminal text-[11px] text-muted-foreground">
-                {selectedItem.source_kind || "studio"} • {selectedItem.scope} scope
-              </div>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3 p-4">
-              <ScrollArea className="max-h-[60vh] border border-primary/15 bg-black/40 p-3">
-                <div className="whitespace-pre-wrap font-terminal text-sm text-zinc-200">
-                  {selectedItem.body_markdown || JSON.stringify(selectedItem.payload || {}, null, 2)}
-                </div>
-              </ScrollArea>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={isPromoting || selectedItem.status === "promoted" || activeBoardScope === "overall"}
-                  className="rounded-none border-primary/30 bg-black/50 font-arcade text-[10px]"
-                  onClick={() => onPromoteItem(selectedItem.id, "copy")}
-                >
-                  <Copy className="mr-1 h-3 w-3" />
-                  COPY TO PROJECT
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={isPromoting || selectedItem.status === "promoted" || activeBoardScope === "overall"}
-                  className="rounded-none border-primary/30 bg-black/50 font-arcade text-[10px]"
-                  onClick={() => onPromoteItem(selectedItem.id, "move")}
-                >
-                  <MoveRight className="mr-1 h-3 w-3" />
-                  MOVE TO PROJECT
-                </Button>
-                {selectedItem.source_path ? (
-                  <Badge variant="outline" className="rounded-none text-[10px] border-primary/30 text-muted-foreground truncate max-w-xs">
-                    <FolderOpen className="mr-1 h-3 w-3 shrink-0" />
-                    {selectedItem.source_path}
-                  </Badge>
-                ) : null}
-              </div>
-            </CardContent>
-          </Card>
+        {selectedItem && !historyPinnedToHiddenItem ? (
+          <StudioSelectedItemCard
+            activeBoardScope={activeBoardScope}
+            draftBody={draftBody}
+            draftTitle={draftTitle}
+            historyOpen={historyOpen}
+            historyTarget={historyTarget}
+            isEditingItem={isEditingItem}
+            isHistoryLoading={isHistoryLoading}
+            isPromoting={isPromoting}
+            isUpdatingItem={isUpdatingItem}
+            onArchiveItem={onArchiveItem}
+            onCancelEditing={onCancelEditing}
+            onDraftBodyChange={onDraftBodyChange}
+            onDraftTitleChange={onDraftTitleChange}
+            onMarkBoarded={onMarkBoarded}
+            onPromoteItem={onPromoteItem}
+            onSaveItemEdit={onSaveItemEdit}
+            onStartEditing={onStartEditing}
+            onToggleHistory={onToggleHistory}
+            revisionHistory={revisionHistory}
+            selectedItem={selectedItem}
+          />
+        ) : historyOpen && historyItemSnapshot ? (
+          <StudioPinnedHistoryCard
+            historyItemSnapshot={historyItemSnapshot}
+            isHistoryLoading={isHistoryLoading}
+            revisionHistory={revisionHistory}
+          />
         ) : (
-          <div className="border border-primary/20 bg-black/35 p-6 text-center">
-            <div className="font-arcade text-[10px] text-primary">NO ITEM SELECTED</div>
-            <div className="mt-2 font-terminal text-xs text-muted-foreground">
-              Select an item from the board sidebar, or use Tutor to capture new content.
-            </div>
-          </div>
+          <StudioSummaryEmptyState />
         )}
       </div>
     </div>

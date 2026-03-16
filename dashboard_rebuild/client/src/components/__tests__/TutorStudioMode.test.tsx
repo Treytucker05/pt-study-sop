@@ -8,12 +8,16 @@ import { TutorStudioMode } from "@/components/TutorStudioMode";
 const {
   restoreStudioItemsMock,
   promoteStudioItemMock,
+  updateStudioItemMock,
+  getStudioItemRevisionsMock,
   getMaterialContentMock,
   getMaterialFileUrlMock,
   getContentSourcesMock,
 } = vi.hoisted(() => ({
   restoreStudioItemsMock: vi.fn(),
   promoteStudioItemMock: vi.fn(),
+  updateStudioItemMock: vi.fn(),
+  getStudioItemRevisionsMock: vi.fn(),
   getMaterialContentMock: vi.fn(),
   getMaterialFileUrlMock: vi.fn((id: number) => `/api/tutor/materials/${id}/file`),
   getContentSourcesMock: vi.fn(),
@@ -24,6 +28,8 @@ vi.mock("@/lib/api", () => ({
     tutor: {
       restoreStudioItems: restoreStudioItemsMock,
       promoteStudioItem: promoteStudioItemMock,
+      updateStudioItem: updateStudioItemMock,
+      getStudioItemRevisions: getStudioItemRevisionsMock,
       getMaterialContent: getMaterialContentMock,
       getMaterialFileUrl: getMaterialFileUrlMock,
       getContentSources: getContentSourcesMock,
@@ -126,6 +132,8 @@ describe("TutorStudioMode", () => {
     vi.clearAllMocks();
     restoreStudioItemsMock.mockResolvedValue({ items: [] });
     promoteStudioItemMock.mockResolvedValue({ ok: true });
+    updateStudioItemMock.mockResolvedValue({ request_id: "req-update", item: { id: 1 } });
+    getStudioItemRevisionsMock.mockResolvedValue({ item_id: 1, revisions: [] });
     getContentSourcesMock.mockResolvedValue({
       courses: [{ id: 4, name: "Test Course", code: "TC-100", doc_count: 2 }],
       total_materials: 2,
@@ -227,5 +235,191 @@ describe("TutorStudioMode", () => {
     expect(screen.getByTestId("studio-class-detail")).toBeInTheDocument();
     expect(screen.getByTestId("studio-breadcrumb")).toHaveTextContent("Level 2");
     expect(screen.queryByTestId("tutor-workspace-surface")).not.toBeInTheDocument();
+  });
+
+  it("supports editing and boarding a selected Studio item", async () => {
+    restoreStudioItemsMock.mockImplementation(async ({ scope }: { scope?: string }) => ({
+      items:
+        scope === "session"
+          ? [
+              {
+                id: 101,
+                course_id: 4,
+                tutor_session_id: "session-1",
+                scope: "session",
+                item_type: "note",
+                source_kind: "studio",
+                title: "Captured Note",
+                body_markdown: "Original body",
+                source_path: null,
+                source_locator: null,
+                payload: null,
+                status: "captured",
+                promoted_from_id: null,
+                version: 1,
+                deleted_at: null,
+                created_at: "2026-03-15T00:00:00Z",
+                updated_at: "2026-03-15T00:00:00Z",
+              },
+            ]
+          : [],
+      counts: { total: 1, captured: 1, boarded: 0, promoted: 0, archived: 0 },
+    }));
+    updateStudioItemMock.mockResolvedValue({
+      request_id: "req-update",
+      item: {
+        id: 101,
+        course_id: 4,
+        tutor_session_id: "session-1",
+        scope: "session",
+        item_type: "note",
+        source_kind: "studio",
+        title: "Edited Note",
+        body_markdown: "Edited body",
+        source_path: null,
+        source_locator: null,
+        payload: null,
+        status: "captured",
+        promoted_from_id: null,
+        version: 2,
+        deleted_at: null,
+        created_at: "2026-03-15T00:00:00Z",
+        updated_at: "2026-03-15T00:05:00Z",
+      },
+    });
+
+    renderStudio({ activeBoardScope: "session" });
+
+    expect(await screen.findByTestId("studio-item-edit")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("studio-item-edit"));
+    fireEvent.change(screen.getByTestId("studio-item-title-input"), { target: { value: "Edited Note" } });
+    fireEvent.change(screen.getByTestId("studio-item-body-input"), { target: { value: "Edited body" } });
+    fireEvent.click(screen.getByTestId("studio-item-save"));
+
+    await waitFor(() => {
+      expect(updateStudioItemMock).toHaveBeenCalledWith(101, {
+        title: "Edited Note",
+        body_markdown: "Edited body",
+      });
+    });
+
+    updateStudioItemMock.mockResolvedValueOnce({
+      request_id: "req-board",
+      item: {
+        id: 101,
+        course_id: 4,
+        tutor_session_id: "session-1",
+        scope: "session",
+        item_type: "note",
+        source_kind: "studio",
+        title: "Edited Note",
+        body_markdown: "Edited body",
+        source_path: null,
+        source_locator: null,
+        payload: null,
+        status: "boarded",
+        promoted_from_id: null,
+        version: 3,
+        deleted_at: null,
+        created_at: "2026-03-15T00:00:00Z",
+        updated_at: "2026-03-15T00:10:00Z",
+      },
+    });
+
+    fireEvent.click(screen.getByTestId("studio-item-board"));
+
+    await waitFor(() => {
+      expect(updateStudioItemMock).toHaveBeenLastCalledWith(101, { status: "boarded" });
+    });
+  });
+
+  it("shows revision history and preserves it after archiving", async () => {
+    restoreStudioItemsMock.mockImplementation(async ({ scope }: { scope?: string }) => ({
+      items:
+        scope === "session"
+          ? [
+              {
+                id: 202,
+                course_id: 4,
+                tutor_session_id: "session-1",
+                scope: "session",
+                item_type: "note",
+                source_kind: "studio",
+                title: "History Note",
+                body_markdown: "Current body",
+                source_path: null,
+                source_locator: null,
+                payload: null,
+                status: "boarded",
+                promoted_from_id: null,
+                version: 2,
+                deleted_at: null,
+                created_at: "2026-03-15T00:00:00Z",
+                updated_at: "2026-03-15T00:05:00Z",
+              },
+            ]
+          : [],
+      counts: { total: 1, captured: 0, boarded: 1, promoted: 0, archived: 0 },
+    }));
+    getStudioItemRevisionsMock.mockResolvedValue({
+      item_id: 202,
+      revisions: [
+        {
+          revision: 2,
+          body_markdown: "Current body",
+          payload: null,
+          source_locator: null,
+          created_at: "2026-03-15T00:05:00Z",
+        },
+        {
+          revision: 1,
+          body_markdown: "Original body",
+          payload: null,
+          source_locator: null,
+          created_at: "2026-03-15T00:00:00Z",
+        },
+      ],
+    });
+    updateStudioItemMock.mockResolvedValue({
+      request_id: "req-archive",
+      item: {
+        id: 202,
+        course_id: 4,
+        tutor_session_id: "session-1",
+        scope: "session",
+        item_type: "note",
+        source_kind: "studio",
+        title: "History Note",
+        body_markdown: "Current body",
+        source_path: null,
+        source_locator: null,
+        payload: null,
+        status: "archived",
+        promoted_from_id: null,
+        version: 3,
+        deleted_at: null,
+        created_at: "2026-03-15T00:00:00Z",
+        updated_at: "2026-03-15T00:06:00Z",
+      },
+    });
+
+    renderStudio({ activeBoardScope: "session" });
+
+    expect(await screen.findByTestId("studio-item-history")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("studio-item-history"));
+
+    await waitFor(() => {
+      expect(getStudioItemRevisionsMock).toHaveBeenCalledWith(202);
+    });
+    expect(await screen.findByText("REVISION HISTORY")).toBeInTheDocument();
+    expect(screen.getByText("Original body")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("studio-item-archive"));
+
+    await waitFor(() => {
+      expect(updateStudioItemMock).toHaveBeenCalledWith(202, { status: "archived" });
+    });
   });
 });

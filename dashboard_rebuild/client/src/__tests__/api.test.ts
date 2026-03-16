@@ -646,7 +646,9 @@ describe("api.tutor", () => {
   });
 
   it("restoreStudioItems builds query string", async () => {
-    mockFetch.mockResolvedValueOnce(jsonResponse({ items: [], counts: { total: 0, captured: 0, promoted: 0 } }));
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({ items: [], counts: { total: 0, captured: 0, boarded: 0, promoted: 0, archived: 0 } }),
+    );
     await api.tutor.restoreStudioItems({ course_id: 1, tutor_session_id: "tutor-123", scope: "session" });
     const url = mockFetch.mock.calls[0][0] as string;
     expect(url).toContain("/api/tutor/studio/restore?");
@@ -661,6 +663,24 @@ describe("api.tutor", () => {
     expect(mockFetch).toHaveBeenCalledWith(
       "/api/tutor/studio/promote",
       expect.objectContaining({ method: "POST" })
+    );
+  });
+
+  it("updateStudioItem sends PATCH", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ request_id: "req-2", item: { id: 2 } }));
+    await api.tutor.updateStudioItem(2, { status: "boarded", title: "Updated" });
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/tutor/studio/items/2",
+      expect.objectContaining({ method: "PATCH" }),
+    );
+  });
+
+  it("getStudioItemRevisions fetches the revision route", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ item_id: 9, revisions: [] }));
+    await api.tutor.getStudioItemRevisions(9);
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/tutor/studio/items/9/revisions",
+      expect.anything(),
     );
   });
 
