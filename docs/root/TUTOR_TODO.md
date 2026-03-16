@@ -132,7 +132,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Validation note: completed on 2026-03-16 with `cd dashboard_rebuild && npm run build`, `pytest brain/tests/`, `python -m pytest brain/tests/test_harness_eval.py::test_harness_eval_runs_live_golden_path_from_registry -q -s`, and `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5000`
 
 ### Sprint: Tutor Workflow Depth Pass (2026-03-16)
-- [ ] TDP-000. Finish the original post-redesign Tutor depth work in one execution train by deepening Priming extraction, richer Polish/Final Sync artifact publishing, and Brain workflow analytics beyond the completed staged shell backbone.
+- [x] TDP-000. Finish the original post-redesign Tutor depth work in one execution train by deepening Priming extraction, richer Polish/Final Sync artifact publishing, and Brain workflow analytics beyond the completed staged shell backbone.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
     - `conductor/tracks.md`
@@ -153,6 +153,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - `cd dashboard_rebuild && npm run build`, `pytest brain/tests/`, `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5000`, and an enriched manual workflow checklist all pass before closeout
   - Execution note:
     - run as one continuous execution pass after track bootstrap; do not reopen the closed Tutor Workflow Redesign track
+  - Completed 2026-03-16: captured the depth baseline and metric contract, added source-linked Priming Assist with per-source rerun/write-back, promoted richer Studio artifact packages through Polish/Final Sync, expanded Brain workflow intelligence with source-link/re-prime/artifact/snapshot signals, passed `cd dashboard_rebuild && npm run build`, passed `pytest brain/tests/`, passed `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5000`, and passed a live enriched workflow proof on the restarted dashboard.
 
 ### Sprint: UI Production System (2026-03-16)
 - [x] UPS-100. Define the durable UI production system so the app can move from theme experiments into one sellable shell/page hierarchy with code-driven interaction over decorative rail art.

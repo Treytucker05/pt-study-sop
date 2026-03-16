@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import brainBackground from "@assets/BrainBackground.jpg";
 import logoImg from "@assets/StudyBrainIMAGE_1768640444498.jpg";
+import navFramePrimary from "@assets/nav-frame-primary.png";
 import {
   CONTROL_COPY,
   CONTROL_DECK_SECTION,
@@ -182,12 +183,15 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
   const notesDockDragRef = useRef<{ pointerId: number; offsetY: number; moved: boolean } | null>(null);
   // ─── Adaptive header state ───
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  const [headerHovered, setHeaderHovered] = useState(false);
+  const [headerHeightPx, setHeaderHeightPx] = useState(0);
   const lastScrollY = useRef(0);
   const lastScrollSource = useRef<EventTarget | null>(null);
   const scrollAccumulator = useRef(0);
   const SCROLL_DOWN_THRESHOLD = 40;
   const SCROLL_UP_THRESHOLD = 20;
   const TOP_ZONE = 80;
+  const HEADER_SLIVER_PX = 8;
 
   const clampNotesDockTop = useCallback((top: number) => {
     if (typeof window === "undefined") {
@@ -262,7 +266,39 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
     };
   }, [handleScroll]);
 
-  const headerExpanded = !headerCollapsed;
+  const headerExpanded = !headerCollapsed || headerHovered;
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const node = document.querySelector<HTMLElement>("header[data-header-shell]");
+    if (!node) {
+      return;
+    }
+
+    const measure = () => {
+      const rect = node.getBoundingClientRect();
+      setHeaderHeightPx(rect.height || 0);
+    };
+
+    measure();
+
+    const resizeObserver = "ResizeObserver" in window ? new ResizeObserver(measure) : null;
+    if (resizeObserver) {
+      resizeObserver.observe(node);
+    } else {
+      window.addEventListener("resize", measure);
+    }
+
+    return () => {
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      } else {
+        window.removeEventListener("resize", measure);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const updateTime = () => {
@@ -650,14 +686,29 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
       <div className="crt-scanlines" />
 
       {/* Top Nav — adaptive header with Retro-Futuristic Tactical Banner */}
+      {/* Hover hot zone for expanding the collapsed header sliver */}
+      <div
+        className="fixed inset-x-0 top-0 z-30 pointer-events-auto"
+        style={{ height: HEADER_SLIVER_PX }}
+        onMouseEnter={() => setHeaderHovered(true)}
+      />
       <header
+        data-header-shell
         className={cn(
           "relative z-20 sticky top-0 transition-transform duration-300 ease-out will-change-transform border-b-4 border-red-700",
-          headerExpanded
-            ? "translate-y-0 shadow-[0_10px_30px_rgba(220,38,38,0.4)]"
-            : "-translate-y-full",
+          headerExpanded && "shadow-[0_10px_30px_rgba(220,38,38,0.4)]",
         )}
+        style={{
+          transform: headerExpanded
+            ? "translateY(0)"
+            : `translateY(-${Math.max(0, (headerHeightPx || 0) - HEADER_SLIVER_PX)}px)`,
+          marginBottom: headerExpanded
+            ? 0
+            : -Math.max(0, (headerHeightPx || 0) - HEADER_SLIVER_PX),
+        }}
         data-header-state={headerExpanded ? "expanded" : "compact"}
+        onMouseEnter={() => setHeaderHovered(true)}
+        onMouseLeave={() => setHeaderHovered(false)}
       >
         {/* Banner Image Background */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
@@ -706,26 +757,41 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
 
             <div className="flex min-w-0 flex-col gap-2.5" data-testid="nav-desktop-groups">
               <nav
-                className={cn("mx-auto w-full max-w-[60rem]", railShellClass("primary"))}
+                className="relative mx-auto w-full max-w-[700px] h-[160px]"
                 aria-label="Primary study navigation"
                 data-testid="nav-primary-rail"
               >
-                <div className="pointer-events-none absolute inset-x-6 top-[10px] h-[1px] bg-gradient-to-r from-transparent via-[rgba(255,84,118,0.8)] to-transparent" />
+                {/* 3D Frame background image */}
+                <img
+                  src={navFramePrimary}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none drop-shadow-[0_0_20px_rgba(255,50,50,0.3)]"
+                  aria-hidden="true"
+                />
+                {/* Nav buttons positioned over the frame slots */}
                 <div
-                  className={railCoreClass("primary")}
+                  className="absolute inset-0 z-10 grid grid-cols-3 items-center justify-items-center px-[10%] pb-[8%]"
                   data-testid="nav-core-group"
                   aria-label="Core triad navigation"
                 >
                   {PRIMARY_NAV_ITEMS.map((item) => {
                     const isActive = currentPath === item.path;
                     return (
-                      <ShellNavLink
+                      <a
                         key={item.path}
-                        item={item}
-                        isActive={isActive}
-                        tier="primary"
-                        onNavigate={handleNavActivate}
-                      />
+                        href={item.path}
+                        data-testid={`nav-${item.testId}`}
+                        className={cn(
+                          "flex items-center justify-center gap-2 w-[90%] h-[60px] font-arcade text-sm tracking-wider uppercase transition-all duration-150",
+                          "text-gray-400 hover:text-red-400 hover:drop-shadow-[0_0_12px_rgba(255,100,100,0.6)]",
+                          isActive && "text-white drop-shadow-[0_0_12px_rgba(255,100,100,0.9)]"
+                        )}
+                        aria-current={isActive ? "page" : undefined}
+                        onClick={(event) => handleNavActivate(event, item.path)}
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        <span>{item.label}</span>
+                      </a>
                     );
                   })}
                 </div>
@@ -733,26 +799,38 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
 
               <div className="mx-auto w-full max-w-[52rem] overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <nav
-                  className={railShellClass("support")}
+                  className="relative flex items-center justify-center h-10 bg-gradient-to-b from-[#1a1a1a] to-[#0a0a0a] border border-red-900/30 rounded-sm"
                   aria-label="Secondary study navigation"
                   data-testid="nav-secondary-rail"
                 >
-                  <div className="pointer-events-none absolute inset-x-7 top-[7px] h-[1px] bg-gradient-to-r from-transparent via-[rgba(255,84,118,0.42)] to-transparent" />
+                  {/* Top red accent line */}
+                  <div className="absolute inset-x-8 top-0 h-[1px] bg-gradient-to-r from-transparent via-red-500/60 to-transparent shadow-[0_0_8px_rgba(239,68,68,0.4)]" />
                   <div
-                    className={railCoreClass("support")}
+                    className="flex items-center justify-center gap-0"
                     data-testid="nav-support-group"
                     aria-label="Support systems navigation"
                   >
-                    {SUPPORT_NAV_ITEMS.map((item) => {
+                    {SUPPORT_NAV_ITEMS.map((item, idx) => {
                       const isActive = currentPath === item.path;
                       return (
-                        <ShellNavLink
+                        <a
                           key={item.path}
-                          item={item}
-                          isActive={isActive}
-                          tier="support"
-                          onNavigate={handleNavActivate}
-                        />
+                          href={item.path}
+                          data-testid={`nav-${item.testId}`}
+                          className={cn(
+                            "relative flex items-center justify-center px-5 h-10 font-arcade text-xs tracking-widest uppercase transition-colors",
+                            "text-gray-500 hover:text-red-400",
+                            isActive && "text-white"
+                          )}
+                          aria-current={isActive ? "page" : undefined}
+                          onClick={(event) => handleNavActivate(event, item.path)}
+                        >
+                          {item.label}
+                          {/* Separator */}
+                          {idx < SUPPORT_NAV_ITEMS.length - 1 && (
+                            <span className="absolute right-0 top-1/2 -translate-y-1/2 w-px h-4 bg-gradient-to-b from-transparent via-gray-700 to-transparent" />
+                          )}
+                        </a>
                       );
                     })}
                   </div>

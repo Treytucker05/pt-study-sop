@@ -73,7 +73,6 @@ import { TutorArtifacts, type TutorArtifact } from "@/components/TutorArtifacts"
 import { TutorWorkspaceSurface } from "@/components/TutorWorkspaceSurface";
 import { TutorStudioMode, type TutorStudioEntryRequest } from "@/components/TutorStudioMode";
 import { TutorScheduleMode, type TutorScheduleLaunchIntent } from "@/components/TutorScheduleMode";
-import { TutorPublishMode } from "@/components/TutorPublishMode";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -92,7 +91,6 @@ import {
   ListChecks,
   FileText,
   CreditCard,
-  FolderOpen,
   Check,
   X,
   Trash2,
@@ -153,9 +151,10 @@ function readTutorShellQuery(): TutorShellQuery {
       rawMode === "dashboard" ||
       rawMode === "studio" ||
       rawMode === "tutor" ||
-      rawMode === "schedule" ||
-      rawMode === "publish"
+      rawMode === "schedule"
         ? rawMode
+        : rawMode === "publish"
+          ? "dashboard"
         : undefined,
     boardScope:
       rawBoardScope === "session" || rawBoardScope === "project" || rawBoardScope === "overall"
@@ -2453,7 +2452,8 @@ function useTutorPageController() {
       }
 
       if (candidate.last_mode === "publish") {
-        setShellMode("publish");
+        setWorkflowView("launch");
+        setShellMode("dashboard");
         setShowSetup(false);
         return;
       }
@@ -2567,10 +2567,13 @@ function useTutorPageController() {
         !hasExplicitModeOverride &&
         !initialRouteQuery.mode &&
         shellMode === "studio" &&
-        nextProjectShell.workspace_state.last_mode &&
-        nextProjectShell.workspace_state.last_mode !== "publish"
+        nextProjectShell.workspace_state.last_mode
       ) {
-        setShellMode(nextProjectShell.workspace_state.last_mode);
+        setShellMode(
+          nextProjectShell.workspace_state.last_mode === "publish"
+            ? "dashboard"
+            : nextProjectShell.workspace_state.last_mode,
+        );
       }
       if (
         !initialRouteQuery.boardScope &&
@@ -2831,14 +2834,6 @@ function useTutorPageController() {
   const promotedStudioItems =
     projectStudioItems?.items.filter((item) => item.status === "promoted") || [];
 
-  const handlePublishRecorded = useCallback(async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["tutor-project-shell"] }),
-      queryClient.invalidateQueries({ queryKey: ["tutor-studio-restore"] }),
-      queryClient.invalidateQueries({ queryKey: ["obsidian"] }),
-    ]);
-  }, [queryClient]);
-
   const tutorHeroStats = [
     { label: "Mode", value: shellMode.toUpperCase() },
     {
@@ -3059,19 +3054,6 @@ function useTutorPageController() {
           <Clock className={`${ICON_MD} mr-1`} />
           SCHEDULE
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            setStudioEntryRequest(null);
-            setScheduleLaunchIntent(null);
-            setShellMode("publish");
-          }}
-          className={controlToggleButton(shellMode === "publish", "primary")}
-        >
-          <FolderOpen className={`${ICON_MD} mr-1`} />
-          PUBLISH
-        </Button>
         <Button variant="ghost" size="sm" onClick={openSettings} className={controlToggleButton(false)}>
           <SlidersHorizontal className={`${ICON_MD} mr-1`} />
           SETTINGS
@@ -3139,7 +3121,7 @@ function useTutorPageController() {
       <PageScaffold
         eyebrow="Live Study Core"
         title="Tutor"
-        subtitle="Run the staged Tutor workflow from Launch through Priming, then move into Tutor, Studio, schedule, and publish without losing context."
+        subtitle="Run the staged Tutor workflow from Launch through Priming, then move into Tutor, Studio, schedule, and Final Sync without losing context."
         className="min-h-[calc(100vh-140px)]"
         contentClassName="gap-6"
         stats={tutorHeroStats}
@@ -3444,71 +3426,6 @@ function useTutorPageController() {
                       focusTopic={topic || null}
                       launchIntent={scheduleLaunchIntent}
                     />
-                  </div>
-                </div>
-              ) : shellMode === "publish" ? (
-                <div key="publish" className="flex-1 min-h-0 overflow-y-auto p-4 animate-fade-slide-in">
-                  <div className="mx-auto grid w-full max-w-7xl gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-                    <TutorPublishMode
-                      activeSessionId={activeSessionId}
-                      courseName={courseLabel || null}
-                      topic={topic || null}
-                      noteMarkdown={promotedStudioItems[0]?.body_markdown || null}
-                      defaultVaultPath={
-                        courseLabel
-                          ? `Tutor Studio/${sanitizeVaultSegment(courseLabel)}/${sanitizeVaultSegment(
-                              topic || promotedStudioItems[0]?.title || "Tutor Session",
-                            ) || "Tutor Session"}.md`
-                          : null
-                      }
-                      onPublished={() => {
-                        void handlePublishRecorded();
-                      }}
-                    />
-
-                    <Card className={`rounded-none ${CARD_BORDER} bg-black/45 border-primary/20`}>
-                      <CardHeader className="border-b border-primary/15 pb-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <CardTitle className="font-arcade text-xs text-primary">
-                            PROJECT RESOURCES
-                          </CardTitle>
-                          <Badge variant="outline" className="rounded-none border-primary/30 text-[10px]">
-                            {promotedStudioItems.length} PROMOTED
-                          </Badge>
-                        </div>
-                        <div className="font-terminal text-xs text-muted-foreground">
-                          Publish acts only on promoted project resources. Review the promoted set here while the publish workspace stages vault and Anki output.
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-3 p-4">
-                        {promotedStudioItems.length === 0 ? (
-                          <div className="border border-primary/20 bg-black/35 px-4 py-6 font-terminal text-sm text-muted-foreground">
-                            No promoted Studio resources yet. Use Studio to review captures, then copy or move the useful pieces up to the project layer.
-                          </div>
-                        ) : (
-                          promotedStudioItems.map((item) => (
-                            <div key={item.id} className="border border-primary/20 bg-black/35 p-3">
-                              <div className="flex flex-wrap items-start justify-between gap-2">
-                                <div>
-                                  <div className="font-arcade text-[10px] text-primary">
-                                    {item.title || `${item.item_type.toUpperCase()} ${item.id}`}
-                                  </div>
-                                  <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-                                    {item.item_type.toUpperCase()} • promoted from {item.scope}
-                                  </div>
-                                </div>
-                                <Badge variant="outline" className="rounded-none border-green-500/30 text-[10px] text-green-300">
-                                  READY TO PUBLISH
-                                </Badge>
-                              </div>
-                              <div className="mt-2 whitespace-pre-wrap font-terminal text-xs text-zinc-200">
-                                {(item.body_markdown || JSON.stringify(item.payload || {}, null, 2)).slice(0, 420)}
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </CardContent>
-                    </Card>
                   </div>
                 </div>
               ) : (

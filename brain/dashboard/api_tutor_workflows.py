@@ -130,7 +130,7 @@ def _fetch_material_rows(conn: sqlite3.Connection, material_ids: list[int]) -> l
     cur = conn.cursor()
     cur.execute(
         f"""
-        SELECT id, title, source_path, folder_path, course_id, content_type, content
+        SELECT id, title, source_path, folder_path, course_id, file_type, content
         FROM rag_docs
         WHERE id IN ({placeholders}) AND COALESCE(corpus, 'materials') = 'materials'
         ORDER BY title COLLATE NOCASE, id
@@ -147,7 +147,7 @@ def _build_source_inventory_item(row: sqlite3.Row) -> dict[str, Any]:
         "source_path": row["source_path"],
         "folder_path": row["folder_path"],
         "course_id": row["course_id"],
-        "content_type": row["content_type"],
+        "content_type": row["file_type"],
     }
 
 

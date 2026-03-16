@@ -162,7 +162,7 @@ Execution rule:
 ### Phase 2 — Priming extraction depth
 
 #### TDP-200
-- `status`: in_progress
+- `status`: completed
 - `depends_on`: [TDP-110]
 - `surfaces`:
   - `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx`
@@ -178,7 +178,7 @@ Execution rule:
 - `expected_evidence`: saved workflow detail showing per-source priming objects
 
 #### TDP-210
-- `status`: in_progress
+- `status`: completed
 - `depends_on`: [TDP-200]
 - `surfaces`:
   - Priming UI
@@ -193,7 +193,7 @@ Execution rule:
 - `expected_evidence`: source-rerun proof note in track evidence
 
 #### TDP-220
-- `status`: in_progress
+- `status`: completed
 - `depends_on`: [TDP-210]
 - `surfaces`:
   - Priming assist UI/API
@@ -209,7 +209,7 @@ Execution rule:
 ### Phase 3 — Polish / Final Sync artifact depth
 
 #### TDP-300
-- `status`: in_progress
+- `status`: completed
 - `depends_on`: [TDP-110]
 - `surfaces`:
   - `dashboard_rebuild/client/src/components/TutorWorkflowPolishStudio.tsx`
@@ -225,7 +225,7 @@ Execution rule:
 - `expected_evidence`: Polish bundle and Final Sync preview with richer artifact data
 
 #### TDP-310
-- `status`: in_progress
+- `status`: completed
 - `depends_on`: [TDP-300]
 - `surfaces`:
   - Final Sync publish results
@@ -242,7 +242,7 @@ Execution rule:
 ### Phase 4 — Brain analytics and learner-evidence depth
 
 #### TDP-400
-- `status`: in_progress
+- `status`: completed
 - `depends_on`: [TDP-220, TDP-310]
 - `surfaces`:
   - `brain/dashboard/api_tutor_workflows.py`
@@ -261,7 +261,7 @@ Execution rule:
 - `expected_evidence`: enriched analytics response sample
 
 #### TDP-410
-- `status`: in_progress
+- `status`: completed
 - `depends_on`: [TDP-400]
 - `surfaces`:
   - Brain analytics UI rendering
@@ -277,7 +277,7 @@ Execution rule:
 ### Phase 5 — Full validation and closeout
 
 #### TDP-500
-- `status`: pending
+- `status`: completed
 - `depends_on`: [TDP-410]
 - `surfaces`:
   - repo-wide validation targets

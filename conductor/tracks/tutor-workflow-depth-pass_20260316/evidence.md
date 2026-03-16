@@ -43,6 +43,13 @@
   - source-linked priming count
   - artifact + re-prime signals
   - richer learner snapshot summary
+- 2026-03-16: live enriched workflow proof passed after restarting the dashboard on port `5000`
+  - workflow `223559bb-667d-4f14-89e2-c3a3a07771e9`
+  - course `Neuroscience`
+  - study unit `Week 9 To Do and LO`
+  - `2` source-linked priming outputs persisted in the saved bundle
+  - `1` richer Studio artifact persisted through Polish and into Final Sync linkage
+  - analytics summary returned non-empty `source_linked_workflows`, `studio_artifacts`, `reprime_requests`, and `learner_snapshot_history`
 
 ## Validation evidence
 
@@ -52,3 +59,6 @@
 - 2026-03-16: `cd dashboard_rebuild && npm run build` passed after the richer Studio artifact publish slice
 - 2026-03-16: `python -m py_compile brain/dashboard/api_tutor_workflows.py` passed after the analytics-depth slice
 - 2026-03-16: `cd dashboard_rebuild && npm run build` passed after the Brain workflow intelligence UI slice
+- 2026-03-16: `pytest brain/tests/` passed with `1070 passed, 1 skipped`
+- 2026-03-16: `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5000` passed
+- 2026-03-16: live enriched workflow proof script passed against the restarted dashboard on `127.0.0.1:5000`

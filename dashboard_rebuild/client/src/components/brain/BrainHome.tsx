@@ -30,6 +30,10 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
+import { ActionItemRow } from "./ActionItemRow";
+import { CourseListItem } from "./CourseListItem";
+import { InfoCard, InfoCardGrid } from "./InfoCard";
+import { StatCard } from "./StatCard";
 import type { BrainWorkspace, MainMode } from "./useBrainWorkspace";
 
 type BrainQueueItem = {
@@ -794,36 +798,28 @@ async function handleDownloadJson(
               </div>
             </div>
           </CardHeader>
-          <CardContent className="grid gap-3 p-4 md:grid-cols-3">
-            <div className="border border-primary/20 bg-black/35 p-3">
-              <div className="font-arcade text-[11px] text-primary">CURRENT COURSE</div>
-              <div className="mt-2 font-terminal text-sm text-white">
-                {currentCourse?.name || "No course selected"}
-              </div>
-              <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-                {currentCourse?.code || "Tutor will still launch with your saved materials."}
-              </div>
-            </div>
-            <div className="border border-primary/20 bg-black/35 p-3">
-              <div className="font-arcade text-[11px] text-primary">LEARNER STATE</div>
-              <div className="mt-2 font-terminal text-sm text-white">
-                {learnerProfile?.hybridArchetype?.label || "No stable Brain archetype yet"}
-              </div>
-              <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-                {learnerProfile?.profileSummary?.headline || "Brain is still building a stable learner summary."}
-              </div>
-            </div>
-            <div className="border border-primary/20 bg-black/35 p-3">
-              <div className="font-arcade text-[11px] text-primary">SCHOLAR STATUS</div>
-              <div className="mt-2 font-terminal text-sm text-white">
-                {scholarInvestigations[0]?.title || "No active investigation"}
-              </div>
-              <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-                {scholarQuestions.length > 0
-                  ? `${scholarQuestions.length} question(s) waiting on input.`
-                  : "No direct Scholar blockers right now."}
-              </div>
-            </div>
+          <CardContent className="p-4">
+            <InfoCardGrid columns={3}>
+              <InfoCard
+                label="CURRENT COURSE"
+                value={currentCourse?.name || "No course selected"}
+                subtext={currentCourse?.code || "Tutor will still launch with your saved materials."}
+              />
+              <InfoCard
+                label="LEARNER STATE"
+                value={learnerProfile?.hybridArchetype?.label || "No stable Brain archetype yet"}
+                subtext={learnerProfile?.profileSummary?.headline || "Brain is still building a stable learner summary."}
+              />
+              <InfoCard
+                label="SCHOLAR STATUS"
+                value={scholarInvestigations[0]?.title || "No active investigation"}
+                subtext={
+                  scholarQuestions.length > 0
+                    ? `${scholarQuestions.length} question(s) waiting on input.`
+                    : "No direct Scholar blockers right now."
+                }
+              />
+            </InfoCardGrid>
           </CardContent>
         </Card>
 
@@ -838,25 +834,14 @@ async function handleDownloadJson(
               </div>
             ) : (
               queueItems.map((item) => (
-                <div
+                <ActionItemRow
                   key={item.id}
-                  data-testid="brain-queue-item"
-                  className="flex flex-col gap-3 border border-primary/15 bg-black/30 p-4 lg:flex-row lg:items-center lg:justify-between"
-                >
-                  <div className="space-y-1">
-                    <div className="font-terminal text-sm text-white">{item.title}</div>
-                    <div className="font-terminal text-xs text-muted-foreground">{item.reason}</div>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="rounded-none border-primary/40 font-arcade text-xs"
-                    data-testid={`brain-queue-action-${item.id}`}
-                    onClick={() => openSupportPage(item.destination, buildLaunchContext(item))}
-                  >
-                    {item.buttonLabel}
-                  </Button>
-                </div>
+                  testId="brain-queue-item"
+                  title={item.title}
+                  reason={item.reason}
+                  buttonLabel={item.buttonLabel}
+                  onAction={() => openSupportPage(item.destination, buildLaunchContext(item))}
+                />
               ))
             )}
           </CardContent>
@@ -868,43 +853,27 @@ async function handleDownloadJson(
               <CardTitle className="font-arcade text-sm text-primary">PERFORMANCE / HEALTH</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 p-4 md:grid-cols-2">
-              <div className="border border-primary/15 bg-black/30 p-3">
-                <div className="font-arcade text-[11px] text-primary">BRAIN CONFIDENCE</div>
-                <div className="mt-2 font-terminal text-sm text-white">
-                  {learnerProfileWithConfidence?.hybridArchetype?.confidence || "low"}
-                </div>
-                <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-                  {learnerProfile?.hybridArchetype?.label || "No active archetype"}
-                </div>
-              </div>
-              <div className="border border-primary/15 bg-black/30 p-3">
-                <div className="font-arcade text-[11px] text-primary">WEAK POINTS</div>
-                <div className="mt-2 font-terminal text-sm text-white">
-                  {weaknessQueue.length} active weak points
-                </div>
-                <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-                  {weaknessQueue[0]?.topic || "No flagged topics right now."}
-                </div>
-              </div>
-              <div className="border border-primary/15 bg-black/30 p-3">
-                <div className="font-arcade text-[11px] text-primary">DEADLINE PRESSURE</div>
-                <div className="mt-2 font-terminal text-sm text-white">{getDeadlinePressure(deadlines)}</div>
-                <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-                  {deadlines.filter((deadline) => !deadline.completed).length} active deadline(s)
-                </div>
-              </div>
-              <div className="border border-primary/15 bg-black/30 p-3">
-                <div className="font-arcade text-[11px] text-primary">MASTERY SNAPSHOT</div>
-                <div data-testid="brain-mastery-headline" className="mt-2 font-terminal text-sm text-white">
-                  {masteryHeadline}
-                </div>
-                <div
-                  data-testid="brain-mastery-detail"
-                  className="mt-1 font-terminal text-[11px] text-muted-foreground"
-                >
-                  {masteryDetail}
-                </div>
-              </div>
+              <StatCard
+                label="BRAIN CONFIDENCE"
+                value={learnerProfileWithConfidence?.hybridArchetype?.confidence || "low"}
+                subtext={learnerProfile?.hybridArchetype?.label || "No active archetype"}
+              />
+              <StatCard
+                label="WEAK POINTS"
+                value={`${weaknessQueue.length} active weak points`}
+                subtext={weaknessQueue[0]?.topic || "No flagged topics right now."}
+              />
+              <StatCard
+                label="DEADLINE PRESSURE"
+                value={getDeadlinePressure(deadlines)}
+                subtext={`${deadlines.filter((deadline) => !deadline.completed).length} active deadline(s)`}
+              />
+              <StatCard
+                label="MASTERY SNAPSHOT"
+                value={masteryHeadline}
+                subtext={masteryDetail}
+                testId="brain-mastery-headline"
+              />
             </CardContent>
           </Card>
 
@@ -913,40 +882,26 @@ async function handleDownloadJson(
               <CardTitle className="font-arcade text-sm text-primary">ACTIVITY / OUTPUT</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 p-4 md:grid-cols-2">
-              <div className="border border-primary/15 bg-black/30 p-3">
-                <div className="font-arcade text-[11px] text-primary">TODAY</div>
-                <div className="mt-2 font-terminal text-sm text-white">{todaySessions.length} sessions</div>
-                <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-                  {hasStudiedToday ? `${todayMinutes} minutes logged today.` : "No session logged today yet."}
-                </div>
-              </div>
-              <div className="border border-primary/15 bg-black/30 p-3">
-                <div className="font-arcade text-[11px] text-primary">STREAK</div>
-                <div className="mt-2 font-terminal text-sm text-white">
-                  {streakData?.currentStreak || 0} day streak
-                </div>
-                <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-                  Longest: {streakData?.longestStreak || 0}
-                </div>
-              </div>
-              <div className="border border-primary/15 bg-black/30 p-3">
-                <div className="font-arcade text-[11px] text-primary">SESSIONS</div>
-                <div className="mt-2 font-terminal text-sm text-white">
-                  {workspace.metrics?.totalSessions || 0} total sessions
-                </div>
-                <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-                  {workspace.metrics?.totalMinutes || 0} total minutes logged
-                </div>
-              </div>
-              <div className="border border-primary/15 bg-black/30 p-3">
-                <div className="font-arcade text-[11px] text-primary">OUTPUTS</div>
-                <div className="mt-2 font-terminal text-sm text-white">
-                  {workspace.metrics?.totalCards || 0} cards captured
-                </div>
-                <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-                  {productAnalytics?.engagement?.tutorSessionsCompleted30d || 0} Tutor completions in 30 days
-                </div>
-              </div>
+              <StatCard
+                label="TODAY"
+                value={`${todaySessions.length} sessions`}
+                subtext={hasStudiedToday ? `${todayMinutes} minutes logged today.` : "No session logged today yet."}
+              />
+              <StatCard
+                label="STREAK"
+                value={`${streakData?.currentStreak || 0} day streak`}
+                subtext={`Longest: ${streakData?.longestStreak || 0}`}
+              />
+              <StatCard
+                label="SESSIONS"
+                value={`${workspace.metrics?.totalSessions || 0} total sessions`}
+                subtext={`${workspace.metrics?.totalMinutes || 0} total minutes logged`}
+              />
+              <StatCard
+                label="OUTPUTS"
+                value={`${workspace.metrics?.totalCards || 0} cards captured`}
+                subtext={`${productAnalytics?.engagement?.tutorSessionsCompleted30d || 0} Tutor completions in 30 days`}
+              />
             </CardContent>
           </Card>
         </div>
@@ -956,77 +911,55 @@ async function handleDownloadJson(
             <CardTitle className="font-arcade text-sm text-primary">TUTOR WORKFLOW INTELLIGENCE</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 p-4 md:grid-cols-2">
-            <div className="border border-primary/15 bg-black/30 p-3">
-              <div className="font-arcade text-[11px] text-primary">WORKFLOW CLOSEOUT</div>
-              <div className="mt-2 font-terminal text-sm text-white">
-                {tutorWorkflowAnalytics?.totals?.stored || 0} stored / {tutorWorkflowAnalytics?.totals?.workflows || 0} total
-              </div>
-              <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-                {tutorWorkflowAnalytics?.totals?.publish_successes || 0} publish success signal(s),
-                {" "}
-                {tutorWorkflowAnalytics?.totals?.publish_failures || 0} failure signal(s)
-              </div>
-            </div>
-            <div className="border border-primary/15 bg-black/30 p-3">
-              <div className="font-arcade text-[11px] text-primary">TOP COURSE LOAD</div>
-              <div className="mt-2 font-terminal text-sm text-white">
-                {topWorkflowCourse?.course_name || "No workflow course data yet"}
-              </div>
-              <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-                {topWorkflowCourse
+            <StatCard
+              label="WORKFLOW CLOSEOUT"
+              value={`${tutorWorkflowAnalytics?.totals?.stored || 0} stored / ${tutorWorkflowAnalytics?.totals?.workflows || 0} total`}
+              subtext={`${tutorWorkflowAnalytics?.totals?.publish_successes || 0} publish success signal(s), ${tutorWorkflowAnalytics?.totals?.publish_failures || 0} failure signal(s)`}
+            />
+            <StatCard
+              label="TOP COURSE LOAD"
+              value={topWorkflowCourse?.course_name || "No workflow course data yet"}
+              subtext={
+                topWorkflowCourse
                   ? `${topWorkflowCourse.workflow_count} workflows / ${Math.round((topWorkflowCourse.total_stage_seconds || 0) / 60)} min`
-                  : "Finish a workflow to start tracking course time."}
-              </div>
-            </div>
-            <div className="border border-primary/15 bg-black/30 p-3">
-              <div className="font-arcade text-[11px] text-primary">LEARNER SNAPSHOT</div>
-              <div className="mt-2 font-terminal text-sm text-white">
-                {workflowLearnerSnapshot?.label || "No workflow learner snapshot yet"}
-              </div>
-              <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-                {workflowLearnerSnapshot?.confidence
-                  ? `${workflowLearnerSnapshot.confidence} confidence`
-                  : "Run Final Sync to save an archetype snapshot."}
-                {workflowLearnerSnapshot?.evidence?.[0]
-                  ? ` • ${workflowLearnerSnapshot.evidence[0]}`
-                  : ""}
-                {workflowLearnerSnapshotHistory.length > 1
-                  ? ` • ${workflowLearnerSnapshotHistory.length} saved snapshots`
-                  : ""}
-              </div>
-            </div>
-            <div className="border border-primary/15 bg-black/30 p-3">
-              <div className="font-arcade text-[11px] text-primary">METHOD SIGNALS</div>
-              <div className="mt-2 font-terminal text-sm text-white">
-                {topPrimingMethod?.label || "No priming method usage yet"}
-              </div>
-              <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-                {topPrimingMethod
-                  ? `${topPrimingMethod.count} workflow(s) used this method`
-                  : "Brain is waiting on priming bundle history."}
-                {topPrimingChain?.label
-                  ? ` • top chain ${topPrimingChain.label} (${topPrimingChain.count})`
-                  : ""}
-              </div>
-            </div>
-            <div className="border border-primary/15 bg-black/30 p-3">
-              <div className="font-arcade text-[11px] text-primary">SOURCE-LINKED PRIMING</div>
-              <div className="mt-2 font-terminal text-sm text-white">
-                {tutorWorkflowAnalytics?.totals?.source_linked_workflows || 0} workflow(s)
-              </div>
-              <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-                Workflows with persisted per-source priming outputs.
-              </div>
-            </div>
-            <div className="border border-primary/15 bg-black/30 p-3">
-              <div className="font-arcade text-[11px] text-primary">ARTIFACT + RE-PRIME SIGNALS</div>
-              <div className="mt-2 font-terminal text-sm text-white">
-                {tutorWorkflowAnalytics?.totals?.studio_artifacts || 0} artifact(s)
-              </div>
-              <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-                {tutorWorkflowAnalytics?.totals?.reprime_requests || 0} re-prime request(s) captured
-              </div>
-            </div>
+                  : "Finish a workflow to start tracking course time."
+              }
+            />
+            <StatCard
+              label="LEARNER SNAPSHOT"
+              value={workflowLearnerSnapshot?.label || "No workflow learner snapshot yet"}
+              subtext={
+                <>
+                  {workflowLearnerSnapshot?.confidence
+                    ? `${workflowLearnerSnapshot.confidence} confidence`
+                    : "Run Final Sync to save an archetype snapshot."}
+                  {workflowLearnerSnapshot?.evidence?.[0] ? ` • ${workflowLearnerSnapshot.evidence[0]}` : ""}
+                  {workflowLearnerSnapshotHistory.length > 1 ? ` • ${workflowLearnerSnapshotHistory.length} saved snapshots` : ""}
+                </>
+              }
+            />
+            <StatCard
+              label="METHOD SIGNALS"
+              value={topPrimingMethod?.label || "No priming method usage yet"}
+              subtext={
+                <>
+                  {topPrimingMethod
+                    ? `${topPrimingMethod.count} workflow(s) used this method`
+                    : "Brain is waiting on priming bundle history."}
+                  {topPrimingChain?.label ? ` • top chain ${topPrimingChain.label} (${topPrimingChain.count})` : ""}
+                </>
+              }
+            />
+            <StatCard
+              label="SOURCE-LINKED PRIMING"
+              value={`${tutorWorkflowAnalytics?.totals?.source_linked_workflows || 0} workflow(s)`}
+              subtext="Workflows with persisted per-source priming outputs."
+            />
+            <StatCard
+              label="ARTIFACT + RE-PRIME SIGNALS"
+              value={`${tutorWorkflowAnalytics?.totals?.studio_artifacts || 0} artifact(s)`}
+              subtext={`${tutorWorkflowAnalytics?.totals?.reprime_requests || 0} re-prime request(s) captured`}
+            />
           </CardContent>
         </Card>
 
@@ -1038,42 +971,26 @@ async function handleDownloadJson(
             <CardContent className="space-y-3 p-4">
               {courseBreakdown.length ? (
                 courseBreakdown.map((course) => (
-                  <div
+                  <CourseListItem
                     key={course.course}
-                    data-testid="brain-course-breakdown-item"
-                    className="flex flex-col gap-3 border border-primary/15 bg-black/30 px-3 py-3 md:flex-row md:items-center md:justify-between"
-                  >
-                    <div>
-                      <div className="font-terminal text-sm text-white">{course.course}</div>
-                      <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
-                        {course.count} sessions / {course.minutes} min
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="font-terminal text-[11px] text-muted-foreground">
-                        {buildCourseActionLabel(course)}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="rounded-none border-primary/40 font-arcade text-[10px]"
-                        onClick={() =>
-                          openSupportPage(
-                            buildTutorPath(courseIdByName.get(normalizeQueueKey(course.course))),
-                            {
-                              source: "brain-home",
-                              itemId: `course-breakdown-${normalizeQueueKey(course.course).replace(/\s+/g, "-")}`,
-                              title: `Open ${course.course} from Brain`,
-                              reason: "Reason: Brain is routing your next live block from course history.",
-                              courseName: course.course,
-                            },
-                          )
-                        }
-                      >
-                        OPEN TUTOR
-                      </Button>
-                    </div>
-                  </div>
+                    testId="brain-course-breakdown-item"
+                    name={course.course}
+                    sessions={course.count}
+                    minutes={course.minutes}
+                    actionLabel={buildCourseActionLabel(course)}
+                    onAction={() =>
+                      openSupportPage(
+                        buildTutorPath(courseIdByName.get(normalizeQueueKey(course.course))),
+                        {
+                          source: "brain-home",
+                          itemId: `course-breakdown-${normalizeQueueKey(course.course).replace(/\s+/g, "-")}`,
+                          title: `Open ${course.course} from Brain`,
+                          reason: "Reason: Brain is routing your next live block from course history.",
+                          courseName: course.course,
+                        },
+                      )
+                    }
+                  />
                 ))
               ) : (
                 <div className="border border-primary/15 bg-black/30 p-4 font-terminal text-sm text-muted-foreground">
