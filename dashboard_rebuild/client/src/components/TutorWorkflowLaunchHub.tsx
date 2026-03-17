@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { INPUT_BASE, SELECT_BASE, TEXT_MUTED } from "@/lib/theme";
+import { formatWorkflowStatus } from "@/lib/workflowStatus";
 import { Clock3, Filter, FolderClock, RotateCcw, Sparkles } from "lucide-react";
 
 export type TutorWorkflowLaunchFilters = {
@@ -147,7 +148,7 @@ export function TutorWorkflowLaunchHub({
                 <div className="mt-2 font-terminal text-sm text-foreground break-words">
                   {tutorHubLoading
                     ? "Loading..."
-                    : tutorHub?.recommended_action?.summary || "No recommendation available."}
+                    : tutorHub?.recommended_action?.title || "No recommendation available."}
                 </div>
                 {tutorHub?.recommended_action?.action_label ? (
                   <div className={`${TEXT_MUTED} mt-2 text-xs`}>
@@ -259,7 +260,11 @@ export function TutorWorkflowLaunchHub({
             >
               <option value="all">All classes</option>
               {courses
-                .filter((course) => typeof course.id === "number")
+                .filter(
+                  (course, idx, arr) =>
+                    typeof course.id === "number" &&
+                    arr.findIndex((c) => c.id === course.id) === idx,
+                )
                 .map((course) => (
                   <option key={course.id} value={course.id ?? ""}>
                     {course.code ? `${course.code} - ` : ""}
@@ -386,13 +391,13 @@ export function TutorWorkflowLaunchHub({
                               variant="outline"
                               className={`rounded-none ${stageBadgeColor(workflow.current_stage)}`}
                             >
-                              {workflow.current_stage.toUpperCase()}
+                              {workflow.current_stage.replace(/_/g, " ").toUpperCase()}
                             </Badge>
                             <Badge
                               variant="outline"
                               className="rounded-none border-primary/20 text-muted-foreground"
                             >
-                              {workflow.status}
+                              {formatWorkflowStatus(workflow.status)}
                             </Badge>
                           </div>
                         </td>

@@ -11,6 +11,7 @@ import type {
   TutorWorkflowSummary,
 } from "@/lib/api";
 import { INPUT_BASE, SELECT_BASE, TEXT_MUTED } from "@/lib/theme";
+import { formatWorkflowStatus, truncateWorkflowId } from "@/lib/workflowStatus";
 import { CheckCircle2, Clock3, Play, RefreshCw, Save, Sparkles } from "lucide-react";
 
 type StudyUnitOption = {
@@ -189,7 +190,7 @@ export function TutorWorkflowPrimingPanel({
                 </p>
               </div>
               <Badge variant="outline" className="rounded-none border-primary/30 text-primary/80">
-                {workflow?.status || "draft"}
+                {formatWorkflowStatus(workflow?.status)}
               </Badge>
             </div>
           </CardHeader>
@@ -198,7 +199,7 @@ export function TutorWorkflowPrimingPanel({
               <div className="border border-primary/20 bg-black/35 p-3">
                 <div className="font-arcade text-[10px] text-primary/80">WORKFLOW</div>
                 <div className="mt-2 font-terminal text-xs text-foreground break-all">
-                  {workflow?.workflow_id || "No workflow loaded"}
+                  {truncateWorkflowId(workflow?.workflow_id)}
                 </div>
               </div>
               <div className="border border-primary/20 bg-black/35 p-3">

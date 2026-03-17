@@ -84,7 +84,7 @@ function extractCardCandidates(polishBundle: TutorPolishBundle | null): FinalSyn
   return cards;
 }
 
-function extractStudioArtifacts(polishBundle: TutorPolishBundle | null): FinalSyncStudioArtifact[] {
+function extractStudioArtifacts(polishBundle: TutorPolishBundle | null | undefined): FinalSyncStudioArtifact[] {
   const raw = (polishBundle?.studio_payload?.artifacts || []) as unknown[];
   return raw
     .map((item, index) => {
