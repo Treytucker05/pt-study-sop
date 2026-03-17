@@ -87,6 +87,7 @@ ui/
 !dashboard_rebuild/client/src/components/ui/**
 jules-sdk/
 task-agent/
+node_modules/
 dashboard_rebuild/client/node_modules/.vite/
 dashboard_rebuild/client/node_modules/bufferutil/
 nul
@@ -149,6 +150,7 @@ scripts/_ai_config_backups/
 # Playwright MCP screenshots (local only)
 .playwright-mcp/*.png
 .playwright-mcp/*.md
+.playwright-mcp/*.log
 
 # Large generated files
 /filetree.txt
