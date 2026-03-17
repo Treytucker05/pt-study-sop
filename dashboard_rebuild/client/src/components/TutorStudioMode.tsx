@@ -6,6 +6,7 @@ import {
   FolderOpen,
   History,
   Layers3,
+  ListChecks,
   PencilLine,
   Save,
   Sparkles,
@@ -24,6 +25,7 @@ import { api } from "@/lib/api";
 import type { Material, MaterialContent, TutorBoardScope, TutorStudioItem } from "@/lib/api";
 import { MaterialViewer } from "@/components/MaterialViewer";
 import { TutorWorkspaceSurface, type TutorWorkspaceSurfaceHandle } from "@/components/TutorWorkspaceSurface";
+import { TutorEmptyState } from "@/components/TutorEmptyState";
 import {
   buildMaterialViewerPopoutHtml,
   STUDIO_MATERIAL_VIEWER_POPOUT_CHANNEL,
@@ -658,7 +660,25 @@ export function TutorStudioMode(props: TutorStudioModeProps) {
     promoteItem,
   } = controller;
 
-  if (studioLevel === 1 || typeof courseId !== "number") {
+  if (typeof courseId !== "number") {
+    return (
+      <TutorEmptyState
+        icon={FolderOpen}
+        title="NO COURSE SELECTED"
+        description="Select a course from the LAUNCH tab to open Studio."
+        actions={[
+          {
+            label: "GO TO LAUNCH",
+            icon: ListChecks,
+            onClick: handleLaunchSession,
+            variant: "primary",
+          },
+        ]}
+      />
+    );
+  }
+
+  if (studioLevel === 1) {
     return (
       <StudioRootLevelView
         activeSessionId={activeSessionId}

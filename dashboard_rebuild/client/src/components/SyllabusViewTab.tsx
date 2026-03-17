@@ -84,7 +84,7 @@ export function SyllabusViewTab({
   const hasData = modules.length > 0 || objectives.length > 0 || events.length > 0;
 
   return (
-    <div className="space-y-4 p-4">
+    <div className="space-y-4 min-w-0 overflow-hidden">
       {/* Course Selector */}
       {lockedCourseId === null || lockedCourseId === undefined ? (
         <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">

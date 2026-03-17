@@ -208,11 +208,30 @@ def create_artifact(session_id: str):
         return jsonify(result), 201
 
     result: dict[str, object] = {"type": artifact_type, "session_id": session_id}
+    front: str | None = None
 
     if artifact_type == "card":
         front = data.get("front", title)
         back = data.get("back", content)
         tags = data.get("tags", "tutor")
+
+        # Auto-generate a descriptive title when front is generic or empty
+        if not front or front.strip().lower().startswith("tutor flashcard"):
+            topic = str(session.get("topic") or "").strip()
+            # Extract first meaningful concept from back content
+            first_concept = ""
+            if back:
+                for line in str(back).splitlines():
+                    stripped = line.strip().lstrip("#-*> ").strip()
+                    if len(stripped) >= 5:
+                        first_concept = stripped[:80]
+                        break
+            if topic and first_concept:
+                front = f"{topic}: {first_concept}"
+            elif topic:
+                front = topic
+            elif first_concept:
+                front = first_concept
 
         cur = conn.cursor()
         cur.execute(
@@ -270,7 +289,7 @@ def create_artifact(session_id: str):
 
     artifact_entry = {
         "type": artifact_type,
-        "title": title,
+        "title": front if artifact_type == "card" else title,
         "created_at": datetime.now().isoformat(),
     }
     if artifact_type in ("note", "card", "map"):

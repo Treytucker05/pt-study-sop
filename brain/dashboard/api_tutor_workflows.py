@@ -8,7 +8,7 @@ import json
 import re
 import sqlite3
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from flask import jsonify, request
@@ -502,6 +502,7 @@ def list_tutor_workflows():
     course_id = request.args.get("course_id")
     status = request.args.get("status")
     stage = request.args.get("stage")
+    include_drafts = request.args.get("include_drafts", "false").lower() == "true"
     try:
         parsed_limit = max(1, min(int(request.args.get("limit", "20")), 100))
         parsed_course_id = int(course_id) if course_id else None
@@ -518,6 +519,14 @@ def list_tutor_workflows():
     if stage:
         where_parts.append("tw.current_stage = ?")
         values.append(stage)
+    if not include_drafts:
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+        where_parts.append(
+            "NOT (tw.course_id IS NULL AND tw.topic IS NULL"
+            " AND tw.status = 'priming_in_progress'"
+            " AND tw.created_at < ?)"
+        )
+        values.append(cutoff)
     where_sql = f"WHERE {' AND '.join(where_parts)}" if where_parts else ""
     values.append(parsed_limit)
     conn = get_connection()

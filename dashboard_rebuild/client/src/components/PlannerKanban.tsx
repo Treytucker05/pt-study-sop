@@ -94,7 +94,7 @@ function KanbanColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex flex-col h-[360px] sm:h-[420px] border border-secondary/40 bg-black/30 rounded-none",
+        "flex flex-col h-[360px] sm:h-[420px] border border-secondary/40 bg-black/30 rounded-none min-w-0",
         isOver && "border-primary/70 bg-primary/10"
       )}
       aria-label={label}
@@ -684,7 +684,7 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
   } = usePlannerKanbanBoard(tasks);
 
   return (
-    <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
+    <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none min-w-0 overflow-hidden">
       <PlannerKanbanHeader
         taskCount={tasks.length}
         isUpdating={isUpdating}

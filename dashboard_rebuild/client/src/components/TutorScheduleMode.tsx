@@ -268,7 +268,7 @@ function UpcomingEventsCard({
 
 function PlannerQueueCard({ isLoading, queue }: PlannerQueueCardProps) {
   return (
-    <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
+    <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none min-w-0 overflow-hidden">
       <CardHeader className="border-b border-primary/40">
         <div className="flex items-center justify-between gap-3">
           <CardTitle className="font-arcade text-sm">PLANNER QUEUE</CardTitle>
@@ -410,8 +410,8 @@ export function TutorScheduleMode({
   }
 
   return (
-    <div className={cn("grid gap-4 xl:grid-cols-[1.05fr_1.45fr]", className)} data-testid="tutor-schedule-mode">
-      <div className="space-y-4">
+    <div className={cn("grid gap-4 xl:grid-cols-[1.05fr_1.45fr] w-full min-w-0 overflow-hidden", className)} data-testid="tutor-schedule-mode">
+      <div className="space-y-4 min-w-0 overflow-hidden">
         <ScheduleOverviewCard
           calendarSource={calendarSource}
           displayCourse={displayCourse}

@@ -927,6 +927,25 @@ function ActiveSessionSummary({
   );
 }
 
+/** For existing drafts with generic titles, derive a display title from back content. */
+function deriveCardDisplayTitle(artifact: TutorArtifact, index: number): string {
+  const title = artifact.title || "";
+  // If title is meaningful (not generic pattern), use it as-is
+  if (title && !/^Tutor flashcard\s*\d*$/i.test(title)) {
+    return title;
+  }
+  // Try first meaningful line from back content
+  if (artifact.content) {
+    for (const line of artifact.content.split("\n")) {
+      const stripped = line.replace(/^[#\-*>\s]+/, "").trim();
+      if (stripped.length >= 5) {
+        return stripped.length > 80 ? stripped.slice(0, 77) + "..." : stripped;
+      }
+    }
+  }
+  return title || `${artifact.type} #${index + 1}`;
+}
+
 function ArtifactCard({
   artifact,
   index,
@@ -958,7 +977,9 @@ function ArtifactCard({
         />
         <Icon className={`${ICON_MD} ${color}`} />
         <span className={`${TEXT_BODY} text-sm truncate flex-1`}>
-          {artifact.title || `${artifact.type} #${index + 1}`}
+          {artifact.type === "card"
+            ? deriveCardDisplayTitle(artifact, index)
+            : artifact.title || `${artifact.type} #${index + 1}`}
         </span>
         {sessionId && onDelete && (
           <Button

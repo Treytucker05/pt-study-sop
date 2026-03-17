@@ -68,20 +68,20 @@ function actionLabelForWorkflow(workflow: TutorWorkflowSummary) {
   return "Open Workflow";
 }
 
-function stageTone(stage: TutorWorkflowStage) {
+function stageBadgeColor(stage: string): string {
   switch (stage) {
-    case "launch":
-      return "border-primary/40 text-primary";
     case "priming":
-      return "border-sky-500/40 text-sky-300";
+      return "border-amber-500/40 bg-amber-500/10 text-amber-300";
     case "tutor":
-      return "border-emerald-500/40 text-emerald-300";
+      return "border-blue-500/40 bg-blue-500/10 text-blue-300";
     case "polish":
-      return "border-amber-500/40 text-amber-200";
+      return "border-purple-500/40 bg-purple-500/10 text-purple-300";
     case "final_sync":
-      return "border-fuchsia-500/40 text-fuchsia-300";
+      return "border-green-500/40 bg-green-500/10 text-green-300";
+    case "stored":
+      return "border-zinc-500/40 bg-zinc-500/10 text-zinc-300";
     default:
-      return "border-primary/30 text-primary";
+      return "border-primary/30 bg-primary/10 text-primary";
   }
 }
 
@@ -189,25 +189,37 @@ export function TutorWorkflowLaunchHub({
               <CardTitle className="font-arcade text-xs text-primary">STUDY WHEEL</CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="grid gap-3 pt-4 sm:grid-cols-3">
-            <div className="border border-primary/20 bg-black/35 p-3">
-              <div className="font-arcade text-[10px] text-primary/80">TOTAL SESSIONS</div>
-              <div className="mt-2 font-terminal text-xl text-foreground">
-                {tutorHub?.study_wheel.total_sessions ?? 0}
+          <CardContent className="pt-4">
+            {(tutorHub?.study_wheel.total_sessions ?? 0) === 0 &&
+            (tutorHub?.study_wheel.total_minutes ?? 0) === 0 ? (
+              <div className="flex flex-col items-center gap-3 py-6">
+                <FolderClock className="h-8 w-8 text-primary/40" />
+                <p className="font-terminal text-xs text-muted-foreground text-center">
+                  Start a tutor session to build your study wheel
+                </p>
               </div>
-            </div>
-            <div className="border border-primary/20 bg-black/35 p-3">
-              <div className="font-arcade text-[10px] text-primary/80">TOTAL MINUTES</div>
-              <div className="mt-2 font-terminal text-xl text-foreground">
-                {tutorHub?.study_wheel.total_minutes ?? 0}
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="border border-primary/20 bg-black/35 p-3">
+                  <div className="font-arcade text-[10px] text-primary/80">TOTAL SESSIONS</div>
+                  <div className="mt-2 font-terminal text-xl text-foreground">
+                    {tutorHub?.study_wheel.total_sessions ?? 0}
+                  </div>
+                </div>
+                <div className="border border-primary/20 bg-black/35 p-3">
+                  <div className="font-arcade text-[10px] text-primary/80">TOTAL MINUTES</div>
+                  <div className="mt-2 font-terminal text-xl text-foreground">
+                    {tutorHub?.study_wheel.total_minutes ?? 0}
+                  </div>
+                </div>
+                <div className="border border-primary/20 bg-black/35 p-3">
+                  <div className="font-arcade text-[10px] text-primary/80">NEXT COURSE</div>
+                  <div className="mt-2 font-terminal text-sm text-foreground break-words">
+                    {tutorHub?.study_wheel.next_course_name || "Not set"}
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="border border-primary/20 bg-black/35 p-3">
-              <div className="font-arcade text-[10px] text-primary/80">NEXT COURSE</div>
-              <div className="mt-2 font-terminal text-sm text-foreground break-words">
-                {tutorHub?.study_wheel.next_course_name || "Not set"}
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -372,7 +384,7 @@ export function TutorWorkflowLaunchHub({
                           <div className="flex flex-wrap gap-2">
                             <Badge
                               variant="outline"
-                              className={`rounded-none ${stageTone(workflow.current_stage)}`}
+                              className={`rounded-none ${stageBadgeColor(workflow.current_stage)}`}
                             >
                               {workflow.current_stage.toUpperCase()}
                             </Badge>
