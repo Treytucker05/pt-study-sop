@@ -1,14 +1,23 @@
 import { useLocation } from "wouter";
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
-import { Brain, Calendar, GraduationCap, Bot, Blocks, TrendingUp, BookOpen, Shield, Save, Trash2, GripVertical, Pencil, X, Check } from "lucide-react";
+import { BookOpen, Save, Trash2, GripVertical, Pencil, X, Check, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import brainBackground from "@assets/BrainBackground.jpg";
+import navShellBackground from "@assets/Dashboard Background image.png";
+import navShellFrame from "@assets/Dashboard finished.png";
 import logoImg from "@assets/StudyBrainIMAGE_1768640444498.jpg";
-import navFramePrimary from "@assets/nav-frame-primary.png";
+import navBrainCustom from "@assets/nav-brain-custom.png";
+import navScholarCustom from "@assets/nav-scholar-custom.png";
+import navTutorCustom from "@assets/nav-tutor-custom.png";
+import navLibraryCustom from "@assets/nav-library-custom.png";
+import navMasteryCustom from "@assets/nav-mastery-custom.png";
+import navCalendarCustom from "@assets/nav-calendar-custom.png";
+import navMethodsCustom from "@assets/nav-methods-custom.png";
+import navVaultCustom from "@assets/nav-vault-custom.png";
 import {
   CONTROL_COPY,
   CONTROL_DECK_SECTION,
@@ -21,18 +30,95 @@ import { api } from "@/lib/api";
 import { useToast } from "@/use-toast";
 import type { Note } from "@shared/schema";
 
+const NAV_REFERENCE_WIDTH = 1536;
+const NAV_REFERENCE_HEIGHT = 1024;
+
+const navGuidePlacementStyle = (
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): CSSProperties => ({
+  left: `${(x / NAV_REFERENCE_WIDTH) * 100}%`,
+  top: `${(y / NAV_REFERENCE_HEIGHT) * 100}%`,
+  width: `${(width / NAV_REFERENCE_WIDTH) * 100}%`,
+  height: `${(height / NAV_REFERENCE_HEIGHT) * 100}%`,
+});
+
+// Playground export: 1440w × 325h hero
+// CSS width% = % of parent width, height% = % of parent height
+// widthPct from export is correct (% of 1440). heightPct must be recalculated as px/325.
 const PRIMARY_NAV_ITEMS = [
-  { path: "/", label: "BRAIN", icon: Brain, testId: "brain" },
-  { path: "/scholar", label: "SCHOLAR", icon: GraduationCap, testId: "scholar" },
-  { path: "/tutor", label: "TUTOR", icon: Bot, testId: "tutor" },
+  {
+    path: "/",
+    label: "BRAIN",
+    testId: "brain",
+    tier: "primary",
+    imageSrc: navBrainCustom,
+    accentClass: "drop-shadow-[0_0_18px_rgba(255,74,74,0.34)]",
+    shellStyle: { left: "22.16%", top: "46.83%", width: "16.39%", height: "31.69%" } as CSSProperties,
+  },
+  {
+    path: "/scholar",
+    label: "SCHOLAR",
+    testId: "scholar",
+    tier: "primary",
+    imageSrc: navScholarCustom,
+    accentClass: "brightness-[1.02] saturate-[1.08] drop-shadow-[0_0_18px_rgba(255,164,92,0.34)]",
+    shellStyle: { left: "37.23%", top: "44.39%", width: "16.39%", height: "31.69%" } as CSSProperties,
+  },
+  {
+    path: "/tutor",
+    label: "TUTOR",
+    testId: "tutor",
+    tier: "primary",
+    imageSrc: navTutorCustom,
+    accentClass: "brightness-[1.02] saturate-[1.08] drop-shadow-[0_0_18px_rgba(255,98,98,0.38)]",
+    shellStyle: { left: "52.01%", top: "47.08%", width: "16.39%", height: "31.69%" } as CSSProperties,
+  },
 ];
 
 const SUPPORT_NAV_ITEMS = [
-  { path: "/library", label: "LIBRARY", icon: BookOpen, testId: "library" },
-  { path: "/mastery", label: "MASTERY", icon: TrendingUp, testId: "mastery" },
-  { path: "/calendar", label: "CALENDAR", icon: Calendar, testId: "calendar" },
-  { path: "/methods", label: "METHODS", icon: Blocks, testId: "methods" },
-  { path: "/vault-health", label: "VAULT", icon: Shield, testId: "vault" },
+  {
+    path: "/library",
+    label: "LIBRARY",
+    testId: "library",
+    tier: "support",
+    imageSrc: navLibraryCustom,
+    shellStyle: { left: "24.46%", top: "78.34%", width: "9.03%", height: "20%" } as CSSProperties,
+  },
+  {
+    path: "/mastery",
+    label: "MASTERY",
+    testId: "mastery",
+    tier: "support",
+    imageSrc: navMasteryCustom,
+    shellStyle: { left: "33.26%", top: "78.54%", width: "9.03%", height: "20%" } as CSSProperties,
+  },
+  {
+    path: "/calendar",
+    label: "CALENDAR",
+    testId: "calendar",
+    tier: "support",
+    imageSrc: navCalendarCustom,
+    shellStyle: { left: "41.75%", top: "79.08%", width: "9.03%", height: "20%" } as CSSProperties,
+  },
+  {
+    path: "/methods",
+    label: "METHODS",
+    testId: "methods",
+    tier: "support",
+    imageSrc: navMethodsCustom,
+    shellStyle: { left: "49.92%", top: "78.78%", width: "9.03%", height: "20%" } as CSSProperties,
+  },
+  {
+    path: "/vault-health",
+    label: "VAULT",
+    testId: "vault",
+    tier: "support",
+    imageSrc: navVaultCustom,
+    shellStyle: { left: "58.59%", top: "79.28%", width: "9.03%", height: "20%" } as CSSProperties,
+  },
 ];
 
 type NoteCategory = "notes" | "planned" | "ideas";
@@ -46,15 +132,18 @@ const NOTE_CATEGORIES: { value: NoteCategory; label: string; tabLabel: string }[
 type NavItem = {
   path: string;
   label: string;
-  icon: typeof Brain;
   testId: string;
+  tier: "primary" | "support";
+  imageSrc: string;
+  accentClass?: string;
+  shellStyle: CSSProperties;
 };
-
-type NavTier = "primary" | "support";
 
 const NOTES_DOCK_STORAGE_KEY = "layout.notesDockTop.v1";
 const NOTES_DOCK_MARGIN = 16;
 const NOTES_DOCK_MIN_TOP = 96;
+const NAV_BUILD_MARKER = "NAV 317.3";
+const DESKTOP_NAV_BREAKPOINT = 1024;
 
 const resolveNoteType = (note: Note): NoteCategory => {
   const raw = (note as Note & { noteType?: string }).noteType;
@@ -64,95 +153,58 @@ const resolveNoteType = (note: Note): NoteCategory => {
   return "notes";
 };
 
-const railShellClass = (tier: NavTier) =>
+const navButtonImageClass = (item: NavItem, isActive: boolean) =>
   cn(
-    "relative overflow-hidden border-2 rounded-sm backdrop-blur-md",
-    tier === "primary"
-      ? "border-red-600 bg-black/80 shadow-[0_0_15px_rgba(220,38,38,0.5)] p-2"
-      : "border-red-800 bg-black/80 shadow-[0_0_10px_rgba(153,27,27,0.5)] p-1.5",
+    "pointer-events-none h-full w-full object-contain transition-[filter,opacity,transform] duration-200 motion-reduce:transition-none",
+    item.tier === "primary"
+      ? isActive
+        ? "brightness-[1.1] saturate-[1.2] drop-shadow-[0_0_24px_rgba(255,74,74,0.42)] group-hover:brightness-[1.14] group-hover:saturate-[1.24] group-hover:drop-shadow-[0_0_28px_rgba(255,74,74,0.5)]"
+        : "opacity-[0.98] brightness-[0.97] saturate-[1.06] group-hover:scale-[1.03] group-hover:opacity-100 group-hover:brightness-[1.07] group-hover:saturate-[1.14] group-hover:drop-shadow-[0_0_18px_rgba(255,96,96,0.3)] group-active:scale-[0.99]"
+      : isActive
+        ? "brightness-[1.08] saturate-[1.18] drop-shadow-[0_0_22px_rgba(255,74,74,0.42)] group-hover:brightness-[1.12] group-hover:saturate-[1.22] group-hover:drop-shadow-[0_0_24px_rgba(255,74,74,0.46)]"
+        : "opacity-[0.92] brightness-[0.78] saturate-[0.84] group-hover:scale-[1.02] group-hover:opacity-100 group-hover:brightness-100 group-hover:saturate-[1.08] group-hover:drop-shadow-[0_0_14px_rgba(255,74,74,0.28)] group-active:scale-[0.99]",
+    item.accentClass,
   );
 
-const railCoreClass = (tier: NavTier) =>
+const navShellLinkClass = (item: NavItem, isActive: boolean) =>
   cn(
-    "relative z-10 grid items-stretch",
-    tier === "primary" ? "grid-cols-3 gap-2" : "min-w-[34rem] grid-cols-5 gap-1.5 sm:min-w-0",
-  );
-
-const navLinkClass = (tier: NavTier, isActive: boolean) =>
-  cn(
-    "group relative flex items-center justify-center border-b-4 border-transparent font-arcade text-red-500 transition-all duration-100 uppercase overflow-hidden",
-    "hover:bg-red-950/50 hover:text-red-300 hover:border-red-500 hover:shadow-[inset_0_0_10px_rgba(220,38,38,0.4)]",
-    "active:scale-95",
-    tier === "primary"
-      ? "gap-2 px-4 text-left items-center justify-start h-14 text-sm"
-      : "px-3 text-center h-10 text-xs",
-    isActive && "border-red-600 bg-red-900/30 text-white shadow-[inset_0_0_15px_rgba(220,38,38,0.6)]",
-  );
-
-const navIconWrapClass = (isActive: boolean) =>
-  cn(
-    "relative z-10 flex shrink-0 items-center justify-center text-red-500 group-hover:text-red-300 transition-colors",
-    isActive && "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]",
-    "h-6 w-6"
-  );
-
-const navLabelClass = (tier: NavTier) =>
-  cn(
-    "relative z-10 tracking-[0.1em]",
+    "group absolute z-10 flex cursor-pointer items-center justify-center rounded-[1.4rem] pointer-events-auto will-change-transform transition-transform duration-200 motion-reduce:transition-none",
+    "after:pointer-events-none after:absolute after:inset-[8%] after:rounded-[1.2rem] after:border-0 after:transition-[border-color,box-shadow,opacity] after:duration-200",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
+    item.tier === "primary"
+      ? isActive
+        ? "scale-[1.025] hover:-translate-y-1 after:border-red-300/55 after:shadow-[0_0_16px_rgba(255,82,82,0.32)]"
+        : "hover:-translate-y-1.5 active:translate-y-px active:scale-[0.985] hover:after:border-red-300/35 hover:after:shadow-[0_0_14px_rgba(255,82,82,0.22)]"
+      : isActive
+        ? "scale-[1.02] hover:-translate-y-0.5 after:border-red-300/45 after:shadow-[0_0_12px_rgba(255,82,82,0.24)]"
+        : "hover:-translate-y-1 active:translate-y-px active:scale-[0.985] hover:after:border-red-300/28 hover:after:shadow-[0_0_10px_rgba(255,82,82,0.18)]",
   );
 
 const notesDockStyle = (top: number | null): CSSProperties => ({
   top: top === null ? "34%" : `${top}px`,
 });
 
-function ShellNavLink({
-  item,
-  isActive,
-  tier,
-  onNavigate,
+function BrainTitleChip({
+  className = "h-12 w-12",
+  imageClassName = "h-8 w-8",
 }: {
-  item: NavItem;
-  isActive: boolean;
-  tier: NavTier;
-  onNavigate: (event: MouseEvent<HTMLAnchorElement>, path: string) => void;
+  className?: string;
+  imageClassName?: string;
 }) {
-  const showIcon = tier === "primary";
   return (
-    <a
-      href={item.path}
-      data-testid={`nav-${item.testId}`}
-      className={navLinkClass(tier, isActive)}
-      aria-current={isActive ? "page" : undefined}
-      onClick={(event) => onNavigate(event, item.path)}
+    <span
+      className={cn(
+        "relative inline-flex shrink-0 items-center justify-center rounded-full border border-red-500/60 bg-[radial-gradient(circle_at_35%_35%,rgba(255,255,255,0.18),rgba(0,0,0,0.82)_72%)] shadow-[0_0_18px_rgba(255,82,82,0.34),0_10px_20px_rgba(0,0,0,0.45)] backdrop-blur-md",
+        className,
+      )}
     >
-      <span className="pointer-events-none absolute inset-x-4 top-[2px] h-px bg-gradient-to-r from-transparent via-[rgba(255,208,216,0.28)] to-transparent" />
-      <span
-        className={cn(
-          "pointer-events-none absolute inset-x-4 bottom-[4px] h-[1px] bg-gradient-to-r from-transparent via-[rgba(255,88,118,0.5)] to-transparent",
-          isActive
-            ? "opacity-100 shadow-[0_0_10px_rgba(255,110,140,0.42)]"
-            : "opacity-35 group-hover:opacity-65",
-        )}
+      <img
+        src={logoImg}
+        alt=""
+        aria-hidden="true"
+        className={cn("rounded-full object-cover grayscale-[0.08] saturate-[1.15]", imageClassName)}
       />
-      {showIcon ? (
-        <span className={navIconWrapClass(isActive)}>
-          <item.icon
-            className={cn(
-              "shrink-0 text-[#fff3f6] drop-shadow-[0_0_6px_rgba(255,120,132,0.42)]",
-              "h-4.5 w-4.5"
-            )}
-          />
-        </span>
-      ) : null}
-      <span
-        className={cn(
-          navLabelClass(tier),
-          tier === "primary" ? "text-left" : "text-center",
-        )}
-      >
-        {item.label}
-      </span>
-    </a>
+    </span>
   );
 }
 
@@ -176,9 +228,13 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
   const [dragOverNote, setDragOverNote] = useState<{ id: number; type: NoteCategory } | null>(null);
   const [dragOverCategory, setDragOverCategory] = useState<NoteCategory | null>(null);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notesDockTop, setNotesDockTop] = useState<number | null>(null);
   const [isDraggingNotesDock, setIsDraggingNotesDock] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
+  const [isDesktopViewport, setIsDesktopViewport] = useState(() =>
+    typeof window === "undefined" ? true : window.innerWidth >= DESKTOP_NAV_BREAKPOINT,
+  );
   const notesDockRef = useRef<HTMLButtonElement | null>(null);
   const notesDockDragRef = useRef<{ pointerId: number; offsetY: number; moved: boolean } | null>(null);
   // ─── Adaptive header state ───
@@ -188,16 +244,15 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
   const lastScrollY = useRef(0);
   const lastScrollSource = useRef<EventTarget | null>(null);
   const scrollAccumulator = useRef(0);
-  const SCROLL_DOWN_THRESHOLD = 40;
-  const SCROLL_UP_THRESHOLD = 20;
-  const TOP_ZONE = 80;
-  const HEADER_SLIVER_PX = 8;
+  const SCROLL_DOWN_THRESHOLD = 1;
+  const TOP_ZONE = 10;
+  const HEADER_SLIVER_PX = 6;
 
   const clampNotesDockTop = useCallback((top: number) => {
     if (typeof window === "undefined") {
       return top;
     }
-    const dockHeight = notesDockRef.current?.offsetHeight ?? 88;
+    const dockHeight = notesDockRef.current?.offsetHeight ?? 64;
     const maxTop = Math.max(NOTES_DOCK_MIN_TOP, window.innerHeight - dockHeight - NOTES_DOCK_MARGIN);
     return Math.min(Math.max(top, NOTES_DOCK_MIN_TOP), maxTop);
   }, []);
@@ -219,16 +274,20 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
   }, []);
 
   const handleScroll = useCallback((event?: Event) => {
+    if (!isDesktopViewport) {
+      setHeaderCollapsed(false);
+      scrollAccumulator.current = 0;
+      return;
+    }
+
     const { source, y } = resolveScrollPosition(event?.target ?? null);
 
+    // Track per-source scroll position without dropping the first event
     if (lastScrollSource.current !== source) {
       lastScrollSource.current = source;
       lastScrollY.current = y;
       scrollAccumulator.current = 0;
-      if (y <= TOP_ZONE) {
-        setHeaderCollapsed(false);
-      }
-      return;
+      // Don't return — still process this scroll event
     }
 
     const delta = y - lastScrollY.current;
@@ -241,32 +300,70 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Accumulate scroll in the current direction; reset on direction change
+    // Any scroll down past the top zone — collapse immediately
     if (delta > 0) {
       scrollAccumulator.current = Math.max(0, scrollAccumulator.current) + delta;
       if (scrollAccumulator.current > SCROLL_DOWN_THRESHOLD) {
         setHeaderCollapsed(true);
       }
-    } else if (delta < 0) {
-      scrollAccumulator.current = Math.min(0, scrollAccumulator.current) + delta;
-      if (scrollAccumulator.current < -SCROLL_UP_THRESHOLD) {
-        setHeaderCollapsed(false);
-        scrollAccumulator.current = 0;
-      }
     }
-  }, [resolveScrollPosition]);
+    // Scroll up does NOT expand — only TOP_ZONE or mouse hover expands
+  }, [isDesktopViewport, resolveScrollPosition]);
 
   useEffect(() => {
     document.addEventListener("scroll", handleScroll, { passive: true, capture: true });
     window.addEventListener("scroll", handleScroll, { passive: true });
+    // Also listen directly on <main> since it's the scroll container on workspace routes
+    const main = document.querySelector("main");
+    if (main) {
+      main.addEventListener("scroll", handleScroll, { passive: true });
+    }
     handleScroll();
     return () => {
       document.removeEventListener("scroll", handleScroll, true);
       window.removeEventListener("scroll", handleScroll);
+      if (main) {
+        main.removeEventListener("scroll", handleScroll);
+      }
     };
   }, [handleScroll]);
 
-  const headerExpanded = !headerCollapsed || headerHovered;
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const syncViewportFromWindow = () =>
+      setIsDesktopViewport(window.innerWidth >= DESKTOP_NAV_BREAKPOINT);
+
+    if (typeof window.matchMedia !== "function") {
+      syncViewportFromWindow();
+      window.addEventListener("resize", syncViewportFromWindow);
+      return () => window.removeEventListener("resize", syncViewportFromWindow);
+    }
+
+    const mediaQuery = window.matchMedia(`(min-width: ${DESKTOP_NAV_BREAKPOINT}px)`);
+    const syncViewport = () => setIsDesktopViewport(mediaQuery.matches);
+    syncViewport();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", syncViewport);
+      return () => mediaQuery.removeEventListener("change", syncViewport);
+    }
+
+    mediaQuery.addListener(syncViewport);
+    return () => mediaQuery.removeListener(syncViewport);
+  }, []);
+
+  useEffect(() => {
+    if (isDesktopViewport) {
+      return;
+    }
+    setHeaderCollapsed(false);
+    setHeaderHovered(false);
+  }, [isDesktopViewport]);
+
+  const headerExpanded = !isDesktopViewport || !headerCollapsed || headerHovered;
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -368,6 +465,10 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
       delete (window as typeof window & { openTutor?: () => void }).openTutor;
     };
   }, [setLocation]);
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [currentPath]);
 
   const { data: notes = [], isLoading: notesLoading } = useQuery({
     queryKey: ["notes"],
@@ -688,14 +789,14 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
       {/* Top Nav — adaptive header with Retro-Futuristic Tactical Banner */}
       {/* Hover hot zone for expanding the collapsed header sliver */}
       <div
-        className="fixed inset-x-0 top-0 z-30 pointer-events-auto"
+        className="fixed inset-x-0 top-0 z-30 hidden pointer-events-auto lg:block"
         style={{ height: HEADER_SLIVER_PX }}
         onMouseEnter={() => setHeaderHovered(true)}
       />
       <header
         data-header-shell
         className={cn(
-          "relative z-20 sticky top-0 transition-transform duration-300 ease-out will-change-transform border-b-4 border-red-700",
+          "relative z-20 sticky top-0 overflow-hidden transition-transform duration-300 ease-out will-change-transform border-b-4 border-red-700",
           headerExpanded && "shadow-[0_10px_30px_rgba(220,38,38,0.4)]",
         )}
         style={{
@@ -713,128 +814,189 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
         {/* Banner Image Background */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
           <img
-            src="/nav-home.png"
+            src={navShellBackground}
             alt="Nav Banner"
-            className="w-full h-full object-cover opacity-40 mix-blend-luminosity brightness-50 contrast-125"
+            className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-black/90" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
           <div className="absolute inset-0 bg-[linear-gradient(rgba(220,38,38,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.05)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
         </div>
 
         <div
           className={cn(
-            "relative z-10 w-full px-2 sm:px-3 md:px-4 py-3.5",
+            "relative z-10 w-full px-2 pb-1 pt-2 sm:px-3 sm:pt-2.5 md:px-4",
           )}
         >
-          <div className="grid gap-3 lg:grid-cols-[minmax(15rem,22rem)_minmax(0,1fr)] lg:items-start lg:gap-5">
-            <a
-              href="/"
-              onClick={(event) => handleNavActivate(event, "/")}
-              className="group flex min-w-0 items-center gap-3 border-2 border-red-800 bg-black/60 px-3 py-2 shadow-[0_0_15px_rgba(220,38,38,0.3)] backdrop-blur-sm hover:border-red-500 transition-colors"
-            >
-              <img
-                src={logoImg}
-                alt="Logo"
-                className={cn(
-                  "border-2 border-red-600 object-cover grayscale group-hover:grayscale-0",
-                  "h-14 w-14 sm:h-15 sm:w-15",
-                )}
-              />
-              <div className="min-w-0">
-                <span
-                  className={cn(
-                    "block whitespace-nowrap font-arcade text-red-500 group-hover:text-red-400 group-hover:drop-shadow-[0_0_8px_rgba(220,38,38,0.8)] motion-reduce:transition-none",
-                    "text-[0.72rem] sm:text-[0.8rem]",
-                  )}
-                >
-                  TREY'S STUDY SYSTEM
-                </span>
-                <span className="block font-terminal text-[0.68rem] text-red-700 sm:text-sm">
-                  NEURAL COMMAND DECK
-                </span>
-              </div>
-            </a>
+          <div className="flex min-w-0 justify-center lg:hidden">
+            <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+              <div className="mx-auto w-full max-w-[42rem]">
+                <div className="flex items-center gap-3 rounded-[1.2rem] border border-red-500/28 bg-[linear-gradient(180deg,rgba(18,0,0,0.92),rgba(6,0,0,0.96))] px-3 py-2.5 shadow-[0_0_18px_rgba(220,38,38,0.18),0_18px_36px_rgba(0,0,0,0.35)]">
+                  <a
+                    href="/"
+                    onClick={(event) => handleNavActivate(event, "/")}
+                    className="flex min-w-0 flex-1 items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                    aria-label="Trey's Study System"
+                  >
+                    <BrainTitleChip className="h-10 w-10" imageClassName="h-7 w-7" />
+                    <div className="min-w-0">
+                      <div className="truncate font-arcade text-[0.74rem] uppercase tracking-[0.14em] text-[#fff4ed] [text-shadow:0_0_12px_rgba(255,108,108,0.42)]">
+                        TREY&apos;S STUDY SYSTEM
+                      </div>
+                    </div>
+                  </a>
 
-            <div className="flex min-w-0 flex-col gap-2.5" data-testid="nav-desktop-groups">
-              <nav
-                className="relative mx-auto w-full max-w-[700px] h-[160px]"
-                aria-label="Primary study navigation"
-                data-testid="nav-primary-rail"
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 rounded-[0.95rem] border-red-500/45 bg-black/40 px-3 font-arcade text-[0.65rem] uppercase tracking-[0.18em] text-[#fff4ed] hover:bg-red-900/30"
+                    onClick={() => setMobileNavOpen(true)}
+                    data-testid="mobile-nav-trigger"
+                    aria-label="Open study navigation"
+                  >
+                    <Menu className="mr-1.5 h-3.5 w-3.5" />
+                    Menu
+                  </Button>
+                </div>
+              </div>
+
+              <SheetContent
+                side="right"
+                className="w-[min(88vw,22rem)] border-l-4 border-double border-primary bg-black/95 px-4 py-5 sm:px-5 lg:hidden"
               >
-                {/* 3D Frame background image */}
-                <img
-                  src={navFramePrimary}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none drop-shadow-[0_0_20px_rgba(255,50,50,0.3)]"
-                  aria-hidden="true"
-                />
-                {/* Nav buttons positioned over the frame slots */}
-                <div
-                  className="absolute inset-0 z-10 grid grid-cols-3 items-center justify-items-center px-[10%] pb-[8%]"
-                  data-testid="nav-core-group"
-                  aria-label="Core triad navigation"
-                >
-                  {PRIMARY_NAV_ITEMS.map((item) => {
+                <SheetTitle className="font-arcade text-sm text-primary">SYSTEM NAVIGATION</SheetTitle>
+                <SheetDescription className="mt-1 font-terminal text-xs text-muted-foreground">
+                  Compact mobile command access while the desktop shell stays reserved for larger screens.
+                </SheetDescription>
+
+                <div className="mt-5 space-y-5">
+                  <div>
+                    <div className="mb-2 font-terminal text-[0.68rem] uppercase tracking-[0.28em] text-emerald-300/80">
+                      Core
+                    </div>
+                    <div className="space-y-2">
+                      {PRIMARY_NAV_ITEMS.map((item) => {
+                        const isActive = currentPath === item.path;
+                        return (
+                          <a
+                            key={`mobile-${item.path}`}
+                            href={item.path}
+                            aria-current={isActive ? "page" : undefined}
+                            onClick={(event) => {
+                              handleNavActivate(event, item.path);
+                              setMobileNavOpen(false);
+                            }}
+                            className={cn(
+                              "flex items-center justify-between rounded-[1rem] border px-3 py-3 font-arcade text-[0.74rem] uppercase tracking-[0.16em] transition-colors",
+                              isActive
+                                ? "border-red-400/65 bg-red-900/30 text-white shadow-[0_0_14px_rgba(255,74,74,0.24)]"
+                                : "border-red-900/45 bg-black/45 text-red-100/86 hover:border-red-500/55 hover:bg-red-950/35",
+                            )}
+                          >
+                            <span>{item.label}</span>
+                            <span className="font-terminal text-[0.62rem] tracking-[0.2em] text-emerald-300/80">
+                              GO
+                            </span>
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-2 font-terminal text-[0.68rem] uppercase tracking-[0.28em] text-emerald-300/80">
+                      Support
+                    </div>
+                    <div className="space-y-2">
+                      {SUPPORT_NAV_ITEMS.map((item) => {
+                        const isActive = currentPath === item.path;
+                        return (
+                          <a
+                            key={`mobile-${item.path}`}
+                            href={item.path}
+                            aria-current={isActive ? "page" : undefined}
+                            onClick={(event) => {
+                              handleNavActivate(event, item.path);
+                              setMobileNavOpen(false);
+                            }}
+                            className={cn(
+                              "flex items-center justify-between rounded-[1rem] border px-3 py-3 font-arcade text-[0.72rem] uppercase tracking-[0.16em] transition-colors",
+                              isActive
+                                ? "border-red-400/60 bg-red-900/28 text-white shadow-[0_0_12px_rgba(255,74,74,0.2)]"
+                                : "border-red-900/40 bg-black/40 text-red-100/84 hover:border-red-500/50 hover:bg-red-950/30",
+                            )}
+                          >
+                            <span>{item.label}</span>
+                            <span className="font-terminal text-[0.62rem] tracking-[0.2em] text-emerald-300/75">
+                              OPEN
+                            </span>
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+
+          <div className="hidden min-w-0 justify-center lg:flex" data-testid="nav-desktop-groups">
+            <div className="mx-auto w-full max-w-[1440px]">
+              <div className="relative">
+                <div className="relative z-20 mb-2">
+                  <a
+                    href="/"
+                    onClick={(event) => handleNavActivate(event, "/")}
+                    className="group absolute left-[1.2rem] top-[0.2rem] z-30 flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                    aria-label="Trey's Study System"
+                  >
+                    <div className="pointer-events-none absolute left-[1rem] top-1/2 h-[4.8rem] w-[50rem] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,84,84,0.46),transparent_72%)] blur-3xl" />
+                    <BrainTitleChip className="relative z-10 h-[7rem] w-[7rem]" imageClassName="h-[4.6rem] w-[4.6rem]" />
+                    <span
+                      className="relative -ml-3 pl-4 pr-3 font-arcade uppercase leading-none text-[#fff4ed] [text-shadow:0_0_18px_rgba(255,108,108,0.7),0_0_34px_rgba(255,92,92,0.28),0_5px_0_rgba(36,10,10,0.98)]"
+                      style={{
+                        fontSize: "clamp(2.06rem,3.42vw,3.18rem)",
+                        letterSpacing: "0.11em",
+                      }}
+                    >
+                      TREY&apos;S STUDY SYSTEM
+                    </span>
+                    <BrainTitleChip className="relative z-10 ml-1 h-[7rem] w-[7rem]" imageClassName="h-[4.6rem] w-[4.6rem]" />
+                  </a>
+                </div>
+
+                <div className="relative z-10 w-full h-[325px]">
+                  {/* Cockpit frame — behind buttons, in front of background */}
+                  <img
+                    src={navShellFrame}
+                    alt=""
+                    aria-hidden="true"
+                    className="pointer-events-none absolute z-[5] object-contain select-none"
+                    style={{ left: "0.45%", top: "-19.95%", width: "90.42%", height: "207.69%" }}
+                  />
+
+                  {/* Nav button overlays — on top of everything */}
+                  {[...PRIMARY_NAV_ITEMS, ...SUPPORT_NAV_ITEMS].map((item) => {
                     const isActive = currentPath === item.path;
                     return (
                       <a
                         key={item.path}
                         href={item.path}
-                        data-testid={`nav-${item.testId}`}
-                        className={cn(
-                          "flex items-center justify-center gap-2 w-[90%] h-[60px] font-arcade text-sm tracking-wider uppercase transition-all duration-150",
-                          "text-gray-400 hover:text-red-400 hover:drop-shadow-[0_0_12px_rgba(255,100,100,0.6)]",
-                          isActive && "text-white drop-shadow-[0_0_12px_rgba(255,100,100,0.9)]"
-                        )}
-                        aria-current={isActive ? "page" : undefined}
                         onClick={(event) => handleNavActivate(event, item.path)}
+                        aria-current={isActive ? "page" : undefined}
+                        data-testid={`nav-${item.testId}`}
+                        className={navShellLinkClass(item, isActive)}
+                        style={item.shellStyle}
                       >
-                        <item.icon className="h-4 w-4 shrink-0" />
-                        <span>{item.label}</span>
+                        <img
+                          src={item.imageSrc}
+                          alt={item.label}
+                          className={navButtonImageClass(item, isActive)}
+                        />
                       </a>
                     );
                   })}
                 </div>
-              </nav>
-
-              <div className="mx-auto w-full max-w-[52rem] overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <nav
-                  className="relative flex items-center justify-center h-10 bg-gradient-to-b from-[#1a1a1a] to-[#0a0a0a] border border-red-900/30 rounded-sm"
-                  aria-label="Secondary study navigation"
-                  data-testid="nav-secondary-rail"
-                >
-                  {/* Top red accent line */}
-                  <div className="absolute inset-x-8 top-0 h-[1px] bg-gradient-to-r from-transparent via-red-500/60 to-transparent shadow-[0_0_8px_rgba(239,68,68,0.4)]" />
-                  <div
-                    className="flex items-center justify-center gap-0"
-                    data-testid="nav-support-group"
-                    aria-label="Support systems navigation"
-                  >
-                    {SUPPORT_NAV_ITEMS.map((item, idx) => {
-                      const isActive = currentPath === item.path;
-                      return (
-                        <a
-                          key={item.path}
-                          href={item.path}
-                          data-testid={`nav-${item.testId}`}
-                          className={cn(
-                            "relative flex items-center justify-center px-5 h-10 font-arcade text-xs tracking-widest uppercase transition-colors",
-                            "text-gray-500 hover:text-red-400",
-                            isActive && "text-white"
-                          )}
-                          aria-current={isActive ? "page" : undefined}
-                          onClick={(event) => handleNavActivate(event, item.path)}
-                        >
-                          {item.label}
-                          {/* Separator */}
-                          {idx < SUPPORT_NAV_ITEMS.length - 1 && (
-                            <span className="absolute right-0 top-1/2 -translate-y-1/2 w-px h-4 bg-gradient-to-b from-transparent via-gray-700 to-transparent" />
-                          )}
-                        </a>
-                      );
-                    })}
-                  </div>
-                </nav>
               </div>
             </div>
           </div>
@@ -843,7 +1005,8 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
 
       <Sheet open={notesOpen} onOpenChange={setNotesOpen}>
         <SheetContent
-          className="bg-black border-l-4 border-t-[3px] border-b-[3px] border-double border-primary w-[min(92vw,32rem)] sm:w-[30rem] lg:w-[34rem] shadow-2xl overflow-y-auto z-[100001] inset-y-3 h-auto [&>button]:hidden"
+          side="left"
+          className="bg-black border-r-4 border-t-[3px] border-b-[3px] border-double border-primary w-[min(92vw,32rem)] sm:w-[30rem] lg:w-[34rem] shadow-2xl overflow-y-auto z-[100001] inset-y-3 h-auto [&>button]:hidden"
           style={{ zIndex: 100001 }}
         >
                 <div className="mb-4 flex items-center gap-2">
@@ -1035,10 +1198,10 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
         ref={notesDockRef}
         type="button"
         className={cn(
-          "fixed right-0 z-40 flex min-h-[96px] min-w-[52px] w-[3.35rem] -translate-y-1/2 items-center justify-center overflow-hidden rounded-l-[1.15rem] border border-r-0 border-[rgba(255,122,146,0.28)] px-1.5 py-2 font-arcade text-[#ffd6dd] shadow-[0_14px_28px_rgba(0,0,0,0.48),0_0_0_1px_rgba(255,108,138,0.2)] transition-all duration-200 ease-out",
-          "before:absolute before:inset-[1px_1px_1px_0] before:rounded-l-[1rem] before:border before:border-[rgba(255,184,204,0.12)] before:bg-[linear-gradient(180deg,rgba(8,6,7,0.74),rgba(0,0,0,0.76)_100%)] before:content-['']",
-          "after:pointer-events-none after:absolute after:inset-x-2 after:bottom-2 after:h-[2px] after:rounded-full after:bg-[linear-gradient(90deg,transparent,rgba(255,122,146,0.8),transparent)] after:shadow-[0_0_10px_rgba(255,102,132,0.42)] after:content-['']",
-          "hover:text-white hover:shadow-[0_18px_32px_rgba(0,0,0,0.56),0_0_12px_rgba(255,102,132,0.16)]",
+          "fixed left-0 z-40 flex h-[3.75rem] w-[2.65rem] -translate-y-1/2 items-center justify-center overflow-hidden rounded-r-[1rem] border border-l-0 border-[rgba(255,122,146,0.28)] px-1 py-1.5 text-[#ffd6dd] shadow-[0_14px_28px_rgba(0,0,0,0.48),0_0_0_1px_rgba(255,108,138,0.2)] transition-all duration-200 ease-out",
+          "before:absolute before:inset-[1px_0_1px_1px] before:rounded-r-[0.9rem] before:border before:border-[rgba(255,184,204,0.12)] before:bg-[linear-gradient(180deg,rgba(8,6,7,0.8),rgba(0,0,0,0.86)_100%)] before:content-['']",
+          "after:pointer-events-none after:absolute after:inset-y-2 after:right-1 after:w-[2px] after:rounded-full after:bg-[linear-gradient(180deg,transparent,rgba(255,122,146,0.8),transparent)] after:shadow-[0_0_10px_rgba(255,102,132,0.42)] after:content-['']",
+          "hover:text-white hover:translate-x-0.5 hover:shadow-[0_18px_32px_rgba(0,0,0,0.56),0_0_12px_rgba(255,102,132,0.16)]",
           notesOpen && "pointer-events-none opacity-0",
           isDraggingNotesDock && "cursor-grabbing",
         )}
@@ -1051,12 +1214,9 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
         data-testid="notes-dock"
         aria-label="Open notes panel"
       >
-        <div className="relative z-10 flex flex-col items-center gap-1.5">
-          <span className="flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-[0.95rem] border border-[rgba(255,164,184,0.42)] bg-[radial-gradient(circle_at_30%_0%,rgba(255,255,255,0.22),transparent_40%),linear-gradient(180deg,rgba(255,112,140,0.2),rgba(12,4,6,0.96))] shadow-[inset_0_0_0_1px_rgba(255,214,224,0.08),0_0_12px_rgba(255,96,128,0.16)]">
+        <div className="relative z-10 flex items-center justify-center">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.9rem] border border-[rgba(255,164,184,0.42)] bg-[radial-gradient(circle_at_30%_0%,rgba(255,255,255,0.22),transparent_40%),linear-gradient(180deg,rgba(255,112,140,0.2),rgba(12,4,6,0.96))] shadow-[inset_0_0_0_1px_rgba(255,214,224,0.08),0_0_12px_rgba(255,96,128,0.16)]">
             <BookOpen className="h-4 w-4 shrink-0 text-[#fff2f5] drop-shadow-[0_0_4px_rgba(255,120,132,0.42)]" />
-          </span>
-          <span className="[writing-mode:vertical-rl] rotate-180 text-[0.6rem] tracking-[0.26em] [text-shadow:0_1px_2px_rgba(0,0,0,0.8),0_0_4px_rgba(255,80,110,0.4)]">
-            NOTES
           </span>
         </div>
       </button>
@@ -1072,7 +1232,7 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
         <div
           className={cn(
             "page-enter",
-            isWorkspaceRoute ? "min-h-full" : "app-route-shell min-h-full",
+            isWorkspaceRoute ? "h-full flex flex-col min-h-0" : "app-route-shell min-h-full",
           )}
         >
           {children}
