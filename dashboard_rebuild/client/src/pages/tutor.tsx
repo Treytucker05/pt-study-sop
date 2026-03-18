@@ -535,7 +535,9 @@ function useTutorPageController() {
 
   useEffect(() => {
     if (!hasRestored) return;
+    // Target both window and <main> — main is the actual scroll container in the layout grid
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    document.querySelector("main")?.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [activeSessionId, hasRestored, shellMode, workflow.workflowView]);
 
   useEffect(() => {
@@ -767,7 +769,7 @@ function useTutorPageController() {
         eyebrow="Live Study Core"
         title="Tutor"
         subtitle="Run your study plan from Launch through Priming, then move into Tutor, Studio, schedule, and Final Sync without losing context."
-        className="min-h-[calc(100vh-140px)]"
+        className="h-full min-h-0"
         contentClassName="gap-6"
         stats={tutorHeroStats}
         actions={
