@@ -4,7 +4,7 @@
 > built into `brain/dashboard/api_tutor.py`. These runtime files are historical artifacts
 > from when the tutor was a ChatGPT Custom GPT.
 
-Canonical runtime stage model is CP-MSS v1.0 (`PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
+Canonical runtime stage model is CP-MSS v2.0 (`PRIME -> TEACH -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
 
 ## Current Tutor
 

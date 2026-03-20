@@ -33,13 +33,13 @@
 | M-OVR-002 | OVERLEARN | cards | intensity, speed_pressure | PASS | ok |
 | M-OVR-003 | OVERLEARN | notes | intensity, speed_pressure | PASS | ok |
 | M-OVR-004 | OVERLEARN | notes | feedback_style, output_format, priming_scope | PASS | ok |
-| M-PRE-001 | PRIME | notes | feedback_style | PASS | ok |
+| M-PRE-001 | CALIBRATE | notes | feedback_style | PASS | ok |
 | M-PRE-002 | PRIME | notes | guidance_level, priming_scope | PASS | ok |
-| M-PRE-003 | PRIME | notes | guidance_level, priming_scope | PASS | ok |
+| M-PRE-003 | CALIBRATE | notes | guidance_level, priming_scope | PASS | ok |
 | M-PRE-004 | PRIME | notes | complexity_level, representation_format | PASS | ok |
 | M-PRE-005 | PRIME | concept-map | map_format, node_count_cap | PASS | ok |
 | M-PRE-006 | PRIME | notes | output_mode, pillar_count | PASS | ok |
-| M-PRE-007 | PRIME | notes | confidence_scale, probe_count | PASS | ok |
+| M-PRE-007 | CALIBRATE | notes | confidence_scale, probe_count | PASS | ok |
 | M-PRE-008 | PRIME | notes | node_cap, objective_link_required, output_format, priming_depth_mode | PASS | ok |
 | M-PRE-009 | PRIME | notes | source_cap, synthesis_format | PASS | ok |
 | M-PRE-010 | PRIME | notes | cognitive_depth, delivery_style, objective_scope | PASS | ok |

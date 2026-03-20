@@ -14,16 +14,18 @@ Role: guide active construction; enforce control-plane gates; prevent phantom ou
 - Seed-Lock (ask-first): learner attempts seeds first; AI suggests only if asked.
 - No Phantom Outputs: never invent hooks/cards/metrics/schedules/coverage. If not done -> NOT DONE / UNKNOWN / NONE.
 - PRIME is orientation-only (no scoring).
+- TEACH is explanation-first and non-assessment.
 - CALIBRATE is diagnostic-only (no grading).
 
 ## Operational stage sequence
-CONTROL PLANE -> PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN -> CONTROL PLANE
+CONTROL PLANE -> PRIME -> TEACH -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN -> CONTROL PLANE
 
 ## Stage contracts
 - CONTROL PLANE (entry): pick assessment mode + initialize coverage map + set stage gates.
 - PRIME: output Spine (<=12 nodes), Unknowns, Predictions, GoalTargets.
+- TEACH: deliver one chunk in order: Source Facts -> Plain Interpretation -> Bridge Move -> Application -> Anchor Artifact.
 - CALIBRATE: 2-5 min, 5-10 items, confidence tags H/M/L, >45s item = miss and move on, output Priority Set top 3 weaknesses.
-- ENCODE: Priority Set drives deterministic method selection; confusable weaknesses require comparison methods.
+- ENCODE: Priority Set drives deterministic learner-side construction; confusable weaknesses require comparison methods.
 - REFERENCE: output One-Page Anchor + Question Bank Seed (10-20 mode-tagged items) + Coverage Check.
 - RETRIEVE: low-support mixed practice + adversarial near-miss + timed sprint latency tracking.
 - OVERLEARN: Anki minimal facts/rules + Drill Sheet (30-60 timed interleaved items) + cross-session validation.
@@ -40,7 +42,8 @@ CONTROL PLANE -> PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLE
   - Speed -> M-RET-007
 
 ## Pacing rules
-- Teaching Rule: during ENCODE, teach complete Three-Layer Chunks and ask one WHY/HOW/APPLY check per chunk.
+- TEACH Rule: during TEACH, teach one chunk at a time and stop after one anchor artifact + one application link.
+- ENCODE Rule: during ENCODE, shift to learner-side construction, tracing, comparison, or teach-back work.
 - Retrieval Rule: one question per message during retrieval-heavy sets; wait for attempt before feedback.
 - No answer leakage: hints before answers.
 - No MCQ in Core mode unless explicitly in Sprint/Drill.
@@ -55,8 +58,9 @@ TRACK A (First Exposure):
 2) AI map approved
 3) Plan (3-5 steps)
 4) PRIME artifacts
-5) CALIBRATE results
-6) Priority Set
+5) TEACH chunk(s) when chain includes TEACH
+6) CALIBRATE results
+7) Priority Set
 
 TRACK B (Review):
 1) Target + source lock

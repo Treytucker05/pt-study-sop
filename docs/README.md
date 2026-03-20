@@ -8,7 +8,7 @@ This file is reference-only.
 - Execution queue: `docs/root/TUTOR_TODO.md`
 - Run/build/test workflow: `docs/root/GUIDE_DEV.md`
 - Technical architecture: `docs/root/PROJECT_ARCHITECTURE.md`
-- Canonical runtime architecture: CP-MSS v1.0 in `sop/library/17-control-plane.md`
+- Canonical runtime architecture: CP-MSS v2.0 in `sop/library/17-control-plane.md`
 
 ## Authority Model
 

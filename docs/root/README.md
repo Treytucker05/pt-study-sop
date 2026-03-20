@@ -5,7 +5,7 @@ Reference-only documentation moved from the repo root.
 - Top-level repo truth: `C:/pt-study-sop/README.md`
 - Execution queue: `C:/pt-study-sop/docs/root/TUTOR_TODO.md`
 - Run/build/test guide: `C:/pt-study-sop/docs/root/GUIDE_DEV.md`
-- Canonical runtime architecture: CP-MSS v1.0 in `C:/pt-study-sop/sop/library/17-control-plane.md`
+- Canonical runtime architecture: CP-MSS v2.0 in `C:/pt-study-sop/sop/library/17-control-plane.md`
 
 ## Contents
 

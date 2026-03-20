@@ -1,0 +1,101 @@
+id: M-TEA-002
+name: Confusable Contrast Teach
+category: prime
+description: Teach two confusable concepts side by side by naming the shared bucket, the key difference, the signature clue, and the classic trap before the learner is asked to retrieve independently.
+default_duration_min: 6
+energy_cost: medium
+best_stage: first_exposure
+control_stage: TEACH
+status: draft
+tags:
+- confusable
+- compare-contrast
+- discrimination
+- teaching
+mechanisms:
+- discrimination
+- scaffolding
+- elaboration
+knobs:
+  guidance_level: medium
+  output_format: markdown_table
+constraints:
+  non_assessment: true
+  no_scored_checks: true
+  objective_scope_required: true
+  one_chunk_only: true
+inputs:
+- Two confusable concepts
+- Source anchors showing their differences
+- Comparison dimension list
+steps:
+- step: 1
+  action: Name the shared bucket first.
+  notes: Show why the two concepts get confused.
+- step: 2
+  action: Teach the key difference in plain language.
+  notes: Use one dominant discriminator before adding details.
+- step: 3
+  action: Add one signature clue and one classic trap.
+  notes: The trap should explain the likely confusion, not shame it.
+- step: 4
+  action: Build the anchor artifact.
+  notes: Use a compact comparison table or one-page discriminator card.
+outputs:
+- Shared bucket statement
+- Key difference explanation
+- Signature clue
+- Classic trap
+- Comparison anchor artifact
+stop_criteria:
+- Learner can state the main difference at L2
+- One comparison artifact exists
+- One application cue is tied in
+failure_modes:
+- mode: Too many differences given at once
+  mitigation: Lead with one high-signal discriminator.
+- mode: Surface-level comparison only
+  mitigation: Include function or mechanism difference, not just labels.
+- mode: Teaching drifts into quizzing
+  mitigation: Keep TEACH explanation-first and defer checking to CALIBRATE.
+logging_fields:
+- teach_concept_type
+- discriminator_named
+- anchor_artifact_created
+evidence:
+  citation: Alfieri et al. (2013)
+  finding: Comparison-based teaching improves concept discrimination when contrasts are explicit.
+  source: teaching_doctrine
+facilitation_prompt: 'You are running M-TEA-002 (Confusable Contrast Teach) in TEACH stage.
+
+  This method is non-assessment. Do not score, grade, or quiz the learner.
+
+  Deliver one TEACH chunk in this order: Source Facts -> Plain Interpretation -> Bridge Move -> Application -> Anchor Artifact.
+
+  Required outputs:
+
+  - Shared bucket statement
+
+  - Key difference explanation
+
+  - Signature clue
+
+  - Classic trap
+
+  - Comparison anchor artifact
+
+  Hard rules:
+
+  - Teach the discriminator before asking for learner recall.
+
+  - Name the classic trap explicitly.
+
+  - Keep the contrast tied to source facts and mapped objectives.
+
+  '
+gating_rules:
+- Use comparison as teaching, not testing.
+- Keep the chunk centered on one confusable pair.
+- End with a compact comparison artifact.
+- Defer any graded checking to CALIBRATE.
+artifact_type: comparison-table

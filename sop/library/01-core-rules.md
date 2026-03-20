@@ -24,20 +24,22 @@ All behavioral rules the tutor must follow. Organized by category.
 ### Chain Execution
 - Every session follows **Wizard → Chain Execution → Wrap**. No phase may be skipped.
 - The tutor executes each method block in the selected chain sequentially.
-- Each block is tagged to a CP stage (PRIME, CALIBRATE, ENCODE, REFERENCE, RETRIEVE, OVERLEARN). The tutor enforces the block's stage contract.
+- Each block is tagged to a CP stage (`PRIME`, `TEACH`, `CALIBRATE`, `ENCODE`, `REFERENCE`, `RETRIEVE`, `OVERLEARN`). The tutor enforces the block's stage contract.
 
 ### Operational Stage Overlay (Control Plane)
-- Operational sequence of CP stages: **CONTROL PLANE → PRIME → CALIBRATE → ENCODE → REFERENCE → RETRIEVE → OVERLEARN → CONTROL PLANE**.
-- PRIME and CALIBRATE are distinct:
-  - PRIME = orientation only, no scoring.
+- Operational sequence of CP stages: **CONTROL PLANE → PRIME → TEACH → CALIBRATE → ENCODE → REFERENCE → RETRIEVE → OVERLEARN → CONTROL PLANE**.
+- PRIME, TEACH, and CALIBRATE are distinct:
+  - PRIME = orientation and artifact setup only, no scoring.
+  - TEACH = explanation-first chunk delivery, no scoring.
   - CALIBRATE = short diagnostic (2-5 min, 5-10 items, confidence tags H/M/L), no grading.
+- If a chain contains both TEACH and CALIBRATE, TEACH must come first.
 - CP stages are **tags on method blocks**, not standalone runtime phases. The chain determines which stages are executed and in what order.
 - Control Plane rules (selector, coverage map, gates, adaptation) are canonical in `17-control-plane.md`.
 
 ### PEIRRO Compatibility
 - PEIRRO categories (`prepare`, `encode`, `interrogate`, `retrieve`, `refine`, `overlearn`) remain canonical in YAML schemas and validators.
 - For backward compatibility, operational stages map to canonical categories:
-  - PRIME/CALIBRATE → `prepare`
+  - PRIME/TEACH/CALIBRATE → `prepare`
   - ENCODE/REFERENCE → `encode` or `interrogate` depending on method intent
   - RETRIEVE → `retrieve` or `refine`
   - OVERLEARN → `overlearn`
@@ -103,8 +105,8 @@ These prevent overclaiming. The tutor must follow them strictly:
 ## Testing Rules
 
 ### Fail-First Testing
-- **First Exposure chains:** Prime blocks are brain dumps, NOT retrieval tests. You can't test what you haven't learned. UNKNOWN is a valid answer.
-- **Review chains:** Pre-test blocks establish baseline (retrieval, no hints). The tutor must test before telling.
+- **First Exposure chains:** PRIME prepares artifacts, TEACH explains unfamiliar material, and CALIBRATE checks only after that teaching when CALIBRATE is present. UNKNOWN is a valid answer during orientation.
+- **Review chains:** Pre-test blocks establish baseline (retrieval, no hints). The tutor may test before telling only when the chain intentionally omits TEACH for already-known material.
 - **Both:** Retrieval practice is embedded throughout the chain via RETRIEVE-tagged blocks, not deferred to Wrap.
 
 ### Level Gating

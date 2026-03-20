@@ -43,6 +43,10 @@ describe("getDisplayStage", () => {
     expect(getDisplayStage(makeBlock({ control_stage: "prime", category: "encode" } as any))).toBe("priming");
   });
 
+  it("maps teach control stage to teaching", () => {
+    expect(getDisplayStage(makeBlock({ control_stage: "teach" } as any))).toBe("teaching");
+  });
+
   it("defaults to encoding for unknown category", () => {
     expect(getDisplayStage(makeBlock({ category: "unknown" }))).toBe("encoding");
   });
@@ -51,6 +55,7 @@ describe("getDisplayStage", () => {
 describe("DISPLAY_STAGE_LABELS", () => {
   it("has labels for all stages", () => {
     expect(DISPLAY_STAGE_LABELS.priming).toBe("PRIMING");
+    expect(DISPLAY_STAGE_LABELS.teaching).toBe("TEACH");
     expect(DISPLAY_STAGE_LABELS.calibrate).toBe("CALIBRATE");
     expect(DISPLAY_STAGE_LABELS.retrieval).toBe("RETRIEVAL");
     expect(DISPLAY_STAGE_LABELS.overlearning).toBe("OVERLEARNING");
@@ -103,8 +108,9 @@ describe("getDisplayStage edge cases", () => {
     expect(getDisplayStage(makeBlock({ category: "refine" }))).toBe("overlearning");
   });
 
-  it("maps CP-MSS v1.0 control_stage values", () => {
+  it("maps CP-MSS v2.0 control_stage values", () => {
     expect(getDisplayStage(makeBlock({ control_stage: "prime" } as any))).toBe("priming");
+    expect(getDisplayStage(makeBlock({ control_stage: "teach" } as any))).toBe("teaching");
     expect(getDisplayStage(makeBlock({ control_stage: "calibrate" } as any))).toBe("calibrate");
     expect(getDisplayStage(makeBlock({ control_stage: "reference" } as any))).toBe("reference");
   });

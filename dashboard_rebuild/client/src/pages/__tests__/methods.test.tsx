@@ -240,8 +240,8 @@ describe("MethodsPage", () => {
   it("renders the library tab by default and loads seeded methods", async () => {
     renderMethodsPage();
 
-    expect(await screen.findByText("METHOD_LIBRARY")).toBeInTheDocument();
-    expect(screen.getByTestId("method-block-1")).toHaveTextContent("Prime with constraints");
+    expect(await screen.findByRole("button", { name: "LIBRARY" })).toBeInTheDocument();
+    expect(await screen.findByTestId("method-block-1")).toHaveTextContent("Prime with constraints");
     expect(screen.getByTestId("method-block-2")).toHaveTextContent("Retrieve under load");
   });
 
@@ -250,7 +250,8 @@ describe("MethodsPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "CHAINS" }));
 
-    expect(await screen.findByText("2 CHAINS (1 templates)")).toBeInTheDocument();
+    expect(await screen.findByText("2 chains")).toBeInTheDocument();
+    expect(screen.getByText("1 templates")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Template Alpha"));
 
     expect(await screen.findByTestId("chain-builder")).toHaveTextContent("builder:Template Alpha");
@@ -295,9 +296,8 @@ describe("MethodsPage", () => {
     const { default: App } = await import("@/App");
     render(<App />);
 
-    expect(await screen.findByText("METHOD_LIBRARY")).toBeInTheDocument();
-    expect(screen.getByTestId("nav-support-group")).toBeInTheDocument();
-    expect(screen.getByTestId("nav-methods").className).toContain("active");
-    expect(screen.getByText("SUPPORT SYSTEMS")).toBeInTheDocument();
+    expect(await screen.findByTestId("nav-methods")).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "LIBRARY" })).toBeInTheDocument();
+    expect(screen.getByTestId("nav-methods")).toHaveAttribute("aria-current", "page");
   });
 });

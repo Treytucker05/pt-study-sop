@@ -2,7 +2,7 @@
 # Brain Dashboard Package
 
 This directory contains the modularized Flask application for the PT Study Brain Dashboard.
-System context: the tutor/session model is CP-MSS v1.0 (`PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
+System context: the tutor/session model is CP-MSS v2.0 (`PRIME -> TEACH -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
 
 ## Structure
 

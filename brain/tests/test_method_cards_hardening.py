@@ -12,7 +12,7 @@ import yaml
 
 
 METHODS_DIR = Path(__file__).resolve().parents[2] / "sop" / "library" / "methods"
-ALLOWED_STAGES = {"PRIME", "CALIBRATE", "ENCODE", "REFERENCE", "RETRIEVE", "OVERLEARN"}
+ALLOWED_STAGES = {"PRIME", "TEACH", "CALIBRATE", "ENCODE", "REFERENCE", "RETRIEVE", "OVERLEARN"}
 REQUIRED_FIELDS = {
     "id",
     "name",
@@ -82,6 +82,14 @@ def test_method_cards_stage_boundary_semantics() -> None:
         if stage == "CALIBRATE":
             assert _contains_any(prompt, {"confidence", "calibration", "mismatch", "miscalibration"}), (
                 f"{path.name}: CALIBRATE prompt must reference confidence/calibration"
+            )
+
+        if stage == "TEACH":
+            assert _contains_any(prompt, {"teach", "plain interpretation", "bridge", "application", "anchor"}), (
+                f"{path.name}: TEACH prompt must enforce the teach chunk contract"
+            )
+            assert _contains_any(prompt, {"non-assessment", "do not score", "do not quiz", "no scored"}), (
+                f"{path.name}: TEACH prompt must explicitly enforce non-assessment behavior"
             )
 
         if stage == "ENCODE":

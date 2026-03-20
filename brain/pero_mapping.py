@@ -58,6 +58,7 @@ PERO_ORDER = {stage: i for i, stage in enumerate(PERO_STAGES)}
 
 _CATEGORY_DEFAULT: dict[str, str] = {
     "prepare": "P",
+    "teach": "P",
     "encode": "E",
     "retrieve": "R",
     "interrogate": "E",  # default; overridden per method below
@@ -106,17 +107,32 @@ def get_pero_stage(method_name: str, category: str = "") -> str:
     override = _METHOD_OVERRIDES.get(method_name)
     if override:
         return override["pero"]
-    return _CATEGORY_DEFAULT.get(category, "E")
+    normalized_category = str(category or "").strip().lower()
+    return _CATEGORY_DEFAULT.get(normalized_category, "E")
 
 
 def get_prepare_substage(method_name: str) -> str:
-    """Return PRIME vs CALIBRATE operational substage for prepare methods."""
+    """Return PRIME vs TEACH vs CALIBRATE operational substage for prepare-side methods."""
     calibrate_names = {
+        "Brain Dump",
+        "Prior Knowledge Scan",
         "Pre-Test",
         "Micro Precheck",
         "Confidence Tagging",
         "Priority Set",
     }
+    teach_names = {
+        "Analogy Bridge",
+        "Mechanism Trace",
+        "Side-by-Side Comparison",
+        "Story Spine",
+        "Confusable Contrast Teach",
+        "Clinical Anchor Mini-Case",
+        "Modality Switch",
+        "Jingle / Rhyme Hook",
+    }
+    if method_name in teach_names:
+        return "TEACH"
     return "CALIBRATE" if method_name in calibrate_names else "PRIME"
 
 
@@ -138,7 +154,8 @@ def get_pero_info(method_name: str, category: str = "") -> dict:
         if stage == "P":
             info["micro_stage"] = get_prepare_substage(method_name)
         return info
-    stage = _CATEGORY_DEFAULT.get(category, "E")
+    normalized_category = str(category or "").strip().lower()
+    stage = _CATEGORY_DEFAULT.get(normalized_category, "E")
     info = {
         "pero": stage,
         "label": PERO_LABELS[stage],

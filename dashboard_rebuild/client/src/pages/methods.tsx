@@ -22,6 +22,7 @@ const DISPLAY_STAGES: Array<DisplayStage | "all" | "favorites"> = [
   "all",
   "favorites",
   "priming",
+  "teaching",
   "calibrate",
   "encoding",
   "reference",
@@ -124,6 +125,7 @@ function createEditBlockDialogState(): EditBlockDialogState {
 function normalizeBlockCategory(block: MethodBlock): MethodCategory {
   const categoryOptions: MethodCategory[] = [
     "PRIME",
+    "TEACH",
     "CALIBRATE",
     "ENCODE",
     "REFERENCE",
@@ -895,9 +897,10 @@ function AddBlockDialog({
     undefined,
     createAddBlockDialogState,
   );
-  // Control Plane categories (CP-MSS v1.0)
+  // Control Plane categories (CP-MSS v2.0)
   const categoryOptions: MethodCategory[] = [
     "PRIME",
+    "TEACH",
     "CALIBRATE",
     "ENCODE",
     "REFERENCE",
@@ -1091,6 +1094,7 @@ function EditBlockDialog({
 
   const categoryOptions: MethodCategory[] = [
     "PRIME",
+    "TEACH",
     "CALIBRATE",
     "ENCODE",
     "REFERENCE",
@@ -1099,6 +1103,7 @@ function EditBlockDialog({
   ];
   const categoryLabel: Record<string, string> = {
     PRIME: "PRIMING",
+    TEACH: "TEACH",
     CALIBRATE: "CALIBRATE",
     ENCODE: "ENCODING",
     REFERENCE: "REFERENCE",

@@ -8,7 +8,7 @@
 **Version:** v9.5 | **Owner:** Trey Tucker
 
 This is the canonical source of truth for the PT Study OS methodology. Runtime bundles in `sop/runtime/` are generated artifacts — if anything conflicts, these library files win.
-Canonical stage model is CP-MSS v1.0 (`PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
+Canonical stage model is CP-MSS v2.0 (`PRIME -> TEACH -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
 Legacy PEIRRO wording is kept only where explicitly marked for compatibility.
 
 ## How to Use This Library
@@ -26,7 +26,7 @@ Legacy PEIRRO wording is kept only where explicitly marked for compatibility.
 |---|------|-------|---------|
 | 00 | [00-overview.md](00-overview.md) | Foundation | System identity, vision, architecture, file map |
 | 01 | [01-core-rules.md](01-core-rules.md) | Foundation | Behavioral rules and invariants |
-| 02 | [02-learning-cycle.md](02-learning-cycle.md) | Foundation | Control-plane operational flow (CP-MSS v1.0) + KWIK micro-loop (legacy term mapping noted in-file) |
+| 02 | [02-learning-cycle.md](02-learning-cycle.md) | Foundation | Control-plane operational flow (CP-MSS v2.0) + KWIK micro-loop (legacy term mapping noted in-file) |
 | 03 | [03-frameworks.md](03-frameworks.md) | Execution | H/M/Y/L series frameworks |
 | 04 | [04-engines.md](04-engines.md) | Execution | Anatomy Engine + Concept Engine |
 | 05 | [05-session-flow.md](05-session-flow.md) | Execution | M0-M6 module sequence |

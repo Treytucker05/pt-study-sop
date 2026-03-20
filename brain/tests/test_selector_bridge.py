@@ -1,4 +1,4 @@
-"""Unit tests for brain/selector_bridge.py — CP-MSS v1.0 API."""
+"""Unit tests for brain/selector_bridge.py — CP-MSS v2.0 API."""
 
 import pytest
 
@@ -13,7 +13,7 @@ from brain.selector_bridge import get_policy_version, reload_chain_catalog, run_
 def test_policy_version_returns_string():
     v = get_policy_version()
     assert isinstance(v, str)
-    assert v == "v1.0"
+    assert v == "v2.0"
 
 
 # ---------------------------------------------------------------------------
@@ -164,3 +164,13 @@ def test_mechanism_mode_routes_to_standard():
     """Mechanism mode should route to C-FE-STD."""
     result = run_selector(assessment_mode="mechanism", energy="high", time_available=45)
     assert result["chain_id"] == "C-FE-STD"
+
+
+def test_standard_chain_includes_teach_stage():
+    result = run_selector(assessment_mode="mechanism", energy="high", time_available=45)
+    assert "TEACH" in result["selected_blocks"]
+
+
+def test_minimal_chain_can_omit_teach_stage():
+    result = run_selector(assessment_mode="definition", energy="high", time_available=45)
+    assert "TEACH" not in result["selected_blocks"]

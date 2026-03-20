@@ -6,7 +6,7 @@ description: 'Trace the causal mechanism step-by-step: what triggers what, and w
 default_duration_min: 10
 energy_cost: high
 best_stage: first_exposure
-control_stage: ENCODE
+control_stage: TEACH
 status: validated
 tags:
 - causal-reasoning
@@ -25,6 +25,8 @@ constraints:
   active_processing_required: true
   objective_scope_required: true
   no_final_answer_only: true
+  non_assessment: true
+  no_scored_checks: true
 inputs:
 - Pathway or mechanism to trace
 - Source material with mechanism details
@@ -74,18 +76,20 @@ evidence:
   finding: Causal reasoning with biomedical mechanisms supports diagnostic transfer to novel cases
   source: seed_methods.py
 evidence_raw: Kulasegaram et al. (2013); causal reasoning with biomedical mechanisms supports diagnostic transfer
-facilitation_prompt: 'You are running M-ENC-008 (Mechanism Trace) in ENCODE stage.
+facilitation_prompt: 'You are running M-ENC-008 (Mechanism Trace) in TEACH stage.
+
+  This method is non-assessment. Do not score, grade, or quiz the learner.
 
   Execute this method card exactly and keep outputs deterministic.
 
 
   Stage hard rules:
 
-  - Force active learner processing.
-
-  - Prefer transformation over passive lecture.
+  - Deliver one teach chunk in this order: Source Facts -> Plain Interpretation -> Bridge Move -> Application -> Anchor Artifact.
 
   - Keep focus on target concept scope.
+  - Use the mechanism trace as the bridge/application scaffold, not as a graded check.
+  - Stop once the learner has a usable L2 grasp and one anchor artifact.
 
 
   Required outputs:

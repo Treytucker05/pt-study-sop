@@ -11,7 +11,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 
 ## Current Board (In-Progress)
 
-- Canonical execution order: `PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`
+- Canonical execution order: `PRIME -> TEACH -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`
 - Execution references:
   - `README.md` (master repo truth)
   - `docs/root/TUTOR_TODO.md` (active execution board)
@@ -42,6 +42,21 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - the final backlog groups issues into Wave 1 (`P1`), Wave 2 (`P2`), and Wave 3 (`P3`) remediation passes
 
 ### Sprint: Tutor Prime Artifact Layout Pass (2026-03-19)
+- [x] TCH-100. Introduce a first-class `TEACH` control stage across Tutor runtime, method library, and UI so teaching-first chains can explain unfamiliar material before `CALIBRATE`.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `README.md`
+    - `sop/library/`
+    - `brain/`
+    - `dashboard_rebuild/`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - canonical stage order becomes `PRIME -> TEACH -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`
+    - `control_stage` enums, DB/runtime validators, method cards, chains, and Tutor UI all accept and display `TEACH`
+    - explanation-first methods are reclassified into `TEACH`, learner-production methods remain in `ENCODE`, and TEACH-native method cards exist for the missing teaching moves
+    - Tutor prompt assembly can build a `teach_packet` / `teach_context` runtime layer for TEACH blocks
+    - targeted backend/frontend tests and the production frontend build pass
+  - Completed 2026-03-20 via `TSCU-100`: promoted TEACH to first-class stage across canon docs, SOP/runtime generators, backend/runtime validators, prompt assembly, chain validation, Methods UI stage filters, and generated runtime bundles while preserving compatibility for chains that omit TEACH.
 - [x] TPAL-100. Reframe the current Tutor Priming surface around the agreed Studio PRIME artifact bundle without changing the underlying workflow save/restore contract.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -86,6 +101,26 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - source-linked previews are compact but still visibly structured
     - targeted validation covers the priming assist backend test or relevant Tutor frontend test, a production frontend build, and a live `/tutor` Priming extraction check
   - Completed 2026-03-19: tightened `brain/dashboard/api_tutor_workflows.py` so Priming Assist asks for markdown-ready summaries, definition-style term lines, and a true hierarchical map representation; updated `dashboard_rebuild/client/src/lib/tutorUtils.ts` to normalize markdown list prefixes on save, promote multi-source aggregate blocks into markdown subheadings, and format PRIME artifacts into headed lists/paragraphs plus Mermaid-aware previews; updated `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` so the artifact workspace renders formatted markdown instead of raw terminal blobs and falls back to a visual Mermaid map derived from the Study Spine when the extractor returns prose for the hierarchy; added targeted frontend coverage in `dashboard_rebuild/client/src/lib/__tests__/tutorUtils.test.ts`; passed `pytest brain/tests/test_tutor_workflow_priming_assist.py`, passed `cd dashboard_rebuild && npm run test -- client/src/lib/__tests__/tutorUtils.test.ts`, passed `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.workspace.integration.test.tsx`, passed `cd dashboard_rebuild && npm run build`, and confirmed on the live `/tutor` Priming flow after a hard refresh that source-linked extraction previews now show numbered/headed markdown and the Summary artifact renders as a formatted document instead of a raw text blob.
+
+### Sprint: TEACH Stage Control-Plane Upgrade (2026-03-20)
+- [x] TSCU-100. Introduce `TEACH` as a first-class control-plane stage in Tutor runtime, method contracts, and stage-facing UI while preserving compatibility for chains that do not include TEACH.
+  - Scope:
+    - `README.md`
+    - `sop/library/`
+    - `sop/tools/`
+    - `brain/`
+    - `dashboard_rebuild/client/src/`
+    - `brain/tests/`
+    - `sop/tests/`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - canonical stage order is upgraded to `PRIME -> TEACH -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`
+    - `control_stage` accepts `TEACH` across method cards, DB/runtime validation, APIs, and frontend stage types
+    - TEACH-specific doctrine and prompt assembly exist so Tutor can run explanation-first blocks with `Source Facts -> Plain Interpretation -> Bridge Move -> Application -> Anchor Artifact`
+    - explanation-first methods are reclassified into TEACH, learner-production methods remain in ENCODE, and the new TEACH-native cards exist
+    - chain validation and Tutor UI surfaces treat TEACH as first-class, while chains without TEACH continue to load and run
+  - Completed 2026-03-20: upgraded canon stage order to `PRIME -> TEACH -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`, added `TEACH` to DB/runtime/API/frontend stage contracts, built TEACH prompt assembly and non-assessment guardrails, reclassified explanation-first methods into TEACH, added five TEACH-native method cards, updated chain validation plus selector policy to CP-MSS v2.0, exposed TEACH in Methods UI filtering and badges, regenerated `sop/runtime/*` plus golden outputs, and passed validator, backend, frontend, and production build verification.
+    - targeted validation covers SOP validators/tests, backend runtime/tests, relevant Tutor frontend tests, and a production frontend build
 
 ### Sprint: Custom Navbar Layout Plugin (2026-03-16)
 - [x] FNP-100. Create a minimal custom navbar layout plugin that imports the dashboard shell background plus the split navbar button PNGs and lays them out automatically in the open design file.

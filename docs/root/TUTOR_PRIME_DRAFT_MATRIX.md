@@ -2,7 +2,7 @@
 
 Date: 2026-02-23  
 Status: Locked for implementation  
-Scope: PRIME method blocks only (with CALIBRATE boundary note for `M-PRE-007`)
+Scope: PRIME method blocks only (with CALIBRATE boundary notes for `M-PRE-001`, `M-PRE-003`, and `M-PRE-007`)
 
 ## Locked Boundary Rules (Locked Inputs)
 - PRIME is orientation/teaching only (non-assessment).
@@ -104,13 +104,13 @@ Scope: PRIME method blocks only (with CALIBRATE boundary note for `M-PRE-007`)
 | M-PRE-004 | Hierarchical Advance Organizer | PRIME | Provide high-level pillar tree before detail | PillarTree; PriorKnowledgeLinks; StructuralHypotheses | Tutor-provided orientation map | Deep detail teaching; assessment prompts |
 | M-PRE-008 | Structural Extraction | PRIME | Build compact topic spine linked to objectives | Spine <=12 nodes; objective linkage map | Structure extraction from source | Trivia expansion; scoring correctness |
 | M-PRE-009 | Syntopical Big-Picture Synthesis | PRIME | Merge 2-3 sources into one top-down map | UnifiedTopDownTree; CrossSourceLinks; ConflictFlags | Multi-source structural synthesis | Deep detail teaching; quiz behavior |
-| M-PRE-003 | Prior Knowledge Scan | PRIME | Surface anchors and prerequisite gaps | Connection map; primary anchor; gap list | Connection labeling; optional visual | Penalizing weak prior knowledge |
 | M-PRE-005 | Skeleton Concept Hierarchy | PRIME | Build bare category map (depth <=2) | SkeletonMap; CategoryLabels; CrossLinks | Tutor-guided structural map | Detailed mechanism testing |
 | M-PRE-006 | Structural Skimming + Pillar Mapping | PRIME | Rapidly extract 3-5 pillars from structure cues | PillarMap; ObjectiveLinks; FollowUpTargets | Structural skim and map | Paragraph-level summarization; scoring |
 | M-PRE-002 | Overarching Pre-Question Set | PRIME | Optional conceptual hook prompts before detail | PreQuestionSet; PriorityPrompts; FollowUpTargets | Non-scored conceptual prompts | Grading answers; confidence scoring |
-| M-PRE-001 | Brain Dump (Conditional) | PRIME | Optional returner-only anchor refresh | StrongConnections; MissingNodes; FollowUpTargets | Non-scored synthesis feedback | Use on first-contact unseen content |
 
 ## Boundary Note (Not PRIME)
+- `M-PRE-001 Brain Dump` is currently `CALIBRATE`, and should stay prior-knowledge-activation owned.
+- `M-PRE-003 Prior Knowledge Scan` is currently `CALIBRATE`, and should stay schema-activation/readiness-mapping owned.
 - `M-PRE-007 Pre-Test` is currently `CALIBRATE`, and should stay assessment-owned.
 
 ## Visual Boundary Note (ENCODE Methods)
@@ -123,11 +123,8 @@ Scope: PRIME method blocks only (with CALIBRATE boundary note for `M-PRE-007`)
 | M-PRE-010 | cognitive_depth | enum | conceptual_understanding | foundational_recall, conceptual_understanding, clinical_application | Lock to foundational/conceptual in first exposure; escalate to clinical after stable CALIBRATE |
 | M-PRE-010 | delivery_style | enum | direct_statement | direct_statement, inquiry_based_preview | Lock to direct_statement when energy/time low |
 | M-PRE-004 | complexity_level | enum | intermediate_outline | epitome_only, intermediate_outline, detailed_hierarchy | Roll back to epitome_only if overload signs appear |
-| M-PRE-001 | feedback_style | enum | supportive_synthesis | supportive_synthesis, strict_gap_analysis | Lock supportive in first exposure; allow strict only after repeated sessions |
 | M-PRE-002 | question_count | int | 4 | min 3, max 5 | Lock at 3 when cognitive load high |
 | M-PRE-002 | question_scope | enum | foundational | foundational, mixed | Keep foundational in first exposure |
-| M-PRE-003 | map_format | enum | bullet_list | bullet_list, ascii_map | Roll back to bullet_list if map complexity rises |
-| M-PRE-003 | connection_target | int | 3 | min 3, max 5 | Lock at 3 for low energy/time |
 | M-PRE-005 | cluster_limit | int | 4 | min 3, max 5 | Roll back if one cluster dominates |
 | M-PRE-005 | render_format | enum | ascii_list | ascii_list, ascii_map, markdown_table | Lock to ascii_list by default |
 | M-PRE-006 | detail_depth | enum | standard | light, standard, expanded | Keep light/standard in first exposure |
@@ -141,11 +138,9 @@ Scope: PRIME method blocks only (with CALIBRATE boundary note for `M-PRE-007`)
 2. `M-PRE-004` Hierarchical Advance Organizer  
 3. `M-PRE-008` Structural Extraction  
 4. `M-PRE-009` Syntopical Big-Picture Synthesis  
-5. `M-PRE-003` Prior Knowledge Scan  
-6. `M-PRE-005` Skeleton Concept Hierarchy  
-7. `M-PRE-006` Structural Skimming + Pillar Mapping  
-8. `M-PRE-002` Overarching Pre-Question Set (optional)  
-9. `M-PRE-001` Brain Dump (conditional/optional)
+5. `M-PRE-005` Skeleton Concept Hierarchy  
+6. `M-PRE-006` Structural Skimming + Pillar Mapping  
+7. `M-PRE-002` Overarching Pre-Question Set (optional)
 
 ## Open Items
 - Confirm PRIME-lite requirement for any additional ENCODE visuals after this release.

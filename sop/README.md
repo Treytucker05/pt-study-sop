@@ -1,15 +1,15 @@
 # SOP Method Library
 
 YAML-based study method library. YAML specs are the **single source of truth** — markdown docs, DB seeds, and runtime bundles all derive from YAML.
-Canonical stage model is CP-MSS v1.0: `PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`.
+Canonical stage model is CP-MSS v2.0: `PRIME -> TEACH -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`.
 
 ## Folder Structure
 
 ```
 sop/
   library/
-    methods/          # M-XXX-NNN.yaml — 50 method block specs
-    chains/           # C-XX(X)-NNN.yaml — 19 chain specs
+    methods/          # M-XXX-NNN.yaml — 54 method block specs
+    chains/           # C-XX(X)-NNN.yaml — 20 chain specs
     meta/
       taxonomy.yaml   # Categories, mechanisms, stages, class types
       version.yaml    # Library version (semver)
@@ -81,8 +81,8 @@ pytest sop/tests/test_validate_library.py -v    # validator tests
    ```yaml
    id: M-CAT-NNN
    name: Method Name
-   control_stage: PRIME # one of: PRIME, CALIBRATE, ENCODE, REFERENCE, RETRIEVE, OVERLEARN
-   category: prime      # one of: prime, calibrate, encode, reference, retrieve, overlearn
+   control_stage: PRIME # one of: PRIME, TEACH, CALIBRATE, ENCODE, REFERENCE, RETRIEVE, OVERLEARN
+   category: prime      # compatibility taxonomy; one of: prime, calibrate, encode, reference, retrieve, overlearn
    description: What this method does.
    default_duration_min: 5
    energy_cost: medium   # low, medium, high

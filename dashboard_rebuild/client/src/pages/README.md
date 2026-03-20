@@ -6,7 +6,7 @@ This file is implementation context only, not product authority.
 
 - Top-level repo truth: `README.md`
 - Build/run/test authority: `docs/root/GUIDE_DEV.md`
-- Canonical runtime architecture: CP-MSS v1.0 in `sop/library/17-control-plane.md`
+- Canonical runtime architecture: CP-MSS v2.0 in `sop/library/17-control-plane.md`
 
 ## Current Public Pages
 

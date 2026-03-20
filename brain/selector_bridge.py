@@ -1,5 +1,5 @@
 """
-Selector Bridge for CP-MSS v1.0.
+Selector Bridge for CP-MSS v2.0.
 
 This module bridges the control-plane selector (brain.selector)
 with the adaptive tutor API.
@@ -16,7 +16,7 @@ except ModuleNotFoundError:
     # as a top-level module, so this fallback keeps both contexts working.
     from selector import select_chain
 
-_POLICY_VERSION = "v1.0"
+_POLICY_VERSION = "v2.0"
 
 
 def _build_chain_catalog() -> dict[str, dict[str, object]]:
@@ -26,6 +26,7 @@ def _build_chain_catalog() -> dict[str, dict[str, object]]:
             "chain_name": "Standard First Exposure",
             "selected_blocks": [
                 "PRIME",
+                "TEACH",
                 "CALIBRATE",
                 "ENCODE",
                 "REFERENCE",
@@ -37,7 +38,6 @@ def _build_chain_catalog() -> dict[str, dict[str, object]]:
             "chain_name": "Minimal / Low Energy",
             "selected_blocks": [
                 "PRIME",
-                "CALIBRATE",
                 "ENCODE",
                 "REFERENCE",
                 "RETRIEVE",
@@ -48,6 +48,7 @@ def _build_chain_catalog() -> dict[str, dict[str, object]]:
             "chain_name": "Procedure / Lab",
             "selected_blocks": [
                 "PRIME",
+                "TEACH",
                 "CALIBRATE",
                 "ENCODE",
                 "REFERENCE",

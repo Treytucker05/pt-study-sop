@@ -984,3 +984,29 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
   - `cd dashboard_rebuild && npm run build`
   - live `/tutor` hard-refresh check confirming source-linked extraction previews now show headed/numbered markdown and the Summary artifact renders as a formatted document instead of a raw terminal blob
+
+## 2026-03-20 - Reclassify Pre-Test into CALIBRATE
+- Moved `M-PRE-007 Pre-Test` from PRIME to CALIBRATE in `sop/library/methods/M-PRE-007.yaml` so the method stage matches its diagnostic confidence-capture behavior instead of being grouped with Studio PRIME artifact-building work.
+- Updated the canonical method library and category references in `sop/library/15-method-library.md`, `sop/library/categories/PRIME.md`, and `sop/library/categories/CALIBRATE.md` so the stage counts and inventories now place Pre-Test under CALIBRATE instead of PRIME.
+- Synced the integrity smoke doc in `docs/root/TUTOR_METHOD_INTEGRITY_SMOKE.md` so the stage listing for `M-PRE-007` matches the new categorization.
+- Validation passed:
+  - `pytest brain/tests/test_seed_methods.py brain/tests/test_artifact_validators.py brain/tests/test_chain_validator.py brain/tests/test_pero_mapping.py -q`
+
+## 2026-03-20 - Move Brain Dump and Prior Knowledge Scan into CALIBRATE
+- Reclassified `M-PRE-001 Brain Dump` and `M-PRE-003 Prior Knowledge Scan` from PRIME to CALIBRATE in `sop/library/methods/M-PRE-001.yaml` and `sop/library/methods/M-PRE-003.yaml`, including stage-specific stipulations, prompts, and gating rules.
+- Updated the canonical stage inventories and boundary docs in `sop/library/15-method-library.md`, `sop/library/categories/PRIME.md`, and `sop/library/categories/CALIBRATE.md` so PRIME is material-grounded structure work and CALIBRATE owns prior-knowledge activation plus readiness mapping.
+- Synced supporting references in `docs/root/TUTOR_METHOD_INTEGRITY_SMOKE.md`, `docs/root/TUTOR_PRIME_DRAFT_MATRIX.md`, and fallback metadata in `brain/data/seed_methods.py` so the runtime seed path and PRIME-only draft matrix no longer contradict the canon method library.
+- Validation passed:
+  - `pytest brain/tests/test_seed_methods.py brain/tests/test_artifact_validators.py brain/tests/test_chain_validator.py brain/tests/test_pero_mapping.py -q`
+
+## 2026-03-20 - First-class TEACH stage upgrade
+- Promoted `TEACH` to a first-class control-plane stage across canon docs, runtime contracts, selector/chain validation, DB/API compatibility layers, Tutor prompt assembly, and Methods UI stage handling.
+- Reclassified explanation-first methods into `TEACH`, added TEACH-native method cards (`Story Spine`, `Confusable Contrast Teach`, `Clinical Anchor Mini-Case`, `Modality Switch`, `Jingle / Rhyme Hook`), and kept learner-production methods in `ENCODE`.
+- Added TEACH doctrine and guardrails to runtime prompt assembly so TEACH blocks run `Source Facts -> Plain Interpretation -> Bridge Move -> Application -> Anchor Artifact` without scored checks or confidence tagging.
+- Updated runtime generators and generated outputs (`sop/library/15-method-library.md`, `sop/runtime/*`, `sop/tests/golden/*`) to CP-MSS v2.0 so the generated bundle no longer lags behind the source-of-truth docs.
+- Exposed `TEACH` in the Methods UI display-stage filtering and refreshed repo README surfaces so active docs now match the working code.
+- Validation passed:
+  - `python sop/tools/validate_library.py`
+  - `pytest sop/tests/test_validate_library.py sop/tests/test_build_golden.py brain/tests/test_method_cards_hardening.py brain/tests/test_seed_methods.py brain/tests/test_chain_validator.py brain/tests/test_chain_runner.py brain/tests/test_tutor_session_linking.py brain/tests/test_methods_api.py -q`
+  - `cd dashboard_rebuild && npm run test -- client/src/lib/__tests__/displayStage.test.ts client/src/pages/__tests__/methods.test.tsx`
+  - `cd dashboard_rebuild && npm run build`

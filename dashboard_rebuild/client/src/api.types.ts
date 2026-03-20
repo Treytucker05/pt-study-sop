@@ -757,17 +757,19 @@ export interface ProductOutcomeReport {
 // ── Method Library ──────────────────────────────────────────────────────────
 
 export type MethodCategory =
-  | "PRIME" | "CALIBRATE" | "ENCODE" | "REFERENCE" | "RETRIEVE" | "OVERLEARN"
-  | "prepare" | "encode" | "interrogate" | "retrieve" | "refine" | "overlearn";
+  | "PRIME" | "TEACH" | "CALIBRATE" | "ENCODE" | "REFERENCE" | "RETRIEVE" | "OVERLEARN"
+  | "prepare" | "teach" | "encode" | "interrogate" | "retrieve" | "refine" | "overlearn";
 
 export const CATEGORY_LABELS: Record<MethodCategory, string> = {
   PRIME: "PRIME",
+  TEACH: "TEACH",
   CALIBRATE: "CALIBRATE",
   ENCODE: "ENCODE",
   REFERENCE: "REFERENCE",
   RETRIEVE: "RETRIEVE",
   OVERLEARN: "OVERLEARN",
   prepare: "Prepare",
+  teach: "Teach",
   encode: "Encode",
   interrogate: "Interrogate",
   retrieve: "Retrieve",
@@ -777,12 +779,14 @@ export const CATEGORY_LABELS: Record<MethodCategory, string> = {
 
 export const CATEGORY_COLORS: Record<MethodCategory, string> = {
   PRIME: "#3b82f6",
+  TEACH: "#06b6d4",
   CALIBRATE: "#f59e0b",
   ENCODE: "#10b981",
   REFERENCE: "#8b5cf6",
   RETRIEVE: "#ef4444",
   OVERLEARN: "#ec4899",
   prepare: "#3b82f6",
+  teach: "#06b6d4",
   encode: "#10b981",
   interrogate: "#8b5cf6",
   retrieve: "#ef4444",

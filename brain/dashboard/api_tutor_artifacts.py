@@ -173,17 +173,22 @@ def create_artifact(session_id: str):
         return _session_not_active_response(session)
 
     active_stage = _active_control_stage_for_session(conn, session)
-    if active_stage == "PRIME":
+    if active_stage in {"PRIME", "TEACH"}:
         prime_violations = _prime_assessment_violations(data)
         if prime_violations:
+            error_code = (
+                "PRIME_ASSESSMENT_BLOCKED"
+                if active_stage == "PRIME"
+                else "TEACH_ASSESSMENT_BLOCKED"
+            )
             conn.close()
             return (
                 jsonify(
                     {
                         "error": "validation_failed",
-                        "code": "PRIME_ASSESSMENT_BLOCKED",
+                        "code": error_code,
                         "details": [
-                            f"prime_guardrail: {msg}" for msg in prime_violations
+                            f"{active_stage.lower()}_guardrail: {msg}" for msg in prime_violations
                         ],
                     }
                 ),

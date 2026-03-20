@@ -588,7 +588,7 @@ research_packet_lines = [
     "The system implements a domain-agnostic Intelligent Tutoring System (ITS) control-plane.",
     "The control-plane separates policy from content and enforces a fixed operational sequence:",
     "",
-    "`PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`",
+    "`PRIME -> TEACH -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`",
     "",
     "Key properties:",
     "- deterministic stage gates",
@@ -698,7 +698,7 @@ for item in sorted(chain_catalog, key=lambda x: x.get("id", "")):
     gates_value = _flatten(item.get("gates"))
     failure_value = _flatten(item.get("failure_actions"))
     if gates_value == "MISSING":
-        gates_value = "Global stage gates apply: PRIME/CALIBRATE/ENCODE/REFERENCE/RETRIEVE/OVERLEARN."
+        gates_value = "Global stage gates apply: PRIME/TEACH/CALIBRATE/ENCODE/REFERENCE/RETRIEVE/OVERLEARN."
     if failure_value == "MISSING":
         failure_value = "Global Error Taxonomy adaptation mapping applies."
     gates_and_failure = f"Gates={gates_value}; FailureActions={failure_value}"

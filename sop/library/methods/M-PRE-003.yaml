@@ -1,12 +1,12 @@
 id: M-PRE-003
 name: Prior Knowledge Scan
-category: prime
-description: Conditional PRIME method that maps known concepts to the new topic when prior notes or North Star context already
-  exist.
+category: calibrate
+description: Conditional CALIBRATE method that maps known concepts to the new topic when prior notes or North Star context
+  already exist.
 default_duration_min: 3
 energy_cost: low
 best_stage: first_exposure
-control_stage: PRIME
+control_stage: CALIBRATE
 status: validated
 tags:
 - schema-activation
@@ -19,8 +19,8 @@ mechanisms:
 stipulations:
 - Run only when prior context exists (North Star and/or prior notes linked to the current learning objective).
 - If no prior context exists, skip this method and route to M-PRE-010 followed by M-PRE-008.
-- PRIME boundary: orientation only; no scored probes and no answer-checking.
-- Use this for connection mapping, not for calibration.
+- CALIBRATE boundary: activation and readiness mapping only; no scored probes and no answer-checking.
+- Use this for connection mapping inside CALIBRATE, not for scoring.
 knobs:
   priming_scope: single_focus
   guidance_level: medium
@@ -82,7 +82,7 @@ primary_citations:
 - Ausubel (1968)
 - Luiten et al. (1980)
 evidence_raw: Ausubel (1968); meaningful learning requires anchoring to existing schemas
-facilitation_prompt: 'You are running M-PRE-003 (Prior Knowledge Scan) in PRIME stage.
+facilitation_prompt: 'You are running M-PRE-003 (Prior Knowledge Scan) in CALIBRATE stage.
 
   This method is conditional and non-assessment.
 
@@ -111,7 +111,7 @@ facilitation_prompt: 'You are running M-PRE-003 (Prior Knowledge Scan) in PRIME 
 
   '
 gating_rules:
-- Do not assess or score the learner in PRIME.
+- Do not assess or score the learner in CALIBRATE.
 - Stay at orientation level and avoid full solution reveal.
 artifact_type: notes
 allowed_moves:

@@ -335,7 +335,7 @@ def flag_anomalies() -> Dict[str, List[Dict]]:
                 method = cursor.fetchone()
                 # Map control_stage to legacy category
                 stage_to_category = {
-                    'PRIME': 'prepare', 'CALIBRATE': 'prepare',
+                    'PRIME': 'prepare', 'TEACH': 'prepare', 'CALIBRATE': 'prepare',
                     'ENCODE': 'encode', 'REFERENCE': 'interrogate',
                     'RETRIEVE': 'retrieve', 'OVERLEARN': 'overlearn',
                 }

@@ -5,7 +5,7 @@ description: Create an analogy linking this concept to something familiar. Test 
 default_duration_min: 3
 energy_cost: medium
 best_stage: review
-control_stage: ENCODE
+control_stage: TEACH
 status: validated
 tags:
 - analogy
@@ -27,6 +27,8 @@ constraints:
   active_processing_required: true
   objective_scope_required: true
   no_final_answer_only: true
+  non_assessment: true
+  no_scored_checks: true
 inputs:
 - Concept to analogize
 - Familiar domain for comparison
@@ -71,20 +73,22 @@ evidence:
   finding: Analogical reasoning supports structural mapping and transfer across domains
   source: seed_methods.py
 evidence_raw: Gentner (1983); analogical reasoning supports structural mapping and transfer
-facilitation_prompt: 'You are running M-INT-001 (Analogy Bridge) in ENCODE stage.
+facilitation_prompt: 'You are running M-INT-001 (Analogy Bridge) in TEACH stage.
+
+  This method is non-assessment. Do not score, grade, or quiz the learner.
 
   Execute this method card exactly and keep outputs deterministic.
 
 
   Stage hard rules:
 
-  - Force active learner processing.
-
-  - Prefer transformation over passive lecture.
+  - Deliver one teach chunk in this order: Source Facts -> Plain Interpretation -> Bridge Move -> Application -> Anchor Artifact.
 
   - Keep focus on target concept scope.
   - Treat analogies as explanatory bridges, not evidence.
   - Make the analogy limits explicit before moving on.
+  - State at least one analogy breakdown point before closing the chunk.
+  - Return to the real concept after the bridge.
 
 
   Required outputs:

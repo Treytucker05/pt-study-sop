@@ -1,0 +1,101 @@
+id: M-TEA-003
+name: Clinical Anchor Mini-Case
+category: prime
+description: Attach a new concept to a tiny patient scene that explains why the concept matters clinically without overloading first exposure.
+default_duration_min: 5
+energy_cost: medium
+best_stage: first_exposure
+control_stage: TEACH
+status: draft
+tags:
+- clinical
+- anchor
+- application
+- teaching
+mechanisms:
+- transfer
+- scaffolding
+- elaboration
+knobs:
+  guidance_level: medium
+  output_format: bullets
+constraints:
+  non_assessment: true
+  no_scored_checks: true
+  objective_scope_required: true
+  one_chunk_only: true
+inputs:
+- Target concept
+- One clinical implication from the source
+- Learner objective scope
+steps:
+- step: 1
+  action: State the concept and why it matters.
+  notes: Keep the importance concrete and brief.
+- step: 2
+  action: Introduce one tiny patient scene.
+  notes: The case should illustrate relevance, not become a full problem-solving exercise.
+- step: 3
+  action: Tie the scene back to the mechanism or definition.
+  notes: Return to the real concept after the case.
+- step: 4
+  action: State one overgeneralization boundary.
+  notes: Name what the mini-case does not prove.
+- step: 5
+  action: Capture the anchor artifact.
+  notes: Use a one-page anchor note or short clinical relevance card.
+outputs:
+- Mini clinical scene
+- Why-it-matters explanation
+- Overgeneralization boundary
+- Clinical anchor note
+stop_criteria:
+- Learner has one concrete reason the concept matters
+- One anchor artifact exists
+- Boundary is stated explicitly
+failure_modes:
+- mode: Case gets too complex
+  mitigation: Keep it to one small scene and one takeaway.
+- mode: Clinical detail overwhelms the base concept
+  mitigation: Return to the mechanism/definition after the case.
+- mode: Learner overgeneralizes from the case
+  mitigation: State the boundary before ending the chunk.
+logging_fields:
+- teach_concept_type
+- clinical_anchor_used
+- anchor_artifact_created
+evidence:
+  citation: Merrill (2002)
+  finding: Application examples improve relevance when they stay tightly coupled to the core concept.
+  source: teaching_doctrine
+facilitation_prompt: 'You are running M-TEA-003 (Clinical Anchor Mini-Case) in TEACH stage.
+
+  This method is non-assessment. Do not score, grade, or quiz the learner.
+
+  Deliver one TEACH chunk in this order: Source Facts -> Plain Interpretation -> Bridge Move -> Application -> Anchor Artifact.
+
+  Required outputs:
+
+  - Mini clinical scene
+
+  - Why-it-matters explanation
+
+  - Overgeneralization boundary
+
+  - Clinical anchor note
+
+  Hard rules:
+
+  - Keep the case tiny and explanation-first.
+
+  - Return to the actual concept after the mini-case.
+
+  - State one boundary so the learner does not overgeneralize from the example.
+
+  '
+gating_rules:
+- Use one mini-case only.
+- Do not turn TEACH into a full case quiz.
+- Keep the clinical anchor tied to the active objective.
+- End with one anchor artifact.
+artifact_type: notes

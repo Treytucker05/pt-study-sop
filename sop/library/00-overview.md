@@ -25,7 +25,7 @@ Sessions are driven by the **Tutor Wizard** (3-step startup) and a **Method Chai
 | Phase | What Happens | CP Stage Tags |
 |-------|-------------|---------------|
 | **Wizard** | Select course, upload materials, pick chain, choose mode | CONTROL PLANE (setup) |
-| **Chain Execution** | Tutor walks the learner through each block in order | PRIME → CALIBRATE → ENCODE → REFERENCE → RETRIEVE (per block tags) |
+| **Chain Execution** | Tutor walks the learner through each block in order | PRIME → TEACH? → CALIBRATE → ENCODE → REFERENCE → RETRIEVE (per block tags) |
 | **Wrap** | Exit Ticket + Session Ledger | OVERLEARN → CONTROL PLANE (exit) |
 
 ### PEIRRO Compatibility
@@ -48,7 +48,7 @@ PEIRRO categories (`prepare`, `encode`, `interrogate`, `retrieve`, `refine`, `ov
 2. **Content Pipeline** -- normalize, transcode, transcribe, index course docs.
 3. **RAG Index & Search** -- ingest API; returns snippets + citations.
 4. **Study Engine (SOP Runner)** -- enforces tutor rules, chain execution, Seed-Lock, and deterministic stage contracts.
-5. **Composable Method Library** -- 46 method blocks (YAML) + 15 template chains. See `15-method-library.md`.
+5. **Composable Method Library** -- 54 method blocks (YAML) + 20 template chains. See `15-method-library.md`.
 6. **Card/Anki Bridge** -- add/update cards; dedupe by deck+guid; source-tag.
 7. **Brain (DB + Resume)** -- ingest session logs; generate resume/readiness; versioned schemas.
 8. **Multi-AI Router** -- route by task; audit model+tool used.

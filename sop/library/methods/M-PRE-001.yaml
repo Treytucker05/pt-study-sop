@@ -1,7 +1,7 @@
 id: M-PRE-001
 name: Brain Dump
-category: prime
-control_stage: PRIME
+category: calibrate
+control_stage: CALIBRATE
 description: Rapid orientation recall over existing notes to identify strong anchors and missing nodes before deeper work.
 default_duration_min: 3
 energy_cost: low
@@ -13,7 +13,7 @@ outputs_summary: Connection refresh list; known-knowns snapshot; flagged gaps
 stipulations:
 - Use only when prior notes or prior North Star artifacts already exist for this objective.
 - Do not run for first-contact unseen content with no prior context.
-- PRIME boundary applies: no scoring, no grading, no confidence judgment.
+- CALIBRATE boundary applies: activation/readiness mapping only; no scoring, no grading, no confidence judgment.
 when_to_use:
 - Learner is returning to a topic with existing notes.
 - Tutor needs a fast re-orientation pass before ENCODE/REFERENCE.
@@ -61,7 +61,7 @@ evidence_strength: medium
 primary_citations:
 - Ausubel (1968)
 - Bjork & Bjork (2011)
-facilitation_prompt: 'You are running M-PRE-001 (Brain Dump) in PRIME stage.
+facilitation_prompt: 'You are running M-PRE-001 (Brain Dump) in CALIBRATE stage.
 
   This method is non-assessment.
 
@@ -88,7 +88,7 @@ facilitation_prompt: 'You are running M-PRE-001 (Brain Dump) in PRIME stage.
 
   '
 gating_rules:
-- Do not assess or score the learner in PRIME.
+- Do not assess or score the learner in CALIBRATE.
 - Stay at orientation level and avoid full solution reveal.
 artifact_type: notes
 evidence_raw: Ausubel (1968); Bjork & Bjork (2011); prior knowledge activation strengthens subsequent encoding

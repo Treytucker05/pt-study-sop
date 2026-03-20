@@ -32,10 +32,10 @@ graph TB
         TeachBack["tutor_teach_back.py<br/>Rubric scoring"]
     end
 
-    subgraph ControlPlane["Control Plane (CP-MSS v1.0)"]
+    subgraph ControlPlane["Control Plane (CP-MSS v2.0)"]
         Selector["selector.py<br/>7-Knob Router"]
         Chains["method_chains<br/>C-FE-STD / MIN / PRO"]
-        Blocks["method_blocks<br/>46 blocks x 6 stages"]
+        Blocks["method_blocks<br/>54 blocks x 7 stages"]
         ErrorTelemetry["error_logs<br/>HCWR + dominant_error"]
     end
 
@@ -637,7 +637,7 @@ TutorPage (tutor.tsx)
 | **Vault** | `brain/vault_artifact_router.py` | ~100 | Operation dispatcher |
 | **Vault** | `brain/tutor_templates.py` | ~745 | Template renderers |
 | **Database** | `brain/db_setup.py` | ~2500 | Schema + migrations |
-| **SOP** | `sop/library/17-control-plane.md` | ~40 | CP-MSS v1.0 spec |
+| **SOP** | `sop/library/17-control-plane.md` | ~40 | CP-MSS v2.0 spec |
 | **Chains** | `sop/library/chains/C-FE-STD.yaml` | ~37 | Standard chain |
 | **Chains** | `sop/library/chains/C-FE-MIN.yaml` | ~31 | Minimal chain |
 | **Chains** | `sop/library/chains/C-FE-PRO.yaml` | ~30 | Procedure chain |

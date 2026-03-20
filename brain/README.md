@@ -1,8 +1,8 @@
-# PT Study Brain (CP-MSS v1.0 Era)
+# PT Study Brain (CP-MSS v2.0 Era)
 
 Session tracking and analytics system for the PT Study SOP.
 
-Canonical learning system: **CP-MSS v1.0** (`PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
+Canonical learning system: **CP-MSS v2.0** (`PRIME -> TEACH -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
 Legacy PEIRRO category names are compatibility aliases only where still present in historical data paths.
 
 ---

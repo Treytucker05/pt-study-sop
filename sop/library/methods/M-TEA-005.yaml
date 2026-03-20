@@ -1,0 +1,95 @@
+id: M-TEA-005
+name: Jingle / Rhyme Hook
+category: prime
+description: Compress a fixed sequence or ordered list into a short rhyme, rhythm, or jingle only after the meaning of the sequence is already clear.
+default_duration_min: 4
+energy_cost: low
+best_stage: first_exposure
+control_stage: TEACH
+status: draft
+tags:
+- mnemonic
+- sequence
+- rhyme
+- teaching
+mechanisms:
+- generation
+- scaffolding
+- dual_coding
+knobs:
+  guidance_level: medium
+  output_format: bullets
+constraints:
+  non_assessment: true
+  no_scored_checks: true
+  objective_scope_required: true
+  one_chunk_only: true
+inputs:
+- Ordered list or fixed sequence
+- Meaning of each step or element
+- Distortion risks or confusable items
+steps:
+- step: 1
+  action: Confirm the sequence meaning first.
+  notes: Do not build the hook before the list makes sense.
+- step: 2
+  action: Compress the sequence into a short rhyme, rhythm, or jingle.
+  notes: Keep it short enough to say in one breath.
+- step: 3
+  action: Map each lyric fragment back to the real target.
+  notes: The learner should know exactly what each part stands for.
+- step: 4
+  action: State one anti-distortion warning.
+  notes: Name where the hook could mislead if taken too literally.
+outputs:
+- Jingle or rhyme hook
+- Hook-to-sequence mapping
+- Anti-distortion warning
+stop_criteria:
+- Hook is short and repeatable
+- Every hook fragment maps back to the real target
+- One distortion warning is stated
+failure_modes:
+- mode: Hook is catchy but inaccurate
+  mitigation: Force a line-by-line mapping back to the source sequence.
+- mode: Hook introduced before understanding exists
+  mitigation: Explain the meaning first, then add the hook.
+- mode: Hook distorts mechanism-heavy content
+  mitigation: Reserve this method for fixed sequences, not full mechanisms.
+logging_fields:
+- bridge_move_used
+- mnemonic_created
+- distortion_warning_given
+evidence:
+  citation: Dunlosky et al. (2013)
+  finding: Mnemonic devices help when tightly mapped and used after initial understanding is established.
+  source: teaching_doctrine
+facilitation_prompt: 'You are running M-TEA-005 (Jingle / Rhyme Hook) in TEACH stage.
+
+  This method is non-assessment. Do not score, grade, or quiz the learner.
+
+  Deliver one TEACH chunk in this order: Source Facts -> Plain Interpretation -> Bridge Move -> Application -> Anchor Artifact.
+
+  Required outputs:
+
+  - Jingle or rhyme hook
+
+  - Hook-to-sequence mapping
+
+  - Anti-distortion warning
+
+  Hard rules:
+
+  - Meaning first, hook second.
+
+  - Use this only for fixed sequences or ordered lists.
+
+  - State where the hook could distort the real content.
+
+  '
+gating_rules:
+- Do not use this as the first explanation of a mechanism.
+- Keep the hook tightly mapped to the real sequence.
+- Include one anti-distortion warning.
+- End after the hook and mapping are both explicit.
+artifact_type: cards

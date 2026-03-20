@@ -1,7 +1,7 @@
 import { Clock, Zap } from "lucide-react";
 import type { MethodBlock } from "@/api";
-import { DISPLAY_STAGE_LABELS, getDisplayStage } from "@/lib/displayStage";
-import { PERO_COLORS, PERO_DEFAULT, ENERGY_COLORS, ENERGY_DEFAULT } from "@/lib/colors";
+import { ENERGY_COLORS, ENERGY_DEFAULT, CONTROL_PLANE_COLORS, CONTROL_PLANE_DEFAULT } from "@/lib/colors";
+import { getMethodStageBadgeLabel, getMethodStageColorKey } from "@/lib/controlStages";
 
 interface MethodBlockCardProps {
   block: MethodBlock;
@@ -20,11 +20,10 @@ export default function MethodBlockCard({
   onDragStart,
   showLegacyCategory,
 }: MethodBlockCardProps) {
-  const stage = getDisplayStage(block);
-  const stageColors = PERO_COLORS[stage] || PERO_DEFAULT;
+  const stageColors = CONTROL_PLANE_COLORS[getMethodStageColorKey(block)] || CONTROL_PLANE_DEFAULT;
   const colorClass = stageColors.border;
   const badgeClass = stageColors.badge;
-  const stageLabel = DISPLAY_STAGE_LABELS[stage] || stage.toUpperCase();
+  const stageLabel = getMethodStageBadgeLabel(block);
   const energyClass = ENERGY_COLORS[block.energy_cost] || ENERGY_DEFAULT;
   const isInteractive = Boolean(onClick || draggable);
   const Wrapper = isInteractive ? "button" : "div";

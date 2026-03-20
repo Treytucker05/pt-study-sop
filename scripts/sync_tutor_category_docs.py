@@ -224,7 +224,7 @@ def sync_category_docs(methods_dir: Path, output_dir: Path) -> dict[str, int]:
         "Canonical control-plane categories and links to category method books.",
         "",
         "## Pipeline",
-        "`PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`",
+        "`PRIME -> TEACH -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`",
         "",
         "## Category Pages",
     ]

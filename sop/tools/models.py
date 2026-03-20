@@ -52,6 +52,7 @@ class AssessmentMode(str, Enum):
 
 class OperationalStage(str, Enum):
     PRIME = "PRIME"
+    TEACH = "TEACH"
     CALIBRATE = "CALIBRATE"
     ENCODE = "ENCODE"
     REFERENCE = "REFERENCE"

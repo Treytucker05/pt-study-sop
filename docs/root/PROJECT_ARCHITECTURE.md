@@ -6,7 +6,7 @@
 **Purpose:** Reference-only technical documentation for system architecture, dependencies, and integration. Top-level product/page ownership authority lives in `README.md`.
 
 > Master repo truth: `README.md`
-> Canonical domain primitives + CP-MSS v1.0 architecture: `sop/library/17-control-plane.md`.
+> Canonical domain primitives + CP-MSS v2.0 architecture: `sop/library/17-control-plane.md`.
 > Terminology note: current DB/UI `modules` are CourseModules (course material units), not LearningModules.
 
 ---
@@ -21,7 +21,7 @@ Core product systems:
 3.  **Tutor System (`brain/dashboard/api_tutor.py` + `dashboard_rebuild/`)**: The bread-and-butter staged study workflow shell, live protocol-led teaching engine, and active workspace.
 
 Supporting systems:
-1.  **SOP System (`sop/`)**: The rigorous learning methodology (CP-MSS v1.0) consumed by the Tutor runtime.
+1.  **SOP System (`sop/`)**: The rigorous learning methodology (CP-MSS v2.0) consumed by the Tutor runtime.
 2.  **Scripts & Automation (`scripts/`)**: Release validation, external integrations, and agent workflows.
 
 This document serves as the "Project Map," superseding previous architecture docs.
@@ -97,10 +97,11 @@ sop/runtime/knowledge_upload/
 These files define the pedagogical backbone of the system.
 
 **1. `17-control-plane.md` + `02-learning-cycle.md` (CP-MSS + KWIK)**
-Defines the canonical 6-stage learning cycle that ALL sessions must follow:
-- **PRIME**: orient and structure.
-- **CALIBRATE**: assess and prioritize.
-- **ENCODE**: construct durable schemas (active, not passive).
+Defines the canonical 7-stage learning cycle that ALL sessions must follow when the relevant stages are present:
+- **PRIME**: orient and build source-grounded artifacts.
+- **TEACH**: explain unfamiliar material one chunk at a time.
+- **CALIBRATE**: assess and prioritize after teaching when TEACH is present.
+- **ENCODE**: construct durable schemas through learner-side work.
 - **REFERENCE**: generate retrieval targets and anchors.
 - **RETRIEVE**: effortful recall without cues.
 - **OVERLEARN**: close loop with artifacts and repetition.

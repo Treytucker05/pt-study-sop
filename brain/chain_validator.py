@@ -1,17 +1,13 @@
-"""Chain Validator --checks PERO ordering rules for method chains.
+"""Chain Validator --checks CP-MSS stage ordering rules.
 
-Validates that chains follow sound pedagogical sequencing:
-  P (Priming) ->E (Encoding) ->R (Retrieval) ->O (Overlearning)
+Validates that chains follow sound control-plane sequencing:
+  PRIME -> TEACH -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN
 
 Violations flagged:
-  - Retrieval before any Encoding (unless diagnostic Pre-Test)
-  - Overlearning without prior Retrieval or Encoding
-  - Backward stage jumps without valid exception
-
-Allowed exceptions:
-  - Pre-Test (diagnostic retrieval in Priming position)
-  - Immediate feedback/repair after retrieval (Error Autopsy, Mastery Loop)
-  - Encoding after retrieval (re-encoding after gap identification)
+  - TEACH before PRIME or after CALIBRATE/ENCODE
+  - CALIBRATE before TEACH when both are present
+  - Retrieval before any prior ENCODE/REFERENCE (unless diagnostic Pre-Test)
+  - Overlearning without prior Encoding/Reference/Retrieval
 """
 
 from __future__ import annotations
@@ -20,13 +16,45 @@ import json
 from dataclasses import dataclass, field
 from typing import Any
 
-from pero_mapping import (
-    PERO_ORDER,
-    PERO_LABELS,
-    get_pero_sequence,
-    get_stage_coverage,
-    get_exception_flags,
-)
+from pero_mapping import get_exception_flags
+
+
+# Canonical CP-MSS v2.0 order.
+CONTROL_STAGE_ORDER = {
+    "PRIME": 0,
+    "TEACH": 1,
+    "CALIBRATE": 2,
+    "ENCODE": 3,
+    "REFERENCE": 4,
+    "RETRIEVE": 5,
+    "OVERLEARN": 6,
+}
+
+CONTROL_STAGE_LABELS = {stage: stage.title() for stage in CONTROL_STAGE_ORDER}
+
+
+def _normalize_control_stage(block: dict[str, Any]) -> str:
+    raw_stage = str(block.get("control_stage") or "").strip().upper()
+    if raw_stage:
+        return raw_stage
+    raw_category = str(block.get("category") or "").strip().lower()
+    return {
+        "prime": "PRIME",
+        "teach": "TEACH",
+        "calibrate": "CALIBRATE",
+        "prepare": "PRIME",
+        "encode": "ENCODE",
+        "interrogate": "ENCODE",
+        "reference": "REFERENCE",
+        "retrieve": "RETRIEVE",
+        "refine": "RETRIEVE",
+        "overlearn": "OVERLEARN",
+    }.get(raw_category, "ENCODE")
+
+
+def _stage_coverage(sequence: list[dict[str, str]]) -> dict[str, bool]:
+    seen = {step["stage"] for step in sequence}
+    return {stage: stage in seen for stage in CONTROL_STAGE_ORDER}
 
 
 @dataclass
@@ -57,12 +85,7 @@ class ChainReport:
 # Core Validation
 # ---------------------------------------------------------------------------
 
-# Methods whose presence in the chain signals "diagnostic retrieval" intent,
-# allowing R-before-E without violation.
 _DIAGNOSTIC_METHODS = {"Pre-Test"}
-
-# Methods that are post-retrieval repair (expected after R, before more E or O)
-_REPAIR_METHODS = {"Error Autopsy", "Mastery Loop"}
 
 
 def validate_chain(
@@ -74,7 +97,7 @@ def validate_chain(
 
     Args:
         chain_name: display name of the chain
-        blocks: list of block dicts with "name" and "category"
+        blocks: list of block dicts with "name" and either "control_stage" or "category"
         chain_id: optional DB id
 
     Returns:
@@ -87,49 +110,75 @@ def validate_chain(
         report.violations.append("Chain has no blocks")
         return report
 
-    sequence = get_pero_sequence(blocks)
-    report.stage_sequence = [s["pero"] for s in sequence]
-    report.stage_coverage = get_stage_coverage(blocks)
+    sequence = [
+        {
+            "name": str(block.get("name") or ""),
+            "stage": _normalize_control_stage(block),
+        }
+        for block in blocks
+    ]
+    report.stage_sequence = [s["stage"] for s in sequence]
+    report.stage_coverage = _stage_coverage(sequence)
     report.exception_flags = get_exception_flags(blocks)
 
-    # Track what stages have appeared so far
-    has_encoding = False
+    has_encode_or_reference = False
     has_retrieval = False
     has_diagnostic = False
+    seen_teach = False
     method_names = {b.get("name", "") for b in blocks}
-
-    # Check for diagnostic retrieval exception
     has_diagnostic = bool(_DIAGNOSTIC_METHODS & method_names)
 
     for i, step in enumerate(sequence):
-        stage = step["pero"]
+        stage = step["stage"]
         name = step["name"]
 
-        if stage == "E":
-            has_encoding = True
+        if stage not in CONTROL_STAGE_ORDER:
+            report.violations.append(
+                f"Step {i + 1} '{name}' has unknown control stage '{stage}'"
+            )
+            continue
 
-        if stage == "R":
-            # Rule: Retrieval before any Encoding is a violation
-            # Exception: diagnostic Pre-Test or repair methods
-            if not has_encoding and not has_diagnostic and name not in _REPAIR_METHODS:
+        if stage == "TEACH":
+            seen_teach = True
+            prior_prime = any(prev["stage"] == "PRIME" for prev in sequence[:i])
+            if not prior_prime:
                 report.violations.append(
-                    f"Step {i + 1} '{name}' is Retrieval before any Encoding "
+                    f"Step {i + 1} '{name}' is TEACH before PRIME"
+                )
+            if any(
+                prev["stage"] in {"CALIBRATE", "ENCODE", "REFERENCE", "RETRIEVE", "OVERLEARN"}
+                for prev in sequence[:i]
+            ):
+                report.violations.append(
+                    f"Step {i + 1} '{name}' is TEACH after downstream stages"
+                )
+
+        if stage == "CALIBRATE" and any(prev["stage"] == "TEACH" for prev in sequence[i + 1:]):
+            report.violations.append(
+                f"Step {i + 1} '{name}' is CALIBRATE before TEACH"
+            )
+
+        if stage in {"ENCODE", "REFERENCE"}:
+            has_encode_or_reference = True
+
+        if stage == "RETRIEVE":
+            if not has_encode_or_reference and not has_diagnostic:
+                report.violations.append(
+                    f"Step {i + 1} '{name}' is RETRIEVE before any ENCODE or REFERENCE "
                     f"(no diagnostic Pre-Test to justify early retrieval)"
                 )
             has_retrieval = True
 
-        if stage == "O":
-            # Rule: Overlearning without any prior Encoding or Retrieval is suspect
-            if not has_encoding and not has_retrieval:
+        if stage == "OVERLEARN":
+            if not has_encode_or_reference and not has_retrieval:
                 report.violations.append(
-                    f"Step {i + 1} '{name}' is Overlearning with no prior "
-                    f"Encoding or Retrieval --nothing to consolidate"
+                    f"Step {i + 1} '{name}' is OVERLEARN with no prior "
+                    f"ENCODE, REFERENCE, or RETRIEVE"
                 )
 
-    # Coverage warnings (not violations --short chains are valid)
-    if not report.stage_coverage.get("R") and not report.stage_coverage.get("O"):
+    if not report.stage_coverage.get("RETRIEVE") and not report.stage_coverage.get("OVERLEARN"):
         report.warnings.append(
-            "Chain has no Retrieval or Overlearning --learning may not be consolidated"
+            "Chain has no RETRIEVE or OVERLEARN stage --learning may not be consolidated"
         )
 
     report.valid = len(report.violations) == 0
@@ -164,8 +213,15 @@ def validate_all_chains(conn=None) -> list[ChainReport]:
     chains = cursor.fetchall()
 
     # Build block lookup
-    cursor.execute("SELECT id, name, category FROM method_blocks")
-    block_lookup = {row["id"]: {"name": row["name"], "category": row["category"]} for row in cursor.fetchall()}
+    cursor.execute("SELECT id, name, category, control_stage FROM method_blocks")
+    block_lookup = {
+        row["id"]: {
+            "name": row["name"],
+            "category": row["category"],
+            "control_stage": row["control_stage"],
+        }
+        for row in cursor.fetchall()
+    }
 
     if close_conn:
         conn.close()
@@ -195,7 +251,7 @@ def format_report(reports: list[ChainReport]) -> str:
     passing = sum(1 for r in reports if r.valid)
     failing = total - passing
 
-    lines.append(f"PERO Chain Validation Report")
+    lines.append("CP-MSS Chain Validation Report")
     lines.append(f"{'=' * 40}")
     lines.append(f"Total chains: {total}")
     lines.append(f"Passing:      {passing}")
@@ -209,7 +265,7 @@ def format_report(reports: list[ChainReport]) -> str:
         lines.append(f"  Sequence: {seq_str}")
 
         coverage_parts = []
-        for stage, label in PERO_LABELS.items():
+        for stage, label in CONTROL_STAGE_LABELS.items():
             mark = "x" if report.stage_coverage.get(stage) else " "
             coverage_parts.append(f"[{mark}] {stage}({label})")
         lines.append(f"  Coverage: {' '.join(coverage_parts)}")

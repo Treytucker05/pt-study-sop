@@ -88,7 +88,7 @@ Priority components to audit:
 |------|--------------|
 | Chain API | GET/POST/PUT/DELETE chains — do YAML and DB stay in sync? |
 | Session API | Start/stop/wrap — does it follow Wizard→Chain→Wrap? |
-| Method API | Block CRUD — 46 blocks match SOP? |
+| Method API | Block CRUD — 54 blocks match SOP? |
 | Materials API | Upload/parse — supported formats match docs? |
 | Settings API | Custom Instructions save/load |
 | LO Engine API | Is it wired up or orphaned? |

@@ -1,7 +1,7 @@
 # Dashboard Rebuild
 
 Source for the PT Study dashboard UI (frontend only). The API is served by Flask in `brain/dashboard/api_adapter.py` against `brain/data/pt_study.db`.
-Canonical system context: tutor/session behavior is governed by CP-MSS v1.0 (`PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
+Canonical system context: tutor/session behavior is governed by CP-MSS v2.0 (`PRIME -> TEACH -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
 This README is implementation context only, not product authority.
 
 - Top-level repo truth: `README.md`

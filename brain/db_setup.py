@@ -1763,7 +1763,7 @@ def init_database():
             method_id TEXT,
             name TEXT NOT NULL,
             category TEXT,
-            control_stage TEXT DEFAULT 'ENCODE' CHECK(control_stage IN ('PRIME', 'CALIBRATE', 'ENCODE', 'REFERENCE', 'RETRIEVE', 'OVERLEARN')),
+            control_stage TEXT DEFAULT 'ENCODE' CHECK(control_stage IN ('PRIME', 'TEACH', 'CALIBRATE', 'ENCODE', 'REFERENCE', 'RETRIEVE', 'OVERLEARN')),
             description TEXT,
             default_duration_min INTEGER DEFAULT 5,
             energy_cost TEXT DEFAULT 'medium',
@@ -1906,16 +1906,17 @@ def init_database():
                 pass
 
     # Keep legacy category field available for older test/data paths.
-    cursor.execute(
-        """
-        UPDATE method_blocks
-        SET category = CASE control_stage
-            WHEN 'PRIME' THEN 'prepare'
-            WHEN 'CALIBRATE' THEN 'prepare'
-            WHEN 'ENCODE' THEN 'encode'
-            WHEN 'REFERENCE' THEN 'interrogate'
-            WHEN 'RETRIEVE' THEN 'retrieve'
-            WHEN 'OVERLEARN' THEN 'overlearn'
+        cursor.execute(
+            """
+            UPDATE method_blocks
+            SET category = CASE control_stage
+                WHEN 'PRIME' THEN 'prepare'
+                WHEN 'TEACH' THEN 'prepare'
+                WHEN 'CALIBRATE' THEN 'prepare'
+                WHEN 'ENCODE' THEN 'encode'
+                WHEN 'REFERENCE' THEN 'interrogate'
+                WHEN 'RETRIEVE' THEN 'retrieve'
+                WHEN 'OVERLEARN' THEN 'overlearn'
             ELSE category
         END
         WHERE category IS NULL OR TRIM(category) = ''
@@ -2997,6 +2998,7 @@ def migrate_method_categories():
     # PEIRRO to Control Plane mapping
     category_map = {
         "prepare": "PRIME",
+        "teach": "TEACH",
         "encode": "ENCODE",
         "interrogate": "ENCODE",
         "retrieve": "RETRIEVE",

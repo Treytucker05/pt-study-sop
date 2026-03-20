@@ -1,0 +1,100 @@
+id: M-TEA-001
+name: Story Spine
+category: prime
+description: Turn a sequence, pathway, or cascade into a short narrative spine so the learner can track beginning state, trigger, movement, consequence, and where the story breaks clinically.
+default_duration_min: 6
+energy_cost: medium
+best_stage: first_exposure
+control_stage: TEACH
+status: draft
+tags:
+- sequence
+- pathway
+- narrative
+- mechanism
+mechanisms:
+- elaboration
+- scaffolding
+- transfer
+knobs:
+  guidance_level: medium
+  output_format: bulleted_spine
+constraints:
+  non_assessment: true
+  no_scored_checks: true
+  objective_scope_required: true
+  one_chunk_only: true
+inputs:
+- Target sequence, pathway, or cascade
+- Source anchors for the steps
+- Current learning objective
+steps:
+- step: 1
+  action: State the starting state and the trigger in plain language.
+  notes: Do not begin with jargon unless the learner already has the labels.
+- step: 2
+  action: Walk through the movement/change one step at a time.
+  notes: Keep causal transitions explicit.
+- step: 3
+  action: Add one bridge move if needed.
+  notes: A short story image is allowed, but it must map back to the real mechanism.
+- step: 4
+  action: End with the main consequence and one clinical breakdown point.
+  notes: Name where the story stops matching reality or where it matters clinically.
+- step: 5
+  action: Produce one anchor artifact.
+  notes: Use a mini process flow or one-page anchor outline.
+outputs:
+- Story spine with start, trigger, movement, consequence
+- One clinical breakdown point
+- Mini process flow anchor
+stop_criteria:
+- Learner has a usable L2 explanation of the sequence
+- One anchor artifact exists
+- One clinical implication is tied in
+failure_modes:
+- mode: Story becomes fiction detached from source
+  mitigation: Re-anchor every story beat to the source facts.
+- mode: Too many details in one pass
+  mitigation: Keep the chunk to one sequence slice only.
+- mode: No breakdown point named
+  mitigation: Explicitly state where the story analogy stops or misleads.
+logging_fields:
+- teach_concept_type
+- bridge_move_used
+- anchor_artifact_created
+evidence:
+  citation: Mayer (2009)
+  finding: Segmented explanation and coherent signaling improve novice understanding of complex processes.
+  source: teaching_doctrine
+facilitation_prompt: 'You are running M-TEA-001 (Story Spine) in TEACH stage.
+
+  This method is non-assessment. Do not score, grade, or quiz the learner.
+
+  Deliver one TEACH chunk in this order: Source Facts -> Plain Interpretation -> Bridge Move -> Application -> Anchor Artifact.
+
+  Required outputs:
+
+  - Story spine with start, trigger, movement, consequence
+
+  - One clinical breakdown point
+
+  - Mini process flow anchor
+
+  Hard rules:
+
+  - Meaning first, bridge second, anchor third.
+
+  - Keep the story tied to source facts.
+
+  - If you use a bridge move, state where it breaks down before moving on.
+
+  - Stop once the learner has a usable L2 grasp plus one anchor artifact.
+
+  '
+gating_rules:
+- Stay inside the active objective scope.
+- Do not introduce scored checks or confidence ratings in TEACH.
+- Use story only as a teaching bridge, never as source evidence.
+- End the chunk after one anchor artifact is produced.
+artifact_type: flowchart

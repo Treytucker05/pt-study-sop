@@ -1,10 +1,11 @@
 id: C-FE-001
 name: First Exposure (Core)
-description: Control-plane first exposure flow. PRIME → CALIBRATE → ENCODE → REFERENCE → RETRIEVE → OVERLEARN with deterministic Priority Set routing.
+description: Control-plane first exposure flow. PRIME → TEACH → CALIBRATE → ENCODE → REFERENCE → RETRIEVE → OVERLEARN with deterministic Priority Set routing.
 blocks:
 - M-PRE-010
 - M-PRE-008
 - M-PRE-009
+- M-INT-001
 - M-CAL-001
 - M-CAL-002
 - M-CAL-003
@@ -22,6 +23,7 @@ allowed_modes:
 - recognition
 gates:
 - prime_artifacts_present
+- teach_chunk_delivered_when_present
 - calibrate_attempt_completed
 - reference_targets_ready
 - retrieve_after_reference_only

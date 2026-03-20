@@ -149,7 +149,7 @@ The START button in the tab bar is a shortcut to the Start Panel. SETTINGS opens
 **Key behaviors:**
 - Changing course clears materials, objectives, and topic
 - Preflight validation runs on every config change
-- TEMPLATE tab shows 19 chain cards (click to select/deselect)
+- TEMPLATE tab shows 20 chain cards (click to select/deselect)
 - CUSTOM tab embeds `<TutorChainBuilder>` for composing blocks
 - START button disabled if `requiresFocusObjective && !selectedObjectiveId`
 
@@ -420,7 +420,7 @@ Implementation: `MessageList.tsx` lines 298-421.
 
 - Tutor behavior is modeled as `Category -> Method -> Knob -> Chain`.
 - Default operating assumption is first exposure unless the session has strong prior-mastery evidence.
-- `PRIME` is non-assessment structure and teaching. `CALIBRATE` is where assessment begins.
+- `PRIME` is non-assessment orientation and artifact setup. `TEACH` is the explanation-first stage when a chain includes it. `CALIBRATE` is where diagnostic checking begins.
 - Tutor-generated Obsidian notes must include wiki links at creation time, not as deferred cleanup.
 - Mind Map uses `ASCII` as the project-default representation knob unless a session explicitly overrides it.
 
@@ -521,15 +521,15 @@ Start_Dashboard.bat
 
 ## Control Plane Pipeline
 
-### CP-MSS v1.0 (6-Stage Pipeline)
+### CP-MSS v2.0 (7-Stage Pipeline)
 
 Every session follows the Control Plane learning pipeline. Stages execute in dependency order via method block chains.
 
 ```
-PRIME --> CALIBRATE --> ENCODE --> REFERENCE --> RETRIEVE --> OVERLEARN
-   |                                                           |
-   +-----------------------------------------------------------+
-                    (spaced repetition loop)
+PRIME --> TEACH --> CALIBRATE --> ENCODE --> REFERENCE --> RETRIEVE --> OVERLEARN
+  |                                                                          |
+  +--------------------------------------------------------------------------+
+                           (spaced repetition loop)
 ```
 
 **The Dependency Law:** No retrieval without targets. Every RETRIEVE stage must be preceded by REFERENCE (target generation).
@@ -552,9 +552,9 @@ The `brain/selector.py` router automatically selects the optimal chain based on 
 
 | Chain | Duration | Use Case | Stages |
 |-------|----------|----------|--------|
-| `C-FE-STD` | 35 min | Standard first exposure | PRIME→CALIBRATE→ENCODE→REFERENCE→RETRIEVE |
+| `C-FE-STD` | 35 min | Standard first exposure | PRIME→TEACH→CALIBRATE→ENCODE→REFERENCE→RETRIEVE |
 | `C-FE-MIN` | 20 min | Low energy / short time | PRIME→REFERENCE→RETRIEVE→OVERLEARN |
-| `C-FE-PRO` | 45 min | Lab/procedure learning | PRIME→ENCODE→REFERENCE→RETRIEVE (with fault injection) |
+| `C-FE-PRO` | 45 min | Lab/procedure learning | PRIME→TEACH→ENCODE→REFERENCE→RETRIEVE (with fault injection) |
 
 ### Operating Modes
 
@@ -581,7 +581,7 @@ For runtime wiring details and endpoint/state maps, use `docs/root/PROJECT_ARCHI
 |---|------|-------------|
 | 00 | `00-overview.md` | System identity, version history, library map |
 | 01 | `01-core-rules.md` | Behavioral rules: Source-Lock, Seed-Lock, No Phantom Outputs |
-| 02 | `02-learning-cycle.md` | CP-MSS v1.0 operational cycle + KWIK encoding micro-loop |
+| 02 | `02-learning-cycle.md` | CP-MSS v2.0 operational cycle + KWIK encoding micro-loop |
 | 03 | `03-frameworks.md` | H/M/Y framework series + L1-L4 depth gating |
 | 04 | `04-engines.md` | Anatomy Engine (OIANA+) + Concept Engine |
 | 05 | `05-session-flow.md` | Session execution flow (Exposure Check + Split-Track) |
@@ -594,8 +594,8 @@ For runtime wiring details and endpoint/state maps, use `docs/root/PROJECT_ARCHI
 | 12 | `12-evidence.md` | Evidence base, research citations, NotebookLM bridge |
 | 13 | `13-custom-gpt-system-instructions.md` | Legacy Custom GPT system instructions |
 | 14 | `14-lo-engine.md` | Learning Objective Engine protocol pack |
-| 15 | `15-method-library.md` | Composable Method Library (46 blocks + chains) |
-| 17 | `17-control-plane.md` | Control Plane Constitution (CP-MSS v1.0) |
+| 15 | `15-method-library.md` | Composable Method Library (54 blocks + chains) |
+| 17 | `17-control-plane.md` | Control Plane Constitution (CP-MSS v2.0) |
 
 ---
 
@@ -858,8 +858,8 @@ SQLite at `brain/data/pt_study.db`. Schema managed in `brain/db_setup.py`.
 
 +------------------+     +------------------+     +------------------+
 |  method_blocks   |     |  method_chains   |     |  method_ratings  |
-|  (46 blocks,     |     |  (CP chain defs) |     |  (user ratings)  |
-|   6 CP stages)   |     |                  |     |                  |
+|  (54 blocks,     |     |  (CP chain defs) |     |  (user ratings)  |
+|   7 CP stages)   |     |                  |     |                  |
 +------------------+     +------------------+     +------------------+
 
 +------------------+     +------------------+     +------------------+

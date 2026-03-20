@@ -1,6 +1,6 @@
 # PT Study SOP — Flowchart Index
 
-Complete visual breakdown of the PT Study Operating System architecture, CP-MSS v1.0 learning cycle, and data flows.
+Complete visual breakdown of the PT Study Operating System architecture, CP-MSS v2.0 learning cycle, and data flows.
 
 ## Overview
 
@@ -47,7 +47,7 @@ Walks through all 6 modules in sequence:
 **Purpose:** Cognitive framework (macro & micro loops)
 
 Shows how learning science is encoded:
-- **Control Plane (macro):** 6-stage session cycle
+- **Control Plane (macro):** 7-stage session cycle
   - PRIME
   - CALIBRATE
   - ENCODE (activates KWIK)
@@ -61,7 +61,7 @@ Shows how learning science is encoded:
   4. Resonance (learner approval)
   5. Lock (card/log artifact)
 
-**When to use:** Learning science documentation, neuroscience/cognitive alignment, encoding troubleshooting.
+**When to use:** Learning science documentation, neuroscience/cognitive alignment, teach/encode troubleshooting.
 
 ---
 
@@ -238,4 +238,4 @@ PT Study SOP (Level 1: Vision)
 
 See `sop/library/00-overview.md` for high-level overview, or reference the canonical files linked above for detailed explanations.
 
-Legacy note: The filename `03-peirro-kwik-learning-cycles.mmd` is retained for backward link compatibility; the canonical runtime model is CP-MSS v1.0.
+Legacy note: The filename `03-peirro-kwik-learning-cycles.mmd` is retained for backward link compatibility; the canonical runtime model is CP-MSS v2.0.

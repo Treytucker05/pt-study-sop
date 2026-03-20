@@ -1,7 +1,7 @@
 # Brain Static Assets
 
 Static files served by Flask (`brain/dashboard_web.py`).
-These assets power a CP-MSS v1.0-aligned dashboard runtime.
+These assets power a CP-MSS v2.0-aligned dashboard runtime.
 
 Key paths
 - `dist/`: built React dashboard assets served by Flask.

@@ -157,6 +157,68 @@ def _build_chain_guardrails_section(chain_info: Optional[dict]) -> Optional[str]
     return "\n".join(lines) if len(lines) > 1 else None
 
 
+def _build_teach_context_section(teach_context: Optional[dict]) -> Optional[str]:
+    if not isinstance(teach_context, dict) or not teach_context:
+        return None
+
+    lines = ["## TEACH Context"]
+    objective = str(teach_context.get("objective") or "").strip()
+    if objective:
+        lines.append(f"- Objective: {objective}")
+
+    concept_type = str(teach_context.get("concept_type") or "").strip()
+    if concept_type:
+        lines.append(f"- Concept type: {concept_type}")
+
+    depth_start = str(teach_context.get("depth_start") or "").strip()
+    depth_ceiling = str(teach_context.get("depth_ceiling") or "").strip()
+    if depth_start or depth_ceiling:
+        lines.append(
+            f"- Depth ladder: start at {depth_start or 'L1'} and do not exceed {depth_ceiling or 'L4'}"
+        )
+
+    source_anchors = teach_context.get("source_anchors")
+    if isinstance(source_anchors, list) and source_anchors:
+        lines.append("- Source anchors:")
+        lines.extend(f"  - {anchor}" for anchor in source_anchors[:8])
+
+    prime_artifacts = teach_context.get("prime_artifacts")
+    if isinstance(prime_artifacts, list) and prime_artifacts:
+        lines.append("- PRIME artifacts available:")
+        lines.extend(f"  - {artifact}" for artifact in prime_artifacts[:8])
+
+    bridge_moves_allowed = teach_context.get("bridge_moves_allowed")
+    if isinstance(bridge_moves_allowed, list) and bridge_moves_allowed:
+        lines.append(
+            "- Allowed bridge moves: "
+            + ", ".join(str(move) for move in bridge_moves_allowed)
+        )
+
+    required_artifact = str(teach_context.get("required_artifact") or "").strip()
+    if required_artifact:
+        lines.append(f"- Required anchor artifact: {required_artifact}")
+
+    exemplar_refs = teach_context.get("exemplar_refs")
+    if isinstance(exemplar_refs, list) and exemplar_refs:
+        lines.append("- Teaching exemplars to imitate:")
+        lines.extend(f"  - {ref}" for ref in exemplar_refs[:2])
+
+    stop_conditions = teach_context.get("stop_conditions")
+    if isinstance(stop_conditions, list) and stop_conditions:
+        lines.append("- Stop conditions:")
+        lines.extend(f"  - {condition}" for condition in stop_conditions[:6])
+
+    lines.extend(
+        [
+            "- TEACH chunk contract: Source Facts -> Plain Interpretation -> Bridge Move -> Application -> Anchor Artifact.",
+            "- TEACH is non-assessment. Do not quiz, score, or require confidence ratings here.",
+            "- Bridge moves are teaching aids, not evidence. If you use an analogy, state its breakdown point before moving on.",
+            "- Meaning first, bridge second, anchor third.",
+        ]
+    )
+    return "\n".join(lines)
+
+
 def _build_block_section(current_block: Optional[dict]) -> Optional[str]:
     if not current_block:
         return None
@@ -231,6 +293,7 @@ def build_prompt_with_contexts(
     graph_context: Optional[str] = None,
     course_map: str = "",
     vault_state: str = "",
+    teach_context: Optional[dict] = None,
 ) -> str:
     parts: list[str] = [_format_tier1(course_id, topic)]
 
@@ -249,6 +312,10 @@ def build_prompt_with_contexts(
     chain_guardrails_section = _build_chain_guardrails_section(chain_info)
     if chain_guardrails_section:
         parts.append(chain_guardrails_section)
+
+    teach_context_section = _build_teach_context_section(teach_context)
+    if teach_context_section:
+        parts.append(teach_context_section)
 
     if material_context and material_context.strip():
         parts.append(

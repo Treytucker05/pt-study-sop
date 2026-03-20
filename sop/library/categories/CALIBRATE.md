@@ -1,16 +1,17 @@
 # CALIBRATE Category Reference
 
 Stage: 2 of 6 | Control Stage: `CALIBRATE`
-Purpose: Measure what the learner actually knows vs what they think they know.
+Purpose: Surface what the learner already knows, what they think they know, and where the mismatch is before encoding.
 
 ## Entry / Exit
 
-- **Entry**: PRIME complete with a minimally taught structure.
-- **Exit**: Clear mismatch map exists (accuracy + confidence + error pattern).
+- **Entry**: PRIME complete, or returning topic with prior context that needs activation/readiness mapping.
+- **Exit**: Clear readiness map exists (anchors, gaps, confidence, or error pattern depending on method).
 
 ## Hard Rules
 
-- Assessment probes with scored responses and confidence capture.
+- Activation and/or diagnostic probes are allowed here.
+- Confidence capture is required when the method uses scored or confidence-tagged probes.
 - Must follow PRIME in first-exposure chains.
 - Not for: endless quizzing, long lectures, or blind checks on unseen material.
 
@@ -18,6 +19,9 @@ Purpose: Measure what the learner actually knows vs what they think they know.
 
 | ID | Name | Energy | Duration | Key Mechanism |
 |----|------|--------|----------|--------------|
+| M-PRE-001 | Brain Dump | low | 3 min | prior_knowledge_activation |
+| M-PRE-003 | Prior Knowledge Scan | low | 3 min | schema_activation |
+| M-PRE-007 | Pre-Test | low | 5 min | pretesting_effect |
 | M-CAL-001 | Micro Precheck | low | 3 min | diagnostic_testing |
 | M-CAL-002 | Confidence Tagging | low | 3 min | metacognitive_monitoring |
 | M-CAL-003 | Priority Set | low | 3 min | gap_analysis |
@@ -25,18 +29,18 @@ Purpose: Measure what the learner actually knows vs what they think they know.
 
 ## Contract Summary
 
-- **Allowed**: Probe understanding, capture confidence/latency/error type, build priority gap map.
-- **Forbidden**: Teach or explain content, run without confidence capture, skip error typing.
-- **Required outputs**: Confidence-tagged responses, priority weakness set.
+- **Allowed**: Activate prior knowledge, probe understanding, capture confidence/latency/error type when applicable, build a readiness or priority gap map.
+- **Forbidden**: Deep teaching, summative grading, blind checks on unseen material, skipping confidence capture when a scored method requires it.
+- **Required outputs**: Method-dependent readiness outputs, and confidence-tagged responses for scored calibrate methods.
 
 ## Question Boundary (vs PRIME)
 
 | Property | PRIME questions | CALIBRATE questions |
 |----------|---------------|-------------------|
-| Purpose | Orient/structure | Assess/calibrate |
-| Scored | No | Yes |
-| Accuracy logged | No | Yes |
-| Confidence required | No | Yes |
+| Purpose | Orient/structure from source | Activate and/or assess readiness |
+| Scored | No | Sometimes |
+| Accuracy logged | No | Method-dependent |
+| Confidence required | No | Required for scored methods |
 
 ## Sample Tutor Prompt
 

@@ -1,5 +1,8 @@
+import { getMethodControlStage } from "@/lib/controlStages";
+
 export type DisplayStage =
   | "priming"
+  | "teaching"
   | "calibrate"
   | "encoding"
   | "reference"
@@ -8,6 +11,7 @@ export type DisplayStage =
 
 export const DISPLAY_STAGE_LABELS: Record<DisplayStage, string> = {
   priming: "PRIMING",
+  teaching: "TEACH",
   calibrate: "CALIBRATE",
   encoding: "ENCODING",
   reference: "REFERENCE",
@@ -18,6 +22,8 @@ export const DISPLAY_STAGE_LABELS: Record<DisplayStage, string> = {
 const BEST_STAGE_MAP: Record<string, DisplayStage> = {
   priming: "priming",
   first_exposure: "priming",
+  teach: "teaching",
+  teaching: "teaching",
   calibrate: "calibrate",
   calibration: "calibrate",
   encoding: "encoding",
@@ -31,8 +37,10 @@ const BEST_STAGE_MAP: Record<string, DisplayStage> = {
 }
 
 const CATEGORY_MAP: Record<string, DisplayStage> = {
-  // Control Plane (CP-MSS v1.0) stages
+  // Control Plane (CP-MSS v2.0) stages
   prime: "priming",
+  teach: "teaching",
+  teaching: "teaching",
   calibrate: "calibrate",
   encode: "encoding",
   reference: "reference",
@@ -60,11 +68,16 @@ export function getDisplayStage(
 ): DisplayStage {
   if (!block) return "encoding"
 
-  // Check control_stage (Control Plane) FIRST - highest priority
-  const controlStage = CATEGORY_MAP[normalize(block.control_stage)]
-  if (controlStage) return controlStage
+  const controlStage = getMethodControlStage(block)
+  if (controlStage === "PRIME") return "priming"
+  if (controlStage === "TEACH") return "teaching"
+  if (controlStage === "CALIBRATE") return "calibrate"
+  if (controlStage === "ENCODE") return "encoding"
+  if (controlStage === "REFERENCE") return "reference"
+  if (controlStage === "RETRIEVE") return "retrieval"
+  if (controlStage === "OVERLEARN") return "overlearning"
 
-  // Fall back to category (legacy)
+  // Fall back to category/best-stage aliases when stage normalization cannot resolve.
   const category = CATEGORY_MAP[normalize(block.category)]
   if (category) return category
 

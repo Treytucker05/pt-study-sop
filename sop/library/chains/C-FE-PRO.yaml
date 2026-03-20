@@ -2,11 +2,13 @@ id: C-FE-PRO
 name: "First Exposure: Procedure"
 description: >-
   Procedure-focused first-exposure chain for high-energy sessions.
-  Maps process steps, generates anchors, runs case walkthrough with
+  Uses a TEACH story spine for the ordered process, maps process steps,
+  generates anchors, runs case walkthrough with
   fault injection, and closes with timed sprint retrieval.
 blocks:
   - M-PRE-010  # Learning Objectives Primer (mandatory first)
   - M-PRE-008  # Structural Extraction
+  - M-TEA-001  # Story Spine (teach the ordered process)
   - M-ENC-011  # Process Flowchart (Map the steps)
   - M-REF-003  # One-Page Anchor
   - M-INT-005  # Case Walkthrough (Fault Injection for procedures)
@@ -14,6 +16,7 @@ blocks:
 allowed_modes:
   - procedure
 gates:
+  - teach_chunk_delivered_when_present
   - cascade_misses_eq_0
 failure_actions:
   - inject_reference_targets_before_retrieve

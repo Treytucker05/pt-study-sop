@@ -186,6 +186,10 @@ session_fields:
     type: string
     required: false
 
+  - name: teach_concept_type
+    type: string
+    required: false
+
   - name: concepts_applied
     type: integer
     required: false
@@ -215,6 +219,10 @@ session_fields:
     type: string
     required: false
 
+  - name: discriminator_named
+    type: boolean
+    required: false
+
   - name: confusion_points
     type: integer
     required: false
@@ -231,12 +239,20 @@ session_fields:
     type: string
     required: false
 
+  - name: bridge_move_used
+    type: string
+    required: false
+
   - name: cross_link_count
     type: integer
     required: false
 
   - name: cross_topics
     type: string
+    required: false
+
+  - name: clinical_anchor_used
+    type: boolean
     required: false
 
   - name: curiosity_satisfaction_rate
@@ -256,6 +272,22 @@ session_fields:
     required: false
 
   - name: diagnosis_reached
+    type: boolean
+    required: false
+
+  - name: modality_selected
+    type: string
+    required: false
+
+  - name: mnemonic_created
+    type: boolean
+    required: false
+
+  - name: distortion_warning_given
+    type: boolean
+    required: false
+
+  - name: anchor_artifact_created
     type: boolean
     required: false
 

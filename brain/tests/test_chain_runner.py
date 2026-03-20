@@ -364,6 +364,39 @@ class TestFacilitationPromptInjection:
         assert "## Chain-Specific Block Rules" in rich_prompt
         assert "Do not present analogies as evidence" in rich_prompt
 
+    def test_tutor_prompt_builder_includes_teach_context(self):
+        """TEACH packets append doctrine and stop conditions to the prompt."""
+        from tutor_prompt_builder import build_prompt_with_contexts
+
+        prompt = build_prompt_with_contexts(
+            current_block={
+                "name": "Analogy Bridge",
+                "control_stage": "TEACH",
+                "description": "Explain the concept with a bounded analogy.",
+                "facilitation_prompt": "Teach it.",
+            },
+            chain_info={"name": "Teach First", "blocks": ["Analogy Bridge"], "current_index": 0, "total": 1},
+            topic="Week 7",
+            teach_context={
+                "objective": "Explain how the mechanism works at L2 before precision detail.",
+                "concept_type": "mechanism",
+                "depth_start": "L1",
+                "depth_ceiling": "L3",
+                "source_anchors": ["Lecture PDF p.4-5"],
+                "prime_artifacts": ["Study Spine", "Hierarchical Map"],
+                "bridge_moves_allowed": ["analogy", "story"],
+                "required_artifact": "one_page_anchor",
+                "exemplar_refs": ["teach/example/mechanism-001"],
+                "stop_conditions": ["learner_can_explain_L2", "anchor_exists"],
+            },
+        )
+
+        assert "## TEACH Context" in prompt
+        assert "Objective: Explain how the mechanism works at L2 before precision detail." in prompt
+        assert "Allowed bridge moves: analogy, story" in prompt
+        assert "TEACH chunk contract: Source Facts -> Plain Interpretation -> Bridge Move -> Application -> Anchor Artifact." in prompt
+        assert "TEACH is non-assessment. Do not quiz, score, or require confidence ratings here." in prompt
+
     def test_tutor_prompt_builder_preserves_default_rules_with_custom_instructions(self, monkeypatch):
         """Custom instructions append to, but do not replace, core tutor rules."""
         import tutor_prompt_builder as prompt_builder

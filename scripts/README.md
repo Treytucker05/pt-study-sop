@@ -2,7 +2,7 @@
 
 Automation utilities for the PT Study SOP repo.
 
-System context: scripts support CP-MSS v1.0 operations and governance.
+System context: scripts support CP-MSS v2.0 operations and governance.
 
 ## Common entries
 - `generate_architecture_dump.ps1` - Regenerates `docs/root/ARCHITECTURE_CONTEXT.md`.

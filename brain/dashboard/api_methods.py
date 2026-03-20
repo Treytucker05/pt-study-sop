@@ -219,6 +219,7 @@ def _ensure_method_blocks_columns(conn) -> None:
             UPDATE method_blocks
             SET category = CASE control_stage
                 WHEN 'PRIME' THEN 'prepare'
+                WHEN 'TEACH' THEN 'prepare'
                 WHEN 'CALIBRATE' THEN 'prepare'
                 WHEN 'ENCODE' THEN 'encode'
                 WHEN 'REFERENCE' THEN 'interrogate'
@@ -270,6 +271,7 @@ def list_methods():
     # Map old PEIRRO categories to new Control Plane stages for backward compatibility
     category_to_stage = {
         'prepare': 'PRIME',
+        'teach': 'TEACH',
         'encode': 'ENCODE',
         'interrogate': 'REFERENCE',
         'retrieve': 'RETRIEVE',
@@ -296,6 +298,7 @@ def list_methods():
     # Map new Control Plane stages back to old categories for frontend compatibility
     stage_to_category = {
         'PRIME': 'prepare',
+        'TEACH': 'prepare',
         'CALIBRATE': 'prepare',
         'ENCODE': 'encode',
         'REFERENCE': 'interrogate',
@@ -319,7 +322,8 @@ def list_methods():
         
         # Add backward-compatible 'category' field based on control_stage
         stage = row.get('control_stage', '')
-        row['category'] = stage_to_category.get(stage, stage.lower())
+        if not str(row.get("category") or "").strip():
+            row['category'] = stage_to_category.get(stage, stage.lower())
         _apply_method_knob_payload(row, cards_by_method_id)
     
     return jsonify(rows)
@@ -352,6 +356,7 @@ def get_method(method_id: int):
     # Add backward-compatible 'category' field based on control_stage
     stage_to_category = {
         'PRIME': 'prepare',
+        'TEACH': 'prepare',
         'CALIBRATE': 'prepare',
         'ENCODE': 'encode',
         'REFERENCE': 'interrogate',
@@ -359,7 +364,8 @@ def get_method(method_id: int):
         'OVERLEARN': 'overlearn',
     }
     stage = result.get('control_stage', '')
-    result['category'] = stage_to_category.get(stage, stage.lower())
+    if not str(result.get("category") or "").strip():
+        result['category'] = stage_to_category.get(stage, stage.lower())
     _apply_method_knob_payload(result, _load_method_cards_from_yaml())
     
     return jsonify(result)
@@ -378,6 +384,7 @@ def create_method():
     # Map old PEIRRO categories to new Control Plane stages
     category_to_stage = {
         'prepare': 'PRIME',
+        'teach': 'TEACH',
         'encode': 'ENCODE',
         'interrogate': 'REFERENCE',
         'retrieve': 'RETRIEVE',
@@ -387,6 +394,7 @@ def create_method():
     stage = category_to_stage.get(control_stage.lower(), control_stage.upper())
     stage_to_category = {
         "PRIME": "prepare",
+        "TEACH": "prepare",
         "CALIBRATE": "prepare",
         "ENCODE": "encode",
         "REFERENCE": "interrogate",
@@ -452,6 +460,7 @@ def update_method(method_id: int):
     if "category" in data and "control_stage" not in data:
         category_to_stage = {
             "prepare": "PRIME",
+            "teach": "TEACH",
             "encode": "ENCODE",
             "interrogate": "REFERENCE",
             "retrieve": "RETRIEVE",
@@ -463,6 +472,7 @@ def update_method(method_id: int):
     if "control_stage" in data and "category" not in data:
         stage_to_category = {
             "PRIME": "prepare",
+            "TEACH": "prepare",
             "CALIBRATE": "prepare",
             "ENCODE": "encode",
             "REFERENCE": "interrogate",

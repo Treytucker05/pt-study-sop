@@ -1804,6 +1804,46 @@ def test_send_turn_blocks_prime_evaluate_mode(client):
     assert body["active_stage"] == "PRIME"
 
 
+def test_send_turn_blocks_teach_evaluate_mode(client):
+    prime_block_id = _insert_method_block(
+        name="Teach Guard Prime",
+        control_stage="PRIME",
+        method_id="M-PRE-010",
+        facilitation_prompt="prime prompt",
+        artifact_type="notes",
+    )
+    teach_block_id = _insert_method_block(
+        name="Teach Guard Block",
+        control_stage="TEACH",
+        method_id="M-INT-001",
+        facilitation_prompt="teach prompt",
+        artifact_type="notes",
+    )
+    chain_id = _create_chain(
+        client,
+        name="Teach Guard Test Chain",
+        block_ids=[prime_block_id, teach_block_id],
+    )
+    tutor_sid = _create_tutor_session(client, method_chain_id=chain_id)
+
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        "UPDATE tutor_sessions SET current_block_index = 1 WHERE session_id = ?",
+        (tutor_sid,),
+    )
+    conn.commit()
+    conn.close()
+
+    resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/turn",
+        json={"message": "Please evaluate me", "behavior_override": "evaluate"},
+    )
+    assert resp.status_code == 400
+    body = resp.get_json()
+    assert body["code"] == "TEACH_ASSESSMENT_BLOCKED"
+    assert body["active_stage"] == "TEACH"
+
+
 def test_create_session_rejects_chain_not_starting_prime(client):
     block_id = _insert_method_block(
         name="Chain Start Not Prime",

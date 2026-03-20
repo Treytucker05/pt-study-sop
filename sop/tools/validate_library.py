@@ -11,7 +11,7 @@ Checks:
   7. Evidence presence — warning if null (error in --strict)
   8. Logging field alignment — if method.logging_fields set, check against session_log_template.yaml
   9. Operational stage enforcement — required control_stage and inferred stage in
-     {PRIME, CALIBRATE, ENCODE, REFERENCE, RETRIEVE, OVERLEARN}
+     {PRIME, TEACH, CALIBRATE, ENCODE, REFERENCE, RETRIEVE, OVERLEARN}
   10. Chain artifact dependency (validated/core chains) —
       no RETRIEVE method before a method that produces OnePageAnchor/QuestionBankSeed
   11. Knob registry enforcement — knob keys and values must match
@@ -56,6 +56,7 @@ CHAIN_FILE_GLOB = "C-*.yaml"
 
 ALLOWED_OPERATIONAL_STAGES = {
     "PRIME",
+    "TEACH",
     "CALIBRATE",
     "ENCODE",
     "REFERENCE",
@@ -76,12 +77,21 @@ ALLOWED_ASSESSMENT_MODES = {
 
 METHOD_STAGE_PREFIX_MAP = {
     "M-PRE": "PRIME",
+    "M-TEA": "TEACH",
     "M-CAL": "CALIBRATE",
     "M-ENC": "ENCODE",
     "M-INT": "ENCODE",
     "M-REF": "REFERENCE",
     "M-RET": "RETRIEVE",
     "M-OVR": "OVERLEARN",
+}
+
+METHOD_ID_STAGE_OVERRIDES = {
+    "M-PRE-001": "CALIBRATE",
+    "M-PRE-003": "CALIBRATE",
+    "M-PRE-007": "CALIBRATE",
+    "M-INT-001": "TEACH",
+    "M-ENC-008": "TEACH",
 }
 
 REFERENCE_ARTIFACT_TOKENS = {"onepageanchor", "questionbankseed"}
@@ -197,6 +207,9 @@ def load_csv_header(path: Path) -> list[str]:
 
 def infer_operational_stage(method_id: str) -> str | None:
     """Infer control-plane operational stage from method ID prefix."""
+    override = METHOD_ID_STAGE_OVERRIDES.get(method_id)
+    if override:
+        return override
     for prefix, stage in METHOD_STAGE_PREFIX_MAP.items():
         if method_id.startswith(prefix):
             return stage

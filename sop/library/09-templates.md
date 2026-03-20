@@ -1,6 +1,6 @@
 # 09 — Templates
 
-Core study templates for the operational flow (CONTROL PLANE -> PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN). Copy and fill in per session/week.
+Core study templates for the operational flow (CONTROL PLANE -> PRIME -> TEACH -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN). Copy and fill in per session/week.
 
 ---
 
@@ -14,7 +14,8 @@ Core study templates for the operational flow (CONTROL PLANE -> PRIME -> CALIBRA
 - Input materials (paste or upload):
 - [ ] AI cluster map approved
 - Plan from map (3-5 steps):
-- Prime (brain dump; UNKNOWN is valid):
+- PRIME artifacts:
+- TEACH chunk delivered (if present):
 - Mode (Core/Sprint/Light/Quick Sprint/Drill):
 - Method chain (optional):
 

@@ -34,12 +34,12 @@ _CHAIN_CERTIFICATION_REGISTRY_PATH = _CHAINS_DIR / "certification_registry.yaml"
 
 
 # ---------------------------------------------------------------------------
-# Atomic Method Blocks (46 blocks across 6 Control Plane stages)
+# Atomic Method Blocks (54 blocks across 7 Control Plane stages)
 # ---------------------------------------------------------------------------
 METHOD_BLOCKS = [
     {
         "name": "Brain Dump",
-        "control_stage": "PRIME",
+        "control_stage": "CALIBRATE",
         "description": "Free-write everything you already know about the topic for 2-3 min. Surfaces prior knowledge and sets a baseline.",
         "default_duration_min": 3,
         "energy_cost": "low",
@@ -67,7 +67,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Prior Knowledge Scan",
-        "control_stage": "PRIME",
+        "control_stage": "CALIBRATE",
         "description": "List related concepts you already know. Identify connections to previous modules.",
         "default_duration_min": 3,
         "energy_cost": "low",
@@ -246,7 +246,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Mechanism Trace",
-        "control_stage": "ENCODE",
+        "control_stage": "TEACH",
         "description": "Trace the causal mechanism step-by-step: what triggers what, and why. Build a cause→effect chain from input to output. Especially useful for pathophysiology and physiological pathways.",
         "default_duration_min": 10,
         "energy_cost": "high",
@@ -412,7 +412,7 @@ METHOD_BLOCKS = [
     # === INTERROGATE (link to prior knowledge, apply, compare) ===
     {
         "name": "Analogy Bridge",
-        "control_stage": "ENCODE",
+        "control_stage": "TEACH",
         "description": "Create an analogy linking this concept to something familiar. Test if the analogy holds at the edges.",
         "default_duration_min": 3,
         "energy_cost": "medium",

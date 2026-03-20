@@ -1,7 +1,7 @@
 # brain/selector.py
 
 """
-Control Plane Modular Study System (CP-MSS v1.0)
+Control Plane Modular Study System (CP-MSS v2.0)
 Chain Selector - Deterministic Router
 
 Takes the 7 Knobs as input and returns the exact Chain ID to run.
@@ -11,7 +11,7 @@ Implements the routing rules defined in sop/library/17-control-plane.md
 
 def select_chain(assessment_mode, time_available_min, energy, dominant_error=None):
     """
-    Deterministic Router for CP-MSS v1.0.
+    Deterministic Router for CP-MSS v2.0.
     
     Inputs:
         - assessment_mode: str - Learning goal (procedure, classification, mechanism, etc.)

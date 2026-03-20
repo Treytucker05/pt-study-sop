@@ -66,6 +66,201 @@ from dashboard.api_tutor_utils import (
 import llm_provider as _llm_provider
 
 _LOG = logging.getLogger(__name__)
+_NON_ASSESSMENT_STAGES = {"PRIME", "TEACH"}
+
+
+def _coerce_string_list(value: Any, *, limit: int | None = None) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    items = [str(item).strip() for item in value if str(item or "").strip()]
+    if limit is not None:
+        return items[:limit]
+    return items
+
+
+def _infer_teach_concept_type(
+    *,
+    block_info: Optional[dict[str, Any]],
+    chain_info: Optional[dict[str, Any]],
+    content_filter: dict[str, Any],
+) -> str:
+    runtime_profile = chain_info.get("runtime_profile") if isinstance(chain_info, dict) else {}
+    if isinstance(runtime_profile, dict):
+        for key in ("concept_type", "teaching_lane", "assessment_mode"):
+            value = str(runtime_profile.get(key) or "").strip().lower()
+            if value:
+                return value
+
+    for key in ("concept_type", "assessment_mode", "teaching_lane"):
+        value = str(content_filter.get(key) or "").strip().lower()
+        if value:
+            return value
+
+    method_name = str((block_info or {}).get("name") or "").strip().lower()
+    if "analogy" in method_name:
+        return "mechanism"
+    if "mechanism" in method_name or "story" in method_name:
+        return "mechanism"
+    if "comparison" in method_name or "contrast" in method_name:
+        return "compare/contrast"
+    if "clinical" in method_name or "case" in method_name:
+        return "clinical reasoning"
+    if "flow" in method_name or "procedure" in method_name:
+        return "procedure"
+    if "draw" in method_name or "map" in method_name or "spatial" in method_name:
+        return "spatial"
+    return "definition"
+
+
+def _default_bridge_moves_for_concept_type(concept_type: str) -> list[str]:
+    normalized = concept_type.strip().lower()
+    if normalized == "spatial":
+        return ["hand_draw_map", "concept_map"]
+    if normalized == "mechanism":
+        return ["analogy", "story"]
+    if normalized in {"compare/contrast", "confusable", "confusable pair"}:
+        return ["comparison_table", "analogy"]
+    if normalized == "procedure":
+        return ["story", "jingle"]
+    if normalized == "clinical reasoning":
+        return ["clinical_anchor_case", "comparison_table"]
+    return ["analogy", "kwik_hook"]
+
+
+def _default_required_artifact(
+    *,
+    block_info: Optional[dict[str, Any]],
+    concept_type: str,
+) -> str:
+    method_name = str((block_info or {}).get("name") or "").strip().lower()
+    if "comparison" in method_name or "contrast" in method_name:
+        return "comparison_table"
+    if "mechanism" in method_name or concept_type == "mechanism":
+        return "mini_process_flow"
+    if concept_type == "spatial":
+        return "hand_draw_map"
+    if concept_type == "clinical reasoning":
+        return "one_page_anchor"
+    return "one_page_anchor"
+
+
+def _build_teach_context(
+    *,
+    session: dict[str, Any],
+    block_info: Optional[dict[str, Any]],
+    chain_info: Optional[dict[str, Any]],
+    content_filter: dict[str, Any],
+    map_of_contents: Optional[dict[str, Any]],
+    objective_scope: str,
+    focus_objective_id: str,
+    selected_material_labels: list[str],
+) -> Optional[dict[str, Any]]:
+    active_stage = str(
+        (block_info or {}).get("control_stage")
+        or (block_info or {}).get("category")
+        or ""
+    ).strip().upper()
+    if active_stage != "TEACH":
+        return None
+
+    runtime_profile = chain_info.get("runtime_profile") if isinstance(chain_info, dict) else {}
+    runtime_profile = runtime_profile if isinstance(runtime_profile, dict) else {}
+    teach_profile = runtime_profile.get("teach_profile")
+    teach_profile = teach_profile if isinstance(teach_profile, dict) else {}
+
+    objective = ""
+    if focus_objective_id:
+        objective = focus_objective_id
+    elif isinstance(map_of_contents, dict):
+        objective_ids = _coerce_string_list(map_of_contents.get("objective_ids"), limit=3)
+        if objective_ids:
+            objective = objective_ids[0] if objective_scope == "single_focus" else ", ".join(objective_ids)
+    if not objective:
+        objective = str(content_filter.get("focus_objective") or session.get("topic") or "").strip()
+
+    prime_artifacts = _coerce_string_list(content_filter.get("prime_artifacts"), limit=8)
+    if not prime_artifacts and isinstance(map_of_contents, dict):
+        objective_ids = _coerce_string_list(map_of_contents.get("objective_ids"), limit=6)
+        if objective_ids:
+            prime_artifacts.append(f"learning_objectives:{', '.join(objective_ids)}")
+        map_path = str(map_of_contents.get("path") or "").strip()
+        if map_path:
+            prime_artifacts.append(f"map_of_contents:{map_path}")
+
+    session_unknowns = _normalize_wikilinks(session.get("unknowns"), max_items=12)
+    if session_unknowns:
+        prime_artifacts.append("unknowns:" + ", ".join(session_unknowns[:6]))
+
+    source_anchors = selected_material_labels[:8]
+    if not source_anchors:
+        source_anchors = _coerce_string_list(content_filter.get("source_anchors"), limit=8)
+
+    concept_type = _infer_teach_concept_type(
+        block_info=block_info,
+        chain_info=chain_info,
+        content_filter=content_filter,
+    )
+    bridge_moves_allowed = _coerce_string_list(
+        teach_profile.get("bridge_moves_allowed") or runtime_profile.get("bridge_moves_allowed"),
+        limit=6,
+    )
+    if not bridge_moves_allowed:
+        bridge_moves_allowed = _default_bridge_moves_for_concept_type(concept_type)
+
+    exemplar_refs = _coerce_string_list(
+        teach_profile.get("exemplar_refs")
+        or runtime_profile.get("teach_exemplar_refs")
+        or content_filter.get("teach_exemplar_refs"),
+        limit=2,
+    )
+
+    required_artifact = str(
+        teach_profile.get("required_artifact")
+        or runtime_profile.get("required_artifact")
+        or content_filter.get("required_artifact")
+        or _default_required_artifact(block_info=block_info, concept_type=concept_type)
+        or ""
+    ).strip()
+
+    stop_conditions = _coerce_string_list(
+        teach_profile.get("stop_conditions")
+        or runtime_profile.get("teach_stop_conditions")
+        or content_filter.get("teach_stop_conditions"),
+        limit=6,
+    )
+    if not stop_conditions:
+        stop_conditions = [
+            "learner_can_explain_L2",
+            "anchor_exists",
+            "one_application_link_made",
+            "tutor_judges_ready_to_hand_off",
+        ]
+
+    depth_start = str(
+        teach_profile.get("depth_start")
+        or runtime_profile.get("teach_depth_start")
+        or content_filter.get("teach_depth_start")
+        or ("L1" if objective_scope == "module_all" else "L2")
+    ).strip()
+    depth_ceiling = str(
+        teach_profile.get("depth_ceiling")
+        or runtime_profile.get("teach_depth_ceiling")
+        or content_filter.get("teach_depth_ceiling")
+        or "L4"
+    ).strip()
+
+    return {
+        "objective": objective,
+        "source_anchors": source_anchors,
+        "prime_artifacts": prime_artifacts,
+        "concept_type": concept_type,
+        "depth_start": depth_start,
+        "depth_ceiling": depth_ceiling,
+        "bridge_moves_allowed": bridge_moves_allowed,
+        "required_artifact": required_artifact,
+        "stop_conditions": stop_conditions,
+        "exemplar_refs": exemplar_refs,
+    }
 
 
 def _stream_with_heartbeats(
@@ -558,14 +753,19 @@ def send_turn(session_id: str):
             )
 
     behavior_override_norm = str(behavior_override or "").strip().lower()
-    if active_stage == "PRIME" and behavior_override_norm in {"evaluate", "teach_back"}:
+    if active_stage in _NON_ASSESSMENT_STAGES and behavior_override_norm in {"evaluate", "teach_back"}:
+        error_code = (
+            "PRIME_ASSESSMENT_BLOCKED"
+            if active_stage == "PRIME"
+            else "TEACH_ASSESSMENT_BLOCKED"
+        )
         conn.close()
         return (
             jsonify(
                 {
-                    "error": "Assessment behavior is blocked in PRIME. Move to CALIBRATE for scored checks.",
-                    "code": "PRIME_ASSESSMENT_BLOCKED",
-                    "active_stage": "PRIME",
+                    "error": f"Assessment behavior is blocked in {active_stage}. Move to CALIBRATE for scored checks.",
+                    "code": error_code,
+                    "active_stage": active_stage,
                 }
             ),
             400,
@@ -730,6 +930,16 @@ def send_turn(session_id: str):
     is_prime_first_block_turn = active_stage == "PRIME" and (
         is_first_turn_in_active_block or turn_number == 1
     )
+    teach_context = _build_teach_context(
+        session=session,
+        block_info=block_info,
+        chain_info=chain_info,
+        content_filter=content_filter,
+        map_of_contents=map_of_contents,
+        objective_scope=objective_scope,
+        focus_objective_id=focus_objective_id,
+        selected_material_labels=selected_material_labels,
+    )
 
     def generate():
         _LOG.debug(
@@ -880,6 +1090,7 @@ def send_turn(session_id: str):
                 graph_context=graph_context_text,
                 course_map=ctx.get("course_map", ""),
                 vault_state=vault_state_text,
+                teach_context=teach_context,
             )
             session_rules = _normalize_session_rules(
                 content_filter.get("session_rules")
@@ -998,6 +1209,19 @@ def send_turn(session_id: str):
                         "This is a PRIME block. As you engage with the student, identify and extract the key learning objectives from the loaded materials. "
                         "Use the save_learning_objectives tool to save them. Extract 3-7 specific, measurable learning objectives.\n"
                     )
+            if (
+                block_info
+                and str(block_info.get("control_stage") or "").upper() == "TEACH"
+            ):
+                system_prompt += (
+                    "\n\n## TEACH Stage Guardrails (Hard)\n"
+                    "- TEACH is explanation-first, not assessment-first.\n"
+                    "- Do not run scored checks, confidence tagging, teach-back grading, or retrieval gating inside TEACH.\n"
+                    "- Teach one chunk at a time using: Source Facts -> Plain Interpretation -> Bridge Move -> Application -> Anchor Artifact.\n"
+                    "- Function before structure. Meaning first, bridge second, anchor third.\n"
+                    "- If you use an analogy or story, state where it breaks and return to the real concept before moving on.\n"
+                    "- Hand off based on Tutor judgment when the learner has a usable L2 grasp and one anchor artifact or application link.\n"
+                )
             system_prompt += (
                 f"\n\n## PRIME Objective Scope\n- Active scope: {objective_scope}\n"
             )

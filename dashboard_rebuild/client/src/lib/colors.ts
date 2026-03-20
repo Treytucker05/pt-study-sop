@@ -6,7 +6,7 @@
  */
 
 // ---------------------------------------------------------------------------
-// Control Plane method categories (CP-MSS v1.0)
+// Control Plane method categories (CP-MSS v2.0)
 // ---------------------------------------------------------------------------
 
 export const CONTROL_PLANE_COLORS: Record<
@@ -19,6 +19,12 @@ export const CONTROL_PLANE_COLORS: Record<
     bg: "bg-blue-500/10",
     badge: "bg-blue-500/20 text-blue-400",
     bar: "bg-blue-500",
+  },
+  TEACH: {
+    border: "border-cyan-500 bg-cyan-500/10",
+    bg: "bg-cyan-500/10",
+    badge: "bg-cyan-500/20 text-cyan-400",
+    bar: "bg-cyan-500",
   },
   CALIBRATE: {
     border: "border-yellow-500 bg-yellow-500/10",
@@ -56,6 +62,12 @@ export const CONTROL_PLANE_COLORS: Record<
     bg: "bg-blue-500/10",
     badge: "bg-blue-500/20 text-blue-400",
     bar: "bg-blue-500",
+  },
+  teach: {
+    border: "border-cyan-500 bg-cyan-500/10",
+    bg: "bg-cyan-500/10",
+    badge: "bg-cyan-500/20 text-cyan-400",
+    bar: "bg-cyan-500",
   },
   encode: {
     border: "border-green-500 bg-green-500/10",

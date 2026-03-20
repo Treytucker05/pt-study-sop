@@ -336,16 +336,18 @@ Role: guide active construction; enforce control-plane gates; prevent phantom ou
 - Seed-Lock (ask-first): learner attempts seeds first; AI suggests only if asked.
 - No Phantom Outputs: never invent hooks/cards/metrics/schedules/coverage. If not done -> NOT DONE / UNKNOWN / NONE.
 - PRIME is orientation-only (no scoring).
+- TEACH is explanation-first and non-assessment.
 - CALIBRATE is diagnostic-only (no grading).
 
 ## Operational stage sequence
-CONTROL PLANE -> PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN -> CONTROL PLANE
+CONTROL PLANE -> PRIME -> TEACH -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN -> CONTROL PLANE
 
 ## Stage contracts
 - CONTROL PLANE (entry): pick assessment mode + initialize coverage map + set stage gates.
 - PRIME: output Spine (<=12 nodes), Unknowns, Predictions, GoalTargets.
+- TEACH: deliver one chunk in order: Source Facts -> Plain Interpretation -> Bridge Move -> Application -> Anchor Artifact.
 - CALIBRATE: 2-5 min, 5-10 items, confidence tags H/M/L, >45s item = miss and move on, output Priority Set top 3 weaknesses.
-- ENCODE: Priority Set drives deterministic method selection; confusable weaknesses require comparison methods.
+- ENCODE: Priority Set drives deterministic learner-side construction; confusable weaknesses require comparison methods.
 - REFERENCE: output One-Page Anchor + Question Bank Seed (10-20 mode-tagged items) + Coverage Check.
 - RETRIEVE: low-support mixed practice + adversarial near-miss + timed sprint latency tracking.
 - OVERLEARN: Anki minimal facts/rules + Drill Sheet (30-60 timed interleaved items) + cross-session validation.
@@ -362,7 +364,8 @@ CONTROL PLANE -> PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLE
   - Speed -> M-RET-007
 
 ## Pacing rules
-- Teaching Rule: during ENCODE, teach complete Three-Layer Chunks and ask one WHY/HOW/APPLY check per chunk.
+- TEACH Rule: during TEACH, teach one chunk at a time and stop after one anchor artifact + one application link.
+- ENCODE Rule: during ENCODE, shift to learner-side construction, tracing, comparison, or teach-back work.
 - Retrieval Rule: one question per message during retrieval-heavy sets; wait for attempt before feedback.
 - No answer leakage: hints before answers.
 - No MCQ in Core mode unless explicitly in Sprint/Drill.
@@ -377,8 +380,9 @@ TRACK A (First Exposure):
 2) AI map approved
 3) Plan (3-5 steps)
 4) PRIME artifacts
-5) CALIBRATE results
-6) Priority Set
+5) TEACH chunk(s) when chain includes TEACH
+6) CALIBRATE results
+7) Priority Set
 
 TRACK B (Review):
 1) Target + source lock
@@ -429,26 +433,33 @@ def build_custom_instructions() -> str:
 # YAML-based method library generation
 # ---------------------------------------------------------------------------
 
-# Category display order (PEIRRO sequence)
-CATEGORY_ORDER = ["prime", "calibrate", "encode", "reference", "retrieve", "overlearn"]
+# Category display order (CP-MSS v2.0 sequence)
+CATEGORY_ORDER = ["prime", "teach", "calibrate", "encode", "reference", "retrieve", "overlearn"]
 
 # Category labels for markdown headings (Control Plane taxonomy)
 CATEGORY_LABELS = {
     "prime": "PRIME",
+    "teach": "TEACH",
     "calibrate": "CALIBRATE",
     "encode": "ENCODE",
     "reference": "REFERENCE",
     "retrieve": "RETRIEVE",
     "overlearn": "OVERLEARN",
-    "retrieve": "Retrieve",
-    "interrogate": "Interrogate",
-    "refine": "Refine",
-    "overlearn": "Overlearn",
+}
+
+CONTROL_STAGE_DESCRIPTIONS = {
+    "prime": "Prepare attention, align objectives, and build source-grounded artifacts before detail work",
+    "teach": "Explain unfamiliar material one chunk at a time without scoring or diagnostic pressure",
+    "calibrate": "Run short diagnostic checks after teaching to identify the next encoding targets",
+    "encode": "Drive learner-side construction, comparison, mapping, tracing, and durable meaning-making",
+    "reference": "Generate target cues and compact reference artifacts for later retrieval",
+    "retrieve": "Test recall with low-support retrieval, near-miss discrimination, and timing pressure",
+    "overlearn": "Close the loop with wrap artifacts, fluency work, and carry-forward reinforcement",
 }
 
 # Chain name→number mapping (preserves original numbering)
 CHAIN_NUMBERS = {
-    # Control Plane Chains (v1.0)
+    # Control Plane Chains (v2.0)
     "First Exposure: Standard": "C-FE-STD",
     "First Exposure: Minimal": "C-FE-MIN",
     "First Exposure: Procedure": "C-FE-PRO",
@@ -470,7 +481,7 @@ CHAIN_NUMBERS = {
 
 # Chain groupings for section headers
 CHAIN_GROUPS = {
-    "Control Plane Chains (CP-MSS v1.0)": [
+    "Control Plane Chains (CP-MSS v2.0)": [
         "First Exposure: Standard", "First Exposure: Minimal", "First Exposure: Procedure",
     ],
     "Core Chains": [
@@ -638,7 +649,7 @@ def build_methods_from_yaml() -> str:
     for i, cat in enumerate(CATEGORY_ORDER, 1):
         info = categories.get(cat, {})
         label = info.get("label", cat.title())
-        desc = info.get("description", "")
+        desc = info.get("description", "") or CONTROL_STAGE_DESCRIPTIONS.get(cat, "")
         # List method names for this category
         cat_methods = [m["name"].lower() for m in methods 
                        if m.get("control_stage", m.get("category", "")).lower() == cat]
@@ -675,7 +686,7 @@ Each method block represents a single study activity.
 | Field | Type | Description |
 |-------|------|-------------|
 | `name` | string | Block name (e.g., "Brain Dump", "Teach-Back") |
-| `control_stage` | enum | One of 6 Control Plane stages (see below) |
+| `control_stage` | enum | One of 7 Control Plane stages (see below) |
 | `description` | string | What the block does |
 | `duration` | number | Typical minutes required |
 | `energy_cost` | enum | `low` / `medium` / `high` |
