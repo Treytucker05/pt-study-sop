@@ -1,7 +1,8 @@
 id: C-CR-001
 name: Clinical Reasoning
-description: Build clinical reasoning chains. Prepare → Interrogate → Refine → Overlearn.
+description: Build clinical reasoning chains with a short PRIME orientation, a calibrate scan, and contrast-heavy encoding before wrap.
 blocks:
+- M-PRE-010
 - M-PRE-003
 - M-PRE-006
 - M-INT-005

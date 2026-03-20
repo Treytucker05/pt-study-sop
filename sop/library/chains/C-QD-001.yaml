@@ -1,7 +1,8 @@
 id: C-QD-001
 name: Quick Drill
-description: Minimal time investment. Prepare → Retrieve → Overlearn. Good for spacing reviews.
+description: Minimal time investment. Short PRIME orientation, quick calibrate pulse, then reference, retrieve, and overlearn. Good for spacing reviews.
 blocks:
+- M-PRE-010
 - M-PRE-001
 - M-REF-003
 - M-REF-004

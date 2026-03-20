@@ -1,7 +1,8 @@
 id: C-CI-001
 name: Clinical Reasoning Intake
-description: Clinical first exposure with illness scripts. Pre-Test → Illness Script → Compare → Retrieve → Overlearn.
+description: Clinical first exposure with a short PRIME orientation before pre-test, illness scripts, comparison, retrieval, and overlearn.
 blocks:
+- M-PRE-010
 - M-PRE-007
 - M-INT-006
 - M-INT-004

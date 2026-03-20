@@ -1,9 +1,11 @@
 id: C-DP-001
 name: DEPTH
 description: >-
-  Pass 2: Selective mastery on high-priority objectives.
-  Full PEIRRO cycle. Retrieval-driven. Cards only from errors.
+  Pass 2: Selective mastery on high-priority objectives with a quick PRIME
+  orientation before calibration and depth work. Retrieval-driven. Cards only
+  from errors.
 blocks:
+- M-PRE-010
 - M-PRE-007
 - M-ENC-005
 - M-ENC-008

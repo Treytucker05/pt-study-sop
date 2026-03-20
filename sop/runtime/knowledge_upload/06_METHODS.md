@@ -170,19 +170,19 @@ Each method block represents a single study activity.
 **Use for:** Fast review loop. Prepare → Retrieve → Interrogate (application) → Overlearn. Skips encode for known material.
 
 #### 3. Quick Drill
-**Blocks:** Brain Dump → One-Page Anchor → Question Bank Seed → Sprint Quiz → Exit Ticket
+**Blocks:** Learning Objectives Primer → Brain Dump → One-Page Anchor → Question Bank Seed → Sprint Quiz → Exit Ticket
 **Context:** review, medium energy, 15 min
-**Use for:** Minimal time investment. Prepare → Retrieve → Overlearn. Good for spacing reviews.
+**Use for:** Minimal time investment. Short PRIME orientation, quick calibrate pulse, then reference, retrieve, and overlearn. Good for spacing reviews.
 
 #### 4. Anatomy Deep Dive
-**Blocks:** Prior Knowledge Scan → Structural Skimming + Pillar Mapping → Draw-Label → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Anki Card Draft
+**Blocks:** Learning Objectives Primer → Prior Knowledge Scan → Structural Skimming + Pillar Mapping → Draw-Label → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Anki Card Draft
 **Context:** Anatomy, first exposure, high energy, 40 min
-**Use for:** Anatomy-focused chain with drawing. Prepare → Encode (Draw-Label) → Retrieve → Overlearn.
+**Use for:** Anatomy-focused chain with a short PRIME orientation, a calibrate check, and drawing-led encoding before retrieval and overlearn.
 
 #### 5. Low Energy
-**Blocks:** Brain Dump → Hierarchical Advance Organizer → One-Page Anchor → Question Bank Seed → Fill-in-Blank → Exit Ticket
+**Blocks:** Learning Objectives Primer → Brain Dump → Hierarchical Advance Organizer → One-Page Anchor → Question Bank Seed → Fill-in-Blank → Exit Ticket
 **Context:** low energy, 15 min
-**Use for:** Low-effort chain for tired days. Prepare → Reference → Retrieve → Overlearn. Maintain streak without burning out.
+**Use for:** Low-effort chain for tired days. Short PRIME orientation, quick calibrate pulse, then reference, retrieve, and overlearn. Maintain streak without burning out.
 
 #### 6. Exam Prep
 **Blocks:** Overarching Pre-Question Set → One-Page Anchor → Question Bank Seed → Mixed Practice → Side-by-Side Comparison → Error Autopsy → Anki Card Draft
@@ -190,9 +190,9 @@ Each method block represents a single study activity.
 **Use for:** Exam-focused chain with interleaving and error analysis. Prepare → Retrieve → Interrogate → Refine → Overlearn.
 
 #### 7. Clinical Reasoning
-**Blocks:** Prior Knowledge Scan → Structural Skimming + Pillar Mapping → Case Walkthrough → Side-by-Side Comparison → Error Autopsy → Anki Card Draft
+**Blocks:** Learning Objectives Primer → Prior Knowledge Scan → Structural Skimming + Pillar Mapping → Case Walkthrough → Side-by-Side Comparison → Error Autopsy → Anki Card Draft
 **Context:** Clinical, exam prep, high energy, 45 min
-**Use for:** Build clinical reasoning chains. Prepare → Interrogate → Refine → Overlearn.
+**Use for:** Build clinical reasoning chains with a short PRIME orientation, a calibrate scan, and contrast-heavy encoding before wrap.
 
 #### 8. Mastery Review
 **Blocks:** One-Page Anchor → Question Bank Seed → Timed Brain Dump → Error Autopsy → Mastery Loop → Anki Card Draft
@@ -202,31 +202,31 @@ Each method block represents a single study activity.
 ### Intake-Focused Chains
 
 #### 9. Dense Anatomy Intake
-**Blocks:** Pre-Test → Draw-Label → One-Page Anchor → Question Bank Seed → Timed Brain Dump → KWIK Hook → Anki Card Draft
+**Blocks:** Learning Objectives Primer → Pre-Test → Draw-Label → One-Page Anchor → Question Bank Seed → Timed Brain Dump → KWIK Hook → Anki Card Draft
 **Context:** Anatomy, first exposure, high energy, 40 min
-**Use for:** High-detail anatomy first exposure. Pre-Test primes encoding, Draw-Label for spatial memory, retrieval before generative steps.
+**Use for:** High-detail anatomy first exposure with a short PRIME orientation before pre-test, Draw-Label for spatial memory, retrieval, and later generative steps.
 
 #### 10. Pathophysiology Intake
-**Blocks:** Pre-Test → Self-Explanation Protocol → Skeleton Concept Hierarchy → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Error Autopsy
+**Blocks:** Learning Objectives Primer → Pre-Test → Self-Explanation Protocol → Skeleton Concept Hierarchy → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Error Autopsy
 **Context:** Pathology, first exposure, high energy, 45 min
-**Use for:** Pathology first exposure with mechanism tracing. Pre-Test → Self-Explanation → Concept Cluster → Retrieve → Refine.
+**Use for:** Pathology first exposure with a short PRIME orientation before pre-test, self-explanation, concept clustering, retrieval, and refinement.
 
 #### 11. Clinical Reasoning Intake
-**Blocks:** Pre-Test → Illness Script Builder → Side-by-Side Comparison → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Anki Card Draft
+**Blocks:** Learning Objectives Primer → Pre-Test → Illness Script Builder → Side-by-Side Comparison → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Anki Card Draft
 **Context:** Clinical, first exposure, high energy, 45 min
-**Use for:** Clinical first exposure with illness scripts. Pre-Test → Illness Script → Compare → Retrieve → Overlearn.
+**Use for:** Clinical first exposure with a short PRIME orientation before pre-test, illness scripts, comparison, retrieval, and overlearn.
 
 #### 12. Quick First Exposure
-**Blocks:** Pre-Test → Hierarchical Advance Organizer → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Exit Ticket
+**Blocks:** Learning Objectives Primer → Pre-Test → Hierarchical Advance Organizer → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Exit Ticket
 **Context:** first exposure, medium energy, 20 min
-**Use for:** Minimal intake chain when time is limited. Pre-Test → AI Skeleton → Retrieve → Overlearn.
+**Use for:** Minimal intake chain when time is limited. Short PRIME orientation before pre-test, hierarchy setup, retrieval, and overlearn.
 
 ### Visualization Chains
 
 #### 13. Visual Encoding
-**Blocks:** Brain Dump → Concept Map → Comparison Table → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Exit Ticket
+**Blocks:** Learning Objectives Primer → Brain Dump → Concept Map → Comparison Table → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Exit Ticket
 **Context:** first exposure, high energy, 40 min
-**Use for:** Visualization-first encoding for topics with confusable concepts. Build visual representations before retrieval.
+**Use for:** Visualization-first encoding for topics with confusable concepts. Short PRIME orientation, quick calibrate pulse, then build visual representations before retrieval.
 
 ---
 

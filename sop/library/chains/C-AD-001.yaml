@@ -1,7 +1,8 @@
 id: C-AD-001
 name: Anatomy Deep Dive
-description: Anatomy-focused chain with drawing. Prepare → Encode (Draw-Label) → Retrieve → Overlearn.
+description: Anatomy-focused chain with a short PRIME orientation, a calibrate check, and drawing-led encoding before retrieval and overlearn.
 blocks:
+- M-PRE-010
 - M-PRE-003
 - M-PRE-006
 - M-ENC-003

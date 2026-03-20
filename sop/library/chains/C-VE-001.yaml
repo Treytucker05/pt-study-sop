@@ -1,7 +1,8 @@
 id: C-VE-001
 name: Visual Encoding
-description: Visualization-first encoding for topics with confusable concepts. Build visual representations before retrieval.
+description: Visualization-first encoding for topics with confusable concepts. Short PRIME orientation, quick calibrate pulse, then build visual representations before retrieval.
 blocks:
+- M-PRE-010
 - M-PRE-001
 - M-ENC-009
 - M-ENC-010

@@ -1,7 +1,8 @@
 id: C-LE-001
 name: Low Energy
-description: Low-effort chain for tired days. Prepare → Reference → Retrieve → Overlearn. Maintain streak without burning out.
+description: Low-effort chain for tired days. Short PRIME orientation, quick calibrate pulse, then reference, retrieve, and overlearn. Maintain streak without burning out.
 blocks:
+- M-PRE-010
 - M-PRE-001
 - M-PRE-004
 - M-REF-003

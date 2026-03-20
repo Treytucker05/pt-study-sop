@@ -1,7 +1,8 @@
 id: C-PI-001
 name: Pathophysiology Intake
-description: Pathology first exposure with mechanism tracing. Pre-Test → Self-Explanation → Concept Cluster → Retrieve → Refine.
+description: Pathology first exposure with a short PRIME orientation before pre-test, self-explanation, concept clustering, retrieval, and refinement.
 blocks:
+- M-PRE-010
 - M-PRE-007
 - M-ENC-007
 - M-PRE-005

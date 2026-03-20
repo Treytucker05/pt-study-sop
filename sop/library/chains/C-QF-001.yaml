@@ -1,7 +1,8 @@
 id: C-QF-001
 name: Quick First Exposure
-description: Minimal intake chain when time is limited. Pre-Test → AI Skeleton → Retrieve → Overlearn.
+description: Minimal intake chain when time is limited. Short PRIME orientation before pre-test, hierarchy setup, retrieval, and overlearn.
 blocks:
+- M-PRE-010
 - M-PRE-007
 - M-PRE-004
 - M-REF-003
