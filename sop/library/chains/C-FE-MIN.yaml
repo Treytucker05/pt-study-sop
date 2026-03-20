@@ -2,18 +2,25 @@ id: C-FE-MIN
 name: "First Exposure: Minimal"
 description: >-
   Minimal first-exposure chain for low-energy sessions targeting definition
-  and recognition modes. Covers structural extraction, anchor generation,
-  free recall, and exit wrap-up.
+  and recognition modes. Uses compact opening sequence
+  MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE, then light retrieval and wrap-up.
 blocks:
   - M-PRE-010  # Learning Objectives Primer (mandatory first)
   - M-PRE-008  # Structural Extraction
-  - M-REF-003  # One-Page Anchor (Make the Cheat Sheet)
+  - M-CAL-001  # Micro Precheck
+  - M-TEA-004  # Modality Switch (TEACH chunk)
+  - M-REF-003  # One-Page Anchor (TEACH-close artifact)
+  - M-CAL-002  # Full Calibrate Probes
+  - M-CAL-003  # Full Calibrate Priority Set
   - M-RET-001  # Free Recall Blurt (Test the Cheat Sheet)
   - M-OVR-001  # Exit Ticket
 allowed_modes:
   - definition
   - recognition
 gates:
+  - micro_calibrate_before_teach
+  - teach_close_artifact_ready
+  - full_calibrate_after_teach
   - rsr_accuracy_ge_0.80
 failure_actions:
   - inject_reference_targets_before_retrieve
@@ -24,6 +31,18 @@ status: draft
 context_tags:
   energy: low
   time_available: 20
+runtime_profile:
+  opening_sequence:
+    - MICRO-CALIBRATE
+    - TEACH
+    - FULL_CALIBRATE
+block_overrides:
+  M-TEA-004:
+    teach_packet:
+      concept_type: definition
+      bridge_choice: modality_switch
+      artifact_target: one_page_anchor
+      escalation_rule: brief_l0_hook_then_l3_mechanism_then_l4_precision_with_low_friction_function_confirmation
 default_knobs:
   energy: low
   retrieval_support: minimal

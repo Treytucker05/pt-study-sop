@@ -1,6 +1,6 @@
 # REFERENCE Category Reference
 
-Stage: 4 of 6 | Control Stage: `REFERENCE`
+Stage: 5 of 7 | Control Stage: `REFERENCE`
 Purpose: Externalize targets and anchors so retrieval has clear goals.
 
 ## Entry / Exit

@@ -9,11 +9,13 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { Archive, Clock3, Pause, Play, Send, SlidersHorizontal, Square } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   api,
   type BehaviorOverride,
   type TutorAccuracyProfile,
+  type TutorSessionWithTurns,
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
@@ -24,7 +26,13 @@ import {
   BTN_TOOLBAR_ACTIVE,
   ICON_MD,
 } from "@/lib/theme";
-import type { TutorChatProps, NorthStarSummary } from "./TutorChat.types";
+import {
+  resolveTutorTeachRuntime,
+  type TutorChatProps,
+  type NorthStarSummary,
+  type TutorTeachRuntimeField,
+  type TutorTeachRuntimeStatus,
+} from "./TutorChat.types";
 import { useSSEStream } from "./useSSEStream";
 import { MessageList } from "./MessageList";
 import { SourcesPanel } from "./SourcesPanel";
@@ -49,6 +57,8 @@ type TutorSessionContext = {
   folders: string[];
   materialsDefault: boolean;
   northStarSummary: NorthStarSummary | null;
+  sessionSnapshot: Record<string, unknown> | null;
+  currentBlock: NonNullable<TutorSessionWithTurns["chain_blocks"]>[number] | null;
 };
 
 type SpeedTierControl = {
@@ -170,9 +180,129 @@ function useTutorSessionContext(
         folders,
         materialsDefault: defaultMaterialsOn || Boolean(defaultMode?.materials),
         northStarSummary,
+        sessionSnapshot: session as Record<string, unknown>,
+        currentBlock:
+          Array.isArray(session.chain_blocks)
+            && typeof session.current_block_index === "number"
+            && session.current_block_index >= 0
+            && session.current_block_index < session.chain_blocks.length
+            ? session.chain_blocks[session.current_block_index]
+            : null,
       };
     },
   });
+}
+
+const RUNTIME_STATUS_STYLES: Record<TutorTeachRuntimeStatus, string> = {
+  live: "border-primary/40 bg-primary/10 text-primary",
+  available: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
+  pending: "border-amber-500/40 bg-amber-500/10 text-amber-200",
+  locked: "border-red-500/30 bg-red-500/10 text-red-200",
+  complete: "border-emerald-500/40 bg-emerald-500/10 text-emerald-200",
+  skipped: "border-slate-500/40 bg-slate-500/10 text-slate-300",
+  fallback: "border-secondary/40 bg-secondary/10 text-secondary-foreground",
+};
+
+function runtimeBadgeClasses(status: TutorTeachRuntimeStatus): string {
+  return cn(
+    "rounded-none border px-2 py-1 font-arcade text-[10px] uppercase tracking-[0.18em]",
+    RUNTIME_STATUS_STYLES[status],
+  );
+}
+
+function TutorRuntimeChip({ field }: { field: TutorTeachRuntimeField }) {
+  return (
+    <div className="rounded-none border border-primary/20 bg-black/35 p-2">
+      <div className="flex items-start justify-between gap-2">
+        <div className="font-arcade text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          {field.label}
+        </div>
+        <Badge variant="outline" className={runtimeBadgeClasses(field.status)}>
+          {field.status}
+        </Badge>
+      </div>
+      <div className="mt-2 font-terminal text-xs leading-5 text-foreground">
+        {field.value}
+      </div>
+    </div>
+  );
+}
+
+function TutorTeachRuntimeStrip({
+  isLoading,
+  teachRuntime,
+}: {
+  isLoading: boolean;
+  teachRuntime: ReturnType<typeof resolveTutorTeachRuntime> | null;
+}) {
+  if (isLoading) {
+    return (
+      <div
+        data-testid="tutor-teach-runtime-strip-loading"
+        className="grid grid-cols-1 gap-2 rounded-none border border-primary/20 bg-black/35 p-3 sm:grid-cols-2"
+      >
+        {[0, 1, 2, 3].map((item) => (
+          <div key={item} className="animate-pulse rounded-none border border-primary/10 bg-black/45 p-3">
+            <div className="h-3 w-20 bg-primary/20" />
+            <div className="mt-3 h-4 w-32 bg-primary/10" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (!teachRuntime) return null;
+
+  return (
+    <div
+      data-testid="tutor-teach-runtime-strip"
+      className="rounded-none border border-primary/20 bg-gradient-to-b from-black/40 to-black/20 p-3"
+    >
+      <div className="flex flex-col gap-2 border-b border-primary/15 pb-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="font-arcade text-[10px] uppercase tracking-[0.18em] text-primary">
+            Live TEACH Packet
+          </div>
+          <div className="mt-1 font-terminal text-xs leading-5 text-muted-foreground">
+            Current stage, lane, close artifact, and unlock states stay visible while you chat.
+          </div>
+        </div>
+        <Badge variant="outline" className={runtimeBadgeClasses(teachRuntime.stage.status)}>
+          {teachRuntime.packetSource === "backend"
+            ? "backend packet"
+            : teachRuntime.packetSource === "mixed"
+              ? "mixed packet"
+              : "inferred fallback"}
+        </Badge>
+      </div>
+
+      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        <TutorRuntimeChip field={teachRuntime.stage} />
+        <TutorRuntimeChip field={teachRuntime.conceptType} />
+        <TutorRuntimeChip
+          field={{
+            label: "Depth lane",
+            value: `${teachRuntime.depth.start} -> ${teachRuntime.depth.current} -> ${teachRuntime.depth.ceiling}`,
+            status: teachRuntime.depth.status,
+          }}
+        />
+        <TutorRuntimeChip field={teachRuntime.bridge} />
+        <TutorRuntimeChip field={teachRuntime.requiredArtifact} />
+        <TutorRuntimeChip field={teachRuntime.functionConfirmation} />
+        <TutorRuntimeChip field={teachRuntime.l4Unlock} />
+        <TutorRuntimeChip field={teachRuntime.mnemonic} />
+      </div>
+
+      <div className="mt-3 border-t border-primary/15 pt-3 font-terminal text-xs leading-5 text-muted-foreground">
+        {teachRuntime.note}
+        {teachRuntime.missingBackendFields.length > 0 ? (
+          <div className="mt-2">
+            Waiting on backend fields: {teachRuntime.missingBackendFields.join(", ")}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
 }
 
 function TutorChatEmptyState() {
@@ -432,6 +562,13 @@ export function TutorChat({
   const effectiveMaterialsOn =
     chatState.materialsPreference ?? sessionContext?.materialsDefault ?? defaultMaterialsOn;
   const northStarSummary = sessionContext?.northStarSummary ?? null;
+  const teachRuntime = sessionContext
+    ? resolveTutorTeachRuntime({
+        workflowDetail: sessionContext.sessionSnapshot,
+        workflowStage: sessionContext.currentBlock?.category || null,
+        currentBlock: sessionContext.currentBlock,
+      })
+    : null;
   const selectedMp4Count = availableMaterials.filter(
     (material) =>
       selectedMaterialIds.includes(material.id) &&
@@ -624,6 +761,7 @@ export function TutorChat({
         <MessageList
           ref={scrollRef}
           messages={messages}
+          teachRuntime={teachRuntime}
           onArtifactCreated={onArtifactCreated}
           onStudioCapture={onStudioCapture}
           onCaptureNote={onCaptureNote}
@@ -651,6 +789,11 @@ export function TutorChat({
             onBehaviorSelect={handleBehaviorSelect}
             onToggleTimer={onToggleTimer}
             onCompact={onCompact}
+          />
+
+          <TutorTeachRuntimeStrip
+            isLoading={sessionContextQuery.isLoading}
+            teachRuntime={teachRuntime}
           />
 
           <TutorSpeedTierRow controls={speedTiers} />

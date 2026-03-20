@@ -2,24 +2,31 @@ id: C-FE-STD
 name: "First Exposure: Standard"
 description: >-
   Standard first-exposure chain for medium-energy sessions targeting
-  classification and mechanism modes. PRIME artifacts first, then one
-  TEACH chunk before calibration, followed by comparison encoding,
+  classification and mechanism modes. Opening is explicit
+  MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE, then ENCODE,
   reference generation, and timed retrieval sprint.
 # THE LAW: M-REF-004 (Target Gen) MUST precede M-RET-* (Retrieval)
 blocks:
   - M-PRE-010  # Learning Objectives Primer (mandatory first)
   - M-PRE-008  # Structural Extraction (Structure)
-  - M-ENC-008  # Mechanism Trace (Teach chunk when unfamiliar)
   - M-CAL-001  # Micro Precheck (Baseline)
-  - M-ENC-010  # Comparison Table (Deep Encode)
+  - M-ENC-008  # Mechanism Trace (TEACH chunk)
   - M-REF-003  # One-Page Anchor (Cue Gen 1)
+  - M-CAL-002  # Full Calibrate Probes
+  - M-CAL-003  # Full Calibrate Priority Set
+  - M-ENC-010  # Comparison Table (Deep Encode)
+  - M-ENC-001  # Full KWIK Hook (deeper encode; not live KWIK Lite slot)
   - M-REF-004  # Question Bank Seed (Cue Gen 2 - The Targets)
   - M-RET-007  # Timed Sprint Sets (Retrieval)
 allowed_modes:
   - classification
   - mechanism
 gates:
+  - micro_calibrate_before_teach
   - teach_chunk_delivered_when_present
+  - teach_close_artifact_ready
+  - full_calibrate_after_teach
+  - mnemonic_after_teach_close_artifact_only
   - tie_breakers_complete
   - rsr_accuracy_ge_0.85
 failure_actions:
@@ -32,6 +39,24 @@ status: draft
 context_tags:
   energy: medium
   time_available: 35
+runtime_profile:
+  opening_sequence:
+    - MICRO-CALIBRATE
+    - TEACH
+    - FULL_CALIBRATE
+  mnemonic_policy: mnemonic slot only after TEACH-close artifact; full KWIK stays in ENCODE depth work
+block_overrides:
+  M-ENC-008:
+    teach_packet:
+      concept_type: mechanism
+      bridge_choice: mechanism_trace
+      artifact_target: one_page_anchor
+      escalation_rule: brief_l0_hook_then_l3_mechanism_then_l4_precision_with_low_friction_function_confirmation
+  M-ENC-001:
+    slot_policy:
+      requires_teach_close_artifact: true
+      runtime_live_slot: kwik_lite_pending_runtime_lane
+      full_kwik_position: encode_deepening
 default_knobs:
   energy: medium
   near_miss_intensity: low

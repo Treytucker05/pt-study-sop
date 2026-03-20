@@ -1,6 +1,6 @@
 # OVERLEARN Category Reference
 
-Stage: 6 of 6 | Control Stage: `OVERLEARN`
+Stage: 7 of 7 | Control Stage: `OVERLEARN`
 Purpose: Move from "can do" to fluent, durable performance.
 
 ## Entry / Exit

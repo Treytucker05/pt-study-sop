@@ -79,6 +79,11 @@ VALID_TAXONOMY = {
             "prefix": "PRE",
             "aliases": ["prep", "prepare"],
         },
+        "teach": {
+            "label": "Teach",
+            "prefix": "TEA",
+            "aliases": ["explain", "instruct"],
+        },
         "retrieve": {
             "label": "Retrieve",
             "prefix": "RET",
@@ -310,6 +315,7 @@ class TestOperationalStageInference:
         assert infer_operational_stage("M-PRE-001") == "CALIBRATE"
         assert infer_operational_stage("M-PRE-003") == "CALIBRATE"
         assert infer_operational_stage("M-PRE-007") == "CALIBRATE"
+        assert infer_operational_stage("M-TEA-001") == "TEACH"
         assert infer_operational_stage("M-CAL-001") == "CALIBRATE"
         assert infer_operational_stage("M-ENC-001") == "ENCODE"
         assert infer_operational_stage("M-INT-001") == "TEACH"

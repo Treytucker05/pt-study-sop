@@ -64,6 +64,7 @@ from dashboard.api_tutor_utils import (
 )
 
 import llm_provider as _llm_provider
+from chain_validator import summarize_stage_truth
 
 _LOG = logging.getLogger(__name__)
 _NON_ASSESSMENT_STAGES = {"PRIME", "TEACH"}
@@ -78,6 +79,43 @@ def _coerce_string_list(value: Any, *, limit: int | None = None) -> list[str]:
     return items
 
 
+def _coerce_string_dict(value: Any) -> dict[str, str]:
+    if not isinstance(value, dict):
+        return {}
+    result: dict[str, str] = {}
+    for raw_key, raw_value in value.items():
+        key = str(raw_key or "").strip()
+        text = str(raw_value or "").strip()
+        if key and text:
+            result[key] = text
+    return result
+
+
+def _canonical_teach_concept_type(raw_value: Any) -> str:
+    value = str(raw_value or "").strip().lower()
+    if not value:
+        return ""
+    mapping = {
+        "classification": "compare/contrast",
+        "compare": "compare/contrast",
+        "compare_contrast": "compare/contrast",
+        "confusable": "compare/contrast",
+        "confusable pair": "compare/contrast",
+        "confusable_pair": "compare/contrast",
+        "recognition": "definition",
+        "definition": "definition",
+        "mechanism": "mechanism",
+        "computation": "mechanism",
+        "procedure": "procedure",
+        "spatial": "spatial",
+        "story": "procedure",
+        "clinical": "clinical reasoning",
+        "clinical_reasoning": "clinical reasoning",
+        "synthesis": "clinical reasoning",
+    }
+    return mapping.get(value, value)
+
+
 def _infer_teach_concept_type(
     *,
     block_info: Optional[dict[str, Any]],
@@ -87,12 +125,12 @@ def _infer_teach_concept_type(
     runtime_profile = chain_info.get("runtime_profile") if isinstance(chain_info, dict) else {}
     if isinstance(runtime_profile, dict):
         for key in ("concept_type", "teaching_lane", "assessment_mode"):
-            value = str(runtime_profile.get(key) or "").strip().lower()
+            value = _canonical_teach_concept_type(runtime_profile.get(key))
             if value:
                 return value
 
     for key in ("concept_type", "assessment_mode", "teaching_lane"):
-        value = str(content_filter.get(key) or "").strip().lower()
+        value = _canonical_teach_concept_type(content_filter.get(key))
         if value:
             return value
 
@@ -113,7 +151,7 @@ def _infer_teach_concept_type(
 
 
 def _default_bridge_moves_for_concept_type(concept_type: str) -> list[str]:
-    normalized = concept_type.strip().lower()
+    normalized = _canonical_teach_concept_type(concept_type)
     if normalized == "spatial":
         return ["hand_draw_map", "concept_map"]
     if normalized == "mechanism":
@@ -121,10 +159,15 @@ def _default_bridge_moves_for_concept_type(concept_type: str) -> list[str]:
     if normalized in {"compare/contrast", "confusable", "confusable pair"}:
         return ["comparison_table", "analogy"]
     if normalized == "procedure":
-        return ["story", "jingle"]
+        return ["story", "hand_draw_map"]
     if normalized == "clinical reasoning":
         return ["clinical_anchor_case", "comparison_table"]
-    return ["analogy", "kwik_hook"]
+    return ["analogy", "clinical_anchor_case"]
+
+
+def _default_first_bridge_for_concept_type(concept_type: str) -> str:
+    bridge_moves = _default_bridge_moves_for_concept_type(concept_type)
+    return bridge_moves[0] if bridge_moves else "analogy"
 
 
 def _default_required_artifact(
@@ -137,11 +180,65 @@ def _default_required_artifact(
         return "comparison_table"
     if "mechanism" in method_name or concept_type == "mechanism":
         return "mini_process_flow"
+    if concept_type == "procedure":
+        return "mini_process_flow"
     if concept_type == "spatial":
         return "hand_draw_map"
     if concept_type == "clinical reasoning":
         return "one_page_anchor"
     return "one_page_anchor"
+
+
+def _default_function_confirmation_gate(
+    concept_type: str,
+    *,
+    required_artifact: str,
+) -> dict[str, str]:
+    normalized = _canonical_teach_concept_type(concept_type)
+    if normalized == "procedure":
+        confirmation_prompt = (
+            "Have the learner state the ordered function of the process in one short pass "
+            "before moving into L4 precision."
+        )
+    elif normalized == "spatial":
+        confirmation_prompt = (
+            "Have the learner identify what the structure does in space before layering on L4 precision."
+        )
+    else:
+        confirmation_prompt = (
+            "Have the learner confirm the core function/mechanism in one low-friction check before L4 precision."
+        )
+
+    return {
+        "mode": "low_friction_function_confirmation",
+        "required_before_l4": "true",
+        "state": "pending",
+        "artifact_dependency": required_artifact or "one_page_anchor",
+        "prompt": confirmation_prompt,
+        "unlocks": "L4_precision",
+        "teach_back_default_gate": "false",
+    }
+
+
+def _default_mnemonic_slot_policy(concept_type: str) -> dict[str, str]:
+    normalized = _canonical_teach_concept_type(concept_type)
+    if normalized == "clinical reasoning":
+        return {
+            "mode": "kwik_lite",
+            "position": "post_artifact_pre_full_calibrate",
+            "availability": "skip_by_default",
+            "state": "skipped",
+            "reason": "clinical_reasoning_prefers_case_and_function_over_compression",
+            "full_kwik_later_stage": "ENCODE_OR_OVERLEARN",
+        }
+    return {
+        "mode": "kwik_lite",
+        "position": "post_artifact_pre_full_calibrate",
+        "availability": "available_after_close_artifact",
+        "state": "locked_until_artifact",
+        "reason": "light_compression_after_meaning_and_anchor",
+        "full_kwik_later_stage": "ENCODE_OR_OVERLEARN",
+    }
 
 
 def _build_teach_context(
@@ -230,17 +327,18 @@ def _build_teach_context(
     )
     if not stop_conditions:
         stop_conditions = [
-            "learner_can_explain_L2",
-            "anchor_exists",
+            "brief_l0_hook_delivered",
+            "learner_can_confirm_function",
+            "close_artifact_exists",
             "one_application_link_made",
-            "tutor_judges_ready_to_hand_off",
+            "tutor_judges_ready_for_full_calibrate",
         ]
 
     depth_start = str(
         teach_profile.get("depth_start")
         or runtime_profile.get("teach_depth_start")
         or content_filter.get("teach_depth_start")
-        or ("L1" if objective_scope == "module_all" else "L2")
+        or "L0"
     ).strip()
     depth_ceiling = str(
         teach_profile.get("depth_ceiling")
@@ -248,6 +346,33 @@ def _build_teach_context(
         or content_filter.get("teach_depth_ceiling")
         or "L4"
     ).strip()
+    first_bridge = str(
+        teach_profile.get("first_bridge")
+        or runtime_profile.get("teach_first_bridge")
+        or content_filter.get("teach_first_bridge")
+        or _default_first_bridge_for_concept_type(concept_type)
+    ).strip()
+
+    function_confirmation_gate = (
+        teach_profile.get("function_confirmation_gate")
+        or runtime_profile.get("function_confirmation_gate")
+        or content_filter.get("function_confirmation_gate")
+    )
+    function_confirmation_gate = _coerce_string_dict(function_confirmation_gate)
+    if not function_confirmation_gate:
+        function_confirmation_gate = _default_function_confirmation_gate(
+            concept_type,
+            required_artifact=required_artifact,
+        )
+
+    mnemonic_slot_policy = (
+        teach_profile.get("mnemonic_slot_policy")
+        or runtime_profile.get("mnemonic_slot_policy")
+        or content_filter.get("mnemonic_slot_policy")
+    )
+    mnemonic_slot_policy = _coerce_string_dict(mnemonic_slot_policy)
+    if not mnemonic_slot_policy:
+        mnemonic_slot_policy = _default_mnemonic_slot_policy(concept_type)
 
     return {
         "objective": objective,
@@ -256,10 +381,24 @@ def _build_teach_context(
         "concept_type": concept_type,
         "depth_start": depth_start,
         "depth_ceiling": depth_ceiling,
+        "depth_path": ["L0", "L3", "L4"],
+        "fallback_depths": ["L1", "L2"],
         "bridge_moves_allowed": bridge_moves_allowed,
+        "first_bridge": first_bridge,
+        "current_bridge": first_bridge,
+        "current_depth": "L3",
         "required_artifact": required_artifact,
+        "required_close_artifact": required_artifact,
+        "close_artifact_status": "pending",
+        "function_confirmation": function_confirmation_gate.get("state") or "pending",
+        "function_confirmed": False,
+        "function_confirmation_gate": function_confirmation_gate,
+        "l4_unlocked": False,
+        "mnemonic_state": mnemonic_slot_policy.get("state") or "locked_until_artifact",
+        "mnemonic_slot_policy": mnemonic_slot_policy,
         "stop_conditions": stop_conditions,
         "exemplar_refs": exemplar_refs,
+        "teach_back_default_gate": False,
     }
 
 
@@ -444,6 +583,7 @@ def _build_chain_info(
         if isinstance(context_tags.get("block_overrides"), dict)
         else {}
     )
+    stage_truth = summarize_stage_truth(blocks)
 
     # Current block info
     block_info = None
@@ -473,9 +613,13 @@ def _build_chain_info(
     chain_info = {
         "name": chain_row["name"],
         "blocks": [b["name"] for b in blocks],
+        "stage_sequence": stage_truth["stage_sequence"],
+        "selected_blocks": stage_truth["selected_blocks"],
+        "stage_coverage": stage_truth["stage_coverage"],
         "current_index": current_index,
         "total": len(blocks),
         "runtime_profile": runtime_profile,
+        "context_tags": context_tags,
         "allowed_modes": context_tags.get("allowed_modes") if isinstance(context_tags.get("allowed_modes"), list) else [],
         "gates": context_tags.get("gates") if isinstance(context_tags.get("gates"), list) else [],
         "failure_actions": context_tags.get("failure_actions") if isinstance(context_tags.get("failure_actions"), list) else [],

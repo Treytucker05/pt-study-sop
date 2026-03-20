@@ -134,6 +134,7 @@ function normalizeBlockCategory(block: MethodBlock): MethodCategory {
   ];
   const legacyToControl: Record<string, MethodCategory> = {
     PREPARE: "PRIME",
+    TEACH: "TEACH",
     ENCODE: "ENCODE",
     INTERROGATE: "REFERENCE",
     RETRIEVE: "RETRIEVE",

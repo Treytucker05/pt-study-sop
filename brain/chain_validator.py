@@ -57,6 +57,35 @@ def _stage_coverage(sequence: list[dict[str, str]]) -> dict[str, bool]:
     return {stage: stage in seen for stage in CONTROL_STAGE_ORDER}
 
 
+def summarize_stage_truth(blocks: list[dict[str, Any]]) -> dict[str, Any]:
+    """Return normalized stage truth for a chain-like block sequence.
+
+    The runtime uses a simplified `selected_blocks` list for selector metadata
+    and UI summaries. That list must come from the actual block sequence,
+    not a hand-maintained approximation.
+    """
+    sequence = [
+        {
+            "name": str(block.get("name") or ""),
+            "stage": _normalize_control_stage(block),
+        }
+        for block in blocks
+    ]
+    stage_sequence = [step["stage"] for step in sequence]
+
+    selected_blocks: list[str] = []
+    for stage in stage_sequence:
+        if stage not in selected_blocks:
+            selected_blocks.append(stage)
+
+    return {
+        "sequence": sequence,
+        "stage_sequence": stage_sequence,
+        "selected_blocks": selected_blocks,
+        "stage_coverage": _stage_coverage(sequence),
+    }
+
+
 @dataclass
 class ChainReport:
     chain_name: str
@@ -110,15 +139,10 @@ def validate_chain(
         report.violations.append("Chain has no blocks")
         return report
 
-    sequence = [
-        {
-            "name": str(block.get("name") or ""),
-            "stage": _normalize_control_stage(block),
-        }
-        for block in blocks
-    ]
-    report.stage_sequence = [s["stage"] for s in sequence]
-    report.stage_coverage = _stage_coverage(sequence)
+    stage_truth = summarize_stage_truth(blocks)
+    sequence = stage_truth["sequence"]
+    report.stage_sequence = stage_truth["stage_sequence"]
+    report.stage_coverage = stage_truth["stage_coverage"]
     report.exception_flags = get_exception_flags(blocks)
 
     has_encode_or_reference = False

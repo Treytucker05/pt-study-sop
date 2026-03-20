@@ -7,6 +7,8 @@ energy_cost: low
 best_stage: first_exposure
 control_stage: CALIBRATE
 status: core
+calibrate_phase: micro_optional
+calibrate_scope: opening_optional
 tags:
 - calibrate
 - confidence
@@ -22,12 +24,14 @@ stipulations:
 - No item-level questions — this is story-level confidence only
 - Confidence captured before any corrective feedback
 - Respects the top-down flow — does not break narrative immersion
+- Optional MICRO-CALIBRATE supplement only; does not replace FULL CALIBRATE (M-CAL-002 + M-CAL-003)
 when_to_use:
-- After a narrative PRIME or L1-L2 encoding build
+- After a narrative PRIME or TEACH story chunk
 - When learner prefers top-down big-picture processing
-- Before deciding depth of encoding needed
+- As an optional supplement before FULL CALIBRATE probes
 when_not_to_use:
-- After item-level pretest (use M-CAL-002 instead)
+- As the only calibrate method in a first-exposure chain
+- After FULL CALIBRATE has already been completed for the same scope
 - When material has no narrative structure
 knobs:
   confidence_scale: HML
@@ -80,6 +84,7 @@ gating_rules:
 - Capture confidence before correctness feedback.
 - Diagnostic only — do not teach or explain content.
 - Stay at narrative/story level, not item level.
+- Do not treat this output as a substitute for FULL CALIBRATE telemetry.
 artifact_type: notes
 allowed_moves:
 - Ask learner to rate story-level confidence on configured scale (1-3 or HML)
@@ -88,6 +93,7 @@ allowed_moves:
 - Use brief retell prompt (2 sentences) to verify confidence accuracy
 - Recalibrate if learner claims full understanding but cannot retell story arc
 - Keep interaction under 2-minute hard cap
+- Hand off flagged fuzzy zones into M-CAL-002 probe design
 forbidden_moves:
 - Present item-level quiz questions (story-level confidence only)
 - Teach or explain content during calibration (diagnostic only)
@@ -96,13 +102,15 @@ forbidden_moves:
 - Exceed 2-minute hard cap
 - Turn this into a quiz or pretest
 - Provide corrective feedback on story content (capture only)
+- Use this card as a replacement for M-CAL-002 / M-CAL-003
 required_outputs:
 - Story confidence rating (1-3 scale)
 - Fuzzy zones list (narrative breakdown points)
 - Priority encoding targets (focus areas for ENCODE phase)
+- Optional probe seed suggestions for M-CAL-002
 facilitation_prompt: |
   You are running M-CAL-004 (Story Confidence Tag) in CALIBRATE stage.
-  Capture narrative-level confidence after the big-picture overview.
+  Capture optional narrative-level MICRO-CALIBRATE confidence after the big-picture overview.
 
   Requirements:
   - Ask learner to rate story confidence on {confidence_scale} scale.
@@ -110,10 +118,12 @@ facilitation_prompt: |
   - Tag fuzzy areas as priority targets for deeper encoding.
   - No item-level questions — story-level confidence only.
   - Hard cap at 2 minutes.
+  - This does NOT replace FULL CALIBRATE (M-CAL-002 / M-CAL-003).
 
   Return exactly:
   1) StoryConfidenceRating
   2) FuzzyZonesList (narrative breakdown points)
   3) PriorityEncodingTargets
+  4) OptionalProbeSeedSuggestions
 
   Do not teach or explain content. This method is diagnostic only.

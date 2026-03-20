@@ -39,9 +39,9 @@ Each method block represents a single study activity.
 
 **Categories (Control Plane stages):**
 
-1. **PRIME** — Prepare attention, surface prior knowledge, build structure (e.g., overarching pre-question set, hierarchical advance organizer, skeleton concept hierarchy, structural skimming + pillar mapping, structural extraction, syntopical big-picture synthesis, learning objectives primer, hand-draw map)
-2. **Teach** — Explain unfamiliar material one chunk at a time without scoring or diagnostic pressure (e.g., mechanism trace, analogy bridge, story spine, confusable contrast teach, clinical anchor mini-case, modality switch, jingle / rhyme hook)
-3. **CALIBRATE** — Diagnostic micro-assessments to identify weaknesses before encoding (e.g., micro precheck, confidence tagging, priority set, story confidence tag, brain dump, prior knowledge scan, pre-test)
+1. **PRIME** — Prepare attention and build structure from the source before detail (e.g., overarching pre-question set, hierarchical advance organizer, skeleton concept hierarchy, structural skimming + pillar mapping, structural extraction, syntopical big-picture synthesis, learning objectives primer, hand-draw map)
+2. **TEACH** — Deliver first-contact explanation in bounded chunks before diagnostic probing (e.g., mechanism trace, analogy bridge, story spine, confusable contrast teach, clinical anchor mini-case, modality switch, jingle / rhyme hook)
+3. **CALIBRATE** — Diagnostic readiness checks after PRIME or TEACH to identify weaknesses before learner production (e.g., micro precheck, full calibrate probes, full calibrate priority set, story confidence tag, brain dump, prior knowledge scan, pre-test)
 4. **ENCODE** — Attach meaning to material through active processing (e.g., kwik hook, seed-lock generation, draw-label, teach-back, why-chain, self-explanation protocol, concept map, comparison table, process flowchart, clinical decision tree, memory palace, chain linking, clinical application, cross-topic link, side-by-side comparison, case walkthrough, illness script builder)
 5. **REFERENCE** — Generate target cues and cheat sheets for retrieval (e.g., error autopsy, mastery loop, one-page anchor, question bank seed)
 6. **RETRIEVE** — Test recall with adversarial near-miss and timed sprints (e.g., timed brain dump, sprint quiz, fill-in-blank, mixed practice, variable retrieval, adversarial drill, timed sprint sets)
@@ -70,18 +70,18 @@ Each method block represents a single study activity.
 |-------|----------|--------|----------|
 | Mechanism Trace | 10 min | high | Kulasegaram et al. (2013); Causal reasoning with biomedical mechanisms supports diagnostic transfer to novel cases |
 | Analogy Bridge | 3 min | medium | Gentner (1983); Analogical reasoning supports structural mapping and transfer across domains |
-| Story Spine | 6 min | medium | Mayer (2009); Segmented explanation and coherent signaling improve novice understanding of complex processes. |
-| Confusable Contrast Teach | 6 min | medium | Alfieri et al. (2013); Comparison-based teaching improves concept discrimination when contrasts are explicit. |
-| Clinical Anchor Mini-Case | 5 min | medium | Merrill (2002); Application examples improve relevance when they stay tightly coupled to the core concept. |
-| Modality Switch | 4 min | low | Mayer (2009); Matching representation to concept structure reduces extraneous load for novices. |
-| Jingle / Rhyme Hook | 4 min | low | Dunlosky et al. (2013); Mnemonic devices help when tightly mapped and used after initial understanding is established. |
+| Story Spine | 6 min | medium | Mayer (2009); Segmented explanation and pretraining support novice learning on unfamiliar systems |
+| Confusable Contrast Teach | 6 min | medium | Alfieri et al. (2013); Comparison-based learning improves discrimination and concept formation |
+| Clinical Anchor Mini-Case | 5 min | medium | Schmidt and Rikers (2007); Clinically anchored explanation supports later script formation and transfer |
+| Modality Switch | 3 min | low | Mayer (2009); Matching representation and segmenting explanation helps novice comprehension |
+| Jingle / Rhyme Hook | 3 min | low | Paivio (1991); Verbal plus image-linked hooks can improve retention when grounded in meaning |
 
 ### CALIBRATE (7 blocks)
 | Block | Duration | Energy | Evidence |
 |-------|----------|--------|----------|
 | Micro Precheck | 4 min | medium | Kornell et al. (2009); Pretesting improves later learning and reveals knowledge gaps. |
-| Confidence Tagging | 3 min | low | Metcalfe (2017); Calibration monitoring supports targeted corrective learning. |
-| Priority Set | 3 min | low | Rawson and Dunlosky (2011); Targeted corrective practice outperforms broad untargeted restudy. |
+| Full Calibrate Probes | 6 min | medium | Metcalfe (2017); Calibration monitoring supports targeted corrective learning. |
+| Full Calibrate Priority Set | 3 min | low | Rawson and Dunlosky (2011); Targeted corrective practice outperforms broad untargeted restudy. |
 | Story Confidence Tag | 2 min | low | Metcalfe (2017); Metacognitive monitoring at the schema level identifies high-value encoding targets |
 | Brain Dump | 3 min | low | Ausubel (1968); Bjork & Bjork (2011); prior knowledge activation strengthens subsequent encoding |
 | Prior Knowledge Scan | 3 min | low | Ausubel (1968); Meaningful learning requires anchoring new information to existing schemas |
@@ -142,26 +142,26 @@ Each method block represents a single study activity.
 ### Control Plane Chains (CP-MSS v2.0)
 
 #### C-FE-STD. First Exposure: Standard
-**Blocks:** Learning Objectives Primer → Structural Extraction → Mechanism Trace → Micro Precheck → Comparison Table → One-Page Anchor → Question Bank Seed → Timed Sprint Sets
+**Blocks:** Learning Objectives Primer → Structural Extraction → Micro Precheck → Mechanism Trace → One-Page Anchor → Full Calibrate Probes → Full Calibrate Priority Set → Comparison Table → KWIK Hook → Question Bank Seed → Timed Sprint Sets
 **Context:** medium energy, 35 min
-**Use for:** Standard first-exposure chain for medium-energy sessions targeting classification and mechanism modes. PRIME artifacts first, then one TEACH chunk before calibration, followed by comparison encoding, reference generation, and timed retrieval sprint.
+**Use for:** Standard first-exposure chain for medium-energy sessions targeting classification and mechanism modes. Opening is explicit MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE, then ENCODE, reference generation, and timed retrieval sprint.
 
 #### C-FE-MIN. First Exposure: Minimal
-**Blocks:** Learning Objectives Primer → Structural Extraction → One-Page Anchor → Timed Brain Dump → Exit Ticket
+**Blocks:** Learning Objectives Primer → Structural Extraction → Micro Precheck → Modality Switch → One-Page Anchor → Full Calibrate Probes → Full Calibrate Priority Set → Timed Brain Dump → Exit Ticket
 **Context:** low energy, 20 min
-**Use for:** Minimal first-exposure chain for low-energy sessions targeting definition and recognition modes. Covers structural extraction, anchor generation, free recall, and exit wrap-up.
+**Use for:** Minimal first-exposure chain for low-energy sessions targeting definition and recognition modes. Uses compact opening sequence MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE, then light retrieval and wrap-up.
 
 #### C-FE-PRO. First Exposure: Procedure
-**Blocks:** Learning Objectives Primer → Structural Extraction → Story Spine → Process Flowchart → One-Page Anchor → Case Walkthrough → Timed Sprint Sets
+**Blocks:** Learning Objectives Primer → Structural Extraction → Micro Precheck → Story Spine → Process Flowchart → Full Calibrate Probes → Full Calibrate Priority Set → One-Page Anchor → Case Walkthrough → Timed Sprint Sets
 **Context:** high energy
-**Use for:** Procedure-focused first-exposure chain for high-energy sessions. Uses a TEACH story spine for the ordered process, maps process steps, generates anchors, runs case walkthrough with fault injection, and closes with timed sprint retrieval.
+**Use for:** Procedure-focused first-exposure chain for high-energy sessions. Uses explicit opening sequence MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE, then process encoding, anchor generation, case walkthrough with fault injection, and timed sprint retrieval.
 
 ### Core Chains
 
 #### 1. First Exposure (Core)
-**Blocks:** Learning Objectives Primer → Structural Extraction → Syntopical Big-Picture Synthesis → Analogy Bridge → Micro Precheck → Confidence Tagging → Priority Set → KWIK Hook → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Adversarial Drill → Timed Sprint Sets → Anki Card Draft → Drill Sheet Builder
+**Blocks:** Learning Objectives Primer → Structural Extraction → Syntopical Big-Picture Synthesis → Micro Precheck → Analogy Bridge → One-Page Anchor → Full Calibrate Probes → Full Calibrate Priority Set → KWIK Hook → Question Bank Seed → Timed Brain Dump → Adversarial Drill → Timed Sprint Sets → Anki Card Draft → Drill Sheet Builder
 **Context:** first exposure, high energy, 55 min
-**Use for:** Control-plane first exposure flow. PRIME → TEACH → CALIBRATE → ENCODE → REFERENCE → RETRIEVE → OVERLEARN with deterministic Priority Set routing.
+**Use for:** Control-plane first exposure flow with explicit MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE opening, followed by ENCODE, REFERENCE, RETRIEVE, and OVERLEARN.
 **Note:** Retrieval (Free Recall) comes before generative encoding (KWIK Hook) per Roelle et al. (2022) — lower cognitive load, higher gains.
 
 #### 2. Review Sprint

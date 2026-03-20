@@ -1,18 +1,19 @@
 # PRIME Category Reference
 
-Stage: 1 of 6 | Control Stage: `PRIME`
+Stage: 1 of 7 | Control Stage: `PRIME`
 Purpose: Build structure from the source material before detail so the learner has a stable mental frame.
 
 ## Entry / Exit
 
 - **Entry**: New topic (unseen material) or fresh material slice that needs structure before teaching.
-- **Exit**: Learner can restate the core structure in plain language.
+- **Exit**: The learner has a stable scaffold and the next stage can either teach or calibrate without drifting.
 
 ## Hard Rules
 
 - Material-grounded structure only. No scoring, no confidence logging, no accuracy values.
 - No learner-memory probes in PRIME; those live in CALIBRATE.
-- Must precede CALIBRATE in first-exposure chains.
+- Do not begin core instruction in PRIME; TEACH owns first-contact explanation.
+- Must precede TEACH or CALIBRATE in first-exposure chains.
 
 ## Method Inventory
 

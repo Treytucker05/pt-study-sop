@@ -1,9 +1,10 @@
-"""Teach-back gate module (Phase 6 — Feynman Technique).
+"""Teach-back mastery / repair module.
 
-The student explains a concept as if teaching a novice. The LLM acts as a
-confused listener, asks probing questions, and emits a structured rubric
-that maps deficiencies to skill_id/edge_id. Weak rubric scores block
-mastery threshold crossing even if quiz accuracy is high.
+Teach-back is available for deeper mastery checks and repair work after the
+main TEACH chunk. It is not the default live L3 -> L4 unlock gate; that gate
+is a lower-friction function confirmation step handled by the TEACH runtime.
+When teach-back is used, the student explains a concept as if teaching a
+novice, and the LLM emits a structured rubric that can guide repair.
 """
 
 from __future__ import annotations
@@ -14,6 +15,8 @@ import re
 from typing import Optional
 
 _LOG = logging.getLogger(__name__)
+TEACH_BACK_IS_DEFAULT_L4_GATE = False
+TEACH_BACK_RUNTIME_ROLE = "deeper_mastery_or_repair"
 
 # ---------------------------------------------------------------------------
 # Rubric schema
@@ -37,9 +40,10 @@ TEACH_BACK_RUBRIC_SCHEMA = {
 
 TEACH_BACK_PROMPT_SUFFIX = """
 
-## Teach-Back Evaluation Contract
+## Teach-Back Deeper Mastery Contract
 
-You are acting as a NOVICE LISTENER. The student is teaching you this topic.
+You are acting as a NOVICE LISTENER during a deeper mastery / repair block.
+This is NOT the default L3 -> L4 unlock gate for normal TEACH turns.
 
 Rules for your behavior:
 - Do NOT explain concepts yourself — only the student teaches
@@ -152,15 +156,15 @@ TEACH_BACK_MASTERY_THRESHOLD = 0.6  # Minimum effective mastery to allow teach-b
 
 
 def check_teach_back_gate(effective_mastery: float) -> bool:
-    """Return True if student's mastery is high enough for teach-back."""
+    """Return True if mastery is high enough for deeper teach-back work."""
     return effective_mastery >= TEACH_BACK_MASTERY_THRESHOLD
 
 
 def rubric_blocks_mastery(rubric: dict) -> bool:
-    """Return True if the rubric is too weak to allow mastery crossing.
+    """Return True if the rubric is too weak to support deeper mastery credit.
 
-    A student cannot cross the mastery threshold (0.95+) if their
-    teach-back rubric shows any score below 2 or overall_rating != "pass".
+    Teach-back is not the default live unlock gate, but when it is used for a
+    deeper mastery block we still refuse mastery credit if the rubric is weak.
     """
     if rubric.get("overall_rating") != "pass":
         return True

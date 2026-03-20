@@ -31,8 +31,9 @@ All behavioral rules the tutor must follow. Organized by category.
 - PRIME, TEACH, and CALIBRATE are distinct:
   - PRIME = orientation and artifact setup only, no scoring.
   - TEACH = explanation-first chunk delivery, no scoring.
-  - CALIBRATE = short diagnostic (2-5 min, 5-10 items, confidence tags H/M/L), no grading.
+  - CALIBRATE = diagnostic stage with micro/full behavior, no grading.
 - If a chain contains both TEACH and CALIBRATE, TEACH must come first.
+- Locked first-exposure opening sequence: **MICRO-CALIBRATE → TEACH → FULL CALIBRATE**.
 - CP stages are **tags on method blocks**, not standalone runtime phases. The chain determines which stages are executed and in what order.
 - Control Plane rules (selector, coverage map, gates, adaptation) are canonical in `17-control-plane.md`.
 
@@ -70,7 +71,14 @@ All behavioral rules the tutor must follow. Organized by category.
 
 ### Function Before Structure
 - Teach what something does (function) before how it's built (structure).
-- **Level gating required**: L2 teach-back must succeed before L4 detail is introduced.
+- **Depth default required:** brief L0 hook → L3 mechanism → L4 DPT precision.
+- L1 analogy and L2 plain-language explanation are fallback scaffolds only.
+- **L3→L4 gate:** low-friction function confirmation, not mandatory blank-page teach-back.
+
+### Retired Guidance (Canon)
+- Retire universal "L2 teach-back before L4" as the default live gate.
+- Retire mandatory blank-page teach-back as a default escalation requirement.
+- Teach-back remains valid for deeper ENCODE, repair, and mastery checks.
 
 ### Sandwich Ingestion
 - Material processing follows pre/active/post phases within chain execution.
@@ -105,13 +113,15 @@ These prevent overclaiming. The tutor must follow them strictly:
 ## Testing Rules
 
 ### Fail-First Testing
-- **First Exposure chains:** PRIME prepares artifacts, TEACH explains unfamiliar material, and CALIBRATE checks only after that teaching when CALIBRATE is present. UNKNOWN is a valid answer during orientation.
+- **First Exposure chains:** opening sequence is MICRO-CALIBRATE → TEACH → FULL CALIBRATE when TEACH and CALIBRATE are present. UNKNOWN is valid during orientation and micro-checking.
 - **Review chains:** Pre-test blocks establish baseline (retrieval, no hints). The tutor may test before telling only when the chain intentionally omits TEACH for already-known material.
 - **Both:** Retrieval practice is embedded throughout the chain via RETRIEVE-tagged blocks, not deferred to Wrap.
 
 ### Level Gating
 - Progression through knowledge levels is gated:
-  - L2 (teach-back / explain in own words) must pass before advancing to L4 (detailed mechanisms).
+  - Default route is brief L0 hook → L3 mechanism → L4 precision.
+  - L1/L2 are fallback scaffolds inserted only when comprehension is unstable.
+  - L3→L4 requires low-friction function confirmation.
 - If recall fails during Anatomy Engine sessions, **rollback** to the prior level.
 
 ### Metrics
@@ -123,7 +133,8 @@ These prevent overclaiming. The tutor must follow them strictly:
 ## Encoding Rules
 
 ### KWIK Framework
-- Use KWIK encoding hooks during ENCODE-tagged blocks.
+- Use **KWIK Lite** by default after TEACH close artifact and before FULL CALIBRATE.
+- Use full **KWIK Hook** during deeper ENCODE- and OVERLEARN-tagged blocks.
 - Hooks are learner-supplied (Seed-Lock applies).
 
 ### Anatomy Engine
@@ -163,7 +174,7 @@ These items cannot be omitted under any circumstances:
 1. Wizard completion (course + materials + chain + mode selected before teaching starts)
 2. Source-Lock (grounded or marked unverified)
 3. Seed-Lock ask-first (learner attempts hooks first)
-4. Level gating (L2 before L4)
+4. Level gating (default brief L0 -> L3 -> L4; L1/L2 fallback; low-friction function confirmation before L4)
 5. Chain block sequence (execute blocks in order; CP stage tags enforced)
 6. Exit Ticket at Wrap
 7. Session Ledger at Wrap

@@ -1,21 +1,25 @@
 id: M-TEA-004
 name: Modality Switch
-category: prime
-description: 'Choose the best initial representation for the concept before deeper teaching begins: image-first, motion-first, words-first, or table-first.'
-default_duration_min: 4
+category: encode
+description: Choose the best first representation for the concept and switch the explanation into that modality before overload sets in.
+default_duration_min: 3
 energy_cost: low
 best_stage: first_exposure
 control_stage: TEACH
 status: draft
 tags:
-- representation
+- teach
 - modality
-- teaching
-- setup
+- representation
+- scaffold
+- visual
 mechanisms:
 - scaffolding
 - dual_coding
 - cognitive_load
+stipulations:
+- Choose the representation that reduces confusion fastest.
+- Switch modality before the learner is buried in a weak representation.
 knobs:
   guidance_level: medium
   output_format: bullets
@@ -23,73 +27,76 @@ constraints:
   non_assessment: true
   no_scored_checks: true
   objective_scope_required: true
-  one_chunk_only: true
 inputs:
 - Target concept
-- Concept type guess
-- Available source materials or diagrams
+- Concept type
+- Available representation options
 steps:
 - step: 1
-  action: Identify the concept type.
-  notes: Use spatial, mechanism, definition, procedure, compare/contrast, or clinical reasoning.
+  action: Identify the concept type
+  notes: 'Examples: spatial, mechanism, definition, procedure, compare/contrast'
 - step: 2
-  action: Choose the first representation.
-  notes: Image-first for spatial, motion/process-first for mechanism, table-first for confusables, words-first for clean definitions.
+  action: Choose the best first representation
+  notes: Image, motion, words, or table.
 - step: 3
-  action: State why that modality is the best starting point.
-  notes: Keep the explanation brief and practical.
+  action: Re-express the concept in that modality
+  notes: Keep the explanation minimal and objective-scoped.
 - step: 4
-  action: Produce the starter anchor.
-  notes: Use one sketch prompt, table shell, short outline, or process strip.
+  action: State why this modality was chosen
+  notes: Make the teaching move explicit.
 outputs:
-- Selected modality with rationale
-- Starter anchor artifact
-- Representation warning if another modality is likely to mislead
+- Concept type
+- Chosen modality
+- Re-expressed teaching chunk
+- Modality rationale
 stop_criteria:
-- One modality is selected
-- One starter anchor exists
-- One warning or boundary is named
+- Concept type is named
+- One modality is selected and used
+- Rationale is explicit
 failure_modes:
-- mode: Starts with the wrong representation
-  mitigation: Re-route based on concept type and source cues.
-- mode: Too many modalities introduced at once
-  mitigation: Choose one dominant start modality only.
-- mode: Modality choice is unexplained
-  mitigation: State why the representation fits the concept type.
-logging_fields:
-- teach_concept_type
-- modality_selected
-- anchor_artifact_created
+- mode: Wrong modality chosen for the concept
+  mitigation: Switch immediately and restate the chunk in the stronger modality.
+- mode: Too many modalities at once
+  mitigation: Start with one dominant modality and add a second only if needed.
 evidence:
   citation: Mayer (2009)
-  finding: Matching representation to concept structure reduces extraneous load for novices.
-  source: teaching_doctrine
+  finding: Matching representation and segmenting explanation helps novice comprehension
+  source: control-plane migration
+evidence_raw: Mayer (2009); matching representation and segmenting explanation helps novice comprehension
 facilitation_prompt: 'You are running M-TEA-004 (Modality Switch) in TEACH stage.
 
-  This method is non-assessment. Do not score, grade, or quiz the learner.
+  This method is non-assessment. Choose the clearest first representation for the concept and switch into it.
 
-  Deliver one TEACH chunk in this order: Source Facts -> Plain Interpretation -> Bridge Move -> Application -> Anchor Artifact.
+  Return exactly:
 
-  Required outputs:
+  1) ConceptType
 
-  - Selected modality with rationale
+  2) ChosenModality
 
-  - Starter anchor artifact
+  3) ReExpressedChunk
 
-  - Representation warning if another modality is likely to mislead
+  4) ModalityRationale
 
-  Hard rules:
-
-  - Pick one dominant start modality only.
-
-  - Explain why the modality fits the concept type.
-
-  - Produce a small starter anchor immediately after the choice.
+  Prefer one strong modality over a cluttered mixed explanation.
 
   '
 gating_rules:
-- Choose image-first, motion-first, words-first, or table-first explicitly.
-- Do not ask the learner to retrieve before the representation is selected.
-- Keep the output small and usable.
-- Stop after one starter anchor exists.
-artifact_type: outline
+- Pick one dominant modality first.
+- Keep the representation choice tied to the concept type.
+- Do not add scored checks or retrieval probes.
+artifact_type: notes
+allowed_moves:
+- Switch from prose to image, motion, table, or other clearer representation
+- Explain why the new modality better fits the concept
+- Keep the chunk small and objective-scoped
+- Add a second modality only if the first still leaves confusion
+forbidden_moves:
+- Keep pushing a weak modality after confusion is obvious
+- Use multiple modalities at once without a clear lead representation
+- Turn the switch into a quiz about preference or confidence
+- Drift outside the active objective scope
+required_outputs:
+- Concept type
+- Chosen modality
+- Re-expressed teaching chunk
+- Modality rationale

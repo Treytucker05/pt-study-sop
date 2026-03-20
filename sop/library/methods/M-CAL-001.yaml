@@ -1,12 +1,14 @@
 id: M-CAL-001
 name: Micro Precheck
 category: calibrate
-description: Run a short scored baseline (2-5 minutes) to estimate current readiness before ENCODE.
+description: Run a short scored micro-calibrate baseline (2-5 minutes) at session opening to estimate readiness before TEACH.
 default_duration_min: 4
 energy_cost: medium
 best_stage: first_exposure
 control_stage: CALIBRATE
 status: validated
+calibrate_phase: micro
+calibrate_scope: opening
 tags:
 - calibrate
 - diagnostic
@@ -17,11 +19,11 @@ mechanisms:
 - retrieval
 - metacognitive_monitoring
 stipulations:
-- This is the first scored stage after PRIME.
+- This is the opening MICRO-CALIBRATE block after PRIME.
 - Require an attempt before hints or full answer reveal.
 - Keep scope bounded to active objective targets.
 when_to_use:
-- Immediately after PRIME exits.
+- Immediately after PRIME exits and before TEACH.
 - When readiness is unknown or likely drifted.
 when_not_to_use:
 - Never before PRIME for first exposure.
@@ -38,7 +40,7 @@ gating_rules:
 - Require one best-attempt response per item before hints or answer reveal.
 - Keep all items constrained to active objective scope.
 - Maintain hard time cap; do not exceed max_duration_min.
-- Do not switch into teaching mode during this block.
+- Do not switch into TEACH or FULL CALIBRATE during this block.
 inputs:
 - Active objective targets
 - Calibrate item set aligned to scope
@@ -61,11 +63,12 @@ outputs:
 - ReadinessSnapshot
 - CalibrationGapSummary
 - DominantErrorSeed
+- MicroCalibrateSnapshot
 artifact_type: notes
 stop_criteria:
 - item_count items attempted or timer cap reached
 - Per-item confidence tags captured
-- ReadinessSnapshot generated
+- ReadinessSnapshot and MicroCalibrateSnapshot generated
 failure_modes:
 - mode: Learner requests answer without attempt
   mitigation: Provide a minimal hint and require attempt.
@@ -112,9 +115,10 @@ required_outputs:
 - ReadinessSnapshot (accuracy summary)
 - CalibrationGapSummary (predicted vs actual gap)
 - DominantErrorSeed (highest-frequency error class)
+- MicroCalibrateSnapshot (opening readiness signal for TEACH routing)
 facilitation_prompt: 'You are running M-CAL-001 (Micro Precheck) in CALIBRATE stage.
 
-  This is a scored baseline, but still brief and low-friction.
+  This is MICRO-CALIBRATE: a scored opening baseline that stays brief and low-friction.
 
 
   Requirements:
@@ -138,7 +142,9 @@ facilitation_prompt: 'You are running M-CAL-001 (Micro Precheck) in CALIBRATE st
 
   4) DominantErrorSeed
 
+  5) MicroCalibrateSnapshot
 
-  Do not move into deep teaching here. Hand off to M-CAL-002 / M-CAL-003 and then ENCODE.
+
+  Do not move into TEACH here. Hand off to TEACH next, then FULL CALIBRATE (M-CAL-002 / M-CAL-003).
 
   '

@@ -7,8 +7,18 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { TutorVerdict, TeachBackRubric } from "@/lib/api";
-import type { ChatMessage, ToolAction } from "./TutorChat.types";
-import { detectMarkdownTable, detectMermaidBlock, summarizeProvenance, summarizeConfidence, TOOL_LABELS, TOOL_ICONS } from "./TutorChat.types";
+import type {
+  ChatMessage,
+  TutorTeachRuntimeStatus,
+  TutorTeachRuntimeViewModel,
+} from "./TutorChat.types";
+import {
+  detectMarkdownTable,
+  detectMermaidBlock,
+  summarizeProvenance,
+  summarizeConfidence,
+  TOOL_ICONS,
+} from "./TutorChat.types";
 import { ICON_SM, TEXT_BADGE } from "@/lib/theme";
 
 function VerdictBadge({ verdict }: { verdict: TutorVerdict }) {
@@ -111,7 +121,7 @@ function TeachBackBadge({ rubric }: { rubric: TeachBackRubric }) {
       {expanded && (
         <div className="mt-2 space-y-1 font-terminal text-xs text-zinc-300">
           {rubric._mastery_blocked && (
-            <p className="text-red-400">Mastery blocked — improve teach-back to unlock</p>
+            <p className="text-red-400">Teach-back flagged a repair block for deeper mastery.</p>
           )}
           {rubric.strengths && rubric.strengths.length > 0 && (
             <p>
@@ -194,6 +204,7 @@ function ProvenanceBadge({ msg }: { msg: ChatMessage }) {
 
 interface MessageListProps {
   messages: ChatMessage[];
+  teachRuntime?: TutorTeachRuntimeViewModel | null;
   onArtifactCreated: (artifact: { type: string; content: string; title?: string }) => void;
   onStudioCapture?: (capture: {
     content: string;
@@ -216,6 +227,56 @@ interface MessageListProps {
   }) => void;
 }
 
+const RUNTIME_STATUS_STYLES: Record<TutorTeachRuntimeStatus, string> = {
+  live: "border-primary/40 bg-primary/10 text-primary",
+  available: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
+  pending: "border-amber-500/40 bg-amber-500/10 text-amber-200",
+  locked: "border-red-500/30 bg-red-500/10 text-red-200",
+  complete: "border-emerald-500/40 bg-emerald-500/10 text-emerald-200",
+  skipped: "border-slate-500/40 bg-slate-500/10 text-slate-300",
+  fallback: "border-secondary/40 bg-secondary/10 text-secondary-foreground",
+};
+
+function runtimeBadgeClasses(status: TutorTeachRuntimeStatus): string {
+  return `rounded-none border px-2 py-1 font-arcade text-[10px] uppercase tracking-[0.18em] ${RUNTIME_STATUS_STYLES[status]}`;
+}
+
+function TeachRuntimeRail({ teachRuntime }: { teachRuntime: TutorTeachRuntimeViewModel }) {
+  const fields = [
+    teachRuntime.stage,
+    teachRuntime.conceptType,
+    {
+      label: "Depth lane",
+      value: `${teachRuntime.depth.current} (${teachRuntime.depth.start} -> ${teachRuntime.depth.ceiling})`,
+      status: teachRuntime.depth.status,
+    },
+    teachRuntime.requiredArtifact,
+    teachRuntime.functionConfirmation,
+    teachRuntime.l4Unlock,
+    teachRuntime.mnemonic,
+  ];
+
+  return (
+    <div data-testid="message-runtime-rail" className="mt-2 border-t border-primary/20 pt-2">
+      <div className="mb-2 font-arcade text-[10px] uppercase tracking-[0.18em] text-primary">
+        Live TEACH Contract
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {fields.map((field) => (
+          <span key={`${field.label}-${field.value}`} className={runtimeBadgeClasses(field.status)}>
+            {field.label}: {field.value}
+          </span>
+        ))}
+      </div>
+      {teachRuntime.missingBackendFields.length > 0 ? (
+        <div className="mt-2 font-terminal text-xs leading-5 text-muted-foreground">
+          Waiting on backend fields: {teachRuntime.missingBackendFields.join(", ")}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function getChatMessageKey(msg: ChatMessage) {
   if (msg.messageId) return msg.messageId;
   return [
@@ -232,7 +293,7 @@ function getChatMessageKey(msg: ChatMessage) {
 
 export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
   function MessageList(
-    { messages, onArtifactCreated, onStudioCapture, onCaptureNote, onFeedback },
+    { messages, teachRuntime, onArtifactCreated, onStudioCapture, onCaptureNote, onFeedback },
     ref,
   ) {
     const [openStudioMenuIndex, setOpenStudioMenuIndex] = useState<number | null>(null);
@@ -247,6 +308,38 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
             <div className="font-terminal text-lg text-muted-foreground leading-7">
               Ask a question to begin learning. Use /note, /card, /map, /table, or /smap for artifacts.
             </div>
+            {teachRuntime ? (
+              <div className="mx-auto mt-4 max-w-4xl rounded-none border border-primary/20 bg-black/35 p-3 text-left">
+                <div className="mb-3 font-arcade text-[10px] uppercase tracking-[0.18em] text-primary">
+                  Current Teaching Contract
+                </div>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                  {[
+                    teachRuntime.stage,
+                    teachRuntime.conceptType,
+                    teachRuntime.bridge,
+                    {
+                      label: "Depth lane",
+                      value: `${teachRuntime.depth.start} -> ${teachRuntime.depth.current} -> ${teachRuntime.depth.ceiling}`,
+                      status: teachRuntime.depth.status,
+                    },
+                    teachRuntime.requiredArtifact,
+                    teachRuntime.functionConfirmation,
+                    teachRuntime.l4Unlock,
+                    teachRuntime.mnemonic,
+                  ].map((field) => (
+                    <div key={`${field.label}-${field.value}`} className="rounded-none border border-primary/10 bg-black/40 p-2">
+                      <div className="font-arcade text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                        {field.label}
+                      </div>
+                      <div className="mt-2 font-terminal text-xs leading-5 text-foreground">
+                        {field.value}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
 
@@ -321,6 +414,10 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
               {msg.role === "assistant" && msg.content && !msg.isStreaming && (
                 <ProvenanceBadge msg={msg} />
               )}
+
+              {msg.role === "assistant" && msg.content && !msg.isStreaming && teachRuntime && i === messages.length - 1 ? (
+                <TeachRuntimeRail teachRuntime={teachRuntime} />
+              ) : null}
 
               {msg.role === "assistant" && msg.content && !msg.isStreaming && (
                 <div className="flex flex-wrap items-center gap-1 mt-2 pt-2 border-t border-primary/20">

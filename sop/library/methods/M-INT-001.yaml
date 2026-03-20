@@ -26,7 +26,6 @@ knobs:
 constraints:
   active_processing_required: true
   objective_scope_required: true
-  no_final_answer_only: true
   non_assessment: true
   no_scored_checks: true
 inputs:
@@ -119,19 +118,18 @@ gating_rules:
 - Keep output scoped to mapped objectives only.
 artifact_type: notes
 allowed_moves:
+- Propose an analogy when the learner needs a bridge into an unfamiliar mechanism
 - Ask probing questions about analogy structure and correspondences
-- Challenge breakdown points — demand specifics on where the analogy fails
+- Challenge breakdown points and make their limits explicit
 - Require structural mapping, not surface similarity (reject "they're both big")
-- Push learner to find additional correspondences beyond initial attempt
+- Invite the learner to refine or extend the mapping after the initial bridge
 - Question whether the familiar domain is truly familiar to the learner
 - Use Socratic questioning to expose gaps in the mapping
-- Demand the learner articulate what the breakdown teaches about the real concept
+- Demand a return to the real concept after the bridge move
 forbidden_moves:
 - Accept surface-level analogy without structural mapping (e.g., "it's like a pump")
-- Provide the analogy FOR the learner — the learner must generate it
 - Skip identification of breakdown points
 - Accept an analogy with fewer than 3 mapped correspondences
-- Teach new content — interrogation uses what was already encoded
 - Let the analogy stand unchallenged as a full explanation
 - Move on without the learner distinguishing analogy from source-backed fact
 - Present content outside the mapped objective scope

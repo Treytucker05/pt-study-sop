@@ -1010,3 +1010,17 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `pytest sop/tests/test_validate_library.py sop/tests/test_build_golden.py brain/tests/test_method_cards_hardening.py brain/tests/test_seed_methods.py brain/tests/test_chain_validator.py brain/tests/test_chain_runner.py brain/tests/test_tutor_session_linking.py brain/tests/test_methods_api.py -q`
   - `cd dashboard_rebuild && npm run test -- client/src/lib/__tests__/displayStage.test.ts client/src/pages/__tests__/methods.test.tsx`
   - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-20 - Tutor TEACH architecture correction pass
+- Locked first-exposure canon to `MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE`, changed the default TEACH depth path to `brief L0 hook -> L3 mechanism -> L4 DPT precision`, replaced mandatory blank-page teach-back gating with low-friction function confirmation, and set mnemonic placement to post-artifact / pre-full-calibrate with `KWIK Lite` as the live lightweight slot.
+- Updated first-exposure and proving-ground chain YAML plus CALIBRATE/KWIK method cards so chain truth matches the canon, including explicit TEACH packet metadata and post-TEACH mnemonic slot policy.
+- Removed selector stage fabrication by deriving selector and chain-status truth from real chain/method YAML, expanded the TEACH runtime packet in `api_tutor_turns.py`, and reframed `tutor_teach_back.py` as deeper mastery / repair instead of the default L3->L4 gate.
+- Wired TEACH packet visibility into the live Tutor UI across the top bar, chat strip, transcript footer, and chain builder, then exposed the packet through `GET /api/tutor/session/<id>` so the UI can read real backend TEACH metadata instead of relying on inference-only fallbacks.
+- Cleaned remaining doctrine drift in `sop/library/10-deployment.md` and `sop/library/methods/M-ENC-001.yaml`, regenerated runtime knowledge uploads plus golden outputs, and added focused backend/frontend proofs for TEACH packet exposure.
+- Validation passed:
+  - `python sop/tools/validate_library.py`
+  - `python sop/tools/build_runtime_bundle.py --update-golden`
+  - `pytest sop/tests/test_validate_library.py sop/tests/test_build_golden.py -q`
+  - `pytest brain/tests/test_selector_bridge.py brain/tests/test_chain_runner.py brain/tests/test_teach_back.py brain/tests/test_tutor_teach_packet.py brain/tests/test_chain_validator.py brain/tests/test_tutor_session_linking.py brain/tests/test_regression_safety.py brain/tests/test_tutor_strategy_mediation.py -q`
+  - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorTopBar.test.tsx client/src/components/__tests__/TutorChat.test.tsx client/src/components/__tests__/TutorChainBuilder.test.tsx client/src/components/__tests__/TutorStartPanel.test.tsx client/src/components/__tests__/MethodBlockCard.test.tsx`
+  - `cd dashboard_rebuild && npm run build`

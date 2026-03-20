@@ -380,12 +380,29 @@ class TestFacilitationPromptInjection:
             teach_context={
                 "objective": "Explain how the mechanism works at L2 before precision detail.",
                 "concept_type": "mechanism",
-                "depth_start": "L1",
-                "depth_ceiling": "L3",
+                "depth_start": "L0",
+                "depth_ceiling": "L4",
+                "depth_path": ["L0", "L3", "L4"],
+                "fallback_depths": ["L1", "L2"],
                 "source_anchors": ["Lecture PDF p.4-5"],
                 "prime_artifacts": ["Study Spine", "Hierarchical Map"],
                 "bridge_moves_allowed": ["analogy", "story"],
+                "first_bridge": "analogy",
                 "required_artifact": "one_page_anchor",
+                "required_close_artifact": "one_page_anchor",
+                "close_artifact_status": "pending",
+                "function_confirmation_gate": {
+                    "mode": "low_friction_function_confirmation",
+                    "state": "pending",
+                    "prompt": "Have the learner confirm the core function before L4 precision.",
+                    "unlocks": "L4_precision",
+                },
+                "mnemonic_slot_policy": {
+                    "mode": "kwik_lite",
+                    "position": "post_artifact_pre_full_calibrate",
+                    "availability": "available_after_close_artifact",
+                    "state": "locked_until_artifact",
+                },
                 "exemplar_refs": ["teach/example/mechanism-001"],
                 "stop_conditions": ["learner_can_explain_L2", "anchor_exists"],
             },
@@ -394,8 +411,13 @@ class TestFacilitationPromptInjection:
         assert "## TEACH Context" in prompt
         assert "Objective: Explain how the mechanism works at L2 before precision detail." in prompt
         assert "Allowed bridge moves: analogy, story" in prompt
+        assert "First bridge to try: analogy" in prompt
+        assert "Required close artifact: one_page_anchor" in prompt
+        assert "Mnemonic slot policy:" in prompt
+        assert "L3 -> L4 unlock gate:" in prompt
         assert "TEACH chunk contract: Source Facts -> Plain Interpretation -> Bridge Move -> Application -> Anchor Artifact." in prompt
         assert "TEACH is non-assessment. Do not quiz, score, or require confidence ratings here." in prompt
+        assert "Use teach-back only for deeper mastery or repair." in prompt
 
     def test_tutor_prompt_builder_preserves_default_rules_with_custom_instructions(self, monkeypatch):
         """Custom instructions append to, but do not replace, core tutor rules."""

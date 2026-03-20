@@ -2,21 +2,27 @@ id: C-FE-PRO
 name: "First Exposure: Procedure"
 description: >-
   Procedure-focused first-exposure chain for high-energy sessions.
-  Uses a TEACH story spine for the ordered process, maps process steps,
-  generates anchors, runs case walkthrough with
-  fault injection, and closes with timed sprint retrieval.
+  Uses explicit opening sequence MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE,
+  then process encoding, anchor generation, case walkthrough with fault
+  injection, and timed sprint retrieval.
 blocks:
   - M-PRE-010  # Learning Objectives Primer (mandatory first)
   - M-PRE-008  # Structural Extraction
+  - M-CAL-001  # Micro Precheck
   - M-TEA-001  # Story Spine (teach the ordered process)
-  - M-ENC-011  # Process Flowchart (Map the steps)
+  - M-ENC-011  # Process Flowchart (TEACH-close artifact target)
+  - M-CAL-002  # Full Calibrate Probes
+  - M-CAL-003  # Full Calibrate Priority Set
   - M-REF-003  # One-Page Anchor
   - M-INT-005  # Case Walkthrough (Fault Injection for procedures)
   - M-RET-007  # Timed Sprint Sets
 allowed_modes:
   - procedure
 gates:
+  - micro_calibrate_before_teach
   - teach_chunk_delivered_when_present
+  - teach_close_artifact_ready
+  - full_calibrate_after_teach
   - cascade_misses_eq_0
 failure_actions:
   - inject_reference_targets_before_retrieve
@@ -27,6 +33,19 @@ is_template: true
 status: draft
 context_tags:
   energy: high
+runtime_profile:
+  opening_sequence:
+    - MICRO-CALIBRATE
+    - TEACH
+    - FULL_CALIBRATE
+  mnemonic_policy: no default mnemonic slot in this chain unless explicitly inserted after TEACH-close artifact
+block_overrides:
+  M-TEA-001:
+    teach_packet:
+      concept_type: procedure
+      bridge_choice: story_spine
+      artifact_target: process_flowchart
+      escalation_rule: brief_l0_hook_then_l3_mechanism_then_l4_precision_with_low_friction_function_confirmation
 default_knobs:
   energy: high
   assessment_mode: procedure

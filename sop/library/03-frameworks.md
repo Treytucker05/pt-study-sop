@@ -84,30 +84,37 @@ Rapid orientation lenses when H/M frameworks are insufficient. Keep to <=4 bulle
 
 ---
 
-## Levels: Pedagogical Depth (L1-L4)
+## Levels: Pedagogical Depth (L0-L4)
 
 Control explanation depth. Gate advancement with demonstrated comprehension.
 
 | Level | Name | Target | Characteristics |
 |-------|------|--------|-----------------|
+| **L0** | Brief Hook | Entry orientation | One image/motion/felt-sense opener; brief and non-authoritative |
 | **L1** | Metaphor/Analogy | Raw relatable image | No technical terms; everyday comparison; "It's like a..." |
-| **L2** | Simple (10-year-old) | Clear child-friendly explanation | Short sentences; everyday words; core concept only; no jargon |
-| **L3** | High School | Add terminology and mechanisms | Proper terms; basic mechanism; real-world context |
-| **L4** | Professional/Clinical (PT) | Full precision for clinical application | Domain jargon; edge cases; clinical implications |
+| **L2** | Simple (10-year-old) | Clear plain-language explanation | Short sentences; everyday words; core concept only; minimal jargon |
+| **L3** | Mechanism | Terminology + causal mechanism | Proper terms; mechanism flow; practical context |
+| **L4** | DPT Precision | Clinical-grade precision | Domain terms; edge cases; differential implications; transfer conditions |
 
 ### Gating Rules
 
-- L1 and L2 are always available.
-- L3 requires demonstrated L2 understanding.
-- L4 requires a clear L2 teach-back first.
-- If learner jumps to L4 terms: stop and request L2 explanation.
+- Default route: **brief L0 hook -> L3 mechanism -> L4 DPT precision**.
+- L1 and L2 are fallback scaffolds, not default route.
+- L3->L4 requires low-friction function confirmation.
+- Do not require mandatory blank-page teach-back as default escalation gate.
 
-**Pattern:** Understand simply -> Add complexity. NOT: Hear complexity -> Hope to understand.
+**Pattern:** Anchor function quickly -> explain mechanism -> sharpen to clinical precision.
 
 ### Practice Modes
 
-- **Core mode:** L1 metaphor -> L2 teach-back -> L4 precision.
-- **Sprint mode:** Quick L2 check even when answer is correct.
+- **Core mode default:** brief L0 hook -> L3 mechanism -> low-friction function confirmation -> L4 precision.
+- **Fallback mode:** insert L1/L2 only when needed to recover understanding.
+- **Sprint mode:** use low-friction checks; avoid mandatory blank-page gating.
+
+### Retired Canon Guidance
+
+- Retired as default live path: mandatory `L1 -> L2 teach-back -> L4` progression.
+- Retired as universal requirement: mandatory L2 teach-back before L4.
 
 ---
 
@@ -132,4 +139,4 @@ Control explanation depth. Gate advancement with demonstrated comprehension.
 | Compensation pattern | Y3 |
 | Neural/sensory pathway | Y4 |
 | Resume / interview prep | M-STAR |
-| Controlling explanation depth | L1-L4 |
+| Controlling explanation depth | L0-L4 |

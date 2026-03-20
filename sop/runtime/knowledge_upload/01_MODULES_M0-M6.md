@@ -48,7 +48,7 @@ Choose how the session will be structured:
 | **Auto** | System recommends a chain based on context (course type, stage, energy, time available) |
 
 Each chain displays:
-- Block sequence with stage badges (PRIME, CALIBRATE, ENCODE, etc.)
+- Block sequence with stage badges (PRIME, TEACH, CALIBRATE, ENCODE, etc.)
 - Estimated duration
 - Context tags (class type, stage, energy level)
 
@@ -89,9 +89,11 @@ All rules from `01-core-rules.md` apply throughout chain execution:
 - **Source-Lock:** All factual content grounded in uploaded materials.
 - **Seed-Lock:** Learner attempts hooks first; tutor does not invent unprompted.
 - **Function Before Structure:** Teach what it does before how it's built.
-- **Level Gating:** L2 teach-back before L4 detail.
+- **Depth default:** brief L0 hook -> L3 mechanism -> L4 DPT precision.
+- **Fallback depth:** L1/L2 only when needed to recover comprehension.
+- **L3->L4 gate:** low-friction function confirmation (not mandatory blank-page teach-back).
 - **No Phantom Outputs:** If a step didn't happen, output NOT DONE / UNKNOWN.
-- **KWIK Flow** (inside ENCODE blocks): Sound → Function → Image → Resonance → Lock.
+- **KWIK placement:** KWIK Lite after TEACH close artifact and before FULL CALIBRATE; full KWIK Hook deeper in ENCODE/OVERLEARN.
 
 ### Block-Level Stage Behaviors
 
@@ -100,14 +102,30 @@ All rules from `01-core-rules.md` apply throughout chain execution:
 - Output: Spine, Unknowns, Predictions, GoalTargets.
 - **First exposure:** UNKNOWN is a valid answer (can't test what you haven't learned).
 
-#### CALIBRATE blocks (diagnostic, not testing)
+#### MICRO-CALIBRATE opening check (inside CALIBRATE stage, no grading)
+- Low-friction function confirmation before TEACH.
+- Short orientation check only; no deep retrieval or scoring language.
+- Output: MicroCalibrateSignal used to tune TEACH depth/bridge choice.
+
+#### TEACH blocks (explanation-first, no scoring)
+- One chunk at a time: Source Facts -> Plain Interpretation -> Bridge Move -> Application -> Anchor Artifact.
+- Depth default: brief L0 hook -> L3 mechanism -> L4 DPT precision.
+- L1/L2 are fallback scaffolds only.
+- Output: TeachChunk + AnchorArtifact + ApplicationLink.
+
+#### Post-TEACH mnemonic compression slot
+- Run **KWIK Lite** after TEACH close artifact and before FULL CALIBRATE.
+- KWIK Lite contract: system seed + one learner ownership action.
+- Full KWIK Hook is not the default in this slot.
+
+#### FULL CALIBRATE blocks (diagnostic, not grading)
 - 2-5 min, 5-10 items, confidence tags H/M/L, no grading language.
 - Items >45 seconds → mark miss, move on.
 - Output: CalibrateResults + PrioritySet (top 3 weaknesses).
 
-#### ENCODE blocks (attach meaning)
+#### ENCODE blocks (learner production and deeper encoding)
 - PrioritySet-driven construction. Learner supplies the Seed (Seed-Lock).
-- KWIK flow for hooks. Dual coding (words + visuals).
+- Full KWIK Hook may run here when deeper compression is needed.
 - Desirable difficulty only after initial encoding is stable.
 - Output: Encoded weaknesses, hooks locked, reference artifacts.
 
@@ -194,8 +212,11 @@ WIZARD (3-step setup)
 CHAIN EXECUTION (block by block)
   │
   ├── PRIME blocks → orientation, brain dump, structural extraction
-  ├── CALIBRATE blocks → diagnostic, confidence tags, Priority Set
-  ├── ENCODE blocks → KWIK, teach-back, draw-label, concept map
+  ├── MICRO-CALIBRATE → low-friction function check (opening)
+  ├── TEACH blocks → chunked explanation + anchor artifact
+  ├── KWIK Lite slot → post-artifact mnemonic compression
+  ├── FULL CALIBRATE blocks → diagnostic, confidence tags, Priority Set
+  ├── ENCODE blocks → deeper learner production + optional full KWIK
   ├── REFERENCE blocks → one-page anchor, question bank seed
   ├── RETRIEVE blocks → free recall, sprint quiz, adversarial drill
   └── OVERLEARN blocks → anki cards, drill sheets

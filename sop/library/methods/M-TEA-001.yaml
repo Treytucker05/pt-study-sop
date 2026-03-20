@@ -1,100 +1,104 @@
 id: M-TEA-001
 name: Story Spine
-category: prime
-description: Turn a sequence, pathway, or cascade into a short narrative spine so the learner can track beginning state, trigger, movement, consequence, and where the story breaks clinically.
+category: encode
+description: Teach a sequence or pathway as a compact story with a beginning state, trigger, causal progression, consequence, and clinical breakpoint.
 default_duration_min: 6
 energy_cost: medium
 best_stage: first_exposure
 control_stage: TEACH
 status: draft
 tags:
+- teach
+- story
 - sequence
 - pathway
 - narrative
-- mechanism
 mechanisms:
-- elaboration
 - scaffolding
+- elaboration
 - transfer
+stipulations:
+- Story is a teaching bridge, not source evidence by itself.
+- Keep the story faithful to the source sequence and name where the simplification breaks.
 knobs:
   guidance_level: medium
-  output_format: bulleted_spine
+  output_format: bullets
 constraints:
   non_assessment: true
   no_scored_checks: true
   objective_scope_required: true
-  one_chunk_only: true
 inputs:
-- Target sequence, pathway, or cascade
-- Source anchors for the steps
-- Current learning objective
+- Ordered process, pathway, or sequence
+- Source anchors for the key steps
 steps:
 - step: 1
-  action: State the starting state and the trigger in plain language.
-  notes: Do not begin with jargon unless the learner already has the labels.
+  action: State the beginning state and trigger
+  notes: Name the system before change begins.
 - step: 2
-  action: Walk through the movement/change one step at a time.
-  notes: Keep causal transitions explicit.
+  action: Walk the sequence as a causal story
+  notes: Each sentence should move the process forward.
 - step: 3
-  action: Add one bridge move if needed.
-  notes: A short story image is allowed, but it must map back to the real mechanism.
+  action: Mark the main consequence or endpoint
+  notes: Show why the sequence matters.
 - step: 4
-  action: End with the main consequence and one clinical breakdown point.
-  notes: Name where the story stops matching reality or where it matters clinically.
+  action: Add one clinical breakpoint or failure point
+  notes: Explain where the story goes wrong in the real world.
 - step: 5
-  action: Produce one anchor artifact.
-  notes: Use a mini process flow or one-page anchor outline.
+  action: Return to the formal mechanism terms
+  notes: Translate the story back to the real source language.
 outputs:
-- Story spine with start, trigger, movement, consequence
-- One clinical breakdown point
-- Mini process flow anchor
+- Story spine
+- Ordered step list
+- Clinical breakpoint
+- Source-backed mechanism restatement
 stop_criteria:
-- Learner has a usable L2 explanation of the sequence
-- One anchor artifact exists
-- One clinical implication is tied in
+- Beginning state, trigger, middle progression, and endpoint are all present
+- One breakpoint is named
+- Story is translated back into source terms
 failure_modes:
-- mode: Story becomes fiction detached from source
-  mitigation: Re-anchor every story beat to the source facts.
-- mode: Too many details in one pass
-  mitigation: Keep the chunk to one sequence slice only.
-- mode: No breakdown point named
-  mitigation: Explicitly state where the story analogy stops or misleads.
-logging_fields:
-- teach_concept_type
-- bridge_move_used
-- anchor_artifact_created
+- mode: Story becomes decorative and loses the mechanism
+  mitigation: Re-anchor every sentence to the underlying cause-effect chain.
+- mode: Learner remembers story but not real terms
+  mitigation: End with a direct source-term restatement.
 evidence:
   citation: Mayer (2009)
-  finding: Segmented explanation and coherent signaling improve novice understanding of complex processes.
-  source: teaching_doctrine
+  finding: Segmented explanation and pretraining support novice learning on unfamiliar systems
+  source: control-plane migration
+evidence_raw: Mayer (2009); segmented explanation supports novice learning on unfamiliar systems
 facilitation_prompt: 'You are running M-TEA-001 (Story Spine) in TEACH stage.
 
-  This method is non-assessment. Do not score, grade, or quiz the learner.
+  This method is non-assessment. Teach one bounded story chunk.
 
-  Deliver one TEACH chunk in this order: Source Facts -> Plain Interpretation -> Bridge Move -> Application -> Anchor Artifact.
+  Return exactly:
 
-  Required outputs:
+  1) StorySpine
 
-  - Story spine with start, trigger, movement, consequence
+  2) OrderedStepList
 
-  - One clinical breakdown point
+  3) ClinicalBreakpoint
 
-  - Mini process flow anchor
+  4) MechanismRestatement
 
-  Hard rules:
-
-  - Meaning first, bridge second, anchor third.
-
-  - Keep the story tied to source facts.
-
-  - If you use a bridge move, state where it breaks down before moving on.
-
-  - Stop once the learner has a usable L2 grasp plus one anchor artifact.
+  Keep the story faithful to the source sequence and translate back to formal source terms before stopping.
 
   '
 gating_rules:
-- Stay inside the active objective scope.
-- Do not introduce scored checks or confidence ratings in TEACH.
-- Use story only as a teaching bridge, never as source evidence.
-- End the chunk after one anchor artifact is produced.
-artifact_type: flowchart
+- Keep the story inside the active objective scope.
+- Use the story only to clarify the true causal sequence.
+- End with a source-backed restatement.
+artifact_type: notes
+allowed_moves:
+- Turn a hard sequence into a simple causal story
+- Emphasize trigger, transition, endpoint, and breakpoint
+- Pause to restate the real mechanism after the bridge
+- Ask a light check-in question about whether the story clicks
+forbidden_moves:
+- Score the learner or turn the story into a quiz
+- Add causal steps not supported by source anchors
+- Leave the story un-translated back to the formal mechanism
+- Use the story as the final evidence instead of the source-backed explanation
+required_outputs:
+- Story spine
+- Ordered step list
+- Clinical breakpoint
+- Source-backed mechanism restatement

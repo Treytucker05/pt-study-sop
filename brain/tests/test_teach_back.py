@@ -7,6 +7,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tutor_teach_back import (
     TEACH_BACK_PROMPT_SUFFIX,
+    TEACH_BACK_IS_DEFAULT_L4_GATE,
+    TEACH_BACK_RUNTIME_ROLE,
     check_teach_back_gate,
     parse_teach_back_rubric,
     rubric_blocks_mastery,
@@ -140,6 +142,10 @@ class TestTeachBackGate:
         assert check_teach_back_gate(0.8)
         assert check_teach_back_gate(1.0)
 
+    def test_teach_back_not_default_l4_gate(self):
+        assert TEACH_BACK_IS_DEFAULT_L4_GATE is False
+        assert TEACH_BACK_RUNTIME_ROLE == "deeper_mastery_or_repair"
+
 
 class TestRubricBlocksMastery:
     def test_pass_does_not_block(self):
@@ -211,3 +217,7 @@ class TestPromptSuffix:
     def test_suffix_instructs_novice_behavior(self):
         assert "NOVICE" in TEACH_BACK_PROMPT_SUFFIX.upper()
         assert "Do NOT explain" in TEACH_BACK_PROMPT_SUFFIX
+
+    def test_suffix_marks_deeper_mastery_position(self):
+        assert "deeper mastery / repair" in TEACH_BACK_PROMPT_SUFFIX
+        assert "NOT the default L3 -> L4 unlock gate" in TEACH_BACK_PROMPT_SUFFIX

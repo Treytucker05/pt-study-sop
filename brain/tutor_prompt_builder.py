@@ -172,9 +172,23 @@ def _build_teach_context_section(teach_context: Optional[dict]) -> Optional[str]
 
     depth_start = str(teach_context.get("depth_start") or "").strip()
     depth_ceiling = str(teach_context.get("depth_ceiling") or "").strip()
+    depth_path = teach_context.get("depth_path")
+    fallback_depths = teach_context.get("fallback_depths")
     if depth_start or depth_ceiling:
+        if isinstance(depth_path, list) and depth_path:
+            path_text = " -> ".join(str(level) for level in depth_path)
+            lines.append(
+                f"- Default depth path: {path_text} (start at {depth_start or 'L0'}, ceiling {depth_ceiling or 'L4'})"
+            )
+        else:
+            lines.append(
+                f"- Depth ladder: start at {depth_start or 'L0'} and do not exceed {depth_ceiling or 'L4'}"
+            )
+    if isinstance(fallback_depths, list) and fallback_depths:
         lines.append(
-            f"- Depth ladder: start at {depth_start or 'L1'} and do not exceed {depth_ceiling or 'L4'}"
+            "- Fallback scaffolds: "
+            + ", ".join(str(level) for level in fallback_depths)
+            + " only when the learner needs extra support."
         )
 
     source_anchors = teach_context.get("source_anchors")
@@ -193,10 +207,55 @@ def _build_teach_context_section(teach_context: Optional[dict]) -> Optional[str]
             "- Allowed bridge moves: "
             + ", ".join(str(move) for move in bridge_moves_allowed)
         )
+    first_bridge = str(teach_context.get("first_bridge") or "").strip()
+    if first_bridge:
+        lines.append(f"- First bridge to try: {first_bridge}")
 
-    required_artifact = str(teach_context.get("required_artifact") or "").strip()
+    required_artifact = str(
+        teach_context.get("required_close_artifact")
+        or teach_context.get("required_artifact")
+        or ""
+    ).strip()
     if required_artifact:
-        lines.append(f"- Required anchor artifact: {required_artifact}")
+        lines.append(f"- Required close artifact: {required_artifact}")
+    close_artifact_status = str(teach_context.get("close_artifact_status") or "").strip()
+    if close_artifact_status:
+        lines.append(f"- Close artifact status: {close_artifact_status}")
+
+    function_confirmation_gate = teach_context.get("function_confirmation_gate")
+    if isinstance(function_confirmation_gate, dict) and function_confirmation_gate:
+        lines.append("- L3 -> L4 unlock gate:")
+        gate_mode = str(function_confirmation_gate.get("mode") or "").strip()
+        gate_state = str(function_confirmation_gate.get("state") or "").strip()
+        gate_prompt = str(function_confirmation_gate.get("prompt") or "").strip()
+        gate_unlock = str(function_confirmation_gate.get("unlocks") or "").strip()
+        if gate_mode:
+            lines.append(f"  - Mode: {gate_mode}")
+        if gate_state:
+            lines.append(f"  - State: {gate_state}")
+        if gate_prompt:
+            lines.append(f"  - Prompt: {gate_prompt}")
+        if gate_unlock:
+            lines.append(f"  - Unlocks: {gate_unlock}")
+
+    mnemonic_slot_policy = teach_context.get("mnemonic_slot_policy")
+    if isinstance(mnemonic_slot_policy, dict) and mnemonic_slot_policy:
+        lines.append("- Mnemonic slot policy:")
+        slot_mode = str(mnemonic_slot_policy.get("mode") or "").strip()
+        slot_position = str(mnemonic_slot_policy.get("position") or "").strip()
+        slot_availability = str(mnemonic_slot_policy.get("availability") or "").strip()
+        slot_state = str(mnemonic_slot_policy.get("state") or "").strip()
+        slot_reason = str(mnemonic_slot_policy.get("reason") or "").strip()
+        if slot_mode:
+            lines.append(f"  - Mode: {slot_mode}")
+        if slot_position:
+            lines.append(f"  - Position: {slot_position}")
+        if slot_availability:
+            lines.append(f"  - Availability: {slot_availability}")
+        if slot_state:
+            lines.append(f"  - State: {slot_state}")
+        if slot_reason:
+            lines.append(f"  - Reason: {slot_reason}")
 
     exemplar_refs = teach_context.get("exemplar_refs")
     if isinstance(exemplar_refs, list) and exemplar_refs:
@@ -214,6 +273,7 @@ def _build_teach_context_section(teach_context: Optional[dict]) -> Optional[str]
             "- TEACH is non-assessment. Do not quiz, score, or require confidence ratings here.",
             "- Bridge moves are teaching aids, not evidence. If you use an analogy, state its breakdown point before moving on.",
             "- Meaning first, bridge second, anchor third.",
+            "- Use teach-back only for deeper mastery or repair. It is not the default L3 -> L4 unlock gate.",
         ]
     )
     return "\n".join(lines)

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
@@ -417,5 +417,149 @@ describe("TutorChat", () => {
     fireEvent.click(screen.getByRole("button", { name: /where from/i }));
     expect(await screen.findByText(/^Confidence$/i)).toBeInTheDocument();
     expect(await screen.findByText(/Cited source: Lecture transcript.txt/i)).toBeInTheDocument();
+  });
+
+  it("renders the live TEACH runtime strip with resilient fallback text", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : (input as Request).url;
+
+      if (url.includes("/turn")) {
+        return makeSseResponse([
+          { type: "token", content: "Let's walk the mechanism." },
+          { type: "done", model: "codex" },
+        ]);
+      }
+
+      return new Response(
+        JSON.stringify({
+          session_id: "sess-runtime",
+          current_block_index: 0,
+          chain_blocks: [
+            {
+              id: 8,
+              name: "Teach the sodium-potassium mechanism",
+              category: "teach",
+              description: "Explain the mechanism chunk before checking it.",
+              default_duration_min: 12,
+              facilitation_prompt: "Use analogy, then build a mini process flow.",
+            },
+          ],
+          content_filter: {},
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    });
+
+    render(
+      <TutorChat
+        sessionId="sess-runtime"
+        availableMaterials={[]}
+        selectedMaterialIds={[]}
+        accuracyProfile="balanced"
+        onAccuracyProfileChange={vi.fn()}
+        onSelectedMaterialIdsChange={vi.fn()}
+        onArtifactCreated={vi.fn()}
+        onTurnComplete={vi.fn()}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    const runtimeStrip = await screen.findByTestId("tutor-teach-runtime-strip");
+    expect(runtimeStrip).toBeInTheDocument();
+    expect(within(runtimeStrip).getByText(/Live TEACH Packet/i)).toBeInTheDocument();
+    expect(within(runtimeStrip).getByText(/^Procedure$/i)).toBeInTheDocument();
+    expect(within(runtimeStrip).getByText(/^Analogy$/i)).toBeInTheDocument();
+    expect(within(runtimeStrip).getByText(/Mini Process Flow/i)).toBeInTheDocument();
+    expect(within(runtimeStrip).getByText(/Waiting on backend fields/i)).toBeInTheDocument();
+  });
+
+  it("uses backend TEACH packet data without showing missing-field warnings", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : (input as Request).url;
+
+      if (url.includes("/turn")) {
+        return makeSseResponse([
+          { type: "token", content: "Mechanism locked." },
+          { type: "done", model: "codex" },
+        ]);
+      }
+
+      return new Response(
+        JSON.stringify({
+          session_id: "sess-runtime-backend",
+          current_block_index: 0,
+          teach_packet: {
+            concept_type: "mechanism",
+            current_bridge: "analogy",
+            current_depth: "L3",
+            depth_start: "L0",
+            depth_ceiling: "L4",
+            required_close_artifact: "mini_process_flow",
+            function_confirmation: "pending",
+            function_confirmed: false,
+            l4_unlocked: false,
+            mnemonic_state: "locked_until_artifact",
+          },
+          chain_blocks: [
+            {
+              id: 8,
+              name: "Teach the sodium-potassium mechanism",
+              category: "teach",
+              description: "Explain the mechanism chunk before checking it.",
+              default_duration_min: 12,
+              facilitation_prompt: "Use analogy, then build a mini process flow.",
+              teach_packet: {
+                concept_type: "mechanism",
+                current_bridge: "analogy",
+                current_depth: "L3",
+                required_close_artifact: "mini_process_flow",
+                function_confirmation: "pending",
+                l4_unlocked: false,
+                mnemonic_state: "locked_until_artifact",
+              },
+            },
+          ],
+          content_filter: {},
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    });
+
+    render(
+      <TutorChat
+        sessionId="sess-runtime-backend"
+        availableMaterials={[]}
+        selectedMaterialIds={[]}
+        accuracyProfile="balanced"
+        onAccuracyProfileChange={vi.fn()}
+        onSelectedMaterialIdsChange={vi.fn()}
+        onArtifactCreated={vi.fn()}
+        onTurnComplete={vi.fn()}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    const runtimeStrip = await screen.findByTestId("tutor-teach-runtime-strip");
+    expect(runtimeStrip).toBeInTheDocument();
+    expect(within(runtimeStrip).getByText(/^Mechanism$/i)).toBeInTheDocument();
+    expect(within(runtimeStrip).getByText(/^Analogy$/i)).toBeInTheDocument();
+    expect(within(runtimeStrip).getByText(/Mini Process Flow/i)).toBeInTheDocument();
+    expect(within(runtimeStrip).queryByText(/Waiting on backend fields/i)).not.toBeInTheDocument();
   });
 });

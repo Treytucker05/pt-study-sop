@@ -122,6 +122,28 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Completed 2026-03-20: upgraded canon stage order to `PRIME -> TEACH -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`, added `TEACH` to DB/runtime/API/frontend stage contracts, built TEACH prompt assembly and non-assessment guardrails, reclassified explanation-first methods into TEACH, added five TEACH-native method cards, updated chain validation plus selector policy to CP-MSS v2.0, exposed TEACH in Methods UI filtering and badges, regenerated `sop/runtime/*` plus golden outputs, and passed validator, backend, frontend, and production build verification.
     - targeted validation covers SOP validators/tests, backend runtime/tests, relevant Tutor frontend tests, and a production frontend build
 
+### Sprint: Tutor TEACH Architecture Correction (2026-03-20)
+- [ ] TTAC-100. Align canon, chains, runtime, mnemonic policy, and the live Tutor UI to the locked TEACH-first first-exposure architecture.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `sop/library/`
+    - `sop/tools/`
+    - `sop/runtime/`
+    - `brain/`
+    - `dashboard_rebuild/client/src/`
+    - `brain/tests/`
+    - `sop/tests/`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - canon explicitly defines first-exposure opening as `MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE`
+    - canon and runtime agree that the default TEACH depth path is `brief L0 hook -> L3 mechanism -> L4 DPT precision`, with `L1/L2` fallback-only
+    - `L3 -> L4` escalation uses low-friction function confirmation instead of mandatory blank-page teach-back
+    - TEACH packets/chains/runtime expose concept type, first bridge, required close artifact, function-confirmation state, and mnemonic slot policy
+    - `KWIK Lite` exists as the live post-artifact / pre-FULL-CALIBRATE mnemonic path while full `KWIK Hook` remains deeper in `ENCODE` / `OVERLEARN`
+    - selector/runtime stage metadata derives from actual chain truth instead of hardcoded stage lists
+    - the live Tutor UI visibly exposes TEACH packet state and locked/unlocked progression
+    - SOP validators/tests, backend runtime/tests, relevant Tutor frontend tests, and a production frontend build all pass
+
 ### Sprint: Custom Navbar Layout Plugin (2026-03-16)
 - [x] FNP-100. Create a minimal custom navbar layout plugin that imports the dashboard shell background plus the split navbar button PNGs and lays them out automatically in the open design file.
   - Scope:

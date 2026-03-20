@@ -189,8 +189,7 @@ export function useTutorSession({
     setCurrentBlockIndex(session.current_block_index ?? 0);
     setChainBlocks(
       (session.chain_blocks || []).map((block) => ({
-        id: block.id,
-        name: block.name,
+        ...block,
         category: block.category,
         description: block.description || "",
         duration: block.default_duration_min,

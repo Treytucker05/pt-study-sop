@@ -1,18 +1,19 @@
 # ENCODE Category Reference
 
-Stage: 3 of 6 | Control Stage: `ENCODE`
-Purpose: Build understanding deeply enough to be remembered and explained.
+Stage: 4 of 7 | Control Stage: `ENCODE`
+Purpose: Turn explained material into learner-built structures, explanations, maps, and durable internal representations.
 
 ## Entry / Exit
 
-- **Entry**: CALIBRATE identified what needs to be fixed/learned.
-- **Exit**: Learner can explain the concept in their own words with correct structure.
+- **Entry**: CALIBRATE identified what needs work, or TEACH handed off a chunk that now needs learner production.
+- **Exit**: Learner has actively built or transformed the concept well enough to explain, map, compare, or apply it.
 
 ## Hard Rules
 
-- Use active processing: explain, compare, map, trace.
-- Convert weak/confused areas into coherent mental models.
+- Use active processing: generate, map, compare, draw, teach back, or transform.
+- Convert explained material into coherent learner-owned mental models.
 - Not for: passive rereading as the primary activity.
+- Not for: tutor-led first-contact explanation; that belongs in TEACH.
 
 ## Method Inventory
 
@@ -26,7 +27,6 @@ Purpose: Build understanding deeply enough to be remembered and explained.
 | M-ENC-004 | Teach-Back | medium | 8 min | generation, self_explanation |
 | M-ENC-005 | Why-Chain | medium | 5 min | elaborative_interrogation |
 | M-ENC-007 | Self-Explanation Protocol | medium | 8 min | self_explanation |
-| M-ENC-008 | Mechanism Trace | medium | 10 min | causal_reasoning |
 | M-ENC-009 | Concept Map | medium | 10 min | spatial_organization |
 | M-ENC-010 | Comparison Table | medium | 8 min | discrimination |
 | M-ENC-011 | Process Flowchart | medium | 10 min | procedural_encoding |
@@ -38,7 +38,6 @@ Purpose: Build understanding deeply enough to be remembered and explained.
 
 | ID | Name | Energy | Duration | Key Mechanism |
 |----|------|--------|----------|--------------|
-| M-INT-001 | Analogy Bridge | medium | 5 min | analogical_transfer |
 | M-INT-002 | Clinical Application | medium | 8 min | application_transfer |
 | M-INT-003 | Cross-Topic Link | medium | 5 min | interleaving |
 | M-INT-004 | Side-by-Side Comparison | medium | 8 min | discrimination |
@@ -47,17 +46,18 @@ Purpose: Build understanding deeply enough to be remembered and explained.
 
 ## Contract Summary
 
-- **Allowed**: Active processing (explain, compare, map, trace, generate), build mental models, use analogies and multiple representations.
+- **Allowed**: Active processing (teach back, compare, map, trace, generate), build learner-owned mental models, transform source material into artifacts.
 - **Forbidden**: Passive rereading, skipping active production, accepting surface-level answers without elaboration.
 - **Required outputs**: Vary per method — typically artifacts (maps, tables, explanations, flowcharts).
 
 ## Sample Tutor Prompt
 
 ```
-You are running an ENCODE block. Use active processing to build deep
-understanding. The learner must explain, compare, map, or trace — not
-passively reread. End each teaching chunk with a check-in. Exit when
-the learner can explain the concept in their own words correctly.
+You are running an ENCODE block. The learner must build something:
+an explanation, map, comparison, flow, or other active artifact. Do not
+passively summarize. Use the learner's production to reveal weak points
+and tighten the structure. Exit when the learner can produce the concept
+in a usable form.
 ```
 
 ## Evidence Anchors

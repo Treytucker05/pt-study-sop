@@ -2,6 +2,11 @@ import { useId, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { CATEGORY_COLORS } from "@/api.types";
+import {
+  getMethodControlStage,
+  getMethodStageBadgeLabel,
+  getMethodStageColorKey,
+} from "@/lib/controlStages";
 import type {
   AppLearningObjective,
   MethodCategory,
@@ -1160,7 +1165,7 @@ function ChainOptionsCard({
               const isSelected = chainId === chain.id;
               const blockCounts: Record<string, number> = {};
               for (const block of chain.blocks) {
-                const stage = block.control_stage || block.category || "ENCODE";
+                const stage = getMethodControlStage(block) || "ENCODE";
                 blockCounts[stage] = (blockCounts[stage] || 0) + 1;
               }
               return (
@@ -1186,11 +1191,11 @@ function ChainOptionsCard({
                         key={stage}
                         className="text-xs font-terminal px-1 border"
                         style={{
-                          color: CATEGORY_COLORS[stage as MethodCategory] || "#888",
-                          borderColor: `${CATEGORY_COLORS[stage as MethodCategory] || "#888"}40`,
+                          color: CATEGORY_COLORS[getMethodStageColorKey({ control_stage: stage }) as MethodCategory] || "#888",
+                          borderColor: `${CATEGORY_COLORS[getMethodStageColorKey({ control_stage: stage }) as MethodCategory] || "#888"}40`,
                         }}
                       >
-                        {count} {stage}
+                        {count} {getMethodStageBadgeLabel({ control_stage: stage })}
                       </span>
                     ))}
                   </div>

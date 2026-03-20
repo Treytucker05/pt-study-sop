@@ -1,18 +1,18 @@
 # CALIBRATE Category Reference
 
-Stage: 2 of 6 | Control Stage: `CALIBRATE`
-Purpose: Surface what the learner already knows, what they think they know, and where the mismatch is before encoding.
+Stage: 3 of 7 | Control Stage: `CALIBRATE`
+Purpose: Surface what the learner already knows, what they think they know, and where the mismatch is before learner-production work.
 
 ## Entry / Exit
 
-- **Entry**: PRIME complete, or returning topic with prior context that needs activation/readiness mapping.
+- **Entry**: PRIME complete, TEACH complete when present, or returning topic with prior context that needs activation/readiness mapping.
 - **Exit**: Clear readiness map exists (anchors, gaps, confidence, or error pattern depending on method).
 
 ## Hard Rules
 
 - Activation and/or diagnostic probes are allowed here.
 - Confidence capture is required when the method uses scored or confidence-tagged probes.
-- Must follow PRIME in first-exposure chains.
+- Must follow PRIME, and it must follow TEACH when a chain includes TEACH.
 - Not for: endless quizzing, long lectures, or blind checks on unseen material.
 
 ## Method Inventory

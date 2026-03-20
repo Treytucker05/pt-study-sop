@@ -1,28 +1,26 @@
 id: C-TRY-002
 name: "Top-Down Forward Progress"
 description: >-
-  Evidence-based first-exposure chain for top-down learners. Built on C-TRY-001
-  with three key upgrades: (1) retrieval-based calibration via Micro Precheck
-  instead of narrative self-report — breaks the coverage trap (Bjork 2013);
-  (2) student-generated Concept Map added to ENCODE for visual relationship
-  encoding (Faraji 2025, SMD=1.693); (3) tiered exit points at 20/35/50 min
-  so every session is complete regardless of time available. Teach-Back replaces
-  separate retrieval block — Chi (1994) showed self-explanation forces the same
-  recall + gap detection as free recall. Single Brain Dump at session close for
-  consolidation. Micro Precheck silently skipped on first session per course.
+  Top-down first-exposure chain with tiered exits and explicit opening order:
+  MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE. TEACH closes with a learner-usable
+  anchor artifact before any mnemonic slot. Teach-back is removed from the
+  default live path.
 blocks:
-  # --- TIER 1: 20-min minimum (orientation + targets) ---
-  - M-PRE-004      # Hierarchical Advance Organizer (big picture — 5 min)
-  - M-PRE-011      # Hand-Draw Map (spatial mind map — 5 min)
-  - M-CAL-001      # Micro Precheck (retrieval-based calibration — 4 min)
-  - M-REF-003      # One-Page Anchor (retrieval targets — 8 min)
-  # --- TIER 2: +15 min (deep encoding) ---
-  - M-ENC-001      # KWIK Hook (sound-story mnemonics — 3 min)
-  - M-INT-001      # Analogy Bridge (cross-domain connections — 3 min)
-  - M-ENC-009      # Concept Map (visual relationship encoding — 10 min)
-  # --- TIER 3: +15 min (retrieval + closure) ---
-  - M-ENC-004      # Teach-Back (explain it back = retrieval test — 5 min)
-  - M-OVR-004      # Brain Dump + Exit (session-level recall + gap fill — 7 min)
+  # --- TIER 1: opening architecture complete ---
+  - M-PRE-004      # Hierarchical Advance Organizer
+  - M-PRE-011      # Hand-Draw Map
+  - M-CAL-001      # MICRO-CALIBRATE baseline
+  - M-ENC-008      # TEACH Mechanism Trace
+  - M-INT-001      # TEACH Analogy Bridge
+  - M-REF-003      # TEACH-close artifact
+  - M-CAL-002      # FULL CALIBRATE probes
+  - M-CAL-003      # FULL CALIBRATE priority set
+  # --- TIER 2: deep encode ---
+  - M-ENC-001      # Full KWIK Hook (deeper ENCODE)
+  - M-ENC-009      # Concept Map (learner-facing production)
+  # --- TIER 3: retrieval + closure ---
+  - M-RET-001      # Timed Brain Dump
+  - M-OVR-004      # Brain Dump + Exit
 allowed_modes:
   - classification
   - mechanism
@@ -32,23 +30,26 @@ allowed_modes:
   - recognition
 gates:
   - prime_artifacts_present
-  - calibrate_skip_if_first_session
-  - reference_targets_ready
+  - micro_calibrate_before_teach
+  - teach_chunk_delivered_when_present
+  - teach_close_artifact_ready
+  - full_calibrate_after_teach
+  - mnemonic_after_teach_close_artifact_only
   - retrieve_after_reference_only
   - tier_exit_allowed
 failure_actions:
-  - if_calibrate_poor_flag_gaps_but_advance
-  - if_recall_poor_return_to_encode
+  - if_micro_calibrate_unstable_reduce_initial_chunk
+  - if_full_calibrate_poor_route_to_targeted_encode
   - substitute_by_error_type_mapping
 requires_reference_targets: true
 tier_exits:
   tier_1:
-    after_block: M-REF-003
-    min_duration_min: 20
-    description: "Orientation + targets complete. Safe to stop."
+    after_block: M-CAL-003
+    min_duration_min: 24
+    description: "Opening architecture complete (MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE). Safe to stop."
   tier_2:
     after_block: M-ENC-009
-    min_duration_min: 35
+    min_duration_min: 38
     description: "Deep encoding complete. Safe to stop."
   tier_3:
     after_block: M-OVR-004
@@ -60,82 +61,39 @@ context_tags:
   time_available: 50
   learner_style: top_down_structured
 runtime_profile:
-  provenance_mode: strict       # always cite sources inline; flag general-knowledge claims
-  confidence_floor: medium      # do not proceed if confidence is below this threshold
-  block_overrides: {}           # per-block knob overrides (empty for now)
-  teaching_style: explanation-first but more structured and target-oriented
-  analogy_policy: analogies allowed as support, not as the dominant teaching mechanism
-  retrieval_timing: use earlier calibration only when prior exposure or learner readiness exists; otherwise stay explanation-first and skip retrieval-style calibration
-  provenance_policy: materials and notes first for factual claims; general knowledge allowed for conceptual teaching with explicit disclosure
-  confidence_policy: qualitative grounding labels preferred over raw numeric confidence for normal tutoring
-  output_policy: notes and cards must be dependable session outputs
+  opening_sequence:
+    - MICRO-CALIBRATE
+    - TEACH
+    - FULL_CALIBRATE
+  depth_policy: brief_l0_hook_then_l3_mechanism_then_l4_precision_with_l1_l2_fallback_only
+  l3_to_l4_gate: low_friction_function_confirmation
+  teaching_style: explanation-first but structured and target-oriented
+  mnemonic_policy: mnemonic slot only after TEACH-close artifact; full KWIK remains ENCODE depth work
+  provenance_mode: strict
+  confidence_floor: medium
 default_knobs:
   energy: medium
   near_miss_intensity: low
   time_available_min: 50
   timed: soft
 block_overrides:
-  M-CAL-001:
-    allowed_moves:
-      - Keep calibration brief and tightly scoped to the active objective.
-      - Skip or downgrade to a non-retrieval readiness check on true first exposure.
-      - Use the result to steer later encoding depth.
-    forbidden_moves:
-      - Do not drift into explanation-heavy teaching during calibration.
-      - Do not turn a short calibrate block into a full quiz.
-      - Do not force recall before prior exposure or learner consent.
-    required_outputs:
-      - readiness snapshot
-      - calibration gap
-      - dominant error seed
-  M-REF-003:
-    allowed_moves:
-      - Produce retrieval-ready targets before later retrieval-like behavior.
-      - Keep the anchor highly discriminative and objective-scoped.
-    forbidden_moves:
-      - Do not proceed as though retrieval targets exist if the anchor is vague.
-    required_outputs:
-      - One-page anchor with explicit retrieval-ready cues
-  M-ENC-001:
-    allowed_moves:
-      - Add hooks only after the concept has been structurally framed.
-    forbidden_moves:
-      - Do not let hook creation dominate the session.
-    required_outputs:
-      - concise hook tied to the structured concept
+  M-ENC-008:
+    teach_packet:
+      concept_type: mechanism
+      bridge_choice: mechanism_trace
+      artifact_target: one_page_anchor
+      escalation_rule: brief_l0_hook_then_l3_mechanism_then_l4_precision_with_low_friction_function_confirmation
   M-INT-001:
-    allowed_moves:
-      - Use analogies to clarify difficult mechanism relationships.
-    forbidden_moves:
-      - Do not let analogies replace the structured progression of the chain.
-    required_outputs:
-      - analogy with explicit limits
-  M-ENC-009:
-    allowed_moves:
-      - Build a learner-usable concept map that supports later explanation.
-    forbidden_moves:
-      - Do not generate a decorative or tutor-only map.
-      - Do not skip the learner-facing explanation of the map.
-    required_outputs:
-      - concept map
-      - learner explanation
-  M-ENC-004:
-    allowed_moves:
-      - Use teach-back as retrieval-aware synthesis near the end of the chain.
-    forbidden_moves:
-      - Do not spring surprise evaluation or harsh grading.
-    required_outputs:
-      - teach-back explanation
-      - breakdown list
-  M-OVR-004:
-    allowed_moves:
-      - Use the dump to consolidate the whole session and respect tier exits.
-    forbidden_moves:
-      - Do not reopen the whole chain after closure unless a major breakdown requires it.
-    required_outputs:
-      - closure dump
-      - gap list
-      - next-step signal
+    teach_packet:
+      concept_type: compare_contrast
+      bridge_choice: analogy_bridge
+      artifact_target: one_page_anchor
+      escalation_rule: brief_l0_hook_then_l3_mechanism_then_l4_precision_with_low_friction_function_confirmation
+  M-ENC-001:
+    slot_policy:
+      requires_teach_close_artifact: true
+      runtime_live_slot: kwik_lite_pending_runtime_lane
+      full_kwik_position: encode_deepening
 proving_ground: true
 weak_cards_log: []
 is_template: true
@@ -143,7 +101,4 @@ status: draft
 evidence:
   advance_organizer: "Ausubel (1960); Mayer (1979) d=0.57"
   concept_mapping: "Faraji et al. (2025) SMD=1.693, 44 RCTs"
-  teach_back: "Chi et al. (1994) self-explanation effect"
-  coverage_trap: "Bjork et al. (2013) fluency illusion; Dunlosky & Rawson (2012)"
-  retrieval_timing: "Kriechbaum & Bäuml (2023) 20-min delay rule"
-  brain_dump: "Roediger & Karpicke (2006) testing effect"
+  coverage_trap: "Bjork et al. (2013) fluency illusion; Dunlosky and Rawson (2012)"

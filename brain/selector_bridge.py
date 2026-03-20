@@ -10,56 +10,21 @@ from __future__ import annotations
 from typing import Optional
 
 try:
-    from brain.selector import select_chain
+    from brain.selector import (
+        get_chain_metadata,
+        reload_chain_catalog as reload_selector_catalog,
+        select_chain,
+    )
 except ModuleNotFoundError:
     # Test harnesses that add brain/ directly to sys.path import selector_bridge
     # as a top-level module, so this fallback keeps both contexts working.
-    from selector import select_chain
+    from selector import (
+        get_chain_metadata,
+        reload_chain_catalog as reload_selector_catalog,
+        select_chain,
+    )
 
 _POLICY_VERSION = "v2.0"
-
-
-def _build_chain_catalog() -> dict[str, dict[str, object]]:
-    """Return static chain metadata used by API/tests."""
-    return {
-        "C-FE-STD": {
-            "chain_name": "Standard First Exposure",
-            "selected_blocks": [
-                "PRIME",
-                "TEACH",
-                "CALIBRATE",
-                "ENCODE",
-                "REFERENCE",
-                "RETRIEVE",
-                "OVERLEARN",
-            ],
-        },
-        "C-FE-MIN": {
-            "chain_name": "Minimal / Low Energy",
-            "selected_blocks": [
-                "PRIME",
-                "ENCODE",
-                "REFERENCE",
-                "RETRIEVE",
-                "OVERLEARN",
-            ],
-        },
-        "C-FE-PRO": {
-            "chain_name": "Procedure / Lab",
-            "selected_blocks": [
-                "PRIME",
-                "TEACH",
-                "CALIBRATE",
-                "ENCODE",
-                "REFERENCE",
-                "RETRIEVE",
-                "OVERLEARN",
-            ],
-        },
-    }
-
-
-_CHAIN_CATALOG = _build_chain_catalog()
 
 
 def get_policy_version() -> str:
@@ -73,16 +38,18 @@ def reload_chain_catalog() -> int:
 
     Kept as explicit API so callers/tests can verify selector metadata readiness.
     """
-    global _CHAIN_CATALOG
-    _CHAIN_CATALOG = _build_chain_catalog()
-    return len(_CHAIN_CATALOG)
+    return reload_selector_catalog()
 
 
-def _resolve_chain_metadata(chain_id: str) -> tuple[str, list[str]]:
-    chain = _CHAIN_CATALOG.get(chain_id) or _CHAIN_CATALOG["C-FE-STD"]
-    chain_name = str(chain["chain_name"])
-    selected_blocks = [str(x) for x in list(chain["selected_blocks"])]
-    return chain_name, selected_blocks
+def _resolve_chain_metadata(chain_id: str) -> dict[str, object]:
+    chain = get_chain_metadata(chain_id) or get_chain_metadata("C-FE-STD")
+    if chain:
+        return chain
+    return {
+        "chain_name": str(chain_id or "Unknown Chain"),
+        "selected_blocks": [],
+        "dependency_fix_applied": False,
+    }
 
 
 def run_selector(
@@ -113,7 +80,13 @@ def run_selector(
         dominant_error=dominant_error,
     )
 
-    chain_name, selected_blocks = _resolve_chain_metadata(chain_id)
+    chain_metadata = _resolve_chain_metadata(chain_id)
+    chain_name = str(chain_metadata.get("chain_name") or chain_id)
+    selected_blocks = [
+        str(block)
+        for block in list(chain_metadata.get("selected_blocks") or [])
+        if str(block or "").strip()
+    ]
 
     # Build deterministic numeric score tuple for telemetry/tests
     mode_score_map = {
@@ -160,11 +133,7 @@ def run_selector(
         ),
     ]
 
-    dependency_fix_applied = False
-    if "REFERENCE" in selected_blocks and "RETRIEVE" in selected_blocks:
-        dependency_fix_applied = (
-            selected_blocks.index("REFERENCE") < selected_blocks.index("RETRIEVE")
-        )
+    dependency_fix_applied = bool(chain_metadata.get("dependency_fix_applied"))
 
     return {
         "chain_id": chain_id,

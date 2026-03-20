@@ -1072,7 +1072,20 @@ export interface TutorTemplateChain {
   id: number;
   name: string;
   description: string;
-  blocks: { id: number; name: string; control_stage?: string; category: string; description?: string; duration: number; facilitation_prompt?: string }[];
+  blocks: {
+    id: number;
+    name: string;
+    control_stage?: string;
+    category: string;
+    description?: string;
+    duration: number;
+    facilitation_prompt?: string;
+    default_duration_min?: number;
+    evidence?: string | null;
+    teach_packet?: Record<string, unknown> | null;
+    teach_context?: Record<string, unknown> | null;
+    runtime_profile?: Record<string, unknown> | null;
+  }[];
   context_tags: string;
   template_id?: string | null;
   certification?: {
@@ -1261,7 +1274,22 @@ export interface TutorSessionWithTurns extends TutorSession {
   summary_text: string | null;
   ended_at: string | null;
   turns: TutorTurn[];
-  chain_blocks?: { id: number; name: string; category: string; description: string; default_duration_min: number; facilitation_prompt?: string; evidence?: string }[];
+  teach_packet?: Record<string, unknown> | null;
+  teach_context?: Record<string, unknown> | null;
+  runtime_profile?: Record<string, unknown> | null;
+  chain_blocks?: {
+    id: number;
+    name: string;
+    category: string;
+    control_stage?: string;
+    description: string;
+    default_duration_min: number;
+    facilitation_prompt?: string;
+    evidence?: string;
+    teach_packet?: Record<string, unknown> | null;
+    teach_context?: Record<string, unknown> | null;
+    runtime_profile?: Record<string, unknown> | null;
+  }[];
 }
 
 export interface TutorSessionSummary {

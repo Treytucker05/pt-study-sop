@@ -708,7 +708,13 @@ def create_session():
 @tutor_bp.route("/session/<session_id>", methods=["GET"])
 def get_session(session_id: str):
     from dashboard.api_tutor import _ensure_selector_columns
+    from dashboard.api_tutor_materials import (
+        _load_selected_materials,
+        _normalize_material_ids,
+    )
     from dashboard.api_tutor_turns import (
+        _build_chain_info,
+        _build_teach_context,
         _get_tutor_session,
         _get_session_turns,
         _resolve_chain_blocks,
@@ -777,10 +783,73 @@ def get_session(session_id: str):
     # Include chain block info if chain is active
     if session.get("method_chain_id"):
         blocks = _resolve_chain_blocks(conn, session["method_chain_id"])
+        for block in blocks:
+            if not str(block.get("category") or "").strip():
+                block["category"] = str(block.get("control_stage") or "").strip()
+            if block.get("duration") is None:
+                block["duration"] = block.get("default_duration_min", 5)
         session["chain_blocks"] = blocks
         idx = session.get("current_block_index", 0) or 0
         if blocks and 0 <= idx < len(blocks):
             session["current_block_name"] = blocks[idx]["name"]
+
+        content_filter = (
+            session.get("content_filter")
+            if isinstance(session.get("content_filter"), dict)
+            else {}
+        )
+        material_ids = _normalize_material_ids(content_filter.get("material_ids")) or []
+        selected_material_labels: list[str] = []
+        if material_ids:
+            try:
+                selected_materials = _load_selected_materials(conn, material_ids)
+            except Exception:
+                selected_materials = []
+            for material in selected_materials:
+                label = str(
+                    material.get("title")
+                    or material.get("source_path")
+                    or f"Material {material.get('id')}"
+                    or ""
+                ).strip()
+                if label:
+                    selected_material_labels.append(label)
+
+        block_info = None
+        chain_info = None
+        try:
+            block_info, chain_info = _build_chain_info(
+                conn,
+                session["method_chain_id"],
+                idx,
+            )
+        except Exception:
+            block_info, chain_info = None, None
+
+        teach_packet = _build_teach_context(
+            session=session,
+            block_info=block_info,
+            chain_info=chain_info,
+            content_filter=content_filter,
+            map_of_contents=content_filter.get("map_of_contents")
+            if isinstance(content_filter.get("map_of_contents"), dict)
+            else None,
+            objective_scope=_normalize_objective_scope(
+                content_filter.get("objective_scope")
+            ),
+            focus_objective_id=str(content_filter.get("focus_objective_id") or "").strip(),
+            selected_material_labels=selected_material_labels,
+        )
+        if teach_packet:
+            session["teach_packet"] = teach_packet
+            session["teach_context"] = teach_packet
+            if isinstance(chain_info, dict) and isinstance(chain_info.get("runtime_profile"), dict):
+                session["runtime_profile"] = chain_info["runtime_profile"]
+            if blocks and 0 <= idx < len(blocks):
+                blocks[idx]["teach_packet"] = teach_packet
+                blocks[idx]["teach_context"] = teach_packet
+                if isinstance(chain_info, dict) and isinstance(chain_info.get("runtime_profile"), dict):
+                    blocks[idx]["runtime_profile"] = chain_info["runtime_profile"]
 
     # --- Reconcile-on-load: verify Obsidian files still exist ---
     # Read endpoint is side-effect-free: expose reconciled state in response

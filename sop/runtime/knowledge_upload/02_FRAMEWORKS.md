@@ -21,6 +21,12 @@ Each method block in the library carries a CP stage tag and a PEIRRO category. T
 
 Not every chain uses every stage. `TEACH` is chain-optional. A chain is an ordered list of blocks; the stages present depend on which blocks the chain includes.
 
+For first-exposure chains that include TEACH and CALIBRATE, the locked opening sequence is:
+
+`MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE`
+
+This sequence is an execution contract, not a new stage taxonomy.
+
 ### Stage contracts
 
 | Stage | Contract | Required outputs |
@@ -28,7 +34,7 @@ Not every chain uses every stage. `TEACH` is chain-optional. A chain is an order
 | CONTROL PLANE (entry) | Wizard selects course, materials, chain, mode | Wizard completion → session launched |
 | PRIME | Orientation and artifact setup only; no scoring | Spine (<=12 nodes), Unknowns, Predictions, GoalTargets |
 | TEACH | Explanation-first teaching, one chunk at a time, no scoring | TeachChunk + AnchorArtifact + ApplicationLink |
-| CALIBRATE | 2-5 min, 5-10 items, confidence H/M/L, no grading | CalibrateResults + PrioritySet (top 3 weaknesses) |
+| CALIBRATE | Diagnostic stage with micro/full split: opening micro-check + post-teach full diagnostic | MicroCalibrateSignal and/or CalibrateResults + PrioritySet (top 3 weaknesses) |
 | ENCODE | PrioritySet-driven learner construction | learner-built schema/map/table/trace as required |
 | REFERENCE | Build compact study references tied to objectives | OnePageAnchor + QuestionBankSeed + CoverageCheck |
 | RETRIEVE | Low-support retrieval + adversarial near-miss + latency tracking | retrieval results + ErrorLog updates |
@@ -53,9 +59,13 @@ This preserves:
 
 ---
 
-## KWIK Micro-Loop (unchanged)
+## KWIK Placement and Mode
 
-KWIK remains inside ENCODE-tagged blocks:
+Live mnemonic compression defaults to a lighter mode after TEACH close artifact and before FULL CALIBRATE:
+
+`KWIK Lite = system seed + one learner ownership action`
+
+Full KWIK remains deeper in ENCODE or OVERLEARN:
 
 `Sound → Function → Image → Resonance → Lock`
 
@@ -71,8 +81,12 @@ Rules:
 - Blocks execute in chain order. The tutor does not skip or reorder blocks.
 - PRIME, TEACH, and CALIBRATE are distinct when present.
 - TEACH, when present, must occur after PRIME and before CALIBRATE.
+- First exposure opening, when TEACH + CALIBRATE are present: MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE.
 - CALIBRATE is diagnostic calibration, not grading.
 - TEACH is explanation-first and non-assessment.
+- TEACH depth default: brief L0 hook -> L3 mechanism -> L4 DPT precision.
+- L1/L2 are fallback scaffolds, not default route.
+- L3 -> L4 requires low-friction function confirmation, not mandatory blank-page teach-back.
 - Confusable content requires explicit discrimination methods.
 - Retrieval-tagged blocks must update `ErrorLog.csv`.
 - If a step did not happen, output `NOT DONE` / `UNKNOWN` / `NONE` (No Phantom Outputs).
@@ -165,30 +179,37 @@ Rapid orientation lenses when H/M frameworks are insufficient. Keep to <=4 bulle
 
 ---
 
-## Levels: Pedagogical Depth (L1-L4)
+## Levels: Pedagogical Depth (L0-L4)
 
 Control explanation depth. Gate advancement with demonstrated comprehension.
 
 | Level | Name | Target | Characteristics |
 |-------|------|--------|-----------------|
+| **L0** | Brief Hook | Entry orientation | One image/motion/felt-sense opener; brief and non-authoritative |
 | **L1** | Metaphor/Analogy | Raw relatable image | No technical terms; everyday comparison; "It's like a..." |
-| **L2** | Simple (10-year-old) | Clear child-friendly explanation | Short sentences; everyday words; core concept only; no jargon |
-| **L3** | High School | Add terminology and mechanisms | Proper terms; basic mechanism; real-world context |
-| **L4** | Professional/Clinical (PT) | Full precision for clinical application | Domain jargon; edge cases; clinical implications |
+| **L2** | Simple (10-year-old) | Clear plain-language explanation | Short sentences; everyday words; core concept only; minimal jargon |
+| **L3** | Mechanism | Terminology + causal mechanism | Proper terms; mechanism flow; practical context |
+| **L4** | DPT Precision | Clinical-grade precision | Domain terms; edge cases; differential implications; transfer conditions |
 
 ### Gating Rules
 
-- L1 and L2 are always available.
-- L3 requires demonstrated L2 understanding.
-- L4 requires a clear L2 teach-back first.
-- If learner jumps to L4 terms: stop and request L2 explanation.
+- Default route: **brief L0 hook -> L3 mechanism -> L4 DPT precision**.
+- L1 and L2 are fallback scaffolds, not default route.
+- L3->L4 requires low-friction function confirmation.
+- Do not require mandatory blank-page teach-back as default escalation gate.
 
-**Pattern:** Understand simply -> Add complexity. NOT: Hear complexity -> Hope to understand.
+**Pattern:** Anchor function quickly -> explain mechanism -> sharpen to clinical precision.
 
 ### Practice Modes
 
-- **Core mode:** L1 metaphor -> L2 teach-back -> L4 precision.
-- **Sprint mode:** Quick L2 check even when answer is correct.
+- **Core mode default:** brief L0 hook -> L3 mechanism -> low-friction function confirmation -> L4 precision.
+- **Fallback mode:** insert L1/L2 only when needed to recover understanding.
+- **Sprint mode:** use low-friction checks; avoid mandatory blank-page gating.
+
+### Retired Canon Guidance
+
+- Retired as default live path: mandatory `L1 -> L2 teach-back -> L4` progression.
+- Retired as universal requirement: mandatory L2 teach-back before L4.
 
 ---
 
@@ -213,4 +234,4 @@ Control explanation depth. Gate advancement with demonstrated comprehension.
 | Compensation pattern | Y3 |
 | Neural/sensory pathway | Y4 |
 | Resume / interview prep | M-STAR |
-| Controlling explanation depth | L1-L4 |
+| Controlling explanation depth | L0-L4 |

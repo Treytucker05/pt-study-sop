@@ -1,101 +1,107 @@
 id: M-TEA-002
 name: Confusable Contrast Teach
-category: prime
-description: Teach two confusable concepts side by side by naming the shared bucket, the key difference, the signature clue, and the classic trap before the learner is asked to retrieve independently.
+category: encode
+description: Teach two confusable concepts side-by-side by naming the shared bucket, the key difference, the signature clue, and the classic trap.
 default_duration_min: 6
 energy_cost: medium
 best_stage: first_exposure
 control_stage: TEACH
 status: draft
 tags:
+- teach
+- compare
+- contrast
 - confusable
-- compare-contrast
-- discrimination
-- teaching
+- differential
 mechanisms:
 - discrimination
 - scaffolding
-- elaboration
+- transfer
+stipulations:
+- Teach the contrast before asking the learner to build their own table.
+- End with a crisp discriminator, not a vague recap.
 knobs:
-  guidance_level: medium
-  output_format: markdown_table
+  output_format: bullets
 constraints:
   non_assessment: true
   no_scored_checks: true
   objective_scope_required: true
-  one_chunk_only: true
 inputs:
 - Two confusable concepts
-- Source anchors showing their differences
-- Comparison dimension list
+- Source anchors for definitions and discriminators
 steps:
 - step: 1
-  action: Name the shared bucket first.
-  notes: Show why the two concepts get confused.
+  action: State the common bucket both concepts belong to
+  notes: Start with what makes them seem similar.
 - step: 2
-  action: Teach the key difference in plain language.
-  notes: Use one dominant discriminator before adding details.
+  action: Name the one key difference
+  notes: Use plain language first, then formal terms.
 - step: 3
-  action: Add one signature clue and one classic trap.
-  notes: The trap should explain the likely confusion, not shame it.
+  action: Give a signature clue for each concept
+  notes: What clue should make the learner lean one way?
 - step: 4
-  action: Build the anchor artifact.
-  notes: Use a compact comparison table or one-page discriminator card.
+  action: Name the classic trap
+  notes: Explain why people mix them up.
+- step: 5
+  action: Finish with one short application contrast
+  notes: Use a minimal example, not a full case drill.
 outputs:
 - Shared bucket statement
-- Key difference explanation
-- Signature clue
+- Key difference statement
+- Signature clues
 - Classic trap
-- Comparison anchor artifact
+- Mini application contrast
 stop_criteria:
-- Learner can state the main difference at L2
-- One comparison artifact exists
-- One application cue is tied in
+- Shared bucket and discriminator are explicit
+- Each concept has a signature clue
+- One trap is named
 failure_modes:
-- mode: Too many differences given at once
-  mitigation: Lead with one high-signal discriminator.
-- mode: Surface-level comparison only
-  mitigation: Include function or mechanism difference, not just labels.
-- mode: Teaching drifts into quizzing
-  mitigation: Keep TEACH explanation-first and defer checking to CALIBRATE.
-logging_fields:
-- teach_concept_type
-- discriminator_named
-- anchor_artifact_created
+- mode: Contrast stays too abstract
+  mitigation: Force a concrete discriminator and one signature clue per concept.
+- mode: Too many differences create noise
+  mitigation: Rank and teach the top discriminator first.
 evidence:
   citation: Alfieri et al. (2013)
-  finding: Comparison-based teaching improves concept discrimination when contrasts are explicit.
-  source: teaching_doctrine
+  finding: Comparison-based learning improves discrimination and concept formation
+  source: control-plane migration
+evidence_raw: Alfieri et al. (2013); comparison-based learning improves discrimination and concept formation
 facilitation_prompt: 'You are running M-TEA-002 (Confusable Contrast Teach) in TEACH stage.
 
-  This method is non-assessment. Do not score, grade, or quiz the learner.
+  This method is non-assessment. Teach the contrast clearly before any learner-built table.
 
-  Deliver one TEACH chunk in this order: Source Facts -> Plain Interpretation -> Bridge Move -> Application -> Anchor Artifact.
+  Return exactly:
 
-  Required outputs:
+  1) SharedBucket
 
-  - Shared bucket statement
+  2) KeyDifference
 
-  - Key difference explanation
+  3) SignatureClues
 
-  - Signature clue
+  4) ClassicTrap
 
-  - Classic trap
+  5) MiniApplicationContrast
 
-  - Comparison anchor artifact
-
-  Hard rules:
-
-  - Teach the discriminator before asking for learner recall.
-
-  - Name the classic trap explicitly.
-
-  - Keep the contrast tied to source facts and mapped objectives.
+  End with the cleanest discriminator in one sentence.
 
   '
 gating_rules:
-- Use comparison as teaching, not testing.
-- Keep the chunk centered on one confusable pair.
-- End with a compact comparison artifact.
-- Defer any graded checking to CALIBRATE.
-artifact_type: comparison-table
+- Teach the shared bucket before the difference.
+- Keep the contrast bounded to the active objective scope.
+- Use a minimal application example, not a scored check.
+artifact_type: table
+allowed_moves:
+- Explain why the concepts are confusable
+- Name the key discriminator in plain language and source terms
+- Use one short compare/contrast example
+- Highlight the classic trap explicitly
+forbidden_moves:
+- Turn the block into learner-first recall or quizzing
+- Present a long exhaustive table instead of a clean teaching contrast
+- Skip the classic trap
+- Leave the learner without one crisp discriminator
+required_outputs:
+- Shared bucket statement
+- Key difference statement
+- Signature clues
+- Classic trap
+- Mini application contrast

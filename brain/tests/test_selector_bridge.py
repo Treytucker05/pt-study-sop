@@ -173,4 +173,32 @@ def test_standard_chain_includes_teach_stage():
 
 def test_minimal_chain_can_omit_teach_stage():
     result = run_selector(assessment_mode="definition", energy="high", time_available=45)
-    assert "TEACH" not in result["selected_blocks"]
+    assert "TEACH" in result["selected_blocks"]
+    assert result["selected_blocks"][0:3] == ["PRIME", "CALIBRATE", "TEACH"]
+
+
+def test_standard_chain_stage_summary_matches_real_chain_definition():
+    result = run_selector(assessment_mode="mechanism", energy="high", time_available=45)
+    assert result["chain_id"] == "C-FE-STD"
+    assert result["selected_blocks"] == [
+        "PRIME",
+        "CALIBRATE",
+        "TEACH",
+        "REFERENCE",
+        "ENCODE",
+        "RETRIEVE",
+    ]
+
+
+def test_procedure_chain_stage_summary_matches_real_chain_definition():
+    result = run_selector(assessment_mode="procedure", energy="high", time_available=45)
+    assert result["chain_id"] == "C-FE-PRO"
+    assert result["selected_blocks"] == [
+        "PRIME",
+        "CALIBRATE",
+        "TEACH",
+        "ENCODE",
+        "REFERENCE",
+        "RETRIEVE",
+    ]
+    assert result["selected_blocks"].count("CALIBRATE") == 1

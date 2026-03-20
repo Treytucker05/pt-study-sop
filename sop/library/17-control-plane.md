@@ -8,11 +8,17 @@ The system enforces this canonical order when the relevant stages are present in
 
 Not every chain uses every stage. `TEACH` is chain-optional, but when present it must occur after `PRIME` and before `CALIBRATE`.
 
+For first-exposure openings, the required startup handshake is:
+
+`MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE`
+
+This does not add extra control-plane stages; it defines required ordering inside the `TEACH`/`CALIBRATE` opening behavior.
+
 | Stage | Function | Required Input | Required Output |
 | :--- | :--- | :--- | :--- |
 | **1. PRIME** | Source-grounded orientation and artifact setup | Source material + objective scope | `StructuralSpine`, objective links, hierarchy/map seeds, unknowns |
-| **2. TEACH** | Explanation-first teaching for unfamiliar material | PRIME artifacts + source anchors | `TeachChunk`, `AnchorArtifact`, one application link |
-| **3. CALIBRATE** | Short post-teach diagnostic | Teach chunk or prior evidence | readiness signal, `PrioritySet`, error hints |
+| **2. TEACH** | Explanation-first teaching for unfamiliar material | PRIME artifacts + source anchors + optional micro-check signal | `TeachChunk`, `AnchorArtifact`, one application link |
+| **3. CALIBRATE** | Diagnostic calibration with micro/full split | Teach chunk or prior evidence | micro-check signal (opening) and/or readiness signal + `PrioritySet` + error hints |
 | **4. ENCODE** | Learner-side construction and production | `PrioritySet` or selected target | learner-made schema, map, comparison, trace, or explanation artifact |
 | **5. REFERENCE** | External offloading and retrieval target generation | encoded targets + objective scope | `OnePageAnchor.md` / `QuestionBankSeed.md` / coverage artifact |
 | **6. RETRIEVE** | Reconstructive recall and discrimination | reference targets or explicit retrieval targets | updated `ErrorLog.csv`, retrieval results |
@@ -32,10 +38,21 @@ The default session assumption is first exposure unless the learner has strong p
 
 - `PRIME` is artifact-first and non-assessment. It prepares the terrain.
 - `TEACH` is explanation-first and non-assessment. It teaches one chunk at a time.
-- `CALIBRATE` is the first stage where short diagnostic checking may begin.
+- `CALIBRATE` is the diagnostic stage and may run as:
+  - `MICRO-CALIBRATE` (low-friction function confirmation for opening checks)
+  - `FULL CALIBRATE` (full post-teach diagnostic)
 - `ENCODE` is learner-side construction, production, and manipulation, not tutor-led exposition.
 - Every method belongs to exactly one `control_stage`.
 - Any chain containing both `TEACH` and `CALIBRATE` must order them `TEACH -> CALIBRATE`.
+
+### Locked Opening Sequence (First Exposure)
+
+When a chain contains `TEACH` and `CALIBRATE` for unfamiliar material, enforce:
+
+`MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE`
+
+- `MICRO-CALIBRATE` checks function-level orientation only. It is not grading and not deep recall.
+- `FULL CALIBRATE` runs after TEACH and produces the actionable `PrioritySet`.
 
 ### TEACH Doctrine (Hard Contract)
 
@@ -49,6 +66,18 @@ The default session assumption is first exposure unless the learner has strong p
 - Analogies must include their breakdown points.
 - Memory hooks come after meaning, not before meaning.
 - TEACH must not score, grade, confidence-tag, or require retrieval-style performance.
+
+### TEACH Depth Policy (Hard Contract)
+
+- Default depth path: `brief L0 hook -> L3 mechanism -> L4 DPT precision`.
+- `L1` analogy and `L2` plain-language explanation are fallback scaffolds, not the default route.
+- `L3 -> L4` escalation uses low-friction function confirmation; do not require mandatory blank-page teach-back.
+
+### Mnemonic Placement Policy (Hard Contract)
+
+- Default live mnemonic compression slot: after TEACH close artifact and before `FULL CALIBRATE`.
+- Live mode in this slot is `KWIK Lite` (system seed + one learner ownership action).
+- Full `KWIK Hook` remains a deeper method in `ENCODE` and/or `OVERLEARN`.
 
 ## 4. PEIRRO Compatibility (Internal)
 

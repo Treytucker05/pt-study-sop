@@ -1,6 +1,6 @@
 # RETRIEVE Category Reference
 
-Stage: 5 of 6 | Control Stage: `RETRIEVE`
+Stage: 6 of 7 | Control Stage: `RETRIEVE`
 Purpose: Pull knowledge from memory to strengthen retention.
 
 ## Entry / Exit

@@ -1,26 +1,30 @@
 id: M-CAL-003
-name: Priority Set
+name: Full Calibrate Priority Set
 category: calibrate
-description: Build a deterministic top-3 weakness set from CALIBRATE telemetry to drive ENCODE method selection.
+description: Build a deterministic top-3 weakness set from FULL CALIBRATE telemetry to drive ENCODE method selection.
 default_duration_min: 3
 energy_cost: low
 best_stage: first_exposure
 control_stage: CALIBRATE
 status: validated
+calibrate_phase: full
+calibrate_scope: post_teach
 tags:
 - calibrate
 - prioritization
 - sequencing
 - deterministic-routing
+- full-calibrate
 mechanisms:
 - adaptive_sequencing
 - error_localization
 stipulations:
+- This is the second FULL CALIBRATE block and follows M-CAL-002.
 - Output must be deterministic and ranked.
 - Exactly top 3 weaknesses are emitted.
 - Ranking favors high-confidence misses and repeated errors.
 when_to_use:
-- After M-CAL-001 and M-CAL-002 complete.
+- After M-CAL-002 completes.
 - Before selecting ENCODE methods.
 when_not_to_use:
 - If fewer than 3 valid items exist; run micro-recalibration first.
@@ -35,8 +39,10 @@ gating_rules:
 - Apply deterministic tie-breaks (high-confidence misses, then frequency).
 - Output ranking and routing seeds only; no teaching/explanations.
 - Keep ranking scoped to current objective telemetry only.
+- Treat this as FULL CALIBRATE closure before ENCODE.
 inputs:
-- Calibrate correctness and latency
+- FullCalibrateItemResults
+- FullCalibrateSnapshot
 - Confidence-tagged results
 - Error-type labels
 steps:
@@ -53,13 +59,14 @@ steps:
   action: Map each weakness to next ENCODE action seed
   notes: Provide method-family recommendation only, not full lesson.
 outputs:
-- PrioritySet
+- FullCalibratePrioritySet
 - WeaknessScoreTable
 - EncodeRoutingSeed
+- FullCalibrateHandoff
 artifact_type: notes
 stop_criteria:
 - Exactly 3 prioritized weaknesses output
-- EncodeRoutingSeed created
+- EncodeRoutingSeed and FullCalibrateHandoff created
 failure_modes:
 - mode: Too little data for stable ranking
   mitigation: Trigger micro-recalibration with 2-3 extra items.
@@ -98,12 +105,13 @@ forbidden_moves:
 - Skip tie-break resolution (all ties must be resolved)
 - Allow ranking to drift into teaching mode
 required_outputs:
-- PrioritySet (exactly 3 ranked weaknesses)
+- FullCalibratePrioritySet (exactly 3 ranked weaknesses)
 - WeaknessScoreTable (scoring breakdown per weakness)
 - EncodeRoutingSeed (one ENCODE method-family recommendation per weakness)
-facilitation_prompt: 'You are running M-CAL-003 (Priority Set) in CALIBRATE stage.
+- FullCalibrateHandoff (diagnostic-to-encode handoff contract)
+facilitation_prompt: 'You are running M-CAL-003 (Full Calibrate Priority Set) in CALIBRATE stage.
 
-  Build a deterministic ranked weakness set for ENCODE routing.
+  Build a deterministic ranked weakness set to close FULL CALIBRATE and hand off to ENCODE.
 
 
   Requirements:
@@ -119,11 +127,13 @@ facilitation_prompt: 'You are running M-CAL-003 (Priority Set) in CALIBRATE stag
 
   Return exactly:
 
-  1) PrioritySet
+  1) FullCalibratePrioritySet
 
   2) WeaknessScoreTable
 
   3) EncodeRoutingSeed
+
+  4) FullCalibrateHandoff
 
 
   Do not provide full teaching or answer explanations in this method.

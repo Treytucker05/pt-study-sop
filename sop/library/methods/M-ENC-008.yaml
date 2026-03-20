@@ -24,7 +24,6 @@ knobs:
 constraints:
   active_processing_required: true
   objective_scope_required: true
-  no_final_answer_only: true
   non_assessment: true
   no_scored_checks: true
 inputs:
@@ -120,6 +119,7 @@ gating_rules:
 - Keep output scoped to mapped objectives only.
 artifact_type: notes
 allowed_moves:
+- Explain the trigger and downstream chain in plain language before adding finer detail
 - Help learner identify the trigger (initial cause or stimulus) of the mechanism
 - Prompt "What happens next as a direct result?" at each step
 - Require "because" statements at every causal arrow
@@ -129,11 +129,10 @@ allowed_moves:
 - Require explicit intermediate steps (A to B to C, not A to C)
 - Use Socratic questioning to help learner discover missing links
 forbidden_moves:
-- Trace the mechanism chain FOR the learner
 - Accept vague "because" statements without specific mechanism detail
 - Allow skipping intermediate steps in the causal chain
 - Skip source verification of the completed chain
-- Deliver a passive explanation of the pathway instead of guiding the trace
+- Deliver a long ungated lecture without using the mechanism trace as the teaching scaffold
 - Accept linear-only thinking without exploring branch points
 - Present information outside the objective scope
 - Move to retrieval before the mechanism trace is complete

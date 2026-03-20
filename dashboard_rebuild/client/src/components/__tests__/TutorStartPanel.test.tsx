@@ -45,7 +45,10 @@ function setupQueryMocks() {
             id: 1,
             name: "First Exposure (Core)",
             description: "For new material",
-            blocks: [{ id: 1, name: "Prime", category: "encode", duration: 15 }],
+            blocks: [
+              { id: 1, name: "Prime", control_stage: "PRIME", category: "prepare", duration: 15 },
+              { id: 4, name: "Teach", control_stage: "TEACH", category: "encode", duration: 12 },
+            ],
             context_tags: "first-exposure",
           },
           {
@@ -216,5 +219,15 @@ describe("TutorStartPanel", () => {
     expect(screen.getByRole("button", { name: /RESUME ACTIVE SESSION/i })).toBeInTheDocument();
     expect(screen.getByText("OTHER RECENT SESSIONS")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^RESUME$/i })).toBeInTheDocument();
+  });
+
+  it("shows TEACH in template chain stage counts", async () => {
+    renderStartPanel({ chainId: 1 });
+
+    fireEvent.click(screen.getByRole("button", { name: /ADJUST LAUNCH OPTIONS/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("1 TEACH")).toBeInTheDocument();
+    });
   });
 });

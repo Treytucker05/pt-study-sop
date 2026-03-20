@@ -1,16 +1,8 @@
 
 import { CoreWorkspaceFrame } from "@/components/CoreWorkspaceFrame";
 import { PageScaffold } from "@/components/PageScaffold";
-import {
-  CONTROL_CHIP,
-  CONTROL_COPY,
-  CONTROL_DECK_SECTION,
-  CONTROL_KICKER,
-  controlToggleButton,
-} from "@/components/shell/controlStyles";
-import { TutorWorkflowStepper } from "@/components/TutorWorkflowStepper";
-import { TutorTabBar } from "@/components/TutorTabBar";
 import { TutorShell } from "@/components/TutorShell";
+import { TutorTopBar } from "@/components/TutorTopBar";
 import { useTutorHub } from "@/hooks/useTutorHub";
 import { useTutorSession } from "@/hooks/useTutorSession";
 import { useTutorWorkflow } from "@/hooks/useTutorWorkflow";
@@ -39,25 +31,16 @@ import {
 } from "@/lib/tutorClientState";
 import type { TutorStudioEntryRequest } from "@/components/TutorStudioMode";
 import type { TutorScheduleLaunchIntent } from "@/components/TutorScheduleMode";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
-import {
-  MessageSquare,
-  Clock,
-  Timer,
-  SkipForward,
-  RefreshCw,
-} from "lucide-react";
-import { ICON_SM, ICON_MD } from "@/lib/theme";
-import { CONTROL_PLANE_COLORS } from "@/lib/colors";
-import { cn } from "@/lib/utils";
+import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import {
   readTutorShellQuery,
   writeTutorShellQuery,
 } from "@/lib/tutorUtils";
 import type { TutorPageMode, TutorShellQuery } from "@/lib/tutorUtils";
+import { resolveTutorTeachRuntime } from "@/components/TutorChat.types";
 
 function useTutorPageController() {
   const [, setLocation] = useLocation();
@@ -619,147 +602,70 @@ function useTutorPageController() {
     } as const,
   ];
 
+  const teachRuntime = useMemo(
+    () =>
+      resolveTutorTeachRuntime({
+        workflowDetail: workflow.activeWorkflowDetail as unknown,
+        workflowStage:
+          sessionWithWorkflow.currentBlock?.control_stage
+          || sessionWithWorkflow.currentBlock?.category
+          || workflow.activeWorkflowDetail?.workflow?.current_stage
+          || null,
+        currentBlock: sessionWithWorkflow.currentBlock,
+      }),
+    [
+      sessionWithWorkflow.currentBlock,
+      workflow.activeWorkflowDetail,
+    ],
+  );
+
   // ─── Top bar ───
   const tutorShellTopBar = (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-3 border-b border-primary/10 pb-2">
-        <div>
-          <div className={CONTROL_KICKER}>Tutor</div>
-          <div className={cn(CONTROL_COPY, "text-[11px]")}>
-            Brain&apos;s default live study surface for guided sessions, artifacts, and next-step handoff.
-          </div>
-        </div>
-        {!isTutorSessionView ? (
-          <Badge variant="outline" className="shrink-0 rounded-full border-primary/30 px-3 py-1 font-terminal text-[10px]">
-            BRAIN TO TUTOR LIVE SURFACE
-          </Badge>
-        ) : null}
-      </div>
-      {!isTutorSessionView && brainLaunchContext?.title ? (
-        <div
-          data-testid="tutor-brain-handoff"
-          className={cn(CONTROL_DECK_SECTION, "space-y-1")}
-        >
-          <div className={CONTROL_KICKER}>Opened From Brain</div>
-          <div className="font-terminal text-xs text-white">{brainLaunchContext.title}</div>
-          {brainLaunchContext.reason ? (
-            <div className={cn(CONTROL_COPY, "text-[11px]")}>
-              {brainLaunchContext.reason}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-      {isTutorSessionView ? (
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-          <Badge variant="outline" className="min-h-[40px] shrink-0 rounded-full border-primary/30 px-3 font-terminal text-[11px]">
-            <span className="text-muted-foreground mr-1">TOPIC:</span>
-            <span className="text-foreground">{hub.topic || "Freeform"}</span>
-          </Badge>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className={cn(CONTROL_CHIP, "min-h-[40px] px-2.5 text-[11px]")} title="Turns">
-              <MessageSquare className={ICON_SM} />
-              {sessionWithWorkflow.turnCount}
-            </span>
-            {sessionWithWorkflow.startedAt ? (
-              <span className={cn(CONTROL_CHIP, "min-h-[40px] px-2.5 text-[11px]")} title="Started At">
-                <Clock className={ICON_SM} />
-                {new Date(sessionWithWorkflow.startedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-              </span>
-            ) : null}
-          </div>
-
-          {sessionWithWorkflow.hasChain && sessionWithWorkflow.currentBlock && !sessionWithWorkflow.isChainComplete ? (
-            <div className="flex items-center gap-2 px-2 shrink-0 border-l border-primary/20">
-              <Badge
-                variant="outline"
-                className={`h-7 rounded-full px-2 text-[10px] font-arcade uppercase ${
-                  CONTROL_PLANE_COLORS[sessionWithWorkflow.currentBlock.control_stage?.toUpperCase?.() || sessionWithWorkflow.currentBlock.category?.toUpperCase?.() || ""]?.badge
-                  || "bg-secondary/20 text-muted-foreground"
-                }`}
-              >
-                {sessionWithWorkflow.currentBlock.control_stage || sessionWithWorkflow.currentBlock.category || "BLOCK"}
-              </Badge>
-              <span className="text-xs font-terminal text-foreground truncate max-w-[120px]" title={sessionWithWorkflow.currentBlock.name}>
-                {sessionWithWorkflow.currentBlock.name}
-              </span>
-              {sessionWithWorkflow.blockTimerSeconds !== null ? (
-                <span
-                  className={`text-sm font-arcade tabular-nums ${
-                    sessionWithWorkflow.blockTimerSeconds <= 0
-                      ? "text-destructive animate-pulse"
-                      : sessionWithWorkflow.blockTimerSeconds <= 60
-                        ? "text-destructive"
-                        : sessionWithWorkflow.blockTimerSeconds <= 120
-                          ? "text-warning"
-                          : "text-foreground"
-                  }`}
-                >
-                  {sessionWithWorkflow.formatTimer(Math.max(0, sessionWithWorkflow.blockTimerSeconds))}
-                </span>
-              ) : null}
-              <span className="text-[10px] text-muted-foreground font-terminal">
-                {sessionWithWorkflow.progressCount}/{sessionWithWorkflow.chainBlocks.length}
-              </span>
-              {sessionWithWorkflow.blockTimerSeconds !== null ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => sessionWithWorkflow.setTimerPaused((p: boolean) => !p)}
-                  className={cn(controlToggleButton(false, "secondary", true), "h-8 w-8 p-0 text-muted-foreground")}
-                  title={sessionWithWorkflow.timerPaused ? "Resume timer" : "Pause timer"}
-                >
-                  {sessionWithWorkflow.timerPaused ? <Timer className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                </Button>
-              ) : null}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={sessionWithWorkflow.advanceBlock}
-                className={cn(controlToggleButton(false, "secondary", true), "h-8 px-2 text-[10px]")}
-                title="Skip to next block"
-              >
-                <SkipForward className="w-3 h-3" />
-              </Button>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
-      <TutorWorkflowStepper
-        activeWorkflowId={workflow.activeWorkflowId}
-        currentStage={workflow.activeWorkflowDetail?.workflow?.status ?? null}
-        onStageClick={(stage) => {
-          setStudioEntryRequest(null);
-          setScheduleLaunchIntent(null);
-          if (stage === "tutor") {
-            setShellMode("tutor");
-          } else if (stage === "polish") {
-            void workflow.openWorkflowPolish();
-          } else {
-            setShellMode("dashboard");
-            workflow.setWorkflowView(stage as "priming" | "final_sync");
-          }
-        }}
-      />
-
-      <TutorTabBar
-        shellMode={shellMode}
-        workflowView={workflow.workflowView}
-        activeWorkflowId={workflow.activeWorkflowId}
-        activeWorkflowDetail={workflow.activeWorkflowDetail}
-        activeSessionId={activeSessionId}
-        showArtifacts={sessionWithWorkflow.showArtifacts}
-        artifacts={sessionWithWorkflow.artifacts}
-        onSetShellMode={setShellMode}
-        onSetWorkflowView={workflow.setWorkflowView}
-        onSetShowArtifacts={sessionWithWorkflow.setShowArtifacts}
-        onSetShowEndConfirm={sessionWithWorkflow.setShowEndConfirm}
-        onOpenWorkflowPolish={() => void workflow.openWorkflowPolish()}
-        onOpenSettings={openSettings}
-        onSetStudioEntryRequest={setStudioEntryRequest}
-        onSetScheduleLaunchIntent={setScheduleLaunchIntent}
-      />
-    </div>
+    <TutorTopBar
+      shellMode={shellMode}
+      isTutorSessionView={isTutorSessionView}
+      brainLaunchContext={brainLaunchContext}
+      topic={hub.topic || "Freeform"}
+      turnCount={sessionWithWorkflow.turnCount}
+      startedAt={sessionWithWorkflow.startedAt}
+      hasChain={sessionWithWorkflow.hasChain}
+      currentBlock={sessionWithWorkflow.currentBlock}
+      isChainComplete={sessionWithWorkflow.isChainComplete}
+      blockTimerSeconds={sessionWithWorkflow.blockTimerSeconds}
+      timerPaused={sessionWithWorkflow.timerPaused}
+      progressCount={sessionWithWorkflow.progressCount}
+      chainBlocksLength={sessionWithWorkflow.chainBlocks.length}
+      formatTimer={sessionWithWorkflow.formatTimer}
+      onSetTimerPaused={sessionWithWorkflow.setTimerPaused}
+      onAdvanceBlock={sessionWithWorkflow.advanceBlock}
+      activeWorkflowId={workflow.activeWorkflowId}
+      activeWorkflowDetail={workflow.activeWorkflowDetail}
+      workflowView={workflow.workflowView}
+      teachRuntime={teachRuntime}
+      onStepperStageClick={(stage) => {
+        setStudioEntryRequest(null);
+        setScheduleLaunchIntent(null);
+        if (stage === "tutor") {
+          setShellMode("tutor");
+        } else if (stage === "polish") {
+          void workflow.openWorkflowPolish();
+        } else {
+          setShellMode("dashboard");
+          workflow.setWorkflowView(stage as "priming" | "final_sync");
+        }
+      }}
+      activeSessionId={activeSessionId}
+      showArtifacts={sessionWithWorkflow.showArtifacts}
+      artifacts={sessionWithWorkflow.artifacts}
+      onSetShellMode={setShellMode}
+      onSetWorkflowView={workflow.setWorkflowView}
+      onSetShowArtifacts={sessionWithWorkflow.setShowArtifacts}
+      onSetShowEndConfirm={sessionWithWorkflow.setShowEndConfirm}
+      onOpenWorkflowPolish={() => void workflow.openWorkflowPolish()}
+      onOpenSettings={openSettings}
+      onSetStudioEntryRequest={setStudioEntryRequest}
+      onSetScheduleLaunchIntent={setScheduleLaunchIntent}
+    />
   );
 
   // ─── Render ───

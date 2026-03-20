@@ -254,6 +254,101 @@ def test_create_session_returns_scholar_strategy(client):
     assert session["scholar_strategy"]["fields"]["pacing"]["value"]
 
 
+def test_get_session_exposes_teach_packet_for_active_teach_block(client):
+    conn = sqlite3.connect(config.DB_PATH)
+    cur = conn.cursor()
+    block_ids = []
+    seed_blocks = [
+        ("M-PRE-TST", "Prime Scope Lock", "PRIME", "Prime the topic before live teaching."),
+        ("M-CAL-TST-1", "Micro Calibrate", "CALIBRATE", "Run a brief function check."),
+        ("M-TEA-TST", "Teach Mechanism", "TEACH", "Use analogy, then close with a mini process flow."),
+        ("M-CAL-TST-2", "Full Calibrate", "CALIBRATE", "Probe and rank understanding after teaching."),
+    ]
+    for method_id, name, control_stage, facilitation_prompt in seed_blocks:
+        cur.execute(
+            """
+            INSERT INTO method_blocks
+                (method_id, name, category, control_stage, description, default_duration_min,
+                 energy_cost, best_stage, tags, evidence, facilitation_prompt, artifact_type,
+                 knob_overrides_json, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            """,
+            (
+                method_id,
+                name,
+                "prepare",
+                control_stage,
+                "test block",
+                5,
+                "low",
+                "first_exposure",
+                "[]",
+                "",
+                facilitation_prompt,
+                "notes",
+                "{}",
+            ),
+        )
+        block_ids.append(cur.lastrowid)
+
+    cur.execute(
+        """
+        INSERT INTO method_chains (name, description, block_ids, context_tags, is_template, created_at)
+        VALUES (?, ?, ?, ?, 0, datetime('now'))
+        """,
+        (
+            "Test Teach Packet Chain",
+            "Prime, micro-calibrate, teach, then full calibrate.",
+            json.dumps(block_ids),
+            json.dumps({"stage": "review"}),
+        ),
+    )
+    chain_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+
+    created = client.post(
+        "/api/tutor/session",
+        json={
+            "phase": "first_pass",
+            "mode": "Core",
+            "topic": "Sodium Potassium Pump",
+            "method_chain_id": chain_id,
+        },
+    ).get_json()
+    session_id = created["session_id"]
+
+    initial_detail = client.get(f"/api/tutor/session/{session_id}")
+    assert initial_detail.status_code == 200
+    initial_payload = initial_detail.get_json()
+    teach_index = 2
+
+    conn = db_setup.get_connection()
+    conn.execute(
+        "UPDATE tutor_sessions SET current_block_index = ? WHERE session_id = ?",
+        (teach_index, session_id),
+    )
+    conn.commit()
+    conn.close()
+
+    detail = client.get(f"/api/tutor/session/{session_id}")
+    assert detail.status_code == 200
+    payload = detail.get_json()
+
+    teach_packet = payload["teach_packet"]
+    assert teach_packet["depth_path"] == ["L0", "L3", "L4"]
+    assert teach_packet["fallback_depths"] == ["L1", "L2"]
+    assert teach_packet["current_bridge"]
+    assert teach_packet["current_depth"] == "L3"
+    assert teach_packet["function_confirmation"] == "pending"
+    assert teach_packet["function_confirmed"] is False
+    assert teach_packet["l4_unlocked"] is False
+    assert teach_packet["mnemonic_state"]
+
+    active_block = payload["chain_blocks"][teach_index]
+    assert active_block["teach_packet"]["required_close_artifact"] == teach_packet["required_close_artifact"]
+
+
 def test_strategy_feedback_endpoint_persists_on_session(client):
     created = client.post(
         "/api/tutor/session",

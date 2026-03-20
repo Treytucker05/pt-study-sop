@@ -9,6 +9,8 @@ energy_cost: medium
 best_stage: first_exposure
 control_stage: ENCODE
 status: validated
+mnemonic_tier: full
+slot_policy: encode_deepening
 tags:
 - mnemonic
 - kwik
@@ -25,6 +27,8 @@ stipulations:
 - Confirm the learner understands the concept's function before building the hook.
 - Hooks support understanding; they do not replace explanation.
 - If a hook uses broader teaching knowledge or analogy, do not present it as if it came directly from source material.
+- This is full KWIK for deeper ENCODE work, not the lightweight live mnemonic slot between TEACH and FULL CALIBRATE.
+- If the chain declares a post-TEACH mnemonic slot, reserve that slot for KWIK Lite (separate method/runtime lane).
 knobs:
   guidance_level: medium
   output_format: bullets
@@ -32,6 +36,7 @@ constraints:
   active_processing_required: true
   objective_scope_required: true
   no_final_answer_only: true
+  full_kwik_only: true
 inputs:
 - New term or concept to encode
 - Definition or meaning from source material
@@ -124,6 +129,7 @@ facilitation_prompt: 'You are running M-ENC-001 (KWIK Hook) in ENCODE stage.
 gating_rules:
 - Force active processing (explain, transform, or map), not passive reading.
 - Keep output scoped to mapped objectives only.
+- Require TEACH-close artifact to exist before running full KWIK.
 artifact_type: notes
 allowed_moves:
 - Explain concept function in one clear sentence before hook building begins
@@ -143,6 +149,7 @@ forbidden_moves:
 - Deliver a passive lecture about the term instead of guiding hook creation
 - Present information outside the objective scope
 - Proceed to retrieval practice before encoding is complete
+- Use this card as the full KWIK path only; do not collapse it into the lightweight live mnemonic slot
 required_outputs:
 - KWIK hook (sound-function-image triplet)
 - Session log entry

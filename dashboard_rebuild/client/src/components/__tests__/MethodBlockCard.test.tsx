@@ -20,7 +20,7 @@ describe("MethodBlockCard", () => {
   it("renders block name and stage badge in full mode", () => {
     render(<MethodBlockCard block={baseBlock} />);
     expect(screen.getByText("Active Recall")).toBeInTheDocument();
-    expect(screen.getByText("RETRIEVAL")).toBeInTheDocument();
+    expect(screen.getByText("RETRIEVE")).toBeInTheDocument();
   });
 
   it("renders description and evidence in full mode", () => {
@@ -79,5 +79,21 @@ describe("MethodBlockCard", () => {
   it("shows legacy category when showLegacyCategory is set", () => {
     render(<MethodBlockCard block={baseBlock} showLegacyCategory />);
     expect(screen.getByText("legacy: retrieve")).toBeInTheDocument();
+  });
+
+  it("renders TEACH stage badges from control_stage", () => {
+    render(
+      <MethodBlockCard
+        block={{
+          ...baseBlock,
+          id: 99,
+          name: "Bridge the mechanism",
+          control_stage: "TEACH",
+          category: "encode",
+        }}
+      />,
+    );
+    expect(screen.getByText("Bridge the mechanism")).toBeInTheDocument();
+    expect(screen.getByText("TEACH")).toBeInTheDocument();
   });
 });

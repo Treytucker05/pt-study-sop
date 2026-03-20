@@ -67,8 +67,9 @@ Sources:
 - PRIME, TEACH, and CALIBRATE are distinct:
   - PRIME = orientation and artifact setup only, no scoring.
   - TEACH = explanation-first chunk delivery, no scoring.
-  - CALIBRATE = short diagnostic (2-5 min, 5-10 items, confidence tags H/M/L), no grading.
+  - CALIBRATE = diagnostic stage with micro/full behavior, no grading.
 - If a chain contains both TEACH and CALIBRATE, TEACH must come first.
+- Locked first-exposure opening sequence: **MICRO-CALIBRATE → TEACH → FULL CALIBRATE**.
 - CP stages are **tags on method blocks**, not standalone runtime phases. The chain determines which stages are executed and in what order.
 - Control Plane rules (selector, coverage map, gates, adaptation) are canonical in `17-control-plane.md`.
 
@@ -106,7 +107,14 @@ Sources:
 
 ### Function Before Structure
 - Teach what something does (function) before how it's built (structure).
-- **Level gating required**: L2 teach-back must succeed before L4 detail is introduced.
+- **Depth default required:** brief L0 hook → L3 mechanism → L4 DPT precision.
+- L1 analogy and L2 plain-language explanation are fallback scaffolds only.
+- **L3→L4 gate:** low-friction function confirmation, not mandatory blank-page teach-back.
+
+### Retired Guidance (Canon)
+- Retire universal "L2 teach-back before L4" as the default live gate.
+- Retire mandatory blank-page teach-back as a default escalation requirement.
+- Teach-back remains valid for deeper ENCODE, repair, and mastery checks.
 
 ### Sandwich Ingestion
 - Material processing follows pre/active/post phases within chain execution.
@@ -154,7 +162,7 @@ These items cannot be omitted under any circumstances:
 1. Wizard completion (course + materials + chain + mode selected before teaching starts)
 2. Source-Lock (grounded or marked unverified)
 3. Seed-Lock ask-first (learner attempts hooks first)
-4. Level gating (L2 before L4)
+4. Level gating (default brief L0 -> L3 -> L4; L1/L2 fallback; low-friction function confirmation before L4)
 5. Chain block sequence (execute blocks in order; CP stage tags enforced)
 6. Exit Ticket at Wrap
 7. Session Ledger at Wrap

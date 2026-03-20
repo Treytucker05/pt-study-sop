@@ -11,6 +11,7 @@ import {
   TEXT_MUTED,
   ICON_SM,
 } from "@/lib/theme";
+import { cn } from "@/lib/utils";
 import {
   CONTROL_STAGE_ORDER,
   getChainStageWarnings,
@@ -41,6 +42,19 @@ function getStageChip(stage: string): string {
     default:
       return stage.slice(0, 3).toUpperCase();
   }
+}
+
+type ArchitectureSlot = {
+  label: string;
+  status: "complete" | "pending" | "locked" | "available";
+  detail: string;
+};
+
+function architectureSlotClasses(status: ArchitectureSlot["status"]): string {
+  if (status === "complete") return "border-emerald-500/40 bg-emerald-500/10 text-emerald-300";
+  if (status === "available") return "border-primary/40 bg-primary/10 text-primary";
+  if (status === "pending") return "border-amber-500/40 bg-amber-500/10 text-amber-200";
+  return "border-red-500/30 bg-red-500/10 text-red-200";
 }
 
 
@@ -99,6 +113,70 @@ export function TutorChainBuilder({
   }, [selectedBlocks]);
 
   const chainWarnings = useMemo(() => getChainStageWarnings(selectedBlocks), [selectedBlocks]);
+
+  const architectureSlots = useMemo<ArchitectureSlot[]>(() => {
+    const stages = selectedBlocks.map((block) => getMethodControlStage(block) || "ENCODE");
+    const firstTeachIndex = stages.findIndex((stage) => stage === "TEACH");
+    const microCalibrateIndex =
+      firstTeachIndex === -1
+        ? -1
+        : stages.findIndex((stage, index) => stage === "CALIBRATE" && index < firstTeachIndex);
+    const fullCalibrateIndex =
+      firstTeachIndex === -1
+        ? -1
+        : stages.findIndex((stage, index) => stage === "CALIBRATE" && index > firstTeachIndex);
+    const teachBackIndex = selectedBlocks.findIndex((block) =>
+      block.name.toLowerCase().includes("teach-back"),
+    );
+
+    return [
+      {
+        label: "MICRO-CALIBRATE",
+        status: microCalibrateIndex >= 0 ? "complete" : "pending",
+        detail:
+          microCalibrateIndex >= 0
+            ? selectedBlocks[microCalibrateIndex]?.name || "Pre-teach check added"
+            : "Add a short calibrate block before TEACH.",
+      },
+      {
+        label: "TEACH",
+        status: firstTeachIndex >= 0 ? "complete" : "pending",
+        detail:
+          firstTeachIndex >= 0
+            ? selectedBlocks[firstTeachIndex]?.name || "Teaching block added"
+            : "Add a TEACH block so the chain explains before it checks.",
+      },
+      {
+        label: "FULL CALIBRATE",
+        status: fullCalibrateIndex >= 0 ? "complete" : "pending",
+        detail:
+          fullCalibrateIndex >= 0
+            ? selectedBlocks[fullCalibrateIndex]?.name || "Post-teach check added"
+            : "Add a second calibrate block after TEACH.",
+      },
+      {
+        label: "KWIK LITE SLOT",
+        status:
+          firstTeachIndex >= 0 && fullCalibrateIndex >= 0
+            ? "available"
+            : firstTeachIndex >= 0
+              ? "locked"
+              : "pending",
+        detail:
+          firstTeachIndex >= 0 && fullCalibrateIndex >= 0
+            ? "Runtime-only slot opens after the TEACH close artifact and before FULL CALIBRATE."
+            : "Needs TEACH plus a post-teach calibrate block before the runtime mnemonic slot can open.",
+      },
+      {
+        label: "TEACH-BACK GATE",
+        status: teachBackIndex >= 0 ? "locked" : "available",
+        detail:
+          teachBackIndex >= 0
+            ? "Teach-back is present. Keep it for deeper repair, not as the default L3 -> L4 unlock."
+            : "No default teach-back gate in this chain.",
+      },
+    ];
+  }, [selectedBlocks]);
 
   const toggleCategory = (cat: string) => {
     setCollapsedCategories((prev) => {
@@ -303,6 +381,36 @@ export function TutorChainBuilder({
               ))}
             </div>
           )}
+
+          <div
+            data-testid="tutor-chain-architecture"
+            className="rounded-none border border-primary/20 bg-black/30 p-3"
+          >
+            <div className="font-arcade text-[10px] uppercase tracking-[0.18em] text-primary">
+              Locked Architecture
+            </div>
+            <div className="mt-2 font-terminal text-xs leading-5 text-muted-foreground">
+              First-exposure chains should surface MICRO-CALIBRATE {"->"} TEACH {"->"} FULL CALIBRATE, then
+              open the runtime-only KWIK Lite slot after the TEACH close artifact.
+            </div>
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {architectureSlots.map((slot) => (
+                <div key={slot.label} className="rounded-none border border-primary/10 bg-black/35 p-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="font-arcade text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                      {slot.label}
+                    </div>
+                    <Badge variant="outline" className={cn("rounded-none text-[10px]", architectureSlotClasses(slot.status))}>
+                      {slot.status}
+                    </Badge>
+                  </div>
+                  <div className="mt-2 font-terminal text-xs leading-5 text-foreground">
+                    {slot.detail}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>

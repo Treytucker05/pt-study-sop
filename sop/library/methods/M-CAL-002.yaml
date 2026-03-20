@@ -1,66 +1,79 @@
 id: M-CAL-002
-name: Confidence Tagging
+name: Full Calibrate Probes
 category: calibrate
-description: Convert raw item responses into confidence-calibrated signals to detect overconfidence and underconfidence.
-default_duration_min: 3
-energy_cost: low
+description: Run the FULL CALIBRATE probe set after TEACH-close artifact to generate scored evidence for routing.
+default_duration_min: 6
+energy_cost: medium
 best_stage: first_exposure
 control_stage: CALIBRATE
 status: validated
+calibrate_phase: full
+calibrate_scope: post_teach
 tags:
 - calibrate
 - confidence
 - metacognition
 - risk-detection
+- full-calibrate
 mechanisms:
 - metacognitive_monitoring
 - calibration
 stipulations:
+- This is FULL CALIBRATE and runs after TEACH close artifact.
 - Confidence must be captured before correctness feedback.
 - High-confidence misses are highest-priority risk signals.
 - Confidence alone cannot lower difficulty without performance evidence.
 when_to_use:
-- Immediately after M-CAL-001 item attempts.
-- Any time learner behavior suggests miscalibration.
+- After TEACH close artifact is produced.
+- Before ENCODE method selection and retrieval scheduling.
 when_not_to_use:
-- Skip only if confidence data is already captured at item level.
+- Never as a replacement for opening MICRO-CALIBRATE.
+- Skip only when a validated full-calibrate result already exists for the same objective scope.
 knobs:
+  item_count: 6
+  max_duration_min: 5
   confidence_scale: HML
   miscalibration_threshold: 0.2
 constraints:
+  full_calibrate_stage: true
   confidence_before_feedback_required: true
   confidence_only_adaptation_disallowed: true
 gating_rules:
+- Run scored probes only after TEACH-close artifact exists.
 - Capture confidence before correctness feedback for every attempted item.
 - Treat this block as diagnostic-only; do not teach or explain content deeply.
 - Never lower difficulty based on confidence alone; require correctness/latency corroboration.
 - Preserve a single confidence_scale throughout the block.
 inputs:
-- Calibrate item responses
+- TEACH-close artifact (anchor/map/table/flow)
+- Full-calibrate probe set aligned to objective scope
 - Item correctness
 - Item latency
 steps:
 - step: 1
-  action: Apply confidence tag to each item
-  notes: Use configured confidence_scale.
+  action: Run item_count scored probes against current objective scope
+  notes: Use max_duration_min hard cap.
 - step: 2
+  action: Apply confidence tag before correctness feedback on each probe
+  notes: Use configured confidence_scale.
+- step: 3
   action: Identify high-confidence misses and low-confidence hits
   notes: Both are miscalibration signals.
-- step: 3
-  action: Compute calibration bias summary
-  notes: Compare confidence pattern to correctness pattern.
 - step: 4
-  action: Emit risk flags for routing
-  notes: These feed M-CAL-003 and ENCODE method selection.
+  action: Compute full-calibrate bias and emit risk flags
+  notes: Feeds M-CAL-003 priority ranking and ENCODE routing.
 outputs:
+- FullCalibrateItemResults
 - ConfidenceTaggedResults
 - HighConfidenceMisses
 - LowConfidenceHits
 - CalibrationRiskFlags
+- FullCalibrateSnapshot
 artifact_type: notes
 stop_criteria:
+- item_count probes attempted or timer cap reached
 - Every attempted item has confidence tag
-- Risk flags generated
+- FullCalibrateSnapshot and risk flags generated
 failure_modes:
 - mode: Learner always picks same confidence level
   mitigation: Collapse scale to HML and continue.
@@ -69,6 +82,8 @@ failure_modes:
 - mode: Confidence manipulated to force easier flow
   mitigation: Weight adaptation by correctness and latency first.
 logging_fields:
+- item_count_attempted
+- item_count_correct
 - confidence_scale
 - high_confidence_miss_count
 - low_confidence_hit_count
@@ -84,6 +99,7 @@ primary_citations:
 - Dunlosky et al. (2013)
 evidence_raw: Confidence-calibration signals improve targeting of corrective study actions.
 allowed_moves:
+- Run scored full-calibrate probes against TEACH-covered objective scope
 - Apply confidence tag to each item using configured confidence scale
 - Capture confidence BEFORE revealing correctness feedback
 - Identify high-confidence misses (overconfidence signals)
@@ -93,6 +109,7 @@ allowed_moves:
 - Collapse scale to HML if learner always picks same level
 - Invalidate and re-prompt if confidence captured after feedback
 forbidden_moves:
+- Run this block before TEACH-close artifact exists
 - Reveal correctness before confidence tag is captured (never reverse order)
 - Teach or explain content during calibration (diagnostic only)
 - Lower difficulty based on confidence alone (requires correctness/latency corroboration)
@@ -101,16 +118,20 @@ forbidden_moves:
 - Change confidence scale mid-block
 - Use confidence data to bypass performance-based routing
 required_outputs:
+- FullCalibrateItemResults (per-item correctness, latency, confidence)
 - ConfidenceTaggedResults (per-item confidence + correctness)
 - HighConfidenceMisses (overconfidence items)
 - LowConfidenceHits (underconfidence items)
 - CalibrationRiskFlags (routing signals for downstream methods)
-facilitation_prompt: 'You are running M-CAL-002 (Confidence Tagging) in CALIBRATE stage.
+- FullCalibrateSnapshot (post-TEACH diagnostic summary)
+facilitation_prompt: 'You are running M-CAL-002 (Full Calibrate Probes) in CALIBRATE stage.
 
-  Convert item attempts into actionable calibration signals.
+  This is FULL CALIBRATE and must run after TEACH-close artifact.
 
 
   Requirements:
+
+  - Run {item_count} scored probes within {max_duration_min} minutes.
 
   - Tag each item with confidence ({confidence_scale}) before correctness feedback.
 
@@ -121,13 +142,17 @@ facilitation_prompt: 'You are running M-CAL-002 (Confidence Tagging) in CALIBRAT
 
   Return exactly:
 
-  1) ConfidenceTaggedResults
+  1) FullCalibrateItemResults
 
-  2) HighConfidenceMisses
+  2) ConfidenceTaggedResults
 
-  3) LowConfidenceHits
+  3) HighConfidenceMisses
 
-  4) CalibrationRiskFlags
+  4) LowConfidenceHits
+
+  5) CalibrationRiskFlags
+
+  6) FullCalibrateSnapshot
 
 
   Do not teach content here. This method is diagnostic routing only.

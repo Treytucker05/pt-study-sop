@@ -1,12 +1,17 @@
 categories:
   prime:
     label: "PRIME"
-    description: "Prepare attention, surface prior knowledge, build structure"
+    description: "Prepare attention and build structure from the source before detail"
     prefix: PRE
     aliases: ["prep", "warmup", "prime", "prepare"]
+  teach:
+    label: "TEACH"
+    description: "Deliver first-contact explanation in bounded chunks before diagnostic probing"
+    prefix: TEA
+    aliases: ["instruct", "explain", "teach_first", "guided_explanation"]
   calibrate:
     label: "CALIBRATE"
-    description: "Diagnostic micro-assessments to identify weaknesses before encoding"
+    description: "Diagnostic readiness checks after PRIME or TEACH to identify weaknesses before learner production"
     prefix: CAL
     aliases: ["diagnostic", "baseline", "pretest"]
   encode:
