@@ -14,13 +14,20 @@ Active execution priority is tracked in `docs/root/TUTOR_TODO.md`.
 
 Active status: 2 active workstreams.
 
-Latest update: 2026-03-16, opened Tutor UI Stabilization Loop to run repeatable live audits and fix Tutor shell-state, handoff, and transition defects while UI Production System remains active.
+Latest update: 2026-03-16, opened Repo-Wide Quality Audit Backlog for a non-blocking current-tree audit across shell, Brain, Tutor, Scholar, support routes, backend/API contracts, and validation coverage while UI Production System remains active.
 
-- [ ] **Track: Tutor UI Stabilization Loop** (active — created 2026-03-16; scope: repeatable live-page audits, Tutor shell-state stabilization, Brain launch handoff cleanup, stage transition fixes, and iterative re-audit until critical flows are clean twice in a row)
-  *Link: [./tracks/tutor-ui-stabilization-loop_20260316/](./tracks/tutor-ui-stabilization-loop_20260316/)*
+- [ ] **Track: Repo-Wide Quality Audit Backlog** (active — created 2026-03-16; scope: current dirty-tree audit across live routes, shared shell/nav, backend/API contracts, validation coverage, and severity-ranked fix-wave planning)
+  *Link: [./tracks/repo-quality-audit_20260316/](./tracks/repo-quality-audit_20260316/)*
+
+---
 
 - [ ] **Track: UI Production System** (active — created 2026-03-16; scope: flagship/support/utility hierarchy, asset-backed shell contract, shared control system rollout, support-page normalization, and responsive production polish)
   *Link: [./tracks/ui-production-system_20260316/](./tracks/ui-production-system_20260316/)*
+
+---
+
+- [x] **Track: Tutor UI Stabilization Loop** (complete — created 2026-03-16; closed 2026-03-16; scope: repeatable live-page audits, Tutor shell-state stabilization, Brain launch handoff cleanup, stage transition fixes, and iterative re-audit until critical flows stayed clean across 10 consecutive browser-tool passes)
+  *Link: [./tracks/tutor-ui-stabilization-loop_20260316/](./tracks/tutor-ui-stabilization-loop_20260316/)*
 
 ---
 

@@ -703,8 +703,8 @@ export function TutorShell({
               </TutorErrorBoundary>
 
               {session.showEndConfirm && (
-                <div className="absolute inset-x-0 bottom-0 z-50 bg-black/95 border-t-2 border-primary/50 p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] animate-fade-slide-in">
-                  <div className="max-w-md mx-auto space-y-3">
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 animate-fade-slide-in">
+                  <div className="bg-black/95 border-2 border-primary/50 rounded-lg p-6 shadow-[0_0_60px_rgba(0,0,0,0.9)] max-w-md w-full mx-4 space-y-3">
                     <div className="section-header">SESSION COMPLETE</div>
                     <div className={`flex items-center gap-4 ${TEXT_MUTED} text-xs`}>
                       <span className="text-foreground">{hub.topic || "No topic"}</span>

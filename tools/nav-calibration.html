@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Nav Button Calibration — Production Mirror</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000; color: #fff; font-family: monospace; overflow-x: hidden; }
+
+  /* === PRODUCTION-IDENTICAL STRUCTURE === */
+  /* Matches layout.tsx lines 966-1037 exactly */
+
+  .nav-desktop-groups {
+    display: flex;
+    min-width: 0;
+    justify-content: center;
+  }
+
+  .max-width-wrapper {
+    margin: 0 auto;
+    width: 100%;
+    max-width: 1440px;
+  }
+
+  .positioning-context {
+    position: relative;
+  }
+
+  /* Shell container: layout.tsx line 1001 */
+  .shell-container {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    height: 460px;
+  }
+
+  /* Frame wrapper: layout.tsx lines 1002-1004 */
+  .frame-wrapper {
+    position: absolute;
+    z-index: 5;
+    left: 50%;
+    transform: translateX(-50%);
+    top: -19.95%;
+    width: 90.42%;
+    height: 207.69%;
+  }
+
+  /* Frame image: layout.tsx line 1010 */
+  .frame-image {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    width: 100%;
+    object-fit: contain;
+    user-select: none;
+  }
+
+  /* Button anchor: matches navShellLinkClass */
+  .nav-button {
+    position: absolute;
+    z-index: 10;
+    display: flex;
+    cursor: move;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+    border: none;
+    background: none;
+    padding: 0;
+  }
+
+  /* Button image: matches navButtonImageClass */
+  .nav-button img {
+    pointer-events: none;
+    height: 100%;
+    width: 100%;
+    object-fit: contain;
+  }
+
+  /* === CALIBRATION UI === */
+  .controls {
+    position: fixed;
+    top: 8px;
+    right: 8px;
+    z-index: 1000;
+    background: rgba(0,0,0,0.95);
+    border: 1px solid #444;
+    padding: 10px;
+    font-size: 11px;
+    max-height: 90vh;
+    overflow-y: auto;
+    width: 320px;
+  }
+  .controls h3 { color: #0ff; margin-bottom: 6px; }
+  .controls .selected-name { color: #ff0; font-weight: bold; }
+  .controls button {
+    background: #222;
+    color: #fff;
+    border: 1px solid #555;
+    padding: 4px 8px;
+    margin: 2px;
+    cursor: pointer;
+    font-size: 10px;
+    font-family: monospace;
+  }
+  .controls button:hover { background: #444; }
+  .controls button.active { border-color: #0ff; color: #0ff; }
+  .controls pre {
+    background: #111;
+    padding: 6px;
+    margin-top: 6px;
+    font-size: 9px;
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  /* Debug overlays */
+  .debug-target { border: 2px solid cyan; position: absolute; pointer-events: none; z-index: 50; }
+  .debug-actual { border: 2px dashed red; position: absolute; pointer-events: none; z-index: 49; }
+  .debug-label {
+    position: absolute;
+    color: cyan;
+    font-size: 8px;
+    font-family: monospace;
+    z-index: 51;
+    pointer-events: none;
+    transform: translateY(-10px);
+    white-space: nowrap;
+  }
+
+  /* Resize handles */
+  .resize-handle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: #ff0;
+    z-index: 60;
+    cursor: nwse-resize;
+  }
+  .resize-handle.tl { top: -4px; left: -4px; cursor: nwse-resize; }
+  .resize-handle.tr { top: -4px; right: -4px; cursor: nesw-resize; }
+  .resize-handle.bl { bottom: -4px; left: -4px; cursor: nesw-resize; }
+  .resize-handle.br { bottom: -4px; right: -4px; cursor: nwse-resize; }
+
+  .wrapper-outline {
+    position: absolute;
+    inset: 0;
+    border: 1px dashed rgba(255,255,0,0.3);
+    pointer-events: none;
+    z-index: 2;
+  }
+</style>
+</head>
+<body>
+
+<!-- === PRODUCTION-IDENTICAL DOM === -->
+<div class="nav-desktop-groups">
+  <div class="max-width-wrapper">
+    <div class="positioning-context">
+      <div class="shell-container">
+        <div class="frame-wrapper" id="frameWrapper">
+          <div class="wrapper-outline"></div>
+          <img
+            src="../UI Images/Dashboard finished.png"
+            alt=""
+            class="frame-image"
+          />
+          <!-- Buttons injected by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Controls panel -->
+<div class="controls" id="controls">
+  <h3>NAV CALIBRATION TOOL</h3>
+  <div style="color:#888;margin-bottom:6px;">
+    Production mirror: same DOM, same CSS, same assets.<br>
+    All values relative to frame wrapper rect.
+  </div>
+  <div style="margin-bottom:6px;">
+    <strong>Selected:</strong> <span class="selected-name" id="selectedName">none</span>
+  </div>
+  <div style="margin-bottom:6px;">
+    <button onclick="toggleDebug()">Toggle Debug Boxes</button>
+    <button onclick="exportValues()">EXPORT VALUES</button>
+    <button onclick="copyExport()">COPY TO CLIPBOARD</button>
+  </div>
+  <div style="margin-bottom:6px;">
+    <strong>Step size:</strong>
+    <button class="step-btn" data-step="0.1">0.1%</button>
+    <button class="step-btn active" data-step="0.25">0.25%</button>
+    <button class="step-btn" data-step="0.5">0.5%</button>
+    <button class="step-btn" data-step="1">1%</button>
+  </div>
+  <div style="margin-bottom:6px;" id="nudgeControls" style="display:none;">
+    <strong>Move:</strong>
+    <button onclick="nudge('left',-1)">← L</button>
+    <button onclick="nudge('left',1)">R →</button>
+    <button onclick="nudge('top',-1)">↑ U</button>
+    <button onclick="nudge('top',1)">D ↓</button>
+    <br>
+    <strong>Size:</strong>
+    <button onclick="nudge('width',-1)">W-</button>
+    <button onclick="nudge('width',1)">W+</button>
+    <button onclick="nudge('height',-1)">H-</button>
+    <button onclick="nudge('height',1)">H+</button>
+    <br>
+    <strong>Copy size:</strong>
+    <button onclick="copySizeFrom()">Copy size from selected → all same tier</button>
+  </div>
+  <div id="wrapperInfo" style="color:#888;margin-bottom:4px;"></div>
+  <div id="buttonInfo" style="color:#aaa;margin-bottom:4px;"></div>
+  <pre id="exportOutput"></pre>
+</div>
+
+<script>
+// === BUTTON DEFINITIONS — current production values ===
+const BUTTONS = [
+  { id: "brain",    tier: "primary", src: "../UI Images/nav-brain-custom.png",    left: 7.68,  top: 29.42, width: 22.27, height: 19.74 },
+  { id: "scholar",  tier: "primary", src: "../UI Images/nav-scholar-custom.png",  left: 31.77, top: 27.73, width: 24.22, height: 21.43 },
+  { id: "tutor",    tier: "primary", src: "../UI Images/nav-tutor-custom.png",    left: 55.86, top: 29.42, width: 22.92, height: 19.74 },
+  { id: "library",  tier: "support", src: "../UI Images/nav-library-custom.png",  left: 18.23, top: 50.50, width: 10.42, height: 11.81 },
+  { id: "mastery",  tier: "support", src: "../UI Images/nav-mastery-custom.png",  left: 29.30, top: 50.50, width: 10.42, height: 11.81 },
+  { id: "calendar", tier: "support", src: "../UI Images/nav-calendar-custom.png", left: 40.36, top: 50.50, width: 10.42, height: 11.81 },
+  { id: "methods",  tier: "support", src: "../UI Images/nav-methods-custom.png",  left: 49.91, top: 50.50, width: 10.42, height: 11.81 },
+  { id: "vault",    tier: "support", src: "../UI Images/nav-vault-custom.png",    left: 62.50, top: 50.50, width: 10.42, height: 11.81 },
+];
+
+let selectedId = null;
+let stepSize = 0.25;
+let debugVisible = true;
+let dragging = null;
+let resizing = null;
+
+const wrapper = document.getElementById("frameWrapper");
+
+// Create button elements
+BUTTONS.forEach(btn => {
+  const a = document.createElement("div");
+  a.className = "nav-button";
+  a.id = `btn-${btn.id}`;
+  a.dataset.buttonId = btn.id;
+  a.style.left = btn.left + "%";
+  a.style.top = btn.top + "%";
+  a.style.width = btn.width + "%";
+  a.style.height = btn.height + "%";
+
+  const img = document.createElement("img");
+  img.src = btn.src;
+  img.alt = btn.id.toUpperCase();
+  a.appendChild(img);
+
+  // Resize handles
+  ["tl","tr","bl","br"].forEach(corner => {
+    const h = document.createElement("div");
+    h.className = `resize-handle ${corner}`;
+    h.dataset.corner = corner;
+    h.dataset.buttonId = btn.id;
+    a.appendChild(h);
+  });
+
+  a.addEventListener("mousedown", (e) => {
+    if (e.target.classList.contains("resize-handle")) {
+      startResize(e, btn.id, e.target.dataset.corner);
+    } else {
+      startDrag(e, btn.id);
+    }
+  });
+
+  a.addEventListener("click", () => selectButton(btn.id));
+
+  wrapper.appendChild(a);
+});
+
+// Step size buttons
+document.querySelectorAll(".step-btn").forEach(b => {
+  b.addEventListener("click", () => {
+    stepSize = parseFloat(b.dataset.step);
+    document.querySelectorAll(".step-btn").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+  });
+});
+
+function selectButton(id) {
+  selectedId = id;
+  document.getElementById("selectedName").textContent = id.toUpperCase();
+  // Highlight
+  document.querySelectorAll(".nav-button").forEach(el => {
+    el.style.outline = el.dataset.buttonId === id ? "2px solid #ff0" : "none";
+  });
+  updateButtonInfo();
+}
+
+function getButtonData(id) {
+  return BUTTONS.find(b => b.id === id);
+}
+
+function getButtonEl(id) {
+  return document.getElementById(`btn-${id}`);
+}
+
+// === DRAG ===
+function startDrag(e, id) {
+  e.preventDefault();
+  selectButton(id);
+  const wRect = wrapper.getBoundingClientRect();
+  const el = getButtonEl(id);
+  const bRect = el.getBoundingClientRect();
+  dragging = {
+    id,
+    startX: e.clientX,
+    startY: e.clientY,
+    startLeft: (bRect.left - wRect.left) / wRect.width * 100,
+    startTop: (bRect.top - wRect.top) / wRect.height * 100,
+  };
+}
+
+document.addEventListener("mousemove", (e) => {
+  if (dragging) {
+    const wRect = wrapper.getBoundingClientRect();
+    const dx = (e.clientX - dragging.startX) / wRect.width * 100;
+    const dy = (e.clientY - dragging.startY) / wRect.height * 100;
+    const btn = getButtonData(dragging.id);
+    btn.left = Math.round((dragging.startLeft + dx) * 100) / 100;
+    btn.top = Math.round((dragging.startTop + dy) * 100) / 100;
+    applyPosition(dragging.id);
+    updateButtonInfo();
+  }
+  if (resizing) {
+    handleResize(e);
+  }
+});
+
+document.addEventListener("mouseup", () => {
+  if (dragging || resizing) {
+    recalcFromRect(dragging?.id || resizing?.id);
+  }
+  dragging = null;
+  resizing = null;
+});
+
+// === RESIZE ===
+function startResize(e, id, corner) {
+  e.preventDefault();
+  e.stopPropagation();
+  selectButton(id);
+  const wRect = wrapper.getBoundingClientRect();
+  const el = getButtonEl(id);
+  const bRect = el.getBoundingClientRect();
+  resizing = {
+    id,
+    corner,
+    startX: e.clientX,
+    startY: e.clientY,
+    startLeft: (bRect.left - wRect.left) / wRect.width * 100,
+    startTop: (bRect.top - wRect.top) / wRect.height * 100,
+    startWidth: bRect.width / wRect.width * 100,
+    startHeight: bRect.height / wRect.height * 100,
+  };
+}
+
+function handleResize(e) {
+  const wRect = wrapper.getBoundingClientRect();
+  const dx = (e.clientX - resizing.startX) / wRect.width * 100;
+  const dy = (e.clientY - resizing.startY) / wRect.height * 100;
+  const btn = getButtonData(resizing.id);
+  const c = resizing.corner;
+
+  if (c === "br") {
+    btn.width = Math.max(2, Math.round((resizing.startWidth + dx) * 100) / 100);
+    btn.height = Math.max(2, Math.round((resizing.startHeight + dy) * 100) / 100);
+  } else if (c === "bl") {
+    btn.left = Math.round((resizing.startLeft + dx) * 100) / 100;
+    btn.width = Math.max(2, Math.round((resizing.startWidth - dx) * 100) / 100);
+    btn.height = Math.max(2, Math.round((resizing.startHeight + dy) * 100) / 100);
+  } else if (c === "tr") {
+    btn.top = Math.round((resizing.startTop + dy) * 100) / 100;
+    btn.width = Math.max(2, Math.round((resizing.startWidth + dx) * 100) / 100);
+    btn.height = Math.max(2, Math.round((resizing.startHeight - dy) * 100) / 100);
+  } else if (c === "tl") {
+    btn.left = Math.round((resizing.startLeft + dx) * 100) / 100;
+    btn.top = Math.round((resizing.startTop + dy) * 100) / 100;
+    btn.width = Math.max(2, Math.round((resizing.startWidth - dx) * 100) / 100);
+    btn.height = Math.max(2, Math.round((resizing.startHeight - dy) * 100) / 100);
+  }
+
+  applyPosition(resizing.id);
+  updateButtonInfo();
+}
+
+// === RECT-BASED MEASUREMENT (Rule 6) ===
+function recalcFromRect(id) {
+  if (!id) return;
+  const wRect = wrapper.getBoundingClientRect();
+  const el = getButtonEl(id);
+  const bRect = el.getBoundingClientRect();
+  const btn = getButtonData(id);
+
+  // Save from rect math, not from drag deltas
+  btn.left = Math.round(((bRect.left - wRect.left) / wRect.width) * 10000) / 100;
+  btn.top = Math.round(((bRect.top - wRect.top) / wRect.height) * 10000) / 100;
+  btn.width = Math.round((bRect.width / wRect.width) * 10000) / 100;
+  btn.height = Math.round((bRect.height / wRect.height) * 10000) / 100;
+
+  applyPosition(id);
+  updateButtonInfo();
+}
+
+function applyPosition(id) {
+  const btn = getButtonData(id);
+  const el = getButtonEl(id);
+  el.style.left = btn.left + "%";
+  el.style.top = btn.top + "%";
+  el.style.width = btn.width + "%";
+  el.style.height = btn.height + "%";
+}
+
+// === NUDGE ===
+function nudge(prop, direction) {
+  if (!selectedId) return;
+  const btn = getButtonData(selectedId);
+  btn[prop] = Math.round((btn[prop] + direction * stepSize) * 100) / 100;
+  applyPosition(selectedId);
+  recalcFromRect(selectedId);
+}
+
+// === COPY SIZE ===
+function copySizeFrom() {
+  if (!selectedId) return;
+  const src = getButtonData(selectedId);
+  BUTTONS.filter(b => b.tier === src.tier && b.id !== src.id).forEach(b => {
+    b.width = src.width;
+    b.height = src.height;
+    applyPosition(b.id);
+    recalcFromRect(b.id);
+  });
+}
+
+// === INFO ===
+function updateButtonInfo() {
+  const wRect = wrapper.getBoundingClientRect();
+  document.getElementById("wrapperInfo").textContent =
+    `Wrapper: ${Math.round(wRect.width)}×${Math.round(wRect.height)} at (${Math.round(wRect.left)},${Math.round(wRect.top)})`;
+
+  if (!selectedId) return;
+  const btn = getButtonData(selectedId);
+  const el = getButtonEl(selectedId);
+  const bRect = el.getBoundingClientRect();
+  document.getElementById("buttonInfo").innerHTML =
+    `<strong>${btn.id.toUpperCase()}</strong><br>` +
+    `Pos: left=${btn.left}% top=${btn.top}%<br>` +
+    `Size: w=${btn.width}% h=${btn.height}%<br>` +
+    `Rect: ${Math.round(bRect.width)}×${Math.round(bRect.height)} at (${Math.round(bRect.left - wRect.left)},${Math.round(bRect.top - wRect.top)})`;
+}
+
+// === DEBUG OVERLAYS ===
+function toggleDebug() {
+  debugVisible = !debugVisible;
+  document.querySelectorAll(".debug-target,.debug-actual,.debug-label").forEach(el => {
+    el.style.display = debugVisible ? "" : "none";
+  });
+  if (debugVisible) renderDebug();
+}
+
+function renderDebug() {
+  // Remove old debug elements
+  document.querySelectorAll(".debug-target,.debug-actual,.debug-label").forEach(el => el.remove());
+
+  BUTTONS.forEach(btn => {
+    // Actual button anchor (red dashed)
+    const actual = document.createElement("div");
+    actual.className = "debug-actual";
+    actual.style.left = btn.left + "%";
+    actual.style.top = btn.top + "%";
+    actual.style.width = btn.width + "%";
+    actual.style.height = btn.height + "%";
+    wrapper.appendChild(actual);
+
+    // Label
+    const label = document.createElement("div");
+    label.className = "debug-label";
+    label.style.left = btn.left + "%";
+    label.style.top = btn.top + "%";
+    label.textContent = `${btn.id} ${btn.left}%,${btn.top}% ${btn.width}%×${btn.height}%`;
+    wrapper.appendChild(label);
+  });
+}
+
+// === EXPORT (Rule 6: rect math, not dragged values) ===
+function exportValues() {
+  const wRect = wrapper.getBoundingClientRect();
+  const result = {
+    _meta: {
+      wrapperRect: {
+        left: Math.round(wRect.left),
+        top: Math.round(wRect.top),
+        width: Math.round(wRect.width),
+        height: Math.round(wRect.height),
+      },
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      timestamp: new Date().toISOString(),
+    },
+  };
+
+  BUTTONS.forEach(btn => {
+    const el = getButtonEl(btn.id);
+    const bRect = el.getBoundingClientRect();
+
+    // Rule 6: compute from rect, not stored values
+    result[btn.id] = {
+      left: (Math.round(((bRect.left - wRect.left) / wRect.width) * 10000) / 100) + "%",
+      top: (Math.round(((bRect.top - wRect.top) / wRect.height) * 10000) / 100) + "%",
+      width: (Math.round((bRect.width / wRect.width) * 10000) / 100) + "%",
+      height: (Math.round((bRect.height / wRect.height) * 10000) / 100) + "%",
+      _px: {
+        left: Math.round(bRect.left - wRect.left),
+        top: Math.round(bRect.top - wRect.top),
+        width: Math.round(bRect.width),
+        height: Math.round(bRect.height),
+      },
+    };
+  });
+
+  const json = JSON.stringify(result, null, 2);
+  document.getElementById("exportOutput").textContent = json;
+  return json;
+}
+
+function copyExport() {
+  const json = exportValues();
+  navigator.clipboard.writeText(json).then(() => {
+    document.getElementById("selectedName").textContent = "COPIED!";
+    setTimeout(() => {
+      document.getElementById("selectedName").textContent = selectedId?.toUpperCase() || "none";
+    }, 1000);
+  });
+}
+
+// Keyboard shortcuts
+document.addEventListener("keydown", (e) => {
+  if (!selectedId) return;
+  const key = e.key;
+  if (key === "ArrowLeft") { e.preventDefault(); nudge("left", -1); }
+  if (key === "ArrowRight") { e.preventDefault(); nudge("left", 1); }
+  if (key === "ArrowUp") { e.preventDefault(); nudge("top", -1); }
+  if (key === "ArrowDown") { e.preventDefault(); nudge("top", 1); }
+  if (key === "[") { nudge("width", -1); }
+  if (key === "]") { nudge("width", 1); }
+  if (key === "{") { nudge("height", -1); }
+  if (key === "}") { nudge("height", 1); }
+  // Tab to cycle buttons
+  if (key === "Tab") {
+    e.preventDefault();
+    const idx = BUTTONS.findIndex(b => b.id === selectedId);
+    const next = BUTTONS[(idx + 1) % BUTTONS.length];
+    selectButton(next.id);
+  }
+});
+
+// Initial render
+renderDebug();
+updateButtonInfo();
+
+// Show wrapper info on load
+window.addEventListener("load", () => {
+  const wRect = wrapper.getBoundingClientRect();
+  document.getElementById("wrapperInfo").textContent =
+    `Wrapper: ${Math.round(wRect.width)}×${Math.round(wRect.height)} at (${Math.round(wRect.left)},${Math.round(wRect.top)})`;
+});
+</script>
+</body>
+</html>

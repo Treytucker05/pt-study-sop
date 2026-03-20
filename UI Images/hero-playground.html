@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hero Section Playground</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; color: #fff; font-family: 'Segoe UI', system-ui, sans-serif; overflow-x: hidden; }
+
+  #hero {
+    position: relative;
+    width: 100%;
+    background: #000;
+    overflow: hidden;
+    border-bottom: 4px solid #b91c1c;
+  }
+
+  #hero-bg {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover; z-index: 0;
+  }
+  #hero-bg-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.4), transparent, rgba(0,0,0,0.6));
+    z-index: 1; pointer-events: none;
+  }
+
+  /* ── Shared resizable element ── */
+  .resizable {
+    position: absolute;
+    cursor: move;
+  }
+  /* Images fit inside container — container resizes freely */
+  .resizable img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    pointer-events: none; user-select: none;
+  }
+
+  /* Resize handles — small and tight */
+  .rh {
+    position: absolute;
+    z-index: 60;
+    opacity: 0.7;
+  }
+  .resizable:hover .rh,
+  .resizable.selected .rh { opacity: 1; }
+  .rh.corner { width: 7px; height: 7px; border-radius: 1px; }
+  .rh.edge-h { height: 4px; border-radius: 1px; }
+  .rh.edge-v { width: 4px; border-radius: 1px; }
+  .rh-tl { top: -3px; left: -3px; cursor: nwse-resize; }
+  .rh-tr { top: -3px; right: -3px; cursor: nesw-resize; }
+  .rh-bl { bottom: -3px; left: -3px; cursor: nesw-resize; }
+  .rh-br { bottom: -3px; right: -3px; cursor: nwse-resize; }
+  .rh-t  { top: -2px; left: 25%; width: 50%; cursor: ns-resize; }
+  .rh-b  { bottom: -2px; left: 25%; width: 50%; cursor: ns-resize; }
+  .rh-l  { left: -2px; top: 25%; height: 50%; cursor: ew-resize; }
+  .rh-r  { right: -2px; top: 25%; height: 50%; cursor: ew-resize; }
+
+  /* Cockpit frame */
+  #cockpit-frame-wrapper {
+    z-index: 5;
+    outline: 1px dashed rgba(255,200,0,0.4);
+    outline-offset: 1px;
+  }
+  #cockpit-frame-wrapper:hover { outline-color: rgba(255,200,0,0.8); }
+  #cockpit-frame-wrapper .rh { background: #fbbf24; }
+
+  /* Nav buttons */
+  .nav-btn {
+    z-index: 10;
+    outline: 1px dashed rgba(100,200,255,0.3);
+    outline-offset: 1px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nav-btn:hover { outline-color: rgba(100,200,255,0.8); }
+  .nav-btn .rh { background: #38bdf8; }
+  .nav-btn .btn-label {
+    position: absolute; bottom: -14px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px; color: #fbbf24;
+    white-space: nowrap; pointer-events: none;
+    text-shadow: 0 1px 3px #000;
+  }
+
+  /* Selected highlight */
+  .resizable.selected { outline-color: #22d3ee !important; outline-width: 2px !important; outline-style: solid !important; }
+
+  /* ── Control panel ── */
+  #controls {
+    position: fixed; top: 8px; right: 8px; z-index: 1000;
+    background: rgba(0,0,0,0.95);
+    border: 2px solid #b91c1c; border-radius: 8px;
+    padding: 10px 14px; width: 310px;
+    max-height: 94vh; overflow-y: auto;
+    font-size: 12px; backdrop-filter: blur(8px);
+  }
+  #controls h2 { color: #f87171; font-size: 13px; margin-bottom: 4px; letter-spacing: 0.1em; }
+  #controls h3 { color: #fbbf24; font-size: 10px; margin: 8px 0 3px; text-transform: uppercase; letter-spacing: 0.15em; }
+  .row { display: flex; justify-content: space-between; align-items: center; padding: 1px 0; color: #d4d4d4; }
+  .row span.lbl { min-width: 18px; font-size: 11px; }
+  .row input[type="range"] { flex: 1; margin: 0 4px; accent-color: #ef4444; }
+  .val { color: #22d3ee; font-family: monospace; min-width: 44px; text-align: right; font-size: 10px; }
+  #controls button {
+    width: 100%; margin-top: 6px; padding: 7px;
+    background: #b91c1c; color: #fff; border: none;
+    border-radius: 5px; cursor: pointer; font-weight: 600;
+    font-size: 11px; letter-spacing: 0.08em;
+  }
+  #controls button:hover { background: #dc2626; }
+  #controls button.secondary { background: #333; margin-top: 4px; }
+  #controls button.secondary:hover { background: #555; }
+  .instructions {
+    margin-top: 4px; padding: 6px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px; color: #a3a3a3;
+    font-size: 10px; line-height: 1.4;
+  }
+  #output-box {
+    margin-top: 6px; padding: 6px;
+    background: #111; border: 1px solid #333;
+    border-radius: 4px; font-family: monospace;
+    font-size: 9px; color: #22d3ee;
+    white-space: pre-wrap; word-break: break-all;
+    max-height: 180px; overflow-y: auto;
+    display: none;
+  }
+  #selected-detail { margin-top: 4px; }
+  #selected-detail .detail-title {
+    color: #22d3ee; font-weight: 700; font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    margin-bottom: 3px;
+  }
+  .slider-group { margin-bottom: 2px; }
+
+  /* Size copy/paste */
+  .size-btns { display: flex; gap: 5px; margin-top: 4px; }
+  .size-btns button { flex: 1; margin-top: 0; padding: 5px 3px; font-size: 9px; border-radius: 4px; }
+  .size-btns .copy-size { background: #0e7490; }
+  .size-btns .copy-size:hover { background: #0891b2; }
+  .size-btns .paste-size { background: #6d28d9; }
+  .size-btns .paste-size:hover { background: #7c3aed; }
+  .size-btns .paste-size:disabled { background: #333; color: #666; cursor: not-allowed; }
+  #copied-badge {
+    display: none; margin-top: 3px; padding: 2px 6px;
+    background: rgba(14,116,144,0.25); border: 1px solid #0e7490;
+    border-radius: 3px; font-size: 9px; color: #22d3ee;
+    font-family: monospace; text-align: center;
+  }
+
+  /* +/- nudge buttons */
+  .nudge-row { display: flex; gap: 4px; margin-top: 5px; }
+  .nudge-btn {
+    flex: 1; margin-top: 0 !important; padding: 6px 2px !important;
+    font-size: 9px !important; border-radius: 4px !important;
+    text-align: center;
+    background: #1e293b !important; border: 1px solid #334155 !important;
+    color: #e2e8f0 !important;
+  }
+  .nudge-btn:hover { background: #334155 !important; }
+</style>
+</head>
+<body>
+
+<div id="hero">
+  <img id="hero-bg" src="Dashboard Background image.png" alt="">
+  <div id="hero-bg-overlay"></div>
+
+  <div id="cockpit-frame-wrapper" class="resizable" data-name="cockpit-frame">
+    <img src="Dashboard finished.png" alt="Cockpit Frame">
+    <div class="rh corner rh-tl" data-dir="tl"></div>
+    <div class="rh corner rh-tr" data-dir="tr"></div>
+    <div class="rh corner rh-bl" data-dir="bl"></div>
+    <div class="rh corner rh-br" data-dir="br"></div>
+    <div class="rh edge-h rh-t" data-dir="t"></div>
+    <div class="rh edge-h rh-b" data-dir="b"></div>
+    <div class="rh edge-v rh-l" data-dir="l"></div>
+    <div class="rh edge-v rh-r" data-dir="r"></div>
+  </div>
+
+  <div class="nav-btn resizable" data-name="brain" data-tier="primary">
+    <img src="nav-brain-custom.png" alt="Brain"><span class="btn-label">BRAIN</span>
+    <div class="rh corner rh-tl" data-dir="tl"></div><div class="rh corner rh-tr" data-dir="tr"></div>
+    <div class="rh corner rh-bl" data-dir="bl"></div><div class="rh corner rh-br" data-dir="br"></div>
+    <div class="rh edge-h rh-t" data-dir="t"></div><div class="rh edge-h rh-b" data-dir="b"></div>
+    <div class="rh edge-v rh-l" data-dir="l"></div><div class="rh edge-v rh-r" data-dir="r"></div>
+  </div>
+  <div class="nav-btn resizable" data-name="scholar" data-tier="primary">
+    <img src="nav-scholar-custom.png" alt="Scholar"><span class="btn-label">SCHOLAR</span>
+    <div class="rh corner rh-tl" data-dir="tl"></div><div class="rh corner rh-tr" data-dir="tr"></div>
+    <div class="rh corner rh-bl" data-dir="bl"></div><div class="rh corner rh-br" data-dir="br"></div>
+    <div class="rh edge-h rh-t" data-dir="t"></div><div class="rh edge-h rh-b" data-dir="b"></div>
+    <div class="rh edge-v rh-l" data-dir="l"></div><div class="rh edge-v rh-r" data-dir="r"></div>
+  </div>
+  <div class="nav-btn resizable" data-name="tutor" data-tier="primary">
+    <img src="nav-tutor-custom.png" alt="Tutor"><span class="btn-label">TUTOR</span>
+    <div class="rh corner rh-tl" data-dir="tl"></div><div class="rh corner rh-tr" data-dir="tr"></div>
+    <div class="rh corner rh-bl" data-dir="bl"></div><div class="rh corner rh-br" data-dir="br"></div>
+    <div class="rh edge-h rh-t" data-dir="t"></div><div class="rh edge-h rh-b" data-dir="b"></div>
+    <div class="rh edge-v rh-l" data-dir="l"></div><div class="rh edge-v rh-r" data-dir="r"></div>
+  </div>
+
+  <div class="nav-btn resizable" data-name="library" data-tier="support">
+    <img src="nav-library-custom.png" alt="Library"><span class="btn-label">LIBRARY</span>
+    <div class="rh corner rh-tl" data-dir="tl"></div><div class="rh corner rh-tr" data-dir="tr"></div>
+    <div class="rh corner rh-bl" data-dir="bl"></div><div class="rh corner rh-br" data-dir="br"></div>
+    <div class="rh edge-h rh-t" data-dir="t"></div><div class="rh edge-h rh-b" data-dir="b"></div>
+    <div class="rh edge-v rh-l" data-dir="l"></div><div class="rh edge-v rh-r" data-dir="r"></div>
+  </div>
+  <div class="nav-btn resizable" data-name="mastery" data-tier="support">
+    <img src="nav-mastery-custom.png" alt="Mastery"><span class="btn-label">MASTERY</span>
+    <div class="rh corner rh-tl" data-dir="tl"></div><div class="rh corner rh-tr" data-dir="tr"></div>
+    <div class="rh corner rh-bl" data-dir="bl"></div><div class="rh corner rh-br" data-dir="br"></div>
+    <div class="rh edge-h rh-t" data-dir="t"></div><div class="rh edge-h rh-b" data-dir="b"></div>
+    <div class="rh edge-v rh-l" data-dir="l"></div><div class="rh edge-v rh-r" data-dir="r"></div>
+  </div>
+  <div class="nav-btn resizable" data-name="calendar" data-tier="support">
+    <img src="nav-calendar-custom.png" alt="Calendar"><span class="btn-label">CALENDAR</span>
+    <div class="rh corner rh-tl" data-dir="tl"></div><div class="rh corner rh-tr" data-dir="tr"></div>
+    <div class="rh corner rh-bl" data-dir="bl"></div><div class="rh corner rh-br" data-dir="br"></div>
+    <div class="rh edge-h rh-t" data-dir="t"></div><div class="rh edge-h rh-b" data-dir="b"></div>
+    <div class="rh edge-v rh-l" data-dir="l"></div><div class="rh edge-v rh-r" data-dir="r"></div>
+  </div>
+  <div class="nav-btn resizable" data-name="methods" data-tier="support">
+    <img src="nav-methods-custom.png" alt="Methods"><span class="btn-label">METHODS</span>
+    <div class="rh corner rh-tl" data-dir="tl"></div><div class="rh corner rh-tr" data-dir="tr"></div>
+    <div class="rh corner rh-bl" data-dir="bl"></div><div class="rh corner rh-br" data-dir="br"></div>
+    <div class="rh edge-h rh-t" data-dir="t"></div><div class="rh edge-h rh-b" data-dir="b"></div>
+    <div class="rh edge-v rh-l" data-dir="l"></div><div class="rh edge-v rh-r" data-dir="r"></div>
+  </div>
+  <div class="nav-btn resizable" data-name="vault" data-tier="support">
+    <img src="nav-vault-custom.png" alt="Vault"><span class="btn-label">VAULT</span>
+    <div class="rh corner rh-tl" data-dir="tl"></div><div class="rh corner rh-tr" data-dir="tr"></div>
+    <div class="rh corner rh-bl" data-dir="bl"></div><div class="rh corner rh-br" data-dir="br"></div>
+    <div class="rh edge-h rh-t" data-dir="t"></div><div class="rh edge-h rh-b" data-dir="b"></div>
+    <div class="rh edge-v rh-l" data-dir="l"></div><div class="rh edge-v rh-r" data-dir="r"></div>
+  </div>
+</div>
+
+<!-- Control Panel -->
+<div id="controls">
+  <h2>HERO PLAYGROUND</h2>
+  <div class="instructions">
+    <strong>Click</strong> to select. <strong>Drag</strong> to move. <strong>Handles</strong> to resize.<br>
+    Use <strong>+/- buttons</strong> for fine nudges. <strong>Copy/Paste Size</strong> to match elements.
+  </div>
+
+  <h3>Hero Section</h3>
+  <div class="row">
+    <span class="lbl">H</span>
+    <input type="range" id="hero-h-slider" min="200" max="1000" value="500">
+    <span class="val" id="hero-h-val">500px</span>
+  </div>
+
+  <div id="selected-detail">
+    <h3>Click an element to adjust</h3>
+  </div>
+
+  <h3>All Elements</h3>
+  <div id="all-readouts" style="font-size:9px; font-family:monospace; color:#737373; line-height:1.5;"></div>
+
+  <button id="export-btn">EXPORT VALUES</button>
+  <button class="secondary" id="reset-btn">RESET TO DEFAULTS</button>
+  <div id="output-box"></div>
+</div>
+
+<script>
+const hero = document.getElementById('hero');
+const frame = document.getElementById('cockpit-frame-wrapper');
+const heroSlider = document.getElementById('hero-h-slider');
+const heroHVal = document.getElementById('hero-h-val');
+const outputBox = document.getElementById('output-box');
+const allElements = document.querySelectorAll('.resizable');
+const selectedDetail = document.getElementById('selected-detail');
+const allReadouts = document.getElementById('all-readouts');
+
+const REF_W = 1536;
+const REF_H = 1024;
+const toPct = (v, r) => v / r * 100;
+const STEP = 1; // nudge step in %
+
+// Defaults — pixel sizes (stable regardless of hero height)
+// Positions are % of hero. Sizes are px.
+const DEFAULTS = {
+  heroHeight: 500,
+  frame: { left: 0, top: 0, width: 1130, height: 500 },
+  buttons: {
+    brain:    { left: 14, top: 18, width: 220, height: 90 },
+    scholar:  { left: 39, top: 16, width: 230, height: 100 },
+    tutor:    { left: 65, top: 18, width: 230, height: 90 },
+    library:  { left: 18, top: 55, width: 130, height: 65 },
+    mastery:  { left: 30, top: 55, width: 130, height: 65 },
+    calendar: { left: 43, top: 55, width: 130, height: 65 },
+    methods:  { left: 56, top: 55, width: 130, height: 65 },
+    vault:    { left: 68, top: 55, width: 130, height: 65 },
+  }
+};
+
+let selected = null;
+let copiedSize = null;
+
+// Positions: % of hero. Sizes: px.
+function setPos(el, leftPct, topPct, widthPx, heightPx) {
+  el.style.left = leftPct + '%';
+  el.style.top = topPct + '%';
+  el.style.width = widthPx + 'px';
+  el.style.height = heightPx + 'px';
+}
+
+function getPos(el) {
+  const heroRect = hero.getBoundingClientRect();
+  return {
+    left: parseFloat(el.style.left) || 0,
+    top: parseFloat(el.style.top) || 0,
+    width: el.offsetWidth || parseInt(el.style.width) || 100,
+    height: el.offsetHeight || parseInt(el.style.height) || 50,
+  };
+}
+
+function applyDefaults() {
+  heroSlider.value = DEFAULTS.heroHeight;
+  hero.style.height = DEFAULTS.heroHeight + 'px';
+  heroHVal.textContent = DEFAULTS.heroHeight + 'px';
+  setPos(frame, DEFAULTS.frame.left, DEFAULTS.frame.top, DEFAULTS.frame.width, DEFAULTS.frame.height);
+  allElements.forEach(el => {
+    const name = el.dataset.name;
+    if (name === 'cockpit-frame') return;
+    const d = DEFAULTS.buttons[name];
+    if (!d) return;
+    setPos(el, d.left, d.top, d.width, d.height);
+  });
+  updateAllReadouts();
+  if (selected) showDetail(selected);
+}
+
+// ── Selection ──
+function selectElement(el) {
+  allElements.forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  selected = el;
+  showDetail(el);
+}
+
+function nudge(prop, delta) {
+  if (!selected) return;
+  if (prop === 'width' || prop === 'height') {
+    const cur = selected.offsetWidth || parseInt(selected.style[prop]) || 50;
+    const curH = selected.offsetHeight || parseInt(selected.style.height) || 50;
+    if (prop === 'width') selected.style.width = Math.max(20, cur + delta * 10) + 'px';
+    else selected.style.height = Math.max(10, curH + delta * 10) + 'px';
+  } else {
+    const cur = parseFloat(selected.style[prop]) || 0;
+    selected.style[prop] = (cur + delta) + '%';
+  }
+  updateAllReadouts();
+  showDetail(selected);
+}
+
+function showDetail(el) {
+  const name = el.dataset.name;
+  const p = getPos(el);
+  const pasteDisabled = copiedSize ? '' : 'disabled';
+  const badgeText = copiedSize ? `Copied: ${copiedSize.width.toFixed(1)}% x ${copiedSize.height.toFixed(1)}%` : '';
+
+  selectedDetail.innerHTML = `
+    <div class="detail-title">${name.toUpperCase()}</div>
+    <div class="slider-group">
+      <div class="row"><span class="lbl">X</span>
+        <input type="range" min="-20" max="100" step="0.5" value="${p.left.toFixed(1)}" data-prop="left">
+        <span class="val">${p.left.toFixed(1)}%</span></div>
+      <div class="row"><span class="lbl">Y</span>
+        <input type="range" min="-20" max="100" step="0.5" value="${p.top.toFixed(1)}" data-prop="top">
+        <span class="val">${p.top.toFixed(1)}%</span></div>
+      <div class="row"><span class="lbl">W</span>
+        <input type="range" min="20" max="1400" step="5" value="${p.width}" data-prop="width" data-unit="px">
+        <span class="val">${p.width}px</span></div>
+      <div class="row"><span class="lbl">H</span>
+        <input type="range" min="10" max="500" step="5" value="${p.height}" data-prop="height" data-unit="px">
+        <span class="val">${p.height}px</span></div>
+    </div>
+
+    <div class="nudge-row">
+      <button class="nudge-btn" data-action="wider">+ WIDER</button>
+      <button class="nudge-btn" data-action="narrower">- NARROWER</button>
+    </div>
+    <div class="nudge-row">
+      <button class="nudge-btn" data-action="taller">+ TALLER</button>
+      <button class="nudge-btn" data-action="shorter">- SHORTER</button>
+    </div>
+
+    <div class="size-btns">
+      <button class="copy-size" id="copy-size-btn">COPY SIZE</button>
+      <button class="paste-size" id="paste-size-btn" ${pasteDisabled}>PASTE SIZE</button>
+    </div>
+    <div id="copied-badge" style="${copiedSize ? 'display:block' : 'display:none'}">${badgeText}</div>
+  `;
+
+  // Sliders
+  selectedDetail.querySelectorAll('input[type="range"]').forEach(slider => {
+    slider.addEventListener('input', () => {
+      const unit = slider.dataset.unit || '%';
+      selected.style[slider.dataset.prop] = slider.value + unit;
+      const label = unit === 'px' ? Math.round(slider.value) + 'px' : parseFloat(slider.value).toFixed(1) + '%';
+      slider.parentElement.querySelector('.val').textContent = label;
+      updateAllReadouts();
+    });
+  });
+
+  // Nudge buttons
+  selectedDetail.querySelectorAll('.nudge-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.action;
+      if (action === 'wider')    nudge('width', STEP);
+      if (action === 'narrower') nudge('width', -STEP);
+      if (action === 'taller')   nudge('height', STEP);
+      if (action === 'shorter')  nudge('height', -STEP);
+    });
+  });
+
+  // Copy Size
+  document.getElementById('copy-size-btn').addEventListener('click', () => {
+    const pos = getPos(selected);
+    copiedSize = { width: pos.width, height: pos.height };
+    const badge = document.getElementById('copied-badge');
+    badge.textContent = `Copied: ${pos.width}px x ${pos.height}px`;
+    badge.style.display = 'block';
+    const pasteBtn = document.getElementById('paste-size-btn');
+    if (pasteBtn) pasteBtn.disabled = false;
+    const copyBtn = document.getElementById('copy-size-btn');
+    copyBtn.textContent = 'COPIED!';
+    setTimeout(() => { copyBtn.textContent = 'COPY SIZE'; }, 1200);
+  });
+
+  // Paste Size
+  document.getElementById('paste-size-btn').addEventListener('click', () => {
+    if (!copiedSize || !selected) return;
+    selected.style.width = copiedSize.width + 'px';
+    selected.style.height = copiedSize.height + 'px';
+    updateAllReadouts();
+    showDetail(selected);
+  });
+}
+
+// ── Readouts ──
+function updateAllReadouts() {
+  let html = '';
+  allElements.forEach(el => {
+    const p = getPos(el);
+    const c = el.dataset.name === 'cockpit-frame' ? '#fbbf24' : '#38bdf8';
+    html += `<div style="color:${c}">${el.dataset.name}: ${p.left.toFixed(1)}%, ${p.top.toFixed(1)}% | ${p.width}x${p.height}px</div>`;
+  });
+  allReadouts.innerHTML = html;
+}
+
+// ── Hero height ──
+heroSlider.addEventListener('input', () => {
+  hero.style.height = heroSlider.value + 'px';
+  heroHVal.textContent = heroSlider.value + 'px';
+});
+
+// ── Drag & Resize ──
+let mode = null;
+let activeEl = null;
+let resizeDir = '';
+let startMouse = { x: 0, y: 0 };
+let startRect = { left: 0, top: 0, width: 0, height: 0 };
+
+allElements.forEach(el => {
+  el.addEventListener('pointerdown', (e) => {
+    const handle = e.target.closest('.rh');
+    const heroRect = hero.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+
+    selectElement(el);
+    e.preventDefault();
+    e.stopPropagation();
+
+    startMouse = { x: e.clientX, y: e.clientY };
+    startRect = {
+      left: (elRect.left - heroRect.left) / heroRect.width * 100,
+      top: (elRect.top - heroRect.top) / heroRect.height * 100,
+      width: elRect.width,
+      height: elRect.height,
+    };
+    activeEl = el;
+
+    if (handle) {
+      mode = 'resize';
+      resizeDir = handle.dataset.dir;
+    } else {
+      mode = 'drag';
+    }
+  });
+});
+
+document.addEventListener('pointermove', (e) => {
+  if (!activeEl || !mode) return;
+
+  const heroRect = hero.getBoundingClientRect();
+  // dx/dy in % for position, raw px for sizing
+  const dxPct = (e.clientX - startMouse.x) / heroRect.width * 100;
+  const dyPct = (e.clientY - startMouse.y) / heroRect.height * 100;
+  const dxPx = e.clientX - startMouse.x;
+  const dyPx = e.clientY - startMouse.y;
+
+  if (mode === 'drag') {
+    activeEl.style.left = (startRect.left + dxPct) + '%';
+    activeEl.style.top = (startRect.top + dyPct) + '%';
+  } else if (mode === 'resize') {
+    let { left, top, width, height } = startRect;
+
+    // Right edge
+    if (resizeDir === 'r' || resizeDir === 'tr' || resizeDir === 'br') {
+      width = Math.max(20, startRect.width + dxPx);
+    }
+    // Left edge
+    if (resizeDir === 'l' || resizeDir === 'tl' || resizeDir === 'bl') {
+      width = Math.max(20, startRect.width - dxPx);
+      left = startRect.left + dxPct;
+    }
+    // Bottom edge
+    if (resizeDir === 'b' || resizeDir === 'bl' || resizeDir === 'br') {
+      height = Math.max(10, startRect.height + dyPx);
+    }
+    // Top edge
+    if (resizeDir === 't' || resizeDir === 'tl' || resizeDir === 'tr') {
+      height = Math.max(10, startRect.height - dyPx);
+      top = startRect.top + dyPct;
+    }
+
+    activeEl.style.left = left + '%';
+    activeEl.style.top = top + '%';
+    activeEl.style.width = width + 'px';
+    activeEl.style.height = height + 'px';
+  }
+
+  updateAllReadouts();
+});
+
+document.addEventListener('pointerup', () => {
+  if (activeEl && mode) {
+    showDetail(activeEl); // refresh sliders after drag/resize
+  }
+  mode = null;
+  activeEl = null;
+  resizeDir = '';
+});
+
+// Deselect on background click
+hero.addEventListener('pointerdown', (e) => {
+  if (e.target === hero || e.target.id === 'hero-bg' || e.target.id === 'hero-bg-overlay') {
+    allElements.forEach(el => el.classList.remove('selected'));
+    selected = null;
+    selectedDetail.innerHTML = '<h3>Click an element to adjust</h3>';
+  }
+});
+
+// ── Export ──
+document.getElementById('export-btn').addEventListener('click', () => {
+  const heroW = hero.offsetWidth;
+  const heroH = parseInt(heroSlider.value);
+  const data = { heroHeight: heroH + 'px', heroWidth: heroW + 'px' };
+  allElements.forEach(el => {
+    const p = getPos(el);
+    data[el.dataset.name] = {
+      left: p.left.toFixed(2) + '%',
+      top: p.top.toFixed(2) + '%',
+      width: p.width + 'px',
+      height: p.height + 'px',
+      // Also export as % of hero width for responsive use
+      widthPct: (p.width / heroW * 100).toFixed(2) + '%',
+      heightPct: (p.height / heroW * 100).toFixed(2) + '%',
+    };
+  });
+  const text = JSON.stringify(data, null, 2);
+  outputBox.textContent = text;
+  outputBox.style.display = 'block';
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('export-btn');
+    btn.textContent = 'COPIED TO CLIPBOARD!';
+    setTimeout(() => { btn.textContent = 'EXPORT VALUES'; }, 2000);
+  }).catch(() => {});
+});
+
+document.getElementById('reset-btn').addEventListener('click', applyDefaults);
+
+// ── Init ──
+applyDefaults();
+</script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import Layout from "@/components/layout";
+
 import { PageScaffold } from "@/components/PageScaffold";
 import { useState, useEffect, useMemo, type ReactElement } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -1214,7 +1214,6 @@ function useLibraryPageController() {
   }, [syncStatus]);
 
   return (
-    <Layout>
       <PageScaffold
         eyebrow="Library Support System"
         title="Materials Library"
@@ -1944,7 +1943,6 @@ function useLibraryPageController() {
         </DialogContent>
       </Dialog>
       </PageScaffold>
-    </Layout>
   );
 }
 

@@ -1,0 +1,10 @@
+[
+  {"name":"brain","x":176,"y":304,"width":359,"height":191},
+  {"name":"scholar","x":582,"y":296,"width":371,"height":204},
+  {"name":"tutor","x":990,"y":304,"width":376,"height":188},
+  {"name":"library","x":225,"y":459,"width":210,"height":118},
+  {"name":"mastery","x":430,"y":458,"width":231,"height":120},
+  {"name":"calendar","x":661,"y":458,"width":214,"height":119},
+  {"name":"methods","x":881,"y":458,"width":218,"height":119},
+  {"name":"vault","x":1095,"y":460,"width":220,"height":117}
+]

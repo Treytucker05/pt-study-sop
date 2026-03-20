@@ -1,0 +1,1 @@
+Loaded repo `AGENTS.md` from `C:\pt-study-sop` and will follow it. What do you want to do next?

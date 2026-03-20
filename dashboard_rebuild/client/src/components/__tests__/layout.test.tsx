@@ -143,7 +143,7 @@ describe("Layout nav and notes dock", () => {
       { wrapper: createWrapper() },
     );
 
-    const header = screen.getByText("TREY'S STUDY SYSTEM").closest("header");
+    const header = document.querySelector("header[data-header-shell]");
     const main = document.querySelector("main");
 
     expect(header).not.toBeNull();

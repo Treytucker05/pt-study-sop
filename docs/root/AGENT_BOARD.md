@@ -62,12 +62,19 @@ Use only these values in the live table:
 
 ## Live Board
 
-Current state: no active multi-agent ownership claims.
+Current state: rolling repo-quality-audit swarm active with orchestrator-owned shared files and private per-shard artifact scopes.
 
 Historical rows archived to `docs/archive/AGENT_BOARD_history_2026-03-15.md`.
 
 | Agent | Task ID / Goal | File Scope | Status | Blocked On | Artifacts / Results | Next Handoff |
 |---|---|---|---|---|---|---|
+| `sparky-rqa-110` | `RQA-110` shared shell and nav audit | write: `conductor/tracks/repo-quality-audit_20260316/audit/RQA-110.md`; read: `dashboard_rebuild/client/src/App.tsx`, `dashboard_rebuild/client/src/components/layout.tsx` | `done` | `none` | `RQA-110.md` with 2 `P2` findings on route normalization and scroll-reset gaps | orchestrator to merge findings into the consolidated backlog |
+| `sparky-rqa-120` | `RQA-120` Brain surface audit | write: `conductor/tracks/repo-quality-audit_20260316/audit/RQA-120.md`; read: `dashboard_rebuild/client/src/pages/brain.tsx`, `dashboard_rebuild/client/src/components/brain/` | `done` | `none` | `RQA-120.md` with 2 `P2` findings and 1 `P3` finding on Brain command/edit behavior | orchestrator to merge findings into the consolidated backlog |
+| `sparky-rqa-130` | `RQA-130` Tutor workflow audit | write: `conductor/tracks/repo-quality-audit_20260316/audit/RQA-130.md`; read: `dashboard_rebuild/client/src/pages/tutor.tsx`, Tutor components, `dashboard_rebuild/client/src/lib/tutorClientState.ts` | `in_progress` | `none` | artifact pending | finish Tutor audit and return normalized findings only in the shard artifact |
+| `sparky-rqa-140` | `RQA-140` Scholar audit | write: `conductor/tracks/repo-quality-audit_20260316/audit/RQA-140.md`; read: `dashboard_rebuild/client/src/pages/scholar.tsx`, Scholar route support components | `in_progress` | `none` | artifact pending | finish Scholar audit and return normalized findings only in the shard artifact |
+| `sparky-rqa-150` | `RQA-150` Methods and Mastery audit | write: `conductor/tracks/repo-quality-audit_20260316/audit/RQA-150.md`; read: `dashboard_rebuild/client/src/pages/methods.tsx`, `dashboard_rebuild/client/src/pages/mastery.tsx`, related components | `done` | `none` | `RQA-150.md` with 2 `P2` findings on Methods failure UX and Mastery stale diagnostics | orchestrator to merge findings into the consolidated backlog |
+| `sparky-rqa-160` | `RQA-160` Library, Calendar, and Vault Health audit | write: `conductor/tracks/repo-quality-audit_20260316/audit/RQA-160.md`; read: `dashboard_rebuild/client/src/pages/library.tsx`, `dashboard_rebuild/client/src/pages/calendar.tsx`, `dashboard_rebuild/client/src/pages/vault-health.tsx` | `in_progress` | `none` | artifact pending | finish support-route audit and return normalized findings only in the shard artifact |
+| `sparky-rqa-170` | `RQA-170` backend and API contract audit | write: `conductor/tracks/repo-quality-audit_20260316/audit/RQA-170.md`; read: `brain/dashboard/`, frontend API consumers | `in_progress` | `none` | artifact pending | finish backend/API contract audit and return normalized findings only in the shard artifact |
 
 ## Row Rules
 

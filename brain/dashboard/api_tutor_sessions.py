@@ -922,6 +922,28 @@ def end_session(session_id: str):
             (str(brain_session_id), session_id),
         )
 
+    # --- Advance parent workflow past tutor stage ---
+    try:
+        cur.execute(
+            """UPDATE tutor_workflows
+               SET current_stage = 'polish',
+                   status = 'polish_in_progress',
+                   active_tutor_session_id = NULL,
+                   updated_at = ?
+               WHERE active_tutor_session_id = ?
+                 AND current_stage = 'tutor'
+                 AND status = 'tutor_in_progress'""",
+            (now.isoformat(), session_id),
+        )
+        if cur.rowcount:
+            _LOG.info(
+                "end_session: advanced %d workflow(s) to polish for session %s",
+                cur.rowcount,
+                session_id,
+            )
+    except Exception as exc:
+        _LOG.warning("end_session: workflow advancement failed: %s", exc)
+
     log_product_event(
         conn,
         event_type="tutor_session_completed",

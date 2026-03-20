@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Skill Audit"
+  short_description: "Audit project skill gaps from real session history"
+  default_prompt: "Use $project-skill-audit to audit this repo's session history and recommend which local skills to create or update."

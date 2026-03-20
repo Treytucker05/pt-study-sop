@@ -10,6 +10,7 @@ import brainBackground from "@assets/BrainBackground.jpg";
 import navShellBackground from "@assets/Dashboard Background image.png";
 import navShellFrame from "@assets/Dashboard finished.png";
 import logoImg from "@assets/StudyBrainIMAGE_1768640444498.jpg";
+import navBrainLogo from "@assets/Brain by title.png";
 import navBrainCustom from "@assets/nav-brain-custom.png";
 import navScholarCustom from "@assets/nav-scholar-custom.png";
 import navTutorCustom from "@assets/nav-tutor-custom.png";
@@ -56,7 +57,7 @@ const PRIMARY_NAV_ITEMS = [
     tier: "primary",
     imageSrc: navBrainCustom,
     accentClass: "drop-shadow-[0_0_18px_rgba(255,74,74,0.34)]",
-    shellStyle: { left: "22.16%", top: "46.83%", width: "16.39%", height: "31.69%" } as CSSProperties,
+    shellStyle: { left: "17.65%", top: "32.68%", width: "19.97%", height: "15.02%" } as CSSProperties,
   },
   {
     path: "/scholar",
@@ -65,7 +66,7 @@ const PRIMARY_NAV_ITEMS = [
     tier: "primary",
     imageSrc: navScholarCustom,
     accentClass: "brightness-[1.02] saturate-[1.08] drop-shadow-[0_0_18px_rgba(255,164,92,0.34)]",
-    shellStyle: { left: "37.23%", top: "44.39%", width: "16.39%", height: "31.69%" } as CSSProperties,
+    shellStyle: { left: "39.99%", top: "31.60%", width: "19.97%", height: "15.02%" } as CSSProperties,
   },
   {
     path: "/tutor",
@@ -74,7 +75,7 @@ const PRIMARY_NAV_ITEMS = [
     tier: "primary",
     imageSrc: navTutorCustom,
     accentClass: "brightness-[1.02] saturate-[1.08] drop-shadow-[0_0_18px_rgba(255,98,98,0.38)]",
-    shellStyle: { left: "52.01%", top: "47.08%", width: "16.39%", height: "31.69%" } as CSSProperties,
+    shellStyle: { left: "61.54%", top: "31.93%", width: "19.97%", height: "15.02%" } as CSSProperties,
   },
 ];
 
@@ -85,7 +86,7 @@ const SUPPORT_NAV_ITEMS = [
     testId: "library",
     tier: "support",
     imageSrc: navLibraryCustom,
-    shellStyle: { left: "24.46%", top: "78.34%", width: "9.03%", height: "20%" } as CSSProperties,
+    shellStyle: { left: "21.22%", top: "45.06%", width: "10.42%", height: "11.81%" } as CSSProperties,
   },
   {
     path: "/mastery",
@@ -93,7 +94,7 @@ const SUPPORT_NAV_ITEMS = [
     testId: "mastery",
     tier: "support",
     imageSrc: navMasteryCustom,
-    shellStyle: { left: "33.26%", top: "78.54%", width: "9.03%", height: "20%" } as CSSProperties,
+    shellStyle: { left: "33.68%", top: "44.74%", width: "10.42%", height: "11.81%" } as CSSProperties,
   },
   {
     path: "/calendar",
@@ -101,7 +102,7 @@ const SUPPORT_NAV_ITEMS = [
     testId: "calendar",
     tier: "support",
     imageSrc: navCalendarCustom,
-    shellStyle: { left: "41.75%", top: "79.08%", width: "9.03%", height: "20%" } as CSSProperties,
+    shellStyle: { left: "45.04%", top: "44.95%", width: "10.42%", height: "11.81%" } as CSSProperties,
   },
   {
     path: "/methods",
@@ -109,7 +110,7 @@ const SUPPORT_NAV_ITEMS = [
     testId: "methods",
     tier: "support",
     imageSrc: navMethodsCustom,
-    shellStyle: { left: "49.92%", top: "78.78%", width: "9.03%", height: "20%" } as CSSProperties,
+    shellStyle: { left: "56.82%", top: "44.95%", width: "10.42%", height: "11.81%" } as CSSProperties,
   },
   {
     path: "/vault-health",
@@ -117,7 +118,7 @@ const SUPPORT_NAV_ITEMS = [
     testId: "vault",
     tier: "support",
     imageSrc: navVaultCustom,
-    shellStyle: { left: "58.59%", top: "79.28%", width: "9.03%", height: "20%" } as CSSProperties,
+    shellStyle: { left: "68.87%", top: "44.74%", width: "10.42%", height: "11.81%" } as CSSProperties,
   },
 ];
 
@@ -248,6 +249,25 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
   const TOP_ZONE = 10;
   const HEADER_SLIVER_PX = 6;
 
+  // Mouse-based header collapse: collapse when mouse enters content area, expand at top
+  useEffect(() => {
+    if (!isDesktopViewport) return;
+    const handleMouseMove = (e: globalThis.MouseEvent) => {
+      const header = document.querySelector<HTMLElement>("header[data-header-shell]");
+      if (!header) return;
+      const headerBottom = header.getBoundingClientRect().bottom;
+      if (e.clientY > headerBottom + 20) {
+        setHeaderCollapsed(true);
+        setHeaderHovered(false);
+      } else if (e.clientY < HEADER_SLIVER_PX + 10) {
+        setHeaderHovered(true);
+        setHeaderCollapsed(false);
+      }
+    };
+    document.addEventListener("mousemove", handleMouseMove, { passive: true });
+    return () => document.removeEventListener("mousemove", handleMouseMove);
+  }, [isDesktopViewport]);
+
   const clampNotesDockTop = useCallback((top: number) => {
     if (typeof window === "undefined") {
       return top;
@@ -273,42 +293,10 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
     return { source: window, y: window.scrollY || document.documentElement.scrollTop || 0 };
   }, []);
 
-  const handleScroll = useCallback((event?: Event) => {
-    if (!isDesktopViewport) {
-      setHeaderCollapsed(false);
-      scrollAccumulator.current = 0;
-      return;
-    }
-
-    const { source, y } = resolveScrollPosition(event?.target ?? null);
-
-    // Track per-source scroll position without dropping the first event
-    if (lastScrollSource.current !== source) {
-      lastScrollSource.current = source;
-      lastScrollY.current = y;
-      scrollAccumulator.current = 0;
-      // Don't return — still process this scroll event
-    }
-
-    const delta = y - lastScrollY.current;
-    lastScrollY.current = y;
-
-    // Near the top — always expand
-    if (y <= TOP_ZONE) {
-      setHeaderCollapsed(false);
-      scrollAccumulator.current = 0;
-      return;
-    }
-
-    // Any scroll down past the top zone — collapse immediately
-    if (delta > 0) {
-      scrollAccumulator.current = Math.max(0, scrollAccumulator.current) + delta;
-      if (scrollAccumulator.current > SCROLL_DOWN_THRESHOLD) {
-        setHeaderCollapsed(true);
-      }
-    }
-    // Scroll up does NOT expand — only TOP_ZONE or mouse hover expands
-  }, [isDesktopViewport, resolveScrollPosition]);
+  // Scroll handler — no longer controls header collapse/expand (mouse-only now)
+  const handleScroll = useCallback((_event?: Event) => {
+    // Kept for other scroll-dependent logic but header state is mouse-only
+  }, []);
 
   useEffect(() => {
     document.addEventListener("scroll", handleScroll, { passive: true, capture: true });
@@ -364,6 +352,15 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
   }, [isDesktopViewport]);
 
   const headerExpanded = !isDesktopViewport || !headerCollapsed || headerHovered;
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (headerExpanded) {
+      document.body.classList.remove("scrolled-down");
+    } else {
+      document.body.classList.add("scrolled-down");
+    }
+  }, [headerExpanded]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -468,6 +465,19 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMobileNavOpen(false);
+
+    // Reset scroll + header state on route change so stale scroll
+    // position from a previous page doesn't collapse the hero/header.
+    setHeaderCollapsed(false);
+    scrollAccumulator.current = 0;
+    lastScrollY.current = 0;
+    lastScrollSource.current = null;
+
+    const main = document.querySelector("main");
+    if (main) {
+      main.scrollTop = 0;
+    }
+    window.scrollTo(0, 0);
   }, [currentPath]);
 
   const { data: notes = [], isLoading: notesLoading } = useQuery({
@@ -791,25 +801,19 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
       <div
         className="fixed inset-x-0 top-0 z-30 hidden pointer-events-auto lg:block"
         style={{ height: HEADER_SLIVER_PX }}
-        onMouseEnter={() => setHeaderHovered(true)}
+        onMouseEnter={() => { setHeaderHovered(true); setHeaderCollapsed(false); }}
       />
       <header
         data-header-shell
         className={cn(
-          "relative z-20 sticky top-0 overflow-hidden transition-transform duration-300 ease-out will-change-transform border-b-4 border-red-700",
-          headerExpanded && "shadow-[0_10px_30px_rgba(220,38,38,0.4)]",
+          "relative z-20 border-b-4 border-red-700",
+          headerExpanded
+            ? "shadow-[0_10px_30px_rgba(220,38,38,0.4)]"
+            : "invisible h-0 overflow-hidden border-b-0",
         )}
-        style={{
-          transform: headerExpanded
-            ? "translateY(0)"
-            : `translateY(-${Math.max(0, (headerHeightPx || 0) - HEADER_SLIVER_PX)}px)`,
-          marginBottom: headerExpanded
-            ? 0
-            : -Math.max(0, (headerHeightPx || 0) - HEADER_SLIVER_PX),
-        }}
         data-header-state={headerExpanded ? "expanded" : "compact"}
-        onMouseEnter={() => setHeaderHovered(true)}
-        onMouseLeave={() => setHeaderHovered(false)}
+        onMouseEnter={() => { setHeaderHovered(true); setHeaderCollapsed(false); }}
+        onMouseLeave={() => { setHeaderHovered(false); if (isDesktopViewport) setHeaderCollapsed(true); }}
       >
         {/* Banner Image Background */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
@@ -942,60 +946,71 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
 
           <div className="hidden min-w-0 justify-center lg:flex" data-testid="nav-desktop-groups">
             <div className="mx-auto w-full max-w-[1440px]">
-              <div className="relative">
-                <div className="relative z-20 mb-2">
-                  <a
-                    href="/"
-                    onClick={(event) => handleNavActivate(event, "/")}
-                    className="group absolute left-[1.2rem] top-[0.2rem] z-30 flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-                    aria-label="Trey's Study System"
-                  >
-                    <div className="pointer-events-none absolute left-[1rem] top-1/2 h-[4.8rem] w-[50rem] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,84,84,0.46),transparent_72%)] blur-3xl" />
-                    <BrainTitleChip className="relative z-10 h-[7rem] w-[7rem]" imageClassName="h-[4.6rem] w-[4.6rem]" />
+              <div className="relative overflow-visible">
+                {/* Brains — decorative, absolute, z-5 behind cockpit, no layout impact */}
+                <a href="/" onClick={(event) => handleNavActivate(event, "/")} aria-label="Home"
+                  className="absolute z-[5] pointer-events-auto"
+                  style={{ left: "-11%", top: "-2rem", width: "clamp(14rem, 24.28vw, 27.31rem)", height: "clamp(14rem, 24.28vw, 27.31rem)" }}>
+                  <img src={navBrainLogo} alt="" aria-hidden="true"
+                    className="h-full w-full object-contain drop-shadow-[0_0_24px_rgba(255,82,82,0.6)]"
+                  />
+                </a>
+                <a href="/" onClick={(event) => handleNavActivate(event, "/")} aria-label="Home"
+                  className="absolute z-[5] pointer-events-auto"
+                  style={{ right: "-11%", top: "-2rem", width: "clamp(14rem, 24.28vw, 27.31rem)", height: "clamp(14rem, 24.28vw, 27.31rem)" }}>
+                  <img src={navBrainLogo} alt="" aria-hidden="true"
+                    className="h-full w-full object-contain drop-shadow-[0_0_24px_rgba(255,82,82,0.6)]"
+                  />
+                </a>
+
+                {/* Title text — in flow, centered, z-30 on top of everything */}
+                <div className="relative z-30 flex justify-center pt-2 pb-0">
+                  <a href="/" onClick={(event) => handleNavActivate(event, "/")}
+                    aria-label="Trey's Study System">
+                    <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[4.8rem] w-[50rem] rounded-full bg-[radial-gradient(circle,rgba(255,84,84,0.46),transparent_72%)] blur-3xl" />
                     <span
-                      className="relative -ml-3 pl-4 pr-3 font-arcade uppercase leading-none text-[#fff4ed] [text-shadow:0_0_18px_rgba(255,108,108,0.7),0_0_34px_rgba(255,92,92,0.28),0_5px_0_rgba(36,10,10,0.98)]"
-                      style={{
-                        fontSize: "clamp(2.06rem,3.42vw,3.18rem)",
-                        letterSpacing: "0.11em",
-                      }}
+                      className="relative font-arcade uppercase leading-none whitespace-nowrap text-[#fff4ed] [text-shadow:0_0_18px_rgba(255,108,108,0.7),0_0_34px_rgba(255,92,92,0.28),0_5px_0_rgba(36,10,10,0.98)]"
+                      style={{ fontSize: "clamp(2.06rem,3.42vw,3.18rem)", letterSpacing: "0.11em" }}
                     >
                       TREY&apos;S STUDY SYSTEM
                     </span>
-                    <BrainTitleChip className="relative z-10 ml-1 h-[7rem] w-[7rem]" imageClassName="h-[4.6rem] w-[4.6rem]" />
                   </a>
                 </div>
 
-                <div className="relative z-10 w-full h-[325px]">
-                  {/* Cockpit frame — behind buttons, in front of background */}
-                  <img
-                    src={navShellFrame}
-                    alt=""
-                    aria-hidden="true"
-                    className="pointer-events-none absolute z-[5] object-contain select-none"
-                    style={{ left: "0.45%", top: "-19.95%", width: "90.42%", height: "207.69%" }}
-                  />
+                {/* Cockpit shell — right below title, z-15 in front of brains */}
+                <div className="pointer-events-none relative z-[15] w-full h-[370px]" style={{ marginTop: "-8rem" }}>
+                  <div
+                    className="absolute z-[5] left-1/2 -translate-x-1/2"
+                    style={{ top: "-19.95%", width: "90.42%", height: "207.69%" }}
+                  >
+                    <img
+                      src={navShellFrame}
+                      alt=""
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-0 h-full w-full object-contain select-none"
+                    />
 
-                  {/* Nav button overlays — on top of everything */}
-                  {[...PRIMARY_NAV_ITEMS, ...SUPPORT_NAV_ITEMS].map((item) => {
-                    const isActive = currentPath === item.path;
-                    return (
-                      <a
-                        key={item.path}
-                        href={item.path}
-                        onClick={(event) => handleNavActivate(event, item.path)}
-                        aria-current={isActive ? "page" : undefined}
-                        data-testid={`nav-${item.testId}`}
-                        className={navShellLinkClass(item, isActive)}
-                        style={item.shellStyle}
-                      >
-                        <img
-                          src={item.imageSrc}
-                          alt={item.label}
-                          className={navButtonImageClass(item, isActive)}
-                        />
-                      </a>
-                    );
-                  })}
+                    {[...PRIMARY_NAV_ITEMS, ...SUPPORT_NAV_ITEMS].map((item) => {
+                      const isActive = currentPath === item.path;
+                      return (
+                        <a
+                          key={item.path}
+                          href={item.path}
+                          onClick={(event) => handleNavActivate(event, item.path)}
+                          aria-current={isActive ? "page" : undefined}
+                          data-testid={`nav-${item.testId}`}
+                          className={navShellLinkClass(item, isActive)}
+                          style={item.shellStyle}
+                        >
+                          <img
+                            src={item.imageSrc}
+                            alt={item.label}
+                            className={navButtonImageClass(item, isActive)}
+                          />
+                        </a>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1221,6 +1236,9 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
         </div>
       </button>
 
+      {/* Hero portal — PageScaffold renders the page hero here, outside main */}
+      <div id="page-hero-portal" className="relative z-10" />
+
       <main
         className={cn(
           "relative z-10 h-full min-h-0 w-full",
@@ -1232,7 +1250,7 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
         <div
           className={cn(
             "page-enter",
-            isWorkspaceRoute ? "h-full flex flex-col min-h-0" : "app-route-shell min-h-full",
+            isWorkspaceRoute ? "min-h-full flex flex-col" : "app-route-shell min-h-full",
           )}
         >
           {children}

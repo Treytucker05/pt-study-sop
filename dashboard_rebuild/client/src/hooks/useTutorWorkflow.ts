@@ -54,7 +54,7 @@ export function useTutorWorkflow({
   const [savingPrimingBundle, setSavingPrimingBundle] = useState(false);
   const [savingPolishBundle, setSavingPolishBundle] = useState(false);
 
-  // ─── Priming text states ───
+  // ─── PRIME artifact states ───
   const [primingMethod, setPrimingMethod] = useState("summary_first");
   const [primingChainId, setPrimingChainId] = useState(
     "ingest_objectives_concepts_summary_gaps",
@@ -206,12 +206,17 @@ export function useTutorWorkflow({
     [hub.chatMaterials, primingSourceInventory, hub.selectedMaterials],
   );
 
-  // ─── Priming readiness ───
+  // ─── PRIME readiness ───
   const primingReadinessItems = useMemo<TutorPrimingReadinessItem[]>(() => {
-    const hasObjectives =
+    const extractedObjectiveCount = mergedPrimingSourceInventory.flatMap(
+      (item) => item.priming_output?.learning_objectives || [],
+    ).length;
+    const hasManualObjectiveScope =
       hub.selectedObjectiveGroup.trim().length > 0 &&
       (hub.objectiveScope !== "single_focus" || hub.selectedObjectiveId.trim().length > 0);
-    const conceptCount = parseLinesToRecords(primingConceptsText, "concept").length;
+    const hasObjectives = hasManualObjectiveScope || extractedObjectiveCount > 0;
+    const studySpineCount = parseLinesToRecords(primingConceptsText, "concept").length;
+    const termsCount = parseLinesToRecords(primingTerminologyText, "term").length;
     return [
       {
         label: "Materials loaded",
@@ -222,32 +227,53 @@ export function useTutorWorkflow({
             : "Add at least one source material.",
       },
       {
-        label: "Study unit / objective scope",
+        label: "Learning objectives captured",
         ready: hasObjectives,
-        detail: hasObjectives
+        detail: hasManualObjectiveScope
           ? hub.selectedObjectiveGroup || hub.selectedObjectiveId
-          : "Select a study unit and focus objective when single-focus mode is enabled.",
+          : extractedObjectiveCount > 0
+            ? `${extractedObjectiveCount} extracted objective candidate${extractedObjectiveCount === 1 ? "" : "s"}`
+            : "Run PRIME to extract objectives from the selected materials.",
       },
       {
         label: "Summary generated",
         ready: primingSummaryText.trim().length > 0,
         detail: primingSummaryText.trim().length > 0
-          ? "Summary ready for Tutor handoff"
-          : "Add at least one priming summary.",
+          ? "Summary drafted for Tutor handoff"
+          : "Add the Studio PRIME summary.",
       },
       {
-        label: "Concept set generated",
-        ready: conceptCount > 0,
+        label: "Study spine drafted",
+        ready: studySpineCount > 0,
         detail:
-          conceptCount > 0
-            ? `${conceptCount} concept lines ready`
-            : "Capture at least one key concept.",
+          studySpineCount > 0
+            ? `${studySpineCount} study spine nodes ready`
+            : "Capture at least one study spine node.",
+      },
+      {
+        label: "Hierarchical map drafted",
+        ready: primingRootExplanationText.trim().length > 0,
+        detail:
+          primingRootExplanationText.trim().length > 0
+            ? "Hierarchical map or structure notes captured"
+            : "Add the hierarchical map or structure notes.",
+      },
+      {
+        label: "Terms captured",
+        ready: termsCount > 0,
+        detail:
+          termsCount > 0
+            ? `${termsCount} key terms ready`
+            : "Capture at least one key term.",
       },
     ];
   }, [
+    mergedPrimingSourceInventory,
     hub.objectiveScope,
     primingConceptsText,
+    primingRootExplanationText,
     primingSummaryText,
+    primingTerminologyText,
     hub.selectedMaterials.length,
     hub.selectedObjectiveGroup,
     hub.selectedObjectiveId,
@@ -260,6 +286,7 @@ export function useTutorWorkflow({
     hub.setSelectedMaterials([]);
     hub.setSelectedPaths([]);
     hub.setTopic("");
+    hub.setVaultFolder("");
     hub.setSelectedObjectiveGroup("");
     hub.setSelectedObjectiveId("");
     hub.setObjectiveScope("module_all");

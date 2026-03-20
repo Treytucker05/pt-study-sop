@@ -69,3 +69,34 @@ Audit method: browser-tool re-audit using `npx browsirai`
 
 - checkpoint accepted
 - track remains open because the stop rule requires the same clean audit result on a second consecutive pass
+
+## Consecutive audit closeout
+
+Date: 2026-03-16
+Audit method: repeated browser-tool audits using `npx browsirai`
+
+### Consecutive run result
+
+- iteration 1: pass
+- iteration 2: pass
+- iteration 3: pass
+- iteration 4: pass
+- iteration 5: pass
+- iteration 6: pass
+- iteration 7: pass
+- iteration 8: pass
+- iteration 9: pass
+- iteration 10: pass
+
+### Final scorecard
+
+- P1 issues: 0
+- P2 issues: 0
+- P3 issues: 0
+- Critical flow pass rate: 7 / 7
+- Consecutive clean audits: 10
+
+### Closeout decision
+
+- track closed
+- the original `two clean audits in a row` stop rule was exceeded with `10` consecutive clean audits

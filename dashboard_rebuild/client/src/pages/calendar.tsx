@@ -1,4 +1,4 @@
-import Layout from "@/components/layout";
+
 import { PageScaffold } from "@/components/PageScaffold";
 import { SupportWorkspaceFrame } from "@/components/SupportWorkspaceFrame";
 import { Button } from "@/components/ui/button";
@@ -1520,7 +1520,7 @@ function useCalendarPageController() {
   };
 
   return (
-    <Layout>
+    <>
       {debugModals && (
         <div className="fixed bottom-12 right-4 z-[70] bg-black/80 border border-primary text-primary font-terminal text-xs px-2 py-1 rounded-none">
           <div>Calendar modals</div>
@@ -2439,7 +2439,7 @@ function useCalendarPageController() {
         />
       )}
       <CalendarAssistant isOpen={showAssistant} onClose={() => setShowAssistant(false)} />
-    </Layout>
+    </>
   );
 }
 

@@ -636,3 +636,351 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Eval-kit changes:
   - added two supplemental critique-oriented benchmark prompts
   - captured the resulting experiment in `conductor/tracks/swarm-planner-hardening_20260315/review-only-experiment-scorecard.md`
+
+## 2026-03-16 - Custom navbar layout plugin
+- Added a repo-local custom navbar layout plugin at `tools/custom-navbar-layout-plugin/` so the dashboard shell background and split navbar PNGs can be placed directly inside an open design file without relying on MCP placement support.
+- The plugin ships as a minimal no-build scaffold:
+  - `manifest.json`
+  - `code.js`
+  - `ui.html`
+  - `README.md`
+- The plugin UI asks for:
+  - `C:\Users\treyt\Downloads\Dashboard finished.png`
+  - the eight split PNGs from `C:\Users\treyt\Downloads\buttons_for_dashboard_split`
+- The main plugin logic creates a `1536 x 1024` frame, places the background, and lays out the buttons at the recorded navbar coordinates for:
+  - Brain
+  - Scholar
+  - Tutor
+  - Library
+  - Mastery
+  - Calendar
+  - Methods
+  - Vault
+- Validation passed:
+  - `node --check tools/custom-navbar-layout-plugin/code.js`
+  - `python scripts/check_docs_sync.py`
+  - `git diff --check`
+
+## 2026-03-16 - Project skill audit skill
+- Added a repo-local Codex skill at `.codex/skills/project-skill-audit/` for auditing project-specific skill gaps from memory, rollout summaries, session history, and existing local skills.
+- The skill encodes:
+  - repo surface and canon scan order
+  - targeted memory and rollout-summary analysis before raw session fallback
+  - comparison rules for `new skill` versus `update existing skill`
+  - output structure for existing skills, suggested updates, suggested new skills, and priority order
+- Added matching UI metadata at `.codex/skills/project-skill-audit/agents/openai.yaml`.
+- Validation passed:
+  - `python C:\Users\treyt\.codex\skills\.system\skill-creator\scripts\quick_validate.py .codex\skills\project-skill-audit`
+
+## 2026-03-16 - Custom app navbar load
+- Copied the split custom navbar PNGs into `dashboard_rebuild/attached_assets/` as app-local assets for:
+  - Brain
+  - Scholar
+  - Tutor
+  - Library
+  - Mastery
+  - Calendar
+  - Methods
+  - Vault
+- Replaced the generated text-only shared-shell header nav controls in `dashboard_rebuild/client/src/components/layout.tsx` with the custom button art while preserving:
+  - the existing route map
+  - the current nav `data-testid` hooks
+  - keyboard focus treatment and route activation behavior
+- Added responsive sizing plus dimmed/active glow states so the custom buttons stay readable in the live shell without reintroducing the older frame/background dependency.
+- Validation passed:
+  - `npm run test -- layout.test.tsx`
+  - `npm run build`
+  - manual render check at `http://127.0.0.1:5000/brain`
+
+## 2026-03-16 - UI image centralization
+- Created `C:\pt-study-sop\UI Images` as the canonical repo-local home for the shell/navbar image set and the working navbar source art.
+- Moved the current live shell assets there:
+  - `BrainBackground.jpg`
+  - `StudyBrainIMAGE_1768640444498.jpg`
+  - `TreysStudySystemIMAGE.jpg`
+  - `nav-brain-custom.png`
+  - `nav-scholar-custom.png`
+  - `nav-tutor-custom.png`
+  - `nav-library-custom.png`
+  - `nav-mastery-custom.png`
+  - `nav-calendar-custom.png`
+  - `nav-methods-custom.png`
+  - `nav-vault-custom.png`
+- Preserved working/reference art in the same repo folder under:
+  - `UI Images/buttons_for_dashboard_split/`
+  - `UI Images/reference/`
+  - `UI Images/generated_images/`
+- Repointed the frontend `@assets` alias in `dashboard_rebuild/vite.config.ts`, `dashboard_rebuild/vitest.config.ts`, and `dashboard_rebuild/tsconfig.json` so the app now resolves image imports from `UI Images` instead of `dashboard_rebuild/attached_assets`.
+- Updated the custom navbar layout plugin docs/UI copy to use the repo-local `UI Images` paths.
+- Validation passed:
+  - `npm run test -- layout.test.tsx`
+  - `npm run build`
+  - `python scripts/check_docs_sync.py`
+  - live render check at `http://127.0.0.1:5000/brain`
+
+## 2026-03-16 - Navbar tool naming cleanup
+- Renamed the repo-local navbar layout scaffold from `tools/figma-navbar-layout-plugin/` to `tools/custom-navbar-layout-plugin/` so the folder no longer carries the stale Figma-first label.
+- Updated the active sprint board, historical log references, and the tool README/UI copy to use the neutral custom naming while keeping the underlying plugin files intact.
+- Validation passed:
+  - `node --check tools/custom-navbar-layout-plugin/code.js`
+  - `python scripts/check_docs_sync.py`
+  - `git diff --check`
+
+## 2026-03-16 - Navbar PNG crop fix
+- Repaired the custom navbar PNG set under `C:\pt-study-sop\UI Images` after the live shell showed a leftover white block under every button except Tutor.
+- Updated both the live app assets and the split source copies while keeping the imported filenames stable for:
+  - Brain
+  - Scholar
+  - Library
+  - Mastery
+  - Calendar
+  - Methods
+  - Vault
+- Removed the full lower tail artifact rather than only shaving the bottom edge so the live header no longer shows the pale block beneath the buttons.
+- Validation passed:
+  - `npm run build`
+  - live render screenshot check at `http://127.0.0.1:5000/brain`
+
+## 2026-03-16 - Custom nav background shell integration
+- Updated `dashboard_rebuild/client/src/components/layout.tsx` so the shared header now renders `C:\pt-study-sop\UI Images\Dashboard finished.png` as the custom nav backing plate behind the existing button links instead of leaving the buttons floating over the page background.
+- Preserved the current route map, `data-testid` hooks, and click behavior while switching the header layout to an overlaid shell-stage composition using the recorded button placements.
+- Validation passed:
+  - `npm run test -- layout.test.tsx`
+  - `npm run build`
+  - live render screenshot check at `http://127.0.0.1:5000/brain`
+
+## 2026-03-16 - Custom nav interaction regression fix
+- Reworked `dashboard_rebuild/client/src/components/layout.tsx` so the overlaid primary/support nav rails no longer block each other's pointer events, which restores reliable hover and click behavior for the top-row Brain/Scholar/Tutor buttons.
+- Strengthened the custom button hover/press treatment and widened the desktop nav stage/shell presentation so the background plate reads larger without changing the current route map or `data-testid` hooks.
+- Validation passed:
+  - `npm run test -- layout.test.tsx`
+  - `npm run build`
+  - live browser verification at `http://127.0.0.1:5000/brain` including successful hover and route navigation for the primary custom buttons
+
+## 2026-03-16 - Notes dock side swap
+- Updated `dashboard_rebuild/client/src/components/layout.tsx` so the floating notes control now renders as a compact unlabeled icon tab on the left edge instead of the larger labeled right-edge dock.
+- Moved the notes sheet to the left side to match the new tab location while keeping the existing drag/open behavior and `data-testid="notes-dock"` intact.
+- Validation passed:
+  - `npm run test -- layout.test.tsx`
+  - `npm run build`
+  - live browser verification at `http://127.0.0.1:5000/brain` including opening the left-side notes tab and confirming the sheet opens cleanly
+
+## 2026-03-16 - Custom nav shell scale rebalance
+- Tuned `dashboard_rebuild/client/src/components/layout.tsx` so the custom shell background renders larger while the button art is reduced inside the same clickable link areas, matching the requested bigger-background/smaller-button balance.
+- Narrowed the logo column slightly, widened the desktop nav stage, increased the shell image scale, and reduced the button image width so the overall nav plate grows without making the buttons feel oversized.
+- Validation passed:
+  - `npm run test -- layout.test.tsx`
+  - `npm run build`
+  - live browser verification at `http://127.0.0.1:5000/brain`
+
+## 2026-03-16 - Custom nav title and hero polish
+- Reworked `dashboard_rebuild/client/src/components/layout.tsx` so the custom nav shell now sits as a centered/lowered hero element instead of sharing the header with a separate left-side logo card.
+- Replaced the old `TREY'S STUDY SYSTEM / NEURAL COMMAND DECK` block with a curved title treatment that arcs over the shell and embeds the brain logo directly into the title composition.
+- Strengthened the primary-button treatment so Scholar and Tutor keep stronger always-on glow/brightness accents and read as emphasized peers next to Brain while preserving the current nav routes and `data-testid` hooks.
+- Validation passed:
+  - `npm run test -- layout.test.tsx`
+  - `npm run build`
+  - live browser verification at `http://127.0.0.1:5000/brain`
+
+## 2026-03-16 - Custom nav fit and title emphasis follow-up
+- Tightened `dashboard_rebuild/client/src/components/layout.tsx` so the desktop header no longer relies on a forced horizontal overflow rail or the oversized shell scale that had introduced left-right scrolling and a bulkier collapsed shell.
+- Reduced the visible button art slightly while widening/recentering the clickable placement zones, giving the mid-row and bottom-row PNG buttons a cleaner fit inside the shell artwork without changing the route map or test hooks.
+- Recovered the title into a single left-starting `TREY'S STUDY SYSTEM` wordmark with the brain mark tucked into the title lane after the earlier three-part arc treatment regressed visually.
+- Switched the shell plate rendering from a contained fit to a centered cover crop so the banner actually fills the header lane instead of leaving a dead black gap under the button rows.
+- Validation passed:
+  - `npm run test -- layout.test.tsx`
+  - `npm run build`
+  - live browser verification at `http://127.0.0.1:5000/brain`
+
+## 2026-03-16 - Header variant lab
+- Added a standalone `/nav-lab` route in `dashboard_rebuild/client/src/App.tsx` and a new `dashboard_rebuild/client/src/pages/nav-lab.tsx` gallery page that renders six custom banner lockup variants at once.
+- Kept the shell/button language stable and used the variant set to explore the actual alignment question: how the brain mark should attach to the `TREY'S STUDY SYSTEM` wordmark and how that lockup should sit relative to the shell.
+- Validation passed:
+  - `npm run test -- layout.test.tsx`
+  - `npm run build`
+  - live route check at `http://127.0.0.1:5000/nav-lab`
+
+## 2026-03-16 - Nav build marker and launch guard
+- Added a bright `NAV 316.1` marker to `dashboard_rebuild/client/src/components/layout.tsx` so the live custom header immediately shows which build is actually on screen during visual tuning.
+- Confirmed the canonical `http://127.0.0.1:5000/brain` path was serving fresh `brain/static/dist` assets, identified a stray `dashboard_rebuild` Vite dev server still running on port `3000`, and killed only that repo-local dev server to remove a second dashboard surface.
+- Hardened `Start_Dashboard.bat` so its stale-build detection now also watches `dashboard_rebuild/shared`, repo-level `UI Images`, and additional frontend config/plugin files before deciding to skip the UI rebuild.
+- Validation passed:
+  - `npm run test -- layout.test.tsx`
+  - `npm run build`
+  - `python scripts/check_docs_sync.py`
+  - `Start_Dashboard.bat`
+  - live route check at `http://127.0.0.1:5000/brain`
+
+## 2026-03-16 - Navbar build-path stabilization and NAV 316.4
+- Updated `dashboard_rebuild/client/src/components/layout.tsx` so the desktop banner now carries the `NAV 316.4` marker, a wider shell/background bleed, and a retuned `TREY'S STUDY SYSTEM` left lockup for the ongoing navbar polish pass.
+- Switched `dashboard_rebuild/package.json` from `tsx build.ts` to direct `vite build` after confirming the canonical starter was blocking on the extra wrapper while the actual Vite production build still completed successfully.
+- Reproduced the `Start_Dashboard.bat` path end-to-end, confirmed the rebuilt live bundle in `brain/static/dist` contains `NAV 316.4`, and verified the canonical `http://127.0.0.1:5000/brain` launcher now serves that fresh bundle again.
+- Validation passed:
+  - `npm run test -- client/src/components/__tests__/layout.test.tsx`
+  - `npx vite build --debug`
+  - `Start_Dashboard.bat`
+  - `python scripts/check_docs_sync.py`
+
+## 2026-03-16 - Navbar dense alignment grid and center dots
+- Updated `dashboard_rebuild/client/src/components/layout.tsx` so the live desktop `/brain` navbar overlay keeps the major `A-P` and `1-10` alignment grid while adding three lower-opacity subdivision lines between every major row and column.
+- Used three distinct subdivision line colors inside the existing green-family grid and kept the major grid lines brighter so the overlay stays readable without overpowering the shell art.
+- Added a small red center marker directly inside each desktop nav button anchor so future alignment feedback can target button centers against the labeled grid without affecting hover or click behavior.
+- Validation passed:
+  - `npm run test -- client/src/components/__tests__/layout.test.tsx`
+  - `npm run build`
+  - `python scripts/check_docs_sync.py`
+  - built bundle check for `NAV 316.5` in `brain/static/dist`
+
+## 2026-03-16 - Scholar grid placement adjustment
+- Moved only the Scholar desktop nav button in `dashboard_rebuild/client/src/components/layout.tsx` so its center marker targets the user's requested alignment callout: on the `H|I` major vertical line and centered in `box 5`.
+- Left every other desktop nav button placement unchanged for this pass so the next alignment corrections can be called out one button at a time against the `NAV 316.6` overlay.
+- Validation passed:
+  - `npm run test -- client/src/components/__tests__/layout.test.tsx`
+  - `npm run build`
+  - built bundle check for `NAV 316.6` in `brain/static/dist`
+
+## 2026-03-16 - Navbar alignment overlay coordinate repair
+- Verified with a fresh `http://127.0.0.1:5000/brain` screenshot that the `NAV 316.6`/`316.7` Scholar callout missed because the live shell background and green grid were rendered inside the widened bleed box while the button anchors were still positioned against the narrower inner stage.
+- Updated `dashboard_rebuild/client/src/components/layout.tsx` so the background art, live grid, and both desktop nav rails now render inside the same widened shell coordinate space.
+- Measured the custom PNG alpha bounds and moved the red debug dots to the visible button-art centers instead of the raw image rectangles, which had inconsistent bottom transparency across the support row.
+- Validation passed:
+  - `npm run test -- client/src/components/__tests__/layout.test.tsx`
+  - `npm run build`
+  - built bundle check for `NAV 316.8` in `brain/static/dist`
+
+## 2026-03-17 - Navbar debug overlay removal
+- Removed the temporary desktop navbar debug overlay from `dashboard_rebuild/client/src/components/layout.tsx`, including the live `A-P` / `1-10` grid, the row/column labels, and the red button-center dots.
+- Kept the top-right build marker in place and bumped it to `NAV 316.9` so the live shared header can still be identified quickly during further visual tuning.
+- Validation passed:
+  - `npm run test -- client/src/components/__tests__/layout.test.tsx`
+  - `npm run build`
+  - built bundle check for `NAV 316.9` in `brain/static/dist`
+
+## 2026-03-17 - Navbar visual review guardrail capture
+- Added a permanent visual-work guardrail to `docs/root/AGENT_GUARDRAILS.md` after the navbar tuning drifted into source-first nudging instead of full live-render review.
+- Captured the specific prevention rule for this repo: use only the canonical `5000` surface, take a fresh full-area screenshot after each meaningful visual change, separate structural resets from micro-polish, and keep a build marker visible during iterative UI work.
+- Validation passed:
+  - `python scripts/check_docs_sync.py`
+
+## 2026-03-17 - Navbar placement-guide recovery
+- Used `UI Images/reference/Dashboard finished placement guide.png` and `UI Images/buttons_for_dashboard_split/placement.json` as the single visual source of truth for the desktop navbar layout.
+- Generated `UI Images/Dashboard finished composite.png` by compositing the split navbar PNGs onto `UI Images/Dashboard finished.png` at the recorded guide coordinates.
+- Updated `dashboard_rebuild/client/src/components/layout.tsx` so the desktop header now renders the guide-derived composite scene and uses transparent absolute hotspots for the existing routes instead of trying to visually align separate live button images.
+- Tuned the desktop scene crop and verified the live `http://127.0.0.1:5000/brain` render now shows the full top row and support row aligned on the shell in `NAV 317.0`.
+- Validation passed:
+  - `npm run test -- client/src/components/__tests__/layout.test.tsx`
+  - `npm run build`
+  - built bundle check for `NAV 317.0` in `brain/static/dist`
+
+## 2026-03-17 - Desktop title chip enlargement pass
+- Updated `dashboard_rebuild/client/src/components/layout.tsx` so the desktop `TREY'S STUDY SYSTEM` title lockup now uses a doubled left brain chip and a duplicated matching chip at the right edge of the wordmark.
+- Kept the guide-based shell/button composite untouched in this pass so only the title lane changed.
+- Captured a fresh live screenshot at `tmp-nav-brain-3171b.png` after rebuilding to verify the `NAV 317.1` title result on the canonical `5000` surface.
+- Validation passed:
+  - `npm run test -- client/src/components/__tests__/layout.test.tsx`
+  - `npm run build`
+  - `python scripts/check_docs_sync.py`
+
+## 2026-03-17 - Path B step 1 desktop composite removal
+- Removed the desktop `Dashboard finished composite.png` render from `dashboard_rebuild/client/src/components/layout.tsx` as the first targeted reset step toward restoring true separate live button images.
+- Left the desktop hotspot anchors intact so the baked image removal could be verified in isolation before reintroducing the separate shell background and button PNGs.
+- Captured a fresh live screenshot at `tmp-nav-brain-3172.png` confirming the desktop composite art is gone in `NAV 317.2`.
+- Validation passed:
+  - `npm run test -- client/src/components/__tests__/layout.test.tsx`
+  - `npm run build`
+  - built bundle check for `NAV 317.2` in `brain/static/dist`
+
+## 2026-03-17 - Path B step 2 desktop hotspot window removal
+- Removed both desktop nav hotspot rails from `dashboard_rebuild/client/src/components/layout.tsx`, which removes all 8 clear desktop button windows from the live shared header.
+- Captured a fresh live screenshot at `tmp-nav-brain-3173.png` confirming the desktop header is now down to the title lane only in `NAV 317.3`.
+- Validation:
+  - `npm run build` passed
+  - built bundle check for `NAV 317.3` in `brain/static/dist` passed
+  - `npm run test -- client/src/components/__tests__/layout.test.tsx` now fails as expected because the temporary desktop reset removed `nav-brain` / desktop nav anchors that the test still expects
+
+## 2026-03-17 - Title lockup comparison lab
+- Reworked `dashboard_rebuild/client/src/pages/nav-lab.tsx` into a focused three-variant title comparison strip for the live navbar decision instead of the older six-way lockup experiment.
+- Added `Oxanium`, `Orbitron`, and `Audiowide` imports plus font tokens in `dashboard_rebuild/client/src/index.css`, then built the app and captured fresh comparison screenshots at `tmp-nav-lab-title-1.png` and `tmp-nav-lab-title-2.png`.
+- Incorporated read-only agent feedback: Oxanium as the safest baseline, Orbitron as the strongest mounted-command treatment, Audiowide as the softest/most stylized option, with explicit warning not to judge them at too tiny a scale.
+- Validation passed:
+  - `npm run build`
+  - `python scripts/check_docs_sync.py`
+
+## 2026-03-17 - Browser fallback stack cleanup
+- Replaced the ad hoc `chrome-cdp` prep path in `C:\Users\treyt\OneDrive\Desktop\UI-UX` with an `agent-browser` fallback profile and launcher script so the local browser stack is now documented as `windows-mcp -> browsirai -> agent-browser -> Playwright`.
+- Updated `Tool-Profiles.json`, `Start-Assistant-Tool.ps1`, and `UI-UX-README.md` to make `agent-browser` the supported live-browser fallback while leaving `chrome-cdp` as an optional legacy install instead of the main recommendation.
+- Verified the launcher profiles for `agent-browser-prep`, `penpot-mcp`, and `pt-study-dashboard`, then reopened the canonical dashboard and Penpot startup flows from the new launcher path.
+- Upgraded the global `agent-browser` CLI from `0.20.5` to `0.21.0`.
+- Removed the old local `chrome-cdp` skill files so the fallback path is no longer ambiguous.
+
+## 2026-03-17 - Stitch MCP setup
+- Configured global Google Cloud ADC for the active `treytucker05@yahoo.com` account and quota project `studysop`, creating `C:\Users\treyt\AppData\Roaming\gcloud\application_default_credentials.json`.
+- Enabled `stitch.googleapis.com` and then enabled the Stitch MCP endpoint for `projects/studysop` with system `gcloud beta services mcp enable`.
+- Verified Stitch CLI access through `@_davideast/stitch-mcp` using system gcloud auth by listing tools and opening the projects browser, which surfaced live Stitch projects including `Arcade Style Retro Header Variant` and `Professional Study Brain Dashboard`.
+- Added a permanent `stitch` MCP server entry to `C:\Users\treyt\.codex\config.toml` using `npx -y @_davideast/stitch-mcp@latest proxy` with `STITCH_USE_SYSTEM_GCLOUD=1` and `GOOGLE_CLOUD_PROJECT=studysop`.
+- Updated `C:\Users\treyt\OneDrive\Desktop\UI-UX\UI-UX-README.md` with the Stitch setup and restart requirements.
+
+## 2026-03-17 - Desktop nav background swap
+- Swapped the live desktop shell background in `dashboard_rebuild/client/src/components/layout.tsx` from `UI Images/Dashboard finished.png` to `UI Images/Dashboard Background image.png`.
+- Restored the desktop shell image layer itself, since the earlier Path B reset had removed the render and left an empty header lane where the background could not appear.
+- Rebuilt the canonical frontend bundle and verified the new background on `http://127.0.0.1:5000/brain` using a fresh browser screenshot (`tmp-nav-bg-check-2.png`).
+- Validation:
+  - `npm run build`
+  - `python scripts/check_docs_sync.py`
+- Known pre-existing issue: `npm run test -- client/src/components/__tests__/layout.test.tsx` still fails on missing desktop nav anchors (`data-testid="nav-brain"`) from the earlier Path B desktop-navbar reset, not from this background swap.
+
+## 2026-03-17 - Disable Figma MCP in Codex
+- Disabled the global Codex Figma MCP server in `C:\Users\treyt\.codex\config.toml` by setting `[mcp_servers.figma].enabled = false`.
+- Confirmed the repo-local [`.mcp.json`](C:\pt-study-sop\.mcp.json) does not register a separate Figma MCP server, so no local override remains active.
+- Created a timestamped backup before the change at `C:\Users\treyt\.codex\config.toml.bak-20260317-231804`.
+- Validation: parsed `C:\Users\treyt\.codex\config.toml` with Python `tomllib` and confirmed `mcp_servers.figma.enabled` resolves to `False`.
+
+## 2026-03-19 - Tutor PRIME artifact layout pass
+- Reframed the current Tutor Priming surface in `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` around the agreed Studio PRIME artifact bundle: `Learning Objectives`, `Study Spine`, `Hierarchical Map`, `Summary`, and `Terms`.
+- Kept the existing workflow save/restore contract in `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts` and reused the current priming bundle payload fields instead of adding a schema migration.
+- Demoted `Open Questions / Ambiguities` and Tutor guidance into a separate handoff card so the main PRIME surface stays focused on artifact creation.
+- Updated `brain/dashboard/api_tutor_workflows.py` so Priming Assist now asks for source-linked PRIME artifacts using the new framing while preserving the existing JSON key contract.
+- Validation passed:
+  - `pytest brain/tests/test_tutor_workflow_priming_assist.py`
+  - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live `/tutor` Priming sanity check at `http://127.0.0.1:5000/tutor`
+
+## 2026-03-19 - Tutor Setup Rail layout pass
+- Rebuilt the live Priming panel in `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` around the chosen Setup Rail structure so setup lives in the left rail, the source viewer stays centered, and PRIME artifacts render as an extraction-first review workspace on the right.
+- Updated `dashboard_rebuild/client/src/components/priming/PrimingLayout.tsx` to support the three-zone left-rail / center-viewer / right-workspace layout instead of the earlier two-panel shell with a bottom block bar.
+- Tightened `dashboard_rebuild/client/src/components/priming/PrimingMaterialReader.tsx` so the center viewer only follows explicitly selected materials and shows a clean empty state when nothing is in scope.
+- Removed the old Priming bottom-bar clutter from the live screen, kept manual editing behind fallback toggles, and preserved the existing workflow save/restore contract and PRIME payload fields.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live `/tutor` Priming sanity check at `http://127.0.0.1:5000/tutor`
+
+## 2026-03-19 - Tutor Setup Rail follow-up fixes
+- Patched `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` so the left rail actually exposes the materials picker and prime-chain controls in the live view, changed study unit entry to a typeable suggestion-backed field, and added a simple chain preview instead of leaving the chain hidden inside a select.
+- Patched `dashboard_rebuild/client/src/hooks/useTutorHub.ts` and `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts` so the displayed Obsidian target derives from the current class plus study unit instead of stale saved vault state, and new Priming runs clear the previous vault-folder override.
+- Tightened `dashboard_rebuild/client/src/components/MaterialSelector.tsx` so existing materials stay class-scoped instead of dumping every material when no class is selected, while still leaving upload available before a class is chosen.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live `/tutor` check confirming Exercise Physiology plus typed `Week 7` resolves the Obsidian target to `Courses/Exercise Physiology/Week 7`
+
+## 2026-03-19 - Tutor Priming stacked-window fallback
+- Flattened `dashboard_rebuild/client/src/components/priming/PrimingLayout.tsx` from the fixed-height three-column shell into vertically stacked windows so the Priming surface can be worked through top-to-bottom without clipping.
+- Updated the source viewer container in `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` to use a tall bounded viewport inside the new stacked flow, so PDFs and extracted docs remain usable while the page itself scrolls naturally.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live `/tutor` check confirming `START NEW` now renders stacked `SETUP`, `MATERIALS IN SCOPE`, and subsequent Priming windows instead of the prior clipped three-column layout
+
+## 2026-03-19 - Tutor PRIME artifact formatting pass
+- Tightened `brain/dashboard/api_tutor_workflows.py` so Priming Assist now asks for markdown-ready summaries, `Term :: definition` terminology lines, and a real hierarchical map representation instead of a prose-only structure note.
+- Updated `dashboard_rebuild/client/src/lib/tutorUtils.ts` so saved markdown list prefixes are normalized back into plain records, multi-source aggregate blocks render as markdown subheadings instead of `[Source]` blobs, and PRIME artifacts format into headings, numbered lists, paragraphs, and Mermaid-aware preview text.
+- Reworked the artifact display in `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` to render formatted markdown in the live Priming workspace and to fall back to a visual Mermaid map derived from the Study Spine when the extractor returns prose for the hierarchy.
+- Added focused frontend coverage in `dashboard_rebuild/client/src/lib/__tests__/tutorUtils.test.ts` and mocked the structured map component in `dashboard_rebuild/client/src/pages/__tests__/tutor.workspace.integration.test.tsx` so the new preview path stays testable.
+- Validation passed:
+  - `pytest brain/tests/test_tutor_workflow_priming_assist.py`
+  - `cd dashboard_rebuild && npm run test -- client/src/lib/__tests__/tutorUtils.test.ts`
+  - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live `/tutor` hard-refresh check confirming source-linked extraction previews now show headed/numbered markdown and the Summary artifact renders as a formatted document instead of a raw terminal blob

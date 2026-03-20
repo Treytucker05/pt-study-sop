@@ -1,4 +1,4 @@
-import { type ReactElement, useState } from "react";
+import { type ReactElement, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 import { api } from "@/api";
@@ -42,7 +42,17 @@ export function PrimingMaterialReader({
 
   const materials = selectedMaterials.length > 0
     ? allMaterials.filter((m) => selectedMaterials.includes(m.id))
-    : allMaterials;
+    : [];
+
+  useEffect(() => {
+    if (materials.length === 0) {
+      setActiveId(null);
+      return;
+    }
+    if (!materials.some((material) => material.id === activeId)) {
+      setActiveId(materials[0]?.id ?? null);
+    }
+  }, [activeId, materials]);
 
   const activeMaterial = materials.find((m) => m.id === activeId) ?? null;
   const isPdf = activeMaterial?.file_type?.toLowerCase() === "pdf";
@@ -59,7 +69,7 @@ export function PrimingMaterialReader({
       <div className="flex gap-1 overflow-x-auto border-b border-primary/20 bg-black/60 px-2 py-1.5">
         {materials.length === 0 && (
           <span className="px-2 py-1 font-terminal text-xs text-muted-foreground">
-            No materials available
+            Select materials in the setup rail to review them here
           </span>
         )}
         {materials.map((m) => {

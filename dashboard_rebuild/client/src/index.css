@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Audiowide&family=Orbitron:wght@500;700;800&family=Oxanium:wght@500;700;800&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 @source "./**/*.{ts,tsx,js,jsx,html}";
@@ -8,6 +9,9 @@
 @theme inline {
   --font-arcade: 'Press Start 2P', monospace;
   --font-terminal: 'VT323', monospace;
+  --font-oxanium: 'Oxanium', sans-serif;
+  --font-orbitron: 'Orbitron', sans-serif;
+  --font-audiowide: 'Audiowide', sans-serif;
 
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
@@ -280,6 +284,22 @@
     box-shadow: var(--ds-panel-shadow), var(--ds-panel-glow);
     backdrop-filter: blur(14px);
     isolation: isolate;
+    max-height: 500px;
+    transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+                padding 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+                opacity 0.25s ease, margin 0.3s ease, border 0.3s ease;
+  }
+
+  body.scrolled-down .page-shell__hero {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin: 0;
+    margin-bottom: 0;
+    border-width: 0;
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
   }
 
   .page-shell__hero::before {
@@ -340,6 +360,21 @@
     gap: 1rem;
   }
 
+  @media (min-width: 1024px) {
+    .page-shell__header {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .page-shell__meta {
+      justify-content: flex-end;
+      flex-wrap: nowrap;
+    }
+    .page-shell__actions {
+      flex-wrap: nowrap;
+    }
+  }
+
   .page-shell__eyebrow {
     font-family: var(--font-terminal);
     font-size: 0.8rem;
@@ -372,18 +407,21 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.65rem;
-    align-items: flex-start;
+    align-items: center;
   }
 
   .page-shell__actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.65rem;
+    align-items: center;
   }
 
   .page-shell__stat {
     min-height: 44px;
-    min-width: min(100%, 11rem);
+    flex: 1 1 auto;
+    min-width: min(100%, 8rem);
+    max-width: 14rem;
     padding: 0.7rem 0.85rem;
     border-radius: 999px;
     border: 1px solid hsl(var(--primary) / 0.22);
@@ -842,9 +880,13 @@
     }
 
     .page-shell__meta {
-      justify-content: flex-end;
-      max-width: 44%;
-    }
+        justify-content: flex-end;
+        flex-wrap: nowrap;
+        flex-shrink: 0;
+      }
+      .page-shell__actions {
+        flex-wrap: nowrap;
+      }
 
     .page-shell__hero::after {
       width: 21rem;

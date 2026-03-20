@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Title Row Calibration — Production Mirror</title>
+<style>
+  @font-face { font-family: 'ArcadeFallback'; src: local('Press Start 2P'), local('VT323'), local('Courier New'); }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000; color: #fff; font-family: monospace; overflow-x: hidden; }
+
+  /* Production: <header> is full viewport width */
+  .header-shell { position: relative; width: 100%; overflow: visible; }
+
+  /* Production: background fills entire header */
+  .header-bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+  .header-bg img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* Production: shell container is FULL WIDTH (not capped at 1440px) */
+  .shell-container { position: relative; z-index: 10; width: 100%; }
+
+  /* Drag overlay — sits on top of the cockpit frame so clicks always reach the shell */
+  .cockpit-drag-overlay {
+    position: absolute; inset: 0; z-index: 50; cursor: move;
+    /* transparent — just catches clicks */
+  }
+
+  /* Production: frame wrapper centered inside full-width shell */
+  .frame-wrapper {
+    position: absolute; z-index: 5; left: 50%; transform: translateX(-50%);
+    top: -19.95%; width: 90.42%; height: 207.69%;
+  }
+  .frame-image { pointer-events: auto; cursor: move; position: absolute; inset: 0; height: 100%; width: 100%; object-fit: contain; user-select: none; }
+  .nav-button { position: absolute; z-index: 10; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  .nav-button img { pointer-events: none; height: 100%; width: 100%; object-fit: contain; }
+
+  /* Title elements — all absolutely positioned for independent control */
+  .brain-logo {
+    position: absolute; z-index: 25; object-fit: contain;
+    filter: drop-shadow(0 0 24px rgba(255,82,82,0.6));
+    user-select: none;
+  }
+  .title-text {
+    position: absolute; z-index: 24;
+    font-family: 'Press Start 2P', 'ArcadeFallback', monospace;
+    text-transform: uppercase; line-height: 1; white-space: nowrap;
+    color: #fff4ed;
+    text-shadow: 0 0 18px rgba(255,108,108,0.7), 0 0 34px rgba(255,92,92,0.28), 0 5px 0 rgba(36,10,10,0.98);
+    letter-spacing: 0.11em; user-select: none;
+  }
+  .title-glow {
+    pointer-events: none; position: absolute; z-index: 23;
+    height: 4.8rem; width: 50rem; border-radius: 9999px;
+    background: radial-gradient(circle, rgba(255,84,84,0.46), transparent 72%);
+    filter: blur(48px);
+  }
+
+  /* Controls */
+  .controls {
+    position: fixed; bottom: 8px; left: 8px; z-index: 1000;
+    background: rgba(0,0,0,0.95); border: 1px solid #444;
+    padding: 8px; font-size: 11px; width: 300px;
+  }
+  .controls.collapsed .ctrl-body { display: none; }
+  .controls h3 { color: #0ff; margin-bottom: 4px; cursor: pointer; user-select: none; font-size: 12px; }
+  .controls .sel { color: #ff0; font-weight: bold; }
+  .controls button {
+    background: #222; color: #fff; border: 1px solid #555;
+    padding: 3px 6px; margin: 1px; cursor: pointer; font-size: 10px; font-family: monospace;
+  }
+  .controls button:hover { background: #444; }
+  .controls button.active { border-color: #0ff; color: #0ff; }
+  .controls pre { background: #111; padding: 4px; margin-top: 4px; font-size: 9px; max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+  .controls .section { margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #333; }
+  .selected-outline { outline: 2px solid #ff0 !important; outline-offset: 2px; }
+
+  /* Resize handles — always visible on selected brain */
+  .rh {
+    position: fixed; width: 12px; height: 12px; background: #ff0;
+    z-index: 9999; display: none; cursor: nwse-resize; border: 1px solid #000;
+  }
+
+  /* Alignment guides */
+  .guide { position: absolute; z-index: 100; pointer-events: none; display: none; }
+  .guide-v { width: 1px; top: 0; bottom: 0; border-left: 1px dashed rgba(0,255,255,0.6); }
+  .guide-h { height: 1px; left: 0; right: 0; border-top: 1px dashed rgba(0,255,255,0.6); }
+  .guide.snap { border-color: rgba(0,255,0,1) !important; }
+  .guide-label {
+    position: absolute; color: #0ff; font-size: 9px; font-family: monospace;
+    background: rgba(0,0,0,0.8); padding: 1px 4px; white-space: nowrap; z-index: 101;
+    pointer-events: none;
+  }
+  .align-info {
+    position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 1000;
+    background: rgba(0,180,0,0.9); color: #fff; font-family: monospace; font-size: 11px;
+    padding: 4px 12px; border-radius: 4px; display: none;
+  }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- Full-width header (like production <header>) -->
+<div class="header-shell" id="headerShell">
+  <!-- Background — full viewport width -->
+  <div class="header-bg"><img src="../UI Images/Dashboard Background image.png" alt=""></div>
+
+  <!-- Alignment guides -->
+  <div class="guide guide-v" id="guideCenter"></div>
+  <div class="guide guide-h" id="guideMiddle"></div>
+  <div class="guide guide-h" id="guideBrainY"></div>
+  <div class="guide-label" id="guideInfo"></div>
+  <div class="align-info" id="alignInfo"></div>
+
+  <!-- Title elements — absolutely positioned relative to headerShell -->
+  <div class="title-glow" id="titleGlow"></div>
+  <img id="brainLeft" class="brain-logo" src="../UI Images/Brain by title.png" alt="Left Brain">
+  <span id="titleText" class="title-text">TREY'S STUDY SYSTEM</span>
+  <img id="brainRight" class="brain-logo" src="../UI Images/Brain by title.png" alt="Right Brain">
+
+  <!-- Cockpit group — full viewport width shell, frame wrapper centered inside -->
+  <div class="shell-container" id="shellContainer">
+    <div class="frame-wrapper" id="frameWrapper">
+      <img src="../UI Images/Dashboard finished.png" alt="" class="frame-image">
+    </div>
+  </div>
+</div>
+
+<!-- Resize handles (4 corners) -->
+<div class="rh" id="rh0"></div>
+<div class="rh" id="rh1"></div>
+<div class="rh" id="rh2"></div>
+<div class="rh" id="rh3"></div>
+
+<div class="controls" id="ctrlPanel">
+  <h3 onclick="document.getElementById('ctrlPanel').classList.toggle('collapsed')">CALIBRATION ▼</h3>
+  <div class="ctrl-body">
+    <div class="section">
+      Click to select. Drag to <strong>move</strong>. Yellow corners to <strong>resize</strong> brains.<br>
+      <strong>Selected:</strong> <span class="sel" id="selName">none</span>
+    </div>
+    <div class="section">
+      <strong>Step:</strong>
+      <button class="sbtn" data-s="1">1</button>
+      <button class="sbtn active" data-s="4">4</button>
+      <button class="sbtn" data-s="10">10</button>
+      <button class="sbtn" data-s="20">20</button>
+    </div>
+    <div class="section">
+      <strong>Move:</strong>
+      <button onclick="N('x',-1)">←</button>
+      <button onclick="N('x',1)">→</button>
+      <button onclick="N('y',-1)">↑</button>
+      <button onclick="N('y',1)">↓</button>
+      &nbsp;<strong>Size:</strong>
+      <button onclick="N('s',-1)">−</button>
+      <button onclick="N('s',1)">+</button>
+      &nbsp;<strong>Font:</strong>
+      <button onclick="adjFont(-1)">−</button>
+      <button onclick="adjFont(1)">+</button>
+      <span id="fontDisp" style="color:#0ff;margin-left:4px;"></span>
+      &nbsp;<strong>Cockpit:</strong>
+      <button onclick="sel('cockpit')" style="border-color:#0f0;color:#0f0;">SEL</button>
+      <button onclick="N('s',-1)">H−</button>
+      <button onclick="N('s',1)">H+</button>
+    </div>
+    <div class="section">
+      <strong>Brain size:</strong>
+      <button onclick="copyBrainSize()" style="border-color:#f0f;color:#f0f;">COPY SIZE</button>
+      <button onclick="pasteBrainSize()" style="border-color:#f0f;color:#f0f;">PASTE TO OTHER</button>
+      <span id="copiedSize" style="color:#888;margin-left:4px;font-size:9px;"></span>
+    </div>
+    <div class="section">
+      <strong>Align:</strong>
+      <button onclick="toggleGuides()" id="guideToggle" style="border-color:#0ff;color:#0ff;">GUIDES ON</button>
+      <button onclick="centerTitle()">CENTER TITLE</button>
+      <button onclick="centerCockpit()">CENTER COCKPIT</button>
+      <button onclick="matchBrainY()">MATCH BRAIN Y</button>
+      <button onclick="symmetricBrains()">SYMMETRIC BRAINS</button>
+    </div>
+    <div class="section" id="alignReport" style="color:#0ff;font-size:9px;"></div>
+    <div class="section">
+      <button onclick="doExport()" style="background:#040;border-color:#0f0;color:#0f0;">EXPORT</button>
+      <button onclick="doCopy()">COPY</button>
+    </div>
+    <pre id="exportOut"></pre>
+  </div>
+</div>
+
+<script>
+// Production-measured initial values (from Chrome DevTools at 1800px viewport):
+// brainLeft: x=180, y=13, 220x220
+// titleText: x=384, y=98, fontSize=50.88px
+// brainRight: x=1485, y=13, 220x220
+// shell: top=0 (from header), h=474
+// header total h=478
+
+const S = {
+  brainLeft:  { x: 180, y: 13, w: 220, h: 220 },
+  titleText:  { x: 384, y: 98, fontSize: 51 },
+  brainRight: { x: 1485, y: 13, w: 220, h: 220 },
+  cockpit:    { x: 0, y: 0, height: 474 },
+};
+
+const BUTTONS = [
+  { id: "brain",    src: "../UI Images/nav-brain-custom.png",    left: "17.65%", top: "32.68%", width: "19.97%", height: "15.02%" },
+  { id: "scholar",  src: "../UI Images/nav-scholar-custom.png",  left: "39.99%", top: "31.60%", width: "19.97%", height: "15.02%" },
+  { id: "tutor",    src: "../UI Images/nav-tutor-custom.png",    left: "61.54%", top: "31.93%", width: "19.97%", height: "15.02%" },
+  { id: "library",  src: "../UI Images/nav-library-custom.png",  left: "21.22%", top: "45.06%", width: "10.42%", height: "11.81%" },
+  { id: "mastery",  src: "../UI Images/nav-mastery-custom.png",  left: "33.68%", top: "44.74%", width: "10.42%", height: "11.81%" },
+  { id: "calendar", src: "../UI Images/nav-calendar-custom.png", left: "45.04%", top: "44.95%", width: "10.42%", height: "11.81%" },
+  { id: "methods",  src: "../UI Images/nav-methods-custom.png",  left: "56.82%", top: "44.95%", width: "10.42%", height: "11.81%" },
+  { id: "vault",    src: "../UI Images/nav-vault-custom.png",    left: "68.87%", top: "44.74%", width: "10.42%", height: "11.81%" },
+];
+
+// Render locked buttons inside frame wrapper
+const fw = document.getElementById("frameWrapper");
+BUTTONS.forEach(b => {
+  const d = document.createElement("div");
+  d.className = "nav-button";
+  d.style.cssText = `left:${b.left};top:${b.top};width:${b.width};height:${b.height};`;
+  const img = document.createElement("img"); img.src = b.src; img.alt = b.id;
+  d.appendChild(img); fw.appendChild(d);
+});
+
+function apply() {
+  const bl = document.getElementById("brainLeft");
+  bl.style.left = S.brainLeft.x + "px"; bl.style.top = S.brainLeft.y + "px";
+  bl.style.width = S.brainLeft.w + "px"; bl.style.height = S.brainLeft.h + "px";
+
+  const br = document.getElementById("brainRight");
+  br.style.left = S.brainRight.x + "px"; br.style.top = S.brainRight.y + "px";
+  br.style.width = S.brainRight.w + "px"; br.style.height = S.brainRight.h + "px";
+
+  const tt = document.getElementById("titleText");
+  tt.style.left = S.titleText.x + "px"; tt.style.top = S.titleText.y + "px";
+  tt.style.fontSize = S.titleText.fontSize + "px";
+
+  // Move the frame-wrapper independently — don't touch shellContainer margins
+  // so the background and header height stay fixed
+  const fwEl = document.getElementById("frameWrapper");
+  fwEl.style.marginTop = S.cockpit.y + "px";
+  fwEl.style.marginLeft = S.cockpit.x + "px";
+
+  const sc = document.getElementById("shellContainer");
+  sc.style.height = S.cockpit.height + "px";
+
+  // Header shell total height — fixed based on title + shell, not cockpit offset
+  const titleBottom = Math.max(S.brainLeft.y + S.brainLeft.h, S.brainRight.y + S.brainRight.h, S.titleText.y + S.titleText.fontSize + 20);
+  const cockpitBottom = S.cockpit.height;
+  const totalH = Math.max(titleBottom, cockpitBottom);
+  document.getElementById("headerShell").style.height = totalH + "px";
+  // Also set min-height so background covers everything
+  document.getElementById("headerShell").style.minHeight = totalH + "px";
+
+  // Glow follows text
+  const glow = document.getElementById("titleGlow");
+  glow.style.left = (S.titleText.x - 100) + "px";
+  glow.style.top = (S.titleText.y - 20) + "px";
+
+  document.getElementById("fontDisp").textContent = S.titleText.fontSize + "px";
+  positionHandles();
+}
+
+// === SELECTION ===
+let selected = null;
+let step = 4;
+const elMap = { brainLeft: "brainLeft", brainRight: "brainRight", titleText: "titleText", cockpit: "shellContainer" };
+
+function sel(key) {
+  selected = key;
+  document.getElementById("selName").textContent = key || "none";
+  document.querySelectorAll(".selected-outline").forEach(e => e.classList.remove("selected-outline"));
+  if (elMap[key]) document.getElementById(elMap[key]).classList.add("selected-outline");
+  positionHandles();
+}
+
+function positionHandles() {
+  const handles = [document.getElementById("rh0"), document.getElementById("rh1"), document.getElementById("rh2"), document.getElementById("rh3")];
+  if (selected === "brainLeft" || selected === "brainRight") {
+    const el = document.getElementById(selected);
+    const r = el.getBoundingClientRect();
+    const positions = [
+      { left: r.left - 6, top: r.top - 6 },        // TL
+      { left: r.right - 6, top: r.top - 6 },       // TR
+      { left: r.left - 6, top: r.bottom - 6 },     // BL
+      { left: r.right - 6, top: r.bottom - 6 },    // BR
+    ];
+    positions.forEach((p, i) => {
+      handles[i].style.display = "block";
+      handles[i].style.left = (p.left + window.scrollX) + "px";
+      handles[i].style.top = (p.top + window.scrollY) + "px";
+    });
+  } else {
+    handles.forEach(h => h.style.display = "none");
+  }
+}
+
+// Click to select — brains use mousedown for drag, so also wire click
+["brainLeft", "brainRight", "titleText"].forEach(id => {
+  document.getElementById(id).addEventListener("mousedown", (e) => {
+    e.preventDefault(); e.stopPropagation();
+    sel(id);
+    startDrag(e, "move");
+  });
+});
+// Cockpit: drag via the frame image itself (only the visible cockpit, not the background)
+document.querySelector(".frame-image").addEventListener("mousedown", (e) => {
+  e.stopPropagation();
+  sel("cockpit");
+  startDrag(e, "move");
+});
+
+// Resize handles
+[0,1,2,3].forEach(i => {
+  document.getElementById("rh" + i).addEventListener("mousedown", (e) => {
+    e.preventDefault(); e.stopPropagation();
+    startDrag(e, "resize");
+  });
+});
+
+// Step buttons
+document.querySelectorAll(".sbtn").forEach(b => {
+  b.addEventListener("click", () => { step = parseInt(b.dataset.s); document.querySelectorAll(".sbtn").forEach(x => x.classList.remove("active")); b.classList.add("active"); });
+});
+
+// === NUDGE ===
+function N(axis, dir) {
+  if (!selected) return;
+  const d = dir * step;
+  const s = S[selected];
+  if (!s) return;
+  if (axis === "x" && "x" in s) s.x += d;
+  if (axis === "y" && "y" in s) s.y += d;
+  if (axis === "s" && "w" in s) { s.w = Math.max(40, s.w + d); s.h = s.w; }
+  if (axis === "s" && selected === "cockpit") s.height = Math.max(100, s.height + d);
+  apply();
+}
+function adjFont(dir) { S.titleText.fontSize = Math.max(10, S.titleText.fontSize + dir * step); apply(); }
+
+// === BRAIN SIZE COPY/PASTE ===
+let copiedBrainSize = null;
+function copyBrainSize() {
+  if (selected !== "brainLeft" && selected !== "brainRight") {
+    document.getElementById("copiedSize").textContent = "Select a brain first!";
+    return;
+  }
+  copiedBrainSize = S[selected].w;
+  document.getElementById("copiedSize").textContent = copiedBrainSize + "px copied";
+}
+function pasteBrainSize() {
+  if (!copiedBrainSize) { document.getElementById("copiedSize").textContent = "Nothing copied!"; return; }
+  const target = selected === "brainLeft" ? "brainRight" : selected === "brainRight" ? "brainLeft" : null;
+  if (!target) { document.getElementById("copiedSize").textContent = "Select a brain first!"; return; }
+  S[target].w = copiedBrainSize;
+  S[target].h = copiedBrainSize;
+  document.getElementById("copiedSize").textContent = copiedBrainSize + "px → " + target;
+  apply();
+}
+
+// === DRAG ===
+let drag = null;
+function startDrag(e, mode) {
+  if (!selected) return;
+  drag = { mode, sx: e.clientX, sy: e.clientY, snap: JSON.parse(JSON.stringify(S[selected])) };
+}
+document.addEventListener("mousemove", (e) => {
+  if (!drag || !selected) return;
+  const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+  const s = S[selected];
+
+  if (drag.mode === "move") {
+    if ("x" in s) s.x = drag.snap.x + dx;
+    if ("y" in s) s.y = drag.snap.y + dy;
+  } else if (drag.mode === "resize" && "w" in s) {
+    // Proportional resize from any corner
+    const newW = Math.max(40, drag.snap.w + dx);
+    s.w = newW; s.h = newW;
+  }
+  apply();
+});
+document.addEventListener("mouseup", () => { drag = null; });
+
+// === KEYBOARD ===
+document.addEventListener("keydown", (e) => {
+  if (!selected) return;
+  if (e.key === "ArrowLeft") { e.preventDefault(); N("x", -1); }
+  if (e.key === "ArrowRight") { e.preventDefault(); N("x", 1); }
+  if (e.key === "ArrowUp") { e.preventDefault(); N("y", -1); }
+  if (e.key === "ArrowDown") { e.preventDefault(); N("y", 1); }
+  if (e.key === "[") N("s", -1);
+  if (e.key === "]") N("s", 1);
+  if (e.key === "-") adjFont(-1);
+  if (e.key === "=") adjFont(1);
+  if (e.key === "Tab") {
+    e.preventDefault();
+    const keys = ["brainLeft", "titleText", "brainRight"];
+    sel(keys[(keys.indexOf(selected) + 1) % keys.length]);
+  }
+});
+
+// === EXPORT (rect-computed from headerShell) ===
+function doExport() {
+  const hs = document.getElementById("headerShell").getBoundingClientRect();
+  const bl = document.getElementById("brainLeft").getBoundingClientRect();
+  const br = document.getElementById("brainRight").getBoundingClientRect();
+  const tt = document.getElementById("titleText").getBoundingClientRect();
+  const sc = document.getElementById("shellContainer").getBoundingClientRect();
+  const fwR = document.getElementById("frameWrapper").getBoundingClientRect();
+
+  const result = {
+    _meta: { headerWidth: Math.round(hs.width), headerHeight: Math.round(hs.height), viewport: window.innerWidth + "x" + window.innerHeight, timestamp: new Date().toISOString() },
+    brainLeft: {
+      xFromHeader: Math.round(bl.left - hs.left), yFromHeader: Math.round(bl.top - hs.top),
+      sizePx: Math.round(bl.width),
+      tailwind: `h-[${(bl.width/16).toFixed(2)}rem] w-[${(bl.width/16).toFixed(2)}rem]`,
+    },
+    titleText: {
+      xFromHeader: Math.round(tt.left - hs.left), yFromHeader: Math.round(tt.top - hs.top),
+      fontSizePx: S.titleText.fontSize,
+      widthPx: Math.round(tt.width), heightPx: Math.round(tt.height),
+    },
+    brainRight: {
+      xFromHeader: Math.round(br.left - hs.left), yFromHeader: Math.round(br.top - hs.top),
+      sizePx: Math.round(br.width),
+      tailwind: `h-[${(br.width/16).toFixed(2)}rem] w-[${(br.width/16).toFixed(2)}rem]`,
+    },
+    cockpit: {
+      yFromHeader: Math.round(sc.top - hs.top),
+      heightPx: S.cockpit.height,
+    },
+    rawState: JSON.parse(JSON.stringify(S)),
+  };
+  const json = JSON.stringify(result, null, 2);
+  document.getElementById("exportOut").textContent = json;
+  return json;
+}
+function doCopy() {
+  const j = doExport();
+  navigator.clipboard.writeText(j).then(() => {
+    document.getElementById("selName").textContent = "COPIED!";
+    setTimeout(() => { if(selected) sel(selected); }, 1000);
+  });
+}
+
+// === ALIGNMENT GUIDES ===
+let guidesOn = true;
+const SNAP_PX = 6; // snap threshold
+
+function toggleGuides() {
+  guidesOn = !guidesOn;
+  document.getElementById("guideToggle").textContent = guidesOn ? "GUIDES ON" : "GUIDES OFF";
+  updateGuides();
+}
+
+function updateGuides() {
+  const gc = document.getElementById("guideCenter");
+  const gm = document.getElementById("guideMiddle");
+  const gby = document.getElementById("guideBrainY");
+  const report = document.getElementById("alignReport");
+
+  if (!guidesOn) {
+    gc.style.display = gm.style.display = gby.style.display = "none";
+    report.textContent = "";
+    return;
+  }
+
+  const hs = document.getElementById("headerShell").getBoundingClientRect();
+  const centerX = hs.width / 2;
+
+  // Vertical center guide
+  gc.style.display = "block";
+  gc.style.left = centerX + "px";
+
+  // Get element centers
+  const bl = document.getElementById("brainLeft").getBoundingClientRect();
+  const br = document.getElementById("brainRight").getBoundingClientRect();
+  const tt = document.getElementById("titleText").getBoundingClientRect();
+
+  const blCx = (bl.left - hs.left) + bl.width / 2;
+  const brCx = (br.left - hs.left) + br.width / 2;
+  const ttCx = (tt.left - hs.left) + tt.width / 2;
+  const blCy = (bl.top - hs.top) + bl.height / 2;
+  const brCy = (br.top - hs.top) + br.height / 2;
+  const ttCy = (tt.top - hs.top) + tt.height / 2;
+
+  // Title center distance from header center
+  const titleOffCenter = Math.round(ttCx - centerX);
+
+  // Brain symmetry: distance from center should be equal
+  const blDist = Math.round(centerX - blCx);
+  const brDist = Math.round(brCx - centerX);
+  const symmetryDiff = Math.abs(blDist - brDist);
+
+  // Brain Y alignment
+  const brainYDiff = Math.abs(Math.round(bl.top - br.top));
+
+  // Horizontal guide at brain Y level
+  gby.style.display = "block";
+  gby.style.top = (bl.top - hs.top) + "px";
+  gby.className = "guide guide-h" + (brainYDiff <= SNAP_PX ? " snap" : "");
+
+  // Report
+  const lines = [];
+  if (titleOffCenter === 0) lines.push("Title: CENTERED");
+  else lines.push(`Title: ${titleOffCenter > 0 ? titleOffCenter + "px RIGHT" : Math.abs(titleOffCenter) + "px LEFT"} of center`);
+
+  if (symmetryDiff <= 1) lines.push("Brains: SYMMETRIC");
+  else lines.push(`Brains: ${symmetryDiff}px asymmetric (L=${blDist}px, R=${brDist}px from center)`);
+
+  if (brainYDiff === 0) lines.push("Brain Y: ALIGNED");
+  else lines.push(`Brain Y: ${brainYDiff}px apart (L=${Math.round(bl.top - hs.top)}px, R=${Math.round(br.top - hs.top)}px)`);
+
+  // Cockpit horizontal offset
+  if (S.cockpit.x === 0) lines.push("Cockpit: CENTERED");
+  else lines.push(`Cockpit: ${S.cockpit.x}px ${S.cockpit.x > 0 ? "RIGHT" : "LEFT"} of center`);
+
+  // Check title vertically centered between top and cockpit
+  const cockpitTop = Math.round(document.getElementById("shellContainer").getBoundingClientRect().top - hs.top);
+  const titleMidY = Math.round(ttCy);
+  const idealMidY = Math.round(cockpitTop / 2);
+  const vDiff = Math.abs(titleMidY - idealMidY);
+  if (vDiff <= 2) lines.push("Title V: CENTERED in gap");
+  else lines.push(`Title V: ${vDiff}px from center of gap (at ${titleMidY}px, ideal ${idealMidY}px)`);
+
+  report.innerHTML = lines.map(l =>
+    l.includes("CENTERED") || l.includes("SYMMETRIC") || l.includes("ALIGNED")
+      ? `<span style="color:#0f0;">${l}</span>`
+      : l
+  ).join("<br>");
+}
+
+// One-click alignment helpers
+function centerTitle() {
+  const hs = document.getElementById("headerShell").getBoundingClientRect();
+  const tt = document.getElementById("titleText").getBoundingClientRect();
+  S.titleText.x = Math.round((hs.width - tt.width) / 2);
+  apply();
+}
+
+function matchBrainY() {
+  // Set both brains to the same Y
+  const avgY = Math.round((S.brainLeft.y + S.brainRight.y) / 2);
+  S.brainLeft.y = avgY;
+  S.brainRight.y = avgY;
+  apply();
+}
+
+function centerCockpit() {
+  // Reset cockpit x offset so frame-wrapper centers naturally via CSS left:50% translateX(-50%)
+  S.cockpit.x = 0;
+  apply();
+}
+
+function symmetricBrains() {
+  const hs = document.getElementById("headerShell").getBoundingClientRect();
+  const center = hs.width / 2;
+  // Make brains equidistant from center
+  const blCenter = S.brainLeft.x + S.brainLeft.w / 2;
+  const brCenter = S.brainRight.x + S.brainRight.w / 2;
+  const avgDist = Math.round(((center - blCenter) + (brCenter - center)) / 2);
+  S.brainLeft.x = Math.round(center - avgDist - S.brainLeft.w / 2);
+  S.brainRight.x = Math.round(center + avgDist - S.brainRight.w / 2);
+  // Also match Y
+  matchBrainY();
+  apply();
+}
+
+// Hook into apply() to update guides on every change
+const _origApply = apply;
+apply = function() {
+  _origApply();
+  if (guidesOn) updateGuides();
+};
+
+apply();
+</script>
+</body>
+</html>

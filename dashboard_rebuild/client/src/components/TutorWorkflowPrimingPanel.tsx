@@ -1,14 +1,13 @@
 import { useState } from "react";
+import { ConceptMapStructured } from "@/components/brain/ConceptMapStructured";
+import { ObsidianRenderer } from "@/components/ObsidianRenderer";
 import { MaterialSelector } from "@/components/MaterialSelector";
 import type { TutorPrimingSourceInventoryItem } from "@/api.types";
-import type { MethodBlock } from "@/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { PrimingLayout } from "@/components/priming/PrimingLayout";
 import { PrimingMaterialReader } from "@/components/priming/PrimingMaterialReader";
-import { PrimingBlockBar } from "@/components/priming/PrimingBlockBar";
 import type {
   AppLearningObjective,
   TutorContentSources,
@@ -16,6 +15,13 @@ import type {
   TutorWorkflowSummary,
 } from "@/lib/api";
 import { INPUT_BASE, SELECT_BASE, TEXT_MUTED } from "@/lib/theme";
+import {
+  extractMermaidBlock,
+  formatPrimeArtifactMarkdown,
+  formatPrimeArtifactPreviewText,
+  parseLinesToRecords,
+  type PrimeArtifactFormatKey,
+} from "@/lib/tutorUtils";
 import { formatWorkflowStatus, truncateWorkflowId } from "@/lib/workflowStatus";
 import { CheckCircle2, Clock3, Play, RefreshCw, Save, Sparkles } from "lucide-react";
 
@@ -103,6 +109,24 @@ const PRIMING_CHAIN_OPTIONS = [
   },
 ];
 
+const PRIME_ARTIFACTS: Array<{
+  key: PrimeArtifactFormatKey;
+  label: string;
+  empty: string;
+  editable: boolean;
+}> = [
+  {
+    key: "objectives",
+    label: "Learning Objectives",
+    empty: "Run PRIME to extract learning objectives from the selected materials.",
+    editable: false,
+  },
+  { key: "spine", label: "Study Spine", empty: "Run PRIME extraction to build the study spine.", editable: true },
+  { key: "map", label: "Hierarchical Map", empty: "Run PRIME extraction to build the hierarchy.", editable: true },
+  { key: "summary", label: "Summary", empty: "Run PRIME extraction to generate the summary.", editable: true },
+  { key: "terms", label: "Terms", empty: "Run PRIME extraction to capture the key terms.", editable: true },
+];
+
 function formatWorkflowDate(value: string | null | undefined) {
   if (!value) return "Not saved yet";
   const parsed = new Date(value);
@@ -113,6 +137,109 @@ function formatWorkflowDate(value: string | null | undefined) {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function dedupeLines(lines: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    const key = line.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(line);
+  }
+  return result;
+}
+
+function previewForArtifact(item: TutorPrimingSourceInventoryItem, artifact: PrimeArtifactFormatKey): string {
+  const output = item.priming_output;
+  if (!output) return "";
+  if (artifact === "objectives") {
+    return output.learning_objectives
+      .map((objective) => (objective.lo_code ? `${objective.lo_code} - ${objective.title}` : objective.title))
+      .join("\n");
+  }
+  if (artifact === "spine") return output.concepts.join("\n");
+  if (artifact === "map") return output.root_explanation || "";
+  if (artifact === "summary") return output.summary || "";
+  return output.terminology.join("\n");
+}
+
+function renderPreview(value: string, fallback: string) {
+  return value.trim().length > 0 ? value : fallback;
+}
+
+function buildFallbackMapMermaid(title: string, studySpineText: string): string | null {
+  const nodes = parseLinesToRecords(studySpineText, "concept")
+    .map((record) => record.concept)
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .slice(0, 8);
+  if (nodes.length === 0) return null;
+
+  const sanitize = (value: string, maxLength = 52) => {
+    const compact = value.replace(/["[\]{}]/g, "").replace(/\s+/g, " ").trim();
+    if (compact.length <= maxLength) return compact;
+    return `${compact.slice(0, maxLength - 1).trim()}…`;
+  };
+
+  const lines = [`graph TD`, `  ROOT["${sanitize(title, 28) || "Study Map"}"]`];
+  nodes.forEach((node, index) => {
+    lines.push(`  N${index}["${sanitize(node)}"]`);
+    lines.push(index === 0 ? `  ROOT --> N${index}` : `  N${index - 1} --> N${index}`);
+  });
+  return lines.join("\n");
+}
+
+function PrimeArtifactContent({
+  artifact,
+  value,
+  fallback,
+  fallbackMermaid,
+}: {
+  artifact: PrimeArtifactFormatKey;
+  value: string;
+  fallback: string;
+  fallbackMermaid?: string | null;
+}) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return <div className="font-terminal text-sm text-muted-foreground">{fallback}</div>;
+  }
+
+  const markdown = formatPrimeArtifactMarkdown(artifact, trimmed);
+  const extractedMermaid = artifact === "map" ? extractMermaidBlock(markdown) : null;
+  const mermaid = extractedMermaid || (artifact === "map" ? fallbackMermaid || null : null);
+
+  if (mermaid) {
+    return (
+      <div className="space-y-3">
+        <div className="h-[360px] overflow-hidden border border-primary/20 bg-black/50">
+          <ConceptMapStructured key={mermaid} initialMermaid={mermaid} hideToolbar className="h-full" />
+        </div>
+        <div className="flex items-center justify-between gap-3 border border-primary/15 bg-black/35 p-4">
+          <div>
+            <div className="font-arcade text-[10px] text-primary/80">MERMAID MAP READY</div>
+            <div className="mt-1 font-terminal text-sm text-muted-foreground">
+              {extractedMermaid
+                ? "The extracted hierarchy is rendered above as a structured map instead of a text blob."
+                : "The extractor returned prose for the map, so the visual above is derived from the Study Spine as a fallback."}
+            </div>
+          </div>
+          <Badge variant="outline" className="rounded-none border-primary/25 text-primary/80">
+            VISUAL MAP
+          </Badge>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border border-primary/15 bg-black/35 p-4">
+      <ObsidianRenderer content={markdown} />
+    </div>
+  );
 }
 
 export function TutorWorkflowPrimingPanel({
@@ -162,7 +289,9 @@ export function TutorWorkflowPrimingPanel({
   isRunningAssist,
   assistTargetMaterialId,
 }: TutorWorkflowPrimingPanelProps) {
-  const [activeBlock, setActiveBlock] = useState<MethodBlock | null>(null);
+  const [activeArtifact, setActiveArtifact] = useState<PrimeArtifactFormatKey>("objectives");
+  const [editingArtifact, setEditingArtifact] = useState<PrimeArtifactFormatKey | null>(null);
+  const [editingHandoff, setEditingHandoff] = useState(false);
 
   const groupedObjectives = availableObjectives.reduce<Record<string, AppLearningObjective[]>>(
     (acc, objective) => {
@@ -174,50 +303,76 @@ export function TutorWorkflowPrimingPanel({
     {},
   );
 
-  const activeObjectives = selectedObjectiveGroup
-    ? groupedObjectives[selectedObjectiveGroup] || []
-    : [];
-  const readyForTutor = readinessItems.every((item) => item.ready);
-  const selectedSourceInventory = sourceInventory.filter((item) =>
-    selectedMaterials.includes(item.id),
+  const activeObjectives = selectedObjectiveGroup ? groupedObjectives[selectedObjectiveGroup] || [] : [];
+  const displayedObjectives =
+    objectiveScope === "single_focus"
+      ? activeObjectives.filter((objective) => String(objective.loCode || "") === selectedObjectiveId)
+      : activeObjectives;
+  const objectiveLines = displayedObjectives.map((objective) =>
+    objective.loCode ? `${objective.loCode} - ${objective.title}` : objective.title,
   );
+  const selectedSourceInventory = sourceInventory.filter((item) => selectedMaterials.includes(item.id));
+  const extractedObjectiveLines = dedupeLines(
+    selectedSourceInventory.flatMap((item) =>
+      (item.priming_output?.learning_objectives || []).map((objective) =>
+        objective.lo_code ? `${objective.lo_code} - ${objective.title}` : objective.title,
+      ),
+    ),
+  );
+  const extractedSourceCount = selectedSourceInventory.filter((item) => item.priming_output).length;
+  const readyForTutor = readinessItems.every((item) => item.ready);
+
+  const artifactValues = {
+    spine: conceptsText,
+    map: rootExplanationText,
+    summary: summaryText,
+    terms: terminologyText,
+  } as const;
+
+  const setArtifactValue = (artifact: Exclude<PrimeArtifactFormatKey, "objectives">, value: string) => {
+    if (artifact === "spine") setConceptsText(value);
+    else if (artifact === "map") setRootExplanationText(value);
+    else if (artifact === "summary") setSummaryText(value);
+    else setTerminologyText(value);
+  };
+
+  const activeConfig = PRIME_ARTIFACTS.find((artifact) => artifact.key === activeArtifact) || PRIME_ARTIFACTS[0];
+  const activeValue = activeArtifact === "objectives" ? "" : artifactValues[activeArtifact];
+  const sourcePreviews = selectedSourceInventory
+    .map((item) => ({
+      item,
+      preview: previewForArtifact(item, activeArtifact),
+    }))
+    .filter(({ preview }) => preview.trim().length > 0);
+  const activeGenerated =
+    activeArtifact === "objectives"
+      ? objectiveLines.length > 0 || extractedObjectiveLines.length > 0
+      : activeValue.trim().length > 0 || sourcePreviews.length > 0;
+  const generatedArtifactCount = PRIME_ARTIFACTS.filter((artifact) => {
+    if (artifact.key === "objectives") {
+      return objectiveLines.length > 0 || extractedObjectiveLines.length > 0;
+    }
+    return artifactValues[artifact.key].trim().length > 0;
+  }).length;
+  const selectedChainLabel =
+    PRIMING_CHAIN_OPTIONS.find((option) => option.value === primingChainId)?.label ||
+    "Choose a priming chain";
+  const selectedChainSteps = selectedChainLabel
+    .split("->")
+    .map((step) => step.trim())
+    .filter(Boolean);
 
   return (
     <PrimingLayout
-      leftPanel={
-        <PrimingMaterialReader
-          courseId={courseId}
-          selectedMaterials={selectedMaterials}
-          onExtractMaterial={onRunAssistForMaterial}
-        />
-      }
-      rightPanel={
-        <div className="p-4 space-y-4 overflow-y-auto">
-          {activeBlock && (
-            <Card className="border-yellow-500/30 bg-yellow-500/5">
-              <CardHeader className="py-2 px-3 flex flex-row items-center justify-between">
-                <CardTitle className="font-arcade text-xs text-yellow-400">{activeBlock.name}</CardTitle>
-                <Button variant="ghost" size="sm" onClick={() => setActiveBlock(null)}>&#x2715;</Button>
-              </CardHeader>
-              <CardContent className="px-3 pb-3">
-                <ScrollArea className="max-h-48">
-                  <p className="font-terminal text-xs text-muted-foreground whitespace-pre-wrap">
-                    {activeBlock.facilitation_prompt}
-                  </p>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          )}
-
+      leftRail={
+        <div className="space-y-4 p-4">
           <Card className="rounded-none border-2 border-primary/30 bg-black/45">
             <CardHeader className="border-b border-primary/15 pb-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <CardTitle className="font-arcade text-xs text-primary">
-                    PRIMING WORKSTATION
-                  </CardTitle>
+                  <CardTitle className="font-arcade text-xs text-primary">SETUP</CardTitle>
                   <p className={`${TEXT_MUTED} mt-2 text-xs`}>
-                    Stage 2. Load class context, select materials, and build a Tutor-ready bundle.
+                    Pick a class, then load the material.
                   </p>
                 </div>
                 <Badge variant="outline" className="rounded-none border-primary/30 text-primary/80">
@@ -226,249 +381,62 @@ export function TutorWorkflowPrimingPanel({
               </div>
             </CardHeader>
             <CardContent className="space-y-4 pt-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="border border-primary/20 bg-black/35 p-3">
-                  <div className="font-arcade text-[10px] text-primary/80">WORKFLOW</div>
-                  <div className="mt-2 font-terminal text-xs text-foreground break-all">
-                    {truncateWorkflowId(workflow?.workflow_id)}
-                  </div>
-                </div>
-                <div className="border border-primary/20 bg-black/35 p-3">
-                  <div className="font-arcade text-[10px] text-primary/80">LAST UPDATED</div>
-                  <div className="mt-2 font-terminal text-sm text-foreground">
-                    {formatWorkflowDate(workflow?.updated_at)}
-                  </div>
-                </div>
-              </div>
-
               <div className="space-y-2">
                 <label className={`${TEXT_MUTED} block text-xs`}>CLASS</label>
                 <select
                   value={courseId ?? ""}
-                  onChange={(event) =>
-                    setCourseId(event.target.value ? Number(event.target.value) : undefined)
-                  }
-                  className={SELECT_BASE}
-                >
-                  <option value="">Select class</option>
-                  {courses
-                    .filter((course) => typeof course.id === "number")
-                    .map((course) => (
-                      <option key={course.id} value={course.id ?? ""}>
-                        {course.code ? `${course.code} - ` : ""}
-                        {course.name}
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <label className={`${TEXT_MUTED} block text-xs`}>STUDY UNIT</label>
-                <select
-                  value={selectedObjectiveGroup}
                   onChange={(event) => {
-                    setSelectedObjectiveGroup(event.target.value);
+                    setCourseId(event.target.value ? Number(event.target.value) : undefined);
+                    setSelectedMaterials([]);
+                    setSelectedObjectiveGroup("");
                     setSelectedObjectiveId("");
                   }}
                   className={SELECT_BASE}
                 >
-                  <option value="">Select study unit</option>
-                  {studyUnitOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.value}
-                      {option.objectiveCount > 0
-                        ? ` (${option.objectiveCount} objectives)`
-                        : option.materialCount > 0
-                          ? ` (${option.materialCount} materials)`
-                          : ""}
+                  <option value="">Select class</option>
+                  {courses.filter((course) => typeof course.id === "number").map((course) => (
+                    <option key={course.id} value={course.id ?? ""}>
+                      {course.code ? `${course.code} - ` : ""}
+                      {course.name}
                     </option>
                   ))}
                 </select>
               </div>
-
-              <div className="space-y-2">
-                <label className={`${TEXT_MUTED} block text-xs`}>OBJECTIVE SCOPE</label>
-                <select
-                  value={objectiveScope}
-                  onChange={(event) =>
-                    setObjectiveScope(
-                      event.target.value === "single_focus" ? "single_focus" : "module_all",
-                    )
-                  }
-                  className={SELECT_BASE}
-                >
-                  <option value="module_all">Whole study unit first</option>
-                  <option value="single_focus">Single focus objective</option>
-                </select>
-              </div>
-
-              {objectiveScope === "single_focus" ? (
-                <div className="space-y-2">
-                  <label className={`${TEXT_MUTED} block text-xs`}>FOCUS OBJECTIVE</label>
-                  <select
-                    value={selectedObjectiveId}
-                    onChange={(event) => setSelectedObjectiveId(event.target.value)}
-                    className={SELECT_BASE}
-                  >
-                    <option value="">Select one objective</option>
-                    {activeObjectives.map((objective) => (
-                      <option
-                        key={`${objective.id}-${objective.loCode}`}
-                        value={String(objective.loCode || "")}
-                      >
-                        {objective.loCode ? `${objective.loCode} - ` : ""}
-                        {objective.title}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : null}
-
-              <div className="space-y-2">
-                <label className={`${TEXT_MUTED} block text-xs`}>TOPIC</label>
-                <input
-                  value={topic}
-                  onChange={(event) => setTopic(event.target.value)}
-                  placeholder="Optional focus topic"
-                  className={INPUT_BASE}
-                />
-              </div>
-
-              <div className="border border-primary/20 bg-black/35 p-3">
-                <div className="font-arcade text-[10px] text-primary/80">OBSIDIAN TARGET</div>
-                <div className="mt-2 font-terminal text-xs text-foreground break-all">
-                  {vaultFolderPreview || "Select a class and study unit to derive the folder path."}
-                </div>
-              </div>
             </CardContent>
           </Card>
 
-          <Card className="rounded-none border-2 border-primary/20 bg-black/40 overflow-hidden">
+          <Card className="rounded-none border-2 border-primary/20 bg-black/40">
             <CardHeader className="border-b border-primary/15 pb-3">
-              <div className="flex items-center justify-between gap-3">
-                <CardTitle className="font-arcade text-xs text-primary">SOURCE MATERIALS</CardTitle>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="rounded-none"
-                  onClick={onRunAssistForSelected}
-                  disabled={isRunningAssist || selectedMaterials.length === 0}
-                >
-                  {isRunningAssist && assistTargetMaterialId == null ? (
-                    <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Sparkles className="mr-2 h-3.5 w-3.5" />
-                  )}
-                  Extract selected
-                </Button>
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="font-arcade text-xs text-primary">MATERIALS IN SCOPE</CardTitle>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline" className="rounded-none border-primary/25 text-primary/80">
+                    {selectedMaterials.length} selected
+                  </Badge>
+                  <Badge variant="outline" className="rounded-none border-primary/25 text-primary/80">
+                    {extractedSourceCount} extracted
+                  </Badge>
+                </div>
               </div>
             </CardHeader>
-            <ScrollArea className="h-[420px] w-full">
-              <div className="space-y-4 p-4">
-                <MaterialSelector
-                  courseId={courseId}
-                  selectedMaterials={selectedMaterials}
-                  setSelectedMaterials={setSelectedMaterials}
-                />
-                {selectedSourceInventory.length > 0 ? (
-                  <div className="space-y-3">
-                    <div className="font-arcade text-[10px] text-primary/80">
-                      SOURCE-LINKED PRIMING OUTPUTS
-                    </div>
-                    {selectedSourceInventory.map((item) => {
-                      const output = item.priming_output;
-                      const concepts = output?.concepts || [];
-                      const gaps = output?.gaps || [];
-                      const objectives = output?.learning_objectives || [];
-                      return (
-                        <div
-                          key={item.id}
-                          className="space-y-2 border border-primary/15 bg-black/35 p-3"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <div className="font-terminal text-sm text-foreground break-words">
-                                {item.title}
-                              </div>
-                              <div className="mt-1 font-terminal text-[11px] text-muted-foreground break-all">
-                                {item.source_path || "No source path"}
-                              </div>
-                            </div>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="rounded-none"
-                              onClick={() => onRunAssistForMaterial(item.id)}
-                              disabled={isRunningAssist}
-                            >
-                              {isRunningAssist && assistTargetMaterialId === item.id ? (
-                                <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <RefreshCw className="mr-2 h-3.5 w-3.5" />
-                              )}
-                              Rerun source
-                            </Button>
-                          </div>
-                          {output ? (
-                            <div className="space-y-2 text-xs text-foreground">
-                              <div>
-                                <span className="font-arcade text-[10px] text-primary/80">
-                                  SUMMARY
-                                </span>
-                                <div className="mt-1 whitespace-pre-wrap text-xs">
-                                  {output.summary || "No summary extracted yet."}
-                                </div>
-                              </div>
-                              <div className="grid gap-3 sm:grid-cols-3">
-                                <div>
-                                  <div className="font-arcade text-[10px] text-primary/80">
-                                    CONCEPTS
-                                  </div>
-                                  <div className="mt-1 whitespace-pre-wrap text-xs">
-                                    {concepts.length > 0 ? concepts.join("\n") : "No concepts yet."}
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="font-arcade text-[10px] text-primary/80">
-                                    OBJECTIVES
-                                  </div>
-                                  <div className="mt-1 whitespace-pre-wrap text-xs">
-                                    {objectives.length > 0
-                                      ? objectives
-                                          .map((objective) => objective.title || "Untitled objective")
-                                          .join("\n")
-                                      : "No objectives yet."}
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="font-arcade text-[10px] text-primary/80">GAPS</div>
-                                  <div className="mt-1 whitespace-pre-wrap text-xs">
-                                    {gaps.length > 0 ? gaps.join("\n") : "No gaps yet."}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="font-terminal text-xs text-muted-foreground">
-                              No source-linked extraction yet. Run Priming Assist on this source.
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : null}
-              </div>
-            </ScrollArea>
+            <CardContent className="space-y-3 pt-4">
+              <p className={`${TEXT_MUTED} text-xs`}>
+                Pick or upload the exact materials for this run here. Library stays the browse-everything
+                surface.
+              </p>
+              <MaterialSelector
+                courseId={courseId}
+                selectedMaterials={selectedMaterials}
+                setSelectedMaterials={setSelectedMaterials}
+              />
+            </CardContent>
           </Card>
 
-          <Card className="rounded-none border-2 border-primary/30 bg-black/45">
+          <Card className="rounded-none border-2 border-primary/20 bg-black/40">
             <CardHeader className="border-b border-primary/15 pb-3">
-              <CardTitle className="font-arcade text-xs text-primary">PRIMING CONFIG</CardTitle>
+              <CardTitle className="font-arcade text-xs text-primary">PRIME CHAIN</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 pt-4 md:grid-cols-2">
+            <CardContent className="space-y-4 pt-4">
               <div className="space-y-2">
                 <label className={`${TEXT_MUTED} block text-xs`}>PRIMING METHOD</label>
                 <select
@@ -499,64 +467,390 @@ export function TutorWorkflowPrimingPanel({
                 </select>
               </div>
 
-              <div className="space-y-2 md:col-span-2">
-                <label className={`${TEXT_MUTED} block text-xs`}>SUMMARY</label>
-                <textarea
-                  value={summaryText}
-                  onChange={(event) => setSummaryText(event.target.value)}
-                  placeholder="Write or paste the priming summary that Tutor should teach from."
-                  className={`${INPUT_BASE} min-h-[120px] resize-y`}
+              <div className="space-y-2 border border-primary/20 bg-black/35 p-3">
+                <div className="font-arcade text-[10px] text-primary/80">CHAIN PREVIEW</div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {selectedChainSteps.map((step) => (
+                    <Badge
+                      key={step}
+                      variant="outline"
+                      className="rounded-none border-primary/25 text-primary/80"
+                    >
+                      {step}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                className="w-full rounded-none font-arcade text-xs"
+                onClick={onRunAssistForSelected}
+                disabled={isRunningAssist || selectedMaterials.length === 0}
+              >
+                {isRunningAssist && assistTargetMaterialId == null ? (
+                  <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-2 h-3.5 w-3.5" />
+                )}
+                {selectedMaterials.length === 0 ? "SELECT MATERIALS TO EXTRACT" : "EXTRACT PRIME"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-none border-2 border-primary/20 bg-black/40">
+            <CardHeader className="border-b border-primary/15 pb-3">
+              <CardTitle className="font-arcade text-xs text-primary">WORKFLOW CONTEXT</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <label className={`${TEXT_MUTED} block text-xs`}>STUDY UNIT (OPTIONAL)</label>
+                <input
+                  value={selectedObjectiveGroup}
+                  onChange={(event) => {
+                    setSelectedObjectiveGroup(event.target.value);
+                    setSelectedObjectiveId("");
+                  }}
+                  list="priming-study-unit-options"
+                  placeholder="Type or choose a study unit"
+                  className={INPUT_BASE}
                 />
+                <datalist id="priming-study-unit-options">
+                  {studyUnitOptions.map((option) => (
+                    <option key={option.value} value={option.value} />
+                  ))}
+                </datalist>
               </div>
 
               <div className="space-y-2">
-                <label className={`${TEXT_MUTED} block text-xs`}>KEY CONCEPTS (ONE PER LINE)</label>
-                <textarea
-                  value={conceptsText}
-                  onChange={(event) => setConceptsText(event.target.value)}
-                  placeholder={"Concept one\nConcept two\nConcept three"}
-                  className={`${INPUT_BASE} min-h-[140px] resize-y`}
-                />
+                <label className={`${TEXT_MUTED} block text-xs`}>OBJECTIVE SCOPE (OPTIONAL)</label>
+                <select
+                  value={objectiveScope}
+                  onChange={(event) =>
+                    setObjectiveScope(
+                      event.target.value === "single_focus" ? "single_focus" : "module_all",
+                    )
+                  }
+                  className={SELECT_BASE}
+                >
+                  <option value="module_all">Whole study unit first</option>
+                  <option value="single_focus">Single focus objective</option>
+                </select>
               </div>
+
+              {objectiveScope === "single_focus" ? (
+                <div className="space-y-2">
+                  <label className={`${TEXT_MUTED} block text-xs`}>FOCUS OBJECTIVE (OPTIONAL)</label>
+                  <select
+                    value={selectedObjectiveId}
+                    onChange={(event) => setSelectedObjectiveId(event.target.value)}
+                    className={SELECT_BASE}
+                  >
+                    <option value="">Select one objective</option>
+                    {activeObjectives.map((objective) => (
+                      <option
+                        key={`${objective.id}-${objective.loCode}`}
+                        value={String(objective.loCode || "")}
+                      >
+                        {objective.loCode ? `${objective.loCode} - ` : ""}
+                        {objective.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
 
               <div className="space-y-2">
-                <label className={`${TEXT_MUTED} block text-xs`}>TERMINOLOGY (ONE PER LINE)</label>
-                <textarea
-                  value={terminologyText}
-                  onChange={(event) => setTerminologyText(event.target.value)}
-                  placeholder={"Term one\nTerm two"}
-                  className={`${INPUT_BASE} min-h-[140px] resize-y`}
+                <label className={`${TEXT_MUTED} block text-xs`}>TOPIC (OPTIONAL)</label>
+                <input
+                  value={topic}
+                  onChange={(event) => setTopic(event.target.value)}
+                  placeholder="Optional focus topic"
+                  className={INPUT_BASE}
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className={`${TEXT_MUTED} block text-xs`}>ROOT EXPLANATION</label>
-                <textarea
-                  value={rootExplanationText}
-                  onChange={(event) => setRootExplanationText(event.target.value)}
-                  placeholder="Explain the underlying model or first-principles logic here."
-                  className={`${INPUT_BASE} min-h-[140px] resize-y`}
-                />
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                <div className="border border-primary/20 bg-black/35 p-3">
+                  <div className="font-arcade text-[10px] text-primary/80">WORKFLOW</div>
+                  <div className="mt-2 break-all font-terminal text-xs text-foreground">
+                    {truncateWorkflowId(workflow?.workflow_id)}
+                  </div>
+                </div>
+                <div className="border border-primary/20 bg-black/35 p-3">
+                  <div className="font-arcade text-[10px] text-primary/80">LAST UPDATED</div>
+                  <div className="mt-2 font-terminal text-sm text-foreground">
+                    {formatWorkflowDate(workflow?.updated_at)}
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <label className={`${TEXT_MUTED} block text-xs`}>GAPS / AMBIGUITIES</label>
-                <textarea
-                  value={gapsText}
-                  onChange={(event) => setGapsText(event.target.value)}
-                  placeholder="List open questions, weak evidence, or unresolved ambiguities."
-                  className={`${INPUT_BASE} min-h-[140px] resize-y`}
-                />
+              <div className="border border-primary/20 bg-black/35 p-3">
+                <div className="font-arcade text-[10px] text-primary/80">OBSIDIAN TARGET</div>
+                <div className="mt-2 break-all font-terminal text-xs text-foreground">
+                  {vaultFolderPreview || "Select a class to derive the folder path."}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      }
+      centerPanel={
+        <div className="flex h-[60vh] min-h-[24rem] max-h-[52rem] flex-col lg:h-[70vh]">
+          <div className="border-b border-primary/20 bg-black/60 px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="font-arcade text-xs text-primary">SOURCE VIEWER</div>
+                <p className={`${TEXT_MUTED} mt-1 text-xs`}>
+                  Review the exact PDFs, docs, and notes the LLM is using for Studio PRIME.
+                </p>
+              </div>
+              <Badge variant="outline" className="rounded-none border-primary/25 text-primary/80">
+                {selectedMaterials.length > 0
+                  ? `${selectedMaterials.length} materials in viewer`
+                  : "No materials selected"}
+              </Badge>
+            </div>
+          </div>
+          <div className="min-h-0 flex-1">
+            <PrimingMaterialReader
+              courseId={courseId}
+              selectedMaterials={selectedMaterials}
+              onExtractMaterial={onRunAssistForMaterial}
+            />
+          </div>
+        </div>
+      }
+      rightPanel={
+        <div className="space-y-4 p-4">
+          <Card className="rounded-none border-2 border-primary/30 bg-black/45">
+            <CardHeader className="border-b border-primary/15 pb-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="font-arcade text-xs text-primary">
+                    PRIME ARTIFACT WORKSPACE
+                  </CardTitle>
+                  <p className={`${TEXT_MUTED} mt-2 text-xs`}>
+                    Generated first. Manual edits are only a fallback when the extracted output needs a
+                    small correction.
+                  </p>
+                </div>
+                <Badge variant="outline" className="rounded-none border-primary/30 text-primary/80">
+                  {generatedArtifactCount}/{PRIME_ARTIFACTS.length} ready
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-4">
+              <div className="grid gap-2 sm:grid-cols-2">
+                {PRIME_ARTIFACTS.map((artifact) => {
+                  const hasContent =
+                    artifact.key === "objectives"
+                      ? objectiveLines.length > 0 || extractedObjectiveLines.length > 0
+                      : artifactValues[artifact.key].trim().length > 0;
+                  return (
+                    <button
+                      key={artifact.key}
+                      type="button"
+                      onClick={() => {
+                        setActiveArtifact(artifact.key);
+                        if (editingArtifact && editingArtifact !== artifact.key) {
+                          setEditingArtifact(null);
+                        }
+                      }}
+                      className={`border p-3 text-left transition-colors ${
+                        activeArtifact === artifact.key
+                          ? "border-primary/50 bg-primary/10"
+                          : "border-primary/15 bg-black/35 hover:border-primary/35"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="font-arcade text-[10px] text-primary/80">{artifact.label}</div>
+                        <Badge
+                          variant="outline"
+                          className="rounded-none border-primary/20 text-[10px] text-primary/70"
+                        >
+                          {hasContent ? (artifact.key === "objectives" ? "READY" : "GENERATED") : "PENDING"}
+                        </Badge>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
 
-              <div className="space-y-2 md:col-span-2">
-                <label className={`${TEXT_MUTED} block text-xs`}>RECOMMENDED TUTOR STRATEGY</label>
-                <textarea
-                  value={recommendedStrategyText}
-                  onChange={(event) => setRecommendedStrategyText(event.target.value)}
-                  placeholder="Optional guidance for Tutor Core: pacing, focus, scaffold depth, retrieval pressure."
-                  className={`${INPUT_BASE} min-h-[90px] resize-y`}
-                />
+              <div className="space-y-3 border border-primary/20 bg-black/35 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="font-arcade text-xs text-primary">{activeConfig.label}</div>
+                    <p className={`${TEXT_MUTED} mt-1 text-xs`}>
+                      {activeArtifact === "objectives"
+                        ? "Resolved from the selected scope and checked against source-linked extraction."
+                        : "Generated from the selected materials and reviewed before Tutor handoff."}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="rounded-none border-primary/25 text-primary/80">
+                    {activeGenerated ? "GENERATED" : "PENDING"}
+                  </Badge>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-none"
+                    onClick={onRunAssistForSelected}
+                    disabled={isRunningAssist || selectedMaterials.length === 0}
+                  >
+                    {isRunningAssist && assistTargetMaterialId == null ? (
+                      <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <RefreshCw className="mr-2 h-3.5 w-3.5" />
+                    )}
+                    REGENERATE FROM SOURCES
+                  </Button>
+                  {activeConfig.editable ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="rounded-none"
+                      onClick={() =>
+                        setEditingArtifact((current) => (current === activeArtifact ? null : activeArtifact))
+                      }
+                    >
+                      {editingArtifact === activeArtifact ? "HIDE MANUAL EDIT" : "ADJUST MANUALLY"}
+                    </Button>
+                  ) : null}
+                </div>
+
+                {activeArtifact === "objectives" ? (
+                  <div className="grid gap-3">
+                    <div className="border border-primary/15 bg-black/40 p-3">
+                      <div className="font-arcade text-[10px] text-primary/80">
+                        MANUAL SCOPE (OPTIONAL)
+                      </div>
+                      <div className="mt-2 space-y-2">
+                        {objectiveLines.length > 0 ? (
+                          objectiveLines.map((line) => (
+                            <div key={line} className="font-terminal text-sm text-foreground/90">
+                              {line}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="font-terminal text-sm text-muted-foreground">
+                            No manual study unit or focus objective selected.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="border border-primary/15 bg-black/40 p-3">
+                      <div className="font-arcade text-[10px] text-primary/80">
+                        EXTRACTED OBJECTIVE CANDIDATES
+                      </div>
+                      <div className="mt-2 space-y-2">
+                        {extractedObjectiveLines.length > 0 ? (
+                          extractedObjectiveLines.map((line) => (
+                            <div key={line} className="font-terminal text-sm text-foreground/90">
+                              {line}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="font-terminal text-sm text-muted-foreground">
+                            {activeConfig.empty}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : editingArtifact === activeArtifact ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={activeValue}
+                      onChange={(event) => setArtifactValue(activeArtifact, event.target.value)}
+                      className={`${INPUT_BASE} min-h-[220px] resize-y`}
+                    />
+                    <p className={`${TEXT_MUTED} text-xs`}>
+                      Manual edits are a fallback. Regenerate from the selected materials whenever you
+                      want to refresh the extracted version.
+                    </p>
+                  </div>
+                ) : (
+                  <PrimeArtifactContent
+                    artifact={activeArtifact}
+                    value={activeValue}
+                    fallback={activeConfig.empty}
+                    fallbackMermaid={
+                      activeArtifact === "map"
+                        ? buildFallbackMapMermaid(
+                            workflow?.topic || workflow?.assignment_title || workflow?.course_name || "Study Map",
+                            artifactValues.spine,
+                          )
+                        : null
+                    }
+                  />
+                )}
+
+                <div className="space-y-3 border-t border-primary/15 pt-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="font-arcade text-[10px] text-primary/80">
+                      SOURCE-LINKED EXTRACTION
+                    </div>
+                    <Badge variant="outline" className="rounded-none border-primary/20 text-primary/70">
+                      {sourcePreviews.length}/{selectedSourceInventory.length} sources
+                    </Badge>
+                  </div>
+                  {selectedSourceInventory.length > 0 ? (
+                    <div className="space-y-2">
+                      {selectedSourceInventory.map((item) => {
+                        const preview = previewForArtifact(item, activeArtifact);
+                        return (
+                          <div
+                            key={item.id}
+                            className="space-y-2 border border-primary/15 bg-black/40 p-3"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="break-words font-terminal text-sm text-foreground">
+                                  {item.title}
+                                </div>
+                                <div className="mt-1 break-all font-terminal text-[11px] text-muted-foreground">
+                                  {item.source_path || "No source path"}
+                                </div>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="rounded-none"
+                                onClick={() => onRunAssistForMaterial(item.id)}
+                                disabled={isRunningAssist}
+                              >
+                                {isRunningAssist && assistTargetMaterialId === item.id ? (
+                                  <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <RefreshCw className="mr-2 h-3.5 w-3.5" />
+                                )}
+                                RERUN SOURCE
+                              </Button>
+                            </div>
+                            <div className="border border-primary/10 bg-black/25 p-3">
+                              <div className="font-terminal whitespace-pre-wrap text-xs text-foreground/90">
+                                {preview.trim().length > 0
+                                  ? formatPrimeArtifactPreviewText(activeArtifact, preview)
+                                  : `No ${activeConfig.label.toLowerCase()} extracted for this source yet.`}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="font-terminal text-sm text-muted-foreground">
+                      Select one or more materials in the setup rail to see source-linked extraction here.
+                    </div>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -582,7 +876,70 @@ export function TutorWorkflowPrimingPanel({
                   </div>
                 </div>
               ))}
+            </CardContent>
+          </Card>
 
+          <Card className="rounded-none border-2 border-primary/20 bg-black/40">
+            <CardHeader className="border-b border-primary/15 pb-3">
+              <div className="flex items-center justify-between gap-3">
+                <CardTitle className="font-arcade text-xs text-primary">TUTOR HANDOFF NOTES</CardTitle>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-none"
+                  onClick={() => setEditingHandoff((current) => !current)}
+                >
+                  {editingHandoff ? "HIDE MANUAL EDIT" : "ADJUST HANDOFF"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-4">
+              {editingHandoff ? (
+                <>
+                  <div className="space-y-2">
+                    <label className={`${TEXT_MUTED} block text-xs`}>OPEN QUESTIONS / AMBIGUITIES</label>
+                    <textarea
+                      value={gapsText}
+                      onChange={(event) => setGapsText(event.target.value)}
+                      placeholder="List open questions, weak evidence, or unresolved ambiguities."
+                      className={`${INPUT_BASE} min-h-[120px] resize-y`}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className={`${TEXT_MUTED} block text-xs`}>RECOMMENDED TUTOR STRATEGY</label>
+                    <textarea
+                      value={recommendedStrategyText}
+                      onChange={(event) => setRecommendedStrategyText(event.target.value)}
+                      placeholder="Optional guidance for Tutor Core: pacing, focus, scaffold depth, retrieval pressure."
+                      className={`${INPUT_BASE} min-h-[120px] resize-y`}
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="grid gap-3">
+                  <div className="border border-primary/15 bg-black/40 p-3">
+                    <div className="font-arcade text-[10px] text-primary/80">OPEN QUESTIONS / AMBIGUITIES</div>
+                    <div className="mt-2 font-terminal whitespace-pre-wrap text-sm text-foreground/90">
+                      {renderPreview(gapsText, "No open questions or ambiguities captured yet.")}
+                    </div>
+                  </div>
+                  <div className="border border-primary/15 bg-black/40 p-3">
+                    <div className="font-arcade text-[10px] text-primary/80">RECOMMENDED TUTOR STRATEGY</div>
+                    <div className="mt-2 font-terminal whitespace-pre-wrap text-sm text-foreground/90">
+                      {renderPreview(
+                        recommendedStrategyText,
+                        "No Tutor strategy note captured yet.",
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-none border-2 border-primary/30 bg-black/45">
+            <CardContent className="space-y-3 pt-4">
               <div className="border border-primary/20 bg-black/35 p-3">
                 <div className="font-arcade text-[10px] text-primary/80">TUTOR HANDOFF</div>
                 <div className="mt-2 font-terminal text-sm text-foreground">
@@ -630,12 +987,6 @@ export function TutorWorkflowPrimingPanel({
             </CardContent>
           </Card>
         </div>
-      }
-      bottomBar={
-        <PrimingBlockBar
-          onBlockActivate={setActiveBlock}
-          activeBlockId={activeBlock?.id}
-        />
       }
     />
   );

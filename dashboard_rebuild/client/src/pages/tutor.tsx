@@ -1,4 +1,4 @@
-import Layout from "@/components/layout";
+
 import { CoreWorkspaceFrame } from "@/components/CoreWorkspaceFrame";
 import { PageScaffold } from "@/components/PageScaffold";
 import {
@@ -764,12 +764,11 @@ function useTutorPageController() {
 
   // ─── Render ───
   return (
-    <Layout>
       <PageScaffold
         eyebrow="Live Study Core"
         title="Tutor"
         subtitle="Run your study plan from Launch through Priming, then move into Tutor, Studio, schedule, and Final Sync without losing context."
-        className="h-full min-h-0"
+        className="h-full min-h-0 [&_.page-shell\_\_horizon]:hidden [&_.page-shell\_\_hero]:border-transparent [&_.page-shell\_\_hero]:before:hidden"
         contentClassName="gap-6"
         stats={tutorHeroStats}
         actions={
@@ -824,7 +823,6 @@ function useTutorPageController() {
           />
         </CoreWorkspaceFrame>
       </PageScaffold>
-    </Layout>
   );
 }
 

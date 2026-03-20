@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>PT Study Navbar Layout</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, system-ui, sans-serif;
+      }
+
+      body {
+        margin: 0;
+        background: #111111;
+        color: #f5f5f5;
+      }
+
+      .panel {
+        padding: 16px;
+        display: grid;
+        gap: 14px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      p,
+      li,
+      label,
+      button,
+      input {
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      .card {
+        border: 1px solid #2d2d2d;
+        border-radius: 10px;
+        background: #171717;
+        padding: 12px;
+        display: grid;
+        gap: 8px;
+      }
+
+      .card h2 {
+        margin: 0;
+        font-size: 14px;
+      }
+
+      .hint {
+        color: #b4b4b4;
+        margin: 0;
+      }
+
+      .status {
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: #1d1d1d;
+        border: 1px solid #303030;
+      }
+
+      .status.error {
+        border-color: #a32f2f;
+        color: #ffb1b1;
+      }
+
+      .status.ok {
+        border-color: #2f7a45;
+        color: #b4f0c2;
+      }
+
+      code {
+        background: #202020;
+        padding: 1px 4px;
+        border-radius: 4px;
+      }
+
+      ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      .actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      button {
+        border: 0;
+        border-radius: 8px;
+        padding: 10px 12px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      button.primary {
+        background: #ef4444;
+        color: #111111;
+      }
+
+      button.secondary {
+        background: #2a2a2a;
+        color: #f5f5f5;
+      }
+
+      button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .files {
+        color: #d8d8d8;
+        display: grid;
+        gap: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="panel">
+      <section>
+        <h1>PT Study Navbar Layout</h1>
+        <p class="hint">
+          Select the dashboard shell background and the eight split button PNGs.
+          The plugin will build a <code>1536 x 1024</code> navbar frame in the
+          current design file.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>1. Background</h2>
+        <p class="hint">
+          Use <code>C:\pt-study-sop\UI Images\Dashboard finished.png</code>.
+        </p>
+        <input id="background" type="file" accept=".png,.jpg,.jpeg,.webp,image/*" />
+        <div id="background-file" class="files"></div>
+      </section>
+
+      <section class="card">
+        <h2>2. Button PNGs</h2>
+        <p class="hint">
+          Select all eight files from
+          <code>C:\pt-study-sop\UI Images\buttons_for_dashboard_split</code>.
+        </p>
+        <input id="buttons" type="file" accept=".png,.jpg,.jpeg,.webp,image/*" multiple />
+        <div class="files" id="button-files"></div>
+      </section>
+
+      <section class="card">
+        <h2>Expected button names</h2>
+        <ul>
+          <li><code>brain.png</code></li>
+          <li><code>scholar.png</code></li>
+          <li><code>tutor.png</code></li>
+          <li><code>library.png</code></li>
+          <li><code>mastery.png</code></li>
+          <li><code>calendar.png</code></li>
+          <li><code>methods.png</code></li>
+          <li><code>vault.png</code></li>
+        </ul>
+      </section>
+
+      <section id="status" class="status">
+        Select the files and then click <strong>Build Navbar Frame</strong>.
+      </section>
+
+      <section class="actions">
+        <button id="build" class="primary" disabled>Build Navbar Frame</button>
+        <button id="cancel" class="secondary">Cancel</button>
+      </section>
+    </main>
+
+    <script>
+      const expectedButtons = [
+        "brain",
+        "scholar",
+        "tutor",
+        "library",
+        "mastery",
+        "calendar",
+        "methods",
+        "vault",
+      ];
+
+      const backgroundInput = document.getElementById("background");
+      const buttonsInput = document.getElementById("buttons");
+      const buildButton = document.getElementById("build");
+      const cancelButton = document.getElementById("cancel");
+      const statusEl = document.getElementById("status");
+      const backgroundFileEl = document.getElementById("background-file");
+      const buttonFilesEl = document.getElementById("button-files");
+
+      let backgroundFile = null;
+      let buttonFiles = [];
+
+      backgroundInput.addEventListener("change", () => {
+        backgroundFile = backgroundInput.files && backgroundInput.files[0]
+          ? backgroundInput.files[0]
+          : null;
+        render();
+      });
+
+      buttonsInput.addEventListener("change", () => {
+        buttonFiles = buttonsInput.files ? Array.from(buttonsInput.files) : [];
+        render();
+      });
+
+      cancelButton.addEventListener("click", () => {
+        parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
+      });
+
+      buildButton.addEventListener("click", async () => {
+        setStatus("Reading files…", "ok");
+        buildButton.disabled = true;
+
+        try {
+          const payload = {
+            background: await toPayload(backgroundFile),
+            buttons: await Promise.all(buttonFiles.map((file) => toPayload(file))),
+          };
+
+          parent.postMessage(
+            {
+              pluginMessage: {
+                type: "layout-assets",
+                payload,
+              },
+            },
+            "*"
+          );
+        } catch (error) {
+          setStatus(error instanceof Error ? error.message : String(error), "error");
+          buildButton.disabled = !isReady();
+        }
+      });
+
+      window.onmessage = (event) => {
+        const pluginMessage = event.data && event.data.pluginMessage;
+        if (!pluginMessage) {
+          return;
+        }
+        if (pluginMessage.type === "error") {
+          setStatus(pluginMessage.message, "error");
+          buildButton.disabled = !isReady();
+        }
+      };
+
+      function normalizeName(name) {
+        return String(name)
+          .toLowerCase()
+          .replace(/\.[a-z0-9]+$/i, "")
+          .replace(/[^a-z0-9]+/g, "");
+      }
+
+      async function toPayload(file) {
+        if (!file) {
+          throw new Error("Missing required file input.");
+        }
+        const buffer = await file.arrayBuffer();
+        return {
+          name: file.name,
+          bytes: new Uint8Array(buffer),
+        };
+      }
+
+      function isReady() {
+        if (!backgroundFile) {
+          return false;
+        }
+        const keys = new Set(buttonFiles.map((file) => normalizeName(file.name)));
+        return expectedButtons.every((key) => keys.has(key));
+      }
+
+      function render() {
+        backgroundFileEl.textContent = backgroundFile
+          ? `Selected: ${backgroundFile.name}`
+          : "No background selected yet.";
+
+        const buttonNames = buttonFiles.map((file) => file.name);
+        buttonFilesEl.innerHTML = "";
+        if (buttonNames.length === 0) {
+          buttonFilesEl.textContent = "No button PNGs selected yet.";
+        } else {
+          buttonNames.forEach((name) => {
+            const div = document.createElement("div");
+            div.textContent = name;
+            buttonFilesEl.appendChild(div);
+          });
+        }
+
+        const missing = expectedButtons.filter(
+          (key) => !buttonFiles.some((file) => normalizeName(file.name) === key)
+        );
+
+        if (!backgroundFile) {
+          setStatus("Select the dashboard background PNG first.", "");
+        } else if (missing.length > 0) {
+          setStatus(`Missing button PNGs: ${missing.join(", ")}`, "");
+        } else {
+          setStatus("Ready. Click Build Navbar Frame.", "ok");
+        }
+
+        buildButton.disabled = !isReady();
+      }
+
+      function setStatus(message, variant) {
+        statusEl.textContent = message;
+        statusEl.className = `status${variant ? ` ${variant}` : ""}`;
+      }
+
+      render();
+    </script>
+  </body>
+</html>

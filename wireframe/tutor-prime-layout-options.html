@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tutor Prime Layout Options — PT Study SOP</title>
+  <style>
+    :root {
+      --black: #000000;
+      --text: #333333;
+      --muted: #666666;
+      --light: #999999;
+      --border: #cccccc;
+      --surface: #eeeeee;
+      --white: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--white);
+    }
+
+    .page {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .titlebar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 18px;
+      border: 2px solid var(--black);
+      background: var(--white);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .titlebar h1 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.2;
+      color: var(--black);
+    }
+
+    .rec {
+      font-size: 14px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 16px 0 22px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .tab {
+      border: 1px solid var(--black);
+      background: var(--white);
+      color: var(--text);
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .tab.active {
+      background: var(--black);
+      color: var(--white);
+    }
+
+    .panel {
+      display: none;
+      border-top: 4px solid var(--black);
+      padding-top: 18px;
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+      align-items: end;
+    }
+
+    .panel-head h2 {
+      margin: 0 0 6px;
+      font-size: 28px;
+      color: var(--black);
+    }
+
+    .panel-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      max-width: 900px;
+    }
+
+    .badge {
+      border: 1px solid var(--black);
+      padding: 6px 10px;
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--white);
+      white-space: nowrap;
+    }
+
+    .wireframe {
+      border: 2px solid var(--black);
+      background: var(--white);
+      padding: 18px;
+      min-height: 700px;
+    }
+
+    .section-title {
+      margin: 0 0 8px;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .chip-row, .action-row, .toggle-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chip, .pill, .button, .ghost {
+      border: 1px solid var(--black);
+      background: var(--white);
+      padding: 8px 10px;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .pill.active, .button.primary {
+      background: var(--black);
+      color: var(--white);
+    }
+
+    .ghost {
+      border-color: var(--border);
+      color: var(--muted);
+    }
+
+    .field, .textblock, .panel-box, .viewer, .rail, .drawer, .stack-card, .summary-box, .table-box {
+      border: 1px solid var(--border);
+      background: var(--white);
+    }
+
+    .field {
+      padding: 10px 12px;
+      min-height: 42px;
+      color: var(--light);
+    }
+
+    .textblock {
+      padding: 12px;
+      min-height: 120px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .row {
+      display: grid;
+      gap: 16px;
+    }
+
+    .two {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .three {
+      grid-template-columns: 260px 1fr 360px;
+    }
+
+    .safe-shell {
+      display: grid;
+      gap: 16px;
+      grid-template-rows: auto auto 1fr auto;
+      min-height: 660px;
+    }
+
+    .setup-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--black);
+      background: var(--surface);
+    }
+
+    .setup-item {
+      border: 1px solid var(--border);
+      background: var(--white);
+      padding: 10px;
+    }
+
+    .safe-main {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 16px;
+      min-height: 0;
+    }
+
+    .stack {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .stack-card {
+      padding: 12px;
+    }
+
+    .viewer {
+      padding: 12px;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 12px;
+      min-height: 450px;
+    }
+
+    .viewer-surface {
+      border: 1px dashed var(--border);
+      min-height: 300px;
+      background: var(--surface);
+      padding: 16px;
+      color: var(--muted);
+    }
+
+    .setup-rail-layout {
+      display: grid;
+      grid-template-columns: 240px 1fr 360px;
+      gap: 16px;
+      min-height: 660px;
+    }
+
+    .rail, .drawer {
+      padding: 12px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .accordion {
+      border: 1px solid var(--border);
+    }
+
+    .accordion button {
+      width: 100%;
+      text-align: left;
+      border: 0;
+      border-bottom: 1px solid var(--border);
+      background: var(--white);
+      padding: 10px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      color: var(--black);
+    }
+
+    .accordion .content {
+      padding: 12px;
+      display: none;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .accordion.open .content {
+      display: block;
+    }
+
+    .split-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .artifact-tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .artifact-tab {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      font-size: 12px;
+    }
+
+    .artifact-tab.active {
+      border-color: var(--black);
+      background: var(--surface);
+      color: var(--black);
+      font-weight: 600;
+    }
+
+    .step-layout {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 16px;
+      min-height: 660px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .step {
+      border: 1px solid var(--border);
+      padding: 12px;
+      background: var(--white);
+    }
+
+    .step.active {
+      border-color: var(--black);
+      background: var(--surface);
+    }
+
+    .step-body {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 16px;
+      min-height: 0;
+    }
+
+    .artifact-desk {
+      display: grid;
+      grid-template-columns: 280px 1fr 280px;
+      gap: 16px;
+      min-height: 660px;
+    }
+
+    .canvas {
+      border: 2px solid var(--black);
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+      min-height: 500px;
+      background: var(--white);
+    }
+
+    .canvas .textblock {
+      min-height: 90px;
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--surface);
+      color: var(--black);
+    }
+
+    .stars {
+      letter-spacing: 0.05em;
+      color: var(--black);
+      white-space: nowrap;
+    }
+
+    .summary-box {
+      padding: 14px;
+      margin-top: 16px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 1100px) {
+      .three,
+      .setup-rail-layout,
+      .artifact-desk,
+      .step-body,
+      .safe-main {
+        grid-template-columns: 1fr;
+      }
+
+      .setup-strip,
+      .steps {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .page {
+        padding: 12px;
+      }
+
+      .titlebar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .setup-strip,
+      .steps,
+      .two,
+      .mini-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="titlebar">
+      <h1>Tutor Prime Layout Options — PT Study SOP</h1>
+      <div class="rec">★ Recommended: Option 2</div>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="Layout options">
+      <button class="tab active" data-target="opt1">1: Safe</button>
+      <button class="tab" data-target="opt2">2: Setup Rail</button>
+      <button class="tab" data-target="opt3">3: Step Flow</button>
+      <button class="tab" data-target="opt4">4: Artifact Desk</button>
+      <button class="tab" data-target="summary">Summary</button>
+    </div>
+
+    <section id="opt1" class="panel active">
+      <div class="panel-head">
+        <div>
+          <h2>Option 1: Safe Option</h2>
+          <p>Keep the current split-view paradigm, but turn the confusing top and bottom picker clutter into one sticky setup strip and one clear artifact stack.</p>
+        </div>
+        <div class="badge">Low risk</div>
+      </div>
+      <div class="wireframe">
+        <div class="safe-shell">
+          <div class="setup-strip">
+            <div class="setup-item">
+              <div class="section-title">Class</div>
+              <div class="field">PHYT 6313 Neuroscience</div>
+            </div>
+            <div class="setup-item">
+              <div class="section-title">Study Unit</div>
+              <div class="field">Week 7 Neural Development</div>
+            </div>
+            <div class="setup-item">
+              <div class="section-title">Scope</div>
+              <div class="field">Single focus objective</div>
+            </div>
+            <div class="setup-item">
+              <div class="section-title">Actions</div>
+              <div class="action-row">
+                <div class="button">Load material</div>
+                <div class="ghost">Pick notes</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="split-header">
+            <div class="chip-row">
+              <div class="pill active">Source materials</div>
+              <div class="pill">Viewer</div>
+              <div class="pill">Source-linked output</div>
+            </div>
+            <div class="action-row">
+              <div class="ghost">Prime method</div>
+              <div class="ghost">Prime chain</div>
+            </div>
+          </div>
+
+          <div class="safe-main">
+            <div class="viewer">
+              <div class="split-header">
+                <div>
+                  <div class="section-title">Material viewer</div>
+                  <div class="muted">One selected source visible at full height.</div>
+                </div>
+                <div class="button">Extract selected</div>
+              </div>
+              <div class="chip-row">
+                <div class="chip">Week 7 To Do</div>
+                <div class="chip">Lecture PDF</div>
+                <div class="chip">Transcript</div>
+              </div>
+              <div class="viewer-surface">PDF / doc / note viewer here. This option keeps the familiar left reader, but stops stuffing extra pickers above and below it.</div>
+            </div>
+
+            <div class="stack">
+              <div class="stack-card">
+                <div class="section-title">Learning objectives</div>
+                <div class="textblock">Resolved objectives appear here as a compact read-only list.</div>
+              </div>
+              <div class="stack-card">
+                <div class="section-title">Study spine</div>
+                <div class="textblock">Ordered nodes, one per line.</div>
+              </div>
+              <div class="stack-card">
+                <div class="section-title">Hierarchical map</div>
+                <div class="textblock">Top-down tree / structure notes.</div>
+              </div>
+              <div class="mini-grid">
+                <div class="stack-card">
+                  <div class="section-title">Summary</div>
+                  <div class="textblock">Concise material-grounded summary.</div>
+                </div>
+                <div class="stack-card">
+                  <div class="section-title">Terms</div>
+                  <div class="textblock">Key terms + short definitions.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-row">
+            <div class="button primary">Save draft</div>
+            <div class="button">Mark ready</div>
+            <div class="ghost">Open questions</div>
+            <div class="ghost">Tutor handoff notes</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="opt2" class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Option 2: Setup Rail</h2>
+          <p>Move every picker into one dedicated left rail, keep the source viewer in the center, and make the right side a focused PRIME artifact workspace.</p>
+        </div>
+        <div class="badge">Recommended</div>
+      </div>
+      <div class="wireframe">
+        <div class="setup-rail-layout">
+          <div class="rail">
+            <div>
+              <div class="section-title">Setup rail</div>
+              <div class="muted">All pickers live in one place instead of being spread above and below the workspace.</div>
+            </div>
+            <div class="accordion open">
+              <button type="button">1. Class + Unit</button>
+              <div class="content">
+                <div class="field">PHYT 6313 Neuroscience</div>
+                <div class="field" style="margin-top: 8px;">Week 7 Neural Development</div>
+                <div class="field" style="margin-top: 8px;">Single focus objective</div>
+              </div>
+            </div>
+            <div class="accordion open">
+              <button type="button">2. Materials</button>
+              <div class="content">
+                <div class="chip-row">
+                  <div class="chip">Slides</div>
+                  <div class="chip">PDF</div>
+                  <div class="chip">Transcript</div>
+                </div>
+                <div class="button" style="margin-top: 10px;">Pick / Upload</div>
+              </div>
+            </div>
+            <div class="accordion">
+              <button type="button">3. Obsidian target</button>
+              <div class="content">Folder chooser and note target go here.</div>
+            </div>
+            <div class="accordion">
+              <button type="button">4. Prime controls</button>
+              <div class="content">Prime method and chain stay here, out of the main workspace.</div>
+            </div>
+            <div class="button primary">Start with this setup</div>
+          </div>
+
+          <div class="viewer">
+            <div class="split-header">
+              <div>
+                <div class="section-title">Source viewer</div>
+                <div class="muted">This stays tall and unclipped.</div>
+              </div>
+              <div class="action-row">
+                <div class="button">Extract selected</div>
+                <div class="ghost">Pop out</div>
+              </div>
+            </div>
+            <div class="chip-row">
+              <div class="pill active">Viewer</div>
+              <div class="pill">Source-linked output</div>
+              <div class="pill">Obsidian</div>
+            </div>
+            <div class="viewer-surface">The center is only for seeing the material and its direct source-linked extraction. No setup controls. No readiness clutter.</div>
+          </div>
+
+          <div class="drawer">
+            <div>
+              <div class="section-title">Prime artifacts</div>
+              <div class="muted">One clear artifact workspace. No extra pickers inside it.</div>
+            </div>
+            <div class="artifact-tabs">
+              <div class="artifact-tab active">Objectives</div>
+              <div class="artifact-tab">Spine</div>
+              <div class="artifact-tab">Map</div>
+              <div class="artifact-tab">Summary</div>
+              <div class="artifact-tab">Terms</div>
+            </div>
+            <div class="stack-card">
+              <div class="section-title">Active artifact editor</div>
+              <div class="textblock">Each artifact gets the full right panel when selected. That makes it readable and stops the “everything is cut off” problem.</div>
+            </div>
+            <div class="stack-card">
+              <div class="section-title">Readiness</div>
+              <div class="chip-row">
+                <div class="chip">Objectives</div>
+                <div class="chip">Spine</div>
+                <div class="chip">Map</div>
+                <div class="chip">Summary</div>
+                <div class="chip">Terms</div>
+              </div>
+            </div>
+            <div class="stack-card">
+              <div class="section-title">Handoff</div>
+              <div class="textblock">Open questions and Tutor notes stay collapsed until needed.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="opt3" class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Option 3: Step Flow</h2>
+          <p>Treat Priming like a short guided build sequence so only one dense area is on screen at a time.</p>
+        </div>
+        <div class="badge">Best for low clutter</div>
+      </div>
+      <div class="wireframe">
+        <div class="step-layout">
+          <div class="steps">
+            <div class="step">1. Setup</div>
+            <div class="step active">2. Prime</div>
+            <div class="step">3. Review</div>
+            <div class="step">4. Handoff</div>
+          </div>
+
+          <div class="step-body">
+            <div class="rail">
+              <div>
+                <div class="section-title">Current step</div>
+                <div class="muted">The left rail explains what this step needs and shows only the relevant controls.</div>
+              </div>
+              <div class="stack-card">
+                <div class="section-title">Step 2 checklist</div>
+                <div class="textblock">Generate summary, spine, map, and terms from the selected source material.</div>
+              </div>
+              <div class="stack-card">
+                <div class="section-title">Materials in scope</div>
+                <div class="textblock">3 selected files</div>
+              </div>
+              <div class="button">Back to setup</div>
+            </div>
+
+            <div class="canvas">
+              <div class="split-header">
+                <div>
+                  <div class="section-title">Step workspace</div>
+                  <div class="muted">One large artifact-focused canvas.</div>
+                </div>
+                <div class="action-row">
+                  <div class="button">Extract from source</div>
+                  <div class="ghost">Show viewer</div>
+                </div>
+              </div>
+              <div class="artifact-tabs">
+                <div class="artifact-tab">Objectives</div>
+                <div class="artifact-tab active">Study spine</div>
+                <div class="artifact-tab">Map</div>
+                <div class="artifact-tab">Summary</div>
+                <div class="artifact-tab">Terms</div>
+              </div>
+              <div class="textblock" style="min-height: 360px;">Full-height editor for the active artifact. The viewer can slide in when needed, but it does not permanently steal width.</div>
+            </div>
+          </div>
+
+          <div class="action-row">
+            <div class="button">Previous</div>
+            <div class="button primary">Next step</div>
+            <div class="ghost">Save draft</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="opt4" class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Option 4: Artifact Desk</h2>
+          <p>Make the artifact work the center of gravity, with source materials and setup living in side drawers instead of running the whole page.</p>
+        </div>
+        <div class="badge">Most focused</div>
+      </div>
+      <div class="wireframe">
+        <div class="artifact-desk">
+          <div class="drawer">
+            <div>
+              <div class="section-title">Left drawer</div>
+              <div class="muted">Setup + source list</div>
+            </div>
+            <div class="stack-card">
+              <div class="section-title">Setup</div>
+              <div class="field">Class / unit / scope</div>
+            </div>
+            <div class="stack-card">
+              <div class="section-title">Source list</div>
+              <div class="textblock">All materials listed here. Viewer opens only when a file is selected.</div>
+            </div>
+            <div class="ghost">Collapse drawer</div>
+          </div>
+
+          <div class="canvas">
+            <div class="split-header">
+              <div>
+                <div class="section-title">Artifact desk</div>
+                <div class="muted">The center is a writing and shaping surface, not a setup form.</div>
+              </div>
+              <div class="chip-row">
+                <div class="pill active">Objectives</div>
+                <div class="pill">Spine</div>
+                <div class="pill">Map</div>
+                <div class="pill">Summary</div>
+                <div class="pill">Terms</div>
+              </div>
+            </div>
+            <div class="mini-grid">
+              <div class="textblock">Objective list</div>
+              <div class="textblock">Terms</div>
+            </div>
+            <div class="textblock">Study spine editor / hierarchy builder / summary workspace rotates in the big center area depending on the active artifact.</div>
+            <div class="action-row">
+              <div class="button">Extract</div>
+              <div class="button">Save</div>
+              <div class="ghost">Compare to source</div>
+            </div>
+          </div>
+
+          <div class="drawer">
+            <div>
+              <div class="section-title">Right drawer</div>
+              <div class="muted">Viewer + handoff + readiness</div>
+            </div>
+            <div class="stack-card">
+              <div class="section-title">Quick viewer</div>
+              <div class="textblock">Mini source viewer for reference while editing.</div>
+            </div>
+            <div class="stack-card">
+              <div class="section-title">Readiness</div>
+              <div class="textblock">Five artifact checks only.</div>
+            </div>
+            <div class="stack-card">
+              <div class="section-title">Tutor handoff</div>
+              <div class="textblock">Open questions and pacing notes stay off to the side.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="summary" class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Summary</h2>
+          <p>Comparison of the layout directions against the current pain points: cut-off content, bad picker placement, and too many disconnected controls.</p>
+        </div>
+        <div class="badge">Best fit: Option 2</div>
+      </div>
+      <div class="wireframe">
+        <table>
+          <thead>
+            <tr>
+              <th>Option</th>
+              <th>Short description</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1. Safe Option</td>
+              <td>Refines the current split view without changing the underlying page philosophy.</td>
+              <td class="stars">★★★★☆</td>
+            </tr>
+            <tr>
+              <td>2. Setup Rail</td>
+              <td>Consolidates all pickers into one rail and gives artifacts their own dedicated workspace.</td>
+              <td class="stars">★★★★★</td>
+            </tr>
+            <tr>
+              <td>3. Step Flow</td>
+              <td>Reduces clutter the most, but hides too much context for quick back-and-forth work.</td>
+              <td class="stars">★★★☆☆</td>
+            </tr>
+            <tr>
+              <td>4. Artifact Desk</td>
+              <td>Best for focused artifact editing, but less direct for rapid material triage and setup.</td>
+              <td class="stars">★★★★☆</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="summary-box">
+          Option 2 is the best fit because it directly fixes the three pain points you called out. All setup controls move into one left rail, the material viewer stays tall and readable in the center, and the right side becomes a clean artifact workspace instead of a pile of stacked cards and scattered pickers. It keeps enough simultaneous visibility for real study work without collapsing into the current cut-off, overstuffed layout.
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const tabs = Array.from(document.querySelectorAll('.tab'));
+    const panels = Array.from(document.querySelectorAll('.panel'));
+    const accordions = Array.from(document.querySelectorAll('.accordion'));
+
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        tabs.forEach((t) => t.classList.remove('active'));
+        panels.forEach((panel) => panel.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.target).classList.add('active');
+      });
+    });
+
+    accordions.forEach((item) => {
+      const button = item.querySelector('button');
+      if (!button) return;
+      button.addEventListener('click', () => {
+        item.classList.toggle('open');
+      });
+    });
+  </script>
+</body>
+</html>

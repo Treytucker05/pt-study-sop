@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { CoreWorkspaceFrame } from "@/components/CoreWorkspaceFrame";
 import { PageScaffold } from "@/components/PageScaffold";
-import Layout from "@/components/layout";
+
 import { MainContent } from "@/components/brain/MainContent";
 import { useBrainWorkspace } from "@/components/brain/useBrainWorkspace";
 
@@ -21,7 +21,6 @@ export default function Brain() {
   }, []);
 
   return (
-    <Layout>
       <PageScaffold
         eyebrow="System Command Core"
         title="Brain"
@@ -56,6 +55,5 @@ export default function Brain() {
           <MainContent workspace={workspace} />
         </CoreWorkspaceFrame>
       </PageScaffold>
-    </Layout>
   );
 }

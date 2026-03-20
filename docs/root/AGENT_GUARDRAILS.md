@@ -97,6 +97,18 @@ Codex MCP's `ask-codex` ignores full diff/code embedded in the prompt and asks f
 **Cause:** An older `dashboard_web.py` process can remain bound to port `5000`, so the new code is not actually serving requests.  
 **Solution:** Before validating backend fixes, confirm the listening PID on `5000` and its recent start time. If stale, stop it and relaunch via `Start_Dashboard.bat`.
 
+### Live Navbar/UI Visual Pass Rule
+
+**Problem:** Repeated navbar/header tweaks regressed because visual changes were judged from source coordinates, partial assumptions, or stale mental models instead of the full live render.  
+**Cause:** Structural fixes and polish tweaks were mixed together, and the shell art, overlay/debug surface, and button anchors drifted into different coordinate systems before anyone forced a full-screen visual reset.  
+**Solution:** Treat live UI polish as a screenshot-first workflow:
+
+- Use the canonical `Start_Dashboard.bat` -> `http://127.0.0.1:5000` surface only.
+- After every meaningful visual change, capture a fresh live screenshot of the whole affected area before claiming improvement.
+- If the full composition looks wrong, stop nudging individual elements and do a baseline recovery pass first.
+- Do not mix structural layout resets and micro-alignment polish in the same pass.
+- Keep a visible build marker during iterative UI work so the rendered screenshot can be tied to the actual bundle under review.
+
 ### Destructive Async UI State Rule (Tutor/Brain)
 
 **Problem:** Repeated regressions around delete/edit flows caused stuck overlays, overlapping modals, and duplicate destructive actions.  

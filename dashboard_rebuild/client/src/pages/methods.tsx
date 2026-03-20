@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import Layout from "@/components/layout";
+
 import MethodBlockCard from "@/components/MethodBlockCard";
 import ChainBuilder from "@/components/ChainBuilder";
 import MethodAnalytics from "@/components/MethodAnalytics";
@@ -535,7 +535,6 @@ function useMethodsPageController() {
   );
 
   return (
-    <Layout>
       <PageScaffold
         eyebrow="Tutor Support System"
         title="Method Library"
@@ -875,7 +874,6 @@ function useMethodsPageController() {
           />
         )}
       </PageScaffold>
-    </Layout>
   );
 }
 

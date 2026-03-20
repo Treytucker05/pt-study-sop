@@ -1158,11 +1158,11 @@ def run_tutor_priming_assist(workflow_id: str):
             continue
         content_excerpt = content[:12000]
         system_prompt = """You are Priming Assist for a study workflow.
-Extract source-linked study scaffolding from the provided material.
+Extract source-linked PRIME artifacts from the provided material.
 Do not invent facts and do not use external knowledge.
 Return STRICT JSON only:
 {
-  "summary": "string",
+  "summary": "markdown-ready string",
   "concepts": ["string"],
   "terminology": ["string"],
   "root_explanation": "string",
@@ -1182,6 +1182,14 @@ Return STRICT JSON only:
             f"Priming chain: {priming_chain_id}\n"
             f"Material title: {row['title'] or f'Material {material_id}'}\n"
             f"Material source path: {row['source_path'] or 'Unknown'}\n\n"
+            "Artifact guidance:\n"
+            "- summary = concise material-grounded PRIME summary with short markdown-friendly section labels and short paragraphs; avoid one giant paragraph\n"
+            "- concepts = high-signal study spine nodes, not trivia; return concise strings only with no numbering or bullets\n"
+            "- terminology = key terms for the selected material; each entry should use 'Term :: concise material-grounded definition'\n"
+            "- root_explanation = a real hierarchical map, not prose; prefer a fenced ```mermaid``` flowchart or mindmap block, otherwise return an ASCII tree in a fenced text block\n"
+            "- gaps = unresolved ambiguities or missing support in the material; return concise strings only with no numbering or bullets\n"
+            "- learning_objectives = instructor-aligned or material-grounded objectives for this slice; keep titles concise and source-grounded\n"
+            "- keep all outputs readable in a study workspace with headings, paragraphs, and visible structure where applicable\n\n"
             f"Material content:\n{content_excerpt}"
         )
         result = call_llm(system_prompt=system_prompt, user_prompt=user_prompt, timeout=60)

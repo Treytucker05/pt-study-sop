@@ -3,6 +3,13 @@ import type { TutorPrimingSourceInventoryItem } from "@/api.types";
 import type { TutorArtifact } from "@/components/TutorArtifacts";
 import type { TutorShellMode, TutorBoardScope } from "@/lib/api";
 
+export type PrimeArtifactFormatKey = "objectives" | "spine" | "map" | "summary" | "terms";
+
+const MARKDOWN_LIST_PREFIX_RE = /^((?:[-*+])|(?:\d+[\.\)]))\s+/;
+const MARKDOWN_HEADING_RE = /^#{1,6}\s+/;
+const MERMAID_BLOCK_RE = /```mermaid\s*\n([\s\S]*?)```/i;
+const CODE_BLOCK_RE = /^```/;
+
 // ─── Query-string helpers ───
 
 export type TutorPageMode = TutorShellMode | "dashboard";
@@ -183,6 +190,9 @@ export function parseLinesToRecords(value: string, key: string): Record<string, 
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean)
+    .filter((line) => !MARKDOWN_HEADING_RE.test(line) && !CODE_BLOCK_RE.test(line))
+    .map((line) => line.replace(MARKDOWN_LIST_PREFIX_RE, "").trim())
+    .filter(Boolean)
     .map((line) => ({ [key]: line }));
 }
 
@@ -217,7 +227,8 @@ export function formatSourceBlockText(
       const value = record?.[valueKey];
       const text = typeof value === "string" ? value.trim() : "";
       if (!text) return "";
-      return `[${record.title}]\n${text}`;
+      const title = String(record.title || "Source").trim() || "Source";
+      return `### ${title}\n\n${text}`;
     })
     .filter(Boolean)
     .join("\n\n");
@@ -234,6 +245,119 @@ export function formatSourceLineText(
     })
     .filter(Boolean)
     .join("\n");
+}
+
+function splitCleanLines(value: string): string[] {
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !MARKDOWN_HEADING_RE.test(line) && !CODE_BLOCK_RE.test(line))
+    .map((line) => line.replace(MARKDOWN_LIST_PREFIX_RE, "").trim())
+    .filter(Boolean);
+}
+
+function splitIntoParagraphs(value: string, sentencesPerParagraph = 2): string[] {
+  const trimmed = value.trim();
+  if (!trimmed) return [];
+  const sentences = trimmed
+    .split(/(?<=[.!?])\s+(?=[A-Z0-9])/)
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+  if (sentences.length <= sentencesPerParagraph) return [trimmed];
+  const paragraphs: string[] = [];
+  for (let index = 0; index < sentences.length; index += sentencesPerParagraph) {
+    paragraphs.push(sentences.slice(index, index + sentencesPerParagraph).join(" "));
+  }
+  return paragraphs;
+}
+
+function withHeading(heading: string, body: string): string {
+  const trimmed = body.trim();
+  if (!trimmed) return "";
+  return MARKDOWN_HEADING_RE.test(trimmed) ? trimmed : `## ${heading}\n\n${trimmed}`;
+}
+
+function looksStructuredMarkdown(value: string): boolean {
+  const trimmed = value.trim();
+  return (
+    MARKDOWN_HEADING_RE.test(trimmed) ||
+    MARKDOWN_LIST_PREFIX_RE.test(trimmed) ||
+    CODE_BLOCK_RE.test(trimmed) ||
+    trimmed.includes("\n\n") ||
+    /\|.+\|/.test(trimmed)
+  );
+}
+
+function looksLikeStructuredMap(value: string): boolean {
+  const trimmed = value.trim();
+  return (
+    MERMAID_BLOCK_RE.test(trimmed) ||
+    /(?:->|=>|-->|::)/.test(trimmed) ||
+    /^[|`+\- ].+$/m.test(trimmed) ||
+    /^\s{2,}\S/m.test(trimmed)
+  );
+}
+
+export function extractMermaidBlock(value: string): string | null {
+  const match = value.match(MERMAID_BLOCK_RE);
+  return match ? match[1].trim() : null;
+}
+
+export function formatPrimeArtifactMarkdown(
+  artifact: PrimeArtifactFormatKey,
+  value: string,
+): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  if (artifact === "summary") {
+    if (looksStructuredMarkdown(trimmed)) return withHeading("Summary", trimmed);
+    return withHeading("Summary", splitIntoParagraphs(trimmed).join("\n\n"));
+  }
+
+  if (artifact === "map") {
+    const mermaid = extractMermaidBlock(trimmed);
+    if (mermaid) {
+      return withHeading("Hierarchical Map", `\`\`\`mermaid\n${mermaid}\n\`\`\``);
+    }
+    if (looksLikeStructuredMap(trimmed)) {
+      return withHeading("Hierarchical Map", `\`\`\`text\n${trimmed}\n\`\`\``);
+    }
+    return withHeading("Structure Notes", splitIntoParagraphs(trimmed).join("\n\n"));
+  }
+
+  const lines = splitCleanLines(trimmed);
+  if (lines.length === 0) return "";
+
+  if (artifact === "terms") {
+    return withHeading("Key Terms", lines.map((line) => `- ${line}`).join("\n"));
+  }
+
+  const orderedHeading = artifact === "objectives" ? "Learning Objectives" : "Study Spine";
+  return withHeading(
+    orderedHeading,
+    lines.map((line, index) => `${index + 1}. ${line}`).join("\n"),
+  );
+}
+
+export function formatPrimeArtifactPreviewText(
+  artifact: PrimeArtifactFormatKey,
+  value: string,
+  maxLines = 8,
+): string {
+  const markdown = formatPrimeArtifactMarkdown(artifact, value)
+    .replace(/```mermaid\s*\n?/gi, "MERMAID MAP\n")
+    .replace(/```text\s*\n?/gi, "")
+    .replace(/```/g, "")
+    .trim();
+  if (!markdown) return "";
+  const lines = markdown
+    .split(/\r?\n/)
+    .map((line) => line.trimEnd())
+    .filter(Boolean);
+  if (lines.length <= maxLines) return lines.join("\n");
+  return `${lines.slice(0, maxLines).join("\n")}\n...`;
 }
 
 export function mergePrimingSourceInventory(

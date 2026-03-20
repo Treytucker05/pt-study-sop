@@ -208,10 +208,9 @@ export function useTutorHub({
 
   const derivedVaultFolder = useMemo(
     () =>
-      vaultFolder.trim() ||
-      (courseLabel && selectedObjectiveGroup
+      courseLabel
         ? deriveVaultFolder(courseLabel, selectedObjectiveGroup)
-        : ""),
+        : vaultFolder.trim(),
     [vaultFolder, courseLabel, selectedObjectiveGroup],
   );
 

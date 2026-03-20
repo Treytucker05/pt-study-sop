@@ -109,6 +109,10 @@ vi.mock("@/components/brain/UnifiedBrainCanvas", () => ({
   UnifiedBrainCanvas: () => <div data-testid="page-graph-ready">graph ready</div>,
 }));
 
+vi.mock("@/components/brain/ConceptMapStructured", () => ({
+  ConceptMapStructured: () => <div data-testid="structured-map-preview">structured map</div>,
+}));
+
 vi.mock("@/lib/api", () => ({
   api: {
     tutor: {

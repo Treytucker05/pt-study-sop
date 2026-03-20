@@ -1,0 +1,114 @@
+[
+  {
+    "name": "brain",
+    "file": "C:\\Users\\treyt\\Downloads\\buttons_for_dashboard_split\\brain.png",
+    "sheet_bounds": [
+      16,
+      118,
+      514,
+      383
+    ],
+    "size": [
+      498,
+      265
+    ]
+  },
+  {
+    "name": "scholar",
+    "file": "C:\\Users\\treyt\\Downloads\\buttons_for_dashboard_split\\scholar.png",
+    "sheet_bounds": [
+      509,
+      118,
+      1024,
+      401
+    ],
+    "size": [
+      515,
+      283
+    ]
+  },
+  {
+    "name": "tutor",
+    "file": "C:\\Users\\treyt\\Downloads\\buttons_for_dashboard_split\\tutor.png",
+    "sheet_bounds": [
+      998,
+      106,
+      1520,
+      367
+    ],
+    "size": [
+      522,
+      261
+    ]
+  },
+  {
+    "name": "library",
+    "file": "C:\\Users\\treyt\\Downloads\\buttons_for_dashboard_split\\library.png",
+    "sheet_bounds": [
+      205,
+      486,
+      580,
+      696
+    ],
+    "size": [
+      375,
+      210
+    ]
+  },
+  {
+    "name": "mastery",
+    "file": "C:\\Users\\treyt\\Downloads\\buttons_for_dashboard_split\\mastery.png",
+    "sheet_bounds": [
+      557,
+      486,
+      969,
+      700
+    ],
+    "size": [
+      412,
+      214
+    ]
+  },
+  {
+    "name": "calendar",
+    "file": "C:\\Users\\treyt\\Downloads\\buttons_for_dashboard_split\\calendar.png",
+    "sheet_bounds": [
+      947,
+      487,
+      1329,
+      700
+    ],
+    "size": [
+      382,
+      213
+    ]
+  },
+  {
+    "name": "methods",
+    "file": "C:\\Users\\treyt\\Downloads\\buttons_for_dashboard_split\\methods.png",
+    "sheet_bounds": [
+      377,
+      731,
+      766,
+      943
+    ],
+    "size": [
+      389,
+      212
+    ]
+  },
+  {
+    "name": "vault",
+    "file": "C:\\Users\\treyt\\Downloads\\buttons_for_dashboard_split\\vault.png",
+    "sheet_bounds": [
+      760,
+      730,
+      1153,
+      939
+    ],
+    "size": [
+      393,
+      209
+    ]
+  }
+]

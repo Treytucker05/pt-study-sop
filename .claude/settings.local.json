@@ -58,16 +58,17 @@
       "Bash(wmic process where \"name=''python.exe''\" get processid,commandline)",
       "Bash(git check-ignore:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "mcp__Claude_Preview__preview_start"
     ],
     "defaultMode": "bypassPermissions"
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "filesystem",
     "github",
     "memory",
     "codex-cli",
     "stitch"
-  ],
-  "enableAllProjectMcpServers": true
+  ]
 }

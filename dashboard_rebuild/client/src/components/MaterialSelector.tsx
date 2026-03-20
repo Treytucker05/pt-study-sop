@@ -168,14 +168,16 @@ function MaterialSelectorLoadingState({
 
 function MaterialSelectorEmptyState({
   uploadZoneProps,
+  message,
 }: {
   uploadZoneProps: MaterialUploadZoneProps;
+  message?: string;
 }) {
   return (
     <div className="space-y-2">
       <MaterialUploadZone {...uploadZoneProps} />
       <div className={`${TEXT_MUTED} text-center py-2`}>
-        No materials uploaded yet
+        {message || "No materials uploaded yet"}
       </div>
     </div>
   );
@@ -593,7 +595,7 @@ function useMaterialSelectorController({
     queryFn: () => api.tutor.getMaterials(courseId ? { course_id: courseId } : undefined),
   });
 
-  const courseMaterials = materials;
+  const courseMaterials = courseId ? materials : [];
 
   const dupeChecksums = useMemo(() => {
     const counts = new Map<string, number>();
@@ -876,7 +878,7 @@ function useMaterialSelectorController({
   }, [selectedMaterials, setSelectedMaterials]);
 
   const onToggleAll = useCallback(() => {
-    const target = courseId ? courseMaterials : materials;
+    const target = courseMaterials;
     if (selectedMaterials.length === target.length) {
       setSelectedMaterials([]);
       toast.success("Cleared all materials");
@@ -975,7 +977,16 @@ export function MaterialSelector({
   }
 
   if (courseMaterials.length === 0) {
-    return <MaterialSelectorEmptyState uploadZoneProps={uploadZoneProps} />;
+    return (
+      <MaterialSelectorEmptyState
+        uploadZoneProps={uploadZoneProps}
+        message={
+          courseId
+            ? "No materials linked to this class yet"
+            : "Select a class to load scoped materials, or upload new ones here"
+        }
+      />
+    );
   }
 
   return (

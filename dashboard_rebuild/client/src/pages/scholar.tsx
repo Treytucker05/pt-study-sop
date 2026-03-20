@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 import { CoreWorkspaceFrame } from "@/components/CoreWorkspaceFrame";
-import Layout from "@/components/layout";
+
 import { PageScaffold } from "@/components/PageScaffold";
 import { ScholarRunStatus } from "@/components/ScholarRunStatus";
 import {
@@ -951,7 +951,6 @@ export default function ScholarPage() {
   );
 
   return (
-    <Layout>
       <PageScaffold
         eyebrow="System Research Console"
         title="Scholar"
@@ -1008,6 +1007,5 @@ export default function ScholarPage() {
           </CoreWorkspaceFrame>
         </Tabs>
       </PageScaffold>
-    </Layout>
   );
 }

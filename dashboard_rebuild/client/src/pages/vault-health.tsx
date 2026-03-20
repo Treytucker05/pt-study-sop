@@ -14,7 +14,7 @@ import {
   Wrench,
   Zap,
 } from "lucide-react";
-import Layout from "@/components/layout";
+
 import { PageScaffold } from "@/components/PageScaffold";
 import { SupportWorkspaceFrame } from "@/components/SupportWorkspaceFrame";
 import { api } from "@/lib/api";
@@ -1143,7 +1143,6 @@ export default function VaultHealth() {
   );
 
   return (
-    <Layout>
       <PageScaffold
         eyebrow="Brain Support System"
         title="Vault Health"
@@ -1183,6 +1182,5 @@ export default function VaultHealth() {
           />
         </SupportWorkspaceFrame>
       </PageScaffold>
-    </Layout>
   );
 }

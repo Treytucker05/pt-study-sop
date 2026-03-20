@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Lock, Unlock, Trophy, ChevronDown, ChevronRight, AlertTriangle, ArrowRight } from "lucide-react";
-import Layout from "@/components/layout";
+
 import { PageScaffold } from "@/components/PageScaffold";
 import { SupportWorkspaceFrame } from "@/components/SupportWorkspaceFrame";
 import { api } from "@/lib/api";
@@ -201,7 +201,6 @@ export default function MasteryPage() {
   };
 
   return (
-    <Layout>
       <PageScaffold
         eyebrow="Brain Support System"
         title="Mastery"
@@ -329,6 +328,5 @@ export default function MasteryPage() {
           )}
         </SupportWorkspaceFrame>
       </PageScaffold>
-    </Layout>
   );
 }
