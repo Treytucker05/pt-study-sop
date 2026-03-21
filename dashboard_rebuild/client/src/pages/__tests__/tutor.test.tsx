@@ -10,6 +10,7 @@ const {
   getHubMock,
   configCheckMock,
   getContentSourcesMock,
+  getTemplateChainsMock,
   preflightSessionMock,
   getLearningObjectivesByCourseMock,
   getCurrentCourseMock,
@@ -31,6 +32,7 @@ const {
   getHubMock: vi.fn(),
   configCheckMock: vi.fn(),
   getContentSourcesMock: vi.fn(),
+  getTemplateChainsMock: vi.fn(),
   preflightSessionMock: vi.fn(),
   getLearningObjectivesByCourseMock: vi.fn(),
   getCurrentCourseMock: vi.fn(),
@@ -245,8 +247,9 @@ vi.mock("@/lib/api", () => ({
       listSessions: listSessionsMock,
       getHub: getHubMock,
       configCheck: configCheckMock,
-      getContentSources: getContentSourcesMock,
-      preflightSession: preflightSessionMock,
+        getContentSources: getContentSourcesMock,
+        getTemplateChains: getTemplateChainsMock,
+        preflightSession: preflightSessionMock,
       getSession: getSessionMock,
       getSettings: vi.fn().mockResolvedValue({ custom_instructions: "" }),
       saveSettings: vi.fn().mockResolvedValue({ custom_instructions: "" }),
@@ -448,6 +451,7 @@ describe("Tutor page restore", () => {
     getHubMock.mockResolvedValue(makeTutorHub());
     configCheckMock.mockResolvedValue({ ok: true });
     getContentSourcesMock.mockResolvedValue({ courses: [] });
+    getTemplateChainsMock.mockResolvedValue([]);
     preflightSessionMock.mockResolvedValue({
       ok: true,
       preflight_id: "preflight-test",

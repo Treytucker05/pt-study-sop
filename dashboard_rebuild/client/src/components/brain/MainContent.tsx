@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { House, BrainCircuit } from "lucide-react";
-import { BrainHome } from "./BrainHome";
+import { ContractBrainHome } from "./ContractBrainHome";
 import { LearnerProfilePanel } from "./LearnerProfilePanel";
 import { ErrorBoundary, TabErrorFallback } from "@/components/ErrorBoundary";
 import {
@@ -168,7 +168,7 @@ export function MainContent({ workspace }: MainContentProps) {
                 />
               }
             >
-              <BrainHome workspace={workspace} />
+              <ContractBrainHome workspace={workspace} />
             </ErrorBoundary>
           </div>
         )}

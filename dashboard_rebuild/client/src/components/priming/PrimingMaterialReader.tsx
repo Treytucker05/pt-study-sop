@@ -1,6 +1,5 @@
 import { type ReactElement, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Sparkles } from "lucide-react";
 import { api } from "@/api";
 import type { Material, MaterialContent } from "@/api.types";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -8,7 +7,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 interface PrimingMaterialReaderProps {
   courseId: number | undefined;
   selectedMaterials: number[];
-  onExtractMaterial?: (materialId: number) => void;
 }
 
 const FILE_TYPE_COLORS: Record<string, string> = {
@@ -31,7 +29,6 @@ function truncate(text: string | null, max: number): string {
 export function PrimingMaterialReader({
   courseId,
   selectedMaterials,
-  onExtractMaterial,
 }: PrimingMaterialReaderProps): ReactElement {
   const [activeId, setActiveId] = useState<number | null>(null);
 
@@ -91,26 +88,6 @@ export function PrimingMaterialReader({
               <span className={`rounded px-1 py-0.5 text-[10px] font-bold ${badgeColor}`}>
                 {typeBadge(m.file_type)}
               </span>
-              {onExtractMaterial && (
-                <span
-                  role="button"
-                  tabIndex={0}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onExtractMaterial(m.id);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.stopPropagation();
-                      onExtractMaterial(m.id);
-                    }
-                  }}
-                  className="ml-0.5 rounded p-0.5 hover:bg-primary/20"
-                  title="Extract material"
-                >
-                  <Sparkles className="h-3 w-3" />
-                </span>
-              )}
             </button>
           );
         })}

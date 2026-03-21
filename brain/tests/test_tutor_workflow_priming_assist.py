@@ -120,12 +120,17 @@ def test_priming_assist_returns_source_linked_outputs(client, mock_llm):
     mock_llm.set_response(
         json.dumps(
             {
-                "summary": "Brainstem nuclei are organized by modality and pathway.",
-                "concepts": ["cranial nerve nuclei", "functional columns"],
-                "terminology": ["somatic motor", "visceral sensory"],
-                "root_explanation": "Columns help explain how nuclei align across the brainstem.",
-                "gaps": ["Need a cleaner map of modalities by level."],
-                "learning_objectives": [{"title": "Map cranial nerve nuclei by column", "lo_code": "LO-9A"}],
+                "method_outputs": {
+                    "M-PRE-013": {
+                        "summary": "Brainstem nuclei are organized by modality and pathway.",
+                        "major_sections": ["cranial nerve nuclei", "functional columns"],
+                    },
+                    "M-PRE-005": {
+                        "concepts": ["cranial nerve nuclei", "functional columns"],
+                        "map": "graph TD\nROOT[Brainstem] --> COLS[Functional columns]",
+                        "follow_up_targets": ["Need a cleaner map of modalities by level."],
+                    },
+                }
             }
         )
     )
@@ -136,8 +141,7 @@ def test_priming_assist_returns_source_linked_outputs(client, mock_llm):
             "material_ids": [11, 22],
             "study_unit": "Week 9",
             "topic": "Brainstem",
-            "priming_method": "summary_first",
-            "priming_chain_id": "ingest_objectives_concepts_summary_gaps",
+            "priming_methods": ["summary_first", "concept_mapping"],
         },
     )
 
@@ -151,23 +155,249 @@ def test_priming_assist_returns_source_linked_outputs(client, mock_llm):
     assert {item["content_type"] for item in source_inventory} == {"pdf", "txt"}
 
     for item in source_inventory:
+        assert [run["method_id"] for run in item["method_outputs"]] == ["M-PRE-013", "M-PRE-005"]
         priming_output = item["priming_output"]
         assert priming_output["material_id"] == item["id"]
         assert priming_output["title"] == item["title"]
         assert priming_output["source_path"] == item["source_path"]
         assert priming_output["summary"] == "Brainstem nuclei are organized by modality and pathway."
         assert priming_output["concepts"] == ["cranial nerve nuclei", "functional columns"]
-        assert priming_output["terminology"] == ["somatic motor", "visceral sensory"]
+        assert priming_output["root_explanation"] == "graph TD\nROOT[Brainstem] --> COLS[Functional columns]"
+        assert priming_output["terminology"] == []
         assert priming_output["gaps"] == ["Need a cleaner map of modalities by level."]
-        assert priming_output["learning_objectives"] == [
-            {"title": "Map cranial nerve nuclei by column", "lo_code": "LO-9A"}
-        ]
+        assert priming_output["learning_objectives"] == []
 
     aggregate = body["aggregate"]
+    assert [run["method_id"] for run in body["priming_method_runs"]] == ["M-PRE-013", "M-PRE-005"]
     assert len(aggregate["summaries"]) == 2
     assert len(aggregate["concepts"]) == 4
-    assert len(aggregate["terminology"]) == 4
+    assert len(aggregate["terminology"]) == 0
     assert len(aggregate["root_explanations"]) == 2
     assert len(aggregate["identified_gaps"]) == 2
-    assert len(aggregate["learning_objectives"]) == 2
+    assert len(aggregate["learning_objectives"]) == 0
     assert {item["material_id"] for item in aggregate["summaries"]} == {11, 22}
+    assert "Selected Priming methods: M-PRE-013 (Big-Picture Orientation Summary), M-PRE-005 (Skeleton Concept Hierarchy)" in mock_llm.last_args["user_prompt"]
+    assert "Priming chain:" not in mock_llm.last_args["user_prompt"]
+    assert "Selected method logic:" in mock_llm.last_args["user_prompt"]
+    assert "Coverage mode: full material coverage" in mock_llm.last_args["user_prompt"]
+
+
+def test_priming_assist_merges_new_method_outputs_into_existing_inventory(client, mock_llm):
+    course_id = 902
+    _insert_course(course_id, "Neuro")
+    _insert_material(
+        33,
+        course_id=course_id,
+        title="Week 9 Notes",
+        source_path="/tmp/week9-notes.txt",
+        file_type="txt",
+        content="Basal ganglia circuits regulate movement scaling and suppression.",
+    )
+
+    workflow_response = client.post(
+        "/api/tutor/workflows",
+        json={
+            "course_id": course_id,
+            "study_unit": "Week 9",
+            "topic": "Basal ganglia",
+            "current_stage": "priming",
+            "status": "priming_in_progress",
+        },
+    )
+    assert workflow_response.status_code == 200
+    workflow_id = workflow_response.get_json()["workflow"]["workflow_id"]
+
+    mock_llm.set_response(
+        json.dumps(
+            {
+                "method_outputs": {
+                    "M-PRE-013": {
+                        "summary": "Basal ganglia set movement selection context.",
+                        "major_sections": ["selection", "suppression"],
+                    }
+                }
+            }
+        )
+    )
+
+    response = client.post(
+        f"/api/tutor/workflows/{workflow_id}/priming-assist",
+        json={
+            "material_ids": [33],
+            "study_unit": "Week 9",
+            "topic": "Basal ganglia",
+            "priming_methods": ["M-PRE-013"],
+            "source_inventory": [
+                {
+                    "id": 33,
+                    "title": "Week 9 Notes",
+                    "source_path": "/tmp/week9-notes.txt",
+                    "method_outputs": [
+                        {
+                            "method_id": "M-PRE-010",
+                            "method_name": "Learning Objectives Primer",
+                            "output_family": "learning_objectives",
+                            "outputs": {
+                                "learning_objectives": [
+                                    {"lo_code": "LO-1", "title": "Explain direct vs indirect pathway roles"}
+                                ]
+                            },
+                            "source_ids": [33],
+                            "status": "complete",
+                            "updated_at": "2026-03-20T10:00:00Z",
+                        }
+                    ],
+                }
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body.get("failures") in (None, [])
+    item = body["source_inventory"][0]
+    assert [run["method_id"] for run in item["method_outputs"]] == ["M-PRE-010", "M-PRE-013"]
+    assert {run["method_id"] for run in body["priming_method_runs"]} == {"M-PRE-010", "M-PRE-013"}
+    assert body["aggregate"]["learning_objectives"] == [
+        {
+            "material_id": 33,
+            "lo_code": "LO-1",
+            "title": "Explain direct vs indirect pathway roles",
+        }
+    ]
+
+
+def test_priming_assist_uses_method_logic_and_existing_outputs_as_prompt_context(client, mock_llm):
+    course_id = 903
+    _insert_course(course_id, "Neuro")
+    _insert_material(
+        44,
+        course_id=course_id,
+        title="Week 10 Objectives",
+        source_path="/tmp/week10-objectives.txt",
+        file_type="txt",
+        content="Objective 1: Explain the vestibulospinal tract. Objective 2: Compare reticulospinal pathways.",
+    )
+
+    workflow_response = client.post(
+        "/api/tutor/workflows",
+        json={
+            "course_id": course_id,
+            "study_unit": "Week 10",
+            "topic": "Descending pathways",
+            "current_stage": "priming",
+            "status": "priming_in_progress",
+        },
+    )
+    assert workflow_response.status_code == 200
+    workflow_id = workflow_response.get_json()["workflow"]["workflow_id"]
+
+    mock_llm.set_response(
+        json.dumps(
+            {
+                "method_outputs": {
+                    "M-PRE-010": {
+                        "learning_objectives": [
+                            {"lo_code": "LO-1", "title": "Explain the vestibulospinal tract"}
+                        ]
+                    }
+                }
+            }
+        )
+    )
+
+    response = client.post(
+        f"/api/tutor/workflows/{workflow_id}/priming-assist",
+        json={
+            "material_ids": [44],
+            "study_unit": "Week 10",
+            "topic": "Descending pathways",
+            "priming_methods": ["M-PRE-010"],
+            "source_inventory": [
+                {
+                    "id": 44,
+                    "title": "Week 10 Objectives",
+                    "source_path": "/tmp/week10-objectives.txt",
+                    "method_outputs": [
+                        {
+                            "method_id": "M-PRE-010",
+                            "method_name": "Learning Objectives Primer",
+                            "output_family": "learning_objectives",
+                            "outputs": {
+                                "learning_objectives": [
+                                    {"lo_code": "LO-1", "title": "Explain the vestibulospinal tract"}
+                                ]
+                            },
+                            "source_ids": [44],
+                            "status": "complete",
+                            "updated_at": "2026-03-20T10:00:00Z",
+                        }
+                    ],
+                }
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    prompt = mock_llm.last_args["user_prompt"]
+    assert "Facilitation logic:" in prompt
+    assert "Objective source precedence:" in prompt
+    assert "Existing outputs already stored for the selected methods on this material:" in prompt
+    assert "Explain the vestibulospinal tract" in prompt
+    assert "prefer stable counts and stable wording across reruns" in prompt
+
+
+def test_priming_assist_uses_full_material_coverage_for_long_content(client, mock_llm):
+    course_id = 904
+    _insert_course(course_id, "Neuro")
+    long_content = ("Vestibular nuclei organize balance signals. " * 900).strip()
+    _insert_material(
+        55,
+        course_id=course_id,
+        title="Long Neuro Packet",
+        source_path="/tmp/long-neuro-packet.txt",
+        file_type="txt",
+        content=long_content,
+    )
+
+    workflow_response = client.post(
+        "/api/tutor/workflows",
+        json={
+            "course_id": course_id,
+            "study_unit": "Week 10",
+            "topic": "Vestibular pathways",
+            "current_stage": "priming",
+            "status": "priming_in_progress",
+        },
+    )
+    assert workflow_response.status_code == 200
+    workflow_id = workflow_response.get_json()["workflow"]["workflow_id"]
+
+    mock_llm.set_response(
+        json.dumps(
+            {
+                "method_outputs": {
+                    "M-PRE-013": {
+                        "summary": "Vestibular nuclei organize balance pathways.",
+                        "major_sections": ["vestibular nuclei", "balance pathways"],
+                    }
+                }
+            }
+        )
+    )
+
+    response = client.post(
+        f"/api/tutor/workflows/{workflow_id}/priming-assist",
+        json={
+            "material_ids": [55],
+            "study_unit": "Week 10",
+            "topic": "Vestibular pathways",
+            "priming_methods": ["M-PRE-013"],
+        },
+    )
+
+    assert response.status_code == 200
+    assert mock_llm.call_count == 5
+    assert "Current chunk: 1/4" in mock_llm.call_history[0]["user_prompt"]
+    assert "Current chunk: 4/4" in mock_llm.call_history[3]["user_prompt"]
+    assert "Chunk count: 4" in mock_llm.call_history[4]["user_prompt"]

@@ -12,6 +12,7 @@ import type {
   TutorSessionWithTurns,
   TutorStrategyFeedback,
   TutorTemplateChain,
+  TutorWorkflowDetailResponse,
 } from "@/lib/api";
 import type { TutorArtifact } from "@/components/TutorArtifacts";
 import type { ChatMessage } from "@/components/TutorChat.types";
@@ -38,7 +39,7 @@ export interface UseTutorSessionParams {
   setRestoredTurns: (turns: { question: string; answer: string | null }[] | undefined) => void;
   hasRestored: boolean;
   activeWorkflowId: string | null;
-  activeWorkflowDetail: { stage_time_logs?: Array<{ stage: string; seconds_active?: number; pause_count?: number }> } | null;
+  activeWorkflowDetail: TutorWorkflowDetailResponse | null;
 }
 
 export function useTutorSession({
@@ -55,6 +56,50 @@ export function useTutorSession({
   activeWorkflowDetail,
 }: UseTutorSessionParams) {
   const queryClient = useQueryClient();
+
+  const workflowPrimingObjectives = useMemo(() => {
+    const rawObjectives = Array.isArray(activeWorkflowDetail?.priming_bundle?.learning_objectives)
+      ? activeWorkflowDetail.priming_bundle.learning_objectives
+      : [];
+    const seen = new Set<string>();
+    return rawObjectives
+      .map((objective) => {
+        if (!objective || typeof objective !== "object") return null;
+        const rawTitle =
+          typeof objective.title === "string"
+            ? objective.title
+            : typeof objective.name === "string"
+              ? objective.name
+              : "";
+        const title = rawTitle.trim();
+        if (!title) return null;
+        const rawLoCode =
+          typeof objective.lo_code === "string"
+            ? objective.lo_code
+            : typeof objective.loCode === "string"
+              ? objective.loCode
+              : "";
+        const loCode = rawLoCode.trim();
+        const key = `${loCode.toLowerCase()}::${title.toLowerCase()}`;
+        if (seen.has(key)) return null;
+        seen.add(key);
+        const payload: {
+          lo_code?: string;
+          title: string;
+          status?: string;
+          group?: string;
+        } = { title };
+        if (loCode) payload.lo_code = loCode;
+        if (typeof objective.status === "string" && objective.status.trim()) {
+          payload.status = objective.status.trim();
+        }
+        if (typeof objective.group === "string" && objective.group.trim()) {
+          payload.group = objective.group.trim();
+        }
+        return payload;
+      })
+      .filter((objective): objective is NonNullable<typeof objective> => Boolean(objective));
+  }, [activeWorkflowDetail?.priming_bundle?.learning_objectives]);
 
   // ─── Session runtime state ───
   const [currentBlockIndex, setCurrentBlockIndex] = useState(0);
@@ -88,6 +133,17 @@ export function useTutorSession({
   // ─── Preflight ───
   const preflightPayload = useMemo(() => {
     if (typeof hub.courseId !== "number") return null;
+    const learningObjectives =
+      hub.scopedObjectives.length > 0
+        ? hub.scopedObjectives.map((objective) => ({
+            ...(objective.loCode ? { lo_code: objective.loCode } : {}),
+            title: objective.title,
+            status: objective.status,
+            group: objective.groupName || undefined,
+          }))
+        : workflowPrimingObjectives.length > 0
+          ? workflowPrimingObjectives
+          : undefined;
     return {
       course_id: hub.courseId,
       topic: hub.effectiveTopic || undefined,
@@ -95,15 +151,7 @@ export function useTutorSession({
       module_name: hub.selectedObjectiveGroup || undefined,
       objective_scope: hub.objectiveScope,
       focus_objective_id: hub.selectedObjectiveId || undefined,
-      learning_objectives:
-        hub.scopedObjectives.length > 0
-          ? hub.scopedObjectives.map((objective) => ({
-              ...(objective.loCode ? { lo_code: objective.loCode } : {}),
-              title: objective.title,
-              status: objective.status,
-              group: objective.groupName || undefined,
-            }))
-          : undefined,
+      learning_objectives: learningObjectives,
       content_filter: {
         ...(hub.selectedPaths.length > 0 ? { folders: hub.selectedPaths } : {}),
         material_ids: hub.selectedMaterials,
@@ -125,6 +173,7 @@ export function useTutorSession({
     hub.selectedObjectiveGroup,
     hub.selectedObjectiveId,
     hub.selectedPaths,
+    workflowPrimingObjectives,
   ]);
 
   const {
@@ -140,10 +189,16 @@ export function useTutorSession({
     enabled:
       shellMode === "dashboard" &&
       !!preflightPayload &&
-      hub.selectedMaterials.length > 0 &&
-      !!hub.selectedObjectiveGroup,
+      hub.selectedMaterials.length > 0,
     staleTime: 30 * 1000,
   });
+
+  const preflightErrorMessage =
+    preflightError instanceof Error
+      ? preflightError.message
+      : preflightError
+        ? String(preflightError)
+        : null;
 
   // ─── Config check ───
   const { data: configStatus } = useQuery<TutorConfigCheck>({
@@ -770,7 +825,7 @@ export function useTutorSession({
     // Preflight
     preflight,
     preflightLoading,
-    preflightError,
+    preflightError: preflightErrorMessage,
     preflightPayload,
     configStatus,
 

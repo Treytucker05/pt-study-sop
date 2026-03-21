@@ -10,6 +10,7 @@ const {
   getHubMock,
   configCheckMock,
   getContentSourcesMock,
+  getTemplateChainsMock,
   preflightSessionMock,
   getLearningObjectivesByCourseMock,
   getCurrentCourseMock,
@@ -29,6 +30,7 @@ const {
   getHubMock: vi.fn(),
   configCheckMock: vi.fn(),
   getContentSourcesMock: vi.fn(),
+  getTemplateChainsMock: vi.fn(),
   preflightSessionMock: vi.fn(),
   getLearningObjectivesByCourseMock: vi.fn(),
   getCurrentCourseMock: vi.fn(),
@@ -121,6 +123,7 @@ vi.mock("@/lib/api", () => ({
       getHub: getHubMock,
       configCheck: configCheckMock,
       getContentSources: getContentSourcesMock,
+      getTemplateChains: getTemplateChainsMock,
       preflightSession: preflightSessionMock,
       getSession: getSessionMock,
       getProjectShell: getProjectShellMock,
@@ -201,7 +204,48 @@ function makeTutorHub() {
     upcoming_assignments: [],
     upcoming_tests: [],
     class_projects: [],
-    study_wheel: null,
+    study_wheel: {
+      current_course_name: "Course 1",
+      current_position: 1,
+      total_sessions: 0,
+      total_minutes: 0,
+    },
+  };
+}
+
+function makeActiveSession(sessionId = "sess-active", courseId = 1) {
+  return {
+    session_id: sessionId,
+    status: "active",
+    turn_count: 2,
+    started_at: new Date("2026-03-13T12:00:00Z").toISOString(),
+    topic: "Launch leak repro",
+    course_id: courseId,
+    method_chain_id: null,
+    current_block_index: 0,
+    chain_blocks: [],
+    content_filter: {
+      material_ids: [],
+      accuracy_profile: "strict",
+      objective_scope: "module_all",
+    },
+    scholar_strategy: {
+      summary: "Keep retrieval tight and mechanism-first.",
+      profileSnapshotId: "profile-1",
+      hybridArchetype: {
+        label: "Precision Builder",
+      },
+      boundedBy: {
+        note: "Bound to the active tutor session only.",
+        allowedFields: ["pace"],
+        forbiddenFields: ["launch"],
+      },
+      fields: {},
+      activeInvestigation: null,
+    },
+    strategy_feedback: null,
+    artifacts_json: "[]",
+    turns: [],
   };
 }
 
@@ -227,6 +271,7 @@ describe("Tutor studio route integration", () => {
     getHubMock.mockResolvedValue(makeTutorHub());
     configCheckMock.mockResolvedValue({ ok: true });
     getContentSourcesMock.mockResolvedValue({ courses: [] });
+    getTemplateChainsMock.mockResolvedValue([]);
     preflightSessionMock.mockResolvedValue({
       ok: true,
       preflight_id: "preflight-test",
@@ -280,5 +325,25 @@ describe("Tutor studio route integration", () => {
     expect(screen.getByRole("button", { name: /open dashboard/i })).toBeInTheDocument();
     expect(screen.queryByTestId("sidebar-rail")).not.toBeInTheDocument();
     expect(screen.queryByTestId("brain-tool-profile")).not.toBeInTheDocument();
+  });
+
+  it("hides Scholar Strategy when navigating back to Launch from an active tutor session", async () => {
+    localStorage.setItem("tutor.active_session.v1", "sess-active");
+    getSessionMock.mockResolvedValue(makeActiveSession());
+
+    renderTutor();
+
+    expect(
+      await screen.findByRole("button", { name: /scholar strategy/i }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: /^launch$/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("button", { name: /scholar strategy/i }),
+      ).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole("button", { name: /start new/i })).toBeInTheDocument();
   });
 });

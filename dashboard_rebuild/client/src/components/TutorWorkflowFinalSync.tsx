@@ -223,6 +223,7 @@ function buildBrainIndexPayload(
     course_name: workflow?.course_name || null,
     assignment_title: workflow?.assignment_title || null,
     study_unit: workflow?.study_unit || null,
+    priming_methods: primingBundle?.priming_methods || [],
     priming_method: primingBundle?.priming_method || null,
     priming_chain_id: primingBundle?.priming_chain_id || null,
     note_counts: {
@@ -610,7 +611,7 @@ export function TutorWorkflowFinalSync({
               </div>
               <div className="flex items-center gap-2">
                 <BookMarked className="h-3.5 w-3.5 text-primary" />
-                Priming method + chain usage will be carried into the Brain payload.
+                Priming method usage will be carried into the Brain payload.
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-3.5 w-3.5 text-primary" />

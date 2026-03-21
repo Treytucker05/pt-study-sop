@@ -10,6 +10,7 @@ interface MethodBlockCardProps {
   draggable?: boolean;
   onDragStart?: (e: React.DragEvent) => void;
   showLegacyCategory?: boolean;
+  hideHeader?: boolean;
 }
 
 export default function MethodBlockCard({
@@ -19,6 +20,7 @@ export default function MethodBlockCard({
   draggable,
   onDragStart,
   showLegacyCategory,
+  hideHeader,
 }: MethodBlockCardProps) {
   const stageColors = CONTROL_PLANE_COLORS[getMethodStageColorKey(block)] || CONTROL_PLANE_DEFAULT;
   const colorClass = stageColors.border;
@@ -32,18 +34,35 @@ export default function MethodBlockCard({
     return (
       <Wrapper
         {...(isInteractive ? { type: "button" as const, onClick } : {})}
-        className={`border-2 ${colorClass} p-2 rounded-none transition-opacity ${isInteractive ? "w-full cursor-pointer text-left hover:opacity-80" : ""}`}
+        className={`${hideHeader ? "" : `border-2 ${colorClass}`} p-2 rounded-none transition-opacity ${isInteractive ? "w-full cursor-pointer text-left hover:opacity-80" : ""}`}
         draggable={draggable}
         onDragStart={onDragStart}
       >
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-terminal text-base truncate">{block.name}</span>
-          <span className={`text-xs font-arcade px-1 py-0.5 rounded-none ${badgeClass}`}>
-            {stageLabel}
-          </span>
-        </div>
+        {!hideHeader && (
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-terminal text-base truncate">{block.name}</span>
+            <span className={`text-xs font-arcade px-1 py-0.5 rounded-none ${badgeClass}`}>
+              {stageLabel}
+            </span>
+          </div>
+        )}
         {showLegacyCategory && (
           <div className="text-[10px] font-terminal text-muted-foreground/70">legacy: {block.category}</div>
+        )}
+        {hideHeader && block.description && (
+          <p className="font-terminal text-xs text-muted-foreground line-clamp-2">{block.description}</p>
+        )}
+        {hideHeader && (
+          <div className="flex items-center gap-3 text-xs text-muted-foreground font-terminal mt-1">
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {block.default_duration_min}m
+            </span>
+            <span className={`flex items-center gap-1 ${energyClass}`}>
+              <Zap className="w-3 h-3" />
+              {block.energy_cost}
+            </span>
+          </div>
         )}
       </Wrapper>
     );

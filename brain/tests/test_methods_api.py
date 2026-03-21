@@ -94,6 +94,26 @@ class TestMethodBlocks:
         assert isinstance(knob, dict)
         assert "fallback" in knob
 
+    def test_prime_methods_include_yaml_metadata_for_priming_page(self, client):
+        resp = client.get("/api/methods?control_stage=PRIME")
+        assert resp.status_code == 200
+        methods = resp.get_json()
+        target = next(
+            (
+                method
+                for method in methods
+                if method.get("method_id") in {"M-PRE-005", "M-PRE-010", "M-PRE-013"}
+                and method.get("outputs_summary")
+            ),
+            None,
+        )
+        assert target is not None
+        assert isinstance(target.get("outputs_summary"), str) and target["outputs_summary"]
+        assert isinstance(target.get("required_outputs"), list)
+        assert isinstance(target.get("when_to_use"), list) and target["when_to_use"]
+        assert isinstance(target.get("when_not_to_use"), list)
+        assert isinstance(target.get("mechanisms"), list)
+
     def test_create_method(self, client):
         resp = client.post(
             "/api/methods",

@@ -641,17 +641,24 @@ function useTutorPageController() {
       activeWorkflowId={workflow.activeWorkflowId}
       activeWorkflowDetail={workflow.activeWorkflowDetail}
       workflowView={workflow.workflowView}
+      hasPolishBundle={Boolean(workflow.activeWorkflowDetail?.polish_bundle)}
       teachRuntime={teachRuntime}
       onStepperStageClick={(stage) => {
         setStudioEntryRequest(null);
         setScheduleLaunchIntent(null);
-        if (stage === "tutor") {
+        if (stage === "launch") {
+          setShellMode("dashboard");
+          workflow.setWorkflowView("launch");
+        } else if (stage === "priming") {
+          setShellMode("dashboard");
+          workflow.setWorkflowView("priming");
+        } else if (stage === "tutor") {
           setShellMode("tutor");
         } else if (stage === "polish") {
           void workflow.openWorkflowPolish();
         } else {
           setShellMode("dashboard");
-          workflow.setWorkflowView(stage as "priming" | "final_sync");
+          workflow.setWorkflowView("final_sync");
         }
       }}
       activeSessionId={activeSessionId}
@@ -661,7 +668,6 @@ function useTutorPageController() {
       onSetWorkflowView={workflow.setWorkflowView}
       onSetShowArtifacts={sessionWithWorkflow.setShowArtifacts}
       onSetShowEndConfirm={sessionWithWorkflow.setShowEndConfirm}
-      onOpenWorkflowPolish={() => void workflow.openWorkflowPolish()}
       onOpenSettings={openSettings}
       onSetStudioEntryRequest={setStudioEntryRequest}
       onSetScheduleLaunchIntent={setScheduleLaunchIntent}

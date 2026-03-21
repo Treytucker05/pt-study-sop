@@ -22,5 +22,6 @@ if ([System.Windows.Forms.Clipboard]::ContainsImage()) {
     Start-Sleep -Milliseconds 250 
     
     # Send the keystrokes to type the path into the active window
-    [System.Windows.Forms.SendKeys]::SendWait("@$path")
+    $escapedPath = $path -replace '([+^%~()[\]{}])', '{$1}'
+    [System.Windows.Forms.SendKeys]::SendWait("@""$escapedPath""")
 }

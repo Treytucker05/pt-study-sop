@@ -56,6 +56,7 @@ export interface TutorTopBarProps {
   activeWorkflowId: string | null;
   activeWorkflowDetail: TutorWorkflowDetailResponse | undefined;
   workflowView: TutorWorkflowView;
+  hasPolishBundle: boolean;
   onStepperStageClick: (stage: string) => void;
   activeSessionId: string | null;
   showArtifacts: boolean;
@@ -65,7 +66,6 @@ export interface TutorTopBarProps {
   onSetWorkflowView: (view: TutorWorkflowView) => void;
   onSetShowArtifacts: (show: boolean) => void;
   onSetShowEndConfirm: (show: boolean) => void;
-  onOpenWorkflowPolish: () => void;
   onOpenSettings: () => void;
   onSetStudioEntryRequest: (req: null) => void;
   onSetScheduleLaunchIntent: (intent: null) => void;
@@ -136,6 +136,7 @@ export function TutorTopBar({
   activeWorkflowId,
   activeWorkflowDetail,
   workflowView,
+  hasPolishBundle,
   onStepperStageClick,
   activeSessionId,
   showArtifacts,
@@ -145,7 +146,6 @@ export function TutorTopBar({
   onSetWorkflowView,
   onSetShowArtifacts,
   onSetShowEndConfirm,
-  onOpenWorkflowPolish,
   onOpenSettings,
   onSetStudioEntryRequest,
   onSetScheduleLaunchIntent,
@@ -178,6 +178,33 @@ export function TutorTopBar({
           ) : null}
         </div>
       ) : null}
+
+      <div className="space-y-3 border border-primary/15 bg-black/25 p-3">
+        <TutorWorkflowStepper
+          activeWorkflowId={activeWorkflowId}
+          currentStage={activeWorkflowDetail?.workflow?.status ?? null}
+          shellMode={shellMode}
+          workflowView={workflowView}
+          hasActiveSession={Boolean(activeSessionId)}
+          hasPolishBundle={hasPolishBundle}
+          onStageClick={onStepperStageClick}
+        />
+
+        <TutorTabBar
+          shellMode={shellMode}
+          workflowView={workflowView}
+          activeSessionId={activeSessionId}
+          showArtifacts={showArtifacts}
+          artifacts={artifacts}
+          onSetShellMode={onSetShellMode}
+          onSetWorkflowView={onSetWorkflowView}
+          onSetShowArtifacts={onSetShowArtifacts}
+          onSetShowEndConfirm={onSetShowEndConfirm}
+          onOpenSettings={onOpenSettings}
+          onSetStudioEntryRequest={onSetStudioEntryRequest}
+          onSetScheduleLaunchIntent={onSetScheduleLaunchIntent}
+        />
+      </div>
 
       {isTutorSessionView ? (
         <div className="space-y-3">
@@ -397,30 +424,6 @@ export function TutorTopBar({
           ) : null}
         </div>
       ) : null}
-
-      <TutorWorkflowStepper
-        activeWorkflowId={activeWorkflowId}
-        currentStage={activeWorkflowDetail?.workflow?.status ?? null}
-        onStageClick={onStepperStageClick}
-      />
-
-      <TutorTabBar
-        shellMode={shellMode}
-        workflowView={workflowView}
-        activeWorkflowId={activeWorkflowId}
-        activeWorkflowDetail={activeWorkflowDetail}
-        activeSessionId={activeSessionId}
-        showArtifacts={showArtifacts}
-        artifacts={artifacts}
-        onSetShellMode={onSetShellMode}
-        onSetWorkflowView={onSetWorkflowView}
-        onSetShowArtifacts={onSetShowArtifacts}
-        onSetShowEndConfirm={onSetShowEndConfirm}
-        onOpenWorkflowPolish={onOpenWorkflowPolish}
-        onOpenSettings={onOpenSettings}
-        onSetStudioEntryRequest={onSetStudioEntryRequest}
-        onSetScheduleLaunchIntent={onSetScheduleLaunchIntent}
-      />
     </div>
   );
 }

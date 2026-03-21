@@ -9,6 +9,7 @@ import re
 import sqlite3
 import uuid
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any
 
 from flask import jsonify, request
@@ -33,6 +34,50 @@ VALID_WORKFLOW_STATUSES = {
 VALID_NOTE_MODES = {"exact", "editable"}
 VALID_FEEDBACK_SENTIMENTS = {"liked", "disliked"}
 _UNSET = object()
+_ROOT = Path(__file__).resolve().parents[2]
+_METHODS_DIR = _ROOT / "sop" / "library" / "methods"
+_PRIME_METHODS_CACHE: dict[str, Any] = {"stamp": None, "cards": {}}
+
+PRIME_LEGACY_METHOD_MAP = {
+    "summary_first": "M-PRE-013",
+    "learning_objectives": "M-PRE-010",
+    "concept_mapping": "M-PRE-005",
+    "weak_point_surfacing": "M-PRE-014",
+    "terminology_extraction": "M-PRE-012",
+}
+PRIME_TEACH_REDIRECT_SLUGS = {"root_understanding"}
+DEFAULT_PRIMING_METHOD_IDS = ["M-PRE-010", "M-PRE-008"]
+PRIMING_CONTENT_CHUNK_CHARS = 12000
+PRIMING_CONTENT_CHUNK_OVERLAP = 1000
+PRIME_OBJECTIVE_METHOD_IDS = {"M-PRE-010"}
+PRIME_STRUCTURAL_METHOD_IDS = {"M-PRE-004", "M-PRE-005", "M-PRE-006", "M-PRE-008", "M-PRE-009"}
+PRIME_HAND_DRAW_METHOD_IDS = {"M-PRE-011"}
+PRIME_METHOD_OUTPUT_FAMILY = {
+    "M-PRE-002": "prequestions",
+    "M-PRE-004": "structural_overview",
+    "M-PRE-005": "structural_overview",
+    "M-PRE-006": "structural_overview",
+    "M-PRE-008": "structural_overview",
+    "M-PRE-009": "structural_overview",
+    "M-PRE-010": "objectives",
+    "M-PRE-011": "hand_draw_map",
+    "M-PRE-012": "terminology",
+    "M-PRE-013": "orientation_summary",
+    "M-PRE-014": "ambiguity_scan",
+}
+PRIME_METHOD_OUTPUT_KEYS = {
+    "M-PRE-002": {"questions"},
+    "M-PRE-004": {"concepts", "map", "follow_up_targets"},
+    "M-PRE-005": {"concepts", "map", "follow_up_targets"},
+    "M-PRE-006": {"concepts", "map", "follow_up_targets"},
+    "M-PRE-008": {"concepts", "map", "follow_up_targets"},
+    "M-PRE-009": {"concepts", "map", "follow_up_targets"},
+    "M-PRE-010": {"learning_objectives"},
+    "M-PRE-011": {"drawing_brief", "branch_points"},
+    "M-PRE-012": {"terminology"},
+    "M-PRE-013": {"summary", "major_sections"},
+    "M-PRE-014": {"gaps", "unsupported_jumps"},
+}
 
 
 def _now_iso() -> str:
@@ -104,23 +149,484 @@ def _normalize_string_list(value: Any) -> list[str]:
     return items
 
 
+def _dedupe_string_list(values: list[str]) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        key = value.strip().lower()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        result.append(value.strip())
+    return result
+
+
+def _normalize_priming_method_id(value: Any) -> str | None:
+    text = _normalize_text(value)
+    if not text:
+        return None
+    upper = text.upper()
+    if upper in PRIME_METHOD_OUTPUT_FAMILY:
+        return upper
+    lower = text.lower()
+    if lower in PRIME_TEACH_REDIRECT_SLUGS:
+        return None
+    return PRIME_LEGACY_METHOD_MAP.get(lower)
+
+
+def _normalize_priming_methods(value: Any, legacy_value: Any = None) -> list[str]:
+    raw_methods = _normalize_string_list(value)
+    if not raw_methods:
+        legacy = _normalize_text(legacy_value)
+        if legacy:
+            raw_methods = [legacy]
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for method in raw_methods:
+        normalized = _normalize_priming_method_id(method)
+        if not normalized:
+            continue
+        key = normalized.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(normalized)
+    return deduped
+
+
 def _normalize_objective_list(value: Any) -> list[dict[str, Any]]:
     if not isinstance(value, list):
         return []
     items: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
     for item in value:
         if not isinstance(item, dict):
             continue
         title = _normalize_text(item.get("title"))
         if not title:
             continue
+        lo_code = _normalize_text(item.get("lo_code"))
+        key = (title.casefold(), lo_code.casefold())
+        if key in seen:
+            continue
+        seen.add(key)
         items.append(
             {
                 "title": title,
-                "lo_code": _normalize_text(item.get("lo_code")),
+                "lo_code": lo_code,
             }
         )
     return items
+
+
+def _normalize_priming_method_outputs(method_id: str, value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        return {}
+    allowed = PRIME_METHOD_OUTPUT_KEYS.get(method_id) or set()
+    normalized: dict[str, Any] = {}
+    for key in allowed:
+        if key == "learning_objectives":
+            objectives = _normalize_objective_list(value.get(key))
+            if objectives:
+                normalized[key] = objectives
+        elif key in {"concepts", "terminology", "gaps", "unsupported_jumps", "questions", "major_sections", "follow_up_targets", "branch_points"}:
+            items = _dedupe_string_list(_normalize_string_list(value.get(key)))
+            if items:
+                normalized[key] = items
+        else:
+            text = _normalize_text(value.get(key))
+            if text:
+                normalized[key] = text
+    return normalized
+
+
+def _normalize_priming_method_run(value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    method_id = _normalize_priming_method_id(value.get("method_id"))
+    if not method_id:
+        return None
+    outputs = _normalize_priming_method_outputs(method_id, value.get("outputs"))
+    return {
+        "method_id": method_id,
+        "method_name": _normalize_text(value.get("method_name")) or method_id,
+        "output_family": _normalize_text(value.get("output_family")) or PRIME_METHOD_OUTPUT_FAMILY.get(method_id) or "notes",
+        "outputs": outputs,
+        "source_ids": [
+            source_id
+            for source_id in (
+                _normalize_int(item, field_name="priming_method_run.source_ids[]")
+                for item in _normalize_list(value.get("source_ids"), field_name="priming_method_run.source_ids")
+            )
+            if source_id is not None
+        ],
+        "status": _normalize_text(value.get("status")) or "complete",
+        "updated_at": _normalize_text(value.get("updated_at")),
+    }
+
+
+def _normalize_priming_method_runs(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    runs: list[dict[str, Any]] = []
+    seen: set[tuple[str, tuple[int, ...]]] = set()
+    for item in value:
+        normalized = _normalize_priming_method_run(item)
+        if not normalized:
+            continue
+        key = (normalized["method_id"], tuple(normalized.get("source_ids") or ()))
+        if key in seen:
+            continue
+        seen.add(key)
+        runs.append(normalized)
+    return runs
+
+
+def _load_prime_method_cards() -> dict[str, dict[str, Any]]:
+    if not _METHODS_DIR.exists():
+        return {}
+    try:
+        import yaml
+    except ImportError:
+        return {}
+
+    files = sorted(_METHODS_DIR.glob("M-PRE-*.yaml"))
+    stamp = tuple((file.name, file.stat().st_mtime_ns) for file in files)
+    if _PRIME_METHODS_CACHE.get("stamp") == stamp:
+        return _PRIME_METHODS_CACHE.get("cards") or {}
+
+    cards: dict[str, dict[str, Any]] = {}
+    for path in files:
+        try:
+            data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if not isinstance(data, dict):
+            continue
+        method_id = _normalize_text(data.get("id"))
+        if not method_id:
+            continue
+        cards[method_id] = {
+            "method_id": method_id,
+            "name": _normalize_text(data.get("name")) or method_id,
+            "description": _normalize_text(data.get("description")) or "",
+            "outputs_summary": _normalize_text(data.get("outputs_summary")) or "",
+            "artifact_type": _normalize_text(data.get("artifact_type")) or "notes",
+            "inputs": _normalize_string_list(data.get("inputs")),
+            "required_outputs": _normalize_string_list(data.get("required_outputs")),
+            "allowed_moves": _normalize_string_list(data.get("allowed_moves")),
+            "forbidden_moves": _normalize_string_list(data.get("forbidden_moves")),
+            "when_to_use": _normalize_string_list(data.get("when_to_use")),
+            "when_not_to_use": _normalize_string_list(data.get("when_not_to_use")),
+            "primary_citations": _normalize_string_list(data.get("primary_citations")),
+            "mechanisms": _normalize_string_list(data.get("mechanisms")),
+            "constraints": dict(data.get("constraints") or {}) if isinstance(data.get("constraints"), dict) else {},
+            "knobs": dict(data.get("knobs") or {}) if isinstance(data.get("knobs"), dict) else {},
+            "facilitation_prompt": _normalize_text(data.get("facilitation_prompt")) or "",
+        }
+
+    _PRIME_METHODS_CACHE["stamp"] = stamp
+    _PRIME_METHODS_CACHE["cards"] = cards
+    return cards
+
+
+def _derive_legacy_priming_output(method_outputs: list[dict[str, Any]], material_id: int, title: str, source_path: str | None) -> dict[str, Any]:
+    summary = None
+    root_explanation = None
+    concepts: list[str] = []
+    terminology: list[str] = []
+    gaps: list[str] = []
+    learning_objectives: list[dict[str, Any]] = []
+
+    for run in method_outputs:
+        method_id = run.get("method_id")
+        outputs = run.get("outputs") if isinstance(run.get("outputs"), dict) else {}
+        if method_id == "M-PRE-013":
+            summary = summary or _normalize_text(outputs.get("summary"))
+        if method_id in PRIME_STRUCTURAL_METHOD_IDS:
+            concepts.extend(_normalize_string_list(outputs.get("concepts")))
+            root_explanation = root_explanation or _normalize_text(outputs.get("map"))
+            gaps.extend(_normalize_string_list(outputs.get("follow_up_targets")))
+        if method_id == "M-PRE-012":
+            terminology.extend(_normalize_string_list(outputs.get("terminology")))
+        if method_id == "M-PRE-014":
+            gaps.extend(_normalize_string_list(outputs.get("gaps")))
+            gaps.extend(_normalize_string_list(outputs.get("unsupported_jumps")))
+        if method_id == "M-PRE-010":
+            learning_objectives.extend(_normalize_objective_list(outputs.get("learning_objectives")))
+
+    return {
+        "material_id": material_id,
+        "title": title,
+        "source_path": source_path,
+        "summary": summary,
+        "concepts": _dedupe_string_list(concepts),
+        "terminology": _dedupe_string_list(terminology),
+        "root_explanation": root_explanation,
+        "gaps": _dedupe_string_list(gaps),
+        "learning_objectives": learning_objectives,
+        "extraction_lossy": False,
+        "updated_at": _now_iso(),
+    }
+
+
+def _build_priming_method_runs(source_inventory: list[dict[str, Any]], selected_method_ids: list[str]) -> list[dict[str, Any]]:
+    cards = _load_prime_method_cards()
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    discovered_ids: list[str] = []
+    for item in source_inventory:
+        if not isinstance(item, dict):
+            continue
+        material_id = _normalize_int(item.get("id"), field_name="source_inventory.id")
+        if material_id is None:
+            continue
+        method_outputs = item.get("method_outputs")
+        if not isinstance(method_outputs, list):
+            continue
+        for run in method_outputs:
+            normalized = _normalize_priming_method_run(run)
+            if not normalized:
+                continue
+            method_id = normalized["method_id"]
+            entry = {
+                "material_id": material_id,
+                "title": _normalize_text(item.get("title")) or f"Material {material_id}",
+                "source_path": _normalize_text(item.get("source_path")),
+                **normalized["outputs"],
+            }
+            grouped.setdefault(method_id, []).append(entry)
+            if method_id not in discovered_ids:
+                discovered_ids.append(method_id)
+
+    runs: list[dict[str, Any]] = []
+    ordered_method_ids = list(selected_method_ids)
+    for method_id in discovered_ids:
+        if method_id not in ordered_method_ids:
+            ordered_method_ids.append(method_id)
+    for method_id in ordered_method_ids:
+        card = cards.get(method_id) or {}
+        entries = grouped.get(method_id, [])
+        runs.append(
+            {
+                "method_id": method_id,
+                "method_name": card.get("name") or method_id,
+                "output_family": PRIME_METHOD_OUTPUT_FAMILY.get(method_id) or "notes",
+                "outputs": {"entries": entries},
+                "source_ids": [int(entry["material_id"]) for entry in entries if entry.get("material_id") is not None],
+                "status": "complete" if entries else "pending",
+                "updated_at": _now_iso() if entries else None,
+            }
+        )
+    return runs
+
+
+def _merge_method_outputs(
+    existing_runs: Any,
+    new_runs: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    merged_by_id: dict[str, dict[str, Any]] = {}
+    ordered_ids: list[str] = []
+
+    for candidate in _normalize_priming_method_runs(existing_runs):
+        method_id = candidate["method_id"]
+        merged_by_id[method_id] = candidate
+        if method_id not in ordered_ids:
+            ordered_ids.append(method_id)
+
+    for candidate in new_runs:
+        normalized = _normalize_priming_method_run(candidate)
+        if not normalized:
+            continue
+        method_id = normalized["method_id"]
+        merged_by_id[method_id] = normalized
+        if method_id not in ordered_ids:
+            ordered_ids.append(method_id)
+
+    return [merged_by_id[method_id] for method_id in ordered_ids if method_id in merged_by_id]
+
+
+def _format_method_reasoning_block(card: dict[str, Any]) -> str:
+    method_id = _normalize_text(card.get("method_id")) or "UNKNOWN"
+    name = _normalize_text(card.get("name")) or method_id
+    lines = [f"{method_id} - {name}"]
+
+    description = _normalize_text(card.get("description"))
+    if description:
+        lines.append(f"Description: {description}")
+
+    facilitation_prompt = _normalize_text(card.get("facilitation_prompt"))
+    if facilitation_prompt:
+        lines.append("Facilitation logic:")
+        lines.append(facilitation_prompt)
+
+    outputs_summary = _normalize_text(card.get("outputs_summary"))
+    if outputs_summary:
+        lines.append(f"Outputs summary: {outputs_summary}")
+
+    required_outputs = _normalize_string_list(card.get("required_outputs"))
+    if required_outputs:
+        lines.append("Required outputs:")
+        lines.extend(f"- {item}" for item in required_outputs)
+
+    inputs = _normalize_string_list(card.get("inputs"))
+    if inputs:
+        lines.append("Expected inputs:")
+        lines.extend(f"- {item}" for item in inputs)
+
+    allowed_moves = _normalize_string_list(card.get("allowed_moves"))
+    if allowed_moves:
+        lines.append("Allowed moves:")
+        lines.extend(f"- {item}" for item in allowed_moves)
+
+    forbidden_moves = _normalize_string_list(card.get("forbidden_moves"))
+    if forbidden_moves:
+        lines.append("Forbidden moves:")
+        lines.extend(f"- {item}" for item in forbidden_moves)
+
+    when_to_use = _normalize_string_list(card.get("when_to_use"))
+    if when_to_use:
+        lines.append("When to use:")
+        lines.extend(f"- {item}" for item in when_to_use)
+
+    when_not_to_use = _normalize_string_list(card.get("when_not_to_use"))
+    if when_not_to_use:
+        lines.append("When not to use:")
+        lines.extend(f"- {item}" for item in when_not_to_use)
+
+    mechanisms = _normalize_string_list(card.get("mechanisms"))
+    if mechanisms:
+        lines.append("Mechanisms:")
+        lines.extend(f"- {item}" for item in mechanisms)
+
+    citations = _normalize_string_list(card.get("primary_citations"))
+    if citations:
+        lines.append("Primary citations:")
+        lines.extend(f"- {item}" for item in citations)
+
+    constraints = card.get("constraints")
+    if isinstance(constraints, dict) and constraints:
+        lines.append(f"Constraints: {_json_dumps(constraints)}")
+
+    knobs = card.get("knobs")
+    if isinstance(knobs, dict) and knobs:
+        lines.append(f"Default knobs: {_json_dumps(knobs)}")
+
+    return "\n".join(lines)
+
+
+def _select_existing_method_outputs(
+    method_outputs: Any,
+    selected_method_ids: list[str],
+) -> list[dict[str, Any]]:
+    if not selected_method_ids:
+        return []
+    selected_set = {method_id.casefold() for method_id in selected_method_ids}
+    existing_runs = _normalize_priming_method_runs(method_outputs)
+    return [
+        run
+        for run in existing_runs
+        if _normalize_text(run.get("method_id")).casefold() in selected_set
+    ]
+
+
+def _split_priming_content_windows(
+    content: str,
+    *,
+    chunk_chars: int = PRIMING_CONTENT_CHUNK_CHARS,
+    overlap_chars: int = PRIMING_CONTENT_CHUNK_OVERLAP,
+) -> list[str]:
+    text = str(content or "")
+    if not text:
+        return []
+    if len(text) <= chunk_chars:
+        return [text]
+    windows: list[str] = []
+    step = max(chunk_chars - max(overlap_chars, 0), 1)
+    start = 0
+    text_length = len(text)
+    while start < text_length:
+        end = min(start + chunk_chars, text_length)
+        windows.append(text[start:end])
+        if end >= text_length:
+            break
+        start += step
+    return windows
+
+
+def _build_method_outputs_payload(method_runs: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    payload: dict[str, dict[str, Any]] = {}
+    for run in method_runs:
+        method_id = _normalize_text(run.get("method_id"))
+        outputs = run.get("outputs")
+        if not method_id or not isinstance(outputs, dict):
+            continue
+        payload[method_id] = outputs
+    return payload
+
+
+def _method_prompt_contract(method_id: str) -> str:
+    return {
+        "M-PRE-002": '- M-PRE-002 => {"questions":["bounded non-scored prequestions"]}',
+        "M-PRE-004": '- M-PRE-004 => {"concepts":["major levels or pillars"], "map":"hierarchical outline or mermaid map", "follow_up_targets":["unclear transitions to revisit later"]}',
+        "M-PRE-005": '- M-PRE-005 => {"concepts":["skeleton concept nodes"], "map":"hierarchical outline or mermaid map", "follow_up_targets":["missing links to revisit later"]}',
+        "M-PRE-006": '- M-PRE-006 => {"concepts":["pillar map nodes"], "map":"structural scan map", "follow_up_targets":["compressed sections to revisit later"]}',
+        "M-PRE-008": '- M-PRE-008 => {"concepts":["high-signal structure nodes"], "map":"hierarchical outline or mermaid map", "follow_up_targets":["gaps or unsupported jumps"]}',
+        "M-PRE-009": '- M-PRE-009 => {"concepts":["cross-source big-picture pillars"], "map":"integrated structure map", "follow_up_targets":["cross-source ambiguities or conflicts"]}',
+        "M-PRE-010": '- M-PRE-010 => {"learning_objectives":[{"title":"string","lo_code":"string or null"}]}',
+        "M-PRE-011": '- M-PRE-011 => {"drawing_brief":"what the learner should hand-draw", "branch_points":["3-5 branches or anchors"]}',
+        "M-PRE-012": '- M-PRE-012 => {"terminology":["Term :: concise source-grounded definition"]}',
+        "M-PRE-013": '- M-PRE-013 => {"summary":"short orientation summary", "major_sections":["major sections or pillars"]}',
+        "M-PRE-014": '- M-PRE-014 => {"gaps":["explicit ambiguities"], "unsupported_jumps":["places the source skips reasoning"]}',
+    }.get(method_id, f'- {method_id} => {{}}')
+
+
+def _run_priming_llm_pass(
+    *,
+    call_llm_fn: Any,
+    system_prompt: str,
+    user_prompt: str,
+    priming_methods: list[str],
+    cards: dict[str, dict[str, Any]],
+    timeout: int = 60,
+) -> tuple[list[dict[str, Any]] | None, str | None]:
+    result = call_llm_fn(system_prompt=system_prompt, user_prompt=user_prompt, timeout=timeout)
+    if not result.get("success"):
+        return None, result.get("error") or "Priming assist failed"
+    content_raw = str(result.get("content") or "")
+    parsed = _extract_json_payload(content_raw)
+    if not parsed:
+        return None, "Priming assist returned invalid JSON"
+    method_runs = _normalize_selected_method_outputs(priming_methods, parsed, cards)
+    if not method_runs:
+        return None, "Priming assist returned no selected method outputs"
+    return method_runs, None
+
+
+def _normalize_selected_method_outputs(
+    selected_method_ids: list[str],
+    payload: Any,
+    cards: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    method_outputs = payload.get("method_outputs") if isinstance(payload, dict) else None
+    if not isinstance(method_outputs, dict):
+        return []
+    runs: list[dict[str, Any]] = []
+    for method_id in selected_method_ids:
+        outputs = _normalize_priming_method_outputs(method_id, method_outputs.get(method_id))
+        if not outputs:
+            continue
+        card = cards.get(method_id) or {}
+        runs.append(
+            {
+                "method_id": method_id,
+                "method_name": card.get("name") or method_id,
+                "output_family": PRIME_METHOD_OUTPUT_FAMILY.get(method_id) or "notes",
+                "outputs": outputs,
+                "status": "complete",
+                "updated_at": _now_iso(),
+            }
+        )
+    return runs
 
 
 def _fetch_material_rows(conn: sqlite3.Connection, material_ids: list[int]) -> list[sqlite3.Row]:
@@ -177,6 +683,8 @@ def _merge_source_inventory(
         }
         if "priming_output" in existing:
             merged["priming_output"] = existing["priming_output"]
+        if "method_outputs" in existing:
+            merged["method_outputs"] = existing["method_outputs"]
         inventory_by_id[material_id] = merged
         if material_id not in ordered_ids:
             ordered_ids.append(material_id)
@@ -193,13 +701,23 @@ def _build_priming_aggregate(source_inventory: list[dict[str, Any]]) -> dict[str
     for item in source_inventory:
         if not isinstance(item, dict):
             continue
-        priming_output = item.get("priming_output")
-        if not isinstance(priming_output, dict):
-            continue
         material_id = _normalize_int(item.get("id"), field_name="source_inventory.id")
         if material_id is None:
             continue
         title = _normalize_text(item.get("title")) or f"Material {material_id}"
+        priming_output = item.get("priming_output")
+        if not isinstance(priming_output, dict):
+            method_outputs = item.get("method_outputs")
+            if isinstance(method_outputs, list):
+                priming_output = _derive_legacy_priming_output(
+                    method_outputs,
+                    material_id,
+                    title,
+                    _normalize_text(item.get("source_path")),
+                )
+                item["priming_output"] = priming_output
+        if not isinstance(priming_output, dict):
+            continue
         summary = _normalize_text(priming_output.get("summary"))
         if summary:
             summaries.append({"material_id": material_id, "title": title, "summary": summary})
@@ -285,6 +803,13 @@ def _serialize_priming_bundle(row: sqlite3.Row | None) -> dict[str, Any] | None:
         "selected_material_ids": _json_loads(row["selected_material_ids_json"], []),
         "selected_paths": _json_loads(row["selected_paths_json"], []),
         "source_inventory": _json_loads(row["source_inventory_json"], []),
+        "priming_methods": _normalize_priming_methods(
+            _json_loads(row["priming_methods_json"], []),
+            row["priming_method"],
+        ),
+        "priming_method_runs": _normalize_priming_method_runs(
+            _json_loads(row["priming_method_runs_json"], [])
+        ),
         "priming_method": row["priming_method"],
         "priming_chain_id": row["priming_chain_id"],
         "learning_objectives": _json_loads(row["learning_objectives_json"], []),
@@ -703,6 +1228,7 @@ def upsert_tutor_priming_bundle(workflow_id: str):
         selected_material_ids = _normalize_list(data.get("selected_material_ids"), field_name="selected_material_ids")
         selected_paths = _normalize_list(data.get("selected_paths"), field_name="selected_paths")
         source_inventory = _normalize_list(data.get("source_inventory"), field_name="source_inventory")
+        priming_method_runs = _normalize_priming_method_runs(data.get("priming_method_runs"))
         learning_objectives = _normalize_list(data.get("learning_objectives"), field_name="learning_objectives")
         concepts = _normalize_list(data.get("concepts"), field_name="concepts")
         terminology = _normalize_list(data.get("terminology"), field_name="terminology")
@@ -721,6 +1247,14 @@ def upsert_tutor_priming_bundle(workflow_id: str):
 
     readiness_status = str(data.get("readiness_status") or "draft").strip().lower() or "draft"
     workflow_status = "priming_complete" if readiness_status == "ready" else "priming_in_progress"
+    priming_methods = _normalize_priming_methods(
+        data.get("priming_methods"),
+        data.get("priming_method"),
+    )
+    primary_priming_method = priming_methods[0] if priming_methods else _normalize_text(data.get("priming_method"))
+    incoming_priming_chain = _normalize_text(data.get("priming_chain_id")) if "priming_chain_id" in data else None
+    if not priming_method_runs and isinstance(source_inventory, list):
+        priming_method_runs = _build_priming_method_runs(source_inventory, priming_methods)
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     try:
@@ -728,8 +1262,13 @@ def upsert_tutor_priming_bundle(workflow_id: str):
         if workflow_row is None:
             return jsonify({"error": "Workflow not found"}), 404
         cur = conn.cursor()
-        cur.execute("SELECT id FROM tutor_priming_bundles WHERE workflow_id = ?", (workflow_id,))
+        cur.execute("SELECT id, priming_chain_id FROM tutor_priming_bundles WHERE workflow_id = ?", (workflow_id,))
         existing = cur.fetchone()
+        priming_chain_id = (
+            incoming_priming_chain
+            if "priming_chain_id" in data
+            else (_normalize_text(existing["priming_chain_id"]) if existing else None)
+        )
         params = (
             course_id,
             _normalize_text(data.get("study_unit")),
@@ -737,8 +1276,10 @@ def upsert_tutor_priming_bundle(workflow_id: str):
             _json_dumps(selected_material_ids),
             _json_dumps(selected_paths),
             _json_dumps(source_inventory),
-            _normalize_text(data.get("priming_method")),
-            _normalize_text(data.get("priming_chain_id")),
+            _json_dumps(priming_methods),
+            _json_dumps(priming_method_runs),
+            primary_priming_method,
+            priming_chain_id,
             _json_dumps(learning_objectives),
             _json_dumps(concepts),
             _json_dumps(concept_graph),
@@ -757,14 +1298,14 @@ def upsert_tutor_priming_bundle(workflow_id: str):
                 """
                 INSERT INTO tutor_priming_bundles (
                     workflow_id, course_id, study_unit, topic, selected_material_ids_json,
-                    selected_paths_json, source_inventory_json, priming_method, priming_chain_id,
+                    selected_paths_json, source_inventory_json, priming_methods_json, priming_method_runs_json, priming_method, priming_chain_id,
                     learning_objectives_json, concepts_json, concept_graph_json, terminology_json,
                     root_explanations_json, summaries_json, identified_gaps_json,
                     confidence_flags_json, readiness_status, readiness_blockers_json,
                     recommended_tutor_strategy_json, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (workflow_id, *params[:-1], now, now),
+                (workflow_id, *params),
             )
         else:
             conn.execute(
@@ -777,6 +1318,8 @@ def upsert_tutor_priming_bundle(workflow_id: str):
                     selected_material_ids_json = ?,
                     selected_paths_json = ?,
                     source_inventory_json = ?,
+                    priming_methods_json = ?,
+                    priming_method_runs_json = ?,
                     priming_method = ?,
                     priming_chain_id = ?,
                     learning_objectives_json = ?,
@@ -1173,8 +1716,15 @@ def run_tutor_priming_assist(workflow_id: str):
 
     study_unit = _normalize_text(data.get("study_unit"))
     topic = _normalize_text(data.get("topic"))
-    priming_method = _normalize_text(data.get("priming_method")) or "summary_first"
-    priming_chain_id = _normalize_text(data.get("priming_chain_id")) or "ingest_objectives_concepts_summary_gaps"
+    priming_methods = _normalize_priming_methods(
+        data.get("priming_methods"),
+        data.get("priming_method"),
+    ) or DEFAULT_PRIMING_METHOD_IDS
+    cards = _load_prime_method_cards()
+    priming_methods_label = ", ".join(
+        f"{method_id} ({(cards.get(method_id) or {}).get('name') or method_id})"
+        for method_id in priming_methods
+    )
 
     conn = get_connection()
     conn.row_factory = sqlite3.Row
@@ -1204,70 +1754,155 @@ def run_tutor_priming_assist(workflow_id: str):
         if not content:
             failures.append({"material_id": material_id, "error": "Material content is empty"})
             continue
-        content_excerpt = content[:12000]
+        content_windows = _split_priming_content_windows(content)
         system_prompt = """You are Priming Assist for a study workflow.
-Extract source-linked PRIME artifacts from the provided material.
-Do not invent facts and do not use external knowledge.
+Run only the selected PRIME methods against the provided material.
+PRIME is structural and non-instructional: do not begin core TEACH explanation,
+do not quiz or score the learner, and do not invent facts beyond the source.
 Return STRICT JSON only:
 {
-  "summary": "markdown-ready string",
-  "concepts": ["string"],
-  "terminology": ["string"],
-  "root_explanation": "string",
-  "gaps": ["string"],
-  "learning_objectives": [
-    {
-      "title": "string",
-      "lo_code": "string or null"
+  "method_outputs": {
+    "METHOD_ID": {
+      "...": "selected-method-specific fields only"
     }
-  ]
+  }
 }
+Only include the selected method IDs. Do not emit outputs for unselected methods.
 """
-        user_prompt = (
-            f"Workflow study unit: {study_unit or workflow_row['study_unit'] or 'Unspecified'}\n"
-            f"Workflow topic: {topic or workflow_row['topic'] or 'Unspecified'}\n"
-            f"Priming method: {priming_method}\n"
-            f"Priming chain: {priming_chain_id}\n"
-            f"Material title: {row['title'] or f'Material {material_id}'}\n"
-            f"Material source path: {row['source_path'] or 'Unknown'}\n\n"
-            "Artifact guidance:\n"
-            "- summary = concise material-grounded PRIME summary with short markdown-friendly section labels and short paragraphs; avoid one giant paragraph\n"
-            "- concepts = high-signal study spine nodes, not trivia; return concise strings only with no numbering or bullets\n"
-            "- terminology = key terms for the selected material; each entry should use 'Term :: concise material-grounded definition'\n"
-            "- root_explanation = a real hierarchical map, not prose; prefer a fenced ```mermaid``` flowchart or mindmap block, otherwise return an ASCII tree in a fenced text block\n"
-            "- gaps = unresolved ambiguities or missing support in the material; return concise strings only with no numbering or bullets\n"
-            "- learning_objectives = instructor-aligned or material-grounded objectives for this slice; keep titles concise and source-grounded\n"
-            "- keep all outputs readable in a study workspace with headings, paragraphs, and visible structure where applicable\n\n"
-            f"Material content:\n{content_excerpt}"
+        prompt_contract = "\n".join(_method_prompt_contract(method_id) for method_id in priming_methods)
+        selected_method_notes = "\n\n".join(
+            _format_method_reasoning_block(cards.get(method_id) or {"method_id": method_id})
+            for method_id in priming_methods
         )
-        result = call_llm(system_prompt=system_prompt, user_prompt=user_prompt, timeout=60)
-        if not result.get("success"):
-            failures.append(
+        inventory_item = inventory_by_id.get(material_id) or _build_source_inventory_item(row)
+        existing_selected_runs = _select_existing_method_outputs(
+            inventory_item.get("method_outputs"),
+            priming_methods,
+        )
+        existing_selected_runs_json = _json_dumps(existing_selected_runs) if existing_selected_runs else "[]"
+        chunk_outputs: list[dict[str, Any]] = []
+        material_error: str | None = None
+
+        for chunk_index, chunk_content in enumerate(content_windows, start=1):
+            user_prompt = (
+                f"Workflow study unit: {study_unit or workflow_row['study_unit'] or 'Unspecified'}\n"
+                f"Workflow topic: {topic or workflow_row['topic'] or 'Unspecified'}\n"
+                f"Selected Priming methods: {priming_methods_label}\n"
+                f"Material title: {row['title'] or f'Material {material_id}'}\n"
+                f"Material source path: {row['source_path'] or 'Unknown'}\n"
+                f"Coverage mode: full material coverage\n"
+                f"Current chunk: {chunk_index}/{len(content_windows)}\n\n"
+                "Selected method logic:\n"
+                f"{selected_method_notes}\n\n"
+                "JSON contracts for the selected methods:\n"
+                f"{prompt_contract}\n\n"
+                "Existing outputs already stored for the selected methods on this material:\n"
+                f"{existing_selected_runs_json}\n\n"
+                "Global output rules:\n"
+                "- stay structural, orientation-level, and source-grounded\n"
+                "- reason from the source before drafting outputs; do not guess or pad the result\n"
+                "- use the actual method logic above, not just the method name, when deciding what to extract\n"
+                "- if existing outputs are already stored for a selected method, treat them as an anchor and revise conservatively rather than regenerating from scratch\n"
+                "- only add, remove, split, or merge items when the source clearly justifies the change\n"
+                "- prefer stable counts and stable wording across reruns when the material has not changed\n"
+                "- use concise strings with no numbering unless the field explicitly implies structure\n"
+                "- maps should prefer mermaid or simple outline structure over loose prose\n"
+                "- terminology entries should use 'Term :: concise source-grounded definition'\n"
+                "- follow-up targets and gaps should name unresolved ambiguities without teaching the answer\n"
+                "- learning objectives must stay concise, material-grounded, and deduplicated by meaning\n"
+                "- for M-PRE-010, extract the full stable objective set supported by this chunk and preserve existing objective wording when still supported\n\n"
+                f"Material content chunk {chunk_index}/{len(content_windows)}:\n{chunk_content}"
+            )
+            method_runs, material_error = _run_priming_llm_pass(
+                call_llm_fn=call_llm,
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                priming_methods=priming_methods,
+                cards=cards,
+                timeout=60,
+            )
+            if material_error or method_runs is None:
+                failures.append(
+                    {
+                        "material_id": material_id,
+                        "error": material_error or "Priming assist failed",
+                    }
+                )
+                break
+            chunk_outputs.append(
                 {
-                    "material_id": material_id,
-                    "error": result.get("error") or "Priming assist failed",
+                    "chunk_index": chunk_index,
+                    "chunk_count": len(content_windows),
+                    "method_outputs": _build_method_outputs_payload(method_runs),
                 }
             )
+
+        if material_error:
             continue
-        content_raw = str(result.get("content") or "")
-        parsed = _extract_json_payload(content_raw)
-        if not parsed:
-            failures.append({"material_id": material_id, "error": "Priming assist returned invalid JSON"})
-            continue
-        inventory_item = inventory_by_id.get(material_id) or _build_source_inventory_item(row)
+
+        if len(chunk_outputs) == 1:
+            method_runs = _normalize_selected_method_outputs(
+                priming_methods,
+                {"method_outputs": chunk_outputs[0]["method_outputs"]},
+                cards,
+            )
+        else:
+            consolidation_system_prompt = """You are Priming Assist consolidation for a study workflow.
+Combine chunk-level PRIME extraction results into one final material-level output.
+Return STRICT JSON only in the same method_outputs shape.
+Do not omit evidence that only appeared in later chunks.
+Do not emit outputs for unselected methods.
+"""
+            consolidation_prompt = (
+                f"Workflow study unit: {study_unit or workflow_row['study_unit'] or 'Unspecified'}\n"
+                f"Workflow topic: {topic or workflow_row['topic'] or 'Unspecified'}\n"
+                f"Selected Priming methods: {priming_methods_label}\n"
+                f"Material title: {row['title'] or f'Material {material_id}'}\n"
+                f"Material source path: {row['source_path'] or 'Unknown'}\n"
+                f"Chunk count: {len(content_windows)}\n\n"
+                "Selected method logic:\n"
+                f"{selected_method_notes}\n\n"
+                "JSON contracts for the selected methods:\n"
+                f"{prompt_contract}\n\n"
+                "Existing outputs already stored for the selected methods on this material:\n"
+                f"{existing_selected_runs_json}\n\n"
+                "Chunk-level outputs covering the full material:\n"
+                f"{_json_dumps(chunk_outputs)}\n\n"
+                "Consolidation rules:\n"
+                "- use every chunk above as evidence; do not ignore later chunks\n"
+                "- combine all supported points into one final material-level output per selected method\n"
+                "- preserve stable items from prior outputs when still supported\n"
+                "- deduplicate repeated objectives, terms, concepts, and follow-up targets by meaning\n"
+                "- only change counts when the chunk evidence clearly requires it\n"
+                "- return one final method_outputs object for the selected methods only"
+            )
+            method_runs, material_error = _run_priming_llm_pass(
+                call_llm_fn=call_llm,
+                system_prompt=consolidation_system_prompt,
+                user_prompt=consolidation_prompt,
+                priming_methods=priming_methods,
+                cards=cards,
+                timeout=60,
+            )
+            if material_error or method_runs is None:
+                failures.append(
+                    {
+                        "material_id": material_id,
+                        "error": material_error or "Priming consolidation failed",
+                    }
+                )
+                continue
+
+        merged_method_runs = _merge_method_outputs(inventory_item.get("method_outputs"), method_runs)
+        inventory_item["method_outputs"] = merged_method_runs
         inventory_item["priming_output"] = {
-            "material_id": material_id,
-            "title": row["title"] or f"Material {material_id}",
-            "source_path": row["source_path"],
-            "summary": _normalize_text(parsed.get("summary")),
-            "concepts": _normalize_string_list(parsed.get("concepts")),
-            "terminology": _normalize_string_list(parsed.get("terminology")),
-            "root_explanation": _normalize_text(parsed.get("root_explanation")),
-            "gaps": _normalize_string_list(parsed.get("gaps")),
-            "learning_objectives": _normalize_objective_list(parsed.get("learning_objectives")),
+            **_derive_legacy_priming_output(
+                merged_method_runs,
+                material_id,
+                row["title"] or f"Material {material_id}",
+                row["source_path"],
+            ),
             "char_count": len(content),
-            "extraction_lossy": False,
-            "updated_at": _now_iso(),
         }
         inventory_by_id[material_id] = inventory_item
 
@@ -1276,9 +1911,11 @@ Return STRICT JSON only:
         for item in merged_inventory
         if isinstance(item, dict) and _normalize_int(item.get("id"), field_name="source_inventory.id") is not None
     ]
+    priming_method_runs = _build_priming_method_runs(source_inventory_response, priming_methods)
     aggregate = _build_priming_aggregate(source_inventory_response)
     payload: dict[str, Any] = {
         "source_inventory": source_inventory_response,
+        "priming_method_runs": priming_method_runs,
         "aggregate": aggregate,
     }
     if failures:
@@ -1519,7 +2156,7 @@ def get_tutor_workflow_analytics_summary():
 
         cur.execute(
             """
-            SELECT workflow_id, priming_method, priming_chain_id, source_inventory_json
+            SELECT workflow_id, priming_methods_json, priming_method, priming_chain_id, source_inventory_json
             FROM tutor_priming_bundles
             ORDER BY id ASC
             """
@@ -1633,9 +2270,12 @@ def get_tutor_workflow_analytics_summary():
             totals["feedback_disliked"] += 1
 
     for row in priming_rows:
-        method = _normalize_text(row["priming_method"])
+        methods = _normalize_priming_methods(
+            _json_loads(row["priming_methods_json"], []),
+            row["priming_method"],
+        )
         chain_id = _normalize_text(row["priming_chain_id"])
-        if method:
+        for method in methods:
             method_counts[method] = method_counts.get(method, 0) + 1
         if chain_id:
             chain_counts[chain_id] = chain_counts.get(chain_id, 0) + 1

@@ -1094,3 +1094,149 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - restarted the app via `Start_Dashboard.bat`
   - confirmed `http://127.0.0.1:5000/api/methods` and `http://127.0.0.1:5000/api/chains` both return `200`
   - confirmed the live Methods page renders again at `http://127.0.0.1:5000/methods`
+## 2026-03-20 - Tutor Guided Studyability Loop baseline opened
+- Opened `conductor/tracks/tutor-guided-studyability_20260320/` as the repo-native surface for Tutor feature inventory, guided stage-by-stage real study passes, normalized issue capture, and prioritized fix-wave planning.
+- Added an active execution item in `docs/root/TUTOR_TODO.md` and registered the new active track in `conductor/tracks.md`.
+- Seeded baseline artifacts:
+  - `spec.md`
+  - `plan.md`
+  - `feature-matrix.md`
+  - `study-pass-checklist.md`
+  - `issue-log.md`
+  - `findings.md`
+
+## 2026-03-21 - Shared nav shell motion removal
+- Removed the adaptive shared-header collapse behavior from `dashboard_rebuild/client/src/components/layout.tsx`, including the hover hot zone, hover/scroll compaction state, and the internal shell logic that kept the banner reacting independently from page flow.
+- Switched the app shell from a fixed-height grid with an internally scrolling `<main>` to a normal flex-column page flow so the nav now scrolls with the document instead of staying pinned outside the page scroll.
+- Stripped translate/scale motion from the desktop nav button shell/image classes while keeping the existing visual styling and hover highlighting.
+- Removed the matching `.page-shell__hero` compaction rule from `dashboard_rebuild/client/src/index.css` so the hero no longer animates closed when the old nav state toggles.
+- Updated `dashboard_rebuild/client/src/components/__tests__/layout.test.tsx` so the shared layout test now proves the header remains expanded during scroll instead of expecting compact-on-scroll behavior.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/layout.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live browser check on `http://127.0.0.1:5000/methods` confirmed `window.scrollY = 1800` with `header[data-header-shell]` at `y = -1800`, showing the header now moves with normal page scroll
+
+## 2026-03-21 - Priming setup contract pulled into first window
+- Updated `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` so the first setup card now owns the real Tutor launch contract: class selection, study unit, objective scope, focus objective when needed, topic, materials, and live Tutor launch blockers/readiness all appear together instead of being split across the page.
+- Removed the duplicated full readiness checklist from the lower `TUTOR HANDOFF` section so the page tells one launch story instead of two.
+- Added focused regression coverage in `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx` for the new setup-window contract placement while keeping advanced controls collapsed by default.
+- Updated the guided studyability artifacts in `conductor/tracks/tutor-guided-studyability_20260320/issue-log.md` and `conductor/tracks/tutor-guided-studyability_20260320/findings.md`, and marked the execution item complete in `docs/root/TUTOR_TODO.md`.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-21 - Priming objective-scope removal
+- Removed the redundant `Objective Scope` and `Focus Objective` controls from `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` so Priming now works from the selected study unit plus file-derived objectives instead of asking the learner for a separate narrowing mode.
+- Normalized hidden narrowing state by resetting `single_focus` back to `module_all` when class or study unit changes and by auto-clearing stale invalid `single_focus` state when Priming opens without a valid focus objective.
+- Updated `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts` so the `Learning objectives captured` readiness item now keys off approved study-unit objectives or extracted source objectives rather than the old objective-scope toggle.
+- Updated the objectives artifact pane copy to show study-unit objectives instead of manual focus scope, and added focused regression coverage in `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx` plus `dashboard_rebuild/client/src/hooks/__tests__/useTutorWorkflow.test.tsx`.
+- Updated the guided studyability artifacts in `conductor/tracks/tutor-guided-studyability_20260320/issue-log.md` and `conductor/tracks/tutor-guided-studyability_20260320/findings.md`, and marked the execution item complete in `docs/root/TUTOR_TODO.md`.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx client/src/hooks/__tests__/useTutorWorkflow.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-21 - Priming and Tutor chain selectors moved into the live study flow
+- Moved PRIME method and Priming chain selection out of the old advanced dropdowns and into the active Priming setup flow in `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx`, using card-style selectors closer to the Methods page before the learner clicks `Extract PRIME`.
+- Added a real Tutor chain picker to the Priming handoff area with `AUTO`, `PRE-BUILT`, and `CUSTOM` choices before `Start Tutor`, and wired it into the same `chainId` / `customBlockIds` runtime state that Tutor session start already consumes.
+- Updated `dashboard_rebuild/client/src/components/TutorShell.tsx` to fetch template chains for the Priming view and pass them into the Priming panel, then trimmed the old advanced area down to workflow context instead of keeping duplicated hidden selection controls.
+- Updated focused coverage in `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx` and extended Tutor page test mocks in `dashboard_rebuild/client/src/pages/__tests__/tutor.workspace.integration.test.tsx` plus `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx` for the template-chain query.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-21 - Priming simplified around multi-select methods and workspace-owned extraction
+- Removed the live Priming chain selector from `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` and rebuilt the stage so Priming is driven by multi-select Priming methods instead of a method-plus-chain pair.
+- Moved the `Prime Artifact Workspace` directly under `Setup`, moved the main `Extract PRIME` action into that workspace header, and demoted the `Source Viewer` into a reference-only section below it. `dashboard_rebuild/client/src/components/priming/PrimingMaterialReader.tsx` no longer owns extraction controls.
+- Switched the canonical frontend/backend Priming contract to `priming_methods` in `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts`, `dashboard_rebuild/client/src/api.types.ts`, `brain/dashboard/api_tutor_workflows.py`, and `brain/db_setup.py`, while keeping legacy hydration for older `priming_method` / `priming_chain_id` rows.
+- Updated regression coverage in `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`, `dashboard_rebuild/client/src/hooks/__tests__/useTutorWorkflow.test.tsx`, `dashboard_rebuild/client/src/hooks/__tests__/useTutorSession.test.tsx`, and `brain/tests/test_tutor_workflow_priming_assist.py`.
+- Validation passed:
+  - `pytest brain/tests/test_tutor_workflow_priming_assist.py brain/tests/test_tutor_workflow_delete.py -q`
+  - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx client/src/hooks/__tests__/useTutorWorkflow.test.tsx client/src/hooks/__tests__/useTutorSession.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+
+## 2026-03-21 - PRIME rebuilt around the real SOP method library
+- Added canonical PRIME cards `M-PRE-012`, `M-PRE-013`, and `M-PRE-014` in `sop/library/methods/`, updated `sop/library/categories/PRIME.md` and `sop/library/15-method-library.md`, and locked the boundary that `root_understanding` is a TEACH intent rather than a PRIME method.
+- Enriched `/api/methods` in `brain/dashboard/api_methods.py` so PRIME cards expose YAML-backed metadata like `outputs_summary`, `required_outputs`, `allowed_moves`, `when_to_use`, `when_not_to_use`, `primary_citations`, and `mechanisms`, which the Priming page can now consume directly instead of relying on a synthetic local registry.
+- Rewired `brain/dashboard/api_tutor_workflows.py` and `brain/db_setup.py` so Priming assist runs only the selected stable `M-PRE-*` method IDs, stores workflow-level `priming_method_runs_json` plus per-source `method_outputs`, derives the old aggregate artifact bundle only as a compatibility layer, and normalizes legacy synthetic slugs into real PRIME method IDs while dropping `root_understanding` from PRIME.
+- Rebuilt `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx`, `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts`, `dashboard_rebuild/client/src/components/TutorShell.tsx`, `dashboard_rebuild/client/src/api.types.ts`, and `dashboard_rebuild/client/src/lib/tutorUtils.ts` so the live Priming workspace loads real PRIME methods from the API, allows multi-select, renders selected-method output cards only, preserves `Legacy PRIME outputs` for historical workflows, and uses objective-plus-structural-organizer readiness instead of the old fixed artifact-tab contract.
+- Updated regression coverage in `brain/tests/test_tutor_workflow_priming_assist.py`, `brain/tests/test_methods_api.py`, `brain/tests/test_seed_methods.py`, `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`, `dashboard_rebuild/client/src/hooks/__tests__/useTutorWorkflow.test.tsx`, and `dashboard_rebuild/client/src/hooks/__tests__/useTutorSession.test.tsx`.
+- Validation passed:
+  - `python sop/tools/validate_library.py`
+  - `pytest brain/tests/test_tutor_workflow_priming_assist.py brain/tests/test_methods_api.py brain/tests/test_seed_methods.py -q`
+  - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx client/src/hooks/__tests__/useTutorWorkflow.test.tsx client/src/hooks/__tests__/useTutorSession.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-21 - Brain evidence-contract realignment
+- Replaced the old Brain home dashboard surface with `dashboard_rebuild/client/src/components/brain/ContractBrainHome.tsx`, then wired `dashboard_rebuild/client/src/components/brain/MainContent.tsx` to that evidence-first view instead of the launch/support/setup-heavy legacy layout.
+- Realigned `dashboard_rebuild/client/src/pages/brain.tsx` so the route hero and header stats describe Brain as a read-only evidence ledger rather than a command deck for course routing or live-study handoff.
+- Centered the page around stored session evidence, WRAP-traceable rollups, issues/failures, display-only integration status, and an annotation-only organizer that uses `api.brain.organizePreview(...)` without mutating stored Brain data.
+- Tightened `dashboard_rebuild/client/src/pages/__tests__/brain.test.tsx` to validate the new contract directly, including the annotation-only organizer path and the removal of the old dashboard drift sections.
+- Live browser verification on `http://127.0.0.1:5000/brain` confirmed the old `WHAT NEEDS ATTENTION NOW` / `PROJECTS DASHBOARD` / `SUPPORT SYSTEMS` / `SYSTEM / SETUP` blocks are gone and the new evidence ledger is what Flask serves after build.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- src/pages/__tests__/brain.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-21 - Tutor top-of-page workflow navigation repair
+- Added `TGSL-170` to `docs/root/TUTOR_TODO.md` and logged the Tutor navigation problem as `TGSL-TU-001` in the guided studyability issue backlog.
+- Reworked `dashboard_rebuild/client/src/components/TutorWorkflowStepper.tsx` into a real workflow navigator that includes `LAUNCH`, `PRIMING`, `TUTOR`, `POLISH`, and `FINAL SYNC`, plus explicit `BACK TO ...` and `NEXT: ...` controls.
+- Simplified `dashboard_rebuild/client/src/components/TutorTabBar.tsx` so it no longer competes with the workflow stage story; it now serves as a smaller workspace-mode row with `WORKFLOW`, `TUTOR`, `STUDIO`, `SCHEDULE`, `SETTINGS`, and live Tutor actions.
+- Moved the workflow navigator and workspace tabs to the top of `dashboard_rebuild/client/src/components/TutorTopBar.tsx`, above the oversized TEACH runtime diagnostics block, and updated `dashboard_rebuild/client/src/pages/tutor.tsx` to wire the new stage movement contract.
+- Added focused coverage in `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowStepper.test.tsx` and updated `dashboard_rebuild/client/src/components/__tests__/TutorTopBar.test.tsx`.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- src/components/__tests__/TutorWorkflowStepper.test.tsx src/components/__tests__/TutorTopBar.test.tsx src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live snapshot check on `http://127.0.0.1:5000/tutor` confirmed the top row now exposes `WORKFLOW / TUTOR / STUDIO / SCHEDULE / SETTINGS` above the TEACH runtime block
+
+## 2026-03-21 - Scholar Strategy launch-page leak fix
+- Tightened `dashboard_rebuild/client/src/components/TutorShell.tsx` so the live `SCHOLAR STRATEGY` panel only renders while `shellMode === "tutor"` with an active session, instead of leaking onto `LAUNCH` and other workflow surfaces whenever a session id exists.
+- Added a focused regression in `dashboard_rebuild/client/src/pages/__tests__/tutor.workspace.integration.test.tsx` that restores an active Tutor session, clicks `LAUNCH`, and verifies the Scholar Strategy chrome disappears while the launch command deck stays visible.
+
+## 2026-03-21 - Tutor Launch HUD visual restyle
+- Restyled `dashboard_rebuild/client/src/components/TutorWorkflowLaunchHub.tsx` to match the repo's sci-fi HUD direction without changing any layout, routing, or navigation behavior. The page now keeps the same Launch structure but uses sharper illuminated panel shells, higher-contrast typography, red-accent primary actions, instrument-style filter controls, and darker workflow-table states.
+- Added reusable Launch-only HUD primitives in `dashboard_rebuild/client/src/index.css` for the Launch surface: `tutor-launch-hud`, `tutor-launch-hud__panel`, `tutor-launch-hud__metric`, `tutor-launch-hud__module`, `tutor-launch-hud__field`, `tutor-launch-hud__button`, `tutor-launch-hud__table-shell`, `tutor-launch-hud__row`, and related badge/title/meta variants.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- src/components/__tests__/TutorWorkflowLaunchHub.test.tsx src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+- Follow-up adjustment: reverted the Launch page buttons in `dashboard_rebuild/client/src/components/TutorWorkflowLaunchHub.tsx` back to the standard button treatment while keeping the new HUD panel/table/typography styling, and removed the unused custom Launch button skin from `dashboard_rebuild/client/src/index.css`.
+
+## 2026-03-21 - Priming workspace blank-until-selected cleanup
+- Tightened `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` so nothing renders below the PRIME method cards until at least one method is selected.
+- Moved the main `Extract PRIME` action out of the workspace header and into a selected-method window area that only appears after methods are chosen.
+- Kept the method-owned output model, but now reveal one window per selected method in selection order instead of mixing generic helper/output panels under the method picker before the learner has committed to a method.
+- Updated focused coverage in `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`.
+
+## 2026-03-21 - Priming learning-objective formatting cleanup
+- Updated `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` so extracted method-owned learning objectives, existing study-unit objectives, and legacy extracted objective candidates all render as structured objective cards instead of raw line text.
+- Kept the PRIME extraction contract structured and source-grounded; the app now formats objective objects in the UI instead of asking the LLM to emit presentation-specific markup.
+- Added focused coverage in `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx` to verify a real extracted `learning_objectives` payload renders the code badge and readable objective titles.
+
+## 2026-03-21 - Priming selected-vs-existing extraction separation
+- Updated `brain/dashboard/api_tutor_workflows.py` so Priming assist merges new per-material `method_outputs` into the existing source inventory by `method_id` instead of overwriting prior extracted method runs, then rebuilds the legacy aggregate artifact bundle from the merged result.
+- Updated `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts` so derived `primingMethodRuns` can represent both the currently selected methods and already extracted methods discovered in the scoped material inventory, instead of filtering everything down to the active selection only.
+- Reworked `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` so the workspace now clearly separates:
+  - `SELECTED PRIME METHOD WINDOWS`
+  - `EXISTING STUDY-UNIT OBJECTIVES`
+  - `ALREADY EXTRACTED PRIME METHODS`
+- This prevents old extracted outputs from reading like part of the next extraction request and keeps study-unit objectives out of the selected-method extraction area.
+- Added focused regression coverage in `brain/tests/test_tutor_workflow_priming_assist.py` and `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`.
+- Validation passed:
+  - `pytest brain/tests/test_tutor_workflow_priming_assist.py -q`
+  - `cd dashboard_rebuild && npm run test -- src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx src/hooks/__tests__/useTutorWorkflow.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-21 - Priming extraction reasoning and full-coverage hardening
+- Updated `brain/dashboard/api_tutor_workflows.py` so the PRIME extractor prompt now uses richer YAML-backed method logic instead of only short descriptions: facilitation guidance, inputs, required outputs, allowed/forbidden moves, citations, constraints, and default knobs are now fed into the selected-method reasoning block for the LLM.
+- Added rerun stabilization context by feeding the material's existing outputs for the selected methods back into the prompt, instructing the LLM to revise conservatively rather than regenerate from a blank slate when the source has not changed.
+- Removed the old front-slice-only extraction path for long materials. Priming assist now splits long material content into full-coverage windows, runs the LLM over every chunk, then performs a final LLM consolidation pass so the material-level output can include evidence that appears later in the document instead of only in the front segment.
+- Tightened objective normalization so duplicate learning objectives with the same title/code pair are collapsed after extraction.
+- Added focused backend coverage in `brain/tests/test_tutor_workflow_priming_assist.py` to verify:
+  - richer method logic and prior-output context appear in the prompt
+  - long content uses chunk-by-chunk full coverage plus a final consolidation pass
+- Validation passed:
+  - `pytest brain/tests/test_tutor_workflow_priming_assist.py -q`
+
+## 2026-03-21 - Tutor workflow navigator render-stability fix
+- Updated `dashboard_rebuild/client/src/components/TutorWorkflowStepper.tsx` so the workflow navigator no longer hard-returns `null` just because `activeWorkflowId` is temporarily missing.
+- The stepper now stays visible whenever there is real workflow/session context, including live Tutor mode, current stage status, active Tutor session, or Polish state.
+- Added focused regression coverage in `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowStepper.test.tsx` for the exact case where Tutor mode is active but the workflow id is temporarily absent.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- src/components/__tests__/TutorWorkflowStepper.test.tsx`

@@ -22,13 +22,13 @@ export default function Brain() {
 
   return (
       <PageScaffold
-        eyebrow="System Command Core"
+        eyebrow="Evidence Ledger"
         title="Brain"
-        subtitle="Run the primary operating surface for focus, course routing, profile state, and downstream study-system handoff without breaking the central command deck feel."
+        subtitle="Review stored WRAP sessions, derived evidence rollups, integration status, and annotation-only analysis without exposing launch, planning, or live-study controls."
         className="min-h-[calc(100vh-140px)]"
         contentClassName="gap-6"
         stats={[
-          { label: "Mode", value: String(workspace.mainMode).toUpperCase() },
+          { label: "View", value: "READ ONLY", tone: "info" },
           {
             label: "Obsidian",
             value: workspace.obsidianStatus?.connected ? "Connected" : "Offline",
@@ -40,9 +40,9 @@ export default function Brain() {
             tone: workspace.ankiStatus?.connected ? "success" : "warn",
           },
           {
-            label: "Drafts",
-            value: String(workspace.pendingDrafts.length),
-            tone: workspace.pendingDrafts.length > 0 ? "info" : "default",
+            label: "Sessions",
+            value: String(workspace.metrics?.totalSessions ?? "--"),
+            tone: "default",
           },
         ]}
       >

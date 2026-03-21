@@ -2452,6 +2452,8 @@ def init_database():
             selected_material_ids_json TEXT NOT NULL DEFAULT '[]',
             selected_paths_json TEXT NOT NULL DEFAULT '[]',
             source_inventory_json TEXT NOT NULL DEFAULT '[]',
+            priming_methods_json TEXT NOT NULL DEFAULT '[]',
+            priming_method_runs_json TEXT NOT NULL DEFAULT '[]',
             priming_method TEXT,
             priming_chain_id TEXT,
             learning_objectives_json TEXT NOT NULL DEFAULT '[]',
@@ -2478,6 +2480,59 @@ def init_database():
         ON tutor_priming_bundles(workflow_id)
         """
     )
+
+    cursor.execute("PRAGMA table_info(tutor_priming_bundles)")
+    priming_bundle_cols = {col[1] for col in cursor.fetchall()}
+    if "priming_methods_json" not in priming_bundle_cols:
+        try:
+            cursor.execute(
+                "ALTER TABLE tutor_priming_bundles ADD COLUMN priming_methods_json TEXT NOT NULL DEFAULT '[]'"
+            )
+            print("[INFO] Added 'priming_methods_json' column to tutor_priming_bundles table")
+        except sqlite3.OperationalError:
+            pass
+    if "priming_method_runs_json" not in priming_bundle_cols:
+        try:
+            cursor.execute(
+                "ALTER TABLE tutor_priming_bundles ADD COLUMN priming_method_runs_json TEXT NOT NULL DEFAULT '[]'"
+            )
+            print("[INFO] Added 'priming_method_runs_json' column to tutor_priming_bundles table")
+        except sqlite3.OperationalError:
+            pass
+
+    try:
+        cursor.execute(
+            """
+            SELECT id, priming_method, priming_methods_json
+            FROM tutor_priming_bundles
+            """
+        )
+        priming_bundle_rows = cursor.fetchall()
+        for bundle_id, priming_method, priming_methods_json in priming_bundle_rows:
+            methods_value = []
+            if priming_methods_json:
+                try:
+                    parsed = json.loads(priming_methods_json)
+                except (TypeError, ValueError, json.JSONDecodeError):
+                    parsed = []
+                if isinstance(parsed, list):
+                    methods_value = [
+                        str(item).strip()
+                        for item in parsed
+                        if isinstance(item, str) and str(item).strip()
+                    ]
+            if not methods_value and priming_method:
+                methods_value = [str(priming_method).strip()]
+            cursor.execute(
+                """
+                UPDATE tutor_priming_bundles
+                SET priming_methods_json = ?
+                WHERE id = ?
+                """,
+                (json.dumps(methods_value, ensure_ascii=False), bundle_id),
+            )
+    except sqlite3.OperationalError:
+        pass
 
     cursor.execute(
         """

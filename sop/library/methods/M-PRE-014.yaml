@@ -1,0 +1,91 @@
+id: M-PRE-014
+name: Ambiguity and Blind-Spot Scan
+category: prime
+status: validated
+control_stage: PRIME
+description: Scan the selected source for ambiguities, unsupported jumps, contradictions, and follow-up targets that should be watched during TEACH.
+default_duration_min: 4
+energy_cost: medium
+has_steps: Y
+has_outputs_or_artifacts: Y
+outputs_summary: AmbiguityLog; unsupported jumps; follow-up targets
+mechanisms:
+- gap_detection
+- attention_guidance
+- prequestioning
+constraints:
+  non_assessment: true
+  source_grounded_only: true
+  no_learner_diagnosis: true
+  no_hidden_teaching: true
+when_to_use:
+- The source is dense, compressed, or likely to skip reasoning steps.
+- The learner wants PRIME to surface where TEACH will need to slow down.
+when_not_to_use:
+- The source is already very explicit and low ambiguity.
+- The requested move is learner diagnosis rather than source-gap scanning.
+steps:
+- step: 1
+  action: Scan for compressed leaps or unclear transitions
+  notes: Look for places where the source assumes missing structure.
+- step: 2
+  action: Capture unresolved ambiguities and contradiction flags
+  notes: Stay grounded in what the source does or does not support.
+- step: 3
+  action: Translate gaps into follow-up targets for TEACH
+  notes: These are handoff targets, not learner judgments.
+outputs:
+- AmbiguityLog
+- UnsupportedJumpList
+- FollowUpTargets
+stop_criteria:
+- The main ambiguities and unsupported jumps are made explicit.
+- Follow-up targets are phrased as source-grounded TEACH watchpoints, not learner deficits.
+evidence_strength: medium
+primary_citations:
+- Overoye et al. (2021)
+- Pan and Rivers (2023)
+- Hausman and Rhodes (2018)
+facilitation_prompt: |
+  You are running M-PRE-014 (Ambiguity and Blind-Spot Scan) in PRIME stage.
+  Inspect the source for unclear jumps, contradictions, and follow-up targets that
+  TEACH should repair later.
+
+  Requirements:
+  - Stay source-grounded.
+  - Report ambiguities and unsupported jumps only.
+  - Do not turn this into learner diagnosis or full explanation.
+
+  Return exactly:
+  1) AmbiguityLog
+  2) UnsupportedJumpList
+  3) FollowUpTargets
+
+  This is non-assessment. Do not quiz, grade, or score the learner.
+inputs:
+- Selected source material slice
+- Current study unit/topic label
+gating_rules:
+- No scored checks or learner-memory probing in PRIME.
+- Do not resolve the ambiguity by teaching the full mechanism here.
+failure_modes:
+- mode: Findings become vague complaints
+  mitigation: Rewrite each item as a concrete source-grounded ambiguity or jump.
+- mode: Scan turns into diagnosis of the learner
+  mitigation: Re-anchor on what the source does or does not make explicit.
+artifact_type: notes
+evidence_raw: Overoye et al. (2021); Pan and Rivers (2023); Hausman and Rhodes (2018); bounded prequestions and targeted attention-shaping can potentiate later learning when they highlight what matters without becoming hidden explanation.
+allowed_moves:
+- Identify source-grounded ambiguities and unsupported jumps
+- Flag contradictions, missing transitions, or underspecified terms
+- Convert source gaps into follow-up targets for TEACH
+- Highlight where later explanation should slow down or repair structure
+forbidden_moves:
+- Diagnose the learner's weaknesses
+- Resolve the ambiguity with full explanation inside PRIME
+- Score, grade, or assess the learner
+- Add unsupported external corrections as if they came from the source
+required_outputs:
+- AmbiguityLog
+- UnsupportedJumpList
+- FollowUpTargets

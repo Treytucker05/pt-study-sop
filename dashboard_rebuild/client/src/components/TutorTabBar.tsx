@@ -2,10 +2,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { controlToggleButton } from "@/components/shell/controlStyles";
 import {
-  ListChecks,
-  Sparkles,
-  FileStack,
-  CheckCircle2,
   PenTool,
   MessageSquare,
   Clock,
@@ -18,7 +14,6 @@ import {
 import { ICON_MD, BTN_TOOLBAR } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
-import type { TutorWorkflowDetailResponse } from "@/lib/api";
 import type { TutorPageMode, TutorWorkflowView } from "@/lib/tutorUtils";
 import type { TutorArtifact } from "@/components/TutorArtifacts";
 import { toast } from "sonner";
@@ -26,8 +21,6 @@ import { toast } from "sonner";
 export interface TutorTabBarProps {
   shellMode: TutorPageMode;
   workflowView: TutorWorkflowView;
-  activeWorkflowId: string | null;
-  activeWorkflowDetail: TutorWorkflowDetailResponse | undefined;
   activeSessionId: string | null;
   showArtifacts: boolean;
   artifacts: TutorArtifact[];
@@ -35,7 +28,6 @@ export interface TutorTabBarProps {
   onSetWorkflowView: (view: TutorWorkflowView) => void;
   onSetShowArtifacts: (show: boolean) => void;
   onSetShowEndConfirm: (show: boolean) => void;
-  onOpenWorkflowPolish: () => void;
   onOpenSettings: () => void;
   onSetStudioEntryRequest: (req: null) => void;
   onSetScheduleLaunchIntent: (intent: null) => void;
@@ -44,8 +36,6 @@ export interface TutorTabBarProps {
 export function TutorTabBar({
   shellMode,
   workflowView,
-  activeWorkflowId,
-  activeWorkflowDetail,
   activeSessionId,
   showArtifacts,
   artifacts,
@@ -53,7 +43,6 @@ export function TutorTabBar({
   onSetWorkflowView,
   onSetShowArtifacts,
   onSetShowEndConfirm,
-  onOpenWorkflowPolish,
   onOpenSettings,
   onSetStudioEntryRequest,
   onSetScheduleLaunchIntent,
@@ -64,7 +53,12 @@ export function TutorTabBar({
   };
 
   return (
-    <div role="tablist" aria-label="Tutor navigation" className="flex flex-wrap items-center gap-2 overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-primary/30 pb-1 -mb-1">
+    <div
+      role="tablist"
+      aria-label="Tutor workspace navigation"
+      data-testid="workspace-tab-bar"
+      className="flex flex-wrap items-center gap-2 overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-primary/30 pb-1 -mb-1"
+    >
       <Button
         role="tab"
         id="tutor-tab-launch"
@@ -76,77 +70,12 @@ export function TutorTabBar({
           onSetShellMode("dashboard");
           onSetWorkflowView("launch");
         }}
-        className={cn(controlToggleButton(shellMode === "dashboard" && workflowView === "launch", "primary"), "flex-shrink-0 whitespace-nowrap")}
+        className={cn(
+          controlToggleButton(shellMode === "dashboard" && workflowView === "launch", "primary"),
+          "flex-shrink-0 whitespace-nowrap",
+        )}
       >
-        <ListChecks className={`${ICON_MD} mr-1`} />
         LAUNCH
-      </Button>
-      <Button
-        role="tab"
-        id="tutor-tab-priming"
-        aria-selected={shellMode === "dashboard" && workflowView === "priming"}
-        aria-disabled={!activeWorkflowId}
-        variant="ghost"
-        size="sm"
-        onClick={() => {
-          clearNavIntents();
-          onSetShellMode("dashboard");
-          onSetWorkflowView("priming");
-        }}
-        className={cn(controlToggleButton(shellMode === "dashboard" && workflowView === "priming", "primary", false, !activeWorkflowId), "flex-shrink-0 whitespace-nowrap")}
-        disabled={!activeWorkflowId}
-      >
-        <Sparkles className={`${ICON_MD} mr-1`} />
-        PRIMING
-      </Button>
-      <Button
-        role="tab"
-        id="tutor-tab-polish"
-        aria-selected={shellMode === "dashboard" && workflowView === "polish"}
-        aria-disabled={!activeWorkflowId}
-        variant="ghost"
-        size="sm"
-        onClick={() => {
-          void onOpenWorkflowPolish();
-        }}
-        className={cn(controlToggleButton(shellMode === "dashboard" && workflowView === "polish", "primary", false, !activeWorkflowId), "flex-shrink-0 whitespace-nowrap")}
-        disabled={!activeWorkflowId}
-      >
-        <FileStack className={`${ICON_MD} mr-1`} />
-        POLISH
-      </Button>
-      <Button
-        role="tab"
-        id="tutor-tab-final_sync"
-        aria-selected={shellMode === "dashboard" && workflowView === "final_sync"}
-        aria-disabled={!activeWorkflowDetail?.polish_bundle}
-        variant="ghost"
-        size="sm"
-        onClick={() => {
-          clearNavIntents();
-          onSetShellMode("dashboard");
-          onSetWorkflowView("final_sync");
-        }}
-        className={cn(controlToggleButton(shellMode === "dashboard" && workflowView === "final_sync", "primary", false, !activeWorkflowDetail?.polish_bundle), "flex-shrink-0 whitespace-nowrap")}
-        disabled={!activeWorkflowDetail?.polish_bundle}
-      >
-        <CheckCircle2 className={`${ICON_MD} mr-1`} />
-        FINAL SYNC
-      </Button>
-      <Button
-        role="tab"
-        id="tutor-tab-studio"
-        aria-selected={shellMode === "studio"}
-        variant="ghost"
-        size="sm"
-        onClick={() => {
-          clearNavIntents();
-          onSetShellMode("studio");
-        }}
-        className={cn(controlToggleButton(shellMode === "studio", "primary"), "flex-shrink-0 whitespace-nowrap")}
-      >
-        <PenTool className={`${ICON_MD} mr-1`} />
-        STUDIO
       </Button>
       <Button
         role="tab"
@@ -162,6 +91,21 @@ export function TutorTabBar({
       >
         <MessageSquare className={`${ICON_MD} mr-1`} />
         TUTOR
+      </Button>
+      <Button
+        role="tab"
+        id="tutor-tab-studio"
+        aria-selected={shellMode === "studio"}
+        variant="ghost"
+        size="sm"
+        onClick={() => {
+          clearNavIntents();
+          onSetShellMode("studio");
+        }}
+        className={cn(controlToggleButton(shellMode === "studio", "primary"), "flex-shrink-0 whitespace-nowrap")}
+      >
+        <PenTool className={`${ICON_MD} mr-1`} />
+        STUDIO
       </Button>
       <Button
         role="tab"

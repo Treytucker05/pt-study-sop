@@ -9,6 +9,8 @@ import type { TutorWorkflowDetailResponse, TutorWorkflowSummary } from "@/lib/ap
 const listWorkflowsMock = vi.fn();
 const getWorkflowMock = vi.fn();
 const deleteWorkflowMock = vi.fn();
+const savePrimingBundleMock = vi.fn();
+const updateWorkflowStageMock = vi.fn();
 const toastSuccessMock = vi.fn();
 const toastErrorMock = vi.fn();
 
@@ -19,8 +21,8 @@ vi.mock("@/lib/api", () => ({
       getWorkflow: (...args: unknown[]) => getWorkflowMock(...args),
       deleteWorkflow: (...args: unknown[]) => deleteWorkflowMock(...args),
       createWorkflow: vi.fn(),
-      savePrimingBundle: vi.fn(),
-      updateWorkflowStage: vi.fn(),
+      savePrimingBundle: (...args: unknown[]) => savePrimingBundleMock(...args),
+      updateWorkflowStage: (...args: unknown[]) => updateWorkflowStageMock(...args),
       runPrimingAssist: vi.fn(),
       savePolishBundle: vi.fn(),
       captureWorkflowNote: vi.fn(),
@@ -127,6 +129,8 @@ describe("useTutorWorkflow", () => {
         priming_bundles: 0,
       },
     });
+    savePrimingBundleMock.mockResolvedValue({ priming_bundle: null });
+    updateWorkflowStageMock.mockResolvedValue({ ok: true });
   });
 
   it("clears the active workflow when the open workflow is deleted", async () => {
@@ -170,5 +174,164 @@ describe("useTutorWorkflow", () => {
     expect(session.clearActiveSessionState).toHaveBeenCalled();
     expect(hub.setSelectedMaterials).toHaveBeenCalledWith([]);
     expect(toastSuccessMock).toHaveBeenCalledWith("Study plan deleted");
+  });
+
+  it("saves extracted PRIME objectives into the workflow bundle when no approved objectives exist yet", async () => {
+    const hub = {
+      ...createHubMock(),
+      courseId: 101,
+      selectedMaterials: [101],
+      selectedObjectiveGroup: "Week 7",
+    };
+    const session = createSessionMock();
+    const wrapper = createWrapper();
+
+    getWorkflowMock.mockResolvedValue({
+      ...workflowDetailFixture,
+      priming_bundle: {
+        id: 1,
+        workflow_id: workflowFixture.workflow_id,
+        course_id: 101,
+        study_unit: "Week 7",
+        topic: "Cardiovascular regulation",
+        selected_material_ids: [101],
+        selected_paths: [],
+        source_inventory: [
+          {
+            id: 101,
+            title: "Week 7 Deck",
+            priming_output: {
+              material_id: 101,
+              title: "Week 7 Deck",
+              concepts: [],
+              terminology: [],
+              gaps: [],
+              learning_objectives: [
+                { lo_code: "OBJ-1", title: "Explain cardiac output" },
+                { lo_code: "OBJ-1", title: "Explain cardiac output" },
+                { title: "Describe preload vs afterload" },
+              ],
+            },
+          },
+        ],
+        priming_methods: ["M-PRE-010"],
+        priming_method: "M-PRE-010",
+        priming_method_runs: [],
+        learning_objectives: [],
+        concepts: [{ concept: "Cardiac output" }],
+        concept_graph: {},
+        terminology: [{ term: "Cardiac output" }],
+        root_explanations: [{ text: "Hierarchy" }],
+        summaries: [{ summary: "Summary" }],
+        identified_gaps: [],
+        confidence_flags: {},
+        readiness_status: "draft",
+        readiness_blockers: [],
+        recommended_tutor_strategy: {},
+        created_at: "2026-03-20T11:00:00Z",
+        updated_at: "2026-03-20T11:10:00Z",
+      },
+      workflow: { ...workflowFixture, study_unit: "Week 7" },
+    });
+
+    const { result } = renderHook(
+      () =>
+        useTutorWorkflow({
+          hub: hub as never,
+          session: session as never,
+          activeSessionId: null,
+          shellMode: "dashboard",
+          setShellMode: vi.fn(),
+          hasRestored: true,
+        }),
+      { wrapper },
+    );
+
+    await waitFor(() => {
+      expect(listWorkflowsMock).toHaveBeenCalled();
+    });
+
+    act(() => {
+      result.current.setActiveWorkflowId(workflowFixture.workflow_id);
+      result.current.setWorkflowView("priming");
+    });
+
+    await waitFor(() => {
+      expect(getWorkflowMock).toHaveBeenCalledWith(workflowFixture.workflow_id);
+    });
+
+    await waitFor(() => {
+      expect(result.current.mergedPrimingSourceInventory).toHaveLength(1);
+    });
+
+    await act(async () => {
+      await result.current.saveWorkflowPriming("draft");
+    });
+
+    expect(savePrimingBundleMock).toHaveBeenCalledWith(
+      workflowFixture.workflow_id,
+      expect.objectContaining({
+        priming_methods: ["M-PRE-010"],
+        priming_method: "M-PRE-010",
+        learning_objectives: [
+          {
+            lo_code: "OBJ-1",
+            title: "Explain cardiac output",
+            status: "active",
+            group: "Week 7",
+          },
+          {
+            title: "Describe preload vs afterload",
+            status: "active",
+            group: "Week 7",
+          },
+        ],
+      }),
+    );
+  });
+
+  it("treats approved study-unit objectives as readiness evidence without relying on single-focus scope", async () => {
+    const hub = {
+      ...createHubMock(),
+      selectedObjectiveGroup: "Week 7",
+      scopedObjectives: [
+        {
+          id: "obj-1",
+          loCode: "OBJ-1",
+          title: "Explain cardiac output",
+          status: "active",
+          groupName: "Week 7",
+        },
+      ],
+    };
+    const session = createSessionMock();
+    const wrapper = createWrapper();
+
+    const { result } = renderHook(
+      () =>
+        useTutorWorkflow({
+          hub: hub as never,
+          session: session as never,
+          activeSessionId: null,
+          shellMode: "dashboard",
+          setShellMode: vi.fn(),
+          hasRestored: true,
+        }),
+      { wrapper },
+    );
+
+    await waitFor(() => {
+      expect(listWorkflowsMock).toHaveBeenCalled();
+    });
+
+    expect(result.current.primingReadinessItems).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          label: "Learning objectives captured",
+          ready: true,
+          detail: expect.stringContaining("approved objective"),
+        }),
+      ]),
+    );
   });
 });

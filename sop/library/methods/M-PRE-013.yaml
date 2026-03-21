@@ -1,0 +1,90 @@
+id: M-PRE-013
+name: Big-Picture Orientation Summary
+category: prime
+status: validated
+control_stage: PRIME
+description: Generate a short source-grounded overview that orients the learner to what the material is about without crossing into full explanation.
+default_duration_min: 4
+energy_cost: low
+has_steps: Y
+has_outputs_or_artifacts: Y
+outputs_summary: OrientationSummary; major sections; north-star sentence
+mechanisms:
+- advance_organizer
+- orientation
+- schema_activation
+constraints:
+  non_assessment: true
+  source_grounded_only: true
+  orientation_only: true
+  no_mechanism_teaching: true
+when_to_use:
+- The learner needs a quick big-picture frame before details.
+- The material has a clear storyline, sequence, or purpose that can be summarized at a high level.
+when_not_to_use:
+- The learner is already using a stronger structural method and does not need an additional overview.
+- The requested move is really explanation-first TEACH rather than PRIME orientation.
+steps:
+- step: 1
+  action: Identify the source's north-star idea
+  notes: Name what the material is mainly about in one plain-language sentence.
+- step: 2
+  action: Summarize the major sections or pillars
+  notes: Keep the summary short, source-grounded, and forward-looking.
+- step: 3
+  action: Stop before mechanism teaching
+  notes: The goal is orientation, not explanation depth.
+outputs:
+- OrientationSummary
+- MajorSectionList
+- NorthStarSentence
+stop_criteria:
+- The learner has a concise big-picture frame for the material.
+- The output stays at orientation level and does not become full TEACH content.
+evidence_strength: high
+primary_citations:
+- Ausubel (1968)
+- Mayer (2009)
+facilitation_prompt: |
+  You are running M-PRE-013 (Big-Picture Orientation Summary) in PRIME stage.
+  Build a short overview that helps the learner understand what the source is
+  generally about before TEACH begins.
+
+  Requirements:
+  - Stay source-grounded.
+  - Keep the summary concise and orientation-level.
+  - Do not cross into mechanism teaching or full explanation.
+
+  Return exactly:
+  1) NorthStarSentence
+  2) OrientationSummary
+  3) MajorSectionList
+
+  This is non-assessment. Do not quiz, grade, or test the learner.
+inputs:
+- Selected source material slice
+- Current study unit/topic label
+gating_rules:
+- No scored checks or learner diagnosis in PRIME.
+- No mechanism-level explanation or stepwise TEACH content.
+failure_modes:
+- mode: Overview becomes too vague
+  mitigation: Tie the summary back to the source's main sections or pillars.
+- mode: Overview becomes too explanatory
+  mitigation: Compress back to what/why this material matters at a high level.
+artifact_type: notes
+evidence_raw: Ausubel (1968); advance organizers help assimilation of new material when structure is established before detail. Mayer (2009); segmented orientation helps novices manage complex material.
+allowed_moves:
+- Write a short source-grounded orientation summary
+- Name the main sections, pillars, or storyline
+- Highlight the north-star purpose of the material
+- Prepare the learner for later TEACH without teaching the mechanism itself
+forbidden_moves:
+- Deliver full causal or mechanism explanation
+- Score, grade, or assess the learner
+- Add external content not supported by the source
+- Replace TEACH with a disguised lesson
+required_outputs:
+- NorthStarSentence
+- OrientationSummary
+- MajorSectionList

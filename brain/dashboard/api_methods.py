@@ -147,6 +147,17 @@ def _normalize_knobs(knobs: Any) -> dict[str, dict[str, Any]]:
     return normalized
 
 
+def _normalize_string_list(values: Any) -> list[str]:
+    if not isinstance(values, list):
+        return []
+    result: list[str] = []
+    for value in values:
+        text = str(value or "").strip()
+        if text:
+            result.append(text)
+    return result
+
+
 def _load_method_cards_from_yaml() -> dict[str, dict[str, Any]]:
     if not _METHODS_DIR.exists():
         return {}
@@ -172,6 +183,17 @@ def _load_method_cards_from_yaml() -> dict[str, dict[str, Any]]:
         if not method_id:
             continue
         cards[method_id] = {
+            "outputs_summary": data.get("outputs_summary"),
+            "artifact_type": data.get("artifact_type"),
+            "required_outputs": _normalize_string_list(data.get("required_outputs")),
+            "outputs": _normalize_string_list(data.get("outputs")),
+            "inputs": _normalize_string_list(data.get("inputs")),
+            "allowed_moves": _normalize_string_list(data.get("allowed_moves")),
+            "forbidden_moves": _normalize_string_list(data.get("forbidden_moves")),
+            "when_to_use": _normalize_string_list(data.get("when_to_use")),
+            "when_not_to_use": _normalize_string_list(data.get("when_not_to_use")),
+            "primary_citations": _normalize_string_list(data.get("primary_citations")),
+            "mechanisms": _normalize_string_list(data.get("mechanisms")),
             "knobs": _normalize_knobs(data.get("knobs") or {}),
             "constraints": dict(data.get("constraints") or {}),
         }
@@ -191,6 +213,18 @@ def _apply_method_knob_payload(row: dict[str, Any], cards_by_method_id: dict[str
     row["knobs"] = base_knobs
     row["constraints"] = card.get("constraints") or {}
     row["has_active_knobs"] = bool(base_knobs)
+    row["outputs_summary"] = card.get("outputs_summary")
+    if not row.get("artifact_type"):
+        row["artifact_type"] = card.get("artifact_type")
+    row["required_outputs"] = card.get("required_outputs") or []
+    row["outputs"] = card.get("outputs") or row.get("outputs") or []
+    row["inputs"] = card.get("inputs") or row.get("inputs") or []
+    row["allowed_moves"] = card.get("allowed_moves") or []
+    row["forbidden_moves"] = card.get("forbidden_moves") or []
+    row["when_to_use"] = card.get("when_to_use") or []
+    row["when_not_to_use"] = card.get("when_not_to_use") or []
+    row["primary_citations"] = card.get("primary_citations") or []
+    row["mechanisms"] = card.get("mechanisms") or []
 
 
 

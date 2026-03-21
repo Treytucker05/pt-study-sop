@@ -135,7 +135,7 @@ describe("Layout nav and notes dock", () => {
     expect(Number(window.localStorage.getItem("layout.notesDockTop.v1"))).toBeGreaterThan(0);
   });
 
-  it("compacts the header on scroll down and expands it again when scrolled back up", async () => {
+  it("keeps the header static and expanded while the page scrolls", async () => {
     render(
       <Layout>
         <div>page</div>
@@ -159,8 +159,9 @@ describe("Layout nav and notes dock", () => {
     fireEvent.scroll(main as HTMLElement);
 
     await waitFor(() => {
-      expect(header).toHaveAttribute("data-header-state", "compact");
+      expect(header).toHaveAttribute("data-header-state", "expanded");
     });
+    expect(document.body).not.toHaveClass("scrolled-down");
 
     Object.defineProperty(main as HTMLElement, "scrollTop", {
       configurable: true,
@@ -173,5 +174,6 @@ describe("Layout nav and notes dock", () => {
     await waitFor(() => {
       expect(header).toHaveAttribute("data-header-state", "expanded");
     });
+    expect(document.body).not.toHaveClass("scrolled-down");
   });
 });

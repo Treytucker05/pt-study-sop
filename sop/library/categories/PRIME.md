@@ -27,14 +27,23 @@ Purpose: Build structure from the source material before detail so the learner h
 | M-PRE-009 | Syntopical Big-Picture Synthesis | high | 15 min | cross_source_integration |
 | M-PRE-010 | Learning Objectives Primer | low | 5 min | goal_setting |
 | M-PRE-011 | Hand-Draw Map | medium | 5 min | spatial_encoding, generation |
+| M-PRE-012 | Terminology Pretraining | low | 4 min | pretraining_principle |
+| M-PRE-013 | Big-Picture Orientation Summary | low | 4 min | advance_organizer |
+| M-PRE-014 | Ambiguity and Blind-Spot Scan | medium | 4 min | gap_detection |
 
 ## Contract Summary
 
 All PRIME methods share these behavioral constraints:
 
-- **Allowed**: Structure material, extract high-level organization, ask non-scored orientation prompts anchored to the source.
-- **Forbidden**: Check correctness, probe memory from prior knowledge, log confidence as score signal, produce accuracy values, run assessment probes.
+- **Allowed**: Structure material, extract high-level organization, anchor objectives, terminology, and blind spots, ask non-scored orientation prompts anchored to the source.
+- **Forbidden**: Check correctness, probe memory from prior knowledge, log confidence as score signal, produce accuracy values, run assessment probes, or deliver first-contact explanation.
 - **Required outputs**: Vary per method (see individual YAML files).
+
+## PRIME / TEACH Boundary
+
+- `root-level understanding` is no longer a PRIME move.
+- If the learner wants the root mechanism or organizing explanation first, route that intent to TEACH (for example `Mechanism Trace`) after PRIME finishes structural setup.
+- PRIME may highlight unknowns, name key parts, and build a scaffold, but it must not replace TEACH.
 
 ## Sample Tutor Prompt
 
@@ -48,4 +57,5 @@ or log confidence. Exit when the learner can restate the core structure.
 ## Evidence Anchors
 
 - Ausubel (1968): advance organizers improve integration of new information
-- Pressley et al. (1990): prediction questions can orient attention before detail when used non-scoring
+- Mayer (2009): pretraining key parts before explanation helps novices manage complex material
+- Pan and Rivers (2023): bounded prequestions can potentiate downstream learning when paired with later instruction

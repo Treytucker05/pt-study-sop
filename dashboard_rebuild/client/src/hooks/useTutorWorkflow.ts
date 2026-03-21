@@ -5,7 +5,11 @@ import type {
   TutorWorkflowDetailResponse,
   TutorWorkflowSummary,
 } from "@/lib/api";
-import type { TutorPolishBundleRequest, TutorPrimingSourceInventoryItem } from "@/api.types";
+import type {
+  TutorPolishBundleRequest,
+  TutorPrimingMethodRun,
+  TutorPrimingSourceInventoryItem,
+} from "@/api.types";
 import type { TutorPrimingReadinessItem } from "@/components/TutorWorkflowPrimingPanel";
 import type { TutorWorkflowLaunchFilters } from "@/components/TutorWorkflowLaunchHub";
 import type { ChatMessage } from "@/components/TutorChat.types";
@@ -28,6 +32,147 @@ export interface UseTutorWorkflowParams {
   shellMode: TutorPageMode;
   setShellMode: (mode: TutorPageMode) => void;
   hasRestored: boolean;
+}
+
+type PrimingObjectiveRecord = {
+  lo_code?: string;
+  title: string;
+  status?: string;
+  group?: string;
+};
+
+const LEGACY_PRIMING_METHOD_MAP: Record<string, string> = {
+  summary_first: "M-PRE-013",
+  learning_objectives: "M-PRE-010",
+  concept_mapping: "M-PRE-005",
+  weak_point_surfacing: "M-PRE-014",
+  terminology_extraction: "M-PRE-012",
+};
+
+const DEFAULT_PRIMING_METHOD_IDS = ["M-PRE-010", "M-PRE-008"];
+const PRIME_OBJECTIVE_METHOD_IDS = new Set(["M-PRE-010"]);
+const PRIME_STRUCTURAL_METHOD_IDS = new Set(["M-PRE-004", "M-PRE-005", "M-PRE-006", "M-PRE-008", "M-PRE-009"]);
+
+function normalizePrimingMethodId(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const upper = trimmed.toUpperCase();
+  if (/^M-PRE-\d{3}$/.test(upper)) return upper;
+  if (trimmed.toLowerCase() === "root_understanding") return null;
+  return LEGACY_PRIMING_METHOD_MAP[trimmed.toLowerCase()] || null;
+}
+
+function normalizePrimingMethods(value: unknown, legacyValue?: string | null): string[] {
+  const raw = Array.isArray(value) ? value : [];
+  const normalized = raw
+    .map(normalizePrimingMethodId)
+    .filter((item): item is string => typeof item === "string" && item.length > 0);
+  if (normalized.length > 0) {
+    return Array.from(new Set(normalized));
+  }
+  const legacy = normalizePrimingMethodId(legacyValue);
+  if (legacy) return [legacy];
+  return [...DEFAULT_PRIMING_METHOD_IDS];
+}
+
+function dedupePrimingObjectives(records: PrimingObjectiveRecord[]): PrimingObjectiveRecord[] {
+  const seen = new Set<string>();
+  const result: PrimingObjectiveRecord[] = [];
+  for (const record of records) {
+    const title = String(record.title || "").trim();
+    const loCode = typeof record.lo_code === "string" ? record.lo_code.trim() : "";
+    if (!title) continue;
+    const key = `${loCode.toLowerCase()}::${title.toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push({
+      ...(loCode ? { lo_code: loCode } : {}),
+      title,
+      ...(typeof record.status === "string" && record.status.trim()
+        ? { status: record.status.trim() }
+        : {}),
+      ...(typeof record.group === "string" && record.group.trim()
+        ? { group: record.group.trim() }
+        : {}),
+    });
+  }
+  return result;
+}
+
+function normalizePrimingMethodRuns(value: unknown): TutorPrimingMethodRun[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const run = item as Record<string, unknown>;
+      const methodId = normalizePrimingMethodId(run.method_id);
+      if (!methodId) return null;
+      return {
+        method_id: methodId,
+        method_name: typeof run.method_name === "string" && run.method_name.trim().length > 0 ? run.method_name.trim() : methodId,
+        output_family:
+          typeof run.output_family === "string" && run.output_family.trim().length > 0
+            ? run.output_family.trim()
+            : "notes",
+        outputs: run.outputs && typeof run.outputs === "object" ? (run.outputs as Record<string, unknown>) : {},
+        source_ids: Array.isArray(run.source_ids)
+          ? run.source_ids.filter((entry): entry is number => typeof entry === "number")
+          : [],
+        status: typeof run.status === "string" && run.status.trim().length > 0 ? run.status.trim() : "complete",
+        updated_at: typeof run.updated_at === "string" ? run.updated_at : null,
+      } satisfies TutorPrimingMethodRun;
+    })
+    .filter((item): item is TutorPrimingMethodRun => item !== null);
+}
+
+function buildPrimingMethodRunsFromInventory(
+  sourceInventory: TutorPrimingSourceInventoryItem[],
+  selectedMethodIds: string[] = [],
+): TutorPrimingMethodRun[] {
+  const discoveredMethodIds = sourceInventory.flatMap((item) =>
+    (item.method_outputs || [])
+      .map((run) => normalizePrimingMethodId(run.method_id))
+      .filter((value): value is string => Boolean(value)),
+  );
+  const methodIds = [
+    ...selectedMethodIds,
+    ...discoveredMethodIds.filter((methodId) => !selectedMethodIds.includes(methodId)),
+  ];
+
+  return methodIds.map((methodId) => {
+    const entries = sourceInventory
+      .flatMap((item) =>
+        (item.method_outputs || [])
+          .filter((run) => run.method_id === methodId)
+          .map((run) => ({
+            material_id: item.id,
+            title: item.title,
+            source_path: item.source_path ?? null,
+            ...(run.outputs || {}),
+          })),
+      );
+    return {
+      method_id: methodId,
+      method_name:
+        (sourceInventory
+          .flatMap((item) => item.method_outputs || [])
+          .find((run) => run.method_id === methodId)?.method_name || methodId),
+      output_family:
+        (sourceInventory
+          .flatMap((item) => item.method_outputs || [])
+          .find((run) => run.method_id === methodId)?.output_family || "notes"),
+      outputs: { entries },
+      source_ids: entries
+        .map((entry) => entry.material_id)
+        .filter((value): value is number => typeof value === "number"),
+      status: entries.length > 0 ? "complete" : "pending",
+      updated_at:
+        sourceInventory
+          .flatMap((item) => item.method_outputs || [])
+          .find((run) => run.method_id === methodId)?.updated_at || null,
+    };
+  });
 }
 
 export function useTutorWorkflow({
@@ -56,10 +201,8 @@ export function useTutorWorkflow({
   const [savingPolishBundle, setSavingPolishBundle] = useState(false);
 
   // ─── PRIME artifact states ───
-  const [primingMethod, setPrimingMethod] = useState("summary_first");
-  const [primingChainId, setPrimingChainId] = useState(
-    "ingest_objectives_concepts_summary_gaps",
-  );
+  const [primingMethods, setPrimingMethods] = useState<string[]>(DEFAULT_PRIMING_METHOD_IDS);
+  const [primingMethodRuns, setPrimingMethodRuns] = useState<TutorPrimingMethodRun[]>([]);
   const [primingSummaryText, setPrimingSummaryText] = useState("");
   const [primingConceptsText, setPrimingConceptsText] = useState("");
   const [primingTerminologyText, setPrimingTerminologyText] = useState("");
@@ -177,9 +320,18 @@ export function useTutorWorkflow({
     hub.setSelectedObjectiveGroup(primingBundle?.study_unit ?? workflow.study_unit ?? "");
     hub.setObjectiveScope(firstObjectiveCode ? "single_focus" : "module_all");
     hub.setSelectedObjectiveId(firstObjectiveCode);
-    setPrimingMethod(primingBundle?.priming_method || "summary_first");
-    setPrimingChainId(
-      primingBundle?.priming_chain_id || "ingest_objectives_concepts_summary_gaps",
+    const normalizedBundleMethods = normalizePrimingMethods(
+      primingBundle?.priming_methods,
+      primingBundle?.priming_method,
+    );
+    const normalizedBundleMethodRuns = normalizePrimingMethodRuns(primingBundle?.priming_method_runs);
+    setPrimingMethods(normalizedBundleMethods);
+    setPrimingMethodRuns(
+      normalizedBundleMethodRuns.length > 0
+        ? normalizedBundleMethodRuns
+        : buildPrimingMethodRunsFromInventory(
+            Array.isArray(primingBundle?.source_inventory) ? primingBundle.source_inventory : [],
+          ),
     );
     setPrimingSourceInventory(
       Array.isArray(primingBundle?.source_inventory) ? primingBundle.source_inventory : [],
@@ -207,18 +359,40 @@ export function useTutorWorkflow({
     [hub.chatMaterials, primingSourceInventory, hub.selectedMaterials],
   );
 
+  const derivedPrimingMethodRuns = useMemo(() => {
+    if (primingMethodRuns.length > 0) return primingMethodRuns;
+    return buildPrimingMethodRunsFromInventory(mergedPrimingSourceInventory);
+  }, [mergedPrimingSourceInventory, primingMethodRuns]);
+
   // ─── PRIME readiness ───
   const primingReadinessItems = useMemo<TutorPrimingReadinessItem[]>(() => {
     const extractedObjectiveCount = mergedPrimingSourceInventory.flatMap(
       (item) => item.priming_output?.learning_objectives || [],
     ).length;
-    const hasManualObjectiveScope =
-      hub.selectedObjectiveGroup.trim().length > 0 &&
-      (hub.objectiveScope !== "single_focus" || hub.selectedObjectiveId.trim().length > 0);
-    const hasObjectives = hasManualObjectiveScope || extractedObjectiveCount > 0;
-    const studySpineCount = parseLinesToRecords(primingConceptsText, "concept").length;
-    const termsCount = parseLinesToRecords(primingTerminologyText, "term").length;
+    const approvedObjectiveCount = hub.scopedObjectives.length;
+    const hasStudyUnit = hub.selectedObjectiveGroup.trim().length > 0;
+    const hasApprovedObjectives = approvedObjectiveCount > 0;
+    const hasObjectiveMethod = derivedPrimingMethodRuns.some(
+      (run) =>
+        PRIME_OBJECTIVE_METHOD_IDS.has(run.method_id) &&
+        Array.isArray((run.outputs as Record<string, unknown>).entries) &&
+        ((run.outputs as Record<string, unknown>).entries as unknown[]).length > 0,
+    );
+    const hasObjectives = hasApprovedObjectives || extractedObjectiveCount > 0 || hasObjectiveMethod;
+    const hasStructuralMethod = derivedPrimingMethodRuns.some(
+      (run) =>
+        PRIME_STRUCTURAL_METHOD_IDS.has(run.method_id) &&
+        Array.isArray((run.outputs as Record<string, unknown>).entries) &&
+        ((run.outputs as Record<string, unknown>).entries as unknown[]).length > 0,
+    );
     return [
+      {
+        label: "Study unit selected",
+        ready: hasStudyUnit,
+        detail: hasStudyUnit
+          ? hub.selectedObjectiveGroup
+          : "Choose the study unit before handing PRIME off to Tutor.",
+      },
       {
         label: "Materials loaded",
         ready: hub.selectedMaterials.length > 0,
@@ -230,54 +404,27 @@ export function useTutorWorkflow({
       {
         label: "Learning objectives captured",
         ready: hasObjectives,
-        detail: hasManualObjectiveScope
-          ? hub.selectedObjectiveGroup || hub.selectedObjectiveId
+        detail: hasApprovedObjectives
+          ? `${approvedObjectiveCount} approved objective${approvedObjectiveCount === 1 ? "" : "s"} for ${hub.selectedObjectiveGroup || "the selected study unit"}`
           : extractedObjectiveCount > 0
             ? `${extractedObjectiveCount} extracted objective candidate${extractedObjectiveCount === 1 ? "" : "s"}`
-            : "Run PRIME to extract objectives from the selected materials.",
+            : "Use existing study-unit objectives or run Learning Objectives Primer.",
       },
       {
-        label: "Summary generated",
-        ready: primingSummaryText.trim().length > 0,
-        detail: primingSummaryText.trim().length > 0
-          ? "Summary drafted for Tutor handoff"
-          : "Add the Studio PRIME summary.",
-      },
-      {
-        label: "Study spine drafted",
-        ready: studySpineCount > 0,
+        label: "Structural organizer captured",
+        ready: hasStructuralMethod,
         detail:
-          studySpineCount > 0
-            ? `${studySpineCount} study spine nodes ready`
-            : "Capture at least one study spine node.",
-      },
-      {
-        label: "Hierarchical map drafted",
-        ready: primingRootExplanationText.trim().length > 0,
-        detail:
-          primingRootExplanationText.trim().length > 0
-            ? "Hierarchical map or structure notes captured"
-            : "Add the hierarchical map or structure notes.",
-      },
-      {
-        label: "Terms captured",
-        ready: termsCount > 0,
-        detail:
-          termsCount > 0
-            ? `${termsCount} key terms ready`
-            : "Capture at least one key term.",
+          hasStructuralMethod
+            ? "At least one structural PRIME method produced a study scaffold."
+            : "Run a structural PRIME method such as Hierarchical Advance Organizer or Structural Extraction.",
       },
     ];
   }, [
+    derivedPrimingMethodRuns,
     mergedPrimingSourceInventory,
-    hub.objectiveScope,
-    primingConceptsText,
-    primingRootExplanationText,
-    primingSummaryText,
-    primingTerminologyText,
+    hub.scopedObjectives.length,
     hub.selectedMaterials.length,
     hub.selectedObjectiveGroup,
-    hub.selectedObjectiveId,
   ]);
 
   // ─── Reset priming draft ───
@@ -291,8 +438,8 @@ export function useTutorWorkflow({
     hub.setSelectedObjectiveGroup("");
     hub.setSelectedObjectiveId("");
     hub.setObjectiveScope("module_all");
-    setPrimingMethod("summary_first");
-    setPrimingChainId("ingest_objectives_concepts_summary_gaps");
+    setPrimingMethods([...DEFAULT_PRIMING_METHOD_IDS]);
+    setPrimingMethodRuns([]);
     setPrimingSummaryText("");
     setPrimingConceptsText("");
     setPrimingTerminologyText("");
@@ -304,7 +451,7 @@ export function useTutorWorkflow({
 
   // ─── Build priming bundle payload ───
   const buildPrimingBundlePayload = useCallback(() => {
-    const learningObjectives =
+    const learningObjectives = dedupePrimingObjectives(
       hub.scopedObjectives.length > 0
         ? hub.scopedObjectives.map((objective) => ({
             ...(objective.loCode ? { lo_code: objective.loCode } : {}),
@@ -312,7 +459,17 @@ export function useTutorWorkflow({
             status: objective.status,
             group: objective.groupName || undefined,
           }))
-        : [];
+        : mergedPrimingSourceInventory.flatMap((item) =>
+            (item.priming_output?.learning_objectives || []).map((objective) => ({
+              ...(typeof objective.lo_code === "string" && objective.lo_code.trim()
+                ? { lo_code: objective.lo_code.trim() }
+                : {}),
+              title: objective.title,
+              status: "active",
+              group: hub.selectedObjectiveGroup || undefined,
+            })),
+          ),
+    );
 
     const readinessBlockers = primingReadinessItems
       .filter((item) => !item.ready)
@@ -325,8 +482,9 @@ export function useTutorWorkflow({
       selected_material_ids: hub.selectedMaterials,
       selected_paths: hub.selectedPaths,
       source_inventory: mergedPrimingSourceInventory,
-      priming_method: primingMethod,
-      priming_chain_id: primingChainId,
+      priming_methods: primingMethods,
+      priming_method: primingMethods[0] || null,
+      priming_method_runs: derivedPrimingMethodRuns,
       learning_objectives: learningObjectives,
       concepts: parseLinesToRecords(primingConceptsText, "concept"),
       concept_graph: {},
@@ -346,10 +504,10 @@ export function useTutorWorkflow({
   }, [
     hub.courseId,
     mergedPrimingSourceInventory,
-    primingChainId,
     primingConceptsText,
     primingGapsText,
-    primingMethod,
+    primingMethods,
+    derivedPrimingMethodRuns,
     primingReadinessItems,
     primingRootExplanationText,
     primingStrategyText,
@@ -410,6 +568,10 @@ export function useTutorWorkflow({
         toast.error("Select at least one source material first.");
         return;
       }
+      if (primingMethods.length === 0) {
+        toast.error("Select at least one PRIME method before extraction.");
+        return;
+      }
       setRunningPrimingAssist(true);
       setPrimingAssistTargetMaterialId(materialIds.length === 1 ? materialIds[0] : null);
       try {
@@ -417,11 +579,12 @@ export function useTutorWorkflow({
           material_ids: materialIds,
           study_unit: hub.selectedObjectiveGroup || null,
           topic: hub.topic || null,
-          priming_method: primingMethod,
-          priming_chain_id: primingChainId,
+          priming_methods: primingMethods,
+          priming_method: primingMethods[0] || null,
           source_inventory: mergedPrimingSourceInventory,
         });
         setPrimingSourceInventory(response.source_inventory);
+        setPrimingMethodRuns(normalizePrimingMethodRuns(response.priming_method_runs));
         setPrimingSummaryText(formatSourceBlockText(response.aggregate.summaries, "summary"));
         setPrimingConceptsText(formatSourceLineText(response.aggregate.concepts, "concept"));
         setPrimingTerminologyText(formatSourceLineText(response.aggregate.terminology, "term"));
@@ -446,8 +609,7 @@ export function useTutorWorkflow({
     [
       activeWorkflowId,
       mergedPrimingSourceInventory,
-      primingChainId,
-      primingMethod,
+      primingMethods,
       hub.selectedObjectiveGroup,
       hub.topic,
     ],
@@ -943,10 +1105,9 @@ export function useTutorWorkflow({
     savingPolishBundle,
 
     // Priming state
-    primingMethod,
-    setPrimingMethod,
-    primingChainId,
-    setPrimingChainId,
+    primingMethods,
+    setPrimingMethods,
+    primingMethodRuns: derivedPrimingMethodRuns,
     primingSummaryText,
     setPrimingSummaryText,
     primingConceptsText,

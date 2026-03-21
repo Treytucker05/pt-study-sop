@@ -380,6 +380,7 @@ export function mergePrimingSourceInventory(
       course_id: existing?.course_id ?? material?.course_id ?? null,
       content_type: existing?.content_type ?? (material as unknown as Record<string, unknown>)?.content_type as string | null ?? null,
       priming_output: existing?.priming_output ?? null,
+      method_outputs: existing?.method_outputs ?? [],
     });
   }
   return result;

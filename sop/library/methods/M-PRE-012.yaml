@@ -1,0 +1,90 @@
+id: M-PRE-012
+name: Terminology Pretraining
+category: prime
+status: validated
+control_stage: PRIME
+description: Extract the names, abbreviations, and short component definitions that the learner must recognize before TEACH begins.
+default_duration_min: 4
+energy_cost: low
+has_steps: Y
+has_outputs_or_artifacts: Y
+outputs_summary: TerminologySet; abbreviation map; concise component definitions
+mechanisms:
+- pretraining_principle
+- vocabulary_grounding
+- schema_activation
+constraints:
+  non_assessment: true
+  source_grounded_only: true
+  no_mechanism_explanation: true
+  no_hidden_teaching: true
+  no_scored_checks: true
+when_to_use:
+- Dense terminology, abbreviations, or nomenclature would otherwise make TEACH hard to follow.
+- First exposure to anatomy, neuro, or systems content with many named parts.
+when_not_to_use:
+- Terminology load is already light and obvious from the source.
+- The learner already has a stable working vocabulary for this topic.
+steps:
+- step: 1
+  action: Extract the high-signal terms and abbreviations
+  notes: Prefer the smallest set that meaningfully unlocks the source.
+- step: 2
+  action: Attach concise source-grounded definitions
+  notes: Keep each definition short enough to orient, not teach the full mechanism.
+- step: 3
+  action: Group terms by function or structure where helpful
+  notes: Optional clustering is allowed only if it clarifies the source.
+outputs:
+- TerminologySet
+- AbbreviationMap
+- ComponentDefinitionList
+stop_criteria:
+- The learner could read the upcoming material without tripping on unknown names or abbreviations.
+- Every extracted definition stays concise and source-grounded.
+evidence_strength: high
+primary_citations:
+- Mayer (2009)
+facilitation_prompt: |
+  You are running M-PRE-012 (Terminology Pretraining) in PRIME stage.
+  Extract only the names, abbreviations, and short component definitions the learner
+  must recognize before TEACH begins.
+
+  Requirements:
+  - Stay source-grounded and concise.
+  - Do not drift into mechanism teaching.
+  - Definitions should orient the learner, not replace TEACH.
+
+  Return exactly:
+  1) TerminologySet
+  2) AbbreviationMap
+  3) ComponentDefinitionList
+
+  This is non-assessment. Do not quiz, grade, or judge mastery.
+inputs:
+- Selected source material slice
+- Current study unit/topic label
+gating_rules:
+- No scoring, quizzing, or learner diagnosis in PRIME.
+- Do not explain full mechanisms or causal chains.
+failure_modes:
+- mode: Too many low-value terms
+  mitigation: Keep only the smallest set that unlocks the source.
+- mode: Definitions become mini-lessons
+  mitigation: Compress back to short orientation-level labels.
+artifact_type: notes
+evidence_raw: Mayer (2009); pretraining helps novices when key parts and names are introduced before complex explanation.
+allowed_moves:
+- Extract key terms and abbreviations from the selected source
+- Attach concise source-grounded definitions
+- Group terminology into simple structural or functional clusters
+- Highlight the minimum vocabulary the learner must recognize before TEACH
+forbidden_moves:
+- Teach the full mechanism or concept in depth
+- Score or assess the learner
+- Add external knowledge not supported by the source
+- Turn terminology extraction into a full summary of the lesson
+required_outputs:
+- TerminologySet
+- AbbreviationMap
+- ComponentDefinitionList

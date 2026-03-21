@@ -144,8 +144,6 @@ const NOTES_DOCK_STORAGE_KEY = "layout.notesDockTop.v1";
 const NOTES_DOCK_MARGIN = 16;
 const NOTES_DOCK_MIN_TOP = 96;
 const NAV_BUILD_MARKER = "NAV 317.3";
-const DESKTOP_NAV_BREAKPOINT = 1024;
-
 const resolveNoteType = (note: Note): NoteCategory => {
   const raw = (note as Note & { noteType?: string }).noteType;
   if (raw === "planned" || raw === "ideas" || raw === "notes") {
@@ -156,29 +154,29 @@ const resolveNoteType = (note: Note): NoteCategory => {
 
 const navButtonImageClass = (item: NavItem, isActive: boolean) =>
   cn(
-    "pointer-events-none h-full w-full object-contain transition-[filter,opacity,transform] duration-200 motion-reduce:transition-none",
+    "pointer-events-none h-full w-full object-contain transition-[filter,opacity] duration-200 motion-reduce:transition-none",
     item.tier === "primary"
       ? isActive
         ? "brightness-[1.1] saturate-[1.2] drop-shadow-[0_0_24px_rgba(255,74,74,0.42)] group-hover:brightness-[1.14] group-hover:saturate-[1.24] group-hover:drop-shadow-[0_0_28px_rgba(255,74,74,0.5)]"
-        : "opacity-[0.98] brightness-[0.97] saturate-[1.06] group-hover:scale-[1.03] group-hover:opacity-100 group-hover:brightness-[1.07] group-hover:saturate-[1.14] group-hover:drop-shadow-[0_0_18px_rgba(255,96,96,0.3)] group-active:scale-[0.99]"
+        : "opacity-[0.98] brightness-[0.97] saturate-[1.06] group-hover:opacity-100 group-hover:brightness-[1.07] group-hover:saturate-[1.14] group-hover:drop-shadow-[0_0_18px_rgba(255,96,96,0.3)]"
       : isActive
         ? "brightness-[1.08] saturate-[1.18] drop-shadow-[0_0_22px_rgba(255,74,74,0.42)] group-hover:brightness-[1.12] group-hover:saturate-[1.22] group-hover:drop-shadow-[0_0_24px_rgba(255,74,74,0.46)]"
-        : "opacity-[0.92] brightness-[0.78] saturate-[0.84] group-hover:scale-[1.02] group-hover:opacity-100 group-hover:brightness-100 group-hover:saturate-[1.08] group-hover:drop-shadow-[0_0_14px_rgba(255,74,74,0.28)] group-active:scale-[0.99]",
+        : "opacity-[0.92] brightness-[0.78] saturate-[0.84] group-hover:opacity-100 group-hover:brightness-100 group-hover:saturate-[1.08] group-hover:drop-shadow-[0_0_14px_rgba(255,74,74,0.28)]",
     item.accentClass,
   );
 
 const navShellLinkClass = (item: NavItem, isActive: boolean) =>
   cn(
-    "group absolute z-10 flex cursor-pointer items-center justify-center rounded-[1.4rem] pointer-events-auto will-change-transform transition-transform duration-200 motion-reduce:transition-none",
+    "group absolute z-10 flex cursor-pointer items-center justify-center rounded-[1.4rem] pointer-events-auto",
     "after:pointer-events-none after:absolute after:inset-[8%] after:rounded-[1.2rem] after:border-0 after:transition-[border-color,box-shadow,opacity] after:duration-200",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
     item.tier === "primary"
       ? isActive
-        ? "scale-[1.025] hover:-translate-y-1 after:border-red-300/55 after:shadow-[0_0_16px_rgba(255,82,82,0.32)]"
-        : "hover:-translate-y-1.5 active:translate-y-px active:scale-[0.985] hover:after:border-red-300/35 hover:after:shadow-[0_0_14px_rgba(255,82,82,0.22)]"
+        ? "after:border-red-300/55 after:shadow-[0_0_16px_rgba(255,82,82,0.32)]"
+        : "hover:after:border-red-300/35 hover:after:shadow-[0_0_14px_rgba(255,82,82,0.22)]"
       : isActive
-        ? "scale-[1.02] hover:-translate-y-0.5 after:border-red-300/45 after:shadow-[0_0_12px_rgba(255,82,82,0.24)]"
-        : "hover:-translate-y-1 active:translate-y-px active:scale-[0.985] hover:after:border-red-300/28 hover:after:shadow-[0_0_10px_rgba(255,82,82,0.18)]",
+        ? "after:border-red-300/45 after:shadow-[0_0_12px_rgba(255,82,82,0.24)]"
+        : "hover:after:border-red-300/28 hover:after:shadow-[0_0_10px_rgba(255,82,82,0.18)]",
   );
 
 const notesDockStyle = (top: number | null): CSSProperties => ({
@@ -233,40 +231,8 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
   const [notesDockTop, setNotesDockTop] = useState<number | null>(null);
   const [isDraggingNotesDock, setIsDraggingNotesDock] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
-  const [isDesktopViewport, setIsDesktopViewport] = useState(() =>
-    typeof window === "undefined" ? true : window.innerWidth >= DESKTOP_NAV_BREAKPOINT,
-  );
   const notesDockRef = useRef<HTMLButtonElement | null>(null);
   const notesDockDragRef = useRef<{ pointerId: number; offsetY: number; moved: boolean } | null>(null);
-  // ─── Adaptive header state ───
-  const [headerCollapsed, setHeaderCollapsed] = useState(false);
-  const [headerHovered, setHeaderHovered] = useState(false);
-  const [headerHeightPx, setHeaderHeightPx] = useState(0);
-  const lastScrollY = useRef(0);
-  const lastScrollSource = useRef<EventTarget | null>(null);
-  const scrollAccumulator = useRef(0);
-  const SCROLL_DOWN_THRESHOLD = 1;
-  const TOP_ZONE = 10;
-  const HEADER_SLIVER_PX = 6;
-
-  // Mouse-based header collapse: collapse when mouse enters content area, expand at top
-  useEffect(() => {
-    if (!isDesktopViewport) return;
-    const handleMouseMove = (e: globalThis.MouseEvent) => {
-      const header = document.querySelector<HTMLElement>("header[data-header-shell]");
-      if (!header) return;
-      const headerBottom = header.getBoundingClientRect().bottom;
-      if (e.clientY > headerBottom + 20) {
-        setHeaderCollapsed(true);
-        setHeaderHovered(false);
-      } else if (e.clientY < HEADER_SLIVER_PX + 10) {
-        setHeaderHovered(true);
-        setHeaderCollapsed(false);
-      }
-    };
-    document.addEventListener("mousemove", handleMouseMove, { passive: true });
-    return () => document.removeEventListener("mousemove", handleMouseMove);
-  }, [isDesktopViewport]);
 
   const clampNotesDockTop = useCallback((top: number) => {
     if (typeof window === "undefined") {
@@ -275,123 +241,6 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
     const dockHeight = notesDockRef.current?.offsetHeight ?? 64;
     const maxTop = Math.max(NOTES_DOCK_MIN_TOP, window.innerHeight - dockHeight - NOTES_DOCK_MARGIN);
     return Math.min(Math.max(top, NOTES_DOCK_MIN_TOP), maxTop);
-  }, []);
-
-  const resolveScrollPosition = useCallback((target?: EventTarget | null) => {
-    if (target instanceof HTMLElement) {
-      if (target === document.body || target === document.documentElement) {
-        return { source: window, y: window.scrollY || document.documentElement.scrollTop || 0 };
-      }
-      return { source: target, y: target.scrollTop };
-    }
-
-    const main = document.querySelector("main");
-    if (main instanceof HTMLElement) {
-      return { source: main, y: main.scrollTop };
-    }
-
-    return { source: window, y: window.scrollY || document.documentElement.scrollTop || 0 };
-  }, []);
-
-  // Scroll handler — no longer controls header collapse/expand (mouse-only now)
-  const handleScroll = useCallback((_event?: Event) => {
-    // Kept for other scroll-dependent logic but header state is mouse-only
-  }, []);
-
-  useEffect(() => {
-    document.addEventListener("scroll", handleScroll, { passive: true, capture: true });
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    // Also listen directly on <main> since it's the scroll container on workspace routes
-    const main = document.querySelector("main");
-    if (main) {
-      main.addEventListener("scroll", handleScroll, { passive: true });
-    }
-    handleScroll();
-    return () => {
-      document.removeEventListener("scroll", handleScroll, true);
-      window.removeEventListener("scroll", handleScroll);
-      if (main) {
-        main.removeEventListener("scroll", handleScroll);
-      }
-    };
-  }, [handleScroll]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const syncViewportFromWindow = () =>
-      setIsDesktopViewport(window.innerWidth >= DESKTOP_NAV_BREAKPOINT);
-
-    if (typeof window.matchMedia !== "function") {
-      syncViewportFromWindow();
-      window.addEventListener("resize", syncViewportFromWindow);
-      return () => window.removeEventListener("resize", syncViewportFromWindow);
-    }
-
-    const mediaQuery = window.matchMedia(`(min-width: ${DESKTOP_NAV_BREAKPOINT}px)`);
-    const syncViewport = () => setIsDesktopViewport(mediaQuery.matches);
-    syncViewport();
-
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", syncViewport);
-      return () => mediaQuery.removeEventListener("change", syncViewport);
-    }
-
-    mediaQuery.addListener(syncViewport);
-    return () => mediaQuery.removeListener(syncViewport);
-  }, []);
-
-  useEffect(() => {
-    if (isDesktopViewport) {
-      return;
-    }
-    setHeaderCollapsed(false);
-    setHeaderHovered(false);
-  }, [isDesktopViewport]);
-
-  const headerExpanded = !isDesktopViewport || !headerCollapsed || headerHovered;
-
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    if (headerExpanded) {
-      document.body.classList.remove("scrolled-down");
-    } else {
-      document.body.classList.add("scrolled-down");
-    }
-  }, [headerExpanded]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    const node = document.querySelector<HTMLElement>("header[data-header-shell]");
-    if (!node) {
-      return;
-    }
-
-    const measure = () => {
-      const rect = node.getBoundingClientRect();
-      setHeaderHeightPx(rect.height || 0);
-    };
-
-    measure();
-
-    const resizeObserver = "ResizeObserver" in window ? new ResizeObserver(measure) : null;
-    if (resizeObserver) {
-      resizeObserver.observe(node);
-    } else {
-      window.addEventListener("resize", measure);
-    }
-
-    return () => {
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      } else {
-        window.removeEventListener("resize", measure);
-      }
-    };
   }, []);
 
   useEffect(() => {
@@ -465,13 +314,6 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMobileNavOpen(false);
-
-    // Reset scroll + header state on route change so stale scroll
-    // position from a previous page doesn't collapse the hero/header.
-    setHeaderCollapsed(false);
-    scrollAccumulator.current = 0;
-    lastScrollY.current = 0;
-    lastScrollSource.current = null;
 
     const main = document.querySelector("main");
     if (main) {
@@ -772,8 +614,7 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <div
       className={cn(
-        "relative h-[100dvh] overflow-hidden bg-transparent font-terminal text-foreground",
-        "grid grid-rows-[auto_1fr_auto]",
+        "relative flex min-h-[100dvh] flex-col bg-transparent font-terminal text-foreground",
       )}
     >
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
@@ -796,24 +637,11 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
       {/* CRT Scanlines */}
       <div className="crt-scanlines" />
 
-      {/* Top Nav — adaptive header with Retro-Futuristic Tactical Banner */}
-      {/* Hover hot zone for expanding the collapsed header sliver */}
-      <div
-        className="fixed inset-x-0 top-0 z-30 hidden pointer-events-auto lg:block"
-        style={{ height: HEADER_SLIVER_PX }}
-        onMouseEnter={() => { setHeaderHovered(true); setHeaderCollapsed(false); }}
-      />
+      {/* Top Nav — static header attached to normal page flow */}
       <header
         data-header-shell
-        className={cn(
-          "relative z-20 border-b-4 border-red-700",
-          headerExpanded
-            ? "shadow-[0_10px_30px_rgba(220,38,38,0.4)]"
-            : "invisible h-0 overflow-hidden border-b-0",
-        )}
-        data-header-state={headerExpanded ? "expanded" : "compact"}
-        onMouseEnter={() => { setHeaderHovered(true); setHeaderCollapsed(false); }}
-        onMouseLeave={() => { setHeaderHovered(false); if (isDesktopViewport) setHeaderCollapsed(true); }}
+        className="relative z-20 border-b-4 border-red-700 shadow-[0_10px_30px_rgba(220,38,38,0.4)]"
+        data-header-state="expanded"
       >
         {/* Banner Image Background */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
@@ -1241,10 +1069,10 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
 
       <main
         className={cn(
-          "relative z-10 h-full min-h-0 w-full",
+          "relative z-10 w-full flex-1",
           isWorkspaceRoute
-            ? "overflow-y-auto overscroll-y-contain"
-            : "overflow-y-auto px-2 py-3 sm:px-3 md:px-5 md:py-4"
+            ? ""
+            : "px-2 py-3 sm:px-3 md:px-5 md:py-4"
         )}
       >
         <div

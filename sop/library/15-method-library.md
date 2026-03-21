@@ -43,9 +43,9 @@ Each method block represents a single study activity.
 
 ---
 
-## §2.1 Block Catalog (56 blocks)
+## §2.1 Block Catalog (59 blocks)
 
-### PRIME (8 blocks)
+### PRIME (11 blocks)
 | Block | Duration | Energy | Evidence |
 |-------|----------|--------|----------|
 | Overarching Pre-Question Set | 3 min | low | Jamison et al. (2023/2024); Prequestions improve downstream learning when paired with structured follow-up. |
@@ -56,6 +56,9 @@ Each method block represents a single study activity.
 | Syntopical Big-Picture Synthesis | 6 min | low | Ausubel (1968); Comparative organizers support integration across related sources. |
 | Learning Objectives Primer | 3 min | low | Ausubel (1968); Hattie (2009); explicit learning objectives improve encoding direction and metacognitive monitoring |
 | Hand-Draw Map | 5 min | medium | Wammes et al. (2016); Drawing effect — drawing doubles free-recall rates (45% vs 20%) through multimodal encoding combining motor, visual, and semantic processing |
+| Terminology Pretraining | 4 min | low | Mayer (2009); pretraining key parts before explanation improves novice comprehension of complex material |
+| Big-Picture Orientation Summary | 4 min | low | Ausubel (1968); Mayer (2009); orientation-level overviews help learners organize incoming detail without replacing TEACH |
+| Ambiguity and Blind-Spot Scan | 4 min | medium | Overoye et al. (2021); Pan and Rivers (2023); bounded prequestioning helps direct attention toward missing or unclear structure before later instruction |
 
 ### TEACH (9 blocks)
 | Block | Duration | Energy | Evidence |

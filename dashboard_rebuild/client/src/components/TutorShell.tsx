@@ -47,10 +47,13 @@ import { cn } from "@/lib/utils";
 import { controlToggleButton } from "@/components/shell/controlStyles";
 import { formatElapsedDuration, INPUT_BASE, SELECT_BASE } from "@/lib/tutorUtils";
 import type { TutorPageMode } from "@/lib/tutorUtils";
+import { api } from "@/lib/api";
+import type { TutorTemplateChain } from "@/lib/api";
 import type { UseTutorHubReturn } from "@/hooks/useTutorHub";
 import type { UseTutorSessionReturn } from "@/hooks/useTutorSession";
 import type { UseTutorWorkflowReturn } from "@/hooks/useTutorWorkflow";
 import type { TutorBoardScope } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
 
 export interface TutorShellProps {
   shellMode: TutorPageMode;
@@ -112,10 +115,17 @@ export function TutorShell({
   saveSettings,
   restoreDefaultInstructions,
 }: TutorShellProps) {
+  const { data: templateChains = [], isLoading: templateChainsLoading } = useQuery<TutorTemplateChain[]>({
+    queryKey: ["tutor-chains-templates"],
+    queryFn: () => api.tutor.getTemplateChains(),
+    enabled: shellMode === "dashboard" && workflow.workflowView === "priming",
+    staleTime: 60 * 1000,
+  });
+
   return (
     <>
       {/* Scholar strategy panel */}
-      {activeSessionId && session.scholarStrategy && (
+      {shellMode === "tutor" && activeSessionId && session.scholarStrategy && (
         <div className="flex-none">
         <button
           type="button"
@@ -330,10 +340,15 @@ export function TutorShell({
                   setSelectedObjectiveGroup={hub.setSelectedObjectiveGroup}
                   availableObjectives={hub.availableObjectives}
                   studyUnitOptions={hub.studyUnitOptions}
-                  primingMethod={workflow.primingMethod}
-                  setPrimingMethod={workflow.setPrimingMethod}
-                  primingChainId={workflow.primingChainId}
-                  setPrimingChainId={workflow.setPrimingChainId}
+                  primingMethods={workflow.primingMethods}
+                  setPrimingMethods={workflow.setPrimingMethods}
+                  primingMethodRuns={workflow.primingMethodRuns}
+                  chainId={hub.chainId}
+                  setChainId={hub.setChainId}
+                  customBlockIds={hub.customBlockIds}
+                  setCustomBlockIds={hub.setCustomBlockIds}
+                  templateChains={templateChains}
+                  templateChainsLoading={templateChainsLoading}
                   summaryText={workflow.primingSummaryText}
                   setSummaryText={workflow.setPrimingSummaryText}
                   conceptsText={workflow.primingConceptsText}
@@ -349,6 +364,9 @@ export function TutorShell({
                   sourceInventory={workflow.mergedPrimingSourceInventory}
                   vaultFolderPreview={hub.derivedVaultFolder}
                   readinessItems={workflow.primingReadinessItems}
+                  preflightBlockers={session.preflight?.blockers || []}
+                  preflightLoading={session.preflightLoading}
+                  preflightError={session.preflightError}
                   onBackToLaunch={() => workflow.setWorkflowView("launch")}
                   onSaveDraft={() => {
                     void workflow.saveWorkflowPriming("draft");

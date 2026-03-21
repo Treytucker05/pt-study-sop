@@ -12,9 +12,14 @@ Update policy: after every significant change, update this file with status chan
 
 Active execution priority is tracked in `docs/root/TUTOR_TODO.md`.
 
-Active status: 2 active workstreams.
+Active status: 3 active workstreams.
 
-Latest update: 2026-03-16, opened Repo-Wide Quality Audit Backlog for a non-blocking current-tree audit across shell, Brain, Tutor, Scholar, support routes, backend/API contracts, and validation coverage while UI Production System remains active.
+Latest update: 2026-03-20, opened Tutor Guided Studyability Loop to inventory current Tutor workflow features, run guided stage-by-stage live study passes, and normalize all study friction into one prioritized backlog while Repo-Wide Quality Audit Backlog and UI Production System remain active.
+
+- [ ] **Track: Tutor Guided Studyability Loop** (active — created 2026-03-20; scope: Tutor-only feature inventory, guided stage-by-stage live study passes with real class/material inputs, normalized friction logging, and prioritized fix-wave planning)
+  *Link: [./tracks/tutor-guided-studyability_20260320/](./tracks/tutor-guided-studyability_20260320/)*
+
+---
 
 - [ ] **Track: Repo-Wide Quality Audit Backlog** (active — created 2026-03-16; scope: current dirty-tree audit across live routes, shared shell/nav, backend/API contracts, validation coverage, and severity-ranked fix-wave planning)
   *Link: [./tracks/repo-quality-audit_20260316/](./tracks/repo-quality-audit_20260316/)*

@@ -259,6 +259,18 @@ def test_seed_methods_strict_sync_updates_stale_artifact_type(
     assert row[3] == "notes"
 
 
+def test_load_from_yaml_includes_new_prime_method_cards() -> None:
+    module = _load_seed_methods_module()
+    data = module.load_from_yaml()
+
+    assert data is not None
+    method_ids = {method["method_id"] for method in data["methods"]}
+
+    assert "M-PRE-012" in method_ids
+    assert "M-PRE-013" in method_ids
+    assert "M-PRE-014" in method_ids
+
+
 def test_seed_methods_repairs_control_stage_drift_without_strict_sync(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

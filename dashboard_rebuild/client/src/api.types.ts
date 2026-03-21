@@ -796,6 +796,7 @@ export const CATEGORY_COLORS: Record<MethodCategory, string> = {
 
 export interface MethodBlock {
   id: number;
+  method_id?: string | null;
   name: string;
   control_stage?: string | null;
   category: MethodCategory | string;
@@ -805,6 +806,17 @@ export interface MethodBlock {
   best_stage: string | null;
   tags: string[];
   evidence: string | null;
+  outputs_summary?: string | null;
+  artifact_type?: string | null;
+  required_outputs?: string[];
+  outputs?: string[];
+  inputs?: string[];
+  allowed_moves?: string[];
+  forbidden_moves?: string[];
+  when_to_use?: string[];
+  when_not_to_use?: string[];
+  primary_citations?: string[];
+  mechanisms?: string[];
   facilitation_prompt?: string | null;
   knobs?: Record<string, unknown>;
   constraints?: Record<string, unknown>;
@@ -1534,8 +1546,10 @@ export interface TutorPrimingBundle {
   selected_material_ids: number[];
   selected_paths: string[];
   source_inventory: TutorPrimingSourceInventoryItem[];
+  priming_methods: string[];
   priming_method: string | null;
   priming_chain_id: string | null;
+  priming_method_runs: TutorPrimingMethodRun[];
   learning_objectives: Record<string, unknown>[];
   concepts: Record<string, unknown>[];
   concept_graph: Record<string, unknown>;
@@ -1554,6 +1568,16 @@ export interface TutorPrimingBundle {
 export interface TutorPrimingSourceOutputObjective {
   title: string;
   lo_code?: string | null;
+}
+
+export interface TutorPrimingMethodRun {
+  method_id: string;
+  method_name: string;
+  output_family: string;
+  outputs: Record<string, unknown>;
+  source_ids?: number[];
+  status: string;
+  updated_at?: string | null;
 }
 
 export interface TutorPrimingSourceOutput {
@@ -1579,6 +1603,7 @@ export interface TutorPrimingSourceInventoryItem {
   course_id?: number | null;
   content_type?: string | null;
   priming_output?: TutorPrimingSourceOutput | null;
+  method_outputs?: TutorPrimingMethodRun[];
 }
 
 export interface TutorPrimingBundleRequest {
@@ -1588,8 +1613,10 @@ export interface TutorPrimingBundleRequest {
   selected_material_ids?: number[];
   selected_paths?: string[];
   source_inventory?: TutorPrimingSourceInventoryItem[];
+  priming_methods?: string[];
   priming_method?: string | null;
   priming_chain_id?: string | null;
+  priming_method_runs?: TutorPrimingMethodRun[];
   learning_objectives?: Record<string, unknown>[];
   concepts?: Record<string, unknown>[];
   concept_graph?: Record<string, unknown>;
@@ -1607,6 +1634,7 @@ export interface TutorPrimingAssistRequest {
   material_ids: number[];
   study_unit?: string | null;
   topic?: string | null;
+  priming_methods?: string[];
   priming_method?: string | null;
   priming_chain_id?: string | null;
   source_inventory?: TutorPrimingSourceInventoryItem[];
@@ -1623,6 +1651,7 @@ export interface TutorPrimingAssistAggregate {
 
 export interface TutorPrimingAssistResponse {
   source_inventory: TutorPrimingSourceInventoryItem[];
+  priming_method_runs: TutorPrimingMethodRun[];
   aggregate: TutorPrimingAssistAggregate;
 }
 
