@@ -186,6 +186,34 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - the Methods page shows a retryable destructive error panel for method or chain query failures instead of collapsing into a blank/empty surface
     - targeted backend/frontend tests pass, the production frontend build passes, and the restarted live dashboard shows the recovered Methods page
   - Completed 2026-03-20: updated `brain/db_setup.py` to rebuild stale `method_blocks` tables whose `control_stage` check still excluded `TEACH`, normalized copied stage values during the rebuild, and excluded `certification_registry.yaml` from expected template-chain counts so startup no longer reseeds forever; added a regression test in `brain/tests/test_methods_api.py` proving a legacy table is upgraded and can accept `TEACH`; added retryable error panels plus focused coverage in `dashboard_rebuild/client/src/pages/methods.tsx` and `dashboard_rebuild/client/src/pages/__tests__/methods.test.tsx`; passed `pytest brain/tests/test_methods_api.py brain/tests/test_seed_methods.py -q`; passed `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/methods.test.tsx client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`; passed `cd dashboard_rebuild && npm run build`; ran `python brain/db_setup.py` to repair the live DB and reseed the library to `54` method blocks with `5` TEACH blocks; restarted the app with `Start_Dashboard.bat`; and re-verified the live Methods page at `http://127.0.0.1:5000/methods`.
+- [x] MCAS-120. Repair canonical method stage drift in the live library when existing rows have valid descriptions/tags but stale control-plane assignment.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `brain/data/seed_methods.py`
+    - `brain/tests/test_seed_methods.py`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - runtime/non-strict method seeding always repairs canonical `control_stage` drift for existing method rows
+    - the legacy compatibility `category` field is kept aligned with the repaired stage
+    - a regression test proves an existing non-placeholder row with stale stage data is corrected without requiring `--strict-sync`
+    - reseeding the live DB moves `Analogy Bridge` back under `TEACH` while leaving `KWIK Hook` in `ENCODE`
+  - Completed 2026-03-20: updated `brain/data/seed_methods.py` so canonical stage/category drift is always repaired for existing method rows during normal seed merges, added `brain/tests/test_seed_methods.py` coverage for non-strict stage repair, passed `pytest brain/tests/test_seed_methods.py -q`, ran `python brain/data/seed_methods.py` to reseed the live database, and re-verified `http://127.0.0.1:5000/api/methods` now returns `Analogy Bridge` as `TEACH` and `KWIK Hook` as `ENCODE`.
+- [x] MCAS-130. Surface the missing TEACH doctrine cards in the live Methods library so the depth ladder and KWIK Lite slot are selectable/visible instead of living only in canon text.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `sop/library/methods/`
+    - `sop/library/15-method-library.md`
+    - `sop/library/categories/TEACH.md`
+    - `brain/data/seed_methods.py`
+    - `brain/tests/test_seed_methods.py`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - the library contains a visible TEACH card for the `4-10-HS-PT` depth ladder doctrine
+    - the library contains a visible `KWIK Lite` card for the post-TEACH / pre-FULL-CALIBRATE mnemonic slot
+    - method-library docs and TEACH category docs list the new cards
+    - reseeding the live DB makes both cards appear through `http://127.0.0.1:5000/api/methods`
+    - validator/tests pass for the new cards
+  - Completed 2026-03-20: added `M-TEA-006 Depth Ladder (4-10-HS-PT)` and `M-TEA-007 KWIK Lite` under `sop/library/methods/`, updated `sop/library/15-method-library.md`, `sop/library/categories/TEACH.md`, and `sop/library/categories/ENCODE.md` so the TEACH inventory and KWIK split are documented, added `brain/tests/test_seed_methods.py` coverage proving the YAML loader surfaces the new TEACH doctrine cards, passed `python sop/tools/validate_library.py`, passed `pytest brain/tests/test_seed_methods.py -q`, reseeded the live DB via `python brain/data/seed_methods.py`, verified `http://127.0.0.1:5000/api/methods` returns the new cards, and confirmed the live Methods page at `http://127.0.0.1:5000/methods` renders both `Depth Ladder (4-10-HS-PT)` and `KWIK Lite` under `TEACH`.
 
 ### Sprint: Custom Navbar Layout Plugin (2026-03-16)
 - [x] FNP-100. Create a minimal custom navbar layout plugin that imports the dashboard shell background plus the split navbar button PNGs and lays them out automatically in the open design file.

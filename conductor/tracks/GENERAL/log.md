@@ -2,6 +2,32 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-20 - Methods library stage drift repair
+
+- Repaired non-strict method-library seeding in `brain/data/seed_methods.py` so canonical `control_stage` drift now self-heals for existing non-placeholder rows instead of only updating during `--strict-sync`.
+- Kept the legacy `category` column aligned with repaired control-plane stages during seed merges so frontend compatibility fields stop lagging behind canon.
+- Added regression coverage in `brain/tests/test_seed_methods.py` proving a stale `Analogy Bridge` row is corrected from `ENCODE` to `TEACH` without requiring a destructive reseed or strict sync.
+- Ran `python brain/data/seed_methods.py` against the live database and re-verified `http://127.0.0.1:5000/api/methods` now reports:
+  - `Analogy Bridge` -> `TEACH`
+  - `KWIK Hook` -> `ENCODE`
+- Verification:
+  - `pytest brain/tests/test_seed_methods.py -q`
+  - `python brain/data/seed_methods.py`
+
+## 2026-03-20 - TEACH doctrine cards surfaced in Methods library
+
+- Added two previously invisible TEACH doctrine cards to the live method library:
+  - `M-TEA-006` `Depth Ladder (4-10-HS-PT)`
+  - `M-TEA-007` `KWIK Lite`
+- Updated TEACH/ENCODE library docs so the visible inventory now matches the locked TEACH-first architecture and the full-vs-lite KWIK split is explicit.
+- Added `brain/tests/test_seed_methods.py` coverage proving the YAML loader surfaces the new TEACH doctrine cards.
+- Validation and live checks:
+  - `python sop/tools/validate_library.py`
+  - `pytest brain/tests/test_seed_methods.py -q`
+  - `python brain/data/seed_methods.py`
+  - verified `http://127.0.0.1:5000/api/methods` returns `M-TEA-006` and `M-TEA-007`
+  - verified `http://127.0.0.1:5000/methods` renders both cards under `TEACH`
+
 ## 2026-03-15 - Tutor Page 1 Command Deck closeout
 
 - Closed `conductor/tracks/tutor-page1-command-deck_20260315/` after shipping the responsive command deck and syncing the repo boards to the final IA.

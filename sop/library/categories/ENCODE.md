@@ -12,6 +12,7 @@ Purpose: Turn explained material into learner-built structures, explanations, ma
 
 - Use active processing: generate, map, compare, draw, teach back, or transform.
 - Convert explained material into coherent learner-owned mental models.
+- Full `KWIK Hook` belongs here as deeper encoding work; `KWIK Lite` is the lighter TEACH-side live slot.
 - Not for: passive rereading as the primary activity.
 - Not for: tutor-led first-contact explanation; that belongs in TEACH.
 

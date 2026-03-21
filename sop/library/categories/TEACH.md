@@ -29,6 +29,8 @@ Purpose: Deliver first-contact explanation in bounded chunks so unfamiliar mater
 | M-TEA-003 | Clinical Anchor Mini-Case | medium | 5 min | situated_relevance |
 | M-TEA-004 | Modality Switch | low | 3 min | representation_matching |
 | M-TEA-005 | Jingle / Rhyme Hook | low | 3 min | mnemonic_compression |
+| M-TEA-006 | Depth Ladder (4-10-HS-PT) | low | 4 min | staged_depth_control |
+| M-TEA-007 | KWIK Lite | low | 2 min | lightweight_mnemonic_compression |
 
 ## Contract Summary
 

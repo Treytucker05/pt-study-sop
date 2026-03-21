@@ -1,0 +1,122 @@
+id: M-TEA-006
+name: Depth Ladder (4-10-HS-PT)
+category: encode
+description: Route first-contact explanation through a brief hook, direct mechanism teaching, and DPT precision, using analogy or simple-language scaffolds only when comprehension actually needs recovery.
+default_duration_min: 4
+energy_cost: low
+best_stage: first_exposure
+control_stage: TEACH
+status: draft
+tags:
+- teach
+- depth
+- ladder
+- scaffold
+- sop-core
+mechanisms:
+- scaffolding
+- worked_examples
+- transfer
+stipulations:
+- The default route is brief L0 hook -> L3 mechanism -> L4 DPT precision.
+- L1 analogy and L2 plain-language explanation are fallback scaffolds, not the default route.
+- Unlock L4 only after low-friction function confirmation.
+- Do not turn the depth ladder into a blank-page teach-back requirement.
+knobs:
+  guidance_level: medium
+  output_format: bullets
+constraints:
+  non_assessment: true
+  no_scored_checks: true
+  objective_scope_required: true
+inputs:
+- Active concept or objective
+- Source facts or PRIME artifacts
+- Learner familiarity signal
+steps:
+- step: 1
+  action: Deliver one brief L0 hook
+  notes: Use a quick image, motion, or felt-sense opener only to orient.
+- step: 2
+  action: Move directly to L3 mechanism
+  notes: Teach the real causal structure with proper terms.
+- step: 3
+  action: Insert L1 analogy or L2 simple explanation only if comprehension breaks
+  notes: Use fallback scaffolds to recover understanding, then return to the real mechanism.
+- step: 4
+  action: Run low-friction function confirmation
+  notes: Use a short functional check, not a blank-page teach-back.
+- step: 5
+  action: Unlock L4 DPT precision
+  notes: Add edge cases, clinical implications, or discriminators only after function is confirmed.
+outputs:
+- DepthRoutePlan
+- L0Hook
+- L3Mechanism
+- FallbackScaffoldUsed
+- FunctionConfirmation
+- L4PrecisionRestatement
+stop_criteria:
+- One brief L0 hook is delivered
+- L3 mechanism is stated in real source terms
+- Any fallback scaffold is explicitly labeled and closed
+- Function confirmation is captured before L4 precision
+- L4 precision is delivered or deferred with a stated reason
+failure_modes:
+- mode: Tutor spends too long in analogy or simple-language mode
+  mitigation: Return to the real L3 mechanism after one bounded scaffold.
+- mode: L4 detail arrives before function is actually clear
+  mitigation: Pause and run a low-friction function confirmation first.
+- mode: Depth ladder becomes a mandatory blank-page performance task
+  mitigation: Keep the gate lightweight and concept-scoped.
+evidence:
+  citation: Mayer (2009)
+  finding: Segmented and pretraining-style explanation improves novice understanding of unfamiliar systems.
+  source: control-plane migration
+evidence_raw: Mayer (2009); segmented explanation supports novice learning, especially when depth is controlled.
+facilitation_prompt: 'You are running M-TEA-006 (Depth Ladder (4-10-HS-PT)) in TEACH stage.
+
+  This method is non-assessment. Follow the depth route deliberately.
+
+  Return exactly:
+
+  1) DepthRoutePlan
+
+  2) L0Hook
+
+  3) L3Mechanism
+
+  4) FallbackScaffoldUsed
+
+  5) FunctionConfirmation
+
+  6) L4PrecisionRestatement
+
+  Default to brief L0 -> L3 -> L4. Use L1/L2 only as fallback scaffolds, and do not unlock L4 until function confirmation is captured.
+
+  '
+gating_rules:
+- Default to brief L0 hook -> L3 mechanism -> L4 DPT precision.
+- Use L1/L2 only when comprehension needs recovery.
+- Require low-friction function confirmation before L4 precision.
+- Keep every move inside the active objective scope.
+artifact_type: notes
+allowed_moves:
+- Give one quick hook before the real mechanism
+- Teach the mechanism directly in proper source terms
+- Insert one bounded analogy or plain-language scaffold when needed
+- Ask a low-friction function check before unlocking L4
+- Add clinical precision only after function is confirmed
+forbidden_moves:
+- Default to the full ladder every time regardless of learner state
+- Stay in analogy mode without returning to the real concept
+- Require a blank-page teach-back as the default L4 unlock
+- Deliver L4 precision before function is clear
+- Turn the depth ladder into a scored diagnostic
+required_outputs:
+- Depth route plan
+- L0 hook
+- L3 mechanism
+- Fallback scaffold use or skip statement
+- Function confirmation
+- L4 precision restatement

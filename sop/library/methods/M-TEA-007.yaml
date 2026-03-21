@@ -1,0 +1,110 @@
+id: M-TEA-007
+name: KWIK Lite
+category: encode
+description: Run the lightweight live mnemonic slot after the TEACH close artifact and before FULL CALIBRATE using one system-seeded cue plus one learner ownership action.
+default_duration_min: 2
+energy_cost: low
+best_stage: first_exposure
+control_stage: TEACH
+status: draft
+mnemonic_tier: lite
+slot_policy: post_teach_pre_full_calibrate
+tags:
+- teach
+- mnemonic
+- kwik
+- lite
+- hook
+mechanisms:
+- dual_coding
+- elaboration
+- generation
+stipulations:
+- Use this only after the TEACH close artifact exists and meaning is already clear.
+- KWIK Lite is the live slot; full KWIK Hook remains deeper ENCODE work.
+- Default to skipping this slot for clinical reasoning or systems-integration topics unless a hook is clearly helpful.
+- Require one learner ownership action so the hook is not purely AI-authored.
+knobs:
+  output_format: bullets
+constraints:
+  non_assessment: true
+  no_scored_checks: true
+  objective_scope_required: true
+inputs:
+- TEACH close artifact
+- Target term, concept, or ordered item to compress
+- Short meaning/function statement
+steps:
+- step: 1
+  action: Confirm the TEACH close artifact and concept meaning are in place
+  notes: Do not run this slot if meaning is still unstable.
+- step: 2
+  action: Seed one lightweight cue
+  notes: Use a concise sound, image, phrase, or compression line tied to function.
+- step: 3
+  action: Capture one learner ownership action
+  notes: Learner must personalize, tweak, choose, or restate the cue.
+- step: 4
+  action: Record the final hook and one distortion guard
+  notes: State what the cue helps remember and what it should not distort.
+outputs:
+- KWIKLiteSeed
+- LearnerOwnershipAction
+- FinalHook
+- DistortionGuard
+stop_criteria:
+- TEACH close artifact is confirmed
+- One system seed is generated
+- One learner ownership action is captured
+- One distortion guard is stated
+failure_modes:
+- mode: Slot is used before meaning is clear
+  mitigation: Skip the slot and return to TEACH or anchor repair.
+- mode: Hook becomes too elaborate and turns into full KWIK
+  mitigation: Keep it to one seed plus one ownership action.
+- mode: Hook distorts clinical reasoning or integrated systems content
+  mitigation: Skip by default for those concept types unless value is obvious.
+evidence:
+  citation: Paivio (1991)
+  finding: Lightweight verbal-plus-image hooks can improve retention when they are grounded in already-understood meaning.
+  source: control-plane migration
+evidence_raw: Paivio (1991); lightweight mnemonic compression is useful only after meaning is already established.
+facilitation_prompt: 'You are running M-TEA-007 (KWIK Lite) in TEACH stage.
+
+  This method is non-assessment. It is the lightweight post-TEACH mnemonic slot, not full KWIK.
+
+  Return exactly:
+
+  1) KWIKLiteSeed
+
+  2) LearnerOwnershipAction
+
+  3) FinalHook
+
+  4) DistortionGuard
+
+  Only run this after the TEACH close artifact exists and the concept meaning is clear. Keep it to one system seed plus one learner ownership action.
+
+  '
+gating_rules:
+- Run only after the TEACH close artifact exists.
+- Do not use this slot before concept meaning is clear.
+- Keep the slot lighter than full KWIK Hook.
+- Skip by default for clinical reasoning or systems-integration topics unless a hook is clearly helpful.
+artifact_type: notes
+allowed_moves:
+- Seed one lightweight cue tied to function or meaning
+- Ask the learner to personalize, choose, or slightly modify the cue
+- State one guardrail to prevent mnemonic distortion
+- Skip the slot when the topic would be harmed by compression
+forbidden_moves:
+- Use this slot before TEACH meaning is established
+- Expand the slot into full multi-step KWIK Hook
+- Replace the TEACH close artifact with the mnemonic
+- Force a mnemonic for clinical reasoning or systems integration by default
+- Turn the slot into a scored check
+required_outputs:
+- KWIK Lite seed
+- Learner ownership action
+- Final hook
+- Distortion guard

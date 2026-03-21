@@ -259,6 +259,95 @@ def test_seed_methods_strict_sync_updates_stale_artifact_type(
     assert row[3] == "notes"
 
 
+def test_seed_methods_repairs_control_stage_drift_without_strict_sync(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    db_path = tmp_path / "seed_methods_stage_repair.db"
+    _init_seed_db(db_path)
+
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    cur.execute(
+        """
+        INSERT INTO method_blocks
+            (method_id, name, control_stage, description, default_duration_min, energy_cost, best_stage, tags, evidence, artifact_type)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            "M-INT-001",
+            "Analogy Bridge",
+            "ENCODE",
+            "Canonical description already present",
+            3,
+            "medium",
+            "review",
+            json.dumps(["analogy", "transfer", "creative"]),
+            "canonical evidence",
+            "",
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+    module = _load_seed_methods_module()
+
+    def _get_conn():
+        return sqlite3.connect(db_path)
+
+    monkeypatch.setattr(module, "get_connection", _get_conn)
+    monkeypatch.setattr(module, "regenerate_prompts", lambda: None)
+    monkeypatch.setattr(module, "_insert_library_meta", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        module,
+        "load_from_yaml",
+        lambda: {
+            "version": "test",
+            "methods": [
+                {
+                    "method_id": "M-INT-001",
+                    "name": "Analogy Bridge",
+                    "control_stage": "TEACH",
+                    "description": "Canonical description already present",
+                    "default_duration_min": 3,
+                    "energy_cost": "medium",
+                    "best_stage": "review",
+                    "tags": ["analogy", "transfer", "creative"],
+                    "evidence": "canonical evidence",
+                    "artifact_type": "",
+                }
+            ],
+            "chains": [],
+        },
+    )
+
+    module.seed_methods(force=False)
+
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT method_id, name, control_stage FROM method_blocks WHERE method_id = ?",
+        ("M-INT-001",),
+    )
+    row = cur.fetchone()
+    conn.close()
+
+    assert row is not None
+    assert row[0] == "M-INT-001"
+    assert row[1] == "Analogy Bridge"
+    assert row[2] == "TEACH"
+
+
+def test_load_from_yaml_includes_visible_teach_doctrine_cards() -> None:
+    module = _load_seed_methods_module()
+    data = module.load_from_yaml()
+    assert data is not None
+
+    method_ids = {method.get("method_id") for method in data["methods"]}
+
+    assert "M-TEA-006" in method_ids
+    assert "M-TEA-007" in method_ids
+
+
 def test_load_from_yaml_merges_chain_certification_registry(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

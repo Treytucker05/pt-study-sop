@@ -43,7 +43,7 @@ Each method block represents a single study activity.
 
 ---
 
-## §2.1 Block Catalog (54 blocks)
+## §2.1 Block Catalog (56 blocks)
 
 ### PRIME (8 blocks)
 | Block | Duration | Energy | Evidence |
@@ -57,7 +57,7 @@ Each method block represents a single study activity.
 | Learning Objectives Primer | 3 min | low | Ausubel (1968); Hattie (2009); explicit learning objectives improve encoding direction and metacognitive monitoring |
 | Hand-Draw Map | 5 min | medium | Wammes et al. (2016); Drawing effect — drawing doubles free-recall rates (45% vs 20%) through multimodal encoding combining motor, visual, and semantic processing |
 
-### TEACH (7 blocks)
+### TEACH (9 blocks)
 | Block | Duration | Energy | Evidence |
 |-------|----------|--------|----------|
 | Mechanism Trace | 10 min | high | Kulasegaram et al. (2013); Causal reasoning with biomedical mechanisms supports diagnostic transfer to novel cases |
@@ -67,6 +67,8 @@ Each method block represents a single study activity.
 | Clinical Anchor Mini-Case | 5 min | medium | Schmidt and Rikers (2007); Clinically anchored explanation supports later script formation and transfer |
 | Modality Switch | 3 min | low | Mayer (2009); Matching representation and segmenting explanation helps novice comprehension |
 | Jingle / Rhyme Hook | 3 min | low | Paivio (1991); Verbal plus image-linked hooks can improve retention when grounded in meaning |
+| Depth Ladder (4-10-HS-PT) | 4 min | low | Mayer (2009); Controlled depth and segmented explanation reduce novice overload while preserving fidelity |
+| KWIK Lite | 2 min | low | Paivio (1991); Lightweight mnemonic compression works best after meaning is already established |
 
 ### CALIBRATE (7 blocks)
 | Block | Duration | Energy | Evidence |

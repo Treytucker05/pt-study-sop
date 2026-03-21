@@ -33,8 +33,21 @@ _VERSION_PATH = _ROOT / "sop" / "library" / "meta" / "version.yaml"
 _CHAIN_CERTIFICATION_REGISTRY_PATH = _CHAINS_DIR / "certification_registry.yaml"
 
 
+def _legacy_category_for_stage(control_stage: str) -> str:
+    stage = str(control_stage or "").strip().upper()
+    return {
+        "PRIME": "prepare",
+        "TEACH": "prepare",
+        "CALIBRATE": "prepare",
+        "ENCODE": "encode",
+        "REFERENCE": "interrogate",
+        "RETRIEVE": "retrieve",
+        "OVERLEARN": "overlearn",
+    }.get(stage, stage.lower())
+
+
 # ---------------------------------------------------------------------------
-# Atomic Method Blocks (54 blocks across 7 Control Plane stages)
+# Atomic Method Blocks fallback (legacy hardcoded set; YAML canon may contain more)
 # ---------------------------------------------------------------------------
 METHOD_BLOCKS = [
     {
@@ -1517,6 +1530,8 @@ def seed_methods(force: bool = False, strict_sync: bool = False):
         "best_stage",
         "tags",
     ]
+    if "category" in mb_cols:
+        select_cols.append("category")
     if "evidence" in mb_cols:
         select_cols.append("evidence")
     if "knob_overrides_json" in mb_cols:
@@ -1617,19 +1632,26 @@ def seed_methods(force: bool = False, strict_sync: bool = False):
 
         desired_tags_json = json.dumps(block["tags"])
         existing_tags_json = tags_raw if isinstance(tags_raw, str) else json.dumps(tags_raw or [])
+        desired_category = _legacy_category_for_stage(block["control_stage"])
+        canonical_stage_drift = (existing.get("control_stage") or "") != block["control_stage"]
+        canonical_category_drift = (
+            "category" in mb_cols
+            and (existing.get("category") or "") != desired_category
+        )
 
         strict_field_drift = False
         if strict_sync:
             strict_field_drift = any(
                 [
                     (existing.get("name") or "") != block["name"],
-                    (existing.get("control_stage") or "") != block["control_stage"],
+                    canonical_stage_drift,
                     (existing.get("description") or "") != (block["description"] or ""),
                     int(existing.get("default_duration_min") or 0)
                     != int(block["default_duration_min"] or 0),
                     (existing.get("energy_cost") or "") != (block["energy_cost"] or ""),
                     (existing.get("best_stage") or "") != (block["best_stage"] or ""),
                     existing_tags_json != desired_tags_json,
+                    canonical_category_drift,
                     (
                         "evidence" in mb_cols
                         and (existing.get("evidence") or "") != (block.get("evidence") or "")
@@ -1652,7 +1674,13 @@ def seed_methods(force: bool = False, strict_sync: bool = False):
                 ]
             )
 
-        if needs_update or needs_method_id_update or strict_field_drift:
+        if (
+            needs_update
+            or needs_method_id_update
+            or canonical_stage_drift
+            or canonical_category_drift
+            or strict_field_drift
+        ):
             set_cols = [
                 "method_id = ?",
                 "control_stage = ?",
@@ -1671,6 +1699,9 @@ def seed_methods(force: bool = False, strict_sync: bool = False):
                 block["best_stage"],
                 desired_tags_json,
             ]
+            if "category" in mb_cols:
+                set_cols.insert(1, "category = ?")
+                values.insert(1, desired_category)
             if strict_sync and (existing.get("name") or "") != block["name"]:
                 set_cols.insert(0, "name = ?")
                 values.insert(0, block["name"])
