@@ -1499,6 +1499,20 @@ export interface TutorWorkflowListResponse {
   count: number;
 }
 
+export interface TutorWorkflowDeleteResponse {
+  deleted: boolean;
+  workflow_id: string;
+  related_records_deleted: {
+    publish_results: number;
+    polish_bundles: number;
+    memory_capsules: number;
+    stage_time_logs: number;
+    feedback_events: number;
+    captured_notes: number;
+    priming_bundles: number;
+  };
+}
+
 export interface TutorWorkflowCreateRequest {
   course_id?: number | null;
   course_event_id?: number | null;

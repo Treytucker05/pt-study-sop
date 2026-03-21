@@ -303,10 +303,14 @@ export function TutorShell({
                   onOpenWorkflow={(wf) => {
                     void workflow.openWorkflowRecord(wf);
                   }}
+                  onDeleteWorkflow={(wf) => {
+                    void workflow.deleteWorkflowRecord(wf);
+                  }}
                   tutorHub={hub.tutorHub}
                   tutorHubLoading={hub.tutorHubLoading}
                   activeWorkflowId={workflow.activeWorkflowId}
                   isCreating={workflow.creatingWorkflow}
+                  deletingWorkflowId={workflow.deletingWorkflowId}
                 />
               ) : workflow.workflowView === "priming" ? (
                 <TutorWorkflowPrimingPanel

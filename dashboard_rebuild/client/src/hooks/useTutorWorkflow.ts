@@ -51,6 +51,7 @@ export function useTutorWorkflow({
     dueBucket: "all",
   });
   const [creatingWorkflow, setCreatingWorkflow] = useState(false);
+  const [deletingWorkflowId, setDeletingWorkflowId] = useState<string | null>(null);
   const [savingPrimingBundle, setSavingPrimingBundle] = useState(false);
   const [savingPolishBundle, setSavingPolishBundle] = useState(false);
 
@@ -475,6 +476,60 @@ export function useTutorWorkflow({
     }
   }, [queryClient, resetPrimingDraft, setShellMode]);
 
+  // ─── Delete workflow ───
+  const deleteWorkflowRecord = useCallback(
+    async (workflow: TutorWorkflowSummary) => {
+      if (deletingWorkflowId === workflow.workflow_id) return false;
+      setDeletingWorkflowId(workflow.workflow_id);
+      try {
+        await api.tutor.deleteWorkflow(workflow.workflow_id);
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["tutor-workflows"] }),
+          queryClient.removeQueries({
+            queryKey: ["tutor-workflow-detail", workflow.workflow_id],
+            exact: true,
+          }),
+        ]);
+
+        const deletingActiveWorkflow = activeWorkflowId === workflow.workflow_id;
+        if (deletingActiveWorkflow) {
+          resetPrimingDraft();
+          setActiveWorkflowId(null);
+          setWorkflowView("launch");
+          setShellMode("dashboard");
+          if (
+            activeSessionId &&
+            workflow.active_tutor_session_id &&
+            workflow.active_tutor_session_id === activeSessionId
+          ) {
+            session.clearActiveSessionState();
+          }
+        }
+
+        toast.success("Study plan deleted");
+        return true;
+      } catch (err) {
+        toast.error(
+          `Failed to delete study plan: ${err instanceof Error ? err.message : "Unknown"}`,
+        );
+        return false;
+      } finally {
+        setDeletingWorkflowId((current) =>
+          current === workflow.workflow_id ? null : current,
+        );
+      }
+    },
+    [
+      activeSessionId,
+      activeWorkflowId,
+      deletingWorkflowId,
+      queryClient,
+      resetPrimingDraft,
+      session,
+      setShellMode,
+    ],
+  );
+
   // ─── Start tutor from workflow ───
   const startTutorFromWorkflow = useCallback(async () => {
     const ready = await saveWorkflowPriming("ready");
@@ -883,6 +938,7 @@ export function useTutorWorkflow({
     workflowFilters,
     setWorkflowFilters,
     creatingWorkflow,
+    deletingWorkflowId,
     savingPrimingBundle,
     savingPolishBundle,
 
@@ -944,6 +1000,7 @@ export function useTutorWorkflow({
     saveWorkflowPriming,
     runWorkflowPrimingAssist,
     createWorkflowAndOpenPriming,
+    deleteWorkflowRecord,
     startTutorFromWorkflow,
     openWorkflowPolish,
     saveWorkflowPolish,

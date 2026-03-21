@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { INPUT_BASE, SELECT_BASE, TEXT_MUTED } from "@/lib/theme";
 import { formatWorkflowStatus } from "@/lib/workflowStatus";
-import { Clock3, Filter, FolderClock, RotateCcw, Sparkles } from "lucide-react";
+import { Clock3, Filter, FolderClock, RotateCcw, Sparkles, Trash2 } from "lucide-react";
 
 export type TutorWorkflowLaunchFilters = {
   search: string;
@@ -33,10 +33,12 @@ interface TutorWorkflowLaunchHubProps {
   onFiltersChange: (next: TutorWorkflowLaunchFilters) => void;
   onStartNew: () => void;
   onOpenWorkflow: (workflow: TutorWorkflowSummary) => void;
+  onDeleteWorkflow: (workflow: TutorWorkflowSummary) => void;
   tutorHub?: TutorHubResponse;
   tutorHubLoading?: boolean;
   activeWorkflowId?: string | null;
   isCreating?: boolean;
+  deletingWorkflowId?: string | null;
 }
 
 function formatDateLabel(value: string | null | undefined) {
@@ -94,10 +96,12 @@ export function TutorWorkflowLaunchHub({
   onFiltersChange,
   onStartNew,
   onOpenWorkflow,
+  onDeleteWorkflow,
   tutorHub,
   tutorHubLoading = false,
   activeWorkflowId,
   isCreating = false,
+  deletingWorkflowId = null,
 }: TutorWorkflowLaunchHubProps) {
   return (
     <div className="mx-auto grid w-full max-w-7xl gap-4 xl:grid-cols-[0.95fr_1.35fr]">
@@ -358,6 +362,12 @@ export function TutorWorkflowLaunchHub({
                 ) : (
                   workflows.map((workflow) => {
                     const active = workflow.workflow_id === activeWorkflowId;
+                    const isDeleting = workflow.workflow_id === deletingWorkflowId;
+                    const workflowLabel =
+                      workflow.assignment_title ||
+                      workflow.topic ||
+                      workflow.study_unit ||
+                      workflow.workflow_id;
                     return (
                       <tr
                         key={workflow.workflow_id}
@@ -402,13 +412,32 @@ export function TutorWorkflowLaunchHub({
                           </div>
                         </td>
                         <td className="px-3 py-3 align-top text-right">
-                          <Button
-                            variant="outline"
-                            className="rounded-none font-arcade text-[10px]"
-                            onClick={() => onOpenWorkflow(workflow)}
-                          >
-                            {actionLabelForWorkflow(workflow)}
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              className="rounded-none font-arcade text-[10px]"
+                              onClick={() => onOpenWorkflow(workflow)}
+                              disabled={isDeleting}
+                            >
+                              {actionLabelForWorkflow(workflow)}
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              className="rounded-none font-arcade text-[10px]"
+                              aria-label={`Delete workflow ${workflowLabel}`}
+                              disabled={isDeleting}
+                              onClick={() => {
+                                const confirmed = window.confirm(
+                                  `Delete study plan "${workflowLabel}"? This cannot be undone.`,
+                                );
+                                if (!confirmed) return;
+                                onDeleteWorkflow(workflow);
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              {isDeleting ? "DELETING..." : "DELETE"}
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     );

@@ -497,6 +497,26 @@ def _load_workflow_detail(conn: sqlite3.Connection, workflow_id: str) -> dict[st
     }
 
 
+def _delete_workflow_related_rows(
+    conn: sqlite3.Connection, workflow_id: str
+) -> dict[str, int]:
+    cur = conn.cursor()
+    deleted_counts: dict[str, int] = {}
+    delete_order = [
+        ("publish_results", "DELETE FROM tutor_publish_results WHERE workflow_id = ?"),
+        ("polish_bundles", "DELETE FROM tutor_polish_bundles WHERE workflow_id = ?"),
+        ("memory_capsules", "DELETE FROM tutor_memory_capsules WHERE workflow_id = ?"),
+        ("stage_time_logs", "DELETE FROM tutor_stage_time_logs WHERE workflow_id = ?"),
+        ("feedback_events", "DELETE FROM tutor_feedback_events WHERE workflow_id = ?"),
+        ("captured_notes", "DELETE FROM tutor_captured_notes WHERE workflow_id = ?"),
+        ("priming_bundles", "DELETE FROM tutor_priming_bundles WHERE workflow_id = ?"),
+    ]
+    for label, sql in delete_order:
+        cur.execute(sql, (workflow_id,))
+        deleted_counts[label] = int(cur.rowcount or 0)
+    return deleted_counts
+
+
 @tutor_bp.route("/workflows", methods=["GET"])
 def list_tutor_workflows():
     course_id = request.args.get("course_id")
@@ -618,6 +638,34 @@ def get_tutor_workflow(workflow_id: str):
     if payload is None:
         return jsonify({"error": "Workflow not found"}), 404
     return jsonify(payload)
+
+
+@tutor_bp.route("/workflows/<workflow_id>", methods=["DELETE"])
+def delete_tutor_workflow(workflow_id: str):
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    try:
+        workflow_row = _get_workflow_row(conn, workflow_id)
+        if workflow_row is None:
+            return jsonify({"error": "Workflow not found"}), 404
+
+        deleted_related = _delete_workflow_related_rows(conn, workflow_id)
+        cur = conn.cursor()
+        cur.execute("DELETE FROM tutor_workflows WHERE workflow_id = ?", (workflow_id,))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+    return jsonify(
+        {
+            "deleted": True,
+            "workflow_id": workflow_id,
+            "related_records_deleted": deleted_related,
+        }
+    )
 
 
 @tutor_bp.route("/workflows/<workflow_id>/stage", methods=["PATCH"])

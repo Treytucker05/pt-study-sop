@@ -35,7 +35,7 @@ import type {
   TutorSessionPreflightRequest, TutorSessionPreflightResponse,
   TutorCreateSessionRequest,
   TutorSession, TutorSessionWithTurns, TutorSessionEndResult, TutorSessionSummary,
-  TutorWorkflowCreateRequest, TutorWorkflowDetailResponse, TutorWorkflowListResponse,
+  TutorWorkflowCreateRequest, TutorWorkflowDeleteResponse, TutorWorkflowDetailResponse, TutorWorkflowListResponse,
   TutorPrimingAssistRequest, TutorPrimingAssistResponse, TutorPrimingBundle, TutorPrimingBundleRequest, TutorCapturedNote,
   TutorCapturedNoteRequest, TutorFeedbackEvent, TutorFeedbackEventRequest,
   TutorStageTimeLog, TutorStageTimeLogRequest, TutorMemoryCapsule,
@@ -736,6 +736,10 @@ export const api = {
       request<TutorWorkflowAnalyticsSummary>("/tutor/workflows/analytics/summary"),
     getWorkflow: (workflowId: string) =>
       request<TutorWorkflowDetailResponse>(`/tutor/workflows/${workflowId}`),
+    deleteWorkflow: (workflowId: string) =>
+      request<TutorWorkflowDeleteResponse>(`/tutor/workflows/${workflowId}`, {
+        method: "DELETE",
+      }),
     updateWorkflowStage: (
       workflowId: string,
       data: {

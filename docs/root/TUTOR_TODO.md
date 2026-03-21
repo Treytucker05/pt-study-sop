@@ -42,6 +42,22 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - the final backlog groups issues into Wave 1 (`P1`), Wave 2 (`P2`), and Wave 3 (`P3`) remediation passes
 
 ### Sprint: Tutor Prime Artifact Layout Pass (2026-03-19)
+- [x] TLF-100. Add workflow delete to the Tutor launch hub so stale study plans can be removed directly from the launch table.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `brain/dashboard/api_tutor_workflows.py`
+    - `brain/tests/`
+    - `dashboard_rebuild/client/src/api.ts`
+    - `dashboard_rebuild/client/src/components/TutorWorkflowLaunchHub.tsx`
+    - `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts`
+    - `dashboard_rebuild/client/src/components/__tests__/`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - Tutor workflows can be deleted through a dedicated backend route
+    - the launch table exposes a visible delete action with a confirmation guard
+    - deleting a workflow refreshes the launch list and clears the active workflow if the deleted item was open
+    - targeted backend/frontend tests pass
+  - Completed 2026-03-20: added `DELETE /api/tutor/workflows/<workflow_id>` in `brain/dashboard/api_tutor_workflows.py` with explicit child-row cleanup for priming, notes, feedback, timing, memory, polish, and publish rows; exposed `api.tutor.deleteWorkflow(...)` in `dashboard_rebuild/client/src/api.ts`; added active-workflow delete handling plus launch-list invalidation in `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts`; surfaced a visible destructive delete button with confirmation in `dashboard_rebuild/client/src/components/TutorWorkflowLaunchHub.tsx` and wired it through `dashboard_rebuild/client/src/components/TutorShell.tsx`; added backend regression coverage in `brain/tests/test_tutor_workflow_delete.py`; added focused frontend coverage in `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowLaunchHub.test.tsx` and `dashboard_rebuild/client/src/hooks/__tests__/useTutorWorkflow.test.tsx`; passed `pytest brain/tests/test_tutor_workflow_delete.py brain/tests/test_tutor_workflow_priming_assist.py -q`; passed `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorWorkflowLaunchHub.test.tsx client/src/hooks/__tests__/useTutorWorkflow.test.tsx`; passed `cd dashboard_rebuild && npx vite build --emptyOutDir false`; and confirmed on the live `/tutor` launch page that workflow rows now show delete actions.
 - [x] TCH-100. Introduce a first-class `TEACH` control stage across Tutor runtime, method library, and UI so teaching-first chains can explain unfamiliar material before `CALIBRATE`.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

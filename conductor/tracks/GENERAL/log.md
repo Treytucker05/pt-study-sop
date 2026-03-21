@@ -1060,6 +1060,17 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
   - `cd dashboard_rebuild && npm run build`
 
+## 2026-03-20 - Tutor launch workflow delete
+- Added `DELETE /api/tutor/workflows/<workflow_id>` in `brain/dashboard/api_tutor_workflows.py` and explicitly delete workflow-owned priming, notes, feedback, stage-time, memory, polish, and publish rows before removing the workflow itself.
+- Exposed `api.tutor.deleteWorkflow(...)` in `dashboard_rebuild/client/src/api.ts` and added `deleteWorkflowRecord(...)` to `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts` so deleting from Launch invalidates the workflow list and clears the active workflow state when the deleted plan was open.
+- Added a visible destructive delete button with `window.confirm(...)` in `dashboard_rebuild/client/src/components/TutorWorkflowLaunchHub.tsx` and wired it through `dashboard_rebuild/client/src/components/TutorShell.tsx`.
+- Added regression coverage in `brain/tests/test_tutor_workflow_delete.py`, `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowLaunchHub.test.tsx`, and `dashboard_rebuild/client/src/hooks/__tests__/useTutorWorkflow.test.tsx`.
+- Validation passed:
+  - `pytest brain/tests/test_tutor_workflow_delete.py brain/tests/test_tutor_workflow_priming_assist.py -q`
+  - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorWorkflowLaunchHub.test.tsx client/src/hooks/__tests__/useTutorWorkflow.test.tsx`
+  - `cd dashboard_rebuild && npx vite build --emptyOutDir false`
+  - live `/tutor` launch-page check on `http://127.0.0.1:5000/tutor`
+
 ## 2026-03-20 - Methods/chains API lock fallback
 - Fixed the live Methods page backend failure in `brain/db_setup.py` by making runtime `ensure_method_library_seeded()` prefer existing method/chain rows by default instead of strict write-sync on first read, while keeping strict reconciliation opt-in through `PT_METHOD_LIBRARY_STRICT_SYNC=1`.
 - Added a fail-open guard so transient SQLite `database is locked` errors during best-effort library sync no longer take `/api/methods` or `/api/chains` down with a `500`.
