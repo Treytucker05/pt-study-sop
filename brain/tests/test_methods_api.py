@@ -7,6 +7,7 @@ Uses a fresh in-memory database for isolation.
 
 import json
 import os
+import sqlite3
 import sys
 import tempfile
 import pytest
@@ -22,6 +23,7 @@ os.environ["PT_STUDY_DB"] = _tmp_db.name
 import config
 config.DB_PATH = _tmp_db.name
 
+import db_setup
 from db_setup import init_database
 from dashboard.app import create_app
 
@@ -46,6 +48,19 @@ def client(app):
 
 class TestMethodBlocks:
     def test_list_methods(self, client):
+        resp = client.get("/api/methods")
+        assert resp.status_code == 200
+        assert isinstance(resp.get_json(), list)
+
+    def test_list_methods_survives_locked_seed_sync(self, client, monkeypatch):
+        class LockedSeedModule:
+            @staticmethod
+            def seed_methods(*args, **kwargs):
+                raise sqlite3.OperationalError("database is locked")
+
+        monkeypatch.setattr(db_setup, "_METHOD_LIBRARY_ENSURED", False)
+        monkeypatch.setattr(db_setup, "_load_seed_methods_module", lambda: LockedSeedModule())
+
         resp = client.get("/api/methods")
         assert resp.status_code == 200
         assert isinstance(resp.get_json(), list)
@@ -230,6 +245,19 @@ class TestChains:
         chains = resp.get_json()
         assert len(chains) >= 1
 
+    def test_list_chains_survives_locked_seed_sync(self, client, monkeypatch):
+        class LockedSeedModule:
+            @staticmethod
+            def seed_methods(*args, **kwargs):
+                raise sqlite3.OperationalError("database is locked")
+
+        monkeypatch.setattr(db_setup, "_METHOD_LIBRARY_ENSURED", False)
+        monkeypatch.setattr(db_setup, "_load_seed_methods_module", lambda: LockedSeedModule())
+
+        resp = client.get("/api/chains")
+        assert resp.status_code == 200
+        assert isinstance(resp.get_json(), list)
+
     def test_get_chain_with_blocks(self, client):
         cid = TestChains._created_id
         resp = client.get(f"/api/chains/{cid}")
@@ -325,3 +353,102 @@ def cleanup():
         os.unlink(_tmp_db.name)
     except OSError:
         pass
+
+
+class TestMethodLibrarySeeding:
+    def test_runtime_seed_check_skips_strict_sync_by_default_when_library_exists(self, monkeypatch):
+        class FakeCursor:
+            def __init__(self):
+                self._calls = 0
+
+            def execute(self, _sql):
+                self._calls += 1
+
+            def fetchone(self):
+                return (5,) if self._calls == 1 else (3,)
+
+        class FakeConnection:
+            def __init__(self):
+                self._cursor = FakeCursor()
+
+            def cursor(self):
+                return self._cursor
+
+            def close(self):
+                return None
+
+        called = {"load": False}
+
+        monkeypatch.setattr(db_setup, "_METHOD_LIBRARY_ENSURED", False)
+        monkeypatch.delenv("PT_METHOD_LIBRARY_STRICT_SYNC", raising=False)
+        monkeypatch.setattr(db_setup, "get_connection", lambda: FakeConnection())
+
+        def fake_load():
+            called["load"] = True
+            raise AssertionError("seed loader should not run when the library already exists")
+
+        monkeypatch.setattr(db_setup, "_load_seed_methods_module", fake_load)
+
+        db_setup.ensure_method_library_seeded()
+
+        assert db_setup._METHOD_LIBRARY_ENSURED is True
+        assert called["load"] is False
+
+    def test_init_database_rebuilds_legacy_method_blocks_constraint_for_teach(self, monkeypatch):
+        fd, legacy_db = tempfile.mkstemp(suffix=".db")
+        os.close(fd)
+        try:
+            conn = sqlite3.connect(legacy_db)
+            cur = conn.cursor()
+            cur.executescript(
+                """
+                CREATE TABLE method_blocks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    method_id TEXT,
+                    name TEXT NOT NULL,
+                    category TEXT,
+                    control_stage TEXT DEFAULT 'ENCODE' CHECK(control_stage IN ('PRIME', 'CALIBRATE', 'ENCODE', 'REFERENCE', 'RETRIEVE', 'OVERLEARN')),
+                    description TEXT,
+                    default_duration_min INTEGER DEFAULT 5,
+                    energy_cost TEXT DEFAULT 'medium',
+                    best_stage TEXT,
+                    tags TEXT,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+
+                INSERT INTO method_blocks (name, control_stage, description)
+                VALUES ('Legacy Encode Block', 'ENCODE', 'pre-existing row');
+                """
+            )
+            conn.commit()
+            conn.close()
+
+            monkeypatch.setattr(db_setup, "DB_PATH", legacy_db)
+            db_setup.init_database()
+
+            conn = sqlite3.connect(legacy_db)
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT sql FROM sqlite_master WHERE type='table' AND name='method_blocks'"
+            )
+            sql = cur.fetchone()[0]
+            assert "'TEACH'" in sql
+
+            cur.execute(
+                "INSERT INTO method_blocks (name, control_stage, description) VALUES (?, ?, ?)",
+                ("Teach-ready Block", "TEACH", "insert after rebuild"),
+            )
+            conn.commit()
+
+            cur.execute("SELECT COUNT(*) FROM method_blocks WHERE control_stage = 'TEACH'")
+            assert cur.fetchone()[0] == 1
+            cur.execute(
+                "SELECT COUNT(*) FROM method_blocks WHERE name = 'Legacy Encode Block'"
+            )
+            assert cur.fetchone()[0] == 1
+            conn.close()
+        finally:
+            try:
+                os.unlink(legacy_db)
+            except OSError:
+                pass

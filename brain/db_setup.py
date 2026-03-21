@@ -15,6 +15,136 @@ from pathlib import Path
 from config import DB_PATH
 
 
+_METHOD_BLOCKS_CONTROL_STAGES = (
+    "PRIME",
+    "TEACH",
+    "CALIBRATE",
+    "ENCODE",
+    "REFERENCE",
+    "RETRIEVE",
+    "OVERLEARN",
+)
+
+
+def _control_stage_normalize_sql(column_name: str = "control_stage") -> str:
+    return f"""
+        CASE UPPER(COALESCE({column_name}, ''))
+            WHEN 'PRIME' THEN 'PRIME'
+            WHEN 'TEACH' THEN 'TEACH'
+            WHEN 'CALIBRATE' THEN 'CALIBRATE'
+            WHEN 'ENCODE' THEN 'ENCODE'
+            WHEN 'REFERENCE' THEN 'REFERENCE'
+            WHEN 'RETRIEVE' THEN 'RETRIEVE'
+            WHEN 'OVERLEARN' THEN 'OVERLEARN'
+            WHEN 'PREPARE' THEN 'PRIME'
+            WHEN 'INTERROGATE' THEN 'REFERENCE'
+            WHEN 'REFINE' THEN 'OVERLEARN'
+            ELSE 'ENCODE'
+        END
+    """.strip()
+
+
+def _ensure_method_blocks_control_stage_constraint(cursor) -> None:
+    """
+    Rebuild legacy method_blocks tables whose control_stage CHECK constraint
+    predates TEACH support.
+
+    Older live databases can still enforce:
+      CHECK(control_stage IN ('PRIME', 'CALIBRATE', 'ENCODE', ...))
+
+    That causes live seed sync to fail as soon as a TEACH-era method card is
+    inserted. Rebuild only when the persisted table SQL is stale.
+    """
+    cursor.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='method_blocks'"
+    )
+    row = cursor.fetchone()
+    table_sql = str(row[0] or "") if row else ""
+    if not table_sql:
+        return
+
+    normalized_sql = table_sql.upper()
+    if "CONTROL_STAGE" not in normalized_sql or "'TEACH'" in normalized_sql:
+        return
+
+    cursor.execute("PRAGMA table_info(method_blocks)")
+    existing_cols = {col[1] for col in cursor.fetchall()}
+    if not existing_cols:
+        return
+
+    stage_values = ", ".join(f"'{value}'" for value in _METHOD_BLOCKS_CONTROL_STAGES)
+    canonical_columns = [
+        ("id", "INTEGER PRIMARY KEY AUTOINCREMENT"),
+        ("method_id", "TEXT"),
+        ("name", "TEXT NOT NULL"),
+        ("category", "TEXT"),
+        (
+            "control_stage",
+            f"TEXT DEFAULT 'ENCODE' CHECK(control_stage IN ({stage_values}))",
+        ),
+        ("description", "TEXT"),
+        ("default_duration_min", "INTEGER DEFAULT 5"),
+        ("energy_cost", "TEXT DEFAULT 'medium'"),
+        ("best_stage", "TEXT"),
+        ("tags", "TEXT"),
+        ("knob_overrides_json", "TEXT"),
+        ("created_at", "TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP"),
+        ("evidence", "TEXT"),
+        ("facilitation_prompt", "TEXT"),
+        ("inputs", "TEXT"),
+        ("outputs", "TEXT"),
+        ("strategy_label", "TEXT"),
+        ("failure_modes", "TEXT"),
+        ("variants", "TEXT"),
+        ("scoring_hooks", "TEXT"),
+        ("icap_level", "TEXT"),
+        ("clt_target", "TEXT"),
+        ("assessment_type", "TEXT"),
+        ("artifact_type", "TEXT"),
+        ("research_terms", "TEXT"),
+    ]
+
+    create_cols = ",\n            ".join(
+        f"{name} {definition}" for name, definition in canonical_columns
+    )
+    cursor.execute(
+        f"""
+        CREATE TABLE method_blocks__new (
+            {create_cols}
+        )
+        """
+    )
+
+    insert_cols = [name for name, _definition in canonical_columns if name in existing_cols]
+    select_exprs = []
+    for col in insert_cols:
+        if col == "control_stage":
+            select_exprs.append(
+                f"{_control_stage_normalize_sql('control_stage')} AS control_stage"
+            )
+        else:
+            select_exprs.append(col)
+
+    cursor.execute("PRAGMA foreign_keys=OFF")
+    cursor.execute(
+        f"""
+        INSERT INTO method_blocks__new ({", ".join(insert_cols)})
+        SELECT {", ".join(select_exprs)}
+        FROM method_blocks
+        """
+    )
+    cursor.execute("DROP TABLE method_blocks")
+    cursor.execute("ALTER TABLE method_blocks__new RENAME TO method_blocks")
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_method_blocks_control_stage
+        ON method_blocks(control_stage)
+        """
+    )
+    cursor.execute("PRAGMA foreign_keys=ON")
+    print("[INFO] Rebuilt legacy method_blocks table to allow TEACH control_stage rows")
+
+
 def _create_learner_profile_tables(cursor) -> None:
     """Create Wave 1 Brain learner-profile tables."""
     cursor.execute(
@@ -1808,6 +1938,8 @@ def init_database():
         ON method_blocks(control_stage)
     """)
 
+    _ensure_method_blocks_control_stage_constraint(cursor)
+
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_method_chains_template
         ON method_chains(is_template)
@@ -3310,7 +3442,9 @@ def ensure_method_library_seeded() -> None:
     if _METHOD_LIBRARY_ENSURED:
         return
 
-    strict_sync = os.environ.get("PT_METHOD_LIBRARY_STRICT_SYNC", "1").strip().lower() in {
+    # Runtime reads should prefer availability once the library is already present.
+    # Strict reconciliation stays opt-in via PT_METHOD_LIBRARY_STRICT_SYNC=1.
+    strict_sync = os.environ.get("PT_METHOD_LIBRARY_STRICT_SYNC", "0").strip().lower() in {
         "1",
         "true",
         "yes",
@@ -3341,6 +3475,13 @@ def ensure_method_library_seeded() -> None:
         except TypeError:
             # Backward compatibility with older seed_methods signatures.
             module.seed_methods(force=False)
+        except sqlite3.OperationalError as exc:
+            # Methods/chains pages should stay readable even if a concurrent writer
+            # temporarily locks the database during best-effort library sync.
+            if "locked" in str(exc).lower():
+                print("[WARN] Method library sync skipped because the database is locked.")
+                return
+            raise
     _METHOD_LIBRARY_ENSURED = True
 
 
@@ -3525,7 +3666,13 @@ if __name__ == "__main__":
         if methods_dir.exists():
             expected_method_count = len(list(methods_dir.glob("*.yaml")))
         if chains_dir.exists():
-            expected_template_chain_count = len(list(chains_dir.glob("*.yaml")))
+            expected_template_chain_count = len(
+                [
+                    path
+                    for path in chains_dir.glob("*.yaml")
+                    if path.name != "certification_registry.yaml"
+                ]
+            )
     except Exception as e:
         print(f"[WARN] Could not compute expected library sizes from YAML: {e}")
         expected_method_count = 0

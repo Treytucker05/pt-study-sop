@@ -101,6 +101,20 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - source-linked previews are compact but still visibly structured
     - targeted validation covers the priming assist backend test or relevant Tutor frontend test, a production frontend build, and a live `/tutor` Priming extraction check
   - Completed 2026-03-19: tightened `brain/dashboard/api_tutor_workflows.py` so Priming Assist asks for markdown-ready summaries, definition-style term lines, and a true hierarchical map representation; updated `dashboard_rebuild/client/src/lib/tutorUtils.ts` to normalize markdown list prefixes on save, promote multi-source aggregate blocks into markdown subheadings, and format PRIME artifacts into headed lists/paragraphs plus Mermaid-aware previews; updated `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` so the artifact workspace renders formatted markdown instead of raw terminal blobs and falls back to a visual Mermaid map derived from the Study Spine when the extractor returns prose for the hierarchy; added targeted frontend coverage in `dashboard_rebuild/client/src/lib/__tests__/tutorUtils.test.ts`; passed `pytest brain/tests/test_tutor_workflow_priming_assist.py`, passed `cd dashboard_rebuild && npm run test -- client/src/lib/__tests__/tutorUtils.test.ts`, passed `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.workspace.integration.test.tsx`, passed `cd dashboard_rebuild && npm run build`, and confirmed on the live `/tutor` Priming flow after a hard refresh that source-linked extraction previews now show numbered/headed markdown and the Summary artifact renders as a formatted document instead of a raw text blob.
+- [x] TPAL-130. Reorder the stacked Priming page around the actual study flow so setup/materials come first, the source viewer stays second, artifact review dominates the page, and chain/context controls move into a demoted advanced section.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - the top of the page is reduced to `SETUP` and `MATERIALS IN SCOPE`
+    - `EXTRACT PRIME` is accessible without opening chain/context controls
+    - `PRIME ARTIFACT WORKSPACE` remains the main review surface
+    - `READINESS`, handoff notes, and Tutor launch actions are consolidated into a simpler downstream handoff section
+    - `PRIME CHAIN` plus `WORKFLOW CONTEXT` are preserved but visually demoted into an advanced controls block
+    - targeted frontend validation covers the new Priming layout behavior and the production frontend build succeeds
+  - Completed 2026-03-20: simplified the live Priming surface by keeping only `SETUP` and `MATERIALS IN SCOPE` in the first stacked window, moving `EXTRACT PRIME` into the source-viewer header so it stays accessible without opening chain controls, consolidating readiness plus handoff notes plus Tutor launch actions into one downstream `TUTOR HANDOFF` window, and demoting `PRIME CHAIN` plus `WORKFLOW CONTEXT` into a toggleable `ADVANCED PRIME CONTROLS` block at the bottom of the page; added targeted coverage in `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`; passed `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`; and passed `cd dashboard_rebuild && npm run build`.
 
 ### Sprint: TEACH Stage Control-Plane Upgrade (2026-03-20)
 - [x] TSCU-100. Introduce `TEACH` as a first-class control-plane stage in Tutor runtime, method contracts, and stage-facing UI while preserving compatibility for chains that do not include TEACH.
@@ -143,6 +157,35 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - selector/runtime stage metadata derives from actual chain truth instead of hardcoded stage lists
     - the live Tutor UI visibly exposes TEACH packet state and locked/unlocked progression
     - SOP validators/tests, backend runtime/tests, relevant Tutor frontend tests, and a production frontend build all pass
+
+### Sprint: Methods/Chains API Stability Fix (2026-03-20)
+- [x] MCAS-100. Keep `/api/methods` and `/api/chains` readable during live dashboard use even when the method-library sync path encounters SQLite contention.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `brain/db_setup.py`
+    - `brain/tests/test_methods_api.py`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - the runtime library-check helper prefers existing method/chain rows by default instead of strict write-sync on first read
+    - transient SQLite lock failures in the best-effort sync path no longer take `/api/methods` or `/api/chains` down with a `500`
+    - backend regression coverage proves the locked-sync case stays non-fatal and the default runtime path skips strict sync when the library already exists
+    - targeted backend tests pass and the restarted live dashboard returns `200` for both `/api/methods` and `/api/chains`
+  - Completed 2026-03-20: changed `brain/db_setup.py` so runtime `ensure_method_library_seeded()` defaults to non-strict sync when the library is already present, added a fail-open guard for SQLite lock errors during best-effort seed sync, added regression coverage in `brain/tests/test_methods_api.py` for both the locked-sync case and the default runtime skip path, passed `pytest brain/tests/test_methods_api.py brain/tests/test_seed_methods.py -q`, restarted the dashboard via `Start_Dashboard.bat`, and confirmed `http://127.0.0.1:5000/api/methods` plus `http://127.0.0.1:5000/api/chains` both return `200`.
+- [x] MCAS-110. Repair stale live method-library schema drift and surface a real retry panel on the Methods page when methods or chains fail to load.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `brain/db_setup.py`
+    - `brain/tests/test_methods_api.py`
+    - `dashboard_rebuild/client/src/pages/methods.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/methods.test.tsx`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - legacy `method_blocks` tables that still reject `TEACH` rows are rebuilt in place during database initialization
+    - runtime expected chain counts ignore non-template registry YAML so startup stops thinking the library is partial on every launch
+    - live DB bootstrap reseeds the missing TEACH-era method rows cleanly
+    - the Methods page shows a retryable destructive error panel for method or chain query failures instead of collapsing into a blank/empty surface
+    - targeted backend/frontend tests pass, the production frontend build passes, and the restarted live dashboard shows the recovered Methods page
+  - Completed 2026-03-20: updated `brain/db_setup.py` to rebuild stale `method_blocks` tables whose `control_stage` check still excluded `TEACH`, normalized copied stage values during the rebuild, and excluded `certification_registry.yaml` from expected template-chain counts so startup no longer reseeds forever; added a regression test in `brain/tests/test_methods_api.py` proving a legacy table is upgraded and can accept `TEACH`; added retryable error panels plus focused coverage in `dashboard_rebuild/client/src/pages/methods.tsx` and `dashboard_rebuild/client/src/pages/__tests__/methods.test.tsx`; passed `pytest brain/tests/test_methods_api.py brain/tests/test_seed_methods.py -q`; passed `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/methods.test.tsx client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`; passed `cd dashboard_rebuild && npm run build`; ran `python brain/db_setup.py` to repair the live DB and reseed the library to `54` method blocks with `5` TEACH blocks; restarted the app with `Start_Dashboard.bat`; and re-verified the live Methods page at `http://127.0.0.1:5000/methods`.
 
 ### Sprint: Custom Navbar Layout Plugin (2026-03-16)
 - [x] FNP-100. Create a minimal custom navbar layout plugin that imports the dashboard shell background plus the split navbar button PNGs and lays them out automatically in the open design file.

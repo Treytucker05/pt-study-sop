@@ -13,6 +13,7 @@ const methodsCreateMock = vi.fn();
 const methodsUpdateMock = vi.fn();
 const methodsDeleteMock = vi.fn();
 const methodsRateMock = vi.fn();
+const methodsGetTemplatePromptMock = vi.fn();
 const chainsGetAllMock = vi.fn();
 const chainsGetOneMock = vi.fn();
 const chainsCreateMock = vi.fn();
@@ -66,6 +67,7 @@ vi.mock("@/lib/api", () => ({
       update: (...args: unknown[]) => methodsUpdateMock(...args),
       delete: (...args: unknown[]) => methodsDeleteMock(...args),
       rate: (...args: unknown[]) => methodsRateMock(...args),
+      getTemplatePrompt: (...args: unknown[]) => methodsGetTemplatePromptMock(...args),
     },
     chains: {
       getAll: (...args: unknown[]) => chainsGetAllMock(...args),
@@ -220,6 +222,7 @@ describe("MethodsPage", () => {
     methodsUpdateMock.mockResolvedValue({});
     methodsDeleteMock.mockResolvedValue({});
     methodsRateMock.mockResolvedValue({});
+    methodsGetTemplatePromptMock.mockResolvedValue({ facilitation_prompt: "" });
 
     chainsGetAllMock.mockResolvedValue(chainFixtures);
     chainsGetOneMock.mockResolvedValue({
@@ -299,5 +302,58 @@ describe("MethodsPage", () => {
     expect(await screen.findByTestId("nav-methods")).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "LIBRARY" })).toBeInTheDocument();
     expect(screen.getByTestId("nav-methods")).toHaveAttribute("aria-current", "page");
+  });
+
+  it("shows a retryable error panel when methods fail to load", async () => {
+    methodsGetAllMock.mockRejectedValueOnce(new Error("Methods backend exploded"));
+
+    renderMethodsPage();
+
+    expect(await screen.findByText("METHODS FAILED TO LOAD")).toBeInTheDocument();
+    expect(screen.getByText("Methods backend exploded")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+  });
+
+  it("shows a retryable error panel when chains fail to load", async () => {
+    chainsGetAllMock.mockRejectedValueOnce(new Error("Chains backend exploded"));
+
+    renderMethodsPage();
+
+    const chainsButtons = await screen.findAllByRole("button", { name: "CHAINS" });
+    fireEvent.click(chainsButtons[0]);
+
+    expect(await screen.findByText("CHAINS FAILED TO LOAD")).toBeInTheDocument();
+    expect(screen.getByText("Chains backend exploded")).toBeInTheDocument();
+  });
+
+  it("retries the methods query from the error panel", async () => {
+    methodsGetAllMock
+      .mockRejectedValueOnce(new Error("Methods backend exploded"))
+      .mockResolvedValueOnce([
+        {
+          id: 3,
+          name: "Recovered Method",
+          category: "prepare",
+          control_stage: "PRIME",
+          description: "Recovered",
+          default_duration_min: 5,
+          energy_cost: "low",
+          best_stage: "first_exposure",
+          tags: [],
+          evidence: "",
+          facilitation_prompt: "prompt",
+          artifact_type: "notes",
+          knob_overrides_json: {},
+          created_at: "2026-03-12T10:00:00Z",
+        },
+      ]);
+
+    renderMethodsPage();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Retry" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Recovered Method")).toBeInTheDocument();
+    });
   });
 });

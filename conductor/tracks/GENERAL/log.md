@@ -1024,3 +1024,36 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `pytest brain/tests/test_selector_bridge.py brain/tests/test_chain_runner.py brain/tests/test_teach_back.py brain/tests/test_tutor_teach_packet.py brain/tests/test_chain_validator.py brain/tests/test_tutor_session_linking.py brain/tests/test_regression_safety.py brain/tests/test_tutor_strategy_mediation.py -q`
   - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorTopBar.test.tsx client/src/components/__tests__/TutorChat.test.tsx client/src/components/__tests__/TutorChainBuilder.test.tsx client/src/components/__tests__/TutorStartPanel.test.tsx client/src/components/__tests__/MethodBlockCard.test.tsx`
   - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-20 - Tutor Priming stacked flow simplification
+- Simplified `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` so the stacked Priming page now leads with `SETUP` plus `MATERIALS IN SCOPE`, keeps `SOURCE VIEWER` second, preserves `PRIME ARTIFACT WORKSPACE` as the main review surface, and consolidates readiness plus handoff notes plus Tutor launch actions into one downstream `TUTOR HANDOFF` window.
+- Moved the top-level `EXTRACT PRIME` action into the source-viewer header so extraction stays accessible without opening chain/config controls.
+- Demoted `PRIME CHAIN` and `WORKFLOW CONTEXT` into a toggleable `ADVANCED PRIME CONTROLS` section at the bottom of the page, while keeping their existing functionality intact.
+- Added focused frontend coverage in `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx` so the advanced section stays collapsed by default and only reveals `PRIME CHAIN` plus `WORKFLOW CONTEXT` when requested.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-20 - Methods/chains API lock fallback
+- Fixed the live Methods page backend failure in `brain/db_setup.py` by making runtime `ensure_method_library_seeded()` prefer existing method/chain rows by default instead of strict write-sync on first read, while keeping strict reconciliation opt-in through `PT_METHOD_LIBRARY_STRICT_SYNC=1`.
+- Added a fail-open guard so transient SQLite `database is locked` errors during best-effort library sync no longer take `/api/methods` or `/api/chains` down with a `500`.
+- Added regression coverage in `brain/tests/test_methods_api.py` for the locked-sync case and the default runtime skip path when the library already exists.
+- Validation passed:
+  - `pytest brain/tests/test_methods_api.py brain/tests/test_seed_methods.py -q`
+  - restarted the dashboard via `Start_Dashboard.bat`
+  - confirmed `http://127.0.0.1:5000/api/methods` -> `200`
+  - confirmed `http://127.0.0.1:5000/api/chains` -> `200`
+
+## 2026-03-20 - Methods schema repair and retryable load panels
+- Rebuilt stale live `method_blocks` tables in `brain/db_setup.py` when the persisted SQLite `control_stage` CHECK constraint still excluded `TEACH`, preserving existing rows/IDs while normalizing copied stage values into the current control-plane set.
+- Fixed startup drift in `brain/db_setup.py` so expected template-chain counts ignore `sop/library/chains/certification_registry.yaml`, which is registry metadata rather than a real template chain.
+- Added a regression test in `brain/tests/test_methods_api.py` proving `init_database()` upgrades a legacy `method_blocks` table and accepts a `TEACH` insert after the rebuild.
+- Added retryable error panels to `dashboard_rebuild/client/src/pages/methods.tsx` for methods/chains query failures and covered them in `dashboard_rebuild/client/src/pages/__tests__/methods.test.tsx`.
+- Re-ran `python brain/db_setup.py`, which repaired the live DB and reseeded the method library to `54` method blocks including `5` TEACH rows.
+- Validation passed:
+  - `pytest brain/tests/test_methods_api.py brain/tests/test_seed_methods.py -q`
+  - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/methods.test.tsx client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - restarted the app via `Start_Dashboard.bat`
+  - confirmed `http://127.0.0.1:5000/api/methods` and `http://127.0.0.1:5000/api/chains` both return `200`
+  - confirmed the live Methods page renders again at `http://127.0.0.1:5000/methods`

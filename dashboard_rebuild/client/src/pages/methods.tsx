@@ -1,6 +1,6 @@
 import { useEffect, useId, useReducer, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Blocks, Link2, BarChart3, Plus, Star, Play, Loader2, ChevronDown, ChevronRight, Pencil, RotateCcw } from "lucide-react";
+import { Blocks, Link2, BarChart3, Plus, Star, Play, Loader2, ChevronDown, ChevronRight, Pencil, RotateCcw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -171,6 +171,47 @@ function hydrateEditBlockDialogState(block: MethodBlock): EditBlockDialogState {
   };
 }
 
+function getQueryErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error) {
+    return error.message || fallback;
+  }
+  if (typeof error === "string" && error.trim()) {
+    return error;
+  }
+  return fallback;
+}
+
+function MethodsLoadErrorPanel({
+  title,
+  message,
+  onRetry,
+}: {
+  title: string;
+  message: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="rounded-[1rem] border border-destructive/40 bg-destructive/10 p-4 text-left" data-testid="methods-load-error">
+      <div className="flex items-start gap-3">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+        <div className="space-y-2">
+          <div className="font-arcade text-xs tracking-[0.2em] text-destructive">{title}</div>
+          <p className="font-terminal text-sm text-white">{message}</p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-none border-[3px] border-double border-destructive/60 bg-black/40 font-arcade text-xs text-destructive hover:bg-destructive/15"
+            onClick={onRetry}
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function useMethodsPageController() {
   const [activeTab, setActiveTab] = useState<TabId>("library");
   const [stageFilter, setStageFilter] = useState<DisplayStage | "all" | "favorites">("all");
@@ -201,12 +242,24 @@ function useMethodsPageController() {
   const queryClient = useQueryClient();
 
   // Queries
-  const { data: blocks = [], isLoading: blocksLoading } = useQuery({
+  const {
+    data: blocks = [],
+    isLoading: blocksLoading,
+    isError: blocksIsError,
+    error: blocksError,
+    refetch: refetchBlocks,
+  } = useQuery({
     queryKey: ["methods"],
     queryFn: () => api.methods.getAll(),
   });
 
-  const { data: chains = [], isLoading: chainsLoading } = useQuery({
+  const {
+    data: chains = [],
+    isLoading: chainsLoading,
+    isError: chainsIsError,
+    error: chainsError,
+    refetch: refetchChains,
+  } = useQuery({
     queryKey: ["chains"],
     queryFn: () => api.chains.getAll(),
   });
@@ -562,6 +615,14 @@ function useMethodsPageController() {
           <div className="space-y-4">
             {blocksLoading ? (
               <p className="font-terminal text-base text-muted-foreground">Loading methods...</p>
+            ) : blocksIsError ? (
+              <MethodsLoadErrorPanel
+                title="METHODS FAILED TO LOAD"
+                message={getQueryErrorMessage(blocksError, "The method library request failed.")}
+                onRetry={() => {
+                  void refetchBlocks();
+                }}
+              />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 card-stagger">
                 {filteredBlocks.map((block) => (
@@ -601,7 +662,7 @@ function useMethodsPageController() {
                 ))}
               </div>
             )}
-            {!blocksLoading && filteredBlocks.length === 0 && (
+            {!blocksLoading && !blocksIsError && filteredBlocks.length === 0 && (
               <p className="font-terminal text-base text-muted-foreground text-center py-8">
                 {stageFilter === "favorites"
                   ? "No favorites yet. Mark blocks with FAV to pin them here."
@@ -616,6 +677,14 @@ function useMethodsPageController() {
           <div className="space-y-4">
             {chainsLoading ? (
               <p className="font-terminal text-base text-muted-foreground">Loading chains...</p>
+            ) : chainsIsError ? (
+              <MethodsLoadErrorPanel
+                title="CHAINS FAILED TO LOAD"
+                message={getQueryErrorMessage(chainsError, "The chain library request failed.")}
+                onRetry={() => {
+                  void refetchChains();
+                }}
+              />
             ) : chains.length === 0 ? (
               <p className="font-terminal text-base text-muted-foreground text-center py-8">
                 No chains yet. Create your first chain to combine method blocks into a study workflow.

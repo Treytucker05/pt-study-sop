@@ -292,6 +292,7 @@ export function TutorWorkflowPrimingPanel({
   const [activeArtifact, setActiveArtifact] = useState<PrimeArtifactFormatKey>("objectives");
   const [editingArtifact, setEditingArtifact] = useState<PrimeArtifactFormatKey | null>(null);
   const [editingHandoff, setEditingHandoff] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const groupedObjectives = availableObjectives.reduce<Record<string, AppLearningObjective[]>>(
     (acc, objective) => {
@@ -357,6 +358,8 @@ export function TutorWorkflowPrimingPanel({
   const selectedChainLabel =
     PRIMING_CHAIN_OPTIONS.find((option) => option.value === primingChainId)?.label ||
     "Choose a priming chain";
+  const selectedMethodLabel =
+    PRIMING_METHOD_OPTIONS.find((option) => option.value === primingMethod)?.label || "Choose a priming method";
   const selectedChainSteps = selectedChainLabel
     .split("->")
     .map((step) => step.trim())
@@ -431,168 +434,6 @@ export function TutorWorkflowPrimingPanel({
               />
             </CardContent>
           </Card>
-
-          <Card className="rounded-none border-2 border-primary/20 bg-black/40">
-            <CardHeader className="border-b border-primary/15 pb-3">
-              <CardTitle className="font-arcade text-xs text-primary">PRIME CHAIN</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <label className={`${TEXT_MUTED} block text-xs`}>PRIMING METHOD</label>
-                <select
-                  value={primingMethod}
-                  onChange={(event) => setPrimingMethod(event.target.value)}
-                  className={SELECT_BASE}
-                >
-                  {PRIMING_METHOD_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <label className={`${TEXT_MUTED} block text-xs`}>PRIMING CHAIN</label>
-                <select
-                  value={primingChainId}
-                  onChange={(event) => setPrimingChainId(event.target.value)}
-                  className={SELECT_BASE}
-                >
-                  {PRIMING_CHAIN_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-2 border border-primary/20 bg-black/35 p-3">
-                <div className="font-arcade text-[10px] text-primary/80">CHAIN PREVIEW</div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {selectedChainSteps.map((step) => (
-                    <Badge
-                      key={step}
-                      variant="outline"
-                      className="rounded-none border-primary/25 text-primary/80"
-                    >
-                      {step}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              <Button
-                type="button"
-                className="w-full rounded-none font-arcade text-xs"
-                onClick={onRunAssistForSelected}
-                disabled={isRunningAssist || selectedMaterials.length === 0}
-              >
-                {isRunningAssist && assistTargetMaterialId == null ? (
-                  <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Sparkles className="mr-2 h-3.5 w-3.5" />
-                )}
-                {selectedMaterials.length === 0 ? "SELECT MATERIALS TO EXTRACT" : "EXTRACT PRIME"}
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-none border-2 border-primary/20 bg-black/40">
-            <CardHeader className="border-b border-primary/15 pb-3">
-              <CardTitle className="font-arcade text-xs text-primary">WORKFLOW CONTEXT</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <label className={`${TEXT_MUTED} block text-xs`}>STUDY UNIT (OPTIONAL)</label>
-                <input
-                  value={selectedObjectiveGroup}
-                  onChange={(event) => {
-                    setSelectedObjectiveGroup(event.target.value);
-                    setSelectedObjectiveId("");
-                  }}
-                  list="priming-study-unit-options"
-                  placeholder="Type or choose a study unit"
-                  className={INPUT_BASE}
-                />
-                <datalist id="priming-study-unit-options">
-                  {studyUnitOptions.map((option) => (
-                    <option key={option.value} value={option.value} />
-                  ))}
-                </datalist>
-              </div>
-
-              <div className="space-y-2">
-                <label className={`${TEXT_MUTED} block text-xs`}>OBJECTIVE SCOPE (OPTIONAL)</label>
-                <select
-                  value={objectiveScope}
-                  onChange={(event) =>
-                    setObjectiveScope(
-                      event.target.value === "single_focus" ? "single_focus" : "module_all",
-                    )
-                  }
-                  className={SELECT_BASE}
-                >
-                  <option value="module_all">Whole study unit first</option>
-                  <option value="single_focus">Single focus objective</option>
-                </select>
-              </div>
-
-              {objectiveScope === "single_focus" ? (
-                <div className="space-y-2">
-                  <label className={`${TEXT_MUTED} block text-xs`}>FOCUS OBJECTIVE (OPTIONAL)</label>
-                  <select
-                    value={selectedObjectiveId}
-                    onChange={(event) => setSelectedObjectiveId(event.target.value)}
-                    className={SELECT_BASE}
-                  >
-                    <option value="">Select one objective</option>
-                    {activeObjectives.map((objective) => (
-                      <option
-                        key={`${objective.id}-${objective.loCode}`}
-                        value={String(objective.loCode || "")}
-                      >
-                        {objective.loCode ? `${objective.loCode} - ` : ""}
-                        {objective.title}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : null}
-
-              <div className="space-y-2">
-                <label className={`${TEXT_MUTED} block text-xs`}>TOPIC (OPTIONAL)</label>
-                <input
-                  value={topic}
-                  onChange={(event) => setTopic(event.target.value)}
-                  placeholder="Optional focus topic"
-                  className={INPUT_BASE}
-                />
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                <div className="border border-primary/20 bg-black/35 p-3">
-                  <div className="font-arcade text-[10px] text-primary/80">WORKFLOW</div>
-                  <div className="mt-2 break-all font-terminal text-xs text-foreground">
-                    {truncateWorkflowId(workflow?.workflow_id)}
-                  </div>
-                </div>
-                <div className="border border-primary/20 bg-black/35 p-3">
-                  <div className="font-arcade text-[10px] text-primary/80">LAST UPDATED</div>
-                  <div className="mt-2 font-terminal text-sm text-foreground">
-                    {formatWorkflowDate(workflow?.updated_at)}
-                  </div>
-                </div>
-              </div>
-
-              <div className="border border-primary/20 bg-black/35 p-3">
-                <div className="font-arcade text-[10px] text-primary/80">OBSIDIAN TARGET</div>
-                <div className="mt-2 break-all font-terminal text-xs text-foreground">
-                  {vaultFolderPreview || "Select a class to derive the folder path."}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       }
       centerPanel={
@@ -605,11 +446,26 @@ export function TutorWorkflowPrimingPanel({
                   Review the exact PDFs, docs, and notes the LLM is using for Studio PRIME.
                 </p>
               </div>
-              <Badge variant="outline" className="rounded-none border-primary/25 text-primary/80">
-                {selectedMaterials.length > 0
-                  ? `${selectedMaterials.length} materials in viewer`
-                  : "No materials selected"}
-              </Badge>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className="rounded-none border-primary/25 text-primary/80">
+                  {selectedMaterials.length > 0
+                    ? `${selectedMaterials.length} materials in viewer`
+                    : "No materials selected"}
+                </Badge>
+                <Button
+                  type="button"
+                  className="rounded-none font-arcade text-xs"
+                  onClick={onRunAssistForSelected}
+                  disabled={isRunningAssist || selectedMaterials.length === 0}
+                >
+                  {isRunningAssist && assistTargetMaterialId == null ? (
+                    <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-2 h-3.5 w-3.5" />
+                  )}
+                  {selectedMaterials.length === 0 ? "SELECT MATERIALS TO EXTRACT" : "EXTRACT PRIME"}
+                </Button>
+              </div>
             </div>
           </div>
           <div className="min-h-0 flex-1">
@@ -857,89 +713,92 @@ export function TutorWorkflowPrimingPanel({
 
           <Card className="rounded-none border-2 border-primary/30 bg-black/45">
             <CardHeader className="border-b border-primary/15 pb-3">
-              <CardTitle className="font-arcade text-xs text-primary">READINESS</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-4">
-              {readinessItems.map((item) => (
-                <div
-                  key={item.label}
-                  className="flex items-start gap-3 border border-primary/15 bg-black/35 p-3"
-                >
-                  {item.ready ? (
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
-                  ) : (
-                    <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
-                  )}
-                  <div className="min-w-0">
-                    <div className="font-arcade text-[10px] text-primary/80">{item.label}</div>
-                    <div className="mt-1 font-terminal text-sm text-foreground">{item.detail}</div>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-none border-2 border-primary/20 bg-black/40">
-            <CardHeader className="border-b border-primary/15 pb-3">
               <div className="flex items-center justify-between gap-3">
-                <CardTitle className="font-arcade text-xs text-primary">TUTOR HANDOFF NOTES</CardTitle>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="rounded-none"
-                  onClick={() => setEditingHandoff((current) => !current)}
-                >
-                  {editingHandoff ? "HIDE MANUAL EDIT" : "ADJUST HANDOFF"}
-                </Button>
+                <div>
+                  <CardTitle className="font-arcade text-xs text-primary">TUTOR HANDOFF</CardTitle>
+                  <p className={`${TEXT_MUTED} mt-2 text-xs`}>
+                    Review readiness, add any final notes, then hand the PRIME bundle into Tutor.
+                  </p>
+                </div>
+                <Badge variant="outline" className="rounded-none border-primary/30 text-primary/80">
+                  {readyForTutor ? "READY" : "INCOMPLETE"}
+                </Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-4 pt-4">
-              {editingHandoff ? (
-                <>
-                  <div className="space-y-2">
-                    <label className={`${TEXT_MUTED} block text-xs`}>OPEN QUESTIONS / AMBIGUITIES</label>
-                    <textarea
-                      value={gapsText}
-                      onChange={(event) => setGapsText(event.target.value)}
-                      placeholder="List open questions, weak evidence, or unresolved ambiguities."
-                      className={`${INPUT_BASE} min-h-[120px] resize-y`}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className={`${TEXT_MUTED} block text-xs`}>RECOMMENDED TUTOR STRATEGY</label>
-                    <textarea
-                      value={recommendedStrategyText}
-                      onChange={(event) => setRecommendedStrategyText(event.target.value)}
-                      placeholder="Optional guidance for Tutor Core: pacing, focus, scaffold depth, retrieval pressure."
-                      className={`${INPUT_BASE} min-h-[120px] resize-y`}
-                    />
-                  </div>
-                </>
-              ) : (
-                <div className="grid gap-3">
-                  <div className="border border-primary/15 bg-black/40 p-3">
-                    <div className="font-arcade text-[10px] text-primary/80">OPEN QUESTIONS / AMBIGUITIES</div>
-                    <div className="mt-2 font-terminal whitespace-pre-wrap text-sm text-foreground/90">
-                      {renderPreview(gapsText, "No open questions or ambiguities captured yet.")}
+              <div className="space-y-3">
+                <div className="font-arcade text-[10px] text-primary/80">READINESS</div>
+                {readinessItems.map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-start gap-3 border border-primary/15 bg-black/35 p-3"
+                  >
+                    {item.ready ? (
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                    ) : (
+                      <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+                    )}
+                    <div className="min-w-0">
+                      <div className="font-arcade text-[10px] text-primary/80">{item.label}</div>
+                      <div className="mt-1 font-terminal text-sm text-foreground">{item.detail}</div>
                     </div>
                   </div>
-                  <div className="border border-primary/15 bg-black/40 p-3">
-                    <div className="font-arcade text-[10px] text-primary/80">RECOMMENDED TUTOR STRATEGY</div>
-                    <div className="mt-2 font-terminal whitespace-pre-wrap text-sm text-foreground/90">
-                      {renderPreview(
-                        recommendedStrategyText,
-                        "No Tutor strategy note captured yet.",
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                ))}
+              </div>
 
-          <Card className="rounded-none border-2 border-primary/30 bg-black/45">
-            <CardContent className="space-y-3 pt-4">
+              <div className="border-t border-primary/15 pt-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div className="font-arcade text-[10px] text-primary/80">HANDOFF NOTES</div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-none"
+                    onClick={() => setEditingHandoff((current) => !current)}
+                  >
+                    {editingHandoff ? "HIDE MANUAL EDIT" : "ADJUST HANDOFF"}
+                  </Button>
+                </div>
+
+                {editingHandoff ? (
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <label className={`${TEXT_MUTED} block text-xs`}>OPEN QUESTIONS / AMBIGUITIES</label>
+                      <textarea
+                        value={gapsText}
+                        onChange={(event) => setGapsText(event.target.value)}
+                        placeholder="List open questions, weak evidence, or unresolved ambiguities."
+                        className={`${INPUT_BASE} min-h-[120px] resize-y`}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className={`${TEXT_MUTED} block text-xs`}>RECOMMENDED TUTOR STRATEGY</label>
+                      <textarea
+                        value={recommendedStrategyText}
+                        onChange={(event) => setRecommendedStrategyText(event.target.value)}
+                        placeholder="Optional guidance for Tutor Core: pacing, focus, scaffold depth, retrieval pressure."
+                        className={`${INPUT_BASE} min-h-[120px] resize-y`}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid gap-3">
+                    <div className="border border-primary/15 bg-black/40 p-3">
+                      <div className="font-arcade text-[10px] text-primary/80">OPEN QUESTIONS / AMBIGUITIES</div>
+                      <div className="mt-2 font-terminal whitespace-pre-wrap text-sm text-foreground/90">
+                        {renderPreview(gapsText, "No open questions or ambiguities captured yet.")}
+                      </div>
+                    </div>
+                    <div className="border border-primary/15 bg-black/40 p-3">
+                      <div className="font-arcade text-[10px] text-primary/80">RECOMMENDED TUTOR STRATEGY</div>
+                      <div className="mt-2 font-terminal whitespace-pre-wrap text-sm text-foreground/90">
+                        {renderPreview(recommendedStrategyText, "No Tutor strategy note captured yet.")}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="border border-primary/20 bg-black/35 p-3">
                 <div className="font-arcade text-[10px] text-primary/80">TUTOR HANDOFF</div>
                 <div className="mt-2 font-terminal text-sm text-foreground">
@@ -984,6 +843,192 @@ export function TutorWorkflowPrimingPanel({
                   {isStartingTutor ? "STARTING TUTOR..." : "START TUTOR SESSION"}
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-none border-2 border-primary/20 bg-black/40">
+            <CardHeader className="border-b border-primary/15 pb-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="font-arcade text-xs text-primary">ADVANCED PRIME CONTROLS</CardTitle>
+                  <p className={`${TEXT_MUTED} mt-2 text-xs`}>
+                    Chain selection and workflow metadata stay here when you need them, without crowding the
+                    main study flow.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-none"
+                  onClick={() => setShowAdvanced((current) => !current)}
+                >
+                  {showAdvanced ? "HIDE ADVANCED" : "SHOW ADVANCED"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="border border-primary/20 bg-black/35 p-3">
+                  <div className="font-arcade text-[10px] text-primary/80">PRIMING METHOD</div>
+                  <div className="mt-2 font-terminal text-sm text-foreground">{selectedMethodLabel}</div>
+                </div>
+                <div className="border border-primary/20 bg-black/35 p-3">
+                  <div className="font-arcade text-[10px] text-primary/80">PRIMING CHAIN</div>
+                  <div className="mt-2 font-terminal text-sm text-foreground">{selectedChainLabel}</div>
+                </div>
+              </div>
+
+              {showAdvanced ? (
+                <div className="space-y-5 border-t border-primary/15 pt-4">
+                  <div className="space-y-4">
+                    <div className="font-arcade text-[10px] text-primary/80">PRIME CHAIN</div>
+
+                    <div className="space-y-2">
+                      <label className={`${TEXT_MUTED} block text-xs`}>PRIMING METHOD</label>
+                      <select
+                        value={primingMethod}
+                        onChange={(event) => setPrimingMethod(event.target.value)}
+                        className={SELECT_BASE}
+                      >
+                        {PRIMING_METHOD_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className={`${TEXT_MUTED} block text-xs`}>PRIMING CHAIN</label>
+                      <select
+                        value={primingChainId}
+                        onChange={(event) => setPrimingChainId(event.target.value)}
+                        className={SELECT_BASE}
+                      >
+                        {PRIMING_CHAIN_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-2 border border-primary/20 bg-black/35 p-3">
+                      <div className="font-arcade text-[10px] text-primary/80">CHAIN PREVIEW</div>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {selectedChainSteps.map((step) => (
+                          <Badge
+                            key={step}
+                            variant="outline"
+                            className="rounded-none border-primary/25 text-primary/80"
+                          >
+                            {step}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 border-t border-primary/15 pt-4">
+                    <div className="font-arcade text-[10px] text-primary/80">WORKFLOW CONTEXT</div>
+
+                    <div className="space-y-2">
+                      <label className={`${TEXT_MUTED} block text-xs`}>STUDY UNIT (OPTIONAL)</label>
+                      <input
+                        value={selectedObjectiveGroup}
+                        onChange={(event) => {
+                          setSelectedObjectiveGroup(event.target.value);
+                          setSelectedObjectiveId("");
+                        }}
+                        list="priming-study-unit-options"
+                        placeholder="Type or choose a study unit"
+                        className={INPUT_BASE}
+                      />
+                      <datalist id="priming-study-unit-options">
+                        {studyUnitOptions.map((option) => (
+                          <option key={option.value} value={option.value} />
+                        ))}
+                      </datalist>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className={`${TEXT_MUTED} block text-xs`}>OBJECTIVE SCOPE (OPTIONAL)</label>
+                      <select
+                        value={objectiveScope}
+                        onChange={(event) =>
+                          setObjectiveScope(
+                            event.target.value === "single_focus" ? "single_focus" : "module_all",
+                          )
+                        }
+                        className={SELECT_BASE}
+                      >
+                        <option value="module_all">Whole study unit first</option>
+                        <option value="single_focus">Single focus objective</option>
+                      </select>
+                    </div>
+
+                    {objectiveScope === "single_focus" ? (
+                      <div className="space-y-2">
+                        <label className={`${TEXT_MUTED} block text-xs`}>FOCUS OBJECTIVE (OPTIONAL)</label>
+                        <select
+                          value={selectedObjectiveId}
+                          onChange={(event) => setSelectedObjectiveId(event.target.value)}
+                          className={SELECT_BASE}
+                        >
+                          <option value="">Select one objective</option>
+                          {activeObjectives.map((objective) => (
+                            <option
+                              key={`${objective.id}-${objective.loCode}`}
+                              value={String(objective.loCode || "")}
+                            >
+                              {objective.loCode ? `${objective.loCode} - ` : ""}
+                              {objective.title}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : null}
+
+                    <div className="space-y-2">
+                      <label className={`${TEXT_MUTED} block text-xs`}>TOPIC (OPTIONAL)</label>
+                      <input
+                        value={topic}
+                        onChange={(event) => setTopic(event.target.value)}
+                        placeholder="Optional focus topic"
+                        className={INPUT_BASE}
+                      />
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="border border-primary/20 bg-black/35 p-3">
+                        <div className="font-arcade text-[10px] text-primary/80">WORKFLOW</div>
+                        <div className="mt-2 break-all font-terminal text-xs text-foreground">
+                          {truncateWorkflowId(workflow?.workflow_id)}
+                        </div>
+                      </div>
+                      <div className="border border-primary/20 bg-black/35 p-3">
+                        <div className="font-arcade text-[10px] text-primary/80">LAST UPDATED</div>
+                        <div className="mt-2 font-terminal text-sm text-foreground">
+                          {formatWorkflowDate(workflow?.updated_at)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border border-primary/20 bg-black/35 p-3">
+                      <div className="font-arcade text-[10px] text-primary/80">OBSIDIAN TARGET</div>
+                      <div className="mt-2 break-all font-terminal text-xs text-foreground">
+                        {vaultFolderPreview || "Select a class to derive the folder path."}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="font-terminal text-sm text-muted-foreground">
+                  Open this section when you need to change the priming method, swap chains, narrow
+                  objective scope, or inspect workflow metadata.
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
