@@ -1,0 +1,8 @@
+{
+  "SessionStart": [
+    {
+      "type": "script",
+      "path": "start-mouse-paste.js"
+    }
+  ]
+}
