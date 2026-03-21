@@ -1,7 +1,7 @@
 id: M-PRE-005
 name: Skeleton Concept Hierarchy
 category: prime
-description: Generate a bare concept hierarchy (topic core -> 4-6 categories -> short descriptors) without deep explanations.
+description: Generate a bare concept hierarchy (topic core -> 4-6 umbrella categories -> short descriptors) that still covers the full selected scope without deep explanations.
 default_duration_min: 5
 energy_cost: medium
 best_stage: first_exposure
@@ -18,6 +18,7 @@ mechanisms:
 stipulations:
 - Keep map skeletal: depth limited to 2 levels.
 - Use descriptors only; avoid explanation paragraphs.
+- The category cap is a final grouping cap. Inventory the full supported structure first, then cluster it into 4-6 broad categories that still cover the whole selected scope.
 - PRIME boundary applies: no scoring.
 when_to_use:
 - Big-picture orientation for integrative topics.
@@ -39,11 +40,11 @@ steps:
   action: Set central node as topic
   notes: Single core node only.
 - step: 2
-  action: Derive 4-6 first-ring categories
-  notes: Categories should be mutually distinct.
+  action: Inventory all major supported sections, then derive 4-6 first-ring categories
+  notes: Categories should be mutually distinct umbrella groups that still cover the full selected scope.
 - step: 3
   action: Attach 1-2 descriptor tokens under each category
-  notes: Descriptors are labels, not explanations.
+  notes: Descriptors are labels, not explanations, and should stay representative rather than cherry-picked.
 - step: 4
   action: Add cross-links between categories where needed
   notes: Use short relation labels only.
@@ -54,6 +55,7 @@ outputs:
 stop_criteria:
 - First-ring categories between 4 and 6
 - Map depth <=2
+- Categories collectively cover the full selected scope
 - 5 minutes elapsed
 failure_modes:
 - mode: Map turns into paragraph notes
@@ -83,6 +85,7 @@ facilitation_prompt: 'You are running M-PRE-005 (Skeleton Concept Hierarchy) in 
   Rules:
 
   - Central topic -> 4-6 categories -> 1-2 descriptors each.
+  - Categories are umbrella groups that collectively cover the full selected scope.
 
   - Depth max = 2.
 
@@ -108,7 +111,7 @@ gating_rules:
 artifact_type: concept-map
 allowed_moves:
 - Generate a bare concept hierarchy with central topic node
-- Derive 4-6 first-ring categories that are mutually distinct
+- Derive 4-6 first-ring umbrella categories that are mutually distinct and collectively cover the full selected scope
 - Attach 1-2 descriptor tokens (labels, not explanations) under each category
 - Add cross-links between categories with short relation labels
 - Orient the learner to the topic's conceptual structure
@@ -116,12 +119,13 @@ allowed_moves:
 forbidden_moves:
 - Score, grade, or assess the learner
 - Turn the map into paragraph notes or explanations
+- Cherry-pick only a few subtopics while leaving major supported sections out of the hierarchy
 - Teach new detailed content beyond structural labels
 - Exceed max depth of 2 levels
 - Exceed node_count_cap (6 default)
 - Run quizzes or retrieval prompts
 - Add explanation paragraphs instead of descriptor tokens
 required_outputs:
-- SkeletonMap (central topic + 4-6 categories + descriptors)
+- SkeletonMap (central topic + 4-6 categories + descriptors that collectively cover the full selected scope)
 - CategoryLabels list
 - CrossLinks list

@@ -322,7 +322,7 @@ describe("Tutor studio route integration", () => {
     renderTutor();
 
     expect(await screen.findByText("NO CHAIN SELECTED")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /open dashboard/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /open launch/i })).toBeInTheDocument();
     expect(screen.queryByTestId("sidebar-rail")).not.toBeInTheDocument();
     expect(screen.queryByTestId("brain-tool-profile")).not.toBeInTheDocument();
   });

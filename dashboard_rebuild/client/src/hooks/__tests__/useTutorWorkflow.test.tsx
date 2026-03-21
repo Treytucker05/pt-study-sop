@@ -9,6 +9,7 @@ import type { TutorWorkflowDetailResponse, TutorWorkflowSummary } from "@/lib/ap
 const listWorkflowsMock = vi.fn();
 const getWorkflowMock = vi.fn();
 const deleteWorkflowMock = vi.fn();
+const createWorkflowMock = vi.fn();
 const savePrimingBundleMock = vi.fn();
 const updateWorkflowStageMock = vi.fn();
 const toastSuccessMock = vi.fn();
@@ -20,7 +21,7 @@ vi.mock("@/lib/api", () => ({
       listWorkflows: (...args: unknown[]) => listWorkflowsMock(...args),
       getWorkflow: (...args: unknown[]) => getWorkflowMock(...args),
       deleteWorkflow: (...args: unknown[]) => deleteWorkflowMock(...args),
-      createWorkflow: vi.fn(),
+      createWorkflow: (...args: unknown[]) => createWorkflowMock(...args),
       savePrimingBundle: (...args: unknown[]) => savePrimingBundleMock(...args),
       updateWorkflowStage: (...args: unknown[]) => updateWorkflowStageMock(...args),
       runPrimingAssist: vi.fn(),
@@ -116,6 +117,13 @@ describe("useTutorWorkflow", () => {
     vi.clearAllMocks();
     listWorkflowsMock.mockResolvedValue({ items: [workflowFixture], count: 1 });
     getWorkflowMock.mockResolvedValue(workflowDetailFixture);
+    createWorkflowMock.mockResolvedValue({
+      workflow: {
+        workflow_id: "wf-new",
+        current_stage: "priming",
+        status: "priming_in_progress",
+      },
+    });
     deleteWorkflowMock.mockResolvedValue({
       deleted: true,
       workflow_id: workflowFixture.workflow_id,
@@ -144,7 +152,7 @@ describe("useTutorWorkflow", () => {
           hub: hub as never,
           session: session as never,
           activeSessionId: "sess-1",
-          shellMode: "dashboard",
+          shellMode: "launch",
           setShellMode: vi.fn(),
           hasRestored: true,
         }),
@@ -157,7 +165,7 @@ describe("useTutorWorkflow", () => {
 
     act(() => {
       result.current.setActiveWorkflowId(workflowFixture.workflow_id);
-      result.current.setWorkflowView("priming");
+      result.current.setStudioView("priming");
     });
 
     await waitFor(() => {
@@ -170,7 +178,7 @@ describe("useTutorWorkflow", () => {
 
     expect(deleteWorkflowMock).toHaveBeenCalledWith(workflowFixture.workflow_id);
     expect(result.current.activeWorkflowId).toBeNull();
-    expect(result.current.workflowView).toBe("launch");
+    expect(result.current.studioView).toBe("workbench");
     expect(session.clearActiveSessionState).toHaveBeenCalled();
     expect(hub.setSelectedMaterials).toHaveBeenCalledWith([]);
     expect(toastSuccessMock).toHaveBeenCalledWith("Study plan deleted");
@@ -240,7 +248,7 @@ describe("useTutorWorkflow", () => {
           hub: hub as never,
           session: session as never,
           activeSessionId: null,
-          shellMode: "dashboard",
+          shellMode: "launch",
           setShellMode: vi.fn(),
           hasRestored: true,
         }),
@@ -253,7 +261,7 @@ describe("useTutorWorkflow", () => {
 
     act(() => {
       result.current.setActiveWorkflowId(workflowFixture.workflow_id);
-      result.current.setWorkflowView("priming");
+      result.current.setStudioView("priming");
     });
 
     await waitFor(() => {
@@ -313,7 +321,7 @@ describe("useTutorWorkflow", () => {
           hub: hub as never,
           session: session as never,
           activeSessionId: null,
-          shellMode: "dashboard",
+          shellMode: "launch",
           setShellMode: vi.fn(),
           hasRestored: true,
         }),
@@ -333,5 +341,134 @@ describe("useTutorWorkflow", () => {
         }),
       ]),
     );
+  });
+
+  it("bootstraps Studio priming once and prevents duplicate workflow creation on repeated clicks", async () => {
+    let resolveCreateWorkflow: ((value: { workflow: { workflow_id: string; current_stage: string; status: string } }) => void) | null = null;
+    createWorkflowMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveCreateWorkflow = resolve;
+        }),
+    );
+    getWorkflowMock.mockResolvedValue({
+      ...workflowDetailFixture,
+      workflow: {
+        ...workflowFixture,
+        workflow_id: "wf-studio",
+        course_id: null,
+        topic: null,
+        study_unit: null,
+      },
+      priming_bundle: null,
+    });
+
+    const hub = {
+      ...createHubMock(),
+      courseId: 101,
+      topic: "Cardiac output",
+      selectedMaterials: [501],
+      selectedObjectiveGroup: "Week 7",
+    };
+    const session = createSessionMock();
+    const setShellMode = vi.fn();
+    const wrapper = createWrapper();
+
+    const { result } = renderHook(
+      () =>
+        useTutorWorkflow({
+          hub: hub as never,
+          session: session as never,
+          activeSessionId: null,
+          shellMode: "studio",
+          setShellMode,
+          hasRestored: true,
+        }),
+      { wrapper },
+    );
+
+    let firstPromise: Promise<string | null> | null = null;
+    let secondPromise: Promise<string | null> | null = null;
+
+    await act(async () => {
+      firstPromise = result.current.openStudioPriming();
+      secondPromise = result.current.openStudioPriming();
+    });
+
+    expect(createWorkflowMock).toHaveBeenCalledTimes(1);
+    expect(result.current.bootstrappingPriming).toBe(true);
+    expect(secondPromise).not.toBeNull();
+    await expect(secondPromise).resolves.toBeNull();
+
+    await act(async () => {
+      resolveCreateWorkflow?.({
+        workflow: {
+          workflow_id: "wf-studio",
+          current_stage: "priming",
+          status: "priming_in_progress",
+        },
+      });
+      await firstPromise;
+    });
+
+    expect(result.current.activeWorkflowId).toBe("wf-studio");
+    expect(result.current.studioView).toBe("priming");
+    expect(setShellMode).toHaveBeenCalledWith("studio");
+    expect(result.current.bootstrappingPriming).toBe(false);
+    expect(toastSuccessMock).toHaveBeenCalledWith("Priming workspace ready");
+    await waitFor(() => {
+      expect(getWorkflowMock).toHaveBeenCalledWith("wf-studio");
+    });
+    expect(hub.setCourseId).toHaveBeenCalledWith(101);
+    expect(hub.setSelectedMaterials).toHaveBeenCalledWith([501]);
+    expect(hub.setSelectedObjectiveGroup).toHaveBeenCalledWith("Week 7");
+  });
+
+  it("clears a stale live Tutor session when Studio opens a workflow from a different course", async () => {
+    const hub = {
+      ...createHubMock(),
+      courseId: 101,
+    };
+    const session = createSessionMock();
+    const setShellMode = vi.fn();
+    const wrapper = createWrapper();
+
+    const { result } = renderHook(
+      () =>
+        useTutorWorkflow({
+          hub: hub as never,
+          session: session as never,
+          activeSessionId: "sess-1",
+          shellMode: "launch",
+          setShellMode,
+          hasRestored: true,
+        }),
+      { wrapper },
+    );
+
+    await waitFor(() => {
+      expect(listWorkflowsMock).toHaveBeenCalled();
+    });
+
+    const crossCourseWorkflow: TutorWorkflowSummary = {
+      ...workflowFixture,
+      workflow_id: "wf-final-sync",
+      course_id: 303,
+      course_name: "Neuroscience",
+      current_stage: "final_sync",
+      status: "stored",
+      active_tutor_session_id: null,
+    };
+
+    await act(async () => {
+      await result.current.openWorkflowRecord(crossCourseWorkflow);
+    });
+
+    expect(session.clearActiveSessionState).toHaveBeenCalledTimes(1);
+    expect(session.resumeSession).not.toHaveBeenCalled();
+    expect(hub.setCourseId).toHaveBeenCalledWith(303);
+    expect(setShellMode).toHaveBeenCalledWith("studio");
+    expect(result.current.activeWorkflowId).toBe("wf-final-sync");
+    expect(result.current.studioView).toBe("final_sync");
   });
 });

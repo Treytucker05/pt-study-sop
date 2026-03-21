@@ -1,7 +1,7 @@
 id: M-PRE-002
 name: Overarching Pre-Question Set
 category: prime
-description: Generate 3-5 broad why/how/where-fit questions before deep study to set conceptual hooks.
+description: Generate 3-5 broad why/how/where-fit questions that jointly cover the whole selected material or module slice before deep study to set conceptual hooks.
 default_duration_min: 3
 energy_cost: low
 best_stage: first_exposure
@@ -18,6 +18,7 @@ mechanisms:
 stipulations:
 - Use broad conceptual questions only (no narrow fact checks).
 - Questions are non-scored orientation prompts in PRIME.
+- The 3-5 prompt cap is a final grouping cap, not permission to cherry-pick isolated details. Inventory the full selected scope first, then write prompts broad enough to cover it.
 - If learner anxiety is high, reduce to 1-2 scaffolded prompts or skip.
 when_to_use:
 - New topic where conceptual framing is unclear.
@@ -35,14 +36,14 @@ constraints:
   question_cap_max: 5
 inputs:
 - Topic title or lecture heading
-- 2-3 high-level keywords or headings
+- Full heading structure or major sections for the selected material/module slice
 steps:
 - step: 1
-  action: Read topic title plus 2-3 high-level headings
-  notes: Do not enter detail paragraphs.
+  action: Inventory the full set of major sections, concepts, and transitions from the selected scope
+  notes: Use the whole selected material/module slice before narrowing. Do not cherry-pick.
 - step: 2
-  action: Generate 3-5 broad conceptual prompts
-  notes: Prefer stems like Why, How, Where does this fit.
+  action: Compress that inventory into 3-5 broad conceptual prompts
+  notes: Prefer stems like Why, How, Where does this fit. Each prompt should cover a broad cluster rather than an isolated detail.
 - step: 3
   action: Rank prompts by expected leverage
   notes: Choose top 1-2 prompts to carry into next method.
@@ -54,7 +55,7 @@ outputs:
 - PriorityPrompts
 - FollowUpTargets
 stop_criteria:
-- 3-5 broad prompts generated
+- 3-5 broad prompts jointly cover the full selected scope
 - Priority prompts selected
 - 3 minutes elapsed
 failure_modes:
@@ -83,8 +84,8 @@ facilitation_prompt: 'You are running M-PRE-002 (Overarching Pre-Question Set) i
 
   This method is orientation only and never scored.
 
-
-  Produce exactly 3-5 broad conceptual prompts from topic title + headings.
+  First account for the full selected source/module scope, then compress it into exactly 3-5 broad conceptual prompts.
+  Treat the 3-5 cap as a final grouping cap, not as permission to ignore supported content.
 
   Prompt style:
 
@@ -112,7 +113,7 @@ gating_rules:
 - Stay at orientation level and avoid full solution reveal.
 artifact_type: notes
 allowed_moves:
-- Generate 3-5 broad conceptual why/how/where-fit questions from topic headings
+- Generate 3-5 broad conceptual why/how/where-fit questions that jointly cover the full selected scope
 - Preview material structure through question framing
 - Build curiosity and anticipation for upcoming content
 - Rank prompts by expected leverage for downstream use
@@ -121,12 +122,13 @@ allowed_moves:
 forbidden_moves:
 - Score, grade, or assess learner responses to the questions
 - Generate narrow fact-check or quiz-style questions
+- Cherry-pick a few isolated details while ignoring the rest of the selected source or module slice
 - Teach new detailed content or reveal answers
 - Run retrieval practice or correctness checks
 - Make confidence or mastery judgments
 - Generate more than 5 questions (hard cap)
 - Drift into detail paragraphs instead of broad conceptual prompts
 required_outputs:
-- PreQuestionSet (3-5 broad conceptual prompts)
+- PreQuestionSet (3-5 broad conceptual prompts that jointly cover the full selected scope)
 - PriorityPrompts (top 1-2 prompts for downstream use)
 - FollowUpTargets list

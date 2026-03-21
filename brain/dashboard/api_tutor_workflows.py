@@ -634,16 +634,16 @@ def _build_method_outputs_payload(method_runs: list[dict[str, Any]]) -> dict[str
 
 def _method_prompt_contract(method_id: str) -> str:
     return {
-        "M-PRE-002": '- M-PRE-002 => {"questions":["bounded non-scored prequestions"]}',
-        "M-PRE-004": '- M-PRE-004 => {"concepts":["major levels or pillars"], "map":"hierarchical outline or mermaid map", "follow_up_targets":["unclear transitions to revisit later"]}',
-        "M-PRE-005": '- M-PRE-005 => {"concepts":["skeleton concept nodes"], "map":"hierarchical outline or mermaid map", "follow_up_targets":["missing links to revisit later"]}',
-        "M-PRE-006": '- M-PRE-006 => {"concepts":["pillar map nodes"], "map":"structural scan map", "follow_up_targets":["compressed sections to revisit later"]}',
-        "M-PRE-008": '- M-PRE-008 => {"concepts":["high-signal structure nodes"], "map":"hierarchical outline or mermaid map", "follow_up_targets":["gaps or unsupported jumps"]}',
-        "M-PRE-009": '- M-PRE-009 => {"concepts":["cross-source big-picture pillars"], "map":"integrated structure map", "follow_up_targets":["cross-source ambiguities or conflicts"]}',
+        "M-PRE-002": '- M-PRE-002 => {"questions":["bounded non-scored umbrella prequestions that jointly cover the selected scope"]}',
+        "M-PRE-004": '- M-PRE-004 => {"concepts":["major umbrella pillars that collectively cover the selected scope"], "map":"hierarchical outline or mermaid map", "follow_up_targets":["unclear transitions to revisit later"]}',
+        "M-PRE-005": '- M-PRE-005 => {"concepts":["skeleton umbrella categories covering the selected scope"], "map":"hierarchical outline or mermaid map", "follow_up_targets":["missing links to revisit later"]}',
+        "M-PRE-006": '- M-PRE-006 => {"concepts":["pillar map umbrella groups covering the full selected structural scope"], "map":"structural scan map", "follow_up_targets":["compressed sections to revisit later"]}',
+        "M-PRE-008": '- M-PRE-008 => {"concepts":["high-signal structure nodes that jointly cover the selected objective scope"], "map":"hierarchical outline or mermaid map", "follow_up_targets":["gaps or unsupported jumps"]}',
+        "M-PRE-009": '- M-PRE-009 => {"concepts":["cross-source big-picture pillars covering the full included source scope"], "map":"integrated structure map", "follow_up_targets":["cross-source ambiguities or conflicts"]}',
         "M-PRE-010": '- M-PRE-010 => {"learning_objectives":[{"title":"string","lo_code":"string or null"}]}',
-        "M-PRE-011": '- M-PRE-011 => {"drawing_brief":"what the learner should hand-draw", "branch_points":["3-5 branches or anchors"]}',
+        "M-PRE-011": '- M-PRE-011 => {"drawing_brief":"what the learner should hand-draw", "branch_points":["3-5 broad umbrella branches covering the whole overview"]}',
         "M-PRE-012": '- M-PRE-012 => {"terminology":["Term :: concise source-grounded definition"]}',
-        "M-PRE-013": '- M-PRE-013 => {"summary":"short orientation summary", "major_sections":["major sections or pillars"]}',
+        "M-PRE-013": '- M-PRE-013 => {"summary":"short orientation summary", "major_sections":["major sections or pillars covering the whole source at orientation level"]}',
         "M-PRE-014": '- M-PRE-014 => {"gaps":["explicit ambiguities"], "unsupported_jumps":["places the source skips reasoning"]}',
     }.get(method_id, f'- {method_id} => {{}}')
 
@@ -1890,6 +1890,9 @@ Only include the selected method IDs. Do not emit outputs for unselected methods
                 "- learning objectives must stay concise, material-grounded, and deduplicated by meaning\n"
                 "- if the source contains explicit learning-objective bullet lists, preserve the full explicit list rather than collapsing it into fewer broader items\n"
                 "- for M-PRE-010, extract the full stable objective set supported by this chunk and preserve existing objective wording when still supported\n\n"
+                "- when a PRIME method uses a capped output count (for example 3-5 prompts, pillars, or branches), treat that cap as the number of final umbrella groups, not as permission to ignore supported source content\n"
+                "- first inventory the full supported sections and concepts in this chunk, then compress them into broad groups that still cover the whole selected material or objective scope\n"
+                "- do not cherry-pick isolated examples unless each chosen item is itself a broad umbrella that represents the omitted content\n\n"
                 f"Material content chunk {chunk_index}/{len(content_windows)}:\n{chunk_content}"
             )
             method_runs, material_error = _run_priming_llm_pass(
@@ -1956,6 +1959,8 @@ Do not emit outputs for unselected methods.
                 "- deduplicate repeated objectives, terms, concepts, and follow-up targets by meaning\n"
                 "- only change counts when the chunk evidence clearly requires it\n"
                 "- if the source contains explicit learning-objective bullet lists, preserve the full explicit list rather than collapsing it into fewer broader items\n"
+                "- for capped PRIME outputs, keep the final 3-5 style counts as umbrella groups that still cover the full selected material or objective scope\n"
+                "- do not cherry-pick isolated examples during consolidation; broaden or regroup until the whole selected scope is represented\n"
                 "- return one final method_outputs object for the selected methods only"
             )
             method_runs, material_error = _run_priming_llm_pass(

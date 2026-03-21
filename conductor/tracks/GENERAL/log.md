@@ -2,6 +2,12 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-21 - Theme lab (single HTML + tabs)
+
+- `dashboard_rebuild/client/theme-lab/index.html` is one page: Overview / Tokens / Panels via CSS-only radio tabs.
+- `theme-lab.ts` imports `src/styles/theme.css` and `theme-lab.css`; Vite `build.rollupOptions.input.themeLab` points at that HTML only.
+- After `npm run build`, open `http://127.0.0.1:5000/theme-lab/index.html` with the dashboard running (`Start_Dashboard.bat`).
+
 ## 2026-03-20 - Methods library stage drift repair
 
 - Repaired non-strict method-library seeding in `brain/data/seed_methods.py` so canonical `control_stage` drift now self-heals for existing non-placeholder rows instead of only updating during `--strict-sync`.
@@ -1248,3 +1254,22 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Added focused regression coverage in `brain/tests/test_tutor_workflow_priming_assist.py` for a material that contains `14` explicit objective bullets while the mocked LLM returns only a `3`-objective subset.
 - Validation passed:
   - `pytest brain/tests/test_tutor_workflow_priming_assist.py -q`
+
+## 2026-03-21 - PRIME capped-group coverage hardening
+- Updated `sop/library/categories/PRIME.md` so any capped PRIME output count like `3-5` is now defined as a final umbrella-group cap, not permission to ignore supported source content.
+- Tightened `sop/library/methods/M-PRE-002.yaml`, `M-PRE-004.yaml`, `M-PRE-005.yaml`, `M-PRE-006.yaml`, and `M-PRE-011.yaml` so the selected source/material scope must be accounted for first and only then compressed into capped prompt/pillar/category/branch groups.
+- Hardened `brain/dashboard/api_tutor_workflows.py` so live Priming Assist carries the same rule in both chunk extraction and consolidation: inventory the full supported structure first, then compress into broad groups that still cover the whole selected scope instead of cherry-picking isolated examples.
+- Added focused prompt-regression coverage in `brain/tests/test_tutor_workflow_priming_assist.py` to prove the live prompt now encodes the new capped-output grouping rule.
+- Validation passed:
+  - `python sop/tools/validate_library.py`
+  - `pytest brain/tests/test_tutor_workflow_priming_assist.py -q`
+
+## 2026-03-21 - Tutor launch hub layout, wheel, and resume cleanup
+- Reworked `dashboard_rebuild/client/src/components/TutorWorkflowLaunchHub.tsx` so `LAUNCH HUB` and `STUDY WHEEL` sit in the top row while `RECENT WORKFLOWS` now renders underneath them instead of beside them.
+- Added a visible `RESUME` button beside `START NEW` and wired it through `dashboard_rebuild/client/src/components/TutorShell.tsx` and `dashboard_rebuild/client/src/pages/tutor.tsx` to the existing Tutor hub resume-candidate flow.
+- Changed the Study Wheel to render linked course rotation rows from `tutorHub.class_projects`, so linked courses now show even when `total_sessions` and `total_minutes` are still `0`.
+- Added focused coverage in `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowLaunchHub.test.tsx` and `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- src/components/__tests__/TutorWorkflowLaunchHub.test.tsx`
+  - `cd dashboard_rebuild && npx vitest run src/pages/__tests__/tutor.test.tsx -t "resumes the most recent launch-hub session from the resume button"`
+  - `cd dashboard_rebuild && npm run build`

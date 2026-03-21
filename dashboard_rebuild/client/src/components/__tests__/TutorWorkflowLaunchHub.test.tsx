@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TutorWorkflowLaunchHub } from "@/components/TutorWorkflowLaunchHub";
-import type { TutorWorkflowSummary } from "@/lib/api";
+import type { TutorHubResponse, TutorWorkflowSummary } from "@/lib/api";
 
 const workflowFixture: TutorWorkflowSummary = {
   workflow_id: "wf-1",
@@ -19,6 +19,71 @@ const workflowFixture: TutorWorkflowSummary = {
   active_tutor_session_id: null,
   created_at: "2026-03-20T10:00:00Z",
   updated_at: "2026-03-20T11:00:00Z",
+};
+
+const tutorHubFixture: TutorHubResponse = {
+  recommended_action: null,
+  resume_candidate: {
+    can_resume: true,
+    course_id: 101,
+    course_name: "Exercise Physiology",
+    course_code: "EPHY-101",
+    session_id: "sess-101",
+    last_mode: "tutor",
+    board_scope: "project",
+    board_id: null,
+    topic: "Cardiovascular regulation",
+    updated_at: "2026-03-20T11:00:00Z",
+    action_label: "Resume Exercise Physiology tutor",
+  },
+  upcoming_assignments: [],
+  upcoming_tests: [],
+  class_projects: [
+    {
+      course_id: 101,
+      course_name: "Exercise Physiology",
+      course_code: "EPHY-101",
+      material_count: 2,
+      recent_session_count: 0,
+      last_studied_at: null,
+      pending_event_count: 1,
+      captured_item_count: 0,
+      promoted_item_count: 0,
+      wheel_linked: true,
+      wheel_active: true,
+      wheel_position: 1,
+      active_session: null,
+      next_due_event: null,
+    },
+    {
+      course_id: 202,
+      course_name: "Cardio",
+      course_code: "CARD-202",
+      material_count: 3,
+      recent_session_count: 0,
+      last_studied_at: null,
+      pending_event_count: 0,
+      captured_item_count: 0,
+      promoted_item_count: 0,
+      wheel_linked: true,
+      wheel_active: false,
+      wheel_position: 2,
+      active_session: null,
+      next_due_event: null,
+    },
+  ],
+  study_wheel: {
+    current_course_id: 101,
+    current_course_name: "Exercise Physiology",
+    current_course_code: "EPHY-101",
+    current_position: 1,
+    total_sessions: 0,
+    total_minutes: 0,
+    total_active_courses: 2,
+    next_course_id: 202,
+    next_course_name: "Cardio",
+    next_course_code: "CARD-202",
+  },
 };
 
 describe("TutorWorkflowLaunchHub", () => {
@@ -83,5 +148,67 @@ describe("TutorWorkflowLaunchHub", () => {
     fireEvent.click(screen.getByRole("button", { name: /delete workflow week 7 study plan/i }));
 
     expect(onDeleteWorkflow).not.toHaveBeenCalled();
+  });
+
+  it("runs the resume callback from the launch hub", () => {
+    const onResumeCandidate = vi.fn();
+
+    render(
+      <TutorWorkflowLaunchHub
+        workflows={[workflowFixture]}
+        totalCount={1}
+        courses={[{ id: 101, name: "Exercise Physiology", code: "EPHY-101" }]}
+        filters={{
+          search: "",
+          courseId: "all",
+          stage: "all",
+          status: "all",
+          dueBucket: "all",
+        }}
+        onFiltersChange={vi.fn()}
+        onStartNew={vi.fn()}
+        onResumeCandidate={onResumeCandidate}
+        onOpenWorkflow={vi.fn()}
+        onDeleteWorkflow={vi.fn()}
+        tutorHub={tutorHubFixture}
+        resumeCandidate={tutorHubFixture.resume_candidate}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /^resume$/i }));
+
+    expect(onResumeCandidate).toHaveBeenCalledWith(tutorHubFixture.resume_candidate);
+  });
+
+  it("shows linked study-wheel courses even before session totals exist", () => {
+    render(
+      <TutorWorkflowLaunchHub
+        workflows={[workflowFixture]}
+        totalCount={1}
+        courses={[{ id: 101, name: "Exercise Physiology", code: "EPHY-101" }]}
+        filters={{
+          search: "",
+          courseId: "all",
+          stage: "all",
+          status: "all",
+          dueBucket: "all",
+        }}
+        onFiltersChange={vi.fn()}
+        onStartNew={vi.fn()}
+        onOpenWorkflow={vi.fn()}
+        onDeleteWorkflow={vi.fn()}
+        tutorHub={tutorHubFixture}
+        resumeCandidate={tutorHubFixture.resume_candidate}
+      />,
+    );
+
+    expect(
+      screen.queryByText(/start a tutor session to build your study wheel/i),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText(/linked courses/i)).toBeInTheDocument();
+    expect(screen.getByText(/EPHY-101 • Exercise Physiology/i)).toBeInTheDocument();
+    expect(screen.getByText(/CARD-202 • Cardio/i)).toBeInTheDocument();
+    expect(screen.getByText(/^CURRENT$/)).toBeInTheDocument();
+    expect(screen.getByText(/^NEXT$/)).toBeInTheDocument();
   });
 });

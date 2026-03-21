@@ -69,7 +69,7 @@ function useTutorPageController() {
   >();
   const [shellMode, setShellMode] = useState<TutorPageMode>(
     initialRouteQuery.mode ||
-      (initialRouteQuery.sessionId || storedActiveSessionId ? "tutor" : "dashboard"),
+      (initialRouteQuery.sessionId || storedActiveSessionId ? "tutor" : "launch"),
   );
   const [studioEntryRequest, setStudioEntryRequest] = useState<TutorStudioEntryRequest | null>(null);
   const [scheduleLaunchIntent, setScheduleLaunchIntent] =
@@ -111,6 +111,7 @@ function useTutorPageController() {
     activeSessionId,
     setActiveSessionId,
     shellMode,
+    studioView: "workbench",
     setShellMode,
     setShowSetup,
     setRestoredTurns,
@@ -135,6 +136,7 @@ function useTutorPageController() {
     activeSessionId,
     setActiveSessionId,
     shellMode,
+    studioView: workflow.studioView,
     setShellMode,
     setShowSetup,
     setRestoredTurns,
@@ -193,11 +195,12 @@ function useTutorPageController() {
   const openProjectFromHub = useCallback((nextCourseId: number) => {
     explicitShellModeRef.current = { courseId: nextCourseId, mode: "studio" };
     hub.setCourseId(nextCourseId);
+    workflow.setStudioView("workbench");
     setShellMode("studio");
     setShowSetup(false);
     setScheduleLaunchIntent(null);
     setStudioEntryRequest({ level: 2, token: nextNavigationToken() });
-  }, [hub, nextNavigationToken]);
+  }, [hub, nextNavigationToken, workflow]);
 
   const openScheduleCourseFromHub = useCallback(
     (nextCourseId: number, kind: "manage_event" | "manage_exam") => {
@@ -283,17 +286,18 @@ function useTutorPageController() {
         return;
       }
       if (candidate.last_mode === "publish") {
-        workflow.setWorkflowView("launch");
-        setShellMode("dashboard");
+        workflow.setStudioView("workbench");
+        setShellMode("launch");
         setShowSetup(false);
         return;
       }
       if (candidate.last_mode === "studio") {
+        workflow.setStudioView("workbench");
         setShellMode("studio");
         setShowSetup(false);
         return;
       }
-      setShellMode("dashboard");
+      setShellMode("launch");
       setShowSetup(false);
     },
     [hub, sessionWithWorkflow, workflow],
@@ -380,11 +384,15 @@ function useTutorPageController() {
         !hasExplicitModeOverride &&
         !initialRouteQuery.mode &&
         shellMode === "studio" &&
+        !workflow.activeWorkflowId &&
         nextProjectShell.workspace_state.last_mode
       ) {
+        if (nextProjectShell.workspace_state.last_mode === "studio") {
+          workflow.setStudioView("workbench");
+        }
         setShellMode(
           nextProjectShell.workspace_state.last_mode === "publish"
-            ? "dashboard"
+            ? "launch"
             : nextProjectShell.workspace_state.last_mode,
         );
       }
@@ -412,8 +420,19 @@ function useTutorPageController() {
         );
       }
     },
-    [activeBoardScope, hub, initialRouteQuery, shellMode],
+    [activeBoardScope, hub, initialRouteQuery, shellMode, workflow],
   );
+
+  const openStudioHome = useCallback(() => {
+    if (typeof hub.courseId === "number") {
+      explicitShellModeRef.current = { courseId: hub.courseId, mode: "studio" };
+    }
+    setStudioEntryRequest(null);
+    setScheduleLaunchIntent(null);
+    workflow.setStudioView("workbench");
+    setShellMode("studio");
+    setShowSetup(false);
+  }, [hub.courseId, workflow]);
 
   // ─── Restore shell state on mount ───
   const restoreTutorShellState = useCallback(async () => {
@@ -438,14 +457,14 @@ function useTutorPageController() {
         }
         clearTutorActiveSessionId();
         if (!initialRouteQuery.mode) {
-          setShellMode("dashboard");
+          setShellMode("launch");
         }
       }
     } catch {
       if (!initialRouteQuery.sessionId) {
         clearTutorActiveSessionId();
         if (!initialRouteQuery.mode) {
-          setShellMode("dashboard");
+          setShellMode("launch");
         }
       }
     }
@@ -494,6 +513,8 @@ function useTutorPageController() {
       !resumedFromProjectShellRef.current &&
       !activeSessionId &&
       !brainLaunchContext &&
+      !workflow.activeWorkflowId &&
+      shellMode === "tutor" &&
       sessionWithWorkflow.projectShell.active_session?.session_id
     ) {
       resumedFromProjectShellRef.current = true;
@@ -512,7 +533,9 @@ function useTutorPageController() {
     brainLaunchContext,
     hub.courseId,
     hydrateProjectShellState,
+    shellMode,
     sessionWithWorkflow,
+    workflow.activeWorkflowId,
     shellHydratedCourseId,
   ]);
 
@@ -521,7 +544,7 @@ function useTutorPageController() {
     // Target both window and <main> — main is the actual scroll container in the layout grid
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     document.querySelector("main")?.scrollTo({ top: 0, left: 0, behavior: "auto" });
-  }, [activeSessionId, hasRestored, shellMode, workflow.workflowView]);
+  }, [activeSessionId, hasRestored, shellMode, workflow.studioView]);
 
   useEffect(() => {
     writeTutorShellQuery({
@@ -535,7 +558,14 @@ function useTutorPageController() {
 
   // Shell persistence
   useEffect(() => {
-    if (!hasRestored || typeof hub.courseId !== "number" || shellMode === "dashboard") return;
+    if (
+      !hasRestored ||
+      typeof hub.courseId !== "number" ||
+      shellMode === "launch" ||
+      shellHydratedCourseId !== hub.courseId
+    ) {
+      return;
+    }
     const persistKey = JSON.stringify({
       courseId: hub.courseId,
       activeSessionId,
@@ -576,6 +606,7 @@ function useTutorPageController() {
     hasRestored,
     queryClient,
     shellMode,
+    shellHydratedCourseId,
     shellRevision,
     viewerState,
   ]);
@@ -640,32 +671,13 @@ function useTutorPageController() {
       onAdvanceBlock={sessionWithWorkflow.advanceBlock}
       activeWorkflowId={workflow.activeWorkflowId}
       activeWorkflowDetail={workflow.activeWorkflowDetail}
-      workflowView={workflow.workflowView}
-      hasPolishBundle={Boolean(workflow.activeWorkflowDetail?.polish_bundle)}
+      studioView={workflow.studioView}
       teachRuntime={teachRuntime}
-      onStepperStageClick={(stage) => {
-        setStudioEntryRequest(null);
-        setScheduleLaunchIntent(null);
-        if (stage === "launch") {
-          setShellMode("dashboard");
-          workflow.setWorkflowView("launch");
-        } else if (stage === "priming") {
-          setShellMode("dashboard");
-          workflow.setWorkflowView("priming");
-        } else if (stage === "tutor") {
-          setShellMode("tutor");
-        } else if (stage === "polish") {
-          void workflow.openWorkflowPolish();
-        } else {
-          setShellMode("dashboard");
-          workflow.setWorkflowView("final_sync");
-        }
-      }}
       activeSessionId={activeSessionId}
       showArtifacts={sessionWithWorkflow.showArtifacts}
       artifacts={sessionWithWorkflow.artifacts}
       onSetShellMode={setShellMode}
-      onSetWorkflowView={workflow.setWorkflowView}
+      onOpenStudioHome={openStudioHome}
       onSetShowArtifacts={sessionWithWorkflow.setShowArtifacts}
       onSetShowEndConfirm={sessionWithWorkflow.setShowEndConfirm}
       onOpenSettings={openSettings}
@@ -732,6 +744,7 @@ function useTutorPageController() {
             setIsPreviewMode={setIsPreviewMode}
             saveSettings={saveSettings}
             restoreDefaultInstructions={restoreDefaultInstructions}
+            onResumeHubCandidate={resumeFromHubCandidate}
           />
         </CoreWorkspaceFrame>
       </PageScaffold>

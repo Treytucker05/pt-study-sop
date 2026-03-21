@@ -77,7 +77,7 @@ The system is not a generic chatbot, not a set of equal peer pages fighting for 
 | Route | Meaning |
 |------|---------|
 | `/` and `/brain` | Brain home |
-| `/tutor` | Tutor workflow shell after Brain handoff. Migration target: Launch, Priming, Tutor, Polish, Final Sync while preserving the current Studio/Tutor/Schedule/Publish workspace surfaces during rollout. |
+| `/tutor` | Tutor surface-first study shell after Brain handoff. Global nav owns `Launch`, `Tutor`, `Studio`, `Schedule`, and `Settings`; `Studio` opens on `Home` and owns the workflow sub-tabs `Workbench`, `Priming`, `Polish`, and `Final Sync`. |
 | `/tutor?course_id=&session_id=&mode=&board_scope=` | Deep-link into specific project/session/mode state |
 | `/scholar` | Scholar investigation console |
 | `/library` | Library support system |
@@ -97,19 +97,22 @@ Tutor is **not a setup wizard**. It is a **Brain-launched, course-backed study w
 | Principle | Detail |
 |-----------|--------|
 | **Brain owns launch context** | Brain decides "what am I working on and why am I entering Tutor" — course, project context, entry point |
-| **Tutor owns the staged workflow shell** | Tutor handles "now I am studying inside this workspace" — Launch, Priming, Tutor, Polish, Final Sync, plus session execution, artifacts, and resume/restore |
+| **Tutor owns the surface-first study shell** | Tutor handles "now I am studying inside this workspace" through one global nav (`Launch`, `Tutor`, `Studio`, `Schedule`, `Settings`) plus session execution, artifacts, and resume/restore |
+| **Studio owns workflow prep and wrap-up** | Workflow setup/refinement lives inside `Studio`, which opens on `Home` and then exposes local sub-tabs: `Workbench`, `Priming`, `Polish`, and `Final Sync` |
 | **No wizard funnel** | Tutor should not force the user through a large multi-step launch wizard every time. The old TutorWizard is demoted to a thin start panel, and setup work moves into explicit downstream stages instead of one mixed launch surface. |
 | **Project == Course** | In v1, every project is a thin wrapper around an existing `course_id`. No freeform projects. |
 | **Bidirectional flow** | Studio preloads and organizes material → transfers to Tutor for study. Tutor sends notes and artifacts back → Studio captures and organizes them. They feed each other. |
 
-**Workflow migration target:**
-- `Launch`: routing, resume, recents, due-date and study-wheel context
-- `Priming`: course selection, source ingestion, source-linked extraction, readiness gating
+**Current surface/workflow model:**
+- `Launch`: workflow inbox, resume, recents, and study-wheel context
 - `Tutor`: live teaching against a primed bundle plus session-time capture and memory compaction
-- `Polish`: mandatory review, Studio organization, summarization, QA, and publish staging
-- `Final Sync`: publish approved notes to Obsidian, cards to Anki, and Brain telemetry/index saves
+- `Studio > Home`: workflow overview, next recommended action, disabled-state guidance, and embedded workbench access
+- `Studio > Workbench`: general class/workspace prep and organization
+- `Studio > Priming`: step-based flow for setup, material scope, PRIME methods, outputs, and Tutor handoff
+- `Studio > Polish`: mandatory review, Studio organization, summarization, and QA
+- `Studio > Final Sync`: publish approved notes to Obsidian, cards to Anki, and Brain telemetry/index saves
 
-Current shell modes remain during rollout. The staged workflow is the target execution model layered onto the existing Tutor shell rather than a second competing launch system.
+Tutor now uses one global surface nav. Workflow progression is contextual inside that shell instead of a second top-level stage rail competing with the surface tabs.
 
 **System boundary:**
 - **Brain owns:** broad launch orchestration, course/project selection, pre-launch context

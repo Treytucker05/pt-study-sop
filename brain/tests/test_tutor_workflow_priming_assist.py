@@ -481,3 +481,62 @@ def test_priming_assist_preserves_full_explicit_learning_objective_list(client, 
     assert objectives[0]["title"] == "List 5 cardiovascular system functions."
     assert objectives[-1]["title"] == "Contrast cardiovascular and metabolic dynamics during upper-body versus lower-body exercise"
     assert "Explicit learning objectives already present in the source material:" in mock_llm.last_args["user_prompt"]
+
+
+def test_priming_assist_prompt_treats_capped_prime_outputs_as_group_caps(client, mock_llm):
+    course_id = 906
+    _insert_course(course_id, "Cardiopulmonary")
+    _insert_material(
+        77,
+        course_id=course_id,
+        title="Pulmonary Review Packet",
+        source_path="/tmp/pulmonary-review.txt",
+        file_type="txt",
+        content=(
+            "Pulmonary ventilation links respiratory muscles, thoracic mechanics, airway resistance, alveolar ventilation, "
+            "gas diffusion, perfusion matching, acid-base buffering, and exercise responses."
+        ),
+    )
+
+    workflow_response = client.post(
+        "/api/tutor/workflows",
+        json={
+            "course_id": course_id,
+            "study_unit": "Pulmonary",
+            "topic": "Pulmonary review",
+            "current_stage": "priming",
+            "status": "priming_in_progress",
+        },
+    )
+    assert workflow_response.status_code == 200
+    workflow_id = workflow_response.get_json()["workflow"]["workflow_id"]
+
+    mock_llm.set_response(
+        json.dumps(
+            {
+                "method_outputs": {
+                    "M-PRE-004": {
+                        "concepts": ["ventilation mechanics", "gas exchange control", "exercise integration"],
+                        "map": "graph TD\nROOT[Pulmonary review] --> VENT[Ventilation mechanics]",
+                        "follow_up_targets": ["Need a cleaner bridge between ventilation and perfusion."],
+                    }
+                }
+            }
+        )
+    )
+
+    response = client.post(
+        f"/api/tutor/workflows/{workflow_id}/priming-assist",
+        json={
+            "material_ids": [77],
+            "study_unit": "Pulmonary",
+            "topic": "Pulmonary review",
+            "priming_methods": ["M-PRE-004"],
+        },
+    )
+
+    assert response.status_code == 200
+    prompt = mock_llm.last_args["user_prompt"]
+    assert "treat that cap as the number of final umbrella groups" in prompt
+    assert "do not cherry-pick isolated examples" in prompt
+    assert 'M-PRE-004 => {"concepts":["major umbrella pillars that collectively cover the selected scope"]' in prompt

@@ -1,0 +1,459 @@
+/* HUD wrapper style variants — theme-lab / sandbox only.
+ * Uses tokens from hud-theme.css (--hud-*, --text-main, --text-muted).
+ * Pair with .tl-vp-head / .tl-vp-body for consistent panel chrome in the lab. */
+
+/* ─── Shared lab utilities (hover/focus simulation for static screenshots) ─── */
+.tl-sim-hover.hud-button-a,
+.tl-sim-hover.hud-button-b,
+.tl-sim-hover.hud-button-c,
+.tl-sim-hover.hud-button-d,
+.tl-sim-hover.hud-button-e {
+  pointer-events: none;
+}
+
+/* ─── Panels: hud-panel-a … e ─── */
+
+.hud-panel-a {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--hud-radius-lg);
+  color: var(--text-main);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--hud-color-surface-b) 92%, transparent),
+    color-mix(in srgb, var(--hud-color-surface-inset) 88%, transparent)
+  );
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 22%, transparent);
+  box-shadow:
+    0 0 0 1px var(--hud-border-inner) inset,
+    0 0 32px color-mix(in srgb, var(--hud-color-accent) 14%, transparent),
+    var(--hud-shadow-panel);
+}
+
+.hud-panel-b {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--hud-radius-md);
+  color: var(--text-main);
+  background: linear-gradient(180deg, var(--hud-color-surface-a), var(--hud-color-bg-base));
+  border: 1px solid var(--hud-border-strong);
+  box-shadow:
+    0 0 0 1px var(--hud-border-subtle) inset,
+    0 4px 12px rgba(0, 0, 0, 0.45);
+}
+
+.hud-panel-c {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--hud-radius-lg);
+  color: var(--text-main);
+  background: linear-gradient(180deg, #140a10, #08060a);
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent-bright) 55%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--hud-color-accent) 35%, transparent) inset,
+    0 0 40px color-mix(in srgb, var(--hud-color-accent) 38%, transparent),
+    0 0 80px color-mix(in srgb, var(--hud-color-accent) 12%, transparent),
+    var(--hud-shadow-panel);
+}
+
+.hud-panel-d {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--hud-radius-lg);
+  color: var(--text-main);
+  background: color-mix(in srgb, var(--hud-color-surface-a) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 18%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, #fff 6%, transparent) inset,
+    var(--hud-shadow-float);
+}
+
+.hud-panel-e {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--hud-radius-md);
+  color: var(--text-main);
+  background: linear-gradient(180deg, var(--hud-color-surface-inset), #040406);
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 12%, transparent);
+  box-shadow:
+    inset 0 2px 14px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.4),
+    0 1px 0 color-mix(in srgb, var(--hud-color-accent) 15%, transparent);
+}
+
+/* ─── Buttons: hud-button-a … e (+ hover/disabled simulation classes) ─── */
+
+.hud-button-a,
+.hud-button-b,
+.hud-button-c,
+.hud-button-d,
+.hud-button-e {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0 14px;
+  font-family: var(--hud-font-label);
+  font-size: var(--hud-text-xs);
+  font-weight: 600;
+  letter-spacing: var(--hud-tracking-label);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    transform var(--hud-duration-fast) var(--hud-ease-out),
+    box-shadow var(--hud-duration-fast) var(--hud-ease-out),
+    border-color var(--hud-duration-fast) var(--hud-ease-out),
+    background var(--hud-duration-fast) var(--hud-ease-out);
+}
+
+.hud-button-a:disabled,
+.hud-button-b:disabled,
+.hud-button-c:disabled,
+.hud-button-d:disabled,
+.hud-button-e:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* a — solid futuristic */
+.hud-button-a {
+  border-radius: var(--hud-radius-md);
+  color: #fff;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hud-color-accent-bright) 35%, var(--hud-color-surface-c)),
+    color-mix(in srgb, var(--hud-color-accent-deep) 55%, #1a0508)
+  );
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 50%, transparent);
+  box-shadow: var(--hud-glow-sm), 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+.hud-button-a:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--hud-glow-md), 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+.tl-sim-hover.hud-button-a {
+  transform: translateY(-1px);
+  box-shadow: var(--hud-glow-md), 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* b — outline neon */
+.hud-button-b {
+  border-radius: var(--hud-radius-md);
+  color: var(--hud-color-text-accent);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 55%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--hud-color-accent) 12%, transparent);
+}
+.hud-button-b:hover:not(:disabled) {
+  border-color: var(--hud-color-accent-bright);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--hud-color-accent) 28%, transparent);
+  color: #fff;
+}
+.tl-sim-hover.hud-button-b {
+  border-color: var(--hud-color-accent-bright);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--hud-color-accent) 28%, transparent);
+  color: #fff;
+}
+
+/* c — glow heavy */
+.hud-button-c {
+  border-radius: var(--hud-radius-pill);
+  color: #fff;
+  background: var(--hud-color-surface-b);
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 30%, transparent);
+  box-shadow:
+    0 0 24px color-mix(in srgb, var(--hud-color-accent) 35%, transparent),
+    0 0 48px color-mix(in srgb, var(--hud-color-accent) 14%, transparent);
+}
+.hud-button-c:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 32px color-mix(in srgb, var(--hud-color-accent) 48%, transparent),
+    0 0 64px color-mix(in srgb, var(--hud-color-accent) 20%, transparent);
+}
+.tl-sim-hover.hud-button-c {
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 32px color-mix(in srgb, var(--hud-color-accent) 48%, transparent),
+    0 0 64px color-mix(in srgb, var(--hud-color-accent) 20%, transparent);
+}
+
+/* d — minimal flat */
+.hud-button-d {
+  border-radius: var(--hud-radius-sm);
+  color: var(--text-main);
+  background: var(--hud-color-surface-a);
+  border: 1px solid var(--hud-border-muted);
+  box-shadow: none;
+}
+.hud-button-d:hover:not(:disabled) {
+  background: var(--hud-color-surface-b);
+  border-color: var(--hud-border-strong);
+}
+.tl-sim-hover.hud-button-d {
+  background: var(--hud-color-surface-b);
+  border-color: var(--hud-border-strong);
+}
+
+/* e — arcade */
+.hud-button-e {
+  border-radius: 2px;
+  color: var(--hud-color-text-accent);
+  background: linear-gradient(180deg, #1a1014, #0c080a);
+  border: 2px solid var(--hud-color-accent);
+  box-shadow:
+    2px 2px 0 color-mix(in srgb, var(--hud-color-accent-deep) 80%, #000),
+    inset 0 1px 0 color-mix(in srgb, #fff 8%, transparent);
+  font-family: var(--hud-font-mono);
+}
+.hud-button-e:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow:
+    3px 3px 0 color-mix(in srgb, var(--hud-color-accent-deep) 90%, #000),
+    inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent);
+}
+.tl-sim-hover.hud-button-e {
+  transform: translate(-1px, -1px);
+  box-shadow:
+    3px 3px 0 color-mix(in srgb, var(--hud-color-accent-deep) 90%, #000),
+    inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent);
+}
+
+/* ─── Tab lists + tabs: a–d ─── */
+
+.hud-tablist-a,
+.hud-tablist-b,
+.hud-tablist-c,
+.hud-tablist-d {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hud-space-2);
+}
+
+.hud-tab-a,
+.hud-tab-b,
+.hud-tab-c,
+.hud-tab-d {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 12px;
+  font-family: var(--hud-font-label);
+  font-size: var(--hud-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  transition:
+    color var(--hud-duration-fast) var(--hud-ease-out),
+    box-shadow var(--hud-duration-fast) var(--hud-ease-out),
+    background var(--hud-duration-fast) var(--hud-ease-out),
+    border-color var(--hud-duration-fast) var(--hud-ease-out);
+}
+
+/* a — pill glow */
+.hud-tablist-a {
+  padding: var(--hud-space-1);
+  border-radius: var(--hud-radius-pill);
+  background: color-mix(in srgb, var(--hud-color-surface-inset) 80%, transparent);
+  border: 1px solid var(--hud-border-subtle);
+}
+.hud-tab-a {
+  border-radius: var(--hud-radius-pill);
+  border: 1px solid transparent;
+}
+.hud-tab-a[aria-selected="true"] {
+  color: #fff;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hud-color-accent) 28%, var(--hud-color-surface-b)),
+    var(--hud-color-surface-inset)
+  );
+  border-color: color-mix(in srgb, var(--hud-color-accent) 45%, transparent);
+  box-shadow: var(--hud-glow-sm);
+}
+
+/* b — underline */
+.hud-tablist-b {
+  gap: 0;
+  border-bottom: 1px solid var(--hud-border-muted);
+  padding-bottom: 0;
+}
+.hud-tab-b {
+  border-radius: var(--hud-radius-sm) var(--hud-radius-sm) 0 0;
+  margin-bottom: -1px;
+  border: 1px solid transparent;
+  border-bottom: none;
+}
+.hud-tab-b[aria-selected="true"] {
+  color: var(--hud-color-text-accent);
+  background: color-mix(in srgb, var(--hud-color-surface-a) 70%, transparent);
+  border-color: var(--hud-border-muted);
+  border-bottom: 1px solid var(--hud-color-surface-a);
+  box-shadow: 0 -2px 12px color-mix(in srgb, var(--hud-color-accent) 12%, transparent);
+}
+
+/* c — boxed segment */
+.hud-tablist-c {
+  padding: 3px;
+  border-radius: var(--hud-radius-md);
+  background: var(--hud-color-surface-inset);
+  border: 1px solid var(--hud-border-subtle);
+  gap: 4px;
+}
+.hud-tab-c {
+  border-radius: var(--hud-radius-sm);
+  border: 1px solid transparent;
+}
+.hud-tab-c[aria-selected="true"] {
+  color: #fff;
+  background: var(--hud-color-surface-b);
+  border-color: color-mix(in srgb, var(--hud-color-accent) 35%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--hud-color-accent) 20%, transparent) inset;
+}
+
+/* d — minimal text */
+.hud-tablist-d {
+  gap: var(--hud-space-4);
+}
+.hud-tab-d {
+  padding: 4px 0;
+  min-height: auto;
+  border-bottom: 2px solid transparent;
+}
+.hud-tab-d[aria-selected="true"] {
+  color: var(--text-main);
+  border-bottom-color: var(--hud-color-accent);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--hud-color-accent) 45%, transparent);
+}
+
+/* ─── Inputs: hud-input-a … d (+ focus simulation) ─── */
+
+.hud-input-a,
+.hud-input-b,
+.hud-input-c,
+.hud-input-d,
+.hud-textarea-a,
+.hud-textarea-b,
+.hud-textarea-c,
+.hud-textarea-d {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--hud-font-mono);
+  font-size: var(--hud-text-sm);
+  color: var(--text-main);
+  background: var(--hud-color-surface-inset);
+  transition:
+    border-color var(--hud-duration-fast) var(--hud-ease-out),
+    box-shadow var(--hud-duration-fast) var(--hud-ease-out);
+}
+
+.hud-input-a,
+.hud-input-b,
+.hud-input-c,
+.hud-input-d {
+  min-height: 40px;
+  padding: 0 12px;
+}
+
+.hud-textarea-a,
+.hud-textarea-b,
+.hud-textarea-c,
+.hud-textarea-d {
+  min-height: 72px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.hud-input-a::placeholder,
+.hud-textarea-a::placeholder,
+.hud-input-b::placeholder,
+.hud-textarea-b::placeholder,
+.hud-input-c::placeholder,
+.hud-textarea-c::placeholder,
+.hud-input-d::placeholder,
+.hud-textarea-d::placeholder {
+  color: var(--hud-color-text-tertiary);
+}
+
+/* a — clean dark */
+.hud-input-a,
+.hud-textarea-a {
+  border-radius: var(--hud-radius-md);
+  border: 1px solid var(--hud-border-muted);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25) inset;
+}
+.hud-input-a:focus,
+.hud-textarea-a:focus,
+.hud-input-a.tl-sim-focus,
+.hud-textarea-a.tl-sim-focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--hud-color-accent) 45%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--hud-color-accent) 25%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--hud-color-accent) 12%, transparent);
+}
+
+/* b — glow focus heavy */
+.hud-input-b,
+.hud-textarea-b {
+  border-radius: var(--hud-radius-md);
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 22%, transparent);
+  background: #0a080c;
+}
+.hud-input-b:focus,
+.hud-textarea-b:focus,
+.hud-input-b.tl-sim-focus,
+.hud-textarea-b.tl-sim-focus {
+  outline: none;
+  border-color: var(--hud-color-accent-bright);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--hud-color-accent) 40%, transparent) inset,
+    0 0 28px color-mix(in srgb, var(--hud-color-accent) 35%, transparent),
+    0 0 56px color-mix(in srgb, var(--hud-color-accent) 15%, transparent);
+}
+
+/* c — boxed neon */
+.hud-input-c,
+.hud-textarea-c {
+  border-radius: var(--hud-radius-sm);
+  border: 2px solid color-mix(in srgb, var(--hud-color-accent) 38%, transparent);
+  background: linear-gradient(180deg, #120a10, #0a060c);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--hud-color-accent) 10%, transparent);
+}
+.hud-input-c:focus,
+.hud-textarea-c:focus,
+.hud-input-c.tl-sim-focus,
+.hud-textarea-c.tl-sim-focus {
+  outline: none;
+  border-color: var(--hud-color-accent-bright);
+  box-shadow:
+    0 0 20px color-mix(in srgb, var(--hud-color-accent) 28%, transparent),
+    0 0 0 1px color-mix(in srgb, #fff 8%, transparent) inset;
+}
+
+/* d — minimal thin */
+.hud-input-d,
+.hud-textarea-d {
+  border-radius: var(--hud-radius-sm);
+  border: 1px solid var(--hud-border-subtle);
+  background: transparent;
+}
+.hud-input-d:focus,
+.hud-textarea-d:focus,
+.hud-input-d.tl-sim-focus,
+.hud-textarea-d.tl-sim-focus {
+  outline: none;
+  border-color: var(--hud-border-strong);
+  box-shadow: 0 1px 0 var(--hud-color-accent);
+}

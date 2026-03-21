@@ -14,6 +14,7 @@ Purpose: Build structure from the source material before detail so the learner h
 - No learner-memory probes in PRIME; those live in CALIBRATE.
 - Do not begin core instruction in PRIME; TEACH owns first-contact explanation.
 - Must precede TEACH or CALIBRATE in first-exposure chains.
+- Any numeric cap on PRIME outputs such as `3-5` prompts, pillars, or branches is a cap on the final umbrella groups, not a license to ignore supported source content. PRIME should account for the full selected material/module scope first, then compress it into broad groups that still cover the whole slice.
 
 ## Method Inventory
 

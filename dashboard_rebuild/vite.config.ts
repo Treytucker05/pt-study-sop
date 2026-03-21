@@ -23,6 +23,15 @@ export default defineConfig({
     emptyOutDir: true,
     chunkSizeWarningLimit: 2048,
     rollupOptions: {
+      input: {
+        main: path.resolve(import.meta.dirname, "client", "index.html"),
+        themeLab: path.resolve(
+          import.meta.dirname,
+          "client",
+          "theme-lab",
+          "index.html",
+        ),
+      },
       output: {
         // Disable manual chunking to avoid module initialization order issues
       },

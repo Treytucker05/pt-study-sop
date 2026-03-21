@@ -24,6 +24,7 @@ stipulations:
 - Simple pictures and colors, not artistic drawings
 - Max 5 minutes per block, max 1-2 hand-draws per session
 - Purpose is spatial encoding, not note-taking
+- When branch count is capped, each branch must be a broad umbrella category that helps cover the full structural overview rather than a cherry-picked detail
 when_to_use:
 - After receiving a structural overview (H1 map or advance organizer)
 - When spatial positioning aids recall (anatomy, pathways, hierarchies)
@@ -55,7 +56,7 @@ steps:
   notes: 'Use your own words, not the textbook label'
 - step: 3
   action: 'Draw 3-5 main branches using different colors'
-  notes: 'Each branch = one pillar or major category'
+  notes: 'Each branch = one broad pillar or major category so the 3-5 branches still cover the full overview'
 - step: 4
   action: 'Add simple pictures or icons to anchor key concepts'
   notes: 'Stick figures, arrows, symbols — not art. Speed over beauty'
@@ -67,7 +68,7 @@ outputs:
 - Spatial recall confidence (can you see the layout with eyes closed?)
 stop_criteria:
 - 5-minute timer ends (hard stop)
-- Map has central concept + 3-5 branches with at least 1 picture each
+- Map has central concept + 3-5 broad branches that cover the full overview with at least 1 picture each
 - Eyes-closed spatial recall attempted
 failure_modes:
 - mode: Spending too long on drawing quality
@@ -104,7 +105,7 @@ facilitation_prompt: |
   Requirements:
   - Learner reviews the structural overview (30 sec scan, no drawing yet).
   - Central concept placed in middle of page using own words.
-  - Draw {branch_limit} main branches using different colors.
+  - Draw {branch_limit} broad umbrella branches using different colors so the whole overview stays represented.
   - Add simple pictures/icons to anchor key concepts (speed over beauty).
   - Close eyes and mentally walk through the map layout.
 
@@ -122,11 +123,12 @@ allowed_moves:
 - Prompt eyes-closed spatial recall of the map layout
 - Confirm map structure (central concept + branch count)
 - Enforce the 5-minute time cap and speed-over-beauty principle
-- Suggest broader categories if learner is stuck on branches
+- Suggest broader umbrella categories if learner is stuck on branches or is narrowing too early
 forbidden_moves:
 - Generate or draw the map for the learner (learner must draw it themselves)
 - Score, grade, or assess the learner's map quality
 - Allow verbatim copying from source material
+- Let the learner use 3-5 narrow branches that ignore major parts of the structural overview
 - Exceed 5-minute time cap per block
 - Allow more than 2 hand-draw blocks per session
 - Skip the eyes-closed spatial recall step

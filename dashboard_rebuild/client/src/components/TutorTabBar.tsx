@@ -14,18 +14,17 @@ import {
 import { ICON_MD, BTN_TOOLBAR } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
-import type { TutorPageMode, TutorWorkflowView } from "@/lib/tutorUtils";
+import type { TutorPageMode } from "@/lib/tutorUtils";
 import type { TutorArtifact } from "@/components/TutorArtifacts";
 import { toast } from "sonner";
 
 export interface TutorTabBarProps {
   shellMode: TutorPageMode;
-  workflowView: TutorWorkflowView;
   activeSessionId: string | null;
   showArtifacts: boolean;
   artifacts: TutorArtifact[];
   onSetShellMode: (mode: TutorPageMode) => void;
-  onSetWorkflowView: (view: TutorWorkflowView) => void;
+  onOpenStudioHome: () => void;
   onSetShowArtifacts: (show: boolean) => void;
   onSetShowEndConfirm: (show: boolean) => void;
   onOpenSettings: () => void;
@@ -35,12 +34,11 @@ export interface TutorTabBarProps {
 
 export function TutorTabBar({
   shellMode,
-  workflowView,
   activeSessionId,
   showArtifacts,
   artifacts,
   onSetShellMode,
-  onSetWorkflowView,
+  onOpenStudioHome,
   onSetShowArtifacts,
   onSetShowEndConfirm,
   onOpenSettings,
@@ -62,16 +60,15 @@ export function TutorTabBar({
       <Button
         role="tab"
         id="tutor-tab-launch"
-        aria-selected={shellMode === "dashboard" && workflowView === "launch"}
+        aria-selected={shellMode === "launch"}
         variant="ghost"
         size="sm"
         onClick={() => {
           clearNavIntents();
-          onSetShellMode("dashboard");
-          onSetWorkflowView("launch");
+          onSetShellMode("launch");
         }}
         className={cn(
-          controlToggleButton(shellMode === "dashboard" && workflowView === "launch", "primary"),
+          controlToggleButton(shellMode === "launch", "primary"),
           "flex-shrink-0 whitespace-nowrap",
         )}
       >
@@ -100,7 +97,7 @@ export function TutorTabBar({
         size="sm"
         onClick={() => {
           clearNavIntents();
-          onSetShellMode("studio");
+          onOpenStudioHome();
         }}
         className={cn(controlToggleButton(shellMode === "studio", "primary"), "flex-shrink-0 whitespace-nowrap")}
       >

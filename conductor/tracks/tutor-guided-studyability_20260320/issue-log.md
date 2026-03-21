@@ -54,6 +54,8 @@ Use this file during guided study passes.
 - Workaround: Ignore part of the page and continue based on memory.
 - Likely owner: frontend
 - Status: triaged
+- Implementation update (2026-03-21 surface-first follow-up): the competing top-of-page workflow rail was removed entirely. Tutor now uses one global surface nav (`Launch`, `Tutor`, `Studio`, `Schedule`, `Settings`), `Launch` acts as the workflow inbox/home, and opening a workflow routes straight into the correct owned surface (`Studio > Priming`, `Tutor`, `Studio > Polish`, or `Studio > Final Sync`) instead of reviving a second dashboard-style stage system. Legacy `mode=dashboard` restore/query state still normalizes back to `Launch`. Needs live learner retest for whether the entry surface now reads as one coherent model.
+- Implementation update (2026-03-21 Studio hardening): `Studio` now opens on a real `Home` surface with next-step CTA priority, clear card-level gating, and embedded workbench access instead of dropping the learner into a contextless workbench. Explicit workflow opens now hold on their owned Studio surface instead of being hijacked by project-shell restore, so `Open Polish in Studio` and `Open Final Sync` stay where the learner expects. Needs learner retest for whether the top-level workflow model now feels fully trustworthy.
 
 #### TGSL-PR-001
 - Stage: Priming
@@ -70,6 +72,7 @@ Use this file during guided study passes.
 - Status: triaged
 - Implementation update (2026-03-21): the live Priming chain selector was removed, Priming method selection moved into the `Prime Artifact Workspace` as multi-select method cards, the main `Extract PRIME` action now lives in that workspace instead of the source viewer, the Priming page now loads real PRIME methods from the Methods API rather than a synthetic local picker, extraction runs only the selected stable `M-PRE-*` methods, and the workspace renders selected-method output cards instead of the old fixed artifact-tab bundle. Needs live retest for smoothness, clarity, and output quality.
 - Implementation update (2026-03-21 follow-up): the workspace now renders nothing below the PRIME method cards until at least one method is selected, then reveals a selected-method window area with the main `Extract PRIME` action plus one method-owned panel per selected method. This directly addresses the learner complaint that generic PRIME info and artifact surfaces were appearing before any method had been chosen.
+- Implementation update (2026-03-21 Studio hardening): Priming is now a five-step flow (`Setup`, `Materials`, `PRIME Methods`, `Outputs`, `Tutor Handoff`) with persistent step navigation, focus movement on step change, inline blocker text, and a side-by-side source viewer instead of one long stacked page. Studio can now enter Priming directly even without an existing workflow, and the bootstrap preserves current course/material context instead of blanking the setup state during hydration. Needs learner retest for whether the step flow now feels direct enough to use without guessing.
 
 #### TGSL-PR-002
 - Stage: Priming
@@ -157,6 +160,20 @@ Use this file during guided study passes.
 - Actual behavior: Priming currently shows `Objective Scope` and `Focus Objective`, even though the learner expects objectives to be pulled from the study unit and file-derived extraction. The learner called the extra narrowing controls redundant and wanted them removed.
 - Study impact: The page asks for one more setup decision than the learner needs, which adds noise and makes the setup contract feel heavier than it should.
 - What the learner liked / disliked: Disliked the extra narrowing controls and saw them as legacy baggage from an older workflow.
+
+#### TGSL-CR-001
+- Stage: Cross-stage
+- Type: workflow break
+- Severity: P1
+- Feature ID: F-ST-001, F-PR-001, F-CR-001
+- Repro: Open `/tutor`, enter `Studio` from the global surface nav or a stored Studio restore path, and try to continue the normal prep flow from there without going back through Launch.
+- Expected behavior: Generic Studio entry should land on a clear Studio Home with an obvious next action, and `Priming` should stay directly enterable even when no workflow is already active.
+- Actual behavior: Studio currently lands on a workbench-first surface that feels like a dead end, while the local `Priming` tab is disabled when there is no active workflow id. The learner called out that the flow needs to be re-thought, does not route intuitively, and that Priming is not available to click to work on.
+- Study impact: This blocks real prep work from Studio itself and forces the learner to rely on memory or bounce back through Launch instead of trusting the surface they are already in.
+- What the learner liked / disliked: Disliked the counterintuitive button model, the lack of a real Studio landing surface, and the dead Priming entry state.
+- Workaround: Go back to Launch and open a workflow there first, or rely on prior familiarity with which surface owns which action.
+- Likely owner: frontend
+- Status: triaged
 - Workaround: Ignore the controls and continue with the default whole-unit path.
 - Likely owner: frontend
 - Status: triaged
@@ -177,6 +194,7 @@ Use this file during guided study passes.
 - Status: triaged
 - Implementation update (2026-03-21): promoted workflow navigation to the top of `TutorTopBar`, split the old mixed navigation into a primary workflow navigator plus a smaller workspace nav row, added explicit previous/next stage controls in `TutorWorkflowStepper.tsx`, added a top-level `WORKFLOW` return action in `TutorTabBar.tsx`, and removed the need to scroll past the large runtime diagnostics block just to find stage navigation. Needs learner retest on the live Tutor page.
 - Implementation update (2026-03-21 follow-up): fixed a brittle render gate in `TutorWorkflowStepper.tsx` so the navigator no longer disappears just because `activeWorkflowId` is temporarily missing during live Tutor mode. The stepper now stays visible whenever there is real workflow/session context such as active Tutor mode, current stage, active session, or Polish state. Needs live learner retest for whether the navigator now stays stable across Tutor transitions and rerenders.
+- Implementation update (2026-03-21 surface-first follow-up): the earlier top-bar stepper approach was superseded by the surface-first IA. `TutorTopBar` now keeps only the global surface nav plus read-only workflow context badges, while `Studio` owns the workflow sub-tabs (`Workbench`, `Priming`, `Polish`, `Final Sync`) and Tutor keeps only live-session execution plus contextual handoff actions like `Open Polish`. This removes the second global navigation system that was making movement feel busted even after the stepper fix. Needs live learner retest for whether Tutor now feels orientation-safe without competing stage rails.
 
 ### Copy/paste template
 

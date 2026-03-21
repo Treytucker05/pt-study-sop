@@ -19,8 +19,9 @@ import {
   formatSourceBlockText,
   formatSourceLineText,
   mergePrimingSourceInventory,
+  resolveStudioViewFromWorkflowStage,
 } from "@/lib/tutorUtils";
-import type { TutorPageMode, TutorWorkflowView } from "@/lib/tutorUtils";
+import type { TutorPageMode, TutorStudioView } from "@/lib/tutorUtils";
 import { toast } from "sonner";
 import type { UseTutorHubReturn } from "./useTutorHub";
 import type { UseTutorSessionReturn } from "./useTutorSession";
@@ -186,7 +187,7 @@ export function useTutorWorkflow({
   const queryClient = useQueryClient();
 
   // ─── Workflow view state ───
-  const [workflowView, setWorkflowView] = useState<TutorWorkflowView>("launch");
+  const [studioView, setStudioView] = useState<TutorStudioView>("workbench");
   const [activeWorkflowId, setActiveWorkflowId] = useState<string | null>(null);
   const [workflowFilters, setWorkflowFilters] = useState<TutorWorkflowLaunchFilters>({
     search: "",
@@ -196,6 +197,7 @@ export function useTutorWorkflow({
     dueBucket: "all",
   });
   const [creatingWorkflow, setCreatingWorkflow] = useState(false);
+  const [bootstrappingPriming, setBootstrappingPriming] = useState(false);
   const [deletingWorkflowId, setDeletingWorkflowId] = useState<string | null>(null);
   const [savingPrimingBundle, setSavingPrimingBundle] = useState(false);
   const [savingPolishBundle, setSavingPolishBundle] = useState(false);
@@ -231,6 +233,16 @@ export function useTutorWorkflow({
   const [memoryCardRequestsText, setMemoryCardRequestsText] = useState("");
   const [savingRuntimeEvent, setSavingRuntimeEvent] = useState(false);
   const hydratedWorkflowIdRef = useRef<string | null>(null);
+  const primingBootstrapInFlightRef = useRef(false);
+  const studioPrimingBootstrapContextRef = useRef<{
+    courseId?: number;
+    topic: string;
+    selectedMaterials: number[];
+    selectedPaths: string[];
+    selectedObjectiveGroup: string;
+    selectedObjectiveId: string;
+    objectiveScope: TutorObjectiveScope;
+  } | null>(null);
 
   // ─── Workflow list query ───
   const { data: workflowListResponse } = useQuery({
@@ -249,7 +261,7 @@ export function useTutorWorkflow({
         ...(workflowFilters.status !== "all" ? { status: workflowFilters.status } : {}),
         limit: 50,
       }),
-    enabled: hasRestored && shellMode === "dashboard",
+    enabled: hasRestored && shellMode === "launch",
     staleTime: 15 * 1000,
   });
 
@@ -312,14 +324,24 @@ export function useTutorWorkflow({
       typeof bundledObjectives[0]?.lo_code === "string"
         ? bundledObjectives[0].lo_code
         : "";
+    const preservedContext = studioPrimingBootstrapContextRef.current;
 
-    hub.setCourseId(primingBundle?.course_id ?? workflow.course_id ?? undefined);
-    hub.setTopic(primingBundle?.topic ?? workflow.topic ?? "");
-    hub.setSelectedMaterials(primingBundle?.selected_material_ids ?? []);
-    hub.setSelectedPaths(primingBundle?.selected_paths ?? []);
-    hub.setSelectedObjectiveGroup(primingBundle?.study_unit ?? workflow.study_unit ?? "");
-    hub.setObjectiveScope(firstObjectiveCode ? "single_focus" : "module_all");
-    hub.setSelectedObjectiveId(firstObjectiveCode);
+    hub.setCourseId(
+      primingBundle?.course_id ?? workflow.course_id ?? preservedContext?.courseId ?? undefined,
+    );
+    hub.setTopic(primingBundle?.topic ?? workflow.topic ?? preservedContext?.topic ?? "");
+    hub.setSelectedMaterials(primingBundle?.selected_material_ids ?? preservedContext?.selectedMaterials ?? []);
+    hub.setSelectedPaths(primingBundle?.selected_paths ?? preservedContext?.selectedPaths ?? []);
+    hub.setSelectedObjectiveGroup(
+      primingBundle?.study_unit ?? workflow.study_unit ?? preservedContext?.selectedObjectiveGroup ?? "",
+    );
+    hub.setObjectiveScope(
+      firstObjectiveCode
+        ? "single_focus"
+        : preservedContext?.objectiveScope ?? "module_all",
+    );
+    hub.setSelectedObjectiveId(firstObjectiveCode || preservedContext?.selectedObjectiveId || "");
+    studioPrimingBootstrapContextRef.current = null;
     const normalizedBundleMethods = normalizePrimingMethods(
       primingBundle?.priming_methods,
       primingBundle?.priming_method,
@@ -428,16 +450,8 @@ export function useTutorWorkflow({
   ]);
 
   // ─── Reset priming draft ───
-  const resetPrimingDraft = useCallback(() => {
+  const resetPrimingArtifacts = useCallback(() => {
     hydratedWorkflowIdRef.current = null;
-    hub.setCourseId(undefined);
-    hub.setSelectedMaterials([]);
-    hub.setSelectedPaths([]);
-    hub.setTopic("");
-    hub.setVaultFolder("");
-    hub.setSelectedObjectiveGroup("");
-    hub.setSelectedObjectiveId("");
-    hub.setObjectiveScope("module_all");
     setPrimingMethods([...DEFAULT_PRIMING_METHOD_IDS]);
     setPrimingMethodRuns([]);
     setPrimingSummaryText("");
@@ -447,7 +461,23 @@ export function useTutorWorkflow({
     setPrimingGapsText("");
     setPrimingStrategyText("");
     setPrimingSourceInventory([]);
-  }, [hub]);
+    setRunningPrimingAssist(false);
+    setPrimingAssistTargetMaterialId(null);
+  }, []);
+
+  const resetPrimingDraft = useCallback(() => {
+    hydratedWorkflowIdRef.current = null;
+    studioPrimingBootstrapContextRef.current = null;
+    hub.setCourseId(undefined);
+    hub.setSelectedMaterials([]);
+    hub.setSelectedPaths([]);
+    hub.setTopic("");
+    hub.setVaultFolder("");
+    hub.setSelectedObjectiveGroup("");
+    hub.setSelectedObjectiveId("");
+    hub.setObjectiveScope("module_all");
+    resetPrimingArtifacts();
+  }, [hub, resetPrimingArtifacts]);
 
   // ─── Build priming bundle payload ───
   const buildPrimingBundlePayload = useCallback(() => {
@@ -619,14 +649,15 @@ export function useTutorWorkflow({
   const createWorkflowAndOpenPriming = useCallback(async () => {
     setCreatingWorkflow(true);
     try {
+      studioPrimingBootstrapContextRef.current = null;
       resetPrimingDraft();
       const result = await api.tutor.createWorkflow({
         current_stage: "priming",
         status: "priming_in_progress",
       });
       setActiveWorkflowId(result.workflow.workflow_id);
-      setWorkflowView("priming");
-      setShellMode("dashboard");
+      setStudioView("priming");
+      setShellMode("studio");
       await queryClient.invalidateQueries({ queryKey: ["tutor-workflows"] });
       toast.success("New study plan created");
     } catch (err) {
@@ -637,6 +668,63 @@ export function useTutorWorkflow({
       setCreatingWorkflow(false);
     }
   }, [queryClient, resetPrimingDraft, setShellMode]);
+
+  const openStudioPriming = useCallback(async () => {
+    if (activeWorkflowId) {
+      setShellMode("studio");
+      setStudioView("priming");
+      return activeWorkflowId;
+    }
+    if (creatingWorkflow || primingBootstrapInFlightRef.current) {
+      return null;
+    }
+
+    primingBootstrapInFlightRef.current = true;
+    setBootstrappingPriming(true);
+    try {
+      studioPrimingBootstrapContextRef.current = {
+        courseId: hub.courseId,
+        topic: hub.topic,
+        selectedMaterials: [...hub.selectedMaterials],
+        selectedPaths: [...hub.selectedPaths],
+        selectedObjectiveGroup: hub.selectedObjectiveGroup,
+        selectedObjectiveId: hub.selectedObjectiveId,
+        objectiveScope: hub.objectiveScope,
+      };
+      resetPrimingArtifacts();
+      const result = await api.tutor.createWorkflow({
+        current_stage: "priming",
+        status: "priming_in_progress",
+      });
+      setActiveWorkflowId(result.workflow.workflow_id);
+      setStudioView("priming");
+      setShellMode("studio");
+      await queryClient.invalidateQueries({ queryKey: ["tutor-workflows"] });
+      toast.success("Priming workspace ready");
+      return result.workflow.workflow_id;
+    } catch (err) {
+      toast.error(
+        `Failed to open Priming: ${err instanceof Error ? err.message : "Unknown"}`,
+      );
+      return null;
+    } finally {
+      primingBootstrapInFlightRef.current = false;
+      setBootstrappingPriming(false);
+    }
+  }, [
+    activeWorkflowId,
+    creatingWorkflow,
+    hub.courseId,
+    hub.objectiveScope,
+    hub.selectedMaterials,
+    hub.selectedObjectiveGroup,
+    hub.selectedObjectiveId,
+    hub.selectedPaths,
+    hub.topic,
+    queryClient,
+    resetPrimingArtifacts,
+    setShellMode,
+  ]);
 
   // ─── Delete workflow ───
   const deleteWorkflowRecord = useCallback(
@@ -657,8 +745,8 @@ export function useTutorWorkflow({
         if (deletingActiveWorkflow) {
           resetPrimingDraft();
           setActiveWorkflowId(null);
-          setWorkflowView("launch");
-          setShellMode("dashboard");
+          setStudioView("workbench");
+          setShellMode("launch");
           if (
             activeSessionId &&
             workflow.active_tutor_session_id &&
@@ -736,8 +824,8 @@ export function useTutorWorkflow({
       return;
     }
 
-    setShellMode("dashboard");
-    setWorkflowView("polish");
+    setShellMode("studio");
+    setStudioView("polish");
   }, [activeWorkflowId, queryClient, setShellMode]);
 
   // ─── Save Polish bundle ───
@@ -767,8 +855,8 @@ export function useTutorWorkflow({
           queryClient.invalidateQueries({ queryKey: ["tutor-workflow-detail", activeWorkflowId] }),
         ]);
 
-        setShellMode("dashboard");
-        setWorkflowView(finalize ? "final_sync" : "polish");
+        setShellMode("studio");
+        setStudioView(finalize ? "final_sync" : "polish");
         toast.success(finalize ? "Polish bundle finalized for final sync." : "Polish bundle saved.");
         return true;
       } catch (err) {
@@ -786,14 +874,27 @@ export function useTutorWorkflow({
   // ─── Open workflow record ───
   const openWorkflowRecord = useCallback(
     async (workflow: TutorWorkflowSummary) => {
+      const currentCourseId = hub.courseId;
       hydratedWorkflowIdRef.current = null;
       setActiveWorkflowId(workflow.workflow_id);
       hub.setCourseId(workflow.course_id ?? undefined);
+
+      if (
+        activeSessionId &&
+        typeof workflow.course_id === "number" &&
+        typeof currentCourseId === "number" &&
+        workflow.course_id !== currentCourseId
+      ) {
+        session.clearActiveSessionState();
+      }
 
       if (workflow.current_stage === "tutor" && workflow.active_tutor_session_id) {
         await session.resumeSession(workflow.active_tutor_session_id);
         return;
       }
+
+      const resolvedStage =
+        workflow.current_stage === "launch" ? "priming" : workflow.current_stage;
 
       if (workflow.current_stage === "launch") {
         try {
@@ -807,16 +908,15 @@ export function useTutorWorkflow({
         }
       }
 
-      setShellMode("dashboard");
-      setWorkflowView(
-        workflow.current_stage === "final_sync"
-          ? "final_sync"
-          : workflow.current_stage === "polish"
-            ? "polish"
-            : "priming",
-      );
+      if (resolvedStage === "tutor") {
+        setShellMode("tutor");
+        return;
+      }
+
+      setShellMode("studio");
+      setStudioView(resolveStudioViewFromWorkflowStage(resolvedStage));
     },
-    [hub, queryClient, session, setShellMode],
+    [activeSessionId, hub, queryClient, session, setShellMode],
   );
 
   // ─── Note capture ───
@@ -1093,13 +1193,14 @@ export function useTutorWorkflow({
 
   return {
     // Workflow view state
-    workflowView,
-    setWorkflowView,
+    studioView,
+    setStudioView,
     activeWorkflowId,
     setActiveWorkflowId,
     workflowFilters,
     setWorkflowFilters,
     creatingWorkflow,
+    bootstrappingPriming,
     deletingWorkflowId,
     savingPrimingBundle,
     savingPolishBundle,
@@ -1161,6 +1262,7 @@ export function useTutorWorkflow({
     saveWorkflowPriming,
     runWorkflowPrimingAssist,
     createWorkflowAndOpenPriming,
+    openStudioPriming,
     deleteWorkflowRecord,
     startTutorFromWorkflow,
     openWorkflowPolish,

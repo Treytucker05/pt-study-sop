@@ -4,10 +4,6 @@ import { describe, expect, it, vi } from "vitest";
 import { TutorTopBar } from "@/components/TutorTopBar";
 import type { TutorTeachRuntimeViewModel } from "@/components/TutorChat.types";
 
-vi.mock("@/components/TutorWorkflowStepper", () => ({
-  TutorWorkflowStepper: () => <div data-testid="workflow-stepper" />,
-}));
-
 vi.mock("@/components/TutorTabBar", () => ({
   TutorTabBar: () => <div data-testid="tab-bar" />,
 }));
@@ -77,15 +73,12 @@ describe("TutorTopBar", () => {
         onAdvanceBlock={vi.fn()}
         activeWorkflowId="wf-1"
         activeWorkflowDetail={undefined}
-        workflowView="priming"
-        hasPolishBundle={false}
-        onStepperStageClick={vi.fn()}
+        studioView="priming"
         activeSessionId="sess-1"
         showArtifacts={false}
         artifacts={[]}
         teachRuntime={teachRuntime}
         onSetShellMode={vi.fn()}
-        onSetWorkflowView={vi.fn()}
         onSetShowArtifacts={vi.fn()}
         onSetShowEndConfirm={vi.fn()}
         onOpenSettings={vi.fn()}

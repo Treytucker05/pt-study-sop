@@ -1,7 +1,7 @@
 id: M-PRE-004
 name: Hierarchical Advance Organizer
 category: prime
-description: Present a high-abstraction top-down framework (3-5 pillars + sub-branches) before detail study.
+description: Present a high-abstraction top-down framework (3-5 umbrella pillars + sub-branches) that still covers the full selected scope before detail study.
 control_stage: PRIME
 default_duration_min: 5
 energy_cost: low
@@ -20,6 +20,7 @@ mechanisms:
 stipulations:
 - Keep abstraction high; do not include leaf-level memorization details.
 - Start from most inclusive concept, then descend one level only.
+- The 3-5 pillar cap is a final grouping cap. Inventory the full supported structure first, then cluster it into broad pillars that still cover the whole selected scope.
 - PRIME boundary applies: no scoring and no quiz behavior.
 when_to_use:
 - New, dense, or mechanism-heavy topics.
@@ -44,11 +45,11 @@ steps:
   action: Identify the most inclusive parent concept
   notes: One sentence maximum.
 - step: 2
-  action: Extract 3-5 pillar concepts
-  notes: Pillars should subsume upcoming details.
+  action: Inventory all major supported sections, then cluster them into 3-5 pillar concepts
+  notes: Pillars should subsume upcoming details and collectively cover the full selected scope.
 - step: 3
   action: Add one sub-branch per pillar
-  notes: Keep depth <=2 and omit leaf trivia.
+  notes: Keep depth <=2, omit leaf trivia, and make sub-branches representative rather than cherry-picked.
 - step: 4
   action: Add one comparative link to prior knowledge for each pillar
   notes: Use concise bridge statements.
@@ -59,6 +60,7 @@ outputs:
 stop_criteria:
 - Pillar count between 3 and 5
 - Depth <=2
+- Pillars collectively cover the full selected scope
 - Every pillar has at least one prior-knowledge bridge
 failure_modes:
 - mode: Tree becomes detail-heavy
@@ -84,6 +86,7 @@ facilitation_prompt: 'You are running M-PRE-004 (Hierarchical Advance Organizer)
   Requirements:
 
   - 3-5 pillars, max depth 2.
+  - Pillars are umbrella groups that collectively cover the full selected scope.
 
   - One concise prior-knowledge bridge per pillar.
 
@@ -108,7 +111,7 @@ artifact_type: notes
 evidence_raw: Ausubel (1960); Luiten et al. (1980); advance organizers facilitate subsumption of new material
 allowed_moves:
 - Present a top-down framework from most inclusive concept downward
-- Extract 3-5 pillar concepts that subsume upcoming details
+- Extract 3-5 umbrella pillar concepts that subsume upcoming details and collectively cover the full selected scope
 - Add one sub-branch per pillar (max depth 2)
 - Add one comparative link to prior knowledge per pillar
 - Orient the learner to upcoming content structure
@@ -116,12 +119,13 @@ allowed_moves:
 forbidden_moves:
 - Score, grade, or assess the learner
 - Include leaf-level memorization details or trivia
+- Cherry-pick a few favorite sections while leaving major supported sections unrepresented
 - Teach new detailed content beyond structural framing
 - Exceed depth of 2 levels in the hierarchy
 - Run quizzes, retrieval prompts, or correctness checks
 - Lecture at length or provide paragraph explanations
 - Exceed 5 pillars
 required_outputs:
-- PillarTree (3-5 pillars, max depth 2)
+- PillarTree (3-5 pillars, max depth 2, collectively covering the full selected scope)
 - PriorKnowledgeLinks (one bridge per pillar)
 - StructuralHypotheses

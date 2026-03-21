@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { cn } from "@/lib/utils";
@@ -52,6 +52,7 @@ export function PageScaffold({
   className,
   contentClassName,
 }: PageScaffoldProps) {
+  const dipLayerId = useId().replace(/:/g, "");
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
@@ -75,14 +76,57 @@ export function PageScaffold({
     };
   }, []);
 
+  const glowId = `page-dipline-glow-${dipLayerId}`;
+  const blurId = `page-dipline-blur-${dipLayerId}`;
+
   const heroContent = (
     <section className="page-shell__hero">
       <div className="page-shell__grid" aria-hidden="true" />
-      <div className="page-shell__horizon" aria-hidden="true" />
       <div className="page-shell__header">
-        <div className="min-w-0">
-          {eyebrow ? <div className="page-shell__eyebrow">{eyebrow}</div> : null}
-          <h1 className="page-shell__title">{title}</h1>
+        <div className="page-shell__title-block min-w-0">
+          <div className="page-shell__title-heading">
+            {eyebrow ? <div className="page-shell__eyebrow">{eyebrow}</div> : null}
+            <h1 className="page-shell__title">{title}</h1>
+            {/*
+              Dipline spans eyebrow→title: long low run under the wordmark, then a tall diagonal
+              to the top band (y≈0 in viewBox) before the upper rail continues across.
+            */}
+            <svg
+              className="page-shell__dipline"
+              aria-hidden="true"
+              viewBox="0 0 1000 100"
+              preserveAspectRatio="none"
+            >
+              <defs>
+                <linearGradient id={glowId} x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="rgba(255,40,65,0.3)" />
+                  <stop offset="12%" stopColor="rgba(255,50,75,1)" />
+                  <stop offset="50%" stopColor="rgba(255,60,85,1)" />
+                  <stop offset="88%" stopColor="rgba(255,50,75,1)" />
+                  <stop offset="100%" stopColor="rgba(255,40,65,0.3)" />
+                </linearGradient>
+                <filter id={blurId}>
+                  <feGaussianBlur stdDeviation="2" />
+                </filter>
+              </defs>
+              <polyline
+                points="0,86 360,86 395,4 1000,4"
+                fill="none"
+                stroke={`url(#${glowId})`}
+                strokeWidth="5"
+                strokeLinejoin="round"
+                filter={`url(#${blurId})`}
+                opacity="0.55"
+              />
+              <polyline
+                points="0,86 360,86 395,4 1000,4"
+                fill="none"
+                stroke={`url(#${glowId})`}
+                strokeWidth="2"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
           <p className="page-shell__subtitle">{subtitle}</p>
         </div>
         {(stats.length > 0 || actions) ? (

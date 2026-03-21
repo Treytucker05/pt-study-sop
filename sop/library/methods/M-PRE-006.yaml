@@ -1,7 +1,7 @@
 id: M-PRE-006
 name: Structural Skimming + Pillar Mapping
 category: prime
-description: Rapidly skim headings/visual cues and map 3-5 top pillars before deep reading.
+description: Rapidly skim headings/visual cues across the full selected scope, then map 3-5 umbrella pillars before deep reading.
 default_duration_min: 5
 energy_cost: medium
 best_stage: first_exposure
@@ -18,6 +18,7 @@ mechanisms:
 stipulations:
 - Use structural signals only (headings, subheadings, bold terms, diagrams).
 - Do not summarize paragraphs at this stage.
+- The 3-5 pillar cap is a final grouping cap. Inventory the full selected structural scope first, then compress it into broad pillars that still cover the whole slice.
 - PRIME boundary applies: no scoring, no correctness judgment.
 when_to_use:
 - Slide decks, textbooks, lecture packets.
@@ -37,14 +38,17 @@ inputs:
 steps:
 - step: 1
   action: Scan structural cues only
-  notes: headings, subheadings, bold terms, diagrams.
+  notes: headings, subheadings, bold terms, diagrams across the full selected slice.
 - step: 2
-  action: Extract 3-5 top pillars
-  notes: Pillars should represent conceptual buckets.
+  action: Inventory all major supported sections and structural signals
+  notes: Account for the whole selected slice before grouping.
 - step: 3
+  action: Compress that inventory into 3-5 top pillars
+  notes: Pillars should be broad umbrella buckets that collectively cover the full selected scope.
+- step: 4
   action: Map one-line descriptor under each pillar
   notes: Descriptor is structural, not explanatory.
-- step: 4
+- step: 5
   action: Link pillars to module objective IDs when available
   notes: Unlinked pillars get flagged for follow-up.
 outputs:
@@ -53,6 +57,7 @@ outputs:
 - FollowUpTargets
 stop_criteria:
 - 3-5 pillars extracted
+- Pillars collectively cover the full selected scope
 - Every pillar has descriptor text
 - 5 minutes elapsed
 failure_modes:
@@ -60,6 +65,8 @@ failure_modes:
   mitigation: Enforce structural-only extraction output.
 - mode: Too many pillars
   mitigation: Cap at pillar_count and merge related nodes.
+- mode: Pillars hide uncovered sections by over-compressing the source
+  mitigation: Revise the umbrella groups until the full selected scope is represented before honoring the cap.
 logging_fields:
 - pillar_count
 - objective_link_count
@@ -92,6 +99,7 @@ facilitation_prompt: 'You are running M-PRE-006 (Structural Skimming + Pillar Ma
   - Non-assessment.
 
   - Structural-only output.
+  - Pillars are umbrella groups that collectively cover the full selected scope.
 
   - Respect pillar_count cap.
 
@@ -102,7 +110,7 @@ gating_rules:
 artifact_type: notes
 allowed_moves:
 - Scan structural cues only (headings, subheadings, bold terms, diagrams)
-- Extract 3-5 top pillars representing conceptual buckets
+- Extract 3-5 top umbrella pillars representing conceptual buckets that collectively cover the full selected scope
 - Map one-line structural descriptors under each pillar
 - Link pillars to module objective IDs when available
 - Flag unlinked pillars for follow-up
@@ -110,12 +118,13 @@ allowed_moves:
 forbidden_moves:
 - Score, grade, or assess the learner
 - Summarize full paragraphs or detailed content
+- Cherry-pick a few headings while leaving major supported sections unrepresented
 - Teach new detailed content beyond structural signals
 - Exceed pillar_count cap
 - Run quizzes, retrieval prompts, or correctness judgments
 - Provide explanatory text instead of structural descriptors
 - Drift into content analysis rather than structural skimming
 required_outputs:
-- PillarMap (3-5 pillars with structural descriptors)
+- PillarMap (3-5 pillars with structural descriptors that collectively cover the full selected scope)
 - ObjectiveLinks (pillar-to-objective mapping)
 - FollowUpTargets list

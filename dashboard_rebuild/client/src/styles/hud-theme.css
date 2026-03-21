@@ -1,0 +1,165 @@
+/* PT Study OS — HUD design tokens (cinematic sci-fi, red-accent).
+ * Imported via theme.css for theme-lab; do not import from main.tsx. */
+
+:root {
+  /* —— Canvas & surfaces —— */
+  --hud-color-bg-void: #030304;
+  --hud-color-bg-base: #050507;
+  --hud-color-bg-raised: #0a0a0f;
+  --hud-color-surface-a: #0e0e16;
+  --hud-color-surface-b: #12121c;
+  --hud-color-surface-c: #161621;
+  --hud-color-surface-inset: #08080e;
+  --hud-color-surface-glass: color-mix(in srgb, var(--hud-color-surface-a) 82%, transparent);
+
+  /* —— Accent (crimson; never primary blue) —— */
+  --hud-color-accent: #ff4d6d;
+  --hud-color-accent-bright: #ff6b85;
+  --hud-color-accent-deep: #e63d5c;
+  --hud-color-accent-muted: rgba(255, 77, 109, 0.55);
+  --hud-color-accent-dim: rgba(255, 77, 109, 0.12);
+  --hud-color-accent-dim-strong: rgba(255, 77, 109, 0.22);
+  --hud-color-accent-line: rgba(255, 77, 109, 0.38);
+  --hud-color-accent-glow: rgba(255, 77, 109, 0.45);
+
+  /* —— Semantic (support only; accent stays red) —— */
+  --hud-color-success: #5ee9b5;
+  --hud-color-success-dim: rgba(94, 233, 181, 0.18);
+  --hud-color-warning: #fbbf24;
+  --hud-color-warning-dim: rgba(251, 191, 36, 0.15);
+  --hud-color-danger: #fb7185;
+  --hud-color-danger-dim: rgba(251, 113, 133, 0.14);
+  --hud-color-locked: #a78bfa;
+  --hud-color-locked-dim: rgba(167, 139, 250, 0.16);
+
+  /* —— Text —— */
+  --hud-color-text-primary: #f4f4f5;
+  --hud-color-text-secondary: #a1a1aa;
+  --hud-color-text-tertiary: #71717a;
+  --hud-color-text-disabled: #52525b;
+  --hud-color-text-accent: var(--hud-color-accent-bright);
+
+  /* —— Borders —— */
+  --hud-border-default: rgba(255, 77, 109, 0.32);
+  --hud-border-subtle: rgba(255, 255, 255, 0.06);
+  --hud-border-muted: rgba(255, 255, 255, 0.1);
+  --hud-border-strong: rgba(255, 255, 255, 0.14);
+  --hud-border-inner: rgba(255, 255, 255, 0.04);
+  --hud-border-focus: var(--hud-color-accent-line);
+
+  /* —— Glow —— */
+  --hud-glow-xs: 0 0 8px rgba(255, 77, 109, 0.12);
+  --hud-glow-sm: 0 0 14px rgba(255, 77, 109, 0.18);
+  --hud-glow-md: 0 0 28px rgba(255, 77, 109, 0.22);
+  --hud-glow-lg: 0 0 48px rgba(255, 77, 109, 0.15);
+  --hud-glow-inset-accent: inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -1px 0 rgba(255, 60, 90, 0.08);
+
+  /* —— Shadows —— */
+  --hud-shadow-panel: 0 12px 40px rgba(0, 0, 0, 0.45);
+  --hud-shadow-float: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --hud-shadow-inset-deep: inset 0 2px 12px rgba(0, 0, 0, 0.35);
+
+  /* —— Radius —— */
+  --hud-radius-xs: 6px;
+  --hud-radius-sm: 10px;
+  --hud-radius-md: 14px;
+  --hud-radius-lg: 18px;
+  --hud-radius-pill: 999px;
+
+  /* —— Spacing —— */
+  --hud-space-1: 4px;
+  --hud-space-2: 8px;
+  --hud-space-3: 12px;
+  --hud-space-4: 16px;
+  --hud-space-5: 20px;
+  --hud-space-6: 24px;
+  --hud-space-7: 32px;
+  --hud-space-8: 40px;
+
+  /* —— Typography —— */
+  --hud-font-sans: "Inter", system-ui, sans-serif;
+  --hud-font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --hud-font-label: var(--hud-font-mono);
+  --hud-text-xs: 0.65rem;
+  --hud-text-sm: 0.75rem;
+  --hud-text-base: 0.875rem;
+  --hud-text-md: 1rem;
+  --hud-text-lg: 1.125rem;
+  --hud-text-xl: 1.35rem;
+  --hud-text-display: 1.75rem;
+  --hud-tracking-label: 0.12em;
+  --hud-tracking-tight: 0.02em;
+  --hud-leading-tight: 1.25;
+  --hud-leading-normal: 1.5;
+
+  /* —— Motion —— */
+  --hud-duration-fast: 0.14s;
+  --hud-duration-normal: 0.22s;
+  --hud-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* —— Z —— */
+  --hud-z-nav: 20;
+  --hud-z-overlay: 30;
+
+  /* —— Background treatments (compose in demos / app shell) —— */
+  --hud-bg-app: radial-gradient(ellipse 120% 80% at 50% -20%, rgba(255, 77, 109, 0.09), transparent 42%),
+    radial-gradient(ellipse 80% 50% at 100% 50%, rgba(255, 40, 60, 0.04), transparent 50%),
+    linear-gradient(180deg, var(--hud-color-bg-raised) 0%, var(--hud-color-bg-base) 45%, var(--hud-color-bg-void) 100%);
+  --hud-bg-panel-shine: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    transparent 42%,
+    transparent 100%
+  );
+  --hud-bg-grid-faint: linear-gradient(rgba(255, 77, 109, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 77, 109, 0.03) 1px, transparent 1px);
+  --hud-bg-grid-size: 24px 24px;
+
+  /* Legacy aliases (theme-lab + earlier tokens) */
+  --bg-main: var(--hud-color-bg-base);
+  --bg-elevated: var(--hud-color-bg-raised);
+  --panel-bg: var(--hud-color-surface-a);
+  --panel-bg-2: var(--hud-color-surface-c);
+  --accent: var(--hud-color-accent);
+  --accent-strong: var(--hud-color-accent-deep);
+  --accent-dim: var(--hud-color-accent-dim-strong);
+  --accent-glow: var(--hud-color-accent-line);
+  --accent-secondary: var(--hud-color-success);
+  --text-main: var(--hud-color-text-primary);
+  --text-muted: var(--hud-color-text-secondary);
+  --text-dim: var(--hud-color-text-tertiary);
+  --border-main: var(--hud-border-default);
+  --border-soft: var(--hud-border-subtle);
+  --border-inner: var(--hud-border-inner);
+  --glow-sm: var(--hud-glow-sm);
+  --glow-md: var(--hud-glow-md);
+  --shadow-panel: var(--hud-shadow-panel);
+  --radius-sm: var(--hud-radius-sm);
+  --radius-md: var(--hud-radius-md);
+  --radius-lg: var(--hud-radius-lg);
+  --space-1: var(--hud-space-1);
+  --space-2: var(--hud-space-2);
+  --space-3: var(--hud-space-3);
+  --space-4: var(--hud-space-4);
+  --space-5: var(--hud-space-6);
+  --space-6: var(--hud-space-7);
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: var(--hud-bg-app);
+  background-color: var(--hud-color-bg-base);
+  color: var(--hud-color-text-primary);
+  font-family: var(--hud-font-sans);
+  font-size: var(--hud-text-base);
+  line-height: var(--hud-leading-normal);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}

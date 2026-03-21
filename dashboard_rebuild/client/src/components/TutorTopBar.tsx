@@ -5,7 +5,6 @@ import {
   CONTROL_KICKER,
   controlToggleButton,
 } from "@/components/shell/controlStyles";
-import { TutorWorkflowStepper } from "@/components/TutorWorkflowStepper";
 import { TutorTabBar } from "@/components/TutorTabBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,7 +24,7 @@ import { ICON_SM } from "@/lib/theme";
 import { CONTROL_PLANE_COLORS } from "@/lib/colors";
 import { cn } from "@/lib/utils";
 import { getMethodStageBadgeLabel, getMethodStageColorKey } from "@/lib/controlStages";
-import type { TutorPageMode, TutorWorkflowView } from "@/lib/tutorUtils";
+import type { TutorPageMode, TutorStudioView } from "@/lib/tutorUtils";
 import type { TutorWorkflowDetailResponse } from "@/lib/api";
 import type { TutorArtifact } from "@/components/TutorArtifacts";
 import type { TutorBrainLaunchContext } from "@/lib/tutorClientState";
@@ -55,15 +54,13 @@ export interface TutorTopBarProps {
   onAdvanceBlock: () => void;
   activeWorkflowId: string | null;
   activeWorkflowDetail: TutorWorkflowDetailResponse | undefined;
-  workflowView: TutorWorkflowView;
-  hasPolishBundle: boolean;
-  onStepperStageClick: (stage: string) => void;
+  studioView: TutorStudioView;
   activeSessionId: string | null;
   showArtifacts: boolean;
   artifacts: TutorArtifact[];
   teachRuntime: TutorTeachRuntimeViewModel | null;
   onSetShellMode: (mode: TutorPageMode) => void;
-  onSetWorkflowView: (view: TutorWorkflowView) => void;
+  onOpenStudioHome: () => void;
   onSetShowArtifacts: (show: boolean) => void;
   onSetShowEndConfirm: (show: boolean) => void;
   onOpenSettings: () => void;
@@ -135,21 +132,30 @@ export function TutorTopBar({
   onAdvanceBlock,
   activeWorkflowId,
   activeWorkflowDetail,
-  workflowView,
-  hasPolishBundle,
-  onStepperStageClick,
+  studioView,
   activeSessionId,
   showArtifacts,
   artifacts,
   teachRuntime,
   onSetShellMode,
-  onSetWorkflowView,
+  onOpenStudioHome,
   onSetShowArtifacts,
   onSetShowEndConfirm,
   onOpenSettings,
   onSetStudioEntryRequest,
   onSetScheduleLaunchIntent,
 }: TutorTopBarProps) {
+  const workflowStageLabel = activeWorkflowDetail?.workflow?.current_stage
+    ? activeWorkflowDetail.workflow.current_stage.replace(/_/g, " ").toUpperCase()
+    : null;
+  const workflowStatusLabel = activeWorkflowDetail?.workflow?.status
+    ? activeWorkflowDetail.workflow.status.replace(/_/g, " ").toUpperCase()
+    : null;
+  const surfaceLabel =
+    shellMode === "studio"
+      ? `STUDIO / ${studioView === "workbench" ? "HOME" : studioView.replace(/_/g, " ").toUpperCase()}`
+      : shellMode.toUpperCase();
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3 border-b border-primary/10 pb-2">
@@ -180,24 +186,49 @@ export function TutorTopBar({
       ) : null}
 
       <div className="space-y-3 border border-primary/15 bg-black/25 p-3">
-        <TutorWorkflowStepper
-          activeWorkflowId={activeWorkflowId}
-          currentStage={activeWorkflowDetail?.workflow?.status ?? null}
-          shellMode={shellMode}
-          workflowView={workflowView}
-          hasActiveSession={Boolean(activeSessionId)}
-          hasPolishBundle={hasPolishBundle}
-          onStageClick={onStepperStageClick}
-        />
+        {activeWorkflowId || workflowStageLabel || activeSessionId ? (
+          <div className="flex flex-wrap items-center gap-2 border border-primary/15 bg-black/35 p-2">
+            <Badge
+              variant="outline"
+              className="rounded-none border-primary/30 px-2 py-1 font-arcade text-[10px]"
+            >
+              ACTIVE WORKFLOW
+            </Badge>
+            <span className="font-terminal text-xs text-foreground">{surfaceLabel}</span>
+            {workflowStageLabel ? (
+              <Badge
+                variant="outline"
+                className="rounded-none border-primary/25 px-2 py-1 font-terminal text-[10px]"
+              >
+                STAGE {workflowStageLabel}
+              </Badge>
+            ) : null}
+            {workflowStatusLabel ? (
+              <Badge
+                variant="outline"
+                className="rounded-none border-secondary/25 px-2 py-1 font-terminal text-[10px]"
+              >
+                {workflowStatusLabel}
+              </Badge>
+            ) : null}
+            {activeSessionId ? (
+              <Badge
+                variant="outline"
+                className="rounded-none border-emerald-500/30 px-2 py-1 font-terminal text-[10px] text-emerald-300"
+              >
+                LIVE SESSION
+              </Badge>
+            ) : null}
+          </div>
+        ) : null}
 
         <TutorTabBar
           shellMode={shellMode}
-          workflowView={workflowView}
           activeSessionId={activeSessionId}
           showArtifacts={showArtifacts}
           artifacts={artifacts}
           onSetShellMode={onSetShellMode}
-          onSetWorkflowView={onSetWorkflowView}
+          onOpenStudioHome={onOpenStudioHome}
           onSetShowArtifacts={onSetShowArtifacts}
           onSetShowEndConfirm={onSetShowEndConfirm}
           onOpenSettings={onOpenSettings}

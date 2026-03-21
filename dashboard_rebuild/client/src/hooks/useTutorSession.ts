@@ -24,7 +24,7 @@ import {
   writeTutorSelectedMaterialIds,
 } from "@/lib/tutorClientState";
 import { normalizeArtifactType } from "@/lib/tutorUtils";
-import type { TutorPageMode, TutorShellQuery } from "@/lib/tutorUtils";
+import type { TutorPageMode, TutorShellQuery, TutorStudioView } from "@/lib/tutorUtils";
 import { toast } from "sonner";
 import type { UseTutorHubReturn } from "./useTutorHub";
 
@@ -34,6 +34,7 @@ export interface UseTutorSessionParams {
   activeSessionId: string | null;
   setActiveSessionId: (id: string | null) => void;
   shellMode: TutorPageMode;
+  studioView: TutorStudioView;
   setShellMode: (mode: TutorPageMode) => void;
   setShowSetup: (show: boolean) => void;
   setRestoredTurns: (turns: { question: string; answer: string | null }[] | undefined) => void;
@@ -48,6 +49,7 @@ export function useTutorSession({
   activeSessionId,
   setActiveSessionId,
   shellMode,
+  studioView,
   setShellMode,
   setShowSetup,
   setRestoredTurns,
@@ -187,7 +189,8 @@ export function useTutorSession({
     ],
     queryFn: () => api.tutor.preflightSession(preflightPayload!),
     enabled:
-      shellMode === "dashboard" &&
+      shellMode === "studio" &&
+      studioView === "priming" &&
       !!preflightPayload &&
       hub.selectedMaterials.length > 0,
     staleTime: 30 * 1000,
@@ -325,7 +328,7 @@ export function useTutorSession({
     setShowSetup(false);
     setShowArtifacts(false);
     setShowEndConfirm(false);
-    setShellMode("dashboard");
+    setShellMode("launch");
     clearTutorActiveSessionId();
   }, [setActiveSessionId, setRestoredTurns, setShellMode, setShowSetup]);
 

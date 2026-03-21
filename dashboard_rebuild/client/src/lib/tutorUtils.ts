@@ -12,7 +12,8 @@ const CODE_BLOCK_RE = /^```/;
 
 // ─── Query-string helpers ───
 
-export type TutorPageMode = TutorShellMode | "dashboard";
+export type TutorPageMode = Exclude<TutorShellMode, "publish"> | "launch";
+export type TutorStudioView = "workbench" | "priming" | "polish" | "final_sync";
 
 export type TutorShellQuery = {
   courseId?: number;
@@ -22,7 +23,36 @@ export type TutorShellQuery = {
   boardId?: number;
 };
 
-export type TutorWorkflowView = "launch" | "priming" | "polish" | "final_sync";
+export function normalizeTutorPageMode(value: string | null | undefined): TutorPageMode | undefined {
+  if (value === "launch" || value === "studio" || value === "tutor" || value === "schedule") {
+    return value;
+  }
+  if (value === "dashboard" || value === "publish") {
+    return "launch";
+  }
+  return undefined;
+}
+
+export function normalizeTutorStudioView(
+  value: string | null | undefined,
+): TutorStudioView | undefined {
+  if (
+    value === "workbench" ||
+    value === "priming" ||
+    value === "polish" ||
+    value === "final_sync"
+  ) {
+    return value;
+  }
+  return undefined;
+}
+
+export function resolveStudioViewFromWorkflowStage(stage: string | null | undefined): TutorStudioView {
+  if (stage === "final_sync") return "final_sync";
+  if (stage === "polish") return "polish";
+  if (stage === "priming" || stage === "launch") return "priming";
+  return "workbench";
+}
 
 export function readTutorShellQuery(): TutorShellQuery {
   if (typeof window === "undefined") return {};
@@ -34,15 +64,7 @@ export function readTutorShellQuery(): TutorShellQuery {
   return {
     courseId: Number.isFinite(parsedCourseId) ? parsedCourseId : undefined,
     sessionId: params.get("session_id") || undefined,
-    mode:
-      rawMode === "dashboard" ||
-      rawMode === "studio" ||
-      rawMode === "tutor" ||
-      rawMode === "schedule"
-        ? rawMode
-        : rawMode === "publish"
-          ? "dashboard"
-        : undefined,
+    mode: normalizeTutorPageMode(rawMode),
     boardScope:
       rawBoardScope === "session" || rawBoardScope === "project" || rawBoardScope === "overall"
         ? rawBoardScope
