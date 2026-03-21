@@ -1240,3 +1240,11 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Added focused regression coverage in `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowStepper.test.tsx` for the exact case where Tutor mode is active but the workflow id is temporarily absent.
 - Validation passed:
   - `cd dashboard_rebuild && npm run test -- src/components/__tests__/TutorWorkflowStepper.test.tsx`
+
+## 2026-03-21 - Priming explicit-learning-objective anchor fix
+- Inspected the live Cardiovascular material row in `rag_docs` and confirmed the stored source text already contains two explicit `## Learning objectives` sections with `14` bullets total, so the under-count was happening in `M-PRE-010` extraction rather than in OCR/page ingestion.
+- Updated `brain/dashboard/api_tutor_workflows.py` so `M-PRE-010` now detects explicit source-side objective lists, feeds them into the LLM prompt as a hard anchor, and reapplies that explicit list onto the final objective output to stop the model from collapsing a visible `14`-objective slide set into a smaller subset.
+- Fixed `_normalize_objective_list(...)` so `lo_code: null` no longer crashes normalization while preserving dedupe behavior.
+- Added focused regression coverage in `brain/tests/test_tutor_workflow_priming_assist.py` for a material that contains `14` explicit objective bullets while the mocked LLM returns only a `3`-objective subset.
+- Validation passed:
+  - `pytest brain/tests/test_tutor_workflow_priming_assist.py -q`

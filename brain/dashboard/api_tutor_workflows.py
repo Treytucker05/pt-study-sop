@@ -206,7 +206,7 @@ def _normalize_objective_list(value: Any) -> list[dict[str, Any]]:
         if not title:
             continue
         lo_code = _normalize_text(item.get("lo_code"))
-        key = (title.casefold(), lo_code.casefold())
+        key = (title.casefold(), lo_code.casefold() if lo_code else "")
         if key in seen:
             continue
         seen.add(key)
@@ -551,6 +551,74 @@ def _split_priming_content_windows(
             break
         start += step
     return windows
+
+
+def _extract_explicit_learning_objectives(content: str) -> list[dict[str, Any]]:
+    lines = [str(line or "").strip() for line in str(content or "").splitlines()]
+    explicit_titles: list[str] = []
+    inside_objectives = False
+
+    for line in lines:
+        if not line:
+            continue
+        lower = line.casefold()
+        if lower.startswith("## "):
+            inside_objectives = lower == "## learning objectives"
+            continue
+        if not inside_objectives:
+            continue
+        if line.startswith("!["):
+            continue
+        candidate = re.sub(r"^(?:[-*]\s+|\d+[.)]\s+)", "", line).strip()
+        if candidate:
+            explicit_titles.append(candidate)
+
+    return _normalize_objective_list(
+        [{"title": title, "lo_code": None} for title in explicit_titles]
+    )
+
+
+def _apply_explicit_objective_anchor(
+    method_runs: list[dict[str, Any]],
+    explicit_objectives: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    if not explicit_objectives:
+        return method_runs
+
+    updated_runs: list[dict[str, Any]] = []
+    found_objective_run = False
+    llm_objective_codes: dict[str, str | None] = {}
+
+    for run in method_runs:
+        if run.get("method_id") != "M-PRE-010":
+            updated_runs.append(run)
+            continue
+
+        found_objective_run = True
+        outputs = run.get("outputs") if isinstance(run.get("outputs"), dict) else {}
+        for objective in _normalize_objective_list(outputs.get("learning_objectives")):
+            llm_objective_codes[objective["title"].casefold()] = objective.get("lo_code")
+
+        anchored_objectives = [
+            {
+                "title": objective["title"],
+                "lo_code": llm_objective_codes.get(objective["title"].casefold()) or objective.get("lo_code"),
+            }
+            for objective in explicit_objectives
+        ]
+        updated_runs.append(
+            {
+                **run,
+                "outputs": {
+                    **outputs,
+                    "learning_objectives": anchored_objectives,
+                },
+            }
+        )
+
+    if found_objective_run:
+        return updated_runs
+    return method_runs
 
 
 def _build_method_outputs_payload(method_runs: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
@@ -1754,6 +1822,11 @@ def run_tutor_priming_assist(workflow_id: str):
         if not content:
             failures.append({"material_id": material_id, "error": "Material content is empty"})
             continue
+        explicit_learning_objectives = (
+            _extract_explicit_learning_objectives(content)
+            if "M-PRE-010" in priming_methods
+            else []
+        )
         content_windows = _split_priming_content_windows(content)
         system_prompt = """You are Priming Assist for a study workflow.
 Run only the selected PRIME methods against the provided material.
@@ -1780,6 +1853,9 @@ Only include the selected method IDs. Do not emit outputs for unselected methods
             priming_methods,
         )
         existing_selected_runs_json = _json_dumps(existing_selected_runs) if existing_selected_runs else "[]"
+        explicit_objectives_json = (
+            _json_dumps(explicit_learning_objectives) if explicit_learning_objectives else "[]"
+        )
         chunk_outputs: list[dict[str, Any]] = []
         material_error: str | None = None
 
@@ -1798,6 +1874,8 @@ Only include the selected method IDs. Do not emit outputs for unselected methods
                 f"{prompt_contract}\n\n"
                 "Existing outputs already stored for the selected methods on this material:\n"
                 f"{existing_selected_runs_json}\n\n"
+                "Explicit learning objectives already present in the source material:\n"
+                f"{explicit_objectives_json}\n\n"
                 "Global output rules:\n"
                 "- stay structural, orientation-level, and source-grounded\n"
                 "- reason from the source before drafting outputs; do not guess or pad the result\n"
@@ -1810,6 +1888,7 @@ Only include the selected method IDs. Do not emit outputs for unselected methods
                 "- terminology entries should use 'Term :: concise source-grounded definition'\n"
                 "- follow-up targets and gaps should name unresolved ambiguities without teaching the answer\n"
                 "- learning objectives must stay concise, material-grounded, and deduplicated by meaning\n"
+                "- if the source contains explicit learning-objective bullet lists, preserve the full explicit list rather than collapsing it into fewer broader items\n"
                 "- for M-PRE-010, extract the full stable objective set supported by this chunk and preserve existing objective wording when still supported\n\n"
                 f"Material content chunk {chunk_index}/{len(content_windows)}:\n{chunk_content}"
             )
@@ -1866,6 +1945,8 @@ Do not emit outputs for unselected methods.
                 f"{prompt_contract}\n\n"
                 "Existing outputs already stored for the selected methods on this material:\n"
                 f"{existing_selected_runs_json}\n\n"
+                "Explicit learning objectives already present in the source material:\n"
+                f"{explicit_objectives_json}\n\n"
                 "Chunk-level outputs covering the full material:\n"
                 f"{_json_dumps(chunk_outputs)}\n\n"
                 "Consolidation rules:\n"
@@ -1874,6 +1955,7 @@ Do not emit outputs for unselected methods.
                 "- preserve stable items from prior outputs when still supported\n"
                 "- deduplicate repeated objectives, terms, concepts, and follow-up targets by meaning\n"
                 "- only change counts when the chunk evidence clearly requires it\n"
+                "- if the source contains explicit learning-objective bullet lists, preserve the full explicit list rather than collapsing it into fewer broader items\n"
                 "- return one final method_outputs object for the selected methods only"
             )
             method_runs, material_error = _run_priming_llm_pass(
@@ -1893,6 +1975,7 @@ Do not emit outputs for unselected methods.
                 )
                 continue
 
+        method_runs = _apply_explicit_objective_anchor(method_runs, explicit_learning_objectives)
         merged_method_runs = _merge_method_outputs(inventory_item.get("method_outputs"), method_runs)
         inventory_item["method_outputs"] = merged_method_runs
         inventory_item["priming_output"] = {

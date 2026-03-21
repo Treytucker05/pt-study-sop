@@ -401,3 +401,83 @@ def test_priming_assist_uses_full_material_coverage_for_long_content(client, moc
     assert "Current chunk: 1/4" in mock_llm.call_history[0]["user_prompt"]
     assert "Current chunk: 4/4" in mock_llm.call_history[3]["user_prompt"]
     assert "Chunk count: 4" in mock_llm.call_history[4]["user_prompt"]
+
+
+def test_priming_assist_preserves_full_explicit_learning_objective_list(client, mock_llm):
+    course_id = 905
+    _insert_course(course_id, "Exercise Physiology")
+    _insert_material(
+        66,
+        course_id=course_id,
+        title="Cardiovascular Slides",
+        source_path="/tmp/cardiovascular-slides.pdf",
+        file_type="pdf",
+        content=(
+            "## Learning objectives\n\n"
+            "- List 5 cardiovascular system functions.\n"
+            "- Define cardiac output, VO2, SBP, DPB, MAP, TPR, RPP.\n"
+            "- Describe interactions among cardiac output, preload, afterload, contractility, and TPR.\n"
+            "- List typical SBP and DPB values and how BP responds to resistance exercises.\n"
+            "- Explain intrinsic and extrinsic factors that regulate heart rate (HR) during rest and physical activity.\n"
+            "- Explain 'central command' in cardiovascular regulation during exercise\n"
+            "- Describe the effects of aerobic training on neural regulation of heart rate\n\n"
+            "## Learning objectives\n\n"
+            "- Describe how nitric oxide regulates local blood flow\n"
+            "- Explain the effects of the Frank-Starling mechanism during physical activity\n"
+            "- Contrast components of CO during rest and maximal effort for trained vs. untrained\n"
+            "- Explain cardiovascular drift\n"
+            "- Describe cardiac output distribution to major body organs during rest and exercise\n"
+            "- Describe the relationship between maximum cardiac output and VO2max along a broad range of fitness levels\n"
+            "- Contrast cardiovascular and metabolic dynamics during upper-body versus lower-body exercise\n"
+        ),
+    )
+
+    workflow_response = client.post(
+        "/api/tutor/workflows",
+        json={
+            "course_id": course_id,
+            "study_unit": "Cardiovascular",
+            "topic": "Cardio Powerpoint",
+            "current_stage": "priming",
+            "status": "priming_in_progress",
+        },
+    )
+    assert workflow_response.status_code == 200
+    workflow_id = workflow_response.get_json()["workflow"]["workflow_id"]
+
+    mock_llm.set_response(
+        json.dumps(
+            {
+                "method_outputs": {
+                    "M-PRE-010": {
+                        "learning_objectives": [
+                            {"title": "List 5 cardiovascular system functions.", "lo_code": None},
+                            {
+                                "title": "Describe interactions among cardiac output, preload, afterload, contractility, and TPR.",
+                                "lo_code": None,
+                            },
+                            {"title": "Explain cardiovascular drift", "lo_code": None},
+                        ]
+                    }
+                }
+            }
+        )
+    )
+
+    response = client.post(
+        f"/api/tutor/workflows/{workflow_id}/priming-assist",
+        json={
+            "material_ids": [66],
+            "study_unit": "Cardiovascular",
+            "topic": "Cardio Powerpoint",
+            "priming_methods": ["M-PRE-010"],
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    objectives = body["aggregate"]["learning_objectives"]
+    assert len(objectives) == 14
+    assert objectives[0]["title"] == "List 5 cardiovascular system functions."
+    assert objectives[-1]["title"] == "Contrast cardiovascular and metabolic dynamics during upper-body versus lower-body exercise"
+    assert "Explicit learning objectives already present in the source material:" in mock_llm.last_args["user_prompt"]

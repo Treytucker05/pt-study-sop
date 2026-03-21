@@ -22,6 +22,7 @@ Purpose: convert guided study-pass observations into a prioritized fix backlog.
 - `TGSL-PR-003` PRIME extraction quality is uneven: objectives are only partially represented in source-linked output, the hierarchical map is blank, and terms/spine are difficult to judge or read.
 - `TGSL-PR-003` now also has a code pass that separates `selected methods for the next extract` from `already extracted PRIME methods` and merges new method outputs into existing per-material inventory by `method_id` instead of replacing prior runs. This still needs learner retest to confirm the workspace now makes the current request vs prior extracted state obvious.
 - `TGSL-PR-003` now also has a code pass that hardens the LLM extraction contract itself: the prompt uses the real SOP method logic, reruns see prior selected-method outputs as stabilization context, and long materials are processed with full chunk coverage plus an LLM consolidation pass instead of the old first-`12000`-characters shortcut. This still needs learner retest to confirm that objective counts and other PRIME outputs are more stable across reruns.
+- `TGSL-PR-003` now also has a source-anchor safeguard for `M-PRE-010`: when the material itself contains explicit `Learning objectives` bullet lists, the backend now feeds that full list into the LLM prompt and preserves that explicit set in the final objective output instead of letting the model silently collapse `14` visible slide objectives down to a smaller subset. This still needs learner retest on the live Cardiovascular packet.
 - `TGSL-PR-004` Tutor handoff currently overstates readiness relative to the thin, weakly formatted handoff content and missing Tutor strategy.
 
 ## Later
@@ -35,6 +36,7 @@ Purpose: convert guided study-pass observations into a prioritized fix backlog.
 - `TGSL-PR-001` The workspace now stays blank below the PRIME method cards until methods are actually selected, then reveals one method-owned window per selected method with the main extraction action anchored in that selected-method area.
 - `TGSL-PR-003` Priming now preserves previously extracted method outputs on the selected materials, shows them in a separate `ALREADY EXTRACTED PRIME METHODS` section when they are not part of the current selection, and keeps existing study-unit objectives outside the selected-method extraction area.
 - `TGSL-PR-003` Priming assist now uses richer method-card reasoning context and full-material chunk coverage, so long-source extraction is no longer limited to a front excerpt and reruns are anchored against prior selected-method outputs.
+- `TGSL-PR-003` `M-PRE-010` now detects explicit `Learning objectives` sections in the source text and preserves that full slide-visible objective list in the final output instead of silently shrinking it when the model only returns a partial subset.
 - `TGSL-PR-005` Priming/Tutor handoff now shows inline launch blockers and disables false-ready actions.
 - `TGSL-PR-006` The first Setup window now owns the actual Tutor launch contract.
 - `TGSL-PR-007` Objective-scope narrowing controls were removed from live Priming.

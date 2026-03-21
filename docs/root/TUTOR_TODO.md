@@ -300,6 +300,20 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - multi-chunk extraction uses an LLM consolidation pass so the final per-material output covers all chunks, not just the front slice
     - focused backend tests pass
   - Completed 2026-03-21: updated `brain/dashboard/api_tutor_workflows.py` so PRIME method cards now contribute richer method logic to the LLM prompt, including facilitation guidance, inputs, required outputs, allowed/forbidden moves, and other YAML-backed constraints; added prior selected-method outputs as explicit rerun context so the LLM can revise conservatively instead of generating from a blank slate each time; removed the front-slice-only prompt path and replaced it with full-material coverage windows plus an LLM consolidation pass for long content; added objective dedupe in normalization; added focused coverage in `brain/tests/test_tutor_workflow_priming_assist.py` for richer prompt context and multi-chunk coverage; passed `pytest brain/tests/test_tutor_workflow_priming_assist.py -q`.
+- [x] TGSL-225. Preserve full explicit learning-objective slide lists during `M-PRE-010` extraction so the model does not collapse a source-visible objective set into a smaller partial candidate list.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `brain/dashboard/api_tutor_workflows.py`
+    - `brain/tests/test_tutor_workflow_priming_assist.py`
+    - `conductor/tracks/tutor-guided-studyability_20260320/issue-log.md`
+    - `conductor/tracks/tutor-guided-studyability_20260320/findings.md`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - `M-PRE-010` detects explicit `Learning objectives` sections already present in the material text
+    - the objective prompt treats those explicit bullets as high-priority anchors instead of optional model guesses
+    - final `learning_objectives` output preserves the full explicit source list instead of silently shrinking it
+    - focused backend regression coverage passes
+  - Completed 2026-03-21: updated `brain/dashboard/api_tutor_workflows.py` so `M-PRE-010` now detects explicit `## Learning objectives` sections in the stored material content, feeds the full source-visible objective list back into the LLM prompt as a hard anchor, and applies that explicit list back onto the final objective output so visible objective slides are preserved instead of collapsing into fewer broader items; also fixed `_normalize_objective_list(...)` so `lo_code: null` no longer crashes normalization; added focused regression coverage in `brain/tests/test_tutor_workflow_priming_assist.py` for a 14-objective cardiovascular packet where the mocked model only returns a partial subset; passed `pytest brain/tests/test_tutor_workflow_priming_assist.py -q`.
 - [x] TGSL-230. Keep the Tutor workflow navigator visible during live Tutor mode even if the active workflow id drops out temporarily.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
