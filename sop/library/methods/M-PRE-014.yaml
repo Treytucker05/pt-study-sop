@@ -18,6 +18,8 @@ constraints:
   source_grounded_only: true
   no_learner_diagnosis: true
   no_hidden_teaching: true
+knobs:
+  question_count: 5
 when_to_use:
 - The source is dense, compressed, or likely to skip reasoning steps.
 - The learner wants PRIME to surface where TEACH will need to slow down.
