@@ -1337,7 +1337,7 @@ def _resolve_tutor_preflight(
             "ok": False,
             "map_of_contents": {
                 "path": (
-                    f"{vault_folder.strip().rstrip('/').rstrip('\\')}/_Map of Contents.md"
+                    f"{vault_folder.strip().rstrip('/').rstrip(chr(92))}/_Map of Contents.md"
                     if vault_folder
                     else ""
                 ),
@@ -1346,7 +1346,7 @@ def _resolve_tutor_preflight(
             },
             "learning_objectives_todo": {
                 "path": (
-                    f"{vault_folder.strip().rstrip('/').rstrip('\\')}/Learning Objectives & To Do.md"
+                    f"{vault_folder.strip().rstrip('/').rstrip(chr(92))}/Learning Objectives & To Do.md"
                     if vault_folder
                     else ""
                 ),
