@@ -1056,7 +1056,7 @@ function Invoke-HarnessRun {
     $apiConfigPath = Join-Path $dataDir "api_config.json"
     $stdoutLog = Join-Path $resolvedArtifactRoot "server.stdout.log"
     $stderrLog = Join-Path $resolvedArtifactRoot "server.stderr.log"
-    $dashboardUrl = "http://127.0.0.1:$Port/brain"
+    $dashboardUrl = "http://127.0.0.1:$Port/api/health/db"
 
     if (-not $SkipUiBuild) {
         if (-not (Test-Path $BuildScript)) {
