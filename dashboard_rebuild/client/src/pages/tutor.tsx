@@ -30,7 +30,7 @@ import {
 } from "@/lib/tutorClientState";
 import type { TutorStudioEntryRequest } from "@/components/TutorStudioMode";
 import type { TutorScheduleLaunchIntent } from "@/components/TutorScheduleMode";
-import { Button } from "@/components/ui/button";
+import { HudButton } from "@/components/ui/HudButton";
 import { useLocation } from "wouter";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -744,10 +744,9 @@ function useTutorPageController() {
       contentClassName="gap-6"
       stats={tutorHeroStats}
       actions={
-        <Button
-          variant="shell"
-          size="sm"
-          className="font-arcade text-xs"
+        <HudButton
+          variant="outline"
+          className="gap-2 px-4 py-2 text-ui-xs text-[#ffd8e0]"
           onClick={() => {
             void Promise.all([
               queryClient.invalidateQueries({ queryKey: ["tutor-hub"] }),
@@ -765,8 +764,9 @@ function useTutorPageController() {
             ]);
           }}
         >
-          <RefreshCw className="mr-2 h-3 w-3" /> REFRESH
-        </Button>
+          <RefreshCw className="h-3.5 w-3.5" />
+          <span>REFRESH</span>
+        </HudButton>
       }
     >
       <CoreWorkspaceFrame
