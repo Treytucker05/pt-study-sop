@@ -1,5 +1,6 @@
 """Integration test: build_context with real ChromaDB (materials only)."""
 
+import os
 import pytest
 
 pytestmark = [
@@ -8,6 +9,10 @@ pytestmark = [
 ]
 
 
+@pytest.mark.skipif(
+    not os.environ.get("OPENAI_API_KEY"),
+    reason="OPENAI_API_KEY not set — ChromaDB embeddings require it",
+)
 def test_build_context_auto_returns_materials_from_chroma():
     """Materials collection has 14,583 vectors — this should return content."""
     from tutor_context import build_context

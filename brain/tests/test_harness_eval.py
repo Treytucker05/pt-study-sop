@@ -476,7 +476,7 @@ def test_harness_eval_failed_live_scenario_writes_failure_artifacts(
         events = _read_jsonl(events_path)
         failed_events = [event for event in events if event["event"] == "command_failed"]
         assert failed_events
-        assert failed_events[-1]["details"]["failure_artifacts"]["result"] == (
+        assert failed_events[-1]["details"]["failure_artifacts"]["result"].lstrip("/") == (
             "scenarios/app-live-golden-path/result.json"
         )
         assert failed_events[-1]["details"]["failure_summary"]["fail_count"] >= 1
