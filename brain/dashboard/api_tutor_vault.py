@@ -286,10 +286,8 @@ def _try_import_objectives_from_vault(
     # --- 1. Determine vault path to the Learning Objectives file ---
     if not vault_folder:
         return []
-    lo_rel_path = (
-        f"{vault_folder.strip().rstrip('/').rstrip('\\')}"
-        "/Learning Objectives & To Do.md"
-    )
+    clean_folder = vault_folder.strip().rstrip("/").rstrip("\\")
+    lo_rel_path = f"{clean_folder}/Learning Objectives & To Do.md"
 
     # --- 2. Read the file ---
     result = _mp("_vault_read_note")(lo_rel_path)
