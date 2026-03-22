@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  type RefObject,
+} from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Archive,
@@ -22,20 +29,43 @@ import {
 import { toast } from "sonner";
 
 import { api } from "@/lib/api";
-import type { Material, MaterialContent, TutorBoardScope, TutorStudioItem } from "@/lib/api";
+import type {
+  Material,
+  MaterialContent,
+  TutorBoardScope,
+  TutorStudioItem,
+} from "@/lib/api";
 import { MaterialViewer } from "@/components/MaterialViewer";
-import { TutorWorkspaceSurface, type TutorWorkspaceSurfaceHandle } from "@/components/TutorWorkspaceSurface";
+import {
+  TutorWorkspaceSurface,
+  type TutorWorkspaceSurfaceHandle,
+} from "@/components/TutorWorkspaceSurface";
 import { TutorEmptyState } from "@/components/TutorEmptyState";
 import {
   buildMaterialViewerPopoutHtml,
   STUDIO_MATERIAL_VIEWER_POPOUT_CHANNEL,
   type MaterialViewerPopoutSnapshot,
 } from "@/lib/materialViewerPopout";
-import { createBroadcastChannelTransport, createStateSnapshot } from "@/lib/popoutSync";
-import { StudioBreadcrumb, type StudioLevel } from "@/components/StudioBreadcrumb";
+import {
+  createBroadcastChannelTransport,
+  createStateSnapshot,
+} from "@/lib/popoutSync";
+import {
+  StudioBreadcrumb,
+  type StudioLevel,
+} from "@/components/StudioBreadcrumb";
 import { StudioClassPicker } from "@/components/StudioClassPicker";
 import { StudioClassDetail } from "@/components/StudioClassDetail";
 import { StudioPrepMode } from "@/components/StudioPrepMode";
+import {
+  CONTROL_DECK,
+  CONTROL_DECK_BOTTOMLINE,
+  CONTROL_DECK_INSET,
+  CONTROL_DECK_SECTION,
+  CONTROL_DECK_TOPLINE,
+  CONTROL_KICKER,
+  controlToggleButton,
+} from "@/components/shell/controlStyles";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -72,9 +102,21 @@ const BOARD_OPTIONS: Array<{
   label: string;
   description: string;
 }> = [
-  { id: "session", label: "SESSION BOARD", description: "Raw captures from the current session." },
-  { id: "project", label: "PROJECT BOARD", description: "Promoted resources worth keeping." },
-  { id: "overall", label: "OVERALL BOARD", description: "Aggregated promoted resources." },
+  {
+    id: "session",
+    label: "SESSION BOARD",
+    description: "Raw captures from the current session.",
+  },
+  {
+    id: "project",
+    label: "PROJECT BOARD",
+    description: "Promoted resources worth keeping.",
+  },
+  {
+    id: "overall",
+    label: "OVERALL BOARD",
+    description: "Aggregated promoted resources.",
+  },
 ];
 
 function itemLabel(item: TutorStudioItem): string {
@@ -83,12 +125,16 @@ function itemLabel(item: TutorStudioItem): string {
 
 function itemExcerpt(item: TutorStudioItem): string {
   const body =
-    typeof item.body_markdown === "string" && item.body_markdown.trim().length > 0
+    typeof item.body_markdown === "string" &&
+    item.body_markdown.trim().length > 0
       ? item.body_markdown
       : typeof item.payload === "string"
         ? item.payload
         : JSON.stringify(item.payload || "", null, 2);
-  return String(body).replace(/\s+/g, " ").trim().slice(0, 220) || "No saved content yet.";
+  return (
+    String(body).replace(/\s+/g, " ").trim().slice(0, 220) ||
+    "No saved content yet."
+  );
 }
 
 function statusClass(status: TutorStudioItem["status"]) {
@@ -107,7 +153,9 @@ function statusClass(status: TutorStudioItem["status"]) {
 function getMaterialLabel(material: Material): string {
   const explicitTitle = String(material.title || "").trim();
   if (explicitTitle) return explicitTitle;
-  const normalizedPath = String(material.source_path || "").replace(/\\/g, "/").trim();
+  const normalizedPath = String(material.source_path || "")
+    .replace(/\\/g, "/")
+    .trim();
   if (!normalizedPath) return `Material ${material.id}`;
   const segments = normalizedPath.split("/");
   return segments[segments.length - 1] || `Material ${material.id}`;
@@ -166,14 +214,22 @@ function createInitialStudioUiState(courseId?: number): StudioUiState {
   };
 }
 
-function studioUiReducer(state: StudioUiState, action: StudioUiAction): StudioUiState {
-  const patch = typeof action.patch === "function" ? action.patch(state) : action.patch;
-  const entries = Object.entries(patch) as Array<[keyof StudioUiState, StudioUiState[keyof StudioUiState]]>;
+function studioUiReducer(
+  state: StudioUiState,
+  action: StudioUiAction,
+): StudioUiState {
+  const patch =
+    typeof action.patch === "function" ? action.patch(state) : action.patch;
+  const entries = Object.entries(patch) as Array<
+    [keyof StudioUiState, StudioUiState[keyof StudioUiState]]
+  >;
   if (entries.length === 0) {
     return state;
   }
 
-  const hasChange = entries.some(([key, value]) => !Object.is(state[key], value));
+  const hasChange = entries.some(
+    ([key, value]) => !Object.is(state[key], value),
+  );
   if (!hasChange) {
     return state;
   }
@@ -186,13 +242,20 @@ function useMaterialViewerPopout(
   viewerMaterialContent?: MaterialContent,
 ) {
   const materialPopoutRef = useRef<Window | null>(null);
-  const materialPopoutChannelRef = useRef<ReturnType<typeof createBroadcastChannelTransport> | null>(null);
+  const materialPopoutChannelRef = useRef<ReturnType<
+    typeof createBroadcastChannelTransport
+  > | null>(null);
 
   const snapshot = useMemo<MaterialViewerPopoutSnapshot>(
     () => ({
-      title: viewerMaterialContent?.title || (viewerMaterial ? getMaterialLabel(viewerMaterial) : "Material Viewer"),
-      url: viewerMaterial ? api.tutor.getMaterialFileUrl(viewerMaterial.id) : null,
-      fileType: viewerMaterialContent?.file_type || viewerMaterial?.file_type || null,
+      title:
+        viewerMaterialContent?.title ||
+        (viewerMaterial ? getMaterialLabel(viewerMaterial) : "Material Viewer"),
+      url: viewerMaterial
+        ? api.tutor.getMaterialFileUrl(viewerMaterial.id)
+        : null,
+      fileType:
+        viewerMaterialContent?.file_type || viewerMaterial?.file_type || null,
       textContent: viewerMaterialContent?.content || null,
     }),
     [viewerMaterial, viewerMaterialContent],
@@ -204,7 +267,9 @@ function useMaterialViewerPopout(
       return;
     }
 
-    const transport = createBroadcastChannelTransport(STUDIO_MATERIAL_VIEWER_POPOUT_CHANNEL);
+    const transport = createBroadcastChannelTransport(
+      STUDIO_MATERIAL_VIEWER_POPOUT_CHANNEL,
+    );
     materialPopoutChannelRef.current = transport;
 
     const html = buildMaterialViewerPopoutHtml({
@@ -213,7 +278,11 @@ function useMaterialViewerPopout(
       liveSyncAvailable: transport.available,
     });
 
-    const popup = window.open("", "_blank", "width=800,height=900,menubar=no,toolbar=no");
+    const popup = window.open(
+      "",
+      "_blank",
+      "width=800,height=900,menubar=no,toolbar=no",
+    );
     if (!popup) {
       toast.error("Popup blocked — allow popups for this site");
       transport.close();
@@ -237,7 +306,12 @@ function useMaterialViewerPopout(
 
   useEffect(() => {
     const transport = materialPopoutChannelRef.current;
-    if (!transport?.available || !materialPopoutRef.current || materialPopoutRef.current.closed) return;
+    if (
+      !transport?.available ||
+      !materialPopoutRef.current ||
+      materialPopoutRef.current.closed
+    )
+      return;
     transport.postMessage(createStateSnapshot(snapshot, Date.now(), true));
   }, [snapshot]);
 
@@ -322,7 +396,10 @@ function useTutorStudioModeController({
         tutor_session_id: activeSessionId || undefined,
         scope: "session",
       }),
-    enabled: typeof courseId === "number" && Boolean(activeSessionId) && studioLevel === 3,
+    enabled:
+      typeof courseId === "number" &&
+      Boolean(activeSessionId) &&
+      studioLevel === 3,
   });
 
   const { data: projectRestore } = useQuery({
@@ -336,19 +413,23 @@ function useTutorStudioModeController({
     enabled: typeof courseId === "number" && studioLevel === 3,
   });
 
-  const { data: revisionHistory, isLoading: revisionHistoryLoading } = useQuery({
-    queryKey: ["tutor-studio-revisions", historyItemId],
-    queryFn: () => api.tutor.getStudioItemRevisions(historyItemId!),
-    enabled: studioLevel === 3 && historyOpen && historyItemId !== null,
-    staleTime: 30 * 1000,
-  });
+  const { data: revisionHistory, isLoading: revisionHistoryLoading } = useQuery(
+    {
+      queryKey: ["tutor-studio-revisions", historyItemId],
+      queryFn: () => api.tutor.getStudioItemRevisions(historyItemId!),
+      enabled: studioLevel === 3 && historyOpen && historyItemId !== null,
+      staleTime: 30 * 1000,
+    },
+  );
 
   async function invalidateStudioState(itemId?: number) {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["tutor-studio-restore"] }),
       queryClient.invalidateQueries({ queryKey: ["tutor-studio-overview"] }),
       queryClient.invalidateQueries({ queryKey: ["tutor-project-shell"] }),
-      queryClient.invalidateQueries({ queryKey: ["tutor-studio-revisions", itemId] }),
+      queryClient.invalidateQueries({
+        queryKey: ["tutor-studio-revisions", itemId],
+      }),
     ]);
   }
 
@@ -364,7 +445,11 @@ function useTutorStudioModeController({
       await invalidateStudioState();
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to promote Studio item");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to promote Studio item",
+      );
     },
   });
 
@@ -374,7 +459,11 @@ function useTutorStudioModeController({
       data: Parameters<typeof api.tutor.updateStudioItem>[1];
       successMessage: string;
       preserveHistory?: boolean;
-      historySnapshot?: { id: number; title: string; status: TutorStudioItem["status"] };
+      historySnapshot?: {
+        id: number;
+        title: string;
+        status: TutorStudioItem["status"];
+      };
     }) => api.tutor.updateStudioItem(payload.itemId, payload.data),
     onSuccess: async (result, variables) => {
       const nextPatch: Partial<StudioUiState> = { isEditingItem: false };
@@ -389,7 +478,9 @@ function useTutorStudioModeController({
       await invalidateStudioState(result.item.id);
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to update Studio item");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update Studio item",
+      );
     },
   });
 
@@ -430,10 +521,16 @@ function useTutorStudioModeController({
       return;
     }
     patchStudioState((current) => {
-      if (current.selectedItemId && visibleItems.some((item) => item.id === current.selectedItemId)) {
+      if (
+        current.selectedItemId &&
+        visibleItems.some((item) => item.id === current.selectedItemId)
+      ) {
         return {};
       }
-      if (activeBoardId && visibleItems.some((item) => item.id === activeBoardId)) {
+      if (
+        activeBoardId &&
+        visibleItems.some((item) => item.id === activeBoardId)
+      ) {
         return { selectedItemId: activeBoardId };
       }
       return { selectedItemId: visibleItems[0].id };
@@ -448,15 +545,19 @@ function useTutorStudioModeController({
     [availableMaterials, selectedMaterialIds],
   );
   const viewerMaterial = useMemo(
-    () => selectedMaterials.find((m) => m.id === selectedViewerMaterialId) || selectedMaterials[0] || null,
+    () =>
+      selectedMaterials.find((m) => m.id === selectedViewerMaterialId) ||
+      selectedMaterials[0] ||
+      null,
     [selectedMaterials, selectedViewerMaterialId],
   );
-  const { data: viewerMaterialContent, isLoading: viewerMaterialLoading } = useQuery<MaterialContent>({
-    queryKey: ["tutor-studio", "material-content", viewerMaterial?.id],
-    queryFn: () => api.tutor.getMaterialContent(viewerMaterial!.id),
-    enabled: viewerMaterial !== null && studioLevel === 3,
-    staleTime: 60 * 1000,
-  });
+  const { data: viewerMaterialContent, isLoading: viewerMaterialLoading } =
+    useQuery<MaterialContent>({
+      queryKey: ["tutor-studio", "material-content", viewerMaterial?.id],
+      queryFn: () => api.tutor.getMaterialContent(viewerMaterial!.id),
+      enabled: viewerMaterial !== null && studioLevel === 3,
+      staleTime: 60 * 1000,
+    });
   const openMaterialViewerPopout = useMaterialViewerPopout(
     viewerMaterial,
     viewerMaterialContent,
@@ -464,7 +565,9 @@ function useTutorStudioModeController({
 
   useEffect(() => {
     const persistedMaterialId =
-      typeof viewerState?.material_id === "number" ? viewerState.material_id : null;
+      typeof viewerState?.material_id === "number"
+        ? viewerState.material_id
+        : null;
     if (!selectedMaterials.length) {
       patchStudioState({ selectedViewerMaterialId: null });
       return;
@@ -472,13 +575,17 @@ function useTutorStudioModeController({
     patchStudioState((current) => {
       if (
         current.selectedViewerMaterialId &&
-        selectedMaterials.some((material) => material.id === current.selectedViewerMaterialId)
+        selectedMaterials.some(
+          (material) => material.id === current.selectedViewerMaterialId,
+        )
       ) {
         return {};
       }
       if (
         persistedMaterialId &&
-        selectedMaterials.some((material) => material.id === persistedMaterialId)
+        selectedMaterials.some(
+          (material) => material.id === persistedMaterialId,
+        )
       ) {
         return { selectedViewerMaterialId: persistedMaterialId };
       }
@@ -490,7 +597,11 @@ function useTutorStudioModeController({
     if (!onViewerStateChange) return;
     onViewerStateChange(
       viewerMaterial
-        ? { material_id: viewerMaterial.id, source_path: viewerMaterial.source_path, file_type: viewerMaterial.file_type }
+        ? {
+            material_id: viewerMaterial.id,
+            source_path: viewerMaterial.source_path,
+            file_type: viewerMaterial.file_type,
+          }
         : null,
     );
   }, [onViewerStateChange, viewerMaterial]);
@@ -611,7 +722,8 @@ function useTutorStudioModeController({
     onBoardScopeChange,
     onLaunchSession,
     onViewerStateChange,
-    promoteItem: (itemId: number, mode: "copy" | "move") => promoteMutation.mutate({ itemId, mode }),
+    promoteItem: (itemId: number, mode: "copy" | "move") =>
+      promoteMutation.mutate({ itemId, mode }),
   };
 }
 
@@ -709,7 +821,9 @@ export function TutorStudioMode(props: TutorStudioModeProps) {
         onNavigate={handleBreadcrumbNavigate}
         onOpenMaterialPopout={openMaterialViewerPopout}
         onOpenWorkbenchPopout={openWorkbenchPopout}
-        onSelectMaterial={(materialId) => patchStudioState({ selectedViewerMaterialId: materialId })}
+        onSelectMaterial={(materialId) =>
+          patchStudioState({ selectedViewerMaterialId: materialId })
+        }
         selectedMaterials={selectedMaterials}
         viewerMaterial={viewerMaterial}
         viewerMaterialContent={viewerMaterialContent ?? undefined}
@@ -721,55 +835,59 @@ export function TutorStudioMode(props: TutorStudioModeProps) {
 
   // L3: Active session — 3-column board layout
   return (
-      <StudioActiveWorkspaceView
-        activeBoardId={activeBoardId}
-        activeBoardScope={activeBoardScope}
+    <StudioActiveWorkspaceView
+      activeBoardId={activeBoardId}
+      activeBoardScope={activeBoardScope}
       activeSessionId={activeSessionId}
       courseName={courseName}
-        onActiveBoardIdChange={onActiveBoardIdChange}
-        onArchiveItem={handleArchiveItem}
-        onBoardScopeChange={onBoardScopeChange}
-        onCancelEditing={() => {
-          patchStudioState({
-            isEditingItem: false,
-            draftTitle: selectedItem?.title ?? "",
-            draftBody: selectedItem?.body_markdown ?? "",
-          });
-        }}
-        onDraftBodyChange={(value) => patchStudioState({ draftBody: value })}
-        onDraftTitleChange={(value) => patchStudioState({ draftTitle: value })}
-        onMarkBoarded={handleMarkBoarded}
-        onNavigate={handleBreadcrumbNavigate}
-        onOpenMaterialViewerPopout={openMaterialViewerPopout}
-        onOpenWorkbenchPopout={openWorkbenchPopout}
-        onPromoteItem={promoteItem}
-        onSaveItemEdit={handleSaveItemEdit}
-        onSelectBoardItem={(selectedId) => patchStudioState({ selectedItemId: selectedId })}
-        onSelectMaterial={(materialId) => patchStudioState({ selectedViewerMaterialId: materialId })}
-        onStartEditing={() => patchStudioState({ isEditingItem: true })}
-        onToggleHistory={handleToggleHistory}
-        projectItems={projectItems}
-        draftBody={draftBody}
-        draftTitle={draftTitle}
-        historyItemSnapshot={historyItemSnapshot}
-        historyOpen={historyOpen}
-        isEditingItem={isEditingItem}
-        isHistoryLoading={revisionHistoryLoading}
-        isUpdatingItem={updateItemPending}
-        revisionHistory={revisionHistory}
-        selectedItem={selectedItem}
-        selectedMaterials={selectedMaterials}
-        sessionItems={sessionItems}
-        viewerMaterial={viewerMaterial}
-        viewerMaterialContent={viewerMaterialContent ?? undefined}
-        viewerMaterialLoading={viewerMaterialLoading}
-        visibleItems={visibleItems}
-        workspaceSurfaceRef={workspaceSurfaceRef}
-        rightTab={rightTab}
-        onRightTabChange={(tab) => patchStudioState({ rightTab: tab })}
-        isPromoting={isPromoting}
-      />
-    );
+      onActiveBoardIdChange={onActiveBoardIdChange}
+      onArchiveItem={handleArchiveItem}
+      onBoardScopeChange={onBoardScopeChange}
+      onCancelEditing={() => {
+        patchStudioState({
+          isEditingItem: false,
+          draftTitle: selectedItem?.title ?? "",
+          draftBody: selectedItem?.body_markdown ?? "",
+        });
+      }}
+      onDraftBodyChange={(value) => patchStudioState({ draftBody: value })}
+      onDraftTitleChange={(value) => patchStudioState({ draftTitle: value })}
+      onMarkBoarded={handleMarkBoarded}
+      onNavigate={handleBreadcrumbNavigate}
+      onOpenMaterialViewerPopout={openMaterialViewerPopout}
+      onOpenWorkbenchPopout={openWorkbenchPopout}
+      onPromoteItem={promoteItem}
+      onSaveItemEdit={handleSaveItemEdit}
+      onSelectBoardItem={(selectedId) =>
+        patchStudioState({ selectedItemId: selectedId })
+      }
+      onSelectMaterial={(materialId) =>
+        patchStudioState({ selectedViewerMaterialId: materialId })
+      }
+      onStartEditing={() => patchStudioState({ isEditingItem: true })}
+      onToggleHistory={handleToggleHistory}
+      projectItems={projectItems}
+      draftBody={draftBody}
+      draftTitle={draftTitle}
+      historyItemSnapshot={historyItemSnapshot}
+      historyOpen={historyOpen}
+      isEditingItem={isEditingItem}
+      isHistoryLoading={revisionHistoryLoading}
+      isUpdatingItem={updateItemPending}
+      revisionHistory={revisionHistory}
+      selectedItem={selectedItem}
+      selectedMaterials={selectedMaterials}
+      sessionItems={sessionItems}
+      viewerMaterial={viewerMaterial}
+      viewerMaterialContent={viewerMaterialContent ?? undefined}
+      viewerMaterialLoading={viewerMaterialLoading}
+      visibleItems={visibleItems}
+      workspaceSurfaceRef={workspaceSurfaceRef}
+      rightTab={rightTab}
+      onRightTabChange={(tab) => patchStudioState({ rightTab: tab })}
+      isPromoting={isPromoting}
+    />
+  );
 }
 
 function StudioRootLevelView({
@@ -811,7 +929,11 @@ function StudioCourseLevelView({
 }) {
   return (
     <div className="flex h-full flex-col min-h-0">
-      <StudioBreadcrumb level={2} courseName={courseName} onNavigate={onNavigate} />
+      <StudioBreadcrumb
+        level={2}
+        courseName={courseName}
+        onNavigate={onNavigate}
+      />
       <div className="flex-1 min-h-0 overflow-y-auto">
         <StudioClassDetail
           courseId={courseId}
@@ -852,7 +974,11 @@ function StudioPrepWorkspaceView({
 }) {
   return (
     <div className="flex h-full flex-col min-h-0">
-      <StudioBreadcrumb level={3} courseName={courseName} onNavigate={onNavigate} />
+      <StudioBreadcrumb
+        level={3}
+        courseName={courseName}
+        onNavigate={onNavigate}
+      />
       <StudioPrepMode
         chainId={chainId}
         availableMaterials={selectedMaterials}
@@ -915,7 +1041,11 @@ function StudioActiveWorkspaceView({
   courseName: string;
   draftBody: string;
   draftTitle: string;
-  historyItemSnapshot: { id: number; title: string; status: TutorStudioItem["status"] } | null;
+  historyItemSnapshot: {
+    id: number;
+    title: string;
+    status: TutorStudioItem["status"];
+  } | null;
   historyOpen: boolean;
   isEditingItem: boolean;
   isHistoryLoading: boolean;
@@ -958,7 +1088,11 @@ function StudioActiveWorkspaceView({
 }) {
   return (
     <div className="flex h-full flex-col min-h-0">
-      <StudioBreadcrumb level={3} courseName={courseName} onNavigate={onNavigate} />
+      <StudioBreadcrumb
+        level={3}
+        courseName={courseName}
+        onNavigate={onNavigate}
+      />
       <div className="flex-1 min-h-0 grid gap-0 lg:grid-cols-[250px_1fr_320px]">
         <StudioBoardSidebar
           activeBoardScope={activeBoardScope}
@@ -1046,8 +1180,10 @@ function StudioBoardSidebar({
                     : "border-primary/15 bg-black/35 hover:border-primary/35",
                 )}
               >
-                <div className="font-arcade text-[10px] text-primary">{option.label}</div>
-                <div className="mt-0.5 font-terminal text-[11px] text-muted-foreground">
+                <div className="font-arcade text-ui-2xs text-primary">
+                  {option.label}
+                </div>
+                <div className="mt-0.5 font-terminal text-ui-xs text-muted-foreground">
                   {option.description}
                 </div>
               </button>
@@ -1064,15 +1200,15 @@ function StudioBoardSidebar({
 
       <ScrollArea className="min-h-0 flex-1">
         <div className="space-y-1.5 p-2">
-          <div className="flex items-center gap-2 font-arcade text-[10px] text-primary">
+          <div className="flex items-center gap-2 font-arcade text-ui-2xs text-primary">
             <FileStack className="h-3.5 w-3.5" />
             BOARD ITEMS
           </div>
 
           {visibleItems.length === 0 ? (
             <div className="border border-primary/20 bg-black/35 p-3">
-              <div className="font-arcade text-[10px] text-primary">EMPTY</div>
-              <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
+              <div className="font-arcade text-ui-2xs text-primary">EMPTY</div>
+              <div className="mt-1 font-terminal text-ui-xs text-muted-foreground">
                 Send items from Tutor or use the workbench to start building.
               </div>
             </div>
@@ -1093,14 +1229,21 @@ function StudioBoardSidebar({
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="font-arcade text-[10px] text-primary truncate">
+                      <div className="font-arcade text-ui-2xs text-primary truncate">
                         {itemLabel(item)}
                       </div>
-                      <div className="mt-0.5 font-terminal text-[11px] text-muted-foreground">
-                        {item.scope.toUpperCase()} • {item.item_type.toUpperCase()}
+                      <div className="mt-0.5 font-terminal text-ui-xs text-muted-foreground">
+                        {item.scope.toUpperCase()} •{" "}
+                        {item.item_type.toUpperCase()}
                       </div>
                     </div>
-                    <Badge variant="outline" className={cn("rounded-none text-[10px] shrink-0", statusClass(item.status))}>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "rounded-none text-ui-2xs shrink-0",
+                        statusClass(item.status),
+                      )}
+                    >
                       {item.status.toUpperCase()}
                     </Badge>
                   </div>
@@ -1117,7 +1260,7 @@ function StudioBoardSidebar({
 function StudioSidebarStat({ label, value }: { label: string; value: number }) {
   return (
     <div className="border border-primary/20 bg-black/35 px-2 py-1">
-      <div className="font-arcade text-[10px] text-primary">{label}</div>
+      <div className="font-arcade text-ui-2xs text-primary">{label}</div>
       <div className="mt-0.5 font-terminal text-sm text-white">{value}</div>
     </div>
   );
@@ -1147,34 +1290,52 @@ function StudioRevisionHistorySection({
     <div className="space-y-2 border border-primary/15 bg-black/45 p-3">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <div className="font-arcade text-[10px] text-primary">REVISION HISTORY</div>
+          <div className="font-arcade text-ui-2xs text-primary">
+            REVISION HISTORY
+          </div>
           {historyTarget ? (
-            <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
+            <div className="mt-1 font-terminal text-ui-xs text-muted-foreground">
               {historyTarget.title} • {historyTarget.status.toUpperCase()}
             </div>
           ) : null}
         </div>
-        <Badge variant="outline" className="rounded-none border-primary/30 text-[10px] text-muted-foreground">
+        <Badge
+          variant="outline"
+          className="rounded-none border-primary/30 text-ui-2xs text-muted-foreground"
+        >
           {revisionHistory.length} REV
         </Badge>
       </div>
       {isHistoryLoading ? (
-        <div className="font-terminal text-xs text-muted-foreground">Loading history...</div>
+        <div className="font-terminal text-xs text-muted-foreground">
+          Loading history...
+        </div>
       ) : revisionHistory.length === 0 ? (
-        <div className="font-terminal text-xs text-muted-foreground">No revisions recorded yet.</div>
+        <div className="font-terminal text-xs text-muted-foreground">
+          No revisions recorded yet.
+        </div>
       ) : (
         <div className="space-y-2">
           {revisionHistory.map((revision) => (
-            <div key={revision.revision} className="border border-primary/15 bg-black/35 p-2">
+            <div
+              key={revision.revision}
+              className="border border-primary/15 bg-black/35 p-2"
+            >
               <div className="flex items-center justify-between gap-2">
-                <div className="font-arcade text-[10px] text-primary">REV {revision.revision}</div>
-                <div className="font-terminal text-[11px] text-muted-foreground">
+                <div className="font-arcade text-ui-2xs text-primary">
+                  REV {revision.revision}
+                </div>
+                <div className="font-terminal text-ui-xs text-muted-foreground">
                   {new Date(revision.created_at).toLocaleString()}
                 </div>
               </div>
               <div className="mt-2 whitespace-pre-wrap font-terminal text-xs text-zinc-300">
                 {revision.body_markdown ||
-                  JSON.stringify(revision.payload || revision.source_locator || {}, null, 2)}
+                  JSON.stringify(
+                    revision.payload || revision.source_locator || {},
+                    null,
+                    2,
+                  )}
               </div>
             </div>
           ))}
@@ -1210,7 +1371,10 @@ function StudioSelectedItemCard({
   draftBody: string;
   draftTitle: string;
   historyOpen: boolean;
-  historyTarget: { title: string; status: TutorStudioItem["status"] } | HistoryItemSnapshot | null;
+  historyTarget:
+    | { title: string; status: TutorStudioItem["status"] }
+    | HistoryItemSnapshot
+    | null;
   isEditingItem: boolean;
   isHistoryLoading: boolean;
   isPromoting: boolean;
@@ -1229,27 +1393,39 @@ function StudioSelectedItemCard({
 }) {
   const canEdit = true;
   const canBoard = selectedItem.status === "captured";
-  const canArchive = selectedItem.status === "captured" || selectedItem.status === "boarded";
+  const canArchive =
+    selectedItem.status === "captured" || selectedItem.status === "boarded";
   const lifecycleDisabled = isUpdatingItem || isPromoting;
 
   return (
-    <Card className="rounded-none border-primary/20 bg-black/35">
-      <CardHeader className="space-y-2 border-b border-primary/15 pb-3">
+    <Card className={CONTROL_DECK}>
+      <div className={CONTROL_DECK_INSET} />
+      <div className={CONTROL_DECK_TOPLINE} />
+      <div className={CONTROL_DECK_BOTTOMLINE} />
+      <CardHeader className="relative z-10 space-y-2 border-b border-primary/15 pb-3">
         <div className="flex flex-wrap items-center gap-2">
-          <CardTitle className="font-arcade text-xs text-primary">{itemLabel(selectedItem)}</CardTitle>
-          <Badge variant="outline" className={cn("rounded-none text-[10px]", statusClass(selectedItem.status))}>
+          <CardTitle className="font-arcade text-xs text-primary">
+            {itemLabel(selectedItem)}
+          </CardTitle>
+          <Badge
+            variant="outline"
+            className={cn(
+              "rounded-full px-2.5 py-1 font-terminal text-ui-2xs",
+              statusClass(selectedItem.status),
+            )}
+          >
             {selectedItem.status.toUpperCase()}
           </Badge>
         </div>
-        <div className="font-terminal text-[11px] text-muted-foreground">
+        <div className="font-mono text-sm leading-6 text-foreground/72">
           {selectedItem.source_kind || "studio"} • {selectedItem.scope} scope
         </div>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3 p-4">
+      <CardContent className="relative z-10 flex flex-col gap-3 p-4">
         {isEditingItem ? (
-          <div className="space-y-3 border border-primary/15 bg-black/40 p-3">
+          <div className={cn(CONTROL_DECK_SECTION, "space-y-3")}>
             <div className="space-y-1.5">
-              <div className="font-arcade text-[10px] text-primary/70">TITLE</div>
+              <div className={CONTROL_KICKER}>TITLE</div>
               <Input
                 data-testid="studio-item-title-input"
                 value={draftTitle}
@@ -1259,7 +1435,7 @@ function StudioSelectedItemCard({
               />
             </div>
             <div className="space-y-1.5">
-              <div className="font-arcade text-[10px] text-primary/70">BODY</div>
+              <div className={CONTROL_KICKER}>BODY</div>
               <Textarea
                 data-testid="studio-item-body-input"
                 value={draftBody}
@@ -1272,7 +1448,8 @@ function StudioSelectedItemCard({
         ) : (
           <ScrollArea className="max-h-[60vh] border border-primary/15 bg-black/40 p-3">
             <div className="whitespace-pre-wrap font-terminal text-sm text-zinc-200">
-              {selectedItem.body_markdown || JSON.stringify(selectedItem.payload || {}, null, 2)}
+              {selectedItem.body_markdown ||
+                JSON.stringify(selectedItem.payload || {}, null, 2)}
             </div>
           </ScrollArea>
         )}
@@ -1284,7 +1461,7 @@ function StudioSelectedItemCard({
                 data-testid="studio-item-save"
                 variant="outline"
                 disabled={lifecycleDisabled}
-                className="rounded-none border-primary/30 bg-black/50 font-arcade text-[10px]"
+                className={controlToggleButton(true, "primary", true)}
                 onClick={onSaveItemEdit}
               >
                 <Save className="mr-1 h-3 w-3" />
@@ -1295,7 +1472,7 @@ function StudioSelectedItemCard({
                 data-testid="studio-item-cancel"
                 variant="outline"
                 disabled={lifecycleDisabled}
-                className="rounded-none border-primary/30 bg-black/50 font-arcade text-[10px]"
+                className={controlToggleButton(false, "secondary", true)}
                 onClick={onCancelEditing}
               >
                 <X className="mr-1 h-3 w-3" />
@@ -1308,7 +1485,7 @@ function StudioSelectedItemCard({
               data-testid="studio-item-edit"
               variant="outline"
               disabled={!canEdit || lifecycleDisabled}
-              className="rounded-none border-primary/30 bg-black/50 font-arcade text-[10px]"
+              className={controlToggleButton(false, "secondary", true)}
               onClick={onStartEditing}
             >
               <PencilLine className="mr-1 h-3 w-3" />
@@ -1320,7 +1497,7 @@ function StudioSelectedItemCard({
             data-testid="studio-item-board"
             variant="outline"
             disabled={!canBoard || lifecycleDisabled}
-            className="rounded-none border-primary/30 bg-black/50 font-arcade text-[10px]"
+            className={controlToggleButton(false, "secondary", true)}
             onClick={onMarkBoarded}
           >
             <ArrowUpRight className="mr-1 h-3 w-3" />
@@ -1331,7 +1508,7 @@ function StudioSelectedItemCard({
             data-testid="studio-item-archive"
             variant="outline"
             disabled={!canArchive || lifecycleDisabled}
-            className="rounded-none border-primary/30 bg-black/50 font-arcade text-[10px]"
+            className={controlToggleButton(false, "secondary", true)}
             onClick={onArchiveItem}
           >
             <Archive className="mr-1 h-3 w-3" />
@@ -1342,7 +1519,7 @@ function StudioSelectedItemCard({
             data-testid="studio-item-history"
             variant="outline"
             disabled={lifecycleDisabled}
-            className="rounded-none border-primary/30 bg-black/50 font-arcade text-[10px]"
+            className={controlToggleButton(false, "secondary", true)}
             onClick={onToggleHistory}
           >
             <History className="mr-1 h-3 w-3" />
@@ -1351,8 +1528,12 @@ function StudioSelectedItemCard({
           <Button
             type="button"
             variant="outline"
-            disabled={lifecycleDisabled || selectedItem.status === "promoted" || activeBoardScope === "overall"}
-            className="rounded-none border-primary/30 bg-black/50 font-arcade text-[10px]"
+            disabled={
+              lifecycleDisabled ||
+              selectedItem.status === "promoted" ||
+              activeBoardScope === "overall"
+            }
+            className={controlToggleButton(false, "secondary", true)}
             onClick={() => onPromoteItem(selectedItem.id, "copy")}
           >
             <Copy className="mr-1 h-3 w-3" />
@@ -1361,8 +1542,12 @@ function StudioSelectedItemCard({
           <Button
             type="button"
             variant="outline"
-            disabled={lifecycleDisabled || selectedItem.status === "promoted" || activeBoardScope === "overall"}
-            className="rounded-none border-primary/30 bg-black/50 font-arcade text-[10px]"
+            disabled={
+              lifecycleDisabled ||
+              selectedItem.status === "promoted" ||
+              activeBoardScope === "overall"
+            }
+            className={controlToggleButton(false, "secondary", true)}
             onClick={() => onPromoteItem(selectedItem.id, "move")}
           >
             <MoveRight className="mr-1 h-3 w-3" />
@@ -1371,7 +1556,7 @@ function StudioSelectedItemCard({
           {selectedItem.source_path ? (
             <Badge
               variant="outline"
-              className="max-w-xs truncate rounded-none border-primary/30 text-[10px] text-muted-foreground"
+              className="max-w-xs truncate rounded-full border-primary/30 px-3 py-1 font-terminal text-ui-2xs text-muted-foreground"
             >
               <FolderOpen className="mr-1 h-3 w-3 shrink-0" />
               {selectedItem.source_path}
@@ -1400,19 +1585,31 @@ function StudioPinnedHistoryCard({
   revisionHistory: StudioRevision[];
 }) {
   return (
-    <Card className="rounded-none border-primary/20 bg-black/35">
-      <CardHeader className="space-y-2 border-b border-primary/15 pb-3">
+    <Card className={CONTROL_DECK}>
+      <div className={CONTROL_DECK_INSET} />
+      <div className={CONTROL_DECK_TOPLINE} />
+      <div className={CONTROL_DECK_BOTTOMLINE} />
+      <CardHeader className="relative z-10 space-y-2 border-b border-primary/15 pb-3">
         <div className="flex flex-wrap items-center gap-2">
-          <CardTitle className="font-arcade text-xs text-primary">{historyItemSnapshot.title}</CardTitle>
-          <Badge variant="outline" className={cn("rounded-none text-[10px]", statusClass(historyItemSnapshot.status))}>
+          <CardTitle className="font-arcade text-xs text-primary">
+            {historyItemSnapshot.title}
+          </CardTitle>
+          <Badge
+            variant="outline"
+            className={cn(
+              "rounded-full px-2.5 py-1 font-terminal text-ui-2xs",
+              statusClass(historyItemSnapshot.status),
+            )}
+          >
             {historyItemSnapshot.status.toUpperCase()}
           </Badge>
         </div>
-        <div className="font-terminal text-[11px] text-muted-foreground">
-          This item is no longer on the active board, but its revision history is still available.
+        <div className="font-mono text-sm leading-6 text-foreground/72">
+          This item is no longer on the active board, but its revision history
+          is still available.
         </div>
       </CardHeader>
-      <CardContent className="p-4">
+      <CardContent className="relative z-10 p-4">
         <StudioRevisionHistorySection
           historyTarget={historyItemSnapshot}
           isHistoryLoading={isHistoryLoading}
@@ -1425,10 +1622,13 @@ function StudioPinnedHistoryCard({
 
 function StudioSummaryEmptyState() {
   return (
-    <div className="border border-primary/20 bg-black/35 p-6 text-center">
-      <div className="font-arcade text-[10px] text-primary">NO ITEM SELECTED</div>
-      <div className="mt-2 font-terminal text-xs text-muted-foreground">
-        Select an item from the board sidebar, or use Tutor to capture new content.
+    <div className={cn(CONTROL_DECK_SECTION, "p-6 text-center")}>
+      <div className="font-arcade text-ui-2xs text-primary">
+        NO ITEM SELECTED
+      </div>
+      <div className="mt-2 font-mono text-sm leading-6 text-foreground/72">
+        Select an item from the board sidebar, or use Tutor to capture new
+        content.
       </div>
     </div>
   );
@@ -1459,7 +1659,11 @@ function StudioSummaryPanel({
   activeBoardScope: TutorBoardScope;
   draftBody: string;
   draftTitle: string;
-  historyItemSnapshot: { id: number; title: string; status: TutorStudioItem["status"] } | null;
+  historyItemSnapshot: {
+    id: number;
+    title: string;
+    status: TutorStudioItem["status"];
+  } | null;
   historyOpen: boolean;
   isEditingItem: boolean;
   isHistoryLoading: boolean;
@@ -1498,9 +1702,12 @@ function StudioSummaryPanel({
     <div className="flex min-h-0 flex-col border-r border-primary/20 bg-black/20">
       <div className="flex items-center gap-1 border-b border-primary/20 px-3 py-1.5 bg-black/30">
         <Layers3 className="h-3 w-3 text-primary" />
-        <span className="font-arcade text-[10px] text-primary">SUMMARY</span>
+        <span className="font-arcade text-ui-2xs text-primary">SUMMARY</span>
         <div className="ml-auto">
-          <Badge variant="outline" className="rounded-none text-[10px] border-primary/30 text-muted-foreground">
+          <Badge
+            variant="outline"
+            className="rounded-none text-ui-2xs border-primary/30 text-muted-foreground"
+          >
             <Sparkles className="mr-1 h-3 w-3" />
             {activeBoardScope === "session" ? "SESSION" : "PROJECT"}
           </Badge>
@@ -1574,7 +1781,7 @@ function StudioRightPanel({
           type="button"
           onClick={() => onRightTabChange("source")}
           className={cn(
-            "flex items-center gap-1 px-2 py-1 font-arcade text-[10px] transition-colors",
+            "flex items-center gap-1 px-2 py-1 font-arcade text-ui-2xs transition-colors",
             rightTab === "source"
               ? "text-primary border-b border-primary"
               : "text-muted-foreground hover:text-primary",
@@ -1583,7 +1790,10 @@ function StudioRightPanel({
           <Eye className="h-3 w-3" />
           SOURCE
           {selectedMaterials.length > 0 ? (
-            <Badge variant="outline" className="ml-1 h-4 px-1 text-[10px] rounded-none border-primary/40">
+            <Badge
+              variant="outline"
+              className="ml-1 h-4 px-1 text-ui-2xs rounded-none border-primary/40"
+            >
               {selectedMaterials.length}
             </Badge>
           ) : null}
@@ -1603,7 +1813,7 @@ function StudioRightPanel({
           type="button"
           onClick={() => onRightTabChange("workbench")}
           className={cn(
-            "flex items-center gap-1 px-2 py-1 font-arcade text-[10px] transition-colors",
+            "flex items-center gap-1 px-2 py-1 font-arcade text-ui-2xs transition-colors",
             rightTab === "workbench"
               ? "text-primary border-b border-primary"
               : "text-muted-foreground hover:text-primary",
@@ -1623,10 +1833,20 @@ function StudioRightPanel({
       </div>
 
       <div className="flex-1 min-h-0 relative">
-        <div className={cn("absolute inset-0", rightTab === "workbench" ? "" : "hidden")}>
+        <div
+          className={cn(
+            "absolute inset-0",
+            rightTab === "workbench" ? "" : "hidden",
+          )}
+        >
           <TutorWorkspaceSurface ref={workspaceSurfaceRef} />
         </div>
-        <div className={cn("absolute inset-0 flex min-h-0", rightTab === "source" ? "" : "hidden")}>
+        <div
+          className={cn(
+            "absolute inset-0 flex min-h-0",
+            rightTab === "source" ? "" : "hidden",
+          )}
+        >
           <StudioMaterialList
             materials={selectedMaterials}
             onSelectMaterial={onSelectMaterial}
@@ -1655,7 +1875,7 @@ function StudioMaterialList({
   return (
     <div className="w-[160px] shrink-0 border-r border-primary/20 bg-black/25 flex flex-col min-h-0">
       <div className="border-b border-primary/15 px-2 py-1.5">
-        <div className="flex items-center gap-1.5 font-arcade text-[10px] text-primary">
+        <div className="flex items-center gap-1.5 font-arcade text-ui-2xs text-primary">
           <BookOpenText className="h-3 w-3" />
           SOURCES
         </div>
@@ -1663,7 +1883,7 @@ function StudioMaterialList({
       <ScrollArea className="min-h-0 flex-1">
         <div className="space-y-1.5 p-2">
           {materials.length === 0 ? (
-            <div className="p-2 font-terminal text-[11px] text-muted-foreground">
+            <div className="p-2 font-terminal text-ui-xs text-muted-foreground">
               Select materials via the Start Panel to see them here.
             </div>
           ) : (
@@ -1682,8 +1902,10 @@ function StudioMaterialList({
                       : "border-primary/15 bg-black/30 hover:border-primary/35",
                   )}
                 >
-                  <div className="font-arcade text-[10px] text-primary truncate">{getMaterialLabel(material)}</div>
-                  <div className="mt-0.5 font-terminal text-[11px] text-muted-foreground">
+                  <div className="font-arcade text-ui-2xs text-primary truncate">
+                    {getMaterialLabel(material)}
+                  </div>
+                  <div className="mt-0.5 font-terminal text-ui-xs text-muted-foreground">
                     {(material.file_type || "file").toUpperCase()}
                   </div>
                 </button>
@@ -1708,18 +1930,26 @@ function StudioMaterialViewerPane({
   return (
     <div className="flex-1 min-h-0 p-3">
       {viewerMaterial ? (
-        <div className="flex h-full min-h-0 flex-col gap-3" data-testid="studio-material-viewer-pane">
+        <div
+          className="flex h-full min-h-0 flex-col gap-3"
+          data-testid="studio-material-viewer-pane"
+        >
           {viewerMaterialLoading ? (
             <div className="flex h-full items-center justify-center">
-              <div className="font-terminal text-sm text-muted-foreground">Loading material...</div>
+              <div className="font-terminal text-sm text-muted-foreground">
+                Loading material...
+              </div>
             </div>
           ) : (
             <MaterialViewer
               source={{
                 id: viewerMaterial.id,
-                title: viewerMaterialContent?.title || getMaterialLabel(viewerMaterial),
+                title:
+                  viewerMaterialContent?.title ||
+                  getMaterialLabel(viewerMaterial),
                 fileName: viewerMaterial.source_path,
-                fileType: viewerMaterialContent?.file_type || viewerMaterial.file_type,
+                fileType:
+                  viewerMaterialContent?.file_type || viewerMaterial.file_type,
                 url: api.tutor.getMaterialFileUrl(viewerMaterial.id),
                 textContent: viewerMaterialContent?.content || null,
               }}
@@ -1730,9 +1960,12 @@ function StudioMaterialViewerPane({
       ) : (
         <div className="flex h-full items-center justify-center">
           <div className="text-center">
-            <div className="font-arcade text-[10px] text-primary">SOURCE VIEWER</div>
+            <div className="font-arcade text-ui-2xs text-primary">
+              SOURCE VIEWER
+            </div>
             <div className="mt-2 font-terminal text-xs text-muted-foreground max-w-xs">
-              Choose materials in the Start Panel to view them here while working.
+              Choose materials in the Start Panel to view them here while
+              working.
             </div>
           </div>
         </div>

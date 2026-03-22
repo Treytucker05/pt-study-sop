@@ -95,7 +95,7 @@ export function StudioClassPicker({
           <div className="flex items-center gap-3">
             <AlertTriangle className="h-4 w-4 text-yellow-400 shrink-0" />
             <div>
-              <div className="font-arcade text-[10px] text-yellow-400">
+              <div className="font-arcade text-ui-2xs text-yellow-400">
                 SESSION IN PROGRESS
               </div>
               <div className="font-terminal text-xs text-muted-foreground">
@@ -123,7 +123,7 @@ export function StudioClassPicker({
                       {course.course_code && (
                         <Badge
                           variant="outline"
-                          className="rounded-none text-[10px] border-primary/30"
+                          className="rounded-none text-ui-2xs border-primary/30"
                         >
                           {course.course_code}
                         </Badge>
@@ -136,7 +136,7 @@ export function StudioClassPicker({
 
                     <Badge
                       variant="outline"
-                      className={`rounded-none text-[9px] shrink-0 ${status.className}`}
+                      className={`rounded-none text-ui-3xs shrink-0 ${status.className}`}
                     >
                       {status.label}
                     </Badge>
@@ -144,32 +144,32 @@ export function StudioClassPicker({
 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="border border-primary/10 bg-black/30 px-2 py-2">
-                      <div className="font-terminal text-[9px] text-muted-foreground">MATERIALS</div>
-                      <div className="mt-1 font-arcade text-[11px] text-primary">
+                      <div className="font-terminal text-ui-3xs text-muted-foreground">MATERIALS</div>
+                      <div className="mt-1 font-arcade text-ui-xs text-primary">
                         {course.material_count}
                       </div>
                     </div>
                     <div className="border border-primary/10 bg-black/30 px-2 py-2">
-                      <div className="font-terminal text-[9px] text-muted-foreground">SESSIONS</div>
-                      <div className="mt-1 font-arcade text-[11px] text-primary">
+                      <div className="font-terminal text-ui-3xs text-muted-foreground">SESSIONS</div>
+                      <div className="mt-1 font-arcade text-ui-xs text-primary">
                         {course.recent_session_count}
                       </div>
                     </div>
                     <div className="border border-primary/10 bg-black/30 px-2 py-2">
-                      <div className="font-terminal text-[9px] text-muted-foreground">LAST STUDIED</div>
-                      <div className="mt-1 font-terminal text-[11px] text-white">
+                      <div className="font-terminal text-ui-3xs text-muted-foreground">LAST STUDIED</div>
+                      <div className="mt-1 font-terminal text-ui-xs text-white">
                         {formatLastStudied(course.last_studied_at)}
                       </div>
                     </div>
                     <div className="border border-primary/10 bg-black/30 px-2 py-2">
-                      <div className="font-terminal text-[9px] text-muted-foreground">PROMOTED</div>
-                      <div className="mt-1 font-arcade text-[11px] text-primary">
+                      <div className="font-terminal text-ui-3xs text-muted-foreground">PROMOTED</div>
+                      <div className="mt-1 font-arcade text-ui-xs text-primary">
                         {course.promoted_item_count}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between gap-2 font-terminal text-[10px] text-muted-foreground">
+                  <div className="flex items-center justify-between gap-2 font-terminal text-ui-2xs text-muted-foreground">
                     <span>{course.pending_event_count} PENDING EVENTS</span>
                     <span>{course.captured_item_count} CAPTURED</span>
                   </div>

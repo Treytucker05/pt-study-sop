@@ -11,7 +11,16 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BTN_OUTLINE, BTN_PRIMARY, CARD_BORDER, TEXT_MUTED } from "@/lib/theme";
+import {
+  CONTROL_COPY,
+  CONTROL_DECK,
+  CONTROL_DECK_BOTTOMLINE,
+  CONTROL_DECK_INSET,
+  CONTROL_DECK_SECTION,
+  CONTROL_DECK_TOPLINE,
+  CONTROL_KICKER,
+} from "@/components/shell/controlStyles";
+import { BTN_OUTLINE, BTN_PRIMARY } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { formatWorkflowStatus, truncateWorkflowId } from "@/lib/workflowStatus";
 
@@ -77,16 +86,23 @@ function StudioActionCard({
   const helperId = `studio-home-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-helper`;
 
   return (
-    <Card className={cn(CARD_BORDER, "rounded-none border-primary/20 bg-black/35")}>
-      <CardHeader className="border-b border-primary/15 pb-3">
+    <Card className={CONTROL_DECK}>
+      <div className={CONTROL_DECK_INSET} />
+      <div className={CONTROL_DECK_TOPLINE} />
+      <div className={CONTROL_DECK_BOTTOMLINE} />
+      <CardHeader className="relative z-10 border-b border-primary/15 pb-3">
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <CardTitle className="font-arcade text-xs text-primary">{title}</CardTitle>
-            <p className={`${TEXT_MUTED} mt-2 text-xs`}>{subtitle}</p>
+          <div className="space-y-2">
+            <CardTitle className="font-arcade text-xs text-primary">
+              {title}
+            </CardTitle>
+            <p className="font-mono text-sm leading-6 text-foreground/72">
+              {subtitle}
+            </p>
           </div>
           <div
             className={cn(
-              "flex h-9 w-9 items-center justify-center border border-primary/20 bg-black/45",
+              "flex h-10 w-10 items-center justify-center rounded-full border border-primary/20 bg-black/45",
               tone === "success" && "border-emerald-500/30 text-emerald-300",
             )}
           >
@@ -94,12 +110,12 @@ function StudioActionCard({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3 pt-4">
+      <CardContent className="relative z-10 space-y-3 pt-4">
         <div
           id={helperId}
           className={cn(
-            "min-h-[3rem] font-terminal text-sm leading-5",
-            enabled ? "text-foreground/90" : "text-muted-foreground",
+            "min-h-[3rem] font-mono text-sm leading-6",
+            enabled ? "text-foreground/84" : "text-foreground/48",
           )}
         >
           {helperText}
@@ -111,7 +127,7 @@ function StudioActionCard({
           aria-describedby={helperId}
           className={cn(
             enabled ? BTN_PRIMARY : BTN_OUTLINE,
-            "w-full rounded-none text-[10px]",
+            "w-full text-ui-2xs",
             !enabled && "cursor-not-allowed opacity-70 hover:translate-y-0",
           )}
         >
@@ -141,31 +157,39 @@ export function TutorStudioHome({
   const workbenchRef = useRef<HTMLDivElement | null>(null);
   const currentStage = workflow?.currentStage ?? null;
   const primingPreferred =
-    !workflow?.workflowId || currentStage === "launch" || currentStage === "priming";
+    !workflow?.workflowId ||
+    currentStage === "launch" ||
+    currentStage === "priming";
 
   const openWorkbench = () => {
-    workbenchRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    workbenchRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   };
 
   const primaryAction = useMemo(() => {
     if (hasActiveSession) {
       return {
         label: "RESUME TUTOR",
-        detail: "You already have a live Tutor session running. Resume that surface first.",
+        detail:
+          "You already have a live Tutor session running. Resume that surface first.",
         onClick: onResumeTutor,
       };
     }
     if (hasFinalSyncAccess) {
       return {
         label: "OPEN FINAL SYNC",
-        detail: "This workflow already has a finalized Polish path ready for final sync.",
+        detail:
+          "This workflow already has a finalized Polish path ready for final sync.",
         onClick: onOpenFinalSync,
       };
     }
     if (hasTutorWork) {
       return {
         label: "OPEN POLISH",
-        detail: "Tutor work exists. Review and refine the captures before you publish anything.",
+        detail:
+          "Tutor work exists. Review and refine the captures before you publish anything.",
         onClick: onOpenPolish,
       };
     }
@@ -180,7 +204,8 @@ export function TutorStudioHome({
     }
     return {
       label: "OPEN WORKBENCH",
-      detail: "No workflow step needs immediate attention. Drop into the workbench tools from Home.",
+      detail:
+        "No workflow step needs immediate attention. Drop into the workbench tools from Home.",
       onClick: openWorkbench,
     };
   }, [
@@ -198,8 +223,12 @@ export function TutorStudioHome({
   const summaryItems = [
     {
       label: "Workflow",
-      value: workflow?.workflowId ? truncateWorkflowId(workflow.workflowId) : "No active workflow",
-      helper: workflow?.status ? formatWorkflowStatus(workflow.status) : "Studio can bootstrap Priming inline.",
+      value: workflow?.workflowId
+        ? truncateWorkflowId(workflow.workflowId)
+        : "No active workflow",
+      helper: workflow?.status
+        ? formatWorkflowStatus(workflow.status)
+        : "Studio can bootstrap Priming inline.",
     },
     {
       label: "Course",
@@ -209,33 +238,50 @@ export function TutorStudioHome({
     {
       label: "Topic",
       value: topic || "Broad module scope",
-      helper: selectedMaterialCount > 0 ? `${selectedMaterialCount} materials in scope` : "No materials scoped yet",
+      helper:
+        selectedMaterialCount > 0
+          ? `${selectedMaterialCount} materials in scope`
+          : "No materials scoped yet",
     },
     {
       label: "Last Update",
       value: formatWorkflowDate(workflow?.updatedAt ?? null),
-      helper: currentStage ? `Stage ${currentStage.replace(/_/g, " ").toUpperCase()}` : "Home overview",
+      helper: currentStage
+        ? `Stage ${currentStage.replace(/_/g, " ").toUpperCase()}`
+        : "Home overview",
     },
   ];
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto p-4">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
-        <Card className={cn(CARD_BORDER, "rounded-none border-primary/25 bg-black/45")}>
-          <CardHeader className="border-b border-primary/15 pb-3">
+        <Card className={CONTROL_DECK}>
+          <div className={CONTROL_DECK_INSET} />
+          <div className={CONTROL_DECK_TOPLINE} />
+          <div className={CONTROL_DECK_BOTTOMLINE} />
+          <CardHeader className="relative z-10 border-b border-primary/15 pb-3">
             <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-              <div>
-                <CardTitle className="font-arcade text-xs text-primary">STUDIO HOME</CardTitle>
-                <p className={`${TEXT_MUTED} mt-2 text-xs`}>
-                  Studio is where prep and wrap-up live. Start from the next recommended action, then drop
-                  into the workbench below when you need open-ended class tools.
+              <div className="space-y-2">
+                <CardTitle className="font-arcade text-xs text-primary">
+                  STUDIO HOME
+                </CardTitle>
+                <p className={CONTROL_COPY}>
+                  Studio is where prep and wrap-up live. Start from the next
+                  recommended action, then drop into the workbench below when
+                  you need open-ended class tools.
                 </p>
               </div>
               <Button
                 type="button"
                 onClick={primaryAction.onClick}
-                className={cn(BTN_PRIMARY, "w-full rounded-none text-[10px] xl:w-auto xl:min-w-[15rem]")}
-                disabled={bootstrappingPriming && primaryAction.onClick === onOpenPriming}
+                className={cn(
+                  BTN_PRIMARY,
+                  "w-full text-ui-2xs xl:w-auto xl:min-w-[15rem]",
+                )}
+                disabled={
+                  bootstrappingPriming &&
+                  primaryAction.onClick === onOpenPriming
+                }
               >
                 {bootstrappingPriming && primaryAction.onClick === onOpenPriming
                   ? "PREPARING PRIMING..."
@@ -244,38 +290,58 @@ export function TutorStudioHome({
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4 pt-4">
+          <CardContent className="relative z-10 space-y-4 pt-4">
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               {summaryItems.map((item) => (
-                <div key={item.label} className="border border-primary/20 bg-black/35 p-3">
-                  <div className="font-arcade text-[10px] text-primary/80">{item.label}</div>
-                  <div className="mt-2 break-all font-terminal text-sm text-foreground">{item.value}</div>
-                  <div className="mt-1 font-terminal text-xs text-muted-foreground">{item.helper}</div>
+                <div
+                  key={item.label}
+                  className={cn(CONTROL_DECK_SECTION, "space-y-1")}
+                >
+                  <div className={CONTROL_KICKER}>{item.label}</div>
+                  <div className="mt-2 break-all font-mono text-sm leading-6 text-foreground">
+                    {item.value}
+                  </div>
+                  <div className="font-mono text-sm leading-6 text-foreground/72">
+                    {item.helper}
+                  </div>
                 </div>
               ))}
             </div>
 
-            <div className="border border-primary/20 bg-black/35 p-4">
+            <div className={cn(CONTROL_DECK_SECTION, "p-4")}>
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <div className="font-arcade text-[10px] text-primary/80">NEXT RECOMMENDED ACTION</div>
-                  <div className="mt-2 font-terminal text-sm text-foreground">{primaryAction.label}</div>
+                  <div className={CONTROL_KICKER}>Next Recommended Action</div>
+                  <div className="mt-2 font-mono text-sm leading-6 text-foreground">
+                    {primaryAction.label}
+                  </div>
                 </div>
                 {hasActiveSession ? (
-                  <Badge variant="outline" className="rounded-none border-emerald-500/30 text-emerald-300">
+                  <Badge
+                    variant="outline"
+                    className="rounded-full border-emerald-500/30 px-3 py-1 font-terminal text-ui-2xs text-emerald-300"
+                  >
                     LIVE SESSION
                   </Badge>
                 ) : currentStage ? (
-                  <Badge variant="outline" className="rounded-none border-primary/25 text-primary/80">
+                  <Badge
+                    variant="outline"
+                    className="rounded-full border-primary/25 px-3 py-1 font-terminal text-ui-2xs text-primary/80"
+                  >
                     {currentStage.replace(/_/g, " ").toUpperCase()}
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="rounded-none border-primary/25 text-primary/80">
+                  <Badge
+                    variant="outline"
+                    className="rounded-full border-primary/25 px-3 py-1 font-terminal text-ui-2xs text-primary/80"
+                  >
                     READY
                   </Badge>
                 )}
               </div>
-              <div className="mt-2 font-terminal text-sm text-muted-foreground">{primaryAction.detail}</div>
+              <div className="mt-2 font-mono text-sm leading-6 text-foreground/72">
+                {primaryAction.detail}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -289,7 +355,9 @@ export function TutorStudioHome({
                 ? "Continue the existing workflow in Priming or reopen the priming setup from Studio."
                 : "Start Priming directly from Studio. The workflow will be bootstrapped inline without sending you back to Launch."
             }
-            buttonLabel={workflow?.workflowId ? "CONTINUE PRIMING" : "START PRIMING"}
+            buttonLabel={
+              workflow?.workflowId ? "CONTINUE PRIMING" : "START PRIMING"
+            }
             enabled
             busy={bootstrappingPriming}
             icon={Compass}
@@ -333,23 +401,32 @@ export function TutorStudioHome({
           />
         </div>
 
-        <Card className={cn(CARD_BORDER, "rounded-none border-primary/20 bg-black/35")} ref={workbenchRef}>
-          <CardHeader className="border-b border-primary/15 pb-3">
+        <Card className={CONTROL_DECK} ref={workbenchRef}>
+          <div className={CONTROL_DECK_INSET} />
+          <div className={CONTROL_DECK_TOPLINE} />
+          <div className={CONTROL_DECK_BOTTOMLINE} />
+          <CardHeader className="relative z-10 border-b border-primary/15 pb-3">
             <div className="flex items-center justify-between gap-3">
-              <div>
-                <CardTitle className="font-arcade text-xs text-primary">WORKBENCH</CardTitle>
-                <p className={`${TEXT_MUTED} mt-2 text-xs`}>
-                  Keep using the class picker, course detail, boards, material viewer, and workspace tools from
-                  here without losing the Home overview.
+              <div className="space-y-2">
+                <CardTitle className="font-arcade text-xs text-primary">
+                  WORKBENCH
+                </CardTitle>
+                <p className={CONTROL_COPY}>
+                  Keep using the class picker, course detail, boards, material
+                  viewer, and workspace tools from here without losing the Home
+                  overview.
                 </p>
               </div>
-              <Badge variant="outline" className="rounded-none border-primary/25 text-primary/80">
+              <Badge
+                variant="outline"
+                className="rounded-full border-primary/25 px-3 py-1 font-terminal text-ui-2xs text-primary/80"
+              >
                 <Layers3 className="mr-2 h-3.5 w-3.5" />
                 EMBEDDED
               </Badge>
             </div>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="relative z-10 p-0">
             <div className="h-[46rem] min-h-[70vh]">{workbenchPanel}</div>
           </CardContent>
         </Card>

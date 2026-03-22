@@ -45,7 +45,7 @@ const TABS = [
 ] as const;
 
 const ROW = "border border-primary/15 bg-black/30 px-3 py-2";
-const BADGE = "rounded-none text-[10px] border-primary/30 shrink-0";
+const BADGE = "rounded-none text-ui-2xs border-primary/30 shrink-0";
 
 function EmptyState({ text }: { text: string }) {
   return (
@@ -92,12 +92,12 @@ function renderObjectivesList(objectives: AppLearningObjective[]) {
     <div className="space-y-3">
       {[...grouped.entries()].map(([group, items]) => (
         <div key={group}>
-          <div className="mb-1 font-arcade text-[9px] text-primary/60">{group}</div>
+          <div className="mb-1 font-arcade text-ui-3xs text-primary/60">{group}</div>
           <div className="space-y-1">
             {items.map((objective) => (
               <div key={objective.id} className={`${ROW} flex items-center justify-between gap-2`}>
                 <div className="min-w-0">
-                  <div className="truncate font-arcade text-[10px] text-primary">
+                  <div className="truncate font-arcade text-ui-2xs text-primary">
                     {objective.loCode ? `${objective.loCode} — ` : ""}
                     {objective.title}
                   </div>
@@ -125,10 +125,10 @@ function renderCardDrafts(drafts: TutorStudioOverviewCardDraft[]) {
         <div key={draft.id} className={ROW}>
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <div className="truncate font-arcade text-[10px] text-primary">
+              <div className="truncate font-arcade text-ui-2xs text-primary">
                 {draft.front.slice(0, 80)}
               </div>
-              <div className="font-terminal text-[11px] text-muted-foreground">
+              <div className="font-terminal text-ui-xs text-muted-foreground">
                 {draft.deckName} · {draft.cardType?.toUpperCase() || "BASIC"}
               </div>
             </div>
@@ -156,10 +156,10 @@ function renderVaultItems(items: TutorStudioItem[]) {
         <div key={item.id} className={ROW}>
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <div className="truncate font-arcade text-[10px] text-primary">
+              <div className="truncate font-arcade text-ui-2xs text-primary">
                 {item.title?.trim() || `${item.item_type.toUpperCase()} ${item.id}`}
               </div>
-              <div className="font-terminal text-[11px] text-muted-foreground">
+              <div className="font-terminal text-ui-xs text-muted-foreground">
                 {(item.source_kind || "studio").toUpperCase()} · {formatTimestamp(item.created_at)}
               </div>
             </div>
@@ -183,8 +183,8 @@ function renderChains(chains: MethodChain[]) {
       {chains.map((chain) => (
         <div key={chain.id} className={ROW}>
           <div className="flex items-center justify-between gap-2">
-            <div className="truncate font-arcade text-[10px] text-primary">{chain.name}</div>
-            <div className="font-terminal text-[11px] text-muted-foreground shrink-0">
+            <div className="truncate font-arcade text-ui-2xs text-primary">{chain.name}</div>
+            <div className="font-terminal text-ui-xs text-muted-foreground shrink-0">
               {chain.block_ids?.length ?? 0} blocks
             </div>
           </div>
@@ -205,8 +205,8 @@ function renderActivity(items: TutorStudioActivityItem[]) {
         <div key={item.id} className={ROW}>
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <div className="truncate font-arcade text-[10px] text-primary">{item.title}</div>
-              <div className="font-terminal text-[11px] text-muted-foreground">
+              <div className="truncate font-arcade text-ui-2xs text-primary">{item.title}</div>
+              <div className="font-terminal text-ui-xs text-muted-foreground">
                 {[item.subtitle, item.status?.toUpperCase(), formatTimestamp(item.created_at)]
                   .filter(Boolean)
                   .join(" · ")}
@@ -275,11 +275,11 @@ export function StudioClassDetail({
               <div className="flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2">
                   <MaterialIcon className={cn("h-4 w-4 shrink-0", color)} />
-                  <div className="truncate font-arcade text-[10px] text-primary">
+                  <div className="truncate font-arcade text-ui-2xs text-primary">
                     {material.title || getFileName(material.source_path)}
                   </div>
                 </div>
-                <span className="shrink-0 font-terminal text-[11px] text-muted-foreground">
+                <span className="shrink-0 font-terminal text-ui-xs text-muted-foreground">
                   {material.file_type?.toUpperCase() || "FILE"}
                 </span>
               </div>
@@ -308,13 +308,13 @@ export function StudioClassDetail({
           { label: "SCHEDULE", value: shellCounts.pending_schedule_events },
         ].map((stat) => (
           <div key={stat.label} className="border border-primary/20 bg-black/35 px-3 py-3">
-            <div className="font-arcade text-[10px] text-primary/70">{stat.label}</div>
+            <div className="font-arcade text-ui-2xs text-primary/70">{stat.label}</div>
             <div className="mt-1 font-terminal text-lg text-white">{stat.value}</div>
           </div>
         ))}
       </div>
       <div>
-        <div className="mb-2 font-arcade text-[10px] text-primary/70">RECENT ACTIVITY</div>
+        <div className="mb-2 font-arcade text-ui-2xs text-primary/70">RECENT ACTIVITY</div>
         {renderActivity(recentActivity)}
       </div>
     </div>
@@ -376,7 +376,7 @@ export function StudioClassDetail({
               type="button"
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex items-center gap-1.5 border-b-2 px-3 py-2 font-arcade text-[11px] transition-colors",
+                "flex items-center gap-1.5 border-b-2 px-3 py-2 font-arcade text-ui-xs transition-colors",
                 isActive
                   ? "border-primary text-primary"
                   : "border-transparent text-muted-foreground hover:text-primary/70",

@@ -1,9 +1,20 @@
 import type { ReactElement, ReactNode, RefObject } from "react";
 
+import {
+  CONTROL_COPY,
+  CONTROL_DECK_SECTION,
+  CONTROL_KICKER,
+  controlToggleButton,
+} from "@/components/shell/controlStyles";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export type PrimingStepId = "setup" | "materials" | "methods" | "outputs" | "handoff";
+export type PrimingStepId =
+  | "setup"
+  | "materials"
+  | "methods"
+  | "outputs"
+  | "handoff";
 
 export type PrimingLayoutStep = {
   id: PrimingStepId;
@@ -34,7 +45,7 @@ function StepButton({
   const helperId = `priming-step-helper-${step.id}`;
 
   return (
-    <div className="space-y-2 border border-primary/15 bg-black/30 p-2">
+    <div className={cn(CONTROL_DECK_SECTION, "space-y-2.5 px-3 py-3")}>
       <Button
         type="button"
         role="tab"
@@ -47,16 +58,21 @@ function StepButton({
         disabled={step.disabled}
         onClick={() => onStepChange(step.id)}
         className={cn(
-          "w-full justify-start rounded-none border px-3 py-2 font-arcade text-[10px] tracking-[0.18em]",
-          active
-            ? "border-primary/45 bg-primary/15 text-primary shadow-[0_0_18px_rgba(255,86,120,0.16)]"
-            : "border-primary/15 bg-black/35 text-muted-foreground hover:border-primary/35 hover:text-primary",
-          step.disabled && "cursor-not-allowed opacity-50 hover:border-primary/15 hover:text-muted-foreground",
+          controlToggleButton(
+            active,
+            active ? "primary" : "secondary",
+            true,
+            Boolean(step.disabled),
+          ),
+          "w-full justify-start whitespace-normal rounded-[0.95rem] px-3 py-2.5 text-left leading-5",
         )}
       >
         {step.label}
       </Button>
-      <div id={helperId} className="font-terminal text-[11px] leading-5 text-muted-foreground">
+      <div
+        id={helperId}
+        className={cn(CONTROL_COPY, "text-sm leading-6 text-foreground/70")}
+      >
         {step.disabled && step.helperText ? step.helperText : step.summary}
       </div>
     </div>
@@ -76,14 +92,29 @@ export function PrimingLayout({
   return (
     <div className="grid gap-4 xl:grid-cols-[17rem_minmax(0,1fr)_minmax(22rem,0.9fr)]">
       <aside className="hidden xl:block">
-        <div className="space-y-3 border border-primary/20 bg-black/35 p-3">
+        <div
+          className={cn(
+            CONTROL_DECK_SECTION,
+            "space-y-4 rounded-[1.2rem] px-4 py-4",
+          )}
+        >
           <div>
-            <div className="font-arcade text-[10px] text-primary/80">PRIMING FLOW</div>
-            <div className="mt-2 font-terminal text-xs leading-5 text-muted-foreground">
-              Move step by step. The source viewer stays beside the active panel so you do not lose the material while working.
+            <div className={cn(CONTROL_KICKER, "text-ui-xs")}>PRIMING FLOW</div>
+            <div
+              className={cn(
+                CONTROL_COPY,
+                "mt-2 text-sm leading-6 text-foreground/70",
+              )}
+            >
+              Move step by step. The source viewer stays beside the active panel
+              so you do not lose the material while working.
             </div>
           </div>
-          <div role="tablist" aria-label="Priming step navigation" className="space-y-2">
+          <div
+            role="tablist"
+            aria-label="Priming step navigation"
+            className="space-y-2"
+          >
             {steps.map((step) => (
               <StepButton
                 key={step.id}
@@ -98,7 +129,11 @@ export function PrimingLayout({
 
       <div className="min-w-0 space-y-4">
         <div className="xl:hidden">
-          <div role="tablist" aria-label="Priming step navigation" className="grid gap-2 md:grid-cols-2">
+          <div
+            role="tablist"
+            aria-label="Priming step navigation"
+            className="grid gap-2 md:grid-cols-2"
+          >
             {steps.map((step) => (
               <StepButton
                 key={step.id}
@@ -114,25 +149,43 @@ export function PrimingLayout({
           id={`priming-step-panel-${activeStep.id}`}
           role="tabpanel"
           aria-labelledby={`priming-step-tab-${activeStep.id}`}
-          className="border border-primary/20 bg-black/35"
+          className={cn(
+            CONTROL_DECK_SECTION,
+            "overflow-hidden rounded-[1.2rem] px-0 py-0",
+          )}
         >
-          <div className="border-b border-primary/15 bg-black/40 px-4 py-3">
+          <div className="border-b border-primary/15 bg-black/35 px-4 py-4">
             <h2
               ref={headingRef}
               tabIndex={-1}
-              className="font-arcade text-xs text-primary outline-none"
+              className={cn(CONTROL_KICKER, "text-sm outline-none")}
             >
               {activeStep.label}
             </h2>
-            <p className="mt-2 font-terminal text-xs leading-5 text-muted-foreground">
+            <p
+              className={cn(
+                CONTROL_COPY,
+                "mt-2 text-sm leading-6 text-foreground/70",
+              )}
+            >
               {activeStep.summary}
             </p>
           </div>
           <div className="p-4">{activeContent}</div>
         </section>
 
-        <details className="border border-primary/20 bg-black/35 xl:hidden">
-          <summary className="cursor-pointer px-4 py-3 font-arcade text-xs text-primary">
+        <details
+          className={cn(
+            CONTROL_DECK_SECTION,
+            "overflow-hidden rounded-[1.2rem] px-0 py-0 xl:hidden",
+          )}
+        >
+          <summary
+            className={cn(
+              CONTROL_KICKER,
+              "list-none cursor-pointer px-4 py-3 text-ui-xs",
+            )}
+          >
             SOURCE VIEWER
           </summary>
           <div className="border-t border-primary/15">{sourceViewer}</div>
@@ -140,7 +193,14 @@ export function PrimingLayout({
       </div>
 
       <aside className="hidden xl:block min-w-0">
-        <div className="sticky top-4 border border-primary/20 bg-black/35">{sourceViewer}</div>
+        <div
+          className={cn(
+            CONTROL_DECK_SECTION,
+            "sticky top-4 min-w-0 overflow-hidden rounded-[1.2rem] px-0 py-0",
+          )}
+        >
+          {sourceViewer}
+        </div>
       </aside>
     </div>
   );

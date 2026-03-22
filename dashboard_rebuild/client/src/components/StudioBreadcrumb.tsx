@@ -9,8 +9,8 @@ type StudioBreadcrumbProps = {
 };
 
 export function StudioBreadcrumb({ level, courseName, onNavigate }: StudioBreadcrumbProps) {
-  const clickable = "font-arcade text-[10px] text-primary/70 hover:text-primary transition-colors bg-transparent border-0 p-0";
-  const active = "font-arcade text-[10px] text-primary";
+  const clickable = "font-arcade text-ui-2xs text-primary/70 hover:text-primary transition-colors bg-transparent border-0 p-0";
+  const active = "font-arcade text-ui-2xs text-primary";
   const separator = "h-3 w-3 text-primary/30";
 
   return (

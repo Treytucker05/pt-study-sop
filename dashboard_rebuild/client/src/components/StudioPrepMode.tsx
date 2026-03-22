@@ -93,7 +93,7 @@ export function StudioPrepMode({
           <Button
             type="button"
             onClick={onLaunchSession}
-            className="mt-4 rounded-none border-2 border-primary bg-primary/10 font-arcade text-[10px] text-primary hover:bg-primary/20"
+            className="mt-4 rounded-none border-2 border-primary bg-primary/10 font-arcade text-ui-2xs text-primary hover:bg-primary/20"
           >
             <Play className="mr-1.5 h-3 w-3" />
             OPEN LAUNCH
@@ -109,9 +109,9 @@ export function StudioPrepMode({
       <div className="flex min-h-0 flex-col border-r border-primary/20 bg-black/40">
         {/* Chain header — compact single line */}
         <div className="flex items-center gap-2 border-b border-primary/20 px-2.5 py-1.5 bg-black/30">
-          <span className="font-arcade text-[9px] text-primary/60 shrink-0">GUIDE</span>
+          <span className="font-arcade text-ui-3xs text-primary/60 shrink-0">GUIDE</span>
           {chainData && (
-            <span className="font-terminal text-[11px] text-muted-foreground truncate">
+            <span className="font-terminal text-ui-xs text-muted-foreground truncate">
               {chainData.name}
             </span>
           )}
@@ -138,7 +138,7 @@ export function StudioPrepMode({
                     )}
                   >
                     <div className="flex items-center gap-1.5">
-                      <span className="font-terminal text-[10px] text-muted-foreground shrink-0 w-3.5 text-right">
+                      <span className="font-terminal text-ui-2xs text-muted-foreground shrink-0 w-3.5 text-right">
                         {idx + 1}
                       </span>
                       <Badge
@@ -147,10 +147,10 @@ export function StudioPrepMode({
                       >
                         {DISPLAY_STAGE_LABELS[stage]}
                       </Badge>
-                      <span className="font-arcade text-[9px] text-primary truncate flex-1">
+                      <span className="font-arcade text-ui-3xs text-primary truncate flex-1">
                         {block.name}
                       </span>
-                      <span className="font-terminal text-[10px] text-muted-foreground/60 shrink-0">
+                      <span className="font-terminal text-ui-2xs text-muted-foreground/60 shrink-0">
                         {block.default_duration_min}m
                       </span>
                       {isActive ? (
@@ -165,7 +165,7 @@ export function StudioPrepMode({
                   {isActive && (
                     <div className="border-x border-b border-yellow-500/20 bg-yellow-500/[0.03] px-2.5 py-2">
                       <div className="font-arcade text-[8px] text-yellow-400/70 mb-1">FACILITATION</div>
-                      <div className="font-terminal text-[11px] text-zinc-300 whitespace-pre-wrap leading-relaxed max-h-[180px] overflow-y-auto">
+                      <div className="font-terminal text-ui-xs text-zinc-300 whitespace-pre-wrap leading-relaxed max-h-[180px] overflow-y-auto">
                         {activeBlock.facilitation_prompt || "No facilitation prompt for this block."}
                       </div>
                     </div>
@@ -181,7 +181,7 @@ export function StudioPrepMode({
           <Button
             type="button"
             onClick={onLaunchSession}
-            className="w-full rounded-none border-2 border-green-500 bg-green-500/10 font-arcade text-[10px] text-green-400 hover:bg-green-500/20"
+            className="w-full rounded-none border-2 border-green-500 bg-green-500/10 font-arcade text-ui-2xs text-green-400 hover:bg-green-500/20"
             data-testid="prep-launch-session"
           >
             <Play className="mr-1.5 h-3 w-3" />
@@ -200,7 +200,7 @@ export function StudioPrepMode({
               type="button"
               onClick={() => setRightTab("material")}
               className={cn(
-                "flex items-center gap-1 px-2 py-1 font-arcade text-[10px] transition-colors",
+                "flex items-center gap-1 px-2 py-1 font-arcade text-ui-2xs transition-colors",
                 rightTab === "material"
                   ? "text-primary border-b border-primary"
                   : "text-muted-foreground hover:text-primary",
@@ -224,7 +224,7 @@ export function StudioPrepMode({
               type="button"
               onClick={() => setRightTab("workbench")}
               className={cn(
-                "flex items-center gap-1 px-2 py-1 font-arcade text-[10px] transition-colors",
+                "flex items-center gap-1 px-2 py-1 font-arcade text-ui-2xs transition-colors",
                 rightTab === "workbench"
                   ? "text-primary border-b border-primary"
                   : "text-muted-foreground hover:text-primary",
@@ -257,7 +257,7 @@ export function StudioPrepMode({
                       data-testid={`prep-material-picker-${material.id}`}
                       onClick={() => onSelectMaterial(material.id)}
                       className={cn(
-                        "shrink-0 border px-2 py-0.5 font-terminal text-[10px] transition-colors whitespace-nowrap max-w-[140px] truncate",
+                        "shrink-0 border px-2 py-0.5 font-terminal text-ui-2xs transition-colors whitespace-nowrap max-w-[140px] truncate",
                         active
                           ? "border-primary/50 bg-primary/10 text-primary"
                           : "border-primary/15 bg-black/30 text-muted-foreground hover:border-primary/35 hover:text-primary",
@@ -303,7 +303,7 @@ export function StudioPrepMode({
               ) : (
                 <div className="flex h-full items-center justify-center">
                   <div className="text-center">
-                    <div className="font-arcade text-[10px] text-primary">MATERIAL VIEWER</div>
+                    <div className="font-arcade text-ui-2xs text-primary">MATERIAL VIEWER</div>
                     <div className="mt-2 font-terminal text-xs text-muted-foreground max-w-xs">
                       Choose materials in the Start Panel to view them here while working.
                     </div>

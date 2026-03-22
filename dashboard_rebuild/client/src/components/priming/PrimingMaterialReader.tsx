@@ -2,7 +2,9 @@ import { type ReactElement, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api";
 import type { Material, MaterialContent } from "@/api.types";
+import { CONTROL_COPY } from "@/components/shell/controlStyles";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 interface PrimingMaterialReaderProps {
   courseId: number | undefined;
@@ -34,12 +36,14 @@ export function PrimingMaterialReader({
 
   const { data: allMaterials = [] } = useQuery<Material[]>({
     queryKey: ["tutor-materials", courseId],
-    queryFn: () => api.tutor.getMaterials(courseId ? { course_id: courseId } : undefined),
+    queryFn: () =>
+      api.tutor.getMaterials(courseId ? { course_id: courseId } : undefined),
   });
 
-  const materials = selectedMaterials.length > 0
-    ? allMaterials.filter((m) => selectedMaterials.includes(m.id))
-    : [];
+  const materials =
+    selectedMaterials.length > 0
+      ? allMaterials.filter((m) => selectedMaterials.includes(m.id))
+      : [];
 
   useEffect(() => {
     if (materials.length === 0) {
@@ -54,38 +58,47 @@ export function PrimingMaterialReader({
   const activeMaterial = materials.find((m) => m.id === activeId) ?? null;
   const isPdf = activeMaterial?.file_type?.toLowerCase() === "pdf";
 
-  const { data: content, isLoading: contentLoading } = useQuery<MaterialContent>({
-    queryKey: ["material-content", activeId],
-    queryFn: () => api.tutor.getMaterialContent(activeId!),
-    enabled: activeId !== null && !isPdf,
-  });
+  const { data: content, isLoading: contentLoading } =
+    useQuery<MaterialContent>({
+      queryKey: ["material-content", activeId],
+      queryFn: () => api.tutor.getMaterialContent(activeId!),
+      enabled: activeId !== null && !isPdf,
+    });
 
   return (
     <div className="flex h-full flex-col">
       {/* Tab strip */}
-      <div className="flex gap-1 overflow-x-auto border-b border-primary/20 bg-black/60 px-2 py-1.5">
+      <div className="flex gap-2 overflow-x-auto border-b border-primary/20 bg-black/60 px-3 py-2">
         {materials.length === 0 && (
-          <span className="px-2 py-1 font-terminal text-xs text-muted-foreground">
+          <span
+            className={cn(
+              CONTROL_COPY,
+              "px-1 text-sm leading-6 text-foreground/68",
+            )}
+          >
             Select materials in the setup rail to review them here
           </span>
         )}
         {materials.map((m) => {
           const isActive = m.id === activeId;
           const ft = (m.file_type ?? "").toLowerCase();
-          const badgeColor = FILE_TYPE_COLORS[ft] ?? "bg-gray-800/60 text-gray-300";
+          const badgeColor =
+            FILE_TYPE_COLORS[ft] ?? "bg-gray-800/60 text-gray-300";
           return (
             <button
               key={m.id}
               type="button"
               onClick={() => setActiveId(m.id)}
-              className={`flex shrink-0 items-center gap-1.5 rounded-sm border px-2 py-1 font-terminal text-xs transition-colors ${
+              className={`flex shrink-0 items-center gap-2 rounded-[0.95rem] border px-3 py-2 font-mono text-sm leading-5 transition-colors ${
                 isActive
-                  ? "border-primary/50 bg-primary/10 text-primary"
-                  : "border-transparent text-muted-foreground hover:text-primary/70"
+                  ? "border-primary/50 bg-primary/10 text-foreground shadow-[0_0_14px_rgba(255,86,120,0.12)]"
+                  : "border-transparent text-foreground/68 hover:border-primary/20 hover:text-foreground/86"
               }`}
             >
               <span>{truncate(m.title, 20)}</span>
-              <span className={`rounded px-1 py-0.5 text-[10px] font-bold ${badgeColor}`}>
+              <span
+                className={`rounded-full px-2 py-1 font-mono text-xs font-semibold tracking-[0.12em] ${badgeColor}`}
+              >
                 {typeBadge(m.file_type)}
               </span>
             </button>
@@ -97,7 +110,12 @@ export function PrimingMaterialReader({
       <div className="min-h-0 flex-1 bg-black/40">
         {activeId === null && (
           <div className="flex h-full items-center justify-center">
-            <span className="font-terminal text-sm text-muted-foreground">
+            <span
+              className={cn(
+                CONTROL_COPY,
+                "text-sm leading-6 text-foreground/68",
+              )}
+            >
               Select a material above to view its content
             </span>
           </div>
@@ -113,7 +131,12 @@ export function PrimingMaterialReader({
 
         {activeId !== null && !isPdf && contentLoading && (
           <div className="flex h-full items-center justify-center">
-            <span className="font-terminal text-sm text-muted-foreground animate-pulse">
+            <span
+              className={cn(
+                CONTROL_COPY,
+                "animate-pulse text-sm leading-6 text-foreground/68",
+              )}
+            >
               Loading content...
             </span>
           </div>
@@ -121,7 +144,7 @@ export function PrimingMaterialReader({
 
         {activeId !== null && !isPdf && !contentLoading && content && (
           <ScrollArea className="h-full">
-            <pre className="p-4 font-terminal text-sm whitespace-pre-wrap text-foreground/90">
+            <pre className="p-4 font-mono text-sm leading-6 whitespace-pre-wrap text-foreground/90 md:text-base md:leading-7">
               {content.content}
             </pre>
           </ScrollArea>
