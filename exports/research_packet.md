@@ -748,7 +748,7 @@ Operate by {objective_scope}:
 Use {cognitive_depth} level and {delivery_style} tone. Ask for learner acknowledgment only, then stop.
 Do not begin core teaching content inside this method.
  |
-| M-PRE-012 | Terminology Pretraining | PRIME | Extract the names, abbreviations, and short component definitions that the learner must recognize before TEACH begins. | Selected source material slice; Current study unit/topic label -> TerminologySet; AbbreviationMap; ComponentDefinitionList | No scoring, quizzing, or learner diagnosis in PRIME.; Do not explain full mechanisms or causal chains. | failure_mode:Definitions become mini-lessons; failure_mode:Too many low-value terms | operational_stage=PRIME; method-specific knobs=MISSING | You are running M-PRE-012 (Terminology Pretraining) in PRIME stage.
+| M-PRE-012 | Terminology Pretraining | PRIME | Extract the names, abbreviations, and short component definitions that the learner must recognize before TEACH begins. | Selected source material slice; Current study unit/topic label -> TerminologySet; AbbreviationMap; ComponentDefinitionList | No scoring, quizzing, or learner diagnosis in PRIME.; Do not explain full mechanisms or causal chains. | failure_mode:Definitions become mini-lessons; failure_mode:Too many low-value terms | operational_stage=PRIME; guidance_level=medium | You are running M-PRE-012 (Terminology Pretraining) in PRIME stage.
 Extract only the names, abbreviations, and short component definitions the learner
 must recognize before TEACH begins.
 
@@ -764,7 +764,7 @@ Return exactly:
 
 This is non-assessment. Do not quiz, grade, or judge mastery.
  |
-| M-PRE-013 | Big-Picture Orientation Summary | PRIME | Generate a short source-grounded overview that orients the learner to what the material is about without crossing into full explanation. | Selected source material slice; Current study unit/topic label -> OrientationSummary; MajorSectionList; NorthStarSentence | No scored checks or learner diagnosis in PRIME.; No mechanism-level explanation or stepwise TEACH content. | failure_mode:Overview becomes too explanatory; failure_mode:Overview becomes too vague | operational_stage=PRIME; method-specific knobs=MISSING | You are running M-PRE-013 (Big-Picture Orientation Summary) in PRIME stage.
+| M-PRE-013 | Big-Picture Orientation Summary | PRIME | Generate a short source-grounded overview that orients the learner to what the material is about without crossing into full explanation. | Selected source material slice; Current study unit/topic label -> OrientationSummary; MajorSectionList; NorthStarSentence | No scored checks or learner diagnosis in PRIME.; No mechanism-level explanation or stepwise TEACH content. | failure_mode:Overview becomes too explanatory; failure_mode:Overview becomes too vague | operational_stage=PRIME; priming_depth_mode=basic | You are running M-PRE-013 (Big-Picture Orientation Summary) in PRIME stage.
 Build a short overview that helps the learner understand what the source is
 generally about before TEACH begins.
 
@@ -780,7 +780,7 @@ Return exactly:
 
 This is non-assessment. Do not quiz, grade, or test the learner.
  |
-| M-PRE-014 | Ambiguity and Blind-Spot Scan | PRIME | Scan the selected source for ambiguities, unsupported jumps, contradictions, and follow-up targets that should be watched during TEACH. | Selected source material slice; Current study unit/topic label -> AmbiguityLog; UnsupportedJumpList; FollowUpTargets | No scored checks or learner-memory probing in PRIME.; Do not resolve the ambiguity by teaching the full mechanism here. | failure_mode:Findings become vague complaints; failure_mode:Scan turns into diagnosis of the learner | operational_stage=PRIME; method-specific knobs=MISSING | You are running M-PRE-014 (Ambiguity and Blind-Spot Scan) in PRIME stage.
+| M-PRE-014 | Ambiguity and Blind-Spot Scan | PRIME | Scan the selected source for ambiguities, unsupported jumps, contradictions, and follow-up targets that should be watched during TEACH. | Selected source material slice; Current study unit/topic label -> AmbiguityLog; UnsupportedJumpList; FollowUpTargets | No scored checks or learner-memory probing in PRIME.; Do not resolve the ambiguity by teaching the full mechanism here. | failure_mode:Findings become vague complaints; failure_mode:Scan turns into diagnosis of the learner | operational_stage=PRIME; probe_count=3 | You are running M-PRE-014 (Ambiguity and Blind-Spot Scan) in PRIME stage.
 Inspect the source for unclear jumps, contradictions, and follow-up targets that
 TEACH should repair later.
 
@@ -1258,7 +1258,7 @@ Only run this after the TEACH close artifact exists and the concept meaning is c
 
 ### Missing metadata fields
 - methods missing explicit `stage`: 59 (examples: M-CAL-001, M-CAL-002, M-CAL-003, M-CAL-004, M-ENC-001, M-ENC-002, M-ENC-003, M-ENC-004)
-- methods missing method-specific `knobs`: 3
+- methods missing method-specific `knobs`: 0
 - methods with no explicit gates (`gating_rules` or `stop_criteria`): 0
 - chains missing chain-specific `gates`: 0
 - chains missing chain-specific `failure_actions`: 0

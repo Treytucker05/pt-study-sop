@@ -19,7 +19,7 @@ constraints:
   orientation_only: true
   no_mechanism_teaching: true
 knobs:
-  scaffold_depth: medium
+  priming_depth_mode: basic
 when_to_use:
 - The learner needs a quick big-picture frame before details.
 - The material has a clear storyline, sequence, or purpose that can be summarized at a high level.
