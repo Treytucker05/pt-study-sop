@@ -27,7 +27,6 @@ Purpose: Build structure from the source material before detail so the learner h
 | M-PRE-008 | Structural Extraction | medium | 10 min | structural_scaffolding |
 | M-PRE-009 | Syntopical Big-Picture Synthesis | high | 15 min | cross_source_integration |
 | M-PRE-010 | Learning Objectives Primer | low | 5 min | goal_setting |
-| M-PRE-011 | Hand-Draw Map | medium | 5 min | spatial_encoding, generation |
 | M-PRE-012 | Terminology Pretraining | low | 4 min | pretraining_principle |
 | M-PRE-013 | Big-Picture Orientation Summary | low | 4 min | advance_organizer |
 | M-PRE-014 | Ambiguity and Blind-Spot Scan | medium | 4 min | gap_detection |

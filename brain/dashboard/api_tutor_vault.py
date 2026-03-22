@@ -286,10 +286,8 @@ def _try_import_objectives_from_vault(
     # --- 1. Determine vault path to the Learning Objectives file ---
     if not vault_folder:
         return []
-    lo_rel_path = (
-        f"{vault_folder.strip().rstrip('/').rstrip('\\')}"
-        "/Learning Objectives & To Do.md"
-    )
+    clean_folder = vault_folder.strip().rstrip("/").rstrip("\\")
+    lo_rel_path = f"{clean_folder}/Learning Objectives & To Do.md"
 
     # --- 2. Read the file ---
     result = _mp("_vault_read_note")(lo_rel_path)
@@ -1339,7 +1337,7 @@ def _resolve_tutor_preflight(
             "ok": False,
             "map_of_contents": {
                 "path": (
-                    f"{vault_folder.strip().rstrip('/').rstrip('\\')}/_Map of Contents.md"
+                    f"{vault_folder.strip().rstrip('/').rstrip(chr(92))}/_Map of Contents.md"
                     if vault_folder
                     else ""
                 ),
@@ -1348,7 +1346,7 @@ def _resolve_tutor_preflight(
             },
             "learning_objectives_todo": {
                 "path": (
-                    f"{vault_folder.strip().rstrip('/').rstrip('\\')}/Learning Objectives & To Do.md"
+                    f"{vault_folder.strip().rstrip('/').rstrip(chr(92))}/Learning Objectives & To Do.md"
                     if vault_folder
                     else ""
                 ),

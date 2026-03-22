@@ -198,3 +198,80 @@ def test_delete_tutor_workflow_removes_related_rows(client):
 
     missing_response = client.get(f"/api/tutor/workflows/{workflow_id}")
     assert missing_response.status_code == 404
+
+
+def test_put_priming_bundle_creates_new_row(client):
+    """Regression: INSERT path needs created_at AND updated_at (24 params)."""
+    course_id = 904
+    _insert_course(course_id, "Anatomy")
+
+    wf_resp = client.post(
+        "/api/tutor/workflows",
+        json={
+            "course_id": course_id,
+            "assignment_title": "Week 1 Study Plan",
+            "study_unit": "Week 1",
+            "topic": "Upper Extremity",
+            "current_stage": "priming",
+            "status": "priming_in_progress",
+        },
+    )
+    assert wf_resp.status_code == 200
+    workflow_id = wf_resp.get_json()["workflow"]["workflow_id"]
+
+    bundle_resp = client.put(
+        f"/api/tutor/workflows/{workflow_id}/priming-bundle",
+        json={
+            "course_id": course_id,
+            "study_unit": "Week 1",
+            "topic": "Upper Extremity",
+            "selected_material_ids": [1],
+            "selected_paths": [],
+            "source_inventory": [],
+            "priming_methods": ["M-PRE-010"],
+            "priming_method_runs": [],
+            "learning_objectives": [{"title": "Identify brachial plexus branches"}],
+            "concepts": [],
+            "terminology": [],
+            "root_explanations": [],
+            "summaries": [],
+            "identified_gaps": [],
+            "readiness_status": "ready",
+            "readiness_blockers": [],
+        },
+    )
+    assert bundle_resp.status_code == 200, f"PUT priming-bundle failed: {bundle_resp.get_json()}"
+    body = bundle_resp.get_json()
+    assert body["priming_bundle"] is not None
+    assert body["priming_bundle"]["study_unit"] == "Week 1"
+    assert len(body["priming_bundle"]["learning_objectives"]) == 1
+
+    # Verify UPDATE path also works (second PUT to same workflow)
+    bundle_resp2 = client.put(
+        f"/api/tutor/workflows/{workflow_id}/priming-bundle",
+        json={
+            "course_id": course_id,
+            "study_unit": "Week 1",
+            "topic": "Upper Extremity",
+            "selected_material_ids": [1, 2],
+            "selected_paths": [],
+            "source_inventory": [],
+            "priming_methods": ["M-PRE-010", "M-PRE-008"],
+            "priming_method_runs": [],
+            "learning_objectives": [
+                {"title": "Identify brachial plexus branches"},
+                {"title": "Describe rotator cuff anatomy"},
+            ],
+            "concepts": [],
+            "terminology": [],
+            "root_explanations": [],
+            "summaries": [],
+            "identified_gaps": [],
+            "readiness_status": "ready",
+            "readiness_blockers": [],
+        },
+    )
+    assert bundle_resp2.status_code == 200
+    body2 = bundle_resp2.get_json()
+    assert len(body2["priming_bundle"]["learning_objectives"]) == 2
+    assert len(body2["priming_bundle"]["selected_material_ids"]) == 2

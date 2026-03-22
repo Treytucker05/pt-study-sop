@@ -8,7 +8,7 @@ description: >-
 blocks:
   # --- TIER 1: opening architecture complete ---
   - M-PRE-004      # Hierarchical Advance Organizer
-  - M-PRE-011      # Hand-Draw Map
+  - M-ENC-015      # Hand-Draw Map
   - M-CAL-001      # MICRO-CALIBRATE baseline
   - M-ENC-008      # TEACH Mechanism Trace
   - M-INT-001      # TEACH Analogy Bridge

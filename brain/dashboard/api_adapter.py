@@ -5999,6 +5999,9 @@ def update_learning_objective(lo_id):
         if "nextAction" in data:
             fields.append("next_action = ?")
             values.append(data["nextAction"])
+        if "groupName" in data:
+            fields.append("group_name = ?")
+            values.append(data["groupName"])
 
         fields.append("updated_at = ?")
         values.append(datetime.now().isoformat())

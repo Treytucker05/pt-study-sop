@@ -13,3 +13,4 @@ langchain-core>=0.3,<1
 langchain-openai>=0.3,<1
 langchain-text-splitters>=0.3,<1
 tiktoken>=0.8,<1
+beautifulsoup4>=4.12,<5

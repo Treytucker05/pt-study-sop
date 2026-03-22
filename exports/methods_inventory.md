@@ -1,8 +1,8 @@
 | id | name | category | default_duration_min | energy_cost | has_steps | has_gating_rules | has_failure_modes | has_stop_criteria | has_outputs_or_artifacts | has_facilitation_prompt | outputs_summary | file_path |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| M-CAL-001 | Micro Precheck | calibrate | 4 | medium | Y | Y | Y | Y | Y | Y | CalibrateItemResults; ReadinessSnapshot; CalibrationGapSummary; DominantErrorSeed | sop/library/methods/M-CAL-001.yaml |
-| M-CAL-002 | Confidence Tagging | calibrate | 3 | low | Y | Y | Y | Y | Y | Y | ConfidenceTaggedResults; HighConfidenceMisses; LowConfidenceHits; CalibrationRiskFlags | sop/library/methods/M-CAL-002.yaml |
-| M-CAL-003 | Priority Set | calibrate | 3 | low | Y | Y | Y | Y | Y | Y | PrioritySet; WeaknessScoreTable; EncodeRoutingSeed | sop/library/methods/M-CAL-003.yaml |
+| M-CAL-001 | Micro Precheck | calibrate | 4 | medium | Y | Y | Y | Y | Y | Y | CalibrateItemResults; ReadinessSnapshot; CalibrationGapSummary; DominantErrorSeed; MicroCalibrateSnapshot | sop/library/methods/M-CAL-001.yaml |
+| M-CAL-002 | Full Calibrate Probes | calibrate | 6 | medium | Y | Y | Y | Y | Y | Y | FullCalibrateItemResults; ConfidenceTaggedResults; HighConfidenceMisses; LowConfidenceHits; CalibrationRiskFlags; Ful... | sop/library/methods/M-CAL-002.yaml |
+| M-CAL-003 | Full Calibrate Priority Set | calibrate | 3 | low | Y | Y | Y | Y | Y | Y | FullCalibratePrioritySet; WeaknessScoreTable; EncodeRoutingSeed; FullCalibrateHandoff | sop/library/methods/M-CAL-003.yaml |
 | M-CAL-004 | Story Confidence Tag | calibrate | 2 | low | Y | Y | Y | Y | Y | Y | Story confidence rating (1-3); Fuzzy zones list (narrative breakdown points); Priority encoding targets | sop/library/methods/M-CAL-004.yaml |
 | M-ENC-001 | KWIK Hook | encode | 3 | medium | Y | Y | Y | Y | Y | Y | KWIK hook (sound-function-image triplet); Anki card draft (optional); Session log entry | sop/library/methods/M-ENC-001.yaml |
 | M-ENC-002 | Seed-Lock Generation | encode | 3 | medium | Y | Y | Y | Y | Y | Y | Learner-generated Seed (primary hook attempt); Final locked hook; Generation success flag (self vs AI-assisted) | sop/library/methods/M-ENC-002.yaml |
@@ -17,6 +17,7 @@
 | M-ENC-012 | Clinical Decision Tree | encode | 10 | high | Y | Y | Y | Y | Y | Y | Clinical decision tree; Red flag list; Confirmatory test per diagnosis; Mermaid code (if using dashboard) | sop/library/methods/M-ENC-012.yaml |
 | M-ENC-013 | Memory Palace | encode | 10 | high | Y | Y | Y | Y | Y | Y | Mental palace with placed items; Retrieval accuracy check; Weak links identified | sop/library/methods/M-ENC-013.yaml |
 | M-ENC-014 | Chain Linking | encode | 8 | medium | Y | Y | Y | Y | Y | Y | Bizarre story narrative; Retrieval success rate; Weak links (breaks in chain) | sop/library/methods/M-ENC-014.yaml |
+| M-ENC-015 | Hand-Draw Map | encode | 5 | medium | Y | Y | Y | Y | Y | Y | Hand-drawn spatial mind map (physical artifact); Spatial recall confidence (can you see the layout with eyes closed?) | sop/library/methods/M-ENC-015.yaml |
 | M-INT-001 | Analogy Bridge | interrogate | 3 | medium | Y | Y | Y | Y | Y | Y | Analogy statement (A is to B as X is to Y); Mapping table (3+ correspondences); Breakdown points (where analogy fails) | sop/library/methods/M-INT-001.yaml |
 | M-INT-002 | Clinical Application | interrogate | 5 | high | Y | Y | Y | Y | Y | Y | Clinical application narrative; Presentation, testing, intervention summary; Verification notes | sop/library/methods/M-INT-002.yaml |
 | M-INT-003 | Cross-Topic Link | interrogate | 3 | medium | Y | Y | Y | Y | Y | Y | Cross-topic connection list (2-3); Explanatory sentences; Shared principles identified | sop/library/methods/M-INT-003.yaml |
@@ -27,17 +28,19 @@
 | M-OVR-002 | Anki Card Draft | overlearn | 5 | low | Y | Y | Y | Y | Y | Y | 3-5 drafted Anki cards; Cards tagged by topic and source; Cards staged in Brain for Anki sync; Card count logged to s... | sop/library/methods/M-OVR-002.yaml |
 | M-OVR-003 | Drill Sheet Builder | overlearn | 10 | medium | Y | Y | Y | Y | Y | Y | DrillSheet; CrossSessionValidation checklist | sop/library/methods/M-OVR-003.yaml |
 | M-OVR-004 | Post-Learn Brain Dump | overlearn | 7 | medium | Y | Y | Y | Y | Y | Y | Brain dump text (raw recall); Gap list (what was missing or wrong); Gap-fill annotations; Session retention estimate ... | sop/library/methods/M-OVR-004.yaml |
-| M-PRE-001 | Brain Dump | prime | 3 | low | Y | Y | Y | Y | Y | Y | StrongConnections; MissingNodes; FollowUpTargets | sop/library/methods/M-PRE-001.yaml |
+| M-PRE-001 | Brain Dump | calibrate | 3 | low | Y | Y | Y | Y | Y | Y | StrongConnections; MissingNodes; FollowUpTargets | sop/library/methods/M-PRE-001.yaml |
 | M-PRE-002 | Overarching Pre-Question Set | prime | 3 | low | Y | Y | Y | Y | Y | Y | PreQuestionSet; PriorityPrompts; FollowUpTargets | sop/library/methods/M-PRE-002.yaml |
-| M-PRE-003 | Prior Knowledge Scan | prime | 3 | low | Y | Y | Y | Y | Y | Y | Connection map (topic + related concepts); Primary anchoring schema identified; Prerequisite gap list; Optional follo... | sop/library/methods/M-PRE-003.yaml |
+| M-PRE-003 | Prior Knowledge Scan | calibrate | 3 | low | Y | Y | Y | Y | Y | Y | Connection map (topic + related concepts); Primary anchoring schema identified; Prerequisite gap list; Optional follo... | sop/library/methods/M-PRE-003.yaml |
 | M-PRE-004 | Hierarchical Advance Organizer | prime | 5 | low | Y | Y | Y | Y | Y | Y | PillarTree; PriorKnowledgeLinks; StructuralHypotheses | sop/library/methods/M-PRE-004.yaml |
 | M-PRE-005 | Skeleton Concept Hierarchy | prime | 5 | medium | Y | Y | Y | Y | Y | Y | SkeletonMap; CategoryLabels; CrossLinks | sop/library/methods/M-PRE-005.yaml |
 | M-PRE-006 | Structural Skimming + Pillar Mapping | prime | 5 | medium | Y | Y | Y | Y | Y | Y | PillarMap; ObjectiveLinks; FollowUpTargets | sop/library/methods/M-PRE-006.yaml |
-| M-PRE-007 | Pre-Test | prime | 5 | low | Y | Y | Y | Y | Y | Y | Pre-test answers (with confidence ratings); Encoding priming for correct answers; Calibration baseline | sop/library/methods/M-PRE-007.yaml |
+| M-PRE-007 | Pre-Test | calibrate | 5 | low | Y | Y | Y | Y | Y | Y | Pre-test answers (with confidence ratings); Encoding priming for correct answers; Calibration baseline | sop/library/methods/M-PRE-007.yaml |
 | M-PRE-008 | Structural Extraction | prime | 5 | medium | Y | Y | Y | Y | Y | Y | StructuralSpine; Objective linkage map; UnknownNodeList; PriorityNodes | sop/library/methods/M-PRE-008.yaml |
 | M-PRE-009 | Syntopical Big-Picture Synthesis | prime | 6 | low | Y | Y | Y | Y | Y | Y | UnifiedTopDownTree; CrossSourceLinks; ConflictFlags; FollowUpTargets | sop/library/methods/M-PRE-009.yaml |
 | M-PRE-010 | Learning Objectives Primer | prime | 3 | low | Y | Y | Y | Y | Y | Y | ModuleObjectiveMap; FocusObjectiveCard; SelectedFocusObjectiveId; LearnerAcknowledgment | sop/library/methods/M-PRE-010.yaml |
-| M-PRE-011 | Hand-Draw Map | prime | 5 | medium | Y | Y | Y | Y | Y | Y | Hand-drawn spatial mind map (physical artifact); Spatial recall confidence (can you see the layout with eyes closed?) | sop/library/methods/M-PRE-011.yaml |
+| M-PRE-012 | Terminology Pretraining | prime | 4 | low | Y | Y | Y | Y | Y | Y | TerminologySet; AbbreviationMap; ComponentDefinitionList | sop/library/methods/M-PRE-012.yaml |
+| M-PRE-013 | Big-Picture Orientation Summary | prime | 4 | low | Y | Y | Y | Y | Y | Y | OrientationSummary; MajorSectionList; NorthStarSentence | sop/library/methods/M-PRE-013.yaml |
+| M-PRE-014 | Ambiguity and Blind-Spot Scan | prime | 4 | medium | Y | Y | Y | Y | Y | Y | AmbiguityLog; UnsupportedJumpList; FollowUpTargets | sop/library/methods/M-PRE-014.yaml |
 | M-REF-001 | Error Autopsy | reference | 5 | medium | Y | Y | Y | Y | Y | Y | Completed error autopsy table; Root cause analysis for each error; Discrimination cues created; Anki card candidates ... | sop/library/methods/M-REF-001.yaml |
 | M-REF-002 | Mastery Loop | reference | 10 | medium | Y | Y | Y | Y | Y | Y | Mastery achieved on all targeted items; Loop count per item (difficulty metric); Weak anchor list (items needing 3+ l... | sop/library/methods/M-REF-002.yaml |
 | M-REF-003 | One-Page Anchor | reference | 8 | medium | Y | Y | Y | Y | Y | Y | One-Page Anchor; Trap list and near-miss set | sop/library/methods/M-REF-003.yaml |
@@ -49,3 +52,10 @@
 | M-RET-005 | Variable Retrieval | retrieve | 10 | medium | Y | Y | Y | Y | Y | Y | Three retrieval outputs (free recall, application, compare/contrast); Accuracy assessment for each format; Difficulty... | sop/library/methods/M-RET-005.yaml |
 | M-RET-006 | Adversarial Drill | retrieve | 8 | high | Y | Y | Y | Y | Y | Y | Adversarial near-miss results; ErrorLog updates | sop/library/methods/M-RET-006.yaml |
 | M-RET-007 | Timed Sprint Sets | retrieve | 8 | high | Y | Y | Y | Y | Y | Y | Timed sprint result set; Latency log; ErrorLog updates | sop/library/methods/M-RET-007.yaml |
+| M-TEA-001 | Story Spine | encode | 6 | medium | Y | Y | Y | Y | Y | Y | Story spine; Ordered step list; Clinical breakpoint; Source-backed mechanism restatement | sop/library/methods/M-TEA-001.yaml |
+| M-TEA-002 | Confusable Contrast Teach | encode | 6 | medium | Y | Y | Y | Y | Y | Y | Shared bucket statement; Key difference statement; Signature clues; Classic trap; Mini application contrast | sop/library/methods/M-TEA-002.yaml |
+| M-TEA-003 | Clinical Anchor Mini-Case | encode | 5 | medium | Y | Y | Y | Y | Y | Y | Mini-case scene; Concept-to-case link; Clinical significance statement; Overgeneralization boundary | sop/library/methods/M-TEA-003.yaml |
+| M-TEA-004 | Modality Switch | encode | 3 | low | Y | Y | Y | Y | Y | Y | Concept type; Chosen modality; Re-expressed teaching chunk; Modality rationale | sop/library/methods/M-TEA-004.yaml |
+| M-TEA-005 | Jingle / Rhyme Hook | encode | 3 | low | Y | Y | Y | Y | Y | Y | Sequence statement; Jingle or rhyme hook; Hook-to-sequence map; Distortion warning | sop/library/methods/M-TEA-005.yaml |
+| M-TEA-006 | Depth Ladder (4-10-HS-PT) | encode | 4 | low | Y | Y | Y | Y | Y | Y | DepthRoutePlan; L0Hook; L3Mechanism; FallbackScaffoldUsed; FunctionConfirmation; L4PrecisionRestatement | sop/library/methods/M-TEA-006.yaml |
+| M-TEA-007 | KWIK Lite | encode | 2 | low | Y | Y | Y | Y | Y | Y | KWIKLiteSeed; LearnerOwnershipAction; FinalHook; DistortionGuard | sop/library/methods/M-TEA-007.yaml |

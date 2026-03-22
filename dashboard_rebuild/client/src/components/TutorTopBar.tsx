@@ -1,5 +1,5 @@
 import { CONTROL_KICKER } from "@/components/shell/controlStyles";
-import { TutorTabBar } from "@/components/TutorTabBar";
+import { TutorTabBar, type StudioSubTab } from "@/components/TutorTabBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,12 +52,14 @@ export interface TutorTopBarProps {
   activeWorkflowId: string | null;
   activeWorkflowDetail: TutorWorkflowDetailResponse | undefined;
   studioView: TutorStudioView;
+  studioSubTabs: StudioSubTab[];
   activeSessionId: string | null;
   showArtifacts: boolean;
   artifacts: TutorArtifact[];
   teachRuntime: TutorTeachRuntimeViewModel | null;
   onSetShellMode: (mode: TutorPageMode) => void;
   onOpenStudioHome: () => void;
+  onStudioSubTabClick: (key: TutorStudioView) => void;
   onSetShowArtifacts: (show: boolean) => void;
   onSetShowEndConfirm: (show: boolean) => void;
   onOpenSettings: () => void;
@@ -145,12 +147,14 @@ export function TutorTopBar({
   activeWorkflowId,
   activeWorkflowDetail,
   studioView,
+  studioSubTabs,
   activeSessionId,
   showArtifacts,
   artifacts,
   teachRuntime,
   onSetShellMode,
   onOpenStudioHome,
+  onStudioSubTabClick,
   onSetShowArtifacts,
   onSetShowEndConfirm,
   onOpenSettings,
@@ -251,8 +255,11 @@ export function TutorTopBar({
           activeSessionId={activeSessionId}
           showArtifacts={showArtifacts}
           artifacts={artifacts}
+          studioSubTabs={studioSubTabs}
+          studioView={studioView}
           onSetShellMode={onSetShellMode}
           onOpenStudioHome={onOpenStudioHome}
+          onStudioSubTabClick={onStudioSubTabClick}
           onSetShowArtifacts={onSetShowArtifacts}
           onSetShowEndConfirm={onSetShowEndConfirm}
           onOpenSettings={onOpenSettings}

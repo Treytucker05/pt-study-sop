@@ -1,12 +1,12 @@
 import { TutorErrorBoundary } from "@/components/TutorErrorBoundary";
 import { TutorEmptyState } from "@/components/TutorEmptyState";
+import { TutorWorkflowContextStrip } from "@/components/TutorWorkflowContextStrip";
 import { TutorWorkflowLaunchHub } from "@/components/TutorWorkflowLaunchHub";
 import { TutorWorkflowPrimingPanel } from "@/components/TutorWorkflowPrimingPanel";
 import { TutorWorkflowPolishStudio } from "@/components/TutorWorkflowPolishStudio";
 import { TutorWorkflowFinalSync } from "@/components/TutorWorkflowFinalSync";
 import { TutorChat } from "@/components/TutorChat";
 import { TutorArtifacts } from "@/components/TutorArtifacts";
-import { TutorStudioHome } from "@/components/TutorStudioHome";
 import { TutorStudioMode } from "@/components/TutorStudioMode";
 import type { TutorStudioEntryRequest } from "@/components/TutorStudioMode";
 import { TutorScheduleMode } from "@/components/TutorScheduleMode";
@@ -48,14 +48,13 @@ import { CONTROL_PLANE_COLORS } from "@/lib/colors";
 import { cn } from "@/lib/utils";
 import {
   CONTROL_KICKER,
-  controlToggleButton,
 } from "@/components/shell/controlStyles";
 import {
   formatElapsedDuration,
   INPUT_BASE,
   SELECT_BASE,
 } from "@/lib/tutorUtils";
-import type { TutorPageMode, TutorStudioView } from "@/lib/tutorUtils";
+import type { TutorPageMode } from "@/lib/tutorUtils";
 import { api } from "@/lib/api";
 import type { TutorTemplateChain } from "@/lib/api";
 import type { TutorHubResumeCandidate } from "@/lib/api";
@@ -162,45 +161,6 @@ export function TutorShell({
   const hasFinalSyncAccess =
     Boolean(workflow.activeWorkflowDetail?.polish_bundle) ||
     currentWorkflowStage === "final_sync";
-  const studioTabs: Array<{
-    key: TutorStudioView;
-    label: string;
-    available: boolean;
-    helper: string;
-  }> = [
-    {
-      key: "workbench",
-      label: "HOME",
-      available: true,
-      helper: "Overview, next action, and embedded workbench tools.",
-    },
-    {
-      key: "priming",
-      label: "PRIMING",
-      available: !workflow.bootstrappingPriming,
-      helper: workflow.bootstrappingPriming
-        ? "Preparing the Priming workspace now."
-        : workflow.activeWorkflowId
-          ? "Setup, materials, PRIME methods, outputs, and Tutor handoff."
-          : "Start Priming directly from Studio even before a workflow exists.",
-    },
-    {
-      key: "polish",
-      label: "POLISH",
-      available: hasTutorWork,
-      helper: hasTutorWork
-        ? "Review Tutor notes, captures, and refinement work."
-        : "Run or capture Tutor work first to unlock Polish.",
-    },
-    {
-      key: "final_sync",
-      label: "FINAL SYNC",
-      available: hasFinalSyncAccess,
-      helper: hasFinalSyncAccess
-        ? "Finalize and publish approved outputs."
-        : "Finalize a Polish bundle first to unlock Final Sync.",
-    },
-  ];
 
   return (
     <>
@@ -483,145 +443,41 @@ export function TutorShell({
               className="flex-1 min-h-0 flex flex-col animate-fade-slide-in"
             >
               <TutorErrorBoundary fallbackLabel="Studio">
-                <div className="flex-none overflow-x-auto p-4 pb-0">
-                  <div className={cn("space-y-3 p-3", TUTOR_GLASS_PANEL_SOFT)}>
-                    <div className="space-y-1">
-                      <div className="font-arcade text-ui-2xs text-primary/80">
-                        STUDIO FLOW
-                      </div>
-                      <div className="font-mono text-base leading-7 text-foreground/78">
-                        Studio Home owns the next move. Use Home for workflow
-                        context and workbench access, then move through Priming,
-                        Polish, and Final Sync from here.
-                      </div>
-                    </div>
-                    <div
-                      role="tablist"
-                      aria-label="Tutor studio workflow navigation"
-                      className="grid gap-2 md:grid-cols-2 xl:grid-cols-4"
-                    >
-                      {studioTabs.map((tab) => (
-                        <div
-                          key={tab.key}
-                          className={cn(
-                            "space-y-2 p-2",
-                            TUTOR_GLASS_PANEL_SOFT,
-                          )}
-                        >
-                          <Button
-                            role="tab"
-                            id={`tutor-studio-tab-${tab.key}`}
-                            aria-selected={workflow.studioView === tab.key}
-                            aria-describedby={`tutor-studio-tab-${tab.key}-helper`}
-                            variant="ghost"
-                            size="sm"
-                            disabled={!tab.available}
-                            onClick={() => {
-                              if (tab.key === "priming") {
-                                void workflow.openStudioPriming();
-                                return;
-                              }
-                              workflow.setStudioView(tab.key);
-                            }}
-                            className={cn(
-                              controlToggleButton(
-                                workflow.studioView === tab.key,
-                                "primary",
-                              ),
-                              "w-full whitespace-nowrap justify-start",
-                              !tab.available && "cursor-not-allowed opacity-40",
-                            )}
-                          >
-                            {tab.key === "priming" &&
-                            workflow.bootstrappingPriming
-                              ? "PRIMING..."
-                              : tab.label}
-                          </Button>
-                          <div
-                            id={`tutor-studio-tab-${tab.key}-helper`}
-                            className="font-mono text-sm leading-6 text-foreground/72"
-                          >
-                            {tab.helper}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
+                <TutorWorkflowContextStrip
+                  workflowId={workflow.activeWorkflowDetail?.workflow?.workflow_id ?? null}
+                  currentStage={workflow.activeWorkflowDetail?.workflow?.current_stage ?? null}
+                  status={workflow.activeWorkflowDetail?.workflow?.status ?? null}
+                  courseName={hub.courseLabel ?? workflow.activeWorkflowDetail?.workflow?.course_name ?? null}
+                  studyUnit={hub.selectedObjectiveGroup ?? workflow.activeWorkflowDetail?.workflow?.study_unit ?? null}
+                  topic={hub.topic ?? workflow.activeWorkflowDetail?.workflow?.topic ?? null}
+                  recommendedAction={hub.tutorHub?.recommended_action ?? null}
+                  onStartNew={() => { void workflow.createWorkflowAndOpenPriming(); }}
+                  onRunRecommendedAction={() => {}}
+                />
                 {workflow.studioView === "workbench" ? (
                   <div className="flex-1 min-h-0">
-                    <TutorStudioHome
-                      workflow={
-                        workflow.activeWorkflowDetail?.workflow
-                          ? {
-                              workflowId:
-                                workflow.activeWorkflowDetail.workflow
-                                  .workflow_id,
-                              currentStage:
-                                workflow.activeWorkflowDetail.workflow
-                                  .current_stage,
-                              status:
-                                workflow.activeWorkflowDetail.workflow.status,
-                              updatedAt:
-                                workflow.activeWorkflowDetail.workflow
-                                  .updated_at,
-                            }
-                          : null
-                      }
-                      courseName={
-                        hub.courseLabel ||
-                        workflow.activeWorkflowDetail?.workflow?.course_name ||
-                        null
-                      }
-                      studyUnit={
-                        hub.selectedObjectiveGroup ||
-                        workflow.activeWorkflowDetail?.workflow?.study_unit ||
-                        null
-                      }
-                      topic={
-                        hub.topic ||
-                        workflow.activeWorkflowDetail?.workflow?.topic ||
-                        null
-                      }
-                      selectedMaterialCount={hub.selectedMaterials.length}
-                      hasTutorWork={hasTutorWork}
-                      hasFinalSyncAccess={hasFinalSyncAccess}
-                      hasActiveSession={Boolean(activeSessionId)}
-                      bootstrappingPriming={workflow.bootstrappingPriming}
-                      onResumeTutor={() => setShellMode("tutor")}
-                      onOpenPriming={() => {
-                        void workflow.openStudioPriming();
+                    <TutorStudioMode
+                      courseId={hub.courseId}
+                      chainId={hub.chainId}
+                      activeSessionId={activeSessionId}
+                      availableMaterials={hub.chatMaterials}
+                      selectedMaterialIds={hub.selectedMaterials}
+                      activeBoardScope={activeBoardScope}
+                      activeBoardId={activeBoardId}
+                      viewerState={viewerState}
+                      onBoardScopeChange={(scope) => {
+                        setActiveBoardScope(scope);
+                        setActiveBoardId(null);
                       }}
-                      onOpenPolish={() => workflow.setStudioView("polish")}
-                      onOpenFinalSync={() =>
-                        workflow.setStudioView("final_sync")
-                      }
-                      workbenchPanel={
-                        <TutorStudioMode
-                          courseId={hub.courseId}
-                          chainId={hub.chainId}
-                          activeSessionId={activeSessionId}
-                          availableMaterials={hub.chatMaterials}
-                          selectedMaterialIds={hub.selectedMaterials}
-                          activeBoardScope={activeBoardScope}
-                          activeBoardId={activeBoardId}
-                          viewerState={viewerState}
-                          onBoardScopeChange={(scope) => {
-                            setActiveBoardScope(scope);
-                            setActiveBoardId(null);
-                          }}
-                          onActiveBoardIdChange={setActiveBoardId}
-                          onViewerStateChange={setViewerState}
-                          onCourseChange={(id) => hub.setCourseId(id)}
-                          onLaunchSession={() => {
-                            workflow.setStudioView("workbench");
-                            setShellMode("launch");
-                            setShowSetup(false);
-                          }}
-                          entryRequest={studioEntryRequest}
-                        />
-                      }
+                      onActiveBoardIdChange={setActiveBoardId}
+                      onViewerStateChange={setViewerState}
+                      onCourseChange={(id) => hub.setCourseId(id)}
+                      onLaunchSession={() => {
+                        workflow.setStudioView("workbench");
+                        setShellMode("launch");
+                        setShowSetup(false);
+                      }}
+                      entryRequest={studioEntryRequest}
                     />
                   </div>
                 ) : workflow.studioView === "priming" ? (

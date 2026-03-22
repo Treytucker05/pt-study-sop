@@ -1269,7 +1269,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
 
 ## 2026-03-21 - PRIME capped-group coverage hardening
 - Updated `sop/library/categories/PRIME.md` so any capped PRIME output count like `3-5` is now defined as a final umbrella-group cap, not permission to ignore supported source content.
-- Tightened `sop/library/methods/M-PRE-002.yaml`, `M-PRE-004.yaml`, `M-PRE-005.yaml`, `M-PRE-006.yaml`, and `M-PRE-011.yaml` so the selected source/material scope must be accounted for first and only then compressed into capped prompt/pillar/category/branch groups.
+- Tightened `sop/library/methods/M-PRE-002.yaml`, `M-PRE-004.yaml`, `M-PRE-005.yaml`, `M-PRE-006.yaml`, and `M-ENC-015.yaml` so the selected source/material scope must be accounted for first and only then compressed into capped prompt/pillar/category/branch groups.
 - Hardened `brain/dashboard/api_tutor_workflows.py` so live Priming Assist carries the same rule in both chunk extraction and consolidation: inventory the full supported structure first, then compress into broad groups that still cover the whole selected scope instead of cherry-picking isolated examples.
 - Added focused prompt-regression coverage in `brain/tests/test_tutor_workflow_priming_assist.py` to prove the live prompt now encodes the new capped-output grouping rule.
 - Validation passed:

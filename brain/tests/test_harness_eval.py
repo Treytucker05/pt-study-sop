@@ -453,14 +453,14 @@ def test_harness_eval_failed_live_scenario_writes_failure_artifacts(
         payload = json.loads(eval_result.stdout)
         assert payload["ok"] is False
         assert payload["code"] == "eval.command_failed"
-        assert payload["artifacts"]["events"] == "events.jsonl"
-        assert payload["artifacts"]["result"] == "scenarios/app-live-golden-path/result.json"
+        assert payload["artifacts"]["events"].lstrip("/") == "events.jsonl"
+        assert payload["artifacts"]["result"].lstrip("/") == "scenarios/app-live-golden-path/result.json"
         assert (
-            payload["artifacts"]["stdout_log"]
+            payload["artifacts"]["stdout_log"].lstrip("/")
             == "scenarios/app-live-golden-path/script.stdout.log"
         )
         assert (
-            payload["artifacts"]["stderr_log"]
+            payload["artifacts"]["stderr_log"].lstrip("/")
             == "scenarios/app-live-golden-path/script.stderr.log"
         )
         assert "live-failure-secret" not in eval_result.stdout
@@ -476,7 +476,7 @@ def test_harness_eval_failed_live_scenario_writes_failure_artifacts(
         events = _read_jsonl(events_path)
         failed_events = [event for event in events if event["event"] == "command_failed"]
         assert failed_events
-        assert failed_events[-1]["details"]["failure_artifacts"]["result"] == (
+        assert failed_events[-1]["details"]["failure_artifacts"]["result"].lstrip("/") == (
             "scenarios/app-live-golden-path/result.json"
         )
         assert failed_events[-1]["details"]["failure_summary"]["fail_count"] >= 1

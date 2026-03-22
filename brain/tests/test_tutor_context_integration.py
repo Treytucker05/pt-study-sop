@@ -1,5 +1,6 @@
 """Integration test: build_context with real ChromaDB (materials only)."""
 
+import os
 import pytest
 
 pytestmark = [
@@ -8,6 +9,10 @@ pytestmark = [
 ]
 
 
+@pytest.mark.skipif(
+    not (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or os.environ.get("OPENAI_API_KEY")),
+    reason="No embedding API key set (GEMINI_API_KEY, GOOGLE_API_KEY, or OPENAI_API_KEY)",
+)
 def test_build_context_auto_returns_materials_from_chroma():
     """Materials collection has 14,583 vectors — this should return content."""
     from tutor_context import build_context

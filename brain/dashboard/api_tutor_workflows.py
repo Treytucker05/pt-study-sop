@@ -51,7 +51,7 @@ PRIMING_CONTENT_CHUNK_CHARS = 12000
 PRIMING_CONTENT_CHUNK_OVERLAP = 1000
 PRIME_OBJECTIVE_METHOD_IDS = {"M-PRE-010"}
 PRIME_STRUCTURAL_METHOD_IDS = {"M-PRE-004", "M-PRE-005", "M-PRE-006", "M-PRE-008", "M-PRE-009"}
-PRIME_HAND_DRAW_METHOD_IDS = {"M-PRE-011"}
+PRIME_HAND_DRAW_METHOD_IDS = {"M-ENC-015"}
 PRIME_METHOD_OUTPUT_FAMILY = {
     "M-PRE-002": "prequestions",
     "M-PRE-004": "structural_overview",
@@ -60,7 +60,7 @@ PRIME_METHOD_OUTPUT_FAMILY = {
     "M-PRE-008": "structural_overview",
     "M-PRE-009": "structural_overview",
     "M-PRE-010": "objectives",
-    "M-PRE-011": "hand_draw_map",
+    "M-ENC-015": "hand_draw_map",
     "M-PRE-012": "terminology",
     "M-PRE-013": "orientation_summary",
     "M-PRE-014": "ambiguity_scan",
@@ -73,7 +73,7 @@ PRIME_METHOD_OUTPUT_KEYS = {
     "M-PRE-008": {"concepts", "map", "follow_up_targets"},
     "M-PRE-009": {"concepts", "map", "follow_up_targets"},
     "M-PRE-010": {"learning_objectives"},
-    "M-PRE-011": {"drawing_brief", "branch_points"},
+    "M-ENC-015": {"drawing_brief", "branch_points"},
     "M-PRE-012": {"terminology"},
     "M-PRE-013": {"summary", "major_sections"},
     "M-PRE-014": {"gaps", "unsupported_jumps"},
@@ -641,7 +641,7 @@ def _method_prompt_contract(method_id: str) -> str:
         "M-PRE-008": '- M-PRE-008 => {"concepts":["high-signal structure nodes that jointly cover the selected objective scope"], "map":"hierarchical outline or mermaid map", "follow_up_targets":["gaps or unsupported jumps"]}',
         "M-PRE-009": '- M-PRE-009 => {"concepts":["cross-source big-picture pillars covering the full included source scope"], "map":"integrated structure map", "follow_up_targets":["cross-source ambiguities or conflicts"]}',
         "M-PRE-010": '- M-PRE-010 => {"learning_objectives":[{"title":"string","lo_code":"string or null"}]}',
-        "M-PRE-011": '- M-PRE-011 => {"drawing_brief":"what the learner should hand-draw", "branch_points":["3-5 broad umbrella branches covering the whole overview"]}',
+        "M-ENC-015": '- M-ENC-015 => {"drawing_brief":"what the learner should hand-draw", "branch_points":["3-5 broad umbrella branches covering the whole overview"]}',
         "M-PRE-012": '- M-PRE-012 => {"terminology":["Term :: concise source-grounded definition"]}',
         "M-PRE-013": '- M-PRE-013 => {"summary":"short orientation summary", "major_sections":["major sections or pillars covering the whole source at orientation level"]}',
         "M-PRE-014": '- M-PRE-014 => {"gaps":["explicit ambiguities"], "unsupported_jumps":["places the source skips reasoning"]}',
@@ -1373,7 +1373,7 @@ def upsert_tutor_priming_bundle(workflow_id: str):
                     recommended_tutor_strategy_json, created_at, updated_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (workflow_id, *params),
+                (workflow_id, *params, now),
             )
         else:
             conn.execute(
