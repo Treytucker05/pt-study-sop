@@ -1373,7 +1373,7 @@ def upsert_tutor_priming_bundle(workflow_id: str):
                     recommended_tutor_strategy_json, created_at, updated_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (workflow_id, *params),
+                (workflow_id, *params, now),
             )
         else:
             conn.execute(
