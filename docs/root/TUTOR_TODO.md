@@ -41,6 +41,26 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - every finding is normalized with severity, type, repro, evidence, owning scope, and fix-wave bucket
     - the final backlog groups issues into Wave 1 (`P1`), Wave 2 (`P2`), and Wave 3 (`P3`) remediation passes
 
+### Sprint: Page-Level Hud Primitive Migration (2026-03-21)
+- [ ] HUD-210. Finish the remaining page-level HUD primitive cleanup so `brain`, `not-found`, and `tutor` stop using ad-hoc route-local chrome where the shared `HudPanel` / `HudButton` primitives should own the surface treatment.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/ui/HudPanel.tsx`
+    - `dashboard_rebuild/client/src/components/ui/HudButton.tsx`
+    - `dashboard_rebuild/client/src/pages/brain.tsx`
+    - `dashboard_rebuild/client/src/pages/not-found.tsx`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/brain.test.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - `not-found` uses `HudPanel` instead of a hand-built border/background shell
+    - `tutor` uses `HudButton` for the page-level hero refresh action instead of a raw button primitive plus route-local text styling
+    - `brain` no longer relies on route-local ad-hoc shell fill classes where the shared page/frame theme should own the presentation
+    - the route behavior and existing navigation flow stay unchanged
+    - targeted frontend tests and the production frontend build pass
+
 ### Sprint: Tutor Prime Artifact Layout Pass (2026-03-19)
 - [x] MTH-SEARCH-001. Run a read-only multi-agent repo search across SOP methods and supporting docs for mind maps, ASCII graphs, and priming-style techniques, then return an evidence-backed file list.
   - Scope:
@@ -65,7 +85,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - Brain shows raw session evidence, WRAP-traceable derived metrics, issues/failures, and integration status
     - Brain exposes annotation-only LLM intake for paste/upload organization without mutating stored data
     - targeted Brain page tests and the production frontend build pass
-- [ ] TGSL-100. Create a repo-native Tutor guided studyability loop so Tutor features, stage-by-stage live study passes, and friction findings all live in one execution surface instead of scattered chat notes.
+- [x] TGSL-100. Create a repo-native Tutor guided studyability loop so Tutor features, stage-by-stage live study passes, and friction findings all live in one execution surface instead of scattered chat notes.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
     - `conductor/tracks.md`
@@ -77,6 +97,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - the study-pass checklist covers `Launch`, `Priming`, `Tutor`, `Polish`, `Final Sync`, and one full end-to-end pass using the learner's real active class/materials
     - the issue log can normalize all friction into `bug`, `missing feature`, `partial feature`, `bad default`, `confusing UX`, `workflow break`, `polish`, or `new desired capability`
     - the findings backlog groups captured issues into `Fix now`, `Fix next`, and `Later`
+  - Completed 2026-03-21: tightened `conductor/tracks/tutor-guided-studyability_20260320/feature-matrix.md` to reflect the live surface-first shell rather than the older Start/Publish/stepper contract, updated `conductor/tracks/tutor-guided-studyability_20260320/study-pass-checklist.md` to the current `Launch -> Studio > Priming -> Tutor -> Polish -> Final Sync` flow, normalized new audit findings in `conductor/tracks/tutor-guided-studyability_20260320/issue-log.md` and `conductor/tracks/tutor-guided-studyability_20260320/findings.md` for launch-list metadata loss, TEACH packet partials, late-stage proof gaps, and canon drift, and added `conductor/tracks/tutor-guided-studyability_20260320/tonight-dry-run.md` as a concrete rehearsal guide grounded in the live `Exercise Physiology -> Cardiovascular` workflow, its one enabled PDF, and the grouped Cardiovascular objectives currently available through the local app and APIs.
 - [ ] TGSL-110. Repair the Priming-to-Tutor handoff so `Mark Ready` and `Start Tutor` use the same launch contract, carry extracted objective candidates forward, and surface launch blockers directly inside the Priming handoff section.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

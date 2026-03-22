@@ -2,6 +2,18 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-21 - Theme lab HUD guide alignment (panels/buttons a–f, tabs/input a, status)
+
+- `hud-variants.css`: core `hud-panel-a`–`f`, `hud-button-a`–`f`, `hud-tablist-a`/`hud-tab-a`, and `hud-input-a` reshaped toward the crimson HUD implementation reference (chamfers, industrial rivets, glass blur ~20px, scanline+inset, tactical clip-path, toggle pseudo-elements, icon glow); added `hud-progress-a` + `hud-badge-a`/`b`.
+- `ThemeLabPreview.tsx`: brain SVG for `hud-button-f`, toggle copy for `e`, section 5 status strip; composite renumbered to §6.
+- Build: `npm run build` in `dashboard_rebuild/`.
+
+## 2026-03-21 - Theme lab wrapper variants expanded (f–j / e–g)
+
+- `src/styles/hud-variants.css`: more sandbox panel (f–j), button (f–j), tab (e–g), and input (e–g) styles (rails, scanline, chamfer, glass, CRT texture, warning rim, etc.); lab hover uses `button.tl-sim-hover[class*="hud-button-"]`.
+- `theme-lab/ThemeLabPreview.tsx`: extended keys and labels for comparison grid and selects.
+- Build: `npm run build` in `dashboard_rebuild/`.
+
 ## 2026-03-21 - Theme lab (single HTML + tabs)
 
 - `dashboard_rebuild/client/theme-lab/index.html` is one page: Overview / Tokens / Panels via CSS-only radio tabs.

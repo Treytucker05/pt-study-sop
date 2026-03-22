@@ -14,9 +14,9 @@ Active execution priority is tracked in `docs/root/TUTOR_TODO.md`.
 
 Active status: 3 active workstreams.
 
-Latest update: 2026-03-20, opened Tutor Guided Studyability Loop to inventory current Tutor workflow features, run guided stage-by-stage live study passes, and normalize all study friction into one prioritized backlog while Repo-Wide Quality Audit Backlog and UI Production System remain active.
+Latest update: 2026-03-21, refreshed Tutor Guided Studyability Loop with a live-shell-aligned feature matrix, normalized issue backlog, and a concrete tonight dry-run guide grounded in the current Cardiovascular study context while Repo-Wide Quality Audit Backlog and UI Production System remain active.
 
-- [ ] **Track: Tutor Guided Studyability Loop** (active — created 2026-03-20; scope: Tutor-only feature inventory, guided stage-by-stage live study passes with real class/material inputs, normalized friction logging, and prioritized fix-wave planning)
+- [ ] **Track: Tutor Guided Studyability Loop** (active — created 2026-03-20; scope: Tutor-only feature inventory, guided stage-by-stage live study passes with real class/material inputs, normalized friction logging, prioritized fix-wave planning, and a repo-native tonight rehearsal guide)
   *Link: [./tracks/tutor-guided-studyability_20260320/](./tracks/tutor-guided-studyability_20260320/)*
 
 ---

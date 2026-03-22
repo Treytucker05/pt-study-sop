@@ -17,14 +17,15 @@ Confirm the learner can land on `/tutor`, understand what is available, open the
 1. Open `/tutor`
 2. Review the launch surface without clicking anything yet
 3. Identify the workflow you actually want to study
-4. Try the intended open/start action
-5. If needed, inspect the start/resume controls
+4. Decide whether you are resuming, opening Priming in Studio, or starting fresh
+5. Try the intended open/start action from `Launch`
 
 ### Expected output
 - the correct workflow is visible
 - the current status is understandable
 - open/resume/start actions feel obvious
 - no stale or unrelated workflow state steals focus
+- the learner is not depending on an old restored Tutor or Studio view for orientation
 
 ### Ask the learner
 - What is the first thing your eye goes to?
@@ -39,17 +40,18 @@ Confirm the learner can land on `/tutor`, understand what is available, open the
 Confirm the learner can select the real class/material scope, inspect source material, extract PRIME artifacts, and feel ready to hand off to Tutor.
 
 ### Actions
-1. Open `Priming`
+1. Open `Studio > Priming`
 2. Confirm the class and materials in scope
 3. Review the source viewer
-4. Run `Extract PRIME` if needed
-5. Review `Learning Objectives`, `Study Spine`, `Hierarchical Map`, `Summary`, and `Terms`
-6. Review Tutor handoff notes/readiness
+4. Choose the PRIME methods you would use
+5. Run `Extract PRIME` if needed
+6. Review the selected-method windows plus any already extracted methods
+7. Review Tutor handoff notes, readiness, and inline blockers
 
 ### Expected output
 - setup is obvious and not overloaded
 - source viewer is usable
-- PRIME artifact outputs are readable
+- PRIME method outputs are readable
 - handoff feels like a real closeout, not a guess
 
 ### Ask the learner
@@ -67,13 +69,13 @@ Confirm the live study workspace feels like a real teaching/study surface instea
 ### Actions
 1. Open `Tutor`
 2. Start interacting with the live teaching flow
-3. Watch the stage/stepper/runtime information
+3. Watch the top nav, runtime information, and `Open Polish` handoff path
 4. Use any note, save, or feedback controls that matter during study
 5. Stay long enough to judge whether the flow supports actual learning
 
 ### Expected output
 - live chat feels study-usable
-- stage state is understandable
+- stage/surface state is understandable
 - runtime controls do not fight the study flow
 - capture actions make sense when needed
 
@@ -134,7 +136,7 @@ Verify the full flow still makes sense in sequence, not just as isolated stages.
 
 ### Actions
 1. Start at `Launch`
-2. Move through the workflow naturally using the real active class/materials
+2. Move through `Launch -> Studio Home -> Priming -> Tutor -> Polish -> Final Sync` using the real active class/materials
 3. Do not optimize or skip around unless the product forces you to
 4. Record where momentum breaks
 

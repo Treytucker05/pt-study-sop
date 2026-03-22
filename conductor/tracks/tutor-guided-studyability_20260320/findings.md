@@ -2,32 +2,37 @@
 
 Purpose: convert guided study-pass observations into a prioritized fix backlog.
 
+## Current audit snapshot
+
+- Best-supported tonight: `Launch Hub -> Studio Priming -> Tutor runtime`.
+- Strong current proof: live app responds on `:5000`, the direct Tutor read-only smoke passes, the hermetic Tutor smoke passes full session lifecycle, and targeted Priming/Tutor tests are green.
+- Weak current proof: the mounted full-path `Launch -> Priming -> Tutor -> Polish -> Final Sync` journey, especially late-stage trust and closeout.
+- Safest mental model tonight: `Launch` is the inbox, `Studio` owns `Home/Priming/Polish/Final Sync`, and `Tutor` owns the live study surface.
+
 ## Fix now
 
-- `TGSL-PR-005` Priming-to-Tutor launch was the main study blocker. The current code pass now adds inline launch blockers and aligns Priming save/handoff state with Tutor preflight, but this still needs a live learner retest to confirm the transition actually feels fixed.
+- `TGSL-LA-003` Launch workflow rows lose top-level course/topic/study-unit metadata even though workflow detail and project-shell endpoints still carry the real context. This weakens resume trust when stale workflows accumulate.
+- `TGSL-LA-004` Launch hub study-wheel rendering has a real null-guard bug. The current `hasWheelContent` logic can treat missing hub data as present and then dereference `tutorHub!.study_wheel`, matching the learner-observed console exception.
+- `TGSL-CN-001` Canon and track drift still describe obsolete surfaces (`TutorStartPanel`, `TutorPublishMode`, mounted workflow stepper) as if they were current, which makes the workflow harder to audit and follow correctly.
+- `TGSL-PR-005` Priming-to-Tutor launch is still a live blocker. The current code pass added inline blocker surfacing, but the latest learner pass still hit unclear approved-objectives / preflight language plus a `500` on `PUT /api/tutor/workflows/<id>/priming-bundle`, leaving `Save Draft`, `Mark Ready`, and `Start Tutor` effectively stuck.
 
 ## Fix next
 
-- `TGSL-PR-006` The first-window launch contract issue has a code pass in place, but still needs guided retest for whether it now feels like the true “ready for Tutor” window.
-- `TGSL-PR-007` The redundant objective-scope controls have been removed from the live Priming UI, but the learner should confirm that objective handling now feels simpler rather than hidden/confusing.
-- `TGSL-LA-001` Launch information architecture and visual setup feel non-intuitive even when the user can still find `Recent workflows` and click `Start New`. Likely frontend-first cleanup around hierarchy, clarity, and overall setup trust.
-- `TGSL-LA-001` now has a code pass on the live Launch surface: the page keeps the same structure but uses a darker HUD-style treatment with stronger contrast, panel definition, and control emphasis. This needs learner retest to confirm the new styling actually improves trust and readability rather than just making the page louder.
-- `TGSL-LA-002` Launch currently presents a dual-track navigation story, with the workflow stage strip and the action area underneath competing instead of reinforcing one clear next step.
-- `TGSL-TU-001` Tutor workflow movement felt busted because the main stage navigation was buried below the oversized runtime diagnostics. The new code pass moves workflow navigation to the top and adds explicit previous/next controls, but it still needs a learner retest to confirm that the route now feels obvious in live use.
-- `TGSL-TU-001` also had a render-stability bug: the navigator could disappear in live Tutor mode when `activeWorkflowId` dropped out temporarily. That render gate now has a code pass, but it still needs learner retest to confirm the navigator stays visible during real Tutor use.
-- `TGSL-PR-001` Priming method/chain placement issue has a code pass in place: Priming chains are removed from live UI, Priming methods are now multi-select in the workspace, and extraction is owned by the workspace. This still needs learner retest for whether the new setup actually feels better.
-- `TGSL-PR-001` The larger PRIME method-system drift now also has a code pass in place: the Priming page loads real PRIME methods from the Methods API, extraction runs only the selected `M-PRE-*` methods, and the workspace renders method-owned outputs instead of a fixed artifact-tab bundle. This still needs learner retest for whether the new method-driven model is actually easier to use and trust.
-- `TGSL-PR-002` Priming readability is weak across the viewer, artifact workspace, and handoff areas because the stage is bland and the small text/contrast are hard to read.
-- `TGSL-PR-002` Learning objectives now have a code pass that formats extracted and existing objective lists as structured cards with LO-code badges and stronger title hierarchy instead of raw text lines. This still needs a learner retest for whether the new rendering feels meaningfully easier to scan during real study.
-- `TGSL-PR-003` PRIME extraction quality is uneven: objectives are only partially represented in source-linked output, the hierarchical map is blank, and terms/spine are difficult to judge or read.
-- `TGSL-PR-003` now also has a code pass that separates `selected methods for the next extract` from `already extracted PRIME methods` and merges new method outputs into existing per-material inventory by `method_id` instead of replacing prior runs. This still needs learner retest to confirm the workspace now makes the current request vs prior extracted state obvious.
-- `TGSL-PR-003` now also has a code pass that hardens the LLM extraction contract itself: the prompt uses the real SOP method logic, reruns see prior selected-method outputs as stabilization context, and long materials are processed with full chunk coverage plus an LLM consolidation pass instead of the old first-`12000`-characters shortcut. This still needs learner retest to confirm that objective counts and other PRIME outputs are more stable across reruns.
-- `TGSL-PR-003` now also has a source-anchor safeguard for `M-PRE-010`: when the material itself contains explicit `Learning objectives` bullet lists, the backend now feeds that full list into the LLM prompt and preserves that explicit set in the final objective output instead of letting the model silently collapse `14` visible slide objectives down to a smaller subset. This still needs learner retest on the live Cardiovascular packet.
-- `TGSL-PR-004` Tutor handoff currently overstates readiness relative to the thin, weakly formatted handoff content and missing Tutor strategy.
+- `TGSL-LA-001` Launch information architecture and visual setup still need a live learner retest after the HUD-style pass.
+- `TGSL-PR-001` The method-driven Priming flow needs a live learner retest for smoothness and clarity.
+- `TGSL-PR-008` The new Priming step order still feels mismatched because the first `Setup` step frames the learner around the Tutor launch contract too early instead of cleanly leading `Setup -> Materials -> PRIME Methods -> Outputs -> Tutor Handoff`.
+- `TGSL-PR-009` The `Materials` step source viewer is too cramped and no longer exposes the pop-out reading behavior the learner expects.
+- `TGSL-PR-010` Priming still lacks a real workspace feel for organizing, comparing, and reshaping extracted outputs.
+- `TGSL-PR-002` Priming readability still needs a real trust/readability retest.
+- `TGSL-PR-003` Priming output quality now has several backend/frontend hardening passes, but the Cardiovascular packet still needs a live rerun/review.
+- `TGSL-TU-002` Tutor TEACH packet clarity is still partial; the live shell remains usable, but it can still rely on inferred fallback values instead of a fully clean teaching packet.
+- `TGSL-CR-002` `Polish` and `Final Sync` are mounted and feature-rich, but the current proof is much thinner than for Launch, Priming, and core Tutor runtime.
 
 ## Later
 
-- pending guided testing
+- run one full mounted `Launch -> Priming -> Tutor -> Polish -> Final Sync` pass against the real Cardiovascular packet
+- finish the pending repo-wide Tutor/backend audit shards and merge them into the same normalized backlog
+- close the canon drift by updating the remaining obsolete workflow descriptions
 
 ## Implemented since initial pass
 
@@ -40,8 +45,15 @@ Purpose: convert guided study-pass observations into a prioritized fix backlog.
 - `TGSL-PR-005` Priming/Tutor handoff now shows inline launch blockers and disables false-ready actions.
 - `TGSL-PR-006` The first Setup window now owns the actual Tutor launch contract.
 - `TGSL-PR-007` Objective-scope narrowing controls were removed from live Priming.
-- `TGSL-TU-001` Tutor now renders a visible top-of-page workflow navigator, separates workflow movement from workspace-mode navigation, and adds explicit previous/next stage controls so the learner does not have to scroll past runtime diagnostics to move around the study flow.
-- `TGSL-TU-001` The workflow navigator now stays rendered in live Tutor mode whenever session/stage context still exists, even if `activeWorkflowId` is briefly unavailable.
+- `TGSL-TU-001` The earlier top-bar workflow-stepper approach has now been superseded by the surface-first shell: `Launch` is the inbox, `Studio` owns `Home/Priming/Polish/Final Sync`, and Tutor keeps live-session execution plus contextual handoff actions like `Open Polish`.
+- `TGSL-LA-003`, `TGSL-TU-002`, `TGSL-CR-002`, and `TGSL-CN-001` are now explicitly tracked as audit findings instead of living only in chat memory.
+- A concrete tonight rehearsal guide now lives in `tonight-dry-run.md` and is grounded in the real `Exercise Physiology -> Cardiovascular` session context currently present in the app.
+
+## Tonight posture
+
+- Start from `Launch`, not from the auto-restored Tutor or Studio view.
+- Use the live `Exercise Physiology -> Cardiovascular` path as the rehearsal target.
+- Treat `Final Sync` as a contract/trust check tonight, not as a must-publish step unless you intentionally want a real closeout.
 
 ## Working rules
 

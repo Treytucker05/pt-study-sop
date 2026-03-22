@@ -73,6 +73,7 @@ Use this file during guided study passes.
 - Implementation update (2026-03-21): the live Priming chain selector was removed, Priming method selection moved into the `Prime Artifact Workspace` as multi-select method cards, the main `Extract PRIME` action now lives in that workspace instead of the source viewer, the Priming page now loads real PRIME methods from the Methods API rather than a synthetic local picker, extraction runs only the selected stable `M-PRE-*` methods, and the workspace renders selected-method output cards instead of the old fixed artifact-tab bundle. Needs live retest for smoothness, clarity, and output quality.
 - Implementation update (2026-03-21 follow-up): the workspace now renders nothing below the PRIME method cards until at least one method is selected, then reveals a selected-method window area with the main `Extract PRIME` action plus one method-owned panel per selected method. This directly addresses the learner complaint that generic PRIME info and artifact surfaces were appearing before any method had been chosen.
 - Implementation update (2026-03-21 Studio hardening): Priming is now a five-step flow (`Setup`, `Materials`, `PRIME Methods`, `Outputs`, `Tutor Handoff`) with persistent step navigation, focus movement on step change, inline blocker text, and a side-by-side source viewer instead of one long stacked page. Studio can now enter Priming directly even without an existing workflow, and the bootstrap preserves current course/material context instead of blanking the setup state during hydration. Needs learner retest for whether the step flow now feels direct enough to use without guessing.
+- Learner retest note (2026-03-21 late pass): the new method step is in the right area, but the method cards still feel too compressed compared with the real Methods page. The learner wanted full-card readability plus full-card selected-state coloring instead of a mostly border-only selection signal.
 
 #### TGSL-PR-002
 - Stage: Priming
@@ -88,6 +89,7 @@ Use this file during guided study passes.
 - Likely owner: frontend
 - Status: triaged
 - Implementation update (2026-03-21 follow-up): extracted and existing learning objectives on the Priming page now render as structured objective cards with numbering, better title emphasis, and LO-code badges when present, instead of plain raw line text. This keeps the extraction contract structured while addressing the readability complaint without asking the LLM to invent UI formatting.
+- Learner retest note (2026-03-21 late pass): readability is still weak. The learner reported that the font treatment feels like the older harder-to-read style again, method outputs still look cramped or badly formatted, and the `PRIME BOUNDARY` card at the bottom does not earn its screen space.
 
 #### TGSL-PR-003
 - Stage: Priming
@@ -105,6 +107,7 @@ Use this file during guided study passes.
 - Implementation update (2026-03-21 follow-up): the live Priming contract now separates `selected methods for the next extract` from `already extracted PRIME methods` on the currently scoped materials, and backend Priming assist now merges new per-material `method_outputs` by `method_id` instead of overwriting prior method runs. Existing study-unit objectives were also moved out of the selected-method window area so they no longer read like part of the next extraction request. Needs learner retest for whether the split is now obvious enough in real use.
 - Implementation update (2026-03-21 reasoning hardening): PRIME extraction now uses the richer SOP method logic in the LLM prompt instead of just a short method description plus JSON shape, feeds prior extracted outputs for the selected methods back into reruns as stabilization context, and covers long materials chunk-by-chunk with an LLM consolidation pass instead of truncating to the first `12000` characters. Needs learner retest for whether objective counts and other outputs now feel materially more stable across reruns.
 - Implementation update (2026-03-21 objective-anchor follow-up): for `M-PRE-010`, backend Priming assist now detects explicit `## Learning objectives` sections already present in the stored material text, feeds the full source-visible objective list into the prompt as a hard anchor, and applies that explicit list back onto the final objective output so visible slide objectives are preserved instead of silently collapsing from `14` down to `9`. Needs learner retest on the Cardiovascular packet to confirm the live objective window now shows all `14` source objectives.
+- Learner retest note (2026-03-21 late pass): extraction quality is still uneven and sometimes opaque. `Learning Objectives` still appeared below after the learner unselected that method, rerunning all methods started again with an already-run structural organizer, `Overarching Pre-Question Set` and `Syntopical Big-Picture Synthesis` produced no useful visible output, `Structural Extraction` read like plain bullet points instead of an obvious structure map, and several method outputs were described as hard-to-read gibberish because of formatting. The learner also questioned whether `Hand-Draw Map` belongs in Priming at all versus a later encode stage.
 
 #### TGSL-PR-004
 - Stage: Priming
@@ -134,6 +137,7 @@ Use this file during guided study passes.
 - Likely owner: multi-surface
 - Status: triaged
 - Implementation update (2026-03-21): Tutor launch blockers are now surfaced inline, the handoff buttons disable when launch is not actually ready, and Priming saves extracted objectives into the handoff bundle for Tutor preflight. Needs live retest from Priming into Tutor.
+- Learner retest note (2026-03-21 late pass): the handoff is still blocked in practice. The learner hit a blocker message about needing to save approved objectives before running Tutor preflight, did not understand what `Tutor preflight` meant, clicked `Save Draft`, and saw `500 INTERNAL SERVER ERROR` on `PUT /api/tutor/workflows/153cbe9b-f4ae-4166-94df-7554e423c182/priming-bundle`. `Mark Ready` and `Start Tutor Session` remained unavailable afterward.
 
 #### TGSL-PR-006
 - Stage: Priming
@@ -161,20 +165,59 @@ Use this file during guided study passes.
 - Study impact: The page asks for one more setup decision than the learner needs, which adds noise and makes the setup contract feel heavier than it should.
 - What the learner liked / disliked: Disliked the extra narrowing controls and saw them as legacy baggage from an older workflow.
 
+#### TGSL-PR-008
+- Stage: Priming
+- Type: confusing UX
+- Severity: P2
+- Feature ID: F-PR-001, F-PR-005, F-PR-006
+- Repro: Start from `Launch -> New -> Priming -> Setup` and read the first step after entering the new five-step Priming flow.
+- Expected behavior: `Setup` should feel like setup only, then the learner should naturally proceed to `Materials`, then `PRIME Methods`, and only later encounter the real Tutor handoff/launch contract once PRIME work has actually been scoped and run.
+- Actual behavior: The first `Setup` step still frames the screen around the Tutor launch contract too early. The learner reached `Tutor launch contract` on the first step and immediately felt that the flow order was wrong because they expected to move through `Materials` and `PRIME Methods` first.
+- Study impact: The current copy and framing can make Priming feel like it is prematurely trying to launch Tutor before the learner has even scoped sources or chosen PRIME methods, which weakens trust in the step flow.
+- What the learner liked / disliked: Disliked seeing Tutor-launch framing this early. Expected a cleaner progression of `Setup -> Materials -> PRIME Methods -> Outputs -> Tutor Handoff`.
+- Workaround: Treat the `Setup` step as scope-only, ignore the Tutor-launch framing there, and continue to `Materials` and `PRIME Methods` before evaluating readiness.
+- Likely owner: frontend
+- Status: triaged
+
+#### TGSL-PR-009
+- Stage: Priming
+- Type: bad default
+- Severity: P2
+- Feature ID: F-PR-002
+- Repro: Enter `Studio > Priming`, move to the `Materials` step, and try to actually read the selected source while the step layout shares the screen with the rest of the stage.
+- Expected behavior: The source viewer should be treated as a real reading surface when the learner is reviewing material. It should be able to use the full available width and support an obvious pop-out path when deeper reading is needed.
+- Actual behavior: The source viewer stays constrained inside the split step layout and no longer offers the pop-out window behavior the learner expects. The learner explicitly wanted the source viewer to take the full width and be pop-out capable.
+- Study impact: Material review feels cramped and discourages real reading, which weakens the value of the `Materials` step as preparation rather than just a quick glance.
+- What the learner liked / disliked: Liked that `Next` did move into `Materials` in the correct order. Disliked that the viewer was too constrained to read comfortably and no pop-out action was visible.
+- Workaround: Continue with the cramped inline viewer or leave the flow to inspect the source elsewhere.
+- Likely owner: frontend
+- Status: triaged
+
+#### TGSL-PR-010
+- Stage: Priming
+- Type: missing feature
+- Severity: P2
+- Feature ID: F-PR-008, F-PR-003
+- Repro: Run one or more PRIME methods, then try to treat the output area like a real Priming workspace where information can be reviewed, reorganized, compared, and refined.
+- Expected behavior: The Priming output area should feel more like a workspace: review what was extracted, keep useful outputs visible, reorganize or restructure them, trigger deeper extraction when needed, and use supporting tools such as diagrams, Mermaid/map views, or Studio tooling where appropriate.
+- Actual behavior: The learner felt pushed out of the method-selection flow into a static output area with little ability to organize or reshape the extracted information. No mind map, meaningful Mermaid/chart tooling, or Studio tools were used, and the surface did not feel like a planning workspace.
+- Study impact: Priming becomes a passive extraction dump instead of an active planning/refinement stage, which lowers trust and makes the stage feel less useful than it should.
+- What the learner liked / disliked: Liked that switching methods and rerunning was possible. Disliked that the page did not support arranging, restructuring, or working with the extracted information in a more deliberate way.
+- Workaround: Rerun individual methods manually and mentally compare the outputs outside the product.
+- Likely owner: multi-surface
+- Status: triaged
+
 #### TGSL-CR-001
 - Stage: Cross-stage
 - Type: workflow break
 - Severity: P1
-- Feature ID: F-ST-001, F-PR-001, F-CR-001
+- Feature ID: F-PR-001, F-CR-001
 - Repro: Open `/tutor`, enter `Studio` from the global surface nav or a stored Studio restore path, and try to continue the normal prep flow from there without going back through Launch.
 - Expected behavior: Generic Studio entry should land on a clear Studio Home with an obvious next action, and `Priming` should stay directly enterable even when no workflow is already active.
 - Actual behavior: Studio currently lands on a workbench-first surface that feels like a dead end, while the local `Priming` tab is disabled when there is no active workflow id. The learner called out that the flow needs to be re-thought, does not route intuitively, and that Priming is not available to click to work on.
 - Study impact: This blocks real prep work from Studio itself and forces the learner to rely on memory or bounce back through Launch instead of trusting the surface they are already in.
 - What the learner liked / disliked: Disliked the counterintuitive button model, the lack of a real Studio landing surface, and the dead Priming entry state.
 - Workaround: Go back to Launch and open a workflow there first, or rely on prior familiarity with which surface owns which action.
-- Likely owner: frontend
-- Status: triaged
-- Workaround: Ignore the controls and continue with the default whole-unit path.
 - Likely owner: frontend
 - Status: triaged
 - Implementation update (2026-03-21): `Objective Scope` and `Focus Objective` were removed from the live Priming UI, hidden stale `single_focus` state is normalized back to `module_all`, and objective readiness now keys off study-unit objectives or extracted file objectives instead of a separate narrowing mode.
@@ -195,6 +238,77 @@ Use this file during guided study passes.
 - Implementation update (2026-03-21): promoted workflow navigation to the top of `TutorTopBar`, split the old mixed navigation into a primary workflow navigator plus a smaller workspace nav row, added explicit previous/next stage controls in `TutorWorkflowStepper.tsx`, added a top-level `WORKFLOW` return action in `TutorTabBar.tsx`, and removed the need to scroll past the large runtime diagnostics block just to find stage navigation. Needs learner retest on the live Tutor page.
 - Implementation update (2026-03-21 follow-up): fixed a brittle render gate in `TutorWorkflowStepper.tsx` so the navigator no longer disappears just because `activeWorkflowId` is temporarily missing during live Tutor mode. The stepper now stays visible whenever there is real workflow/session context such as active Tutor mode, current stage, active session, or Polish state. Needs live learner retest for whether the navigator now stays stable across Tutor transitions and rerenders.
 - Implementation update (2026-03-21 surface-first follow-up): the earlier top-bar stepper approach was superseded by the surface-first IA. `TutorTopBar` now keeps only the global surface nav plus read-only workflow context badges, while `Studio` owns the workflow sub-tabs (`Workbench`, `Priming`, `Polish`, `Final Sync`) and Tutor keeps only live-session execution plus contextual handoff actions like `Open Polish`. This removes the second global navigation system that was making movement feel busted even after the stepper fix. Needs live learner retest for whether Tutor now feels orientation-safe without competing stage rails.
+
+#### TGSL-LA-003
+- Stage: Launch
+- Type: partial feature
+- Severity: P2
+- Feature ID: F-LA-001, F-CR-001
+- Repro: Open `/tutor`, inspect the recent workflow list, and compare it with `GET /api/tutor/workflows` while multiple recent workflows exist.
+- Expected behavior: Workflow rows should carry enough top-level course, topic, and stage context for the learner to identify the correct item without opening each row blindly.
+- Actual behavior: Several recent workflow rows return `null` top-level `course_id`, `course_name`, `study_unit`, and `topic`, even though the workflow detail and course-specific project-shell endpoints still contain real nested context.
+- Study impact: The learner can mistrust the launch list or choose the wrong workflow when several stale items are present, especially during resume-versus-start decisions.
+- What the learner liked / disliked: Liked that the launch list exists and that the hub still exposes a recommended action. Disliked that some rows are too thin to trust on their own.
+- Workaround: Prefer the Launch hub recommended action or a course-specific project shell over the bare workflow list when choosing what to resume.
+- Likely owner: backend
+- Status: triaged
+- Learner retest note (2026-03-21 late pass): the broken Priming draft did appear in `Recent Workflows`, but the row still showed no class, no assignment/topic/scope, and no meaningful time context. The current Launch row renderer falls back to `Unassigned class`, `Untitled workflow`, and `No study unit set`, while the date column only shows a date label rather than a precise time, which makes failed drafts even harder to identify confidently.
+
+#### TGSL-LA-004
+- Stage: Launch
+- Type: bug
+- Severity: P2
+- Feature ID: F-LA-001
+- Repro: Open `/tutor` while the launch hub data is still loading or temporarily undefined, then watch the console and Launch hub rendering path.
+- Expected behavior: The `Study Wheel` panel should stay in a loading/empty-safe state until `tutorHub` is available, without throwing console errors or trying to render wheel state from missing data.
+- Actual behavior: `TutorWorkflowLaunchHub.tsx` can compute `hasWheelContent` as true even when `tutorHub` is undefined because checks like `tutorHub?.study_wheel.current_course_id !== null` treat `undefined !== null` as true. The render path then dereferences `tutorHub!.study_wheel`, matching the learner-observed `Cannot read properties of undefined (reading 'study_wheel')` error.
+- Study impact: Even when the learner is focused on Priming, Launch-hub instability can leak console errors into the session and reduce trust in overall shell stability.
+- What the learner liked / disliked: Disliked seeing unexplained console exceptions while trying to audit the workflow.
+- Workaround: None reliable from the learner side beyond refreshing and hoping the hub data is already loaded.
+- Likely owner: frontend
+- Status: triaged
+
+#### TGSL-TU-002
+- Stage: Tutor
+- Type: partial feature
+- Severity: P2
+- Feature ID: F-TU-002, F-TU-006
+- Repro: Open a live Tutor session and inspect the TEACH runtime chrome and fallback text, or compare the live shell against `TutorTopBar.test.tsx` and `TutorChat.test.tsx`.
+- Expected behavior: The learner-facing TEACH packet should read as a clean, source-backed teaching contract without leaning on inferred fallback values or missing-field placeholders.
+- Actual behavior: The live Tutor shell still depends on inferred or fallback TEACH fields when some backend packet data is absent, which makes the runtime feel more technical than learner-clean.
+- Study impact: Tutor is still usable, but the teaching surface is less trustworthy and more distracting than it should be during a real session.
+- What the learner liked / disliked: Liked that the live study surface and controls are present. Disliked that the TEACH area can still read like partial infrastructure rather than a finished study contract.
+- Workaround: Use Tutor for live chat, notes, timer, and handoff actions while treating the detailed TEACH chrome as advisory rather than fully canonical.
+- Likely owner: prompt/runtime
+- Status: triaged
+
+#### TGSL-CR-002
+- Stage: Cross-stage
+- Type: partial feature
+- Severity: P2
+- Feature ID: F-PO-003, F-PO-004, F-FS-004, F-CR-001
+- Repro: Compare the mounted workflow surfaces and current automated proof. The live read-only smoke stops at GET endpoints and the strongest targeted tests focus on Launch, Priming, and core Tutor runtime rather than a full mounted `Tutor -> Polish -> Final Sync` pass.
+- Expected behavior: Late-stage review and closeout should be backed by proof comparable to Launch, Priming, and core Tutor runtime so the learner can trust the end of the workflow as much as the start.
+- Actual behavior: `Polish` and `Final Sync` exist in code and mount correctly, but direct end-to-end proof is much thinner than the earlier workflow stages.
+- Study impact: The learner is more likely to trust the start of the workflow than the closeout path, which makes late-session review and publish more likely to be skipped or treated cautiously.
+- What the learner liked / disliked: Liked that the stages exist and are reachable from Studio. Disliked that their real trust level is harder to judge than Launch or Priming.
+- Workaround: Use `Polish` and `Final Sync` as contract-verification stages first, and only trust them for real closeout after a successful full mounted pass.
+- Likely owner: multi-surface
+- Status: triaged
+
+#### TGSL-CN-001
+- Stage: Cross-stage
+- Type: workflow break
+- Severity: P2
+- Feature ID: F-LA-003, F-TU-003, F-FS-001, F-CR-001
+- Repro: Compare the live surface-first `/tutor` shell to the repo truth surfaces in `README.md` and the guided-studyability feature matrix.
+- Expected behavior: Canon and execution artifacts should describe the same workflow model the learner actually sees in the app.
+- Actual behavior: The repo still contains obsolete references to a live `TutorStartPanel`, `TutorPublishMode`, and a mounted workflow stepper even though the current shell is surface-first with Studio-owned workflow sub-tabs.
+- Study impact: The learner, operator, and future agents can start from the wrong mental model and misread which surface is supposed to own a study action tonight.
+- What the learner liked / disliked: Liked that the newer surface-first model is clearer once seen live. Disliked that the written system-of-record still points at older surfaces in places.
+- Workaround: Use the `Launch-model note` in `docs/root/TUTOR_TODO.md` plus the live shell behavior as the temporary source of truth.
+- Likely owner: SOP/canon
+- Status: triaged
 
 ### Copy/paste template
 

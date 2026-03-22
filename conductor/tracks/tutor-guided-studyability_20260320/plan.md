@@ -14,12 +14,20 @@
 ### Baseline now
 - Tutor has a staged workflow shell:
   - `Launch`
+  - `Studio Home`
   - `Priming`
   - `Tutor`
   - `Polish`
   - `Final Sync`
 - Canon and workboard contain a mix of landed, planned, and discussed features.
 - Existing audit artifacts help with structure, but do not yet provide a learner-guided study loop.
+
+### Progress update (2026-03-21)
+- The feature inventory is now tightened to the live surface-first shell instead of the older Start/Publish/stepper model.
+- The stage checklist now follows the real `Launch -> Studio Home -> Priming -> Tutor -> Polish -> Final Sync` sequence.
+- A concrete `tonight-dry-run.md` rehearsal guide now exists and is grounded in the live `Exercise Physiology -> Cardiovascular` session context currently available through the app and APIs.
+- The normalized issue backlog now explicitly tracks launch-list metadata loss, partial Tutor TEACH-packet clarity, under-proven `Polish` / `Final Sync`, and canon drift.
+- Remaining gap: the full mounted end-to-end pass is still weaker than the earlier stage-local proof and should remain the next real learner-validation step.
 
 ### Main drift risks
 - features discussed in chat but not present in repo canon
