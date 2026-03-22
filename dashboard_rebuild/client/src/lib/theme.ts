@@ -11,18 +11,54 @@
  */
 
 // ---------------------------------------------------------------------------
+// Aesthetic Tokens (Neural/Arcade)
+// ---------------------------------------------------------------------------
+
+/** Main header shell shadow and border */
+export const SHADOW_HEADER =
+  "border-b-4 border-red-700 shadow-[0_10px_30px_rgba(220,38,38,0.4)]";
+
+/** Massive radial glow for title backdrop */
+export const GLOW_TITLE_BACKDROP =
+  "bg-[radial-gradient(circle,rgba(255,84,84,0.46),transparent_72%)] blur-3xl";
+
+/** Signature arcade text shadow: three-layer red glow */
+export const TEXT_SHADOW_ARCADE =
+  "[text-shadow:0_0_18px_rgba(255,108,108,0.7),0_0_34px_rgba(255,92,92,0.28),0_5px_0_rgba(36,10,10,0.98)]";
+
+/** Dark banner background gradient */
+export const GRADIENT_BANNER =
+  "bg-gradient-to-b from-black/40 via-transparent to-black/60";
+
+/** Retro grid pattern (20px) overlay */
+export const PATTERN_GRID =
+  "bg-[linear-gradient(rgba(220,38,38,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.05)_1px,transparent_1px)] bg-[size:20px_20px]";
+
+/** Active glow for primary nav buttons */
+export const GLOW_ACTIVE_PRIMARY = "drop-shadow-[0_0_24px_rgba(255,74,74,0.42)]";
+
+/** Active glow for support nav buttons */
+export const GLOW_ACTIVE_SUPPORT = "drop-shadow-[0_0_22px_rgba(255,74,74,0.42)]";
+
+/** Floating dock shadow for sidebar/notes trigger */
+export const SHADOW_DOCK =
+  "shadow-[0_14px_28px_rgba(0,0,0,0.48),0_0_0_1px_rgba(255,108,138,0.2)]";
+
+// ---------------------------------------------------------------------------
 // Typography
 // ---------------------------------------------------------------------------
 
 /** Page-level header: "DASHBOARD", "TUTOR", etc. */
-export const TEXT_PAGE_TITLE = "font-arcade text-xl text-primary tracking-[0.22em] uppercase";
+export const TEXT_PAGE_TITLE =
+  "font-arcade text-xl text-primary tracking-[0.22em] uppercase";
 
 /** Panel/card header: "CONTENT FILTER", "ARTIFACTS" */
-export const TEXT_PANEL_TITLE = "font-arcade text-base text-primary tracking-[0.18em] uppercase";
+export const TEXT_PANEL_TITLE =
+  "font-arcade text-ui-sm text-primary tracking-[0.18em] uppercase";
 
 /** Section label: "MODE", "TOPIC", "COURSE" */
 export const TEXT_SECTION_LABEL =
-  "font-arcade text-sm text-primary/70 uppercase tracking-[0.18em]";
+  "font-arcade text-ui-xs text-primary/70 uppercase tracking-[0.18em]";
 
 /** Primary body text (lists, names, content) */
 export const TEXT_BODY = "font-terminal text-lg text-foreground";
@@ -34,10 +70,10 @@ export const TEXT_INPUT = "font-terminal text-lg text-foreground";
 export const TEXT_MUTED = "font-terminal text-base text-muted-foreground";
 
 /** Badge/tag text */
-export const TEXT_BADGE = "text-sm rounded-none";
+export const TEXT_BADGE = "rounded-full font-mono text-ui-xs tracking-[0.12em]";
 
 /** Button text (arcade font) */
-export const TEXT_BUTTON = "font-arcade text-sm";
+export const TEXT_BUTTON = "font-arcade text-ui-xs";
 
 // ---------------------------------------------------------------------------
 // Inputs
@@ -65,11 +101,11 @@ export const BTN_OUTLINE =
 
 /** Toolbar toggle button (inactive) */
 export const BTN_TOOLBAR =
-  "min-h-[44px] rounded-[0.95rem] font-arcade text-xs px-3 text-muted-foreground hover:text-primary border border-transparent";
+  "min-h-[44px] rounded-[0.95rem] border border-transparent px-3 font-arcade text-ui-xs text-muted-foreground hover:text-primary";
 
 /** Toolbar toggle button (active) */
 export const BTN_TOOLBAR_ACTIVE =
-  "min-h-[44px] rounded-[0.95rem] font-arcade text-xs px-3 text-primary bg-primary/15 border border-primary/40 shadow-[0_0_18px_rgba(255,86,120,0.16)]";
+  "min-h-[44px] rounded-[0.95rem] border border-primary/40 bg-primary/15 px-3 font-arcade text-ui-xs text-primary shadow-[0_0_18px_rgba(255,86,120,0.16)]";
 
 // ---------------------------------------------------------------------------
 // Layout
@@ -82,10 +118,12 @@ export const PANEL_PADDING = "p-3";
 export const SECTION_GAP = "space-y-3";
 
 /** Card border style */
-export const CARD_BORDER = "app-panel border border-primary/30 rounded-[1.35rem]";
+export const CARD_BORDER =
+  "app-panel border border-primary/30 rounded-[1.35rem]";
 
 /** Card border (secondary) */
-export const CARD_BORDER_SECONDARY = "app-panel border border-primary/20 rounded-[1.35rem]";
+export const CARD_BORDER_SECONDARY =
+  "app-panel border border-primary/20 rounded-[1.35rem]";
 
 // ---------------------------------------------------------------------------
 // Icons

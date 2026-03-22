@@ -3,93 +3,230 @@
  * Pair with .tl-vp-head / .tl-vp-body for consistent panel chrome in the lab. */
 
 /* ─── Shared lab utilities (hover/focus simulation for static screenshots) ─── */
-.tl-sim-hover.hud-button-a,
-.tl-sim-hover.hud-button-b,
-.tl-sim-hover.hud-button-c,
-.tl-sim-hover.hud-button-d,
-.tl-sim-hover.hud-button-e {
+button.tl-sim-hover[class*="hud-button-"] {
   pointer-events: none;
 }
 
-/* ─── Panels: hud-panel-a … e ─── */
+/* ─── Panels: hud-panel-a … j ─── */
 
+/* a — standard HUD card (guide): tight radius, thin crimson rim, subtle outer glow, ~80% dark fill */
 .hud-panel-a {
   position: relative;
   overflow: hidden;
-  border-radius: var(--hud-radius-lg);
+  border-radius: 4px;
   color: var(--text-main);
-  background: linear-gradient(
-    165deg,
-    color-mix(in srgb, var(--hud-color-surface-b) 92%, transparent),
-    color-mix(in srgb, var(--hud-color-surface-inset) 88%, transparent)
-  );
-  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 22%, transparent);
+  background: color-mix(in srgb, #000 82%, var(--hud-color-surface-inset));
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 55%, transparent);
   box-shadow:
     0 0 0 1px var(--hud-border-inner) inset,
-    0 0 32px color-mix(in srgb, var(--hud-color-accent) 14%, transparent),
+    0 0 20px color-mix(in srgb, var(--hud-color-accent) 8%, transparent),
     var(--hud-shadow-panel);
 }
 
+/* b — high-glow + chamfer top-right (guide) */
 .hud-panel-b {
   position: relative;
   overflow: hidden;
-  border-radius: var(--hud-radius-md);
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%);
   color: var(--text-main);
-  background: linear-gradient(180deg, var(--hud-color-surface-a), var(--hud-color-bg-base));
-  border: 1px solid var(--hud-border-strong);
-  box-shadow:
-    0 0 0 1px var(--hud-border-subtle) inset,
-    0 4px 12px rgba(0, 0, 0, 0.45);
-}
-
-.hud-panel-c {
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--hud-radius-lg);
-  color: var(--text-main);
-  background: linear-gradient(180deg, #140a10, #08060a);
-  border: 1px solid color-mix(in srgb, var(--hud-color-accent-bright) 55%, transparent);
+  background: linear-gradient(180deg, #070508, var(--hud-color-bg-base));
+  border: 2px solid var(--hud-color-accent);
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--hud-color-accent) 35%, transparent) inset,
-    0 0 40px color-mix(in srgb, var(--hud-color-accent) 38%, transparent),
-    0 0 80px color-mix(in srgb, var(--hud-color-accent) 12%, transparent),
+    0 0 18px color-mix(in srgb, var(--hud-color-accent) 45%, transparent),
+    0 0 36px color-mix(in srgb, var(--hud-color-accent) 22%, transparent),
     var(--hud-shadow-panel);
 }
 
-.hud-panel-d {
+/* c — industrial matte, chamfered, corner rivets, no neon glow (guide) */
+.hud-panel-c {
   position: relative;
   overflow: hidden;
-  border-radius: var(--hud-radius-lg);
+  border-radius: 0;
+  clip-path: polygon(
+    12px 0,
+    calc(100% - 12px) 0,
+    100% 12px,
+    100% calc(100% - 12px),
+    calc(100% - 12px) 100%,
+    12px 100%,
+    0 calc(100% - 12px),
+    0 12px
+  );
   color: var(--text-main);
-  background: color-mix(in srgb, var(--hud-color-surface-a) 55%, transparent);
-  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 18%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, #fff 6%, transparent) inset,
-    var(--hud-shadow-float);
+  background: linear-gradient(180deg, #2a282c, #1a181c);
+  border: 3px solid #3f3d44;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.45);
 }
 
-.hud-panel-e {
+.hud-panel-c::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 16px 16px, #6b6b78 2px, transparent 2.5px),
+    radial-gradient(circle at calc(100% - 16px) 16px, #6b6b78 2px, transparent 2.5px),
+    radial-gradient(circle at 16px calc(100% - 16px), #6b6b78 2px, transparent 2.5px),
+    radial-gradient(circle at calc(100% - 16px) calc(100% - 16px), #6b6b78 2px, transparent 2.5px);
+}
+
+/* d — glassmorphism + faint warm top edge (guide: ~20px blur) */
+.hud-panel-d {
   position: relative;
   overflow: hidden;
   border-radius: var(--hud-radius-md);
   color: var(--text-main);
-  background: linear-gradient(180deg, var(--hud-color-surface-inset), #040406);
-  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 12%, transparent);
+  background: color-mix(in srgb, var(--hud-color-surface-a) 42%, transparent);
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 22%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   box-shadow:
-    inset 0 2px 14px rgba(0, 0, 0, 0.55),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.4),
-    0 1px 0 color-mix(in srgb, var(--hud-color-accent) 15%, transparent);
+    inset 0 1px 0 color-mix(in srgb, var(--hud-color-accent-bright) 25%, rgba(255, 255, 255, 0.08)),
+    0 0 0 1px color-mix(in srgb, #fff 5%, transparent) inset,
+    var(--hud-shadow-float);
 }
 
-/* ─── Buttons: hud-button-a … e (+ hover/disabled simulation classes) ─── */
+/* e — scanline + inset crimson recess (guide) */
+.hud-panel-e {
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+  color: var(--text-main);
+  background: linear-gradient(180deg, #0c0a0e, #050406);
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 28%, transparent);
+  box-shadow:
+    inset 0 0 24px color-mix(in srgb, var(--hud-color-accent) 28%, transparent),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+.hud-panel-e::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.22;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.4) 2px,
+    rgba(0, 0, 0, 0.4) 3px
+  );
+  mix-blend-mode: multiply;
+}
+
+/* f — radial crimson core, sharp top highlight, chamfer top-right (guide) */
+.hud-panel-f {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 0 100%);
+  color: var(--text-main);
+  background: radial-gradient(
+    120% 85% at 50% -10%,
+    color-mix(in srgb, var(--hud-color-accent) 42%, #1a060c),
+    #060306 55%,
+    #030204 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 40%, transparent);
+  box-shadow:
+    inset 0 3px 0 color-mix(in srgb, var(--hud-color-accent-bright) 55%, transparent),
+    0 0 32px color-mix(in srgb, var(--hud-color-accent) 20%, transparent),
+    var(--hud-shadow-panel);
+}
+
+.hud-panel-g {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--hud-radius-md);
+  color: var(--text-main);
+  background: linear-gradient(145deg, #10080c, var(--hud-color-surface-inset));
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 28%, transparent);
+  box-shadow: var(--hud-glow-sm), var(--hud-shadow-panel);
+}
+
+.hud-panel-g::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.16;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent,
+    transparent 3px,
+    color-mix(in srgb, var(--hud-color-accent) 10%, transparent) 3px,
+    color-mix(in srgb, var(--hud-color-accent) 10%, transparent) 4px
+  );
+  mix-blend-mode: soft-light;
+}
+
+.hud-panel-h {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0;
+  clip-path: polygon(
+    14px 0,
+    calc(100% - 14px) 0,
+    100% 14px,
+    100% calc(100% - 14px),
+    calc(100% - 14px) 100%,
+    14px 100%,
+    0 calc(100% - 14px),
+    0 14px
+  );
+  color: var(--text-main);
+  background: var(--hud-color-surface-a);
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 32%, transparent);
+  box-shadow:
+    0 0 28px color-mix(in srgb, var(--hud-color-accent) 16%, transparent),
+    0 0 0 1px var(--hud-border-inner) inset;
+}
+
+.hud-panel-i {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--hud-radius-md);
+  color: var(--text-main);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--hud-color-accent) 12%, transparent) 0 5px,
+    var(--hud-color-surface-inset) 5px
+  );
+  border: 1px solid var(--hud-border-muted);
+  border-left: 3px solid var(--hud-color-accent);
+  box-shadow: var(--hud-shadow-float);
+}
+
+.hud-panel-j {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--hud-radius-lg);
+  color: var(--text-main);
+  background: linear-gradient(180deg, var(--hud-color-surface-a), var(--hud-color-surface-inset));
+  border: 1px solid color-mix(in srgb, var(--hud-color-warning) 50%, var(--hud-color-accent) 50%);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--hud-color-warning) 18%, transparent) inset,
+    0 0 36px color-mix(in srgb, var(--hud-color-accent) 16%, transparent),
+    var(--hud-shadow-panel);
+}
+
+/* ─── Buttons: hud-button-a … j (+ hover/disabled simulation classes) ─── */
 
 .hud-button-a,
 .hud-button-b,
 .hud-button-c,
 .hud-button-d,
-.hud-button-e {
+.hud-button-e,
+.hud-button-f,
+.hud-button-g,
+.hud-button-h,
+.hud-button-i,
+.hud-button-j {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -113,123 +250,299 @@
 .hud-button-b:disabled,
 .hud-button-c:disabled,
 .hud-button-d:disabled,
-.hud-button-e:disabled {
+.hud-button-e:disabled,
+.hud-button-f:disabled,
+.hud-button-g:disabled,
+.hud-button-h:disabled,
+.hud-button-i:disabled,
+.hud-button-j:disabled {
   opacity: 0.38;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
 
-/* a — solid futuristic */
+.hud-button-d:disabled {
+  opacity: 0.28;
+}
+
+.hud-button-f:disabled {
+  filter: grayscale(0.4);
+  opacity: 0.35;
+}
+
+/* a — primary: pill, solid crimson, heavy glow, white label (guide) */
 .hud-button-a {
-  border-radius: var(--hud-radius-md);
+  border-radius: var(--hud-radius-pill);
   color: #fff;
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--hud-color-accent-bright) 35%, var(--hud-color-surface-c)),
-    color-mix(in srgb, var(--hud-color-accent-deep) 55%, #1a0508)
+    var(--hud-color-accent-bright),
+    color-mix(in srgb, var(--hud-color-accent-deep) 90%, #200810)
   );
-  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 50%, transparent);
-  box-shadow: var(--hud-glow-sm), 0 4px 14px rgba(0, 0, 0, 0.35);
+  border: 1px solid color-mix(in srgb, #fff 18%, var(--hud-color-accent));
+  box-shadow:
+    0 0 22px color-mix(in srgb, var(--hud-color-accent) 55%, transparent),
+    0 0 44px color-mix(in srgb, var(--hud-color-accent) 22%, transparent),
+    0 4px 14px rgba(0, 0, 0, 0.45);
 }
 .hud-button-a:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: var(--hud-glow-md), 0 8px 20px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    0 0 32px color-mix(in srgb, var(--hud-color-accent) 65%, transparent),
+    0 0 56px color-mix(in srgb, var(--hud-color-accent) 28%, transparent),
+    0 8px 20px rgba(0, 0, 0, 0.5);
 }
 .tl-sim-hover.hud-button-a {
   transform: translateY(-1px);
-  box-shadow: var(--hud-glow-md), 0 8px 20px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    0 0 32px color-mix(in srgb, var(--hud-color-accent) 65%, transparent),
+    0 0 56px color-mix(in srgb, var(--hud-color-accent) 28%, transparent),
+    0 8px 20px rgba(0, 0, 0, 0.5);
 }
 
-/* b — outline neon */
+/* b — secondary: translucent fill, crimson rim + label (guide) */
 .hud-button-b {
   border-radius: var(--hud-radius-md);
   color: var(--hud-color-text-accent);
-  background: transparent;
-  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 55%, transparent);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--hud-color-accent) 12%, transparent);
+  background: color-mix(in srgb, var(--hud-color-accent) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 62%, transparent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--hud-color-accent) 14%, transparent);
 }
 .hud-button-b:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--hud-color-accent) 26%, transparent);
   border-color: var(--hud-color-accent-bright);
-  box-shadow: 0 0 22px color-mix(in srgb, var(--hud-color-accent) 28%, transparent);
   color: #fff;
+  box-shadow: 0 0 24px color-mix(in srgb, var(--hud-color-accent) 28%, transparent);
 }
 .tl-sim-hover.hud-button-b {
+  background: color-mix(in srgb, var(--hud-color-accent) 26%, transparent);
   border-color: var(--hud-color-accent-bright);
-  box-shadow: 0 0 22px color-mix(in srgb, var(--hud-color-accent) 28%, transparent);
   color: #fff;
+  box-shadow: 0 0 24px color-mix(in srgb, var(--hud-color-accent) 28%, transparent);
 }
 
-/* c — glow heavy */
+/* c — tactical parallelogram (guide) */
 .hud-button-c {
-  border-radius: var(--hud-radius-pill);
-  color: #fff;
-  background: var(--hud-color-surface-b);
-  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 30%, transparent);
-  box-shadow:
-    0 0 24px color-mix(in srgb, var(--hud-color-accent) 35%, transparent),
-    0 0 48px color-mix(in srgb, var(--hud-color-accent) 14%, transparent);
+  border-radius: 0;
+  clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
+  color: #f4f4f5;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hud-color-accent) 35%, #1c1016),
+    color-mix(in srgb, var(--hud-color-accent-deep) 40%, #0a0608)
+  );
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 45%, transparent);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--hud-color-accent) 18%, transparent);
+  padding: 0 18px;
 }
 .hud-button-c:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow:
-    0 0 32px color-mix(in srgb, var(--hud-color-accent) 48%, transparent),
-    0 0 64px color-mix(in srgb, var(--hud-color-accent) 20%, transparent);
+  box-shadow: 0 0 26px color-mix(in srgb, var(--hud-color-accent) 32%, transparent);
 }
 .tl-sim-hover.hud-button-c {
   transform: translateY(-1px);
-  box-shadow:
-    0 0 32px color-mix(in srgb, var(--hud-color-accent) 48%, transparent),
-    0 0 64px color-mix(in srgb, var(--hud-color-accent) 20%, transparent);
+  box-shadow: 0 0 26px color-mix(in srgb, var(--hud-color-accent) 32%, transparent);
 }
 
-/* d — minimal flat */
+/* d — muted / “disabled” chrome (guide); still supports real :disabled for lab matrix */
 .hud-button-d {
   border-radius: var(--hud-radius-sm);
-  color: var(--text-main);
-  background: var(--hud-color-surface-a);
+  color: var(--hud-color-text-tertiary);
+  background: color-mix(in srgb, var(--hud-color-surface-a) 88%, #000);
   border: 1px solid var(--hud-border-muted);
   box-shadow: none;
+  opacity: 0.5;
 }
 .hud-button-d:hover:not(:disabled) {
-  background: var(--hud-color-surface-b);
+  opacity: 0.62;
   border-color: var(--hud-border-strong);
+  color: var(--hud-color-text-secondary);
 }
 .tl-sim-hover.hud-button-d {
-  background: var(--hud-color-surface-b);
+  opacity: 0.62;
   border-color: var(--hud-border-strong);
+  color: var(--hud-color-text-secondary);
 }
 
-/* e — arcade */
+/* e — toggle row: track + thumb via pseudo-elements (guide); aria-pressed="false" = off */
 .hud-button-e {
-  border-radius: 2px;
-  color: var(--hud-color-text-accent);
-  background: linear-gradient(180deg, #1a1014, #0c080a);
-  border: 2px solid var(--hud-color-accent);
-  box-shadow:
-    2px 2px 0 color-mix(in srgb, var(--hud-color-accent-deep) 80%, #000),
-    inset 0 1px 0 color-mix(in srgb, #fff 8%, transparent);
-  font-family: var(--hud-font-mono);
+  position: relative;
+  border-radius: var(--hud-radius-pill);
+  padding-left: 46px;
+  color: #fff;
+  background: linear-gradient(180deg, #141018, #0a080c);
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 35%, transparent);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.5);
+}
+.hud-button-e::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--hud-border-muted);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+.hud-button-e::after {
+  content: "";
+  position: absolute;
+  left: 17px;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--hud-color-accent-bright);
+  border: 1px solid color-mix(in srgb, #fff 25%, var(--hud-color-accent));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--hud-color-accent) 65%, transparent);
+  transition: left var(--hud-duration-fast) var(--hud-ease-out), box-shadow var(--hud-duration-fast) var(--hud-ease-out);
+}
+.hud-button-e[aria-pressed="false"]::after {
+  left: 31px;
+  background: #52525b;
+  border-color: #3f3f46;
+  box-shadow: none;
 }
 .hud-button-e:hover:not(:disabled) {
-  transform: translate(-1px, -1px);
-  box-shadow:
-    3px 3px 0 color-mix(in srgb, var(--hud-color-accent-deep) 90%, #000),
-    inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent);
+  border-color: color-mix(in srgb, var(--hud-color-accent) 55%, transparent);
 }
 .tl-sim-hover.hud-button-e {
-  transform: translate(-1px, -1px);
-  box-shadow:
-    3px 3px 0 color-mix(in srgb, var(--hud-color-accent-deep) 90%, #000),
-    inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent);
+  border-color: color-mix(in srgb, var(--hud-color-accent) 55%, transparent);
 }
 
-/* ─── Tab lists + tabs: a–d ─── */
+/* f — icon-only glow (guide); put SVG inside button */
+.hud-button-f {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: var(--hud-radius-md);
+  color: var(--hud-color-accent-bright);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--hud-color-accent) 70%, transparent))
+    drop-shadow(0 0 22px color-mix(in srgb, var(--hud-color-accent) 35%, transparent));
+}
+.hud-button-f:hover:not(:disabled) {
+  transform: scale(1.04);
+  filter: drop-shadow(0 0 14px color-mix(in srgb, var(--hud-color-accent) 85%, transparent))
+    drop-shadow(0 0 28px color-mix(in srgb, var(--hud-color-accent) 45%, transparent));
+}
+.tl-sim-hover.hud-button-f {
+  transform: scale(1.04);
+  filter: drop-shadow(0 0 14px color-mix(in srgb, var(--hud-color-accent) 85%, transparent))
+    drop-shadow(0 0 28px color-mix(in srgb, var(--hud-color-accent) 45%, transparent));
+}
+
+/* g — bevel / pressed */
+.hud-button-g {
+  border-radius: var(--hud-radius-sm);
+  color: var(--text-main);
+  background: linear-gradient(180deg, var(--hud-color-surface-c), var(--hud-color-surface-inset));
+  border: 1px solid var(--hud-border-strong);
+  box-shadow:
+    0 3px 0 color-mix(in srgb, #000 88%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #fff 9%, transparent);
+}
+.hud-button-g:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow:
+    0 5px 0 color-mix(in srgb, #000 88%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #fff 11%, transparent);
+}
+.tl-sim-hover.hud-button-g {
+  transform: translateY(-2px);
+  box-shadow:
+    0 5px 0 color-mix(in srgb, #000 88%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #fff 11%, transparent);
+}
+
+/* h — danger + crimson */
+.hud-button-h {
+  border-radius: var(--hud-radius-pill);
+  color: #fff;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hud-color-danger) 42%, var(--hud-color-surface-b)),
+    color-mix(in srgb, var(--hud-color-accent-deep) 48%, #140810)
+  );
+  border: 1px solid color-mix(in srgb, var(--hud-color-danger) 42%, var(--hud-color-accent));
+  box-shadow: 0 0 22px color-mix(in srgb, var(--hud-color-danger) 22%, transparent);
+}
+.hud-button-h:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 32px color-mix(in srgb, var(--hud-color-danger) 32%, transparent),
+    0 0 18px color-mix(in srgb, var(--hud-color-accent) 18%, transparent);
+}
+.tl-sim-hover.hud-button-h {
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 32px color-mix(in srgb, var(--hud-color-danger) 32%, transparent),
+    0 0 18px color-mix(in srgb, var(--hud-color-accent) 18%, transparent);
+}
+
+/* i — compact data chip */
+.hud-button-i {
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: var(--hud-radius-pill);
+  font-size: 10px;
+  color: var(--hud-color-text-accent);
+  background: var(--hud-color-surface-inset);
+  border: 1px solid var(--hud-border-default);
+  font-family: var(--hud-font-mono);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+.hud-button-i:hover:not(:disabled) {
+  border-color: var(--hud-color-accent-bright);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 0 14px color-mix(in srgb, var(--hud-color-accent) 20%, transparent);
+}
+.tl-sim-hover.hud-button-i {
+  border-color: var(--hud-color-accent-bright);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 0 14px color-mix(in srgb, var(--hud-color-accent) 20%, transparent);
+}
+
+/* j — diagonal split sheen */
+.hud-button-j {
+  border-radius: var(--hud-radius-md);
+  color: #fff;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--hud-color-accent) 58%, #120810) 0%,
+    color-mix(in srgb, var(--hud-color-surface-b) 92%, transparent) 42%,
+    color-mix(in srgb, var(--hud-color-accent-deep) 45%, #0a0608) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 38%, transparent);
+  box-shadow: var(--hud-glow-xs), 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+.hud-button-j:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--hud-glow-sm), 0 8px 18px rgba(0, 0, 0, 0.4);
+}
+.tl-sim-hover.hud-button-j {
+  transform: translateY(-1px);
+  box-shadow: var(--hud-glow-sm), 0 8px 18px rgba(0, 0, 0, 0.4);
+}
+
+/* ─── Tab lists + tabs: a–g ─── */
 
 .hud-tablist-a,
 .hud-tablist-b,
 .hud-tablist-c,
-.hud-tablist-d {
+.hud-tablist-d,
+.hud-tablist-e,
+.hud-tablist-f,
+.hud-tablist-g {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
@@ -239,7 +552,10 @@
 .hud-tab-a,
 .hud-tab-b,
 .hud-tab-c,
-.hud-tab-d {
+.hud-tab-d,
+.hud-tab-e,
+.hud-tab-f,
+.hud-tab-g {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -261,26 +577,28 @@
     border-color var(--hud-duration-fast) var(--hud-ease-out);
 }
 
-/* a — pill glow */
+/* a — guide: horizontal bar; active = solid crimson + 2px bottom accent; inactive = transparent + muted text */
 .hud-tablist-a {
-  padding: var(--hud-space-1);
-  border-radius: var(--hud-radius-pill);
-  background: color-mix(in srgb, var(--hud-color-surface-inset) 80%, transparent);
-  border: 1px solid var(--hud-border-subtle);
+  gap: 2px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--hud-border-muted);
 }
 .hud-tab-a {
-  border-radius: var(--hud-radius-pill);
+  border-radius: 4px 4px 0 0;
+  margin-bottom: -1px;
   border: 1px solid transparent;
+  border-bottom: none;
+  color: var(--hud-color-text-tertiary);
 }
 .hud-tab-a[aria-selected="true"] {
   color: #fff;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--hud-color-accent) 28%, var(--hud-color-surface-b)),
-    var(--hud-color-surface-inset)
-  );
-  border-color: color-mix(in srgb, var(--hud-color-accent) 45%, transparent);
-  box-shadow: var(--hud-glow-sm);
+  background: color-mix(in srgb, var(--hud-color-accent) 78%, #1a0508);
+  border-color: color-mix(in srgb, var(--hud-color-accent) 55%, transparent);
+  border-bottom: 2px solid var(--hud-color-accent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--hud-color-accent) 22%, transparent);
 }
 
 /* b — underline */
@@ -337,16 +655,114 @@
   text-shadow: 0 0 12px color-mix(in srgb, var(--hud-color-accent) 45%, transparent);
 }
 
-/* ─── Inputs: hud-input-a … d (+ focus simulation) ─── */
+/* e — vertical stack + rail */
+.hud-tablist-e {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--hud-space-1);
+  padding: var(--hud-space-2);
+  border-radius: var(--hud-radius-md);
+  background: color-mix(in srgb, var(--hud-color-surface-inset) 88%, transparent);
+  border: 1px solid var(--hud-border-subtle);
+  border-left: 3px solid color-mix(in srgb, var(--hud-color-accent) 52%, transparent);
+}
+.hud-tab-e {
+  justify-content: flex-start;
+  text-align: left;
+  border-radius: var(--hud-radius-sm);
+  border: 1px solid transparent;
+}
+.hud-tab-e[aria-selected="true"] {
+  color: #fff;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--hud-color-accent) 26%, transparent),
+    transparent
+  );
+  border-color: color-mix(in srgb, var(--hud-color-accent) 32%, transparent);
+  box-shadow: var(--hud-glow-xs);
+}
+
+/* f — HUD bracket frame */
+.hud-tablist-f {
+  flex-wrap: wrap;
+  gap: var(--hud-space-3);
+  padding: var(--hud-space-3);
+  position: relative;
+  border: 1px solid var(--hud-border-muted);
+}
+.hud-tablist-f::before,
+.hud-tablist-f::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--hud-color-accent);
+  pointer-events: none;
+  opacity: 0.9;
+}
+.hud-tablist-f::before {
+  top: -1px;
+  left: -1px;
+  border-right: none;
+  border-bottom: none;
+}
+.hud-tablist-f::after {
+  bottom: -1px;
+  right: -1px;
+  border-left: none;
+  border-top: none;
+}
+.hud-tab-f {
+  border-radius: 2px;
+  border: 1px solid transparent;
+}
+.hud-tab-f[aria-selected="true"] {
+  color: var(--hud-color-text-accent);
+  border-color: color-mix(in srgb, var(--hud-color-accent) 42%, transparent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--hud-color-accent) 18%, transparent);
+}
+
+/* g — segmented data bar */
+.hud-tablist-g {
+  flex-wrap: nowrap;
+  gap: 0;
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 28%, transparent);
+  border-radius: var(--hud-radius-sm);
+  overflow: hidden;
+  background: var(--hud-color-surface-inset);
+}
+.hud-tab-g {
+  border-radius: 0;
+  flex: 1 1 auto;
+  min-height: 38px;
+  border-right: 1px solid var(--hud-border-muted);
+}
+.hud-tab-g:last-child {
+  border-right: none;
+}
+.hud-tab-g[aria-selected="true"] {
+  color: #fff;
+  background: color-mix(in srgb, var(--hud-color-accent) 28%, var(--hud-color-surface-b));
+  box-shadow: inset 0 -3px 0 var(--hud-color-accent);
+}
+
+/* ─── Inputs: hud-input-a … g (+ focus simulation) ─── */
 
 .hud-input-a,
 .hud-input-b,
 .hud-input-c,
 .hud-input-d,
+.hud-input-e,
+.hud-input-f,
+.hud-input-g,
 .hud-textarea-a,
 .hud-textarea-b,
 .hud-textarea-c,
-.hud-textarea-d {
+.hud-textarea-d,
+.hud-textarea-e,
+.hud-textarea-f,
+.hud-textarea-g {
   width: 100%;
   box-sizing: border-box;
   font-family: var(--hud-font-mono);
@@ -361,7 +777,10 @@
 .hud-input-a,
 .hud-input-b,
 .hud-input-c,
-.hud-input-d {
+.hud-input-d,
+.hud-input-e,
+.hud-input-f,
+.hud-input-g {
   min-height: 40px;
   padding: 0 12px;
 }
@@ -369,7 +788,10 @@
 .hud-textarea-a,
 .hud-textarea-b,
 .hud-textarea-c,
-.hud-textarea-d {
+.hud-textarea-d,
+.hud-textarea-e,
+.hud-textarea-f,
+.hud-textarea-g {
   min-height: 72px;
   padding: 10px 12px;
   resize: vertical;
@@ -382,26 +804,34 @@
 .hud-input-c::placeholder,
 .hud-textarea-c::placeholder,
 .hud-input-d::placeholder,
-.hud-textarea-d::placeholder {
+.hud-textarea-d::placeholder,
+.hud-input-e::placeholder,
+.hud-textarea-e::placeholder,
+.hud-input-f::placeholder,
+.hud-textarea-f::placeholder,
+.hud-input-g::placeholder,
+.hud-textarea-g::placeholder {
   color: var(--hud-color-text-tertiary);
 }
 
-/* a — clean dark */
+/* a — guide: pill field, crimson rim, neon glow on focus */
 .hud-input-a,
 .hud-textarea-a {
-  border-radius: var(--hud-radius-md);
-  border: 1px solid var(--hud-border-muted);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25) inset;
+  border-radius: var(--hud-radius-pill);
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 48%, transparent);
+  background: color-mix(in srgb, #000 75%, var(--hud-color-surface-inset));
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35) inset;
 }
 .hud-input-a:focus,
 .hud-textarea-a:focus,
 .hud-input-a.tl-sim-focus,
 .hud-textarea-a.tl-sim-focus {
   outline: none;
-  border-color: color-mix(in srgb, var(--hud-color-accent) 45%, transparent);
+  border-color: var(--hud-color-accent-bright);
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--hud-color-accent) 25%, transparent),
-    0 0 0 3px color-mix(in srgb, var(--hud-color-accent) 12%, transparent);
+    0 0 0 1px color-mix(in srgb, var(--hud-color-accent) 35%, transparent) inset,
+    0 0 20px color-mix(in srgb, var(--hud-color-accent) 38%, transparent),
+    0 0 40px color-mix(in srgb, var(--hud-color-accent) 16%, transparent);
 }
 
 /* b — glow focus heavy */
@@ -456,4 +886,152 @@
   outline: none;
   border-color: var(--hud-border-strong);
   box-shadow: 0 1px 0 var(--hud-color-accent);
+}
+
+/* e — frosted glass field */
+.hud-input-e,
+.hud-textarea-e {
+  border-radius: var(--hud-radius-md);
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 18%, transparent);
+  background: color-mix(in srgb, var(--hud-color-surface-a) 48%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 0 0 1px color-mix(in srgb, #fff 5%, transparent) inset;
+}
+.hud-input-e:focus,
+.hud-textarea-e:focus,
+.hud-input-e.tl-sim-focus,
+.hud-textarea-e.tl-sim-focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--hud-color-accent) 48%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, #fff 6%, transparent) inset,
+    0 0 22px color-mix(in srgb, var(--hud-color-accent) 14%, transparent);
+}
+
+/* f — CRT scan texture */
+.hud-input-f,
+.hud-textarea-f {
+  border-radius: var(--hud-radius-sm);
+  border: 1px solid var(--hud-border-muted);
+  background-color: #0a0609;
+  background-image: repeating-linear-gradient(
+    180deg,
+    transparent,
+    transparent 2px,
+    color-mix(in srgb, var(--hud-color-accent) 6%, transparent) 2px,
+    color-mix(in srgb, var(--hud-color-accent) 6%, transparent) 3px
+  );
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35) inset;
+}
+.hud-input-f:focus,
+.hud-textarea-f:focus,
+.hud-input-f.tl-sim-focus,
+.hud-textarea-f.tl-sim-focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--hud-color-accent) 42%, transparent);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.35) inset,
+    0 0 26px color-mix(in srgb, var(--hud-color-accent) 22%, transparent);
+}
+
+/* g — warning halo focus (still crimson-forward) */
+.hud-input-g,
+.hud-textarea-g {
+  border-radius: var(--hud-radius-md);
+  border: 1px solid var(--hud-border-subtle);
+  background: var(--hud-color-surface-inset);
+}
+.hud-input-g:focus,
+.hud-textarea-g:focus,
+.hud-input-g.tl-sim-focus,
+.hud-textarea-g.tl-sim-focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--hud-color-warning) 55%, var(--hud-color-accent));
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--hud-color-warning) 18%, transparent),
+    0 0 28px color-mix(in srgb, var(--hud-color-accent) 16%, transparent);
+}
+
+/* ─── Status (implementation guide): progress + badges ─── */
+
+.hud-progress-a {
+  display: flex;
+  align-items: center;
+  gap: var(--hud-space-3);
+  width: 100%;
+  max-width: 360px;
+}
+
+.hud-progress-a__track {
+  flex: 1;
+  height: 8px;
+  border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent) 48%, transparent);
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow:
+    0 0 10px color-mix(in srgb, var(--hud-color-accent) 14%, transparent),
+    inset 0 1px 2px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+
+.hud-progress-a__fill {
+  height: 100%;
+  min-width: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--hud-color-accent-deep) 85%, #000),
+    var(--hud-color-accent-bright)
+  );
+  box-shadow:
+    0 0 12px color-mix(in srgb, var(--hud-color-accent) 55%, transparent),
+    0 0 24px color-mix(in srgb, var(--hud-color-accent) 28%, transparent);
+  transition: width var(--hud-duration-fast) var(--hud-ease-out);
+}
+
+.hud-progress-a__label {
+  flex-shrink: 0;
+  font-family: var(--hud-font-mono);
+  font-size: var(--hud-text-xs);
+  font-weight: 600;
+  color: var(--hud-color-text-accent);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--hud-color-accent) 35%, transparent);
+}
+
+.hud-badge-a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  background: radial-gradient(circle at 32% 28%, #ff8a9d, var(--hud-color-accent-deep));
+  border: 1px solid color-mix(in srgb, #fff 35%, var(--hud-color-accent));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--hud-color-accent) 70%, transparent);
+}
+
+.hud-badge-b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 12px;
+  font-family: var(--hud-font-label);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--hud-color-accent-bright) 70%, #300610),
+    color-mix(in srgb, var(--hud-color-accent-deep) 90%, #080204)
+  );
+  clip-path: polygon(10% 0, 90% 0, 100% 50%, 90% 100%, 10% 100%, 0 50%);
+  border: 1px solid color-mix(in srgb, var(--hud-color-accent-bright) 80%, transparent);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--hud-color-accent) 42%, transparent);
 }

@@ -18,12 +18,12 @@ export const CONTROL_DECK_SECTION =
   "rounded-[1.05rem] border border-[rgba(255,120,148,0.18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01)_18%,rgba(0,0,0,0.28)_100%),linear-gradient(135deg,rgba(255,54,96,0.08),rgba(0,0,0,0.06)_48%,rgba(0,0,0,0.24)_100%)] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_20px_rgba(0,0,0,0.18)]";
 
 export const CONTROL_KICKER =
-  "font-arcade text-[10px] uppercase tracking-[0.26em] text-primary/82";
+  "font-arcade text-ui-xs uppercase tracking-[0.22em] text-primary/88";
 
-export const CONTROL_COPY = "font-terminal text-xs text-muted-foreground";
+export const CONTROL_COPY = "font-mono text-base leading-7 text-foreground/78";
 
 export const CONTROL_CHIP =
-  "inline-flex min-h-[44px] items-center gap-2 rounded-full border border-[rgba(255,122,146,0.22)] bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.18)_100%)] px-3 py-2 font-terminal text-sm text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_20px_rgba(0,0,0,0.16)]";
+  "inline-flex min-h-[44px] items-center gap-2 rounded-full border border-[rgba(255,122,146,0.22)] bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.18)_100%)] px-3 py-2 font-terminal text-base text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_20px_rgba(0,0,0,0.16)]";
 
 export const controlToggleButton = (
   active: boolean,
@@ -32,8 +32,8 @@ export const controlToggleButton = (
   disabled = false,
 ) =>
   cn(
-    "relative isolate inline-flex min-h-[44px] items-center justify-center gap-2 overflow-hidden rounded-[1rem] border px-3 py-2 font-arcade text-xs uppercase tracking-[0.18em] transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
-    compact ? "min-h-[40px] px-2.5 text-[10px]" : null,
+    "relative isolate inline-flex min-h-[44px] items-center justify-center gap-2 overflow-hidden rounded-[1rem] border px-3 py-2 font-arcade text-sm uppercase tracking-[0.14em] transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+    compact ? "min-h-[40px] px-2.5 text-ui-xs" : null,
     emphasis === "primary"
       ? "border-[rgba(255,134,160,0.22)]"
       : "border-[rgba(255,122,146,0.16)]",

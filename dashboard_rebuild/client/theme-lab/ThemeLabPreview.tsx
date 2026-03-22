@@ -1,43 +1,108 @@
 import { type ReactNode, useId, useState } from "react";
 
-const PANEL_KEYS = ["a", "b", "c", "d", "e"] as const;
-const BUTTON_KEYS = ["a", "b", "c", "d", "e"] as const;
-const TAB_KEYS = ["a", "b", "c", "d"] as const;
-const INPUT_KEYS = ["a", "b", "c", "d"] as const;
+function HudBrainIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path
+        opacity={0.95}
+        d="M12 3.2c-1.9 0-3.5 1-4.3 2.5-.5-.3-1.1-.5-1.8-.5-2 0-3.6 1.6-3.6 3.6 0 .6.1 1.1.4 1.6-1 .7-1.6 1.8-1.6 3.1 0 2 1.5 3.7 3.4 3.9-.1.3-.1.6-.1.9 0 2.5 2 4.6 4.5 4.6.8 0 1.5-.2 2.1-.6.6.4 1.4.6 2.2.6 2.5 0 4.5-2.1 4.5-4.6 0-.3 0-.6-.1-.9 1.9-.2 3.4-1.9 3.4-3.9 0-1.3-.6-2.4-1.6-3.1.3-.5.4-1 .4-1.6 0-2-1.6-3.6-3.6-3.6-.7 0-1.3.2-1.8.5-.8-1.5-2.4-2.5-4.3-2.5Z"
+      />
+    </svg>
+  );
+}
+
+const PANEL_KEYS = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"] as const;
+const BUTTON_KEYS = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"] as const;
+const TAB_KEYS = ["a", "b", "c", "d", "e", "f", "g"] as const;
+const INPUT_KEYS = ["a", "b", "c", "d", "e", "f", "g"] as const;
 
 export type PanelVariant = (typeof PANEL_KEYS)[number];
 export type ButtonVariant = (typeof BUTTON_KEYS)[number];
 export type TabVariant = (typeof TAB_KEYS)[number];
 export type InputVariant = (typeof INPUT_KEYS)[number];
 
+function WrapperLabButtonSpecimen({
+  variant,
+  simHover,
+  disabled,
+}: {
+  variant: ButtonVariant;
+  simHover?: boolean;
+  disabled?: boolean;
+}) {
+  const cls = `hud-button-${variant}${simHover ? " tl-sim-hover" : ""}`;
+
+  if (variant === "f") {
+    return (
+      <button
+        type="button"
+        className={cls}
+        disabled={disabled}
+        aria-label={disabled ? "Neural link (disabled)" : "Neural link"}
+        tabIndex={simHover ? -1 : undefined}
+      >
+        <HudBrainIcon />
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={cls}
+      disabled={disabled}
+      aria-pressed={variant === "e" ? (disabled ? false : true) : undefined}
+      tabIndex={simHover ? -1 : undefined}
+    >
+      {variant === "e" ? "Live feed" : "Run"}
+    </button>
+  );
+}
+
 const PANEL_META: Record<PanelVariant, string> = {
-  a: "Soft glow",
-  b: "Sharp border · minimal glow",
-  c: "Heavy neon",
-  d: "Glass / transparent",
-  e: "Inset · recessed",
+  a: "Guide: standard card · thin rim · soft glow",
+  b: "Guide: high-glow · chamfer top-right",
+  c: "Guide: industrial · rivets · matte (no neon)",
+  d: "Guide: glass · 20px blur · top edge",
+  e: "Guide: scanline · inset crimson",
+  f: "Guide: radial core · top bar · chamfer TR",
+  g: "Extra: CRT scanline overlay",
+  h: "Extra: chamfered octagon",
+  i: "Extra: left data rail",
+  j: "Extra: amber warning rim",
 };
 
 const BUTTON_META: Record<ButtonVariant, string> = {
-  a: "Solid futuristic",
-  b: "Outline neon",
-  c: "Glow heavy",
-  d: "Minimal flat",
-  e: "Arcade",
+  a: "Guide: primary pill · heavy glow",
+  b: "Guide: secondary translucent",
+  c: "Guide: tactical parallelogram",
+  d: "Guide: muted / disabled chrome",
+  e: "Guide: toggle · thumb",
+  f: "Guide: icon · neural glow",
+  g: "Extra: bevel slab",
+  h: "Extra: danger tint",
+  i: "Extra: mono chip",
+  j: "Extra: diagonal sheen",
 };
 
 const TAB_META: Record<TabVariant, string> = {
-  a: "Pill glow",
-  b: "Underline",
+  a: "Guide: solid active + 2px bottom bar",
+  b: "Underline sheet",
   c: "Boxed segment",
   d: "Minimal text",
+  e: "Vertical stack · left rail",
+  f: "Bracket frame corners",
+  g: "Segmented data bar",
 };
 
 const INPUT_META: Record<InputVariant, string> = {
-  a: "Clean dark",
+  a: "Guide: pill · crimson rim · glow focus",
   b: "Glow focus heavy",
   c: "Boxed neon",
   d: "Minimal thin border",
+  e: "Frosted glass",
+  f: "CRT line texture",
+  g: "Warning halo focus",
 };
 
 function PanelChrome({
@@ -187,21 +252,15 @@ export function ThemeLabPreview() {
                 <div className="tl-wl-btn-variant-row">
                   <div className="tl-wl-btn-col">
                     <span>Default</span>
-                    <button type="button" className={`hud-button-${k}`}>
-                      Run
-                    </button>
+                    <WrapperLabButtonSpecimen variant={k} />
                   </div>
                   <div className="tl-wl-btn-col">
                     <span>Hover</span>
-                    <button type="button" className={`hud-button-${k} tl-sim-hover`} tabIndex={-1}>
-                      Run
-                    </button>
+                    <WrapperLabButtonSpecimen variant={k} simHover />
                   </div>
                   <div className="tl-wl-btn-col">
                     <span>Disabled</span>
-                    <button type="button" className={`hud-button-${k}`} disabled>
-                      Run
-                    </button>
+                    <WrapperLabButtonSpecimen variant={k} disabled />
                   </div>
                 </div>
               </div>
@@ -211,21 +270,15 @@ export function ThemeLabPreview() {
           <div className="tl-wl-btn-variant-row">
             <div className="tl-wl-btn-col">
               <span>Default</span>
-              <button type="button" className={`hud-button-${activeButton}`}>
-                Run
-              </button>
+              <WrapperLabButtonSpecimen variant={activeButton} />
             </div>
             <div className="tl-wl-btn-col">
               <span>Hover (simulated)</span>
-              <button type="button" className={`hud-button-${activeButton} tl-sim-hover`} tabIndex={-1}>
-                Run
-              </button>
+              <WrapperLabButtonSpecimen variant={activeButton} simHover />
             </div>
             <div className="tl-wl-btn-col">
               <span>Disabled</span>
-              <button type="button" className={`hud-button-${activeButton}`} disabled>
-                Run
-              </button>
+              <WrapperLabButtonSpecimen variant={activeButton} disabled />
             </div>
           </div>
         )}
@@ -351,7 +404,35 @@ export function ThemeLabPreview() {
       </section>
 
       <section className="tl-wl-section">
-        <h2>Live composite (single-style mode)</h2>
+        <h2>5 · Status (implementation guide)</h2>
+        <p className="tl-wl-hint">
+          Static specimens — <code className="tl-code">hud-progress-a</code>, <code className="tl-code">hud-badge-a</code>,{" "}
+          <code className="tl-code">hud-badge-b</code>. Not tied to the toolbar selects.
+        </p>
+        <div
+          className="tl-wl-status-strip"
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: "var(--hud-space-5)",
+          }}
+        >
+          <div className="hud-progress-a" role="group" aria-label="Sync progress 75 percent">
+            <div className="hud-progress-a__track">
+              <div className="hud-progress-a__fill" style={{ width: "75%" }} />
+            </div>
+            <span className="hud-progress-a__label">75%</span>
+          </div>
+          <span className="hud-badge-a" aria-label="3 notifications">
+            3
+          </span>
+          <span className="hud-badge-b">New</span>
+        </div>
+      </section>
+
+      <section className="tl-wl-section">
+        <h2>6 · Live composite (single-style mode)</h2>
         <p className="tl-wl-hint">Hidden when comparison grid is on. Uses your four active letters at once.</p>
         {compareAll ? (
           <p className="tl-wl-hint">Turn off comparison grid to preview one combined strip.</p>
@@ -379,15 +460,9 @@ export function ThemeLabPreview() {
                 style={{ marginBottom: "var(--hud-space-3)" }}
               />
               <div className="tl-wl-btn-variant-row">
-                <button type="button" className={`hud-button-${activeButton}`}>
-                  Primary
-                </button>
-                <button type="button" className={`hud-button-${activeButton} tl-sim-hover`} tabIndex={-1}>
-                  Hover
-                </button>
-                <button type="button" className={`hud-button-${activeButton}`} disabled>
-                  Disabled
-                </button>
+                <WrapperLabButtonSpecimen variant={activeButton} />
+                <WrapperLabButtonSpecimen variant={activeButton} simHover />
+                <WrapperLabButtonSpecimen variant={activeButton} disabled />
               </div>
             </PanelChrome>
           </div>
