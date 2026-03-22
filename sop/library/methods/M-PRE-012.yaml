@@ -20,7 +20,7 @@ constraints:
   no_hidden_teaching: true
   no_scored_checks: true
 knobs:
-  term_density: low
+  guidance_level: medium
 when_to_use:
 - Dense terminology, abbreviations, or nomenclature would otherwise make TEACH hard to follow.
 - First exposure to anatomy, neuro, or systems content with many named parts.
