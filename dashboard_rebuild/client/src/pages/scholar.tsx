@@ -25,14 +25,26 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { api, type ScholarInvestigation, type ScholarQuestion } from "@/lib/api";
+import {
+  api,
+  type ScholarInvestigation,
+  type ScholarQuestion,
+} from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/use-toast";
 
-type ScholarBrainProfile = Awaited<ReturnType<typeof api.brain.getProfileSummary>> & {
+type ScholarBrainProfile = Awaited<
+  ReturnType<typeof api.brain.getProfileSummary>
+> & {
   hybridArchetype?: {
     confidence?: string;
     label?: string;
@@ -60,8 +72,12 @@ type ScholarPageState = {
   submittingQuestionIds: Record<string, boolean>;
 };
 
-type ScholarFinding = Awaited<ReturnType<typeof api.scholar.getFindings>>[number];
-type ScholarInvestigationDetail = Awaited<ReturnType<typeof api.scholar.getInvestigation>>;
+type ScholarFinding = Awaited<
+  ReturnType<typeof api.scholar.getFindings>
+>[number];
+type ScholarInvestigationDetail = Awaited<
+  ReturnType<typeof api.scholar.getInvestigation>
+>;
 type ScholarProfileCard = {
   key: string;
   label: string;
@@ -86,7 +102,10 @@ function createScholarPageState(): ScholarPageState {
   };
 }
 
-function scholarPageReducer(state: ScholarPageState, patch: ScholarPagePatch): ScholarPageState {
+function scholarPageReducer(
+  state: ScholarPageState,
+  patch: ScholarPagePatch,
+): ScholarPageState {
   const nextPatch = typeof patch === "function" ? patch(state) : patch;
   return { ...state, ...nextPatch };
 }
@@ -116,6 +135,19 @@ function confidenceTone(confidence?: string) {
       return "border-yellow-500/60 text-yellow-400";
   }
 }
+
+const SCHOLAR_PANEL =
+  "rounded-[1.2rem] border border-[rgba(255,122,146,0.22)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01)_18%,rgba(0,0,0,0.3)_100%),linear-gradient(135deg,rgba(118,10,34,0.28),rgba(10,4,8,0.92)_58%,rgba(0,0,0,0.98)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_16px_30px_rgba(0,0,0,0.24)]";
+const SCHOLAR_PANEL_HEADER =
+  "border-b border-[rgba(255,122,146,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01)_70%)]";
+const SCHOLAR_PANEL_TITLE =
+  "font-arcade text-sm uppercase tracking-[0.18em] text-primary";
+const SCHOLAR_FIELD_LABEL =
+  "font-arcade text-ui-xs uppercase tracking-[0.18em] text-primary/84";
+const SCHOLAR_COPY = "font-mono text-base leading-7 text-foreground/82";
+const SCHOLAR_META = "font-mono text-sm leading-6 text-foreground/68";
+const SCHOLAR_BADGE = "rounded-full px-2.5 py-1 text-ui-2xs tracking-[0.14em]";
+const SCHOLAR_INSET = "rounded-[1rem] border border-primary/15 bg-black/20 p-3";
 
 function ScholarSidebar({
   brainLaunchContext,
@@ -150,14 +182,12 @@ function ScholarSidebar({
       {brainLaunchContext?.title ? (
         <div
           data-testid="scholar-brain-handoff"
-          className="rounded-[1rem] border border-primary/20 bg-primary/10 px-3 py-3"
+          className={cn(CONTROL_DECK_SECTION, "space-y-2")}
         >
-          <div className="font-arcade text-[10px] text-primary">OPENED FROM BRAIN</div>
-          <div className="font-terminal text-sm text-white">{brainLaunchContext.title}</div>
+          <div className={CONTROL_KICKER}>Opened From Brain</div>
+          <div className={CONTROL_COPY}>{brainLaunchContext.title}</div>
           {brainLaunchContext.reason ? (
-            <div className="font-terminal text-[11px] text-muted-foreground">
-              {brainLaunchContext.reason}
-            </div>
+            <div className={SCHOLAR_META}>{brainLaunchContext.reason}</div>
           ) : null}
         </div>
       ) : null}
@@ -167,28 +197,33 @@ function ScholarSidebar({
         {profile ? (
           <>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className={`rounded-none text-[10px] ${confidenceTone(profileConfidence)}`}>
+              <Badge
+                variant="outline"
+                className={`${SCHOLAR_BADGE} ${confidenceTone(profileConfidence)}`}
+              >
                 {profileConfidence?.toUpperCase() || "LOW"} CONFIDENCE
               </Badge>
-              <span className="font-terminal text-sm text-foreground">
-                {profile.hybridArchetype?.label || "No active Brain archetype yet"}
+              <span className={SCHOLAR_COPY}>
+                {profile.hybridArchetype?.label ||
+                  "No active Brain archetype yet"}
               </span>
             </div>
-            <div className="font-terminal text-xs text-muted-foreground">
-              {profile.hybridArchetype?.summary || "Brain has not derived a stable learner-pattern summary yet."}
+            <div className={SCHOLAR_META}>
+              {profile.hybridArchetype?.summary ||
+                "Brain has not derived a stable learner-pattern summary yet."}
             </div>
             <div className="space-y-2">
               {profileCards.map((card) => (
-                <div key={card.key} className="rounded-[0.95rem] border border-primary/15 bg-black/20 p-3">
-                  <div className="font-terminal text-[11px] uppercase tracking-wide text-primary">{card.label}</div>
-                  <div className="font-terminal text-sm text-foreground">{card.value}</div>
-                  <div className="font-terminal text-[11px] text-muted-foreground">{card.helper}</div>
+                <div key={card.key} className={SCHOLAR_INSET}>
+                  <div className={SCHOLAR_FIELD_LABEL}>{card.label}</div>
+                  <div className={SCHOLAR_COPY}>{card.value}</div>
+                  <div className={SCHOLAR_META}>{card.helper}</div>
                 </div>
               ))}
             </div>
           </>
         ) : (
-          <p className="font-terminal text-xs text-muted-foreground">Brain context is still loading.</p>
+          <p className={SCHOLAR_META}>Brain context is still loading.</p>
         )}
       </div>
 
@@ -197,33 +232,46 @@ function ScholarSidebar({
         {detail ? (
           <>
             <div className="flex flex-wrap gap-2">
-              <Badge variant="outline" className={`rounded-none text-[10px] ${statusTone(detail.status)}`}>
+              <Badge
+                variant="outline"
+                className={`${SCHOLAR_BADGE} ${statusTone(detail.status)}`}
+              >
                 {detail.status.toUpperCase()}
               </Badge>
-              <Badge variant="outline" className={`rounded-none text-[10px] ${confidenceTone(detail.confidence)}`}>
+              <Badge
+                variant="outline"
+                className={`${SCHOLAR_BADGE} ${confidenceTone(detail.confidence)}`}
+              >
                 {(detail.confidence || "low").toUpperCase()} CONFIDENCE
               </Badge>
             </div>
-            <div className="font-terminal text-sm text-foreground">{detail.title}</div>
-            <div className="font-terminal text-xs text-muted-foreground">{detail.rationale}</div>
+            <div className={SCHOLAR_COPY}>{detail.title}</div>
+            <div className={SCHOLAR_META}>{detail.rationale}</div>
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-[0.85rem] border border-primary/15 bg-black/20 p-2">
-                <div className="font-terminal text-[10px] text-primary">FINDINGS</div>
-                <div className="font-terminal text-sm text-foreground">{detail.findings_count ?? 0}</div>
+              <div className="rounded-[0.85rem] border border-primary/15 bg-black/20 p-2.5">
+                <div className={SCHOLAR_FIELD_LABEL}>Findings</div>
+                <div className="font-mono text-base leading-7 text-foreground">
+                  {detail.findings_count ?? 0}
+                </div>
               </div>
-              <div className="rounded-[0.85rem] border border-primary/15 bg-black/20 p-2">
-                <div className="font-terminal text-[10px] text-primary">OPEN QS</div>
-                <div className="font-terminal text-sm text-foreground">{detail.open_question_count ?? 0}</div>
+              <div className="rounded-[0.85rem] border border-primary/15 bg-black/20 p-2.5">
+                <div className={SCHOLAR_FIELD_LABEL}>Open Qs</div>
+                <div className="font-mono text-base leading-7 text-foreground">
+                  {detail.open_question_count ?? 0}
+                </div>
               </div>
-              <div className="rounded-[0.85rem] border border-primary/15 bg-black/20 p-2">
-                <div className="font-terminal text-[10px] text-primary">SOURCES</div>
-                <div className="font-terminal text-sm text-foreground">{detail.sources?.length ?? 0}</div>
+              <div className="rounded-[0.85rem] border border-primary/15 bg-black/20 p-2.5">
+                <div className={SCHOLAR_FIELD_LABEL}>Sources</div>
+                <div className="font-mono text-base leading-7 text-foreground">
+                  {detail.sources?.length ?? 0}
+                </div>
               </div>
             </div>
           </>
         ) : (
-          <div className="font-terminal text-xs text-muted-foreground">
-            Start or select an investigation to make the active research goal, findings count, and uncertainty visible here.
+          <div className={SCHOLAR_META}>
+            Start or select an investigation to make the active research goal,
+            findings count, and uncertainty visible here.
           </div>
         )}
       </div>
@@ -256,127 +304,198 @@ function ScholarWorkspaceTab({
   return (
     <TabsContent value="workspace" className="mt-0">
       <div className="grid gap-4 xl:grid-cols-[430px_minmax(0,1fr)]">
-        <Card className="bg-black/40 border border-primary/30">
-          <CardHeader className="border-b border-primary/20">
-            <CardTitle className="font-arcade text-xs">START INVESTIGATION</CardTitle>
+        <Card className={SCHOLAR_PANEL}>
+          <CardHeader className={SCHOLAR_PANEL_HEADER}>
+            <CardTitle className={SCHOLAR_PANEL_TITLE}>
+              Start Investigation
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 p-4">
             <div className="space-y-2">
-              <div className="font-terminal text-xs text-muted-foreground">Investigation question</div>
+              <div className={SCHOLAR_FIELD_LABEL}>Investigation Question</div>
               <Textarea
                 value={queryText}
-                onChange={(event) => patchPageState({ queryText: event.target.value })}
+                onChange={(event) =>
+                  patchPageState({ queryText: event.target.value })
+                }
                 placeholder="Example: Why does Brain keep classifying me as scaffold-dependent during retrieval-heavy sessions?"
-                className="min-h-[96px] rounded-none font-terminal text-xs border-primary/40"
+                className="min-h-[96px] rounded-[1rem] border-primary/40 bg-black/35 font-mono text-sm leading-6"
                 data-testid="scholar-investigation-query"
               />
             </div>
 
             <div className="space-y-2">
-              <div className="font-terminal text-xs text-muted-foreground">Why this matters</div>
+              <div className={SCHOLAR_FIELD_LABEL}>Why This Matters</div>
               <Textarea
                 value={rationale}
-                onChange={(event) => patchPageState({ rationale: event.target.value })}
+                onChange={(event) =>
+                  patchPageState({ rationale: event.target.value })
+                }
                 placeholder="Explain what Scholar should improve, validate, or challenge."
-                className="min-h-[96px] rounded-none font-terminal text-xs border-primary/40"
+                className="min-h-[96px] rounded-[1rem] border-primary/40 bg-black/35 font-mono text-sm leading-6"
                 data-testid="scholar-investigation-rationale"
               />
             </div>
 
             <div className="space-y-2">
-              <div className="font-terminal text-xs text-muted-foreground">Primary target</div>
+              <div className={SCHOLAR_FIELD_LABEL}>Primary Target</div>
               <Select
                 value={audienceType}
                 onValueChange={(value) =>
-                  patchPageState({ audienceType: value as "learner" | "operator" | "system" })
+                  patchPageState({
+                    audienceType: value as "learner" | "operator" | "system",
+                  })
                 }
               >
-                <SelectTrigger className="rounded-none font-terminal text-xs border-primary/40">
+                <SelectTrigger className="rounded-[1rem] border-primary/40 bg-black/35 font-mono text-sm">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-none bg-black border-primary">
-                  <SelectItem value="learner" className="font-terminal text-xs rounded-none">Learner</SelectItem>
-                  <SelectItem value="operator" className="font-terminal text-xs rounded-none">Operator</SelectItem>
-                  <SelectItem value="system" className="font-terminal text-xs rounded-none">System</SelectItem>
+                <SelectContent className="rounded-[1rem] border-primary/40 bg-black/95">
+                  <SelectItem
+                    value="learner"
+                    className="rounded-[0.85rem] font-mono text-sm"
+                  >
+                    Learner
+                  </SelectItem>
+                  <SelectItem
+                    value="operator"
+                    className="rounded-[0.85rem] font-mono text-sm"
+                  >
+                    Operator
+                  </SelectItem>
+                  <SelectItem
+                    value="system"
+                    className="rounded-[0.85rem] font-mono text-sm"
+                  >
+                    System
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <Button
-              className="w-full rounded-none font-terminal text-xs"
+              className="w-full rounded-[1rem] font-arcade text-sm tracking-[0.14em]"
               onClick={() => createInvestigation.mutate()}
-              disabled={createInvestigation.isPending || !queryText.trim() || !rationale.trim()}
+              disabled={
+                createInvestigation.isPending ||
+                !queryText.trim() ||
+                !rationale.trim()
+              }
               data-testid="button-start-investigation"
             >
               <Search className="w-3 h-3 mr-2" />
-              {createInvestigation.isPending ? "STARTING..." : "START INVESTIGATION"}
+              {createInvestigation.isPending
+                ? "STARTING..."
+                : "START INVESTIGATION"}
             </Button>
 
-            <div className="border border-primary/20 bg-black/30 p-3">
-              <div className="font-terminal text-[11px] uppercase tracking-wide text-primary">Current contract</div>
-              <ul className="mt-2 space-y-1 font-terminal text-xs text-muted-foreground">
-                <li>1. Scholar investigates Brain, Tutor, and support-system questions with source-backed research.</li>
-                <li>2. Scholar keeps findings, uncertainty, and blocked questions visible instead of hidden.</li>
-                <li>3. Scholar can challenge the current Brain read without becoming the long-term evidence home.</li>
-                <li>4. Scholar stays non-teaching and does not replace Tutor's live execution role.</li>
+            <div className={SCHOLAR_INSET}>
+              <div className={SCHOLAR_FIELD_LABEL}>Current Contract</div>
+              <ul className="mt-2 space-y-1.5 font-mono text-sm leading-6 text-foreground/68">
+                <li>
+                  1. Scholar investigates Brain, Tutor, and support-system
+                  questions with source-backed research.
+                </li>
+                <li>
+                  2. Scholar keeps findings, uncertainty, and blocked questions
+                  visible instead of hidden.
+                </li>
+                <li>
+                  3. Scholar can challenge the current Brain read without
+                  becoming the long-term evidence home.
+                </li>
+                <li>
+                  4. Scholar stays non-teaching and does not replace Tutor's
+                  live execution role.
+                </li>
               </ul>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-black/40 border border-primary/30">
-          <CardHeader className="border-b border-primary/20">
-            <CardTitle className="font-arcade text-xs">ACTIVE INVESTIGATIONS</CardTitle>
+        <Card className={SCHOLAR_PANEL}>
+          <CardHeader className={SCHOLAR_PANEL_HEADER}>
+            <CardTitle className={SCHOLAR_PANEL_TITLE}>
+              Active Investigations
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <ScrollArea className="h-[620px]">
               <div className="space-y-3 p-4">
                 {investigations.length === 0 ? (
-                  <p className="font-terminal text-xs text-muted-foreground">
+                  <p className={SCHOLAR_META}>
                     No investigations yet. Start one from the panel on the left.
                   </p>
                 ) : (
                   investigations.map((investigation) => {
-                    const isSelected = investigation.investigation_id === selectedInvestigationId;
+                    const isSelected =
+                      investigation.investigation_id ===
+                      selectedInvestigationId;
                     return (
                       <button
                         key={investigation.investigation_id}
                         type="button"
-                        className={`w-full text-left border p-4 bg-black/30 transition ${
-                          isSelected ? "border-primary" : "border-primary/20 hover:border-primary/60"
+                        className={`w-full rounded-[1rem] text-left border p-4 bg-black/30 transition ${
+                          isSelected
+                            ? "border-primary shadow-[0_0_0_1px_rgba(255,94,126,0.18)]"
+                            : "border-primary/20 hover:border-primary/60"
                         }`}
-                        onClick={() => patchPageState({ selectedInvestigationId: investigation.investigation_id })}
+                        onClick={() =>
+                          patchPageState({
+                            selectedInvestigationId:
+                              investigation.investigation_id,
+                          })
+                        }
                         data-testid={`investigation-card-${investigation.investigation_id}`}
                       >
                         <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <Badge variant="outline" className={`rounded-none text-[10px] ${statusTone(investigation.status)}`}>
+                          <Badge
+                            variant="outline"
+                            className={`${SCHOLAR_BADGE} ${statusTone(investigation.status)}`}
+                          >
                             {investigation.status.toUpperCase()}
                           </Badge>
-                          <Badge variant="outline" className={`rounded-none text-[10px] ${confidenceTone(investigation.confidence)}`}>
+                          <Badge
+                            variant="outline"
+                            className={`${SCHOLAR_BADGE} ${confidenceTone(investigation.confidence)}`}
+                          >
                             {(investigation.confidence || "low").toUpperCase()}
                           </Badge>
-                          <Badge variant="outline" className="rounded-none text-[10px] border-primary/20">
-                            {(investigation.audience_type || "learner").toUpperCase()}
+                          <Badge
+                            variant="outline"
+                            className={`${SCHOLAR_BADGE} border-primary/20 text-primary/80`}
+                          >
+                            {(
+                              investigation.audience_type || "learner"
+                            ).toUpperCase()}
                           </Badge>
                         </div>
-                        <div className="font-terminal text-sm text-foreground">{investigation.title}</div>
-                        <div className="font-terminal text-xs text-muted-foreground mt-1">
+                        <div className={SCHOLAR_COPY}>
+                          {investigation.title}
+                        </div>
+                        <div className={cn(SCHOLAR_META, "mt-1")}>
                           {investigation.rationale}
                         </div>
                         <div className="grid grid-cols-3 gap-2 mt-3">
-                          <div className="border border-primary/20 bg-black/20 p-2">
-                            <div className="font-terminal text-[10px] text-primary">FINDINGS</div>
-                            <div className="font-terminal text-xs text-foreground">{investigation.findings_count ?? 0}</div>
+                          <div className="rounded-[0.85rem] border border-primary/20 bg-black/20 p-2.5">
+                            <div className={SCHOLAR_FIELD_LABEL}>Findings</div>
+                            <div className="font-mono text-sm leading-6 text-foreground">
+                              {investigation.findings_count ?? 0}
+                            </div>
                           </div>
-                          <div className="border border-primary/20 bg-black/20 p-2">
-                            <div className="font-terminal text-[10px] text-primary">OPEN QS</div>
-                            <div className="font-terminal text-xs text-foreground">{investigation.open_question_count ?? 0}</div>
+                          <div className="rounded-[0.85rem] border border-primary/20 bg-black/20 p-2.5">
+                            <div className={SCHOLAR_FIELD_LABEL}>Open Qs</div>
+                            <div className="font-mono text-sm leading-6 text-foreground">
+                              {investigation.open_question_count ?? 0}
+                            </div>
                           </div>
-                          <div className="border border-primary/20 bg-black/20 p-2">
-                            <div className="font-terminal text-[10px] text-primary">UPDATED</div>
-                            <div className="font-terminal text-[11px] text-foreground">
+                          <div className="rounded-[0.85rem] border border-primary/20 bg-black/20 p-2.5">
+                            <div className={SCHOLAR_FIELD_LABEL}>Updated</div>
+                            <div className="font-mono text-sm leading-6 text-foreground">
                               {investigation.updated_at
-                                ? new Date(investigation.updated_at).toLocaleDateString()
+                                ? new Date(
+                                    investigation.updated_at,
+                                  ).toLocaleDateString()
                                 : "n/a"}
                             </div>
                           </div>
@@ -411,15 +530,17 @@ function ScholarQuestionsTab({
 }) {
   return (
     <TabsContent value="questions" className="mt-6">
-      <Card className="bg-black/40 border border-primary/30">
-        <CardHeader className="border-b border-primary/20">
-          <CardTitle className="font-arcade text-xs flex items-center gap-2">
+      <Card className={SCHOLAR_PANEL}>
+        <CardHeader className={SCHOLAR_PANEL_HEADER}>
+          <CardTitle
+            className={`${SCHOLAR_PANEL_TITLE} flex items-center gap-2`}
+          >
             <HelpCircle className="w-4 h-4" /> QUESTION INBOX
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 p-4">
           {questions.length === 0 ? (
-            <p className="font-terminal text-xs text-muted-foreground">
+            <p className={SCHOLAR_META}>
               Scholar has not produced any learner questions yet.
             </p>
           ) : (
@@ -429,13 +550,13 @@ function ScholarQuestionsTab({
               return (
                 <div
                   key={questionId}
-                  className="border border-primary/20 bg-black/30 p-4"
+                  className="rounded-[1rem] border border-primary/20 bg-black/30 p-4"
                   data-testid={`question-card-${questionId}`}
                 >
                   <div className="flex flex-wrap items-center gap-2 mb-2">
                     <Badge
                       variant="outline"
-                      className={`rounded-none text-[10px] ${
+                      className={`${SCHOLAR_BADGE} ${
                         answered
                           ? "border-emerald-500/60 text-emerald-400"
                           : "border-primary/60 text-primary"
@@ -446,7 +567,7 @@ function ScholarQuestionsTab({
                     {question.is_blocking ? (
                       <Badge
                         variant="outline"
-                        className="rounded-none text-[10px] border-yellow-500/60 text-yellow-400"
+                        className={`${SCHOLAR_BADGE} border-yellow-500/60 text-yellow-400`}
                       >
                         BLOCKING
                       </Badge>
@@ -454,26 +575,24 @@ function ScholarQuestionsTab({
                     {question.linked_investigation_id ? (
                       <Badge
                         variant="outline"
-                        className="rounded-none text-[10px] border-primary/20"
+                        className={`${SCHOLAR_BADGE} border-primary/20 text-primary/80`}
                       >
                         {question.linked_investigation_id}
                       </Badge>
                     ) : null}
                   </div>
-                  <div className="font-terminal text-sm text-foreground">
+                  <div className={SCHOLAR_COPY}>
                     {question.question_text || question.question}
                   </div>
                   {question.rationale ? (
-                    <p className="font-terminal text-xs text-muted-foreground mt-2">
+                    <p className={cn(SCHOLAR_META, "mt-2")}>
                       {question.rationale}
                     </p>
                   ) : null}
                   {question.evidence_needed ? (
-                    <div className="mt-2 border border-primary/10 bg-black/20 p-2">
-                      <div className="font-terminal text-[10px] uppercase tracking-wide text-primary">
-                        Evidence Needed
-                      </div>
-                      <div className="font-terminal text-xs text-muted-foreground mt-1">
+                    <div className="mt-2 rounded-[0.85rem] border border-primary/10 bg-black/20 p-2.5">
+                      <div className={SCHOLAR_FIELD_LABEL}>Evidence Needed</div>
+                      <div className={cn(SCHOLAR_META, "mt-1")}>
                         {question.evidence_needed}
                       </div>
                     </div>
@@ -481,13 +600,15 @@ function ScholarQuestionsTab({
 
                   {answered ? (
                     <div
-                      className="mt-3 border border-emerald-500/20 bg-emerald-500/5 p-3"
+                      className="mt-3 rounded-[0.85rem] border border-emerald-500/20 bg-emerald-500/5 p-3"
                       data-testid={`saved-answer-${questionId}`}
                     >
-                      <div className="font-terminal text-[10px] uppercase tracking-wide text-emerald-400">
+                      <div
+                        className={cn(SCHOLAR_FIELD_LABEL, "text-emerald-400")}
+                      >
                         Saved Answer
                       </div>
-                      <div className="font-terminal text-xs text-muted-foreground mt-1">
+                      <div className={cn(SCHOLAR_META, "mt-1")}>
                         {question.answer_text}
                       </div>
                     </div>
@@ -504,21 +625,23 @@ function ScholarQuestionsTab({
                           }))
                         }
                         placeholder="Write the learner answer Scholar should incorporate..."
-                        className="min-h-[88px] rounded-none font-terminal text-xs border-primary/30"
+                        className="min-h-[88px] rounded-[1rem] border-primary/30 bg-black/35 font-mono text-sm leading-6"
                       />
                       <div className="flex justify-end">
                         <Button
                           size="sm"
-                          className="rounded-none font-terminal text-xs"
+                          className="rounded-[1rem] font-arcade text-sm tracking-[0.14em]"
                           onClick={() => void submitAnswer(question)}
                           disabled={
-                            !((questionAnswers[questionId] || "").trim()) ||
+                            !(questionAnswers[questionId] || "").trim() ||
                             submittingQuestionIds[questionId]
                           }
                           data-testid={`button-submit-answer-${questionId}`}
                         >
                           <Send className="w-3 h-3 mr-2" />
-                          {submittingQuestionIds[questionId] ? "SAVING..." : "SAVE ANSWER"}
+                          {submittingQuestionIds[questionId]
+                            ? "SAVING..."
+                            : "SAVE ANSWER"}
                         </Button>
                       </div>
                     </div>
@@ -529,12 +652,13 @@ function ScholarQuestionsTab({
           )}
 
           {openQuestionsCount > 0 ? (
-            <div className="border border-yellow-500/20 bg-yellow-500/5 p-3">
-              <div className="font-terminal text-[11px] uppercase tracking-wide text-yellow-300">
+            <div className="rounded-[0.95rem] border border-yellow-500/20 bg-yellow-500/5 p-3">
+              <div className={cn(SCHOLAR_FIELD_LABEL, "text-yellow-300")}>
                 Why these questions matter
               </div>
-              <p className="font-terminal text-xs text-muted-foreground mt-1">
-                Scholar only asks when the current evidence is weak, conflicting, or still needs learner-specific context.
+              <p className={cn(SCHOLAR_META, "mt-1")}>
+                Scholar only asks when the current evidence is weak,
+                conflicting, or still needs learner-specific context.
               </p>
             </div>
           ) : null}
@@ -547,56 +671,59 @@ function ScholarQuestionsTab({
 function ScholarFindingsTab({ findings }: { findings: ScholarFinding[] }) {
   return (
     <TabsContent value="findings" className="mt-6">
-      <Card className="bg-black/40 border border-primary/30">
-        <CardHeader className="border-b border-primary/20">
-          <CardTitle className="font-arcade text-xs flex items-center gap-2">
+      <Card className={SCHOLAR_PANEL}>
+        <CardHeader className={SCHOLAR_PANEL_HEADER}>
+          <CardTitle
+            className={`${SCHOLAR_PANEL_TITLE} flex items-center gap-2`}
+          >
             <Link2 className="w-4 h-4" /> CITED FINDINGS
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 p-4">
           {findings.length === 0 ? (
-            <p className="font-terminal text-xs text-muted-foreground">
-              No research findings yet. Start an investigation and Scholar will populate this lane with cited findings.
+            <p className={SCHOLAR_META}>
+              No research findings yet. Start an investigation and Scholar will
+              populate this lane with cited findings.
             </p>
           ) : (
             findings.map((finding, index) => (
               <div
                 key={finding.finding_id || `${finding.title}-${index}`}
-                className="border border-primary/20 bg-black/30 p-4"
+                className="rounded-[1rem] border border-primary/20 bg-black/30 p-4"
               >
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <Badge
                     variant="outline"
-                    className={`rounded-none text-[10px] ${confidenceTone(finding.confidence)}`}
+                    className={`${SCHOLAR_BADGE} ${confidenceTone(finding.confidence)}`}
                   >
                     {(finding.confidence || "low").toUpperCase()} CONFIDENCE
                   </Badge>
                   {finding.investigation_id ? (
                     <Badge
                       variant="outline"
-                      className="rounded-none text-[10px] border-primary/20"
+                      className={`${SCHOLAR_BADGE} border-primary/20 text-primary/80`}
                     >
                       {finding.investigation_id}
                     </Badge>
                   ) : null}
                 </div>
-                <div className="font-terminal text-sm text-foreground">{finding.title}</div>
-                <p className="font-terminal text-xs text-muted-foreground mt-2">
+                <div className={SCHOLAR_COPY}>{finding.title}</div>
+                <p className={cn(SCHOLAR_META, "mt-2")}>
                   {finding.summary ||
                     finding.content ||
                     "Scholar recorded this finding without a summary yet."}
                 </p>
                 {finding.relevance ? (
-                  <div className="mt-2 text-xs font-terminal text-primary">
+                  <div className="mt-2 font-mono text-sm leading-6 text-primary">
                     Why it matters: {finding.relevance}
                   </div>
                 ) : null}
                 {finding.uncertainty ? (
-                  <div className="mt-2 border border-yellow-500/20 bg-yellow-500/5 p-2">
-                    <div className="font-terminal text-[10px] uppercase tracking-wide text-yellow-300">
+                  <div className="mt-2 rounded-[0.85rem] border border-yellow-500/20 bg-yellow-500/5 p-2.5">
+                    <div className={cn(SCHOLAR_FIELD_LABEL, "text-yellow-300")}>
                       Uncertainty
                     </div>
-                    <div className="font-terminal text-xs text-muted-foreground mt-1">
+                    <div className={cn(SCHOLAR_META, "mt-1")}>
                       {finding.uncertainty}
                     </div>
                   </div>
@@ -609,32 +736,34 @@ function ScholarFindingsTab({ findings }: { findings: ScholarFinding[] }) {
                         href={source.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="block border border-primary/15 bg-black/20 p-3 hover:border-primary/40"
+                        className="block rounded-[0.95rem] border border-primary/15 bg-black/20 p-3 hover:border-primary/40"
                       >
                         <div className="flex flex-wrap items-center gap-2">
                           <Badge
                             variant="outline"
-                            className={`rounded-none text-[10px] ${confidenceTone(source.trust_tier)}`}
+                            className={`${SCHOLAR_BADGE} ${confidenceTone(source.trust_tier)}`}
                           >
                             {(source.trust_tier || "general").toUpperCase()}
                           </Badge>
-                          <span className="font-terminal text-xs text-foreground">
+                          <span className="font-mono text-sm leading-6 text-foreground">
                             {source.title || source.url}
                           </span>
                         </div>
-                        <div className="font-terminal text-[11px] text-muted-foreground mt-1">
-                          {(source.publisher || source.domain) || source.url}
-                          {source.published_at ? ` • ${source.published_at}` : ""}
+                        <div className={cn(SCHOLAR_META, "mt-1")}>
+                          {source.publisher || source.domain || source.url}
+                          {source.published_at
+                            ? ` • ${source.published_at}`
+                            : ""}
                         </div>
                         {source.snippet ? (
-                          <p className="font-terminal text-[11px] text-muted-foreground mt-2">
+                          <p className={cn(SCHOLAR_META, "mt-2")}>
                             {source.snippet}
                           </p>
                         ) : null}
                       </a>
                     ))
                   ) : (
-                    <div className="font-terminal text-[11px] text-muted-foreground">
+                    <div className={SCHOLAR_META}>
                       No citations attached to this finding yet.
                     </div>
                   )}
@@ -648,62 +777,67 @@ function ScholarFindingsTab({ findings }: { findings: ScholarFinding[] }) {
   );
 }
 
-function ScholarHistoryTab({ investigations }: { investigations: ScholarInvestigation[] }) {
+function ScholarHistoryTab({
+  investigations,
+}: {
+  investigations: ScholarInvestigation[];
+}) {
   return (
     <TabsContent value="history" className="mt-6">
-      <Card className="bg-black/40 border border-primary/30">
-        <CardHeader className="border-b border-primary/20">
-          <CardTitle className="font-arcade text-xs flex items-center gap-2">
+      <Card className={SCHOLAR_PANEL}>
+        <CardHeader className={SCHOLAR_PANEL_HEADER}>
+          <CardTitle
+            className={`${SCHOLAR_PANEL_TITLE} flex items-center gap-2`}
+          >
             <CheckCircle2 className="w-4 h-4" /> INVESTIGATION HISTORY
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 p-4">
           {investigations.length === 0 ? (
-            <p className="font-terminal text-xs text-muted-foreground">
-              No Scholar history yet.
-            </p>
+            <p className={SCHOLAR_META}>No Scholar history yet.</p>
           ) : (
             investigations.map((investigation) => (
               <div
                 key={investigation.investigation_id}
-                className="border border-primary/20 bg-black/30 p-4"
+                className="rounded-[1rem] border border-primary/20 bg-black/30 p-4"
               >
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <Badge
                     variant="outline"
-                    className={`rounded-none text-[10px] ${statusTone(investigation.status)}`}
+                    className={`${SCHOLAR_BADGE} ${statusTone(investigation.status)}`}
                   >
                     {investigation.status.toUpperCase()}
                   </Badge>
                   <Badge
                     variant="outline"
-                    className={`rounded-none text-[10px] ${confidenceTone(investigation.confidence)}`}
+                    className={`${SCHOLAR_BADGE} ${confidenceTone(investigation.confidence)}`}
                   >
                     {(investigation.confidence || "low").toUpperCase()}
                   </Badge>
                 </div>
-                <div className="font-terminal text-sm text-foreground">
-                  {investigation.title}
-                </div>
-                <p className="font-terminal text-xs text-muted-foreground mt-1">
+                <div className={SCHOLAR_COPY}>{investigation.title}</div>
+                <p className={cn(SCHOLAR_META, "mt-1")}>
                   {investigation.rationale}
                 </p>
                 {investigation.error_message ? (
-                  <div className="mt-3 border border-destructive/20 bg-destructive/5 p-2">
-                    <div className="font-terminal text-[10px] uppercase tracking-wide text-destructive flex items-center gap-2">
+                  <div className="mt-3 rounded-[0.85rem] border border-destructive/20 bg-destructive/5 p-2.5">
+                    <div
+                      className={cn(
+                        SCHOLAR_FIELD_LABEL,
+                        "flex items-center gap-2 text-destructive",
+                      )}
+                    >
                       <AlertCircle className="w-3 h-3" /> Failure
                     </div>
-                    <div className="font-terminal text-xs text-muted-foreground mt-1">
+                    <div className={cn(SCHOLAR_META, "mt-1")}>
                       {investigation.error_message}
                     </div>
                   </div>
                 ) : null}
                 {investigation.run_notes ? (
-                  <div className="mt-3 border border-primary/10 bg-black/20 p-2">
-                    <div className="font-terminal text-[10px] uppercase tracking-wide text-primary">
-                      Run Notes
-                    </div>
-                    <div className="font-terminal text-xs text-muted-foreground mt-1">
+                  <div className="mt-3 rounded-[0.85rem] border border-primary/10 bg-black/20 p-2.5">
+                    <div className={SCHOLAR_FIELD_LABEL}>Run Notes</div>
+                    <div className={cn(SCHOLAR_META, "mt-1")}>
                       {investigation.run_notes}
                     </div>
                   </div>
@@ -747,7 +881,9 @@ export default function ScholarPage() {
         patchPageState({
           brainLaunchContext: parsed as ScholarBrainLaunchContext,
           selectedInvestigationId:
-            typeof parsed.investigationId === "string" ? parsed.investigationId : "",
+            typeof parsed.investigationId === "string"
+              ? parsed.investigationId
+              : "",
         });
       }
       sessionStorage.removeItem("scholar.open_from_brain.v1");
@@ -764,30 +900,50 @@ export default function ScholarPage() {
       if (!isScholarRoute) {
         return false;
       }
-      const rows = (query.state.data as ScholarInvestigation[] | undefined) ?? [];
-      return rows.some((row) => row.status === "queued" || row.status === "running") ? 2500 : false;
+      const rows =
+        (query.state.data as ScholarInvestigation[] | undefined) ?? [];
+      return rows.some(
+        (row) => row.status === "queued" || row.status === "running",
+      )
+        ? 2500
+        : false;
     },
   });
 
   const investigations = investigationsQuery.data ?? [];
   const selectedInvestigation = useMemo(
-    () => investigations.find((row) => row.investigation_id === selectedInvestigationId) ?? investigations[0] ?? null,
+    () =>
+      investigations.find(
+        (row) => row.investigation_id === selectedInvestigationId,
+      ) ??
+      investigations[0] ??
+      null,
     [investigations, selectedInvestigationId],
   );
 
   useEffect(() => {
-    if (selectedInvestigation && selectedInvestigation.investigation_id !== selectedInvestigationId) {
-      patchPageState({ selectedInvestigationId: selectedInvestigation.investigation_id });
+    if (
+      selectedInvestigation &&
+      selectedInvestigation.investigation_id !== selectedInvestigationId
+    ) {
+      patchPageState({
+        selectedInvestigationId: selectedInvestigation.investigation_id,
+      });
     }
   }, [patchPageState, selectedInvestigation, selectedInvestigationId]);
 
   const detailQuery = useQuery({
-    queryKey: ["scholar-investigation", selectedInvestigation?.investigation_id],
-    queryFn: () => api.scholar.getInvestigation(selectedInvestigation!.investigation_id),
+    queryKey: [
+      "scholar-investigation",
+      selectedInvestigation?.investigation_id,
+    ],
+    queryFn: () =>
+      api.scholar.getInvestigation(selectedInvestigation!.investigation_id),
     enabled: isScholarRoute && Boolean(selectedInvestigation?.investigation_id),
     refetchInterval:
       isScholarRoute &&
-      (selectedInvestigation?.status === "queued" || selectedInvestigation?.status === "running")
+      (selectedInvestigation?.status === "queued" ||
+        selectedInvestigation?.status === "running")
         ? 2500
         : false,
   });
@@ -800,12 +956,17 @@ export default function ScholarPage() {
   });
 
   const findingsQuery = useQuery({
-    queryKey: ["scholar-research-findings", selectedInvestigation?.investigation_id ?? "all"],
-    queryFn: () => api.scholar.getFindings(selectedInvestigation?.investigation_id, 60),
+    queryKey: [
+      "scholar-research-findings",
+      selectedInvestigation?.investigation_id ?? "all",
+    ],
+    queryFn: () =>
+      api.scholar.getFindings(selectedInvestigation?.investigation_id, 60),
     enabled: isScholarRoute,
     refetchInterval:
       isScholarRoute &&
-      (selectedInvestigation?.status === "queued" || selectedInvestigation?.status === "running")
+      (selectedInvestigation?.status === "queued" ||
+        selectedInvestigation?.status === "running")
         ? 2500
         : false,
   });
@@ -833,34 +994,51 @@ export default function ScholarPage() {
         activeTab: "workspace",
       });
       queryClient.invalidateQueries({ queryKey: ["scholar-investigations"] });
-      queryClient.invalidateQueries({ queryKey: ["scholar-research-findings"] });
-      queryClient.invalidateQueries({ queryKey: ["scholar-research-questions"] });
+      queryClient.invalidateQueries({
+        queryKey: ["scholar-research-findings"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["scholar-research-questions"],
+      });
       toast({
         title: "Investigation started",
-        description: "Scholar is collecting sources, citations, and system-facing findings.",
+        description:
+          "Scholar is collecting sources, citations, and system-facing findings.",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Could not start investigation",
-        description: error.message || "Scholar could not start the research run.",
+        description:
+          error.message || "Scholar could not start the research run.",
         variant: "destructive",
       });
     },
   });
 
   const answerQuestionMutation = useMutation({
-    mutationFn: ({ questionId, answer }: { questionId: string; answer: string }) =>
-      api.scholar.answerQuestion(questionId, answer, "ui"),
+    mutationFn: ({
+      questionId,
+      answer,
+    }: {
+      questionId: string;
+      answer: string;
+    }) => api.scholar.answerQuestion(questionId, answer, "ui"),
     onSuccess: (_, variables) => {
       patchPageState((prev) => ({
-        questionAnswers: { ...prev.questionAnswers, [variables.questionId]: "" },
+        questionAnswers: {
+          ...prev.questionAnswers,
+          [variables.questionId]: "",
+        },
       }));
-      queryClient.invalidateQueries({ queryKey: ["scholar-research-questions"] });
+      queryClient.invalidateQueries({
+        queryKey: ["scholar-research-questions"],
+      });
       queryClient.invalidateQueries({ queryKey: ["scholar-investigation"] });
       toast({
         title: "Answer saved",
-        description: "Scholar stored the answer and queued a refresh on the linked investigation.",
+        description:
+          "Scholar stored the answer and queued a refresh on the linked investigation.",
       });
     },
     onError: (error: Error) => {
@@ -879,19 +1057,27 @@ export default function ScholarPage() {
       return;
     }
     patchPageState((prev) => ({
-      submittingQuestionIds: { ...prev.submittingQuestionIds, [questionId]: true },
+      submittingQuestionIds: {
+        ...prev.submittingQuestionIds,
+        [questionId]: true,
+      },
     }));
     try {
       await answerQuestionMutation.mutateAsync({ questionId, answer });
     } finally {
       patchPageState((prev) => ({
-        submittingQuestionIds: { ...prev.submittingQuestionIds, [questionId]: false },
+        submittingQuestionIds: {
+          ...prev.submittingQuestionIds,
+          [questionId]: false,
+        },
       }));
     }
   };
 
   const questions = questionsQuery.data ?? [];
-  const openQuestions = questions.filter((question) => question.status !== "answered");
+  const openQuestions = questions.filter(
+    (question) => question.status !== "answered",
+  );
   const findings = findingsQuery.data ?? [];
   const profile = brainProfileQuery.data as ScholarBrainProfile | undefined;
   const detail = detailQuery.data;
@@ -901,19 +1087,24 @@ export default function ScholarPage() {
         {
           key: "headline",
           label: "Headline",
-          value: profile.profileSummary?.headline || "No active Brain headline yet.",
+          value:
+            profile.profileSummary?.headline || "No active Brain headline yet.",
           helper: "Current top-level Brain interpretation.",
         },
         {
           key: "strength",
           label: "Strength",
-          value: profile.profileSummary?.strengths?.[0] || "No stable strength identified yet.",
+          value:
+            profile.profileSummary?.strengths?.[0] ||
+            "No stable strength identified yet.",
           helper: "Strongest recurring pattern Brain sees.",
         },
         {
           key: "watchout",
           label: "Watchout",
-          value: profile.profileSummary?.watchouts?.[0] || "No major watchout identified yet.",
+          value:
+            profile.profileSummary?.watchouts?.[0] ||
+            "No major watchout identified yet.",
           helper: "Highest-risk drift Brain sees right now.",
         },
       ]
@@ -938,9 +1129,15 @@ export default function ScholarPage() {
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2 text-xs font-terminal text-muted-foreground">
-        <span className={cn(CONTROL_CHIP, "min-h-[40px] px-3 text-xs")}>{investigations.length} investigations</span>
-        <span className={cn(CONTROL_CHIP, "min-h-[40px] px-3 text-xs")}>{openQuestions.length} open questions</span>
-        <span className={cn(CONTROL_CHIP, "min-h-[40px] px-3 text-xs")}>{findings.length} findings</span>
+        <span className={cn(CONTROL_CHIP, "min-h-[40px] px-3 text-xs")}>
+          {investigations.length} investigations
+        </span>
+        <span className={cn(CONTROL_CHIP, "min-h-[40px] px-3 text-xs")}>
+          {openQuestions.length} open questions
+        </span>
+        <span className={cn(CONTROL_CHIP, "min-h-[40px] px-3 text-xs")}>
+          {findings.length} findings
+        </span>
         {selectedInvestigation ? (
           <span className={cn(CONTROL_CHIP, "min-h-[40px] px-3 text-xs")}>
             Active: {selectedInvestigation.title}
@@ -951,61 +1148,79 @@ export default function ScholarPage() {
   );
 
   return (
-      <PageScaffold
-        eyebrow="System Research Console"
-        title="Scholar"
-        subtitle="Investigate assumptions, gather external evidence, and record questions, findings, and uncertainty without turning this route into a teaching surface."
-        className="min-h-[calc(100vh-140px)]"
-        contentClassName="gap-6"
-        stats={[
-          { label: "Investigations", value: String(investigations.length) },
-          { label: "Open Questions", value: String(openQuestions.length), tone: "warn" },
-          { label: "Findings", value: String(findings.length), tone: "info" },
-        ]}
-        actions={
-          <Button
-            variant="shell"
-            size="sm"
-            className="font-arcade text-xs"
-            onClick={() => {
-              queryClient.invalidateQueries({ queryKey: ["scholar-investigations"] });
-              queryClient.invalidateQueries({ queryKey: ["scholar-investigation"] });
-              queryClient.invalidateQueries({ queryKey: ["scholar-research-findings"] });
-              queryClient.invalidateQueries({ queryKey: ["scholar-research-questions"] });
-              queryClient.invalidateQueries({ queryKey: ["brain", "profile", "scholar-bridge"] });
-            }}
-          >
-            <RefreshCw className="w-3 h-3 mr-2" /> REFRESH
-          </Button>
-        }
+    <PageScaffold
+      eyebrow="System Research Console"
+      title="Scholar"
+      subtitle="Investigate assumptions, gather external evidence, and record questions, findings, and uncertainty without turning this route into a teaching surface."
+      className="min-h-[calc(100vh-140px)]"
+      contentClassName="gap-6"
+      stats={[
+        { label: "Investigations", value: String(investigations.length) },
+        {
+          label: "Open Questions",
+          value: String(openQuestions.length),
+          tone: "warn",
+        },
+        { label: "Findings", value: String(findings.length), tone: "info" },
+      ]}
+      actions={
+        <Button
+          variant="shell"
+          size="sm"
+          className="font-arcade text-xs"
+          onClick={() => {
+            queryClient.invalidateQueries({
+              queryKey: ["scholar-investigations"],
+            });
+            queryClient.invalidateQueries({
+              queryKey: ["scholar-investigation"],
+            });
+            queryClient.invalidateQueries({
+              queryKey: ["scholar-research-findings"],
+            });
+            queryClient.invalidateQueries({
+              queryKey: ["scholar-research-questions"],
+            });
+            queryClient.invalidateQueries({
+              queryKey: ["brain", "profile", "scholar-bridge"],
+            });
+          }}
+        >
+          <RefreshCw className="w-3 h-3 mr-2" /> REFRESH
+        </Button>
+      }
+    >
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => patchPageState({ activeTab: value })}
+        className="min-h-[70vh]"
       >
-        <Tabs value={activeTab} onValueChange={(value) => patchPageState({ activeTab: value })} className="min-h-[70vh]">
-          <CoreWorkspaceFrame
-            sidebar={scholarSidebar}
-            topBar={scholarCommandBand}
-            contentClassName="gap-4 p-3 md:p-4"
-          >
-            <ScholarWorkspaceTab
-              audienceType={audienceType}
-              createInvestigation={createInvestigationMutation}
-              investigations={investigations}
-              patchPageState={patchPageState}
-              queryText={queryText}
-              rationale={rationale}
-              selectedInvestigationId={selectedInvestigation?.investigation_id}
-            />
-            <ScholarQuestionsTab
-              openQuestionsCount={openQuestions.length}
-              patchPageState={patchPageState}
-              questionAnswers={questionAnswers}
-              questions={questions}
-              submitAnswer={submitAnswer}
-              submittingQuestionIds={submittingQuestionIds}
-            />
-            <ScholarFindingsTab findings={findings} />
-            <ScholarHistoryTab investigations={investigations} />
-          </CoreWorkspaceFrame>
-        </Tabs>
-      </PageScaffold>
+        <CoreWorkspaceFrame
+          sidebar={scholarSidebar}
+          topBar={scholarCommandBand}
+          contentClassName="gap-4 p-3 md:p-4"
+        >
+          <ScholarWorkspaceTab
+            audienceType={audienceType}
+            createInvestigation={createInvestigationMutation}
+            investigations={investigations}
+            patchPageState={patchPageState}
+            queryText={queryText}
+            rationale={rationale}
+            selectedInvestigationId={selectedInvestigation?.investigation_id}
+          />
+          <ScholarQuestionsTab
+            openQuestionsCount={openQuestions.length}
+            patchPageState={patchPageState}
+            questionAnswers={questionAnswers}
+            questions={questions}
+            submitAnswer={submitAnswer}
+            submittingQuestionIds={submittingQuestionIds}
+          />
+          <ScholarFindingsTab findings={findings} />
+          <ScholarHistoryTab investigations={investigations} />
+        </CoreWorkspaceFrame>
+      </Tabs>
+    </PageScaffold>
   );
 }

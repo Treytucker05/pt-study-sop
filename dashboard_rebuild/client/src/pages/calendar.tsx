@@ -1581,7 +1581,7 @@ function useCalendarPageController() {
                     data-testid="calendar-brain-handoff"
                     className="border border-primary/30 bg-primary/10 p-3 space-y-1"
                   >
-                    <div className="font-arcade text-[10px] text-primary">OPENED FROM BRAIN</div>
+                    <div className="font-arcade text-ui-2xs text-primary">OPENED FROM BRAIN</div>
                     <div className="font-terminal text-sm text-white">{brainLaunchContext.title}</div>
                     {brainLaunchContext.courseName ? (
                       <div className={`${TEXT_MUTED} text-xs`}>
@@ -1605,7 +1605,7 @@ function useCalendarPageController() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="rounded-none h-8 px-3 font-arcade text-[10px]"
+                      className="rounded-none h-8 px-3 font-arcade text-ui-2xs"
                       onClick={() => {
                         if (debugModals) {
                           console.info("[ModalDebug][Calendar] MANAGE click");
@@ -1665,7 +1665,7 @@ function useCalendarPageController() {
                                 <div className={cn("font-terminal text-sm truncate", isSelected ? "text-white" : "text-muted-foreground")}>
                                   {cal.name}
                                 </div>
-                                <div className={`${TEXT_MUTED} text-[11px]`}>
+                                <div className={`${TEXT_MUTED} text-ui-xs`}>
                                   {isSelected ? "Live in canvas" : "Hidden from current canvas"}
                                 </div>
                               </div>

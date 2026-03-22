@@ -426,7 +426,7 @@ function useMethodsPageController() {
   const methodsSidebar = (
     <div className="flex h-full min-h-0 flex-col gap-4 p-3 md:p-4 overflow-auto">
       <div className="space-y-2">
-        <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
+        <div className="font-arcade text-ui-xs uppercase tracking-[0.24em] text-primary/80">
           Workspace
         </div>
         <div className="grid gap-2">
@@ -451,7 +451,7 @@ function useMethodsPageController() {
       </div>
 
       <div className="space-y-3 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
-        <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
+        <div className="font-arcade text-ui-xs uppercase tracking-[0.24em] text-primary/80">
           Current Focus
         </div>
         <div className="font-terminal text-sm text-white">
@@ -468,7 +468,7 @@ function useMethodsPageController() {
 
       {activeTab === "library" ? (
         <div className="space-y-2 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
-          <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
+          <div className="font-arcade text-ui-xs uppercase tracking-[0.24em] text-primary/80">
             Stage Filter
           </div>
           <div className="grid gap-2">
@@ -483,7 +483,7 @@ function useMethodsPageController() {
                     : "border-primary/15 bg-black/10 text-muted-foreground hover:border-primary/25 hover:text-white"
                 }`}
               >
-                <div className="font-arcade text-[11px]">
+                <div className="font-arcade text-ui-xs">
                   {stage === "all"
                     ? "ALL"
                     : stage === "favorites"
@@ -498,7 +498,7 @@ function useMethodsPageController() {
 
       {activeTab === "chains" ? (
         <div className="space-y-2 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
-          <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
+          <div className="font-arcade text-ui-xs uppercase tracking-[0.24em] text-primary/80">
             Chain Snapshot
           </div>
           {selectedChain ? (
@@ -630,7 +630,7 @@ function useMethodsPageController() {
                     <MethodBlockCard block={block} showLegacyCategory />
                     <div className="mt-2 flex items-center justify-end gap-2">
                       <button
-                        className={`inline-flex items-center gap-1 px-2 py-1 border-[3px] border-double transition-colors font-arcade text-[10px] tracking-wide ${
+                        className={`inline-flex items-center gap-1 px-2 py-1 border-[3px] border-double transition-colors font-arcade text-ui-2xs tracking-wide ${
                           favoriteMethodIds.includes(block.id)
                             ? "border-warning bg-warning/20 text-warning hover:bg-warning/30"
                             : "border-muted-foreground/40 bg-black/50 text-muted-foreground hover:text-warning hover:border-warning/60 hover:bg-warning/10"
@@ -642,7 +642,7 @@ function useMethodsPageController() {
                         FAV
                       </button>
                       <button
-                        className="inline-flex items-center gap-1 px-2 py-1 border-[3px] border-double border-primary/40 bg-black/50 text-primary hover:border-primary hover:bg-primary/15 transition-colors font-arcade text-[10px] tracking-wide"
+                        className="inline-flex items-center gap-1 px-2 py-1 border-[3px] border-double border-primary/40 bg-black/50 text-primary hover:border-primary hover:bg-primary/15 transition-colors font-arcade text-ui-2xs tracking-wide"
                         onClick={() => setRatingTarget({ id: block.id, name: block.name, type: "method" })}
                         title="Rate block"
                       >
@@ -650,7 +650,7 @@ function useMethodsPageController() {
                         RATE
                       </button>
                       <button
-                        className="inline-flex items-center gap-1 px-2 py-1 border-[3px] border-double border-primary/30 bg-black/50 text-muted-foreground hover:text-foreground hover:border-primary/60 hover:bg-primary/10 transition-colors font-arcade text-[10px] tracking-wide"
+                        className="inline-flex items-center gap-1 px-2 py-1 border-[3px] border-double border-primary/30 bg-black/50 text-muted-foreground hover:text-foreground hover:border-primary/60 hover:bg-primary/10 transition-colors font-arcade text-ui-2xs tracking-wide"
                         onClick={() => setEditingBlock(block)}
                         title="Edit block settings"
                       >
@@ -1222,7 +1222,7 @@ function EditBlockDialog({
             type="button"
             variant="outline"
             size="sm"
-            className="h-7 px-2 rounded-none border-[3px] border-double font-arcade text-[10px]"
+            className="h-7 px-2 rounded-none border-[3px] border-double font-arcade text-ui-2xs"
             onClick={() => updateState({ fullScreenText: !state.fullScreenText })}
           >
             {state.fullScreenText ? "EXIT FULL" : "FULL TEXT"}
@@ -1261,7 +1261,7 @@ function EditBlockDialog({
                   type="button"
                   variant="outline"
                   size="sm"
-                className="h-6 px-2 rounded-none border-[3px] border-double font-arcade text-[10px]"
+                className="h-6 px-2 rounded-none border-[3px] border-double font-arcade text-ui-2xs"
                 onClick={() => updateState({ facilitationPrompt: block?.facilitation_prompt ?? "" })}
               >
                 UNDO EDITS
@@ -1270,7 +1270,7 @@ function EditBlockDialog({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-6 px-2 rounded-none border-[3px] border-double border-warning/50 text-warning font-arcade text-[10px]"
+                  className="h-6 px-2 rounded-none border-[3px] border-double border-warning/50 text-warning font-arcade text-ui-2xs"
                   disabled={state.templateLoading || !block}
                   onClick={async () => {
                     if (!block) return;
@@ -1306,7 +1306,7 @@ function EditBlockDialog({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-6 px-2 rounded-none border-[3px] border-double font-arcade text-[10px]"
+                className="h-6 px-2 rounded-none border-[3px] border-double font-arcade text-ui-2xs"
                 onClick={() => {
                   updateState({
                     knobsJson: JSON.stringify(block?.knobs ?? {}, null, 2),

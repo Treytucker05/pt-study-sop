@@ -59,18 +59,18 @@ function SkillCard({
     >
       <div className="flex items-center justify-between mb-2">
         <span className="font-arcade text-xs text-white truncate mr-2">{skill.name}</span>
-        <span className={cn("flex items-center gap-1 text-[10px] font-arcade shrink-0", config.color)}>
+        <span className={cn("flex items-center gap-1 text-ui-2xs font-arcade shrink-0", config.color)}>
           <config.Icon className="w-3 h-3" />
           {config.label}
         </span>
       </div>
       <MasteryBar value={skill.effective_mastery} />
       <div className="flex justify-between mt-1">
-        <span className="font-terminal text-[10px] text-muted-foreground">MASTERY</span>
+        <span className="font-terminal text-ui-2xs text-muted-foreground">MASTERY</span>
         <span className={cn("font-terminal text-xs", config.color)}>{pct}%</span>
       </div>
       {isClickable && (
-        <div className="flex items-center gap-1 mt-1 text-[10px] font-terminal text-muted-foreground">
+        <div className="flex items-center gap-1 mt-1 text-ui-2xs font-terminal text-muted-foreground">
           {isSelected ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
           Click for details
         </div>
@@ -89,13 +89,13 @@ function WhyLockedPanel({ data }: { data: WhyLockedResponse }) {
 
       {data.missing_prereqs.length > 0 && (
         <div>
-          <h4 className="font-arcade text-[10px] text-yellow-400 mb-2">MISSING PREREQUISITES</h4>
+          <h4 className="font-arcade text-ui-2xs text-yellow-400 mb-2">MISSING PREREQUISITES</h4>
           <div className="space-y-2">
             {data.missing_prereqs.map((prereq) => (
               <div key={prereq.skill_id} className="bg-black/40 border border-primary/20 p-2">
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-terminal text-xs text-white">{prereq.skill_id}</span>
-                  <span className="font-terminal text-[10px] text-muted-foreground">
+                  <span className="font-terminal text-ui-2xs text-muted-foreground">
                     {Math.round(prereq.effective_mastery * 100)}% / {Math.round(prereq.needed * 100)}% needed
                   </span>
                 </div>
@@ -108,7 +108,7 @@ function WhyLockedPanel({ data }: { data: WhyLockedResponse }) {
 
       {data.flagged_prereqs.length > 0 && (
         <div>
-          <h4 className="font-arcade text-[10px] text-yellow-400 mb-2">FLAGGED PREREQUISITES</h4>
+          <h4 className="font-arcade text-ui-2xs text-yellow-400 mb-2">FLAGGED PREREQUISITES</h4>
           <div className="space-y-2">
             {data.flagged_prereqs.map((fp) => (
               <div key={fp.skill_id} className="bg-black/40 border border-primary/20 p-2">
@@ -116,7 +116,7 @@ function WhyLockedPanel({ data }: { data: WhyLockedResponse }) {
                 {fp.flags.map((flag) => (
                   <div key={`${flag.error_type}-${flag.evidence_ref ?? "none"}`} className="flex items-center gap-2 mt-1">
                     <SeverityBadge severity={flag.severity} />
-                    <span className="font-terminal text-[10px] text-muted-foreground">{flag.error_type}</span>
+                    <span className="font-terminal text-ui-2xs text-muted-foreground">{flag.error_type}</span>
                   </div>
                 ))}
               </div>
@@ -127,14 +127,14 @@ function WhyLockedPanel({ data }: { data: WhyLockedResponse }) {
 
       {data.recent_error_flags.length > 0 && (
         <div>
-          <h4 className="font-arcade text-[10px] text-yellow-400 mb-2">RECENT ERROR FLAGS</h4>
+          <h4 className="font-arcade text-ui-2xs text-yellow-400 mb-2">RECENT ERROR FLAGS</h4>
           <div className="space-y-1">
             {data.recent_error_flags.map((flag) => (
               <div key={`${flag.error_type}-${flag.evidence_ref ?? "none"}`} className="flex items-center gap-2 bg-black/40 border border-primary/20 p-2">
                 <SeverityBadge severity={flag.severity} />
                 <span className="font-terminal text-xs text-white">{flag.error_type}</span>
                 {flag.evidence_ref && (
-                  <span className="font-terminal text-[10px] text-muted-foreground truncate ml-auto">
+                  <span className="font-terminal text-ui-2xs text-muted-foreground truncate ml-auto">
                     {flag.evidence_ref}
                   </span>
                 )}
@@ -146,7 +146,7 @@ function WhyLockedPanel({ data }: { data: WhyLockedResponse }) {
 
       {data.remediation_path.length > 0 && (
         <div>
-          <h4 className="font-arcade text-[10px] text-green-400 mb-2">REMEDIATION PATH</h4>
+          <h4 className="font-arcade text-ui-2xs text-green-400 mb-2">REMEDIATION PATH</h4>
           <ol className="space-y-1">
             {data.remediation_path.map((step) => (
               <li key={step} className="flex items-center gap-2 font-terminal text-xs text-white">
@@ -167,7 +167,7 @@ function SeverityBadge({ severity }: { severity: string }) {
     : "text-yellow-400 bg-yellow-400/10";
 
   return (
-    <span className={cn("px-1.5 py-0.5 text-[9px] font-arcade", color)}>
+    <span className={cn("px-1.5 py-0.5 text-ui-3xs font-arcade", color)}>
       <AlertTriangle className="w-2.5 h-2.5 inline mr-0.5" />
       {severity.toUpperCase()}
     </span>
@@ -218,7 +218,7 @@ export default function MasteryPage() {
           sidebar={
             <div className="flex h-full min-h-0 flex-col gap-4 overflow-auto p-3 md:p-4">
               <div className="space-y-2">
-                <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
+                <div className="font-arcade text-ui-xs uppercase tracking-[0.24em] text-primary/80">
                   Skill Status
                 </div>
                 <div className="grid gap-2">
@@ -239,7 +239,7 @@ export default function MasteryPage() {
               </div>
 
               <div className="space-y-2 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
-                <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
+                <div className="font-arcade text-ui-xs uppercase tracking-[0.24em] text-primary/80">
                   Selected Skill
                 </div>
                 {selectedSkill ? (
@@ -258,7 +258,7 @@ export default function MasteryPage() {
               </div>
 
               <div className="space-y-2 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
-                <div className="font-arcade text-[11px] uppercase tracking-[0.24em] text-primary/80">
+                <div className="font-arcade text-ui-xs uppercase tracking-[0.24em] text-primary/80">
                   How To Read This
                 </div>
                 <div className="font-terminal text-xs text-muted-foreground">

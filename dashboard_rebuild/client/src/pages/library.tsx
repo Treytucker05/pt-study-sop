@@ -526,7 +526,7 @@ function SyncPreviewTreeNode({
         />
         <FileText className={`${ICON_SM} shrink-0`} />
         <span className="truncate flex-1">{node.name}</span>
-        <span className="text-[11px]">{formatSize(node.size)}</span>
+        <span className="text-ui-xs">{formatSize(node.size)}</span>
       </div>
     );
   }
@@ -563,7 +563,7 @@ function SyncPreviewTreeNode({
             <Folder className={`${ICON_SM} shrink-0`} />
           )}
           <span className="truncate flex-1">{node.name}</span>
-          <span className="text-[11px]">{children.length}</span>
+          <span className="text-ui-xs">{children.length}</span>
         </div>
       )}
       {isExpanded &&
@@ -1283,7 +1283,7 @@ function useLibraryPageController() {
                     >
                       <FolderOpen className={ICON_SM} />
                       <span className="truncate flex-1">All Materials</span>
-                      <span className="text-[11px]">{materials.length}</span>
+                      <span className="text-ui-xs">{materials.length}</span>
                     </button>
                     {visibleFolderItems.map((folder) => {
                       const isSelected = selectedFolderPath === folder.path;
@@ -1335,7 +1335,7 @@ function useLibraryPageController() {
                               {isSelected ? <FolderOpen className={ICON_SM} /> : <Folder className={ICON_SM} />}
                               <span className="truncate flex-1">{folder.name}</span>
                             </div>
-                            <span className="text-[11px]">{folder.filesCount}</span>
+                            <span className="text-ui-xs">{folder.filesCount}</span>
                           </div>
                         </div>
                       );
@@ -1357,7 +1357,7 @@ function useLibraryPageController() {
                     >
                       <BookOpen className={ICON_SM} />
                       <span className="truncate flex-1">All Materials</span>
-                      <span className="text-[11px]">{materials.length}</span>
+                      <span className="text-ui-xs">{materials.length}</span>
                     </button>
                     {contentSources?.courses
                       .filter((c) => c.id !== null)
@@ -1376,7 +1376,7 @@ function useLibraryPageController() {
                           >
                             <GraduationCap className={ICON_SM} />
                             <span className="truncate flex-1">{course.name || course.code}</span>
-                            <span className="text-[11px]">{course.doc_count}</span>
+                            <span className="text-ui-xs">{course.doc_count}</span>
                           </button>
                         );
                       })}
@@ -1391,7 +1391,7 @@ function useLibraryPageController() {
                     >
                       <FileText className={`${ICON_SM} opacity-50`} />
                       <span className="truncate flex-1">Unlinked</span>
-                      <span className="text-[11px]">{unlinkedCount}</span>
+                      <span className="text-ui-xs">{unlinkedCount}</span>
                     </button>
                   </>
                 )}
@@ -1509,7 +1509,7 @@ function useLibraryPageController() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="rounded-none h-7 px-2 font-terminal text-[11px]"
+                              className="rounded-none h-7 px-2 font-terminal text-ui-xs"
                               disabled={!syncPreviewFiles.length}
                               onClick={() => selectAllSyncFiles(!allSyncFilesSelected)}
                             >
@@ -1623,7 +1623,7 @@ function useLibraryPageController() {
                   </div>
                   <div className="grid gap-2 lg:grid-cols-[auto_auto_auto]">
                     <div className="border border-primary/20 bg-black/20 p-2 space-y-2">
-                      <div className={`${TEXT_MUTED} text-[11px] uppercase tracking-wide`}>Course Linking</div>
+                      <div className={`${TEXT_MUTED} text-ui-xs uppercase tracking-wide`}>Course Linking</div>
                       <div className="flex items-center gap-1">
                         <select
                           value={courseLinkTarget}
@@ -1660,7 +1660,7 @@ function useLibraryPageController() {
                     </div>
 
                     <div className="border border-primary/20 bg-black/20 p-2 space-y-2">
-                      <div className={`${TEXT_MUTED} text-[11px] uppercase tracking-wide`}>Tutor Queue</div>
+                      <div className={`${TEXT_MUTED} text-ui-xs uppercase tracking-wide`}>Tutor Queue</div>
                       <div className="flex items-center flex-wrap gap-2">
                         <Button
                           variant="outline"
@@ -1702,7 +1702,7 @@ function useLibraryPageController() {
                     </div>
 
                     <div className="border border-red-500/20 bg-red-500/5 p-2 space-y-2">
-                      <div className="text-[11px] uppercase tracking-wide text-red-200">Library Cleanup</div>
+                      <div className="text-ui-xs uppercase tracking-wide text-red-200">Library Cleanup</div>
                       <div className="flex items-center flex-wrap gap-2">
                         <Button
                           variant="destructive"
