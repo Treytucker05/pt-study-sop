@@ -844,7 +844,7 @@ function BulkActionReportBanner({
     <div className={`${PANEL_PADDING} pt-2 pb-0 shrink-0`}>
       <div className="border-[3px] border-double border-yellow-500/50 bg-black/70 p-2 space-y-1.5">
         <div className="flex items-center justify-between gap-2">
-          <div className="font-arcade text-[10px] tracking-wider text-yellow-300">
+          <div className="font-arcade text-ui-2xs tracking-wider text-yellow-300">
             {bulkActionReport.title}
           </div>
           <Button

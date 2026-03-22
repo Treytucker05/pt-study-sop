@@ -11,7 +11,11 @@ vi.mock("@/components/TutorTabBar", () => ({
 const teachRuntime: TutorTeachRuntimeViewModel = {
   packetSource: "mixed",
   stage: { label: "Current stage", value: "TEACH", status: "live" },
-  conceptType: { label: "Concept type", value: "Mechanism", status: "fallback" },
+  conceptType: {
+    label: "Concept type",
+    value: "Mechanism",
+    status: "fallback",
+  },
   bridge: { label: "Current bridge", value: "Analogy", status: "live" },
   depth: {
     label: "Depth lane",
@@ -21,7 +25,11 @@ const teachRuntime: TutorTeachRuntimeViewModel = {
     ceiling: "L4 precision",
     status: "fallback",
   },
-  requiredArtifact: { label: "Close artifact", value: "Mini process flow", status: "live" },
+  requiredArtifact: {
+    label: "Close artifact",
+    value: "Mini process flow",
+    status: "live",
+  },
   functionConfirmation: {
     label: "Function confirmation",
     value: "Function not confirmed",
@@ -40,7 +48,10 @@ const teachRuntime: TutorTeachRuntimeViewModel = {
     status: "available",
   },
   note: "Some TEACH packet fields are live, and the rest are inferred from the active block.",
-  missingBackendFields: ["teach_packet.concept_type", "teach_packet.current_depth"],
+  missingBackendFields: [
+    "teach_packet.concept_type",
+    "teach_packet.current_depth",
+  ],
 };
 
 describe("TutorTopBar", () => {
@@ -82,6 +93,7 @@ describe("TutorTopBar", () => {
         onSetShowArtifacts={vi.fn()}
         onSetShowEndConfirm={vi.fn()}
         onOpenSettings={vi.fn()}
+        onOpenStudioHome={vi.fn()}
         onSetStudioEntryRequest={vi.fn()}
         onSetScheduleLaunchIntent={vi.fn()}
       />,
@@ -89,10 +101,14 @@ describe("TutorTopBar", () => {
 
     const runtime = screen.getByTestId("tutor-teach-runtime");
     expect(runtime).toBeInTheDocument();
-    expect(within(runtime).getByText(/Live TEACH Runtime/i)).toBeInTheDocument();
+    expect(
+      within(runtime).getByText(/Live TEACH Runtime/i),
+    ).toBeInTheDocument();
     expect(within(runtime).getByText(/Concept type/i)).toBeInTheDocument();
     expect(within(runtime).getByText(/^Mechanism$/i)).toBeInTheDocument();
-    expect(within(runtime).getAllByText(/KWIK Lite available/i).length).toBeGreaterThan(0);
+    expect(
+      within(runtime).getAllByText(/KWIK Lite available/i).length,
+    ).toBeGreaterThan(0);
     expect(
       within(runtime).getByText(
         /Waiting on backend fields: teach_packet\.concept_type, teach_packet\.current_depth/i,

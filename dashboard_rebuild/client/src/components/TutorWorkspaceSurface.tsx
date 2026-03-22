@@ -390,8 +390,8 @@ export const TutorWorkspaceSurface = forwardRef<TutorWorkspaceSurfaceHandle>(
     >
       <div className="flex flex-wrap items-center gap-2 border-b border-primary/20 px-4 py-2">
         <div>
-          <div className="font-arcade text-[10px] text-primary">TUTOR WORKSPACE TOOLS</div>
-          <div className="font-terminal text-[11px] text-muted-foreground">
+          <div className="font-arcade text-ui-2xs text-primary">TUTOR WORKSPACE TOOLS</div>
+          <div className="font-terminal text-ui-xs text-muted-foreground">
             Rehosted study surfaces live here, not on the public Brain shell.
           </div>
         </div>
@@ -407,7 +407,7 @@ export const TutorWorkspaceSurface = forwardRef<TutorWorkspaceSurfaceHandle>(
                 size="sm"
                 data-testid={`tutor-workspace-tab-${tab.id}`}
                 className={cn(
-                  "rounded-none font-arcade text-[10px]",
+                  "rounded-none font-arcade text-ui-2xs",
                   isActive
                     ? "border border-primary/40 bg-primary/10 text-primary"
                     : "border border-transparent text-muted-foreground hover:border-primary/20 hover:text-primary",
@@ -426,12 +426,12 @@ export const TutorWorkspaceSurface = forwardRef<TutorWorkspaceSurfaceHandle>(
         <div className="grid min-h-0 flex-1 gap-0 lg:grid-cols-[260px_1fr]">
           <div className="border-r border-primary/20 bg-black/35 p-3">
             <div className="flex items-center justify-between gap-2">
-              <div className="font-arcade text-[10px] text-primary">NOTES</div>
+              <div className="font-arcade text-ui-2xs text-primary">NOTES</div>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="rounded-none border-primary/40 font-arcade text-[10px]"
+                className="rounded-none border-primary/40 font-arcade text-ui-2xs"
                 onClick={createWorkspaceNote}
               >
                 <FilePlus2 className="mr-1 h-3 w-3" />
@@ -439,7 +439,7 @@ export const TutorWorkspaceSurface = forwardRef<TutorWorkspaceSurfaceHandle>(
               </Button>
             </div>
             <div className="mt-3 space-y-2">
-              <div className="font-terminal text-[11px] text-muted-foreground">
+              <div className="font-terminal text-ui-xs text-muted-foreground">
                 Quick vault picks
               </div>
               {pinnedNotePaths.length ? (

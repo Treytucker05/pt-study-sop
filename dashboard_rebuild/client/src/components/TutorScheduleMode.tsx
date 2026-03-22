@@ -127,19 +127,19 @@ function ScheduleOverviewCard({
       <CardContent className="p-4 space-y-4">
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="border border-secondary/30 bg-black/30 p-3">
-            <div className="font-terminal text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            <div className="font-terminal text-ui-xs uppercase tracking-[0.18em] text-muted-foreground">
               Pending events
             </div>
             <div className="mt-2 font-arcade text-lg text-primary">{pendingEventCount}</div>
           </div>
           <div className="border border-secondary/30 bg-black/30 p-3">
-            <div className="font-terminal text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            <div className="font-terminal text-ui-xs uppercase tracking-[0.18em] text-muted-foreground">
               Planner queue
             </div>
             <div className="mt-2 font-arcade text-lg text-primary">{queueCount}</div>
           </div>
           <div className="border border-secondary/30 bg-black/30 p-3">
-            <div className="font-terminal text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            <div className="font-terminal text-ui-xs uppercase tracking-[0.18em] text-muted-foreground">
               Recent sessions
             </div>
             <div className="mt-2 font-arcade text-lg text-primary">{sessionCount}</div>
@@ -148,7 +148,7 @@ function ScheduleOverviewCard({
 
         {focusTopic ? (
           <div className="border border-primary/30 bg-primary/10 p-3">
-            <div className="font-terminal text-[11px] uppercase tracking-[0.18em] text-primary/80">
+            <div className="font-terminal text-ui-xs uppercase tracking-[0.18em] text-primary/80">
               Current focus
             </div>
             <div className="mt-1 font-terminal text-sm text-foreground">{focusTopic}</div>
@@ -157,7 +157,7 @@ function ScheduleOverviewCard({
 
         {launchIntent ? (
           <div className="border border-primary/30 bg-primary/10 p-3">
-            <div className="font-terminal text-[11px] uppercase tracking-[0.18em] text-primary/80">
+            <div className="font-terminal text-ui-xs uppercase tracking-[0.18em] text-primary/80">
               Launch focus
             </div>
             <div className="mt-1 font-terminal text-sm text-foreground">
@@ -253,7 +253,7 @@ function UpcomingEventsCard({
                 </div>
                 <Badge
                   variant="outline"
-                  className={cn("rounded-none text-[11px] uppercase", eventTone(event.type))}
+                  className={cn("rounded-none text-ui-xs uppercase", eventTone(event.type))}
                 >
                   {event.type}
                 </Badge>

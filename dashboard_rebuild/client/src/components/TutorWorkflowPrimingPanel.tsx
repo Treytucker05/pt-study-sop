@@ -151,12 +151,12 @@ function renderObjectives(objectives: AppLearningObjective[] | Array<{ lo_code?:
       {items.map((item, index) => (
         <div key={`${item.code}-${item.title}-${index}`} className="border border-primary/15 bg-black/30 p-3">
           <div className="flex items-start gap-3">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center border border-primary/20 bg-black/45 font-arcade text-[10px] text-primary/80">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center border border-primary/20 bg-black/45 font-arcade text-ui-2xs text-primary/80">
               {index + 1}
             </div>
             <div className="space-y-1">
               {item.code ? (
-                <Badge variant="outline" className="rounded-none border-primary/25 text-[10px] text-primary/80">
+                <Badge variant="outline" className="rounded-none border-primary/25 text-ui-2xs text-primary/80">
                   {item.code}
                 </Badge>
               ) : null}
@@ -174,7 +174,7 @@ function renderTextList(title: string, lines: string[]) {
   if (values.length === 0) return null;
   return (
     <div className="space-y-2">
-      <div className="font-arcade text-[10px] text-primary/80">{title}</div>
+      <div className="font-arcade text-ui-2xs text-primary/80">{title}</div>
       <div className="space-y-1">
         {values.map((value) => (
           <div key={`${title}-${value}`} className="font-terminal text-sm text-foreground/90">
@@ -200,7 +200,7 @@ function renderMethodOutput(entry: Record<string, unknown>) {
     <div className="space-y-4">
       {summary ? <div className="border border-primary/15 bg-black/35 p-4"><ObsidianRenderer content={summary} /></div> : null}
       {objectives.length > 0 ? renderObjectives(objectives) : null}
-      {mermaid ? <div className="space-y-2"><div className="font-arcade text-[10px] text-primary/80">Structure Map</div><div className="h-[260px] overflow-hidden border border-primary/20 bg-black/50"><ConceptMapStructured initialMermaid={mermaid} hideToolbar className="h-full" /></div></div> : map ? <div className="border border-primary/15 bg-black/35 p-4"><ObsidianRenderer content={map} /></div> : null}
+      {mermaid ? <div className="space-y-2"><div className="font-arcade text-ui-2xs text-primary/80">Structure Map</div><div className="h-[260px] overflow-hidden border border-primary/20 bg-black/50"><ConceptMapStructured initialMermaid={mermaid} hideToolbar className="h-full" /></div></div> : map ? <div className="border border-primary/15 bg-black/35 p-4"><ObsidianRenderer content={map} /></div> : null}
       {renderTextList("Concepts", concepts)}
       {renderTextList("Terminology", terms)}
       {renderTextList("Ambiguities", gaps)}
@@ -513,7 +513,7 @@ export function TutorWorkflowPrimingPanel({
         <Button
           type="button"
           variant="outline"
-          className="rounded-none font-arcade text-[10px]"
+          className="rounded-none font-arcade text-ui-2xs"
           onClick={() => previousStepId && setActiveStepId(previousStepId)}
           disabled={!previousStepId}
         >
@@ -522,7 +522,7 @@ export function TutorWorkflowPrimingPanel({
         <Button
           type="button"
           variant="outline"
-          className="rounded-none font-arcade text-[10px]"
+          className="rounded-none font-arcade text-ui-2xs"
           onClick={() => nextStepId && !nextStepDisabled && setActiveStepId(nextStepId)}
           disabled={!nextStepId || nextStepDisabled}
         >
@@ -659,7 +659,7 @@ export function TutorWorkflowPrimingPanel({
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="font-arcade text-[10px] text-primary/80">{item.label}</div>
+                    <div className="font-arcade text-ui-2xs text-primary/80">{item.label}</div>
                     <div className="mt-2 font-terminal text-sm text-foreground/90">{item.detail}</div>
                   </div>
                   {item.ready ? (
@@ -709,25 +709,25 @@ export function TutorWorkflowPrimingPanel({
         <div className="space-y-4 border-t border-primary/15 p-4">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <div className="border border-primary/15 bg-black/30 p-3">
-              <div className="font-arcade text-[10px] text-primary/80">WORKFLOW</div>
+              <div className="font-arcade text-ui-2xs text-primary/80">WORKFLOW</div>
               <div className="mt-2 break-all font-terminal text-sm text-foreground">
                 {truncateWorkflowId(workflow?.workflow_id)}
               </div>
             </div>
             <div className="border border-primary/15 bg-black/30 p-3">
-              <div className="font-arcade text-[10px] text-primary/80">LAST UPDATED</div>
+              <div className="font-arcade text-ui-2xs text-primary/80">LAST UPDATED</div>
               <div className="mt-2 font-terminal text-sm text-foreground">
                 {formatWorkflowDate(workflow?.updated_at)}
               </div>
             </div>
             <div className="border border-primary/15 bg-black/30 p-3">
-              <div className="font-arcade text-[10px] text-primary/80">STATUS</div>
+              <div className="font-arcade text-ui-2xs text-primary/80">STATUS</div>
               <div className="mt-2 font-terminal text-sm text-foreground">
                 {formatWorkflowStatus(workflow?.status)}
               </div>
             </div>
             <div className="border border-primary/15 bg-black/30 p-3">
-              <div className="font-arcade text-[10px] text-primary/80">OBSIDIAN TARGET</div>
+              <div className="font-arcade text-ui-2xs text-primary/80">OBSIDIAN TARGET</div>
               <div className="mt-2 break-all font-terminal text-xs text-foreground">
                 {vaultFolderPreview || "Select a class to derive the folder path."}
               </div>
@@ -831,7 +831,7 @@ export function TutorWorkflowPrimingPanel({
                 setActiveStepId("outputs");
               }}
               disabled={selectedMaterials.length === 0 || primingMethods.length === 0 || isRunningAssist}
-              className="rounded-none font-arcade text-[10px]"
+              className="rounded-none font-arcade text-ui-2xs"
             >
               {isRunningAssist ? (
                 <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" />
@@ -892,7 +892,7 @@ export function TutorWorkflowPrimingPanel({
                             <div className="min-w-0">
                               <div className="break-words font-terminal text-sm text-foreground">{sourceTitle}</div>
                               {sourcePath ? (
-                                <div className="mt-1 break-all font-terminal text-[11px] text-muted-foreground">
+                                <div className="mt-1 break-all font-terminal text-ui-xs text-muted-foreground">
                                   {sourcePath}
                                 </div>
                               ) : null}
@@ -1007,7 +1007,7 @@ export function TutorWorkflowPrimingPanel({
             <div className="space-y-4">
               {summaryText.trim() ? (
                 <div>
-                  <div className="font-arcade text-[10px] text-primary/80">Summary</div>
+                  <div className="font-arcade text-ui-2xs text-primary/80">Summary</div>
                   <div className="mt-2 border border-primary/15 bg-black/30 p-4">
                     <ObsidianRenderer content={summaryText} />
                   </div>
@@ -1029,7 +1029,7 @@ export function TutorWorkflowPrimingPanel({
       ) : null}
 
       <div className="border border-primary/15 bg-black/35 p-4">
-        <div className="font-arcade text-[10px] text-primary/80">PRIME BOUNDARY</div>
+        <div className="font-arcade text-ui-2xs text-primary/80">PRIME BOUNDARY</div>
         <div className="mt-2 font-terminal text-sm text-muted-foreground">
           Need root mechanism understanding? That belongs to TEACH after PRIME finishes structure. Keep
           Priming focused on orientation, scope, and handoff quality.
@@ -1103,7 +1103,7 @@ export function TutorWorkflowPrimingPanel({
                     )}
                   >
                     <Icon className="mb-2 h-4 w-4" />
-                    <div className="font-arcade text-[10px]">{option.label}</div>
+                    <div className="font-arcade text-ui-2xs">{option.label}</div>
                   </button>
                 );
               })}
@@ -1151,7 +1151,7 @@ export function TutorWorkflowPrimingPanel({
                             return (
                               <span
                                 key={`${chain.id}-${stage}`}
-                                className="border px-1 py-0.5 font-terminal text-[10px]"
+                                className="border px-1 py-0.5 font-terminal text-ui-2xs"
                                 style={{ borderColor: `${color}55`, color }}
                               >
                                 {count} {getMethodStageBadgeLabel({ control_stage: stage })}
@@ -1215,13 +1215,13 @@ export function TutorWorkflowPrimingPanel({
             ) : (
               <div className="grid gap-3 lg:grid-cols-2">
                 <div className="border border-primary/15 bg-black/25 p-3">
-                  <div className="font-arcade text-[10px] text-primary/80">OPEN QUESTIONS / AMBIGUITIES</div>
+                  <div className="font-arcade text-ui-2xs text-primary/80">OPEN QUESTIONS / AMBIGUITIES</div>
                   <div className="mt-2 font-terminal whitespace-pre-wrap text-sm text-foreground/90">
                     {renderPreview(gapsText, "No open questions or ambiguities captured yet.")}
                   </div>
                 </div>
                 <div className="border border-primary/15 bg-black/25 p-3">
-                  <div className="font-arcade text-[10px] text-primary/80">RECOMMENDED TUTOR STRATEGY</div>
+                  <div className="font-arcade text-ui-2xs text-primary/80">RECOMMENDED TUTOR STRATEGY</div>
                   <div className="mt-2 font-terminal whitespace-pre-wrap text-sm text-foreground/90">
                     {renderPreview(recommendedStrategyText, "No Tutor strategy note captured yet.")}
                   </div>
@@ -1239,7 +1239,7 @@ export function TutorWorkflowPrimingPanel({
             </div>
             {preflightBlockers.length > 0 ? (
               <div className="space-y-2 border border-destructive/35 bg-destructive/10 p-3">
-                <div className="font-arcade text-[10px] text-destructive/90">CURRENT BLOCKERS</div>
+                <div className="font-arcade text-ui-2xs text-destructive/90">CURRENT BLOCKERS</div>
                 {preflightBlockers.map((blocker, index) => (
                   <div
                     key={`handoff-${blocker.code || blocker.message}-${index}`}
@@ -1254,7 +1254,7 @@ export function TutorWorkflowPrimingPanel({
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-none font-arcade text-[10px]"
+                className="rounded-none font-arcade text-ui-2xs"
                 onClick={onBackToLaunch}
               >
                 BACK TO LAUNCH
@@ -1262,7 +1262,7 @@ export function TutorWorkflowPrimingPanel({
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-none font-arcade text-[10px]"
+                className="rounded-none font-arcade text-ui-2xs"
                 onClick={onSaveDraft}
                 disabled={isSaving}
               >
@@ -1272,7 +1272,7 @@ export function TutorWorkflowPrimingPanel({
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-none font-arcade text-[10px]"
+                className="rounded-none font-arcade text-ui-2xs"
                 onClick={onMarkReady}
                 disabled={isSaving || tutorLaunchDisabled}
               >
@@ -1281,7 +1281,7 @@ export function TutorWorkflowPrimingPanel({
               </Button>
               <Button
                 type="button"
-                className="rounded-none font-arcade text-[10px]"
+                className="rounded-none font-arcade text-ui-2xs"
                 onClick={onStartTutor}
                 disabled={tutorLaunchDisabled || isStartingTutor}
               >

@@ -50,7 +50,7 @@ function VerdictBadge({ verdict }: { verdict: TutorVerdict }) {
         )}
         {label}
         {verdict.confidence != null && (
-          <span className="font-terminal text-[10px] opacity-70">
+          <span className="font-terminal text-ui-2xs opacity-70">
             ({Math.round(verdict.confidence * 100)}%)
           </span>
         )}
@@ -114,7 +114,7 @@ function TeachBackBadge({ rubric }: { rubric: TeachBackRubric }) {
           <XCircle className="w-4 h-4" />
         )}
         {label}
-        <span className="font-terminal text-[10px] opacity-70">
+        <span className="font-terminal text-ui-2xs opacity-70">
           A:{rubric.accuracy_score} B:{rubric.breadth_score} S:{rubric.synthesis_score}
         </span>
       </button>
@@ -238,7 +238,7 @@ const RUNTIME_STATUS_STYLES: Record<TutorTeachRuntimeStatus, string> = {
 };
 
 function runtimeBadgeClasses(status: TutorTeachRuntimeStatus): string {
-  return `rounded-none border px-2 py-1 font-arcade text-[10px] uppercase tracking-[0.18em] ${RUNTIME_STATUS_STYLES[status]}`;
+  return `rounded-none border px-2 py-1 font-arcade text-ui-2xs uppercase tracking-[0.18em] ${RUNTIME_STATUS_STYLES[status]}`;
 }
 
 function TeachRuntimeRail({ teachRuntime }: { teachRuntime: TutorTeachRuntimeViewModel }) {
@@ -258,7 +258,7 @@ function TeachRuntimeRail({ teachRuntime }: { teachRuntime: TutorTeachRuntimeVie
 
   return (
     <div data-testid="message-runtime-rail" className="mt-2 border-t border-primary/20 pt-2">
-      <div className="mb-2 font-arcade text-[10px] uppercase tracking-[0.18em] text-primary">
+      <div className="mb-2 font-arcade text-ui-2xs uppercase tracking-[0.18em] text-primary">
         Live TEACH Contract
       </div>
       <div className="flex flex-wrap gap-2">
@@ -310,7 +310,7 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
             </div>
             {teachRuntime ? (
               <div className="mx-auto mt-4 max-w-4xl rounded-none border border-primary/20 bg-black/35 p-3 text-left">
-                <div className="mb-3 font-arcade text-[10px] uppercase tracking-[0.18em] text-primary">
+                <div className="mb-3 font-arcade text-ui-2xs uppercase tracking-[0.18em] text-primary">
                   Current Teaching Contract
                 </div>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
@@ -329,7 +329,7 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                     teachRuntime.mnemonic,
                   ].map((field) => (
                     <div key={`${field.label}-${field.value}`} className="rounded-none border border-primary/10 bg-black/40 p-2">
-                      <div className="font-arcade text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                      <div className="font-arcade text-ui-2xs uppercase tracking-[0.18em] text-muted-foreground">
                         {field.label}
                       </div>
                       <div className="mt-2 font-terminal text-xs leading-5 text-foreground">
@@ -573,10 +573,10 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                               });
                               setOpenStudioMenuIndex(null);
                             }}
-                            className="block w-full px-2 py-2 text-left font-arcade text-[10px] text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                            className="block w-full px-2 py-2 text-left font-arcade text-ui-2xs text-muted-foreground hover:bg-primary/10 hover:text-primary"
                           >
                             NOTE
-                            <div className="mt-1 font-terminal text-[11px] normal-case text-muted-foreground">
+                            <div className="mt-1 font-terminal text-ui-xs normal-case text-muted-foreground">
                               Send this response into Studio exactly as-is.
                             </div>
                           </button>
@@ -592,10 +592,10 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                               });
                               setOpenStudioMenuIndex(null);
                             }}
-                            className="block w-full px-2 py-2 text-left font-arcade text-[10px] text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                            className="block w-full px-2 py-2 text-left font-arcade text-ui-2xs text-muted-foreground hover:bg-primary/10 hover:text-primary"
                           >
                             SUMMARY BOARD
-                            <div className="mt-1 font-terminal text-[11px] normal-case text-muted-foreground">
+                            <div className="mt-1 font-terminal text-ui-xs normal-case text-muted-foreground">
                               Queue it for cleanup, merging, and later promotion.
                             </div>
                           </button>
@@ -610,7 +610,7 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
               {(msg.citations?.length || msg.model || msg.retrievalDebug) && !msg.isStreaming ? (
                 <div className="flex flex-wrap items-center gap-1 mt-2 pt-2 border-t border-primary/20">
                   {msg.retrievalDebug ? (
-                    <Badge variant="outline" className="text-[11px] rounded-none text-muted-foreground/80">
+                    <Badge variant="outline" className="text-ui-xs rounded-none text-muted-foreground/80">
                       RAG debug | {msg.retrievalDebug.effective_accuracy_profile ?? msg.retrievalDebug.accuracy_profile ?? "strict"}{msg.retrievalDebug.profile_escalated ? " (escalated)" : ""} | conf {(msg.retrievalDebug.retrieval_confidence ?? 0).toFixed(2)} ({msg.retrievalDebug.retrieval_confidence_tier ?? "low"}) | uniq {msg.retrievalDebug.retrieved_material_unique_sources ?? 0} | top {Math.round((msg.retrievalDebug.material_top_source_share ?? 0) * 100)}% | dropped {msg.retrievalDebug.material_dropped_by_cap ?? 0}
                     </Badge>
                   ) : null}

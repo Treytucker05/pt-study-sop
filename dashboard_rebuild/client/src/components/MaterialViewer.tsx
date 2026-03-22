@@ -32,7 +32,7 @@ function MaterialViewerHeader({
       <div className="flex min-w-0 items-center gap-2">
         <Icon className="h-4 w-4 shrink-0 text-primary" />
         <div className="min-w-0">
-          <div className="truncate font-arcade text-[10px] text-primary">
+          <div className="truncate font-arcade text-ui-2xs text-primary">
             MATERIAL VIEWER
           </div>
           <div className="truncate font-terminal text-xs text-foreground">
@@ -41,10 +41,10 @@ function MaterialViewerHeader({
         </div>
       </div>
       <div className="ml-auto flex items-center gap-2">
-        <span className="border border-primary/20 bg-black/30 px-2 py-1 font-terminal text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+        <span className="border border-primary/20 bg-black/30 px-2 py-1 font-terminal text-ui-2xs uppercase tracking-[0.18em] text-muted-foreground">
           {kind}
         </span>
-        <span className="border border-primary/20 bg-black/30 px-2 py-1 font-terminal text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+        <span className="border border-primary/20 bg-black/30 px-2 py-1 font-terminal text-ui-2xs uppercase tracking-[0.18em] text-muted-foreground">
           read-only
         </span>
         {url ? (
@@ -52,7 +52,7 @@ function MaterialViewerHeader({
             href={url}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 border border-primary/30 px-2 py-1 font-terminal text-[10px] uppercase tracking-[0.18em] text-primary transition-colors hover:bg-primary/10"
+            className="inline-flex items-center gap-1 border border-primary/30 px-2 py-1 font-terminal text-ui-2xs uppercase tracking-[0.18em] text-primary transition-colors hover:bg-primary/10"
           >
             <ExternalLink className="h-3 w-3" />
             open
@@ -80,7 +80,7 @@ function FallbackPanel({
       </div>
       {textContent ? (
         <div className="min-h-0 flex-1 overflow-auto border border-primary/15 bg-black/30 p-4">
-          <div className="mb-2 font-arcade text-[10px] text-primary">
+          <div className="mb-2 font-arcade text-ui-2xs text-primary">
             EXTRACTED TEXT PREVIEW
           </div>
           <pre

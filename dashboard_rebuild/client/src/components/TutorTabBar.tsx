@@ -1,6 +1,5 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { controlToggleButton } from "@/components/shell/controlStyles";
 import {
   PenTool,
   MessageSquare,
@@ -11,7 +10,7 @@ import {
   Download,
   Square,
 } from "lucide-react";
-import { ICON_MD, BTN_TOOLBAR } from "@/lib/theme";
+import { ICON_MD } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import type { TutorPageMode } from "@/lib/tutorUtils";
@@ -30,6 +29,21 @@ export interface TutorTabBarProps {
   onOpenSettings: () => void;
   onSetStudioEntryRequest: (req: null) => void;
   onSetScheduleLaunchIntent: (intent: null) => void;
+}
+
+function workspaceTabButton(
+  active: boolean,
+  tone: "default" | "danger" = "default",
+) {
+  return cn(
+    "min-h-[44px] flex-shrink-0 whitespace-nowrap rounded-[0.28rem] border px-3 py-2 font-mono text-ui-xs uppercase tracking-[0.16em] transition-all duration-150 ease-out",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
+    tone === "danger"
+      ? "border-destructive/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.025),rgba(0,0,0,0.16)_26%,rgba(0,0,0,0.4)_100%),linear-gradient(135deg,rgba(88,10,24,0.22),rgba(8,2,4,0.95)_64%,rgba(0,0,0,0.98)_100%)] text-destructive/78 hover:border-destructive/44 hover:text-destructive"
+      : active
+        ? "border-[rgba(255,112,138,0.34)] bg-[linear-gradient(180deg,rgba(255,72,104,0.14),rgba(12,2,5,0.92)_52%,rgba(0,0,0,0.98)_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05),inset_0_0_0_1px_rgba(255,84,116,0.05)]"
+        : "border-[rgba(255,70,104,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.025),rgba(0,0,0,0.16)_26%,rgba(0,0,0,0.4)_100%),linear-gradient(135deg,rgba(66,10,18,0.18),rgba(8,2,4,0.96)_64%,rgba(0,0,0,0.98)_100%)] text-[#ffd4dc] hover:border-[rgba(255,108,136,0.3)] hover:text-white",
+  );
 }
 
 export function TutorTabBar({
@@ -55,7 +69,7 @@ export function TutorTabBar({
       role="tablist"
       aria-label="Tutor workspace navigation"
       data-testid="workspace-tab-bar"
-      className="flex flex-wrap items-center gap-2 overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-primary/30 pb-1 -mb-1"
+      className="flex flex-wrap items-center gap-2 overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-primary/30"
     >
       <Button
         role="tab"
@@ -67,10 +81,7 @@ export function TutorTabBar({
           clearNavIntents();
           onSetShellMode("launch");
         }}
-        className={cn(
-          controlToggleButton(shellMode === "launch", "primary"),
-          "flex-shrink-0 whitespace-nowrap",
-        )}
+        className={workspaceTabButton(shellMode === "launch")}
       >
         LAUNCH
       </Button>
@@ -84,7 +95,7 @@ export function TutorTabBar({
           clearNavIntents();
           onSetShellMode("tutor");
         }}
-        className={cn(controlToggleButton(shellMode === "tutor", "primary"), "flex-shrink-0 whitespace-nowrap")}
+        className={workspaceTabButton(shellMode === "tutor")}
       >
         <MessageSquare className={`${ICON_MD} mr-1`} />
         TUTOR
@@ -99,7 +110,7 @@ export function TutorTabBar({
           clearNavIntents();
           onOpenStudioHome();
         }}
-        className={cn(controlToggleButton(shellMode === "studio", "primary"), "flex-shrink-0 whitespace-nowrap")}
+        className={workspaceTabButton(shellMode === "studio")}
       >
         <PenTool className={`${ICON_MD} mr-1`} />
         STUDIO
@@ -114,12 +125,20 @@ export function TutorTabBar({
           clearNavIntents();
           onSetShellMode("schedule");
         }}
-        className={cn(controlToggleButton(shellMode === "schedule", "primary"), "flex-shrink-0 whitespace-nowrap")}
+        className={workspaceTabButton(shellMode === "schedule")}
       >
         <Clock className={`${ICON_MD} mr-1`} />
         SCHEDULE
       </Button>
-      <Button role="tab" id="tutor-tab-settings" aria-selected={false} variant="ghost" size="sm" onClick={onOpenSettings} className={cn(controlToggleButton(false), "flex-shrink-0 whitespace-nowrap")}>
+      <Button
+        role="tab"
+        id="tutor-tab-settings"
+        aria-selected={false}
+        variant="ghost"
+        size="sm"
+        onClick={onOpenSettings}
+        className={workspaceTabButton(false)}
+      >
         <SlidersHorizontal className={`${ICON_MD} mr-1`} />
         SETTINGS
       </Button>
@@ -130,7 +149,7 @@ export function TutorTabBar({
             variant="ghost"
             size="sm"
             onClick={() => onSetShowArtifacts(!showArtifacts)}
-            className={cn(controlToggleButton(showArtifacts), "ml-1")}
+            className={cn(workspaceTabButton(showArtifacts), "ml-1")}
           >
             {showArtifacts ? (
               <PanelRightClose className={`${ICON_MD} mr-1`} />
@@ -139,7 +158,10 @@ export function TutorTabBar({
             )}
             ARTIFACTS
             {artifacts.length > 0 ? (
-              <Badge variant="outline" className="ml-1 rounded-full border-primary/40 px-1.5 py-0.5 text-[10px]">
+              <Badge
+                variant="outline"
+                className="ml-1 rounded-[0.2rem] border-primary/25 px-1.5 py-0.5 font-mono text-ui-2xs"
+              >
                 {artifacts.length}
               </Badge>
             ) : null}
@@ -155,7 +177,7 @@ export function TutorTabBar({
                   });
                 }
               }}
-              className={controlToggleButton(false)}
+              className={workspaceTabButton(false)}
               title="Export conversation as Markdown"
             >
               <Download className={`${ICON_MD} mr-1`} />
@@ -165,10 +187,7 @@ export function TutorTabBar({
               variant="ghost"
               size="sm"
               onClick={() => onSetShowEndConfirm(true)}
-              className={cn(
-                controlToggleButton(false),
-                "h-11 border-destructive/18 text-destructive/80 hover:border-destructive/36 hover:text-destructive",
-              )}
+              className={workspaceTabButton(false, "danger")}
               title="End session"
             >
               <Square className={`${ICON_MD} mr-1`} />

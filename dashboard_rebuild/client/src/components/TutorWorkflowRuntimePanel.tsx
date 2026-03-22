@@ -1,8 +1,26 @@
+import {
+  CONTROL_DECK,
+  CONTROL_DECK_BOTTOMLINE,
+  CONTROL_DECK_INSET,
+  CONTROL_DECK_SECTION,
+  CONTROL_DECK_TOPLINE,
+  CONTROL_KICKER,
+  controlToggleButton,
+} from "@/components/shell/controlStyles";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { INPUT_BASE, SELECT_BASE, TEXT_MUTED } from "@/lib/theme";
-import { Clock3, Pause, Play, Save, Sparkles, ThumbsDown, ThumbsUp } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  Clock3,
+  Pause,
+  Play,
+  Save,
+  Sparkles,
+  ThumbsDown,
+  ThumbsUp,
+} from "lucide-react";
 
 export type TutorWorkflowRuntimeFeedbackSentiment = "liked" | "disliked";
 
@@ -39,8 +57,12 @@ export interface TutorWorkflowRuntimePanelProps {
   feedbackSentiment: TutorWorkflowRuntimeFeedbackSentiment;
   feedbackIssueType: TutorWorkflowRuntimeFeedbackIssueType;
   feedbackMessage: string;
-  onFeedbackSentimentChange: (value: TutorWorkflowRuntimeFeedbackSentiment) => void;
-  onFeedbackIssueTypeChange: (value: TutorWorkflowRuntimeFeedbackIssueType) => void;
+  onFeedbackSentimentChange: (
+    value: TutorWorkflowRuntimeFeedbackSentiment,
+  ) => void;
+  onFeedbackIssueTypeChange: (
+    value: TutorWorkflowRuntimeFeedbackIssueType,
+  ) => void;
   onFeedbackMessageChange: (value: string) => void;
   onSubmitFeedback: () => void;
   memorySummary: string;
@@ -57,7 +79,8 @@ export interface TutorWorkflowRuntimePanelProps {
 }
 
 function formatDuration(seconds: number) {
-  const safe = Number.isFinite(seconds) && seconds > 0 ? Math.floor(seconds) : 0;
+  const safe =
+    Number.isFinite(seconds) && seconds > 0 ? Math.floor(seconds) : 0;
   const hours = Math.floor(safe / 3600);
   const minutes = Math.floor((safe % 3600) / 60);
   const secs = safe % 60;
@@ -76,9 +99,12 @@ function RuntimeSectionHeader({
 }) {
   return (
     <div className="flex items-center justify-between gap-2 border-b border-primary/15 pb-2">
-      <div className="font-arcade text-[10px] text-primary">{title}</div>
+      <div className={CONTROL_KICKER}>{title}</div>
       {badge ? (
-        <Badge variant="outline" className="rounded-none border-primary/30 text-[10px]">
+        <Badge
+          variant="outline"
+          className="rounded-full border-primary/30 px-3 py-1 font-terminal text-ui-2xs"
+        >
           {badge}
         </Badge>
       ) : null}
@@ -122,61 +148,72 @@ export function TutorWorkflowRuntimePanel({
   disabled = false,
 }: TutorWorkflowRuntimePanelProps) {
   return (
-    <Card className="rounded-none border-2 border-primary/20 bg-black/45">
-      <CardHeader className="border-b border-primary/15 pb-3">
+    <Card className={CONTROL_DECK}>
+      <div className={CONTROL_DECK_INSET} />
+      <div className={CONTROL_DECK_TOPLINE} />
+      <div className={CONTROL_DECK_BOTTOMLINE} />
+      <CardHeader className="relative z-10 border-b border-primary/15 pb-3">
         <div className="flex items-center justify-between gap-3">
-          <CardTitle className="font-arcade text-xs text-primary">WORKFLOW RUNTIME</CardTitle>
-          <Badge variant="outline" className="rounded-none border-primary/30 text-[10px]">
+          <CardTitle className="font-arcade text-xs text-primary">
+            WORKFLOW RUNTIME
+          </CardTitle>
+          <Badge
+            variant="outline"
+            className="rounded-full border-primary/30 px-3 py-1 font-terminal text-ui-2xs"
+          >
             TUTOR STAGE
           </Badge>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4 pt-4">
+      <CardContent className="relative z-10 space-y-4 pt-4">
         {counts ? (
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="border border-primary/15 bg-black/35 p-2">
-              <div className="font-arcade text-[10px] text-primary/80">EXACT</div>
-              <div className="mt-1 font-terminal text-sm text-foreground">
+            <div className={CONTROL_DECK_SECTION}>
+              <div className={CONTROL_KICKER}>EXACT</div>
+              <div className="mt-1 font-mono text-sm leading-6 text-foreground">
                 {counts.exactNotes ?? 0}
               </div>
             </div>
-            <div className="border border-primary/15 bg-black/35 p-2">
-              <div className="font-arcade text-[10px] text-primary/80">EDITABLE</div>
-              <div className="mt-1 font-terminal text-sm text-foreground">
+            <div className={CONTROL_DECK_SECTION}>
+              <div className={CONTROL_KICKER}>EDITABLE</div>
+              <div className="mt-1 font-mono text-sm leading-6 text-foreground">
                 {counts.editableNotes ?? 0}
               </div>
             </div>
-            <div className="border border-primary/15 bg-black/35 p-2">
-              <div className="font-arcade text-[10px] text-primary/80">FEEDBACK</div>
-              <div className="mt-1 font-terminal text-sm text-foreground">
+            <div className={CONTROL_DECK_SECTION}>
+              <div className={CONTROL_KICKER}>FEEDBACK</div>
+              <div className="mt-1 font-mono text-sm leading-6 text-foreground">
                 {counts.feedbackEvents ?? 0}
               </div>
             </div>
-            <div className="border border-primary/15 bg-black/35 p-2">
-              <div className="font-arcade text-[10px] text-primary/80">CAPSULES</div>
-              <div className="mt-1 font-terminal text-sm text-foreground">
+            <div className={CONTROL_DECK_SECTION}>
+              <div className={CONTROL_KICKER}>CAPSULES</div>
+              <div className="mt-1 font-mono text-sm leading-6 text-foreground">
                 {counts.memoryCapsules ?? 0}
               </div>
             </div>
           </div>
         ) : null}
 
-        <div className="space-y-3 border border-primary/15 bg-black/35 p-3">
-          <RuntimeSectionHeader title="STUDY TIMER" badge={timerRunning ? "RUNNING" : "PAUSED"} />
+        <div className={cn(CONTROL_DECK_SECTION, "space-y-3")}>
+          <RuntimeSectionHeader
+            title="STUDY TIMER"
+            badge={timerRunning ? "RUNNING" : "PAUSED"}
+          />
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="font-terminal text-2xl text-foreground">
+              <div className="font-mono text-2xl leading-8 text-foreground">
                 {formatDuration(timerSeconds)}
               </div>
-              <div className={`${TEXT_MUTED} mt-1 text-xs`}>
+              <div className={`${TEXT_MUTED} mt-1 text-sm`}>
                 {timerLabel || "Tutor stage time"}
               </div>
             </div>
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                className="rounded-none font-arcade text-[10px]"
+                className={controlToggleButton(false, "secondary", true)}
                 onClick={onToggleTimer}
                 disabled={disabled}
               >
@@ -194,7 +231,7 @@ export function TutorWorkflowRuntimePanel({
               </Button>
               <Button
                 variant="outline"
-                className="rounded-none font-arcade text-[10px]"
+                className={controlToggleButton(false, "secondary", true)}
                 onClick={onSaveTimerSlice}
                 disabled={disabled}
               >
@@ -205,7 +242,7 @@ export function TutorWorkflowRuntimePanel({
           </div>
         </div>
 
-        <div className="space-y-3 border border-primary/15 bg-black/35 p-3">
+        <div className={cn(CONTROL_DECK_SECTION, "space-y-3")}>
           <RuntimeSectionHeader title="SAVE EXACT NOTE" />
           <input
             value={exactNoteTitle}
@@ -223,7 +260,7 @@ export function TutorWorkflowRuntimePanel({
           />
           <Button
             variant="outline"
-            className="rounded-none font-arcade text-[10px]"
+            className={controlToggleButton(false, "secondary", true)}
             onClick={onSaveExactNote}
             disabled={disabled || !exactNoteContent.trim()}
           >
@@ -232,7 +269,7 @@ export function TutorWorkflowRuntimePanel({
           </Button>
         </div>
 
-        <div className="space-y-3 border border-primary/15 bg-black/35 p-3">
+        <div className={cn(CONTROL_DECK_SECTION, "space-y-3")}>
           <RuntimeSectionHeader title="SAVE EDITABLE NOTE" />
           <input
             value={editableNoteTitle}
@@ -243,14 +280,16 @@ export function TutorWorkflowRuntimePanel({
           />
           <textarea
             value={editableNoteContent}
-            onChange={(event) => onEditableNoteContentChange(event.target.value)}
+            onChange={(event) =>
+              onEditableNoteContentChange(event.target.value)
+            }
             placeholder="Store a revisable note for Polish."
             className={`${INPUT_BASE} min-h-[92px] resize-y`}
             disabled={disabled}
           />
           <Button
             variant="outline"
-            className="rounded-none font-arcade text-[10px]"
+            className={controlToggleButton(false, "secondary", true)}
             onClick={onSaveEditableNote}
             disabled={disabled || !editableNoteContent.trim()}
           >
@@ -259,12 +298,16 @@ export function TutorWorkflowRuntimePanel({
           </Button>
         </div>
 
-        <div className="space-y-3 border border-primary/15 bg-black/35 p-3">
+        <div className={cn(CONTROL_DECK_SECTION, "space-y-3")}>
           <RuntimeSectionHeader title="FEEDBACK" />
           <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
-              className="rounded-none font-arcade text-[10px]"
+              className={controlToggleButton(
+                feedbackSentiment === "liked",
+                "secondary",
+                true,
+              )}
               onClick={() => onFeedbackSentimentChange("liked")}
               disabled={disabled}
             >
@@ -273,14 +316,21 @@ export function TutorWorkflowRuntimePanel({
             </Button>
             <Button
               variant="outline"
-              className="rounded-none font-arcade text-[10px]"
+              className={controlToggleButton(
+                feedbackSentiment === "disliked",
+                "secondary",
+                true,
+              )}
               onClick={() => onFeedbackSentimentChange("disliked")}
               disabled={disabled}
             >
               <ThumbsDown className="mr-2 h-3.5 w-3.5" />
               DISLIKE
             </Button>
-            <Badge variant="outline" className="rounded-none border-primary/30 text-[10px]">
+            <Badge
+              variant="outline"
+              className="rounded-full border-primary/30 px-3 py-1 font-terminal text-ui-2xs"
+            >
               {feedbackSentiment.toUpperCase()}
             </Badge>
           </div>
@@ -312,7 +362,7 @@ export function TutorWorkflowRuntimePanel({
 
           <Button
             variant="outline"
-            className="rounded-none font-arcade text-[10px]"
+            className={controlToggleButton(false, "secondary", true)}
             onClick={onSubmitFeedback}
             disabled={disabled || !feedbackMessage.trim()}
           >
@@ -321,7 +371,7 @@ export function TutorWorkflowRuntimePanel({
           </Button>
         </div>
 
-        <div className="space-y-3 border border-primary/15 bg-black/35 p-3">
+        <div className={cn(CONTROL_DECK_SECTION, "space-y-3")}>
           <RuntimeSectionHeader title="MEMORY CAPSULE" />
           <textarea
             value={memorySummary}
@@ -339,7 +389,9 @@ export function TutorWorkflowRuntimePanel({
           />
           <textarea
             value={memoryUnresolvedQuestions}
-            onChange={(event) => onMemoryUnresolvedQuestionsChange(event.target.value)}
+            onChange={(event) =>
+              onMemoryUnresolvedQuestionsChange(event.target.value)
+            }
             placeholder="Unresolved questions, one per line."
             className={`${INPUT_BASE} min-h-[80px] resize-y`}
             disabled={disabled}
@@ -353,7 +405,7 @@ export function TutorWorkflowRuntimePanel({
           />
 
           <Button
-            className="rounded-none font-arcade text-[10px]"
+            className={controlToggleButton(true, "primary", true)}
             onClick={onCreateMemoryCapsule}
             disabled={disabled || !memorySummary.trim()}
           >

@@ -585,7 +585,7 @@ function RecentSessionsCard({
 
             {secondarySessions.length > 0 ? (
               <div className="space-y-2">
-                <div className="font-arcade text-[10px] tracking-wide text-primary/70">
+                <div className="font-arcade text-ui-2xs tracking-wide text-primary/70">
                   OTHER RECENT SESSIONS
                 </div>
                 {secondarySessions.map((session) => (
@@ -612,7 +612,7 @@ function RecentSessionsCard({
                       <Button
                         variant="outline"
                         onClick={() => onResumeSession(session.session_id)}
-                        className="h-8 rounded-none font-arcade text-[10px]"
+                        className="h-8 rounded-none font-arcade text-ui-2xs"
                       >
                         RESUME
                       </Button>
@@ -1000,7 +1000,7 @@ function ObjectivesSelectionCard({
         ) : null}
 
         <div className="border border-primary/20 p-2">
-          <div className="font-arcade text-[10px] text-primary mb-1">TUTOR VAULT FOLDER</div>
+          <div className="font-arcade text-ui-2xs text-primary mb-1">TUTOR VAULT FOLDER</div>
           <div className="font-terminal text-xs text-foreground/80 break-all">
             {vaultFolderPreview || "Will derive after you choose a study unit."}
           </div>

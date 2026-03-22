@@ -426,14 +426,14 @@ export function TutorWorkflowFinalSync({
         <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="ghost"
-            className="rounded-none font-arcade text-[10px]"
+            className="rounded-none font-arcade text-ui-2xs"
             onClick={onBackToPolish}
           >
             BACK TO POLISH
           </Button>
           <Button
             variant="outline"
-            className="rounded-none font-arcade text-[10px]"
+            className="rounded-none font-arcade text-ui-2xs"
             onClick={() => {
               setMarkdownDraft(buildMarkdown(workflowDetail));
               setVaultPath(buildDefaultVaultPath(workflowDetail));
@@ -444,7 +444,7 @@ export function TutorWorkflowFinalSync({
             RESET PREVIEW
           </Button>
           <Button
-            className="rounded-none font-arcade text-[10px]"
+            className="rounded-none font-arcade text-ui-2xs"
             onClick={() => {
               void runFinalSync();
             }}
@@ -462,7 +462,7 @@ export function TutorWorkflowFinalSync({
             <CardHeader className="pb-2">
               <CardTitle className="font-arcade text-xs text-primary">TARGET HEALTH</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-[10px] font-terminal">
+            <CardContent className="space-y-2 text-ui-2xs font-terminal">
               <Badge variant="outline" className="w-full justify-center rounded-none">
                 Obsidian: {obsidianStatus?.connected ? "ready" : "offline"}
               </Badge>
@@ -473,7 +473,7 @@ export function TutorWorkflowFinalSync({
                 Brain index: always on
               </Badge>
               <div className="border border-primary/20 bg-black/30 p-2">
-                <div className="font-arcade text-[10px] text-primary">Enabled targets</div>
+                <div className="font-arcade text-ui-2xs text-primary">Enabled targets</div>
                 <div className="mt-2 space-y-1 text-muted-foreground">
                   <div>Obsidian: {targetEnabled(polishBundle, "obsidian") ? "enabled" : "disabled"}</div>
                   <div>Anki: {targetEnabled(polishBundle, "anki") ? "enabled" : "disabled"}</div>
@@ -491,15 +491,15 @@ export function TutorWorkflowFinalSync({
               <ScrollArea className="h-[320px] pr-2">
                 <div className="space-y-2">
                   {cardCandidates.length === 0 ? (
-                    <div className="border border-primary/20 bg-black/30 p-2 text-[10px] font-terminal text-muted-foreground">
+                    <div className="border border-primary/20 bg-black/30 p-2 text-ui-2xs font-terminal text-muted-foreground">
                       No structured card candidates yet. Use Polish Assist to draft `front :: back` cards.
                     </div>
                   ) : (
                     cardCandidates.map((card, index) => (
-                      <div key={`${card.front}-${index}`} className="border border-primary/20 bg-black/30 p-2 text-[10px] font-terminal">
+                      <div key={`${card.front}-${index}`} className="border border-primary/20 bg-black/30 p-2 text-ui-2xs font-terminal">
                         <div className="font-bold text-primary">{card.front}</div>
                         <div className="mt-1 text-muted-foreground">{card.back}</div>
-                        <div className="mt-2 text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
+                        <div className="mt-2 text-ui-3xs uppercase tracking-[0.18em] text-muted-foreground">
                           {card.deck_name} / {card.card_type}
                         </div>
                       </div>
@@ -517,18 +517,18 @@ export function TutorWorkflowFinalSync({
               <ScrollArea className="h-[220px] pr-2">
                 <div className="space-y-2">
                   {studioArtifacts.length === 0 ? (
-                    <div className="border border-primary/20 bg-black/30 p-2 text-[10px] font-terminal text-muted-foreground">
+                    <div className="border border-primary/20 bg-black/30 p-2 text-ui-2xs font-terminal text-muted-foreground">
                       No richer Studio artifacts are staged yet.
                     </div>
                   ) : (
                     studioArtifacts.map((item) => (
                       <div
                         key={item.id}
-                        className="border border-primary/20 bg-black/30 p-2 text-[10px] font-terminal"
+                        className="border border-primary/20 bg-black/30 p-2 text-ui-2xs font-terminal"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="font-bold text-primary">{item.title}</div>
-                          <Badge variant="outline" className="rounded-none text-[9px] uppercase">
+                          <Badge variant="outline" className="rounded-none text-ui-3xs uppercase">
                             {item.type}
                           </Badge>
                         </div>
@@ -578,12 +578,12 @@ export function TutorWorkflowFinalSync({
               <ScrollArea className="h-[260px] pr-2">
                 <div className="space-y-2">
                   {publishResults.length === 0 ? (
-                    <div className="border border-primary/20 bg-black/30 p-2 text-[10px] font-terminal text-muted-foreground">
+                    <div className="border border-primary/20 bg-black/30 p-2 text-ui-2xs font-terminal text-muted-foreground">
                       No publish attempts recorded yet.
                     </div>
                   ) : (
                     publishResults.map((result: TutorPublishResult) => (
-                      <div key={result.id} className="border border-primary/20 bg-black/30 p-2 text-[10px] font-terminal">
+                      <div key={result.id} className="border border-primary/20 bg-black/30 p-2 text-ui-2xs font-terminal">
                         <div className="flex items-center justify-between gap-2">
                           <span className="font-bold text-primary">Attempt #{result.id}</span>
                           <Badge variant="outline" className="rounded-none">{result.status}</Badge>
@@ -604,7 +604,7 @@ export function TutorWorkflowFinalSync({
             <CardHeader className="pb-2">
               <CardTitle className="font-arcade text-xs text-primary">CLOSEOUT SIGNALS</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-[10px] font-terminal">
+            <CardContent className="space-y-2 text-ui-2xs font-terminal">
               <div className="flex items-center gap-2">
                 <Brain className="h-3.5 w-3.5 text-primary" />
                 Learner snapshot will be stored in the Brain payload.

@@ -114,7 +114,7 @@ export function TutorWorkflowStepper({
     >
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <div className="font-arcade text-[10px] text-primary/80">WORKFLOW NAVIGATOR</div>
+          <div className="font-arcade text-ui-2xs text-primary/80">WORKFLOW NAVIGATOR</div>
           <div className="mt-1 font-terminal text-xs text-muted-foreground">
             Move between the main study stages without hunting below the runtime diagnostics.
           </div>
@@ -126,7 +126,7 @@ export function TutorWorkflowStepper({
             size="sm"
             onClick={() => previousStage && onStageClick(previousStage.key)}
             disabled={!canGoPrevious}
-            className="rounded-none font-arcade text-[10px]"
+            className="rounded-none font-arcade text-ui-2xs"
           >
             <ChevronLeft className="mr-1 h-3.5 w-3.5" />
             {previousStage ? `BACK TO ${previousStage.label}` : "BACK"}
@@ -137,7 +137,7 @@ export function TutorWorkflowStepper({
             size="sm"
             onClick={() => nextStage && onStageClick(nextStage.key)}
             disabled={!canGoNext}
-            className="rounded-none font-arcade text-[10px]"
+            className="rounded-none font-arcade text-ui-2xs"
           >
             {nextStage ? `NEXT: ${nextStage.label}` : "NEXT"}
             <ChevronRight className="ml-1 h-3.5 w-3.5" />

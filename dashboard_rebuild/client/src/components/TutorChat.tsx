@@ -7,7 +7,15 @@ import {
   type RefObject,
 } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Archive, Clock3, Pause, Play, Send, SlidersHorizontal, Square } from "lucide-react";
+import {
+  Archive,
+  Clock3,
+  Pause,
+  Play,
+  Send,
+  SlidersHorizontal,
+  Square,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,7 +66,9 @@ type TutorSessionContext = {
   materialsDefault: boolean;
   northStarSummary: NorthStarSummary | null;
   sessionSnapshot: Record<string, unknown> | null;
-  currentBlock: NonNullable<TutorSessionWithTurns["chain_blocks"]>[number] | null;
+  currentBlock:
+    | NonNullable<TutorSessionWithTurns["chain_blocks"]>[number]
+    | null;
 };
 
 type SpeedTierControl = {
@@ -136,10 +146,14 @@ function useTutorSessionContext(
           ? (filter.default_mode as Record<string, unknown>)
           : null;
       const folders = Array.isArray(filter.folders)
-        ? filter.folders.filter((value): value is string => typeof value === "string")
+        ? filter.folders.filter(
+            (value): value is string => typeof value === "string",
+          )
         : [];
       const refs = Array.isArray(filter.reference_targets)
-        ? filter.reference_targets.filter((value): value is string => typeof value === "string")
+        ? filter.reference_targets.filter(
+            (value): value is string => typeof value === "string",
+          )
         : [];
       const northStar = filter.map_of_contents || filter.north_star;
       const northStarSummary =
@@ -150,25 +164,35 @@ function useTutorSessionContext(
                   ? ((northStar as Record<string, unknown>).path as string)
                   : undefined,
               status:
-                typeof (northStar as Record<string, unknown>).status === "string"
+                typeof (northStar as Record<string, unknown>).status ===
+                "string"
                   ? ((northStar as Record<string, unknown>).status as string)
                   : undefined,
               module_name:
-                typeof (northStar as Record<string, unknown>).module_name === "string"
-                  ? ((northStar as Record<string, unknown>).module_name as string)
+                typeof (northStar as Record<string, unknown>).module_name ===
+                "string"
+                  ? ((northStar as Record<string, unknown>)
+                      .module_name as string)
                   : undefined,
               course_name:
-                typeof (northStar as Record<string, unknown>).course_name === "string"
-                  ? ((northStar as Record<string, unknown>).course_name as string)
+                typeof (northStar as Record<string, unknown>).course_name ===
+                "string"
+                  ? ((northStar as Record<string, unknown>)
+                      .course_name as string)
                   : undefined,
               subtopic_name:
-                typeof (northStar as Record<string, unknown>).subtopic_name === "string"
-                  ? ((northStar as Record<string, unknown>).subtopic_name as string)
+                typeof (northStar as Record<string, unknown>).subtopic_name ===
+                "string"
+                  ? ((northStar as Record<string, unknown>)
+                      .subtopic_name as string)
                   : undefined,
               objective_ids: Array.isArray(
                 (northStar as Record<string, unknown>).objective_ids,
               )
-                ? ((northStar as Record<string, unknown>).objective_ids as unknown[]).filter(
+                ? (
+                    (northStar as Record<string, unknown>)
+                      .objective_ids as unknown[]
+                  ).filter(
                     (value): value is string => typeof value === "string",
                   )
                 : [],
@@ -182,10 +206,10 @@ function useTutorSessionContext(
         northStarSummary,
         sessionSnapshot: session as Record<string, unknown>,
         currentBlock:
-          Array.isArray(session.chain_blocks)
-            && typeof session.current_block_index === "number"
-            && session.current_block_index >= 0
-            && session.current_block_index < session.chain_blocks.length
+          Array.isArray(session.chain_blocks) &&
+          typeof session.current_block_index === "number" &&
+          session.current_block_index >= 0 &&
+          session.current_block_index < session.chain_blocks.length
             ? session.chain_blocks[session.current_block_index]
             : null,
       };
@@ -203,18 +227,24 @@ const RUNTIME_STATUS_STYLES: Record<TutorTeachRuntimeStatus, string> = {
   fallback: "border-secondary/40 bg-secondary/10 text-secondary-foreground",
 };
 
+const TUTOR_CHAT_PANEL =
+  "rounded-none border border-primary/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.1)_26%,rgba(0,0,0,0.24)_100%),linear-gradient(135deg,rgba(255,42,76,0.07),rgba(0,0,0,0.03)_48%,rgba(0,0,0,0.12)_100%)] backdrop-blur-sm";
+
+const TUTOR_CHAT_PANEL_SOFT =
+  "rounded-none border border-primary/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.028),rgba(0,0,0,0.08)_24%,rgba(0,0,0,0.18)_100%),linear-gradient(135deg,rgba(255,42,76,0.05),rgba(0,0,0,0.03)_48%,rgba(0,0,0,0.1)_100%)] backdrop-blur-sm";
+
 function runtimeBadgeClasses(status: TutorTeachRuntimeStatus): string {
   return cn(
-    "rounded-none border px-2 py-1 font-arcade text-[10px] uppercase tracking-[0.18em]",
+    "rounded-none border px-2 py-1 font-arcade text-ui-2xs uppercase tracking-[0.18em]",
     RUNTIME_STATUS_STYLES[status],
   );
 }
 
 function TutorRuntimeChip({ field }: { field: TutorTeachRuntimeField }) {
   return (
-    <div className="rounded-none border border-primary/20 bg-black/35 p-2">
+    <div className={cn(TUTOR_CHAT_PANEL_SOFT, "p-2")}>
       <div className="flex items-start justify-between gap-2">
-        <div className="font-arcade text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+        <div className="font-arcade text-ui-2xs uppercase tracking-[0.18em] text-muted-foreground">
           {field.label}
         </div>
         <Badge variant="outline" className={runtimeBadgeClasses(field.status)}>
@@ -239,10 +269,16 @@ function TutorTeachRuntimeStrip({
     return (
       <div
         data-testid="tutor-teach-runtime-strip-loading"
-        className="grid grid-cols-1 gap-2 rounded-none border border-primary/20 bg-black/35 p-3 sm:grid-cols-2"
+        className={cn(
+          TUTOR_CHAT_PANEL,
+          "grid grid-cols-1 gap-2 p-3 sm:grid-cols-2",
+        )}
       >
         {[0, 1, 2, 3].map((item) => (
-          <div key={item} className="animate-pulse rounded-none border border-primary/10 bg-black/45 p-3">
+          <div
+            key={item}
+            className="animate-pulse rounded-none border border-primary/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.12)_24%,rgba(0,0,0,0.2)_100%)] p-3 backdrop-blur-sm"
+          >
             <div className="h-3 w-20 bg-primary/20" />
             <div className="mt-3 h-4 w-32 bg-primary/10" />
           </div>
@@ -256,18 +292,25 @@ function TutorTeachRuntimeStrip({
   return (
     <div
       data-testid="tutor-teach-runtime-strip"
-      className="rounded-none border border-primary/20 bg-gradient-to-b from-black/40 to-black/20 p-3"
+      className={cn(
+        TUTOR_CHAT_PANEL,
+        "p-3 shadow-[0_14px_30px_rgba(0,0,0,0.14)]",
+      )}
     >
       <div className="flex flex-col gap-2 border-b border-primary/15 pb-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="font-arcade text-[10px] uppercase tracking-[0.18em] text-primary">
+          <div className="font-arcade text-ui-2xs uppercase tracking-[0.18em] text-primary">
             Live TEACH Packet
           </div>
           <div className="mt-1 font-terminal text-xs leading-5 text-muted-foreground">
-            Current stage, lane, close artifact, and unlock states stay visible while you chat.
+            Current stage, lane, close artifact, and unlock states stay visible
+            while you chat.
           </div>
         </div>
-        <Badge variant="outline" className={runtimeBadgeClasses(teachRuntime.stage.status)}>
+        <Badge
+          variant="outline"
+          className={runtimeBadgeClasses(teachRuntime.stage.status)}
+        >
           {teachRuntime.packetSource === "backend"
             ? "backend packet"
             : teachRuntime.packetSource === "mixed"
@@ -297,7 +340,8 @@ function TutorTeachRuntimeStrip({
         {teachRuntime.note}
         {teachRuntime.missingBackendFields.length > 0 ? (
           <div className="mt-2">
-            Waiting on backend fields: {teachRuntime.missingBackendFields.join(", ")}
+            Waiting on backend fields:{" "}
+            {teachRuntime.missingBackendFields.join(", ")}
           </div>
         ) : null}
       </div>
@@ -310,7 +354,9 @@ function TutorChatEmptyState() {
     <div className="flex items-center justify-center h-full">
       <div className="text-center space-y-2">
         <div className={TEXT_SECTION_LABEL}>NO ACTIVE SESSION</div>
-        <div className={TEXT_MUTED}>Configure content filter and start a session</div>
+        <div className={TEXT_MUTED}>
+          Configure content filter and start a session
+        </div>
       </div>
     </div>
   );
@@ -327,25 +373,27 @@ function TutorBehaviorButtons({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {(["socratic", "evaluate", "concept_map", "teach_back"] as const).map((mode) => {
-        const active = activeMode === mode;
-        return (
-          <button
-            key={mode}
-            type="button"
-            title={BEHAVIOR_TITLES[mode]}
-            onClick={() => onSelect(mode)}
-            disabled={disabled}
-            className={`h-8 px-3 font-arcade text-[10px] tracking-wider border-2 transition-colors disabled:opacity-50 ${
-              active
-                ? "bg-primary/20 border-primary text-primary"
-                : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
-            }`}
-          >
-            {BEHAVIOR_LABELS[mode]}
-          </button>
-        );
-      })}
+      {(["socratic", "evaluate", "concept_map", "teach_back"] as const).map(
+        (mode) => {
+          const active = activeMode === mode;
+          return (
+            <button
+              key={mode}
+              type="button"
+              title={BEHAVIOR_TITLES[mode]}
+              onClick={() => onSelect(mode)}
+              disabled={disabled}
+              className={`h-8 px-3 font-arcade text-ui-2xs tracking-wider border-2 transition-colors disabled:opacity-50 ${
+                active
+                  ? "bg-primary/20 border-primary text-primary"
+                  : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+              }`}
+            >
+              {BEHAVIOR_LABELS[mode]}
+            </button>
+          );
+        },
+      )}
     </div>
   );
 }
@@ -557,10 +605,15 @@ export function TutorChat({
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const sessionContextQuery = useTutorSessionContext(sessionId, defaultMaterialsOn);
+  const sessionContextQuery = useTutorSessionContext(
+    sessionId,
+    defaultMaterialsOn,
+  );
   const sessionContext = sessionContextQuery.data;
   const effectiveMaterialsOn =
-    chatState.materialsPreference ?? sessionContext?.materialsDefault ?? defaultMaterialsOn;
+    chatState.materialsPreference ??
+    sessionContext?.materialsDefault ??
+    defaultMaterialsOn;
   const northStarSummary = sessionContext?.northStarSummary ?? null;
   const teachRuntime = sessionContext
     ? resolveTutorTeachRuntime({
@@ -655,13 +708,17 @@ export function TutorChat({
       try {
         const uploadedIds: number[] = [];
         for (const file of Array.from(files)) {
-          const result = await api.tutor.uploadMaterial(file, { course_id: courseId });
+          const result = await api.tutor.uploadMaterial(file, {
+            course_id: courseId,
+          });
           uploadedIds.push(result.duplicate_of?.id ?? result.id);
         }
         if (onMaterialsChanged) {
           await onMaterialsChanged();
         }
-        const merged = Array.from(new Set([...selectedMaterialIds, ...uploadedIds]));
+        const merged = Array.from(
+          new Set([...selectedMaterialIds, ...uploadedIds]),
+        );
         onSelectedMaterialIdsChange(merged);
         toast.success(
           uploadedIds.length === 1
@@ -768,7 +825,7 @@ export function TutorChat({
           onFeedback={onFeedback}
         />
 
-        <div className="flex flex-col gap-3 p-4 lg:p-5 border-t-2 border-primary/20 bg-black/50">
+        <div className="flex flex-col gap-3 border-t border-primary/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.028),rgba(0,0,0,0.09)_18%,rgba(0,0,0,0.2)_100%),linear-gradient(135deg,rgba(255,42,76,0.05),rgba(0,0,0,0.03)_44%,rgba(0,0,0,0.14)_100%)] p-4 backdrop-blur-md lg:p-5">
           <input
             ref={fileInputRef}
             type="file"
@@ -783,7 +840,9 @@ export function TutorChat({
             behaviorOverride={chatState.behaviorOverride}
             timerState={timerState}
             onToggleSources={() =>
-              patchChatState((state) => ({ isSourcesOpen: !state.isSourcesOpen }))
+              patchChatState((state) => ({
+                isSourcesOpen: !state.isSourcesOpen,
+              }))
             }
             onAccuracyProfileChange={onAccuracyProfileChange}
             onBehaviorSelect={handleBehaviorSelect}

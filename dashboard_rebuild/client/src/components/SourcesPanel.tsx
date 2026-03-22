@@ -216,7 +216,7 @@ function SourcesObjectivesTab({
   return (
     <div className="space-y-3">
       <div className="border border-primary/30 p-2">
-        <div className="font-arcade text-[10px] text-primary mb-2">
+        <div className="font-arcade text-ui-2xs text-primary mb-2">
           LEARNING OBJECTIVES
         </div>
         <div className="text-xs font-terminal text-muted-foreground space-y-1">
@@ -249,7 +249,7 @@ function SourcesObjectivesTab({
               }`}
             >
               <span
-                className={`inline-flex h-4 w-4 items-center justify-center border text-[10px] ${
+                className={`inline-flex h-4 w-4 items-center justify-center border text-ui-2xs ${
                   checked
                     ? "border-primary text-primary"
                     : "border-secondary/50 text-muted-foreground"
@@ -276,7 +276,7 @@ function SourcesFlashcardsTab({ draftCount }: { draftCount: number }) {
   return (
     <div className="space-y-3">
       <div className="border border-primary/30 p-2">
-        <div className="font-arcade text-[10px] text-primary mb-2">FLASHCARDS</div>
+        <div className="font-arcade text-ui-2xs text-primary mb-2">FLASHCARDS</div>
         <div className="text-xs font-terminal text-muted-foreground">
           Review, approve, and sync card drafts without leaving Tutor.
         </div>
@@ -296,7 +296,7 @@ function SourcesMapTab({
   return (
     <div className="space-y-2">
       <div className="border border-primary/30 p-2">
-        <div className="font-arcade text-[10px] text-primary mb-2">
+        <div className="font-arcade text-ui-2xs text-primary mb-2">
           MAP OF CONTENTS
         </div>
         <div className="text-xs font-terminal text-muted-foreground space-y-1">
@@ -323,7 +323,7 @@ function SourcesMapTab({
         </div>
       </div>
       <div className="border border-primary/20 p-2">
-        <div className="font-arcade text-[10px] text-primary mb-2">OBJECTIVES</div>
+        <div className="font-arcade text-ui-2xs text-primary mb-2">OBJECTIVES</div>
         <div className="max-h-32 overflow-y-auto space-y-1">
           {(northStarSummary?.objective_ids || []).slice(0, 80).map((objectiveId) => (
             <div
@@ -342,7 +342,7 @@ function SourcesMapTab({
         </div>
       </div>
       <div className="border border-primary/20 p-2">
-        <div className="font-arcade text-[10px] text-primary mb-2 flex items-center gap-1">
+        <div className="font-arcade text-ui-2xs text-primary mb-2 flex items-center gap-1">
           <Target className="w-3.5 h-3.5" /> REFERENCE TARGETS
         </div>
         <div className="max-h-56 overflow-y-auto space-y-1">
@@ -416,7 +416,7 @@ function SourcesMaterialsTab({
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploadingMaterial}
-          className="h-8 rounded-none px-3 font-arcade text-[10px] gap-1.5 border-2 border-primary/60 bg-primary/10 hover:bg-primary/20"
+          className="h-8 rounded-none px-3 font-arcade text-ui-2xs gap-1.5 border-2 border-primary/60 bg-primary/10 hover:bg-primary/20"
         >
           {isUploadingMaterial ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -429,7 +429,7 @@ function SourcesMaterialsTab({
           type="button"
           variant="ghost"
           onClick={onSelectAll}
-          className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+          className="h-8 rounded-none px-3 font-arcade text-ui-2xs border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
         >
           <RefreshCw className="w-3.5 h-3.5 mr-1" />
           ALL
@@ -438,7 +438,7 @@ function SourcesMaterialsTab({
           type="button"
           variant="ghost"
           onClick={onClearSelected}
-          className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+          className="h-8 rounded-none px-3 font-arcade text-ui-2xs border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
         >
           <RotateCcw className="w-3.5 h-3.5 mr-1" />
           NONE
@@ -539,7 +539,7 @@ function SourcesVaultTab({
           variant="ghost"
           onClick={onRefresh}
           disabled={isLoadingVault}
-          className="h-9 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+          className="h-9 rounded-none px-3 font-arcade text-ui-2xs border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
         >
           {isLoadingVault ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -553,7 +553,7 @@ function SourcesVaultTab({
           type="button"
           variant="ghost"
           onClick={() => void onCreateFolder()}
-          className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+          className="h-8 rounded-none px-3 font-arcade text-ui-2xs border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
         >
           <FolderPlus className="w-3.5 h-3.5 mr-1" />
           NEW FOLDER
@@ -562,7 +562,7 @@ function SourcesVaultTab({
           type="button"
           variant="ghost"
           onClick={() => void onCreateNote()}
-          className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+          className="h-8 rounded-none px-3 font-arcade text-ui-2xs border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
         >
           <FileTextIcon className="w-3.5 h-3.5 mr-1" />
           NEW NOTE
@@ -571,7 +571,7 @@ function SourcesVaultTab({
           type="button"
           variant="ghost"
           onClick={() => void onEditSelectedNote()}
-          className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+          className="h-8 rounded-none px-3 font-arcade text-ui-2xs border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
         >
           <Pencil className="w-3.5 h-3.5 mr-1" />
           EDIT
@@ -580,7 +580,7 @@ function SourcesVaultTab({
           type="button"
           variant="ghost"
           onClick={() => void onRenameSelected()}
-          className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+          className="h-8 rounded-none px-3 font-arcade text-ui-2xs border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
         >
           RENAME
         </Button>
@@ -588,7 +588,7 @@ function SourcesVaultTab({
           type="button"
           variant="ghost"
           onClick={onClearSelected}
-          className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+          className="h-8 rounded-none px-3 font-arcade text-ui-2xs border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
         >
           CLEAR SELECTED
         </Button>
@@ -596,7 +596,7 @@ function SourcesVaultTab({
           type="button"
           variant="ghost"
           onClick={() => void onDeleteSelected()}
-          className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-red-500/50 text-red-300 hover:border-red-400 hover:text-red-200"
+          className="h-8 rounded-none px-3 font-arcade text-ui-2xs border-2 border-red-500/50 text-red-300 hover:border-red-400 hover:text-red-200"
         >
           <Trash2 className="w-3.5 h-3.5 mr-1" />
           DELETE
@@ -604,7 +604,7 @@ function SourcesVaultTab({
       </div>
       {vaultEditor.open ? (
         <div className="border border-primary/30 p-2 space-y-2">
-          <div className="font-arcade text-[10px] text-primary">EDIT NOTE</div>
+          <div className="font-arcade text-ui-2xs text-primary">EDIT NOTE</div>
           <input
             value={vaultEditor.path}
             onChange={(event) => onEditorChange({ path: event.target.value })}
@@ -620,7 +620,7 @@ function SourcesVaultTab({
               type="button"
               onClick={() => void onSaveEditor()}
               disabled={vaultEditor.saving}
-              className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-primary/70 bg-primary/10 hover:bg-primary/20"
+              className="h-8 rounded-none px-3 font-arcade text-ui-2xs border-2 border-primary/70 bg-primary/10 hover:bg-primary/20"
             >
               {vaultEditor.saving ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />
@@ -631,7 +631,7 @@ function SourcesVaultTab({
               type="button"
               variant="ghost"
               onClick={onCloseEditor}
-              className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+              className="h-8 rounded-none px-3 font-arcade text-ui-2xs border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
             >
               CANCEL
             </Button>
@@ -1088,7 +1088,7 @@ export function SourcesPanel(props: SourcesPanelProps) {
       <aside className="absolute left-0 top-0 h-full w-full max-w-md border-r-2 border-primary bg-black/95 flex flex-col">
         <div className="flex items-center gap-2 p-3 border-b border-primary/30">
           <div className="font-arcade text-xs text-primary tracking-wider">SOURCES</div>
-          <Badge variant="outline" className="rounded-none h-5 px-1.5 text-[10px] border-primary/40">
+          <Badge variant="outline" className="rounded-none h-5 px-1.5 text-ui-2xs border-primary/40">
             {sourcesTab.toUpperCase()}
           </Badge>
           <Button
@@ -1105,7 +1105,7 @@ export function SourcesPanel(props: SourcesPanelProps) {
           <button
             type="button"
             onClick={() => onSetSourcesTab("materials")}
-            className={`h-8 px-2 font-arcade text-[10px] border-2 ${
+            className={`h-8 px-2 font-arcade text-ui-2xs border-2 ${
               sourcesTab === "materials"
                 ? "border-primary text-primary bg-primary/10"
                 : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
@@ -1116,7 +1116,7 @@ export function SourcesPanel(props: SourcesPanelProps) {
           <button
             type="button"
             onClick={() => onSetSourcesTab("vault")}
-            className={`h-8 px-2 font-arcade text-[10px] border-2 ${
+            className={`h-8 px-2 font-arcade text-ui-2xs border-2 ${
               sourcesTab === "vault"
                 ? "border-primary text-primary bg-primary/10"
                 : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
@@ -1127,7 +1127,7 @@ export function SourcesPanel(props: SourcesPanelProps) {
           <button
             type="button"
             onClick={() => onSetSourcesTab("objectives")}
-            className={`h-8 px-1 font-arcade text-[9px] border-2 ${
+            className={`h-8 px-1 font-arcade text-ui-3xs border-2 ${
               sourcesTab === "objectives"
                 ? "border-primary text-primary bg-primary/10"
                 : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
@@ -1138,7 +1138,7 @@ export function SourcesPanel(props: SourcesPanelProps) {
           <button
             type="button"
             onClick={() => onSetSourcesTab("flashcards")}
-            className={`h-8 px-1 font-arcade text-[9px] border-2 ${
+            className={`h-8 px-1 font-arcade text-ui-3xs border-2 ${
               sourcesTab === "flashcards"
                 ? "border-primary text-primary bg-primary/10"
                 : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
@@ -1149,7 +1149,7 @@ export function SourcesPanel(props: SourcesPanelProps) {
           <button
             type="button"
             onClick={() => onSetSourcesTab("map_of_contents")}
-            className={`h-8 px-2 font-arcade text-[10px] border-2 ${
+            className={`h-8 px-2 font-arcade text-ui-2xs border-2 ${
               sourcesTab === "map_of_contents"
                 ? "border-primary text-primary bg-primary/10"
                 : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"

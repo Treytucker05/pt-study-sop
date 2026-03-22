@@ -44,12 +44,12 @@ export class TutorErrorBoundary extends Component<
             {fallbackLabel} encountered an error. Click below to try again.
           </div>
           {error?.message && (
-            <div className="text-red-400/70 text-[10px] break-words">
+            <div className="text-red-400/70 text-ui-2xs break-words">
               {error.message}
             </div>
           )}
           <Button
-            className="rounded-none border-2 border-primary font-arcade text-[10px]"
+            className="rounded-none border-2 border-primary font-arcade text-ui-2xs"
             onClick={() => this.setState({ hasError: false, error: null })}
           >
             RETRY

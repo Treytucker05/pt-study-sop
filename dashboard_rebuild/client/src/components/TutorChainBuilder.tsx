@@ -386,7 +386,7 @@ export function TutorChainBuilder({
             data-testid="tutor-chain-architecture"
             className="rounded-none border border-primary/20 bg-black/30 p-3"
           >
-            <div className="font-arcade text-[10px] uppercase tracking-[0.18em] text-primary">
+            <div className="font-arcade text-ui-2xs uppercase tracking-[0.18em] text-primary">
               Locked Architecture
             </div>
             <div className="mt-2 font-terminal text-xs leading-5 text-muted-foreground">
@@ -397,10 +397,10 @@ export function TutorChainBuilder({
               {architectureSlots.map((slot) => (
                 <div key={slot.label} className="rounded-none border border-primary/10 bg-black/35 p-2">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="font-arcade text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                    <div className="font-arcade text-ui-2xs uppercase tracking-[0.18em] text-muted-foreground">
                       {slot.label}
                     </div>
-                    <Badge variant="outline" className={cn("rounded-none text-[10px]", architectureSlotClasses(slot.status))}>
+                    <Badge variant="outline" className={cn("rounded-none text-ui-2xs", architectureSlotClasses(slot.status))}>
                       {slot.status}
                     </Badge>
                   </div>

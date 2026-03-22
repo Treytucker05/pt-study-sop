@@ -37,8 +37,8 @@ export function TutorEmptyState({ icon: Icon, title, description, actions }: Tut
                   variant={action.variant === "ghost" ? "ghost" : "default"}
                   className={
                     action.variant === "ghost"
-                      ? "rounded-none font-arcade text-[10px] border border-primary/20 text-muted-foreground hover:text-primary"
-                      : "rounded-none font-arcade text-[10px] bg-primary text-primary-foreground hover:bg-primary/90"
+                      ? "rounded-none font-arcade text-ui-2xs border border-primary/20 text-muted-foreground hover:text-primary"
+                      : "rounded-none font-arcade text-ui-2xs bg-primary text-primary-foreground hover:bg-primary/90"
                   }
                   onClick={action.onClick}
                 >

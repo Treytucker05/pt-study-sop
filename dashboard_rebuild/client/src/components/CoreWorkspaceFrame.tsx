@@ -14,8 +14,10 @@ interface CoreWorkspaceFrameProps {
   topBar?: ReactNode;
   sidebar?: ReactNode;
   ready?: boolean;
+  topBarVariant?: "deck" | "integrated";
   className?: string;
   topBarClassName?: string;
+  topBarSurfaceClassName?: string;
   sidebarClassName?: string;
   mainClassName?: string;
   contentClassName?: string;
@@ -26,8 +28,10 @@ export function CoreWorkspaceFrame({
   topBar,
   sidebar,
   ready = true,
+  topBarVariant = "deck",
   className,
   topBarClassName,
+  topBarSurfaceClassName,
   sidebarClassName,
   mainClassName,
   contentClassName,
@@ -48,12 +52,18 @@ export function CoreWorkspaceFrame({
               topBarClassName,
             )}
           >
-            <div className={cn(CONTROL_DECK, "min-h-[5rem] p-2.5")}>
-              <div className={CONTROL_DECK_INSET} />
-              <div className={CONTROL_DECK_TOPLINE} />
-              <div className={CONTROL_DECK_BOTTOMLINE} />
-              <div className={CONTROL_DECK_BODY}>{topBar}</div>
-            </div>
+            {topBarVariant === "integrated" ? (
+              <div className={cn("min-h-[5rem]", topBarSurfaceClassName)}>
+                {topBar}
+              </div>
+            ) : (
+              <div className={cn(CONTROL_DECK, "min-h-[5rem] p-2.5", topBarSurfaceClassName)}>
+                <div className={CONTROL_DECK_INSET} />
+                <div className={CONTROL_DECK_TOPLINE} />
+                <div className={CONTROL_DECK_BOTTOMLINE} />
+                <div className={CONTROL_DECK_BODY}>{topBar}</div>
+              </div>
+            )}
           </div>
         ) : null}
 

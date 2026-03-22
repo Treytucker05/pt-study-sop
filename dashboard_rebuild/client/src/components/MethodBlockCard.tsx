@@ -47,7 +47,7 @@ export default function MethodBlockCard({
           </div>
         )}
         {showLegacyCategory && (
-          <div className="text-[10px] font-terminal text-muted-foreground/70">legacy: {block.category}</div>
+          <div className="text-ui-2xs font-terminal text-muted-foreground/70">legacy: {block.category}</div>
         )}
         {hideHeader && block.description && (
           <p className="font-terminal text-xs text-muted-foreground line-clamp-2">{block.description}</p>

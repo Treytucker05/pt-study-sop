@@ -128,10 +128,10 @@ function EventRow({
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="rounded-none border-primary/40 text-[10px]">
+            <Badge variant="outline" className="rounded-none border-primary/40 text-ui-2xs">
               {event.course_code || event.course_name}
             </Badge>
-            <Badge variant="outline" className="rounded-none border-secondary/30 text-[10px]">
+            <Badge variant="outline" className="rounded-none border-secondary/30 text-ui-2xs">
               {event.type.toUpperCase()}
             </Badge>
           </div>
@@ -281,7 +281,7 @@ function StudyWheelSnapshotCard({ studyWheel }: StudyWheelSnapshotCardProps) {
 function MetricStat({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="border border-primary/20 bg-black/35 p-3">
-      <div className="font-terminal text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+      <div className="font-terminal text-ui-xs uppercase tracking-[0.18em] text-muted-foreground">
         {label}
       </div>
       <div className="mt-2 font-terminal text-sm text-white">{value}</div>
@@ -419,7 +419,7 @@ function ClassProjectCard({
         <Badge
           variant="outline"
           className={cn(
-            "rounded-none text-[10px]",
+            "rounded-none text-ui-2xs",
             project.active_session
               ? "border-primary/50 text-primary"
               : "border-secondary/30 text-muted-foreground",
