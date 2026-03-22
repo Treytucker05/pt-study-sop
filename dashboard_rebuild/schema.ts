@@ -97,6 +97,7 @@ export const learningObjectives = sqliteTable("learning_objectives", {
   lastSessionId: integer("last_session_id"),
   lastSessionDate: text("last_session_date"), // ISO date string
   nextAction: text("next_action"),
+  groupName: text("group_name"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
 });

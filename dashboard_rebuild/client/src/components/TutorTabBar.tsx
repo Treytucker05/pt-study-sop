@@ -13,17 +13,26 @@ import {
 import { ICON_MD } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
-import type { TutorPageMode } from "@/lib/tutorUtils";
+import type { TutorPageMode, TutorStudioView } from "@/lib/tutorUtils";
 import type { TutorArtifact } from "@/components/TutorArtifacts";
 import { toast } from "sonner";
+
+export type StudioSubTab = {
+  key: TutorStudioView;
+  label: string;
+  available: boolean;
+};
 
 export interface TutorTabBarProps {
   shellMode: TutorPageMode;
   activeSessionId: string | null;
   showArtifacts: boolean;
   artifacts: TutorArtifact[];
+  studioSubTabs?: StudioSubTab[];
+  studioView?: TutorStudioView;
   onSetShellMode: (mode: TutorPageMode) => void;
   onOpenStudioHome: () => void;
+  onStudioSubTabClick?: (key: TutorStudioView) => void;
   onSetShowArtifacts: (show: boolean) => void;
   onSetShowEndConfirm: (show: boolean) => void;
   onOpenSettings: () => void;
@@ -46,13 +55,27 @@ function workspaceTabButton(
   );
 }
 
+function studioSubButton(active: boolean, available: boolean) {
+  return cn(
+    "min-h-[36px] whitespace-nowrap rounded-[0.22rem] border px-2.5 py-1.5 font-mono text-ui-2xs uppercase tracking-[0.14em] transition-all duration-150 ease-out",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55 focus-visible:ring-offset-1 focus-visible:ring-offset-black",
+    !available && "cursor-not-allowed opacity-40",
+    active
+      ? "border-[rgba(255,112,138,0.40)] bg-[linear-gradient(180deg,rgba(255,72,104,0.18),rgba(12,2,5,0.94)_52%,rgba(0,0,0,0.98)_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05),inset_0_0_0_1px_rgba(255,84,116,0.08)]"
+      : "border-[rgba(255,70,104,0.12)] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.14)_26%,rgba(0,0,0,0.36)_100%),linear-gradient(135deg,rgba(66,10,18,0.14),rgba(8,2,4,0.96)_64%,rgba(0,0,0,0.98)_100%)] text-[#ffd4dc]/80 hover:border-[rgba(255,108,136,0.26)] hover:text-white",
+  );
+}
+
 export function TutorTabBar({
   shellMode,
   activeSessionId,
   showArtifacts,
   artifacts,
+  studioSubTabs,
+  studioView,
   onSetShellMode,
   onOpenStudioHome,
+  onStudioSubTabClick,
   onSetShowArtifacts,
   onSetShowEndConfirm,
   onOpenSettings,
@@ -63,6 +86,8 @@ export function TutorTabBar({
     onSetStudioEntryRequest(null);
     onSetScheduleLaunchIntent(null);
   };
+
+  const isStudioActive = shellMode === "studio";
 
   return (
     <div
@@ -100,21 +125,56 @@ export function TutorTabBar({
         <MessageSquare className={`${ICON_MD} mr-1`} />
         TUTOR
       </Button>
-      <Button
-        role="tab"
-        id="tutor-tab-studio"
-        aria-selected={shellMode === "studio"}
-        variant="ghost"
-        size="sm"
-        onClick={() => {
-          clearNavIntents();
-          onOpenStudioHome();
-        }}
-        className={workspaceTabButton(shellMode === "studio")}
-      >
-        <PenTool className={`${ICON_MD} mr-1`} />
-        STUDIO
-      </Button>
+
+      {/* Studio button + connected sub-tabs */}
+      <div className="flex items-center gap-0">
+        <Button
+          role="tab"
+          id="tutor-tab-studio"
+          aria-selected={isStudioActive}
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            clearNavIntents();
+            onOpenStudioHome();
+          }}
+          className={cn(
+            workspaceTabButton(isStudioActive),
+            isStudioActive && studioSubTabs && "rounded-r-none border-r-0",
+          )}
+        >
+          <PenTool className={`${ICON_MD} mr-1`} />
+          STUDIO
+        </Button>
+        {isStudioActive && studioSubTabs && onStudioSubTabClick && (
+          <div className="flex items-center border-l border-primary/20">
+            {studioSubTabs.map((tab) => (
+              <Button
+                key={tab.key}
+                role="tab"
+                id={`tutor-studio-sub-${tab.key}`}
+                aria-selected={studioView === tab.key}
+                variant="ghost"
+                size="sm"
+                disabled={!tab.available}
+                onClick={() => {
+                  if (tab.available) {
+                    clearNavIntents();
+                    onStudioSubTabClick(tab.key);
+                  }
+                }}
+                className={cn(
+                  studioSubButton(studioView === tab.key, tab.available),
+                  "rounded-none",
+                )}
+              >
+                {tab.label}
+              </Button>
+            ))}
+          </div>
+        )}
+      </div>
+
       <Button
         role="tab"
         id="tutor-tab-schedule"

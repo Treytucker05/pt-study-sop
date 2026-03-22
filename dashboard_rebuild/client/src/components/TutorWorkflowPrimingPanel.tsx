@@ -1,15 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  AlertTriangle,
   CheckCircle2,
   Cpu,
   Link2,
   Loader2,
+  Pencil,
   Play,
   RefreshCw,
   Save,
   Sparkles,
+  Trash2,
   Wand2,
+  X,
+  Check,
 } from "lucide-react";
 
 import type { MethodBlock, TutorPrimingMethodRun, TutorPrimingSourceInventoryItem } from "@/api.types";
@@ -41,6 +46,7 @@ import { INPUT_BASE, SELECT_BASE, TEXT_MUTED } from "@/lib/theme";
 import { extractMermaidBlock } from "@/lib/tutorUtils";
 import { cn } from "@/lib/utils";
 import { formatWorkflowStatus, truncateWorkflowId } from "@/lib/workflowStatus";
+import { toast } from "sonner";
 
 type StudyUnitOption = {
   value: string;
@@ -58,7 +64,6 @@ const PRIME_METHOD_DISPLAY_ORDER = [
   "M-PRE-008",
   "M-PRE-009",
   "M-PRE-010",
-  "M-PRE-011",
   "M-PRE-012",
   "M-PRE-013",
   "M-PRE-014",
@@ -324,6 +329,71 @@ export function TutorWorkflowPrimingPanel({
   const [editingHandoff, setEditingHandoff] = useState(false);
   const [chainMode, setChainMode] = useState<ChainMode>("auto");
   const headingRef = useRef<HTMLHeadingElement | null>(null);
+  const queryClient = useQueryClient();
+
+  // Study unit edit/delete state
+  const [editingUnit, setEditingUnit] = useState<string | null>(null);
+  const [editingUnitValue, setEditingUnitValue] = useState("");
+  const [unitBusy, setUnitBusy] = useState(false);
+
+  const handleRenameStudyUnit = useCallback(
+    async (oldName: string, newName: string) => {
+      const trimmed = newName.trim();
+      if (!trimmed || trimmed === oldName) {
+        setEditingUnit(null);
+        return;
+      }
+      setUnitBusy(true);
+      try {
+        const objectives = availableObjectives.filter(
+          (o) => String(o.groupName || "") === oldName,
+        );
+        await Promise.all(
+          objectives.map((o) =>
+            api.learningObjectives.update(o.id, { groupName: trimmed }),
+          ),
+        );
+        if (selectedObjectiveGroup === oldName) {
+          setSelectedObjectiveGroup(trimmed);
+        }
+        await queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
+        toast.success(`Renamed "${oldName}" → "${trimmed}"`);
+      } catch {
+        toast.error("Failed to rename study unit");
+      } finally {
+        setUnitBusy(false);
+        setEditingUnit(null);
+      }
+    },
+    [availableObjectives, selectedObjectiveGroup, setSelectedObjectiveGroup, queryClient],
+  );
+
+  const handleDeleteStudyUnit = useCallback(
+    async (unitName: string) => {
+      const objectives = availableObjectives.filter(
+        (o) => String(o.groupName || "") === unitName,
+      );
+      if (objectives.length === 0) return;
+      const confirmed = window.confirm(
+        `Delete study unit "${unitName}" and its ${objectives.length} objective${objectives.length === 1 ? "" : "s"}?`,
+      );
+      if (!confirmed) return;
+      setUnitBusy(true);
+      try {
+        await Promise.all(objectives.map((o) => api.learningObjectives.delete(o.id)));
+        if (selectedObjectiveGroup === unitName) {
+          setSelectedObjectiveGroup("");
+        }
+        await queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
+        toast.success(`Deleted study unit "${unitName}"`);
+      } catch {
+        toast.error("Failed to delete study unit");
+      } finally {
+        setUnitBusy(false);
+      }
+    },
+    [availableObjectives, selectedObjectiveGroup, setSelectedObjectiveGroup, queryClient],
+  );
 
   useEffect(() => {
     headingRef.current?.focus();
@@ -625,15 +695,101 @@ export function TutorWorkflowPrimingPanel({
                 setSelectedObjectiveGroup(event.target.value);
                 setSelectedObjectiveId("");
               }}
-              list="priming-study-unit-options"
-              placeholder="Type or choose a study unit"
+              placeholder="Type a new study unit or select below"
               className={INPUT_BASE}
             />
-            <datalist id="priming-study-unit-options">
-              {studyUnitOptions.map((option) => (
-                <option key={option.value} value={option.value} />
-              ))}
-            </datalist>
+            {studyUnitOptions.length > 0 && (
+              <div className="space-y-1 rounded border border-primary/15 bg-black/30 p-2">
+                <div className="font-mono text-ui-2xs text-foreground/50 uppercase tracking-wider">
+                  Existing units
+                </div>
+                {studyUnitOptions.map((option) => (
+                  <div
+                    key={option.value}
+                    className={cn(
+                      "group flex items-center gap-2 rounded px-2 py-1.5 transition-colors",
+                      selectedObjectiveGroup === option.value
+                        ? "bg-primary/10 text-white"
+                        : "text-foreground/75 hover:bg-primary/5 hover:text-white",
+                    )}
+                  >
+                    {editingUnit === option.value ? (
+                      <div className="flex flex-1 items-center gap-1">
+                        <input
+                          value={editingUnitValue}
+                          onChange={(e) => setEditingUnitValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              void handleRenameStudyUnit(option.value, editingUnitValue);
+                            } else if (e.key === "Escape") {
+                              setEditingUnit(null);
+                            }
+                          }}
+                          className={cn(INPUT_BASE, "h-7 flex-1 text-sm")}
+                          disabled={unitBusy}
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => void handleRenameStudyUnit(option.value, editingUnitValue)}
+                          disabled={unitBusy}
+                          className="p-1 text-emerald-400 hover:text-emerald-300"
+                          title="Confirm rename"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingUnit(null)}
+                          disabled={unitBusy}
+                          className="p-1 text-foreground/50 hover:text-foreground/80"
+                          title="Cancel"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedObjectiveGroup(option.value);
+                            setSelectedObjectiveId("");
+                          }}
+                          className="flex-1 text-left font-mono text-sm"
+                        >
+                          {option.value}
+                          <span className="ml-2 text-foreground/40 text-xs">
+                            {option.objectiveCount} obj
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingUnit(option.value);
+                            setEditingUnitValue(option.value);
+                          }}
+                          disabled={unitBusy}
+                          className="p-1 text-foreground/30 opacity-0 transition-opacity group-hover:opacity-100 hover:text-primary"
+                          title="Rename study unit"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteStudyUnit(option.value)}
+                          disabled={unitBusy}
+                          className="p-1 text-foreground/30 opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
+                          title="Delete study unit and its objectives"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
             <div className={`${TEXT_MUTED} text-xs`}>
               Use a broad unit label here so the priming scope covers the whole module instead of isolated fragments.
             </div>
@@ -1293,6 +1449,102 @@ export function TutorWorkflowPrimingPanel({
         </CardContent>
       </Card>
 
+      <Card className="rounded-none border-primary/20 bg-black/35">
+        <CardHeader className="border-b border-primary/15 pb-3">
+          <CardTitle className="font-arcade text-xs text-primary">TUTOR WILL RECEIVE</CardTitle>
+          <p className={`${TEXT_MUTED} mt-2 text-xs`}>
+            Preview of the data packet that will be passed to your Tutor session.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-3 pt-4">
+          {(() => {
+            const truncate = (text: string, max = 100): string => {
+              const trimmed = text.trim();
+              if (trimmed.length === 0) return "";
+              return trimmed.length > max ? `${trimmed.slice(0, max)}...` : trimmed;
+            };
+
+            const selectedChainName =
+              chainMode === "template" && selectedTemplateChain
+                ? selectedTemplateChain.name
+                : chainMode === "custom" && customBlockIds.length > 0
+                  ? `Custom chain (${customBlockIds.length} blocks)`
+                  : "Auto-selected";
+
+            const fields: Array<{
+              label: string;
+              value: string;
+              warning: string;
+              isTruncated?: boolean;
+            }> = [
+              { label: "Topic", value: topic, warning: "Not set" },
+              { label: "Study Unit", value: selectedObjectiveGroup, warning: "Not set" },
+              {
+                label: "Materials",
+                value:
+                  selectedMaterials.length > 0
+                    ? `${selectedMaterials.length} material${selectedMaterials.length === 1 ? "" : "s"} in scope`
+                    : "",
+                warning: "No materials selected",
+              },
+              { label: "Chain", value: selectedChainName, warning: "" },
+              {
+                label: "Summary",
+                value: truncate(summaryText),
+                warning: "Not provided \u2014 Tutor will start without this",
+                isTruncated: true,
+              },
+              {
+                label: "Key Concepts",
+                value: truncate(conceptsText),
+                warning: "Not provided \u2014 Tutor will start without this",
+                isTruncated: true,
+              },
+              {
+                label: "Terminology",
+                value: truncate(terminologyText),
+                warning: "Not provided \u2014 Tutor will start without this",
+                isTruncated: true,
+              },
+              {
+                label: "Root Explanation",
+                value: truncate(rootExplanationText),
+                warning: "Not provided \u2014 Tutor will start without this",
+                isTruncated: true,
+              },
+              {
+                label: "Gaps",
+                value: truncate(gapsText),
+                warning: "Not provided \u2014 Tutor will start without this",
+                isTruncated: true,
+              },
+              {
+                label: "Strategy",
+                value: truncate(recommendedStrategyText),
+                warning: "Not provided \u2014 Tutor will start without this",
+                isTruncated: true,
+              },
+            ];
+
+            return fields.map((field) => (
+              <div key={field.label} className="flex items-start gap-3 border-b border-primary/10 pb-2 last:border-b-0 last:pb-0">
+                <div className={`${TEXT_MUTED} w-28 shrink-0 text-xs`}>{field.label}</div>
+                <div className="min-w-0 flex-1">
+                  {field.value ? (
+                    <div className="font-mono text-sm text-foreground/80">{field.value}</div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 text-amber-400">
+                      <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                      <span className="text-sm">{field.warning}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ));
+          })()}
+        </CardContent>
+      </Card>
+
       {renderStepFooter()}
     </div>
   );
@@ -1313,7 +1565,7 @@ export function TutorWorkflowPrimingPanel({
       steps={steps}
       activeStepId={activeStepId}
       activeContent={activeContent}
-      sourceViewer={sourceViewer}
+      sourceViewer={activeStepId === "setup" ? undefined : sourceViewer}
       headingRef={headingRef}
       onStepChange={setActiveStepId}
     />

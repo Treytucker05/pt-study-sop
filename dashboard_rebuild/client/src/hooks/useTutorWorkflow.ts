@@ -187,7 +187,20 @@ export function useTutorWorkflow({
   const queryClient = useQueryClient();
 
   // ─── Workflow view state ───
-  const [studioView, setStudioView] = useState<TutorStudioView>("workbench");
+  const STUDIO_TAB_KEY = "tutor-studio-last-tab";
+  const [studioView, setStudioViewRaw] = useState<TutorStudioView>(() => {
+    try {
+      const stored = localStorage.getItem(STUDIO_TAB_KEY);
+      if (stored === "workbench" || stored === "priming" || stored === "polish" || stored === "final_sync") {
+        return stored;
+      }
+    } catch { /* ignore */ }
+    return "priming";
+  });
+  const setStudioView = useCallback((view: TutorStudioView) => {
+    setStudioViewRaw(view);
+    try { localStorage.setItem(STUDIO_TAB_KEY, view); } catch { /* ignore */ }
+  }, []);
   const [activeWorkflowId, setActiveWorkflowId] = useState<string | null>(null);
   const [workflowFilters, setWorkflowFilters] = useState<TutorWorkflowLaunchFilters>({
     search: "",

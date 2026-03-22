@@ -85,6 +85,12 @@ describe("TutorTopBar", () => {
         activeWorkflowId="wf-1"
         activeWorkflowDetail={undefined}
         studioView="priming"
+        studioSubTabs={[
+          { key: "workbench", label: "HOME", available: true },
+          { key: "priming", label: "PRIMING", available: true },
+          { key: "polish", label: "POLISH", available: false },
+          { key: "final_sync", label: "FINAL SYNC", available: false },
+        ]}
         activeSessionId="sess-1"
         showArtifacts={false}
         artifacts={[]}
@@ -94,6 +100,7 @@ describe("TutorTopBar", () => {
         onSetShowEndConfirm={vi.fn()}
         onOpenSettings={vi.fn()}
         onOpenStudioHome={vi.fn()}
+        onStudioSubTabClick={vi.fn()}
         onSetStudioEntryRequest={vi.fn()}
         onSetScheduleLaunchIntent={vi.fn()}
       />,

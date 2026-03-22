@@ -2,6 +2,7 @@ import { CoreWorkspaceFrame } from "@/components/CoreWorkspaceFrame";
 import { PageScaffold } from "@/components/PageScaffold";
 import { TutorShell } from "@/components/TutorShell";
 import { TutorTopBar } from "@/components/TutorTopBar";
+import type { StudioSubTab } from "@/components/TutorTabBar";
 import { useTutorHub } from "@/hooks/useTutorHub";
 import { useTutorSession } from "@/hooks/useTutorSession";
 import { useTutorWorkflow } from "@/hooks/useTutorWorkflow";
@@ -35,7 +36,7 @@ import { useLocation } from "wouter";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { readTutorShellQuery, writeTutorShellQuery } from "@/lib/tutorUtils";
-import type { TutorPageMode, TutorShellQuery } from "@/lib/tutorUtils";
+import type { TutorPageMode, TutorShellQuery, TutorStudioView } from "@/lib/tutorUtils";
 import { resolveTutorTeachRuntime } from "@/components/TutorChat.types";
 
 function useTutorPageController() {
@@ -458,7 +459,12 @@ function useTutorPageController() {
     }
     setStudioEntryRequest(null);
     setScheduleLaunchIntent(null);
-    workflow.setStudioView("workbench");
+    let lastTab: string | null = null;
+    try { lastTab = localStorage.getItem("tutor-studio-last-tab"); } catch { /* ignore */ }
+    const validTabs = ["workbench", "priming", "polish", "final_sync"];
+    workflow.setStudioView(
+      (lastTab && validTabs.includes(lastTab) ? lastTab : "priming") as import("@/lib/tutorUtils").TutorStudioView,
+    );
     setShellMode("studio");
     setShowSetup(false);
   }, [hub.courseId, workflow]);
@@ -698,6 +704,45 @@ function useTutorPageController() {
     [sessionWithWorkflow.currentBlock, workflow.activeWorkflowDetail],
   );
 
+  // ─── Studio sub-tabs ───
+  const currentWorkflowStage =
+    workflow.activeWorkflowDetail?.workflow?.current_stage ?? null;
+  const hasTutorWork =
+    Boolean(activeSessionId) ||
+    currentWorkflowStage === "tutor" ||
+    currentWorkflowStage === "polish" ||
+    currentWorkflowStage === "final_sync" ||
+    (workflow.activeWorkflowDetail?.captured_notes?.length ?? 0) > 0;
+  const hasFinalSyncAccess =
+    Boolean(workflow.activeWorkflowDetail?.polish_bundle) ||
+    currentWorkflowStage === "final_sync";
+
+  const studioSubTabs: StudioSubTab[] = useMemo(
+    () => [
+      { key: "workbench" as TutorStudioView, label: "WORKBENCH", available: true },
+      {
+        key: "priming" as TutorStudioView,
+        label: workflow.bootstrappingPriming ? "PRIMING..." : "PRIMING",
+        available: !workflow.bootstrappingPriming,
+      },
+      { key: "polish" as TutorStudioView, label: "POLISH", available: hasTutorWork },
+      { key: "final_sync" as TutorStudioView, label: "FINAL SYNC", available: hasFinalSyncAccess },
+    ],
+    [workflow.bootstrappingPriming, hasTutorWork, hasFinalSyncAccess],
+  );
+
+  const handleStudioSubTabClick = useCallback(
+    (key: TutorStudioView) => {
+      if (key === "priming") {
+        void workflow.openStudioPriming();
+      } else {
+        workflow.setStudioView(key);
+      }
+      setShellMode("studio");
+    },
+    [workflow, setShellMode],
+  );
+
   // ─── Top bar ───
   const tutorShellTopBar = (
     <TutorTopBar
@@ -720,12 +765,14 @@ function useTutorPageController() {
       activeWorkflowId={workflow.activeWorkflowId}
       activeWorkflowDetail={workflow.activeWorkflowDetail}
       studioView={workflow.studioView}
+      studioSubTabs={studioSubTabs}
       teachRuntime={teachRuntime}
       activeSessionId={activeSessionId}
       showArtifacts={sessionWithWorkflow.showArtifacts}
       artifacts={sessionWithWorkflow.artifacts}
       onSetShellMode={setShellMode}
       onOpenStudioHome={openStudioHome}
+      onStudioSubTabClick={handleStudioSubTabClick}
       onSetShowArtifacts={sessionWithWorkflow.setShowArtifacts}
       onSetShowEndConfirm={sessionWithWorkflow.setShowEndConfirm}
       onOpenSettings={openSettings}
