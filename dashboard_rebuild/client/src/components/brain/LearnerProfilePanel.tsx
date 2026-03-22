@@ -12,7 +12,18 @@ import {
 import { useToast } from "@/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  CONTROL_COPY,
+  CONTROL_DECK_SECTION,
+  CONTROL_KICKER,
+} from "@/components/shell/controlStyles";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import type { BrainWorkspace } from "./useBrainWorkspace";
@@ -24,7 +35,8 @@ interface LearnerProfilePanelProps {
 type LearnerProfile = NonNullable<BrainWorkspace["learnerProfile"]>;
 type LearnerProfileClaim = BrainWorkspace["learnerProfileClaims"][number];
 type LearnerProfileQuestion = BrainWorkspace["learnerProfileQuestions"][number];
-type LearnerProfileHistoryItem = BrainWorkspace["learnerProfileHistory"][number];
+type LearnerProfileHistoryItem =
+  BrainWorkspace["learnerProfileHistory"][number];
 
 function formatFreshness(days: number | null | undefined): string {
   if (days === null || days === undefined) return "no fresh signal";
@@ -33,11 +45,24 @@ function formatFreshness(days: number | null | undefined): string {
   return `${Math.round(days)}d old`;
 }
 
-function signalTone(signalDirection: "strength" | "watchout", score: number): string {
-  if (signalDirection === "watchout" && score >= 0.55) return "border-destructive/70 text-destructive";
-  if (signalDirection === "strength" && score >= 0.6) return "border-success/70 text-success";
+function signalTone(
+  signalDirection: "strength" | "watchout",
+  score: number,
+): string {
+  if (signalDirection === "watchout" && score >= 0.55)
+    return "border-destructive/70 text-destructive";
+  if (signalDirection === "strength" && score >= 0.6)
+    return "border-success/70 text-success";
   return "border-primary/40 text-primary";
 }
+
+const PROFILE_CARD = CONTROL_DECK_SECTION;
+const PROFILE_HEADER = "border-b border-primary/15 px-4 pb-3 pt-3";
+const PROFILE_TITLE =
+  "font-arcade text-sm uppercase tracking-[0.18em] text-primary";
+const PROFILE_DESCRIPTION = "font-mono text-sm leading-6 text-foreground/68";
+const PROFILE_META = "font-mono text-sm leading-6 text-foreground/68";
+const PROFILE_BADGE = "rounded-full px-2.5 py-1 text-ui-2xs tracking-[0.14em]";
 
 function ProfileOverviewCard({
   profile,
@@ -49,41 +74,57 @@ function ProfileOverviewCard({
   onRefresh: () => void;
 }) {
   return (
-    <Card className="border-primary/60">
-      <CardHeader className="border-b border-primary/20">
+    <Card className={PROFILE_CARD}>
+      <CardHeader className={PROFILE_HEADER}>
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <BrainCircuit className="h-4 w-4 text-primary" />
-              <CardTitle>BRAIN PROFILE</CardTitle>
+              <CardTitle className={PROFILE_TITLE}>Brain Profile</CardTitle>
             </div>
-            <CardDescription>{profile.profileSummary.headline}</CardDescription>
+            <CardDescription className={PROFILE_DESCRIPTION}>
+              {profile.profileSummary.headline}
+            </CardDescription>
           </div>
           <Button
             type="button"
             variant="outline"
-            className="rounded-none"
+            className="rounded-[1rem] font-arcade text-sm tracking-[0.14em]"
             onClick={onRefresh}
             disabled={refreshing}
           >
-            <RefreshCw className={cn("mr-2 h-3.5 w-3.5", refreshing && "animate-spin")} />
+            <RefreshCw
+              className={cn("mr-2 h-3.5 w-3.5", refreshing && "animate-spin")}
+            />
             REFRESH
           </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-4 pt-4">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline" className="rounded-none border-primary/60 text-primary">
+          <Badge
+            variant="outline"
+            className={`${PROFILE_BADGE} border-primary/60 text-primary`}
+          >
             {profile.hybridArchetype.label}
           </Badge>
-          <Badge variant="outline" className="rounded-none border-primary/30 text-muted-foreground">
+          <Badge
+            variant="outline"
+            className={`${PROFILE_BADGE} border-primary/30 text-foreground/68`}
+          >
             {profile.claimsOverview.highConfidence} strong claim
             {profile.claimsOverview.highConfidence === 1 ? "" : "s"}
           </Badge>
-          <Badge variant="outline" className="rounded-none border-destructive/40 text-destructive">
+          <Badge
+            variant="outline"
+            className={`${PROFILE_BADGE} border-destructive/40 text-destructive`}
+          >
             {profile.claimsOverview.needsCalibration} need calibration
           </Badge>
-          <Badge variant="outline" className="rounded-none border-yellow-400/50 text-yellow-300">
+          <Badge
+            variant="outline"
+            className={`${PROFILE_BADGE} border-yellow-400/50 text-yellow-300`}
+          >
             {profile.claimsOverview.watchouts} active watchout
             {profile.claimsOverview.watchouts === 1 ? "" : "s"}
           </Badge>
@@ -91,28 +132,36 @@ function ProfileOverviewCard({
 
         <div className="grid gap-3 md:grid-cols-3">
           <div className="space-y-2">
-            <div className="font-arcade text-[11px] text-primary">Strengths</div>
-            <ul className="space-y-1 font-terminal text-xs text-muted-foreground">
+            <div className={CONTROL_KICKER}>Strengths</div>
+            <ul className="space-y-1.5 font-mono text-sm leading-6 text-foreground/68">
               {profile.profileSummary.strengths.length > 0 ? (
-                profile.profileSummary.strengths.map((item) => <li key={item}>- {item}</li>)
+                profile.profileSummary.strengths.map((item) => (
+                  <li key={item}>- {item}</li>
+                ))
               ) : (
                 <li>- Brain needs more stable evidence.</li>
               )}
             </ul>
           </div>
           <div className="space-y-2">
-            <div className="font-arcade text-[11px] text-destructive">Watchouts</div>
-            <ul className="space-y-1 font-terminal text-xs text-muted-foreground">
+            <div className="font-arcade text-ui-xs uppercase tracking-[0.22em] text-destructive">
+              Watchouts
+            </div>
+            <ul className="space-y-1.5 font-mono text-sm leading-6 text-foreground/68">
               {profile.profileSummary.watchouts.length > 0 ? (
-                profile.profileSummary.watchouts.map((item) => <li key={item}>- {item}</li>)
+                profile.profileSummary.watchouts.map((item) => (
+                  <li key={item}>- {item}</li>
+                ))
               ) : (
                 <li>- No major watchouts surfaced yet.</li>
               )}
             </ul>
           </div>
           <div className="space-y-2">
-            <div className="font-arcade text-[11px] text-secondary">Next Actions</div>
-            <ul className="space-y-1 font-terminal text-xs text-muted-foreground">
+            <div className="font-arcade text-ui-xs uppercase tracking-[0.22em] text-secondary">
+              Next Actions
+            </div>
+            <ul className="space-y-1.5 font-mono text-sm leading-6 text-foreground/68">
               {profile.profileSummary.nextBestActions.map((item) => (
                 <li key={item}>- {item}</li>
               ))}
@@ -125,7 +174,7 @@ function ProfileOverviewCard({
             <Badge
               key={trait}
               variant="outline"
-              className="rounded-none border-primary/30 text-muted-foreground"
+              className={`${PROFILE_BADGE} border-primary/30 text-foreground/68`}
             >
               {trait}
             </Badge>
@@ -133,19 +182,20 @@ function ProfileOverviewCard({
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">
-          <div className="rounded-none border border-primary/20 bg-black/30 p-3">
-            <div className="font-arcade text-[11px] text-primary">Generated</div>
-            <div className="mt-1 font-terminal text-xs text-muted-foreground">{profile.generatedAt}</div>
+          <div className="rounded-[1rem] border border-primary/20 bg-black/30 p-3">
+            <div className={CONTROL_KICKER}>Generated</div>
+            <div className={PROFILE_META}>{profile.generatedAt}</div>
           </div>
-          <div className="rounded-none border border-primary/20 bg-black/30 p-3">
-            <div className="font-arcade text-[11px] text-primary">Source Window</div>
-            <div className="mt-1 font-terminal text-xs text-muted-foreground">
-              {profile.sourceWindow.start || "n/a"} {"->"} {profile.sourceWindow.end || "n/a"}
+          <div className="rounded-[1rem] border border-primary/20 bg-black/30 p-3">
+            <div className={CONTROL_KICKER}>Source Window</div>
+            <div className={PROFILE_META}>
+              {profile.sourceWindow.start || "n/a"} {"->"}{" "}
+              {profile.sourceWindow.end || "n/a"}
             </div>
           </div>
-          <div className="rounded-none border border-primary/20 bg-black/30 p-3">
-            <div className="font-arcade text-[11px] text-primary">Backfill</div>
-            <div className="mt-1 font-terminal text-xs text-muted-foreground">{profile.backfillMode}</div>
+          <div className="rounded-[1rem] border border-primary/20 bg-black/30 p-3">
+            <div className={CONTROL_KICKER}>Backfill</div>
+            <div className={PROFILE_META}>{profile.backfillMode}</div>
           </div>
         </div>
       </CardContent>
@@ -155,28 +205,35 @@ function ProfileOverviewCard({
 
 function EvidenceOwnershipCard({ profile }: { profile: LearnerProfile }) {
   return (
-    <Card className="border-primary/40">
-      <CardHeader className="border-b border-primary/20">
+    <Card className={PROFILE_CARD}>
+      <CardHeader className={PROFILE_HEADER}>
         <div className="flex items-center gap-2">
           <ShieldCheck className="h-4 w-4 text-primary" />
-          <CardTitle>Evidence Ownership</CardTitle>
+          <CardTitle className={PROFILE_TITLE}>Evidence Ownership</CardTitle>
         </div>
-        <CardDescription>Brain confidence is tiered by signal ownership and quality.</CardDescription>
+        <CardDescription className={PROFILE_DESCRIPTION}>
+          Brain confidence is tiered by signal ownership and quality.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 pt-4">
         {profile.reliabilityTiers.map((tier) => (
-          <div key={tier.tier} className="rounded-none border border-primary/20 bg-black/30 p-3">
+          <div
+            key={tier.tier}
+            className="rounded-[1rem] border border-primary/20 bg-black/30 p-3"
+          >
             <div className="flex items-center justify-between gap-2">
-              <span className="font-arcade text-[11px] text-primary">
+              <span className={CONTROL_KICKER}>
                 Tier {tier.tier}: {tier.label}
               </span>
             </div>
-            <p className="mt-2 font-terminal text-xs text-muted-foreground">{tier.description}</p>
+            <p className="mt-2 font-mono text-sm leading-6 text-foreground/68">
+              {tier.description}
+            </p>
           </div>
         ))}
-        <div className="rounded-none border border-primary/20 bg-black/30 p-3">
-          <div className="font-arcade text-[11px] text-primary">Evidence Summary</div>
-          <pre className="mt-2 whitespace-pre-wrap break-words font-terminal text-[11px] text-muted-foreground">
+        <div className="rounded-[1rem] border border-primary/20 bg-black/30 p-3">
+          <div className={CONTROL_KICKER}>Evidence Summary</div>
+          <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-sm leading-6 text-foreground/68">
             {JSON.stringify(profile.evidenceSummary, null, 2)}
           </pre>
         </div>
@@ -201,60 +258,69 @@ function ClaimCard({
   return (
     <Card
       key={claim.claimKey}
-      className={cn("border-2 bg-black/30", signalTone(claim.signalDirection, claim.score))}
+      className={cn(
+        "rounded-[1rem] border-2 bg-black/30",
+        signalTone(claim.signalDirection, claim.score),
+      )}
       data-testid={`claim-card-${claim.claimKey}`}
     >
       <CardHeader className="border-b border-current/20">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <CardTitle className="text-xs">{claim.label}</CardTitle>
-            <CardDescription>{claim.explanation}</CardDescription>
+            <CardTitle className={PROFILE_TITLE}>{claim.label}</CardTitle>
+            <CardDescription className={PROFILE_DESCRIPTION}>
+              {claim.explanation}
+            </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Badge variant="outline" className="rounded-none border-current/40 text-current">
+            <Badge
+              variant="outline"
+              className={`${PROFILE_BADGE} border-current/40 text-current`}
+            >
               {claim.valueBand}
             </Badge>
-            <Badge variant="outline" className="rounded-none border-current/30 text-current">
+            <Badge
+              variant="outline"
+              className={`${PROFILE_BADGE} border-current/30 text-current`}
+            >
               {claim.confidenceBand}
             </Badge>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-3 pt-4">
-        <div className="grid gap-3 font-terminal text-xs text-muted-foreground sm:grid-cols-3">
+        <div className="grid gap-3 font-mono text-sm leading-6 text-foreground/68 sm:grid-cols-3">
           <div>
-            <div className="text-[11px] uppercase text-primary">Score</div>
+            <div className={CONTROL_KICKER}>Score</div>
             <div>{claim.score.toFixed(2)}</div>
           </div>
           <div>
-            <div className="text-[11px] uppercase text-primary">Freshness</div>
+            <div className={CONTROL_KICKER}>Freshness</div>
             <div className="flex items-center gap-1">
               <Clock3 className="h-3 w-3" />
               {formatFreshness(claim.freshnessDays)}
             </div>
           </div>
           <div>
-            <div className="text-[11px] uppercase text-primary">Contradiction</div>
+            <div className={CONTROL_KICKER}>Contradiction</div>
             <div>{claim.contradictionState}</div>
           </div>
         </div>
 
-        <div className="rounded-none border border-primary/20 bg-black/20 p-3">
-          <div className="font-arcade text-[11px] text-primary">Recommended Strategy</div>
-          <div className="mt-2 font-terminal text-xs text-muted-foreground">
-            {claim.recommendedStrategy}
-          </div>
+        <div className="rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+          <div className={CONTROL_KICKER}>Recommended Strategy</div>
+          <div className={PROFILE_META}>{claim.recommendedStrategy}</div>
         </div>
 
-        <div className="rounded-none border border-primary/20 bg-black/20 p-3">
-          <div className="font-arcade text-[11px] text-primary">Evidence</div>
-          <pre className="mt-2 whitespace-pre-wrap break-words font-terminal text-[11px] text-muted-foreground">
+        <div className="rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+          <div className={CONTROL_KICKER}>Evidence</div>
+          <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-sm leading-6 text-foreground/68">
             {JSON.stringify(claim.evidence, null, 2)}
           </pre>
         </div>
 
         <div className="space-y-2">
-          <div className="flex items-center gap-2 font-arcade text-[11px] text-primary">
+          <div className="flex items-center gap-2 font-arcade text-ui-xs uppercase tracking-[0.22em] text-primary">
             <AlertTriangle className="h-3 w-3" />
             Challenge This Claim
           </div>
@@ -262,13 +328,13 @@ function ClaimCard({
             value={draft}
             onChange={(event) => onDraftChange(event.target.value)}
             placeholder="Tell Brain what it is missing, overstating, or interpreting incorrectly."
-            className="min-h-[96px] rounded-none border-primary/30 bg-black/40 font-terminal text-xs"
+            className="min-h-[96px] rounded-[1rem] border-primary/30 bg-black/40 font-mono text-sm leading-6"
             data-testid={`claim-challenge-${claim.claimKey}`}
           />
           <Button
             type="button"
             variant="outline"
-            className="rounded-none"
+            className="rounded-[1rem] font-arcade text-sm tracking-[0.14em]"
             disabled={submitting || !draft.trim()}
             onClick={onSubmit}
           >
@@ -294,13 +360,13 @@ function ProfileClaimsSection({
   onSubmit: (claimKey: string) => void;
 }) {
   return (
-    <Card className="border-primary/50">
-      <CardHeader className="border-b border-primary/20">
+    <Card className={PROFILE_CARD}>
+      <CardHeader className={PROFILE_HEADER}>
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" />
-          <CardTitle>Profile Claims</CardTitle>
+          <CardTitle className={PROFILE_TITLE}>Profile Claims</CardTitle>
         </div>
-        <CardDescription>
+        <CardDescription className={PROFILE_DESCRIPTION}>
           These are the factual learner-model claims Brain is currently making.
         </CardDescription>
       </CardHeader>
@@ -334,44 +400,57 @@ function CalibrationQuestionsCard({
   onSubmit: (questionId: number) => void;
 }) {
   return (
-    <Card className="border-primary/50">
-      <CardHeader className="border-b border-primary/20">
+    <Card className={PROFILE_CARD}>
+      <CardHeader className={PROFILE_HEADER}>
         <div className="flex items-center gap-2">
           <MessageSquareQuote className="h-4 w-4 text-primary" />
-          <CardTitle>Calibration Questions</CardTitle>
+          <CardTitle className={PROFILE_TITLE}>Calibration Questions</CardTitle>
         </div>
-        <CardDescription>Brain asks these when evidence is weak, mixed, or contradicted.</CardDescription>
+        <CardDescription className={PROFILE_DESCRIPTION}>
+          Brain asks these when evidence is weak, mixed, or contradicted.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 pt-4">
         {questions.length > 0 ? (
           questions.map((question) => (
             <div
               key={question.id}
-              className="space-y-3 rounded-none border border-primary/20 bg-black/30 p-3"
+              className="space-y-3 rounded-[1rem] border border-primary/20 bg-black/30 p-3"
               data-testid={`question-card-${question.id}`}
             >
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline" className="rounded-none border-primary/40 text-primary">
+                <Badge
+                  variant="outline"
+                  className={`${PROFILE_BADGE} border-primary/40 text-primary`}
+                >
                   {question.questionType}
                 </Badge>
-                <Badge variant="outline" className="rounded-none border-primary/20 text-muted-foreground">
+                <Badge
+                  variant="outline"
+                  className={`${PROFILE_BADGE} border-primary/20 text-foreground/68`}
+                >
                   {question.claimKey}
                 </Badge>
               </div>
-              <div className="font-terminal text-sm text-foreground">{question.questionText}</div>
-              <div className="font-terminal text-xs text-muted-foreground">{question.rationale}</div>
+              <div className={CONTROL_COPY}>{question.questionText}</div>
+              <div className={PROFILE_META}>{question.rationale}</div>
               <Textarea
                 value={questionDrafts[question.id] || ""}
-                onChange={(event) => onDraftChange(question.id, event.target.value)}
+                onChange={(event) =>
+                  onDraftChange(question.id, event.target.value)
+                }
                 placeholder="Answer to calibrate Brain's learner model."
-                className="min-h-[96px] rounded-none border-primary/30 bg-black/40 font-terminal text-xs"
+                className="min-h-[96px] rounded-[1rem] border-primary/30 bg-black/40 font-mono text-sm leading-6"
                 data-testid={`question-answer-${question.id}`}
               />
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-none"
-                disabled={submittingKeys[`question:${question.id}`] || !(questionDrafts[question.id] || "").trim()}
+                className="rounded-[1rem] font-arcade text-sm tracking-[0.14em]"
+                disabled={
+                  submittingKeys[`question:${question.id}`] ||
+                  !(questionDrafts[question.id] || "").trim()
+                }
                 onClick={() => onSubmit(question.id)}
               >
                 Save Answer
@@ -379,8 +458,9 @@ function CalibrationQuestionsCard({
             </div>
           ))
         ) : (
-          <div className="font-terminal text-xs text-muted-foreground">
-            No open calibration questions. Brain has enough stable evidence for the current profile snapshot.
+          <div className={PROFILE_META}>
+            No open calibration questions. Brain has enough stable evidence for
+            the current profile snapshot.
           </div>
         )}
       </CardContent>
@@ -388,34 +468,48 @@ function CalibrationQuestionsCard({
   );
 }
 
-function ProfileTimelineCard({ history }: { history: LearnerProfileHistoryItem[] }) {
+function ProfileTimelineCard({
+  history,
+}: {
+  history: LearnerProfileHistoryItem[];
+}) {
   return (
-    <Card className="border-primary/40">
-      <CardHeader className="border-b border-primary/20">
+    <Card className={PROFILE_CARD}>
+      <CardHeader className={PROFILE_HEADER}>
         <div className="flex items-center gap-2">
           <Clock3 className="h-4 w-4 text-primary" />
-          <CardTitle>Profile Timeline</CardTitle>
+          <CardTitle className={PROFILE_TITLE}>Profile Timeline</CardTitle>
         </div>
-        <CardDescription>Wave 1 keeps a visible history of Brain profile snapshots.</CardDescription>
+        <CardDescription className={PROFILE_DESCRIPTION}>
+          Wave 1 keeps a visible history of Brain profile snapshots.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 pt-4">
         {history.length > 0 ? (
           history.map((item) => (
-            <div key={item.snapshotId} className="rounded-none border border-primary/20 bg-black/30 p-3">
+            <div
+              key={item.snapshotId}
+              className="rounded-[1rem] border border-primary/20 bg-black/30 p-3"
+            >
               <div className="flex items-center justify-between gap-2">
-                <div className="font-arcade text-[11px] text-primary">{item.archetypeLabel}</div>
-                <Badge variant="outline" className="rounded-none border-primary/20 text-muted-foreground">
+                <div className={CONTROL_KICKER}>{item.archetypeLabel}</div>
+                <Badge
+                  variant="outline"
+                  className={`${PROFILE_BADGE} border-primary/20 text-foreground/68`}
+                >
                   snapshot {item.snapshotId}
                 </Badge>
               </div>
-              <div className="mt-2 font-terminal text-xs text-muted-foreground">{item.archetypeSummary}</div>
-              <div className="mt-2 font-terminal text-[11px] text-muted-foreground">{item.generatedAt}</div>
+              <div className="mt-2 font-mono text-sm leading-6 text-foreground/68">
+                {item.archetypeSummary}
+              </div>
+              <div className="mt-2 font-mono text-sm leading-6 text-foreground/56">
+                {item.generatedAt}
+              </div>
             </div>
           ))
         ) : (
-          <div className="font-terminal text-xs text-muted-foreground">
-            No profile history recorded yet.
-          </div>
+          <div className={PROFILE_META}>No profile history recorded yet.</div>
         )}
       </CardContent>
     </Card>
@@ -424,9 +518,13 @@ function ProfileTimelineCard({ history }: { history: LearnerProfileHistoryItem[]
 
 export function LearnerProfilePanel({ workspace }: LearnerProfilePanelProps) {
   const { toast } = useToast();
-  const [questionDrafts, setQuestionDrafts] = useState<Record<number, string>>({});
+  const [questionDrafts, setQuestionDrafts] = useState<Record<number, string>>(
+    {},
+  );
   const [claimDrafts, setClaimDrafts] = useState<Record<string, string>>({});
-  const [submittingKeys, setSubmittingKeys] = useState<Record<string, boolean>>({});
+  const [submittingKeys, setSubmittingKeys] = useState<Record<string, boolean>>(
+    {},
+  );
   const [refreshing, setRefreshing] = useState(false);
 
   const profile = workspace.learnerProfile;
@@ -436,7 +534,7 @@ export function LearnerProfilePanel({ workspace }: LearnerProfilePanelProps) {
 
   const primaryClaims = useMemo(
     () => [...claims].sort((a, b) => b.confidence - a.confidence),
-    [claims]
+    [claims],
   );
 
   const handleRefresh = async () => {
@@ -445,12 +543,16 @@ export function LearnerProfilePanel({ workspace }: LearnerProfilePanelProps) {
       await workspace.refreshLearnerProfile();
       toast({
         title: "Brain Profile Refreshed",
-        description: "Brain recomputed the learner model from current telemetry.",
+        description:
+          "Brain recomputed the learner model from current telemetry.",
       });
     } catch (error) {
       toast({
         title: "Refresh Failed",
-        description: error instanceof Error ? error.message : "Could not refresh the Brain profile.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Could not refresh the Brain profile.",
         variant: "destructive",
       });
     } finally {
@@ -473,12 +575,16 @@ export function LearnerProfilePanel({ workspace }: LearnerProfilePanelProps) {
       setQuestionDrafts((prev) => ({ ...prev, [questionId]: "" }));
       toast({
         title: "Calibration Saved",
-        description: "Brain recorded the answer and updated the learner-profile feedback log.",
+        description:
+          "Brain recorded the answer and updated the learner-profile feedback log.",
       });
     } catch (error) {
       toast({
         title: "Save Failed",
-        description: error instanceof Error ? error.message : "Could not submit the calibration answer.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Could not submit the calibration answer.",
         variant: "destructive",
       });
     } finally {
@@ -501,12 +607,16 @@ export function LearnerProfilePanel({ workspace }: LearnerProfilePanelProps) {
       setClaimDrafts((prev) => ({ ...prev, [claimKey]: "" }));
       toast({
         title: "Challenge Recorded",
-        description: "Brain stored the learner challenge for Scholar and later profile recalibration.",
+        description:
+          "Brain stored the learner challenge for Scholar and later profile recalibration.",
       });
     } catch (error) {
       toast({
         title: "Challenge Failed",
-        description: error instanceof Error ? error.message : "Could not record the claim challenge.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Could not record the claim challenge.",
         variant: "destructive",
       });
     } finally {
@@ -516,15 +626,23 @@ export function LearnerProfilePanel({ workspace }: LearnerProfilePanelProps) {
 
   if (workspace.learnerProfileLoading) {
     return (
-      <div className="flex h-full items-center justify-center" data-testid="learner-profile-loading">
-        <div className="font-terminal text-sm text-muted-foreground">Loading Brain profile...</div>
+      <div
+        className="flex h-full items-center justify-center"
+        data-testid="learner-profile-loading"
+      >
+        <div className="font-terminal text-sm text-muted-foreground">
+          Loading Brain profile...
+        </div>
       </div>
     );
   }
 
   if (!profile) {
     return (
-      <div className="flex h-full items-center justify-center" data-testid="learner-profile-empty">
+      <div
+        className="flex h-full items-center justify-center"
+        data-testid="learner-profile-empty"
+      >
         <div className="font-terminal text-sm text-muted-foreground">
           Brain has not generated a learner profile yet.
         </div>
@@ -533,7 +651,10 @@ export function LearnerProfilePanel({ workspace }: LearnerProfilePanelProps) {
   }
 
   return (
-    <div className="flex-1 space-y-4 overflow-auto p-4 md:p-5" data-testid="learner-profile-panel">
+    <div
+      className="flex-1 space-y-4 overflow-auto p-4 md:p-5"
+      data-testid="learner-profile-panel"
+    >
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <ProfileOverviewCard
           profile={profile}

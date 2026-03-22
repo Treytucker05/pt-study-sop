@@ -355,7 +355,7 @@ export const ExcalidrawCanvas = forwardRef<
 
         <button
           onClick={() => setShowTemplates(!showTemplates)}
-          className={`px-2 h-6 font-terminal text-[13px] bg-transparent border-none text-muted-foreground cursor-pointer flex items-center gap-1 transition-colors hover:text-foreground hover:bg-primary/10 rounded-none ${showTemplates ? "text-primary bg-primary/20" : ""}`}
+          className={`px-2 h-6 font-terminal text-ui-sm bg-transparent border-none text-muted-foreground cursor-pointer flex items-center gap-1 transition-colors hover:text-foreground hover:bg-primary/10 rounded-none ${showTemplates ? "text-primary bg-primary/20" : ""}`}
           title="Layout Templates"
         >
           <LayoutGrid className="w-3.5 h-3.5" />
@@ -371,7 +371,7 @@ export const ExcalidrawCanvas = forwardRef<
         <button
           onClick={() => currentFilePath ? handleSave(currentFilePath) : openSavePicker()}
           disabled={isSaving}
-          className="px-2 h-6 font-terminal text-[13px] bg-transparent border-none text-muted-foreground cursor-pointer flex items-center gap-1 transition-colors hover:text-foreground hover:bg-primary/10 rounded-none disabled:opacity-50"
+          className="px-2 h-6 font-terminal text-ui-sm bg-transparent border-none text-muted-foreground cursor-pointer flex items-center gap-1 transition-colors hover:text-foreground hover:bg-primary/10 rounded-none disabled:opacity-50"
           title={currentFilePath ? `Save to ${currentFilePath}` : "Save As..."}
         >
           <Save className="w-3.5 h-3.5" />
@@ -380,7 +380,7 @@ export const ExcalidrawCanvas = forwardRef<
 
         <button
           onClick={openLoadPicker}
-          className="px-2 h-6 font-terminal text-[13px] bg-transparent border-none text-muted-foreground cursor-pointer flex items-center gap-1 transition-colors hover:text-foreground hover:bg-primary/10 rounded-none"
+          className="px-2 h-6 font-terminal text-ui-sm bg-transparent border-none text-muted-foreground cursor-pointer flex items-center gap-1 transition-colors hover:text-foreground hover:bg-primary/10 rounded-none"
           title="Load from Vault"
         >
           <FolderOpen className="w-3.5 h-3.5" />
@@ -389,7 +389,7 @@ export const ExcalidrawCanvas = forwardRef<
 
         <button
           onClick={handleExport}
-          className="px-2 h-6 font-terminal text-[13px] bg-transparent border-none text-muted-foreground cursor-pointer flex items-center gap-1 transition-colors hover:text-foreground hover:bg-primary/10 rounded-none"
+          className="px-2 h-6 font-terminal text-ui-sm bg-transparent border-none text-muted-foreground cursor-pointer flex items-center gap-1 transition-colors hover:text-foreground hover:bg-primary/10 rounded-none"
           title="Export PNG"
         >
           <Download className="w-3.5 h-3.5" />
@@ -400,7 +400,7 @@ export const ExcalidrawCanvas = forwardRef<
 
         <button
           onClick={handleFullscreen}
-          className={`px-2 h-6 font-terminal text-[13px] bg-transparent border-none text-muted-foreground cursor-pointer flex items-center gap-1 transition-colors hover:text-foreground hover:bg-primary/10 rounded-none ${isFullscreen ? "text-primary bg-primary/15" : ""}`}
+          className={`px-2 h-6 font-terminal text-ui-sm bg-transparent border-none text-muted-foreground cursor-pointer flex items-center gap-1 transition-colors hover:text-foreground hover:bg-primary/10 rounded-none ${isFullscreen ? "text-primary bg-primary/15" : ""}`}
           title={isFullscreen ? "Exit Fullscreen (Esc)" : "Fullscreen"}
         >
           {isFullscreen ? (
@@ -413,7 +413,7 @@ export const ExcalidrawCanvas = forwardRef<
 
         <button
           onClick={() => workspace?.toggleChat()}
-          className={`px-2 h-6 font-terminal text-[13px] bg-transparent border-none text-muted-foreground cursor-pointer flex items-center gap-1 transition-colors hover:text-foreground hover:bg-primary/10 rounded-none ${workspace?.chatExpanded ? "text-primary bg-primary/15" : ""}`}
+          className={`px-2 h-6 font-terminal text-ui-sm bg-transparent border-none text-muted-foreground cursor-pointer flex items-center gap-1 transition-colors hover:text-foreground hover:bg-primary/10 rounded-none ${workspace?.chatExpanded ? "text-primary bg-primary/15" : ""}`}
           title={workspace?.chatExpanded ? "Hide chat" : "Show chat"}
         >
           <MessageSquare className="w-3.5 h-3.5" />
@@ -423,12 +423,12 @@ export const ExcalidrawCanvas = forwardRef<
         <div className="flex-1" />
 
         {currentFilePath && (
-          <span className="font-terminal text-[11px] text-muted-foreground/70 truncate max-w-[200px]" title={currentFilePath}>
+          <span className="font-terminal text-ui-xs text-muted-foreground/70 truncate max-w-[200px]" title={currentFilePath}>
             <FileText className="w-3 h-3 inline mr-1" />
             {currentFilePath.split("/").pop()}
           </span>
         )}
-        <span className="font-terminal text-[13px] text-muted-foreground flex items-center gap-2">
+        <span className="font-terminal text-ui-sm text-muted-foreground flex items-center gap-2">
           {elementCount}N
           <span className="flex items-center gap-1">
             <span
@@ -467,7 +467,7 @@ export const ExcalidrawCanvas = forwardRef<
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
             <div className="flex flex-col items-center gap-5 p-6">
               <div className="flex items-center gap-4">
-                <h2 className="font-arcade text-[10px] text-primary tracking-wider">
+                <h2 className="font-arcade text-ui-2xs text-primary tracking-wider">
                   CHOOSE A LAYOUT TEMPLATE
                 </h2>
                 <button
@@ -506,7 +506,7 @@ export const ExcalidrawCanvas = forwardRef<
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
             <div className="flex flex-col gap-4 p-6 border-[3px] border-double border-primary/40 bg-black/95 w-[420px] max-h-[80%]">
               <div className="flex items-center justify-between">
-                <h2 className="font-arcade text-[10px] text-primary tracking-wider">
+                <h2 className="font-arcade text-ui-2xs text-primary tracking-wider">
                   {showFilePicker === "save" ? "SAVE CANVAS" : "LOAD CANVAS"}
                 </h2>
                 <button
@@ -607,7 +607,7 @@ function TemplateMiniPreview({ templateId }: { templateId: string }) {
     case "blank":
       return (
         <div className="w-[140px] h-[70px] border-[3px] border-double border-secondary/30 bg-black/60 relative flex items-center justify-center">
-          <span className="font-terminal text-[10px] text-secondary/50">
+          <span className="font-terminal text-ui-2xs text-secondary/50">
             blank
           </span>
         </div>

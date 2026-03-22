@@ -32,16 +32,16 @@ export function CourseListItem({
     >
       <div>
         <div className="font-terminal text-sm text-white">{name}</div>
-        <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
+        <div className="mt-1 font-terminal text-ui-xs text-muted-foreground">
           {sessions} sessions / {minutes} min
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <div className="font-terminal text-[11px] text-muted-foreground">{actionLabel}</div>
+        <div className="font-terminal text-ui-xs text-muted-foreground">{actionLabel}</div>
         <Button
           type="button"
           variant="outline"
-          className="rounded-none border-primary/40 font-arcade text-[10px] shrink-0"
+          className="rounded-none border-primary/40 font-arcade text-ui-2xs shrink-0"
           onClick={onAction}
         >
           {buttonLabel}

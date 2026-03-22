@@ -315,7 +315,7 @@ export function UnifiedBrainCanvas() {
       )}
 
       <div className="flex items-center gap-1 px-2 py-1 border-b border-primary/20 bg-black/30 shrink-0 flex-wrap">
-        <span className="font-arcade text-[10px] text-muted-foreground mr-1">STUDY TOOLS</span>
+        <span className="font-arcade text-ui-2xs text-muted-foreground mr-1">STUDY TOOLS</span>
         <Button size="sm" variant="ghost" className="h-6 px-1.5 rounded-none font-terminal text-xs" onClick={() => void saveStudyAction("Generate Summary")} disabled={studyBusy}>
           <BookOpen className="w-3 h-3 mr-1" />Summary
         </Button>

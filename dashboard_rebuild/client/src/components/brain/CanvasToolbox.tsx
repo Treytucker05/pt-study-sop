@@ -257,7 +257,7 @@ export function CanvasToolbox({
           aria-label="Move toolbox"
         >
           <GripHorizontal className="w-3 h-3 text-primary/60" />
-          <span className="text-[10px] font-arcade text-primary/70 uppercase tracking-wider flex-1">
+          <span className="text-ui-2xs font-arcade text-primary/70 uppercase tracking-wider flex-1">
             Tools
           </span>
           <button
@@ -281,7 +281,7 @@ export function CanvasToolbox({
             </button>
             {showSettings && (
               <div className="absolute right-0 top-full mt-1 bg-black border-2 border-primary/50 p-2 min-w-[150px] z-[60]">
-                <p className="text-[10px] font-arcade text-primary/60 mb-1">SHOW TOOLS</p>
+                <p className="text-ui-2xs font-arcade text-primary/60 mb-1">SHOW TOOLS</p>
                 {ALL_TOOLS.map((t) => (
                   <label
                     key={t.id}
@@ -324,7 +324,7 @@ export function CanvasToolbox({
                 {/* Submenus */}
                 {openSubmenu === tool.id && tool.id === "node_color" && (
                   <div className="absolute left-0 top-full mt-1 bg-black border-2 border-primary/50 p-2 z-[60] min-w-[120px]">
-                    <p className="text-[10px] font-arcade text-primary/60 mb-1">NODE COLOR</p>
+                    <p className="text-ui-2xs font-arcade text-primary/60 mb-1">NODE COLOR</p>
                     <div className="flex flex-wrap gap-1">
                       {CONCEPT_NODE_COLORS.map((c, i) => (
                         <button
@@ -342,7 +342,7 @@ export function CanvasToolbox({
 
                 {openSubmenu === tool.id && tool.id === "edge_color" && (
                   <div className="absolute left-0 top-full mt-1 bg-black border-2 border-primary/50 p-2 z-[60] min-w-[120px]">
-                    <p className="text-[10px] font-arcade text-primary/60 mb-1">EDGE COLOR</p>
+                    <p className="text-ui-2xs font-arcade text-primary/60 mb-1">EDGE COLOR</p>
                     <div className="flex flex-wrap gap-1">
                       {CONCEPT_EDGE_COLORS.map((c) => (
                         <button
@@ -361,7 +361,7 @@ export function CanvasToolbox({
 
                 {openSubmenu === tool.id && tool.id === "node_shape" && (
                   <div className="absolute left-0 top-full mt-1 bg-black border-2 border-primary/50 p-2 z-[60] min-w-[100px]">
-                    <p className="text-[10px] font-arcade text-primary/60 mb-1">NEW NODE SHAPE</p>
+                    <p className="text-ui-2xs font-arcade text-primary/60 mb-1">NEW NODE SHAPE</p>
                     {STRUCTURED_SHAPES.map((s) => (
                         <button
                           type="button"
@@ -381,7 +381,7 @@ export function CanvasToolbox({
 
                 {openSubmenu === tool.id && tool.id === "edge_type" && (
                   <div className="absolute left-0 top-full mt-1 bg-black border-2 border-primary/50 p-2 z-[60] min-w-[100px]">
-                    <p className="text-[10px] font-arcade text-primary/60 mb-1">EDGE STYLE</p>
+                    <p className="text-ui-2xs font-arcade text-primary/60 mb-1">EDGE STYLE</p>
                     {EDGE_TYPES.map((et) => (
                         <button
                           type="button"

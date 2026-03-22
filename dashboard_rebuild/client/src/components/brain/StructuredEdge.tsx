@@ -104,19 +104,19 @@ export function StructuredEdge({
               onChange={(e) => setEditValue(e.target.value)}
               onBlur={commitEdit}
               onKeyDown={handleKeyDown}
-              className="bg-black border border-primary text-primary text-[10px] font-terminal text-center px-1 py-0.5 outline-none min-w-[60px]"
+              className="bg-black border border-primary text-primary text-ui-2xs font-terminal text-center px-1 py-0.5 outline-none min-w-[60px]"
             />
           ) : label ? (
             <span
               onDoubleClick={startEditing}
-              className="bg-black/90 border border-primary/40 text-primary/80 text-[10px] font-terminal px-1.5 py-0.5 cursor-pointer hover:border-primary hover:text-primary"
+              className="bg-black/90 border border-primary/40 text-primary/80 text-ui-2xs font-terminal px-1.5 py-0.5 cursor-pointer hover:border-primary hover:text-primary"
             >
               {label}
             </span>
           ) : selected ? (
             <button
               onClick={startEditing}
-              className="bg-black/80 border border-dashed border-primary/30 text-primary/40 text-[10px] font-terminal px-1.5 py-0.5 hover:border-primary/60 hover:text-primary/60"
+              className="bg-black/80 border border-dashed border-primary/30 text-primary/40 text-ui-2xs font-terminal px-1.5 py-0.5 hover:border-primary/60 hover:text-primary/60"
             >
               + label
             </button>

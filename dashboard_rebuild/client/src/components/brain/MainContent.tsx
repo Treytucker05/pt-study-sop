@@ -110,7 +110,7 @@ export function MainContent({ workspace }: MainContentProps) {
             aria-label="Connection status"
           >
             <span
-              className={cn(CONTROL_CHIP, "min-h-[40px] px-2.5 text-[11px]")}
+              className={cn(CONTROL_CHIP, "min-h-[40px] px-2.5 text-ui-xs")}
               aria-label={
                 workspace.obsidianStatus?.connected ? "Obsidian: connected" : "Obsidian: disconnected"
               }
@@ -125,7 +125,7 @@ export function MainContent({ workspace }: MainContentProps) {
               Obsidian
             </span>
             <span
-              className={cn(CONTROL_CHIP, "min-h-[40px] px-2.5 text-[11px]")}
+              className={cn(CONTROL_CHIP, "min-h-[40px] px-2.5 text-ui-xs")}
               aria-label={workspace.ankiStatus?.connected ? "Anki: connected" : "Anki: disconnected"}
             >
               <span
@@ -140,7 +140,7 @@ export function MainContent({ workspace }: MainContentProps) {
             {workspace.pendingDrafts.length > 0 && (
               <Badge
                 variant="outline"
-                className="min-h-[40px] rounded-full border-secondary/50 px-3 font-terminal text-[11px] text-secondary"
+                className="min-h-[40px] rounded-full border-secondary/50 px-3 font-terminal text-ui-xs text-secondary"
               >
                 {workspace.pendingDrafts.length} drafts
               </Badge>

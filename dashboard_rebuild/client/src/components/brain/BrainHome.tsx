@@ -1007,7 +1007,7 @@ async function handleDownloadJson(
             <CardContent className="space-y-3 p-4">
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="outline" className="rounded-none border-primary/40 text-[10px]">
+                  <Badge variant="outline" className="rounded-none border-primary/40 text-ui-2xs">
                     {learnerProfileWithConfidence?.hybridArchetype?.confidence || "low"} confidence
                   </Badge>
                   <div className="font-terminal text-sm text-white">
@@ -1019,13 +1019,13 @@ async function handleDownloadJson(
                 </p>
               </div>
               <div className="space-y-2">
-                <div className="font-arcade text-[11px] text-primary">STRENGTHS</div>
+                <div className="font-arcade text-ui-xs text-primary">STRENGTHS</div>
                 <div className="font-terminal text-xs text-muted-foreground">
                   {learnerProfile?.profileSummary?.strengths?.[0] || "No stable strengths identified yet."}
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="font-arcade text-[11px] text-primary">WATCHOUTS</div>
+                <div className="font-arcade text-ui-xs text-primary">WATCHOUTS</div>
                 <div className="font-terminal text-xs text-muted-foreground">
                   {learnerProfile?.profileSummary?.watchouts?.[0] || "No major watchouts reported yet."}
                 </div>
@@ -1069,11 +1069,11 @@ async function handleDownloadJson(
             </CardHeader>
             <CardContent className="space-y-3 p-4">
               <div className="border border-primary/15 bg-black/30 p-3">
-                <div className="font-arcade text-[11px] text-primary">UP NEXT</div>
+                <div className="font-arcade text-ui-xs text-primary">UP NEXT</div>
                 <div className="mt-2 font-terminal text-sm text-white">
                   {currentCourse?.name || "Launch Tutor from your last saved scope"}
                 </div>
-                <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
+                <div className="mt-1 font-terminal text-ui-xs text-muted-foreground">
                   {studyRotationSummary}
                 </div>
               </div>
@@ -1082,11 +1082,11 @@ async function handleDownloadJson(
                   data-testid="brain-project-launch-item-current-course"
                   className="border border-primary/15 bg-black/30 p-3"
                 >
-                  <div className="font-arcade text-[11px] text-primary">CURRENT COURSE SHELL</div>
+                  <div className="font-arcade text-ui-xs text-primary">CURRENT COURSE SHELL</div>
                   <div className="mt-2 font-terminal text-sm text-white">
                     {currentCourse?.name || "Last saved Tutor scope"}
                   </div>
-                  <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
+                  <div className="mt-1 font-terminal text-ui-xs text-muted-foreground">
                     {currentCourse?.code
                       ? `Launch the course-keyed Tutor shell for ${currentCourse.code}.`
                       : "Launch Tutor with the most recent saved scope if no course is active."}
@@ -1116,9 +1116,9 @@ async function handleDownloadJson(
                     data-testid="brain-project-launch-item-planner"
                     className="border border-primary/15 bg-black/30 p-3"
                   >
-                    <div className="font-arcade text-[11px] text-primary">PLANNER FOLLOW-THROUGH</div>
+                    <div className="font-arcade text-ui-xs text-primary">PLANNER FOLLOW-THROUGH</div>
                     <div className="mt-2 font-terminal text-sm text-white">{plannerProject.title}</div>
-                    <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
+                    <div className="mt-1 font-terminal text-ui-xs text-muted-foreground">
                       {plannerProject.courseName}
                       {plannerProject.scheduledDate ? ` · ${plannerReason(parseLocalDate(plannerProject.scheduledDate))}` : ""}
                     </div>
@@ -1148,9 +1148,9 @@ async function handleDownloadJson(
                     data-testid="brain-project-launch-item-deadline"
                     className="border border-primary/15 bg-black/30 p-3"
                   >
-                    <div className="font-arcade text-[11px] text-primary">DEADLINE PRESSURE</div>
+                    <div className="font-arcade text-ui-xs text-primary">DEADLINE PRESSURE</div>
                     <div className="mt-2 font-terminal text-sm text-white">{deadlineProject.title}</div>
-                    <div className="mt-1 font-terminal text-[11px] text-muted-foreground">
+                    <div className="mt-1 font-terminal text-ui-xs text-muted-foreground">
                       {deadlineProject.courseName}
                       {deadlineProject.dueDate ? ` · ${deadlineReason(parseLocalDate(deadlineProject.dueDate))}` : ""}
                     </div>
@@ -1195,10 +1195,10 @@ async function handleDownloadJson(
                     <item.icon className="h-4 w-4 text-primary" />
                     <div className="font-arcade text-xs text-white">{item.title}</div>
                   </div>
-                  <div className="mt-2 font-terminal text-[11px] text-muted-foreground">
+                  <div className="mt-2 font-terminal text-ui-xs text-muted-foreground">
                     {item.description}
                   </div>
-                  <div className="mt-3 flex items-center gap-1 font-arcade text-[10px] text-primary">
+                  <div className="mt-3 flex items-center gap-1 font-arcade text-ui-2xs text-primary">
                     OPEN {item.title.toUpperCase()}
                     <ArrowRight className="h-3 w-3" />
                   </div>
@@ -1222,7 +1222,7 @@ async function handleDownloadJson(
                 <div className="mt-2 font-terminal text-xs text-muted-foreground">
                   Capture your goal and current friction so Scholar starts from a grounded hypothesis.
                 </div>
-                <div className="mt-2 font-terminal text-[11px] text-white">
+                <div className="mt-2 font-terminal text-ui-xs text-white">
                   {productAnalytics?.activation?.onboardingCompleted
                     ? "Setup completed."
                     : "Setup still needs a first pass."}
@@ -1266,7 +1266,7 @@ async function handleDownloadJson(
               </div>
               <div className="grid gap-3 md:grid-cols-3">
                 <div className="border border-primary/15 bg-black/30 p-3">
-                  <div className="font-arcade text-[11px] text-primary">BRAIN EXPORT</div>
+                  <div className="font-arcade text-ui-xs text-primary">BRAIN EXPORT</div>
                   <Button
                     type="button"
                     variant="outline"
@@ -1277,7 +1277,7 @@ async function handleDownloadJson(
                   </Button>
                 </div>
                 <div className="border border-primary/15 bg-black/30 p-3">
-                  <div className="font-arcade text-[11px] text-primary">SCHOLAR EXPORT</div>
+                  <div className="font-arcade text-ui-xs text-primary">SCHOLAR EXPORT</div>
                   <Button
                     type="button"
                     variant="outline"
@@ -1288,7 +1288,7 @@ async function handleDownloadJson(
                   </Button>
                 </div>
                 <div className="border border-primary/15 bg-black/30 p-3">
-                  <div className="font-arcade text-[11px] text-primary">OUTCOME REPORT</div>
+                  <div className="font-arcade text-ui-xs text-primary">OUTCOME REPORT</div>
                   <Button
                     type="button"
                     variant="outline"
@@ -1352,7 +1352,7 @@ async function handleDownloadJson(
               />
             </div>
             <div className="flex items-center justify-between gap-3">
-              <div className="font-terminal text-[11px] text-muted-foreground">
+              <div className="font-terminal text-ui-xs text-muted-foreground">
                 Completing setup saves these answers locally and starts a Scholar investigation.
               </div>
               <Button
@@ -1383,7 +1383,7 @@ async function handleDownloadJson(
               <label htmlFor={`${idBase}-tier2-signals`} className="flex items-center justify-between gap-3 border border-primary/10 bg-black/30 p-3">
                 <div className="space-y-1">
                   <div className="font-terminal text-xs text-white">Tier 2 personalization</div>
-                  <div className="font-terminal text-[11px] text-muted-foreground">
+                  <div className="font-terminal text-ui-xs text-muted-foreground">
                     Allow Brain to use supporting vault, library, and calendar signals.
                   </div>
                 </div>
@@ -1400,7 +1400,7 @@ async function handleDownloadJson(
               <label htmlFor={`${idBase}-vault-signals`} className="flex items-center justify-between gap-3 border border-primary/10 bg-black/30 p-3">
                 <div className="space-y-1">
                   <div className="font-terminal text-xs text-white">Vault signals</div>
-                  <div className="font-terminal text-[11px] text-muted-foreground">
+                  <div className="font-terminal text-ui-xs text-muted-foreground">
                     Let Brain use note-quality and vault evidence as a secondary signal.
                   </div>
                 </div>
@@ -1417,7 +1417,7 @@ async function handleDownloadJson(
               <label htmlFor={`${idBase}-calendar-signals`} className="flex items-center justify-between gap-3 border border-primary/10 bg-black/30 p-3">
                 <div className="space-y-1">
                   <div className="font-terminal text-xs text-white">Calendar signals</div>
-                  <div className="font-terminal text-[11px] text-muted-foreground">
+                  <div className="font-terminal text-ui-xs text-muted-foreground">
                     Let Brain use timing pressure and follow-through as context.
                   </div>
                 </div>
@@ -1434,7 +1434,7 @@ async function handleDownloadJson(
               <label htmlFor={`${idBase}-scholar-personalization`} className="flex items-center justify-between gap-3 border border-primary/10 bg-black/30 p-3">
                 <div className="space-y-1">
                   <div className="font-terminal text-xs text-white">Scholar personalization</div>
-                  <div className="font-terminal text-[11px] text-muted-foreground">
+                  <div className="font-terminal text-ui-xs text-muted-foreground">
                     Let Scholar use Brain evidence and learner answers for research strategy.
                   </div>
                 </div>

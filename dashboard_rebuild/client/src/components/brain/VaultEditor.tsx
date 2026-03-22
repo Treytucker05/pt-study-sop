@@ -176,7 +176,7 @@ export function VaultEditor({ workspace, dictation, popout }: VaultEditorProps) 
       {dictation && !dictation.supported ? (
         <div
           data-testid="tutor-workspace-dictation-status"
-          className="border-b border-primary/10 bg-black/30 px-3 py-1 font-terminal text-[11px] text-muted-foreground"
+          className="border-b border-primary/10 bg-black/30 px-3 py-1 font-terminal text-ui-xs text-muted-foreground"
         >
           {dictation.unsupportedReason}
         </div>
@@ -185,7 +185,7 @@ export function VaultEditor({ workspace, dictation, popout }: VaultEditorProps) 
       {popout?.statusMessage ? (
         <div
           data-testid="tutor-workspace-popout-status"
-          className="border-b border-primary/10 bg-black/30 px-3 py-1 font-terminal text-[11px] text-muted-foreground"
+          className="border-b border-primary/10 bg-black/30 px-3 py-1 font-terminal text-ui-xs text-muted-foreground"
         >
           {popout.statusMessage}
         </div>
