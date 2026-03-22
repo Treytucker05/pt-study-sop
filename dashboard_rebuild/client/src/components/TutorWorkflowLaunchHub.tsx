@@ -57,6 +57,50 @@ function formatDateLabel(value: string | null | undefined) {
   });
 }
 
+function formatDateTimeLabel(value: string | null | undefined) {
+  if (!value) return "Not saved yet";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Not saved yet";
+  return parsed.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function workflowPrimaryLabel(workflow: TutorWorkflowSummary) {
+  return (
+    workflow.assignment_title ||
+    workflow.topic ||
+    workflow.study_unit ||
+    `${formatWorkflowStatus(workflow.status)} draft`
+  );
+}
+
+function workflowSecondaryLabel(workflow: TutorWorkflowSummary) {
+  const details = [workflow.topic, workflow.study_unit].filter(
+    (value) => typeof value === "string" && value.trim().length > 0,
+  );
+  const primary = workflowPrimaryLabel(workflow);
+  const secondary = details.find((value) => value !== primary);
+  return secondary || "Scope not saved yet";
+}
+
+function workflowCourseLabel(workflow: TutorWorkflowSummary) {
+  if (workflow.course_name) return workflow.course_name;
+  if (typeof workflow.course_id === "number") return `Course #${workflow.course_id}`;
+  return "Class not saved yet";
+}
+
+function workflowCourseMetaLabel(workflow: TutorWorkflowSummary) {
+  if (workflow.course_code) return workflow.course_code;
+  if (workflow.current_stage) {
+    return `${workflow.current_stage.replace(/_/g, " ")} stage`;
+  }
+  return "No class code";
+}
+
 function actionLabelForWorkflow(workflow: TutorWorkflowSummary) {
   if (workflow.current_stage === "tutor" && workflow.active_tutor_session_id) {
     return "Resume Tutor";
@@ -110,6 +154,7 @@ export function TutorWorkflowLaunchHub({
   isCreating = false,
   deletingWorkflowId = null,
 }: TutorWorkflowLaunchHubProps) {
+  const wheelSnapshot = tutorHub?.study_wheel ?? null;
   const wheelCourses = [...(tutorHub?.class_projects ?? [])]
     .filter(
       (project) =>
@@ -122,15 +167,15 @@ export function TutorWorkflowLaunchHub({
       return left.course_name.localeCompare(right.course_name);
     });
   const linkedCourseCount = Math.max(
-    tutorHub?.study_wheel.total_active_courses ?? 0,
+    wheelSnapshot?.total_active_courses ?? 0,
     wheelCourses.length,
   );
   const hasWheelContent =
-    Boolean(tutorHub) && (
+    Boolean(wheelSnapshot) && (
       wheelCourses.length > 0 ||
       linkedCourseCount > 0 ||
-      tutorHub!.study_wheel.current_course_id !== null ||
-      tutorHub!.study_wheel.next_course_id !== null
+      wheelSnapshot.current_course_id !== null ||
+      wheelSnapshot.next_course_id !== null
     );
   const canResumeRecent = Boolean(
     onResumeCandidate &&
@@ -254,7 +299,7 @@ export function TutorWorkflowLaunchHub({
             ) : (
               <StudyWheel
                 courses={wheelCourses}
-                wheelSnapshot={tutorHub!.study_wheel}
+                wheelSnapshot={wheelSnapshot!}
                 loading={tutorHubLoading}
               />
             )}
@@ -396,11 +441,7 @@ export function TutorWorkflowLaunchHub({
                   workflows.map((workflow) => {
                     const active = workflow.workflow_id === activeWorkflowId;
                     const isDeleting = workflow.workflow_id === deletingWorkflowId;
-                    const workflowLabel =
-                      workflow.assignment_title ||
-                      workflow.topic ||
-                      workflow.study_unit ||
-                      workflow.workflow_id;
+                    const workflowLabel = workflowPrimaryLabel(workflow);
                     return (
                       <tr
                         key={workflow.workflow_id}
@@ -411,25 +452,25 @@ export function TutorWorkflowLaunchHub({
                       >
                         <td className="px-3 py-3 align-top">
                           <div className="tutor-launch-hud__row-title">
-                            {workflow.course_name || "Unassigned class"}
+                            {workflowCourseLabel(workflow)}
                           </div>
                           <div className="tutor-launch-hud__meta mt-1">
-                            {workflow.course_code || "No class code"}
+                            {workflowCourseMetaLabel(workflow)}
                           </div>
                         </td>
                         <td className="px-3 py-3 align-top">
                           <div className="tutor-launch-hud__row-title">
-                            {workflow.assignment_title || workflow.topic || "Untitled workflow"}
+                            {workflowLabel}
                           </div>
                           <div className="tutor-launch-hud__meta mt-1">
-                            {workflow.study_unit || "No study unit set"}
+                            {workflowSecondaryLabel(workflow)}
                           </div>
                         </td>
                         <td className="px-3 py-3 align-top text-muted-foreground">
                           {formatDateLabel(workflow.due_date)}
                         </td>
                         <td className="px-3 py-3 align-top text-muted-foreground">
-                          {formatDateLabel(workflow.updated_at)}
+                          {formatDateTimeLabel(workflow.updated_at)}
                         </td>
                         <td className="px-3 py-3 align-top">
                           <div className="flex flex-wrap gap-2">
