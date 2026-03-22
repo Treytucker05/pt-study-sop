@@ -8,6 +8,7 @@ import type {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { StudyWheel } from "@/components/StudyWheel";
 import { INPUT_BASE, SELECT_BASE } from "@/lib/theme";
 import { formatWorkflowStatus } from "@/lib/workflowStatus";
 import { cn } from "@/lib/utils";
@@ -92,10 +93,6 @@ function stageBadgeColor(stage: string): string {
   }
 }
 
-function countLabel(count: number, singular: string, plural = `${singular}s`) {
-  return `${count} ${count === 1 ? singular : plural}`;
-}
-
 export function TutorWorkflowLaunchHub({
   workflows,
   totalCount,
@@ -129,10 +126,12 @@ export function TutorWorkflowLaunchHub({
     wheelCourses.length,
   );
   const hasWheelContent =
-    wheelCourses.length > 0 ||
-    linkedCourseCount > 0 ||
-    tutorHub?.study_wheel.current_course_id !== null ||
-    tutorHub?.study_wheel.next_course_id !== null;
+    Boolean(tutorHub) && (
+      wheelCourses.length > 0 ||
+      linkedCourseCount > 0 ||
+      tutorHub!.study_wheel.current_course_id !== null ||
+      tutorHub!.study_wheel.next_course_id !== null
+    );
   const canResumeRecent = Boolean(
     onResumeCandidate &&
     resumeCandidate &&
@@ -244,7 +243,7 @@ export function TutorWorkflowLaunchHub({
               <CardTitle className="tutor-launch-hud__title">STUDY WHEEL</CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4 pt-4">
+          <CardContent className="pt-4">
             {!hasWheelContent ? (
               <div className="tutor-launch-hud__empty flex flex-col items-center gap-3 py-6">
                 <FolderClock className="h-8 w-8 text-primary/40" />
@@ -253,103 +252,11 @@ export function TutorWorkflowLaunchHub({
                 </p>
               </div>
             ) : (
-              <>
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <div className="tutor-launch-hud__metric tutor-launch-hud__metric--signal">
-                  <div className="tutor-launch-hud__eyebrow">LINKED COURSES</div>
-                  <div className="tutor-launch-hud__metric-value mt-2">
-                    {linkedCourseCount}
-                  </div>
-                </div>
-                <div className="tutor-launch-hud__metric">
-                  <div className="tutor-launch-hud__eyebrow">TOTAL SESSIONS</div>
-                  <div className="tutor-launch-hud__metric-value mt-2">
-                    {tutorHub?.study_wheel.total_sessions ?? 0}
-                  </div>
-                </div>
-                <div className="tutor-launch-hud__metric">
-                  <div className="tutor-launch-hud__eyebrow">TOTAL MINUTES</div>
-                  <div className="tutor-launch-hud__metric-value mt-2">
-                    {tutorHub?.study_wheel.total_minutes ?? 0}
-                  </div>
-                </div>
-                <div className="tutor-launch-hud__metric tutor-launch-hud__metric--signal">
-                  <div className="tutor-launch-hud__eyebrow">NEXT COURSE</div>
-                  <div className="tutor-launch-hud__metric-copy mt-2 break-words">
-                    {tutorHub?.study_wheel.next_course_name || "Not set"}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="tutor-launch-hud__eyebrow">COURSE ROTATION</div>
-                {wheelCourses.length ? (
-                  <div className="space-y-2">
-                    {wheelCourses.map((project) => {
-                      const isCurrent =
-                        project.wheel_active ||
-                        project.course_id === tutorHub?.study_wheel.current_course_id;
-                      const isNext =
-                        project.course_id === tutorHub?.study_wheel.next_course_id;
-                      return (
-                        <div
-                          key={project.course_id}
-                          className={cn(
-                            "tutor-launch-hud__list-item",
-                            isCurrent && "border-primary/25 bg-primary/5",
-                          )}
-                        >
-                          <div className="flex flex-wrap items-start justify-between gap-2">
-                            <div>
-                              <div className="tutor-launch-hud__metric-copy">
-                                {project.course_code
-                                  ? `${project.course_code} • ${project.course_name}`
-                                  : project.course_name}
-                              </div>
-                              <div className="tutor-launch-hud__meta mt-1">
-                                Position {project.wheel_position ?? "-"} •{" "}
-                                {countLabel(project.recent_session_count, "recent session")} •{" "}
-                                {countLabel(project.pending_event_count, "upcoming item")}
-                              </div>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {isCurrent ? (
-                                <Badge
-                                  variant="outline"
-                                  className="tutor-launch-hud__badge tutor-launch-hud__badge--stage border-primary/45 bg-primary/10 text-[#ffe3e8]"
-                                >
-                                  CURRENT
-                                </Badge>
-                              ) : null}
-                              {isNext ? (
-                                <Badge
-                                  variant="outline"
-                                  className="tutor-launch-hud__badge tutor-launch-hud__badge--status"
-                                >
-                                  NEXT
-                                </Badge>
-                              ) : null}
-                              {project.wheel_linked ? (
-                                <Badge
-                                  variant="outline"
-                                  className="tutor-launch-hud__badge tutor-launch-hud__badge--status"
-                                >
-                                  LINKED
-                                </Badge>
-                              ) : null}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="tutor-launch-hud__meta">
-                    Study wheel summary is loaded, but no linked course rows are available yet.
-                  </div>
-                )}
-              </div>
-              </>
+              <StudyWheel
+                courses={wheelCourses}
+                wheelSnapshot={tutorHub!.study_wheel}
+                loading={tutorHubLoading}
+              />
             )}
           </CardContent>
         </Card>
@@ -453,7 +360,7 @@ export function TutorWorkflowLaunchHub({
               <Button
                 key={option.value}
                 variant={filters.dueBucket === option.value ? "default" : "outline"}
-                className="rounded-none font-arcade text-[10px]"
+                className="rounded-none font-arcade text-ui-2xs"
                 onClick={() =>
                   onFiltersChange({
                     ...filters,
@@ -469,7 +376,7 @@ export function TutorWorkflowLaunchHub({
           <div className="tutor-launch-hud__table-shell overflow-x-auto">
             <table className="tutor-launch-hud__table min-w-full divide-y divide-primary/10">
               <thead className="tutor-launch-hud__table-head">
-                <tr className="text-left font-arcade text-[10px] text-primary/75">
+                <tr className="text-left font-arcade text-ui-2xs text-primary/75">
                   <th className="px-3 py-2">Class</th>
                   <th className="px-3 py-2">Assignment / Scope</th>
                   <th className="px-3 py-2">Due</th>
@@ -547,7 +454,7 @@ export function TutorWorkflowLaunchHub({
                           <div className="flex justify-end gap-2">
                             <Button
                               variant="outline"
-                              className="rounded-none font-arcade text-[10px]"
+                              className="rounded-none font-arcade text-ui-2xs"
                               onClick={() => onOpenWorkflow(workflow)}
                               disabled={isDeleting}
                             >
@@ -555,7 +462,7 @@ export function TutorWorkflowLaunchHub({
                             </Button>
                             <Button
                               variant="destructive"
-                              className="rounded-none font-arcade text-[10px]"
+                              className="rounded-none font-arcade text-ui-2xs"
                               aria-label={`Delete workflow ${workflowLabel}`}
                               disabled={isDeleting}
                               onClick={() => {
