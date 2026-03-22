@@ -42,7 +42,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - the final backlog groups issues into Wave 1 (`P1`), Wave 2 (`P2`), and Wave 3 (`P3`) remediation passes
 
 ### Sprint: Page-Level Hud Primitive Migration (2026-03-21)
-- [ ] HUD-210. Finish the remaining page-level HUD primitive cleanup so `brain`, `not-found`, and `tutor` stop using ad-hoc route-local chrome where the shared `HudPanel` / `HudButton` primitives should own the surface treatment.
+- [x] HUD-210. Finish the remaining page-level HUD primitive cleanup so `brain`, `not-found`, and `tutor` stop using ad-hoc route-local chrome where the shared `HudPanel` / `HudButton` primitives should own the surface treatment.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
     - `dashboard_rebuild/client/src/components/ui/HudPanel.tsx`

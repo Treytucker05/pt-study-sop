@@ -1285,3 +1285,12 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run test -- src/components/__tests__/TutorWorkflowLaunchHub.test.tsx`
   - `cd dashboard_rebuild && npx vitest run src/pages/__tests__/tutor.test.tsx -t "resumes the most recent launch-hub session from the resume button"`
   - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-21 - Page-level HUD primitive migration for Brain, Tutor, and Not Found
+- Fixed the shared `HudPanel` and `HudButton` primitives in `dashboard_rebuild/client/src/components/ui/` so the new page-surface components build and can be reused by route-level shells.
+- Wrapped `dashboard_rebuild/client/src/pages/brain.tsx` in `HudPanel` and removed the route-local `bg-black/25` frame fills so Brain uses the shared HUD surface instead of its own page-level glass styling.
+- Rebuilt `dashboard_rebuild/client/src/pages/not-found.tsx` on `HudPanel` plus shared theme tokens, replacing the hand-built border/background card with the shared page-surface treatment.
+- Swapped the Tutor hero refresh action in `dashboard_rebuild/client/src/pages/tutor.tsx` from the generic shell `Button` to `HudButton` so the route-level page action now uses the Phase 1 HUD primitive.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- src/pages/__tests__/brain.test.tsx src/pages/__tests__/tutor.test.tsx src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
