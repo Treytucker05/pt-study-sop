@@ -21,6 +21,7 @@ import {
   getMethodStageColorKey,
 } from "@/lib/controlStages";
 import type { TutorPageMode, TutorStudioView } from "@/lib/tutorUtils";
+import type { StudioSubTab } from "@/components/TutorTabBar";
 import type { TutorWorkflowDetailResponse } from "@/lib/api";
 import type { TutorBrainLaunchContext } from "@/lib/tutorClientState";
 import type { TutorTemplateChain } from "@/lib/api";

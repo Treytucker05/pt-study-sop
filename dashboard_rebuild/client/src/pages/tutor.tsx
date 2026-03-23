@@ -3,6 +3,7 @@ import { PageScaffold } from "@/components/PageScaffold";
 import { TutorShell } from "@/components/TutorShell";
 import { TutorTopBar } from "@/components/TutorTopBar";
 import { TutorTabBar } from "@/components/TutorTabBar";
+import type { StudioSubTab } from "@/components/TutorTabBar";
 import { useTutorHub } from "@/hooks/useTutorHub";
 import { useTutorSession } from "@/hooks/useTutorSession";
 import { useTutorWorkflow } from "@/hooks/useTutorWorkflow";

@@ -100,6 +100,31 @@ export function TutorTabBar({
         <PenTool className={`${ICON_MD} mr-1`} />
         STUDIO
       </Button>
+      {isStudioActive && studioSubTabs && studioSubTabs.length > 0 && (
+        <>
+          <div className="w-px h-8 bg-primary/20 mx-1" />
+          {studioSubTabs.map((tab) => (
+            <Button
+              key={tab.key}
+              role="tab"
+              aria-selected={studioView === tab.key}
+              variant="ghost"
+              size="sm"
+              disabled={!tab.available}
+              onClick={() => onStudioSubTabClick?.(tab.key)}
+              className={cn(
+                "shrink-0 uppercase tracking-[0.12em] font-terminal text-xs px-3 py-1.5 h-auto min-h-[40px]",
+                studioView === tab.key
+                  ? "bg-primary/15 text-primary border border-primary/30"
+                  : "text-foreground/50 hover:text-foreground/70",
+                !tab.available && "opacity-40 cursor-not-allowed",
+              )}
+            >
+              {tab.label}
+            </Button>
+          ))}
+        </>
+      )}
       <Button
         role="tab"
         id="tutor-tab-tutor"
