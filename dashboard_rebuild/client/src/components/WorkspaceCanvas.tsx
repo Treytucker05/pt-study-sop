@@ -294,6 +294,8 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 function MethodRunnerContent(): ReactElement {
   const [selectedBlock, setSelectedBlock] = useState<MethodBlock | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [topic, setTopic] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [runResult, setRunResult] = useState<ChainRunResult | null>(null);
@@ -303,6 +305,15 @@ function MethodRunnerContent(): ReactElement {
     queryKey: ["workspace-method-blocks"],
     queryFn: () => api.tutor.getMethodBlocks(),
   });
+
+  const filteredBlocks = searchTerm
+    ? blocks.filter(
+        (b) =>
+          b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          b.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (b.description ?? "").toLowerCase().includes(searchTerm.toLowerCase()),
+      )
+    : blocks;
 
   const handleRunMethod = async (): Promise<void> => {
     if (!selectedBlock || !topic.trim()) return;
@@ -333,23 +344,70 @@ function MethodRunnerContent(): ReactElement {
     console.log("[MethodRunner] Send to packet:", runResult);
   };
 
-  const handleBack = (): void => {
-    setSelectedBlock(null);
-    setRunResult(null);
-    setRunError(null);
-    setTopic("");
-  };
+  return (
+    <div className="flex flex-col h-full p-2 gap-2">
+      {/* Search + dropdown selector */}
+      <div className="relative shrink-0">
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setDropdownOpen(true);
+          }}
+          onFocus={() => setDropdownOpen(true)}
+          placeholder={selectedBlock ? selectedBlock.name : "Search methods..."}
+          className={cn(
+            "w-full rounded-sm border border-primary/20 bg-black/60 px-2 py-1.5",
+            "font-terminal text-xs text-foreground/80 placeholder:text-foreground/30",
+            "focus:outline-none focus:border-primary/50 transition-colors",
+          )}
+        />
+        {dropdownOpen && (
+          <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-[200px] overflow-auto rounded-sm border border-primary/20 bg-background/95 backdrop-blur-sm shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
+            {filteredBlocks.length === 0 ? (
+              <div className="px-3 py-2 text-xs font-mono text-foreground/40">
+                No methods found
+              </div>
+            ) : (
+              filteredBlocks.map((block) => (
+                <button
+                  key={block.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedBlock(block);
+                    setSearchTerm("");
+                    setDropdownOpen(false);
+                    setRunResult(null);
+                    setRunError(null);
+                  }}
+                  className={cn(
+                    "w-full text-left px-3 py-1.5 flex items-center gap-2",
+                    "hover:bg-primary/10 transition-colors",
+                    selectedBlock?.id === block.id && "bg-primary/5",
+                  )}
+                >
+                  <Zap className="w-3 h-3 shrink-0 text-primary/50" />
+                  <span className="font-terminal text-xs text-primary/90 truncate">
+                    {block.name}
+                  </span>
+                  <span
+                    className={cn(
+                      "ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded-sm uppercase font-terminal tracking-wider",
+                      CATEGORY_COLORS[block.category] ?? "bg-primary/10 text-primary/70",
+                    )}
+                  >
+                    {block.category}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        )}
+      </div>
 
-  if (selectedBlock) {
-    return (
-      <div className="flex flex-col h-full p-2 gap-2">
-        <button
-          type="button"
-          onClick={handleBack}
-          className="self-start text-xs font-terminal text-primary/60 hover:text-primary transition-colors"
-        >
-          &larr; Back to list
-        </button>
+      {/* Selected method details + run */}
+      {selectedBlock ? (
         <div className="flex-1 min-h-0 overflow-auto rounded-sm border border-primary/15 bg-black/40 p-3">
           <h4 className="font-terminal text-sm text-primary/90 tracking-wider uppercase">
             {selectedBlock.name}
@@ -363,41 +421,15 @@ function MethodRunnerContent(): ReactElement {
             >
               {selectedBlock.category}
             </span>
-            {selectedBlock.method_id && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary/50 font-mono">
-                {selectedBlock.method_id}
-              </span>
-            )}
-            {selectedBlock.best_stage && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary/50 font-mono">
-                Stage: {selectedBlock.best_stage}
-              </span>
-            )}
           </div>
           {selectedBlock.description && (
-            <p className="mt-3 text-xs text-foreground/70 leading-5">
+            <p className="mt-2 text-xs text-foreground/70 leading-5">
               {selectedBlock.description}
             </p>
           )}
-          <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] font-mono text-foreground/50">
-            <div>Duration: {selectedBlock.default_duration_min}min</div>
-            <div>Energy: {selectedBlock.energy_cost}</div>
-          </div>
-          {selectedBlock.tags.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1">
-              {selectedBlock.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="text-[10px] px-1 py-0.5 rounded-sm bg-primary/5 text-primary/40 font-mono"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
 
-          {/* ── Run method section ──────────────────────────────── */}
-          <div className="mt-4 border-t border-primary/15 pt-3">
+          {/* Topic + Run */}
+          <div className="mt-3 border-t border-primary/15 pt-3">
             <label className="block text-[10px] font-terminal text-primary/50 uppercase tracking-wider mb-1">
               Topic / Prompt
             </label>
@@ -405,13 +437,12 @@ function MethodRunnerContent(): ReactElement {
               type="text"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              placeholder="e.g. Muscle contraction physiology"
+              placeholder="e.g. Cardiovascular physiology"
               disabled={isRunning}
               className={cn(
                 "w-full rounded-sm border border-primary/20 bg-black/60 px-2 py-1.5",
                 "font-terminal text-xs text-foreground/80 placeholder:text-foreground/30",
                 "focus:outline-none focus:border-primary/50 transition-colors",
-                isRunning && "opacity-50 cursor-not-allowed",
               )}
             />
             <button
@@ -440,7 +471,7 @@ function MethodRunnerContent(): ReactElement {
             </button>
           </div>
 
-          {/* ── Run error ───────────────────────────────────────── */}
+          {/* Error */}
           {runError && (
             <div className="mt-3 rounded-sm border border-red-500/30 bg-red-900/20 px-3 py-2">
               <p className="font-terminal text-xs text-red-400 uppercase tracking-wider">Error</p>
@@ -448,38 +479,16 @@ function MethodRunnerContent(): ReactElement {
             </div>
           )}
 
-          {/* ── Run output ──────────────────────────────────────── */}
+          {/* Output */}
           {runResult && (
-            <div className="mt-3 flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <span className="font-terminal text-[10px] text-primary/50 uppercase tracking-wider">
-                  Output
-                </span>
-                <span
-                  className={cn(
-                    "text-[10px] px-1.5 py-0.5 rounded-sm font-terminal uppercase tracking-wider",
-                    runResult.status === "completed"
-                      ? "bg-green-500/20 text-green-400"
-                      : "bg-red-500/20 text-red-400",
-                  )}
-                >
-                  {runResult.status}
-                </span>
-              </div>
-              <ScrollArea className="max-h-[200px]">
-                <pre className="whitespace-pre-wrap rounded-sm border border-primary/15 bg-black/60 p-3 font-mono text-xs leading-5 text-foreground/80">
-                  {runResult.steps.map((s) => s.output).join("\n\n---\n\n") || "No output"}
-                </pre>
-              </ScrollArea>
+            <div className="mt-3 border-t border-primary/15 pt-3">
+              <pre className="whitespace-pre-wrap font-terminal text-xs text-foreground/80 leading-5 max-h-[300px] overflow-auto">
+                {runResult.steps?.map((s: { output?: string }) => s.output).join("\n---\n") ?? "No output"}
+              </pre>
               <button
                 type="button"
                 onClick={handleSendToPacket}
-                className={cn(
-                  "flex items-center justify-center gap-2 rounded-sm border px-3 py-2",
-                  "border-primary/30 bg-primary/5 text-primary/70",
-                  "font-terminal text-xs uppercase tracking-wider",
-                  "hover:bg-primary/15 hover:text-primary transition-colors",
-                )}
+                className="mt-2 w-full flex items-center justify-center gap-2 rounded-sm border border-primary/20 bg-primary/5 px-3 py-1.5 font-terminal text-xs uppercase tracking-wider text-primary/70 hover:bg-primary/10 hover:text-primary transition-colors"
               >
                 <Package className="w-3 h-3" />
                 Send to Packet
@@ -487,60 +496,13 @@ function MethodRunnerContent(): ReactElement {
             </div>
           )}
         </div>
-      </div>
-    );
-  }
-
-  if (blocks.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <span className="font-mono text-sm text-foreground/50">
-          No method blocks available
-        </span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col h-full p-2">
-      <ScrollArea className="flex-1">
-        <ul className="space-y-1">
-          {blocks.map((block) => (
-            <li key={block.id}>
-              <button
-                type="button"
-                onClick={() => setSelectedBlock(block)}
-                className={cn(
-                  "w-full text-left px-2 py-1.5 rounded-sm",
-                  "bg-background/40 border border-primary/10",
-                  "hover:border-primary/30 hover:bg-primary/5",
-                  "transition-colors cursor-pointer",
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <Zap className="w-3 h-3 shrink-0 text-primary/50" />
-                  <span className="font-terminal text-xs text-primary/90 truncate">
-                    {block.name}
-                  </span>
-                  <span
-                    className={cn(
-                      "ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded-sm uppercase font-terminal tracking-wider",
-                      CATEGORY_COLORS[block.category] ?? "bg-primary/10 text-primary/70",
-                    )}
-                  >
-                    {block.category}
-                  </span>
-                </div>
-                {block.description && (
-                  <p className="text-[10px] text-primary/40 mt-0.5 line-clamp-1 pl-5">
-                    {block.description}
-                  </p>
-                )}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </ScrollArea>
+      ) : (
+        <div className="flex-1 flex items-center justify-center">
+          <span className="font-mono text-sm text-foreground/40">
+            Select a method above
+          </span>
+        </div>
+      )}
     </div>
   );
 }

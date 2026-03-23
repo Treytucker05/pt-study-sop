@@ -65,10 +65,11 @@ export function WorkspacePanel({
         }}
         onResizeStop={() => {}}
         className={cn(
-          "inline-flex items-center gap-2 px-3 py-1.5 rounded-full",
+          "inline-flex items-center gap-2 px-3 py-1.5 rounded-sm",
           "bg-background/80 border border-primary/20 backdrop-blur-sm",
           "shadow-[0_4px_12px_rgba(0,0,0,0.3)]",
           "font-terminal text-xs tracking-wider text-primary/80 uppercase",
+          "h-8 max-w-[200px]",
           className,
         )}
       >
@@ -107,15 +108,16 @@ export function WorkspacePanel({
         });
         onPositionChange?.(position);
       }}
+      style={{ display: "flex", flexDirection: "column", height: "100%" }}
       className={cn(
-        "flex flex-col bg-background/70 backdrop-blur-sm border border-primary/30 rounded-sm",
+        "bg-background/70 backdrop-blur-sm border border-primary/30 rounded-sm",
         "shadow-[0_4px_16px_rgba(0,0,0,0.5)] shadow-primary/5",
         "ring-1 ring-primary/10",
         className,
       )}
     >
       {/* Title bar */}
-      <div className={cn(TITLE_BAR_CLASSES, "workspace-panel-drag-handle rounded-t-sm")}>
+      <div className={cn(TITLE_BAR_CLASSES, "workspace-panel-drag-handle rounded-t-sm shrink-0")}>
         <span className={TITLE_TEXT_CLASSES}>{title}</span>
 
         <div className="flex items-center gap-0.5 ml-2">
@@ -153,7 +155,7 @@ export function WorkspacePanel({
       </div>
 
       {/* Panel body */}
-      <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
+      <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>{children}</div>
     </Rnd>
   );
 }
