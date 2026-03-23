@@ -12,16 +12,8 @@ import {
   Network,
   GitBranch,
   Brain,
-  ZoomIn,
-  ZoomOut,
-  Maximize,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import {
-  TransformWrapper,
-  TransformComponent,
-  useControls,
-} from "react-zoom-pan-pinch";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { Material, MethodBlock } from "@/api.types";
@@ -440,40 +432,6 @@ function MindMapPanelContent(): ReactElement {
   );
 }
 
-// ── Zoom controls (inside TransformWrapper context) ───────────────────
-
-function ZoomControls(): ReactElement {
-  const { zoomIn, zoomOut, resetTransform } = useControls();
-  return (
-    <div className="absolute top-3 right-3 z-50 flex items-center gap-1 bg-background/90 border border-primary/20 rounded-sm shadow-[0_2px_8px_rgba(0,0,0,0.4)]">
-      <button
-        type="button"
-        onClick={() => zoomIn(0.2)}
-        className="flex items-center justify-center w-8 h-8 text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors"
-        title="Zoom In"
-      >
-        <ZoomIn className="w-4 h-4" />
-      </button>
-      <button
-        type="button"
-        onClick={() => zoomOut(0.2)}
-        className="flex items-center justify-center w-8 h-8 text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors"
-        title="Zoom Out"
-      >
-        <ZoomOut className="w-4 h-4" />
-      </button>
-      <button
-        type="button"
-        onClick={() => resetTransform()}
-        className="flex items-center justify-center w-8 h-8 text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors font-terminal text-xs"
-        title="Reset zoom (1:1)"
-      >
-        <Maximize className="w-4 h-4" />
-      </button>
-    </div>
-  );
-}
-
 // ── Component ─────────────────────────────────────────────────────────
 
 export function WorkspaceCanvas({
@@ -588,52 +546,41 @@ export function WorkspaceCanvas({
   return (
     <div
       className="relative bg-background/50"
-      style={{ width: "100%", height: "calc(100vh - 180px)", overflow: "hidden", position: "relative" }}
+      style={{ width: "100%", height: "calc(100vh - 180px)", overflow: "auto", position: "relative" }}
     >
-      <TransformWrapper
-        initialScale={0.7}
-        minScale={0.3}
-        maxScale={2}
-        centerOnInit
-        wheel={{ step: 0.08 }}
-        panning={{ activationKeys: [" "], velocityDisabled: true }}
-        doubleClick={{ disabled: true }}
+      {/* ── Scrollable canvas surface ─────────────────────────── */}
+      <div
+        style={{ minWidth: "4000px", minHeight: "4000px", position: "relative" }}
       >
-        <ZoomControls />
-        <TransformComponent
-          wrapperStyle={{ width: "100%", height: "100%" }}
-          contentStyle={{ width: "4000px", height: "4000px", position: "relative" }}
-        >
-          {/* ── Active panels ─────────────────────────────────────── */}
-          {panels.map((panel) => {
-            const entry = registryFor(panel.type);
-            if (!entry) return null;
+        {/* ── Active panels ─────────────────────────────────────── */}
+        {panels.map((panel) => {
+          const entry = registryFor(panel.type);
+          if (!entry) return null;
 
-            return (
-              <WorkspacePanel
-                key={panel.id}
-                id={panel.id}
-                title={entry.label}
-                defaultPosition={panel.position}
-                defaultSize={panel.size}
-                collapsed={panel.collapsed}
-                onCollapsedChange={(c) => updateCollapsed(panel.id, c)}
-                onPositionChange={(pos) => updatePosition(panel.id, pos)}
-                onSizeChange={(s) => updateSize(panel.id, s)}
-                onClose={() => closePanel(panel.id)}
-                className={cn(
-                  flashId === panel.id && "ring-2 ring-primary animate-pulse",
-                )}
-              >
-                {renderPanelContent(panel.type, entry.icon, entry.label)}
-              </WorkspacePanel>
-            );
-          })}
-        </TransformComponent>
-      </TransformWrapper>
+          return (
+            <WorkspacePanel
+              key={panel.id}
+              id={panel.id}
+              title={entry.label}
+              defaultPosition={panel.position}
+              defaultSize={panel.size}
+              collapsed={panel.collapsed}
+              onCollapsedChange={(c) => updateCollapsed(panel.id, c)}
+              onPositionChange={(pos) => updatePosition(panel.id, pos)}
+              onSizeChange={(s) => updateSize(panel.id, s)}
+              onClose={() => closePanel(panel.id)}
+              className={cn(
+                flashId === panel.id && "ring-2 ring-primary animate-pulse",
+              )}
+            >
+              {renderPanelContent(panel.type, entry.icon, entry.label)}
+            </WorkspacePanel>
+          );
+        })}
+      </div>
 
-      {/* ── Add-panel button + dropdown (outside transform) ──── */}
-      <div className="absolute bottom-4 right-4 z-50">
+      {/* ── Add-panel button + dropdown (fixed position) ──────── */}
+      <div className="fixed bottom-4 right-4 z-50">
         {menuOpen && (
           <div
             role="menu"
