@@ -460,7 +460,15 @@ function useTutorPageController() {
     }
     setStudioEntryRequest(null);
     setScheduleLaunchIntent(null);
-    workflow.setStudioView("workbench");
+    const lastTab = (() => {
+      try {
+        const stored = localStorage.getItem("tutor-studio-last-tab");
+        if (stored === "priming" || stored === "polish" || stored === "final_sync") return stored;
+        if (stored === "workbench") return "priming";
+      } catch { /* ignore */ }
+      return "priming";
+    })();
+    workflow.setStudioView(lastTab);
     setShellMode("studio");
     setShowSetup(false);
   }, [hub.courseId, workflow]);
