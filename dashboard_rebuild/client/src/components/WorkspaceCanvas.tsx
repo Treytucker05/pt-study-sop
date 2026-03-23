@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, type ReactElement } from "react";
+import { useState, useCallback, useRef, lazy, Suspense, type ReactElement } from "react";
 import {
   FileText,
   Zap,
@@ -9,14 +9,47 @@ import {
   BookOpen,
   Plus,
   Send,
+  Network,
+  GitBranch,
+  Brain,
+  ZoomIn,
+  ZoomOut,
+  Maximize,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import {
+  TransformWrapper,
+  TransformComponent,
+  useControls,
+} from "react-zoom-pan-pinch";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { Material, MethodBlock } from "@/api.types";
 import { WorkspacePanel } from "@/components/ui/WorkspacePanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+
+// Lazy-load heavy tool components so they don't bloat the initial bundle
+const ExcalidrawCanvas = lazy(() =>
+  import("@/components/brain/ExcalidrawCanvas").then((m) => ({
+    default: m.ExcalidrawCanvas,
+  })),
+);
+const ConceptMapStructured = lazy(() =>
+  import("@/components/brain/ConceptMapStructured").then((m) => ({
+    default: m.ConceptMapStructured,
+  })),
+);
+const VaultGraphView = lazy(() =>
+  import("@/components/VaultGraphView").then((m) => ({
+    default: m.VaultGraphView,
+  })),
+);
+const MindMapView = lazy(() =>
+  import("@/components/MindMapView").then((m) => ({
+    default: m.MindMapView,
+  })),
+);
 
 // ── Props ─────────────────────────────────────────────────────────────
 
@@ -36,13 +69,16 @@ export interface PanelRegistryEntry {
 }
 
 export const PANEL_REGISTRY: PanelRegistryEntry[] = [
-  { type: "material-viewer", label: "Material Viewer", icon: FileText, defaultSize: { width: 400, height: 500 }, allowMultiple: false },
-  { type: "method-runner",   label: "Method Runner",   icon: Zap,       defaultSize: { width: 400, height: 500 }, allowMultiple: true },
-  { type: "packet",          label: "Packet",          icon: Package,   defaultSize: { width: 350, height: 600 }, allowMultiple: false },
-  { type: "notes",           label: "Notes",           icon: StickyNote, defaultSize: { width: 350, height: 400 }, allowMultiple: true },
-  { type: "objectives",      label: "Objectives",      icon: Target,    defaultSize: { width: 350, height: 400 }, allowMultiple: false },
-  { type: "excalidraw",      label: "Excalidraw",      icon: PenTool,   defaultSize: { width: 500, height: 400 }, allowMultiple: false },
-  { type: "obsidian",        label: "Obsidian",        icon: BookOpen,  defaultSize: { width: 400, height: 500 }, allowMultiple: false },
+  { type: "material-viewer", label: "Material Viewer", icon: FileText,    defaultSize: { width: 400, height: 500 }, allowMultiple: false },
+  { type: "method-runner",   label: "Method Runner",   icon: Zap,         defaultSize: { width: 400, height: 500 }, allowMultiple: true },
+  { type: "packet",          label: "Packet",          icon: Package,     defaultSize: { width: 350, height: 600 }, allowMultiple: false },
+  { type: "notes",           label: "Notes",           icon: StickyNote,  defaultSize: { width: 350, height: 400 }, allowMultiple: true },
+  { type: "objectives",      label: "Objectives",      icon: Target,      defaultSize: { width: 350, height: 400 }, allowMultiple: false },
+  { type: "excalidraw",      label: "Excalidraw",      icon: PenTool,     defaultSize: { width: 600, height: 500 }, allowMultiple: false },
+  { type: "concept-map",     label: "Concept Map",     icon: Network,     defaultSize: { width: 600, height: 500 }, allowMultiple: false },
+  { type: "vault-graph",     label: "Vault Graph",     icon: GitBranch,   defaultSize: { width: 600, height: 500 }, allowMultiple: false },
+  { type: "mind-map",        label: "Mind Map",        icon: Brain,       defaultSize: { width: 600, height: 500 }, allowMultiple: false },
+  { type: "obsidian",        label: "Obsidian",        icon: BookOpen,    defaultSize: { width: 400, height: 500 }, allowMultiple: false },
 ];
 
 // ── Panel instance state ──────────────────────────────────────────────
@@ -93,6 +129,18 @@ function buildDefaultLayout(): PanelInstance[] {
       collapsed: false,
     },
   ];
+}
+
+// ── Lazy-loading placeholder ──────────────────────────────────────────
+
+function LazyFallback({ label }: { label: string }): ReactElement {
+  return (
+    <div className="flex items-center justify-center h-full">
+      <span className="animate-pulse font-terminal text-xs text-primary/50 uppercase tracking-wider">
+        Loading {label}...
+      </span>
+    </div>
+  );
 }
 
 // ── Live panel content components ─────────────────────────────────────
@@ -350,6 +398,82 @@ function MethodRunnerContent(): ReactElement {
   );
 }
 
+// ── Tool panel content wrappers ───────────────────────────────────────
+
+function ExcalidrawPanelContent(): ReactElement {
+  return (
+    <Suspense fallback={<LazyFallback label="Excalidraw" />}>
+      <div className="h-full w-full">
+        <ExcalidrawCanvas />
+      </div>
+    </Suspense>
+  );
+}
+
+function ConceptMapPanelContent(): ReactElement {
+  return (
+    <Suspense fallback={<LazyFallback label="Concept Map" />}>
+      <div className="h-full w-full">
+        <ConceptMapStructured />
+      </div>
+    </Suspense>
+  );
+}
+
+function VaultGraphPanelContent(): ReactElement {
+  return (
+    <Suspense fallback={<LazyFallback label="Vault Graph" />}>
+      <div className="h-full w-full">
+        <VaultGraphView />
+      </div>
+    </Suspense>
+  );
+}
+
+function MindMapPanelContent(): ReactElement {
+  return (
+    <Suspense fallback={<LazyFallback label="Mind Map" />}>
+      <div className="h-full w-full">
+        <MindMapView />
+      </div>
+    </Suspense>
+  );
+}
+
+// ── Zoom controls (inside TransformWrapper context) ───────────────────
+
+function ZoomControls(): ReactElement {
+  const { zoomIn, zoomOut, resetTransform } = useControls();
+  return (
+    <div className="absolute top-3 right-3 z-50 flex items-center gap-1 bg-background/90 border border-primary/20 rounded-sm shadow-[0_2px_8px_rgba(0,0,0,0.4)]">
+      <button
+        type="button"
+        onClick={() => zoomIn(0.2)}
+        className="flex items-center justify-center w-8 h-8 text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors"
+        title="Zoom In"
+      >
+        <ZoomIn className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => zoomOut(0.2)}
+        className="flex items-center justify-center w-8 h-8 text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors"
+        title="Zoom Out"
+      >
+        <ZoomOut className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => resetTransform()}
+        className="flex items-center justify-center w-8 h-8 text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors font-terminal text-xs"
+        title="Reset zoom (1:1)"
+      >
+        <Maximize className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
+
 // ── Component ─────────────────────────────────────────────────────────
 
 export function WorkspaceCanvas({
@@ -371,7 +495,6 @@ export function WorkspaceCanvas({
       if (!entry.allowMultiple) {
         const existing = panels.find((p) => p.type === type);
         if (existing) {
-          // Flash the existing panel briefly
           if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
           setFlashId(existing.id);
           flashTimerRef.current = setTimeout(() => setFlashId(null), 600);
@@ -440,6 +563,14 @@ export function WorkspaceCanvas({
           );
         case "method-runner":
           return <MethodRunnerContent />;
+        case "excalidraw":
+          return <ExcalidrawPanelContent />;
+        case "concept-map":
+          return <ConceptMapPanelContent />;
+        case "vault-graph":
+          return <VaultGraphPanelContent />;
+        case "mind-map":
+          return <MindMapPanelContent />;
         default:
           return (
             <div className="flex flex-col items-center justify-center h-full gap-2 text-primary/40">
@@ -455,34 +586,53 @@ export function WorkspaceCanvas({
   );
 
   return (
-    <div className="relative flex-1 min-h-[600px] overflow-hidden bg-background/50">
-      {/* ── Active panels ─────────────────────────────────────────── */}
-      {panels.map((panel) => {
-        const entry = registryFor(panel.type);
-        if (!entry) return null;
+    <div
+      className="relative bg-background/50"
+      style={{ width: "100%", height: "calc(100vh - 180px)", overflow: "hidden", position: "relative" }}
+    >
+      <TransformWrapper
+        initialScale={0.7}
+        minScale={0.3}
+        maxScale={2}
+        centerOnInit
+        wheel={{ step: 0.08 }}
+        panning={{ activationKeys: [" "], velocityDisabled: true }}
+        doubleClick={{ disabled: true }}
+      >
+        <ZoomControls />
+        <TransformComponent
+          wrapperStyle={{ width: "100%", height: "100%" }}
+          contentStyle={{ width: "4000px", height: "4000px", position: "relative" }}
+        >
+          {/* ── Active panels ─────────────────────────────────────── */}
+          {panels.map((panel) => {
+            const entry = registryFor(panel.type);
+            if (!entry) return null;
 
-        return (
-          <WorkspacePanel
-            key={panel.id}
-            id={panel.id}
-            title={entry.label}
-            defaultPosition={panel.position}
-            defaultSize={panel.size}
-            collapsed={panel.collapsed}
-            onCollapsedChange={(c) => updateCollapsed(panel.id, c)}
-            onPositionChange={(pos) => updatePosition(panel.id, pos)}
-            onSizeChange={(s) => updateSize(panel.id, s)}
-            onClose={() => closePanel(panel.id)}
-            className={cn(
-              flashId === panel.id && "ring-2 ring-primary animate-pulse",
-            )}
-          >
-            {renderPanelContent(panel.type, entry.icon, entry.label)}
-          </WorkspacePanel>
-        );
-      })}
+            return (
+              <WorkspacePanel
+                key={panel.id}
+                id={panel.id}
+                title={entry.label}
+                defaultPosition={panel.position}
+                defaultSize={panel.size}
+                collapsed={panel.collapsed}
+                onCollapsedChange={(c) => updateCollapsed(panel.id, c)}
+                onPositionChange={(pos) => updatePosition(panel.id, pos)}
+                onSizeChange={(s) => updateSize(panel.id, s)}
+                onClose={() => closePanel(panel.id)}
+                className={cn(
+                  flashId === panel.id && "ring-2 ring-primary animate-pulse",
+                )}
+              >
+                {renderPanelContent(panel.type, entry.icon, entry.label)}
+              </WorkspacePanel>
+            );
+          })}
+        </TransformComponent>
+      </TransformWrapper>
 
-      {/* ── Add-panel button + dropdown ───────────────────────────── */}
+      {/* ── Add-panel button + dropdown (outside transform) ──── */}
       <div className="absolute bottom-4 right-4 z-50">
         {menuOpen && (
           <div
