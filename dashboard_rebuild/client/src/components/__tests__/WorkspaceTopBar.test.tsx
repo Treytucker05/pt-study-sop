@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from "vitest";
 import {
   WorkspaceTopBar,
   type WorkspaceTopBarProps,
+  type SlotInfo,
 } from "@/components/workspace/WorkspaceTopBar";
 
 const defaultProps: WorkspaceTopBarProps = {
@@ -110,19 +111,36 @@ describe("WorkspaceTopBar", () => {
     expect(onWorkspaceNameChange).toHaveBeenCalledWith("Renamed");
   });
 
-  // Layout slot click calls onLoadLayout
-  it("calls onLoadLayout on layout slot click", () => {
+  // Layout slot click calls onLoadLayout when slot has data
+  it("calls onLoadLayout on layout slot click when slot is occupied", () => {
     const onLoadLayout = vi.fn();
-    renderBar({ onLoadLayout });
+    const slotInfo = [
+      { slot: 1, savedAt: null },
+      { slot: 2, savedAt: "2025-01-01T00:00:00Z", name: "My Layout" },
+      { slot: 3, savedAt: null },
+      { slot: 4, savedAt: null },
+      { slot: 5, savedAt: null },
+    ];
+    renderBar({ onLoadLayout, slotInfo });
     fireEvent.click(screen.getByTestId("layout-slot-2"));
     expect(onLoadLayout).toHaveBeenCalledWith(2);
   });
 
-  // Layout slot shift+click calls onSaveLayout
-  it("calls onSaveLayout on shift+click of a layout slot", () => {
+  // Layout slot click does NOT call onLoadLayout when slot is empty
+  it("does not call onLoadLayout on empty slot click", () => {
+    const onLoadLayout = vi.fn();
+    renderBar({ onLoadLayout });
+    fireEvent.click(screen.getByTestId("layout-slot-2"));
+    expect(onLoadLayout).not.toHaveBeenCalled();
+  });
+
+  // Layout slot right-click calls onSaveLayout via prompt
+  it("calls onSaveLayout on right-click of a layout slot", () => {
     const onSaveLayout = vi.fn();
+    vi.spyOn(window, "prompt").mockReturnValue("My Layout");
     renderBar({ onSaveLayout });
-    fireEvent.click(screen.getByTestId("layout-slot-3"), { shiftKey: true });
-    expect(onSaveLayout).toHaveBeenCalledWith(3);
+    fireEvent.contextMenu(screen.getByTestId("layout-slot-3"));
+    expect(onSaveLayout).toHaveBeenCalledWith(3, "My Layout");
+    vi.restoreAllMocks();
   });
 });

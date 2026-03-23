@@ -89,15 +89,22 @@ export function WorkspaceStudio({
   }, []);
 
   // ── Layout save/load ─────────────────────────────────────────────
-  const { saveLayout, loadLayout } = useWorkspaceLayout();
+  const { saveLayout, loadLayout, getSlotInfo, clearSlot } = useWorkspaceLayout();
+
+  const [slotInfo, setSlotInfo] = useState(getSlotInfo());
+
+  const refreshSlotInfo = useCallback(() => {
+    setSlotInfo(getSlotInfo());
+  }, [getSlotInfo]);
 
   const handleSaveLayout = useCallback(
-    (slot: number) => {
+    (slot: number, name: string) => {
       // WorkspaceCanvas manages its own panels internally for now;
       // we save a stub so the slot shows as occupied.
-      saveLayout(slot, [], workspaceName);
+      saveLayout(slot, [], name);
+      refreshSlotInfo();
     },
-    [saveLayout, workspaceName],
+    [saveLayout, refreshSlotInfo],
   );
 
   const handleLoadLayout = useCallback(
@@ -106,6 +113,14 @@ export function WorkspaceStudio({
       // Future: apply loaded layout to WorkspaceCanvas panels
     },
     [loadLayout],
+  );
+
+  const handleClearSlot = useCallback(
+    (slot: number) => {
+      clearSlot(slot);
+      refreshSlotInfo();
+    },
+    [clearSlot, refreshSlotInfo],
   );
 
   // ── Start Tutor handler ──────────────────────────────────────────
@@ -128,8 +143,10 @@ export function WorkspaceStudio({
         timerSeconds={timerSeconds}
         timerPaused={timerPaused}
         onToggleTimer={handleToggleTimer}
+        slotInfo={slotInfo}
         onSaveLayout={handleSaveLayout}
         onLoadLayout={handleLoadLayout}
+        onClearSlot={handleClearSlot}
       />
       <WorkspaceCanvas courseId={_courseId} selectedMaterialIds={_selectedMaterialIds} />
     </div>

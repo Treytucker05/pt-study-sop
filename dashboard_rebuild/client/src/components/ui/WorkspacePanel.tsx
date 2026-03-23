@@ -12,16 +12,18 @@ export interface WorkspacePanelProps {
   minWidth?: number;
   minHeight?: number;
   collapsed?: boolean;
+  isPoppedOut?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
   onPositionChange?: (position: { x: number; y: number }) => void;
   onSizeChange?: (size: { width: number; height: number }) => void;
   onClose?: () => void;
   onPopOut?: () => void;
+  onSendBack?: () => void;
   className?: string;
 }
 
 const TITLE_BAR_CLASSES =
-  "flex items-center justify-between px-3 py-1.5 bg-background/95 border-b border-primary/30 select-none cursor-move";
+  "flex items-center justify-between px-3 py-1.5 bg-background/90 border-b border-primary/20 select-none cursor-move";
 
 const TITLE_TEXT_CLASSES =
   "font-terminal text-sm tracking-wider text-primary/80 uppercase truncate";
@@ -38,11 +40,13 @@ export function WorkspacePanel({
   minWidth = 200,
   minHeight = 100,
   collapsed = false,
+  isPoppedOut = false,
   onCollapsedChange,
   onPositionChange,
   onSizeChange,
   onClose,
   onPopOut,
+  onSendBack,
   className,
 }: WorkspacePanelProps) {
   const handleToggleCollapse = () => {
@@ -65,11 +69,10 @@ export function WorkspacePanel({
         }}
         onResizeStop={() => {}}
         className={cn(
-          "inline-flex items-center gap-2 px-3 py-1.5 rounded-sm",
+          "inline-flex items-center gap-2 px-3 py-1.5 rounded-full",
           "bg-background/80 border border-primary/20 backdrop-blur-sm",
           "shadow-[0_4px_12px_rgba(0,0,0,0.3)]",
           "font-terminal text-xs tracking-wider text-primary/80 uppercase",
-          "h-8 max-w-[200px]",
           className,
         )}
       >
@@ -108,17 +111,20 @@ export function WorkspacePanel({
         });
         onPositionChange?.(position);
       }}
-      style={{ display: "flex", flexDirection: "column", height: "100%" }}
       className={cn(
-        "bg-background/70 backdrop-blur-sm border border-primary/30 rounded-sm",
-        "shadow-[0_4px_16px_rgba(0,0,0,0.5)] shadow-primary/5",
-        "ring-1 ring-primary/10",
+        "flex flex-col bg-background/60 backdrop-blur-sm border border-primary/15 rounded-sm",
+        "shadow-[0_4px_12px_rgba(0,0,0,0.3)]",
         className,
       )}
     >
       {/* Title bar */}
-      <div className={cn(TITLE_BAR_CLASSES, "workspace-panel-drag-handle rounded-t-sm shrink-0")}>
-        <span className={TITLE_TEXT_CLASSES}>{title}</span>
+      <div className={cn(TITLE_BAR_CLASSES, "workspace-panel-drag-handle rounded-t-sm")}>
+        <span className="flex items-center gap-2">
+          {isPoppedOut && (
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" title="Synced to pop-out window" />
+          )}
+          <span className={TITLE_TEXT_CLASSES}>{title}</span>
+        </span>
 
         <div className="flex items-center gap-0.5 ml-2">
           <button
@@ -155,7 +161,32 @@ export function WorkspacePanel({
       </div>
 
       {/* Panel body */}
-      <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>{children}</div>
+      <div className="flex-1 overflow-auto p-3 relative">
+        {isPoppedOut ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm z-10">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="font-terminal text-xs text-primary/60 uppercase tracking-wider">
+                Open in window
+              </span>
+            </div>
+            {onSendBack && (
+              <button
+                type="button"
+                onClick={onSendBack}
+                className={cn(
+                  "px-3 py-1.5 rounded-sm text-xs font-terminal uppercase tracking-wider",
+                  "bg-primary/10 border border-primary/30 text-primary/70",
+                  "hover:bg-primary/20 hover:text-primary transition-colors",
+                )}
+              >
+                Send Back
+              </button>
+            )}
+          </div>
+        ) : null}
+        {children}
+      </div>
     </Rnd>
   );
 }

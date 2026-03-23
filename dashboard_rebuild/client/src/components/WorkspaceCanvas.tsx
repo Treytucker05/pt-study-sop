@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef, lazy, Suspense, type ReactElement } from "react";
+import { useState, useCallback, useRef, useMemo, lazy, Suspense, type ReactElement } from "react";
+import { createPortal } from "react-dom";
 import {
   FileText,
   Zap,
@@ -12,15 +13,30 @@ import {
   Network,
   GitBranch,
   Brain,
-  Loader2,
+  ZoomIn,
+  ZoomOut,
+  Maximize,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import {
+  TransformWrapper,
+  TransformComponent,
+  useControls,
+} from "react-zoom-pan-pinch";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Material, MethodBlock, ChainRunResult } from "@/api.types";
+import type { Material, MethodBlock } from "@/api.types";
 import { WorkspacePanel } from "@/components/ui/WorkspacePanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import {
+  openPanelPopoutWindow,
+  createPanelPopoutTransport,
+  panelChannelName,
+  type PopoutWindowHandle,
+} from "@/lib/workspacePanelPopout";
 
 // Lazy-load heavy tool components so they don't bloat the initial bundle
 const ExcalidrawCanvas = lazy(() =>
@@ -100,7 +116,6 @@ function nextPanelId(type: string): string {
 
 function buildDefaultLayout(): PanelInstance[] {
   return [
-    // Row 1
     {
       id: nextPanelId("material-viewer"),
       type: "material-viewer",
@@ -119,29 +134,7 @@ function buildDefaultLayout(): PanelInstance[] {
       id: nextPanelId("packet"),
       type: "packet",
       position: { x: 860, y: 20 },
-      size: { width: 350, height: 500 },
-      collapsed: false,
-    },
-    // Row 2
-    {
-      id: nextPanelId("notes"),
-      type: "notes",
-      position: { x: 20, y: 540 },
-      size: { width: 400, height: 400 },
-      collapsed: false,
-    },
-    {
-      id: nextPanelId("objectives"),
-      type: "objectives",
-      position: { x: 440, y: 540 },
-      size: { width: 400, height: 400 },
-      collapsed: false,
-    },
-    {
-      id: nextPanelId("excalidraw"),
-      type: "excalidraw",
-      position: { x: 860, y: 540 },
-      size: { width: 600, height: 500 },
+      size: { width: 350, height: 600 },
       collapsed: false,
     },
   ];
@@ -292,122 +285,57 @@ const CATEGORY_COLORS: Record<string, string> = {
   interrogate: "bg-violet-500/20 text-violet-400",
 };
 
+const ALL_CATEGORY = "ALL" as const;
+
 function MethodRunnerContent(): ReactElement {
   const [selectedBlock, setSelectedBlock] = useState<MethodBlock | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [topic, setTopic] = useState("");
-  const [isRunning, setIsRunning] = useState(false);
-  const [runResult, setRunResult] = useState<ChainRunResult | null>(null);
-  const [runError, setRunError] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORY);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: blocks = [] } = useQuery<MethodBlock[]>({
     queryKey: ["workspace-method-blocks"],
     queryFn: () => api.tutor.getMethodBlocks(),
   });
 
-  const filteredBlocks = searchTerm
-    ? blocks.filter(
-        (b) =>
-          b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          b.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (b.description ?? "").toLowerCase().includes(searchTerm.toLowerCase()),
-      )
-    : blocks;
-
-  const handleRunMethod = async (): Promise<void> => {
-    if (!selectedBlock || !topic.trim()) return;
-    setIsRunning(true);
-    setRunResult(null);
-    setRunError(null);
-    try {
-      // Create a single-block chain, then run it
-      const chain = await api.tutor.createCustomChain(
-        [selectedBlock.id],
-        `Run: ${selectedBlock.name}`,
-      );
-      const result = await api.chainRun.start({
-        chain_id: chain.id,
-        topic: topic.trim(),
-      });
-      setRunResult(result);
-    } catch (err: unknown) {
-      setRunError(err instanceof Error ? err.message : "Method execution failed");
-    } finally {
-      setIsRunning(false);
+  // Derive unique categories from actual data
+  const categories = useMemo(() => {
+    const cats = new Set<string>();
+    for (const b of blocks) {
+      if (b.category) cats.add(b.category.toLowerCase());
     }
-  };
+    return [ALL_CATEGORY, ...Array.from(cats).sort()];
+  }, [blocks]);
 
-  const handleSendToPacket = (): void => {
-    // Placeholder — packet wiring comes later
-    // eslint-disable-next-line no-console
-    console.log("[MethodRunner] Send to packet:", runResult);
-  };
+  // Filter by category, then by search
+  const filteredBlocks = useMemo(() => {
+    let result = blocks;
+    if (activeCategory !== ALL_CATEGORY) {
+      result = result.filter(
+        (b) => b.category.toLowerCase() === activeCategory.toLowerCase(),
+      );
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter(
+        (b) =>
+          b.name.toLowerCase().includes(q) ||
+          (b.description ?? "").toLowerCase().includes(q) ||
+          b.tags.some((t) => t.toLowerCase().includes(q)),
+      );
+    }
+    return result;
+  }, [blocks, activeCategory, searchQuery]);
 
-  return (
-    <div className="flex flex-col h-full p-2 gap-2">
-      {/* Search + dropdown selector */}
-      <div className="relative shrink-0">
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setDropdownOpen(true);
-          }}
-          onFocus={() => setDropdownOpen(true)}
-          placeholder={selectedBlock ? selectedBlock.name : "Search methods..."}
-          className={cn(
-            "w-full rounded-sm border border-primary/20 bg-black/60 px-2 py-1.5",
-            "font-terminal text-xs text-foreground/80 placeholder:text-foreground/30",
-            "focus:outline-none focus:border-primary/50 transition-colors",
-          )}
-        />
-        {dropdownOpen && (
-          <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-[200px] overflow-auto rounded-sm border border-primary/20 bg-background/95 backdrop-blur-sm shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
-            {filteredBlocks.length === 0 ? (
-              <div className="px-3 py-2 text-xs font-mono text-foreground/40">
-                No methods found
-              </div>
-            ) : (
-              filteredBlocks.map((block) => (
-                <button
-                  key={block.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedBlock(block);
-                    setSearchTerm("");
-                    setDropdownOpen(false);
-                    setRunResult(null);
-                    setRunError(null);
-                  }}
-                  className={cn(
-                    "w-full text-left px-3 py-1.5 flex items-center gap-2",
-                    "hover:bg-primary/10 transition-colors",
-                    selectedBlock?.id === block.id && "bg-primary/5",
-                  )}
-                >
-                  <Zap className="w-3 h-3 shrink-0 text-primary/50" />
-                  <span className="font-terminal text-xs text-primary/90 truncate">
-                    {block.name}
-                  </span>
-                  <span
-                    className={cn(
-                      "ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded-sm uppercase font-terminal tracking-wider",
-                      CATEGORY_COLORS[block.category] ?? "bg-primary/10 text-primary/70",
-                    )}
-                  >
-                    {block.category}
-                  </span>
-                </button>
-              ))
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Selected method details + run */}
-      {selectedBlock ? (
+  if (selectedBlock) {
+    return (
+      <div className="flex flex-col h-full p-2 gap-2">
+        <button
+          type="button"
+          onClick={() => setSelectedBlock(null)}
+          className="self-start text-xs font-terminal text-primary/60 hover:text-primary transition-colors"
+        >
+          &larr; Back to list
+        </button>
         <div className="flex-1 min-h-0 overflow-auto rounded-sm border border-primary/15 bg-black/40 p-3">
           <h4 className="font-terminal text-sm text-primary/90 tracking-wider uppercase">
             {selectedBlock.name}
@@ -421,88 +349,144 @@ function MethodRunnerContent(): ReactElement {
             >
               {selectedBlock.category}
             </span>
+            {selectedBlock.method_id && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary/50 font-mono">
+                {selectedBlock.method_id}
+              </span>
+            )}
+            {selectedBlock.best_stage && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary/50 font-mono">
+                Stage: {selectedBlock.best_stage}
+              </span>
+            )}
           </div>
           {selectedBlock.description && (
-            <p className="mt-2 text-xs text-foreground/70 leading-5">
+            <p className="mt-3 text-xs text-foreground/70 leading-5">
               {selectedBlock.description}
             </p>
           )}
+          <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] font-mono text-foreground/50">
+            <div>Duration: {selectedBlock.default_duration_min}min</div>
+            <div>Energy: {selectedBlock.energy_cost}</div>
+          </div>
+          {selectedBlock.tags.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {selectedBlock.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="text-[10px] px-1 py-0.5 rounded-sm bg-primary/5 text-primary/40 font-mono"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
-          {/* Topic + Run */}
-          <div className="mt-3 border-t border-primary/15 pt-3">
-            <label className="block text-[10px] font-terminal text-primary/50 uppercase tracking-wider mb-1">
-              Topic / Prompt
-            </label>
-            <input
-              type="text"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              placeholder="e.g. Cardiovascular physiology"
-              disabled={isRunning}
-              className={cn(
-                "w-full rounded-sm border border-primary/20 bg-black/60 px-2 py-1.5",
-                "font-terminal text-xs text-foreground/80 placeholder:text-foreground/30",
-                "focus:outline-none focus:border-primary/50 transition-colors",
-              )}
-            />
+  if (blocks.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <span className="font-mono text-sm text-foreground/50">
+          No method blocks available
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full p-2 gap-2">
+      {/* Search bar */}
+      <input
+        type="text"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        placeholder="Search methods..."
+        className={cn(
+          "w-full px-2 py-1.5 rounded-sm border border-primary/15 bg-black/30",
+          "font-mono text-xs text-foreground/80 placeholder:text-foreground/30",
+          "focus:outline-none focus:border-primary/40 transition-colors",
+        )}
+      />
+
+      {/* Category filter pills */}
+      <div className="flex flex-wrap gap-1">
+        {categories.map((cat) => {
+          const isActive = activeCategory === cat;
+          const colorClass =
+            cat === ALL_CATEGORY
+              ? isActive
+                ? "bg-primary/20 text-primary border-primary/40"
+                : "bg-primary/5 text-primary/50 border-primary/15"
+              : isActive
+                ? cn(CATEGORY_COLORS[cat] ?? "bg-primary/20 text-primary", "border-primary/40")
+                : "bg-primary/5 text-primary/40 border-primary/10";
+          return (
             <button
+              key={cat}
               type="button"
-              onClick={handleRunMethod}
-              disabled={isRunning || !topic.trim()}
+              onClick={() => setActiveCategory(cat)}
               className={cn(
-                "mt-2 w-full flex items-center justify-center gap-2 rounded-sm border px-3 py-2",
-                "font-terminal text-xs uppercase tracking-wider transition-colors",
-                isRunning || !topic.trim()
-                  ? "border-primary/10 bg-primary/5 text-primary/30 cursor-not-allowed"
-                  : "border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary/60",
+                "px-2 py-0.5 rounded-full border text-[10px] font-terminal uppercase tracking-wider",
+                "transition-colors hover:border-primary/40",
+                colorClass,
               )}
             >
-              {isRunning ? (
-                <>
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  Running...
-                </>
-              ) : (
-                <>
-                  <Zap className="w-3 h-3" />
-                  Run Method
-                </>
-              )}
+              {cat}
             </button>
+          );
+        })}
+      </div>
+
+      {/* Method list */}
+      <ScrollArea className="flex-1">
+        {filteredBlocks.length === 0 ? (
+          <div className="flex items-center justify-center py-6">
+            <span className="font-mono text-xs text-foreground/40">
+              No methods match the current filter
+            </span>
           </div>
-
-          {/* Error */}
-          {runError && (
-            <div className="mt-3 rounded-sm border border-red-500/30 bg-red-900/20 px-3 py-2">
-              <p className="font-terminal text-xs text-red-400 uppercase tracking-wider">Error</p>
-              <p className="mt-1 font-mono text-xs text-red-300/80">{runError}</p>
-            </div>
-          )}
-
-          {/* Output */}
-          {runResult && (
-            <div className="mt-3 border-t border-primary/15 pt-3">
-              <pre className="whitespace-pre-wrap font-terminal text-xs text-foreground/80 leading-5 max-h-[300px] overflow-auto">
-                {runResult.steps?.map((s: { output?: string }) => s.output).join("\n---\n") ?? "No output"}
-              </pre>
-              <button
-                type="button"
-                onClick={handleSendToPacket}
-                className="mt-2 w-full flex items-center justify-center gap-2 rounded-sm border border-primary/20 bg-primary/5 px-3 py-1.5 font-terminal text-xs uppercase tracking-wider text-primary/70 hover:bg-primary/10 hover:text-primary transition-colors"
-              >
-                <Package className="w-3 h-3" />
-                Send to Packet
-              </button>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="flex-1 flex items-center justify-center">
-          <span className="font-mono text-sm text-foreground/40">
-            Select a method above
-          </span>
-        </div>
-      )}
+        ) : (
+          <ul className="space-y-1">
+            {filteredBlocks.map((block) => (
+              <li key={block.id}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedBlock(block)}
+                  className={cn(
+                    "w-full text-left px-2 py-1.5 rounded-sm",
+                    "bg-background/40 border border-primary/10",
+                    "hover:border-primary/30 hover:bg-primary/5",
+                    "transition-colors cursor-pointer",
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-3 h-3 shrink-0 text-primary/50" />
+                    <span className="font-terminal text-xs text-primary/90 truncate">
+                      {block.name}
+                    </span>
+                    <span
+                      className={cn(
+                        "ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded-sm uppercase font-terminal tracking-wider",
+                        CATEGORY_COLORS[block.category] ?? "bg-primary/10 text-primary/70",
+                      )}
+                    >
+                      {block.category}
+                    </span>
+                  </div>
+                  {block.description && (
+                    <p className="text-[10px] text-primary/40 mt-0.5 line-clamp-1 pl-5">
+                      {block.description}
+                    </p>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </ScrollArea>
     </div>
   );
 }
@@ -549,6 +533,40 @@ function MindMapPanelContent(): ReactElement {
   );
 }
 
+// ── Zoom controls (inside TransformWrapper context) ───────────────────
+
+function ZoomControls(): ReactElement {
+  const { zoomIn, zoomOut, resetTransform } = useControls();
+  return (
+    <div className="absolute top-3 right-3 z-50 flex items-center gap-1 bg-background/90 border border-primary/20 rounded-sm shadow-[0_2px_8px_rgba(0,0,0,0.4)]">
+      <button
+        type="button"
+        onClick={() => zoomIn(0.2)}
+        className="flex items-center justify-center w-8 h-8 text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors"
+        title="Zoom In"
+      >
+        <ZoomIn className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => zoomOut(0.2)}
+        className="flex items-center justify-center w-8 h-8 text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors"
+        title="Zoom Out"
+      >
+        <ZoomOut className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => resetTransform()}
+        className="flex items-center justify-center w-8 h-8 text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors font-terminal text-xs"
+        title="Reset zoom (1:1)"
+      >
+        <Maximize className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
+
 // ── Component ─────────────────────────────────────────────────────────
 
 export function WorkspaceCanvas({
@@ -559,6 +577,15 @@ export function WorkspaceCanvas({
   const [menuOpen, setMenuOpen] = useState(false);
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
+
+  // ── Fullscreen state ─────────────────────────────────────────────
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // ── Pop-out state ─────────────────────────────────────────────────
+  const [popouts, setPopouts] = useState<
+    Record<string, { container: HTMLElement; handle: PopoutWindowHandle }>
+  >({});
+  const popoutTransportsRef = useRef<Record<string, ReturnType<typeof createPanelPopoutTransport>>>({});
 
   // Spawn a new panel or flash an existing single-instance one
   const spawnPanel = useCallback(
@@ -624,6 +651,78 @@ export function WorkspaceCanvas({
     [],
   );
 
+  // Pop out a panel into a new browser window
+  const handlePopOut = useCallback(
+    (panelId: string) => {
+      // Already popped out?
+      if (popouts[panelId]) {
+        popouts[panelId].handle.window.focus();
+        return;
+      }
+
+      const panel = panels.find((p) => p.id === panelId);
+      if (!panel) return;
+      const entry = registryFor(panel.type);
+      if (!entry) return;
+
+      const handle = openPanelPopoutWindow(panelId, entry.label);
+      if (!handle) return;
+
+      const container = handle.window.document.getElementById("popout-content");
+      if (!container) {
+        handle.close();
+        return;
+      }
+
+      // Listen for messages from the popped-out window
+      const transport = createPanelPopoutTransport(panelChannelName(panelId));
+      popoutTransportsRef.current[panelId] = transport;
+
+      const unsub = transport.subscribe((msg) => {
+        if (
+          (msg.type === "panel.send-back" || msg.type === "panel.child-closed") &&
+          msg.panelId === panelId
+        ) {
+          // Clean up popout state
+          setPopouts((prev) => {
+            const next = { ...prev };
+            delete next[panelId];
+            return next;
+          });
+          transport.close();
+          delete popoutTransportsRef.current[panelId];
+          unsub();
+        }
+      });
+
+      setPopouts((prev) => ({
+        ...prev,
+        [panelId]: { container, handle },
+      }));
+    },
+    [panels, popouts],
+  );
+
+  // Send a popped-out panel back to the canvas
+  const handleSendBack = useCallback(
+    (panelId: string) => {
+      const popout = popouts[panelId];
+      if (!popout) return;
+      popout.handle.close();
+      setPopouts((prev) => {
+        const next = { ...prev };
+        delete next[panelId];
+        return next;
+      });
+      const transport = popoutTransportsRef.current[panelId];
+      if (transport) {
+        transport.close();
+        delete popoutTransportsRef.current[panelId];
+      }
+    },
+    [popouts],
+  );
+
   // Render panel content based on type
   const renderPanelContent = useCallback(
     (panelType: string, icon: LucideIcon, label: string): ReactElement => {
@@ -646,60 +745,6 @@ export function WorkspaceCanvas({
           return <VaultGraphPanelContent />;
         case "mind-map":
           return <MindMapPanelContent />;
-        case "notes":
-          return (
-            <div className="flex flex-col h-full p-2 gap-2">
-              <input
-                type="text"
-                placeholder="Note title..."
-                className="w-full rounded-sm border border-primary/20 bg-black/60 px-2 py-1.5 font-terminal text-xs text-foreground/80 placeholder:text-foreground/30 focus:outline-none focus:border-primary/50"
-              />
-              <textarea
-                placeholder="Write your notes here..."
-                className="flex-1 min-h-0 w-full rounded-sm border border-primary/20 bg-black/60 px-2 py-1.5 font-terminal text-xs text-foreground/80 placeholder:text-foreground/30 focus:outline-none focus:border-primary/50 resize-none"
-              />
-              <button
-                type="button"
-                className="w-full flex items-center justify-center gap-2 rounded-sm border border-primary/20 bg-primary/5 px-3 py-1.5 font-terminal text-xs uppercase tracking-wider text-primary/70 hover:bg-primary/10 hover:text-primary transition-colors"
-              >
-                <Package className="w-3 h-3" />
-                Send to Packet
-              </button>
-            </div>
-          );
-        case "objectives":
-          return (
-            <div className="flex flex-col h-full p-2 gap-2">
-              <div className="text-[10px] font-terminal text-primary/50 uppercase tracking-wider">
-                Learning Objectives
-              </div>
-              <ScrollArea className="flex-1 min-h-0">
-                <div className="space-y-1 text-xs font-terminal text-foreground/70">
-                  <div className="px-2 py-1 text-foreground/40">
-                    Objectives will load from your study unit
-                  </div>
-                </div>
-              </ScrollArea>
-            </div>
-          );
-        case "packet":
-          return (
-            <div className="flex flex-col h-full p-2 gap-2">
-              <div className="text-[10px] font-terminal text-primary/50 uppercase tracking-wider">
-                Packet Items (0)
-              </div>
-              <div className="flex-1 min-h-0 flex items-center justify-center">
-                <span className="font-mono text-xs text-foreground/30">
-                  Send items here from other panels
-                </span>
-              </div>
-              <input
-                type="text"
-                placeholder="Quick add to packet..."
-                className="w-full rounded-sm border border-primary/20 bg-black/60 px-2 py-1.5 font-terminal text-xs text-foreground/80 placeholder:text-foreground/30 focus:outline-none focus:border-primary/50"
-              />
-            </div>
-          );
         default:
           return (
             <div className="flex flex-col items-center justify-center h-full gap-2 text-primary/40">
@@ -716,42 +761,75 @@ export function WorkspaceCanvas({
 
   return (
     <div
-      className="relative bg-background/50"
-      style={{ width: "100%", height: "calc(100vh - 180px)", overflow: "auto", position: "relative" }}
+      className={`relative bg-background/50 ${isFullscreen ? "fixed inset-0 z-50 bg-background" : ""}`}
+      style={isFullscreen ? { overflow: "auto" } : { width: "100%", height: "calc(100vh - 180px)", overflow: "auto", position: "relative" }}
     >
-      {/* ── Scrollable canvas surface ─────────────────────────── */}
-      <div
-        style={{ minWidth: "4000px", minHeight: "4000px", position: "relative" }}
+      {/* Fullscreen toggle */}
+      <button
+        onClick={() => setIsFullscreen((f) => !f)}
+        aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+        className="absolute top-2 right-2 z-50 rounded border border-red-500/40 bg-background/90 p-2 text-primary hover:bg-primary/10 transition-colors"
       >
-        {/* ── Active panels ─────────────────────────────────────── */}
-        {panels.map((panel) => {
-          const entry = registryFor(panel.type);
-          if (!entry) return null;
+        {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+      </button>
+      <TransformWrapper
+        initialScale={0.7}
+        minScale={0.3}
+        maxScale={2}
+        centerOnInit
+        wheel={{ step: 0.08 }}
+        panning={{ activationKeys: [" "], velocityDisabled: true }}
+        doubleClick={{ disabled: true }}
+      >
+        <ZoomControls />
+        <TransformComponent
+          wrapperStyle={{ width: "100%", height: "100%" }}
+          contentStyle={{ width: "4000px", height: "4000px", position: "relative" }}
+        >
+          {/* ── Active panels ─────────────────────────────────────── */}
+          {panels.map((panel) => {
+            const entry = registryFor(panel.type);
+            if (!entry) return null;
+            const isPoppedOut = panel.id in popouts;
+            const popoutInfo = popouts[panel.id];
 
-          return (
-            <WorkspacePanel
-              key={panel.id}
-              id={panel.id}
-              title={entry.label}
-              defaultPosition={panel.position}
-              defaultSize={panel.size}
-              collapsed={panel.collapsed}
-              onCollapsedChange={(c) => updateCollapsed(panel.id, c)}
-              onPositionChange={(pos) => updatePosition(panel.id, pos)}
-              onSizeChange={(s) => updateSize(panel.id, s)}
-              onClose={() => closePanel(panel.id)}
-              className={cn(
-                flashId === panel.id && "ring-2 ring-primary animate-pulse",
-              )}
-            >
-              {renderPanelContent(panel.type, entry.icon, entry.label)}
-            </WorkspacePanel>
-          );
-        })}
-      </div>
+            return (
+              <WorkspacePanel
+                key={panel.id}
+                id={panel.id}
+                title={entry.label}
+                defaultPosition={panel.position}
+                defaultSize={panel.size}
+                collapsed={panel.collapsed}
+                isPoppedOut={isPoppedOut}
+                onCollapsedChange={(c) => updateCollapsed(panel.id, c)}
+                onPositionChange={(pos) => updatePosition(panel.id, pos)}
+                onSizeChange={(s) => updateSize(panel.id, s)}
+                onClose={() => closePanel(panel.id)}
+                onPopOut={() => handlePopOut(panel.id)}
+                onSendBack={() => handleSendBack(panel.id)}
+                className={cn(
+                  flashId === panel.id && "ring-2 ring-primary animate-pulse",
+                )}
+              >
+                {renderPanelContent(panel.type, entry.icon, entry.label)}
+                {/* Portal: render a clone of the content into the pop-out window */}
+                {isPoppedOut && popoutInfo?.container
+                  ? createPortal(
+                      <div className="h-full w-full overflow-auto p-3">
+                        {renderPanelContent(panel.type, entry.icon, entry.label)}
+                      </div>,
+                      popoutInfo.container,
+                    )
+                  : null}
+              </WorkspacePanel>
+            );
+          })}
+        </TransformComponent>
+      </TransformWrapper>
 
-      {/* ── Add-panel button + dropdown (fixed position) ──────── */}
-      <div className="fixed bottom-4 right-4 z-50">
+      {/* ── Add-panel button + dropdown (outside transform) ──── */}
+      <div className="absolute bottom-4 right-4 z-50">
         {menuOpen && (
           <div
             role="menu"

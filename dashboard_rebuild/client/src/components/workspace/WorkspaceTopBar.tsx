@@ -11,6 +11,12 @@ import {
 
 export type WorkspaceMode = "prep" | "tutor" | "polish";
 
+export interface SlotInfo {
+  slot: number;
+  savedAt: string | null;
+  name?: string;
+}
+
 export interface WorkspaceTopBarProps {
   mode: WorkspaceMode;
   onModeChange: (mode: WorkspaceMode) => void;
@@ -24,8 +30,10 @@ export interface WorkspaceTopBarProps {
   timerPaused: boolean;
   onToggleTimer: () => void;
   layoutSlots?: number;
-  onSaveLayout?: (slot: number) => void;
+  slotInfo?: SlotInfo[];
+  onSaveLayout?: (slot: number, name: string) => void;
   onLoadLayout?: (slot: number) => void;
+  onClearSlot?: (slot: number) => void;
 }
 
 function formatTimer(seconds: number): string {
@@ -47,8 +55,10 @@ export function WorkspaceTopBar({
   timerPaused,
   onToggleTimer,
   layoutSlots = 5,
+  slotInfo,
   onSaveLayout,
   onLoadLayout,
+  onClearSlot,
 }: WorkspaceTopBarProps): React.ReactElement {
   const [localName, setLocalName] = React.useState(workspaceName);
 
@@ -60,15 +70,30 @@ export function WorkspaceTopBar({
     onWorkspaceNameChange(localName);
   };
 
-  const handleSlotClick = (
+  const handleSlotClick = (slot: number): void => {
+    const info = slotInfo?.find((s) => s.slot === slot);
+    if (info?.savedAt) {
+      onLoadLayout?.(slot);
+    }
+  };
+
+  const handleSlotContextMenu = (
     slot: number,
     e: React.MouseEvent,
   ): void => {
-    if (e.shiftKey) {
-      onSaveLayout?.(slot);
-    } else {
-      onLoadLayout?.(slot);
+    e.preventDefault();
+    const name = window.prompt("Layout name:", workspaceName);
+    if (name !== null) {
+      onSaveLayout?.(slot, name || `Layout ${slot}`);
     }
+  };
+
+  const handleClearSlot = (
+    slot: number,
+    e: React.MouseEvent,
+  ): void => {
+    e.stopPropagation();
+    onClearSlot?.(slot);
   };
 
   const selectedCourseId = courses.find((c) => c.name === courseName)?.id;
@@ -150,19 +175,44 @@ export function WorkspaceTopBar({
 
       {/* Layout slots */}
       <div className="flex items-center gap-1">
-        {Array.from({ length: layoutSlots }, (_, i) => i + 1).map((slot) => (
-          <Button
-            key={slot}
-            data-testid={`layout-slot-${slot}`}
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 font-arcade text-xs"
-            onClick={(e) => handleSlotClick(slot, e)}
-            aria-label={`Layout slot ${slot}`}
-          >
-            {slot}
-          </Button>
-        ))}
+        {Array.from({ length: layoutSlots }, (_, i) => {
+          const slot = i + 1;
+          const info = slotInfo?.find((s) => s.slot === slot);
+          const isEmpty = !info?.savedAt;
+          const label = isEmpty ? "Empty" : (info?.name ?? `Layout ${slot}`);
+
+          return (
+            <div key={slot} className="relative group">
+              <Button
+                data-testid={`layout-slot-${slot}`}
+                variant={isEmpty ? "ghost" : "outline"}
+                size="sm"
+                className={`h-7 min-w-[4rem] px-2 font-arcade text-xs truncate ${
+                  isEmpty
+                    ? "opacity-50 hover:opacity-80"
+                    : "border-primary/40 text-primary hover:bg-primary/10"
+                }`}
+                onClick={() => handleSlotClick(slot)}
+                onContextMenu={(e) => handleSlotContextMenu(slot, e)}
+                aria-label={`Layout slot ${slot}: ${label}`}
+                title={isEmpty ? "Right-click to save" : `${label} - Right-click to overwrite`}
+              >
+                {label}
+              </Button>
+              {!isEmpty && onClearSlot && (
+                <button
+                  data-testid={`layout-slot-${slot}-clear`}
+                  type="button"
+                  className="absolute -top-1 -right-1 hidden group-hover:flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] leading-none"
+                  onClick={(e) => handleClearSlot(slot, e)}
+                  aria-label={`Clear layout slot ${slot}`}
+                >
+                  x
+                </button>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <div className="h-5 w-px bg-primary/20" />
