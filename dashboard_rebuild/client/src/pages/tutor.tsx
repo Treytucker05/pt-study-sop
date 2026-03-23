@@ -730,6 +730,7 @@ function useTutorPageController() {
       },
       { key: "polish" as TutorStudioView, label: "POLISH", available: hasTutorWork },
       { key: "final_sync" as TutorStudioView, label: "FINAL SYNC", available: hasFinalSyncAccess },
+      { key: "workspace" as TutorStudioView, label: "WORKSPACE", available: true },
     ],
     [workflow.bootstrappingPriming, hasTutorWork, hasFinalSyncAccess],
   );

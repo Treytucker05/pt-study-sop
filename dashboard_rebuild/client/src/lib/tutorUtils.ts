@@ -13,7 +13,7 @@ const CODE_BLOCK_RE = /^```/;
 // ─── Query-string helpers ───
 
 export type TutorPageMode = Exclude<TutorShellMode, "publish" | "launch">;
-export type TutorStudioView = "workbench" | "priming" | "polish" | "final_sync";
+export type TutorStudioView = "workbench" | "priming" | "polish" | "final_sync" | "workspace";
 
 export type TutorShellQuery = {
   courseId?: number;
@@ -40,7 +40,8 @@ export function normalizeTutorStudioView(
     value === "workbench" ||
     value === "priming" ||
     value === "polish" ||
-    value === "final_sync"
+    value === "final_sync" ||
+    value === "workspace"
   ) {
     return value;
   }

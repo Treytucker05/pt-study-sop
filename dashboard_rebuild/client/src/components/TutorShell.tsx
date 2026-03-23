@@ -10,6 +10,7 @@ import { TutorStudioHome } from "@/components/TutorStudioHome";
 import { TutorStudioMode } from "@/components/TutorStudioMode";
 import type { TutorStudioEntryRequest } from "@/components/TutorStudioMode";
 import { TutorScheduleMode } from "@/components/TutorScheduleMode";
+import { WorkspaceStudio } from "@/components/WorkspaceStudio";
 import type { TutorScheduleLaunchIntent } from "@/components/TutorScheduleMode";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -508,6 +509,20 @@ export function TutorShell({
                           entryRequest={studioEntryRequest}
                         />
                       }
+                    />
+                  </div>
+                ) : workflow.studioView === "workspace" ? (
+                  <div className="flex-1 min-h-0 flex flex-col">
+                    <WorkspaceStudio
+                      courseId={hub.courseId ?? null}
+                      courseName={hub.courseLabel}
+                      courses={(hub.tutorContentSources?.courses || [])
+                        .filter((c): c is typeof c & { id: number } => c.id != null)
+                        .map((c) => ({ id: c.id, name: c.name }))}
+                      onCourseChange={(id) => hub.setCourseId(id)}
+                      selectedMaterialIds={hub.selectedMaterials}
+                      activeSessionId={activeSessionId}
+                      workflowId={workflow.activeWorkflowId}
                     />
                   </div>
                 ) : workflow.studioView === "priming" ? (
