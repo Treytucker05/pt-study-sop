@@ -6,6 +6,7 @@ import type {
   TutorWorkflowSummary,
 } from "@/lib/api";
 import type {
+  TutorObjectiveScope,
   TutorPolishBundleRequest,
   TutorPrimingMethodRun,
   TutorPrimingSourceInventoryItem,
@@ -122,7 +123,7 @@ function normalizePrimingMethodRuns(value: unknown): TutorPrimingMethodRun[] {
           : [],
         status: typeof run.status === "string" && run.status.trim().length > 0 ? run.status.trim() : "complete",
         updated_at: typeof run.updated_at === "string" ? run.updated_at : null,
-      } satisfies TutorPrimingMethodRun;
+      } as TutorPrimingMethodRun;
     })
     .filter((item): item is TutorPrimingMethodRun => item !== null);
 }

@@ -174,8 +174,8 @@ export function TutorWorkflowLaunchHub({
     Boolean(wheelSnapshot) && (
       wheelCourses.length > 0 ||
       linkedCourseCount > 0 ||
-      wheelSnapshot.current_course_id !== null ||
-      wheelSnapshot.next_course_id !== null
+      wheelSnapshot?.current_course_id !== null ||
+      wheelSnapshot?.next_course_id !== null
     );
   const canResumeRecent = Boolean(
     onResumeCandidate &&

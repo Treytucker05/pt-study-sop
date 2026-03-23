@@ -133,6 +133,7 @@ describe("useTutorSession", () => {
         source_inventory: [],
         priming_methods: ["M-PRE-010"],
         priming_method: "M-PRE-010",
+        priming_chain_id: null,
         priming_method_runs: [],
         learning_objectives: [
           { lo_code: "OBJ-1", title: "Explain cardiac output", status: "active", group: "Week 7" },

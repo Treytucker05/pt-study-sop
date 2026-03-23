@@ -204,7 +204,7 @@ function useTutorSessionContext(
         folders,
         materialsDefault: defaultMaterialsOn || Boolean(defaultMode?.materials),
         northStarSummary,
-        sessionSnapshot: session as Record<string, unknown>,
+        sessionSnapshot: session as unknown as Record<string, unknown>,
         currentBlock:
           Array.isArray(session.chain_blocks) &&
           typeof session.current_block_index === "number" &&

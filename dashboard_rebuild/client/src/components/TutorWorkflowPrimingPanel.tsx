@@ -336,11 +336,11 @@ function buildMethodWindowStates(
             ...(run.outputs || {}),
           })),
       )
-      .filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === "object");
+      .filter((entry): entry is { material_id: number; title: string; source_path: string | null } => Boolean(entry) && typeof entry === "object" && "material_id" in entry);
     const fallbackEntries =
       fallbackRun?.outputs && typeof fallbackRun.outputs === "object" && Array.isArray(fallbackRun.outputs.entries)
         ? fallbackRun.outputs.entries.filter(
-            (entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === "object",
+            (entry): entry is { material_id: number; title: string; source_path: string | null } => Boolean(entry) && typeof entry === "object" && "material_id" in entry,
           )
         : [];
 
@@ -510,8 +510,8 @@ export function TutorWorkflowPrimingPanel({
       ...primingMethodRuns
         .filter(
           (run) =>
-            run.source_ids.length === 0 ||
-            run.source_ids.some((materialId) => selectedMaterials.includes(materialId)),
+            (run.source_ids?.length ?? 0) === 0 ||
+            (run.source_ids ?? []).some((materialId) => selectedMaterials.includes(materialId)),
         )
         .map((run) => run.method_id),
     ]),
@@ -1229,7 +1229,7 @@ export function TutorWorkflowPrimingPanel({
                         </div>
                         <div className="mt-2 flex flex-wrap gap-1">
                           {Object.entries(stageCounts).map(([stage, count]) => {
-                            const color = CATEGORY_COLORS[stage] || "#999999";
+                            const color = CATEGORY_COLORS[stage as keyof typeof CATEGORY_COLORS] || "#999999";
                             return (
                               <span
                                 key={`${chain.id}-${stage}`}
