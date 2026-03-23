@@ -11,7 +11,7 @@ import { TutorStudioHome } from "@/components/TutorStudioHome";
 import { TutorStudioMode } from "@/components/TutorStudioMode";
 import type { TutorStudioEntryRequest } from "@/components/TutorStudioMode";
 import { TutorScheduleMode } from "@/components/TutorScheduleMode";
-import { WorkspaceStudio } from "@/components/WorkspaceStudio";
+import { WorkspaceStudio, type ChainSelection } from "@/components/WorkspaceStudio";
 import type { TutorScheduleLaunchIntent } from "@/components/TutorScheduleMode";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -58,7 +58,7 @@ import {
 } from "@/lib/tutorUtils";
 import type { TutorPageMode } from "@/lib/tutorUtils";
 import { api } from "@/lib/api";
-import type { TutorTemplateChain } from "@/lib/api";
+import type { TutorTemplateChain, MethodBlock } from "@/lib/api";
 import type { TutorHubResumeCandidate } from "@/lib/api";
 import type { UseTutorHubReturn } from "@/hooks/useTutorHub";
 import type { UseTutorSessionReturn } from "@/hooks/useTutorSession";
@@ -148,9 +148,18 @@ export function TutorShell({
     useQuery<TutorTemplateChain[]>({
       queryKey: ["tutor-chains-templates"],
       queryFn: () => api.tutor.getTemplateChains(),
-      enabled: shellMode === "studio" && workflow.studioView === "priming",
+      enabled:
+        shellMode === "studio" &&
+        (workflow.studioView === "priming" || workflow.studioView === "workspace"),
       staleTime: 60 * 1000,
     });
+
+  const { data: methodBlocks = [] } = useQuery<MethodBlock[]>({
+    queryKey: ["method-blocks"],
+    queryFn: () => api.tutor.getMethodBlocks(),
+    enabled: shellMode === "studio" && workflow.studioView === "workspace",
+    staleTime: 60 * 1000,
+  });
 
   const currentWorkflowStage =
     workflow.activeWorkflowDetail?.workflow?.current_stage ?? null;
@@ -166,9 +175,29 @@ export function TutorShell({
 
   // ── Workspace "Start Tutor" handler ──
   // Auto-creates a workflow when none exists, then starts the tutor session.
-  const handleWorkspaceStartTutor = useCallback(async () => {
+  // Applies the chain/method selection from the workspace picker before starting.
+  const handleWorkspaceStartTutor = useCallback(async (chain: ChainSelection) => {
+    // Apply the chain selection to the hub so startSession picks it up
+    if (chain.chainMode === "template" && chain.chainId != null) {
+      hub.setChainId(chain.chainId);
+      hub.setCustomBlockIds([]);
+    } else if (chain.chainMode === "solo" && chain.methodId != null) {
+      // Find the method block by method_id and set it as a single custom block
+      const block = methodBlocks.find((m) => m.method_id === chain.methodId);
+      if (block) {
+        hub.setChainId(undefined);
+        hub.setCustomBlockIds([block.id]);
+      } else {
+        hub.setChainId(undefined);
+        hub.setCustomBlockIds([]);
+      }
+    } else {
+      // auto / custom / no selection -- freestyle (no chain)
+      hub.setChainId(undefined);
+      hub.setCustomBlockIds([]);
+    }
+
     if (!workflow.activeWorkflowId) {
-      // Create a workflow from the workspace's current course/topic
       const result = await api.tutor.createWorkflow({
         course_id: hub.courseId ?? null,
         study_unit: hub.selectedObjectiveGroup || null,
@@ -179,7 +208,7 @@ export function TutorShell({
       workflow.setActiveWorkflowId(result.workflow.workflow_id);
     }
     await workflow.startTutorFromWorkflow();
-  }, [workflow, hub.courseId, hub.selectedObjectiveGroup, hub.topic]);
+  }, [workflow, hub, methodBlocks]);
 
   return (
     <>
@@ -542,6 +571,18 @@ export function TutorShell({
                       activeSessionId={activeSessionId}
                       workflowId={workflow.activeWorkflowId}
                       onStartTutorSession={handleWorkspaceStartTutor}
+                      availableChains={templateChains.map((tc) => ({
+                        id: tc.id,
+                        title: tc.name,
+                        block_count: tc.blocks.length,
+                      }))}
+                      availableMethods={methodBlocks
+                        .filter((m): m is typeof m & { method_id: string } => m.method_id != null)
+                        .map((m) => ({
+                          id: m.id,
+                          method_id: m.method_id,
+                          title: m.name,
+                        }))}
                     />
                   </div>
                 ) : workflow.studioView === "priming" ? (

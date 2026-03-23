@@ -4,6 +4,17 @@ import { WorkspaceTopBar, type WorkspaceMode } from "@/components/workspace/Work
 import { WorkspaceCanvas } from "@/components/WorkspaceCanvas";
 import { useWorkspaceLayout } from "@/hooks/useWorkspaceLayout";
 import type { PacketItem } from "@/components/workspace/PacketPanel";
+import type { ChainMode } from "@/components/workspace/TutorChatPanel";
+
+// ── Chain selection payload ──────────────────────────────────────────
+
+export interface ChainSelection {
+  chainMode: ChainMode;
+  /** Template chain id (template mode) */
+  chainId: number | null;
+  /** Solo method id (solo mode) */
+  methodId: string | null;
+}
 
 // ── Props ────────────────────────────────────────────────────────────
 
@@ -17,8 +28,12 @@ export interface WorkspaceStudioProps {
   workflowId: string | null;
   /** Slot for injecting the TutorChat component */
   tutorChatSlot?: ReactNode;
-  /** Called when the user clicks "Start Tutor". Should create a workflow + session. */
-  onStartTutorSession?: () => Promise<void>;
+  /** Called when the user clicks "Start Tutor". Receives the chain selection from the picker. */
+  onStartTutorSession?: (chain: ChainSelection) => Promise<void>;
+  /** Available chain templates for the template-mode picker */
+  availableChains?: Array<{ id: number; title: string; block_count: number }>;
+  /** Available methods for the solo-mode picker */
+  availableMethods?: Array<{ id: number; method_id: string; title: string }>;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -41,9 +56,16 @@ export function WorkspaceStudio({
   workflowId: _workflowId,
   tutorChatSlot: _tutorChatSlot,
   onStartTutorSession,
+  availableChains = [],
+  availableMethods = [],
 }: WorkspaceStudioProps): ReactElement {
   // ── Workspace mode ───────────────────────────────────────────────
   const [mode, setMode] = useState<WorkspaceMode>("prep");
+
+  // ── Chain picker state ─────────────────────────────────────────
+  const [chainMode, setChainMode] = useState<ChainMode>("solo");
+  const [selectedChainId, setSelectedChainId] = useState<number | null>(null);
+  const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
 
   // ── Workspace name ───────────────────────────────────────────────
   const [workspaceName, setWorkspaceName] = useState("Untitled workspace");
@@ -134,7 +156,11 @@ export function WorkspaceStudio({
     if (onStartTutorSession) {
       setStartingTutor(true);
       try {
-        await onStartTutorSession();
+        await onStartTutorSession({
+          chainMode,
+          chainId: selectedChainId,
+          methodId: selectedMethodId,
+        });
         setMode("tutor");
       } catch (err) {
         toast.error(
@@ -147,7 +173,7 @@ export function WorkspaceStudio({
       // Fallback: just switch mode without session creation
       setMode("tutor");
     }
-  }, [onStartTutorSession]);
+  }, [onStartTutorSession, chainMode, selectedChainId, selectedMethodId]);
 
   // ── Render ───────────────────────────────────────────────────────
   return (
@@ -178,3 +204,4 @@ export function WorkspaceStudio({
 // Re-export types consumers may need
 export type { WorkspaceMode } from "@/components/workspace/WorkspaceTopBar";
 export type { PacketItem } from "@/components/workspace/PacketPanel";
+export type { ChainMode } from "@/components/workspace/TutorChatPanel";
