@@ -1486,3 +1486,13 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Validation passed:
   - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_agent_guard_hooks.ps1 -Action install`
   - `bash -lc .git/hooks/pre-commit`
+
+## 2026-03-23 - Skill sync preservation for Codex-only local skills
+
+- Installed the full current `mattpocock/skills` catalog into the shared global skill store under `C:\Users\treyt\.agents\skills`.
+- While syncing the new skills into agent roots, found that `scripts/sync_agent_skills.ps1` treated several Codex-only local skills as drift and removed them from `C:\Users\treyt\.codex\skills`.
+- Restored the removed Codex-only skills from the backup created by the sync script and expanded the `codex` `LocalOnlyNames` allowlist so future syncs preserve those local-only directories.
+- Validation passed:
+  - `npx skills add mattpocock/skills -g --all -y`
+  - `pwsh -NoProfile -ExecutionPolicy Bypass -File C:\pt-study-sop\scripts\sync_agent_skills.ps1 -Mode Apply`
+  - `pwsh -NoProfile -ExecutionPolicy Bypass -File C:\pt-study-sop\scripts\sync_agent_skills.ps1 -Mode Check`

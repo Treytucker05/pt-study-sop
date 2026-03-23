@@ -22,7 +22,26 @@ $TargetRoots = [ordered]@{
 }
 
 $LocalOnlyNames = @{
-    codex       = @(".system", "agent-skills", "dev-browser")
+    codex       = @(
+        ".system",
+        "agent-browser",
+        "agent-skills",
+        "chrome-cdp",
+        "context7",
+        "dev-browser",
+        "gemini-computer-use",
+        "llm-council",
+        "markdown-url",
+        "parallel",
+        "parallel-task",
+        "parallel-task-spark",
+        "plan-harder",
+        "read-github",
+        "role-creator",
+        "super-swarm-spark",
+        "swarm-planner",
+        "vercel-react-best-practices"
+    )
     claude      = @("continuous-learning", "learned")
     cursor      = @()
     opencode    = @("agent-strategy", "ensure-agent-workflow")
