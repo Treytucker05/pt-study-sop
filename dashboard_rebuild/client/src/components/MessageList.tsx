@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   FileText, CreditCard, Map, Table2, Network,
   CheckCircle2, XCircle, BookOpen, StickyNote,
+  BookmarkMinus, BookmarkPlus, ThumbsUp, ThumbsDown,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -225,6 +226,10 @@ interface MessageListProps {
     message: ChatMessage;
     index: number;
   }) => void;
+  onSaveGist?: (content: string) => void;
+  onSaveExact?: (content: string) => void;
+  onLike?: (content: string) => void;
+  onDislike?: (content: string) => void;
 }
 
 const RUNTIME_STATUS_STYLES: Record<TutorTeachRuntimeStatus, string> = {
@@ -293,7 +298,7 @@ function getChatMessageKey(msg: ChatMessage) {
 
 export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
   function MessageList(
-    { messages, teachRuntime, onArtifactCreated, onStudioCapture, onCaptureNote, onFeedback },
+    { messages, teachRuntime, onArtifactCreated, onStudioCapture, onCaptureNote, onFeedback, onSaveGist, onSaveExact, onLike, onDislike },
     ref,
   ) {
     const [openStudioMenuIndex, setOpenStudioMenuIndex] = useState<number | null>(null);
@@ -421,6 +426,38 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
 
               {msg.role === "assistant" && msg.content && !msg.isStreaming && (
                 <div className="flex flex-wrap items-center gap-1 mt-2 pt-2 border-t border-primary/20">
+                  {onSaveGist ? (
+                    <button
+                      onClick={() => onSaveGist(msg.content)}
+                      className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
+                    >
+                      <BookmarkMinus className={`${ICON_SM} text-primary/60`} /> Save Gist
+                    </button>
+                  ) : null}
+                  {onSaveExact ? (
+                    <button
+                      onClick={() => onSaveExact(msg.content)}
+                      className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
+                    >
+                      <BookmarkPlus className={`${ICON_SM} text-primary/60`} /> Save Exact
+                    </button>
+                  ) : null}
+                  {onLike ? (
+                    <button
+                      onClick={() => onLike(msg.content)}
+                      className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-green-300 hover:bg-green-500/10 border-2 border-primary/20 hover:border-green-500/50 transition-colors shadow-none"
+                    >
+                      <ThumbsUp className={`${ICON_SM} text-green-400`} /> Like
+                    </button>
+                  ) : null}
+                  {onDislike ? (
+                    <button
+                      onClick={() => onDislike(msg.content)}
+                      className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-red-300 hover:bg-red-500/10 border-2 border-primary/20 hover:border-red-500/50 transition-colors shadow-none"
+                    >
+                      <ThumbsDown className={`${ICON_SM} text-red-400`} /> Dislike
+                    </button>
+                  ) : null}
                   {onCaptureNote ? (
                     <>
                       <button

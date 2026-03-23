@@ -63,6 +63,7 @@ import type { TutorHubResumeCandidate } from "@/lib/api";
 import type { UseTutorHubReturn } from "@/hooks/useTutorHub";
 import type { UseTutorSessionReturn } from "@/hooks/useTutorSession";
 import type { UseTutorWorkflowReturn } from "@/hooks/useTutorWorkflow";
+import { useBrainFeedback } from "@/hooks/useBrainFeedback";
 import type { TutorBoardScope } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 
@@ -160,6 +161,8 @@ export function TutorShell({
     enabled: shellMode === "studio" && workflow.studioView === "workspace",
     staleTime: 60 * 1000,
   });
+
+  const { submitBrainFeedback } = useBrainFeedback();
 
   const currentWorkflowStage =
     workflow.activeWorkflowDetail?.workflow?.current_stage ?? null;
@@ -583,6 +586,7 @@ export function TutorShell({
                           method_id: m.method_id,
                           title: m.name,
                         }))}
+                      onEndSession={session.endSession}
                     />
                   </div>
                 ) : workflow.studioView === "priming" ? (
@@ -1102,6 +1106,10 @@ export function TutorShell({
                         }}
                         onFeedback={(payload) => {
                           void workflow.saveWorkflowMessageFeedback(payload);
+                          void submitBrainFeedback({
+                            ...payload,
+                            sessionId: activeSessionId,
+                          });
                         }}
                         onCompact={() => {
                           void workflow.quickCompactWorkflowMemory();

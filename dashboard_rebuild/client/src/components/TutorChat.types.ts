@@ -62,6 +62,10 @@ export interface TutorChatProps {
     message: ChatMessage;
     index: number;
   }) => void;
+  onSaveGist?: (content: string) => void;
+  onSaveExact?: (content: string) => void;
+  onLike?: (content: string) => void;
+  onDislike?: (content: string) => void;
   onCompact?: () => void;
   timerState?: {
     elapsedSeconds: number;

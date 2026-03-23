@@ -35,6 +35,10 @@ export interface WorkspaceTopBarProps {
   onSaveLayout?: (slot: number, name: string) => void;
   onLoadLayout?: (slot: number) => void;
   onClearSlot?: (slot: number) => void;
+  /** Called when the user clicks "End Session" (tutor mode only) */
+  onEndSession?: () => void;
+  /** True while the end-session API call is in-flight */
+  endingSession?: boolean;
 }
 
 function formatTimer(seconds: number): string {
@@ -61,6 +65,8 @@ export function WorkspaceTopBar({
   onSaveLayout,
   onLoadLayout,
   onClearSlot,
+  onEndSession,
+  endingSession = false,
 }: WorkspaceTopBarProps): React.ReactElement {
   const [localName, setLocalName] = React.useState(workspaceName);
 
@@ -220,16 +226,32 @@ export function WorkspaceTopBar({
       <div className="h-5 w-px bg-primary/20" />
 
       {/* Start Tutor */}
-      <Button
-        data-testid="start-tutor-btn"
-        variant="default"
-        size="sm"
-        className="h-8 font-arcade text-xs uppercase"
-        onClick={onStartTutor}
-        disabled={startingTutor}
-      >
-        {startingTutor ? "Starting\u2026" : "Start Tutor \u2192"}
-      </Button>
+      {mode !== "tutor" && (
+        <Button
+          data-testid="start-tutor-btn"
+          variant="default"
+          size="sm"
+          className="h-8 font-arcade text-xs uppercase"
+          onClick={onStartTutor}
+          disabled={startingTutor}
+        >
+          {startingTutor ? "Starting\u2026" : "Start Tutor \u2192"}
+        </Button>
+      )}
+
+      {/* End Session (tutor mode only) */}
+      {mode === "tutor" && onEndSession && (
+        <Button
+          data-testid="end-session-btn"
+          variant="destructive"
+          size="sm"
+          className="h-8 font-arcade text-xs uppercase"
+          onClick={onEndSession}
+          disabled={endingSession}
+        >
+          {endingSession ? "Ending\u2026" : "End Session"}
+        </Button>
+      )}
     </div>
   );
 }

@@ -620,6 +620,10 @@ export function TutorChat({
   onStudioCapture,
   onCaptureNote,
   onFeedback,
+  onSaveGist,
+  onSaveExact,
+  onLike,
+  onDislike,
   onCompact,
   timerState,
   onToggleTimer,
@@ -854,6 +858,10 @@ export function TutorChat({
           onStudioCapture={onStudioCapture}
           onCaptureNote={onCaptureNote}
           onFeedback={onFeedback}
+          onSaveGist={onSaveGist}
+          onSaveExact={onSaveExact}
+          onLike={onLike}
+          onDislike={onDislike}
         />
 
         <div className="flex flex-col gap-3 border-t border-primary/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.028),rgba(0,0,0,0.09)_18%,rgba(0,0,0,0.2)_100%),linear-gradient(135deg,rgba(255,42,76,0.05),rgba(0,0,0,0.03)_44%,rgba(0,0,0,0.14)_100%)] p-4 backdrop-blur-md lg:p-5">

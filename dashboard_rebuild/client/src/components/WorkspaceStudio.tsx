@@ -1,5 +1,12 @@
 import { useState, useCallback, useRef, useEffect, type ReactElement, type ReactNode } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { WorkspaceTopBar, type WorkspaceMode } from "@/components/workspace/WorkspaceTopBar";
 import { WorkspaceCanvas } from "@/components/WorkspaceCanvas";
 import { useWorkspaceLayout } from "@/hooks/useWorkspaceLayout";
@@ -34,9 +41,17 @@ export interface WorkspaceStudioProps {
   availableChains?: Array<{ id: number; title: string; block_count: number }>;
   /** Available methods for the solo-mode picker */
   availableMethods?: Array<{ id: number; method_id: string; title: string }>;
+  /** Called when the user ends the tutor session */
+  onEndSession?: () => Promise<void>;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
+
+function formatDuration(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
 
 let _packetIdCounter = 0;
 function nextPacketId(): string {
@@ -58,6 +73,7 @@ export function WorkspaceStudio({
   onStartTutorSession,
   availableChains = [],
   availableMethods = [],
+  onEndSession,
 }: WorkspaceStudioProps): ReactElement {
   // ── Workspace mode ───────────────────────────────────────────────
   const [mode, setMode] = useState<WorkspaceMode>("prep");
@@ -175,6 +191,36 @@ export function WorkspaceStudio({
     }
   }, [onStartTutorSession, chainMode, selectedChainId, selectedMethodId]);
 
+  // ── End Session + summary modal ─────────────────────────────────
+  const [endingSession, setEndingSession] = useState(false);
+  const [showEndModal, setShowEndModal] = useState(false);
+  const [finalDuration, setFinalDuration] = useState(0);
+
+  const handleEndSession = useCallback(async () => {
+    setEndingSession(true);
+    try {
+      if (onEndSession) {
+        await onEndSession();
+      }
+      // Capture the timer value at time of ending
+      setFinalDuration(timerSeconds);
+      // Pause the timer
+      setTimerPaused(true);
+      setShowEndModal(true);
+    } catch (err) {
+      toast.error(
+        `Failed to end session: ${err instanceof Error ? err.message : "Unknown error"}`,
+      );
+    } finally {
+      setEndingSession(false);
+    }
+  }, [onEndSession, timerSeconds]);
+
+  const handleGoToPolish = useCallback(() => {
+    setShowEndModal(false);
+    setMode("polish");
+  }, []);
+
   // ── Render ───────────────────────────────────────────────────────
   return (
     <div data-testid="workspace-studio" className="flex flex-1 flex-col min-h-0">
@@ -195,8 +241,48 @@ export function WorkspaceStudio({
         onSaveLayout={handleSaveLayout}
         onLoadLayout={handleLoadLayout}
         onClearSlot={handleClearSlot}
+        onEndSession={onEndSession ? handleEndSession : undefined}
+        endingSession={endingSession}
       />
       <WorkspaceCanvas courseId={_courseId} selectedMaterialIds={_selectedMaterialIds} />
+
+      {/* End Session Summary Modal */}
+      <Dialog open={showEndModal} onOpenChange={setShowEndModal}>
+        <DialogContent className="sm:max-w-md font-terminal">
+          <DialogTitle className="font-arcade text-lg uppercase tracking-wide">
+            Session Complete
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Summary of your completed tutor session
+          </DialogDescription>
+          <div className="space-y-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-primary/20 px-4 py-3">
+              <span className="text-sm text-muted-foreground">Duration</span>
+              <span className="font-arcade text-lg tabular-nums text-primary">
+                {formatDuration(finalDuration)}
+              </span>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowEndModal(false)}
+            >
+              Close
+            </Button>
+            <Button
+              data-testid="go-to-polish-btn"
+              variant="default"
+              size="sm"
+              className="font-arcade text-xs uppercase"
+              onClick={handleGoToPolish}
+            >
+              Go to Polish
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
