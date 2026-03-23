@@ -790,6 +790,9 @@ function useTutorPageController() {
         onOpenSettings={openSettings}
         onSetStudioEntryRequest={setStudioEntryRequest}
         onSetScheduleLaunchIntent={setScheduleLaunchIntent}
+        studioSubTabs={studioSubTabs}
+        studioView={workflow.studioView}
+        onStudioSubTabClick={handleStudioSubTabClick}
       />
     </div>
   );
