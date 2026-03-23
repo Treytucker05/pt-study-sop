@@ -157,7 +157,7 @@ export function WorkspaceCanvas(): ReactElement {
   );
 
   return (
-    <div className="relative flex-1 h-full overflow-hidden bg-background">
+    <div className="relative flex-1 min-h-[600px] overflow-hidden bg-background/50">
       {/* ── Active panels ─────────────────────────────────────────── */}
       {panels.map((panel) => {
         const entry = registryFor(panel.type);

@@ -102,22 +102,23 @@ export function TutorTabBar({
       </Button>
       {isStudioActive && studioSubTabs && studioSubTabs.length > 0 && (
         <>
-          <div className="w-px h-8 bg-primary/20 mx-1" />
+          <div className="w-px h-10 bg-primary/20 mx-1 self-center" />
           {studioSubTabs.map((tab) => (
             <Button
               key={tab.key}
               role="tab"
               aria-selected={studioView === tab.key}
               variant="ghost"
-              size="sm"
+              size="default"
               disabled={!tab.available}
               onClick={() => onStudioSubTabClick?.(tab.key)}
               className={cn(
-                "shrink-0 uppercase tracking-[0.12em] font-terminal text-xs px-3 py-1.5 h-auto min-h-[40px]",
+                TUTOR_TAB_BASE,
+                "h-auto min-h-[50px] px-4 py-[12px] leading-none text-xs",
                 studioView === tab.key
-                  ? "bg-primary/15 text-primary border border-primary/30"
-                  : "text-foreground/50 hover:text-foreground/70",
-                !tab.available && "opacity-40 cursor-not-allowed",
+                  ? "tutor-pattern-button"
+                  : "border border-primary/10 text-foreground/40 hover:text-foreground/60 hover:border-primary/20",
+                !tab.available && "opacity-30 cursor-not-allowed",
               )}
             >
               {tab.label}
