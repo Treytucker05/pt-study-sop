@@ -697,6 +697,22 @@ export function TutorChat({
     streamAbortRef.current = null;
   }, [streamAbortRef]);
 
+  /* ── Auto-compaction after 20 assistant messages ──────────────────── */
+  const AUTO_COMPACT_THRESHOLD = 20;
+  const autoCompactedRef = useRef(false);
+
+  useEffect(() => {
+    if (!onCompact || autoCompactedRef.current || isStreaming) return;
+    const assistantCount = messages.filter(
+      (m) => m.role === "assistant" && !m.isStreaming,
+    ).length;
+    if (assistantCount >= AUTO_COMPACT_THRESHOLD) {
+      autoCompactedRef.current = true;
+      onCompact();
+      toast.success("Session auto-summarized \u2014 notes saved");
+    }
+  }, [messages, onCompact, isStreaming]);
+
   useEffect(() => {
     if (scrollRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
@@ -712,6 +728,7 @@ export function TutorChat({
 
   useEffect(() => {
     patchChatState({ materialsPreference: null, behaviorOverride: null });
+    autoCompactedRef.current = false;
   }, [sessionId]);
 
   useEffect(() => {

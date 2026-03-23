@@ -7,8 +7,13 @@ import {
   Target,
   PenTool,
   Plus,
+  Download,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { api } from "@/lib/api";
+import { serializePacketForTutor } from "@/lib/packetSerializer";
 
 export interface PacketItem {
   id: string;
@@ -24,6 +29,8 @@ export interface PacketPanelProps {
   onAddItem: (item: Omit<PacketItem, "id" | "addedAt">) => void;
   onRemoveItem: (id: string) => void;
   onClearAll?: () => void;
+  /** Course name used to build the Obsidian vault file path. */
+  courseName?: string;
 }
 
 const TYPE_ICONS: Record<PacketItem["type"], typeof FileText> = {
@@ -41,6 +48,16 @@ const BTN_CLASSES =
 const CLEAR_BTN_CLASSES =
   "px-3 py-1 rounded-sm border border-primary/30 bg-background/80 font-terminal text-xs tracking-wider text-primary/80 uppercase hover:bg-red-500/10 hover:text-red-400 hover:border-red-400/30 transition-colors";
 
+const EXPORT_BTN_CLASSES =
+  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-primary/30 bg-background/80 font-terminal text-xs tracking-wider text-primary/80 uppercase hover:bg-primary/10 hover:border-primary/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
+
+function buildObsidianPath(courseName?: string): string {
+  const today = new Date().toISOString().slice(0, 10);
+  const folder = courseName ? courseName.replace(/[/\\:*?"<>|]/g, "_") : "General";
+  const topic = "Packet";
+  return `Study Notes/${folder}/${topic}-${today}.md`;
+}
+
 const PREVIEW_MAX_LENGTH = 80;
 
 function truncate(text: string, max: number): string {
@@ -52,8 +69,10 @@ export function PacketPanel({
   onAddItem,
   onRemoveItem,
   onClearAll,
+  courseName,
 }: PacketPanelProps): React.JSX.Element {
   const [inputValue, setInputValue] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>): void => {
@@ -69,6 +88,30 @@ export function PacketPanel({
     [inputValue, onAddItem],
   );
 
+  const handleExportToObsidian = useCallback(async (): Promise<void> => {
+    if (items.length === 0 || exporting) return;
+    setExporting(true);
+    try {
+      const markdown = serializePacketForTutor(items);
+      const filePath = buildObsidianPath(courseName);
+      const result = await api.obsidian.append(filePath, markdown);
+      if (result.success) {
+        toast.success("Exported to Obsidian vault", {
+          description: filePath,
+        });
+      } else {
+        toast.error("Export failed", {
+          description: "Obsidian API returned an error",
+        });
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast.error("Export to Obsidian failed", { description: message });
+    } finally {
+      setExporting(false);
+    }
+  }, [items, exporting, courseName]);
+
   return (
     <div className="flex flex-col gap-3 h-full">
       {/* Header */}
@@ -77,11 +120,30 @@ export function PacketPanel({
           PACKET ({items.length})
         </h2>
 
-        {onClearAll && items.length > 0 && (
-          <button type="button" className={CLEAR_BTN_CLASSES} onClick={onClearAll}>
-            Clear All
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {items.length > 0 && (
+            <button
+              type="button"
+              className={EXPORT_BTN_CLASSES}
+              disabled={exporting}
+              onClick={handleExportToObsidian}
+              aria-label="Export to Obsidian"
+            >
+              {exporting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Download className="w-3.5 h-3.5" />
+              )}
+              Export to Obsidian
+            </button>
+          )}
+
+          {onClearAll && items.length > 0 && (
+            <button type="button" className={CLEAR_BTN_CLASSES} onClick={onClearAll}>
+              Clear All
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Item list */}

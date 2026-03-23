@@ -625,6 +625,7 @@ export function TutorShell({
                           title: m.name,
                         }))}
                       onEndSession={session.endSession}
+                      onFinalCompact={workflow.quickCompactWorkflowMemory}
                     />
                   </div>
                 ) : workflow.studioView === "priming" ? (

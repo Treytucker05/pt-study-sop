@@ -44,6 +44,8 @@ export interface WorkspaceStudioProps {
   availableMethods?: Array<{ id: number; method_id: string; title: string }>;
   /** Called when the user ends the tutor session */
   onEndSession?: () => Promise<void>;
+  /** Optional final compaction before ending session */
+  onFinalCompact?: () => Promise<void>;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -75,6 +77,7 @@ export function WorkspaceStudio({
   availableChains = [],
   availableMethods = [],
   onEndSession,
+  onFinalCompact,
 }: WorkspaceStudioProps): ReactElement {
   // ── Workspace mode ───────────────────────────────────────────────
   const [mode, setMode] = useState<WorkspaceMode>("prep");
@@ -203,10 +206,21 @@ export function WorkspaceStudio({
   const [endingSession, setEndingSession] = useState(false);
   const [showEndModal, setShowEndModal] = useState(false);
   const [finalDuration, setFinalDuration] = useState(0);
+  const [compactionSaved, setCompactionSaved] = useState(false);
 
   const handleEndSession = useCallback(async () => {
     setEndingSession(true);
+    setCompactionSaved(false);
     try {
+      // Run final compaction before ending the session
+      if (onFinalCompact) {
+        try {
+          await onFinalCompact();
+          setCompactionSaved(true);
+        } catch {
+          // Compaction is best-effort; don't block session end
+        }
+      }
       if (onEndSession) {
         await onEndSession();
       }
@@ -222,7 +236,7 @@ export function WorkspaceStudio({
     } finally {
       setEndingSession(false);
     }
-  }, [onEndSession, timerSeconds]);
+  }, [onFinalCompact, onEndSession, timerSeconds]);
 
   const handleGoToPolish = useCallback(() => {
     setShowEndModal(false);
@@ -270,6 +284,11 @@ export function WorkspaceStudio({
                 {formatDuration(finalDuration)}
               </span>
             </div>
+            {compactionSaved && (
+              <div className="flex items-center gap-2 rounded-md border border-green-500/30 bg-green-500/10 px-4 py-2">
+                <span className="text-green-500 text-sm font-medium">Compaction saved</span>
+              </div>
+            )}
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button

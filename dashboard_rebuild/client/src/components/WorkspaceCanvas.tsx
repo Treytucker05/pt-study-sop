@@ -28,6 +28,8 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { Material, MethodBlock } from "@/api.types";
+import type { Course } from "@shared/schema";
+import { PacketPanel, type PacketItem } from "@/components/workspace/PacketPanel";
 import { WorkspacePanel } from "@/components/ui/WorkspacePanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -491,6 +493,53 @@ function MethodRunnerContent(): ReactElement {
   );
 }
 
+// ── Packet panel content ──────────────────────────────────────────────
+
+let _packetIdCounter = 0;
+function nextPacketItemId(): string {
+  _packetIdCounter += 1;
+  return `pkt-${_packetIdCounter}`;
+}
+
+function PacketPanelContent({ courseId }: { courseId: number | null }): ReactElement {
+  const [items, setItems] = useState<PacketItem[]>([]);
+
+  const { data: course } = useQuery<Course>({
+    queryKey: ["workspace-course", courseId],
+    queryFn: () => api.courses.getOne(courseId!),
+    enabled: courseId !== null,
+  });
+
+  const addItem = useCallback((item: Omit<PacketItem, "id" | "addedAt">) => {
+    const full: PacketItem = {
+      ...item,
+      id: nextPacketItemId(),
+      addedAt: new Date().toISOString(),
+    };
+    setItems((prev) => [...prev, full]);
+  }, []);
+
+  const removeItem = useCallback((id: string) => {
+    setItems((prev) => prev.filter((p) => p.id !== id));
+  }, []);
+
+  const clearAll = useCallback(() => {
+    setItems([]);
+  }, []);
+
+  return (
+    <div className="h-full p-2">
+      <PacketPanel
+        items={items}
+        onAddItem={addItem}
+        onRemoveItem={removeItem}
+        onClearAll={clearAll}
+        courseName={course?.name}
+      />
+    </div>
+  );
+}
+
 // ── Tool panel content wrappers ───────────────────────────────────────
 
 function ExcalidrawPanelContent(): ReactElement {
@@ -737,6 +786,8 @@ export function WorkspaceCanvas({
           );
         case "method-runner":
           return <MethodRunnerContent />;
+        case "packet":
+          return <PacketPanelContent courseId={courseId} />;
         case "excalidraw":
           return <ExcalidrawPanelContent />;
         case "concept-map":
