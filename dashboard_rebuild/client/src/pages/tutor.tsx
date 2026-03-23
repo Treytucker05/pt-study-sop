@@ -461,14 +461,7 @@ function useTutorPageController() {
     }
     setStudioEntryRequest(null);
     setScheduleLaunchIntent(null);
-    const lastTab = (() => {
-      try {
-        const stored = localStorage.getItem("tutor-studio-last-tab");
-        if (stored === "workspace" || stored === "priming" || stored === "polish" || stored === "final_sync" || stored === "workbench") return stored;
-      } catch { /* ignore */ }
-      return "workspace";
-    })();
-    workflow.setStudioView(lastTab);
+    workflow.setStudioView("workspace");
     setShellMode("studio");
     setShowSetup(false);
   }, [hub.courseId, workflow]);
@@ -722,14 +715,14 @@ function useTutorPageController() {
 
   const studioSubTabs: StudioSubTab[] = useMemo(
     () => [
-      { key: "workbench" as TutorStudioView, label: "WORKBENCH", available: true },
-      {
-        key: "priming" as TutorStudioView,
-        label: workflow.bootstrappingPriming ? "PRIMING..." : "PRIMING",
-        available: !workflow.bootstrappingPriming,
-      },
-      { key: "polish" as TutorStudioView, label: "POLISH", available: hasTutorWork },
-      { key: "final_sync" as TutorStudioView, label: "FINAL SYNC", available: hasFinalSyncAccess },
+      // { key: "workbench" as TutorStudioView, label: "WORKBENCH", available: true },
+      // {
+      //   key: "priming" as TutorStudioView,
+      //   label: workflow.bootstrappingPriming ? "PRIMING..." : "PRIMING",
+      //   available: !workflow.bootstrappingPriming,
+      // },
+      // { key: "polish" as TutorStudioView, label: "POLISH", available: hasTutorWork },
+      // { key: "final_sync" as TutorStudioView, label: "FINAL SYNC", available: hasFinalSyncAccess },
       { key: "workspace" as TutorStudioView, label: "WORKSPACE", available: true },
     ],
     [workflow.bootstrappingPriming, hasTutorWork, hasFinalSyncAccess],

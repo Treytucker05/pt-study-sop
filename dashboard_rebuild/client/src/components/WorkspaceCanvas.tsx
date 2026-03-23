@@ -8,10 +8,22 @@ import {
   PenTool,
   BookOpen,
   Plus,
+  Send,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import type { Material, MethodBlock } from "@/api.types";
 import { WorkspacePanel } from "@/components/ui/WorkspacePanel";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+
+// ── Props ─────────────────────────────────────────────────────────────
+
+export interface WorkspaceCanvasProps {
+  courseId: number | null;
+  selectedMaterialIds: number[];
+}
 
 // ── Panel registry types ──────────────────────────────────────────────
 
@@ -83,9 +95,267 @@ function buildDefaultLayout(): PanelInstance[] {
   ];
 }
 
+// ── Live panel content components ─────────────────────────────────────
+
+const FILE_TYPE_COLORS: Record<string, string> = {
+  pdf: "bg-red-800/60 text-red-300",
+  ppt: "bg-orange-800/60 text-orange-300",
+  pptx: "bg-orange-800/60 text-orange-300",
+  txt: "bg-green-800/60 text-green-300",
+  mp4: "bg-blue-800/60 text-blue-300",
+};
+
+function MaterialViewerContent({
+  courseId,
+  selectedMaterialIds,
+}: {
+  courseId: number | null;
+  selectedMaterialIds: number[];
+}): ReactElement {
+  const [activeId, setActiveId] = useState<number | null>(null);
+
+  const { data: allMaterials = [] } = useQuery<Material[]>({
+    queryKey: ["workspace-materials", courseId],
+    queryFn: () =>
+      api.tutor.getMaterials(courseId ? { course_id: courseId } : undefined),
+    enabled: courseId !== null,
+  });
+
+  const materials =
+    selectedMaterialIds.length > 0
+      ? allMaterials.filter((m) => selectedMaterialIds.includes(m.id))
+      : allMaterials;
+
+  const activeMaterial = materials.find((m) => m.id === activeId) ?? null;
+  const isPdf = activeMaterial?.file_type?.toLowerCase() === "pdf";
+
+  const { data: content } = useQuery({
+    queryKey: ["workspace-material-content", activeId],
+    queryFn: () => api.tutor.getMaterialContent(activeId!),
+    enabled: activeId !== null && !isPdf,
+  });
+
+  if (materials.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <span className="font-mono text-sm text-foreground/50">
+          {courseId === null ? "Select a course" : "No materials available"}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full gap-2 p-2">
+      {/* Material list */}
+      <ScrollArea className="max-h-[200px]">
+        <ul className="space-y-1">
+          {materials.map((m) => {
+            const isActive = m.id === activeId;
+            const ft = (m.file_type ?? "").toLowerCase();
+            const badgeColor =
+              FILE_TYPE_COLORS[ft] ?? "bg-gray-800/60 text-gray-300";
+            return (
+              <li key={m.id}>
+                <button
+                  type="button"
+                  onClick={() => setActiveId(m.id)}
+                  className={cn(
+                    "flex items-center gap-2 w-full rounded-sm border px-2 py-1.5 text-left font-mono text-xs transition-colors",
+                    isActive
+                      ? "border-primary/50 bg-primary/10 text-foreground"
+                      : "border-primary/10 text-foreground/60 hover:border-primary/30 hover:text-foreground/80",
+                  )}
+                >
+                  <FileText className="w-3 h-3 shrink-0 text-primary/50" />
+                  <span className="truncate">{m.title || "Untitled"}</span>
+                  <span
+                    className={cn(
+                      "ml-auto shrink-0 rounded-full px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-wider",
+                      badgeColor,
+                    )}
+                  >
+                    {(ft || "file").toUpperCase()}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </ScrollArea>
+
+      {/* Preview area */}
+      {activeMaterial && (
+        <div className="flex-1 min-h-0 flex flex-col rounded-sm border border-primary/15 bg-black/40">
+          <div className="flex items-center gap-2 border-b border-primary/15 px-3 py-1.5">
+            <Send className="w-3 h-3 text-primary/50" />
+            <span className="font-terminal text-xs text-primary/80 truncate">
+              {activeMaterial.title || "Untitled"}
+            </span>
+          </div>
+          <div className="flex-1 min-h-0 overflow-auto">
+            {isPdf ? (
+              <iframe
+                src={api.tutor.getMaterialFileUrl(activeId!)}
+                title="PDF viewer"
+                className="h-full w-full border-0"
+              />
+            ) : content?.content ? (
+              <pre className="whitespace-pre-wrap p-3 font-terminal text-xs leading-5 text-foreground/80">
+                {content.content}
+              </pre>
+            ) : (
+              <div className="flex h-20 items-center justify-center">
+                <span className="animate-pulse font-mono text-xs text-foreground/50">
+                  Loading...
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  retrieve: "bg-green-500/20 text-green-400",
+  encode: "bg-blue-500/20 text-blue-400",
+  review: "bg-purple-500/20 text-purple-400",
+  organize: "bg-amber-500/20 text-amber-400",
+  prepare: "bg-cyan-500/20 text-cyan-400",
+  teach: "bg-teal-500/20 text-teal-400",
+  interrogate: "bg-violet-500/20 text-violet-400",
+};
+
+function MethodRunnerContent(): ReactElement {
+  const [selectedBlock, setSelectedBlock] = useState<MethodBlock | null>(null);
+
+  const { data: blocks = [] } = useQuery<MethodBlock[]>({
+    queryKey: ["workspace-method-blocks"],
+    queryFn: () => api.tutor.getMethodBlocks(),
+  });
+
+  if (selectedBlock) {
+    return (
+      <div className="flex flex-col h-full p-2 gap-2">
+        <button
+          type="button"
+          onClick={() => setSelectedBlock(null)}
+          className="self-start text-xs font-terminal text-primary/60 hover:text-primary transition-colors"
+        >
+          &larr; Back to list
+        </button>
+        <div className="flex-1 min-h-0 overflow-auto rounded-sm border border-primary/15 bg-black/40 p-3">
+          <h4 className="font-terminal text-sm text-primary/90 tracking-wider uppercase">
+            {selectedBlock.name}
+          </h4>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <span
+              className={cn(
+                "text-[10px] px-1.5 py-0.5 rounded-sm uppercase font-terminal tracking-wider",
+                CATEGORY_COLORS[selectedBlock.category] ?? "bg-primary/10 text-primary/70",
+              )}
+            >
+              {selectedBlock.category}
+            </span>
+            {selectedBlock.method_id && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary/50 font-mono">
+                {selectedBlock.method_id}
+              </span>
+            )}
+            {selectedBlock.best_stage && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary/50 font-mono">
+                Stage: {selectedBlock.best_stage}
+              </span>
+            )}
+          </div>
+          {selectedBlock.description && (
+            <p className="mt-3 text-xs text-foreground/70 leading-5">
+              {selectedBlock.description}
+            </p>
+          )}
+          <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] font-mono text-foreground/50">
+            <div>Duration: {selectedBlock.default_duration_min}min</div>
+            <div>Energy: {selectedBlock.energy_cost}</div>
+          </div>
+          {selectedBlock.tags.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {selectedBlock.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="text-[10px] px-1 py-0.5 rounded-sm bg-primary/5 text-primary/40 font-mono"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (blocks.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <span className="font-mono text-sm text-foreground/50">
+          No method blocks available
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full p-2">
+      <ScrollArea className="flex-1">
+        <ul className="space-y-1">
+          {blocks.map((block) => (
+            <li key={block.id}>
+              <button
+                type="button"
+                onClick={() => setSelectedBlock(block)}
+                className={cn(
+                  "w-full text-left px-2 py-1.5 rounded-sm",
+                  "bg-background/40 border border-primary/10",
+                  "hover:border-primary/30 hover:bg-primary/5",
+                  "transition-colors cursor-pointer",
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <Zap className="w-3 h-3 shrink-0 text-primary/50" />
+                  <span className="font-terminal text-xs text-primary/90 truncate">
+                    {block.name}
+                  </span>
+                  <span
+                    className={cn(
+                      "ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded-sm uppercase font-terminal tracking-wider",
+                      CATEGORY_COLORS[block.category] ?? "bg-primary/10 text-primary/70",
+                    )}
+                  >
+                    {block.category}
+                  </span>
+                </div>
+                {block.description && (
+                  <p className="text-[10px] text-primary/40 mt-0.5 line-clamp-1 pl-5">
+                    {block.description}
+                  </p>
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </ScrollArea>
+    </div>
+  );
+}
+
 // ── Component ─────────────────────────────────────────────────────────
 
-export function WorkspaceCanvas(): ReactElement {
+export function WorkspaceCanvas({
+  courseId,
+  selectedMaterialIds,
+}: WorkspaceCanvasProps): ReactElement {
   const [panels, setPanels] = useState<PanelInstance[]>(buildDefaultLayout);
   const [menuOpen, setMenuOpen] = useState(false);
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -156,13 +426,40 @@ export function WorkspaceCanvas(): ReactElement {
     [],
   );
 
+  // Render panel content based on type
+  const renderPanelContent = useCallback(
+    (panelType: string, icon: LucideIcon, label: string): ReactElement => {
+      const Icon = icon;
+      switch (panelType) {
+        case "material-viewer":
+          return (
+            <MaterialViewerContent
+              courseId={courseId}
+              selectedMaterialIds={selectedMaterialIds}
+            />
+          );
+        case "method-runner":
+          return <MethodRunnerContent />;
+        default:
+          return (
+            <div className="flex flex-col items-center justify-center h-full gap-2 text-primary/40">
+              <Icon className="w-8 h-8" />
+              <span className="font-terminal text-xs uppercase tracking-wider">
+                {label}
+              </span>
+            </div>
+          );
+      }
+    },
+    [courseId, selectedMaterialIds],
+  );
+
   return (
     <div className="relative flex-1 min-h-[600px] overflow-hidden bg-background/50">
       {/* ── Active panels ─────────────────────────────────────────── */}
       {panels.map((panel) => {
         const entry = registryFor(panel.type);
         if (!entry) return null;
-        const Icon = entry.icon;
 
         return (
           <WorkspacePanel
@@ -180,13 +477,7 @@ export function WorkspaceCanvas(): ReactElement {
               flashId === panel.id && "ring-2 ring-primary animate-pulse",
             )}
           >
-            {/* Placeholder content */}
-            <div className="flex flex-col items-center justify-center h-full gap-2 text-primary/40">
-              <Icon className="w-8 h-8" />
-              <span className="font-terminal text-xs uppercase tracking-wider">
-                {entry.label}
-              </span>
-            </div>
+            {renderPanelContent(panel.type, entry.icon, entry.label)}
           </WorkspacePanel>
         );
       })}

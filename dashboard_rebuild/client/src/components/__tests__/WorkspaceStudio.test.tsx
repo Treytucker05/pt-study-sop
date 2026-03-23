@@ -1,5 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   WorkspaceStudio,
   type WorkspaceStudioProps,
@@ -50,8 +51,15 @@ const defaultProps: WorkspaceStudioProps = {
 };
 
 function renderStudio(overrides: Partial<WorkspaceStudioProps> = {}) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   const props = { ...defaultProps, ...overrides };
-  return render(<WorkspaceStudio {...props} />);
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <WorkspaceStudio {...props} />
+    </QueryClientProvider>,
+  );
 }
 
 describe("WorkspaceStudio", () => {

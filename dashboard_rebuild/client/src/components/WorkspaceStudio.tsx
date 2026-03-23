@@ -131,7 +131,7 @@ export function WorkspaceStudio({
         onSaveLayout={handleSaveLayout}
         onLoadLayout={handleLoadLayout}
       />
-      <WorkspaceCanvas />
+      <WorkspaceCanvas courseId={_courseId} selectedMaterialIds={_selectedMaterialIds} />
     </div>
   );
 }
