@@ -26,6 +26,7 @@ export interface WorkspaceTopBarProps {
   workspaceName: string;
   onWorkspaceNameChange: (name: string) => void;
   onStartTutor: () => void;
+  startingTutor?: boolean;
   timerSeconds: number;
   timerPaused: boolean;
   onToggleTimer: () => void;
@@ -51,6 +52,7 @@ export function WorkspaceTopBar({
   workspaceName,
   onWorkspaceNameChange,
   onStartTutor,
+  startingTutor = false,
   timerSeconds,
   timerPaused,
   onToggleTimer,
@@ -224,8 +226,9 @@ export function WorkspaceTopBar({
         size="sm"
         className="h-8 font-arcade text-xs uppercase"
         onClick={onStartTutor}
+        disabled={startingTutor}
       >
-        Start Tutor &rarr;
+        {startingTutor ? "Starting\u2026" : "Start Tutor \u2192"}
       </Button>
     </div>
   );

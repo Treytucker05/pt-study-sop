@@ -1243,6 +1243,11 @@ def send_turn(session_id: str):
                 system_prompt += (
                     f"\n\n## Session Rules (Current Session Only)\n{session_rules}"
                 )
+            packet_context = (content_filter.get("packet_context") or "").strip()
+            if packet_context:
+                system_prompt += (
+                    f"\n\n## Student's Study Packet\n{packet_context}"
+                )
             strategy_prompt = render_strategy_prompt(scholar_strategy)
             if strategy_prompt:
                 system_prompt += f"\n\n{strategy_prompt}"

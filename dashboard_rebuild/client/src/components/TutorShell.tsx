@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { TutorErrorBoundary } from "@/components/TutorErrorBoundary";
 import { TutorEmptyState } from "@/components/TutorEmptyState";
 import { TutorWorkflowPrimingPanel } from "@/components/TutorWorkflowPrimingPanel";
@@ -162,6 +163,23 @@ export function TutorShell({
   const hasFinalSyncAccess =
     Boolean(workflow.activeWorkflowDetail?.polish_bundle) ||
     currentWorkflowStage === "final_sync";
+
+  // ── Workspace "Start Tutor" handler ──
+  // Auto-creates a workflow when none exists, then starts the tutor session.
+  const handleWorkspaceStartTutor = useCallback(async () => {
+    if (!workflow.activeWorkflowId) {
+      // Create a workflow from the workspace's current course/topic
+      const result = await api.tutor.createWorkflow({
+        course_id: hub.courseId ?? null,
+        study_unit: hub.selectedObjectiveGroup || null,
+        topic: hub.topic || null,
+        current_stage: "tutor",
+        status: "tutor_in_progress",
+      });
+      workflow.setActiveWorkflowId(result.workflow.workflow_id);
+    }
+    await workflow.startTutorFromWorkflow();
+  }, [workflow, hub.courseId, hub.selectedObjectiveGroup, hub.topic]);
 
   return (
     <>
@@ -523,6 +541,7 @@ export function TutorShell({
                       selectedMaterialIds={hub.selectedMaterials}
                       activeSessionId={activeSessionId}
                       workflowId={workflow.activeWorkflowId}
+                      onStartTutorSession={handleWorkspaceStartTutor}
                     />
                   </div>
                 ) : workflow.studioView === "priming" ? (

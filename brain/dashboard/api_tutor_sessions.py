@@ -417,6 +417,10 @@ def create_session():
     if map_of_contents_refresh:
         content_filter["map_of_contents_refresh"] = True
 
+    packet_context = str(data.get("packet_context") or "").strip() or None
+    if packet_context:
+        content_filter["packet_context"] = packet_context
+
     if map_of_contents_ctx:
         module_prefix = str(Path(str(map_of_contents_ctx["path"])).parent).replace(
             "\\", "/"
@@ -1959,3 +1963,40 @@ def vault_health():
         conn.close()
 
     return jsonify(report)
+
+
+# ---------------------------------------------------------------------------
+# POST /api/tutor/session/<session_id>/summarize-reply — AI-summarize a tutor reply
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/session/<session_id>/summarize-reply", methods=["POST"])
+def summarize_reply(session_id: str):
+    """Summarize a tutor reply into concise key-point gist for student notes."""
+    data = request.get_json(silent=True) or {}
+    message_text = (data.get("message_text") or "").strip()
+    if not message_text:
+        return jsonify({"error": "message_text is required and must be non-empty"}), 400
+
+    from llm_provider import call_llm
+
+    system_prompt = (
+        "You are a concise study-notes assistant. "
+        "Summarize the following tutor response into 2-3 key points "
+        "for a student's study notes. Be concise."
+    )
+    try:
+        result = call_llm(
+            system_prompt=system_prompt,
+            user_prompt=message_text,
+        )
+    except Exception as exc:
+        _LOG.exception("LLM call failed in summarize-reply for session %s", session_id)
+        return jsonify({"error": f"LLM call failed: {exc}"}), 500
+
+    if not result.get("success"):
+        error_msg = result.get("error", "Unknown LLM error")
+        _LOG.error("LLM returned failure in summarize-reply for session %s: %s", session_id, error_msg)
+        return jsonify({"error": error_msg}), 500
+
+    return jsonify({"summary": result["content"]})

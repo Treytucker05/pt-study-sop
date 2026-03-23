@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect, type ReactElement, type ReactNode } from "react";
+import { toast } from "sonner";
 import { WorkspaceTopBar, type WorkspaceMode } from "@/components/workspace/WorkspaceTopBar";
 import { WorkspaceCanvas } from "@/components/WorkspaceCanvas";
 import { useWorkspaceLayout } from "@/hooks/useWorkspaceLayout";
@@ -16,6 +17,8 @@ export interface WorkspaceStudioProps {
   workflowId: string | null;
   /** Slot for injecting the TutorChat component */
   tutorChatSlot?: ReactNode;
+  /** Called when the user clicks "Start Tutor". Should create a workflow + session. */
+  onStartTutorSession?: () => Promise<void>;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -37,6 +40,7 @@ export function WorkspaceStudio({
   activeSessionId: _activeSessionId,
   workflowId: _workflowId,
   tutorChatSlot: _tutorChatSlot,
+  onStartTutorSession,
 }: WorkspaceStudioProps): ReactElement {
   // ── Workspace mode ───────────────────────────────────────────────
   const [mode, setMode] = useState<WorkspaceMode>("prep");
@@ -124,9 +128,26 @@ export function WorkspaceStudio({
   );
 
   // ── Start Tutor handler ──────────────────────────────────────────
-  const handleStartTutor = useCallback(() => {
-    setMode("tutor");
-  }, []);
+  const [startingTutor, setStartingTutor] = useState(false);
+
+  const handleStartTutor = useCallback(async () => {
+    if (onStartTutorSession) {
+      setStartingTutor(true);
+      try {
+        await onStartTutorSession();
+        setMode("tutor");
+      } catch (err) {
+        toast.error(
+          `Failed to start tutor: ${err instanceof Error ? err.message : "Unknown error"}`,
+        );
+      } finally {
+        setStartingTutor(false);
+      }
+    } else {
+      // Fallback: just switch mode without session creation
+      setMode("tutor");
+    }
+  }, [onStartTutorSession]);
 
   // ── Render ───────────────────────────────────────────────────────
   return (
@@ -140,6 +161,7 @@ export function WorkspaceStudio({
         workspaceName={workspaceName}
         onWorkspaceNameChange={setWorkspaceName}
         onStartTutor={handleStartTutor}
+        startingTutor={startingTutor}
         timerSeconds={timerSeconds}
         timerPaused={timerPaused}
         onToggleTimer={handleToggleTimer}
