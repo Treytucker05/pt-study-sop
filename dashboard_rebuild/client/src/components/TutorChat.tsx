@@ -1,4 +1,5 @@
 import {
+  useState,
   useRef,
   useEffect,
   useCallback,
@@ -417,6 +418,36 @@ function TutorSpeedTierRow({ controls }: { controls: SpeedTierControl[] }) {
           {control.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+function DevInfoCollapsible({
+  runtimeStrip,
+  speedTierRow,
+}: {
+  runtimeStrip: React.ReactNode;
+  speedTierRow: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex items-center gap-1.5 px-2 py-1 font-arcade text-ui-2xs text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <span className="inline-block transition-transform" style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}>
+          &#9654;
+        </span>
+        Dev Info
+      </button>
+      {open && (
+        <div className="animate-fade-slide-in">
+          {runtimeStrip}
+          {speedTierRow}
+        </div>
+      )}
     </div>
   );
 }
@@ -850,12 +881,15 @@ export function TutorChat({
             onCompact={onCompact}
           />
 
-          <TutorTeachRuntimeStrip
-            isLoading={sessionContextQuery.isLoading}
-            teachRuntime={teachRuntime}
+          <DevInfoCollapsible
+            runtimeStrip={
+              <TutorTeachRuntimeStrip
+                isLoading={sessionContextQuery.isLoading}
+                teachRuntime={teachRuntime}
+              />
+            }
+            speedTierRow={<TutorSpeedTierRow controls={speedTiers} />}
           />
-
-          <TutorSpeedTierRow controls={speedTiers} />
 
           <TutorInputComposer
             input={input}
