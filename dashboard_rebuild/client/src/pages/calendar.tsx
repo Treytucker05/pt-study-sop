@@ -506,9 +506,6 @@ function useCalendarPageController() {
   const [showAssistant, setShowAssistant] = useState(false);
   const [showMiniCalendar, setShowMiniCalendar] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const debugModals =
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).has("debugModals");
 
   // Calendar Organization State
   const [pinnedCalendars, setPinnedCalendars] = useState<string[]>(() => {
@@ -537,43 +534,15 @@ function useCalendarPageController() {
 
   useEffect(() => {
     if (showEditModal && !selectedEvent) {
-      if (debugModals) {
-        console.warn("[ModalDebug][Calendar] Edit modal open without event; closing.");
-      }
       setShowEditModal(false);
     }
-  }, [debugModals, selectedEvent, showEditModal]);
+  }, [selectedEvent, showEditModal]);
 
   useEffect(() => {
     if (showGoogleEditModal && !selectedGoogleEvent) {
-      if (debugModals) {
-        console.warn("[ModalDebug][Calendar] Google edit modal open without event; closing.");
-      }
       setShowGoogleEditModal(false);
     }
-  }, [debugModals, selectedGoogleEvent, showGoogleEditModal]);
-
-  useEffect(() => {
-    if (!debugModals) return;
-    console.info("[ModalDebug][Calendar] state", {
-      showEditModal,
-      selectedEvent: selectedEvent?.id ?? null,
-      showGoogleEditModal,
-      selectedGoogleEvent: selectedGoogleEvent?.id ?? null,
-      googleEditMode,
-      showCalendarSettings,
-      showEventModal,
-    });
-  }, [
-    debugModals,
-    selectedEvent,
-    selectedGoogleEvent,
-    googleEditMode,
-    showCalendarSettings,
-    showEditModal,
-    showEventModal,
-    showGoogleEditModal,
-  ]);
+  }, [selectedGoogleEvent, showGoogleEditModal]);
 
   const toggleHideCalendar = (calId: string) => {
     setHiddenCalendars(prev => {
@@ -1521,18 +1490,6 @@ function useCalendarPageController() {
 
   return (
     <>
-      {debugModals && (
-        <div className="fixed bottom-12 right-4 z-[70] bg-black/80 border border-primary text-primary font-terminal text-xs px-2 py-1 rounded-none">
-          <div>Calendar modals</div>
-          <div>Edit event: {showEditModal ? "open" : "closed"}</div>
-          <div>Selected event: {selectedEvent?.id ?? "none"}</div>
-          <div>Google edit: {showGoogleEditModal ? "open" : "closed"}</div>
-          <div>Google event: {selectedGoogleEvent?.id ?? "none"}</div>
-          <div>Manage calendars: {showCalendarSettings ? "open" : "closed"}</div>
-          <div>Create event: {showEventModal ? "open" : "closed"}</div>
-        </div>
-      )}
-
       <PageScaffold
         eyebrow="Schedule Support System"
         title="Calendar"
@@ -1606,12 +1563,7 @@ function useCalendarPageController() {
                       variant="outline"
                       size="sm"
                       className="rounded-none h-8 px-3 font-arcade text-ui-2xs"
-                      onClick={() => {
-                        if (debugModals) {
-                          console.info("[ModalDebug][Calendar] MANAGE click");
-                        }
-                        setShowCalendarSettings(true);
-                      }}
+                      onClick={() => setShowCalendarSettings(true)}
                     >
                       MANAGE
                     </Button>

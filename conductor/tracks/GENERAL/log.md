@@ -1446,3 +1446,34 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Validation passed:
   - `cd dashboard_rebuild && npm run build`
   - Live Chrome DevTools inspection on `http://127.0.0.1:5000/tutor`: tablist `paddingTop=4px`, `paddingBottom=4px`, hovered button height `70px`, tablist height `77.99px`, slack `top≈2px`, `bottom≈6px`
+
+## 2026-03-22 - Repo permission surface minimization
+
+- Reduced repo-local `permissions.json` to the minimum policy surface by clearing the legacy `allow_execution` list and leaving only the explicit destructive confirmation for `del`.
+- Mirrored the same minimal policy into `.claude/permissions.json` so the repo-local Claude compatibility file stays aligned with root policy.
+- Left `.claude/settings.local.json` unchanged because it was already in the minimal `bypassPermissions` state with `allow: []`.
+- Validation passed:
+  - `permissions.json` and `.claude/permissions.json` both parse as valid JSON
+  - the two files now have the same content (`git diff --no-index` produced no diff)
+
+## 2026-03-22 - Calendar debug surface cleanup
+
+- Removed the dead `debugModals` diagnostic surface from `dashboard_rebuild/client/src/pages/calendar.tsx`, including the query-param debug flag, modal state overlay, and debug-only console logging.
+- Deleted the tracked scratch audit scripts `.tmp_tutor_audit.mjs` and `.tmp_tutor_audit.cjs`; they were unreferenced repo-root leftovers from an earlier Tutor audit pass.
+- Validation passed:
+  - `rg -n "debugModals|ModalDebug|tmp_tutor_audit" C:\pt-study-sop` returned no matches
+  - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-22 - Screenshot utility consolidation
+
+- Consolidated the root Playwright screenshot utilities into `screenshot.mjs` by keeping the better full-height viewport logic and removing the redundant `screenshot-full.mjs` and `screenshot-calendar.mjs` variants.
+- Verified the deleted variants were not referenced elsewhere in the repo and were only introduced as one-off snapshot helpers in the `snapshot current workspace` commit.
+- Validation passed:
+  - `node --check C:\pt-study-sop\screenshot.mjs`
+  - `rg -n "screenshot-full\.mjs|screenshot-calendar\.mjs" C:\pt-study-sop` returned no matches
+
+## 2026-03-22 - Screenshot output folder cleanup
+
+- Repointed `screenshot.mjs` to write generated route captures into `docs/screenshots/routes/` instead of creating a repo-root `screenshots/` dump folder.
+- Moved the tracked root screenshot PNGs into `docs/screenshots/routes/` so the repo home no longer carries those captures.
+- Added a `.gitignore` guardrail for the legacy root `screenshots/` folder to keep future screenshot dumps out of the repo home.

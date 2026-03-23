@@ -167,7 +167,8 @@ audit-*.html
 /tasks/
 /tools/ralph-dispatcher/
 
-# Root-level screenshots (move to docs/screenshots/)
+# Root-level screenshot dumps (use docs/screenshots/routes/)
+/screenshots/
 /builder-*.png
 /playground-*.png
 /scholar-*.png
