@@ -12,11 +12,12 @@ import {
   Network,
   GitBranch,
   Brain,
+  Loader2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Material, MethodBlock } from "@/api.types";
+import type { Material, MethodBlock, ChainRunResult } from "@/api.types";
 import { WorkspacePanel } from "@/components/ui/WorkspacePanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -99,6 +100,7 @@ function nextPanelId(type: string): string {
 
 function buildDefaultLayout(): PanelInstance[] {
   return [
+    // Row 1
     {
       id: nextPanelId("material-viewer"),
       type: "material-viewer",
@@ -117,7 +119,29 @@ function buildDefaultLayout(): PanelInstance[] {
       id: nextPanelId("packet"),
       type: "packet",
       position: { x: 860, y: 20 },
-      size: { width: 350, height: 600 },
+      size: { width: 350, height: 500 },
+      collapsed: false,
+    },
+    // Row 2
+    {
+      id: nextPanelId("notes"),
+      type: "notes",
+      position: { x: 20, y: 540 },
+      size: { width: 400, height: 400 },
+      collapsed: false,
+    },
+    {
+      id: nextPanelId("objectives"),
+      type: "objectives",
+      position: { x: 440, y: 540 },
+      size: { width: 400, height: 400 },
+      collapsed: false,
+    },
+    {
+      id: nextPanelId("excalidraw"),
+      type: "excalidraw",
+      position: { x: 860, y: 540 },
+      size: { width: 600, height: 500 },
       collapsed: false,
     },
   ];
@@ -270,18 +294,58 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 function MethodRunnerContent(): ReactElement {
   const [selectedBlock, setSelectedBlock] = useState<MethodBlock | null>(null);
+  const [topic, setTopic] = useState("");
+  const [isRunning, setIsRunning] = useState(false);
+  const [runResult, setRunResult] = useState<ChainRunResult | null>(null);
+  const [runError, setRunError] = useState<string | null>(null);
 
   const { data: blocks = [] } = useQuery<MethodBlock[]>({
     queryKey: ["workspace-method-blocks"],
     queryFn: () => api.tutor.getMethodBlocks(),
   });
 
+  const handleRunMethod = async (): Promise<void> => {
+    if (!selectedBlock || !topic.trim()) return;
+    setIsRunning(true);
+    setRunResult(null);
+    setRunError(null);
+    try {
+      // Create a single-block chain, then run it
+      const chain = await api.tutor.createCustomChain(
+        [selectedBlock.id],
+        `Run: ${selectedBlock.name}`,
+      );
+      const result = await api.chainRun.start({
+        chain_id: chain.id,
+        topic: topic.trim(),
+      });
+      setRunResult(result);
+    } catch (err: unknown) {
+      setRunError(err instanceof Error ? err.message : "Method execution failed");
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  const handleSendToPacket = (): void => {
+    // Placeholder — packet wiring comes later
+    // eslint-disable-next-line no-console
+    console.log("[MethodRunner] Send to packet:", runResult);
+  };
+
+  const handleBack = (): void => {
+    setSelectedBlock(null);
+    setRunResult(null);
+    setRunError(null);
+    setTopic("");
+  };
+
   if (selectedBlock) {
     return (
       <div className="flex flex-col h-full p-2 gap-2">
         <button
           type="button"
-          onClick={() => setSelectedBlock(null)}
+          onClick={handleBack}
           className="self-start text-xs font-terminal text-primary/60 hover:text-primary transition-colors"
         >
           &larr; Back to list
@@ -329,6 +393,97 @@ function MethodRunnerContent(): ReactElement {
                   {tag}
                 </span>
               ))}
+            </div>
+          )}
+
+          {/* ── Run method section ──────────────────────────────── */}
+          <div className="mt-4 border-t border-primary/15 pt-3">
+            <label className="block text-[10px] font-terminal text-primary/50 uppercase tracking-wider mb-1">
+              Topic / Prompt
+            </label>
+            <input
+              type="text"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="e.g. Muscle contraction physiology"
+              disabled={isRunning}
+              className={cn(
+                "w-full rounded-sm border border-primary/20 bg-black/60 px-2 py-1.5",
+                "font-terminal text-xs text-foreground/80 placeholder:text-foreground/30",
+                "focus:outline-none focus:border-primary/50 transition-colors",
+                isRunning && "opacity-50 cursor-not-allowed",
+              )}
+            />
+            <button
+              type="button"
+              onClick={handleRunMethod}
+              disabled={isRunning || !topic.trim()}
+              className={cn(
+                "mt-2 w-full flex items-center justify-center gap-2 rounded-sm border px-3 py-2",
+                "font-terminal text-xs uppercase tracking-wider transition-colors",
+                isRunning || !topic.trim()
+                  ? "border-primary/10 bg-primary/5 text-primary/30 cursor-not-allowed"
+                  : "border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary/60",
+              )}
+            >
+              {isRunning ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Running...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-3 h-3" />
+                  Run Method
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* ── Run error ───────────────────────────────────────── */}
+          {runError && (
+            <div className="mt-3 rounded-sm border border-red-500/30 bg-red-900/20 px-3 py-2">
+              <p className="font-terminal text-xs text-red-400 uppercase tracking-wider">Error</p>
+              <p className="mt-1 font-mono text-xs text-red-300/80">{runError}</p>
+            </div>
+          )}
+
+          {/* ── Run output ──────────────────────────────────────── */}
+          {runResult && (
+            <div className="mt-3 flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="font-terminal text-[10px] text-primary/50 uppercase tracking-wider">
+                  Output
+                </span>
+                <span
+                  className={cn(
+                    "text-[10px] px-1.5 py-0.5 rounded-sm font-terminal uppercase tracking-wider",
+                    runResult.status === "completed"
+                      ? "bg-green-500/20 text-green-400"
+                      : "bg-red-500/20 text-red-400",
+                  )}
+                >
+                  {runResult.status}
+                </span>
+              </div>
+              <ScrollArea className="max-h-[200px]">
+                <pre className="whitespace-pre-wrap rounded-sm border border-primary/15 bg-black/60 p-3 font-mono text-xs leading-5 text-foreground/80">
+                  {runResult.steps.map((s) => s.output).join("\n\n---\n\n") || "No output"}
+                </pre>
+              </ScrollArea>
+              <button
+                type="button"
+                onClick={handleSendToPacket}
+                className={cn(
+                  "flex items-center justify-center gap-2 rounded-sm border px-3 py-2",
+                  "border-primary/30 bg-primary/5 text-primary/70",
+                  "font-terminal text-xs uppercase tracking-wider",
+                  "hover:bg-primary/15 hover:text-primary transition-colors",
+                )}
+              >
+                <Package className="w-3 h-3" />
+                Send to Packet
+              </button>
             </div>
           )}
         </div>

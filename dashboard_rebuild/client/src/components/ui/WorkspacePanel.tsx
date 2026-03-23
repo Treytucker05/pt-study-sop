@@ -21,7 +21,7 @@ export interface WorkspacePanelProps {
 }
 
 const TITLE_BAR_CLASSES =
-  "flex items-center justify-between px-3 py-1.5 bg-background/90 border-b border-primary/20 select-none cursor-move";
+  "flex items-center justify-between px-3 py-1.5 bg-background/95 border-b border-primary/30 select-none cursor-move";
 
 const TITLE_TEXT_CLASSES =
   "font-terminal text-sm tracking-wider text-primary/80 uppercase truncate";
@@ -108,8 +108,9 @@ export function WorkspacePanel({
         onPositionChange?.(position);
       }}
       className={cn(
-        "flex flex-col bg-background/60 backdrop-blur-sm border border-primary/15 rounded-sm",
-        "shadow-[0_4px_12px_rgba(0,0,0,0.3)]",
+        "flex flex-col bg-background/70 backdrop-blur-sm border border-primary/30 rounded-sm",
+        "shadow-[0_4px_16px_rgba(0,0,0,0.5)] shadow-primary/5",
+        "ring-1 ring-primary/10",
         className,
       )}
     >
@@ -152,7 +153,7 @@ export function WorkspacePanel({
       </div>
 
       {/* Panel body */}
-      <div className="flex-1 overflow-auto p-3">{children}</div>
+      <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
     </Rnd>
   );
 }
