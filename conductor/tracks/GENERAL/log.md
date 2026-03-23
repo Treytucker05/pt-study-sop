@@ -1477,3 +1477,12 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Repointed `screenshot.mjs` to write generated route captures into `docs/screenshots/routes/` instead of creating a repo-root `screenshots/` dump folder.
 - Moved the tracked root screenshot PNGs into `docs/screenshots/routes/` so the repo home no longer carries those captures.
 - Added a `.gitignore` guardrail for the legacy root `screenshots/` folder to keep future screenshot dumps out of the repo home.
+
+## 2026-03-23 - Git hook execution hardening
+
+- Fixed the repo's managed hook installer so shell hooks are written with LF line endings instead of CRLF, which was breaking `#!/bin/sh` execution under Git Bash on Windows.
+- Hardened the generated `pre-commit` and `pre-push` hook bodies to resolve `pwsh.exe` and `python.exe` explicitly before falling back, avoiding Git Bash permission errors on bare `pwsh` and `python`.
+- Reinstalled the managed hooks in this clone and verified `pre-commit` now executes successfully from Git Bash.
+- Validation passed:
+  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_agent_guard_hooks.ps1 -Action install`
+  - `bash -lc .git/hooks/pre-commit`

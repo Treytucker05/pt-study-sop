@@ -18,7 +18,8 @@ function Write-HookFile {
   )
 
   $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-  [System.IO.File]::WriteAllText($Path, $Content, $utf8NoBom)
+  $normalizedContent = $Content -replace "`r`n", "`n"
+  [System.IO.File]::WriteAllText($Path, $normalizedContent, $utf8NoBom)
 }
 
 function Test-IsManagedHook {
@@ -112,18 +113,38 @@ if [ -z "$REPO_ROOT" ]; then
   REPO_ROOT="$(cd "$HOOK_DIR/../.." && pwd)"
 fi
 cd "$REPO_ROOT"
+if command -v pwsh.exe >/dev/null 2>&1; then
+  POWERSHELL_BIN="pwsh.exe"
+elif command -v pwsh >/dev/null 2>&1; then
+  POWERSHELL_BIN="pwsh"
+elif command -v powershell.exe >/dev/null 2>&1; then
+  POWERSHELL_BIN="powershell.exe"
+else
+  echo "[pre-commit] PowerShell executable not found" >&2
+  exit 1
+fi
+if command -v python.exe >/dev/null 2>&1; then
+  PYTHON_BIN="python.exe"
+elif command -v python >/dev/null 2>&1; then
+  PYTHON_BIN="python"
+else
+  echo "[pre-commit] Python executable not found" >&2
+  exit 1
+fi
 if [ -f "$HOOK_DIR/pre-commit.local-agent-guard" ]; then
   sh "$HOOK_DIR/pre-commit.local-agent-guard"
 fi
 
 echo "[pre-commit] Agent config drift check"
-pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/sync_agent_config.ps1 -Mode Check
+"$POWERSHELL_BIN" -NoProfile -ExecutionPolicy Bypass -File ./scripts/sync_agent_config.ps1 -Mode Check
 
 echo "[pre-commit] Docs sync check"
-python scripts/check_docs_sync.py
+# Unset worktree-scoped git env vars so the script runs against the main
+# working tree at REPO_ROOT, not a linked worktree's index.
+env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE "$PYTHON_BIN" scripts/check_docs_sync.py
 
 echo "[pre-commit] Project hub check"
-python scripts/validate_project_hub.py
+env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE "$PYTHON_BIN" scripts/validate_project_hub.py
 '@
 $preCommitBody = $preCommitBody.Replace("__MARKER__", $marker)
 
@@ -137,23 +158,41 @@ if [ -z "$REPO_ROOT" ]; then
   REPO_ROOT="$(cd "$HOOK_DIR/../.." && pwd)"
 fi
 cd "$REPO_ROOT"
+if command -v pwsh.exe >/dev/null 2>&1; then
+  POWERSHELL_BIN="pwsh.exe"
+elif command -v pwsh >/dev/null 2>&1; then
+  POWERSHELL_BIN="pwsh"
+elif command -v powershell.exe >/dev/null 2>&1; then
+  POWERSHELL_BIN="powershell.exe"
+else
+  echo "[pre-push] PowerShell executable not found" >&2
+  exit 1
+fi
+if command -v python.exe >/dev/null 2>&1; then
+  PYTHON_BIN="python.exe"
+elif command -v python >/dev/null 2>&1; then
+  PYTHON_BIN="python"
+else
+  echo "[pre-push] Python executable not found" >&2
+  exit 1
+fi
 if [ -f "$HOOK_DIR/pre-push.local-agent-guard" ]; then
   sh "$HOOK_DIR/pre-push.local-agent-guard"
 fi
 
 echo "[pre-push] Agent config drift check"
-pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/sync_agent_config.ps1 -Mode Check
+"$POWERSHELL_BIN" -NoProfile -ExecutionPolicy Bypass -File ./scripts/sync_agent_config.ps1 -Mode Check
 
 echo "[pre-push] Docs sync check"
-python scripts/check_docs_sync.py
+env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE "$PYTHON_BIN" scripts/check_docs_sync.py
 
 echo "[pre-push] Project hub check"
-python scripts/validate_project_hub.py
+env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE "$PYTHON_BIN" scripts/validate_project_hub.py
 
 echo "[pre-push] Brain tests"
 PYTEST_LOG="$(mktemp)"
 set +e
-python -m pytest brain/tests -q >"$PYTEST_LOG" 2>&1
+"$PYTHON_BIN" -m pytest brain/tests -q >"$PYTEST_LOG" 2>&1
 PYTEST_STATUS=$?
 set -e
 cat "$PYTEST_LOG"
@@ -161,7 +200,7 @@ cat "$PYTEST_LOG"
 if [ "$PYTEST_STATUS" -ne 0 ] && grep -q "ValueError: I/O operation on closed file" "$PYTEST_LOG"; then
   echo "[pre-push] Detected pytest capture teardown crash. Retrying without capture (-s)."
   set +e
-  python -m pytest brain/tests -q -s >"$PYTEST_LOG" 2>&1
+  "$PYTHON_BIN" -m pytest brain/tests -q -s >"$PYTEST_LOG" 2>&1
   PYTEST_STATUS=$?
   set -e
   cat "$PYTEST_LOG"
