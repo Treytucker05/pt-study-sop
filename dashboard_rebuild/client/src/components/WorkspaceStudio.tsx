@@ -12,6 +12,7 @@ import { WorkspaceCanvas } from "@/components/WorkspaceCanvas";
 import { useWorkspaceLayout } from "@/hooks/useWorkspaceLayout";
 import type { PacketItem } from "@/components/workspace/PacketPanel";
 import type { ChainMode } from "@/components/workspace/TutorChatPanel";
+import { serializePacketForTutor } from "@/lib/packetSerializer";
 
 // ── Chain selection payload ──────────────────────────────────────────
 
@@ -35,8 +36,8 @@ export interface WorkspaceStudioProps {
   workflowId: string | null;
   /** Slot for injecting the TutorChat component */
   tutorChatSlot?: ReactNode;
-  /** Called when the user clicks "Start Tutor". Receives the chain selection from the picker. */
-  onStartTutorSession?: (chain: ChainSelection) => Promise<void>;
+  /** Called when the user clicks "Start Tutor". Receives the chain selection and serialized packet context. */
+  onStartTutorSession?: (chain: ChainSelection, packetContext: string) => Promise<void>;
   /** Available chain templates for the template-mode picker */
   availableChains?: Array<{ id: number; title: string; block_count: number }>;
   /** Available methods for the solo-mode picker */
@@ -169,14 +170,21 @@ export function WorkspaceStudio({
   const [startingTutor, setStartingTutor] = useState(false);
 
   const handleStartTutor = useCallback(async () => {
+    if (packetItems.length === 0) {
+      toast.warning("No materials in Packet — tutor will freestyle");
+    }
+    const packetContext = serializePacketForTutor(packetItems);
     if (onStartTutorSession) {
       setStartingTutor(true);
       try {
-        await onStartTutorSession({
-          chainMode,
-          chainId: selectedChainId,
-          methodId: selectedMethodId,
-        });
+        await onStartTutorSession(
+          {
+            chainMode,
+            chainId: selectedChainId,
+            methodId: selectedMethodId,
+          },
+          packetContext,
+        );
         setMode("tutor");
       } catch (err) {
         toast.error(
@@ -189,7 +197,7 @@ export function WorkspaceStudio({
       // Fallback: just switch mode without session creation
       setMode("tutor");
     }
-  }, [onStartTutorSession, chainMode, selectedChainId, selectedMethodId]);
+  }, [onStartTutorSession, chainMode, selectedChainId, selectedMethodId, packetItems]);
 
   // ── End Session + summary modal ─────────────────────────────────
   const [endingSession, setEndingSession] = useState(false);

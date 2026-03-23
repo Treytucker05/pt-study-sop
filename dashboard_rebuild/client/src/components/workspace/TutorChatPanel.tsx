@@ -1,5 +1,7 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useCallback, useState } from "react";
 import { cn } from "@/lib/utils";
+import { Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import {
   TEXT_SECTION_LABEL,
   TEXT_MUTED,
@@ -20,6 +22,10 @@ export interface TutorChatPanelProps {
   availableMethods: Array<{ id: number; method_id: string; title: string }>;
   selectedMethodId: string | null;
   onMethodSelect: (methodId: string) => void;
+  /** Called when user clicks "Summarize & Save"; wire to quickCompactWorkflowMemory */
+  onCompact?: () => Promise<void>;
+  /** Optional extra callback to persist compaction result into the Packet */
+  onCompactToPacket?: () => Promise<void>;
   children: ReactNode;
 }
 
@@ -40,13 +46,50 @@ export function TutorChatPanel({
   availableMethods,
   selectedMethodId,
   onMethodSelect,
+  onCompact,
+  onCompactToPacket,
   children,
 }: TutorChatPanelProps): React.ReactElement {
+  const [compacting, setCompacting] = useState(false);
+
+  const handleCompact = useCallback(async () => {
+    if (!onCompact) return;
+    setCompacting(true);
+    try {
+      await onCompact();
+      if (onCompactToPacket) {
+        await onCompactToPacket();
+      }
+      toast.success("Session summarized and saved");
+    } catch {
+      toast.error("Failed to summarize session");
+    } finally {
+      setCompacting(false);
+    }
+  }, [onCompact, onCompactToPacket]);
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex-none px-3 py-2 border-b border-primary/20 space-y-2">
-        <h2 className={TEXT_SECTION_LABEL}>TUTOR CHAT</h2>
+        <div className="flex items-center justify-between">
+          <h2 className={TEXT_SECTION_LABEL}>TUTOR CHAT</h2>
+          {sessionId && onCompact ? (
+            <button
+              type="button"
+              disabled={compacting}
+              onClick={handleCompact}
+              title="Summarize & Save"
+              className={cn(
+                BTN_TOOLBAR,
+                "min-h-[28px] py-0.5 px-2 text-[10px] flex items-center gap-1",
+              )}
+            >
+              <Sparkles className="h-3 w-3" />
+              {compacting ? "Saving..." : "Summarize"}
+            </button>
+          ) : null}
+        </div>
 
         {sessionId ? (
           <>

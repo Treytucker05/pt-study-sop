@@ -449,7 +449,7 @@ export function useTutorSession({
   }, [activeSessionId, hub.topic, startedAt, turnCount, artifacts.length, endSession]);
 
   // ─── Start session ───
-  const startSession = useCallback(async () => {
+  const startSession = useCallback(async (opts?: { packet_context?: string }) => {
     setIsStarting(true);
     try {
       if (hub.objectiveScope === "single_focus" && !hub.selectedObjectiveId) {
@@ -479,6 +479,7 @@ export function useTutorSession({
         phase: "first_pass",
         mode: "Core",
         method_chain_id: resolvedChainId,
+        ...(opts?.packet_context ? { packet_context: opts.packet_context } : {}),
       });
       const full = await api.tutor.getSession(session.session_id);
       applySessionState(full);

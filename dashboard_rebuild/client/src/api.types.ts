@@ -1078,6 +1078,7 @@ export interface TutorCreateSessionRequest {
     };
   };
   method_chain_id?: number;
+  packet_context?: string;
 }
 
 export interface TutorTemplateChain {

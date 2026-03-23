@@ -1097,6 +1097,14 @@ export const api = {
         method: "PUT",
         body: JSON.stringify(data),
       }),
+    summarizeReply: (sessionId: string, messageText: string) =>
+      request<{ summary: string }>(
+        `/tutor/session/${sessionId}/summarize-reply`,
+        {
+          method: "POST",
+          body: JSON.stringify({ message_text: messageText }),
+        },
+      ),
   },
 
   mastery: {

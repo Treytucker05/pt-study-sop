@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { toast } from "sonner";
 import { TutorErrorBoundary } from "@/components/TutorErrorBoundary";
 import { TutorEmptyState } from "@/components/TutorEmptyState";
 import { TutorWorkflowPrimingPanel } from "@/components/TutorWorkflowPrimingPanel";
@@ -179,7 +180,7 @@ export function TutorShell({
   // ── Workspace "Start Tutor" handler ──
   // Auto-creates a workflow when none exists, then starts the tutor session.
   // Applies the chain/method selection from the workspace picker before starting.
-  const handleWorkspaceStartTutor = useCallback(async (chain: ChainSelection) => {
+  const handleWorkspaceStartTutor = useCallback(async (chain: ChainSelection, packetContext: string) => {
     // Apply the chain selection to the hub so startSession picks it up
     if (chain.chainMode === "template" && chain.chainId != null) {
       hub.setChainId(chain.chainId);
@@ -210,8 +211,45 @@ export function TutorShell({
       });
       workflow.setActiveWorkflowId(result.workflow.workflow_id);
     }
-    await workflow.startTutorFromWorkflow();
+    await workflow.startTutorFromWorkflow(
+      packetContext ? { packet_context: packetContext } : undefined,
+    );
   }, [workflow, hub, methodBlocks]);
+
+  // ── Save Gist: summarize a reply via LLM and capture as workflow note ──
+  const handleSaveGist = useCallback(
+    async (content: string) => {
+      if (!activeSessionId) {
+        toast.error("No active session");
+        return;
+      }
+      try {
+        const { summary } = await api.tutor.summarizeReply(
+          activeSessionId,
+          content,
+        );
+        if (workflow.activeWorkflowId) {
+          await api.tutor.captureWorkflowNote(workflow.activeWorkflowId, {
+            tutor_session_id: activeSessionId,
+            stage: "tutor",
+            note_mode: "exact",
+            title: `[Gist] ${summary.slice(0, 50)}`,
+            content: summary,
+            status: "captured",
+          });
+          await queryClient.invalidateQueries({
+            queryKey: ["tutor-workflow-detail", workflow.activeWorkflowId],
+          });
+        }
+        toast.success("Saved gist to Packet");
+      } catch (err) {
+        toast.error(
+          `Failed to save gist: ${err instanceof Error ? err.message : "Unknown error"}`,
+        );
+      }
+    },
+    [activeSessionId, workflow.activeWorkflowId, queryClient],
+  );
 
   return (
     <>
@@ -1103,6 +1141,9 @@ export function TutorShell({
                         onStudioCapture={session.handleStudioCapture}
                         onCaptureNote={(payload) => {
                           void workflow.captureWorkflowMessageNote(payload);
+                        }}
+                        onSaveGist={(content) => {
+                          void handleSaveGist(content);
                         }}
                         onFeedback={(payload) => {
                           void workflow.saveWorkflowMessageFeedback(payload);

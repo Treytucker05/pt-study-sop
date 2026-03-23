@@ -819,10 +819,10 @@ export function useTutorWorkflow({
   );
 
   // ─── Start tutor from workflow ───
-  const startTutorFromWorkflow = useCallback(async () => {
+  const startTutorFromWorkflow = useCallback(async (opts?: { packet_context?: string }) => {
     const ready = await saveWorkflowPriming("ready");
     if (!ready || !activeWorkflowId) return;
-    const newSession = await session.startSession();
+    const newSession = await session.startSession(opts);
     if (!newSession) return;
     try {
       await api.tutor.updateWorkflowStage(activeWorkflowId, {
