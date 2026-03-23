@@ -799,7 +799,7 @@ function useTutorPageController() {
     <PageScaffold
       eyebrow="Live Study Core"
       title="Tutor"
-      subtitle="Run your study plan from Studio through Priming, then move into Tutor, schedule, and Final Sync without losing context."
+      subtitle="Run your study plan from Studio through Priming, then move into Tutor, schedule, and Final Sync without losing context. [v0.9.0-workspace]"
       className="h-full min-h-0 [&_.page-shell\_\_horizon]:hidden [&_.page-shell\_\_hero]:border-transparent [&_.page-shell\_\_hero]:before:hidden"
       contentClassName="gap-6"
       stats={tutorHeroStats}
