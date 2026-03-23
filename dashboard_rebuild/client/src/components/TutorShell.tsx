@@ -48,14 +48,13 @@ import { CONTROL_PLANE_COLORS } from "@/lib/colors";
 import { cn } from "@/lib/utils";
 import {
   CONTROL_KICKER,
-  controlToggleButton,
 } from "@/components/shell/controlStyles";
 import {
   formatElapsedDuration,
   INPUT_BASE,
   SELECT_BASE,
 } from "@/lib/tutorUtils";
-import type { TutorPageMode, TutorStudioView } from "@/lib/tutorUtils";
+import type { TutorPageMode } from "@/lib/tutorUtils";
 import { api } from "@/lib/api";
 import type { TutorTemplateChain } from "@/lib/api";
 import type { TutorHubResumeCandidate } from "@/lib/api";
@@ -162,45 +161,6 @@ export function TutorShell({
   const hasFinalSyncAccess =
     Boolean(workflow.activeWorkflowDetail?.polish_bundle) ||
     currentWorkflowStage === "final_sync";
-  const studioTabs: Array<{
-    key: TutorStudioView;
-    label: string;
-    available: boolean;
-    helper: string;
-  }> = [
-    {
-      key: "workbench",
-      label: "HOME",
-      available: true,
-      helper: "Overview, next action, and embedded workbench tools.",
-    },
-    {
-      key: "priming",
-      label: "PRIMING",
-      available: !workflow.bootstrappingPriming,
-      helper: workflow.bootstrappingPriming
-        ? "Preparing the Priming workspace now."
-        : workflow.activeWorkflowId
-          ? "Setup, materials, PRIME methods, outputs, and Tutor handoff."
-          : "Start Priming directly from Studio even before a workflow exists.",
-    },
-    {
-      key: "polish",
-      label: "POLISH",
-      available: hasTutorWork,
-      helper: hasTutorWork
-        ? "Review Tutor notes, captures, and refinement work."
-        : "Run or capture Tutor work first to unlock Polish.",
-    },
-    {
-      key: "final_sync",
-      label: "FINAL SYNC",
-      available: hasFinalSyncAccess,
-      helper: hasFinalSyncAccess
-        ? "Finalize and publish approved outputs."
-        : "Finalize a Polish bundle first to unlock Final Sync.",
-    },
-  ];
 
   return (
     <>

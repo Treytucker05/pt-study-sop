@@ -81,6 +81,12 @@ describe("TutorTopBar", () => {
         activeWorkflowId="wf-1"
         activeWorkflowDetail={undefined}
         studioView="priming"
+        studioSubTabs={[
+          { key: "workbench", label: "HOME", available: true },
+          { key: "priming", label: "PRIMING", available: true },
+          { key: "polish", label: "POLISH", available: false },
+          { key: "final_sync", label: "FINAL SYNC", available: false },
+        ]}
         activeSessionId="sess-1"
         teachRuntime={teachRuntime}
       />,

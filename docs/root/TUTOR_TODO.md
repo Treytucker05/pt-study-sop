@@ -162,7 +162,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - the search identifies any method docs or prompts that explicitly use mind maps, ASCII graphs, concept maps, diagrams, or priming terminology
     - the result is consolidated into a short evidence-backed summary with exact file references
   - Completed 2026-03-21: confirmed canonical method-library hits for `Hand-Draw Map`, `Overarching Pre-Question Set`, `Hierarchical Advance Organizer`, `Skeleton Concept Hierarchy`, `Concept Map`, `Process Flowchart`, and `Clinical Decision Tree`; supporting docs also show active PRIME/Priming map outputs, Mermaid flowcharts, ASCII trees, and related visual priming artifacts.
-  - Completed 2026-03-21: confirmed canonical PRIME hits in `M-PRE-004 Hierarchical Advance Organizer`, `M-PRE-005 Skeleton Concept Hierarchy` (`ascii_tree`), `M-PRE-009 Syntopical Big-Picture Synthesis`, `M-PRE-010 Learning Objectives Primer`, and `M-PRE-011 Hand-Draw Map` (explicit spatial mind map); confirmed the method library and PRIME category docs list those methods as canonical; confirmed the live Priming workflow expects hierarchical-map artifacts and Mermaid/text fallbacks rather than a separate ASCII graph surface.
+  - Completed 2026-03-21: confirmed canonical PRIME hits in `M-PRE-004 Hierarchical Advance Organizer`, `M-PRE-005 Skeleton Concept Hierarchy` (`ascii_tree`), `M-PRE-009 Syntopical Big-Picture Synthesis`, `M-PRE-010 Learning Objectives Primer`, and `M-ENC-015 Hand-Draw Map` (explicit spatial mind map); confirmed the method library and PRIME category docs list those methods as canonical; confirmed the live Priming workflow expects hierarchical-map artifacts and Mermaid/text fallbacks rather than a separate ASCII graph surface.
 - [x] BRAIN-110. Realign the Brain page to the evidence-only contract so it reads as the system's ingestion and analytics layer instead of a launch/dashboard surface.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -321,7 +321,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - `sop/library/methods/M-PRE-004.yaml`
     - `sop/library/methods/M-PRE-005.yaml`
     - `sop/library/methods/M-PRE-006.yaml`
-    - `sop/library/methods/M-PRE-011.yaml`
+    - `sop/library/methods/M-ENC-015.yaml`
     - `brain/dashboard/api_tutor_workflows.py`
     - `brain/tests/test_tutor_workflow_priming_assist.py`
     - `conductor/tracks/GENERAL/log.md`
@@ -330,7 +330,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - capped PRIME methods explicitly require full selected-scope coverage before compressing into `3-5` or `4-6` umbrella groups
     - the live Priming Assist prompt carries the same exhaustive-coverage rule for capped PRIME methods
     - focused backend validation proves the prompt includes the new grouping rule
-  - Completed 2026-03-21: updated `sop/library/categories/PRIME.md` so capped PRIME outputs are defined as final umbrella-group caps rather than evidence caps, tightened `M-PRE-002`, `M-PRE-004`, `M-PRE-005`, `M-PRE-006`, and `M-PRE-011` so they must account for the full selected source/material scope before grouping into capped outputs, hardened `brain/dashboard/api_tutor_workflows.py` so live Priming Assist instructs the LLM to inventory full supported structure first, then compress into broad groups that still cover the whole selected scope instead of cherry-picking isolated examples, and passed `python sop/tools/validate_library.py` plus `pytest brain/tests/test_tutor_workflow_priming_assist.py -q`.
+  - Completed 2026-03-21: updated `sop/library/categories/PRIME.md` so capped PRIME outputs are defined as final umbrella-group caps rather than evidence caps, tightened `M-PRE-002`, `M-PRE-004`, `M-PRE-005`, `M-PRE-006`, and `M-ENC-015` so they must account for the full selected source/material scope before grouping into capped outputs, hardened `brain/dashboard/api_tutor_workflows.py` so live Priming Assist instructs the LLM to inventory full supported structure first, then compress into broad groups that still cover the whole selected scope instead of cherry-picking isolated examples, and passed `python sop/tools/validate_library.py` plus `pytest brain/tests/test_tutor_workflow_priming_assist.py -q`.
 - [x] TGSL-170. Repair Tutor stage navigation so forward/back movement is visible and coherent from the top of the page instead of being buried below runtime diagnostics.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

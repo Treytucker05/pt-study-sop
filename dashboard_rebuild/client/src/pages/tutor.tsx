@@ -38,7 +38,7 @@ import { useLocation } from "wouter";
 import { Palette, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { readTutorShellQuery, writeTutorShellQuery } from "@/lib/tutorUtils";
-import type { TutorPageMode, TutorShellQuery } from "@/lib/tutorUtils";
+import type { TutorPageMode, TutorShellQuery, TutorStudioView } from "@/lib/tutorUtils";
 import { resolveTutorTeachRuntime } from "@/components/TutorChat.types";
 
 function useTutorPageController() {
@@ -707,6 +707,45 @@ function useTutorPageController() {
     [sessionWithWorkflow.currentBlock, workflow.activeWorkflowDetail],
   );
 
+  // ─── Studio sub-tabs ───
+  const currentWorkflowStage =
+    workflow.activeWorkflowDetail?.workflow?.current_stage ?? null;
+  const hasTutorWork =
+    Boolean(activeSessionId) ||
+    currentWorkflowStage === "tutor" ||
+    currentWorkflowStage === "polish" ||
+    currentWorkflowStage === "final_sync" ||
+    (workflow.activeWorkflowDetail?.captured_notes?.length ?? 0) > 0;
+  const hasFinalSyncAccess =
+    Boolean(workflow.activeWorkflowDetail?.polish_bundle) ||
+    currentWorkflowStage === "final_sync";
+
+  const studioSubTabs: StudioSubTab[] = useMemo(
+    () => [
+      { key: "workbench" as TutorStudioView, label: "WORKBENCH", available: true },
+      {
+        key: "priming" as TutorStudioView,
+        label: workflow.bootstrappingPriming ? "PRIMING..." : "PRIMING",
+        available: !workflow.bootstrappingPriming,
+      },
+      { key: "polish" as TutorStudioView, label: "POLISH", available: hasTutorWork },
+      { key: "final_sync" as TutorStudioView, label: "FINAL SYNC", available: hasFinalSyncAccess },
+    ],
+    [workflow.bootstrappingPriming, hasTutorWork, hasFinalSyncAccess],
+  );
+
+  const handleStudioSubTabClick = useCallback(
+    (key: TutorStudioView) => {
+      if (key === "priming") {
+        void workflow.openStudioPriming();
+      } else {
+        workflow.setStudioView(key);
+      }
+      setShellMode("studio");
+    },
+    [workflow, setShellMode],
+  );
+
   // ─── Top bar ───
   const tutorShellTopBar = (
     <TutorTopBar
@@ -729,6 +768,7 @@ function useTutorPageController() {
       activeWorkflowId={workflow.activeWorkflowId}
       activeWorkflowDetail={workflow.activeWorkflowDetail}
       studioView={workflow.studioView}
+      studioSubTabs={studioSubTabs}
       teachRuntime={teachRuntime}
       activeSessionId={activeSessionId}
     />

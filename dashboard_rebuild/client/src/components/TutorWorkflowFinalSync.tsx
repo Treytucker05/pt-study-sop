@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookMarked, Brain, CheckCircle2, RefreshCw, Send, TriangleAlert } from "lucide-react";
+import { BookMarked, Brain, CheckCircle2, PackageCheck, RefreshCw, Send, ShieldAlert, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
 import type {
@@ -456,9 +456,55 @@ export function TutorWorkflowFinalSync({
         </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)_340px]">
-        <div className="space-y-4">
-          <Card className="rounded-none border-primary/30 bg-black/40">
+      {!polishBundle ? (
+        <Card className="rounded-none border-amber-500/30 bg-black/40">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 font-arcade text-xs text-amber-500">
+              <ShieldAlert className="h-4 w-4" />
+              POLISH REQUIRED
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="font-terminal text-ui-2xs text-muted-foreground">
+            Complete the Polish review and click &ldquo;Finalize for Sync&rdquo; before proceeding to Final Sync.
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <Card className="rounded-none border-green-500/30 bg-black/40">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 font-arcade text-xs text-green-400">
+                <PackageCheck className="h-4 w-4" />
+                RECEIVED FROM POLISH
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="font-terminal text-ui-2xs">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="border border-green-500/20 bg-black/30 px-3 py-1.5">
+                  <span className="text-muted-foreground">Cards:</span>{" "}
+                  <span className="text-green-400">
+                    {Array.isArray(polishBundle.card_requests) ? polishBundle.card_requests.length : 0}
+                  </span>
+                </div>
+                <div className="border border-green-500/20 bg-black/30 px-3 py-1.5">
+                  <span className="text-muted-foreground">Re-prime:</span>{" "}
+                  <span className="text-green-400">
+                    {Array.isArray(polishBundle.reprime_requests) ? polishBundle.reprime_requests.length : 0}
+                  </span>
+                </div>
+                <div className="border border-green-500/20 bg-black/30 px-3 py-1.5">
+                  <span className="text-muted-foreground">Artifacts:</span>{" "}
+                  <span className="text-green-400">{studioArtifacts.length}</span>
+                </div>
+                <Badge variant="outline" className="rounded-none border-green-500/40 text-green-400">
+                  Finalized
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)_340px]">
+            <div className="space-y-4">
+              <Card className="rounded-none border-primary/30 bg-black/40">
             <CardHeader className="pb-2">
               <CardTitle className="font-arcade text-xs text-primary">TARGET HEALTH</CardTitle>
             </CardHeader>
@@ -624,7 +670,9 @@ export function TutorWorkflowFinalSync({
             </CardContent>
           </Card>
         </div>
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

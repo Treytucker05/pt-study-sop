@@ -13,17 +13,26 @@ import {
 import { ICON_MD } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
-import type { TutorPageMode } from "@/lib/tutorUtils";
+import type { TutorPageMode, TutorStudioView } from "@/lib/tutorUtils";
 import type { TutorArtifact } from "@/components/TutorArtifacts";
 import { toast } from "sonner";
+
+export type StudioSubTab = {
+  key: TutorStudioView;
+  label: string;
+  available: boolean;
+};
 
 export interface TutorTabBarProps {
   shellMode: TutorPageMode;
   activeSessionId: string | null;
   showArtifacts: boolean;
   artifacts: TutorArtifact[];
+  studioSubTabs?: StudioSubTab[];
+  studioView?: TutorStudioView;
   onSetShellMode: (mode: TutorPageMode) => void;
   onOpenStudioHome: () => void;
+  onStudioSubTabClick?: (key: TutorStudioView) => void;
   onSetShowArtifacts: (show: boolean) => void;
   onSetShowEndConfirm: (show: boolean) => void;
   onOpenSettings: () => void;
@@ -35,13 +44,27 @@ const TUTOR_TAB_BASE = "shrink-0 uppercase tracking-[0.16em]";
 const TUTOR_TAB_PATTERN = "tutor-pattern-button";
 const TUTOR_TAB_PATTERN_SIZE = "h-auto min-h-[70px] px-5 py-[20px] leading-none";
 
+function studioSubButton(active: boolean, available: boolean) {
+  return cn(
+    "min-h-[36px] whitespace-nowrap rounded-[0.22rem] border px-2.5 py-1.5 font-mono text-ui-2xs uppercase tracking-[0.14em] transition-all duration-150 ease-out",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55 focus-visible:ring-offset-1 focus-visible:ring-offset-black",
+    !available && "cursor-not-allowed opacity-40",
+    active
+      ? "border-[rgba(255,112,138,0.40)] bg-[linear-gradient(180deg,rgba(255,72,104,0.18),rgba(12,2,5,0.94)_52%,rgba(0,0,0,0.98)_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05),inset_0_0_0_1px_rgba(255,84,116,0.08)]"
+      : "border-[rgba(255,70,104,0.12)] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.14)_26%,rgba(0,0,0,0.36)_100%),linear-gradient(135deg,rgba(66,10,18,0.14),rgba(8,2,4,0.96)_64%,rgba(0,0,0,0.98)_100%)] text-[#ffd4dc]/80 hover:border-[rgba(255,108,136,0.26)] hover:text-white",
+  );
+}
+
 export function TutorTabBar({
   shellMode,
   activeSessionId,
   showArtifacts,
   artifacts,
+  studioSubTabs,
+  studioView,
   onSetShellMode,
   onOpenStudioHome,
+  onStudioSubTabClick,
   onSetShowArtifacts,
   onSetShowEndConfirm,
   onOpenSettings,
@@ -52,6 +75,8 @@ export function TutorTabBar({
     onSetStudioEntryRequest(null);
     onSetScheduleLaunchIntent(null);
   };
+
+  const isStudioActive = shellMode === "studio";
 
   return (
     <div

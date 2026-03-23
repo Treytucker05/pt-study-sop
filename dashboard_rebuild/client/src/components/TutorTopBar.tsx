@@ -50,6 +50,7 @@ export interface TutorTopBarProps {
   activeWorkflowId: string | null;
   activeWorkflowDetail: TutorWorkflowDetailResponse | undefined;
   studioView: TutorStudioView;
+  studioSubTabs: StudioSubTab[];
   activeSessionId: string | null;
   teachRuntime: TutorTeachRuntimeViewModel | null;
 }
@@ -134,6 +135,7 @@ export function TutorTopBar({
   activeWorkflowId,
   activeWorkflowDetail,
   studioView,
+  studioSubTabs,
   activeSessionId,
   teachRuntime,
 }: TutorTopBarProps) {

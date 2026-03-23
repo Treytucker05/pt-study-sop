@@ -55,16 +55,6 @@ vi.mock("@/components/ContentFilter", () => ({
   ContentFilter: () => <div data-testid="content-filter" />,
 }));
 
-vi.mock("@/components/TutorStartPanel", () => ({
-  TutorStartPanel: () => <div data-testid="tutor-start-panel">start panel</div>,
-}));
-
-vi.mock("@/components/TutorCommandDeck", () => ({
-  TutorCommandDeck: ({ launchSettings }: { launchSettings: ReactNode }) => (
-    <div data-testid="tutor-command-deck">{launchSettings}</div>
-  ),
-}));
-
 vi.mock("@/components/TutorChat", () => ({
   TutorChat: () => <div data-testid="tutor-chat">chat</div>,
 }));
