@@ -646,6 +646,60 @@ export function WorkspaceCanvas({
           return <VaultGraphPanelContent />;
         case "mind-map":
           return <MindMapPanelContent />;
+        case "notes":
+          return (
+            <div className="flex flex-col h-full p-2 gap-2">
+              <input
+                type="text"
+                placeholder="Note title..."
+                className="w-full rounded-sm border border-primary/20 bg-black/60 px-2 py-1.5 font-terminal text-xs text-foreground/80 placeholder:text-foreground/30 focus:outline-none focus:border-primary/50"
+              />
+              <textarea
+                placeholder="Write your notes here..."
+                className="flex-1 min-h-0 w-full rounded-sm border border-primary/20 bg-black/60 px-2 py-1.5 font-terminal text-xs text-foreground/80 placeholder:text-foreground/30 focus:outline-none focus:border-primary/50 resize-none"
+              />
+              <button
+                type="button"
+                className="w-full flex items-center justify-center gap-2 rounded-sm border border-primary/20 bg-primary/5 px-3 py-1.5 font-terminal text-xs uppercase tracking-wider text-primary/70 hover:bg-primary/10 hover:text-primary transition-colors"
+              >
+                <Package className="w-3 h-3" />
+                Send to Packet
+              </button>
+            </div>
+          );
+        case "objectives":
+          return (
+            <div className="flex flex-col h-full p-2 gap-2">
+              <div className="text-[10px] font-terminal text-primary/50 uppercase tracking-wider">
+                Learning Objectives
+              </div>
+              <ScrollArea className="flex-1 min-h-0">
+                <div className="space-y-1 text-xs font-terminal text-foreground/70">
+                  <div className="px-2 py-1 text-foreground/40">
+                    Objectives will load from your study unit
+                  </div>
+                </div>
+              </ScrollArea>
+            </div>
+          );
+        case "packet":
+          return (
+            <div className="flex flex-col h-full p-2 gap-2">
+              <div className="text-[10px] font-terminal text-primary/50 uppercase tracking-wider">
+                Packet Items (0)
+              </div>
+              <div className="flex-1 min-h-0 flex items-center justify-center">
+                <span className="font-mono text-xs text-foreground/30">
+                  Send items here from other panels
+                </span>
+              </div>
+              <input
+                type="text"
+                placeholder="Quick add to packet..."
+                className="w-full rounded-sm border border-primary/20 bg-black/60 px-2 py-1.5 font-terminal text-xs text-foreground/80 placeholder:text-foreground/30 focus:outline-none focus:border-primary/50"
+              />
+            </div>
+          );
         default:
           return (
             <div className="flex flex-col items-center justify-center h-full gap-2 text-primary/40">
