@@ -34,6 +34,7 @@ Purpose: Turn explained material into learner-built structures, explanations, ma
 | M-ENC-012 | Clinical Decision Tree | medium | 10 min | conditional_reasoning |
 | M-ENC-013 | Memory Palace | medium | 10 min | method_of_loci |
 | M-ENC-014 | Chain Linking | low | 5 min | serial_encoding |
+| M-ENC-015 | Hand-Draw Map | medium | 5 min | spatial_encoding, generation |
 
 ### Interrogate (category: `interrogate`, maps to ENCODE stage)
 

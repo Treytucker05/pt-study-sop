@@ -188,7 +188,20 @@ export function useTutorWorkflow({
   const queryClient = useQueryClient();
 
   // ─── Workflow view state ───
-  const [studioView, setStudioView] = useState<TutorStudioView>("workbench");
+  const STUDIO_TAB_KEY = "tutor-studio-last-tab";
+  const [studioView, setStudioViewRaw] = useState<TutorStudioView>(() => {
+    try {
+      const stored = localStorage.getItem(STUDIO_TAB_KEY);
+      if (stored === "workbench" || stored === "priming" || stored === "polish" || stored === "final_sync") {
+        return stored;
+      }
+    } catch { /* ignore */ }
+    return "priming";
+  });
+  const setStudioView = useCallback((view: TutorStudioView) => {
+    setStudioViewRaw(view);
+    try { localStorage.setItem(STUDIO_TAB_KEY, view); } catch { /* ignore */ }
+  }, []);
   const [activeWorkflowId, setActiveWorkflowId] = useState<string | null>(null);
   const [workflowFilters, setWorkflowFilters] = useState<TutorWorkflowLaunchFilters>({
     search: "",
@@ -437,10 +450,11 @@ export function useTutorWorkflow({
       {
         label: "Structural organizer captured",
         ready: hasStructuralMethod,
+        warning: !hasStructuralMethod,
         detail:
           hasStructuralMethod
             ? "At least one structural PRIME method produced a study scaffold."
-            : "Run a structural PRIME method such as Hierarchical Advance Organizer or Structural Extraction.",
+            : "Tutor will have less context about how concepts connect",
       },
     ];
   }, [
@@ -504,7 +518,7 @@ export function useTutorWorkflow({
     );
 
     const readinessBlockers = primingReadinessItems
-      .filter((item) => !item.ready)
+      .filter((item) => !item.ready && !item.warning)
       .map((item) => ({ label: item.label, detail: item.detail }));
 
     return {

@@ -43,7 +43,7 @@
 | M-PRE-008 | PRIME | notes | node_cap, objective_link_required, output_format, priming_depth_mode | PASS | ok |
 | M-PRE-009 | PRIME | notes | source_cap, synthesis_format | PASS | ok |
 | M-PRE-010 | PRIME | notes | cognitive_depth, delivery_style, objective_scope | PASS | ok |
-| M-PRE-011 | PRIME | notes | confidence_scale, map_format, node_count_cap | PASS | ok |
+| M-ENC-015 | ENCODE | notes | confidence_scale, map_format, node_count_cap | PASS | ok |
 | M-REF-001 | REFERENCE | notes | artifact_depth, link_density | PASS | ok |
 | M-REF-002 | REFERENCE | notes | artifact_depth, link_density | PASS | ok |
 | M-REF-003 | REFERENCE | outline | artifact_depth, link_density | PASS | ok |

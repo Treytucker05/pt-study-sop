@@ -1,11 +1,11 @@
-id: M-PRE-011
+id: M-ENC-015
 name: Hand-Draw Map
-category: prime
+category: encode
 description: 'Hand-draw a spatial mind map of the topic structure using own words, simple pictures, colors, and spatial positioning. Close eyes afterward to recall layout — positions trigger details. Max 5 minutes, never full rewrite.'
 default_duration_min: 5
 energy_cost: medium
 best_stage: first_exposure
-control_stage: PRIME
+control_stage: ENCODE
 status: core
 tags:
 - spatial
@@ -95,11 +95,11 @@ primary_citations:
 - Fan (2023)
 - Van der Weel & Van der Meer (2024)
 gating_rules:
-- Do not assess or score the learner in PRIME.
-- Stay at orientation level — this is encoding, not retrieval.
+- Do not assess or score the learner in ENCODE.
+- Stay at encoding level — this is active production, not retrieval.
 artifact_type: notes
 facilitation_prompt: |
-  You are running M-PRE-011 (Hand-Draw Map) in PRIME stage.
+  You are running M-ENC-015 (Hand-Draw Map) in ENCODE stage.
   Guide the learner to create a spatial mind map of the topic structure.
 
   Requirements:
