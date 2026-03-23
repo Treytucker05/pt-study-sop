@@ -72,39 +72,14 @@ cd /d "%~dp0"
 echo [2/5] Checking dashboard UI build...
 echo [INFO] Frontend builds write directly into %DIST_DIR%.
 
-rem Allow skipping UI build (useful when you just want the server up fast)
+rem Build UI on every startup (takes ~20s, prevents stale-cache issues)
+rem Set SKIP_UI_BUILD=1 to skip when you just want the server up fast.
 if /I "%SKIP_UI_BUILD%"=="1" (
     echo [INFO] SKIP_UI_BUILD=1 - skipping UI build.
 ) else (
-    set "UI_BUILD_STATE="
-    if /I "%FORCE_UI_BUILD%"=="1" (
-        set "UI_BUILD_STATE=forced"
-    ) else (
-        for /f %%R in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$dist = [System.IO.Path]::GetFullPath('%DIST_INDEX%'); $root = [System.IO.Path]::GetFullPath('%REBUILD_DIR%'); $shared = [System.IO.Path]::GetFullPath('%SHARED_DIR%'); $uiImages = [System.IO.Path]::GetFullPath('%UI_IMAGES_DIR%'); $files = @(); if (Test-Path $root) { $clientDir = Join-Path $root 'client'; if (Test-Path $clientDir) { $files += Get-ChildItem $clientDir -Recurse -File -ErrorAction SilentlyContinue }; if (Test-Path $shared) { $files += Get-ChildItem $shared -Recurse -File -ErrorAction SilentlyContinue }; foreach ($name in 'package.json','package-lock.json','vite.config.ts','vite-plugin-meta-images.ts','tsconfig.json','vitest.config.ts','build.ts','build-and-sync.ps1') { $candidate = Join-Path $root $name; if (Test-Path $candidate) { $files += Get-Item $candidate } } }; if (Test-Path $uiImages) { $files += Get-ChildItem $uiImages -Recurse -File -ErrorAction SilentlyContinue }; if (-not (Test-Path $dist)) { 'missing' } elseif (-not $files -or $files.Count -eq 0) { 'current' } else { $distTime = (Get-Item $dist).LastWriteTimeUtc; $newest = $files | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1; if ($newest.LastWriteTimeUtc -gt $distTime) { 'stale' } else { 'current' } }"') do (
-            set "UI_BUILD_STATE=%%R"
-        )
-    )
-
-    if /I "!UI_BUILD_STATE!"=="forced" (
-        echo [INFO] FORCE_UI_BUILD=1 - rebuilding dashboard UI.
-    ) else if /I "!UI_BUILD_STATE!"=="missing" (
-        echo [INFO] Dashboard UI build output is missing - rebuilding.
-    ) else if /I "!UI_BUILD_STATE!"=="stale" (
-        echo [INFO] Dashboard UI source is newer than the build output - rebuilding.
-    ) else (
-        echo [INFO] Dashboard UI build is current - skipping rebuild.
-    )
-
-    if /I "!UI_BUILD_STATE!"=="forced" (
-        call :BUILD_UI
-        if errorlevel 1 goto END_FAIL
-    ) else if /I "!UI_BUILD_STATE!"=="missing" (
-        call :BUILD_UI
-        if errorlevel 1 goto END_FAIL
-    ) else if /I "!UI_BUILD_STATE!"=="stale" (
-        call :BUILD_UI
-        if errorlevel 1 goto END_FAIL
-    )
+    echo [INFO] Building dashboard UI...
+    call :BUILD_UI
+    if errorlevel 1 goto END_FAIL
 )
 
 if not exist "%DIST_INDEX%" (
