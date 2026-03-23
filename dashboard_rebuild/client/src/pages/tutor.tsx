@@ -2,6 +2,7 @@ import { CoreWorkspaceFrame } from "@/components/CoreWorkspaceFrame";
 import { PageScaffold } from "@/components/PageScaffold";
 import { TutorShell } from "@/components/TutorShell";
 import { TutorTopBar } from "@/components/TutorTopBar";
+import { TutorTabBar } from "@/components/TutorTabBar";
 import { useTutorHub } from "@/hooks/useTutorHub";
 import { useTutorSession } from "@/hooks/useTutorSession";
 import { useTutorWorkflow } from "@/hooks/useTutorWorkflow";
@@ -31,8 +32,10 @@ import {
 import type { TutorStudioEntryRequest } from "@/components/TutorStudioMode";
 import type { TutorScheduleLaunchIntent } from "@/components/TutorScheduleMode";
 import { HudButton } from "@/components/ui/HudButton";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
-import { RefreshCw } from "lucide-react";
+import { Palette, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { readTutorShellQuery, writeTutorShellQuery } from "@/lib/tutorUtils";
 import type { TutorPageMode, TutorShellQuery } from "@/lib/tutorUtils";
@@ -66,12 +69,10 @@ function useTutorPageController() {
   const [restoredTurns, setRestoredTurns] = useState<
     { question: string; answer: string | null }[] | undefined
   >();
-  const [shellMode, setShellMode] = useState<TutorPageMode>(
+  const initialShellMode =
     initialRouteQuery.mode ||
-      (initialRouteQuery.sessionId || storedActiveSessionId
-        ? "tutor"
-        : "launch"),
-  );
+    (initialRouteQuery.sessionId || storedActiveSessionId ? "tutor" : "studio");
+  const [shellMode, setShellMode] = useState<TutorPageMode>(initialShellMode);
   const [studioEntryRequest, setStudioEntryRequest] =
     useState<TutorStudioEntryRequest | null>(null);
   const [scheduleLaunchIntent, setScheduleLaunchIntent] =
@@ -284,7 +285,7 @@ function useTutorPageController() {
 
       explicitShellModeRef.current = {
         courseId: candidate.course_id,
-        mode: candidate.last_mode || "studio",
+        mode: candidate.last_mode === "launch" ? "studio" : candidate.last_mode || "studio",
       };
       hub.setCourseId(candidate.course_id);
       setStudioEntryRequest(null);
@@ -302,7 +303,7 @@ function useTutorPageController() {
       }
       if (candidate.last_mode === "publish") {
         workflow.setStudioView("workbench");
-        setShellMode("launch");
+        setShellMode("studio");
         setShowSetup(false);
         return;
       }
@@ -312,7 +313,7 @@ function useTutorPageController() {
         setShowSetup(false);
         return;
       }
-      setShellMode("launch");
+      setShellMode("studio");
       setShowSetup(false);
     },
     [hub, sessionWithWorkflow, workflow],
@@ -416,8 +417,9 @@ function useTutorPageController() {
           workflow.setStudioView("workbench");
         }
         setShellMode(
-          nextProjectShell.workspace_state.last_mode === "publish"
-            ? "launch"
+          nextProjectShell.workspace_state.last_mode === "publish" ||
+          nextProjectShell.workspace_state.last_mode === "launch"
+            ? "studio"
             : nextProjectShell.workspace_state.last_mode,
         );
       }
@@ -488,14 +490,14 @@ function useTutorPageController() {
         }
         clearTutorActiveSessionId();
         if (!initialRouteQuery.mode) {
-          setShellMode("launch");
+          setShellMode("studio");
         }
       }
     } catch {
       if (!initialRouteQuery.sessionId) {
         clearTutorActiveSessionId();
         if (!initialRouteQuery.mode) {
-          setShellMode("launch");
+          setShellMode("studio");
         }
       }
     }
@@ -608,7 +610,6 @@ function useTutorPageController() {
     if (
       !hasRestored ||
       typeof hub.courseId !== "number" ||
-      shellMode === "launch" ||
       shellHydratedCourseId !== hub.courseId
     ) {
       return;
@@ -722,16 +723,25 @@ function useTutorPageController() {
       studioView={workflow.studioView}
       teachRuntime={teachRuntime}
       activeSessionId={activeSessionId}
-      showArtifacts={sessionWithWorkflow.showArtifacts}
-      artifacts={sessionWithWorkflow.artifacts}
-      onSetShellMode={setShellMode}
-      onOpenStudioHome={openStudioHome}
-      onSetShowArtifacts={sessionWithWorkflow.setShowArtifacts}
-      onSetShowEndConfirm={sessionWithWorkflow.setShowEndConfirm}
-      onOpenSettings={openSettings}
-      onSetStudioEntryRequest={setStudioEntryRequest}
-      onSetScheduleLaunchIntent={setScheduleLaunchIntent}
     />
+  );
+
+  const tutorWorkspaceNav = (
+    <div className="px-2 md:px-3">
+      <TutorTabBar
+        shellMode={shellMode}
+        activeSessionId={activeSessionId}
+        showArtifacts={sessionWithWorkflow.showArtifacts}
+        artifacts={sessionWithWorkflow.artifacts}
+        onSetShellMode={setShellMode}
+        onOpenStudioHome={openStudioHome}
+        onSetShowArtifacts={sessionWithWorkflow.setShowArtifacts}
+        onSetShowEndConfirm={sessionWithWorkflow.setShowEndConfirm}
+        onOpenSettings={openSettings}
+        onSetStudioEntryRequest={setStudioEntryRequest}
+        onSetScheduleLaunchIntent={setScheduleLaunchIntent}
+      />
+    </div>
   );
 
   // ─── Render ───
@@ -739,34 +749,49 @@ function useTutorPageController() {
     <PageScaffold
       eyebrow="Live Study Core"
       title="Tutor"
-      subtitle="Run your study plan from Launch through Priming, then move into Tutor, Studio, schedule, and Final Sync without losing context."
+      subtitle="Run your study plan from Studio through Priming, then move into Tutor, schedule, and Final Sync without losing context."
       className="h-full min-h-0 [&_.page-shell\_\_horizon]:hidden [&_.page-shell\_\_hero]:border-transparent [&_.page-shell\_\_hero]:before:hidden"
       contentClassName="gap-6"
       stats={tutorHeroStats}
+      heroFooter={tutorWorkspaceNav}
       actions={
-        <HudButton
-          variant="outline"
-          className="gap-2 px-4 py-2 text-ui-xs text-[#ffd8e0]"
-          onClick={() => {
-            void Promise.all([
-              queryClient.invalidateQueries({ queryKey: ["tutor-hub"] }),
-              queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] }),
-              queryClient.invalidateQueries({
-                queryKey: ["tutor-project-shell"],
-              }),
-              queryClient.invalidateQueries({
-                queryKey: ["tutor-studio-restore"],
-              }),
-              queryClient.invalidateQueries({
-                queryKey: ["tutor-chat-materials-all-enabled"],
-              }),
-              queryClient.invalidateQueries({ queryKey: ["obsidian"] }),
-            ]);
-          }}
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          <span>REFRESH</span>
-        </HudButton>
+        <>
+          <a
+            href="/theme-lab/index.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "gap-2 px-4 uppercase tracking-[0.14em] text-[#ffd8e0]",
+            )}
+          >
+            <Palette className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+            <span>THEME LAB</span>
+          </a>
+          <HudButton
+            variant="outline"
+            className="gap-2 px-4 py-2 text-ui-xs text-[#ffd8e0]"
+            onClick={() => {
+              void Promise.all([
+                queryClient.invalidateQueries({ queryKey: ["tutor-hub"] }),
+                queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] }),
+                queryClient.invalidateQueries({
+                  queryKey: ["tutor-project-shell"],
+                }),
+                queryClient.invalidateQueries({
+                  queryKey: ["tutor-studio-restore"],
+                }),
+                queryClient.invalidateQueries({
+                  queryKey: ["tutor-chat-materials-all-enabled"],
+                }),
+                queryClient.invalidateQueries({ queryKey: ["obsidian"] }),
+              ]);
+            }}
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span>REFRESH</span>
+          </HudButton>
+        </>
       }
     >
       <CoreWorkspaceFrame

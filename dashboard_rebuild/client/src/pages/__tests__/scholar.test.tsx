@@ -1,5 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -14,32 +21,46 @@ const mockBrainGetProfileSummary = vi.fn();
 vi.mock("@/lib/api", () => ({
   api: {
     scholar: {
-      getInvestigations: (...args: unknown[]) => mockScholarGetInvestigations(...args),
-      createInvestigation: (...args: unknown[]) => mockScholarCreateInvestigation(...args),
-      getInvestigation: (...args: unknown[]) => mockScholarGetInvestigation(...args),
+      getInvestigations: (...args: unknown[]) =>
+        mockScholarGetInvestigations(...args),
+      createInvestigation: (...args: unknown[]) =>
+        mockScholarCreateInvestigation(...args),
+      getInvestigation: (...args: unknown[]) =>
+        mockScholarGetInvestigation(...args),
       getQuestions: (...args: unknown[]) => mockScholarGetQuestions(...args),
       getFindings: (...args: unknown[]) => mockScholarGetFindings(...args),
-      answerQuestion: (...args: unknown[]) => mockScholarAnswerQuestion(...args),
+      answerQuestion: (...args: unknown[]) =>
+        mockScholarAnswerQuestion(...args),
     },
     brain: {
-      getProfileSummary: (...args: unknown[]) => mockBrainGetProfileSummary(...args),
+      getProfileSummary: (...args: unknown[]) =>
+        mockBrainGetProfileSummary(...args),
     },
   },
 }));
 
 vi.mock("@/components/layout", () => ({
-  default: ({ children }: { children: React.ReactNode }) => <div data-testid="layout">{children}</div>,
+  default: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="layout">{children}</div>
+  ),
 }));
 
 vi.mock("@/components/ScholarRunStatus", () => ({
-  ScholarRunStatus: () => <div data-testid="scholar-run-status">run-status</div>,
+  ScholarRunStatus: () => (
+    <div data-testid="scholar-run-status">run-status</div>
+  ),
 }));
 
 function renderWithClient(ui: React.ReactElement) {
   const client = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 }, mutations: { retry: false } },
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0 },
+      mutations: { retry: false },
+    },
   });
-  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+  return render(
+    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
+  );
 }
 
 describe("ScholarPage research workspace", () => {
@@ -58,7 +79,12 @@ describe("ScholarPage research workspace", () => {
         summary: "Brain sees strong follow-through with some confidence drift.",
       },
       summaryCards: [
-        { key: "consistency", label: "Consistency", value: "Stable", helper: "Recent sessions are regular." },
+        {
+          key: "consistency",
+          label: "Consistency",
+          value: "Stable",
+          helper: "Recent sessions are regular.",
+        },
       ],
     });
 
@@ -67,7 +93,8 @@ describe("ScholarPage research workspace", () => {
         investigation_id: "scholar-inv-1",
         title: "Scaffold dependence investigation",
         query_text: "Why do I rely on scaffolds during retrieval?",
-        rationale: "Scholar should verify whether the current learner fit is still accurate.",
+        rationale:
+          "Scholar should verify whether the current learner fit is still accurate.",
         audience_type: "system",
         mode: "brain",
         status: "completed",
@@ -82,12 +109,14 @@ describe("ScholarPage research workspace", () => {
       investigation_id: "scholar-inv-1",
       title: "Scaffold dependence investigation",
       query_text: "Why do I rely on scaffolds during retrieval?",
-      rationale: "Scholar should verify whether the current learner fit is still accurate.",
+      rationale:
+        "Scholar should verify whether the current learner fit is still accurate.",
       audience_type: "learner",
       mode: "brain",
       status: "completed",
       confidence: "medium",
-      uncertainty_summary: "The web sources are directionally aligned but still need learner-specific context.",
+      uncertainty_summary:
+        "The web sources are directionally aligned but still need learner-specific context.",
       findings_count: 1,
       open_question_count: 1,
       sources: [
@@ -124,7 +153,8 @@ describe("ScholarPage research workspace", () => {
         finding_id: "finding-1",
         investigation_id: "scholar-inv-1",
         title: "Scaffolds may still be compensating for calibration drift",
-        summary: "The current sources suggest the learner needs fewer explanations but more retrieval checkpoints.",
+        summary:
+          "The current sources suggest the learner needs fewer explanations but more retrieval checkpoints.",
         relevance: "This would change how Scholar tunes Tutor pacing later.",
         confidence: "medium",
         uncertainty: "Needs learner confirmation.",
@@ -142,7 +172,10 @@ describe("ScholarPage research workspace", () => {
       },
     ]);
 
-    mockScholarAnswerQuestion.mockResolvedValue({ success: true, status: "answered" });
+    mockScholarAnswerQuestion.mockResolvedValue({
+      success: true,
+      status: "answered",
+    });
     mockScholarCreateInvestigation.mockResolvedValue({
       investigation_id: "scholar-inv-new",
       title: "New investigation",
@@ -164,11 +197,19 @@ describe("ScholarPage research workspace", () => {
     const { default: ScholarPage } = await import("@/pages/scholar");
     renderWithClient(<ScholarPage />);
 
-    expect(await screen.findByText("System Research Console")).toBeInTheDocument();
-    expect(screen.getByText(/Investigate assumptions, gather external evidence/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText("Scholar Research Console"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Focused on Scaffold dependence investigation\. Keep the current question, findings, and uncertainty visible while Scholar runs\./i,
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText("Calibration Builder")).toBeInTheDocument();
-    expect(screen.getAllByText("Scaffold dependence investigation").length).toBeGreaterThan(0);
-    expect(screen.getByText("ACTIVE INVESTIGATIONS")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Scaffold dependence investigation").length,
+    ).toBeGreaterThan(0);
+    expect(screen.getByText(/Active Investigations/i)).toBeInTheDocument();
     expect(screen.getByTestId("scholar-run-status")).toBeInTheDocument();
   }, 10000);
 
@@ -189,8 +230,12 @@ describe("ScholarPage research workspace", () => {
     renderWithClient(<ScholarPage />);
 
     const handoff = await screen.findByTestId("scholar-brain-handoff");
-    expect(handoff).toHaveTextContent("Did the last Tutor block feel too guided?");
-    expect(handoff).toHaveTextContent("Reason: Scholar is blocked on learner input.");
+    expect(handoff).toHaveTextContent(
+      "Did the last Tutor block feel too guided?",
+    );
+    expect(handoff).toHaveTextContent(
+      "Reason: Scholar is blocked on learner input.",
+    );
     expect(sessionStorage.getItem("scholar.open_from_brain.v1")).toBeNull();
   }, 10000);
 
@@ -202,9 +247,15 @@ describe("ScholarPage research workspace", () => {
     fireEvent.change(await screen.findByTestId("scholar-investigation-query"), {
       target: { value: "Why does Brain keep overestimating my retention?" },
     });
-    fireEvent.change(await screen.findByTestId("scholar-investigation-rationale"), {
-      target: { value: "I want Scholar to research whether the current calibration is wrong." },
-    });
+    fireEvent.change(
+      await screen.findByTestId("scholar-investigation-rationale"),
+      {
+        target: {
+          value:
+            "I want Scholar to research whether the current calibration is wrong.",
+        },
+      },
+    );
 
     await user.click(screen.getByTestId("button-start-investigation"));
 
@@ -214,7 +265,8 @@ describe("ScholarPage research workspace", () => {
     expect(mockScholarCreateInvestigation).toHaveBeenCalledWith(
       expect.objectContaining({
         query_text: "Why does Brain keep overestimating my retention?",
-        rationale: "I want Scholar to research whether the current calibration is wrong.",
+        rationale:
+          "I want Scholar to research whether the current calibration is wrong.",
         audience_type: "system",
       }),
     );
@@ -223,7 +275,9 @@ describe("ScholarPage research workspace", () => {
     const answerInput = await screen.findByPlaceholderText(
       "Write the learner answer Scholar should incorporate...",
     );
-    fireEvent.change(answerInput, { target: { value: "No, I still feel lost without guided checkpoints." } });
+    fireEvent.change(answerInput, {
+      target: { value: "No, I still feel lost without guided checkpoints." },
+    });
 
     await user.click(screen.getByTestId("button-submit-answer-q-1"));
 
@@ -241,7 +295,9 @@ describe("ScholarPage research workspace", () => {
     const { default: ScholarPage } = await import("@/pages/scholar");
     renderWithClient(<ScholarPage />);
 
-    expect(await screen.findByText("System Research Console")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Scholar Research Console"),
+    ).toBeInTheDocument();
     await waitFor(() => {
       expect(mockScholarGetQuestions).toHaveBeenCalledTimes(1);
     });

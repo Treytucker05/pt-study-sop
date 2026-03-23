@@ -11,6 +11,7 @@ interface MethodBlockCardProps {
   onDragStart?: (e: React.DragEvent) => void;
   showLegacyCategory?: boolean;
   hideHeader?: boolean;
+  className?: string;
 }
 
 export default function MethodBlockCard({
@@ -21,6 +22,7 @@ export default function MethodBlockCard({
   onDragStart,
   showLegacyCategory,
   hideHeader,
+  className,
 }: MethodBlockCardProps) {
   const stageColors = CONTROL_PLANE_COLORS[getMethodStageColorKey(block)] || CONTROL_PLANE_DEFAULT;
   const colorClass = stageColors.border;
@@ -34,7 +36,7 @@ export default function MethodBlockCard({
     return (
       <Wrapper
         {...(isInteractive ? { type: "button" as const, onClick } : {})}
-        className={`${hideHeader ? "" : `border-2 ${colorClass}`} p-2 rounded-none transition-opacity ${isInteractive ? "w-full cursor-pointer text-left hover:opacity-80" : ""}`}
+        className={`${hideHeader ? "" : `border-2 ${colorClass}`} p-2 rounded-none transition-opacity ${isInteractive ? "w-full cursor-pointer text-left hover:opacity-80" : ""} ${className || ""}`}
         draggable={draggable}
         onDragStart={onDragStart}
       >
@@ -69,9 +71,9 @@ export default function MethodBlockCard({
   }
 
   return (
-    <Wrapper
+      <Wrapper
       {...(isInteractive ? { type: "button" as const, onClick } : {})}
-      className={`border-2 ${colorClass} p-3 rounded-none transition-opacity ${isInteractive ? "w-full cursor-pointer text-left hover:opacity-80" : ""}`}
+      className={`border-2 ${colorClass} p-3 rounded-none transition-opacity ${isInteractive ? "w-full cursor-pointer text-left hover:opacity-80" : ""} ${className || ""}`}
       draggable={draggable}
       onDragStart={onDragStart}
     >

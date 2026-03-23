@@ -114,7 +114,7 @@ interface TutorWorkflowPrimingPanelProps {
   preflightBlockers: { code?: string; message: string }[];
   preflightLoading: boolean;
   preflightError: string | null;
-  onBackToLaunch: () => void;
+  onBackToStudio: () => void;
   onSaveDraft: () => void;
   onMarkReady: () => void;
   onStartTutor: () => void;
@@ -169,21 +169,73 @@ function renderObjectives(objectives: AppLearningObjective[] | Array<{ lo_code?:
   );
 }
 
+function formatOutputKeyLabel(key: string) {
+  return key
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function normalizePreflightMessage(message: string) {
+  return message.replace(/Tutor preflight/gi, "Tutor readiness check");
+}
+
 function renderTextList(title: string, lines: string[]) {
   const values = lines.map((line) => line.trim()).filter(Boolean);
   if (values.length === 0) return null;
   return (
     <div className="space-y-2">
       <div className="font-arcade text-ui-2xs text-primary/80">{title}</div>
-      <div className="space-y-1">
+      <div className="space-y-2">
         {values.map((value) => (
-          <div key={`${title}-${value}`} className="font-terminal text-sm text-foreground/90">
+          <div
+            key={`${title}-${value}`}
+            className="border border-primary/15 bg-black/25 px-3 py-2 font-terminal text-base leading-7 text-foreground/95"
+          >
             {value}
           </div>
         ))}
       </div>
     </div>
   );
+}
+
+function renderStructuredValue(value: unknown) {
+  if (typeof value === "string" && value.trim()) {
+    return (
+      <div className="border border-primary/15 bg-black/35 p-4">
+        <ObsidianRenderer content={value} />
+      </div>
+    );
+  }
+  if (Array.isArray(value)) {
+    const stringItems = value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+    if (stringItems.length === value.length && stringItems.length > 0) {
+      return renderTextList("Items", stringItems);
+    }
+    if (value.length > 0) {
+      return (
+        <div className="space-y-2">
+          {value.map((entry, index) => (
+            <div key={index} className="border border-primary/15 bg-black/25 p-3">
+              <pre className="font-mono text-sm leading-6 whitespace-pre-wrap text-foreground/90">
+                {JSON.stringify(entry, null, 2)}
+              </pre>
+            </div>
+          ))}
+        </div>
+      );
+    }
+  }
+  if (value && typeof value === "object") {
+    return (
+      <div className="border border-primary/15 bg-black/25 p-3">
+        <pre className="font-mono text-sm leading-6 whitespace-pre-wrap text-foreground/90">
+          {JSON.stringify(value, null, 2)}
+        </pre>
+      </div>
+    );
+  }
+  return null;
 }
 
 function renderMethodOutput(entry: Record<string, unknown>) {
@@ -196,14 +248,59 @@ function renderMethodOutput(entry: Record<string, unknown>) {
   const concepts = Array.isArray(entry.concepts) ? entry.concepts.filter((value): value is string => typeof value === "string") : [];
   const terms = Array.isArray(entry.terminology) ? entry.terminology.filter((value): value is string => typeof value === "string") : [];
   const gaps = Array.isArray(entry.gaps) ? entry.gaps.filter((value): value is string => typeof value === "string") : [];
+  const extraEntries = Object.entries(entry).filter(
+    ([key, value]) =>
+      ![
+        "material_id",
+        "title",
+        "source_path",
+        "summary",
+        "map",
+        "learning_objectives",
+        "concepts",
+        "terminology",
+        "gaps",
+      ].includes(key) && value != null,
+  );
   return (
     <div className="space-y-4">
-      {summary ? <div className="border border-primary/15 bg-black/35 p-4"><ObsidianRenderer content={summary} /></div> : null}
+      {summary ? (
+        <div className="space-y-2">
+          <div className="font-arcade text-ui-2xs text-primary/80">Summary</div>
+          <div className="border border-primary/15 bg-black/35 p-4">
+            <ObsidianRenderer content={summary} />
+          </div>
+        </div>
+      ) : null}
       {objectives.length > 0 ? renderObjectives(objectives) : null}
-      {mermaid ? <div className="space-y-2"><div className="font-arcade text-ui-2xs text-primary/80">Structure Map</div><div className="h-[260px] overflow-hidden border border-primary/20 bg-black/50"><ConceptMapStructured initialMermaid={mermaid} hideToolbar className="h-full" /></div></div> : map ? <div className="border border-primary/15 bg-black/35 p-4"><ObsidianRenderer content={map} /></div> : null}
+      {mermaid ? (
+        <div className="space-y-2">
+          <div className="font-arcade text-ui-2xs text-primary/80">Structure Map</div>
+          <div className="h-[260px] overflow-hidden border border-primary/20 bg-black/50">
+            <ConceptMapStructured initialMermaid={mermaid} hideToolbar className="h-full" />
+          </div>
+        </div>
+      ) : map ? (
+        <div className="space-y-2">
+          <div className="font-arcade text-ui-2xs text-primary/80">Structure Map</div>
+          <div className="border border-primary/15 bg-black/35 p-4">
+            <ObsidianRenderer content={map} />
+          </div>
+        </div>
+      ) : null}
       {renderTextList("Concepts", concepts)}
       {renderTextList("Terminology", terms)}
       {renderTextList("Ambiguities", gaps)}
+      {extraEntries.map(([key, value]) => {
+        const rendered = renderStructuredValue(value);
+        if (!rendered) return null;
+        return (
+          <div key={key} className="space-y-2">
+            <div className="font-arcade text-ui-2xs text-primary/80">{formatOutputKeyLabel(key)}</div>
+            {rendered}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -309,7 +406,7 @@ export function TutorWorkflowPrimingPanel({
   preflightBlockers,
   preflightLoading,
   preflightError,
-  onBackToLaunch,
+  onBackToStudio,
   onSaveDraft,
   onMarkReady,
   onStartTutor,
@@ -430,13 +527,6 @@ export function TutorWorkflowPrimingPanel({
       !primingMethods.includes(methodId) &&
       (entries.length > 0 || Boolean(run && Object.keys(run.outputs || {}).length > 0)),
   );
-  const hasLegacyPrimeOutputs =
-    objectiveItems.length > 0 ||
-    summaryText.trim().length > 0 ||
-    conceptsText.trim().length > 0 ||
-    terminologyText.trim().length > 0 ||
-    rootExplanationText.trim().length > 0 ||
-    gapsText.trim().length > 0;
   const readyForTutor = readinessItems.every((item) => item.ready);
   const hasPreflightIssues = Boolean(preflightError) || preflightBlockers.length > 0;
   const tutorLaunchDisabled = !readyForTutor || preflightLoading || hasPreflightIssues;
@@ -466,17 +556,17 @@ export function TutorWorkflowPrimingPanel({
     {
       id: "setup",
       label: "SETUP",
-      summary: "Set the course, study unit, topic, and launch contract before any Tutor handoff.",
+      summary: "Lock the class, study unit, and topic so Priming has the right scope before you read or extract.",
     },
     {
       id: "materials",
       label: "MATERIALS",
-      summary: "Scope the exact materials you want Priming to read and keep visible in the source viewer.",
+      summary: "Read the exact materials in scope and use the full-width source viewer when you need to inspect the packet.",
     },
     {
       id: "methods",
       label: "PRIME METHODS",
-      summary: "Pick the PRIME methods, see extraction blockers, and run the extraction pass.",
+      summary: "Choose the PRIME methods for this pass, then run extraction on the materials already in scope.",
       disabled: selectedMaterials.length === 0,
       helperText: "Select at least one material first so Priming has a source scope.",
     },
@@ -493,7 +583,7 @@ export function TutorWorkflowPrimingPanel({
     {
       id: "handoff",
       label: "TUTOR HANDOFF",
-      summary: "Choose the Tutor chain, refine notes, save the draft, and launch Tutor when ready.",
+      summary: "Review the real Tutor handoff contract, choose the handoff chain, save the draft, and start Tutor when ready.",
     },
   ];
 
@@ -547,8 +637,8 @@ export function TutorWorkflowPrimingPanel({
           <div>
             <div className="font-arcade text-xs text-primary">SOURCE VIEWER</div>
             <p className={`${TEXT_MUTED} mt-1 text-xs`}>
-              Keep the scoped source visible while you work. Priming now stays in one flow instead of
-              sending you below the fold.
+              Keep the scoped source visible while you work. When you need full reading width, switch to
+              the Materials step and use the dedicated reader.
             </p>
           </div>
           <Badge variant="outline" className="rounded-none border-primary/25 text-primary/80">
@@ -643,71 +733,10 @@ export function TutorWorkflowPrimingPanel({
 
       <Card className="rounded-none border-primary/20 bg-black/35">
         <CardHeader className="border-b border-primary/15 pb-3">
-          <CardTitle className="font-arcade text-xs text-primary">TUTOR LAUNCH CONTRACT</CardTitle>
+          <CardTitle className="font-arcade text-xs text-primary">WORKFLOW CONTEXT</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 pt-4">
-          <div className="grid gap-3 lg:grid-cols-2">
-            {readinessItems.map((item) => (
-              <div
-                key={item.label}
-                className={cn(
-                  "border p-3",
-                  item.ready
-                    ? "border-emerald-500/25 bg-emerald-500/5"
-                    : "border-primary/15 bg-black/30",
-                )}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="font-arcade text-ui-2xs text-primary/80">{item.label}</div>
-                    <div className="mt-2 font-terminal text-sm text-foreground/90">{item.detail}</div>
-                  </div>
-                  {item.ready ? (
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-300" />
-                  ) : (
-                    <Badge variant="outline" className="rounded-none border-primary/25 text-primary/80">
-                      BLOCKED
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {preflightLoading ? (
-            <div className="flex items-center gap-2 border border-primary/15 bg-black/30 p-3 font-terminal text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Checking Tutor launch blockers...
-            </div>
-          ) : null}
-
-          {preflightError ? (
-            <div className="border border-destructive/35 bg-destructive/10 p-3 font-terminal text-sm text-destructive/90">
-              {preflightError}
-            </div>
-          ) : null}
-
-          {preflightBlockers.length > 0 ? (
-            <div className="space-y-3 border border-destructive/35 bg-destructive/10 p-4">
-              <div className="font-arcade text-xs text-destructive/90">TUTOR LAUNCH BLOCKERS</div>
-              <div className="space-y-2">
-                {preflightBlockers.map((blocker, index) => (
-                  <div key={`${blocker.code || blocker.message}-${index}`} className="font-terminal text-sm text-destructive/90">
-                    {blocker.message}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
-
-      <details className="border border-primary/20 bg-black/35">
-        <summary className="cursor-pointer px-4 py-3 font-arcade text-xs text-primary">
-          WORKFLOW CONTEXT
-        </summary>
-        <div className="space-y-4 border-t border-primary/15 p-4">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 lg:grid-cols-3">
             <div className="border border-primary/15 bg-black/30 p-3">
               <div className="font-arcade text-ui-2xs text-primary/80">WORKFLOW</div>
               <div className="mt-2 break-all font-terminal text-sm text-foreground">
@@ -721,20 +750,14 @@ export function TutorWorkflowPrimingPanel({
               </div>
             </div>
             <div className="border border-primary/15 bg-black/30 p-3">
-              <div className="font-arcade text-ui-2xs text-primary/80">STATUS</div>
-              <div className="mt-2 font-terminal text-sm text-foreground">
-                {formatWorkflowStatus(workflow?.status)}
-              </div>
-            </div>
-            <div className="border border-primary/15 bg-black/30 p-3">
               <div className="font-arcade text-ui-2xs text-primary/80">OBSIDIAN TARGET</div>
               <div className="mt-2 break-all font-terminal text-xs text-foreground">
                 {vaultFolderPreview || "Select a class to derive the folder path."}
               </div>
             </div>
           </div>
-        </div>
-      </details>
+        </CardContent>
+      </Card>
 
       {renderStepFooter()}
     </div>
@@ -756,6 +779,30 @@ export function TutorWorkflowPrimingPanel({
             selectedMaterials={selectedMaterials}
             setSelectedMaterials={setSelectedMaterials}
           />
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-none border-primary/20 bg-black/35">
+        <CardHeader className="border-b border-primary/15 pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle className="font-arcade text-xs text-primary">FULL READER</CardTitle>
+              <p className={`${TEXT_MUTED} mt-2 text-xs`}>
+                Use the whole width here when you actually need to read the packet. The popout keeps a
+                separate window available for longer review.
+              </p>
+            </div>
+            <Badge variant="outline" className="rounded-none border-primary/25 text-primary/80">
+              {selectedMaterials.length > 0
+                ? `${selectedMaterials.length} material${selectedMaterials.length === 1 ? "" : "s"}`
+                : "Choose material"}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="px-0 pb-0 pt-4">
+          <div className="h-[68vh] min-h-[32rem] border-t border-primary/15">
+            <PrimingMaterialReader courseId={courseId} selectedMaterials={selectedMaterials} />
+          </div>
         </CardContent>
       </Card>
 
@@ -791,20 +838,22 @@ export function TutorWorkflowPrimingPanel({
               Failed to load PRIME methods.
             </div>
           ) : (
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-3 xl:grid-cols-2">
               {primeMethods.map((method) => {
                 const methodId = method.method_id || "";
                 const selected = primingMethods.includes(methodId);
                 return (
-                  <div
+                  <MethodBlockCard
                     key={method.id}
+                    block={method}
+                    onClick={() => togglePrimingMethod(methodId)}
                     className={cn(
-                      "border p-2 transition-colors",
-                      selected ? "border-primary/40 bg-primary/10" : "border-primary/15 bg-black/25",
+                      "min-h-[12rem] transition-colors",
+                      selected
+                        ? "border-primary bg-[linear-gradient(135deg,rgba(255,84,120,0.18),rgba(20,5,10,0.96))] text-foreground shadow-[0_0_22px_rgba(255,84,120,0.18)]"
+                        : "border-primary/20 bg-[linear-gradient(135deg,rgba(18,22,30,0.92),rgba(8,10,14,0.98))] text-foreground hover:border-primary/35 hover:bg-primary/5",
                     )}
-                  >
-                    <MethodBlockCard block={method} compact onClick={() => togglePrimingMethod(methodId)} />
-                  </div>
+                  />
                 );
               })}
             </div>
@@ -955,10 +1004,10 @@ export function TutorWorkflowPrimingPanel({
       {nonSelectedExtractedMethodRuns.length > 0 ? (
         <Card className="rounded-none border-primary/20 bg-black/35">
           <CardHeader className="border-b border-primary/15 pb-3">
-            <CardTitle className="font-arcade text-xs text-primary">ALREADY EXTRACTED PRIME METHODS</CardTitle>
+            <CardTitle className="font-arcade text-xs text-primary">STORED OUTPUTS FROM EARLIER PRIMING RUNS</CardTitle>
             <p className={`${TEXT_MUTED} mt-2 text-xs`}>
-              These outputs already exist on the selected materials but are not part of the method set
-              currently queued for the next extract.
+              These outputs were already extracted on the selected materials. They stay visible here even
+              when you unselect a method for the next extraction pass.
             </p>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
@@ -998,44 +1047,6 @@ export function TutorWorkflowPrimingPanel({
         </Card>
       ) : null}
 
-      {hasLegacyPrimeOutputs && primingMethodRuns.length === 0 ? (
-        <details className="border border-primary/20 bg-black/35">
-          <summary className="cursor-pointer px-4 py-3 font-arcade text-xs text-primary">
-            LEGACY PRIME OUTPUTS
-          </summary>
-          <div className="grid gap-4 border-t border-primary/15 p-4 lg:grid-cols-2">
-            <div className="space-y-4">
-              {summaryText.trim() ? (
-                <div>
-                  <div className="font-arcade text-ui-2xs text-primary/80">Summary</div>
-                  <div className="mt-2 border border-primary/15 bg-black/30 p-4">
-                    <ObsidianRenderer content={summaryText} />
-                  </div>
-                </div>
-              ) : null}
-              {conceptsText.trim()
-                ? renderTextList("Study Spine", conceptsText.split(/\r?\n/).filter(Boolean))
-                : null}
-              {terminologyText.trim()
-                ? renderTextList("Terminology", terminologyText.split(/\r?\n/).filter(Boolean))
-                : null}
-            </div>
-            <div className="space-y-4">
-              {rootExplanationText.trim() ? renderMethodOutput({ map: rootExplanationText }) : null}
-              {gapsText.trim() ? renderTextList("Ambiguities", gapsText.split(/\r?\n/).filter(Boolean)) : null}
-            </div>
-          </div>
-        </details>
-      ) : null}
-
-      <div className="border border-primary/15 bg-black/35 p-4">
-        <div className="font-arcade text-ui-2xs text-primary/80">PRIME BOUNDARY</div>
-        <div className="mt-2 font-terminal text-sm text-muted-foreground">
-          Need root mechanism understanding? That belongs to TEACH after PRIME finishes structure. Keep
-          Priming focused on orientation, scope, and handoff quality.
-        </div>
-      </div>
-
       {renderStepFooter()}
     </div>
   );
@@ -1048,7 +1059,7 @@ export function TutorWorkflowPrimingPanel({
             <div>
               <CardTitle className="font-arcade text-xs text-primary">TUTOR HANDOFF</CardTitle>
               <p className={`${TEXT_MUTED} mt-2 text-xs`}>
-                Choose the Tutor chain, refine the handoff notes, then save or launch when the contract is ready.
+                Choose the Tutor chain, refine the handoff notes, then save or start Tutor when the contract is ready.
               </p>
             </div>
             <Badge variant="outline" className="rounded-none border-primary/25 text-primary/80">
@@ -1057,14 +1068,85 @@ export function TutorWorkflowPrimingPanel({
           </div>
         </CardHeader>
         <CardContent className="space-y-4 pt-4">
-          <div className="space-y-3 border border-primary/20 bg-black/30 p-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <div className="font-arcade text-xs text-primary">TUTOR CHAIN</div>
-                <div className={`${TEXT_MUTED} mt-2 text-xs`}>
-                  This applies to the Tutor session launch, not to the Priming extraction.
+            <div className="space-y-4 border border-primary/20 bg-black/30 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="font-arcade text-xs text-primary">TUTOR HANDOFF CONTRACT</div>
+                  <div className={`${TEXT_MUTED} mt-2 text-xs`}>
+                    Review the actual Tutor requirements here after Priming is scoped and extracted.
+                  </div>
+                </div>
+              <Badge variant="outline" className="rounded-none border-primary/25 text-primary/80">
+                {tutorLaunchDisabled ? "BLOCKED" : "READY"}
+              </Badge>
+            </div>
+
+            <div className="grid gap-3 lg:grid-cols-2">
+              {readinessItems.map((item) => (
+                <div
+                  key={item.label}
+                  className={cn(
+                    "border p-3",
+                    item.ready
+                      ? "border-emerald-500/25 bg-emerald-500/5"
+                      : "border-primary/15 bg-black/30",
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-arcade text-ui-2xs text-primary/80">{item.label}</div>
+                      <div className="mt-2 font-terminal text-sm text-foreground/90">{item.detail}</div>
+                    </div>
+                    {item.ready ? (
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-300" />
+                    ) : (
+                      <Badge variant="outline" className="rounded-none border-primary/25 text-primary/80">
+                        BLOCKED
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {preflightLoading ? (
+              <div className="flex items-center gap-2 border border-primary/15 bg-black/30 p-3 font-terminal text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Checking Tutor readiness blockers...
+              </div>
+            ) : null}
+
+            {preflightError ? (
+              <div className="border border-destructive/35 bg-destructive/10 p-3 font-terminal text-sm text-destructive/90">
+                {normalizePreflightMessage(preflightError)}
+              </div>
+            ) : null}
+
+            {preflightBlockers.length > 0 ? (
+              <div className="space-y-3 border border-destructive/35 bg-destructive/10 p-4">
+                <div className="font-arcade text-xs text-destructive/90">TUTOR HANDOFF BLOCKERS</div>
+                <div className="space-y-2">
+                  {preflightBlockers.map((blocker, index) => (
+                    <div
+                      key={`${blocker.code || blocker.message}-${index}`}
+                      className="font-terminal text-sm text-destructive/90"
+                    >
+                      {normalizePreflightMessage(blocker.message)}
+                    </div>
+                  ))}
                 </div>
               </div>
+            ) : null}
+          </div>
+
+            <div className="space-y-3 border border-primary/20 bg-black/30 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="font-arcade text-xs text-primary">TUTOR CHAIN</div>
+                  <div className={`${TEXT_MUTED} mt-2 text-xs`}>
+                    This applies to the Tutor session start, not to the Priming extraction.
+                  </div>
+                </div>
               <Badge variant="outline" className="rounded-none border-primary/25 text-primary/80">
                 {tutorChainSummary}
               </Badge>
@@ -1172,7 +1254,7 @@ export function TutorWorkflowPrimingPanel({
 
             {chainMode === "auto" ? (
               <div className="border border-primary/15 bg-black/30 p-3 font-terminal text-sm text-muted-foreground">
-                Auto launch lets Tutor choose the live teaching structure without a fixed chain.
+                Auto mode lets Tutor choose the live teaching structure without a fixed chain.
               </div>
             ) : null}
           </div>
@@ -1234,8 +1316,8 @@ export function TutorWorkflowPrimingPanel({
             <div className="font-arcade text-xs text-primary">TUTOR HANDOFF STATUS</div>
             <div className="font-terminal text-sm text-foreground">
               {tutorLaunchDisabled
-                ? "Tutor is still blocked. Finish the launch contract and resolve the blockers before starting a session."
-                : "The handoff packet is ready. You can launch Tutor from here."}
+                ? "Tutor is still blocked. Finish the handoff contract and resolve the blockers before starting a session."
+                : "The handoff packet is ready. You can start Tutor from here."}
             </div>
             {preflightBlockers.length > 0 ? (
               <div className="space-y-2 border border-destructive/35 bg-destructive/10 p-3">
@@ -1245,7 +1327,7 @@ export function TutorWorkflowPrimingPanel({
                     key={`handoff-${blocker.code || blocker.message}-${index}`}
                     className="font-terminal text-sm text-destructive/90"
                   >
-                    {blocker.message}
+                    {normalizePreflightMessage(blocker.message)}
                   </div>
                 ))}
               </div>
@@ -1255,9 +1337,9 @@ export function TutorWorkflowPrimingPanel({
                 type="button"
                 variant="outline"
                 className="rounded-none font-arcade text-ui-2xs"
-                onClick={onBackToLaunch}
+                onClick={onBackToStudio}
               >
-                BACK TO LAUNCH
+                BACK TO STUDIO
               </Button>
               <Button
                 type="button"
@@ -1314,6 +1396,7 @@ export function TutorWorkflowPrimingPanel({
       activeStepId={activeStepId}
       activeContent={activeContent}
       sourceViewer={sourceViewer}
+      sourceViewerHidden={activeStepId === "materials"}
       headingRef={headingRef}
       onStepChange={setActiveStepId}
     />

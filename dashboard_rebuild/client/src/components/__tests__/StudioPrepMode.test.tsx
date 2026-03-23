@@ -164,10 +164,10 @@ describe("StudioPrepMode", () => {
   it("shows empty state when no chain selected", () => {
     renderPrep({ chainId: undefined });
     expect(screen.getByText("NO CHAIN SELECTED")).toBeInTheDocument();
-    expect(screen.getByText("OPEN START PANEL")).toBeInTheDocument();
+    expect(screen.getByText("OPEN STUDIO")).toBeInTheDocument();
   });
 
-  it("renders launch session button", async () => {
+  it("renders studio entry button", async () => {
     const onLaunchSession = vi.fn();
     renderPrep({ onLaunchSession });
 

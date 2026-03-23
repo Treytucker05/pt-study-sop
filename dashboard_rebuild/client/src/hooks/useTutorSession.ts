@@ -328,7 +328,7 @@ export function useTutorSession({
     setShowSetup(false);
     setShowArtifacts(false);
     setShowEndConfirm(false);
-    setShellMode("launch");
+    setShellMode("studio");
     clearTutorActiveSessionId();
   }, [setActiveSessionId, setRestoredTurns, setShellMode, setShowSetup]);
 
@@ -356,6 +356,17 @@ export function useTutorSession({
       return sliceSeconds;
     },
     [activeSessionId, activeWorkflowId, stageTimerPauseCount, stageTimerStartedAt],
+  );
+
+  const checkpointWorkflowStudyTimer = useCallback(
+    async (triggerSource = "manual_save", notes: Record<string, unknown>[] = []) => {
+      if (!stageTimerRunning || !stageTimerStartedAt) return 0;
+      const sliceSeconds = await persistStageTimeSlice(triggerSource, notes);
+      setStageTimerStartedAt(new Date().toISOString());
+      setStageTimerRunning(true);
+      return sliceSeconds;
+    },
+    [persistStageTimeSlice, stageTimerRunning, stageTimerStartedAt],
   );
 
   // ─── End session ───
@@ -674,7 +685,7 @@ export function useTutorSession({
   // ─── Stage timer toggle ───
   const toggleWorkflowStudyTimer = useCallback(async () => {
     if (!activeWorkflowId) {
-      toast.error("Launch Tutor from a study plan to record study time.");
+      toast.error("Open Tutor from Studio to record study time.");
       return;
     }
     try {
@@ -849,6 +860,7 @@ export function useTutorSession({
     applySessionState,
     clearActiveSessionState,
     persistStageTimeSlice,
+    checkpointWorkflowStudyTimer,
     endSessionById,
     endSession,
     shipToBrainAndEnd,

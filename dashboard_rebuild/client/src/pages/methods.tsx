@@ -1,11 +1,36 @@
 import { useEffect, useId, useReducer, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Blocks, Link2, BarChart3, Plus, Star, Play, Loader2, ChevronDown, ChevronRight, Pencil, RotateCcw, AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  Blocks,
+  Link2,
+  BarChart3,
+  Plus,
+  Star,
+  Play,
+  Loader2,
+  ChevronDown,
+  ChevronRight,
+  Pencil,
+  RotateCcw,
+  AlertTriangle,
+} from "lucide-react";
+import { HudButton } from "@/components/ui/HudButton";
+import { HudPanel } from "@/components/ui/HudPanel";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
 import MethodBlockCard from "@/components/MethodBlockCard";
@@ -15,8 +40,20 @@ import RatingDialog from "@/components/RatingDialog";
 import { PageScaffold } from "@/components/PageScaffold";
 import { SupportWorkspaceFrame } from "@/components/SupportWorkspaceFrame";
 import { api } from "@/lib/api";
-import { DISPLAY_STAGE_LABELS, getDisplayStage, type DisplayStage } from "@/lib/displayStage";
-import type { MethodBlock, MethodChain, MethodChainExpanded, ChainRunResult, ChainRunSummary, MethodCategory } from "@/api";
+import {
+  DISPLAY_STAGE_LABELS,
+  getDisplayStage,
+  type DisplayStage,
+} from "@/lib/displayStage";
+import type {
+  MethodBlock,
+  MethodChain,
+  MethodChainExpanded,
+  ChainRunResult,
+  ChainRunSummary,
+  MethodCategory,
+} from "@/api";
+import { BTN_TOOLBAR, BTN_TOOLBAR_ACTIVE, INPUT_BASE } from "@/lib/theme";
 
 const DISPLAY_STAGES: Array<DisplayStage | "all" | "favorites"> = [
   "all",
@@ -35,6 +72,14 @@ const TAB_ITEMS = [
   { id: "chains", label: "CHAINS", icon: Link2 },
   { id: "analytics", label: "ANALYTICS", icon: BarChart3 },
 ] as const;
+
+const METHODS_PANEL_INSET =
+  "bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.05)_18%,rgba(0,0,0,0.14)_100%),linear-gradient(135deg,rgba(110,14,34,0.14),rgba(10,4,7,0.12)_58%,rgba(0,0,0,0.08)_100%)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_12px_24px_rgba(0,0,0,0.12)] backdrop-blur-lg";
+const METHODS_SIDEBAR_BUTTON =
+  "w-full justify-start px-3 py-2 text-left transition";
+const METHODS_STAGE_BUTTON =
+  "w-full min-h-[42px] justify-start px-3 py-2 text-left";
+const METHODS_META_CHIP = "rounded-full border border-primary/20 px-2 py-1";
 
 type TabId = (typeof TAB_ITEMS)[number]["id"];
 
@@ -142,9 +187,11 @@ function normalizeBlockCategory(block: MethodBlock): MethodCategory {
     OVERLEARN: "OVERLEARN",
   };
   const control = String(block.control_stage ?? "").toUpperCase();
-  if (categoryOptions.includes(control as MethodCategory)) return control as MethodCategory;
+  if (categoryOptions.includes(control as MethodCategory))
+    return control as MethodCategory;
   const raw = String(block.category ?? "").toUpperCase();
-  if (categoryOptions.includes(raw as MethodCategory)) return raw as MethodCategory;
+  if (categoryOptions.includes(raw as MethodCategory))
+    return raw as MethodCategory;
   return legacyToControl[raw] ?? "PRIME";
 }
 
@@ -191,51 +238,71 @@ function MethodsLoadErrorPanel({
   onRetry: () => void;
 }) {
   return (
-    <div className="rounded-[1rem] border border-destructive/40 bg-destructive/10 p-4 text-left" data-testid="methods-load-error">
+    <HudPanel
+      variant="b"
+      className="bg-destructive/10 p-4 text-left"
+      data-testid="methods-load-error"
+    >
       <div className="flex items-start gap-3">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
         <div className="space-y-2">
-          <div className="font-arcade text-xs tracking-[0.2em] text-destructive">{title}</div>
+          <div className="font-arcade text-xs tracking-[0.2em] text-destructive">
+            {title}
+          </div>
           <p className="font-terminal text-sm text-white">{message}</p>
-          <Button
+          <HudButton
             type="button"
             variant="outline"
-            size="sm"
-            className="rounded-none border-[3px] border-double border-destructive/60 bg-black/40 font-arcade text-xs text-destructive hover:bg-destructive/15"
+            className="w-auto px-3 border-destructive/60 bg-black/40 text-destructive hover:bg-destructive/15"
             onClick={onRetry}
           >
             Retry
-          </Button>
+          </HudButton>
         </div>
       </div>
-    </div>
+    </HudPanel>
   );
 }
 
 function useMethodsPageController() {
   const [activeTab, setActiveTab] = useState<TabId>("library");
-  const [stageFilter, setStageFilter] = useState<DisplayStage | "all" | "favorites">("all");
+  const [stageFilter, setStageFilter] = useState<
+    DisplayStage | "all" | "favorites"
+  >("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddBlock, setShowAddBlock] = useState(false);
   const [showAddChain, setShowAddChain] = useState(false);
-  const [selectedChain, setSelectedChain] = useState<MethodChainExpanded | null>(null);
+  const [selectedChain, setSelectedChain] =
+    useState<MethodChainExpanded | null>(null);
   const [editingBlock, setEditingBlock] = useState<MethodBlock | null>(null);
-  const [ratingTarget, setRatingTarget] = useState<{ id: number; name: string; type: "method" | "chain" } | null>(null);
-  const [runTarget, setRunTarget] = useState<{ id: number; name: string } | null>(null);
+  const [ratingTarget, setRatingTarget] = useState<{
+    id: number;
+    name: string;
+    type: "method" | "chain";
+  } | null>(null);
+  const [runTarget, setRunTarget] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
   const [runResult, setRunResult] = useState<ChainRunResult | null>(null);
   const [favoriteMethodIds, setFavoriteMethodIds] = useState<number[]>(() => {
     try {
       const saved = localStorage.getItem("methods.favoriteIds");
       if (!saved) return [];
       const parsed = JSON.parse(saved);
-      return Array.isArray(parsed) ? parsed.filter((v) => typeof v === "number") : [];
+      return Array.isArray(parsed)
+        ? parsed.filter((v) => typeof v === "number")
+        : [];
     } catch {
       return [];
     }
   });
 
   useEffect(() => {
-    localStorage.setItem("methods.favoriteIds", JSON.stringify(favoriteMethodIds));
+    localStorage.setItem(
+      "methods.favoriteIds",
+      JSON.stringify(favoriteMethodIds),
+    );
   }, [favoriteMethodIds]);
 
   const { toast } = useToast();
@@ -292,7 +359,11 @@ function useMethodsPageController() {
       toast({ title: "Method block created" });
     },
     onError: (error: Error) => {
-      toast({ title: "Create failed", description: error.message || "Could not create method block.", variant: "destructive" });
+      toast({
+        title: "Create failed",
+        description: error.message || "Could not create method block.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -304,7 +375,11 @@ function useMethodsPageController() {
       toast({ title: "Method block deleted" });
     },
     onError: (error: Error) => {
-      toast({ title: "Delete failed", description: error.message || "Could not delete method block.", variant: "destructive" });
+      toast({
+        title: "Delete failed",
+        description: error.message || "Could not delete method block.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -317,7 +392,11 @@ function useMethodsPageController() {
       toast({ title: "Chain created" });
     },
     onError: (error: Error) => {
-      toast({ title: "Create failed", description: error.message || "Could not create chain.", variant: "destructive" });
+      toast({
+        title: "Create failed",
+        description: error.message || "Could not create chain.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -331,7 +410,11 @@ function useMethodsPageController() {
       toast({ title: "Method block updated" });
     },
     onError: (error: Error) => {
-      toast({ title: "Update failed", description: error.message || "Could not update method block.", variant: "destructive" });
+      toast({
+        title: "Update failed",
+        description: error.message || "Could not update method block.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -343,7 +426,11 @@ function useMethodsPageController() {
       toast({ title: "Chain updated" });
     },
     onError: (error: Error) => {
-      toast({ title: "Update failed", description: error.message || "Could not update chain.", variant: "destructive" });
+      toast({
+        title: "Update failed",
+        description: error.message || "Could not update chain.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -356,46 +443,78 @@ function useMethodsPageController() {
       toast({ title: "Chain deleted" });
     },
     onError: (error: Error) => {
-      toast({ title: "Delete failed", description: error.message || "Could not delete chain.", variant: "destructive" });
+      toast({
+        title: "Delete failed",
+        description: error.message || "Could not delete chain.",
+        variant: "destructive",
+      });
     },
   });
 
   const rateMethodMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: { effectiveness: number; engagement: number; notes: string } }) =>
-      api.methods.rate(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: { effectiveness: number; engagement: number; notes: string };
+    }) => api.methods.rate(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["methods-analytics"] });
       toast({ title: "Rating submitted" });
     },
     onError: (error: Error) => {
-      toast({ title: "Rating failed", description: error.message || "Could not submit rating.", variant: "destructive" });
+      toast({
+        title: "Rating failed",
+        description: error.message || "Could not submit rating.",
+        variant: "destructive",
+      });
     },
   });
 
   const rateChainMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: { effectiveness: number; engagement: number; notes: string } }) =>
-      api.chains.rate(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: { effectiveness: number; engagement: number; notes: string };
+    }) => api.chains.rate(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["methods-analytics"] });
       toast({ title: "Rating submitted" });
     },
     onError: (error: Error) => {
-      toast({ title: "Rating failed", description: error.message || "Could not submit rating.", variant: "destructive" });
+      toast({
+        title: "Rating failed",
+        description: error.message || "Could not submit rating.",
+        variant: "destructive",
+      });
     },
   });
 
   // Filter blocks
   const filteredBlocks = blocks.filter((b) => {
     const displayStage = getDisplayStage(b);
-    if (stageFilter === "favorites" && !favoriteMethodIds.includes(b.id)) return false;
-    if (stageFilter !== "all" && stageFilter !== "favorites" && displayStage !== stageFilter) return false;
-    if (searchQuery && !b.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (stageFilter === "favorites" && !favoriteMethodIds.includes(b.id))
+      return false;
+    if (
+      stageFilter !== "all" &&
+      stageFilter !== "favorites" &&
+      displayStage !== stageFilter
+    )
+      return false;
+    if (
+      searchQuery &&
+      !b.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+      return false;
     return true;
   });
 
   const toggleFavorite = (id: number) => {
     setFavoriteMethodIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   };
 
@@ -404,11 +523,19 @@ function useMethodsPageController() {
       const expanded = await api.chains.getOne(chain.id);
       setSelectedChain(expanded);
     } catch (error) {
-      toast({ title: "Failed to load chain", description: error instanceof Error ? error.message : "Unknown error", variant: "destructive" });
+      toast({
+        title: "Failed to load chain",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleRateSubmit = (rating: { effectiveness: number; engagement: number; notes: string }) => {
+  const handleRateSubmit = (rating: {
+    effectiveness: number;
+    engagement: number;
+    notes: string;
+  }) => {
     if (!ratingTarget) return;
     if (ratingTarget.type === "method") {
       rateMethodMutation.mutate({ id: ratingTarget.id, data: rating });
@@ -425,37 +552,39 @@ function useMethodsPageController() {
         : DISPLAY_STAGE_LABELS[stageFilter];
   const methodsSidebar = (
     <div className="flex h-full min-h-0 flex-col gap-4 p-3 md:p-4 overflow-auto">
-      <div className="space-y-2">
+      <HudPanel variant="b" className={`space-y-2 ${METHODS_PANEL_INSET}`}>
         <div className="font-arcade text-ui-xs uppercase tracking-[0.24em] text-primary/80">
           Workspace
         </div>
         <div className="grid gap-2">
           {TAB_ITEMS.map((tab) => (
-            <button
+            <HudButton
               key={tab.id}
-              type="button"
+              variant="outline"
               onClick={() => setActiveTab(tab.id)}
-              className={`min-h-[44px] rounded-[1rem] border px-3 py-2 text-left transition ${
-                activeTab === tab.id
-                  ? "border-primary/45 bg-primary/12 text-primary shadow-[0_0_18px_rgba(255,86,86,0.12)]"
-                  : "border-primary/15 bg-black/20 text-muted-foreground hover:border-primary/30 hover:text-white"
+              className={`${METHODS_SIDEBAR_BUTTON} ${
+                activeTab === tab.id ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR
               }`}
             >
               <div className="flex items-center gap-2">
                 <tab.icon className="h-4 w-4" />
                 <span className="font-arcade text-xs">{tab.label}</span>
               </div>
-            </button>
+            </HudButton>
           ))}
         </div>
-      </div>
+      </HudPanel>
 
-      <div className="space-y-3 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+      <HudPanel variant="b" className={`space-y-3 ${METHODS_PANEL_INSET}`}>
         <div className="font-arcade text-ui-xs uppercase tracking-[0.24em] text-primary/80">
           Current Focus
         </div>
         <div className="font-terminal text-sm text-white">
-          {activeTab === "library" ? "Method block library" : activeTab === "chains" ? "Tutor chains" : "Method analytics"}
+          {activeTab === "library"
+            ? "Method block library"
+            : activeTab === "chains"
+              ? "Tutor chains"
+              : "Method analytics"}
         </div>
         <div className="font-terminal text-xs text-muted-foreground">
           {activeTab === "library"
@@ -464,23 +593,21 @@ function useMethodsPageController() {
               ? `${chains.length} chain${chains.length === 1 ? "" : "s"}, ${chains.filter((chain) => chain.is_template).length} template${chains.filter((chain) => chain.is_template).length === 1 ? "" : "s"}, ${runHistory.length} run${runHistory.length === 1 ? "" : "s"} logged.`
               : "Review usage, ratings, and adoption before changing Tutor defaults."}
         </div>
-      </div>
+      </HudPanel>
 
       {activeTab === "library" ? (
-        <div className="space-y-2 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+        <HudPanel variant="b" className={`space-y-2 ${METHODS_PANEL_INSET}`}>
           <div className="font-arcade text-ui-xs uppercase tracking-[0.24em] text-primary/80">
             Stage Filter
           </div>
           <div className="grid gap-2">
             {DISPLAY_STAGES.map((stage) => (
-              <button
+              <HudButton
                 key={stage}
-                type="button"
+                variant="outline"
                 onClick={() => setStageFilter(stage)}
-                className={`min-h-[42px] rounded-[0.95rem] border px-3 py-2 text-left transition ${
-                  stageFilter === stage
-                    ? "border-primary/45 bg-primary/12 text-primary"
-                    : "border-primary/15 bg-black/10 text-muted-foreground hover:border-primary/25 hover:text-white"
+                className={`${METHODS_STAGE_BUTTON} ${
+                  stageFilter === stage ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR
                 }`}
               >
                 <div className="font-arcade text-ui-xs">
@@ -490,22 +617,25 @@ function useMethodsPageController() {
                       ? "FAVORITES"
                       : DISPLAY_STAGE_LABELS[stage]}
                 </div>
-              </button>
+              </HudButton>
             ))}
           </div>
-        </div>
+        </HudPanel>
       ) : null}
 
       {activeTab === "chains" ? (
-        <div className="space-y-2 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+        <HudPanel variant="b" className={`space-y-2 ${METHODS_PANEL_INSET}`}>
           <div className="font-arcade text-ui-xs uppercase tracking-[0.24em] text-primary/80">
             Chain Snapshot
           </div>
           {selectedChain ? (
             <>
-              <div className="font-terminal text-sm text-white">{selectedChain.name}</div>
+              <div className="font-terminal text-sm text-white">
+                {selectedChain.name}
+              </div>
               <div className="font-terminal text-xs text-muted-foreground">
-                {(selectedChain.block_ids || []).length} block{(selectedChain.block_ids || []).length === 1 ? "" : "s"}
+                {(selectedChain.block_ids || []).length} block
+                {(selectedChain.block_ids || []).length === 1 ? "" : "s"}
                 {selectedChain.is_template ? " • template" : " • editable"}
               </div>
               {selectedChain.description ? (
@@ -519,7 +649,7 @@ function useMethodsPageController() {
               Select a chain to inspect the sequence, rate it, or launch a run.
             </div>
           )}
-        </div>
+        </HudPanel>
       ) : null}
     </div>
   );
@@ -528,7 +658,11 @@ function useMethodsPageController() {
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="space-y-1">
           <div className="font-arcade text-xs text-primary">
-            {activeTab === "library" ? "Method library" : activeTab === "chains" ? "Chains" : "Analytics"}
+            {activeTab === "library"
+              ? "Method library"
+              : activeTab === "chains"
+                ? "Chains"
+                : "Analytics"}
           </div>
           <div className="font-terminal text-sm text-muted-foreground">
             {activeTab === "library"
@@ -540,24 +674,22 @@ function useMethodsPageController() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {activeTab === "library" ? (
-            <Button
+            <HudButton
               variant="outline"
-              size="sm"
-              className="rounded-none border-[3px] border-double font-arcade text-sm h-10"
+              className="w-auto px-4 text-sm"
               onClick={() => setShowAddBlock(true)}
             >
               <Plus className="w-3 h-3 mr-1" /> ADD BLOCK
-            </Button>
+            </HudButton>
           ) : null}
           {activeTab === "chains" ? (
-            <Button
+            <HudButton
               variant="outline"
-              size="sm"
-              className="rounded-none border-[3px] border-double font-arcade text-sm h-10"
+              className="w-auto px-4 text-sm"
               onClick={() => setShowAddChain(true)}
             >
               <Plus className="w-3 h-3 mr-1" /> NEW CHAIN
-            </Button>
+            </HudButton>
           ) : null}
         </div>
       </div>
@@ -568,57 +700,71 @@ function useMethodsPageController() {
             placeholder="Search methods..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full lg:max-w-sm bg-black/40"
+            className={`${INPUT_BASE} w-full lg:max-w-sm bg-black/40`}
           />
           <div className="flex flex-wrap items-center gap-2 text-xs font-terminal text-muted-foreground">
-            <span className="rounded-full border border-primary/20 px-2 py-1">{selectedStageLabel}</span>
-            <span className="rounded-full border border-primary/20 px-2 py-1">{filteredBlocks.length} visible</span>
-            <span className="rounded-full border border-primary/20 px-2 py-1">{favoriteMethodIds.length} favorites</span>
+            <span className={METHODS_META_CHIP}>{selectedStageLabel}</span>
+            <span className={METHODS_META_CHIP}>
+              {filteredBlocks.length} visible
+            </span>
+            <span className={METHODS_META_CHIP}>
+              {favoriteMethodIds.length} favorites
+            </span>
           </div>
         </div>
       ) : null}
 
       {activeTab === "chains" ? (
         <div className="flex flex-wrap items-center gap-2 text-xs font-terminal text-muted-foreground">
-          <span className="rounded-full border border-primary/20 px-2 py-1">{chains.length} chains</span>
-          <span className="rounded-full border border-primary/20 px-2 py-1">
+          <span className={METHODS_META_CHIP}>{chains.length} chains</span>
+          <span className={METHODS_META_CHIP}>
             {chains.filter((chain) => chain.is_template).length} templates
           </span>
-          <span className="rounded-full border border-primary/20 px-2 py-1">{runHistory.length} recorded runs</span>
+          <span className={METHODS_META_CHIP}>
+            {runHistory.length} recorded runs
+          </span>
         </div>
       ) : null}
     </div>
   );
 
   return (
-      <PageScaffold
-        eyebrow="Tutor Support System"
-        title="Method Library"
-        subtitle="Control the building blocks, chains, and ratings that shape how Tutor teaches, evaluates, and sequences study moves."
-        className="mx-auto max-w-7xl"
-        contentClassName="space-y-6"
-        stats={[
-          { label: "Blocks", value: String(blocks.length) },
-          { label: "Chains", value: String(chains.length), tone: "info" },
-          { label: "Favorites", value: String(favoriteMethodIds.length), tone: "warn" },
-          { label: "Runs", value: String(runHistory.length), tone: "success" },
-        ]}
+    <PageScaffold
+      eyebrow="Tutor Support System"
+      title="Method Library"
+      subtitle="Control the building blocks, chains, and ratings that shape how Tutor teaches, evaluates, and sequences study moves."
+      className="mx-auto max-w-7xl"
+      contentClassName="space-y-6"
+      stats={[
+        { label: "Blocks", value: String(blocks.length) },
+        { label: "Chains", value: String(chains.length), tone: "info" },
+        {
+          label: "Favorites",
+          value: String(favoriteMethodIds.length),
+          tone: "warn",
+        },
+        { label: "Runs", value: String(runHistory.length), tone: "success" },
+      ]}
+    >
+      <SupportWorkspaceFrame
+        sidebar={methodsSidebar}
+        commandBand={methodsCommandBand}
+        contentClassName="gap-4"
       >
-        <SupportWorkspaceFrame
-          sidebar={methodsSidebar}
-          commandBand={methodsCommandBand}
-          contentClassName="gap-4"
-        >
-
         {/* Library Tab */}
         {activeTab === "library" && (
           <div className="space-y-4">
             {blocksLoading ? (
-              <p className="font-terminal text-base text-muted-foreground">Loading methods...</p>
+              <p className="font-terminal text-base text-muted-foreground">
+                Loading methods...
+              </p>
             ) : blocksIsError ? (
               <MethodsLoadErrorPanel
                 title="METHODS FAILED TO LOAD"
-                message={getQueryErrorMessage(blocksError, "The method library request failed.")}
+                message={getQueryErrorMessage(
+                  blocksError,
+                  "The method library request failed.",
+                )}
                 onRetry={() => {
                   void refetchBlocks();
                 }}
@@ -629,46 +775,63 @@ function useMethodsPageController() {
                   <div key={block.id} className="relative">
                     <MethodBlockCard block={block} showLegacyCategory />
                     <div className="mt-2 flex items-center justify-end gap-2">
-                      <button
+                      <HudButton
+                        variant="outline"
                         className={`inline-flex items-center gap-1 px-2 py-1 border-[3px] border-double transition-colors font-arcade text-ui-2xs tracking-wide ${
                           favoriteMethodIds.includes(block.id)
                             ? "border-warning bg-warning/20 text-warning hover:bg-warning/30"
                             : "border-muted-foreground/40 bg-black/50 text-muted-foreground hover:text-warning hover:border-warning/60 hover:bg-warning/10"
                         }`}
                         onClick={() => toggleFavorite(block.id)}
-                        title={favoriteMethodIds.includes(block.id) ? "Remove favorite" : "Add favorite"}
+                        title={
+                          favoriteMethodIds.includes(block.id)
+                            ? "Remove favorite"
+                            : "Add favorite"
+                        }
                       >
-                        <Star className={`w-3 h-3 ${favoriteMethodIds.includes(block.id) ? "fill-current" : ""}`} />
+                        <Star
+                          className={`w-3 h-3 ${favoriteMethodIds.includes(block.id) ? "fill-current" : ""}`}
+                        />
                         FAV
-                      </button>
-                      <button
-                        className="inline-flex items-center gap-1 px-2 py-1 border-[3px] border-double border-primary/40 bg-black/50 text-primary hover:border-primary hover:bg-primary/15 transition-colors font-arcade text-ui-2xs tracking-wide"
-                        onClick={() => setRatingTarget({ id: block.id, name: block.name, type: "method" })}
+                      </HudButton>
+                      <HudButton
+                        variant="outline"
+                        className="inline-flex w-auto min-h-[28px] items-center gap-1 px-2 py-1 border-[3px] border-double border-primary/40 bg-black/50 text-primary hover:border-primary hover:bg-primary/15 transition-colors font-arcade text-ui-2xs tracking-wide"
+                        onClick={() =>
+                          setRatingTarget({
+                            id: block.id,
+                            name: block.name,
+                            type: "method",
+                          })
+                        }
                         title="Rate block"
                       >
                         <BarChart3 className="w-3 h-3" />
                         RATE
-                      </button>
-                      <button
-                        className="inline-flex items-center gap-1 px-2 py-1 border-[3px] border-double border-primary/30 bg-black/50 text-muted-foreground hover:text-foreground hover:border-primary/60 hover:bg-primary/10 transition-colors font-arcade text-ui-2xs tracking-wide"
+                      </HudButton>
+                      <HudButton
+                        variant="outline"
+                        className="inline-flex w-auto min-h-[28px] items-center gap-1 px-2 py-1 border-[3px] border-double border-primary/30 bg-black/50 text-muted-foreground hover:text-foreground hover:border-primary/60 hover:bg-primary/10 transition-colors font-arcade text-ui-2xs tracking-wide"
                         onClick={() => setEditingBlock(block)}
                         title="Edit block settings"
                       >
                         <Pencil className="w-3 h-3" />
                         EDIT
-                      </button>
+                      </HudButton>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-            {!blocksLoading && !blocksIsError && filteredBlocks.length === 0 && (
-              <p className="font-terminal text-base text-muted-foreground text-center py-8">
-                {stageFilter === "favorites"
-                  ? "No favorites yet. Mark blocks with FAV to pin them here."
-                  : `No methods found. ${stageFilter !== "all" ? "Try a different category." : "Add your first method block."}`}
-              </p>
-            )}
+            {!blocksLoading &&
+              !blocksIsError &&
+              filteredBlocks.length === 0 && (
+                <p className="font-terminal text-base text-muted-foreground text-center py-8">
+                  {stageFilter === "favorites"
+                    ? "No favorites yet. Mark blocks with FAV to pin them here."
+                    : `No methods found. ${stageFilter !== "all" ? "Try a different category." : "Add your first method block."}`}
+                </p>
+              )}
           </div>
         )}
 
@@ -676,25 +839,32 @@ function useMethodsPageController() {
         {activeTab === "chains" && (
           <div className="space-y-4">
             {chainsLoading ? (
-              <p className="font-terminal text-base text-muted-foreground">Loading chains...</p>
+              <p className="font-terminal text-base text-muted-foreground">
+                Loading chains...
+              </p>
             ) : chainsIsError ? (
               <MethodsLoadErrorPanel
                 title="CHAINS FAILED TO LOAD"
-                message={getQueryErrorMessage(chainsError, "The chain library request failed.")}
+                message={getQueryErrorMessage(
+                  chainsError,
+                  "The chain library request failed.",
+                )}
                 onRetry={() => {
                   void refetchChains();
                 }}
               />
             ) : chains.length === 0 ? (
               <p className="font-terminal text-base text-muted-foreground text-center py-8">
-                No chains yet. Create your first chain to combine method blocks into a study workflow.
+                No chains yet. Create your first chain to combine method blocks
+                into a study workflow.
               </p>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Chain List */}
                 <div className="space-y-2">
                   {chains.map((chain) => (
-                    <div
+                    <HudPanel
+                      variant="b"
                       key={chain.id}
                       onClick={() => handleSelectChain(chain)}
                       onKeyDown={(event) => {
@@ -706,17 +876,21 @@ function useMethodsPageController() {
                       role="button"
                       tabIndex={0}
                       aria-pressed={selectedChain?.id === chain.id}
-                      className={`border-[3px] border-double p-3 rounded-none cursor-pointer transition-colors ${
+                      className={`cursor-pointer p-3 transition-colors ${
                         selectedChain?.id === chain.id
-                          ? "border-primary bg-primary/10"
-                          : "border-muted-foreground/30 hover:border-muted-foreground/50 hover:bg-black/30"
+                          ? "border-primary/45 bg-primary/12"
+                          : "bg-black/20 hover:border-primary/30 hover:bg-black/30"
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-arcade text-sm">{chain.name}</span>
+                        <span className="font-arcade text-sm">
+                          {chain.name}
+                        </span>
                         <div className="flex items-center gap-2">
                           {chain.is_template ? (
-                            <span className="text-xs font-arcade bg-primary/20 text-primary px-1.5 py-0.5">TEMPLATE</span>
+                            <span className="text-xs font-arcade bg-primary/20 text-primary px-1.5 py-0.5">
+                              TEMPLATE
+                            </span>
                           ) : null}
                           <button
                             className="p-0.5 hover:text-success"
@@ -732,7 +906,11 @@ function useMethodsPageController() {
                             className="p-0.5 hover:text-primary"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setRatingTarget({ id: chain.id, name: chain.name, type: "chain" });
+                              setRatingTarget({
+                                id: chain.id,
+                                name: chain.name,
+                                type: "chain",
+                              });
                             }}
                           >
                             <Star className="w-3 h-3" />
@@ -740,7 +918,9 @@ function useMethodsPageController() {
                         </div>
                       </div>
                       {chain.description && (
-                        <p className="font-terminal text-base text-muted-foreground line-clamp-1">{chain.description}</p>
+                        <p className="font-terminal text-base text-muted-foreground line-clamp-1">
+                          {chain.description}
+                        </p>
                       )}
                       <div className="flex gap-1 mt-1.5">
                         {(chain.block_ids || []).length > 0 && (
@@ -749,43 +929,57 @@ function useMethodsPageController() {
                           </span>
                         )}
                       </div>
-                    </div>
+                    </HudPanel>
                   ))}
                 </div>
 
                 {/* Chain Detail / Builder */}
-                <div className="border-[3px] border-double border-primary/30 bg-black/40 p-4 rounded-none">
+                <HudPanel
+                  variant="b"
+                  className="bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.05)_18%,rgba(0,0,0,0.14)_100%),linear-gradient(135deg,rgba(110,14,34,0.14),rgba(10,4,7,0.12)_58%,rgba(0,0,0,0.08)_100%)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_12px_24px_rgba(0,0,0,0.12)] backdrop-blur-lg"
+                >
                   {selectedChain ? (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="font-arcade text-sm text-primary">{selectedChain.name}</span>
+                        <span className="font-arcade text-sm text-primary">
+                          {selectedChain.name}
+                        </span>
                         <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="rounded-none border-[3px] border-double border-success text-success font-arcade text-xs h-8"
-                              onClick={() => setRunTarget({ id: selectedChain.id, name: selectedChain.name })}
-                            >
-                              <Play className="w-3 h-3 mr-1" /> RUN
-                            </Button>
+                          <HudButton
+                            variant="outline"
+                            className="w-auto border-success text-success"
+                            onClick={() =>
+                              setRunTarget({
+                                id: selectedChain.id,
+                                name: selectedChain.name,
+                              })
+                            }
+                          >
+                            <Play className="w-3 h-3 mr-1" /> RUN
+                          </HudButton>
                           {!selectedChain.is_template && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive rounded-none text-xs font-arcade h-8"
+                            <HudButton
+                              variant="outline"
+                              className="w-auto min-h-[32px] px-3 text-xs text-destructive border-destructive/40 bg-black/40 hover:bg-destructive/15"
                               onClick={() => {
-                                if (confirm(`Delete chain "${selectedChain.name}"?`)) {
+                                if (
+                                  confirm(
+                                    `Delete chain "${selectedChain.name}"?`,
+                                  )
+                                ) {
                                   deleteChainMutation.mutate(selectedChain.id);
                                 }
                               }}
                             >
                               DELETE
-                            </Button>
+                            </HudButton>
                           )}
                         </div>
                       </div>
                       {selectedChain.description && (
-                        <p className="font-terminal text-base text-muted-foreground">{selectedChain.description}</p>
+                        <p className="font-terminal text-base text-muted-foreground">
+                          {selectedChain.description}
+                        </p>
                       )}
                       <ChainBuilder
                         key={selectedChain.id}
@@ -807,23 +1001,38 @@ function useMethodsPageController() {
                       </p>
                     </div>
                   )}
-                </div>
+                </HudPanel>
               </div>
             )}
 
             {/* Run History */}
             {runHistory.length > 0 && (
               <div className="space-y-2">
-                <h3 className="font-arcade text-sm text-muted-foreground">RUN HISTORY</h3>
-                <div className="border-[3px] border-double border-primary/30 rounded-none overflow-hidden">
+                <h3 className="font-arcade text-sm text-muted-foreground">
+                  RUN HISTORY
+                </h3>
+                <HudPanel
+                  variant="b"
+                  className="overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.04)_18%,rgba(0,0,0,0.12)_100%),linear-gradient(135deg,rgba(110,14,34,0.12),rgba(10,4,7,0.1)_58%,rgba(0,0,0,0.08)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_12px_24px_rgba(0,0,0,0.1)] backdrop-blur-lg"
+                >
                   <table className="w-full">
                     <thead>
                       <tr className="border-b-2 border-primary/30 bg-black/60">
-                        <th className="text-left px-3 py-1.5 font-arcade text-xs text-muted-foreground">CHAIN</th>
-                        <th className="text-left px-3 py-1.5 font-arcade text-xs text-muted-foreground">TOPIC</th>
-                        <th className="text-left px-3 py-1.5 font-arcade text-xs text-muted-foreground">STATUS</th>
-                        <th className="text-left px-3 py-1.5 font-arcade text-xs text-muted-foreground">STEPS</th>
-                        <th className="text-left px-3 py-1.5 font-arcade text-xs text-muted-foreground">DATE</th>
+                        <th className="text-left px-3 py-1.5 font-arcade text-xs text-muted-foreground">
+                          CHAIN
+                        </th>
+                        <th className="text-left px-3 py-1.5 font-arcade text-xs text-muted-foreground">
+                          TOPIC
+                        </th>
+                        <th className="text-left px-3 py-1.5 font-arcade text-xs text-muted-foreground">
+                          STATUS
+                        </th>
+                        <th className="text-left px-3 py-1.5 font-arcade text-xs text-muted-foreground">
+                          STEPS
+                        </th>
+                        <th className="text-left px-3 py-1.5 font-arcade text-xs text-muted-foreground">
+                          DATE
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -836,18 +1045,33 @@ function useMethodsPageController() {
                               const full = await api.chainRun.getOne(run.id);
                               setRunResult(full);
                             } catch (error) {
-                              toast({ title: "Failed to load run", description: error instanceof Error ? error.message : "Unknown error", variant: "destructive" });
+                              toast({
+                                title: "Failed to load run",
+                                description:
+                                  error instanceof Error
+                                    ? error.message
+                                    : "Unknown error",
+                                variant: "destructive",
+                              });
                             }
                           }}
                         >
-                          <td className="px-3 py-1.5 font-terminal text-base">{run.chain_name}</td>
-                          <td className="px-3 py-1.5 font-terminal text-base text-muted-foreground">{run.topic}</td>
+                          <td className="px-3 py-1.5 font-terminal text-base">
+                            {run.chain_name}
+                          </td>
+                          <td className="px-3 py-1.5 font-terminal text-base text-muted-foreground">
+                            {run.topic}
+                          </td>
                           <td className="px-3 py-1.5">
-                            <span className={`text-xs font-arcade px-1.5 py-0.5 ${
-                              run.status === "completed" ? "bg-success/20 text-success" :
-                              run.status === "failed" ? "bg-destructive/20 text-destructive" :
-                              "bg-warning/20 text-warning"
-                            }`}>
+                            <span
+                              className={`text-xs font-arcade px-1.5 py-0.5 ${
+                                run.status === "completed"
+                                  ? "bg-success/20 text-success"
+                                  : run.status === "failed"
+                                    ? "bg-destructive/20 text-destructive"
+                                    : "bg-warning/20 text-warning"
+                              }`}
+                            >
                               {run.status.toUpperCase()}
                             </span>
                           </td>
@@ -861,7 +1085,7 @@ function useMethodsPageController() {
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </HudPanel>
               </div>
             )}
           </div>
@@ -871,81 +1095,85 @@ function useMethodsPageController() {
         {activeTab === "analytics" && (
           <div>
             {analyticsLoading ? (
-              <p className="font-terminal text-base text-muted-foreground">Loading analytics...</p>
+              <p className="font-terminal text-base text-muted-foreground">
+                Loading analytics...
+              </p>
             ) : analytics ? (
               <MethodAnalytics data={analytics} />
             ) : (
-              <p className="font-terminal text-base text-muted-foreground">Failed to load analytics.</p>
+              <p className="font-terminal text-base text-muted-foreground">
+                Failed to load analytics.
+              </p>
             )}
           </div>
         )}
-        </SupportWorkspaceFrame>
+      </SupportWorkspaceFrame>
 
-        {/* Add Block Dialog */}
-        <AddBlockDialog
-          open={showAddBlock}
-          onClose={() => setShowAddBlock(false)}
-          onSubmit={(data) => createBlockMutation.mutate(data)}
-        />
+      {/* Add Block Dialog */}
+      <AddBlockDialog
+        open={showAddBlock}
+        onClose={() => setShowAddBlock(false)}
+        onSubmit={(data) => createBlockMutation.mutate(data)}
+      />
 
-        {/* Edit Block Dialog */}
-        <EditBlockDialog
-          open={!!editingBlock}
-          block={editingBlock}
-          onClose={() => setEditingBlock(null)}
-          onSave={(id, data) => updateBlockMutation.mutate({ id, data })}
-          onDelete={(id) => {
-            if (confirm(`Delete "${editingBlock?.name || "this block"}"?`)) {
-              deleteBlockMutation.mutate(id);
-              setEditingBlock(null);
-            }
+      {/* Edit Block Dialog */}
+      <EditBlockDialog
+        open={!!editingBlock}
+        block={editingBlock}
+        onClose={() => setEditingBlock(null)}
+        onSave={(id, data) => updateBlockMutation.mutate({ id, data })}
+        onDelete={(id) => {
+          if (confirm(`Delete "${editingBlock?.name || "this block"}"?`)) {
+            deleteBlockMutation.mutate(id);
+            setEditingBlock(null);
+          }
+        }}
+      />
+
+      {/* Add Chain Dialog */}
+      <AddChainDialog
+        open={showAddChain}
+        onClose={() => setShowAddChain(false)}
+        onSubmit={(data) => createChainMutation.mutate(data)}
+      />
+
+      {/* Chain Run Dialog */}
+      {runTarget && (
+        <ChainRunDialog
+          open={!!runTarget}
+          chainId={runTarget.id}
+          chainName={runTarget.name}
+          courses={courses}
+          onClose={() => setRunTarget(null)}
+          onComplete={(result) => {
+            setRunResult(result);
+            setRunTarget(null);
+            queryClient.invalidateQueries({ queryKey: ["chain-run-history"] });
+            toast({ title: `${result.chain_name} ${result.status}` });
           }}
         />
+      )}
 
-        {/* Add Chain Dialog */}
-        <AddChainDialog
-          open={showAddChain}
-          onClose={() => setShowAddChain(false)}
-          onSubmit={(data) => createChainMutation.mutate(data)}
+      {/* Run Result Viewer */}
+      {runResult && (
+        <ChainRunResultDialog
+          open={!!runResult}
+          result={runResult}
+          onClose={() => setRunResult(null)}
         />
+      )}
 
-        {/* Chain Run Dialog */}
-        {runTarget && (
-          <ChainRunDialog
-            open={!!runTarget}
-            chainId={runTarget.id}
-            chainName={runTarget.name}
-            courses={courses}
-            onClose={() => setRunTarget(null)}
-            onComplete={(result) => {
-              setRunResult(result);
-              setRunTarget(null);
-              queryClient.invalidateQueries({ queryKey: ["chain-run-history"] });
-              toast({ title: `${result.chain_name} ${result.status}` });
-            }}
-          />
-        )}
-
-        {/* Run Result Viewer */}
-        {runResult && (
-          <ChainRunResultDialog
-            open={!!runResult}
-            result={runResult}
-            onClose={() => setRunResult(null)}
-          />
-        )}
-
-        {/* Rating Dialog */}
-        {ratingTarget && (
-          <RatingDialog
-            open={!!ratingTarget}
-            onClose={() => setRatingTarget(null)}
-            onSubmit={handleRateSubmit}
-            targetName={ratingTarget.name}
-            targetType={ratingTarget.type}
-          />
-        )}
-      </PageScaffold>
+      {/* Rating Dialog */}
+      {ratingTarget && (
+        <RatingDialog
+          open={!!ratingTarget}
+          onClose={() => setRatingTarget(null)}
+          onSubmit={handleRateSubmit}
+          targetName={ratingTarget.name}
+          targetType={ratingTarget.type}
+        />
+      )}
+    </PageScaffold>
   );
 }
 
@@ -996,8 +1224,12 @@ function AddBlockDialog({
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="bg-black border-[3px] border-double border-primary rounded-none max-w-md">
-        <DialogTitle className="font-arcade text-sm text-primary">NEW METHOD BLOCK</DialogTitle>
-        <DialogDescription className="sr-only">Create a new method block</DialogDescription>
+        <DialogTitle className="font-arcade text-sm text-primary">
+          NEW METHOD BLOCK
+        </DialogTitle>
+        <DialogDescription className="sr-only">
+          Create a new method block
+        </DialogDescription>
         <div className="space-y-3 mt-2">
           <Input
             placeholder="Method name"
@@ -1007,7 +1239,9 @@ function AddBlockDialog({
           />
           <select
             value={state.category}
-            onChange={(e) => updateState({ category: e.target.value as MethodCategory })}
+            onChange={(e) =>
+              updateState({ category: e.target.value as MethodCategory })
+            }
             className="h-9 w-full rounded-none border-2 border-primary/40 bg-black/60 px-3 py-2 font-terminal text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           >
             {categoryOptions.map((c) => (
@@ -1024,17 +1258,29 @@ function AddBlockDialog({
           />
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label htmlFor={`${idBase}-add-duration`} className="font-arcade text-xs text-muted-foreground">DURATION</label>
+              <label
+                htmlFor={`${idBase}-add-duration`}
+                className="font-arcade text-xs text-muted-foreground"
+              >
+                DURATION
+              </label>
               <Input
                 id={`${idBase}-add-duration`}
                 type="number"
                 value={state.duration}
-                onChange={(e) => updateState({ duration: Number(e.target.value) })}
+                onChange={(e) =>
+                  updateState({ duration: Number(e.target.value) })
+                }
                 className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base"
               />
             </div>
             <div>
-              <label htmlFor={`${idBase}-add-energy`} className="font-arcade text-xs text-muted-foreground">ENERGY</label>
+              <label
+                htmlFor={`${idBase}-add-energy`}
+                className="font-arcade text-xs text-muted-foreground"
+              >
+                ENERGY
+              </label>
               <select
                 id={`${idBase}-add-energy`}
                 value={state.energyCost}
@@ -1050,27 +1296,42 @@ function AddBlockDialog({
             </div>
           </div>
           <div>
-            <label htmlFor={`${idBase}-add-best-stage`} className="font-arcade text-xs text-muted-foreground">BEST STAGE</label>
+            <label
+              htmlFor={`${idBase}-add-best-stage`}
+              className="font-arcade text-xs text-muted-foreground"
+            >
+              BEST STAGE
+            </label>
             <select
               id={`${idBase}-add-best-stage`}
               value={state.bestStage}
               onChange={(e) => updateState({ bestStage: e.target.value })}
               className="h-9 w-full rounded-none border-2 border-primary/40 bg-black/60 px-3 py-2 font-terminal text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
-              <option value="" className="bg-black text-white">Any</option>
-              <option value="first_exposure" className="bg-black text-white">First Exposure</option>
-              <option value="review" className="bg-black text-white">Review</option>
-              <option value="exam_prep" className="bg-black text-white">Exam Prep</option>
-              <option value="consolidation" className="bg-black text-white">Consolidation</option>
+              <option value="" className="bg-black text-white">
+                Any
+              </option>
+              <option value="first_exposure" className="bg-black text-white">
+                First Exposure
+              </option>
+              <option value="review" className="bg-black text-white">
+                Review
+              </option>
+              <option value="exam_prep" className="bg-black text-white">
+                Exam Prep
+              </option>
+              <option value="consolidation" className="bg-black text-white">
+                Consolidation
+              </option>
             </select>
           </div>
-          <Button
-            className="w-full font-arcade rounded-none text-xs"
+          <HudButton
+            className="w-full min-h-[38px] rounded-none text-xs"
             onClick={handleSubmit}
             disabled={!state.name.trim()}
           >
             CREATE BLOCK
-          </Button>
+          </HudButton>
         </div>
       </DialogContent>
     </Dialog>
@@ -1108,8 +1369,12 @@ function AddChainDialog({
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="bg-black border-[3px] border-double border-primary rounded-none max-w-md">
-        <DialogTitle className="font-arcade text-sm text-primary">NEW CHAIN</DialogTitle>
-        <DialogDescription className="sr-only">Create a new method chain</DialogDescription>
+        <DialogTitle className="font-arcade text-sm text-primary">
+          NEW CHAIN
+        </DialogTitle>
+        <DialogDescription className="sr-only">
+          Create a new method chain
+        </DialogDescription>
         <div className="space-y-3 mt-2">
           <Input
             placeholder="Chain name"
@@ -1126,13 +1391,13 @@ function AddChainDialog({
           <p className="font-terminal text-sm text-muted-foreground">
             Add blocks to the chain after creating it.
           </p>
-          <Button
-            className="w-full font-arcade rounded-none text-xs"
+          <HudButton
+            className="w-full min-h-[38px] rounded-none text-xs"
             onClick={handleSubmit}
             disabled={!name.trim()}
           >
             CREATE CHAIN
-          </Button>
+          </HudButton>
         </div>
       </DialogContent>
     </Dialog>
@@ -1198,7 +1463,9 @@ function EditBlockDialog({
       parsedKnobs = parsed as Record<string, unknown>;
       updateState({ knobError: null });
     } catch {
-      updateState({ knobError: "Invalid knobs JSON. Fix syntax before saving." });
+      updateState({
+        knobError: "Invalid knobs JSON. Fix syntax before saving.",
+      });
       return;
     }
     onSave(block.id, {
@@ -1215,21 +1482,30 @@ function EditBlockDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className={`bg-black border-[3px] border-double border-primary rounded-none ${state.fullScreenText ? "max-w-[96vw] w-[96vw] h-[92vh]" : "max-w-lg"}`}>
+      <DialogContent
+        className={`bg-black border-[3px] border-double border-primary rounded-none ${state.fullScreenText ? "max-w-[96vw] w-[96vw] h-[92vh]" : "max-w-lg"}`}
+      >
         <div className="flex items-center justify-between">
-          <DialogTitle className="font-arcade text-sm text-primary">EDIT METHOD BLOCK</DialogTitle>
-          <Button
+          <DialogTitle className="font-arcade text-sm text-primary">
+            EDIT METHOD BLOCK
+          </DialogTitle>
+          <HudButton
             type="button"
             variant="outline"
-            size="sm"
-            className="h-7 px-2 rounded-none border-[3px] border-double font-arcade text-ui-2xs"
-            onClick={() => updateState({ fullScreenText: !state.fullScreenText })}
+            className="w-auto min-h-[28px] rounded-none px-2 text-ui-2xs"
+            onClick={() =>
+              updateState({ fullScreenText: !state.fullScreenText })
+            }
           >
             {state.fullScreenText ? "EXIT FULL" : "FULL TEXT"}
-          </Button>
+          </HudButton>
         </div>
-        <DialogDescription className="sr-only">Edit method block settings</DialogDescription>
-        <div className={`space-y-3 mt-2 ${state.fullScreenText ? "h-[calc(92vh-7rem)] overflow-y-auto pr-1" : ""}`}>
+        <DialogDescription className="sr-only">
+          Edit method block settings
+        </DialogDescription>
+        <div
+          className={`space-y-3 mt-2 ${state.fullScreenText ? "h-[calc(92vh-7rem)] overflow-y-auto pr-1" : ""}`}
+        >
           <Input
             placeholder="Method name"
             value={state.name}
@@ -1238,7 +1514,9 @@ function EditBlockDialog({
           />
           <select
             value={state.category}
-            onChange={(e) => updateState({ category: e.target.value as MethodCategory })}
+            onChange={(e) =>
+              updateState({ category: e.target.value as MethodCategory })
+            }
             className="h-9 w-full rounded-none border-2 border-primary/40 bg-black/60 px-3 py-2 font-terminal text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           >
             {categoryOptions.map((c) => (
@@ -1255,58 +1533,79 @@ function EditBlockDialog({
           />
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label htmlFor={`${idBase}-edit-tutor-prompt`} className="font-arcade text-xs text-muted-foreground">TUTOR PROMPT</label>
-              <div className="flex items-center gap-1">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                className="h-6 px-2 rounded-none border-[3px] border-double font-arcade text-ui-2xs"
-                onClick={() => updateState({ facilitationPrompt: block?.facilitation_prompt ?? "" })}
+              <label
+                htmlFor={`${idBase}-edit-tutor-prompt`}
+                className="font-arcade text-xs text-muted-foreground"
               >
-                UNDO EDITS
-              </Button>
-                <Button
+                TUTOR PROMPT
+              </label>
+              <div className="flex items-center gap-1">
+                <HudButton
                   type="button"
                   variant="outline"
-                  size="sm"
-                  className="h-6 px-2 rounded-none border-[3px] border-double border-warning/50 text-warning font-arcade text-ui-2xs"
+                  className="w-auto min-h-[24px] rounded-none px-2 text-ui-2xs"
+                  onClick={() =>
+                    updateState({
+                      facilitationPrompt: block?.facilitation_prompt ?? "",
+                    })
+                  }
+                >
+                  UNDO EDITS
+                </HudButton>
+                <HudButton
+                  type="button"
+                  variant="outline"
+                  className="w-auto min-h-[24px] rounded-none border-warning/50 px-2 text-ui-2xs text-warning hover:bg-warning/10"
                   disabled={state.templateLoading || !block}
                   onClick={async () => {
                     if (!block) return;
                     updateState({ templateLoading: true });
                     try {
                       const res = await api.methods.getTemplatePrompt(block.id);
-                      updateState({ facilitationPrompt: res.facilitation_prompt });
+                      updateState({
+                        facilitationPrompt: res.facilitation_prompt,
+                      });
                     } catch {
                       // Silently fall back to current DB value if API unavailable
-                      updateState({ facilitationPrompt: block.facilitation_prompt ?? "" });
+                      updateState({
+                        facilitationPrompt: block.facilitation_prompt ?? "",
+                      });
                     } finally {
                       updateState({ templateLoading: false });
                     }
                   }}
                 >
-                  {state.templateLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3 mr-0.5" />}
+                  {state.templateLoading ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <RotateCcw className="w-3 h-3 mr-0.5" />
+                  )}
                   RESET TO TEMPLATE
-                </Button>
+                </HudButton>
               </div>
             </div>
             <Textarea
               id={`${idBase}-edit-tutor-prompt`}
               placeholder="Facilitation prompt used by the tutor for this method..."
               value={state.facilitationPrompt}
-              onChange={(e) => updateState({ facilitationPrompt: e.target.value })}
+              onChange={(e) =>
+                updateState({ facilitationPrompt: e.target.value })
+              }
               className={`${state.fullScreenText ? "h-[42vh]" : "h-32"} rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-sm resize-y`}
             />
           </div>
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label htmlFor={`${idBase}-edit-knobs`} className="font-arcade text-xs text-muted-foreground">KNOBS JSON</label>
-              <Button
+              <label
+                htmlFor={`${idBase}-edit-knobs`}
+                className="font-arcade text-xs text-muted-foreground"
+              >
+                KNOBS JSON
+              </label>
+              <HudButton
                 type="button"
                 variant="outline"
-                size="sm"
-                className="h-6 px-2 rounded-none border-[3px] border-double font-arcade text-ui-2xs"
+                className="w-auto min-h-[24px] rounded-none px-2 text-ui-2xs"
                 onClick={() => {
                   updateState({
                     knobsJson: JSON.stringify(block?.knobs ?? {}, null, 2),
@@ -1315,7 +1614,7 @@ function EditBlockDialog({
                 }}
               >
                 RESET KNOBS
-              </Button>
+              </HudButton>
             </div>
             <Textarea
               id={`${idBase}-edit-knobs`}
@@ -1330,22 +1629,36 @@ function EditBlockDialog({
               className={`${state.fullScreenText ? "h-40" : "h-28"} rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-xs resize-y`}
             />
             {state.knobError && (
-              <p className="mt-1 font-terminal text-xs text-destructive">{state.knobError}</p>
+              <p className="mt-1 font-terminal text-xs text-destructive">
+                {state.knobError}
+              </p>
             )}
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label htmlFor={`${idBase}-edit-duration`} className="font-arcade text-xs text-muted-foreground">DURATION</label>
+              <label
+                htmlFor={`${idBase}-edit-duration`}
+                className="font-arcade text-xs text-muted-foreground"
+              >
+                DURATION
+              </label>
               <Input
                 id={`${idBase}-edit-duration`}
                 type="number"
                 value={state.duration}
-                onChange={(e) => updateState({ duration: Number(e.target.value) })}
+                onChange={(e) =>
+                  updateState({ duration: Number(e.target.value) })
+                }
                 className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base"
               />
             </div>
             <div>
-              <label htmlFor={`${idBase}-edit-energy`} className="font-arcade text-xs text-muted-foreground">ENERGY</label>
+              <label
+                htmlFor={`${idBase}-edit-energy`}
+                className="font-arcade text-xs text-muted-foreground"
+              >
+                ENERGY
+              </label>
               <select
                 id={`${idBase}-edit-energy`}
                 value={state.energyCost}
@@ -1361,35 +1674,50 @@ function EditBlockDialog({
             </div>
           </div>
           <div>
-            <label htmlFor={`${idBase}-edit-best-stage`} className="font-arcade text-xs text-muted-foreground">BEST STAGE</label>
+            <label
+              htmlFor={`${idBase}-edit-best-stage`}
+              className="font-arcade text-xs text-muted-foreground"
+            >
+              BEST STAGE
+            </label>
             <select
               id={`${idBase}-edit-best-stage`}
               value={state.bestStage}
               onChange={(e) => updateState({ bestStage: e.target.value })}
               className="h-9 w-full rounded-none border-2 border-primary/40 bg-black/60 px-3 py-2 font-terminal text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
-              <option value="" className="bg-black text-white">Any</option>
-              <option value="first_exposure" className="bg-black text-white">First Exposure</option>
-              <option value="review" className="bg-black text-white">Review</option>
-              <option value="exam_prep" className="bg-black text-white">Exam Prep</option>
-              <option value="consolidation" className="bg-black text-white">Consolidation</option>
+              <option value="" className="bg-black text-white">
+                Any
+              </option>
+              <option value="first_exposure" className="bg-black text-white">
+                First Exposure
+              </option>
+              <option value="review" className="bg-black text-white">
+                Review
+              </option>
+              <option value="exam_prep" className="bg-black text-white">
+                Exam Prep
+              </option>
+              <option value="consolidation" className="bg-black text-white">
+                Consolidation
+              </option>
             </select>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <Button
+            <HudButton
               variant="outline"
-              className="w-full font-arcade rounded-none text-xs border-[3px] border-double border-destructive/50 text-destructive hover:bg-destructive/10"
+              className="w-full min-h-[38px] rounded-none text-xs border-destructive/50 text-destructive hover:bg-destructive/10"
               onClick={() => block && onDelete(block.id)}
             >
               DELETE
-            </Button>
-            <Button
-              className="w-full font-arcade rounded-none text-xs"
+            </HudButton>
+            <HudButton
+              className="w-full min-h-[38px] rounded-none text-xs"
               onClick={handleSave}
               disabled={!state.name.trim()}
             >
               SAVE
-            </Button>
+            </HudButton>
           </div>
         </div>
       </DialogContent>
@@ -1434,8 +1762,14 @@ function ChainRunDialog({
       const result = await api.chainRun.start({
         chain_id: chainId,
         topic: state.topic.trim(),
-        course_id: state.courseId && state.courseId !== "__none__" ? Number(state.courseId) : undefined,
-        options: { write_obsidian: state.writeObsidian, draft_cards: state.draftCards },
+        course_id:
+          state.courseId && state.courseId !== "__none__"
+            ? Number(state.courseId)
+            : undefined,
+        options: {
+          write_obsidian: state.writeObsidian,
+          draft_cards: state.draftCards,
+        },
       });
       onComplete(result);
     } catch (e) {
@@ -1452,10 +1786,17 @@ function ChainRunDialog({
         <DialogTitle className="font-arcade text-sm text-primary">
           RUN: {chainName}
         </DialogTitle>
-        <DialogDescription className="sr-only">Configure and run a method chain</DialogDescription>
+        <DialogDescription className="sr-only">
+          Configure and run a method chain
+        </DialogDescription>
         <div className="space-y-3 mt-2">
           <div>
-            <label htmlFor={`${idBase}-run-topic`} className="font-arcade text-xs text-muted-foreground">TOPIC</label>
+            <label
+              htmlFor={`${idBase}-run-topic`}
+              className="font-arcade text-xs text-muted-foreground"
+            >
+              TOPIC
+            </label>
             <Input
               id={`${idBase}-run-topic`}
               placeholder="e.g., Glenohumeral Joint Ligaments"
@@ -1466,17 +1807,36 @@ function ChainRunDialog({
             />
           </div>
           <div>
-            <label htmlFor={`${idBase}-run-course`} className="font-arcade text-xs text-muted-foreground">COURSE (OPTIONAL)</label>
-            <Select value={state.courseId} onValueChange={(courseId) => updateState({ courseId })} disabled={state.running}>
-              <SelectTrigger id={`${idBase}-run-course`} className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base">
+            <label
+              htmlFor={`${idBase}-run-course`}
+              className="font-arcade text-xs text-muted-foreground"
+            >
+              COURSE (OPTIONAL)
+            </label>
+            <Select
+              value={state.courseId}
+              onValueChange={(courseId) => updateState({ courseId })}
+              disabled={state.running}
+            >
+              <SelectTrigger
+                id={`${idBase}-run-course`}
+                className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base"
+              >
                 <SelectValue placeholder="None" />
               </SelectTrigger>
               <SelectContent className="bg-black border-2 border-primary rounded-none">
-                <SelectItem value="__none__" className="font-terminal text-sm text-muted-foreground">
+                <SelectItem
+                  value="__none__"
+                  className="font-terminal text-sm text-muted-foreground"
+                >
                   None
                 </SelectItem>
                 {courses.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)} className="font-terminal text-sm">
+                  <SelectItem
+                    key={c.id}
+                    value={String(c.id)}
+                    className="font-terminal text-sm"
+                  >
                     {c.name}
                   </SelectItem>
                 ))}
@@ -1488,7 +1848,9 @@ function ChainRunDialog({
               <input
                 type="checkbox"
                 checked={state.writeObsidian}
-                onChange={(e) => updateState({ writeObsidian: e.target.checked })}
+                onChange={(e) =>
+                  updateState({ writeObsidian: e.target.checked })
+                }
                 disabled={state.running}
                 className="accent-primary"
               />
@@ -1506,10 +1868,12 @@ function ChainRunDialog({
             </label>
           </div>
           {state.error && (
-            <p className="font-terminal text-base text-destructive">{state.error}</p>
+            <p className="font-terminal text-base text-destructive">
+              {state.error}
+            </p>
           )}
-          <Button
-            className="w-full font-arcade rounded-none text-xs"
+          <HudButton
+            className="w-full min-h-[38px] rounded-none text-xs"
             onClick={handleStart}
             disabled={!state.topic.trim() || state.running}
           >
@@ -1523,7 +1887,7 @@ function ChainRunDialog({
                 <Play className="w-3 h-3 mr-1" /> START
               </>
             )}
-          </Button>
+          </HudButton>
           {state.running && (
             <p className="font-terminal text-sm text-muted-foreground text-center">
               This may take 15-45 seconds depending on chain length.
@@ -1565,34 +1929,55 @@ function ChainRunResultDialog({
       <DialogContent className="bg-black border-[3px] border-double border-primary rounded-none max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogTitle className="font-arcade text-sm text-primary flex items-center gap-2">
           {result.chain_name} RESULTS
-          <span className={`text-xs px-1.5 py-0.5 ${
-            result.status === "completed" ? "bg-success/20 text-success" :
-            "bg-destructive/20 text-destructive"
-          }`}>
+          <span
+            className={`text-xs px-1.5 py-0.5 ${
+              result.status === "completed"
+                ? "bg-success/20 text-success"
+                : "bg-destructive/20 text-destructive"
+            }`}
+          >
             {result.status.toUpperCase()}
           </span>
         </DialogTitle>
-        <DialogDescription className="sr-only">Chain run results</DialogDescription>
+        <DialogDescription className="sr-only">
+          Chain run results
+        </DialogDescription>
 
         {/* Metrics Summary */}
         {metrics && (
           <div className="flex gap-4 mt-2">
             <div className="border border-primary/30 px-3 py-1.5 bg-black/60">
-              <span className="font-arcade text-xs text-muted-foreground block">DURATION</span>
-              <span className="font-terminal text-sm">{(metrics.total_duration_ms / 1000).toFixed(1)}s</span>
+              <span className="font-arcade text-xs text-muted-foreground block">
+                DURATION
+              </span>
+              <span className="font-terminal text-sm">
+                {(metrics.total_duration_ms / 1000).toFixed(1)}s
+              </span>
             </div>
             <div className="border border-primary/30 px-3 py-1.5 bg-black/60">
-              <span className="font-arcade text-xs text-muted-foreground block">STEPS</span>
-              <span className="font-terminal text-sm">{metrics.steps_completed}</span>
+              <span className="font-arcade text-xs text-muted-foreground block">
+                STEPS
+              </span>
+              <span className="font-terminal text-sm">
+                {metrics.steps_completed}
+              </span>
             </div>
             <div className="border border-primary/30 px-3 py-1.5 bg-black/60">
-              <span className="font-arcade text-xs text-muted-foreground block">CARDS</span>
-              <span className="font-terminal text-sm">{metrics.cards_drafted}</span>
+              <span className="font-arcade text-xs text-muted-foreground block">
+                CARDS
+              </span>
+              <span className="font-terminal text-sm">
+                {metrics.cards_drafted}
+              </span>
             </div>
             {result.artifacts?.obsidian_path && (
               <div className="border border-primary/30 px-3 py-1.5 bg-black/60">
-                <span className="font-arcade text-xs text-muted-foreground block">OBSIDIAN</span>
-                <span className="font-terminal text-sm text-success">saved</span>
+                <span className="font-arcade text-xs text-muted-foreground block">
+                  OBSIDIAN
+                </span>
+                <span className="font-terminal text-sm text-success">
+                  saved
+                </span>
               </div>
             )}
           </div>
@@ -1601,7 +1986,10 @@ function ChainRunResultDialog({
         {/* Step Outputs */}
         <div className="space-y-2 mt-3">
           {result.steps.map((step) => (
-            <div key={step.step} className="border border-primary/30 rounded-none">
+            <div
+              key={step.step}
+              className="border border-primary/30 rounded-none"
+            >
               <button
                 className="w-full flex items-center gap-2 px-3 py-2 hover:bg-primary/5 text-left"
                 onClick={() => toggleStep(step.step)}
@@ -1611,8 +1999,12 @@ function ChainRunResultDialog({
                 ) : (
                   <ChevronRight className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                 )}
-                <span className="font-arcade text-xs text-primary">{step.step}.</span>
-                <span className="font-terminal text-base">{step.method_name}</span>
+                <span className="font-arcade text-xs text-primary">
+                  {step.step}.
+                </span>
+                <span className="font-terminal text-base">
+                  {step.method_name}
+                </span>
                 <span className="ml-auto font-terminal text-sm text-muted-foreground">
                   {step.category} | {(step.duration_ms / 1000).toFixed(1)}s
                 </span>
@@ -1630,18 +2022,22 @@ function ChainRunResultDialog({
 
         {result.error && (
           <div className="mt-3 border border-destructive/40 bg-destructive/10 px-3 py-2">
-            <span className="font-arcade text-xs text-destructive">ERROR: </span>
-            <span className="font-terminal text-base text-destructive/80">{result.error}</span>
+            <span className="font-arcade text-xs text-destructive">
+              ERROR:{" "}
+            </span>
+            <span className="font-terminal text-base text-destructive/80">
+              {result.error}
+            </span>
           </div>
         )}
 
-        <Button
+        <HudButton
           variant="outline"
-          className="w-full mt-3 font-arcade rounded-none text-xs"
+          className="mt-3 w-full min-h-[38px] rounded-none text-xs"
           onClick={onClose}
         >
           CLOSE
-        </Button>
+        </HudButton>
       </DialogContent>
     </Dialog>
   );

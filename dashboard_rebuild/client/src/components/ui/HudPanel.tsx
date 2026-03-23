@@ -17,7 +17,12 @@ export function HudPanel({
   const borderClass = variant === "a" ? CARD_BORDER : CARD_BORDER_SECONDARY;
 
   return (
-    <div className={cn(borderClass, className)} {...props}>
+    <div
+      data-ui="hud-panel"
+      data-hud-variant={variant}
+      className={cn(borderClass, className)}
+      {...props}
+    >
       {children}
     </div>
   );

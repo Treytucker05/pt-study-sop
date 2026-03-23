@@ -12,7 +12,7 @@ const CODE_BLOCK_RE = /^```/;
 
 // ─── Query-string helpers ───
 
-export type TutorPageMode = Exclude<TutorShellMode, "publish"> | "launch";
+export type TutorPageMode = Exclude<TutorShellMode, "publish" | "launch">;
 export type TutorStudioView = "workbench" | "priming" | "polish" | "final_sync";
 
 export type TutorShellQuery = {
@@ -24,11 +24,11 @@ export type TutorShellQuery = {
 };
 
 export function normalizeTutorPageMode(value: string | null | undefined): TutorPageMode | undefined {
-  if (value === "launch" || value === "studio" || value === "tutor" || value === "schedule") {
+  if (value === "studio" || value === "tutor" || value === "schedule") {
     return value;
   }
-  if (value === "dashboard" || value === "publish") {
-    return "launch";
+  if (value === "launch" || value === "dashboard" || value === "publish") {
+    return "studio";
   }
   return undefined;
 }

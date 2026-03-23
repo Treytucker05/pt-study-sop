@@ -88,7 +88,7 @@ export function StudioPrepMode({
           <Layers3 className="mx-auto mb-3 h-8 w-8 text-primary/40" />
           <div className="font-arcade text-xs text-primary">NO CHAIN SELECTED</div>
           <div className="mt-2 font-terminal text-sm text-muted-foreground">
-            Open Launch to pick a study workflow before using the Studio workbench.
+            Open Studio to pick a study workflow before using the Studio workbench.
           </div>
           <Button
             type="button"
@@ -96,7 +96,7 @@ export function StudioPrepMode({
             className="mt-4 rounded-none border-2 border-primary bg-primary/10 font-arcade text-ui-2xs text-primary hover:bg-primary/20"
           >
             <Play className="mr-1.5 h-3 w-3" />
-            OPEN LAUNCH
+            OPEN STUDIO
           </Button>
         </div>
       </div>
@@ -176,7 +176,7 @@ export function StudioPrepMode({
           </div>
         </ScrollArea>
 
-        {/* Launch button — always anchored */}
+        {/* Studio button — always anchored */}
         <div className="border-t border-primary/20 p-2">
           <Button
             type="button"
@@ -185,7 +185,7 @@ export function StudioPrepMode({
             data-testid="prep-launch-session"
           >
             <Play className="mr-1.5 h-3 w-3" />
-            LAUNCH SESSION
+            OPEN STUDIO
           </Button>
         </div>
       </div>

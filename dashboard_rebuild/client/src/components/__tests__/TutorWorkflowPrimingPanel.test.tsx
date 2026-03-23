@@ -133,7 +133,7 @@ function renderPanel(overrides: Record<string, unknown> = {}) {
       preflightBlockers={[]}
       preflightLoading={false}
       preflightError={null}
-      onBackToLaunch={vi.fn()}
+      onBackToStudio={vi.fn()}
       onSaveDraft={vi.fn()}
       onMarkReady={vi.fn()}
       onStartTutor={vi.fn()}
@@ -187,7 +187,7 @@ describe("TutorWorkflowPrimingPanel", () => {
     expect(screen.getByRole("button", { name: /extract prime/i })).toBeDisabled();
   });
 
-  it("shows the Home-to-Outputs style workspace in ordered steps", async () => {
+  it("keeps Materials as a dedicated reading step and removes legacy outputs chrome from Outputs", async () => {
     renderPanel({
       sourceInventory: [
         {
@@ -218,19 +218,25 @@ describe("TutorWorkflowPrimingPanel", () => {
     expect(screen.getAllByRole("tab", { name: "TUTOR HANDOFF" }).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Keep the scoped source visible while you work/i).length).toBeGreaterThan(0);
 
+    fireEvent.click(screen.getAllByRole("tab", { name: "MATERIALS" })[0]);
+
+    expect(screen.getByRole("heading", { name: "MATERIALS" })).toHaveFocus();
+    expect(screen.getByText("FULL READER")).toBeInTheDocument();
+    expect(screen.getAllByTestId("priming-material-reader").length).toBeGreaterThan(0);
+
     fireEvent.click(screen.getAllByRole("tab", { name: "OUTPUTS" })[0]);
 
     expect(screen.getByRole("heading", { name: "OUTPUTS" })).toHaveFocus();
     expect(screen.getByText("SELECTED PRIME METHOD WINDOWS")).toBeInTheDocument();
-    expect(screen.getByText("LEGACY PRIME OUTPUTS")).toBeInTheDocument();
-    expect(screen.getByText("PRIME BOUNDARY")).toBeInTheDocument();
+    expect(screen.queryByText("LEGACY PRIME OUTPUTS")).not.toBeInTheDocument();
+    expect(screen.queryByText("PRIME BOUNDARY")).not.toBeInTheDocument();
   });
 
-  it("shows Tutor launch blockers and disables ready/start actions in the handoff step", async () => {
+  it("shows Tutor handoff blockers and disables ready/start actions in the handoff step", async () => {
     renderPanel({
       selectedObjectiveGroup: "",
       preflightBlockers: [
-        { code: "STUDY_UNIT_REQUIRED", message: "Choose a study unit before starting the Tutor session." },
+        { code: "STUDY_UNIT_REQUIRED", message: "Choose a study unit before running Tutor preflight." },
       ],
     });
 
@@ -238,7 +244,7 @@ describe("TutorWorkflowPrimingPanel", () => {
 
     fireEvent.click(screen.getAllByRole("tab", { name: "TUTOR HANDOFF" })[0]);
 
-    expect(screen.getByText("Choose a study unit before starting the Tutor session.")).toBeInTheDocument();
+    expect(screen.getAllByText("Choose a study unit before running Tutor readiness check.").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: /mark ready/i })).toBeDisabled();
     expect(screen.getByRole("button", { name: /start tutor session/i })).toBeDisabled();
   });
@@ -330,7 +336,7 @@ describe("TutorWorkflowPrimingPanel", () => {
     fireEvent.click(screen.getAllByRole("tab", { name: "OUTPUTS" })[0]);
 
     expect(screen.getByText("SELECTED PRIME METHOD WINDOWS")).toBeInTheDocument();
-    expect(screen.getByText("ALREADY EXTRACTED PRIME METHODS")).toBeInTheDocument();
+    expect(screen.getByText("STORED OUTPUTS FROM EARLIER PRIMING RUNS")).toBeInTheDocument();
     expect(screen.getAllByText("Big-Picture Orientation Summary").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Learning Objectives Primer").length).toBeGreaterThan(0);
   });

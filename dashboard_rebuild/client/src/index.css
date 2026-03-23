@@ -419,6 +419,16 @@
     isolation: isolate;
   }
 
+  .page-shell__hero--glass {
+    background:
+      linear-gradient(180deg, rgba(12, 2, 6, 0.08), rgba(6, 1, 3, 0.02)),
+      linear-gradient(180deg, rgba(255, 42, 76, 0.03), transparent 28%);
+    box-shadow:
+      0 4px 22px rgba(0, 0, 0, 0.18),
+      0 0 1px rgba(255, 40, 65, 0.12);
+    backdrop-filter: blur(16px);
+  }
+
   /* Title column: heading stack (eyebrow + title + dipline overlay) + subtitle */
   .page-shell__title-block {
     position: relative;
@@ -592,13 +602,6 @@
       justify-content: space-between;
       align-items: flex-start;
     }
-    .page-shell__meta {
-      justify-content: flex-end;
-      flex-wrap: nowrap;
-    }
-    .page-shell__actions {
-      flex-wrap: nowrap;
-    }
   }
 
   .page-shell__eyebrow {
@@ -633,33 +636,81 @@
 
   .page-shell__meta {
     display: flex;
-    flex-wrap: wrap;
+    flex: 0 1 48rem;
+    width: min(100%, 48rem);
+    flex-direction: column;
+    align-items: stretch;
     gap: 0.65rem;
-    align-items: center;
+  }
+
+  .page-shell__stat-grid {
+    display: grid;
+    width: 100%;
+    gap: 0.65rem;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    align-items: stretch;
   }
 
   .page-shell__actions {
     display: flex;
+    width: 100%;
     flex-wrap: wrap;
     gap: 0.65rem;
     align-items: center;
+    justify-content: flex-end;
+  }
+
+  .page-shell__actions > * {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border: 1px solid rgba(255, 84, 116, 0.26);
+    background:
+      radial-gradient(circle, rgba(255, 84, 116, 0.12) 0%, rgba(0, 0, 0, 0) 95%),
+      linear-gradient(rgba(255, 84, 116, 0.06) 1px, transparent 1px),
+      linear-gradient(to right, rgba(255, 84, 116, 0.06) 1px, transparent 1px),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.08) 24%, rgba(0, 0, 0, 0.18) 100%);
+    background-size: cover, 15px 15px, 15px 15px, cover;
+    background-position: center center, center center, center center, center center;
+    box-shadow:
+      0 10px 22px rgba(0, 0, 0, 0.12),
+      0 0 0 1px rgba(255, 84, 116, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(14px);
+    transition:
+      background-size 0.2s ease-in-out,
+      border-color 0.2s ease-in-out,
+      filter 0.2s ease-in-out,
+      transform 0.2s ease-in-out;
+  }
+
+  .page-shell__actions > *:hover {
+    border-color: rgba(255, 164, 184, 0.4);
+    background-size: cover, 10px 10px, 10px 10px, cover;
+    transform: translateY(-1px);
+  }
+
+  .page-shell__actions > *:active {
+    filter: brightness(1.1) saturate(1.08);
   }
 
   .page-shell__stat {
     min-height: 44px;
-    flex: 1 1 auto;
-    min-width: min(100%, 8rem);
-    max-width: 14rem;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
     padding: 0.7rem 0.85rem;
     border-radius: 0.25rem;
-    border: 1px solid rgba(255, 30, 55, 0.25);
-    border-top: 2px solid rgba(255, 40, 65, 0.7);
+    border: 1px solid rgba(255, 122, 146, 0.18);
+    border-top: 2px solid rgba(255, 40, 65, 0.52);
     background:
-      linear-gradient(180deg, rgba(255, 30, 55, 0.06), transparent 50%),
-      rgba(10, 2, 5, 0.9);
+      linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.05) 22%, rgba(0, 0, 0, 0.14) 100%),
+      linear-gradient(135deg, rgba(255, 42, 76, 0.06), rgba(12, 4, 7, 0.14) 56%, rgba(0, 0, 0, 0.08) 100%);
     box-shadow:
-      0 0 6px rgba(255, 30, 55, 0.06),
-      inset 0 1px 0 rgba(255, 40, 65, 0.08);
+      0 10px 20px rgba(0, 0, 0, 0.12),
+      0 0 10px rgba(255, 30, 55, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(14px);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -1200,6 +1251,88 @@
     transition: all var(--ds-transition) ease;
   }
 
+  /* Tutor pattern button: the Uiverse-style grid/glow treatment, tuned to the red HUD palette. */
+  .tutor-pattern-button {
+    --main-color: rgb(255, 84, 116);
+    --main-bg-color: rgba(255, 84, 116, 0.36);
+    --pattern-color: rgba(255, 84, 116, 0.073);
+
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    font-size: 0.95rem !important;
+    border-radius: 0.28rem !important;
+    cursor: pointer;
+    box-shadow: none !important;
+    border: 0 !important;
+    background: transparent !important;
+    transform: none !important;
+    line-height: 1 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--main-color) !important;
+    font-family: var(--font-arcade) !important;
+    font-weight: 700;
+    transition:
+      font-size 0.2s ease-in-out,
+      letter-spacing 0.2s ease-in-out;
+  }
+
+  .tutor-pattern-button::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border-top: 1px solid var(--main-color);
+    border-bottom: 1px solid var(--main-color);
+    background:
+      radial-gradient(
+        circle,
+        var(--main-bg-color) 0%,
+        rgba(0, 0, 0, 0) 95%
+      ),
+      linear-gradient(var(--pattern-color) 1px, transparent 1px),
+      linear-gradient(to right, var(--pattern-color) 1px, transparent 1px);
+    background-size:
+      cover,
+      15px 15px,
+      15px 15px;
+    background-position:
+      center center,
+      center center,
+      center center;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 84, 116, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    pointer-events: none;
+    transition:
+      background-size 0.2s ease-in-out,
+      filter 0.2s ease-in-out;
+  }
+
+  .tutor-pattern-button:hover {
+    font-size: 1rem !important;
+    transform: none !important;
+  }
+
+  .tutor-pattern-button:hover::before {
+    background-size:
+      cover,
+      10px 10px,
+      10px 10px;
+  }
+
+  .tutor-pattern-button:active {
+    filter: hue-rotate(250deg);
+    transform: none !important;
+  }
+
+  .tutor-pattern-button[aria-selected="true"],
+  .tutor-pattern-button[aria-pressed="true"] {
+    --main-bg-color: rgba(255, 84, 116, 0.46);
+    --pattern-color: rgba(255, 84, 116, 0.09);
+  }
+
   /* --- Brain tab: retro-futuristic "cabinet terminal" --- */
   .brain-workspace {
     --brain-glow: hsl(var(--primary) / 0.08);
@@ -1243,24 +1376,32 @@
   .brain-workspace__sidebar-wrap {
     min-height: 0;
     box-shadow: 4px 0 24px -4px var(--brain-glow);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.05) 22%, rgba(0, 0, 0, 0.14) 100%),
+      linear-gradient(135deg, rgba(124, 14, 38, 0.16), rgba(18, 5, 10, 0.22) 56%, rgba(0, 0, 0, 0.42) 100%);
+    backdrop-filter: blur(16px);
   }
   .brain-workspace__canvas {
     min-height: 0;
-    background: hsl(0 0% 5% / 0.6);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.03) 16%, rgba(0, 0, 0, 0.08) 100%),
+      hsl(0 0% 5% / 0.24);
     box-shadow:
       inset 0 0 60px -12px var(--brain-glow),
-      inset 0 0 0 1px hsl(var(--primary) / 0.15);
+      inset 0 0 0 1px hsl(var(--primary) / 0.12);
+    backdrop-filter: blur(12px);
   }
   .tutor-shell-frame {
     border-radius: 0.4rem;
     border-color: rgba(255, 46, 74, 0.28);
     background:
-      linear-gradient(180deg, rgba(255, 42, 76, 0.06), transparent 14%),
-      linear-gradient(180deg, rgba(12, 2, 6, 0.98), rgba(5, 1, 3, 0.98));
+      linear-gradient(180deg, rgba(255, 42, 76, 0.04), transparent 14%),
+      linear-gradient(180deg, rgba(12, 2, 6, 0.24), rgba(5, 1, 3, 0.12));
     box-shadow:
-      0 22px 48px rgba(0, 0, 0, 0.52),
+      0 22px 48px rgba(0, 0, 0, 0.34),
       inset 0 1px 0 rgba(255, 255, 255, 0.03),
       0 0 0 1px rgba(255, 56, 88, 0.08);
+    backdrop-filter: blur(12px);
   }
   .brain-workspace.tutor-shell-frame::before {
     background:
@@ -1320,7 +1461,7 @@
         rgba(255, 255, 255, 0.04),
         transparent
       );
-    opacity: 0.28;
+    opacity: 0.18;
   }
   .tutor-shell-frame .brain-workspace__top-bar {
     padding: 0 1rem 1rem;
@@ -1360,8 +1501,8 @@
   }
   .tutor-shell-frame__main {
     background:
-      linear-gradient(180deg, rgba(255, 42, 76, 0.04), transparent 10%),
-      rgba(4, 1, 3, 0.52);
+      linear-gradient(180deg, rgba(255, 42, 76, 0.02), transparent 10%),
+      rgba(4, 1, 3, 0.16);
   }
   .brain-workspace__empty {
     background-image: var(--brain-grid);
@@ -1696,15 +1837,6 @@
       flex-direction: row;
       justify-content: space-between;
       align-items: flex-start;
-    }
-
-    .page-shell__meta {
-      justify-content: flex-end;
-      flex-wrap: nowrap;
-      flex-shrink: 0;
-    }
-    .page-shell__actions {
-      flex-wrap: nowrap;
     }
 
     .page-shell__hero::after {

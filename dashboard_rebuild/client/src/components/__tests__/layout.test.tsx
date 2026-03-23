@@ -1,7 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
+import { PageScaffold } from "@/components/PageScaffold";
 
 const {
   notesGetAllMock,
@@ -10,19 +11,26 @@ const {
   notesDeleteMock,
   notesReorderMock,
   setLocationMock,
+  mockLocationState,
   toastMock,
-} = vi.hoisted(() => ({
-  notesGetAllMock: vi.fn(),
-  notesCreateMock: vi.fn(),
-  notesUpdateMock: vi.fn(),
-  notesDeleteMock: vi.fn(),
-  notesReorderMock: vi.fn(),
-  setLocationMock: vi.fn(),
-  toastMock: vi.fn(),
-}));
+} = vi.hoisted(() => {
+  const mockLocationState = { value: "/" };
+  return {
+    notesGetAllMock: vi.fn(),
+    notesCreateMock: vi.fn(),
+    notesUpdateMock: vi.fn(),
+    notesDeleteMock: vi.fn(),
+    notesReorderMock: vi.fn(),
+    setLocationMock: vi.fn((nextLocation: string) => {
+      mockLocationState.value = nextLocation;
+    }),
+    mockLocationState,
+    toastMock: vi.fn(),
+  };
+});
 
 vi.mock("wouter", () => ({
-  useLocation: () => ["/", setLocationMock],
+  useLocation: () => [mockLocationState.value, setLocationMock],
 }));
 
 vi.mock("@/lib/api", () => ({
@@ -43,6 +51,40 @@ vi.mock("@/use-toast", () => ({
 
 import Layout from "@/components/layout";
 
+function TestRouteScaffolds() {
+  const route = mockLocationState.value;
+
+  return (
+    <>
+      <div style={route !== "/" ? { display: "none" } : undefined}>
+        <PageScaffold title="BRAIN" subtitle="Brain workspace" eyebrow="Primary">
+          <div>Brain content</div>
+        </PageScaffold>
+      </div>
+
+      <div style={route !== "/scholar" ? { display: "none" } : undefined}>
+        <PageScaffold
+          title="SCHOLAR"
+          subtitle="Scholar workspace"
+          eyebrow="Research"
+        >
+          <div>Scholar content</div>
+        </PageScaffold>
+      </div>
+
+      <div style={route !== "/methods" ? { display: "none" } : undefined}>
+        <PageScaffold
+          title="METHODS"
+          subtitle="Methods workspace"
+          eyebrow="Tools"
+        >
+          <div>Methods content</div>
+        </PageScaffold>
+      </div>
+    </>
+  );
+}
+
 function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -60,6 +102,7 @@ function createWrapper() {
 describe("Layout nav and notes dock", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockLocationState.value = "/";
     notesGetAllMock.mockResolvedValue([]);
     notesCreateMock.mockResolvedValue({});
     notesUpdateMock.mockResolvedValue({});
@@ -85,6 +128,26 @@ describe("Layout nav and notes dock", () => {
     expect(screen.getByTestId("nav-calendar")).toBeInTheDocument();
     expect(screen.getByTestId("nav-methods")).toBeInTheDocument();
     expect(screen.getByTestId("nav-vault")).toBeInTheDocument();
+  });
+
+  it("keeps the floating Theme Lab button off the Tutor route", async () => {
+    const { rerender } = render(
+      <Layout>
+        <div>page</div>
+      </Layout>,
+      { wrapper: createWrapper() },
+    );
+
+    expect(await screen.findByTestId("theme-lab-link")).toBeInTheDocument();
+
+    mockLocationState.value = "/tutor";
+    rerender(
+      <Layout>
+        <div>page</div>
+      </Layout>,
+    );
+
+    expect(screen.queryByTestId("theme-lab-link")).not.toBeInTheDocument();
   });
 
   it("opens the notes panel from the dock and closes it back to the side", async () => {
@@ -175,5 +238,63 @@ describe("Layout nav and notes dock", () => {
       expect(header).toHaveAttribute("data-header-state", "expanded");
     });
     expect(document.body).not.toHaveClass("scrolled-down");
+  });
+
+  it("updates the shared hero when a nav route changes to another kept-alive page", async () => {
+    const portalId = "page-hero-portal";
+
+    const { rerender } = render(
+      <Layout>
+        <TestRouteScaffolds />
+      </Layout>,
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      expect(
+        within(document.getElementById(portalId) as HTMLElement).getByRole("heading", {
+          name: "BRAIN",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("nav-scholar"));
+    expect(setLocationMock).toHaveBeenCalledWith("/scholar");
+
+    rerender(
+      <Layout>
+        <TestRouteScaffolds />
+      </Layout>,
+    );
+
+    await waitFor(() => {
+      expect(
+        within(document.getElementById(portalId) as HTMLElement).getByRole("heading", {
+          name: "SCHOLAR",
+        }),
+      ).toBeInTheDocument();
+    });
+    expect(
+      within(document.getElementById(portalId) as HTMLElement).queryByRole("heading", {
+        name: "BRAIN",
+      }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("nav-methods"));
+    expect(setLocationMock).toHaveBeenCalledWith("/methods");
+
+    rerender(
+      <Layout>
+        <TestRouteScaffolds />
+      </Layout>,
+    );
+
+    await waitFor(() => {
+      expect(
+        within(document.getElementById(portalId) as HTMLElement).getByRole("heading", {
+          name: "METHODS",
+        }),
+      ).toBeInTheDocument();
+    });
   });
 });

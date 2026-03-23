@@ -34,6 +34,18 @@ interface UseSSEStreamReturn {
   streamAbortRef: React.MutableRefObject<AbortController | null>;
 }
 
+function extractReferenceTargetsFromMessage(message: string): string[] {
+  const matches = message.matchAll(/(^|\s)@([^\s@][^\s]*)/g);
+  const targets = Array.from(
+    new Set(
+      Array.from(matches)
+        .map((match) => match[2]?.trim())
+        .filter((value): value is string => Boolean(value)),
+    ),
+  );
+  return targets;
+}
+
 export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
   const {
     sessionId,
@@ -102,6 +114,7 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
     if (!input.trim() || !sessionId || isStreaming) return;
 
     const userMessage = input.trim();
+    const referenceTargets = extractReferenceTargetsFromMessage(userMessage);
     const command = parseArtifactCommand(userMessage);
     setInput("");
     const abortController = new AbortController();
@@ -145,6 +158,7 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
             material_ids: selectedMaterialIds,
             accuracy_profile: accuracyProfile,
             ...(selectedVaultPaths.length > 0 ? { folders: selectedVaultPaths } : {}),
+            ...(referenceTargets.length > 0 ? { reference_targets: referenceTargets } : {}),
           },
           behavior_override: activeBehavior,
           mode: {

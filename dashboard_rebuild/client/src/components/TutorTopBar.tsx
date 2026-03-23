@@ -1,5 +1,4 @@
 import { CONTROL_KICKER } from "@/components/shell/controlStyles";
-import { TutorTabBar } from "@/components/TutorTabBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,7 +22,6 @@ import {
 } from "@/lib/controlStages";
 import type { TutorPageMode, TutorStudioView } from "@/lib/tutorUtils";
 import type { TutorWorkflowDetailResponse } from "@/lib/api";
-import type { TutorArtifact } from "@/components/TutorArtifacts";
 import type { TutorBrainLaunchContext } from "@/lib/tutorClientState";
 import type { TutorTemplateChain } from "@/lib/api";
 import type {
@@ -53,16 +51,7 @@ export interface TutorTopBarProps {
   activeWorkflowDetail: TutorWorkflowDetailResponse | undefined;
   studioView: TutorStudioView;
   activeSessionId: string | null;
-  showArtifacts: boolean;
-  artifacts: TutorArtifact[];
   teachRuntime: TutorTeachRuntimeViewModel | null;
-  onSetShellMode: (mode: TutorPageMode) => void;
-  onOpenStudioHome: () => void;
-  onSetShowArtifacts: (show: boolean) => void;
-  onSetShowEndConfirm: (show: boolean) => void;
-  onOpenSettings: () => void;
-  onSetStudioEntryRequest: (req: null) => void;
-  onSetScheduleLaunchIntent: (intent: null) => void;
 }
 
 const RUNTIME_STATUS_STYLES: Record<TutorTeachRuntimeStatus, string> = {
@@ -146,16 +135,7 @@ export function TutorTopBar({
   activeWorkflowDetail,
   studioView,
   activeSessionId,
-  showArtifacts,
-  artifacts,
   teachRuntime,
-  onSetShellMode,
-  onOpenStudioHome,
-  onSetShowArtifacts,
-  onSetShowEndConfirm,
-  onOpenSettings,
-  onSetStudioEntryRequest,
-  onSetScheduleLaunchIntent,
 }: TutorTopBarProps) {
   const workflowStageLabel = activeWorkflowDetail?.workflow?.current_stage
     ? activeWorkflowDetail.workflow.current_stage
@@ -172,24 +152,6 @@ export function TutorTopBar({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-4 border-b border-primary/10 pb-4 xl:flex-row xl:items-end xl:justify-between">
-        <div className="space-y-2">
-          <div className={CONTROL_KICKER}>Tutor</div>
-          <div className="max-w-3xl font-mono text-base leading-7 text-foreground/84">
-            Brain&apos;s default live study surface for guided sessions,
-            artifacts, and next-step handoff.
-          </div>
-        </div>
-        {!isTutorSessionView ? (
-          <Badge
-            variant="outline"
-            className="shrink-0 rounded-[0.28rem] border-primary/22 px-3 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em] text-foreground/72"
-          >
-            BRAIN TO TUTOR LIVE SURFACE
-          </Badge>
-        ) : null}
-      </div>
-
       {!isTutorSessionView && brainLaunchContext?.title ? (
         <div
           data-testid="tutor-brain-handoff"
@@ -245,20 +207,6 @@ export function TutorTopBar({
             ) : null}
           </div>
         ) : null}
-
-        <TutorTabBar
-          shellMode={shellMode}
-          activeSessionId={activeSessionId}
-          showArtifacts={showArtifacts}
-          artifacts={artifacts}
-          onSetShellMode={onSetShellMode}
-          onOpenStudioHome={onOpenStudioHome}
-          onSetShowArtifacts={onSetShowArtifacts}
-          onSetShowEndConfirm={onSetShowEndConfirm}
-          onOpenSettings={onOpenSettings}
-          onSetStudioEntryRequest={onSetStudioEntryRequest}
-          onSetScheduleLaunchIntent={onSetScheduleLaunchIntent}
-        />
       </div>
 
       {isTutorSessionView ? (

@@ -11,10 +11,9 @@ Purpose: convert guided study-pass observations into a prioritized fix backlog.
 
 ## Fix now
 
-- `TGSL-LA-003` Launch workflow rows lose top-level course/topic/study-unit metadata even though workflow detail and project-shell endpoints still carry the real context. This weakens resume trust when stale workflows accumulate.
-- `TGSL-LA-004` Launch hub study-wheel rendering has a real null-guard bug. The current `hasWheelContent` logic can treat missing hub data as present and then dereference `tutorHub!.study_wheel`, matching the learner-observed console exception.
 - `TGSL-CN-001` Canon and track drift still describe obsolete surfaces (`TutorStartPanel`, `TutorPublishMode`, mounted workflow stepper) as if they were current, which makes the workflow harder to audit and follow correctly.
-- `TGSL-PR-005` Priming-to-Tutor launch is still a live blocker. The current code pass added inline blocker surfacing, but the latest learner pass still hit unclear approved-objectives / preflight language plus a `500` on `PUT /api/tutor/workflows/<id>/priming-bundle`, leaving `Save Draft`, `Mark Ready`, and `Start Tutor` effectively stuck.
+- `TGSL-PR-002` Priming readability still needs a live trust/readability retest after the latest layout and output-formatting pass.
+- `TGSL-PR-003` Priming output quality still needs a real Cardiovascular rerun/review even after the backend/frontend hardening waves.
 
 ## Fix next
 
@@ -43,9 +42,16 @@ Purpose: convert guided study-pass observations into a prioritized fix backlog.
 - `TGSL-PR-003` Priming assist now uses richer method-card reasoning context and full-material chunk coverage, so long-source extraction is no longer limited to a front excerpt and reruns are anchored against prior selected-method outputs.
 - `TGSL-PR-003` `M-PRE-010` now detects explicit `Learning objectives` sections in the source text and preserves that full slide-visible objective list in the final output instead of silently shrinking it when the model only returns a partial subset.
 - `TGSL-PR-005` Priming/Tutor handoff now shows inline launch blockers and disables false-ready actions.
-- `TGSL-PR-006` The first Setup window now owns the actual Tutor launch contract.
+- `TGSL-PR-005` Priming first-save now persists without the insert-path `500`, mirrors course/topic/study-unit context back to the workflow row, and uses learner-facing `Tutor launch check` wording instead of raw `Tutor preflight`.
+- `TGSL-PR-006` The earlier “launch contract belongs in Setup” correction has now been superseded by the later learner retest: `Setup` is scope-only again and the real Tutor launch contract now lives in `Tutor Handoff`.
 - `TGSL-PR-007` Objective-scope narrowing controls were removed from live Priming.
+- `TGSL-PR-008` The Priming step framing now follows `Setup -> Materials -> PRIME Methods -> Outputs -> Tutor Handoff` more cleanly instead of leading with Tutor launch language on the first screen.
+- `TGSL-PR-009` The `Materials` step now includes a dedicated full-width reader plus a `POPOUT READER` action and hides the split sidecar while the learner is in that step.
+- `TGSL-PR-010` Priming method cards are now full-size, selection uses whole-card styling, and output rendering no longer drops non-summary/non-map fields silently.
 - `TGSL-TU-001` The earlier top-bar workflow-stepper approach has now been superseded by the surface-first shell: `Launch` is the inbox, `Studio` owns `Home/Priming/Polish/Final Sync`, and Tutor keeps live-session execution plus contextual handoff actions like `Open Polish`.
+- `TGSL-LA-003` Launch now coalesces workflow context from Priming data, preserves more useful fallback labels, and shows a precise updated timestamp for thin or broken drafts.
+- `TGSL-LA-004` Launch hub Study Wheel rendering now uses a safe null guard instead of dereferencing missing hub data.
+- Tutor chat now preserves typed `@path` references and sends them as `content_filter.reference_targets` without changing the visible message text.
 - `TGSL-LA-003`, `TGSL-TU-002`, `TGSL-CR-002`, and `TGSL-CN-001` are now explicitly tracked as audit findings instead of living only in chat memory.
 - A concrete tonight rehearsal guide now lives in `tonight-dry-run.md` and is grounded in the real `Exercise Physiology -> Cardiovascular` session context currently present in the app.
 

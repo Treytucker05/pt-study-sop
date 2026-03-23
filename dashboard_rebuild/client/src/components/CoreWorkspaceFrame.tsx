@@ -71,7 +71,7 @@ export function CoreWorkspaceFrame({
           {sidebar ? (
             <aside
               className={cn(
-                "brain-workspace__sidebar-wrap flex w-full shrink-0 flex-col border-b border-primary/30 bg-black/40 min-h-0 max-h-[44vh] lg:w-80 lg:max-h-none lg:border-b-0 lg:border-r",
+                "brain-workspace__sidebar-wrap flex w-full shrink-0 flex-col border-b border-primary/30 bg-transparent min-h-0 max-h-[44vh] lg:w-80 lg:max-h-none lg:border-b-0 lg:border-r",
                 sidebarClassName,
               )}
             >

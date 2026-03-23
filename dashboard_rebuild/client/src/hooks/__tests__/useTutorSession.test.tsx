@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -8,14 +8,18 @@ import type { TutorWorkflowDetailResponse } from "@/lib/api";
 
 const preflightSessionMock = vi.fn();
 const configCheckMock = vi.fn();
+const logWorkflowStageTimeMock = vi.fn();
+const getProjectShellMock = vi.fn();
+const restoreStudioItemsMock = vi.fn();
 
 vi.mock("@/lib/api", () => ({
   api: {
     tutor: {
       preflightSession: (...args: unknown[]) => preflightSessionMock(...args),
       configCheck: (...args: unknown[]) => configCheckMock(...args),
-      getProjectShell: vi.fn(),
-      restoreStudioItems: vi.fn(),
+      logWorkflowStageTime: (...args: unknown[]) => logWorkflowStageTimeMock(...args),
+      getProjectShell: (...args: unknown[]) => getProjectShellMock(...args),
+      restoreStudioItems: (...args: unknown[]) => restoreStudioItemsMock(...args),
       createCustomChain: vi.fn(),
       createSession: vi.fn(),
       getSession: vi.fn(),
@@ -93,6 +97,9 @@ describe("useTutorSession", () => {
       blockers: [],
     });
     configCheckMock.mockResolvedValue({ ok: true });
+    logWorkflowStageTimeMock.mockResolvedValue({ ok: true });
+    getProjectShellMock.mockResolvedValue({});
+    restoreStudioItemsMock.mockResolvedValue({ items: [] });
   });
 
   it("uses carried-forward priming objectives in Tutor preflight when no approved objectives are loaded", () => {
@@ -188,5 +195,63 @@ describe("useTutorSession", () => {
         },
       ],
     });
+  });
+
+  it("checkpoints workflow study time on manual save without leaving the timer nullified", async () => {
+    const wrapper = createWrapper();
+    const hub = createHubMock();
+
+    const { result } = renderHook(
+      () =>
+        useTutorSession({
+          initialRouteQuery: {},
+          hub: hub as never,
+          activeSessionId: "sess-1",
+          setActiveSessionId: vi.fn(),
+          shellMode: "tutor",
+          studioView: "workbench",
+          setShellMode: vi.fn(),
+          setShowSetup: vi.fn(),
+          setRestoredTurns: vi.fn(),
+          hasRestored: true,
+          activeWorkflowId: "wf-1",
+          activeWorkflowDetail: null,
+        }),
+      { wrapper },
+    );
+
+    await waitFor(() => {
+      expect(result.current.stageTimerRunning).toBe(true);
+    });
+    const initialStartedAt = result.current.stageTimerStartedAt;
+    expect(initialStartedAt).toBeTruthy();
+
+    vi.useFakeTimers();
+    vi.setSystemTime(
+      new Date(new Date(initialStartedAt!).getTime() + 120_000),
+    );
+
+    await act(async () => {
+      const seconds = await result.current.checkpointWorkflowStudyTimer("manual_save", [
+        { kind: "note_save" },
+      ]);
+      expect(seconds).toBe(120);
+    });
+
+    expect(logWorkflowStageTimeMock).toHaveBeenCalledWith(
+      "wf-1",
+      expect.objectContaining({
+        trigger_source: "manual_save",
+        seconds_active: 120,
+        start_ts: initialStartedAt,
+        stage: "tutor",
+      }),
+    );
+    expect(result.current.stageTimerRunning).toBe(true);
+    expect(result.current.stageTimerStartedAt).toBe(
+      new Date(new Date(initialStartedAt!).getTime() + 120_000).toISOString(),
+    );
+
+    vi.useRealTimers();
   });
 });

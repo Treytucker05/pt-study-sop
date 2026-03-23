@@ -232,7 +232,7 @@ export function useTutorHub({
   const { data: tutorHub, isFetching: tutorHubLoading } = useQuery<TutorHubResponse>({
     queryKey: ["tutor-hub", activeSessionId],
     queryFn: () => api.tutor.getHub(),
-    enabled: hasRestored && shellMode === "launch",
+    enabled: hasRestored && shellMode === "studio",
     staleTime: 15 * 1000,
   });
 

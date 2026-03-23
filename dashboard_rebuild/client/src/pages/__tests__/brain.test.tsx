@@ -1,5 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import type { ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { queryClient } from "@/queryClient";
@@ -49,11 +56,15 @@ vi.mock("@/lib/api", () => ({
     },
     brain: {
       getMetrics: (...args: unknown[]) => mockBrainMetrics(...args),
-      getProfileSummary: (...args: unknown[]) => mockBrainProfileSummary(...args),
+      getProfileSummary: (...args: unknown[]) =>
+        mockBrainProfileSummary(...args),
       getProfileClaims: (...args: unknown[]) => mockBrainProfileClaims(...args),
-      getProfileQuestions: (...args: unknown[]) => mockBrainProfileQuestions(...args),
-      getProfileHistory: (...args: unknown[]) => mockBrainProfileHistory(...args),
-      organizePreview: (...args: unknown[]) => mockBrainOrganizePreview(...args),
+      getProfileQuestions: (...args: unknown[]) =>
+        mockBrainProfileQuestions(...args),
+      getProfileHistory: (...args: unknown[]) =>
+        mockBrainProfileHistory(...args),
+      organizePreview: (...args: unknown[]) =>
+        mockBrainOrganizePreview(...args),
     },
   },
 }));
@@ -68,7 +79,9 @@ vi.mock("sonner", () => ({
 }));
 
 vi.mock("@/components/brain/LearnerProfilePanel", () => ({
-  LearnerProfilePanel: () => <div data-testid="brain-tool-profile">profile tool</div>,
+  LearnerProfilePanel: () => (
+    <div data-testid="brain-tool-profile">profile tool</div>
+  ),
 }));
 
 function renderWithClient(ui: ReactElement) {
@@ -78,7 +91,9 @@ function renderWithClient(ui: ReactElement) {
       mutations: { retry: false },
     },
   });
-  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+  return render(
+    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
+  );
 }
 
 async function renderAppAtRoute(path: string, readyTestId: string) {
@@ -151,16 +166,36 @@ function seedDefaultMocks() {
       { mode: "TEACH", count: 1, minutes: 55 },
       { mode: "RETRIEVE", count: 1, minutes: 35 },
     ],
-    recentConfusions: [{ text: "Ventilation/perfusion mismatch", count: 1, course: "Exercise Physiology" }],
-    recentWeakAnchors: [{ text: "Fick principle", count: 1, course: "Exercise Physiology" }],
+    recentConfusions: [
+      {
+        text: "Ventilation/perfusion mismatch",
+        count: 1,
+        course: "Exercise Physiology",
+      },
+    ],
+    recentWeakAnchors: [
+      { text: "Fick principle", count: 1, course: "Exercise Physiology" },
+    ],
     conceptFrequency: [{ concept: "Oxygen transport", count: 2 }],
-    issuesLog: [{ issue: "source lock dropped", count: 1, course: "Exercise Physiology" }],
+    issuesLog: [
+      { issue: "source lock dropped", count: 1, course: "Exercise Physiology" },
+    ],
     totalMinutes: 90,
     totalSessions: 2,
     totalCards: 6,
-    staleTopics: [{ topic: "Reflex arcs", count: 2, lastStudied: "2026-03-01", daysSince: 19 }],
+    staleTopics: [
+      {
+        topic: "Reflex arcs",
+        count: 2,
+        lastStudied: "2026-03-01",
+        daysSince: 19,
+      },
+    ],
   });
-  mockBrainProfileSummary.mockResolvedValue({ profileSummary: {}, hybridArchetype: null });
+  mockBrainProfileSummary.mockResolvedValue({
+    profileSummary: {},
+    hybridArchetype: null,
+  });
   mockBrainProfileClaims.mockResolvedValue({ claims: [], count: 0 });
   mockBrainProfileQuestions.mockResolvedValue({ questions: [], count: 0 });
   mockBrainProfileHistory.mockResolvedValue({ history: [], count: 0 });
@@ -197,16 +232,22 @@ describe("Brain page contract", () => {
   it("routes both / and /brain to Brain home and highlights Brain in nav", async () => {
     await import("@/pages/brain");
     await renderAppAtRoute("/", "brain-home");
-    expect(screen.getByTestId("nav-brain")).toHaveAttribute("aria-current", "page");
+    expect(screen.getByTestId("nav-brain")).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
 
     cleanup();
     await renderAppAtRoute("/brain", "brain-home");
-    expect(screen.getByTestId("nav-brain")).toHaveAttribute("aria-current", "page");
+    expect(screen.getByTestId("nav-brain")).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
   }, 15000);
 
   it("renders the evidence-first Brain contract and removes the old dashboard drift", async () => {
     const { default: BrainPage } = await import("@/pages/brain");
-    renderWithClient(<BrainPage />);
+    const { container } = renderWithClient(<BrainPage />);
 
     expect(await screen.findByTestId("brain-home")).toBeInTheDocument();
     expect(screen.getByTestId("brain-session-evidence")).toBeInTheDocument();
@@ -215,14 +256,25 @@ describe("Brain page contract", () => {
     expect(screen.getByTestId("brain-integrations")).toBeInTheDocument();
     expect(screen.getByTestId("brain-llm-organizer")).toBeInTheDocument();
 
-    expect(screen.getByTestId("brain-session-evidence")).toHaveTextContent("Exercise Physiology");
-    expect(screen.getByTestId("brain-issue-patterns")).toHaveTextContent("source lock dropped");
-    expect(screen.getByTestId("brain-integration-anki")).toHaveTextContent("Review load: 12 due card(s)");
+    expect(screen.getByTestId("brain-session-evidence")).toHaveTextContent(
+      "Exercise Physiology",
+    );
+    expect(screen.getByTestId("brain-issue-patterns")).toHaveTextContent(
+      "source lock dropped",
+    );
+    expect(screen.getByTestId("brain-integration-anki")).toHaveTextContent(
+      "Review load: 12 due card(s)",
+    );
 
-    expect(screen.queryByText("WHAT NEEDS ATTENTION NOW")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("WHAT NEEDS ATTENTION NOW"),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("PROJECTS DASHBOARD")).not.toBeInTheDocument();
     expect(screen.queryByText("SUPPORT SYSTEMS")).not.toBeInTheDocument();
     expect(screen.queryByText("SYSTEM / SETUP")).not.toBeInTheDocument();
+    expect(
+      container.querySelector('[data-ui="hud-panel"][data-hud-variant="b"]'),
+    ).not.toBeNull();
   });
 
   it("uses the organizer as an annotation-only surface", async () => {
@@ -234,11 +286,12 @@ describe("Brain page contract", () => {
       screen.getByPlaceholderText(/Paste raw session evidence/i),
       { target: { value: "Raw WRAP notes about oxygen transport" } },
     );
-    fireEvent.change(
-      screen.getByPlaceholderText(/Optional: course hint/i),
-      { target: { value: "Exercise Physiology" } },
+    fireEvent.change(screen.getByPlaceholderText(/Optional: course hint/i), {
+      target: { value: "Exercise Physiology" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /organize \+ annotate/i }),
     );
-    fireEvent.click(screen.getByRole("button", { name: /organize \+ annotate/i }));
 
     await waitFor(() => {
       expect(mockBrainOrganizePreview).toHaveBeenCalledWith(
@@ -246,8 +299,14 @@ describe("Brain page contract", () => {
         "Exercise Physiology",
       );
     });
-    expect(await screen.findByText("Organized Session Note")).toBeInTheDocument();
-    expect(screen.getByText(/Suggested destination:\s*Inbox \/ Organized Session Note\.md/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText("Organized Session Note"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Suggested destination:\s*Inbox \/ Organized Session Note\.md/i,
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText("Verify terms")).toBeInTheDocument();
   });
 

@@ -196,6 +196,47 @@ describe("TutorChat", () => {
     });
   });
 
+  it("preserves typed @path references and sends them as reference targets", async () => {
+    const fetchSpy = mockFetchForTutor([
+      { type: "token", content: "ok" },
+      { type: "done", model: "codex" },
+    ]);
+
+    render(
+      <TutorChat
+        sessionId="sess-paths"
+        availableMaterials={[]}
+        selectedMaterialIds={[]}
+        accuracyProfile="balanced"
+        onAccuracyProfileChange={vi.fn()}
+        onSelectedMaterialIdsChange={vi.fn()}
+        onArtifactCreated={vi.fn()}
+        onTurnComplete={vi.fn()}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("Ask a question..."), {
+      target: { value: "Compare @Courses/Cardio/Week-7.md with the selected files" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    await waitFor(() => {
+      const turnCall = fetchSpy.mock.calls.find(([url]) =>
+        String(url).includes("/turn"),
+      );
+      expect(turnCall).toBeDefined();
+      const [, init] = turnCall!;
+      const body = JSON.parse(String((init as RequestInit).body));
+      expect(body.message).toBe(
+        "Compare @Courses/Cardio/Week-7.md with the selected files",
+      );
+      expect(body.content_filter.reference_targets).toEqual([
+        "Courses/Cardio/Week-7.md",
+      ]);
+    });
+  });
+
   it("surfaces a retryable error when the stream ends with malformed chunks", async () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {

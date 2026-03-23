@@ -290,19 +290,19 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
   const isTutorPage = currentPath === "/tutor";
   const isWorkspaceRoute = isBrainPage || isTutorPage;
   const backdropImageClassName = isTutorPage
-    ? "absolute inset-0 scale-[1.02] opacity-[0.42]"
+    ? "absolute inset-0 scale-[1.02] opacity-[0.56]"
     : "absolute inset-0 scale-[1.08] blur-[10px] opacity-[0.16]";
   const backdropImagePosition = isTutorPage
     ? "center center"
     : "center calc(60% + 76px)";
   const backdropGlowClassName = isTutorPage
-    ? "absolute inset-0 bg-[radial-gradient(circle_at_50%_58%,rgba(255,92,120,0.12),transparent_18%),radial-gradient(circle_at_50%_72%,rgba(255,70,112,0.12),transparent_28%),linear-gradient(180deg,rgba(0,0,0,0.32),rgba(0,0,0,0.16)_24%,rgba(0,0,0,0.42)_64%,rgba(0,0,0,0.82)_100%)]"
+    ? "absolute inset-0 bg-[radial-gradient(circle_at_50%_58%,rgba(255,92,120,0.08),transparent_18%),radial-gradient(circle_at_50%_72%,rgba(255,70,112,0.08),transparent_28%),linear-gradient(180deg,rgba(0,0,0,0.12),rgba(0,0,0,0.06)_24%,rgba(0,0,0,0.18)_64%,rgba(0,0,0,0.48)_100%)]"
     : "absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,78,116,0.08),transparent_16%),radial-gradient(circle_at_50%_64%,rgba(255,64,105,0.05),transparent_24%),linear-gradient(180deg,rgba(0,0,0,0.82),rgba(0,0,0,0.56)_18%,rgba(0,0,0,0.64)_60%,rgba(0,0,0,0.92)_100%)]";
   const backdropToneClassName = isTutorPage
-    ? "absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.52),rgba(0,0,0,0.18)_22%,rgba(0,0,0,0.32)_54%,rgba(0,0,0,0.74)_100%)]"
+    ? "absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.18),rgba(0,0,0,0.06)_22%,rgba(0,0,0,0.12)_54%,rgba(0,0,0,0.36)_100%)]"
     : "absolute inset-0 bg-[linear-gradient(180deg,rgba(5,5,8,0.86),rgba(5,5,8,0.4)_24%,rgba(5,5,8,0.58)_72%,rgba(5,5,8,0.9)_100%)]";
   const backdropTextureClassName = isTutorPage
-    ? "absolute inset-0 bg-[radial-gradient(circle_at_50%_48%,rgba(255,255,255,0.03),transparent_18%),linear-gradient(90deg,rgba(255,70,102,0.04),transparent_20%,transparent_80%,rgba(255,70,102,0.04))]"
+    ? "absolute inset-0 bg-[radial-gradient(circle_at_50%_48%,rgba(255,255,255,0.02),transparent_18%),linear-gradient(90deg,rgba(255,70,102,0.03),transparent_20%,transparent_80%,rgba(255,70,102,0.03))]"
     : "absolute inset-0 bg-[radial-gradient(circle_at_50%_12%,rgba(255,255,255,0.02),transparent_18%),linear-gradient(90deg,rgba(255,70,102,0.03),transparent_24%,transparent_76%,rgba(255,70,102,0.03))]";
   const [newNote, setNewNote] = useState("");
   const [newNoteType, setNewNoteType] = useState<NoteCategory>("notes");
@@ -801,25 +801,27 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
       {/* CRT Scanlines */}
       <div className="crt-scanlines" />
 
-      <a
-        href="/theme-lab/index.html"
-        target="_blank"
-        rel="noopener noreferrer"
-        className={cn(
-          buttonVariants({ variant: "outline", size: "sm" }),
-          "pointer-events-auto fixed right-3 z-[60] min-h-0 gap-1.5 border-primary/45 bg-black/55 px-2.5 py-1.5 text-ui-xs uppercase tracking-[0.14em] shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop-blur-sm max-lg:top-[4.75rem] lg:top-4 lg:px-3 lg:text-sm",
-        )}
-        aria-label="Open Theme Lab — HUD and token test page"
-        data-testid="theme-lab-link"
-      >
-        <Palette className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
-        <span className="hidden min-[420px]:inline" aria-hidden="true">
-          Theme lab
-        </span>
-        <span className="inline min-[420px]:hidden" aria-hidden="true">
-          Lab
-        </span>
-      </a>
+      {!isTutorPage ? (
+        <a
+          href="/theme-lab/index.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cn(
+            buttonVariants({ variant: "outline", size: "sm" }),
+            "pointer-events-auto fixed right-3 z-[60] min-h-0 gap-1.5 border-primary/45 bg-black/55 px-2.5 py-1.5 text-ui-xs uppercase tracking-[0.14em] shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop-blur-sm max-lg:top-[4.75rem] lg:top-4 lg:px-3 lg:text-sm",
+          )}
+          aria-label="Open Theme Lab — HUD and token test page"
+          data-testid="theme-lab-link"
+        >
+          <Palette className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+          <span className="hidden min-[420px]:inline" aria-hidden="true">
+            Theme lab
+          </span>
+          <span className="inline min-[420px]:hidden" aria-hidden="true">
+            Lab
+          </span>
+        </a>
+      ) : null}
 
       {/* Top Nav — static header attached to normal page flow */}
       <header

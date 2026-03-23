@@ -4,10 +4,6 @@ import { describe, expect, it, vi } from "vitest";
 import { TutorTopBar } from "@/components/TutorTopBar";
 import type { TutorTeachRuntimeViewModel } from "@/components/TutorChat.types";
 
-vi.mock("@/components/TutorTabBar", () => ({
-  TutorTabBar: () => <div data-testid="tab-bar" />,
-}));
-
 const teachRuntime: TutorTeachRuntimeViewModel = {
   packetSource: "mixed",
   stage: { label: "Current stage", value: "TEACH", status: "live" },
@@ -86,16 +82,7 @@ describe("TutorTopBar", () => {
         activeWorkflowDetail={undefined}
         studioView="priming"
         activeSessionId="sess-1"
-        showArtifacts={false}
-        artifacts={[]}
         teachRuntime={teachRuntime}
-        onSetShellMode={vi.fn()}
-        onSetShowArtifacts={vi.fn()}
-        onSetShowEndConfirm={vi.fn()}
-        onOpenSettings={vi.fn()}
-        onOpenStudioHome={vi.fn()}
-        onSetStudioEntryRequest={vi.fn()}
-        onSetScheduleLaunchIntent={vi.fn()}
       />,
     );
 
@@ -114,5 +101,8 @@ describe("TutorTopBar", () => {
         /Waiting on backend fields: teach_packet\.concept_type, teach_packet\.current_depth/i,
       ),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("workspace-tab-bar"),
+    ).not.toBeInTheDocument();
   });
 });

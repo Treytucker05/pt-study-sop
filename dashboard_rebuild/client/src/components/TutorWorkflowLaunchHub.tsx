@@ -190,7 +190,7 @@ export function TutorWorkflowLaunchHub({
           <CardHeader className="tutor-launch-hud__header border-b border-primary/15 pb-3">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <CardTitle className="tutor-launch-hud__title">LAUNCH HUB</CardTitle>
+                <CardTitle className="tutor-launch-hud__title">STUDIO HUB</CardTitle>
                 <p className="tutor-launch-hud__subcopy mt-2">
                   Resume the correct study surface or start a fresh Studio priming run.
                 </p>

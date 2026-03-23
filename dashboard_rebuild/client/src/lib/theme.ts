@@ -93,19 +93,19 @@ export const SELECT_BASE =
 
 /** Primary action button */
 export const BTN_PRIMARY =
-  "w-full min-h-[44px] rounded-[1rem] border border-primary/50 bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(255,86,120,0.16)_44%,rgba(26,4,10,0.92)_100%)] font-arcade text-sm text-white shadow-[0_12px_26px_rgba(0,0,0,0.28)] hover:-translate-y-0.5 hover:border-primary/80";
+  "relative isolate overflow-hidden w-full min-h-[44px] rounded-[1rem] border border-[rgba(255,84,116,0.34)] bg-[radial-gradient(circle,rgba(255,84,116,0.18)_0%,rgba(0,0,0,0)_95%),linear-gradient(rgba(255,84,116,0.08)_1px,transparent_1px),linear-gradient(to_right,rgba(255,84,116,0.08)_1px,transparent_1px)] bg-[size:cover,15px_15px,15px_15px] bg-center bg-no-repeat px-4 font-arcade text-sm uppercase tracking-[0.22em] text-[#ffe2ea] shadow-[0_0_0_1px_rgba(255,84,116,0.22),0_12px_26px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(255,160,176,0.46)] hover:bg-[size:cover,10px_10px,10px_10px] active:scale-[0.99] active:brightness-110";
 
 /** Secondary/outline button */
 export const BTN_OUTLINE =
-  "min-h-[44px] rounded-[1rem] border border-muted-foreground/30 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.2)_100%)] font-arcade text-sm hover:-translate-y-0.5 hover:border-primary/50";
+  "relative isolate overflow-hidden min-h-[44px] rounded-[1rem] border border-[rgba(255,84,116,0.24)] bg-[radial-gradient(circle,rgba(255,84,116,0.12)_0%,rgba(0,0,0,0)_95%),linear-gradient(rgba(255,84,116,0.06)_1px,transparent_1px),linear-gradient(to_right,rgba(255,84,116,0.06)_1px,transparent_1px)] bg-[size:cover,15px_15px,15px_15px] bg-center bg-no-repeat px-4 font-arcade text-sm uppercase tracking-[0.18em] text-[#ffd8e2] shadow-[0_0_0_1px_rgba(255,84,116,0.12),0_10px_22px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(255,160,176,0.38)] hover:bg-[size:cover,10px_10px,10px_10px] active:scale-[0.99] active:brightness-110";
 
 /** Toolbar toggle button (inactive) */
 export const BTN_TOOLBAR =
-  "min-h-[44px] rounded-[0.95rem] border border-transparent px-3 font-arcade text-ui-xs text-muted-foreground hover:text-primary";
+  "relative isolate overflow-hidden min-h-[44px] rounded-[0.95rem] border border-[rgba(255,84,116,0.18)] bg-[radial-gradient(circle,rgba(255,84,116,0.1)_0%,rgba(0,0,0,0)_95%),linear-gradient(rgba(255,84,116,0.05)_1px,transparent_1px),linear-gradient(to_right,rgba(255,84,116,0.05)_1px,transparent_1px)] bg-[size:cover,15px_15px,15px_15px] bg-center bg-no-repeat px-3 font-arcade text-ui-xs uppercase tracking-[0.16em] text-[#ffccd7]/78 shadow-[0_0_0_1px_rgba(255,84,116,0.08),0_8px_18px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(255,160,176,0.32)] hover:bg-[size:cover,10px_10px,10px_10px] hover:text-[#ffe3ea] active:scale-[0.99] active:brightness-110";
 
 /** Toolbar toggle button (active) */
 export const BTN_TOOLBAR_ACTIVE =
-  "min-h-[44px] rounded-[0.95rem] border border-primary/40 bg-primary/15 px-3 font-arcade text-ui-xs text-primary shadow-[0_0_18px_rgba(255,86,120,0.16)]";
+  "relative isolate overflow-hidden min-h-[44px] rounded-[0.95rem] border border-[rgba(255,84,116,0.32)] bg-[radial-gradient(circle,rgba(255,84,116,0.16)_0%,rgba(0,0,0,0)_95%),linear-gradient(rgba(255,84,116,0.07)_1px,transparent_1px),linear-gradient(to_right,rgba(255,84,116,0.07)_1px,transparent_1px)] bg-[size:cover,15px_15px,15px_15px] bg-center bg-no-repeat px-3 font-arcade text-ui-xs uppercase tracking-[0.16em] text-[#ffe3ea] shadow-[0_0_0_1px_rgba(255,84,116,0.18),0_0_18px_rgba(255,86,120,0.16),0_8px_18px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(255,160,176,0.42)] hover:bg-[size:cover,10px_10px,10px_10px] active:scale-[0.99] active:brightness-110";
 
 // ---------------------------------------------------------------------------
 // Layout

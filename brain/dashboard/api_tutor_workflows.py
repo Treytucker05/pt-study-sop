@@ -818,11 +818,11 @@ def _get_workflow_row(conn: sqlite3.Connection, workflow_id: str) -> sqlite3.Row
         """
         SELECT
             tw.workflow_id,
-            tw.course_id,
+            COALESCE(tw.course_id, tpb.course_id) AS course_id,
             tw.course_event_id,
             tw.assignment_title,
-            tw.study_unit,
-            tw.topic,
+            COALESCE(tw.study_unit, tpb.study_unit) AS study_unit,
+            COALESCE(tw.topic, tpb.topic) AS topic,
             tw.due_date,
             tw.current_stage,
             tw.status,
@@ -832,7 +832,8 @@ def _get_workflow_row(conn: sqlite3.Connection, workflow_id: str) -> sqlite3.Row
             c.name AS course_name,
             c.code AS course_code
         FROM tutor_workflows tw
-        LEFT JOIN courses c ON c.id = tw.course_id
+        LEFT JOIN tutor_priming_bundles tpb ON tpb.workflow_id = tw.workflow_id
+        LEFT JOIN courses c ON c.id = COALESCE(tw.course_id, tpb.course_id)
         WHERE tw.workflow_id = ?
         """,
         (workflow_id,),
@@ -1043,6 +1044,10 @@ def _update_workflow_state(
     current_stage: str | None = None,
     status: str | None = None,
     active_tutor_session_id: Any = _UNSET,
+    course_id: Any = _UNSET,
+    assignment_title: Any = _UNSET,
+    study_unit: Any = _UNSET,
+    topic: Any = _UNSET,
 ) -> None:
     updates = ["updated_at = ?"]
     values: list[Any] = [_now_iso()]
@@ -1055,6 +1060,18 @@ def _update_workflow_state(
     if active_tutor_session_id is not _UNSET:
         updates.append("active_tutor_session_id = ?")
         values.append(active_tutor_session_id)
+    if course_id is not _UNSET:
+        updates.append("course_id = ?")
+        values.append(course_id)
+    if assignment_title is not _UNSET:
+        updates.append("assignment_title = ?")
+        values.append(assignment_title)
+    if study_unit is not _UNSET:
+        updates.append("study_unit = ?")
+        values.append(study_unit)
+    if topic is not _UNSET:
+        updates.append("topic = ?")
+        values.append(topic)
     values.append(workflow_id)
     conn.execute(f"UPDATE tutor_workflows SET {', '.join(updates)} WHERE workflow_id = ?", values)
 
@@ -1150,11 +1167,11 @@ def list_tutor_workflows():
             f"""
             SELECT
                 tw.workflow_id,
-                tw.course_id,
+                COALESCE(tw.course_id, tpb.course_id) AS course_id,
                 tw.course_event_id,
                 tw.assignment_title,
-                tw.study_unit,
-                tw.topic,
+                COALESCE(tw.study_unit, tpb.study_unit) AS study_unit,
+                COALESCE(tw.topic, tpb.topic) AS topic,
                 tw.due_date,
                 tw.current_stage,
                 tw.status,
@@ -1164,7 +1181,8 @@ def list_tutor_workflows():
                 c.name AS course_name,
                 c.code AS course_code
             FROM tutor_workflows tw
-            LEFT JOIN courses c ON c.id = tw.course_id
+            LEFT JOIN tutor_priming_bundles tpb ON tpb.workflow_id = tw.workflow_id
+            LEFT JOIN courses c ON c.id = COALESCE(tw.course_id, tpb.course_id)
             {where_sql}
             ORDER BY datetime(tw.updated_at) DESC, tw.id DESC
             LIMIT ?
@@ -1373,7 +1391,7 @@ def upsert_tutor_priming_bundle(workflow_id: str):
                     recommended_tutor_strategy_json, created_at, updated_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (workflow_id, *params),
+                (workflow_id, *params, now),
             )
         else:
             conn.execute(
@@ -1406,7 +1424,15 @@ def upsert_tutor_priming_bundle(workflow_id: str):
                 """,
                 (*params, workflow_id),
             )
-        _update_workflow_state(conn, workflow_id, current_stage="priming", status=workflow_status)
+        _update_workflow_state(
+            conn,
+            workflow_id,
+            current_stage="priming",
+            status=workflow_status,
+            course_id=course_id,
+            study_unit=_normalize_text(data.get("study_unit")),
+            topic=_normalize_text(data.get("topic")),
+        )
         conn.commit()
         cur.execute("SELECT * FROM tutor_priming_bundles WHERE workflow_id = ?", (workflow_id,))
         bundle_row = cur.fetchone()

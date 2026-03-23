@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { useEffect, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -11,6 +11,7 @@ const {
   configCheckMock,
   getContentSourcesMock,
   getTemplateChainsMock,
+  listWorkflowsMock,
   preflightSessionMock,
   getLearningObjectivesByCourseMock,
   getCurrentCourseMock,
@@ -31,6 +32,7 @@ const {
   configCheckMock: vi.fn(),
   getContentSourcesMock: vi.fn(),
   getTemplateChainsMock: vi.fn(),
+  listWorkflowsMock: vi.fn(),
   preflightSessionMock: vi.fn(),
   getLearningObjectivesByCourseMock: vi.fn(),
   getCurrentCourseMock: vi.fn(),
@@ -124,6 +126,7 @@ vi.mock("@/lib/api", () => ({
       configCheck: configCheckMock,
       getContentSources: getContentSourcesMock,
       getTemplateChains: getTemplateChainsMock,
+      listWorkflows: listWorkflowsMock,
       preflightSession: preflightSessionMock,
       getSession: getSessionMock,
       getProjectShell: getProjectShellMock,
@@ -272,6 +275,7 @@ describe("Tutor studio route integration", () => {
     configCheckMock.mockResolvedValue({ ok: true });
     getContentSourcesMock.mockResolvedValue({ courses: [] });
     getTemplateChainsMock.mockResolvedValue([]);
+    listWorkflowsMock.mockResolvedValue({ items: [], count: 0 });
     preflightSessionMock.mockResolvedValue({
       ok: true,
       preflight_id: "preflight-test",
@@ -322,28 +326,19 @@ describe("Tutor studio route integration", () => {
     renderTutor();
 
     expect(await screen.findByText("NO CHAIN SELECTED")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /open launch/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /open studio/i })).toBeInTheDocument();
     expect(screen.queryByTestId("sidebar-rail")).not.toBeInTheDocument();
     expect(screen.queryByTestId("brain-tool-profile")).not.toBeInTheDocument();
   });
 
-  it("hides Scholar Strategy when navigating back to Launch from an active tutor session", async () => {
+  it("falls back to the Studio hub when the active session restore is stale", async () => {
     localStorage.setItem("tutor.active_session.v1", "sess-active");
-    getSessionMock.mockResolvedValue(makeActiveSession());
+    getSessionMock.mockRejectedValueOnce(new Error("missing"));
 
     renderTutor();
 
-    expect(
-      await screen.findByRole("button", { name: /scholar strategy/i }),
-    ).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("tab", { name: /^launch$/i }));
-
-    await waitFor(() => {
-      expect(
-        screen.queryByRole("button", { name: /scholar strategy/i }),
-      ).not.toBeInTheDocument();
-    });
+    expect(await screen.findByTestId("tutor-launch-hub")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /scholar strategy/i })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /start new/i })).toBeInTheDocument();
   });
 });

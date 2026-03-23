@@ -20,6 +20,8 @@ export function HudButton({
   return (
     <button
       type={type ?? "button"}
+      data-ui="hud-button"
+      data-hud-variant={variant}
       className={cn(
         baseClass,
         "transition-all duration-200",

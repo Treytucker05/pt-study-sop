@@ -22,8 +22,8 @@ import {
   CONTROL_KICKER,
 } from "@/components/shell/controlStyles";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { HudButton } from "@/components/ui/HudButton";
+import { HudPanel } from "@/components/ui/HudPanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
@@ -39,6 +39,19 @@ import {
   type ScholarInvestigation,
   type ScholarQuestion,
 } from "@/lib/api";
+import {
+  INPUT_BASE,
+  SELECT_BASE,
+  STATUS_ERROR,
+  STATUS_INFO,
+  STATUS_SUCCESS,
+  STATUS_WARNING,
+  TEXT_BADGE,
+  TEXT_BODY,
+  TEXT_MUTED,
+  TEXT_PANEL_TITLE,
+  TEXT_SECTION_LABEL,
+} from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/use-toast";
 
@@ -115,11 +128,11 @@ function statusTone(status?: string) {
     case "running":
       return "border-primary/60 text-primary";
     case "blocked":
-      return "border-yellow-500/60 text-yellow-400";
+      return STATUS_WARNING;
     case "completed":
-      return "border-emerald-500/60 text-emerald-400";
+      return STATUS_SUCCESS;
     case "failed":
-      return "border-destructive/60 text-destructive";
+      return STATUS_ERROR;
     default:
       return "border-muted-foreground/40 text-muted-foreground";
   }
@@ -128,26 +141,26 @@ function statusTone(status?: string) {
 function confidenceTone(confidence?: string) {
   switch (confidence) {
     case "high":
-      return "border-emerald-500/60 text-emerald-400";
+      return STATUS_SUCCESS;
     case "medium":
-      return "border-primary/60 text-primary";
+      return STATUS_INFO;
     default:
-      return "border-yellow-500/60 text-yellow-400";
+      return STATUS_WARNING;
   }
 }
 
-const SCHOLAR_PANEL =
-  "rounded-[1.2rem] border border-[rgba(255,122,146,0.22)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01)_18%,rgba(0,0,0,0.3)_100%),linear-gradient(135deg,rgba(118,10,34,0.28),rgba(10,4,8,0.92)_58%,rgba(0,0,0,0.98)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_16px_30px_rgba(0,0,0,0.24)]";
 const SCHOLAR_PANEL_HEADER =
-  "border-b border-[rgba(255,122,146,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01)_70%)]";
-const SCHOLAR_PANEL_TITLE =
-  "font-arcade text-sm uppercase tracking-[0.18em] text-primary";
-const SCHOLAR_FIELD_LABEL =
-  "font-arcade text-ui-xs uppercase tracking-[0.18em] text-primary/84";
-const SCHOLAR_COPY = "font-mono text-base leading-7 text-foreground/82";
-const SCHOLAR_META = "font-mono text-sm leading-6 text-foreground/68";
-const SCHOLAR_BADGE = "rounded-full px-2.5 py-1 text-ui-2xs tracking-[0.14em]";
-const SCHOLAR_INSET = "rounded-[1rem] border border-primary/15 bg-black/20 p-3";
+  "border-b border-primary/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01)_70%)]";
+const SCHOLAR_PANEL_SURFACE =
+  "overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01)_18%,rgba(0,0,0,0.16)_100%),linear-gradient(135deg,rgba(118,10,34,0.18),rgba(10,4,8,0.18)_58%,rgba(0,0,0,0.1)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_16px_30px_rgba(0,0,0,0.16)] backdrop-blur-xl";
+const SCHOLAR_PANEL_TITLE = TEXT_PANEL_TITLE;
+const SCHOLAR_FIELD_LABEL = `${TEXT_SECTION_LABEL} text-primary/84`;
+const SCHOLAR_COPY = `${TEXT_BODY} text-base leading-7 text-foreground/82`;
+const SCHOLAR_META = `${TEXT_MUTED} text-sm leading-6 text-foreground/68`;
+const SCHOLAR_BADGE = `${TEXT_BADGE} px-2.5 py-1 text-ui-2xs`;
+const SCHOLAR_TEXTAREA = `${INPUT_BASE} rounded-[1rem] border-primary/40 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.2)_100%)] text-base leading-7`;
+const SCHOLAR_SELECT = `${SELECT_BASE} rounded-[1rem] border-primary/40 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.2)_100%)] text-base`;
+const SCHOLAR_INSET = "rounded-[1rem] border border-primary/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.04)_18%,rgba(0,0,0,0.12)_100%)] p-3 backdrop-blur-lg";
 
 function ScholarSidebar({
   brainLaunchContext,
@@ -304,13 +317,11 @@ function ScholarWorkspaceTab({
   return (
     <TabsContent value="workspace" className="mt-0">
       <div className="grid gap-4 xl:grid-cols-[430px_minmax(0,1fr)]">
-        <Card className={SCHOLAR_PANEL}>
-          <CardHeader className={SCHOLAR_PANEL_HEADER}>
-            <CardTitle className={SCHOLAR_PANEL_TITLE}>
-              Start Investigation
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 p-4">
+        <HudPanel variant="b" className={SCHOLAR_PANEL_SURFACE}>
+          <div className={cn(SCHOLAR_PANEL_HEADER, "p-4")}>
+            <div className={SCHOLAR_PANEL_TITLE}>Start Investigation</div>
+          </div>
+          <div className="space-y-4 p-4">
             <div className="space-y-2">
               <div className={SCHOLAR_FIELD_LABEL}>Investigation Question</div>
               <Textarea
@@ -319,7 +330,7 @@ function ScholarWorkspaceTab({
                   patchPageState({ queryText: event.target.value })
                 }
                 placeholder="Example: Why does Brain keep classifying me as scaffold-dependent during retrieval-heavy sessions?"
-                className="min-h-[96px] rounded-[1rem] border-primary/40 bg-black/35 font-mono text-sm leading-6"
+                className={cn(SCHOLAR_TEXTAREA, "min-h-[96px]")}
                 data-testid="scholar-investigation-query"
               />
             </div>
@@ -332,7 +343,7 @@ function ScholarWorkspaceTab({
                   patchPageState({ rationale: event.target.value })
                 }
                 placeholder="Explain what Scholar should improve, validate, or challenge."
-                className="min-h-[96px] rounded-[1rem] border-primary/40 bg-black/35 font-mono text-sm leading-6"
+                className={cn(SCHOLAR_TEXTAREA, "min-h-[96px]")}
                 data-testid="scholar-investigation-rationale"
               />
             </div>
@@ -347,7 +358,7 @@ function ScholarWorkspaceTab({
                   })
                 }
               >
-                <SelectTrigger className="rounded-[1rem] border-primary/40 bg-black/35 font-mono text-sm">
+                <SelectTrigger className={SCHOLAR_SELECT}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="rounded-[1rem] border-primary/40 bg-black/95">
@@ -373,8 +384,8 @@ function ScholarWorkspaceTab({
               </Select>
             </div>
 
-            <Button
-              className="w-full rounded-[1rem] font-arcade text-sm tracking-[0.14em]"
+            <HudButton
+              className="tracking-[0.14em]"
               onClick={() => createInvestigation.mutate()}
               disabled={
                 createInvestigation.isPending ||
@@ -387,7 +398,7 @@ function ScholarWorkspaceTab({
               {createInvestigation.isPending
                 ? "STARTING..."
                 : "START INVESTIGATION"}
-            </Button>
+            </HudButton>
 
             <div className={SCHOLAR_INSET}>
               <div className={SCHOLAR_FIELD_LABEL}>Current Contract</div>
@@ -410,16 +421,14 @@ function ScholarWorkspaceTab({
                 </li>
               </ul>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </HudPanel>
 
-        <Card className={SCHOLAR_PANEL}>
-          <CardHeader className={SCHOLAR_PANEL_HEADER}>
-            <CardTitle className={SCHOLAR_PANEL_TITLE}>
-              Active Investigations
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
+        <HudPanel variant="b" className={SCHOLAR_PANEL_SURFACE}>
+          <div className={cn(SCHOLAR_PANEL_HEADER, "p-4")}>
+            <div className={SCHOLAR_PANEL_TITLE}>Active Investigations</div>
+          </div>
+          <div className="p-0">
             <ScrollArea className="h-[620px]">
               <div className="space-y-3 p-4">
                 {investigations.length === 0 ? (
@@ -506,8 +515,8 @@ function ScholarWorkspaceTab({
                 )}
               </div>
             </ScrollArea>
-          </CardContent>
-        </Card>
+          </div>
+        </HudPanel>
       </div>
     </TabsContent>
   );
@@ -530,15 +539,13 @@ function ScholarQuestionsTab({
 }) {
   return (
     <TabsContent value="questions" className="mt-6">
-      <Card className={SCHOLAR_PANEL}>
-        <CardHeader className={SCHOLAR_PANEL_HEADER}>
-          <CardTitle
-            className={`${SCHOLAR_PANEL_TITLE} flex items-center gap-2`}
-          >
+      <HudPanel variant="b" className={SCHOLAR_PANEL_SURFACE}>
+        <div className={cn(SCHOLAR_PANEL_HEADER, "p-4")}>
+          <div className={cn(SCHOLAR_PANEL_TITLE, "flex items-center gap-2")}>
             <HelpCircle className="w-4 h-4" /> QUESTION INBOX
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 p-4">
+          </div>
+        </div>
+        <div className="space-y-4 p-4">
           {questions.length === 0 ? (
             <p className={SCHOLAR_META}>
               Scholar has not produced any learner questions yet.
@@ -625,12 +632,11 @@ function ScholarQuestionsTab({
                           }))
                         }
                         placeholder="Write the learner answer Scholar should incorporate..."
-                        className="min-h-[88px] rounded-[1rem] border-primary/30 bg-black/35 font-mono text-sm leading-6"
+                        className={cn(SCHOLAR_TEXTAREA, "min-h-[88px]")}
                       />
                       <div className="flex justify-end">
-                        <Button
-                          size="sm"
-                          className="rounded-[1rem] font-arcade text-sm tracking-[0.14em]"
+                        <HudButton
+                          className="w-auto px-4 tracking-[0.14em]"
                           onClick={() => void submitAnswer(question)}
                           disabled={
                             !(questionAnswers[questionId] || "").trim() ||
@@ -642,7 +648,7 @@ function ScholarQuestionsTab({
                           {submittingQuestionIds[questionId]
                             ? "SAVING..."
                             : "SAVE ANSWER"}
-                        </Button>
+                        </HudButton>
                       </div>
                     </div>
                   )}
@@ -662,8 +668,8 @@ function ScholarQuestionsTab({
               </p>
             </div>
           ) : null}
-        </CardContent>
-      </Card>
+        </div>
+      </HudPanel>
     </TabsContent>
   );
 }
@@ -671,15 +677,13 @@ function ScholarQuestionsTab({
 function ScholarFindingsTab({ findings }: { findings: ScholarFinding[] }) {
   return (
     <TabsContent value="findings" className="mt-6">
-      <Card className={SCHOLAR_PANEL}>
-        <CardHeader className={SCHOLAR_PANEL_HEADER}>
-          <CardTitle
-            className={`${SCHOLAR_PANEL_TITLE} flex items-center gap-2`}
-          >
+      <HudPanel variant="b" className={SCHOLAR_PANEL_SURFACE}>
+        <div className={cn(SCHOLAR_PANEL_HEADER, "p-4")}>
+          <div className={cn(SCHOLAR_PANEL_TITLE, "flex items-center gap-2")}>
             <Link2 className="w-4 h-4" /> CITED FINDINGS
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 p-4">
+          </div>
+        </div>
+        <div className="space-y-4 p-4">
           {findings.length === 0 ? (
             <p className={SCHOLAR_META}>
               No research findings yet. Start an investigation and Scholar will
@@ -771,8 +775,8 @@ function ScholarFindingsTab({ findings }: { findings: ScholarFinding[] }) {
               </div>
             ))
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </HudPanel>
     </TabsContent>
   );
 }
@@ -784,15 +788,13 @@ function ScholarHistoryTab({
 }) {
   return (
     <TabsContent value="history" className="mt-6">
-      <Card className={SCHOLAR_PANEL}>
-        <CardHeader className={SCHOLAR_PANEL_HEADER}>
-          <CardTitle
-            className={`${SCHOLAR_PANEL_TITLE} flex items-center gap-2`}
-          >
+      <HudPanel variant="b" className={SCHOLAR_PANEL_SURFACE}>
+        <div className={cn(SCHOLAR_PANEL_HEADER, "p-4")}>
+          <div className={cn(SCHOLAR_PANEL_TITLE, "flex items-center gap-2")}>
             <CheckCircle2 className="w-4 h-4" /> INVESTIGATION HISTORY
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 p-4">
+          </div>
+        </div>
+        <div className="space-y-4 p-4">
           {investigations.length === 0 ? (
             <p className={SCHOLAR_META}>No Scholar history yet.</p>
           ) : (
@@ -845,8 +847,8 @@ function ScholarHistoryTab({
               </div>
             ))
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </HudPanel>
     </TabsContent>
   );
 }
@@ -1164,10 +1166,9 @@ export default function ScholarPage() {
         { label: "Findings", value: String(findings.length), tone: "info" },
       ]}
       actions={
-        <Button
-          variant="shell"
-          size="sm"
-          className="font-arcade text-xs"
+        <HudButton
+          variant="outline"
+          className="w-auto px-4 text-xs"
           onClick={() => {
             queryClient.invalidateQueries({
               queryKey: ["scholar-investigations"],
@@ -1187,7 +1188,7 @@ export default function ScholarPage() {
           }}
         >
           <RefreshCw className="w-3 h-3 mr-2" /> REFRESH
-        </Button>
+        </HudButton>
       }
     >
       <Tabs

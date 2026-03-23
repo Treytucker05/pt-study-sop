@@ -2,6 +2,12 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-22 - Studio layout playground added
+
+- Added `docs/design/studio-playground.html` by retargeting the existing page-builder engine to the current Studio module set.
+- The playground now exposes the main Studio parts as draggable/resizable cards, with presets for `Studio Map`, `Workflow First`, `Workspace First`, `Compact Stack`, and `Blank`.
+- The prompt output updates live from the current card arrangement and can be copied back into Claude.
+
 ## 2026-03-21 - Theme lab HUD guide alignment (panels/buttons a–f, tabs/input a, status)
 
 - `hud-variants.css`: core `hud-panel-a`–`f`, `hud-button-a`–`f`, `hud-tablist-a`/`hud-tab-a`, and `hud-input-a` reshaped toward the crimson HUD implementation reference (chamfers, industrial rivets, glass blur ~20px, scanline+inset, tactical clip-path, toggle pseudo-elements, icon glow); added `hud-progress-a` + `hud-badge-a`/`b`.
@@ -591,6 +597,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - live browser proof on `http://127.0.0.1:5000/tutor?mode=studio` against PID `30152` (`python dashboard_web.py`): Studio L1 rendered enriched cards and clicking `Movement Science` still opened the existing class detail flow
 
 ## 2026-03-15 - React Doctor structural closeout
+
 - Finished `RDAH-182` and `RDAH-183` in one pass by clearing remaining active support-surface and Brain/shell structural findings.
 - `dashboard_rebuild/react-doctor.config.json` is now limited to runtime/tooling ignores:
   - `drizzle.config.ts`
@@ -599,6 +606,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - `dashboard_rebuild` changes remain validated via `npm run check`, full `npm run build`, and the React Doctor scan in earlier passes after each major refactor wave.
 
 ## 2026-03-15 - Workspace coordination cleanup
+
 - Compressed the live execution board in `docs/root/TUTOR_TODO.md` down to the active/deferred work only and moved the completed 2026-03-15 sprint history into `docs/archive/TUTOR_TODO_history_2026-03-15_workspace_cleanup.md`.
 - Reset `docs/root/AGENT_BOARD.md` after archiving the 23 completed ownership rows into `docs/archive/AGENT_BOARD_history_2026-03-15.md`.
 - Removed only safe ignored workspace debris:
@@ -613,6 +621,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `git diff --check`
 
 ## 2026-03-15 - Runtime artifact prune and checkpoint split
+
 - Removed bulky ignored runtime debris without touching the active runtime DB or uploads:
   - cleared `scholar/outputs/orchestrator_runs/`
   - cleared `scholar/outputs/research_notebook/`
@@ -629,6 +638,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - Brain/Scholar workspace rewrites
 
 ## 2026-03-15 - Swarm planner hardening
+
 - Created the track `conductor/tracks/swarm-planner-hardening_20260315/` and registered `SPH-100` on the active sprint board before mutating the planner surfaces.
 - Backed up the canonical shared planner skill to `C:\Users\treyt\.agents\backups\swarm-planner-hardening_20260315\treys-swarm-planner` before editing the shared source-of-truth copy.
 - Hardened the shared planner skill under `C:\Users\treyt\.agents\skills\treys-swarm-planner\` with:
@@ -649,6 +659,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `git diff --check`
 
 ## 2026-03-16 - Swarm planner baseline sweep
+
 - Extended the repo-local planner eval kit so non-applicable categories are scored as `n/a` and excluded from case totals instead of dragging down the baseline unfairly.
 - Ran the six benchmark prompts from `.codex/skills/treys-swarm-planner-repo/evals/benchmark-set.md` against the current shared planner plus PT adapter contract and recorded the first durable baseline under `conductor/tracks/swarm-planner-hardening_20260315/baseline-scorecard.md`.
 - Baseline result captured the current planner as strongest on:
@@ -661,6 +672,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `git diff --check`
 
 ## 2026-03-16 - Harness pre-push failure-artifact stabilization
+
 - Fixed a pre-push blocker in `scripts/harness.ps1` by pre-seeding `HarnessLastFailureDetails` with deterministic `result/stdout/stderr` artifact paths before the eval runner starts.
 - This keeps the JSON failure payload stable even when `Eval` fails before the later result-write path populates the failure details, which is what was breaking `brain/tests/test_harness_eval.py::test_harness_eval_failed_live_scenario_writes_failure_artifacts` during full-suite pre-push runs.
 - Focused validation passed:
@@ -668,6 +680,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `pytest brain/tests/test_harness_eval.py -q`
 
 ## 2026-03-16 - Swarm planner review-only experiment
+
 - Ran the next measured planner experiment against the swarm-planner-hardening track instead of broadening the planner again.
 - Shared planner changes:
   - added a review-only path for tightening existing plans
@@ -682,6 +695,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - captured the resulting experiment in `conductor/tracks/swarm-planner-hardening_20260315/review-only-experiment-scorecard.md`
 
 ## 2026-03-16 - Custom navbar layout plugin
+
 - Added a repo-local custom navbar layout plugin at `tools/custom-navbar-layout-plugin/` so the dashboard shell background and split navbar PNGs can be placed directly inside an open design file without relying on MCP placement support.
 - The plugin ships as a minimal no-build scaffold:
   - `manifest.json`
@@ -706,6 +720,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `git diff --check`
 
 ## 2026-03-16 - Project skill audit skill
+
 - Added a repo-local Codex skill at `.codex/skills/project-skill-audit/` for auditing project-specific skill gaps from memory, rollout summaries, session history, and existing local skills.
 - The skill encodes:
   - repo surface and canon scan order
@@ -717,6 +732,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `python C:\Users\treyt\.codex\skills\.system\skill-creator\scripts\quick_validate.py .codex\skills\project-skill-audit`
 
 ## 2026-03-16 - Custom app navbar load
+
 - Copied the split custom navbar PNGs into `dashboard_rebuild/attached_assets/` as app-local assets for:
   - Brain
   - Scholar
@@ -737,6 +753,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - manual render check at `http://127.0.0.1:5000/brain`
 
 ## 2026-03-16 - UI image centralization
+
 - Created `C:\pt-study-sop\UI Images` as the canonical repo-local home for the shell/navbar image set and the working navbar source art.
 - Moved the current live shell assets there:
   - `BrainBackground.jpg`
@@ -763,6 +780,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - live render check at `http://127.0.0.1:5000/brain`
 
 ## 2026-03-16 - Navbar tool naming cleanup
+
 - Renamed the repo-local navbar layout scaffold from `tools/figma-navbar-layout-plugin/` to `tools/custom-navbar-layout-plugin/` so the folder no longer carries the stale Figma-first label.
 - Updated the active sprint board, historical log references, and the tool README/UI copy to use the neutral custom naming while keeping the underlying plugin files intact.
 - Validation passed:
@@ -771,6 +789,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `git diff --check`
 
 ## 2026-03-16 - Navbar PNG crop fix
+
 - Repaired the custom navbar PNG set under `C:\pt-study-sop\UI Images` after the live shell showed a leftover white block under every button except Tutor.
 - Updated both the live app assets and the split source copies while keeping the imported filenames stable for:
   - Brain
@@ -786,6 +805,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - live render screenshot check at `http://127.0.0.1:5000/brain`
 
 ## 2026-03-16 - Custom nav background shell integration
+
 - Updated `dashboard_rebuild/client/src/components/layout.tsx` so the shared header now renders `C:\pt-study-sop\UI Images\Dashboard finished.png` as the custom nav backing plate behind the existing button links instead of leaving the buttons floating over the page background.
 - Preserved the current route map, `data-testid` hooks, and click behavior while switching the header layout to an overlaid shell-stage composition using the recorded button placements.
 - Validation passed:
@@ -794,6 +814,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - live render screenshot check at `http://127.0.0.1:5000/brain`
 
 ## 2026-03-16 - Custom nav interaction regression fix
+
 - Reworked `dashboard_rebuild/client/src/components/layout.tsx` so the overlaid primary/support nav rails no longer block each other's pointer events, which restores reliable hover and click behavior for the top-row Brain/Scholar/Tutor buttons.
 - Strengthened the custom button hover/press treatment and widened the desktop nav stage/shell presentation so the background plate reads larger without changing the current route map or `data-testid` hooks.
 - Validation passed:
@@ -802,6 +823,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - live browser verification at `http://127.0.0.1:5000/brain` including successful hover and route navigation for the primary custom buttons
 
 ## 2026-03-16 - Notes dock side swap
+
 - Updated `dashboard_rebuild/client/src/components/layout.tsx` so the floating notes control now renders as a compact unlabeled icon tab on the left edge instead of the larger labeled right-edge dock.
 - Moved the notes sheet to the left side to match the new tab location while keeping the existing drag/open behavior and `data-testid="notes-dock"` intact.
 - Validation passed:
@@ -810,6 +832,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - live browser verification at `http://127.0.0.1:5000/brain` including opening the left-side notes tab and confirming the sheet opens cleanly
 
 ## 2026-03-16 - Custom nav shell scale rebalance
+
 - Tuned `dashboard_rebuild/client/src/components/layout.tsx` so the custom shell background renders larger while the button art is reduced inside the same clickable link areas, matching the requested bigger-background/smaller-button balance.
 - Narrowed the logo column slightly, widened the desktop nav stage, increased the shell image scale, and reduced the button image width so the overall nav plate grows without making the buttons feel oversized.
 - Validation passed:
@@ -818,6 +841,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - live browser verification at `http://127.0.0.1:5000/brain`
 
 ## 2026-03-16 - Custom nav title and hero polish
+
 - Reworked `dashboard_rebuild/client/src/components/layout.tsx` so the custom nav shell now sits as a centered/lowered hero element instead of sharing the header with a separate left-side logo card.
 - Replaced the old `TREY'S STUDY SYSTEM / NEURAL COMMAND DECK` block with a curved title treatment that arcs over the shell and embeds the brain logo directly into the title composition.
 - Strengthened the primary-button treatment so Scholar and Tutor keep stronger always-on glow/brightness accents and read as emphasized peers next to Brain while preserving the current nav routes and `data-testid` hooks.
@@ -827,6 +851,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - live browser verification at `http://127.0.0.1:5000/brain`
 
 ## 2026-03-16 - Custom nav fit and title emphasis follow-up
+
 - Tightened `dashboard_rebuild/client/src/components/layout.tsx` so the desktop header no longer relies on a forced horizontal overflow rail or the oversized shell scale that had introduced left-right scrolling and a bulkier collapsed shell.
 - Reduced the visible button art slightly while widening/recentering the clickable placement zones, giving the mid-row and bottom-row PNG buttons a cleaner fit inside the shell artwork without changing the route map or test hooks.
 - Recovered the title into a single left-starting `TREY'S STUDY SYSTEM` wordmark with the brain mark tucked into the title lane after the earlier three-part arc treatment regressed visually.
@@ -837,6 +862,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - live browser verification at `http://127.0.0.1:5000/brain`
 
 ## 2026-03-16 - Header variant lab
+
 - Added a standalone `/nav-lab` route in `dashboard_rebuild/client/src/App.tsx` and a new `dashboard_rebuild/client/src/pages/nav-lab.tsx` gallery page that renders six custom banner lockup variants at once.
 - Kept the shell/button language stable and used the variant set to explore the actual alignment question: how the brain mark should attach to the `TREY'S STUDY SYSTEM` wordmark and how that lockup should sit relative to the shell.
 - Validation passed:
@@ -845,6 +871,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - live route check at `http://127.0.0.1:5000/nav-lab`
 
 ## 2026-03-16 - Nav build marker and launch guard
+
 - Added a bright `NAV 316.1` marker to `dashboard_rebuild/client/src/components/layout.tsx` so the live custom header immediately shows which build is actually on screen during visual tuning.
 - Confirmed the canonical `http://127.0.0.1:5000/brain` path was serving fresh `brain/static/dist` assets, identified a stray `dashboard_rebuild` Vite dev server still running on port `3000`, and killed only that repo-local dev server to remove a second dashboard surface.
 - Hardened `Start_Dashboard.bat` so its stale-build detection now also watches `dashboard_rebuild/shared`, repo-level `UI Images`, and additional frontend config/plugin files before deciding to skip the UI rebuild.
@@ -856,6 +883,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - live route check at `http://127.0.0.1:5000/brain`
 
 ## 2026-03-16 - Navbar build-path stabilization and NAV 316.4
+
 - Updated `dashboard_rebuild/client/src/components/layout.tsx` so the desktop banner now carries the `NAV 316.4` marker, a wider shell/background bleed, and a retuned `TREY'S STUDY SYSTEM` left lockup for the ongoing navbar polish pass.
 - Switched `dashboard_rebuild/package.json` from `tsx build.ts` to direct `vite build` after confirming the canonical starter was blocking on the extra wrapper while the actual Vite production build still completed successfully.
 - Reproduced the `Start_Dashboard.bat` path end-to-end, confirmed the rebuilt live bundle in `brain/static/dist` contains `NAV 316.4`, and verified the canonical `http://127.0.0.1:5000/brain` launcher now serves that fresh bundle again.
@@ -866,6 +894,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `python scripts/check_docs_sync.py`
 
 ## 2026-03-16 - Navbar dense alignment grid and center dots
+
 - Updated `dashboard_rebuild/client/src/components/layout.tsx` so the live desktop `/brain` navbar overlay keeps the major `A-P` and `1-10` alignment grid while adding three lower-opacity subdivision lines between every major row and column.
 - Used three distinct subdivision line colors inside the existing green-family grid and kept the major grid lines brighter so the overlay stays readable without overpowering the shell art.
 - Added a small red center marker directly inside each desktop nav button anchor so future alignment feedback can target button centers against the labeled grid without affecting hover or click behavior.
@@ -876,6 +905,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - built bundle check for `NAV 316.5` in `brain/static/dist`
 
 ## 2026-03-16 - Scholar grid placement adjustment
+
 - Moved only the Scholar desktop nav button in `dashboard_rebuild/client/src/components/layout.tsx` so its center marker targets the user's requested alignment callout: on the `H|I` major vertical line and centered in `box 5`.
 - Left every other desktop nav button placement unchanged for this pass so the next alignment corrections can be called out one button at a time against the `NAV 316.6` overlay.
 - Validation passed:
@@ -884,6 +914,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - built bundle check for `NAV 316.6` in `brain/static/dist`
 
 ## 2026-03-16 - Navbar alignment overlay coordinate repair
+
 - Verified with a fresh `http://127.0.0.1:5000/brain` screenshot that the `NAV 316.6`/`316.7` Scholar callout missed because the live shell background and green grid were rendered inside the widened bleed box while the button anchors were still positioned against the narrower inner stage.
 - Updated `dashboard_rebuild/client/src/components/layout.tsx` so the background art, live grid, and both desktop nav rails now render inside the same widened shell coordinate space.
 - Measured the custom PNG alpha bounds and moved the red debug dots to the visible button-art centers instead of the raw image rectangles, which had inconsistent bottom transparency across the support row.
@@ -893,6 +924,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - built bundle check for `NAV 316.8` in `brain/static/dist`
 
 ## 2026-03-17 - Navbar debug overlay removal
+
 - Removed the temporary desktop navbar debug overlay from `dashboard_rebuild/client/src/components/layout.tsx`, including the live `A-P` / `1-10` grid, the row/column labels, and the red button-center dots.
 - Kept the top-right build marker in place and bumped it to `NAV 316.9` so the live shared header can still be identified quickly during further visual tuning.
 - Validation passed:
@@ -901,12 +933,14 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - built bundle check for `NAV 316.9` in `brain/static/dist`
 
 ## 2026-03-17 - Navbar visual review guardrail capture
+
 - Added a permanent visual-work guardrail to `docs/root/AGENT_GUARDRAILS.md` after the navbar tuning drifted into source-first nudging instead of full live-render review.
 - Captured the specific prevention rule for this repo: use only the canonical `5000` surface, take a fresh full-area screenshot after each meaningful visual change, separate structural resets from micro-polish, and keep a build marker visible during iterative UI work.
 - Validation passed:
   - `python scripts/check_docs_sync.py`
 
 ## 2026-03-17 - Navbar placement-guide recovery
+
 - Used `UI Images/reference/Dashboard finished placement guide.png` and `UI Images/buttons_for_dashboard_split/placement.json` as the single visual source of truth for the desktop navbar layout.
 - Generated `UI Images/Dashboard finished composite.png` by compositing the split navbar PNGs onto `UI Images/Dashboard finished.png` at the recorded guide coordinates.
 - Updated `dashboard_rebuild/client/src/components/layout.tsx` so the desktop header now renders the guide-derived composite scene and uses transparent absolute hotspots for the existing routes instead of trying to visually align separate live button images.
@@ -917,6 +951,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - built bundle check for `NAV 317.0` in `brain/static/dist`
 
 ## 2026-03-17 - Desktop title chip enlargement pass
+
 - Updated `dashboard_rebuild/client/src/components/layout.tsx` so the desktop `TREY'S STUDY SYSTEM` title lockup now uses a doubled left brain chip and a duplicated matching chip at the right edge of the wordmark.
 - Kept the guide-based shell/button composite untouched in this pass so only the title lane changed.
 - Captured a fresh live screenshot at `tmp-nav-brain-3171b.png` after rebuilding to verify the `NAV 317.1` title result on the canonical `5000` surface.
@@ -926,6 +961,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `python scripts/check_docs_sync.py`
 
 ## 2026-03-17 - Path B step 1 desktop composite removal
+
 - Removed the desktop `Dashboard finished composite.png` render from `dashboard_rebuild/client/src/components/layout.tsx` as the first targeted reset step toward restoring true separate live button images.
 - Left the desktop hotspot anchors intact so the baked image removal could be verified in isolation before reintroducing the separate shell background and button PNGs.
 - Captured a fresh live screenshot at `tmp-nav-brain-3172.png` confirming the desktop composite art is gone in `NAV 317.2`.
@@ -935,6 +971,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - built bundle check for `NAV 317.2` in `brain/static/dist`
 
 ## 2026-03-17 - Path B step 2 desktop hotspot window removal
+
 - Removed both desktop nav hotspot rails from `dashboard_rebuild/client/src/components/layout.tsx`, which removes all 8 clear desktop button windows from the live shared header.
 - Captured a fresh live screenshot at `tmp-nav-brain-3173.png` confirming the desktop header is now down to the title lane only in `NAV 317.3`.
 - Validation:
@@ -943,6 +980,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `npm run test -- client/src/components/__tests__/layout.test.tsx` now fails as expected because the temporary desktop reset removed `nav-brain` / desktop nav anchors that the test still expects
 
 ## 2026-03-17 - Title lockup comparison lab
+
 - Reworked `dashboard_rebuild/client/src/pages/nav-lab.tsx` into a focused three-variant title comparison strip for the live navbar decision instead of the older six-way lockup experiment.
 - Added `Oxanium`, `Orbitron`, and `Audiowide` imports plus font tokens in `dashboard_rebuild/client/src/index.css`, then built the app and captured fresh comparison screenshots at `tmp-nav-lab-title-1.png` and `tmp-nav-lab-title-2.png`.
 - Incorporated read-only agent feedback: Oxanium as the safest baseline, Orbitron as the strongest mounted-command treatment, Audiowide as the softest/most stylized option, with explicit warning not to judge them at too tiny a scale.
@@ -951,6 +989,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `python scripts/check_docs_sync.py`
 
 ## 2026-03-17 - Browser fallback stack cleanup
+
 - Replaced the ad hoc `chrome-cdp` prep path in `C:\Users\treyt\OneDrive\Desktop\UI-UX` with an `agent-browser` fallback profile and launcher script so the local browser stack is now documented as `windows-mcp -> browsirai -> agent-browser -> Playwright`.
 - Updated `Tool-Profiles.json`, `Start-Assistant-Tool.ps1`, and `UI-UX-README.md` to make `agent-browser` the supported live-browser fallback while leaving `chrome-cdp` as an optional legacy install instead of the main recommendation.
 - Verified the launcher profiles for `agent-browser-prep`, `penpot-mcp`, and `pt-study-dashboard`, then reopened the canonical dashboard and Penpot startup flows from the new launcher path.
@@ -958,6 +997,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Removed the old local `chrome-cdp` skill files so the fallback path is no longer ambiguous.
 
 ## 2026-03-17 - Stitch MCP setup
+
 - Configured global Google Cloud ADC for the active `treytucker05@yahoo.com` account and quota project `studysop`, creating `C:\Users\treyt\AppData\Roaming\gcloud\application_default_credentials.json`.
 - Enabled `stitch.googleapis.com` and then enabled the Stitch MCP endpoint for `projects/studysop` with system `gcloud beta services mcp enable`.
 - Verified Stitch CLI access through `@_davideast/stitch-mcp` using system gcloud auth by listing tools and opening the projects browser, which surfaced live Stitch projects including `Arcade Style Retro Header Variant` and `Professional Study Brain Dashboard`.
@@ -965,6 +1005,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Updated `C:\Users\treyt\OneDrive\Desktop\UI-UX\UI-UX-README.md` with the Stitch setup and restart requirements.
 
 ## 2026-03-17 - Desktop nav background swap
+
 - Swapped the live desktop shell background in `dashboard_rebuild/client/src/components/layout.tsx` from `UI Images/Dashboard finished.png` to `UI Images/Dashboard Background image.png`.
 - Restored the desktop shell image layer itself, since the earlier Path B reset had removed the render and left an empty header lane where the background could not appear.
 - Rebuilt the canonical frontend bundle and verified the new background on `http://127.0.0.1:5000/brain` using a fresh browser screenshot (`tmp-nav-bg-check-2.png`).
@@ -974,12 +1015,14 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Known pre-existing issue: `npm run test -- client/src/components/__tests__/layout.test.tsx` still fails on missing desktop nav anchors (`data-testid="nav-brain"`) from the earlier Path B desktop-navbar reset, not from this background swap.
 
 ## 2026-03-17 - Disable Figma MCP in Codex
+
 - Disabled the global Codex Figma MCP server in `C:\Users\treyt\.codex\config.toml` by setting `[mcp_servers.figma].enabled = false`.
-- Confirmed the repo-local [`.mcp.json`](C:\pt-study-sop\.mcp.json) does not register a separate Figma MCP server, so no local override remains active.
+- Confirmed the repo-local [`.mcp.json`](C:\pt-study-sop.mcp.json) does not register a separate Figma MCP server, so no local override remains active.
 - Created a timestamped backup before the change at `C:\Users\treyt\.codex\config.toml.bak-20260317-231804`.
 - Validation: parsed `C:\Users\treyt\.codex\config.toml` with Python `tomllib` and confirmed `mcp_servers.figma.enabled` resolves to `False`.
 
 ## 2026-03-19 - Tutor PRIME artifact layout pass
+
 - Reframed the current Tutor Priming surface in `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` around the agreed Studio PRIME artifact bundle: `Learning Objectives`, `Study Spine`, `Hierarchical Map`, `Summary`, and `Terms`.
 - Kept the existing workflow save/restore contract in `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts` and reused the current priming bundle payload fields instead of adding a schema migration.
 - Demoted `Open Questions / Ambiguities` and Tutor guidance into a separate handoff card so the main PRIME surface stays focused on artifact creation.
@@ -991,6 +1034,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - live `/tutor` Priming sanity check at `http://127.0.0.1:5000/tutor`
 
 ## 2026-03-19 - Tutor Setup Rail layout pass
+
 - Rebuilt the live Priming panel in `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` around the chosen Setup Rail structure so setup lives in the left rail, the source viewer stays centered, and PRIME artifacts render as an extraction-first review workspace on the right.
 - Updated `dashboard_rebuild/client/src/components/priming/PrimingLayout.tsx` to support the three-zone left-rail / center-viewer / right-workspace layout instead of the earlier two-panel shell with a bottom block bar.
 - Tightened `dashboard_rebuild/client/src/components/priming/PrimingMaterialReader.tsx` so the center viewer only follows explicitly selected materials and shows a clean empty state when nothing is in scope.
@@ -1001,6 +1045,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - live `/tutor` Priming sanity check at `http://127.0.0.1:5000/tutor`
 
 ## 2026-03-19 - Tutor Setup Rail follow-up fixes
+
 - Patched `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` so the left rail actually exposes the materials picker and prime-chain controls in the live view, changed study unit entry to a typeable suggestion-backed field, and added a simple chain preview instead of leaving the chain hidden inside a select.
 - Patched `dashboard_rebuild/client/src/hooks/useTutorHub.ts` and `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts` so the displayed Obsidian target derives from the current class plus study unit instead of stale saved vault state, and new Priming runs clear the previous vault-folder override.
 - Tightened `dashboard_rebuild/client/src/components/MaterialSelector.tsx` so existing materials stay class-scoped instead of dumping every material when no class is selected, while still leaving upload available before a class is chosen.
@@ -1010,6 +1055,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - live `/tutor` check confirming Exercise Physiology plus typed `Week 7` resolves the Obsidian target to `Courses/Exercise Physiology/Week 7`
 
 ## 2026-03-19 - Tutor Priming stacked-window fallback
+
 - Flattened `dashboard_rebuild/client/src/components/priming/PrimingLayout.tsx` from the fixed-height three-column shell into vertically stacked windows so the Priming surface can be worked through top-to-bottom without clipping.
 - Updated the source viewer container in `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` to use a tall bounded viewport inside the new stacked flow, so PDFs and extracted docs remain usable while the page itself scrolls naturally.
 - Validation passed:
@@ -1018,6 +1064,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - live `/tutor` check confirming `START NEW` now renders stacked `SETUP`, `MATERIALS IN SCOPE`, and subsequent Priming windows instead of the prior clipped three-column layout
 
 ## 2026-03-19 - Tutor PRIME artifact formatting pass
+
 - Tightened `brain/dashboard/api_tutor_workflows.py` so Priming Assist now asks for markdown-ready summaries, `Term :: definition` terminology lines, and a real hierarchical map representation instead of a prose-only structure note.
 - Updated `dashboard_rebuild/client/src/lib/tutorUtils.ts` so saved markdown list prefixes are normalized back into plain records, multi-source aggregate blocks render as markdown subheadings instead of `[Source]` blobs, and PRIME artifacts format into headings, numbered lists, paragraphs, and Mermaid-aware preview text.
 - Reworked the artifact display in `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` to render formatted markdown in the live Priming workspace and to fall back to a visual Mermaid map derived from the Study Spine when the extractor returns prose for the hierarchy.
@@ -1030,6 +1077,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - live `/tutor` hard-refresh check confirming source-linked extraction previews now show headed/numbered markdown and the Summary artifact renders as a formatted document instead of a raw terminal blob
 
 ## 2026-03-20 - Reclassify Pre-Test into CALIBRATE
+
 - Moved `M-PRE-007 Pre-Test` from PRIME to CALIBRATE in `sop/library/methods/M-PRE-007.yaml` so the method stage matches its diagnostic confidence-capture behavior instead of being grouped with Studio PRIME artifact-building work.
 - Updated the canonical method library and category references in `sop/library/15-method-library.md`, `sop/library/categories/PRIME.md`, and `sop/library/categories/CALIBRATE.md` so the stage counts and inventories now place Pre-Test under CALIBRATE instead of PRIME.
 - Synced the integrity smoke doc in `docs/root/TUTOR_METHOD_INTEGRITY_SMOKE.md` so the stage listing for `M-PRE-007` matches the new categorization.
@@ -1037,6 +1085,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `pytest brain/tests/test_seed_methods.py brain/tests/test_artifact_validators.py brain/tests/test_chain_validator.py brain/tests/test_pero_mapping.py -q`
 
 ## 2026-03-20 - Move Brain Dump and Prior Knowledge Scan into CALIBRATE
+
 - Reclassified `M-PRE-001 Brain Dump` and `M-PRE-003 Prior Knowledge Scan` from PRIME to CALIBRATE in `sop/library/methods/M-PRE-001.yaml` and `sop/library/methods/M-PRE-003.yaml`, including stage-specific stipulations, prompts, and gating rules.
 - Updated the canonical stage inventories and boundary docs in `sop/library/15-method-library.md`, `sop/library/categories/PRIME.md`, and `sop/library/categories/CALIBRATE.md` so PRIME is material-grounded structure work and CALIBRATE owns prior-knowledge activation plus readiness mapping.
 - Synced supporting references in `docs/root/TUTOR_METHOD_INTEGRITY_SMOKE.md`, `docs/root/TUTOR_PRIME_DRAFT_MATRIX.md`, and fallback metadata in `brain/data/seed_methods.py` so the runtime seed path and PRIME-only draft matrix no longer contradict the canon method library.
@@ -1044,6 +1093,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `pytest brain/tests/test_seed_methods.py brain/tests/test_artifact_validators.py brain/tests/test_chain_validator.py brain/tests/test_pero_mapping.py -q`
 
 ## 2026-03-20 - First-class TEACH stage upgrade
+
 - Promoted `TEACH` to a first-class control-plane stage across canon docs, runtime contracts, selector/chain validation, DB/API compatibility layers, Tutor prompt assembly, and Methods UI stage handling.
 - Reclassified explanation-first methods into `TEACH`, added TEACH-native method cards (`Story Spine`, `Confusable Contrast Teach`, `Clinical Anchor Mini-Case`, `Modality Switch`, `Jingle / Rhyme Hook`), and kept learner-production methods in `ENCODE`.
 - Added TEACH doctrine and guardrails to runtime prompt assembly so TEACH blocks run `Source Facts -> Plain Interpretation -> Bridge Move -> Application -> Anchor Artifact` without scored checks or confidence tagging.
@@ -1056,6 +1106,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run build`
 
 ## 2026-03-20 - Tutor TEACH architecture correction pass
+
 - Locked first-exposure canon to `MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE`, changed the default TEACH depth path to `brief L0 hook -> L3 mechanism -> L4 DPT precision`, replaced mandatory blank-page teach-back gating with low-friction function confirmation, and set mnemonic placement to post-artifact / pre-full-calibrate with `KWIK Lite` as the live lightweight slot.
 - Updated first-exposure and proving-ground chain YAML plus CALIBRATE/KWIK method cards so chain truth matches the canon, including explicit TEACH packet metadata and post-TEACH mnemonic slot policy.
 - Removed selector stage fabrication by deriving selector and chain-status truth from real chain/method YAML, expanded the TEACH runtime packet in `api_tutor_turns.py`, and reframed `tutor_teach_back.py` as deeper mastery / repair instead of the default L3->L4 gate.
@@ -1070,6 +1121,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run build`
 
 ## 2026-03-20 - Tutor Priming stacked flow simplification
+
 - Simplified `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` so the stacked Priming page now leads with `SETUP` plus `MATERIALS IN SCOPE`, keeps `SOURCE VIEWER` second, preserves `PRIME ARTIFACT WORKSPACE` as the main review surface, and consolidates readiness plus handoff notes plus Tutor launch actions into one downstream `TUTOR HANDOFF` window.
 - Moved the top-level `EXTRACT PRIME` action into the source-viewer header so extraction stays accessible without opening chain/config controls.
 - Demoted `PRIME CHAIN` and `WORKFLOW CONTEXT` into a toggleable `ADVANCED PRIME CONTROLS` section at the bottom of the page, while keeping their existing functionality intact.
@@ -1079,6 +1131,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run build`
 
 ## 2026-03-20 - Tutor launch workflow delete
+
 - Added `DELETE /api/tutor/workflows/<workflow_id>` in `brain/dashboard/api_tutor_workflows.py` and explicitly delete workflow-owned priming, notes, feedback, stage-time, memory, polish, and publish rows before removing the workflow itself.
 - Exposed `api.tutor.deleteWorkflow(...)` in `dashboard_rebuild/client/src/api.ts` and added `deleteWorkflowRecord(...)` to `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts` so deleting from Launch invalidates the workflow list and clears the active workflow state when the deleted plan was open.
 - Added a visible destructive delete button with `window.confirm(...)` in `dashboard_rebuild/client/src/components/TutorWorkflowLaunchHub.tsx` and wired it through `dashboard_rebuild/client/src/components/TutorShell.tsx`.
@@ -1090,6 +1143,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - live `/tutor` launch-page check on `http://127.0.0.1:5000/tutor`
 
 ## 2026-03-20 - Methods/chains API lock fallback
+
 - Fixed the live Methods page backend failure in `brain/db_setup.py` by making runtime `ensure_method_library_seeded()` prefer existing method/chain rows by default instead of strict write-sync on first read, while keeping strict reconciliation opt-in through `PT_METHOD_LIBRARY_STRICT_SYNC=1`.
 - Added a fail-open guard so transient SQLite `database is locked` errors during best-effort library sync no longer take `/api/methods` or `/api/chains` down with a `500`.
 - Added regression coverage in `brain/tests/test_methods_api.py` for the locked-sync case and the default runtime skip path when the library already exists.
@@ -1100,6 +1154,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - confirmed `http://127.0.0.1:5000/api/chains` -> `200`
 
 ## 2026-03-20 - Methods schema repair and retryable load panels
+
 - Rebuilt stale live `method_blocks` tables in `brain/db_setup.py` when the persisted SQLite `control_stage` CHECK constraint still excluded `TEACH`, preserving existing rows/IDs while normalizing copied stage values into the current control-plane set.
 - Fixed startup drift in `brain/db_setup.py` so expected template-chain counts ignore `sop/library/chains/certification_registry.yaml`, which is registry metadata rather than a real template chain.
 - Added a regression test in `brain/tests/test_methods_api.py` proving `init_database()` upgrades a legacy `method_blocks` table and accepts a `TEACH` insert after the rebuild.
@@ -1112,7 +1167,9 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - restarted the app via `Start_Dashboard.bat`
   - confirmed `http://127.0.0.1:5000/api/methods` and `http://127.0.0.1:5000/api/chains` both return `200`
   - confirmed the live Methods page renders again at `http://127.0.0.1:5000/methods`
+
 ## 2026-03-20 - Tutor Guided Studyability Loop baseline opened
+
 - Opened `conductor/tracks/tutor-guided-studyability_20260320/` as the repo-native surface for Tutor feature inventory, guided stage-by-stage real study passes, normalized issue capture, and prioritized fix-wave planning.
 - Added an active execution item in `docs/root/TUTOR_TODO.md` and registered the new active track in `conductor/tracks.md`.
 - Seeded baseline artifacts:
@@ -1124,6 +1181,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `findings.md`
 
 ## 2026-03-21 - Shared nav shell motion removal
+
 - Removed the adaptive shared-header collapse behavior from `dashboard_rebuild/client/src/components/layout.tsx`, including the hover hot zone, hover/scroll compaction state, and the internal shell logic that kept the banner reacting independently from page flow.
 - Switched the app shell from a fixed-height grid with an internally scrolling `<main>` to a normal flex-column page flow so the nav now scrolls with the document instead of staying pinned outside the page scroll.
 - Stripped translate/scale motion from the desktop nav button shell/image classes while keeping the existing visual styling and hover highlighting.
@@ -1135,6 +1193,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - live browser check on `http://127.0.0.1:5000/methods` confirmed `window.scrollY = 1800` with `header[data-header-shell]` at `y = -1800`, showing the header now moves with normal page scroll
 
 ## 2026-03-21 - Priming setup contract pulled into first window
+
 - Updated `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` so the first setup card now owns the real Tutor launch contract: class selection, study unit, objective scope, focus objective when needed, topic, materials, and live Tutor launch blockers/readiness all appear together instead of being split across the page.
 - Removed the duplicated full readiness checklist from the lower `TUTOR HANDOFF` section so the page tells one launch story instead of two.
 - Added focused regression coverage in `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx` for the new setup-window contract placement while keeping advanced controls collapsed by default.
@@ -1144,6 +1203,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run build`
 
 ## 2026-03-21 - Priming objective-scope removal
+
 - Removed the redundant `Objective Scope` and `Focus Objective` controls from `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` so Priming now works from the selected study unit plus file-derived objectives instead of asking the learner for a separate narrowing mode.
 - Normalized hidden narrowing state by resetting `single_focus` back to `module_all` when class or study unit changes and by auto-clearing stale invalid `single_focus` state when Priming opens without a valid focus objective.
 - Updated `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts` so the `Learning objectives captured` readiness item now keys off approved study-unit objectives or extracted source objectives rather than the old objective-scope toggle.
@@ -1154,6 +1214,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run build`
 
 ## 2026-03-21 - Priming and Tutor chain selectors moved into the live study flow
+
 - Moved PRIME method and Priming chain selection out of the old advanced dropdowns and into the active Priming setup flow in `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx`, using card-style selectors closer to the Methods page before the learner clicks `Extract PRIME`.
 - Added a real Tutor chain picker to the Priming handoff area with `AUTO`, `PRE-BUILT`, and `CUSTOM` choices before `Start Tutor`, and wired it into the same `chainId` / `customBlockIds` runtime state that Tutor session start already consumes.
 - Updated `dashboard_rebuild/client/src/components/TutorShell.tsx` to fetch template chains for the Priming view and pass them into the Priming panel, then trimmed the old advanced area down to workflow context instead of keeping duplicated hidden selection controls.
@@ -1163,6 +1224,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run build`
 
 ## 2026-03-21 - Priming simplified around multi-select methods and workspace-owned extraction
+
 - Removed the live Priming chain selector from `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` and rebuilt the stage so Priming is driven by multi-select Priming methods instead of a method-plus-chain pair.
 - Moved the `Prime Artifact Workspace` directly under `Setup`, moved the main `Extract PRIME` action into that workspace header, and demoted the `Source Viewer` into a reference-only section below it. `dashboard_rebuild/client/src/components/priming/PrimingMaterialReader.tsx` no longer owns extraction controls.
 - Switched the canonical frontend/backend Priming contract to `priming_methods` in `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts`, `dashboard_rebuild/client/src/api.types.ts`, `brain/dashboard/api_tutor_workflows.py`, and `brain/db_setup.py`, while keeping legacy hydration for older `priming_method` / `priming_chain_id` rows.
@@ -1172,6 +1234,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx client/src/hooks/__tests__/useTutorWorkflow.test.tsx client/src/hooks/__tests__/useTutorSession.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
 
 ## 2026-03-21 - PRIME rebuilt around the real SOP method library
+
 - Added canonical PRIME cards `M-PRE-012`, `M-PRE-013`, and `M-PRE-014` in `sop/library/methods/`, updated `sop/library/categories/PRIME.md` and `sop/library/15-method-library.md`, and locked the boundary that `root_understanding` is a TEACH intent rather than a PRIME method.
 - Enriched `/api/methods` in `brain/dashboard/api_methods.py` so PRIME cards expose YAML-backed metadata like `outputs_summary`, `required_outputs`, `allowed_moves`, `when_to_use`, `when_not_to_use`, `primary_citations`, and `mechanisms`, which the Priming page can now consume directly instead of relying on a synthetic local registry.
 - Rewired `brain/dashboard/api_tutor_workflows.py` and `brain/db_setup.py` so Priming assist runs only the selected stable `M-PRE-*` method IDs, stores workflow-level `priming_method_runs_json` plus per-source `method_outputs`, derives the old aggregate artifact bundle only as a compatibility layer, and normalizes legacy synthetic slugs into real PRIME method IDs while dropping `root_understanding` from PRIME.
@@ -1184,6 +1247,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run build`
 
 ## 2026-03-21 - Brain evidence-contract realignment
+
 - Replaced the old Brain home dashboard surface with `dashboard_rebuild/client/src/components/brain/ContractBrainHome.tsx`, then wired `dashboard_rebuild/client/src/components/brain/MainContent.tsx` to that evidence-first view instead of the launch/support/setup-heavy legacy layout.
 - Realigned `dashboard_rebuild/client/src/pages/brain.tsx` so the route hero and header stats describe Brain as a read-only evidence ledger rather than a command deck for course routing or live-study handoff.
 - Centered the page around stored session evidence, WRAP-traceable rollups, issues/failures, display-only integration status, and an annotation-only organizer that uses `api.brain.organizePreview(...)` without mutating stored Brain data.
@@ -1194,6 +1258,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run build`
 
 ## 2026-03-21 - Tutor top-of-page workflow navigation repair
+
 - Added `TGSL-170` to `docs/root/TUTOR_TODO.md` and logged the Tutor navigation problem as `TGSL-TU-001` in the guided studyability issue backlog.
 - Reworked `dashboard_rebuild/client/src/components/TutorWorkflowStepper.tsx` into a real workflow navigator that includes `LAUNCH`, `PRIMING`, `TUTOR`, `POLISH`, and `FINAL SYNC`, plus explicit `BACK TO ...` and `NEXT: ...` controls.
 - Simplified `dashboard_rebuild/client/src/components/TutorTabBar.tsx` so it no longer competes with the workflow stage story; it now serves as a smaller workspace-mode row with `WORKFLOW`, `TUTOR`, `STUDIO`, `SCHEDULE`, `SETTINGS`, and live Tutor actions.
@@ -1205,10 +1270,12 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - live snapshot check on `http://127.0.0.1:5000/tutor` confirmed the top row now exposes `WORKFLOW / TUTOR / STUDIO / SCHEDULE / SETTINGS` above the TEACH runtime block
 
 ## 2026-03-21 - Scholar Strategy launch-page leak fix
+
 - Tightened `dashboard_rebuild/client/src/components/TutorShell.tsx` so the live `SCHOLAR STRATEGY` panel only renders while `shellMode === "tutor"` with an active session, instead of leaking onto `LAUNCH` and other workflow surfaces whenever a session id exists.
 - Added a focused regression in `dashboard_rebuild/client/src/pages/__tests__/tutor.workspace.integration.test.tsx` that restores an active Tutor session, clicks `LAUNCH`, and verifies the Scholar Strategy chrome disappears while the launch command deck stays visible.
 
 ## 2026-03-21 - Tutor Launch HUD visual restyle
+
 - Restyled `dashboard_rebuild/client/src/components/TutorWorkflowLaunchHub.tsx` to match the repo's sci-fi HUD direction without changing any layout, routing, or navigation behavior. The page now keeps the same Launch structure but uses sharper illuminated panel shells, higher-contrast typography, red-accent primary actions, instrument-style filter controls, and darker workflow-table states.
 - Added reusable Launch-only HUD primitives in `dashboard_rebuild/client/src/index.css` for the Launch surface: `tutor-launch-hud`, `tutor-launch-hud__panel`, `tutor-launch-hud__metric`, `tutor-launch-hud__module`, `tutor-launch-hud__field`, `tutor-launch-hud__button`, `tutor-launch-hud__table-shell`, `tutor-launch-hud__row`, and related badge/title/meta variants.
 - Validation passed:
@@ -1217,17 +1284,20 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Follow-up adjustment: reverted the Launch page buttons in `dashboard_rebuild/client/src/components/TutorWorkflowLaunchHub.tsx` back to the standard button treatment while keeping the new HUD panel/table/typography styling, and removed the unused custom Launch button skin from `dashboard_rebuild/client/src/index.css`.
 
 ## 2026-03-21 - Priming workspace blank-until-selected cleanup
+
 - Tightened `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` so nothing renders below the PRIME method cards until at least one method is selected.
 - Moved the main `Extract PRIME` action out of the workspace header and into a selected-method window area that only appears after methods are chosen.
 - Kept the method-owned output model, but now reveal one window per selected method in selection order instead of mixing generic helper/output panels under the method picker before the learner has committed to a method.
 - Updated focused coverage in `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`.
 
 ## 2026-03-21 - Priming learning-objective formatting cleanup
+
 - Updated `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` so extracted method-owned learning objectives, existing study-unit objectives, and legacy extracted objective candidates all render as structured objective cards instead of raw line text.
 - Kept the PRIME extraction contract structured and source-grounded; the app now formats objective objects in the UI instead of asking the LLM to emit presentation-specific markup.
 - Added focused coverage in `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx` to verify a real extracted `learning_objectives` payload renders the code badge and readable objective titles.
 
 ## 2026-03-21 - Priming selected-vs-existing extraction separation
+
 - Updated `brain/dashboard/api_tutor_workflows.py` so Priming assist merges new per-material `method_outputs` into the existing source inventory by `method_id` instead of overwriting prior extracted method runs, then rebuilds the legacy aggregate artifact bundle from the merged result.
 - Updated `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts` so derived `primingMethodRuns` can represent both the currently selected methods and already extracted methods discovered in the scoped material inventory, instead of filtering everything down to the active selection only.
 - Reworked `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` so the workspace now clearly separates:
@@ -1242,6 +1312,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run build`
 
 ## 2026-03-21 - Priming extraction reasoning and full-coverage hardening
+
 - Updated `brain/dashboard/api_tutor_workflows.py` so the PRIME extractor prompt now uses richer YAML-backed method logic instead of only short descriptions: facilitation guidance, inputs, required outputs, allowed/forbidden moves, citations, constraints, and default knobs are now fed into the selected-method reasoning block for the LLM.
 - Added rerun stabilization context by feeding the material's existing outputs for the selected methods back into the prompt, instructing the LLM to revise conservatively rather than regenerate from a blank slate when the source has not changed.
 - Removed the old front-slice-only extraction path for long materials. Priming assist now splits long material content into full-coverage windows, runs the LLM over every chunk, then performs a final LLM consolidation pass so the material-level output can include evidence that appears later in the document instead of only in the front segment.
@@ -1253,6 +1324,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `pytest brain/tests/test_tutor_workflow_priming_assist.py -q`
 
 ## 2026-03-21 - Tutor workflow navigator render-stability fix
+
 - Updated `dashboard_rebuild/client/src/components/TutorWorkflowStepper.tsx` so the workflow navigator no longer hard-returns `null` just because `activeWorkflowId` is temporarily missing.
 - The stepper now stays visible whenever there is real workflow/session context, including live Tutor mode, current stage status, active Tutor session, or Polish state.
 - Added focused regression coverage in `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowStepper.test.tsx` for the exact case where Tutor mode is active but the workflow id is temporarily absent.
@@ -1260,6 +1332,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run test -- src/components/__tests__/TutorWorkflowStepper.test.tsx`
 
 ## 2026-03-21 - Priming explicit-learning-objective anchor fix
+
 - Inspected the live Cardiovascular material row in `rag_docs` and confirmed the stored source text already contains two explicit `## Learning objectives` sections with `14` bullets total, so the under-count was happening in `M-PRE-010` extraction rather than in OCR/page ingestion.
 - Updated `brain/dashboard/api_tutor_workflows.py` so `M-PRE-010` now detects explicit source-side objective lists, feeds them into the LLM prompt as a hard anchor, and reapplies that explicit list onto the final objective output to stop the model from collapsing a visible `14`-objective slide set into a smaller subset.
 - Fixed `_normalize_objective_list(...)` so `lo_code: null` no longer crashes normalization while preserving dedupe behavior.
@@ -1268,6 +1341,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `pytest brain/tests/test_tutor_workflow_priming_assist.py -q`
 
 ## 2026-03-21 - PRIME capped-group coverage hardening
+
 - Updated `sop/library/categories/PRIME.md` so any capped PRIME output count like `3-5` is now defined as a final umbrella-group cap, not permission to ignore supported source content.
 - Tightened `sop/library/methods/M-PRE-002.yaml`, `M-PRE-004.yaml`, `M-PRE-005.yaml`, `M-PRE-006.yaml`, and `M-PRE-011.yaml` so the selected source/material scope must be accounted for first and only then compressed into capped prompt/pillar/category/branch groups.
 - Hardened `brain/dashboard/api_tutor_workflows.py` so live Priming Assist carries the same rule in both chunk extraction and consolidation: inventory the full supported structure first, then compress into broad groups that still cover the whole selected scope instead of cherry-picking isolated examples.
@@ -1277,6 +1351,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `pytest brain/tests/test_tutor_workflow_priming_assist.py -q`
 
 ## 2026-03-21 - Tutor launch hub layout, wheel, and resume cleanup
+
 - Reworked `dashboard_rebuild/client/src/components/TutorWorkflowLaunchHub.tsx` so `LAUNCH HUB` and `STUDY WHEEL` sit in the top row while `RECENT WORKFLOWS` now renders underneath them instead of beside them.
 - Added a visible `RESUME` button beside `START NEW` and wired it through `dashboard_rebuild/client/src/components/TutorShell.tsx` and `dashboard_rebuild/client/src/pages/tutor.tsx` to the existing Tutor hub resume-candidate flow.
 - Changed the Study Wheel to render linked course rotation rows from `tutorHub.class_projects`, so linked courses now show even when `total_sessions` and `total_minutes` are still `0`.
@@ -1287,6 +1362,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run build`
 
 ## 2026-03-21 - Page-level HUD primitive migration for Brain, Tutor, and Not Found
+
 - Fixed the shared `HudPanel` and `HudButton` primitives in `dashboard_rebuild/client/src/components/ui/` so the new page-surface components build and can be reused by route-level shells.
 - Wrapped `dashboard_rebuild/client/src/pages/brain.tsx` in `HudPanel` and removed the route-local `bg-black/25` frame fills so Brain uses the shared HUD surface instead of its own page-level glass styling.
 - Rebuilt `dashboard_rebuild/client/src/pages/not-found.tsx` on `HudPanel` plus shared theme tokens, replacing the hand-built border/background card with the shared page-surface treatment.
@@ -1294,3 +1370,79 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Validation passed:
   - `cd dashboard_rebuild && npm run test -- src/pages/__tests__/brain.test.tsx src/pages/__tests__/tutor.test.tsx src/pages/__tests__/tutor.workspace.integration.test.tsx`
   - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-21 - HUD primitive regression coverage for Brain, Tutor, and Not Found
+
+- Added stable `data-ui` / `data-hud-variant` selectors to `dashboard_rebuild/client/src/components/ui/HudPanel.tsx` and `dashboard_rebuild/client/src/components/ui/HudButton.tsx` so page-level primitive adoption can be asserted directly instead of inferred from route-local class names.
+- Extended `dashboard_rebuild/client/src/pages/__tests__/brain.test.tsx` and `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx` to verify Brain still renders a `HudPanel` shell and Tutor still uses the shared `HudButton` for the hero refresh action.
+- Added `dashboard_rebuild/client/src/pages/__tests__/not-found.test.tsx` so the 404 route is covered by the same page-level HUD primitive adoption checks.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- src/pages/__tests__/brain.test.tsx src/pages/__tests__/tutor.test.tsx src/pages/__tests__/tutor.workspace.integration.test.tsx src/pages/__tests__/not-found.test.tsx`
+
+## 2026-03-21 - TutorArchitect Launch/Priming hardening wave
+
+- Fixed the first-save Priming bundle insert path in `brain/dashboard/api_tutor_workflows.py`, mirrored Priming course/topic/study-unit context back onto workflow rows, and added `brain/tests/test_tutor_workflow_priming_assist.py` coverage so broken or early drafts stay identifiable in Launch instead of collapsing into empty context rows.
+- Hardened `dashboard_rebuild/client/src/components/TutorWorkflowLaunchHub.tsx` so Study Wheel rendering no longer dereferences missing hub data, thin workflow rows now show safer fallback labels plus a precise updated timestamp, and regression coverage was extended in `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowLaunchHub.test.tsx`.
+- Reworked `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx`, `dashboard_rebuild/client/src/components/priming/PrimingLayout.tsx`, `dashboard_rebuild/client/src/components/priming/PrimingMaterialReader.tsx`, and `dashboard_rebuild/client/src/components/MethodBlockCard.tsx` so `Setup` is scope-only again, `Materials` gets a dedicated full-width reader with pop-out support, method cards are larger with whole-card selection styling, the handoff owns the real Tutor launch contract, and method outputs render more of the structured payload instead of silently dropping non-summary fields.
+- Added timer-checkpoint hardening in `dashboard_rebuild/client/src/hooks/useTutorSession.ts` and `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts` so manual workflow saves log stage-time slices without nullifying the running Tutor timer; added focused hook coverage in `dashboard_rebuild/client/src/hooks/__tests__/useTutorSession.test.tsx` and `dashboard_rebuild/client/src/hooks/__tests__/useTutorWorkflow.test.tsx`.
+- Added send-time `@path` parsing in `dashboard_rebuild/client/src/components/useSSEStream.ts` so typed path references are preserved in the visible message while being forwarded as `content_filter.reference_targets`; added regression coverage in `dashboard_rebuild/client/src/components/__tests__/TutorChat.test.tsx`.
+- Synced the learner findings into repo execution docs by updating `docs/root/TUTOR_TODO.md`, `conductor/tracks/tutor-guided-studyability_20260320/issue-log.md`, and `conductor/tracks/tutor-guided-studyability_20260320/findings.md`.
+- Validation passed:
+  - `pytest brain/tests/test_tutor_workflow_priming_assist.py -q`
+  - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorWorkflowLaunchHub.test.tsx client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx client/src/hooks/__tests__/useTutorSession.test.tsx client/src/hooks/__tests__/useTutorWorkflow.test.tsx client/src/components/__tests__/TutorChat.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-22 - SWARM-101 HUD migration for Scholar, Library, and Methods
+
+- Migrated `dashboard_rebuild/client/src/pages/scholar.tsx` from route-local panel shells to shared `HudPanel` surfaces, remapped its legacy Scholar panel constants onto shared theme tokens, and moved the page refresh / action controls onto `HudButton`.
+- Migrated the main route chrome in `dashboard_rebuild/client/src/pages/library.tsx` to `HudPanel` / `HudButton`, including the sidebar shell, ingest/sync panels, Tutor queue controls, table shell, and the remaining destructive cleanup actions.
+- Tightened `dashboard_rebuild/client/src/pages/methods.tsx` so the workspace sidebar, stage filter, chain snapshot, chain detail actions, and dialog actions now use the shared HUD primitives instead of route-local shadcn buttons or bespoke panel shells.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- src/pages/__tests__/scholar.test.tsx src/pages/__tests__/library.test.tsx src/pages/__tests__/methods.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-22 - Keep-alive page hero sync fix
+
+- Updated `dashboard_rebuild/client/src/components/PageScaffold.tsx` so each mounted scaffold watches `wouter` location changes, checks whether its own route shell is currently hidden by the keep-alive wrapper, and only then claims the shared `page-hero-portal`.
+- This fixes the stale-header bug where switching away from a previously visited page could leave that page's hero title and subtitle mounted above the next route because the old page stayed mounted under `display: none`.
+- Added `dashboard_rebuild/client/src/components/__tests__/PageScaffold.test.tsx` to cover `Brain -> Method Library -> Brain` hero switching plus the no-visible-scaffold case where the portal should clear.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- src/components/__tests__/PageScaffold.test.tsx src/components/__tests__/layout.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - Live smoke via `Start_Dashboard.bat` on `http://127.0.0.1:5000`: `Brain -> Methods -> Brain` now updates the visible hero heading/subtitle on each route change.
+
+## 2026-03-22 - Shared glass surface pass
+
+- Moved the page hero, hero actions, and hero stat cards onto translucent glass styling in `PageScaffold` so the backdrop art reads through the shared route header.
+- Softened the shared workspace shells and extended the same glass treatment to `Library`, `Methods`, and `Scholar` route panels.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run build`
+  - `Start_Dashboard.bat`
+  - Live browser screenshots on `/tutor`, `/library`, `/methods`, and `/scholar`
+
+## 2026-03-22 - Tutor patterned button rail layering fix
+
+- Split the Tutor patterned nav button visuals into a stable rail layer plus an animated pseudo-layer so hover-size changes no longer hide the top edge.
+- Kept the small vertical padding buffer on the Tutor row buttons so the animated label has room to grow without crowding the rail line.
+- Added a guardrail note in `docs/root/AGENT_GUARDRAILS.md` so the pseudo-layer approach is the remembered default for future Tutor patterned buttons.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run build`
+  - Live hover screenshot of the Tutor nav strip from `http://127.0.0.1:5000/tutor`
+
+## 2026-03-22 - Tutor patterned button hover pin fix
+
+- Found the remaining hover clipping cause: the Tutor row uses the shared `Button` primitive with `variant="ghost"`, and that shared variant still applies hover/active translate utilities.
+- Neutralized `transform` on the Tutor-specific patterned button class for base, hover, and active states, tightened the hover font bump slightly, and kept the row-specific line-height pinned so the button stays inside the strip during hover.
+- Extended the Tutor button guardrail in `docs/root/AGENT_GUARDRAILS.md` to call out the shared ghost-variant translate leak explicitly.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run build`
+  - Live hover screenshot of the Tutor nav strip from `http://127.0.0.1:5000/tutor`
+
+## 2026-03-22 - Tutor tablist clipping geometry fix
+
+- Verified in live Chrome DevTools that the Tutor tablist (`[data-testid="workspace-tab-bar"]`) and hovered tab button were sharing the same top edge and effective height, while the tablist computed `overflow-y: auto` because of `overflow-x-auto`.
+- Reduced the Tutor patterned button minimum height/padding in `dashboard_rebuild/client/src/components/TutorTabBar.tsx` and added row-level vertical padding so the tablist is now taller than the hovered button instead of acting as the clip boundary.
+- Extended `docs/root/AGENT_GUARDRAILS.md` with the geometry rule: leave explicit vertical slack when using horizontally scrollable tab rows because `overflow-x-auto` can still clip hover growth vertically.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run build`
+  - Live Chrome DevTools inspection on `http://127.0.0.1:5000/tutor`: tablist `paddingTop=4px`, `paddingBottom=4px`, hovered button height `70px`, tablist height `77.99px`, slack `top≈2px`, `bottom≈6px`

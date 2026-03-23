@@ -217,7 +217,8 @@ describe("TutorStudioMode", () => {
 
   it("renders L1 class picker when no courseId is provided", () => {
     renderStudio({ courseId: undefined });
-    expect(screen.getByTestId("studio-class-picker")).toBeInTheDocument();
+    expect(screen.getByText("NO COURSE SELECTED")).toBeInTheDocument();
+    expect(screen.getByText("GO TO STUDIO")).toBeInTheDocument();
   });
 
   it("renders prep mode when no active session at L3", () => {

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ComponentProps, ReactNode } from "react";
 
@@ -11,6 +11,7 @@ const {
   configCheckMock,
   getContentSourcesMock,
   getTemplateChainsMock,
+  listWorkflowsMock,
   preflightSessionMock,
   getLearningObjectivesByCourseMock,
   getCurrentCourseMock,
@@ -33,6 +34,7 @@ const {
   configCheckMock: vi.fn(),
   getContentSourcesMock: vi.fn(),
   getTemplateChainsMock: vi.fn(),
+  listWorkflowsMock: vi.fn(),
   preflightSessionMock: vi.fn(),
   getLearningObjectivesByCourseMock: vi.fn(),
   getCurrentCourseMock: vi.fn(),
@@ -58,11 +60,11 @@ vi.mock("@/components/ContentFilter", () => ({
 }));
 
 vi.mock("@/components/TutorStartPanel", () => ({
-  TutorStartPanel: ({
-    selectedMaterials,
-  }: {
-    selectedMaterials: number[];
-  }) => <div data-testid="tutor-start-panel">selected:{selectedMaterials.length}</div>,
+  TutorStartPanel: ({ selectedMaterials }: { selectedMaterials: number[] }) => (
+    <div data-testid="tutor-start-panel">
+      selected:{selectedMaterials.length}
+    </div>
+  ),
 }));
 
 vi.mock("@/components/TutorCommandDeck", () => ({
@@ -128,10 +130,16 @@ vi.mock("@/components/TutorCommandDeck", () => ({
       <button type="button" onClick={() => onOpenProject(7)}>
         Open Project
       </button>
-      <button type="button" onClick={() => onOpenScheduleCourse(7, "manage_event")}>
+      <button
+        type="button"
+        onClick={() => onOpenScheduleCourse(7, "manage_event")}
+      >
         Manage Events
       </button>
-      <button type="button" onClick={() => onOpenScheduleCourse(7, "manage_exam")}>
+      <button
+        type="button"
+        onClick={() => onOpenScheduleCourse(7, "manage_exam")}
+      >
         Manage Exams
       </button>
       <button
@@ -177,7 +185,8 @@ vi.mock("@/components/TutorCommandDeck", () => ({
       <button
         type="button"
         onClick={() => {
-          if (hub?.recommended_action) onRunRecommendedAction(hub.recommended_action);
+          if (hub?.recommended_action)
+            onRunRecommendedAction(hub.recommended_action);
         }}
       >
         Run Recommended
@@ -218,22 +227,33 @@ vi.mock("@/components/TutorScheduleMode", () => ({
 }));
 
 vi.mock("@/components/TutorPublishMode", () => ({
-  TutorPublishMode: () => <div data-testid="tutor-publish-mode">publish mode</div>,
+  TutorPublishMode: () => (
+    <div data-testid="tutor-publish-mode">publish mode</div>
+  ),
 }));
 
 vi.mock("@excalidraw/excalidraw", () => ({
-  Excalidraw: () => <div data-testid="mock-excalidraw-canvas">mock excalidraw canvas</div>,
+  Excalidraw: () => (
+    <div data-testid="mock-excalidraw-canvas">mock excalidraw canvas</div>
+  ),
   exportToBlob: vi.fn().mockResolvedValue(new Blob(["png"])),
   convertToExcalidrawElements: (elements: unknown) => elements,
 }));
 
 vi.mock("@/components/TutorWorkspaceSurface", async (importOriginal) => {
-  const actual = (await importOriginal()) as typeof import("@/components/TutorWorkspaceSurface");
+  const actual =
+    (await importOriginal()) as typeof import("@/components/TutorWorkspaceSurface");
   return {
-    TutorWorkspaceSurface: (props: ComponentProps<typeof actual.TutorWorkspaceSurface>) => {
+    TutorWorkspaceSurface: (
+      props: ComponentProps<typeof actual.TutorWorkspaceSurface>,
+    ) => {
       if (workspaceSurfaceMode.useReal) {
-        const ActualSurface = actual.TutorWorkspaceSurface as (props: Record<string, unknown>) => ReactNode;
-        return <>{ActualSurface(props as unknown as Record<string, unknown>)}</>;
+        const ActualSurface = actual.TutorWorkspaceSurface as (
+          props: Record<string, unknown>,
+        ) => ReactNode;
+        return (
+          <>{ActualSurface(props as unknown as Record<string, unknown>)}</>
+        );
       }
       return <div data-testid="tutor-workspace-surface">workspace tools</div>;
     },
@@ -247,9 +267,10 @@ vi.mock("@/lib/api", () => ({
       listSessions: listSessionsMock,
       getHub: getHubMock,
       configCheck: configCheckMock,
-        getContentSources: getContentSourcesMock,
-        getTemplateChains: getTemplateChainsMock,
-        preflightSession: preflightSessionMock,
+      getContentSources: getContentSourcesMock,
+      getTemplateChains: getTemplateChainsMock,
+      listWorkflows: listWorkflowsMock,
+      preflightSession: preflightSessionMock,
       getSession: getSessionMock,
       getSettings: vi.fn().mockResolvedValue({ custom_instructions: "" }),
       saveSettings: vi.fn().mockResolvedValue({ custom_instructions: "" }),
@@ -286,14 +307,19 @@ vi.mock("@/lib/api", () => ({
 
 import Tutor from "@/pages/tutor";
 
-function makeProjectShell(courseId = 1, overrides: Partial<{
-  last_mode: "studio" | "tutor" | "schedule" | "publish";
-  active_session_id: string | null;
-  active_board_scope: "session" | "project" | "overall";
-  selected_material_ids: number[];
-}> = {}) {
+function makeProjectShell(
+  courseId = 1,
+  overrides: Partial<{
+    last_mode: "studio" | "tutor" | "schedule" | "publish";
+    active_session_id: string | null;
+    active_board_scope: "session" | "project" | "overall";
+    selected_material_ids: number[];
+  }> = {},
+) {
   const activeSessionId =
-    overrides.active_session_id === undefined ? null : overrides.active_session_id;
+    overrides.active_session_id === undefined
+      ? null
+      : overrides.active_session_id;
   return {
     course: {
       id: courseId,
@@ -437,6 +463,11 @@ function makeTutorHub() {
 }
 
 function renderTutor() {
+  if (!document.getElementById("page-hero-portal")) {
+    const heroPortal = document.createElement("div");
+    heroPortal.id = "page-hero-portal";
+    document.body.appendChild(heroPortal);
+  }
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
@@ -459,6 +490,7 @@ describe("Tutor page restore", () => {
     configCheckMock.mockResolvedValue({ ok: true });
     getContentSourcesMock.mockResolvedValue({ courses: [] });
     getTemplateChainsMock.mockResolvedValue([]);
+    listWorkflowsMock.mockResolvedValue({ items: [], count: 0 });
     preflightSessionMock.mockResolvedValue({
       ok: true,
       preflight_id: "preflight-test",
@@ -485,22 +517,37 @@ describe("Tutor page restore", () => {
         "Tutor Note": "Tutor Workspace/Tutor Note.md",
       },
     });
-    getObsidianFileMock.mockResolvedValue({ success: true, content: "# Tutor Note" });
-    saveObsidianFileMock.mockResolvedValue({ success: true, path: "Tutor Workspace/Tutor Note.md" });
+    getObsidianFileMock.mockResolvedValue({
+      success: true,
+      content: "# Tutor Note",
+    });
+    saveObsidianFileMock.mockResolvedValue({
+      success: true,
+      path: "Tutor Workspace/Tutor Note.md",
+    });
     getObsidianFilesMock.mockResolvedValue({ files: [] });
     getProjectShellMock.mockResolvedValue(makeProjectShell());
-    saveProjectShellStateMock.mockImplementation(async (data: { course_id: number; last_mode?: "studio" | "tutor" | "schedule" | "publish"; active_tutor_session_id?: string | null; active_board_scope?: "session" | "project" | "overall"; selected_material_ids?: number[]; revision?: number; }) => ({
-      workspace_state: {
-        active_tutor_session_id: data.active_tutor_session_id || null,
-        last_mode: data.last_mode || "studio",
-        active_board_scope: data.active_board_scope || "project",
-        active_board_id: null,
-        viewer_state: null,
-        selected_material_ids: data.selected_material_ids || [],
-        revision: (data.revision || 0) + 1,
-        updated_at: new Date("2026-03-13T00:00:00Z").toISOString(),
-      },
-    }));
+    saveProjectShellStateMock.mockImplementation(
+      async (data: {
+        course_id: number;
+        last_mode?: "studio" | "tutor" | "schedule" | "publish";
+        active_tutor_session_id?: string | null;
+        active_board_scope?: "session" | "project" | "overall";
+        selected_material_ids?: number[];
+        revision?: number;
+      }) => ({
+        workspace_state: {
+          active_tutor_session_id: data.active_tutor_session_id || null,
+          last_mode: data.last_mode || "studio",
+          active_board_scope: data.active_board_scope || "project",
+          active_board_id: null,
+          viewer_state: null,
+          selected_material_ids: data.selected_material_ids || [],
+          revision: (data.revision || 0) + 1,
+          updated_at: new Date("2026-03-13T00:00:00Z").toISOString(),
+        },
+      }),
+    );
     restoreStudioItemsMock.mockResolvedValue({ items: [] });
     promoteStudioItemMock.mockResolvedValue({ item: null, action: null });
     workspaceSurfaceMode.useReal = false;
@@ -540,7 +587,9 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    const artifactsButton = await screen.findByRole("button", { name: /artifacts/i });
+    const artifactsButton = await screen.findByRole("button", {
+      name: /artifacts/i,
+    });
     fireEvent.click(artifactsButton);
 
     await waitFor(() => {
@@ -550,28 +599,50 @@ describe("Tutor page restore", () => {
     });
   });
 
-  it("shows Brain-to-Tutor framing while Launch is the default shell page", async () => {
+  it("renders Studio as the default shell page", async () => {
     renderTutor();
 
-    expect(
-      await screen.findByText(
-        "Brain's default live study surface for guided sessions, artifacts, and next-step handoff.",
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /^launch$/i })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /^studio$/i })).toBeInTheDocument();
+    expect(await screen.findByText("STUDIO HOME")).toBeInTheDocument();
     expect(screen.getByTestId("tutor-launch-hub")).toBeInTheDocument();
+    expect(screen.getByText("STUDIO HUB")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /theme lab/i }),
+    ).toBeInTheDocument();
+    const tabBar = screen.getByTestId("workspace-tab-bar");
+    expect(tabBar).toBeInTheDocument();
+    const heroPortal = document.getElementById("page-hero-portal");
+    expect(heroPortal).not.toBeNull();
+    expect(heroPortal).toContainElement(tabBar);
+    const tabs = within(tabBar).getAllByRole("tab");
+    expect(tabs[0]).toHaveAttribute("id", "tutor-tab-studio");
+    expect(tabs[1]).toHaveAttribute("id", "tutor-tab-tutor");
+    expect(tabs[2]).toHaveAttribute("id", "tutor-tab-schedule");
+    expect(tabs[3]).toHaveAttribute("id", "tutor-tab-settings");
+    expect(screen.queryByRole("tab", { name: /^launch$/i })).not.toBeInTheDocument();
+    expect(
+      tabBar.compareDocumentPosition(screen.getByText("STUDIO HOME")) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: /^refresh$/i })).toHaveAttribute(
+      "data-ui",
+      "hud-button",
+    );
+    expect(screen.getByRole("button", { name: /^refresh$/i })).toHaveAttribute(
+      "data-hud-variant",
+      "outline",
+    );
   });
 
-  it("keeps Tutor as a separate live study surface from Launch", async () => {
+  it("keeps Tutor as a separate live study surface from Studio", async () => {
     renderTutor();
 
-    expect(await screen.findByTestId("tutor-launch-hub")).toBeInTheDocument();
-    expect(screen.queryByTestId("tutor-workspace-surface")).not.toBeInTheDocument();
+    expect(await screen.findByText("STUDIO HOME")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: /^tutor$/i }));
-    expect(await screen.findByText("READY TO RUN A STUDY SESSION")).toBeInTheDocument();
-    expect(screen.queryByTestId("tutor-launch-hub")).not.toBeInTheDocument();
+    expect(
+      await screen.findByText("READY TO RUN A STUDY SESSION"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("STUDIO HOME")).not.toBeInTheDocument();
   });
 
   it("routes the global Schedule tab into Tutor Schedule", async () => {
@@ -579,19 +650,22 @@ describe("Tutor page restore", () => {
 
     fireEvent.click(await screen.findByRole("tab", { name: /^schedule$/i }));
 
-    expect(await screen.findByTestId("tutor-schedule-mode")).toHaveTextContent("schedule mode");
+    expect(await screen.findByTestId("tutor-schedule-mode")).toHaveTextContent(
+      "schedule mode",
+    );
   });
 
-  it("opens Studio as a separate surface from Launch", async () => {
+  it("returns to Studio Home from Tutor", async () => {
     renderTutor();
 
+    fireEvent.click(await screen.findByRole("tab", { name: /^tutor$/i }));
     fireEvent.click(await screen.findByRole("tab", { name: /^studio$/i }));
 
-    expect(await screen.findByText("STUDIO FLOW")).toBeInTheDocument();
-    expect(screen.queryByTestId("tutor-launch-hub")).not.toBeInTheDocument();
+    expect(await screen.findByText("STUDIO HOME")).toBeInTheDocument();
   });
 
-  it("resumes the most recent launch-hub session from the resume button", async () => {
+  it("resumes the most recent Tutor session from Studio", async () => {
+    window.history.replaceState({}, "", "/tutor?course_id=77&mode=studio");
     getHubMock.mockResolvedValueOnce({
       ...makeTutorHub(),
       resume_candidate: {
@@ -629,7 +703,11 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    fireEvent.click(await screen.findByRole("button", { name: /^resume$/i }));
+    fireEvent.click(
+      within(await screen.findByTestId("tutor-launch-hub")).getByRole("button", {
+        name: /^resume$/i,
+      }),
+    );
 
     await waitFor(() => {
       expect(getSessionMock).toHaveBeenCalledWith("sess-recent");
@@ -686,7 +764,9 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    expect(await screen.findByTestId("tutor-schedule-mode")).toBeInTheDocument();
+    expect(
+      await screen.findByTestId("tutor-schedule-mode"),
+    ).toBeInTheDocument();
     expect(screen.queryByTestId("tutor-launch-hub")).not.toBeInTheDocument();
   });
 
@@ -707,7 +787,7 @@ describe("Tutor page restore", () => {
     expect(getSessionMock).not.toHaveBeenCalled();
   });
 
-  it("keeps Launch as the root landing even when project shell last mode was publish", async () => {
+  it("routes publish restore into Studio", async () => {
     getProjectShellMock.mockResolvedValue(
       makeProjectShell(77, {
         last_mode: "publish",
@@ -717,12 +797,16 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    expect(await screen.findByTestId("tutor-launch-hub")).toBeInTheDocument();
+    expect(await screen.findByText("STUDIO HOME")).toBeInTheDocument();
     expect(screen.queryByTestId("tutor-publish-mode")).not.toBeInTheDocument();
   });
 
   it("hydrates board_scope and board_id from query params and persists to shell state", async () => {
-    window.history.replaceState({}, "", "/tutor?course_id=77&mode=studio&board_scope=overall&board_id=42");
+    window.history.replaceState(
+      {},
+      "",
+      "/tutor?course_id=77&mode=studio&board_scope=overall&board_id=42",
+    );
     getProjectShellMock.mockResolvedValue(
       makeProjectShell(77, {
         last_mode: "studio",
@@ -740,9 +824,10 @@ describe("Tutor page restore", () => {
     // Verify the shell state save was called with board_scope from query params
     await waitFor(() => {
       if (saveProjectShellStateMock.mock.calls.length > 0) {
-        const lastCall = saveProjectShellStateMock.mock.calls[
-          saveProjectShellStateMock.mock.calls.length - 1
-        ][0];
+        const lastCall =
+          saveProjectShellStateMock.mock.calls[
+            saveProjectShellStateMock.mock.calls.length - 1
+          ][0];
         expect(lastCall.active_board_scope).toBe("overall");
       }
     });
@@ -757,7 +842,9 @@ describe("Tutor page restore", () => {
     renderTutor();
 
     expect(await screen.findByText("NO CHAIN SELECTED")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /open launch/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /open studio/i }),
+    ).toBeInTheDocument();
     expect(screen.queryByTestId("brain-home")).not.toBeInTheDocument();
   });
 
@@ -802,9 +889,11 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    expect(await screen.findByTestId("tutor-launch-hub")).toBeInTheDocument();
+    expect(await screen.findByText("STUDIO HOME")).toBeInTheDocument();
     expect(getCurrentCourseMock).toHaveBeenCalledTimes(1);
-    expect(localStorage.getItem("tutor.selected_material_ids.v2")).toBe(JSON.stringify([101, 102]));
+    expect(localStorage.getItem("tutor.selected_material_ids.v2")).toBe(
+      JSON.stringify([101, 102]),
+    );
   });
 
   it("keeps canonical selected materials when bootstrapping the current course", async () => {
@@ -820,8 +909,10 @@ describe("Tutor page restore", () => {
     await waitFor(() => {
       expect(getCurrentCourseMock).toHaveBeenCalledTimes(1);
     });
-    expect(await screen.findByTestId("tutor-launch-hub")).toBeInTheDocument();
-    expect(localStorage.getItem("tutor.selected_material_ids.v2")).toBe(JSON.stringify([101]));
+    expect(await screen.findByText("STUDIO HOME")).toBeInTheDocument();
+    expect(localStorage.getItem("tutor.selected_material_ids.v2")).toBe(
+      JSON.stringify([101]),
+    );
     expect(getCurrentCourseMock).toHaveBeenCalledTimes(1);
   });
 
@@ -833,7 +924,7 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    expect(await screen.findByTestId("tutor-launch-hub")).toBeInTheDocument();
+    expect(await screen.findByText("STUDIO HOME")).toBeInTheDocument();
     expect(localStorage.getItem("tutor.selected_material_ids.v2")).toBe(
       JSON.stringify([301, 302]),
     );
@@ -843,6 +934,7 @@ describe("Tutor page restore", () => {
   it("clears a stale active-session key when restore fetch fails", async () => {
     localStorage.setItem("tutor.active_session.v1", "sess-stale");
     getSessionMock.mockRejectedValueOnce(new Error("missing"));
+    window.history.replaceState({}, "", "/tutor?course_id=77&mode=studio");
 
     renderTutor();
 
@@ -855,12 +947,17 @@ describe("Tutor page restore", () => {
 
   it("falls back safely when wizard state is corrupted JSON", async () => {
     localStorage.setItem("tutor.wizard.state.v1", "{not-valid-json");
-    localStorage.setItem("tutor.selected_material_ids.v2", JSON.stringify([909]));
+    localStorage.setItem(
+      "tutor.selected_material_ids.v2",
+      JSON.stringify([909]),
+    );
 
     renderTutor();
 
-    expect(await screen.findByTestId("tutor-launch-hub")).toBeInTheDocument();
-    expect(localStorage.getItem("tutor.selected_material_ids.v2")).toBe(JSON.stringify([909]));
+    expect(await screen.findByText("STUDIO HOME")).toBeInTheDocument();
+    expect(localStorage.getItem("tutor.selected_material_ids.v2")).toBe(
+      JSON.stringify([909]),
+    );
   });
 
   it("clears inactive restored sessions from localStorage", async () => {
@@ -889,7 +986,7 @@ describe("Tutor page restore", () => {
     await waitFor(() => {
       expect(getSessionMock).toHaveBeenCalledWith("sess-complete");
     });
-    expect(await screen.findByTestId("tutor-launch-hub")).toBeInTheDocument();
+    expect(await screen.findByText("STUDIO HOME")).toBeInTheDocument();
     expect(localStorage.getItem("tutor.active_session.v1")).toBeNull();
   });
 });

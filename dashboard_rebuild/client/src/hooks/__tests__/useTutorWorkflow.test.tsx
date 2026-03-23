@@ -12,6 +12,9 @@ const deleteWorkflowMock = vi.fn();
 const createWorkflowMock = vi.fn();
 const savePrimingBundleMock = vi.fn();
 const updateWorkflowStageMock = vi.fn();
+const captureWorkflowNoteMock = vi.fn();
+const saveWorkflowFeedbackMock = vi.fn();
+const createMemoryCapsuleMock = vi.fn();
 const toastSuccessMock = vi.fn();
 const toastErrorMock = vi.fn();
 
@@ -26,9 +29,9 @@ vi.mock("@/lib/api", () => ({
       updateWorkflowStage: (...args: unknown[]) => updateWorkflowStageMock(...args),
       runPrimingAssist: vi.fn(),
       savePolishBundle: vi.fn(),
-      captureWorkflowNote: vi.fn(),
-      saveWorkflowFeedback: vi.fn(),
-      createMemoryCapsule: vi.fn(),
+      captureWorkflowNote: (...args: unknown[]) => captureWorkflowNoteMock(...args),
+      saveWorkflowFeedback: (...args: unknown[]) => saveWorkflowFeedbackMock(...args),
+      createMemoryCapsule: (...args: unknown[]) => createMemoryCapsuleMock(...args),
     },
   },
 }));
@@ -107,6 +110,7 @@ function createSessionMock() {
     startSession: vi.fn(),
     resumeSession: vi.fn(),
     clearActiveSessionState: vi.fn(),
+    checkpointWorkflowStudyTimer: vi.fn().mockResolvedValue(90),
     artifacts: [],
     latestCommittedAssistantMessage: null,
   };
@@ -139,6 +143,9 @@ describe("useTutorWorkflow", () => {
     });
     savePrimingBundleMock.mockResolvedValue({ priming_bundle: null });
     updateWorkflowStageMock.mockResolvedValue({ ok: true });
+    captureWorkflowNoteMock.mockResolvedValue({ note: { id: 1 } });
+    saveWorkflowFeedbackMock.mockResolvedValue({ feedback_event: { id: 1 } });
+    createMemoryCapsuleMock.mockResolvedValue({ capsule: { id: 1 } });
   });
 
   it("clears the active workflow when the open workflow is deleted", async () => {
@@ -396,6 +403,13 @@ describe("useTutorWorkflow", () => {
     });
 
     expect(createWorkflowMock).toHaveBeenCalledTimes(1);
+    expect(createWorkflowMock).toHaveBeenCalledWith({
+      course_id: 101,
+      study_unit: "Week 7",
+      topic: "Cardiac output",
+      current_stage: "priming",
+      status: "priming_in_progress",
+    });
     expect(result.current.bootstrappingPriming).toBe(true);
     expect(secondPromise).not.toBeNull();
     await expect(secondPromise).resolves.toBeNull();
@@ -422,6 +436,50 @@ describe("useTutorWorkflow", () => {
     expect(hub.setCourseId).toHaveBeenCalledWith(101);
     expect(hub.setSelectedMaterials).toHaveBeenCalledWith([501]);
     expect(hub.setSelectedObjectiveGroup).toHaveBeenCalledWith("Week 7");
+  });
+
+  it("checkpoints workflow study time after saving an exact tutor note", async () => {
+    const hub = createHubMock();
+    const session = createSessionMock();
+    const wrapper = createWrapper();
+
+    const { result } = renderHook(
+      () =>
+        useTutorWorkflow({
+          hub: hub as never,
+          session: session as never,
+          activeSessionId: "sess-1",
+          shellMode: "tutor",
+          setShellMode: vi.fn(),
+          hasRestored: true,
+        }),
+      { wrapper },
+    );
+
+    act(() => {
+      result.current.setActiveWorkflowId(workflowFixture.workflow_id);
+      result.current.setExactNoteTitle("Cardiac output");
+      result.current.setExactNoteContent("Stroke volume x heart rate");
+    });
+
+    await act(async () => {
+      await result.current.saveWorkflowNoteCapture("exact");
+    });
+
+    expect(captureWorkflowNoteMock).toHaveBeenCalledWith(
+      workflowFixture.workflow_id,
+      expect.objectContaining({
+        tutor_session_id: "sess-1",
+        note_mode: "exact",
+        stage: "tutor",
+        status: "captured",
+        title: "Cardiac output",
+        content: "Stroke volume x heart rate",
+      }),
+    );
+    expect(session.checkpointWorkflowStudyTimer).toHaveBeenCalledWith("manual_save", [
+      { kind: "note_save", mode: "exact", tutor_session_id: "sess-1" },
+    ]);
   });
 
   it("clears a stale live Tutor session when Studio opens a workflow from a different course", async () => {

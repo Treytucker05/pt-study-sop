@@ -261,11 +261,12 @@ export function useTutorWorkflow({
         ...(workflowFilters.status !== "all" ? { status: workflowFilters.status } : {}),
         limit: 50,
       }),
-    enabled: hasRestored && shellMode === "launch",
+    enabled: hasRestored && shellMode === "studio",
     staleTime: 15 * 1000,
   });
 
   const workflows = workflowListResponse?.items || [];
+  const workflowCount = workflowListResponse?.count ?? workflows.length;
 
   const filteredWorkflows = useMemo(() => {
     const now = Date.now();
@@ -652,6 +653,9 @@ export function useTutorWorkflow({
       studioPrimingBootstrapContextRef.current = null;
       resetPrimingDraft();
       const result = await api.tutor.createWorkflow({
+        course_id: hub.courseId ?? null,
+        study_unit: hub.selectedObjectiveGroup || null,
+        topic: hub.topic || null,
         current_stage: "priming",
         status: "priming_in_progress",
       });
@@ -693,6 +697,9 @@ export function useTutorWorkflow({
       };
       resetPrimingArtifacts();
       const result = await api.tutor.createWorkflow({
+        course_id: hub.courseId ?? null,
+        study_unit: hub.selectedObjectiveGroup || null,
+        topic: hub.topic || null,
         current_stage: "priming",
         status: "priming_in_progress",
       });
@@ -746,7 +753,7 @@ export function useTutorWorkflow({
           resetPrimingDraft();
           setActiveWorkflowId(null);
           setStudioView("workbench");
-          setShellMode("launch");
+          setShellMode("studio");
           if (
             activeSessionId &&
             workflow.active_tutor_session_id &&
@@ -778,6 +785,22 @@ export function useTutorWorkflow({
       session,
       setShellMode,
     ],
+  );
+
+  const checkpointWorkflowTimerAfterSave = useCallback(
+    async (triggerSource: string, notes: Record<string, unknown>[] = []) => {
+      if (typeof session.checkpointWorkflowStudyTimer !== "function") return;
+      try {
+        await session.checkpointWorkflowStudyTimer(triggerSource, notes);
+      } catch (err) {
+        toast.error(
+          `Saved, but failed to checkpoint tutor stage time: ${
+            err instanceof Error ? err.message : "Unknown"
+          }`,
+        );
+      }
+    },
+    [session],
   );
 
   // ─── Start tutor from workflow ───
@@ -942,6 +965,9 @@ export function useTutorWorkflow({
           content: content.trim(),
           status: "captured",
         });
+        await checkpointWorkflowTimerAfterSave("manual_save", [
+          { kind: "note_save", mode, tutor_session_id: activeSessionId },
+        ]);
         if (mode === "exact") {
           setExactNoteTitle("");
           setExactNoteContent("");
@@ -960,6 +986,7 @@ export function useTutorWorkflow({
     [
       activeSessionId,
       activeWorkflowId,
+      checkpointWorkflowTimerAfterSave,
       editableNoteContent,
       editableNoteTitle,
       exactNoteContent,
@@ -996,6 +1023,14 @@ export function useTutorWorkflow({
           content: payload.message.content.trim(),
           status: "captured",
         });
+        await checkpointWorkflowTimerAfterSave("manual_save", [
+          {
+            kind: "message_note_save",
+            mode: payload.mode,
+            tutor_session_id: activeSessionId,
+            source_id: payload.message.messageId || `message-${payload.index + 1}`,
+          },
+        ]);
         await queryClient.invalidateQueries({ queryKey: ["tutor-workflow-detail", activeWorkflowId] });
         toast.success(payload.mode === "exact" ? "Exact reply saved" : "Editable reply saved");
       } catch (err) {
@@ -1006,7 +1041,7 @@ export function useTutorWorkflow({
         setSavingRuntimeEvent(false);
       }
     },
-    [activeSessionId, activeWorkflowId, queryClient],
+    [activeSessionId, activeWorkflowId, checkpointWorkflowTimerAfterSave, queryClient],
   );
 
   // ─── Save feedback ───
@@ -1027,6 +1062,9 @@ export function useTutorWorkflow({
         message: feedbackMessage.trim() || null,
         handoff_to_polish: true,
       });
+      await checkpointWorkflowTimerAfterSave("manual_save", [
+        { kind: "feedback_save", tutor_session_id: activeSessionId },
+      ]);
       setFeedbackMessage("");
       await queryClient.invalidateQueries({ queryKey: ["tutor-workflow-detail", activeWorkflowId] });
       toast.success("Feedback saved");
@@ -1043,6 +1081,7 @@ export function useTutorWorkflow({
     feedbackIssueType,
     feedbackMessage,
     feedbackSentiment,
+    checkpointWorkflowTimerAfterSave,
     queryClient,
   ]);
 
@@ -1072,6 +1111,13 @@ export function useTutorWorkflow({
               : `Marked disliked on tutor reply ${payload.message.sessionTurnNumber ?? payload.index + 1}`,
           handoff_to_polish: true,
         });
+        await checkpointWorkflowTimerAfterSave("manual_save", [
+          {
+            kind: "message_feedback_save",
+            tutor_session_id: activeSessionId,
+            source_id: payload.message.messageId || `message-${payload.index + 1}`,
+          },
+        ]);
         await queryClient.invalidateQueries({ queryKey: ["tutor-workflow-detail", activeWorkflowId] });
         toast.success(payload.sentiment === "liked" ? "Reply liked" : "Reply flagged for review");
       } catch (err) {
@@ -1082,7 +1128,7 @@ export function useTutorWorkflow({
         setSavingRuntimeEvent(false);
       }
     },
-    [activeSessionId, activeWorkflowId, queryClient],
+    [activeSessionId, activeWorkflowId, checkpointWorkflowTimerAfterSave, queryClient],
   );
 
   // ─── Memory capsule ───
@@ -1149,6 +1195,9 @@ export function useTutorWorkflow({
         artifact_refs: artifactRefs,
         source_turn_ids: [],
       });
+      await checkpointWorkflowTimerAfterSave("manual_save", [
+        { kind: "memory_capsule_save", tutor_session_id: activeSessionId },
+      ]);
       setMemorySummaryText("");
       setMemoryWeakPointsText("");
       setMemoryUnresolvedText("");
@@ -1167,6 +1216,7 @@ export function useTutorWorkflow({
     activeWorkflowDetail?.captured_notes,
     activeWorkflowDetail?.feedback_events,
     activeWorkflowId,
+    checkpointWorkflowTimerAfterSave,
     session.artifacts,
     memoryCardRequestsText,
     memorySummaryText,
@@ -1252,6 +1302,7 @@ export function useTutorWorkflow({
 
     // Computed
     workflows,
+    workflowCount,
     filteredWorkflows,
     activeWorkflowDetail,
     mergedPrimingSourceInventory,

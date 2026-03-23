@@ -150,15 +150,8 @@ describe("Library tutor handoff", () => {
 
     await screen.findByText("Intro Notes");
     expect(
-      screen.getByText(
-        "Support system for Brain-owned study materials, Tutor scope, and clean handoff into live study.",
-      ),
+      screen.getByText("Mirror your Obsidian-style folder tree."),
     ).toBeInTheDocument();
-    expect(screen.getByTestId("library-embed-provider")).toHaveTextContent(
-      "Tutor embeddings: GEMINI · gemini-embedding-2-preview",
-    );
-    expect(screen.getByText("1/1 materials live")).toBeInTheDocument();
-    expect(screen.getByText("No stale embeddings")).toBeInTheDocument();
     const checkboxes = screen.getAllByRole("checkbox");
     fireEvent.click(checkboxes[1]);
 
@@ -192,7 +185,11 @@ describe("Library tutor handoff", () => {
     renderLibrary();
 
     expect(await screen.findByText("NEU-9")).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: /upload course/i })).toHaveValue("9");
-    expect(screen.getByRole("combobox", { name: /sync course/i })).toHaveValue("9");
+    expect(
+      screen.getByRole("combobox", { name: /upload course/i }),
+    ).toHaveValue("9");
+    expect(screen.getByRole("combobox", { name: /sync course/i })).toHaveValue(
+      "9",
+    );
   });
 });

@@ -777,10 +777,10 @@ export function TutorStudioMode(props: TutorStudioModeProps) {
       <TutorEmptyState
         icon={FolderOpen}
         title="NO COURSE SELECTED"
-        description="Choose a course from Launch or resume a workflow to open Studio."
+        description="Choose a course from Studio or resume a workflow to open Studio."
         actions={[
           {
-            label: "GO TO LAUNCH",
+            label: "GO TO STUDIO",
             icon: ListChecks,
             onClick: handleLaunchSession,
             variant: "primary",

@@ -540,3 +540,68 @@ def test_priming_assist_prompt_treats_capped_prime_outputs_as_group_caps(client,
     assert "treat that cap as the number of final umbrella groups" in prompt
     assert "do not cherry-pick isolated examples" in prompt
     assert 'M-PRE-004 => {"concepts":["major umbrella pillars that collectively cover the selected scope"]' in prompt
+
+
+def test_priming_bundle_first_save_persists_bundle_and_workflow_context(client):
+    course_id = 907
+    _insert_course(course_id, "Exercise Physiology")
+
+    workflow_response = client.post(
+        "/api/tutor/workflows",
+        json={
+            "current_stage": "priming",
+            "status": "priming_in_progress",
+        },
+    )
+    assert workflow_response.status_code == 200
+    workflow_id = workflow_response.get_json()["workflow"]["workflow_id"]
+
+    response = client.put(
+        f"/api/tutor/workflows/{workflow_id}/priming-bundle",
+        json={
+            "course_id": course_id,
+            "study_unit": "Week 7",
+            "topic": "Cardiovascular regulation",
+            "selected_material_ids": [],
+            "selected_paths": [],
+            "source_inventory": [],
+            "priming_methods": ["M-PRE-010"],
+            "priming_method_runs": [],
+            "learning_objectives": [
+                {"lo_code": "OBJ-1", "title": "Explain cardiac output", "status": "active"}
+            ],
+            "concepts": [],
+            "concept_graph": {},
+            "terminology": [],
+            "root_explanations": [],
+            "summaries": [],
+            "identified_gaps": [],
+            "confidence_flags": {},
+            "readiness_status": "draft",
+            "readiness_blockers": [],
+            "recommended_tutor_strategy": {},
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["priming_bundle"]["course_id"] == course_id
+    assert body["priming_bundle"]["study_unit"] == "Week 7"
+    assert body["priming_bundle"]["topic"] == "Cardiovascular regulation"
+
+    workflow_detail = client.get(f"/api/tutor/workflows/{workflow_id}")
+    assert workflow_detail.status_code == 200
+    detail_body = workflow_detail.get_json()
+    assert detail_body["workflow"]["course_id"] == course_id
+    assert detail_body["workflow"]["course_name"] == "Exercise Physiology"
+    assert detail_body["workflow"]["study_unit"] == "Week 7"
+    assert detail_body["workflow"]["topic"] == "Cardiovascular regulation"
+
+    workflow_list = client.get("/api/tutor/workflows?include_drafts=true")
+    assert workflow_list.status_code == 200
+    listed = workflow_list.get_json()["items"]
+    matching = next(item for item in listed if item["workflow_id"] == workflow_id)
+    assert matching["course_id"] == course_id
+    assert matching["course_name"] == "Exercise Physiology"
+    assert matching["study_unit"] == "Week 7"
+    assert matching["topic"] == "Cardiovascular regulation"

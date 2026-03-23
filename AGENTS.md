@@ -156,3 +156,10 @@ For the full incident log, troubleshooting snippets, and detailed guardrails, us
 - Active workboard: `docs/root/TUTOR_TODO.md`
 - Multi-agent handoff board: `docs/root/AGENT_BOARD.md`
 - Guardrails and troubleshooting: `docs/root/AGENT_GUARDRAILS.md`
+
+## ?? SWARM ORCHESTRATION RULES (Active)
+1. **CANONICAL BOARD:** The source of truth for all tasks is docs/root/TUTOR_TODO.md. Do NOT use any other board.
+2. **CLAIMING TASKS:** Add your name (@AgentName) to the 'Assignee' line of the task in TUTOR_TODO.md.
+3. **REPORTING:** Update the [x] status and 'Completed' notes in TUTOR_TODO.md as you finish sub-tasks.
+4. **MAILBOXES:** Use C:\Users\treyt\.agent-os\.mail\ for cross-agent communication if needed.
+5. **THEME TRUTH:** The 'Top One' Header Navigation Cockpit in layout.tsx is the visual source of truth.

@@ -361,7 +361,7 @@ export function StudioClassDetail({
             onClick={onLaunchSession}
             className="h-12 rounded-none border-2 border-primary bg-primary/20 px-8 font-arcade text-sm text-primary transition-colors hover:bg-primary/30"
           >
-            <Zap className="mr-1 h-4 w-4" /> LAUNCH SESSION
+            <Zap className="mr-1 h-4 w-4" /> START SESSION
           </Button>
         </div>
       </div>

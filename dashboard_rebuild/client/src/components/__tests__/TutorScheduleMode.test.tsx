@@ -117,7 +117,7 @@ describe("TutorScheduleMode", () => {
     );
   });
 
-  it("surfaces an exam-management launch focus from Page 1", async () => {
+  it("surfaces an exam-management entry focus from Page 1", async () => {
     renderMode(
       <TutorScheduleMode
         courseId={7}
@@ -125,7 +125,7 @@ describe("TutorScheduleMode", () => {
       />,
     );
 
-    expect(await screen.findByText("Launch focus")).toBeInTheDocument();
+    expect(await screen.findByText("Entry focus")).toBeInTheDocument();
     expect(screen.getByText("Exam management focus")).toBeInTheDocument();
     const eventCards = screen.getAllByText(/Thorax Quiz|Neuro Exam/);
     expect(eventCards[0]).toHaveTextContent("Neuro Exam");

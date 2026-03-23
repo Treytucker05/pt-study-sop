@@ -29,6 +29,7 @@ interface PrimingLayoutProps {
   activeStepId: PrimingStepId;
   activeContent: ReactNode;
   sourceViewer: ReactNode;
+  sourceViewerHidden?: boolean;
   headingRef: RefObject<HTMLHeadingElement | null>;
   onStepChange: (stepId: PrimingStepId) => void;
 }
@@ -84,13 +85,21 @@ export function PrimingLayout({
   activeStepId,
   activeContent,
   sourceViewer,
+  sourceViewerHidden = false,
   headingRef,
   onStepChange,
 }: PrimingLayoutProps): ReactElement {
   const activeStep = steps.find((step) => step.id === activeStepId) ?? steps[0];
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[17rem_minmax(0,1fr)_minmax(22rem,0.9fr)]">
+    <div
+      className={cn(
+        "grid gap-4",
+        sourceViewerHidden
+          ? "xl:grid-cols-[17rem_minmax(0,1fr)]"
+          : "xl:grid-cols-[17rem_minmax(0,1fr)_minmax(22rem,0.9fr)]",
+      )}
+    >
       <aside className="hidden xl:block">
         <div
           className={cn(
@@ -174,34 +183,38 @@ export function PrimingLayout({
           <div className="p-4">{activeContent}</div>
         </section>
 
-        <details
-          className={cn(
-            CONTROL_DECK_SECTION,
-            "overflow-hidden rounded-[1.2rem] px-0 py-0 xl:hidden",
-          )}
-        >
-          <summary
+        {!sourceViewerHidden ? (
+          <details
             className={cn(
-              CONTROL_KICKER,
-              "list-none cursor-pointer px-4 py-3 text-ui-xs",
+              CONTROL_DECK_SECTION,
+              "overflow-hidden rounded-[1.2rem] px-0 py-0 xl:hidden",
             )}
           >
-            SOURCE VIEWER
-          </summary>
-          <div className="border-t border-primary/15">{sourceViewer}</div>
-        </details>
+            <summary
+              className={cn(
+                CONTROL_KICKER,
+                "list-none cursor-pointer px-4 py-3 text-ui-xs",
+              )}
+            >
+              SOURCE VIEWER
+            </summary>
+            <div className="border-t border-primary/15">{sourceViewer}</div>
+          </details>
+        ) : null}
       </div>
 
-      <aside className="hidden xl:block min-w-0">
-        <div
-          className={cn(
-            CONTROL_DECK_SECTION,
-            "sticky top-4 min-w-0 overflow-hidden rounded-[1.2rem] px-0 py-0",
-          )}
-        >
-          {sourceViewer}
-        </div>
-      </aside>
+      {!sourceViewerHidden ? (
+        <aside className="hidden xl:block min-w-0">
+          <div
+            className={cn(
+              CONTROL_DECK_SECTION,
+              "sticky top-4 min-w-0 overflow-hidden rounded-[1.2rem] px-0 py-0",
+            )}
+          >
+            {sourceViewer}
+          </div>
+        </aside>
+      ) : null}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { MasteryDashboardResponse, WhyLockedResponse } from "@/api";
@@ -60,11 +60,6 @@ describe("MasteryPage", () => {
     const { default: MasteryPage } = await import("@/pages/mastery");
     renderWithClient(<MasteryPage />);
 
-    expect(
-      await screen.findByText(
-        "Support system for Brain's mastery map, locked-skill diagnostics, and intervention signals.",
-      ),
-    ).toBeInTheDocument();
     expect(await screen.findByText("Anatomy Basics")).toBeInTheDocument();
     expect(screen.getByText("Neuroanatomy")).toBeInTheDocument();
     expect(screen.getByText("Cardiac Rehab")).toBeInTheDocument();
@@ -78,9 +73,10 @@ describe("MasteryPage", () => {
     const { default: MasteryPage } = await import("@/pages/mastery");
     renderWithClient(<MasteryPage />);
 
-    expect(await screen.findByText("MASTERED")).toBeInTheDocument();
-    expect(screen.getByText("AVAILABLE")).toBeInTheDocument();
-    expect(screen.getByText("LOCKED")).toBeInTheDocument();
+    const masteredCard = await screen.findByTestId("skill-card-anatomy-101");
+    expect(within(masteredCard).getByText("MASTERED")).toBeInTheDocument();
+    expect(within(screen.getByTestId("skill-card-neuro-201")).getByText("AVAILABLE")).toBeInTheDocument();
+    expect(within(screen.getByTestId("skill-card-cardio-301")).getByText("LOCKED")).toBeInTheDocument();
   });
 
   it("clicking locked skill shows why-locked panel", async () => {

@@ -27,7 +27,84 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Active execution note: the current dirty frontend Tutor/shared-page rewrite set is intentionally left in place during this cleanup pass. Treat those source edits as in-progress local work, not workspace noise.
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 
+- [x] HUD-230. Restyle the shared HUD buttons to a red/orange patterned glass treatment so Tutor, Library, Methods, Scholar, and PageScaffold hero actions share the same visual language without drifting green.
+  - Scope:
+    - `dashboard_rebuild/client/src/lib/theme.ts`
+    - `dashboard_rebuild/client/src/components/ui/HudButton.tsx`
+    - `dashboard_rebuild/client/src/index.css`
+    - `dashboard_rebuild/client/src/components/PageScaffold.tsx`
+  - Done when:
+    - primary, outline, and compact toolbar button tokens use the patterned red treatment instead of the previous flat chrome
+    - page-scaffold hero actions keep the new style without regressing contrast or hit areas
+    - the production frontend build passes and the live app still renders the updated buttons cleanly
+  - Completed 2026-03-22: updated the shared HUD button tokens in `dashboard_rebuild/client/src/lib/theme.ts` to use the red/orange patterned glass treatment, retuned `dashboard_rebuild/client/src/index.css` so the PageScaffold hero actions inherit the same surface language, extended `dashboard_rebuild/client/src/components/ui/button.tsx` so shared `Button` variants on the other pages follow the same crimson pattern instead of the older flat chrome, and passed `cd dashboard_rebuild && npm run build`.
+- [x] HUD-231. Move the Tutor workspace nav row out of the top bar and render `Launch / Tutor / Studio / Schedule / Settings / Artifacts` directly under the hero section so the shared hero owns the page-level navigation band.
+  - Scope:
+    - `dashboard_rebuild/client/src/components/TutorTopBar.tsx`
+    - `dashboard_rebuild/client/src/components/TutorTabBar.tsx`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorTopBar.test.tsx`
+  - Done when:
+    - the Tutor tab row renders below the hero content instead of inside the top bar
+    - the top bar keeps the active-workflow and runtime rails without the redundant nav strip
+    - the Tutor page test covers the new nav placement and the frontend build passes
+  - Completed 2026-03-22: moved the Tutor workspace nav row out of `dashboard_rebuild/client/src/components/TutorTopBar.tsx` and rendered it directly under the hero in `dashboard_rebuild/client/src/pages/tutor.tsx`, kept the top bar focused on the active-workflow and runtime rails, updated regression coverage in `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx` and `dashboard_rebuild/client/src/components/__tests__/TutorTopBar.test.tsx`, passed `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorTopBar.test.tsx`, and passed `cd dashboard_rebuild && npm run build`.
+- [x] HUD-232. Restyle the Tutor workspace nav row with the shared red patterned button treatment so the `Launch / Tutor / Studio / Schedule / Settings / Artifacts` controls match the new hero language instead of the older flat tab chrome.
+  - Scope:
+    - `dashboard_rebuild/client/src/components/TutorTabBar.tsx`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+  - Done when:
+    - the Tutor workspace nav row keeps its hero placement but inherits the patterned red toolbar treatment
+    - the active tab and session-only controls stay readable and aligned with the shared HUD button language
+    - the Tutor page test and frontend build still pass
+  - Completed 2026-03-22: restored the missing `Launch` tab, switched the Tutor workspace nav row in `dashboard_rebuild/client/src/components/TutorTabBar.tsx` onto the dedicated `tutor-pattern-button` treatment that matches the Uiverse-style red grid/glow snippet, made the buttons about 25% larger, neutralized the hover translate so the top and bottom edges stop clipping inside the hero row, detached the `Export` and `End` buttons from the wrapper container, kept the row in the hero footer, and passed `npx vitest run client/src/pages/__tests__/tutor.test.tsx -t \"renders Studio as the default shell page\"` plus `cd dashboard_rebuild && npm run build`.
+- [x] HUD-233. Move the Tutor workspace nav row into the hero section itself so the `Launch / Tutor / Studio / Schedule / Settings / Artifacts` band sits directly under the subtitle paragraph instead of below the hero.
+  - Scope:
+    - `dashboard_rebuild/client/src/components/PageScaffold.tsx`
+    - `dashboard_rebuild/client/src/components/TutorTopBar.tsx`
+    - `dashboard_rebuild/client/src/components/TutorTabBar.tsx`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/PageScaffold.test.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorTopBar.test.tsx`
+  - Done when:
+    - the Tutor nav row renders inside the hero section under the subtitle paragraph
+    - the top bar keeps only the workflow and runtime rails
+    - the shared PageScaffold still passes its hero layout tests and the Tutor page/build checks pass
+  - Completed 2026-03-22: added a `heroFooter` slot to `dashboard_rebuild/client/src/components/PageScaffold.tsx`, moved the Tutor workspace nav row from the page body into that hero slot in `dashboard_rebuild/client/src/pages/tutor.tsx` so the `Launch / Tutor / Studio / Schedule / Settings / Artifacts` band now sits directly under the subtitle paragraph, kept `dashboard_rebuild/client/src/components/TutorTopBar.tsx` focused on the active-workflow and runtime rails, added regression coverage in `dashboard_rebuild/client/src/components/__tests__/PageScaffold.test.tsx`, `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`, and `dashboard_rebuild/client/src/components/__tests__/TutorTopBar.test.tsx`, passed `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/PageScaffold.test.tsx client/src/components/__tests__/TutorTopBar.test.tsx client/src/pages/__tests__/tutor.test.tsx`, and passed `cd dashboard_rebuild && npm run build`.
+- [ ] HUD-234. Make Studio the first Tutor button and merge the Launch surface into Studio so the top nav no longer exposes Launch as a separate workspace tab.
+  - Scope:
+    - `dashboard_rebuild/client/src/components/TutorTabBar.tsx`
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+    - `dashboard_rebuild/client/src/components/TutorStudioHome.tsx`
+    - `dashboard_rebuild/client/src/components/TutorStudioMode.tsx`
+    - `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx`
+    - `dashboard_rebuild/client/src/hooks/useTutorSession.ts`
+    - `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts`
+    - `dashboard_rebuild/client/src/lib/tutorUtils.ts`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+  - Done when:
+    - Studio is the first visible button in the Tutor workspace nav
+    - Launch no longer appears as a separate top-level tab or landing surface
+    - launch-oriented entry points and restore states normalize into Studio instead of reopening a standalone Launch page
+    - the visible Studio and Priming copy no longer sends the user back to Launch
+    - the Tutor page regression tests and production frontend build pass
+- [x] HUD-235. Build a standalone Studio layout playground with draggable and resizable cards for the main Studio modules so the surface can be rearranged visually.
+  - Scope:
+    - `docs/design/studio-playground.html`
+    - `docs/root/TUTOR_TODO.md`
+  - Done when:
+    - the playground lists the current Studio modules as draggable palette items
+    - each placed card can be moved on the canvas and resized from its corners
+    - the canvas supports presets, clear/reset, and live prompt output with copy support
+    - the HTML file opens cleanly in a browser without any external dependencies
+  - Completed 2026-03-22: created `docs/design/studio-playground.html` as a single-file Studio layout playground with Studio-specific palette items, presets, drag-to-place cards, corner resize handles, clear/reset controls, and live prompt output; fixed the script parse break during refinement; and verified the page in a browser by dragging and resizing a card.
+
 ### Sprint: Repo-Wide Quality Audit Backlog (2026-03-16)
+
 - [ ] RQA-100. Run a non-blocking repo-wide audit against the current dirty workspace, split the app into parallel subsystem review shards, collect hard evidence for broken flows and bad UI, and consolidate the result into one severity-ranked fix backlog plus fix-wave plan.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -42,6 +119,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - the final backlog groups issues into Wave 1 (`P1`), Wave 2 (`P2`), and Wave 3 (`P3`) remediation passes
 
 ### Sprint: Page-Level Hud Primitive Migration (2026-03-21)
+
 - [x] HUD-210. Finish the remaining page-level HUD primitive cleanup so `brain`, `not-found`, and `tutor` stop using ad-hoc route-local chrome where the shared `HudPanel` / `HudButton` primitives should own the surface treatment.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -60,8 +138,21 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - `brain` no longer relies on route-local ad-hoc shell fill classes where the shared page/frame theme should own the presentation
     - the route behavior and existing navigation flow stay unchanged
     - targeted frontend tests and the production frontend build pass
+- [x] HUD-220. Add stable regression coverage for page-level HUD primitive adoption so the recent `brain`, `not-found`, and `tutor` migration cannot silently drift back to route-local page chrome.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/ui/HudPanel.tsx`
+    - `dashboard_rebuild/client/src/components/ui/HudButton.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/brain.test.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/not-found.test.tsx`
+  - Done when:
+    - shared HUD primitives expose stable selectors or attributes that tests can assert without coupling to fragile Tailwind class strings
+    - Brain, Tutor, and Not Found each have a focused regression assertion proving the page renders the shared HUD primitive instead of only route-local chrome
+    - the focused frontend tests pass
 
 ### Sprint: Tutor Prime Artifact Layout Pass (2026-03-19)
+
 - [x] MTH-SEARCH-001. Run a read-only multi-agent repo search across SOP methods and supporting docs for mind maps, ASCII graphs, and priming-style techniques, then return an evidence-backed file list.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -450,6 +541,18 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - the page hero no longer compacts in response to nav scroll state
     - targeted layout tests and the production frontend build pass
   - Completed 2026-03-21: removed the shared shell’s hover/scroll-driven header collapse state and fixed top hot zone from `dashboard_rebuild/client/src/components/layout.tsx`, switched the app shell from an internal scrolling `<main>` to normal page scroll, stripped translate/scale motion from the desktop nav button classes while keeping the visual styling intact, removed the hero compaction rule from `dashboard_rebuild/client/src/index.css`, updated `dashboard_rebuild/client/src/components/__tests__/layout.test.tsx` so it now asserts the header stays expanded during scroll, passed `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/layout.test.tsx`, passed `cd dashboard_rebuild && npm run build`, and confirmed in a live browser check on `http://127.0.0.1:5000/methods` that after scrolling to `window.scrollY = 1800` the header’s viewport position was `y = -1800`, meaning it now scrolls with the page instead of remaining pinned.
+- [x] TSHL-120. Keep the shared page hero synced with the active route even when page components stay mounted under the keep-alive shell.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/PageScaffold.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/PageScaffold.test.tsx`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - switching between page-scaffold routes updates the hero title and subtitle every time instead of leaving the previous page header in place
+    - returning to an already-mounted route reclaims the shared hero portal with that route's own copy
+    - focused scaffold regression coverage passes
+  - Assignee: @codex-cli
+  - Completed 2026-03-22: rewired `dashboard_rebuild/client/src/components/PageScaffold.tsx` so each mounted scaffold now reclaims or releases the shared `page-hero-portal` on `wouter` location changes based on whether its own shell is currently hidden by the keep-alive route wrapper, preventing previously visited pages from leaving stale hero copy behind; added `dashboard_rebuild/client/src/components/__tests__/PageScaffold.test.tsx` to cover `Brain -> Method Library -> Brain` hero switching plus portal clearing when no scaffold route is visible; passed `cd dashboard_rebuild && npm run test -- src/components/__tests__/PageScaffold.test.tsx src/components/__tests__/layout.test.tsx`; passed `cd dashboard_rebuild && npm run build`; and live-smoked `Start_Dashboard.bat` at `http://127.0.0.1:5000` by switching `Brain -> Methods -> Brain` and confirming the visible hero copy followed the active route each time.
 - [x] TLF-100. Add workflow delete to the Tutor launch hub so stale study plans can be removed directly from the launch table.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -541,6 +644,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Completed 2026-03-20: simplified the live Priming surface by keeping only `SETUP` and `MATERIALS IN SCOPE` in the first stacked window, moving `EXTRACT PRIME` into the source-viewer header so it stays accessible without opening chain controls, consolidating readiness plus handoff notes plus Tutor launch actions into one downstream `TUTOR HANDOFF` window, and demoting `PRIME CHAIN` plus `WORKFLOW CONTEXT` into a toggleable `ADVANCED PRIME CONTROLS` block at the bottom of the page; added targeted coverage in `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`; passed `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`; and passed `cd dashboard_rebuild && npm run build`.
 
 ### Sprint: TEACH Stage Control-Plane Upgrade (2026-03-20)
+
 - [x] TSCU-100. Introduce `TEACH` as a first-class control-plane stage in Tutor runtime, method contracts, and stage-facing UI while preserving compatibility for chains that do not include TEACH.
   - Scope:
     - `README.md`
@@ -561,6 +665,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - targeted validation covers SOP validators/tests, backend runtime/tests, relevant Tutor frontend tests, and a production frontend build
 
 ### Sprint: Tutor TEACH Architecture Correction (2026-03-20)
+
 - [ ] TTAC-100. Align canon, chains, runtime, mnemonic policy, and the live Tutor UI to the locked TEACH-first first-exposure architecture.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -583,6 +688,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - SOP validators/tests, backend runtime/tests, relevant Tutor frontend tests, and a production frontend build all pass
 
 ### Sprint: Methods/Chains API Stability Fix (2026-03-20)
+
 - [x] MCAS-100. Keep `/api/methods` and `/api/chains` readable during live dashboard use even when the method-library sync path encounters SQLite contention.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -640,6 +746,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Completed 2026-03-20: added `M-TEA-006 Depth Ladder (4-10-HS-PT)` and `M-TEA-007 KWIK Lite` under `sop/library/methods/`, updated `sop/library/15-method-library.md`, `sop/library/categories/TEACH.md`, and `sop/library/categories/ENCODE.md` so the TEACH inventory and KWIK split are documented, added `brain/tests/test_seed_methods.py` coverage proving the YAML loader surfaces the new TEACH doctrine cards, passed `python sop/tools/validate_library.py`, passed `pytest brain/tests/test_seed_methods.py -q`, reseeded the live DB via `python brain/data/seed_methods.py`, verified `http://127.0.0.1:5000/api/methods` returns the new cards, and confirmed the live Methods page at `http://127.0.0.1:5000/methods` renders both `Depth Ladder (4-10-HS-PT)` and `KWIK Lite` under `TEACH`.
 
 ### Sprint: Custom Navbar Layout Plugin (2026-03-16)
+
 - [x] FNP-100. Create a minimal custom navbar layout plugin that imports the dashboard shell background plus the split navbar button PNGs and lays them out automatically in the open design file.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -654,6 +761,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Completed 2026-03-16: added a repo-local custom navbar layout plugin under `tools/custom-navbar-layout-plugin/` with a local file-picker UI, fixed navbar placement coordinates, and import/run docs for the Figma desktop app; validated `manifest.json`, passed `node --check tools/custom-navbar-layout-plugin/code.js`, passed `python scripts/check_docs_sync.py`, and passed `git diff --check` with only pre-existing CRLF warnings in unrelated dirty files.
 
 ### Sprint: Custom App Navbar Load (2026-03-16)
+
 - [x] CAN-100. Replace the shared app shell's generated text nav controls with Trey's custom PNG navbar buttons while preserving the existing route map and nav test hooks.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -669,6 +777,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Completed 2026-03-16: copied the split navbar PNGs into `dashboard_rebuild/attached_assets/`, rewired `layout.tsx` to render the custom primary/support button art against the existing route map, preserved the existing nav test hooks, passed `npm run test -- layout.test.tsx`, passed `npm run build`, and verified the navbar in the live dashboard shell at `http://127.0.0.1:5000/brain`.
 
 ### Sprint: UI Image Centralization (2026-03-16)
+
 - [x] UIC-100. Move the current shell/navbar image set plus the working navbar source art into `C:\pt-study-sop\UI Images` and repoint the frontend asset alias so the live app reads from one canonical repo-local image home.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -687,6 +796,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Completed 2026-03-16: centralized the current shell/navbar assets plus the navbar working/source images under `C:\pt-study-sop\UI Images`, moved non-live art into `reference/` and `generated_images/`, repointed the frontend `@assets` alias in Vite/Vitest/TypeScript to the new repo-level folder, updated the custom navbar layout plugin docs to reference `UI Images`, passed `npm run test -- layout.test.tsx`, passed `npm run build`, passed `python scripts/check_docs_sync.py`, and re-verified the live navbar render at `http://127.0.0.1:5000/brain`.
 
 ### Sprint: Navbar Tool Naming Cleanup (2026-03-16)
+
 - [x] NTNC-100. Rename the old repo-local navbar layout scaffold so it uses neutral `custom` naming instead of the stale `figma` folder label while preserving the existing files and references.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -699,6 +809,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Completed 2026-03-16: renamed `tools/figma-navbar-layout-plugin/` to `tools/custom-navbar-layout-plugin/`, updated the nearby sprint/log/doc references to use the neutral custom naming, passed `node --check tools/custom-navbar-layout-plugin/code.js`, passed `python scripts/check_docs_sync.py`, and passed `git diff --check` with only existing CRLF warnings.
 
 ### Sprint: Navbar PNG Crop Fix (2026-03-16)
+
 - [x] NPCF-100. Re-crop the live custom navbar PNGs so the white block artifact under the lower glow is removed without changing the route wiring or asset names the app imports.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -711,6 +822,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Completed 2026-03-16: repaired the affected live/source navbar PNGs under `C:\pt-study-sop\UI Images` by removing the leftover lower tail artifact from every custom button except Tutor, kept the existing asset filenames stable, rebuilt the frontend bundle with `npm run build`, and re-verified the live navbar visually at `http://127.0.0.1:5000/brain`.
 
 ### Sprint: Custom Nav Background Shell Integration (2026-03-16)
+
 - [x] CNBS-100. Load the custom navbar backing plate from `C:\pt-study-sop\UI Images\Dashboard finished.png` into the shared header and align the existing button links over it without changing the route map or nav test hooks.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -723,6 +835,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Completed 2026-03-16: imported `C:\pt-study-sop\UI Images\Dashboard finished.png` into the shared header, rendered it as the cropped custom nav backing plate behind the existing button links, preserved the current route wiring and nav test hooks, passed `npm run test -- layout.test.tsx`, passed `npm run build`, and re-verified the live navbar visually at `http://127.0.0.1:5000/brain`.
 
 ### Sprint: Custom Nav Interaction Regression Fix (2026-03-16)
+
 - [x] CNIR-100. Rework the custom shared-header nav shell so the primary buttons regain clear hover/click behavior and the shell background plate renders larger without changing the route map or nav test hooks.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -736,6 +849,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Completed 2026-03-16: updated the shared header shell composition so the primary and support rail wrapper layers no longer steal pointer events from one another, strengthened the link/image hover-press motion for the custom nav buttons, widened the desktop nav stage and shell presentation, passed `npm run test -- layout.test.tsx`, passed `npm run build`, and re-verified live hover/click navigation plus the larger shell render at `http://127.0.0.1:5000/brain`.
 
 ### Sprint: Notes Dock Side Swap (2026-03-16)
+
 - [x] NDSS-100. Move the floating notes tab to the left edge, shrink it into a compact unlabeled icon tab, and align the notes sheet behavior with the new side without changing the existing notes interactions or test hook.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -749,6 +863,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Completed 2026-03-16: moved the floating notes dock to the left edge as a smaller unlabeled icon tab, switched the notes sheet to open from the left side for a consistent interaction, kept the existing drag/open behavior plus `data-testid="notes-dock"`, passed `npm run test -- layout.test.tsx`, passed `npm run build`, and re-verified the live shell plus notes panel at `http://127.0.0.1:5000/brain`.
 
 ### Sprint: Custom Nav Title And Hero Polish (2026-03-16)
+
 - [x] CNTH-100. Recompose the shared header so the custom nav shell sits lower and centered, the title arcs over the shell with the brain mark integrated into it, the subtitle is removed, and the Scholar/Tutor buttons carry stronger visual emphasis without changing the route map or nav test hooks.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -763,6 +878,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Completed 2026-03-16: rewired the header composition so the nav shell is centered and lowered as a single hero element, replaced the old left-side logo block with a curved `TREY'S STUDY SYSTEM` title that embeds the brain logo, removed the `NEURAL COMMAND DECK` subtitle, strengthened the primary Scholar/Tutor glow treatment while keeping the current route map and test hooks stable, passed `npm run test -- layout.test.tsx`, passed `npm run build`, and re-verified the live shell at `http://127.0.0.1:5000/brain`.
 
 ### Sprint: Custom Nav Fit And Title Emphasis (2026-03-16)
+
 - [x] CNFE-100. Tighten the custom header footprint so it no longer causes horizontal overflow, restore the compact roof behavior on scroll, push `TREY'S STUDY SYSTEM` into a larger high-attention title above the shell, and realign the primary/support button widths so the plate and PNG art feel intentionally fitted.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -778,6 +894,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Validation: `npm run test -- layout.test.tsx`; `npm run build`; live header recheck at `http://127.0.0.1:5000/brain`.
 
 ### Sprint: Header Variant Lab (2026-03-16)
+
 - [x] HVL-100. Create a dedicated comparison page with 5-6 custom nav/banner alignment variants so the title/logo/shell composition can be chosen visually in one pass instead of repeatedly rewriting the live header.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -793,6 +910,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Validation: `npm run test -- layout.test.tsx`; `npm run build`; live route check at `http://127.0.0.1:5000/nav-lab`.
 
 ### Sprint: Nav Build Marker And Launch Guard (2026-03-16)
+
 - [x] NBLG-100. Add an unmistakable nav build marker to the live header and harden the canonical launcher so repo-level UI asset/config changes trigger a rebuild instead of silently reopening stale dist output.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -808,6 +926,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Validation: `npm run test -- layout.test.tsx`; `npm run build`; `python scripts/check_docs_sync.py`; `Start_Dashboard.bat`; live route check at `http://127.0.0.1:5000/brain`.
 
 ### Sprint: Swarm Planner Baseline Sweep (2026-03-16)
+
 - [x] SPH-110. Run the new planner eval kit against the benchmark prompts and record a durable baseline scorecard for future `trey-autoresearch` tuning.
   - Scope:
     - `.codex/skills/treys-swarm-planner-repo/evals/`
@@ -823,6 +942,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Completed 2026-03-16: added explicit `n/a` score handling to the eval kit, scored all six benchmark prompts, stored a baseline scorecard plus summary in the existing swarm-planner-hardening track, and re-ran docs/diff validation.
 
 ### Sprint: Swarm Planner Hardening (2026-03-15)
+
 - [x] SPH-100. Harden the shared swarm planner and the PT repo adapter so they choose the right orchestration mode, separate validation from review, and gain an autoresearch-style tuning loop.
   - Scope:
     - `C:\Users\treyt\.agents\skills\treys-swarm-planner\`
@@ -841,6 +961,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Completed 2026-03-15: backed up the canonical shared planner skill, hardened both planner skills/templates/examples, added a repo-local eval kit plus benchmark scorecard, stored before/after planner evidence in a new Conductor track, and re-ran the shared-skill sync checks to confirm consumer roots still point at the canonical upstream.
 
 ### Sprint: Workspace Coordination Cleanup (2026-03-15)
+
 - [x] WCC-100. Reduce active workspace noise without touching the in-progress Tutor/shared frontend rewrites.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -869,6 +990,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Completed 2026-03-15: cleared the old Scholar run artifacts under `orchestrator_runs`, `research_notebook`, and `plan_updates`, removed the stale `pt_study.db` backup plus the zero-byte `study.db`, passed docs sync / diff check / production build, and checkpointed the tracked frontend rewrite set into three logical commits instead of one monolithic snapshot.
 
 ### Sprint: Shell Control System Rollout (2026-03-15)
+
 - [ ] SCSR-100. Carry the new command-deck nav language through the rest of the shared control surfaces so flagship routes and support frames use one premium control system instead of mixed button/tab treatments.
   - Scope:
     - `dashboard_rebuild/client/src/components/layout.tsx`
@@ -891,6 +1013,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - `npm run test -- client/src/components/__tests__/layout.test.tsx` and `cd dashboard_rebuild && npm run build` pass
 
 ### Sprint: Tutor Workflow Redesign (2026-03-16)
+
 - [x] TWR-100. Introduce the staged Tutor workflow foundation so `/tutor` can evolve from one mixed start/runtime surface into `Launch -> Priming -> Tutor -> Polish -> Final Sync` without duplicating existing Tutor, Studio, materials, card, or planner systems.
   - Scope:
     - `README.md`
@@ -912,6 +1035,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Validation note: completed on 2026-03-16 with `cd dashboard_rebuild && npm run build`, `pytest brain/tests/`, `python -m pytest brain/tests/test_harness_eval.py::test_harness_eval_runs_live_golden_path_from_registry -q -s`, and `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5000`
 
 ### Sprint: Tutor Workflow Depth Pass (2026-03-16)
+
 - [x] TDP-000. Finish the original post-redesign Tutor depth work in one execution train by deepening Priming extraction, richer Polish/Final Sync artifact publishing, and Brain workflow analytics beyond the completed staged shell backbone.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -936,6 +1060,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Completed 2026-03-16: captured the depth baseline and metric contract, added source-linked Priming Assist with per-source rerun/write-back, promoted richer Studio artifact packages through Polish/Final Sync, expanded Brain workflow intelligence with source-link/re-prime/artifact/snapshot signals, passed `cd dashboard_rebuild && npm run build`, passed `pytest brain/tests/`, passed `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5000`, and passed a live enriched workflow proof on the restarted dashboard.
 
 ### Sprint: Tutor UI Stabilization Loop (2026-03-16)
+
 - [x] TUSL-100. Run a repeatable live-page stabilization loop over Brain handoff, Tutor shell transitions, and adjacent study surfaces until critical navigation, hydration, and shell-state regressions are cleared and the same audit passes twice in a row.
   - Track:
     - `conductor/tracks/tutor-ui-stabilization-loop_20260316/`
@@ -963,6 +1088,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - passed 10 consecutive browser-tool audits over Brain -> Tutor Launch -> Priming -> Final Sync -> Polish -> Methods with no failures
 
 ### Sprint: UI Production System (2026-03-16)
+
 - [x] UPS-100. Define the durable UI production system so the app can move from theme experiments into one sellable shell/page hierarchy with code-driven interaction over decorative rail art.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
@@ -996,6 +1122,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Completed 2026-03-16: quieted the shell/background intensity, aligned the brand copy to the Neural Command Deck language, remapped the highest-drift Tutor/Vault blue-violet surfaces to the locked crimson/info palette, passed `npm run test -- client/src/components/__tests__/layout.test.tsx`, and passed `cd dashboard_rebuild && npm run build`.
 
 ### Sprint Note: Navbar build-path stabilization (2026-03-16)
+
 - [x] Locked the canonical navbar review path back to `Start_Dashboard.bat` + `http://127.0.0.1:5000/brain` after repeated false “reverts” from stale/parallel frontend surfaces.
   - Updated `dashboard_rebuild/package.json` so `npm run build` now calls `vite build` directly instead of the slower `tsx build.ts` wrapper.
   - Verified a fresh production build completes and writes the live Flask bundle back into `brain/static/dist/`.
@@ -1042,3 +1169,61 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Enabled `stitch.googleapis.com` and the Stitch MCP endpoint for `projects/studysop`.
   - Verified Stitch CLI access with system gcloud auth by listing tools and opening the live Stitch project browser.
   - Added a permanent `stitch` MCP server entry to `C:\Users\treyt\.codex\config.toml`; Codex restart is required before the `stitch` tools appear in-chat.
+
+### Sprint: Swarm Orchestration & Feature Hardening (2026-03-21)
+
+- [x] SWARM-100. Unify the UI theme across flagship and support pages using the Header Navigation Cockpit as the visual source of truth.
+  - Scope:
+    - docs/root/TUTOR_TODO.md
+    - dashboard_rebuild/client/src/lib/theme.ts
+    - dashboard_rebuild/client/src/components/ui/HudPanel.tsx
+    - dashboard_rebuild/client/src/components/ui/HudButton.tsx
+    - all .tsx pages in dashboard_rebuild/client/src/pages/
+  - Done when: - heme.ts contains standardized tokens for the Header's crimson accents, glows, and arcade text shadows. - HudPanel and HudButton components encapsulate the HUD aesthetic and are used across at least rain,
+    ot-found, and utor pages. - ad-hoc Tailwind strings for borders and backgrounds are replaced with theme constants.
+  - Assignee: @DesignSystemEngineer
+
+- [ ] SWARM-110. Harden the Tutor workflow logic and fix recurring UI interaction bugs.
+  - Scope:
+    - docs/root/TUTOR_TODO.md
+    - brain/dashboard/api_tutor_workflows.py
+    - brain/tests/test_tutor_workflow_priming_assist.py
+    - dashboard_rebuild/client/src/components/TutorWorkflowLaunchHub.tsx
+    - dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx
+    - dashboard_rebuild/client/src/components/MethodBlockCard.tsx
+    - dashboard_rebuild/client/src/components/priming/PrimingLayout.tsx
+    - dashboard_rebuild/client/src/components/priming/PrimingMaterialReader.tsx
+    - dashboard_rebuild/client/src/components/**tests**/TutorWorkflowLaunchHub.test.tsx
+    - dashboard_rebuild/client/src/components/**tests**/TutorWorkflowPrimingPanel.test.tsx
+    - dashboard_rebuild/client/src/hooks/useTutorSession.ts
+    - dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts
+    - dashboard_rebuild/client/src/hooks/**tests**/useTutorSession.test.tsx
+    - dashboard_rebuild/client/src/hooks/**tests**/useTutorWorkflow.test.tsx
+    - dashboard_rebuild/client/src/hooks/useSSEStream.ts
+    - dashboard_rebuild/client/src/components/TutorChat.tsx
+    - conductor/tracks/tutor-guided-studyability_20260320/issue-log.md
+    - conductor/tracks/tutor-guided-studyability_20260320/findings.md
+  - Done when:
+    - the fresh learner-audit defects `TGSL-LA-003`, `TGSL-LA-004`, `TGSL-PR-005`, `TGSL-PR-008`, `TGSL-PR-009`, and `TGSL-PR-010` are linked to this execution wave and no longer live only in chat memory.
+    - Priming draft saves stop 500ing, preserve workflow row context for Launch, and keep broken drafts identifiable enough to resume or delete safely.
+    - Launch no longer risks the `study_wheel` null-dereference path and recent workflow rows show enough fallback context plus a precise updated time to trust the list during cleanup.
+    - Priming `Setup` no longer front-loads the Tutor launch contract, the Materials step gives the source viewer full-width reading plus pop-out, and the method/output workspace feels readable and selection-driven instead of cramped legacy output dump.
+    - the Stage Timer persists correctly without nullifying on manual save.
+    - the "@path" image hotkey typing is no longer interrupted and successfully triggers a save/upload.
+    - the "Save Exact" vs "Save Editable" workflow is finalized and verified in the live shell.
+  - Completed 2026-03-22: removed the redundant Tutor intro strip from `dashboard_rebuild/client/src/components/TutorTopBar.tsx`, kept the live handoff and workflow/status rails intact, updated `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx` to assert the slimmer layout, and passed `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorTopBar.test.tsx` plus `cd dashboard_rebuild && npm run build`.
+  - Completed 2026-03-22: reflowed the shared `dashboard_rebuild/client/src/components/PageScaffold.tsx` hero so Tutor and other action-bearing pages render stat cards in an even grid with the action row stacked beneath them, moved Tutor's `Theme Lab` control into the hero actions beside `Refresh`, hid the floating global `Theme Lab` pill on `/tutor`, updated regression coverage in `dashboard_rebuild/client/src/components/__tests__/PageScaffold.test.tsx`, `dashboard_rebuild/client/src/components/__tests__/layout.test.tsx`, and `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`, and passed `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/PageScaffold.test.tsx client/src/components/__tests__/layout.test.tsx client/src/pages/__tests__/tutor.test.tsx` plus `cd dashboard_rebuild && npm run build`.
+  - Assignee: @TutorArchitect
+
+- [ ] SWARM-120. Act as the quality gatekeeper, performing final audits and source control management.
+  - Scope:
+    - docs/root/TUTOR_TODO.md
+    - all modified source files in dashboard_rebuild/
+  - Done when:
+    - a final theme consistency audit passes (no hardcoded styles).
+    - regression tests for the Tutor workflow changes pass.
+    - all validated changes are staged and committed with clean messages.
+  - Assignee: @GitGuardian
+
+- [x] SWARM-101. [PHASE 3] Migration: scholar, library, methods (Lead: @DesignSystemEngineer)
+  - Completed 2026-03-22: remapped Scholar, Library, and Methods route-level shells onto `HudPanel` / `HudButton`, removed remaining shadcn `Card` usage from those target pages, and verified the migration with focused page tests plus successful frontend builds during the per-page migration pass.

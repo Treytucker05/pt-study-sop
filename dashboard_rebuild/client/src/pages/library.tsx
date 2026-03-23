@@ -1,4 +1,3 @@
-
 import { PageScaffold } from "@/components/PageScaffold";
 import { useState, useEffect, useMemo, type ReactElement } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -26,13 +25,14 @@ import {
   TEXT_MUTED,
   TEXT_BADGE,
   INPUT_BASE,
-  BTN_PRIMARY,
   ICON_SM,
   ICON_MD,
   PANEL_PADDING,
+  SELECT_BASE,
 } from "@/lib/theme";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { HudButton } from "@/components/ui/HudButton";
+import { HudPanel } from "@/components/ui/HudPanel";
 import { MaterialUploader } from "@/components/MaterialUploader";
 import {
   FileText,
@@ -65,6 +65,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const FILE_TYPE_LABEL: Record<string, string> = {
   pdf: "PDF",
@@ -74,11 +75,23 @@ const FILE_TYPE_LABEL: Record<string, string> = {
   txt: "TXT",
 };
 const ALL_FOLDERS_KEY = "";
+const LIBRARY_PANEL_SURFACE =
+  "bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01)_18%,rgba(0,0,0,0.18)_100%),linear-gradient(135deg,rgba(110,14,34,0.18),rgba(10,4,7,0.18)_58%,rgba(0,0,0,0.1)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_16px_30px_rgba(0,0,0,0.16)] backdrop-blur-xl";
+const LIBRARY_PANEL_INSET =
+  "bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.06)_18%,rgba(0,0,0,0.14)_100%),linear-gradient(135deg,rgba(110,14,34,0.12),rgba(10,4,7,0.1)_58%,rgba(0,0,0,0.08)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_12px_24px_rgba(0,0,0,0.12)] backdrop-blur-lg";
+const LIBRARY_COMPACT_BUTTON = "w-auto h-8 min-h-[32px] px-3 text-xs";
+const LIBRARY_INLINE_BUTTON = "w-auto h-7 min-h-[28px] px-2 text-ui-xs";
+const LIBRARY_SELECT = `${SELECT_BASE} h-8 min-h-[32px] rounded-[0.95rem] border-primary/30 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.22)_100%)] px-2 text-sm`;
 
 function getFileTypeLabel(fileType: string | null | undefined): string {
   const normalizedRaw = (fileType || "").toLowerCase().trim();
-  const normalized = ["", "null", "none"].includes(normalizedRaw) ? "" : normalizedRaw;
-  return FILE_TYPE_LABEL[normalized] || (normalized ? normalized.toUpperCase() : "FILE");
+  const normalized = ["", "null", "none"].includes(normalizedRaw)
+    ? ""
+    : normalizedRaw;
+  return (
+    FILE_TYPE_LABEL[normalized] ||
+    (normalized ? normalized.toUpperCase() : "FILE")
+  );
 }
 
 function formatSize(bytes: number | null | undefined): string {
@@ -89,7 +102,10 @@ function formatSize(bytes: number | null | undefined): string {
   return `${(safeBytes / (1024 * 1024)).toFixed(1)}MB`;
 }
 
-function resolveMaterialAssetUrl(src: string | undefined, materialId: number): string {
+function resolveMaterialAssetUrl(
+  src: string | undefined,
+  materialId: number,
+): string {
   const raw = String(src || "").trim();
   if (!raw) return "";
   if (/^(https?:|data:|blob:|\/)/i.test(raw)) return raw;
@@ -124,7 +140,9 @@ function getMaterialTitle(mat: Material): string {
 
 function getMaterialSize(mat: Material): number {
   const candidate = Number(mat.file_size);
-  return Number.isFinite(candidate) && candidate >= 0 ? Math.floor(candidate) : 0;
+  return Number.isFinite(candidate) && candidate >= 0
+    ? Math.floor(candidate)
+    : 0;
 }
 
 interface FolderNode {
@@ -146,16 +164,22 @@ interface MutateDeleteLike {
 }
 
 function normalizeRawFolderSegments(parts: string[]): string[] {
-  return parts
-    .map((part) => part.trim())
-    .filter(Boolean);
+  return parts.map((part) => part.trim()).filter(Boolean);
 }
 
 function normalizeSourceFolderSegments(parts: string[]): string[] {
   const cleaned = normalizeRawFolderSegments(parts);
-  const usersIndex = cleaned.findIndex((part) => part.toLowerCase() === "users");
-  const desktopIndex = cleaned.findIndex((part) => part.toLowerCase() === "desktop");
-  if (usersIndex >= 0 && desktopIndex > usersIndex && desktopIndex < cleaned.length - 1) {
+  const usersIndex = cleaned.findIndex(
+    (part) => part.toLowerCase() === "users",
+  );
+  const desktopIndex = cleaned.findIndex(
+    (part) => part.toLowerCase() === "desktop",
+  );
+  if (
+    usersIndex >= 0 &&
+    desktopIndex > usersIndex &&
+    desktopIndex < cleaned.length - 1
+  ) {
     // Absolute local paths should not expose machine roots in the vault-style rail.
     return cleaned.slice(desktopIndex + 1);
   }
@@ -163,7 +187,10 @@ function normalizeSourceFolderSegments(parts: string[]): string[] {
 }
 
 function getMaterialFolder(mat: Material): string {
-  const rawFolder = (mat.folder_path || "").replace(/\\/g, "/").trim().replace(/^\/+|\/+$/g, "");
+  const rawFolder = (mat.folder_path || "")
+    .replace(/\\/g, "/")
+    .trim()
+    .replace(/^\/+|\/+$/g, "");
   if (rawFolder) {
     const normalizedRaw = normalizeRawFolderSegments(rawFolder.split("/"));
     return normalizedRaw.join("/") || "Unsorted";
@@ -178,17 +205,27 @@ function getMaterialFolder(mat: Material): string {
     const afterProtocol = sourcePath.slice(protocolIndex + 3);
     const lastSlash = afterProtocol.lastIndexOf("/");
     if (lastSlash <= 0) return protocol;
-    const protocolParts = normalizeRawFolderSegments(afterProtocol.slice(0, lastSlash).split("/"));
-    return protocolParts.length ? `${protocol}/${protocolParts.join("/")}` : protocol;
+    const protocolParts = normalizeRawFolderSegments(
+      afterProtocol.slice(0, lastSlash).split("/"),
+    );
+    return protocolParts.length
+      ? `${protocol}/${protocolParts.join("/")}`
+      : protocol;
   }
 
   const normalizedSource = sourcePath.toLowerCase();
-  if (normalizedSource.includes("/uploads/") || normalizedSource.includes("\\uploads\\")) return "Uploaded Files";
+  if (
+    normalizedSource.includes("/uploads/") ||
+    normalizedSource.includes("\\uploads\\")
+  )
+    return "Uploaded Files";
 
   const lastSlash = sourcePath.lastIndexOf("/");
   if (lastSlash <= 0) return "Unsorted";
 
-  const folders = normalizeSourceFolderSegments(sourcePath.slice(0, lastSlash).split("/"));
+  const folders = normalizeSourceFolderSegments(
+    sourcePath.slice(0, lastSlash).split("/"),
+  );
   if (folders.length > 2) return folders.slice(-2).join("/");
   return folders.join("/") || "Unsorted";
 }
@@ -205,7 +242,8 @@ function buildFolderTree(materials: Material[]): FolderNode {
 
     let node = root;
     for (const part of parts) {
-      if (!node.children[part]) node.children[part] = { name: part, files: [], children: {} };
+      if (!node.children[part])
+        node.children[part] = { name: part, files: [], children: {} };
       node = node.children[part];
     }
     node.files.push(mat);
@@ -222,7 +260,10 @@ interface FolderListItem {
   hasChildren: boolean;
 }
 
-function getFolderNode(root: FolderNode, folderPath: string): FolderNode | null {
+function getFolderNode(
+  root: FolderNode,
+  folderPath: string,
+): FolderNode | null {
   if (!folderPath) return root;
   const parts = folderPath.split("/").filter(Boolean);
   let node: FolderNode | undefined = root;
@@ -341,7 +382,9 @@ function renderMaterialRow(
   const displayTitle = getMaterialTitle(mat);
   const folderLabel = getMaterialFolder(mat);
   const normalizedType = (mat.file_type || "").toLowerCase();
-  const canReextract = ["pdf", "docx", "pptx", "powerpoint"].includes(normalizedType);
+  const canReextract = ["pdf", "docx", "pptx", "powerpoint"].includes(
+    normalizedType,
+  );
   const hasDoclingAssets = Boolean(mat.has_docling_assets);
   const doclingAssetCount = Number(mat.docling_asset_count || 0);
 
@@ -349,7 +392,10 @@ function renderMaterialRow(
     <div
       key={mat.id}
       className={`grid gap-2 px-2 py-1.5 items-center border-b border-primary/10 hover:bg-primary/5 transition-colors ${!mat.enabled ? "opacity-50" : ""}`}
-      style={{ gridTemplateColumns: "28px minmax(210px,1.6fr) minmax(140px,1fr) 64px 72px 84px 116px" }}
+      style={{
+        gridTemplateColumns:
+          "28px minmax(210px,1.6fr) minmax(140px,1fr) 64px 72px 84px 116px",
+      }}
     >
       <div className="flex items-center justify-center">
         <Checkbox
@@ -373,10 +419,16 @@ function renderMaterialRow(
                 if (e.key === "Escape") setEditingId(null);
               }}
             />
-            <button onClick={saveEdit} className="text-primary hover:text-primary/80">
+            <button
+              onClick={saveEdit}
+              className="text-primary hover:text-primary/80"
+            >
               <Check className={ICON_SM} />
             </button>
-            <button onClick={() => setEditingId(null)} className="text-muted-foreground hover:text-foreground">
+            <button
+              onClick={() => setEditingId(null)}
+              className="text-muted-foreground hover:text-foreground"
+            >
               <X className={ICON_SM} />
             </button>
           </div>
@@ -400,7 +452,10 @@ function renderMaterialRow(
       {/* Type */}
       <div className="flex items-center gap-1">
         {isDuplicate ? (
-          <Badge variant="outline" className={`${TEXT_BADGE} h-4 px-1 w-fit border-yellow-500/50 text-yellow-400`}>
+          <Badge
+            variant="outline"
+            className={`${TEXT_BADGE} h-4 px-1 w-fit border-yellow-500/50 text-yellow-400`}
+          >
             DUPE
           </Badge>
         ) : null}
@@ -411,7 +466,11 @@ function renderMaterialRow(
           <Badge
             variant="outline"
             className={`${TEXT_BADGE} h-4 px-1 w-fit ${hasDoclingAssets ? "border-green-500/60 text-green-300" : "border-yellow-500/60 text-yellow-300"}`}
-            title={hasDoclingAssets ? `${doclingAssetCount} Docling asset${doclingAssetCount === 1 ? "" : "s"} detected` : "No Docling image assets detected"}
+            title={
+              hasDoclingAssets
+                ? `${doclingAssetCount} Docling asset${doclingAssetCount === 1 ? "" : "s"} detected`
+                : "No Docling image assets detected"
+            }
           >
             D:{doclingAssetCount}
           </Badge>
@@ -455,7 +514,9 @@ function renderMaterialRow(
             className="text-muted-foreground hover:text-primary transition-colors p-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Re-extract with Docling"
           >
-            <RefreshCw className={`${ICON_SM} ${isReextracting ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`${ICON_SM} ${isReextracting ? "animate-spin" : ""}`}
+            />
           </button>
         ) : null}
         <button
@@ -589,27 +650,52 @@ function useLibraryPageController() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
-  const [materialsFolder, setMaterialsFolder] = useState("C:\\Users\\treyt\\OneDrive\\Desktop\\PT School");
-  const [uploadCourseTarget, setUploadCourseTarget] = useState<string>(initialLaunchState.uploadCourseTarget);
-  const [syncCourseTarget, setSyncCourseTarget] = useState<string>(initialLaunchState.syncCourseTarget);
+  const [materialsFolder, setMaterialsFolder] = useState(
+    "C:\\Users\\treyt\\OneDrive\\Desktop\\PT School",
+  );
+  const [uploadCourseTarget, setUploadCourseTarget] = useState<string>(
+    initialLaunchState.uploadCourseTarget,
+  );
+  const [syncCourseTarget, setSyncCourseTarget] = useState<string>(
+    initialLaunchState.syncCourseTarget,
+  );
   const [syncJobId, setSyncJobId] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<TutorSyncJobStatus | null>(null);
   const [syncing, setSyncing] = useState(false);
-  const [syncPreview, setSyncPreview] = useState<TutorSyncPreviewResult | null>(null);
+  const [syncPreview, setSyncPreview] = useState<TutorSyncPreviewResult | null>(
+    null,
+  );
   const [syncPreviewLoading, setSyncPreviewLoading] = useState(false);
   const [syncPreviewError, setSyncPreviewError] = useState<string | null>(null);
-  const [selectedSyncFiles, setSelectedSyncFiles] = useState<Set<string>>(new Set());
-  const [expandedSyncFolders, setExpandedSyncFolders] = useState<Set<string>>(new Set([""]));
-  const [reextractingMaterialIds, setReextractingMaterialIds] = useState<number[]>([]);
-  const [selectedFolderPath, setSelectedFolderPath] = useState<string>(initialLaunchState.selectedFolderPath);
-  const [expandedFolderPaths, setExpandedFolderPaths] = useState<Set<string>>(new Set());
-  const [initializedFolderExpansion, setInitializedFolderExpansion] = useState(false);
+  const [selectedSyncFiles, setSelectedSyncFiles] = useState<Set<string>>(
+    new Set(),
+  );
+  const [expandedSyncFolders, setExpandedSyncFolders] = useState<Set<string>>(
+    new Set([""]),
+  );
+  const [reextractingMaterialIds, setReextractingMaterialIds] = useState<
+    number[]
+  >([]);
+  const [selectedFolderPath, setSelectedFolderPath] = useState<string>(
+    initialLaunchState.selectedFolderPath,
+  );
+  const [expandedFolderPaths, setExpandedFolderPaths] = useState<Set<string>>(
+    new Set(),
+  );
+  const [initializedFolderExpansion, setInitializedFolderExpansion] =
+    useState(false);
   const [courseLinkTarget, setCourseLinkTarget] = useState<string>("");
-  const [sidebarMode, setSidebarMode] = useState<"folders" | "courses">(initialLaunchState.sidebarMode);
-  const [selectedCourseId, setSelectedCourseId] = useState<number | "unlinked" | null>(initialLaunchState.selectedCourseId);
-  const [viewingMaterialId, setViewingMaterialId] = useState<number | null>(null);
+  const [sidebarMode, setSidebarMode] = useState<"folders" | "courses">(
+    initialLaunchState.sidebarMode,
+  );
+  const [selectedCourseId, setSelectedCourseId] = useState<
+    number | "unlinked" | null
+  >(initialLaunchState.selectedCourseId);
+  const [viewingMaterialId, setViewingMaterialId] = useState<number | null>(
+    null,
+  );
   const [selectedForTutor, setSelectedForTutor] = useState<number[]>(() =>
-    readTutorSelectedMaterialIds()
+    readTutorSelectedMaterialIds(),
   );
 
   const { data: materials = [], isLoading } = useQuery<Material[]>({
@@ -625,11 +711,12 @@ function useLibraryPageController() {
     queryFn: () => api.tutor.getContentSources(),
     enabled: sidebarMode === "courses",
   });
-  const { data: materialContent, isLoading: isContentLoading } = useQuery<MaterialContent>({
-    queryKey: ["material-content", viewingMaterialId],
-    queryFn: () => api.tutor.getMaterialContent(viewingMaterialId!),
-    enabled: viewingMaterialId !== null,
-  });
+  const { data: materialContent, isLoading: isContentLoading } =
+    useQuery<MaterialContent>({
+      queryKey: ["material-content", viewingMaterialId],
+      queryFn: () => api.tutor.getMaterialContent(viewingMaterialId!),
+      enabled: viewingMaterialId !== null,
+    });
   const { data: embedStatus } = useQuery<TutorEmbedStatus>({
     queryKey: ["tutor-embed-status"],
     queryFn: () => api.tutor.embedStatus(),
@@ -638,11 +725,14 @@ function useLibraryPageController() {
   const folderTree = useMemo(() => buildFolderTree(materials), [materials]);
   const folderItems = useMemo(() => flattenFolders(folderTree), [folderTree]);
   const visibleFolderItems = useMemo(
-    () => folderItems.filter((item) => {
-      if (item.depth === 0) return true;
-      const ancestorPaths = getFolderAncestorPaths(item.path).slice(0, -1);
-      return ancestorPaths.every((ancestor) => expandedFolderPaths.has(ancestor));
-    }),
+    () =>
+      folderItems.filter((item) => {
+        if (item.depth === 0) return true;
+        const ancestorPaths = getFolderAncestorPaths(item.path).slice(0, -1);
+        return ancestorPaths.every((ancestor) =>
+          expandedFolderPaths.has(ancestor),
+        );
+      }),
     [folderItems, expandedFolderPaths],
   );
   const selectedFolderNode = useMemo(
@@ -660,7 +750,9 @@ function useLibraryPageController() {
       } else {
         filtered = materials.filter((m) => m.course_id === selectedCourseId);
       }
-      return filtered.sort((a, b) => getMaterialTitle(a).localeCompare(getMaterialTitle(b)));
+      return filtered.sort((a, b) =>
+        getMaterialTitle(a).localeCompare(getMaterialTitle(b)),
+      );
     }
     if (!selectedFolderNode) return [];
     return collectFolderMaterials(selectedFolderNode).sort((a, b) =>
@@ -671,8 +763,10 @@ function useLibraryPageController() {
     if (sidebarMode === "courses") {
       if (selectedCourseId === null) return "All Materials";
       if (selectedCourseId === "unlinked") return "Unlinked";
-      const course = contentSources?.courses.find((c) => c.id === selectedCourseId);
-      return course ? (course.code || course.name) : "All Materials";
+      const course = contentSources?.courses.find(
+        (c) => c.id === selectedCourseId,
+      );
+      return course ? course.code || course.name : "All Materials";
     }
     return selectedFolderPath || "All Materials";
   }, [sidebarMode, selectedCourseId, contentSources, selectedFolderPath]);
@@ -704,7 +798,10 @@ function useLibraryPageController() {
     }
   };
 
-  const selectedForTutorSet = useMemo(() => new Set(selectedForTutor), [selectedForTutor]);
+  const selectedForTutorSet = useMemo(
+    () => new Set(selectedForTutor),
+    [selectedForTutor],
+  );
   const dupeChecksums = useMemo(() => {
     const counts = new Map<string, number>();
     for (const m of materials) {
@@ -722,21 +819,26 @@ function useLibraryPageController() {
     [visibleMaterials],
   );
   const selectedVisibleMaterialIds = useMemo(
-    () => visibleMaterials.filter((m) => m.enabled && selectedForTutorSet.has(m.id)).map((m) => m.id),
+    () =>
+      visibleMaterials
+        .filter((m) => m.enabled && selectedForTutorSet.has(m.id))
+        .map((m) => m.id),
     [visibleMaterials, selectedForTutorSet],
   );
   const hiddenTutorSelectionCount = Math.max(
     0,
     selectedForTutor.length - selectedVisibleMaterialIds.length,
   );
-  const allTutorMaterialsSelected = selectableVisibleMaterialIds.length > 0 &&
+  const allTutorMaterialsSelected =
+    selectableVisibleMaterialIds.length > 0 &&
     selectableVisibleMaterialIds.every((id) => selectedForTutorSet.has(id));
   const syncPreviewFiles = useMemo(
     () => collectSyncPreviewFilePaths(syncPreview?.tree),
     [syncPreview],
   );
   const selectedSyncCount = selectedSyncFiles.size;
-  const allSyncFilesSelected = syncPreviewFiles.length > 0 &&
+  const allSyncFilesSelected =
+    syncPreviewFiles.length > 0 &&
     syncPreviewFiles.every((path) => selectedSyncFiles.has(path));
 
   useEffect(() => {
@@ -768,7 +870,9 @@ function useLibraryPageController() {
       return;
     }
     setSelectedForTutor([...selectableVisibleMaterialIds]);
-    toast.success(`Tutor queue replaced with ${selectableVisibleMaterialIds.length} visible file${selectableVisibleMaterialIds.length === 1 ? "" : "s"}.`);
+    toast.success(
+      `Tutor queue replaced with ${selectableVisibleMaterialIds.length} visible file${selectableVisibleMaterialIds.length === 1 ? "" : "s"}.`,
+    );
   };
 
   const addVisibleToTutorQueue = () => {
@@ -781,7 +885,9 @@ function useLibraryPageController() {
       for (const id of selectableVisibleMaterialIds) next.add(id);
       return [...next];
     });
-    toast.success(`Added ${selectableVisibleMaterialIds.length} visible file${selectableVisibleMaterialIds.length === 1 ? "" : "s"} to the Tutor queue.`);
+    toast.success(
+      `Added ${selectableVisibleMaterialIds.length} visible file${selectableVisibleMaterialIds.length === 1 ? "" : "s"} to the Tutor queue.`,
+    );
   };
 
   const clearTutorQueue = () => {
@@ -792,8 +898,13 @@ function useLibraryPageController() {
 
   useEffect(() => {
     if (isLoading) return;
-    setSelectedForTutor((ids) => ids.filter((id) => materials.some((m) => m.id === id)));
-    if (selectedFolderPath !== ALL_FOLDERS_KEY && !getFolderNode(folderTree, selectedFolderPath)) {
+    setSelectedForTutor((ids) =>
+      ids.filter((id) => materials.some((m) => m.id === id)),
+    );
+    if (
+      selectedFolderPath !== ALL_FOLDERS_KEY &&
+      !getFolderNode(folderTree, selectedFolderPath)
+    ) {
       selectFolderPath(ALL_FOLDERS_KEY);
     }
   }, [isLoading, materials, selectedFolderPath, folderTree]);
@@ -801,7 +912,9 @@ function useLibraryPageController() {
   useEffect(() => {
     if (initializedFolderExpansion) return;
     // Start with top-level folders expanded so first interaction is not empty.
-    const topLevelPaths = folderItems.filter((item) => item.depth === 0).map((item) => item.path);
+    const topLevelPaths = folderItems
+      .filter((item) => item.depth === 0)
+      .map((item) => item.path);
     if (!topLevelPaths.length) return;
     setExpandedFolderPaths((prev) => {
       const next = new Set(prev);
@@ -827,11 +940,21 @@ function useLibraryPageController() {
     queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
 
     if (status.status === "completed") {
-      const syncCount = Number(status.sync_result?.processed ?? status.processed ?? 0);
-      const failedCount = Number(status.sync_result?.failed ?? status.errors ?? 0);
-      const embedResult = status.embed_result as { embedded?: number } | null | undefined;
+      const syncCount = Number(
+        status.sync_result?.processed ?? status.processed ?? 0,
+      );
+      const failedCount = Number(
+        status.sync_result?.failed ?? status.errors ?? 0,
+      );
+      const embedResult = status.embed_result as
+        | { embedded?: number }
+        | null
+        | undefined;
       const embedCount = Number(embedResult?.embedded ?? 0);
-      const embedErrorResult = status.embed_result as { error?: string } | null | undefined;
+      const embedErrorResult = status.embed_result as
+        | { error?: string }
+        | null
+        | undefined;
       const embedError = (embedErrorResult?.error || "").trim();
       if (embedError) {
         toast.warning(
@@ -889,7 +1012,9 @@ function useLibraryPageController() {
           scheduleNextPoll();
           return;
         }
-        handleSyncPollingFailure(err instanceof Error ? err.message : "Unknown");
+        handleSyncPollingFailure(
+          err instanceof Error ? err.message : "Unknown",
+        );
         return;
       }
 
@@ -941,14 +1066,22 @@ function useLibraryPageController() {
       }
       return next;
     });
-    if (isCollapsing && (selectedFolderPath === path || selectedFolderPath.startsWith(`${path}/`))) {
+    if (
+      isCollapsing &&
+      (selectedFolderPath === path || selectedFolderPath.startsWith(`${path}/`))
+    ) {
       selectFolderPath(ALL_FOLDERS_KEY);
     }
   };
 
   const handleLinkSelectedToCourse = () => {
     const targetCourseId = Number(courseLinkTarget);
-    if (!targetCourseId || !selectedVisibleMaterialIds.length || courseLinkMutation.isPending) return;
+    if (
+      !targetCourseId ||
+      !selectedVisibleMaterialIds.length ||
+      courseLinkMutation.isPending
+    )
+      return;
     courseLinkMutation.mutate({
       ids: [...selectedVisibleMaterialIds],
       courseId: targetCourseId,
@@ -956,15 +1089,22 @@ function useLibraryPageController() {
   };
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<{ title: string; enabled: boolean }> }) =>
-      api.tutor.updateMaterial(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: Partial<{ title: string; enabled: boolean }>;
+    }) => api.tutor.updateMaterial(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
       setEditingId(null);
       toast.success("Material updated");
     },
     onError: (err) => {
-      toast.error(`Update failed: ${err instanceof Error ? err.message : "Unknown"}`);
+      toast.error(
+        `Update failed: ${err instanceof Error ? err.message : "Unknown"}`,
+      );
     },
   });
 
@@ -977,13 +1117,17 @@ function useLibraryPageController() {
       toast.success("Material deleted");
     },
     onError: (err) => {
-      toast.error(`Delete failed: ${err instanceof Error ? err.message : "Unknown"}`);
+      toast.error(
+        `Delete failed: ${err instanceof Error ? err.message : "Unknown"}`,
+      );
     },
   });
 
   const clearMaterialsMutation = useMutation({
     mutationFn: async (ids: number[]) => {
-      const results = await Promise.allSettled(ids.map((id) => api.tutor.deleteMaterial(id)));
+      const results = await Promise.allSettled(
+        ids.map((id) => api.tutor.deleteMaterial(id)),
+      );
       const failed = results.filter((r) => r.status === "rejected").length;
       return {
         deleted: ids.length - failed,
@@ -996,18 +1140,28 @@ function useLibraryPageController() {
       queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
       setSelectedForTutor((prev) => prev.filter((id) => !ids.includes(id)));
       if (failed > 0) {
-        toast.warning(`${deleted}/${total} materials deleted; ${failed} failed. Some files may still remain.`);
+        toast.warning(
+          `${deleted}/${total} materials deleted; ${failed} failed. Some files may still remain.`,
+        );
       } else {
         toast.success(`Deleted ${deleted} materials`);
       }
     },
     onError: (err) => {
-      toast.error(`Clear failed: ${err instanceof Error ? err.message : "Unknown"}`);
+      toast.error(
+        `Clear failed: ${err instanceof Error ? err.message : "Unknown"}`,
+      );
     },
   });
 
   const courseLinkMutation = useMutation({
-    mutationFn: async ({ ids, courseId }: { ids: number[]; courseId: number }) => {
+    mutationFn: async ({
+      ids,
+      courseId,
+    }: {
+      ids: number[];
+      courseId: number;
+    }) => {
       let failed = 0;
       for (const id of ids) {
         try {
@@ -1025,18 +1179,23 @@ function useLibraryPageController() {
     },
     onSuccess: ({ linked, failed, total, courseId }) => {
       const targetCourse = courses.find((course) => course.id === courseId);
-      const courseLabel = targetCourse?.code || targetCourse?.name || `Course ${courseId}`;
+      const courseLabel =
+        targetCourse?.code || targetCourse?.name || `Course ${courseId}`;
       queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
       queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
       setCourseLinkTarget("");
       if (failed > 0) {
-        toast.warning(`${linked}/${total} materials linked to ${courseLabel}; ${failed} failed.`);
+        toast.warning(
+          `${linked}/${total} materials linked to ${courseLabel}; ${failed} failed.`,
+        );
       } else {
         toast.success(`Linked ${linked} materials to ${courseLabel}`);
       }
     },
     onError: (err) => {
-      toast.error(`Course link failed: ${err instanceof Error ? err.message : "Unknown"}`);
+      toast.error(
+        `Course link failed: ${err instanceof Error ? err.message : "Unknown"}`,
+      );
     },
   });
 
@@ -1176,13 +1335,21 @@ function useLibraryPageController() {
         course_id: courseId,
       });
       setSyncJobId(started.job_id);
-      setSyncStatus((prev) => (prev ? { ...prev, job_id: started.job_id, folder: started.folder } : prev));
-      toast.success(`Sync started for ${selectedFiles.length} file${selectedFiles.length === 1 ? "" : "s"}`);
+      setSyncStatus((prev) =>
+        prev
+          ? { ...prev, job_id: started.job_id, folder: started.folder }
+          : prev,
+      );
+      toast.success(
+        `Sync started for ${selectedFiles.length} file${selectedFiles.length === 1 ? "" : "s"}`,
+      );
     } catch (err) {
       setSyncing(false);
       setSyncJobId(null);
       setSyncStatus(null);
-      toast.error(`Sync failed: ${err instanceof Error ? err.message : "Unknown"}`);
+      toast.error(
+        `Sync failed: ${err instanceof Error ? err.message : "Unknown"}`,
+      );
     }
   };
 
@@ -1192,16 +1359,26 @@ function useLibraryPageController() {
     try {
       const result = await api.tutor.reextractMaterial(materialId);
       queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
-      queryClient.invalidateQueries({ queryKey: ["material-content", materialId] });
+      queryClient.invalidateQueries({
+        queryKey: ["material-content", materialId],
+      });
       if (result.has_docling_assets) {
-        toast.success(`Re-extracted with Docling (${result.docling_asset_count} assets)`);
+        toast.success(
+          `Re-extracted with Docling (${result.docling_asset_count} assets)`,
+        );
       } else {
-        toast.warning("Re-extracted with Docling, but no image assets were produced.");
+        toast.warning(
+          "Re-extracted with Docling, but no image assets were produced.",
+        );
       }
     } catch (err) {
-      toast.error(`Re-extract failed: ${err instanceof Error ? err.message : "Unknown"}`);
+      toast.error(
+        `Re-extract failed: ${err instanceof Error ? err.message : "Unknown"}`,
+      );
     } finally {
-      setReextractingMaterialIds((prev) => prev.filter((id) => id !== materialId));
+      setReextractingMaterialIds((prev) =>
+        prev.filter((id) => id !== materialId),
+      );
     }
   };
 
@@ -1214,54 +1391,65 @@ function useLibraryPageController() {
   }, [syncStatus]);
 
   return (
-      <PageScaffold
-        eyebrow="Library Support System"
-        title="Materials Library"
-        subtitle="Brain-owned study materials, Tutor scope, and clean handoff into live study all run through one intake surface."
-        className="flex h-full min-h-[72vh] flex-col"
-        contentClassName="flex-1 min-h-0"
-        stats={[
-          {
-            label: "Embeddings",
-            value: `${(embedStatus?.provider || "unknown").toUpperCase()} · ${embedStatus?.model || "unknown"}`,
-            tone: "info",
-          },
-          { label: "Materials", value: `${materials.length} files` },
-          { label: "Folders", value: `${folderItems.length} folders` },
-          {
-            label: "Re-embed",
-            value: (embedStatus?.stale ?? 0) > 0 ? `${embedStatus?.stale} pending` : "None",
-            tone: (embedStatus?.stale ?? 0) > 0 ? "warn" : "success",
-          },
-        ]}
-      >
-        <div className="brain-workspace brain-workspace--ready app-workspace-shell relative flex-1 min-h-[70vh] w-full overflow-hidden">
-          <div className="flex flex-col lg:flex-row h-full min-h-0">
-            <aside className="brain-workspace__sidebar-wrap w-full lg:w-80 shrink-0 border-b lg:border-b-0 lg:border-r border-primary/30 bg-black/40 flex flex-col min-h-0 max-h-[40vh] lg:max-h-none">
+    <PageScaffold
+      eyebrow="Library Support System"
+      title="Materials Library"
+      subtitle="Brain-owned study materials, Tutor scope, and clean handoff into live study all run through one intake surface."
+      className="flex h-full min-h-[72vh] flex-col"
+      contentClassName="flex-1 min-h-0"
+      stats={[
+        {
+          label: "Embeddings",
+          value: `${(embedStatus?.provider || "unknown").toUpperCase()} · ${embedStatus?.model || "unknown"}`,
+          tone: "info",
+        },
+        { label: "Materials", value: `${materials.length} files` },
+        { label: "Folders", value: `${folderItems.length} folders` },
+        {
+          label: "Re-embed",
+          value:
+            (embedStatus?.stale ?? 0) > 0
+              ? `${embedStatus?.stale} pending`
+              : "None",
+          tone: (embedStatus?.stale ?? 0) > 0 ? "warn" : "success",
+        },
+      ]}
+    >
+      <div className="brain-workspace brain-workspace--ready app-workspace-shell relative flex-1 min-h-[70vh] w-full overflow-hidden">
+        <div className="flex flex-col lg:flex-row h-full min-h-0">
+          <aside className="brain-workspace__sidebar-wrap w-full lg:w-80 shrink-0 min-h-0 max-h-[40vh] lg:max-h-none lg:pr-3">
+            <HudPanel
+              variant="b"
+              className="flex h-full min-h-0 flex-col overflow-hidden bg-transparent backdrop-blur-xl"
+            >
               <div className={`${PANEL_PADDING} border-b border-primary/20`}>
                 <div className="flex items-center gap-0 mb-2">
-                  <button
+                  <HudButton
                     type="button"
-                    className={`flex-1 font-arcade text-xs py-1.5 border-2 transition-colors ${
+                    variant={sidebarMode === "folders" ? "primary" : "outline"}
+                    className={cn(
+                      "flex-1 min-h-[38px] px-3 text-xs",
                       sidebarMode === "folders"
-                        ? "border-primary bg-primary/20 text-primary"
-                        : "border-primary/30 text-muted-foreground hover:text-foreground hover:border-primary/50"
-                    }`}
+                        ? "bg-primary/20 text-primary"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
                     onClick={() => handleSidebarModeChange("folders")}
                   >
                     FOLDERS
-                  </button>
-                  <button
+                  </HudButton>
+                  <HudButton
                     type="button"
-                    className={`flex-1 font-arcade text-xs py-1.5 border-2 border-l-0 transition-colors ${
+                    variant={sidebarMode === "courses" ? "primary" : "outline"}
+                    className={cn(
+                      "flex-1 min-h-[38px] px-3 text-xs",
                       sidebarMode === "courses"
-                        ? "border-primary bg-primary/20 text-primary"
-                        : "border-primary/30 text-muted-foreground hover:text-foreground hover:border-primary/50"
-                    }`}
+                        ? "bg-primary/20 text-primary"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
                     onClick={() => handleSidebarModeChange("courses")}
                   >
                     COURSES
-                  </button>
+                  </HudButton>
                 </div>
                 <div className={TEXT_MUTED}>
                   {sidebarMode === "folders"
@@ -1297,20 +1485,24 @@ function useLibraryPageController() {
                                 ? "border-primary/60 bg-primary/20 text-primary"
                                 : "border-primary/15 text-muted-foreground hover:text-foreground hover:border-primary/40"
                             }`}
-                            style={{ paddingLeft: `${0.45 + folder.depth * 0.85}rem` }}
+                            style={{
+                              paddingLeft: `${0.45 + folder.depth * 0.85}rem`,
+                            }}
                             title={folder.path}
                             role="button"
                             tabIndex={0}
                             onClick={() => {
                               selectFolderPath(folder.path);
-                              if (hasChildren && !isExpanded) toggleFolderExpanded(folder.path);
+                              if (hasChildren && !isExpanded)
+                                toggleFolderExpanded(folder.path);
                             }}
                             onKeyDown={(e) => {
                               if (e.target !== e.currentTarget) return;
                               if (e.key === "Enter" || e.key === " ") {
                                 e.preventDefault();
                                 selectFolderPath(folder.path);
-                                if (hasChildren && !isExpanded) toggleFolderExpanded(folder.path);
+                                if (hasChildren && !isExpanded)
+                                  toggleFolderExpanded(folder.path);
                               }
                             }}
                           >
@@ -1322,7 +1514,11 @@ function useLibraryPageController() {
                                   e.stopPropagation();
                                   toggleFolderExpanded(folder.path);
                                 }}
-                                aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
+                                aria-label={
+                                  isExpanded
+                                    ? "Collapse folder"
+                                    : "Expand folder"
+                                }
                               >
                                 <ChevronRight
                                   className={`${ICON_SM} transition-transform ${isExpanded ? "rotate-90" : "rotate-0"}`}
@@ -1332,16 +1528,26 @@ function useLibraryPageController() {
                               <span className="w-4" />
                             )}
                             <div className="flex items-center gap-2 flex-1 min-w-0">
-                              {isSelected ? <FolderOpen className={ICON_SM} /> : <Folder className={ICON_SM} />}
-                              <span className="truncate flex-1">{folder.name}</span>
+                              {isSelected ? (
+                                <FolderOpen className={ICON_SM} />
+                              ) : (
+                                <Folder className={ICON_SM} />
+                              )}
+                              <span className="truncate flex-1">
+                                {folder.name}
+                              </span>
                             </div>
-                            <span className="text-ui-xs">{folder.filesCount}</span>
+                            <span className="text-ui-xs">
+                              {folder.filesCount}
+                            </span>
                           </div>
                         </div>
                       );
                     })}
                     {!folderItems.length && materials.length === 0 ? (
-                      <div className={`${TEXT_MUTED} px-2 py-3 text-xs`}>Sync a folder or upload files to populate this rail.</div>
+                      <div className={`${TEXT_MUTED} px-2 py-3 text-xs`}>
+                        Sync a folder or upload files to populate this rail.
+                      </div>
                     ) : null}
                   </>
                 ) : (
@@ -1375,8 +1581,12 @@ function useLibraryPageController() {
                             type="button"
                           >
                             <GraduationCap className={ICON_SM} />
-                            <span className="truncate flex-1">{course.name || course.code}</span>
-                            <span className="text-ui-xs">{course.doc_count}</span>
+                            <span className="truncate flex-1">
+                              {course.name || course.code}
+                            </span>
+                            <span className="text-ui-xs">
+                              {course.doc_count}
+                            </span>
                           </button>
                         );
                       })}
@@ -1396,18 +1606,27 @@ function useLibraryPageController() {
                   </>
                 )}
               </div>
-            </aside>
+            </HudPanel>
+          </aside>
 
-            <section className="brain-workspace__main-wrap brain-workspace__canvas flex-1 min-h-0 flex flex-col overflow-hidden">
-              <div className="border-b border-primary/20 bg-black/30">
-                <div className={`${PANEL_PADDING} grid gap-3 lg:grid-cols-[minmax(340px,1fr)_minmax(380px,1.2fr)]`}>
-                  <div className="border border-primary/25 bg-black/30 p-3 space-y-2">
+          <section className="brain-workspace__main-wrap brain-workspace__canvas flex-1 min-h-0 flex flex-col overflow-hidden">
+            <HudPanel className="flex h-full min-h-0 flex-col overflow-hidden bg-transparent backdrop-blur-xl">
+              <div className="border-b border-primary/20 bg-transparent">
+                <div
+                  className={`${PANEL_PADDING} grid gap-3 lg:grid-cols-[minmax(340px,1fr)_minmax(380px,1.2fr)]`}
+                >
+                  <HudPanel
+                    variant="b"
+                    className={`${LIBRARY_PANEL_SURFACE} space-y-2 p-3`}
+                  >
                     <div className="flex items-center gap-2">
                       <Upload className={ICON_SM} />
                       <div className={TEXT_PANEL_TITLE}>UPLOAD MATERIALS</div>
                     </div>
                     <div className={`${TEXT_MUTED} text-xs`}>
-                      Use this for one-off files from Downloads, email, or Blackboard. Upload puts the file into the Tutor library immediately.
+                      Use this for one-off files from Downloads, email, or
+                      Blackboard. Upload puts the file into the Tutor library
+                      immediately.
                     </div>
                     <div className="flex items-center gap-2">
                       <label
@@ -1421,53 +1640,76 @@ function useLibraryPageController() {
                         aria-label="Upload course"
                         value={uploadCourseTarget}
                         onChange={(e) => setUploadCourseTarget(e.target.value)}
-                        className="h-8 rounded-none bg-black border border-primary/30 text-xs font-terminal px-2 text-white focus:outline-none focus:border-primary flex-1"
+                        className={cn(LIBRARY_SELECT, "flex-1")}
                       >
                         <option value="">No class</option>
                         {courses.map((course) => (
                           <option key={course.id} value={String(course.id)}>
-                            {course.name}{course.code ? ` (${course.code})` : ""}
+                            {course.name}
+                            {course.code ? ` (${course.code})` : ""}
                           </option>
                         ))}
                       </select>
                     </div>
                     <MaterialUploader
-                      courseId={uploadCourseTarget ? Number(uploadCourseTarget) : undefined}
+                      courseId={
+                        uploadCourseTarget
+                          ? Number(uploadCourseTarget)
+                          : undefined
+                      }
                     />
-                  </div>
+                  </HudPanel>
 
-                  <div className="border border-primary/25 bg-black/30 p-3 space-y-2">
+                  <HudPanel
+                    variant="b"
+                    className={`${LIBRARY_PANEL_SURFACE} space-y-2 p-3`}
+                  >
                     <div className="flex items-center gap-2">
                       <FolderOpen className={ICON_SM} />
                       <div className={TEXT_PANEL_TITLE}>SYNC STUDY FOLDER</div>
                     </div>
                     <div className={`${TEXT_MUTED} text-xs`}>
-                      Use this for a whole course or week folder. Scan first, choose files, then sync only the files you want in the Tutor library.
+                      Use this for a whole course or week folder. Scan first,
+                      choose files, then sync only the files you want in the
+                      Tutor library.
                     </div>
                     <input
                       value={materialsFolder}
-                      onChange={(e) => handleMaterialsFolderChange(e.target.value)}
+                      onChange={(e) =>
+                        handleMaterialsFolderChange(e.target.value)
+                      }
                       className={INPUT_BASE}
                       placeholder="C:\\Users\\...\\PT School"
                     />
                     <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        onClick={scanSyncFolder}
-                        disabled={syncPreviewLoading || syncing || !materialsFolder.trim()}
+                      <HudButton
                         variant="outline"
-                        className="rounded-none h-8 px-3 font-terminal text-xs"
+                        onClick={scanSyncFolder}
+                        disabled={
+                          syncPreviewLoading ||
+                          syncing ||
+                          !materialsFolder.trim()
+                        }
+                        className={LIBRARY_COMPACT_BUTTON}
                       >
                         {syncPreviewLoading ? (
                           <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
                         ) : (
                           <RefreshCw className={`${ICON_SM} mr-1`} />
                         )}
-                        {syncPreviewLoading ? "SCANNING..." : "SCAN FOLDER TREE"}
-                      </Button>
-                      <Button
+                        {syncPreviewLoading
+                          ? "SCANNING..."
+                          : "SCAN FOLDER TREE"}
+                      </HudButton>
+                      <HudButton
                         onClick={startSync}
-                        disabled={syncing || syncPreviewLoading || !materialsFolder.trim() || selectedSyncCount === 0}
-                        className={`w-fit ${BTN_PRIMARY} !text-white`}
+                        disabled={
+                          syncing ||
+                          syncPreviewLoading ||
+                          !materialsFolder.trim() ||
+                          selectedSyncCount === 0
+                        }
+                        className={LIBRARY_COMPACT_BUTTON}
                       >
                         {syncing ? (
                           <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
@@ -1475,7 +1717,7 @@ function useLibraryPageController() {
                           <RefreshCw className={`${ICON_SM} mr-1`} />
                         )}
                         SYNC SELECTED FILES
-                      </Button>
+                      </HudButton>
                     </div>
                     <div className="flex items-center gap-2">
                       <label
@@ -1489,32 +1731,41 @@ function useLibraryPageController() {
                         aria-label="Sync course"
                         value={syncCourseTarget}
                         onChange={(e) => setSyncCourseTarget(e.target.value)}
-                        className="h-8 rounded-none bg-black border border-primary/30 text-xs font-terminal px-2 text-white focus:outline-none focus:border-primary flex-1"
+                        className={cn(LIBRARY_SELECT, "flex-1")}
                       >
                         <option value="">No class</option>
                         {courses.map((course) => (
                           <option key={course.id} value={String(course.id)}>
-                            {course.name}{course.code ? ` (${course.code})` : ""}
+                            {course.name}
+                            {course.code ? ` (${course.code})` : ""}
                           </option>
                         ))}
                       </select>
                     </div>
                     {syncPreview ? (
-                      <div className="border border-primary/20 bg-black/40 p-2 space-y-2">
+                      <HudPanel
+                        variant="b"
+                        className="space-y-2 bg-black/35 p-2"
+                      >
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className={TEXT_MUTED}>
-                            {syncPreview.counts.files} file{syncPreview.counts.files === 1 ? "" : "s"} found • {selectedSyncCount} selected
+                            {syncPreview.counts.files} file
+                            {syncPreview.counts.files === 1 ? "" : "s"} found •{" "}
+                            {selectedSyncCount} selected
                           </div>
                           <div className="flex items-center gap-1">
-                            <Button
+                            <HudButton
                               variant="outline"
-                              size="sm"
-                              className="rounded-none h-7 px-2 font-terminal text-ui-xs"
+                              className={LIBRARY_INLINE_BUTTON}
                               disabled={!syncPreviewFiles.length}
-                              onClick={() => selectAllSyncFiles(!allSyncFilesSelected)}
+                              onClick={() =>
+                                selectAllSyncFiles(!allSyncFilesSelected)
+                              }
                             >
-                              {allSyncFilesSelected ? "CLEAR ALL" : "SELECT ALL"}
-                            </Button>
+                              {allSyncFilesSelected
+                                ? "CLEAR ALL"
+                                : "SELECT ALL"}
+                            </HudButton>
                           </div>
                         </div>
                         <div className="max-h-48 overflow-auto border border-primary/15 bg-black/30 p-1 space-y-1">
@@ -1526,11 +1777,15 @@ function useLibraryPageController() {
                             onToggleFolder={toggleSyncFolderExpanded}
                           />
                         </div>
-                      </div>
+                      </HudPanel>
                     ) : (
-                      <div className={`${TEXT_MUTED} text-xs border border-primary/20 bg-black/30 p-2`}>
-                        Scan the folder to browse your structure and choose files.
-                      </div>
+                      <HudPanel
+                        variant="b"
+                        className={`${TEXT_MUTED} bg-black/30 p-2 text-xs`}
+                      >
+                        Scan the folder to browse your structure and choose
+                        files.
+                      </HudPanel>
                     )}
                     {syncPreviewError ? (
                       <div className="text-xs text-yellow-300 break-all">
@@ -1543,7 +1798,8 @@ function useLibraryPageController() {
                         <div className="flex items-center justify-between">
                           <span className={TEXT_MUTED}>Status</span>
                           <span className="font-terminal !text-white uppercase">
-                            {syncStatus?.status || (syncing ? "running" : "idle")}
+                            {syncStatus?.status ||
+                              (syncing ? "running" : "idle")}
                           </span>
                         </div>
                         <div className="h-2 w-full bg-primary/15 overflow-hidden">
@@ -1553,214 +1809,334 @@ function useLibraryPageController() {
                           />
                         </div>
                         <div className={TEXT_MUTED}>
-                          Processed {syncStatus?.processed ?? 0} / {syncStatus?.total ?? 0} files
-                          {typeof syncStatus?.errors === "number" ? ` • errors ${syncStatus.errors}` : ""}
+                          Processed {syncStatus?.processed ?? 0} /{" "}
+                          {syncStatus?.total ?? 0} files
+                          {typeof syncStatus?.errors === "number"
+                            ? ` • errors ${syncStatus.errors}`
+                            : ""}
                         </div>
                         <div className={`${TEXT_MUTED} break-all`}>
                           Current:{" "}
                           <span className="!text-white">
-                            {syncStatus?.current_file || (syncing ? "Scanning files..." : "Idle")}
+                            {syncStatus?.current_file ||
+                              (syncing ? "Scanning files..." : "Idle")}
                           </span>
                         </div>
                         {syncStatus?.last_error ? (
-                          <div className="text-red-300 break-all">{syncStatus.last_error}</div>
+                          <div className="text-red-300 break-all">
+                            {syncStatus.last_error}
+                          </div>
                         ) : null}
-                        {(syncStatus?.sync_result?.errors as string[] | undefined)?.length ? (
+                        {(
+                          syncStatus?.sync_result?.errors as
+                            | string[]
+                            | undefined
+                        )?.length ? (
                           <details className="mt-1">
                             <summary className="text-red-400 cursor-pointer text-xs font-terminal">
-                              {(syncStatus!.sync_result!.errors as string[]).length} file error{(syncStatus!.sync_result!.errors as string[]).length > 1 ? "s" : ""} — click to expand
+                              {
+                                (syncStatus!.sync_result!.errors as string[])
+                                  .length
+                              }{" "}
+                              file error
+                              {(syncStatus!.sync_result!.errors as string[])
+                                .length > 1
+                                ? "s"
+                                : ""}{" "}
+                              — click to expand
                             </summary>
                             <ul className="mt-1 text-red-300 text-xs font-terminal list-disc pl-4 max-h-32 overflow-y-auto">
-                              {(syncStatus!.sync_result!.errors as string[]).map((err: string) => (
-                                <li key={err} className="break-all">{err}</li>
+                              {(
+                                syncStatus!.sync_result!.errors as string[]
+                              ).map((err: string) => (
+                                <li key={err} className="break-all">
+                                  {err}
+                                </li>
                               ))}
                             </ul>
-                            {Number((syncStatus?.sync_result as { errors_total?: number } | undefined)?.errors_total || 0) > (syncStatus!.sync_result!.errors as string[]).length ? (
+                            {Number(
+                              (
+                                syncStatus?.sync_result as
+                                  | { errors_total?: number }
+                                  | undefined
+                              )?.errors_total || 0,
+                            ) >
+                            (syncStatus!.sync_result!.errors as string[])
+                              .length ? (
                               <div className="mt-1 text-red-300">
-                                Showing first {(syncStatus!.sync_result!.errors as string[]).length} of {Number((syncStatus!.sync_result as { errors_total?: number }).errors_total)} errors.
+                                Showing first{" "}
+                                {
+                                  (syncStatus!.sync_result!.errors as string[])
+                                    .length
+                                }{" "}
+                                of{" "}
+                                {Number(
+                                  (
+                                    syncStatus!.sync_result as {
+                                      errors_total?: number;
+                                    }
+                                  ).errors_total,
+                                )}{" "}
+                                errors.
                               </div>
                             ) : null}
                           </details>
                         ) : null}
                       </div>
                     )}
-                  </div>
+                  </HudPanel>
                 </div>
               </div>
 
-              <div className={`${PANEL_PADDING} flex-1 min-h-0 flex flex-col gap-3`}>
+              <div
+                className={`${PANEL_PADDING} flex-1 min-h-0 flex flex-col gap-3`}
+              >
                 <div className="grid gap-3 lg:grid-cols-3">
-                  <div className="border border-primary/20 bg-black/20 p-3">
+                  <HudPanel
+                    variant="b"
+                    className={`${LIBRARY_PANEL_INSET} p-3`}
+                  >
                     <div className={TEXT_PANEL_TITLE}>1. INGEST</div>
                     <div className={`${TEXT_MUTED} mt-1 text-xs`}>
-                      Upload for one-off files. Sync for a folder tree you want to browse before import.
+                      Upload for one-off files. Sync for a folder tree you want
+                      to browse before import.
                     </div>
-                  </div>
-                  <div className="border border-primary/20 bg-black/20 p-3">
+                  </HudPanel>
+                  <HudPanel
+                    variant="b"
+                    className={`${LIBRARY_PANEL_INSET} p-3`}
+                  >
                     <div className={TEXT_PANEL_TITLE}>2. ORGANIZE</div>
                     <div className={`${TEXT_MUTED} mt-1 text-xs`}>
-                      Use the course link control on the current view when files need to be assigned or reassigned.
+                      Use the course link control on the current view when files
+                      need to be assigned or reassigned.
                     </div>
-                  </div>
-                  <div className="border border-primary/20 bg-black/20 p-3">
+                  </HudPanel>
+                  <HudPanel
+                    variant="b"
+                    className={`${LIBRARY_PANEL_INSET} p-3`}
+                  >
                     <div className={TEXT_PANEL_TITLE}>3. SEND TO TUTOR</div>
                     <div className={`${TEXT_MUTED} mt-1 text-xs`}>
-                      The Tutor queue persists across views. Replace it with the current view, add this view to it, or clear it before opening Tutor.
+                      The Tutor queue persists across views. Replace it with the
+                      current view, add this view to it, or clear it before
+                      opening Tutor.
                     </div>
-                  </div>
+                  </HudPanel>
                 </div>
 
                 <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                   <div className="space-y-1">
                     <div className={TEXT_PANEL_TITLE}>YOUR MATERIALS</div>
                     <div className={TEXT_MUTED}>
-                      {sidebarMode === "courses" ? "Course" : "Folder"}: <span className="!text-white font-terminal">{selectedFolderLabel}</span> • showing {visibleMaterials.length} file{visibleMaterials.length === 1 ? "" : "s"}
+                      {sidebarMode === "courses" ? "Course" : "Folder"}:{" "}
+                      <span className="!text-white font-terminal">
+                        {selectedFolderLabel}
+                      </span>{" "}
+                      • showing {visibleMaterials.length} file
+                      {visibleMaterials.length === 1 ? "" : "s"}
                     </div>
                     <div className={TEXT_MUTED}>
-                      Tutor queue: {selectedForTutor.length} file{selectedForTutor.length === 1 ? "" : "s"} total • {selectedVisibleMaterialIds.length} in this view
-                      {hiddenTutorSelectionCount > 0 ? ` • ${hiddenTutorSelectionCount} from other views` : ""}
+                      Tutor queue: {selectedForTutor.length} file
+                      {selectedForTutor.length === 1 ? "" : "s"} total •{" "}
+                      {selectedVisibleMaterialIds.length} in this view
+                      {hiddenTutorSelectionCount > 0
+                        ? ` • ${hiddenTutorSelectionCount} from other views`
+                        : ""}
                     </div>
                   </div>
                   <div className="grid gap-2 lg:grid-cols-[auto_auto_auto]">
-                    <div className="border border-primary/20 bg-black/20 p-2 space-y-2">
-                      <div className={`${TEXT_MUTED} text-ui-xs uppercase tracking-wide`}>Course Linking</div>
+                    <HudPanel
+                      variant="b"
+                      className={`${LIBRARY_PANEL_INSET} space-y-2 p-2`}
+                    >
+                      <div
+                        className={`${TEXT_MUTED} text-ui-xs uppercase tracking-wide`}
+                      >
+                        Course Linking
+                      </div>
                       <div className="flex items-center gap-1">
                         <select
                           value={courseLinkTarget}
                           onChange={(e) => setCourseLinkTarget(e.target.value)}
-                          className="h-7 rounded-none bg-black border border-primary/30 text-xs font-terminal px-2 text-white focus:outline-none focus:border-primary"
-                          disabled={courses.length === 0 || courseLinkMutation.isPending}
+                          className={LIBRARY_SELECT}
+                          disabled={
+                            courses.length === 0 || courseLinkMutation.isPending
+                          }
                         >
                           <option value="">Select course</option>
                           {courses.map((course) => (
                             <option key={course.id} value={String(course.id)}>
-                              {course.name}{course.code ? ` (${course.code})` : ""}
+                              {course.name}
+                              {course.code ? ` (${course.code})` : ""}
                             </option>
                           ))}
                         </select>
-                        <Button
+                        <HudButton
                           variant="outline"
-                          size="sm"
-                          className="rounded-none h-7 px-3 font-terminal text-xs"
+                          className={LIBRARY_COMPACT_BUTTON}
                           disabled={
-                            courseLinkMutation.isPending
-                            || !selectedVisibleMaterialIds.length
-                            || !courseLinkTarget
+                            courseLinkMutation.isPending ||
+                            !selectedVisibleMaterialIds.length ||
+                            !courseLinkTarget
                           }
                           onClick={handleLinkSelectedToCourse}
                         >
                           {courseLinkMutation.isPending ? (
-                            <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
+                            <Loader2
+                              className={`${ICON_SM} animate-spin mr-1`}
+                            />
                           ) : (
                             <Link2 className={`${ICON_SM} mr-1`} />
                           )}
                           LINK VIEW
-                        </Button>
+                        </HudButton>
                       </div>
-                    </div>
+                    </HudPanel>
 
-                    <div className="border border-primary/20 bg-black/20 p-2 space-y-2">
-                      <div className={`${TEXT_MUTED} text-ui-xs uppercase tracking-wide`}>Tutor Queue</div>
+                    <HudPanel
+                      variant="b"
+                      className={`${LIBRARY_PANEL_INSET} space-y-2 p-2`}
+                    >
+                      <div
+                        className={`${TEXT_MUTED} text-ui-xs uppercase tracking-wide`}
+                      >
+                        Tutor Queue
+                      </div>
                       <div className="flex items-center flex-wrap gap-2">
-                        <Button
+                        <HudButton
                           variant="outline"
-                          size="sm"
-                          className="rounded-none h-7 px-3 font-terminal text-xs"
+                          className={LIBRARY_COMPACT_BUTTON}
                           disabled={!selectableVisibleMaterialIds.length}
                           onClick={replaceTutorQueueWithVisible}
                         >
                           REPLACE WITH VIEW
-                        </Button>
-                        <Button
+                        </HudButton>
+                        <HudButton
                           variant="outline"
-                          size="sm"
-                          className="rounded-none h-7 px-3 font-terminal text-xs"
+                          className={LIBRARY_COMPACT_BUTTON}
                           disabled={!selectableVisibleMaterialIds.length}
                           onClick={addVisibleToTutorQueue}
                         >
                           ADD VIEW
-                        </Button>
-                        <Button
+                        </HudButton>
+                        <HudButton
                           variant="outline"
-                          size="sm"
-                          className="rounded-none h-7 px-3 font-terminal text-xs"
+                          className={LIBRARY_COMPACT_BUTTON}
                           disabled={!selectedForTutor.length}
                           onClick={clearTutorQueue}
                         >
                           CLEAR QUEUE
-                        </Button>
-                        <Button
+                        </HudButton>
+                        <HudButton
                           variant="outline"
-                          size="sm"
-                          className="rounded-none h-7 px-3 font-terminal text-xs"
+                          className={LIBRARY_COMPACT_BUTTON}
                           disabled={!selectedForTutor.length}
                           onClick={handleOpenTutor}
                         >
                           OPEN TUTOR ({selectedForTutor.length})
-                        </Button>
+                        </HudButton>
                       </div>
-                    </div>
+                    </HudPanel>
 
-                    <div className="border border-red-500/20 bg-red-500/5 p-2 space-y-2">
-                      <div className="text-ui-xs uppercase tracking-wide text-red-200">Library Cleanup</div>
+                    <HudPanel
+                      variant="b"
+                      className="space-y-2 border-destructive/30 bg-destructive/5 p-2"
+                    >
+                      <div className="text-ui-xs uppercase tracking-wide text-red-200">
+                        Library Cleanup
+                      </div>
                       <div className="flex items-center flex-wrap gap-2">
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          className="rounded-none h-7 px-3 font-terminal text-xs"
-                          disabled={selectedVisibleMaterialIds.length === 0 || clearMaterialsMutation.isPending}
+                        <HudButton
+                          variant="outline"
+                          className="w-auto min-h-[32px] rounded-none border-destructive/50 px-3 text-xs text-destructive hover:bg-destructive/10"
+                          disabled={
+                            selectedVisibleMaterialIds.length === 0 ||
+                            clearMaterialsMutation.isPending
+                          }
                           onClick={() => {
                             if (!selectedVisibleMaterialIds.length) return;
-                            if (!window.confirm(`Delete ${selectedVisibleMaterialIds.length} selected materials from the current folder view? This will not delete your local PT School files.`)) return;
-                            clearMaterialsMutation.mutate([...selectedVisibleMaterialIds]);
+                            if (
+                              !window.confirm(
+                                `Delete ${selectedVisibleMaterialIds.length} selected materials from the current folder view? This will not delete your local PT School files.`,
+                              )
+                            )
+                              return;
+                            clearMaterialsMutation.mutate([
+                              ...selectedVisibleMaterialIds,
+                            ]);
                           }}
                         >
                           {clearMaterialsMutation.isPending ? (
-                            <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
+                            <Loader2
+                              className={`${ICON_SM} animate-spin mr-1`}
+                            />
                           ) : (
                             <Trash2 className={`${ICON_SM} mr-1`} />
                           )}
                           DELETE VIEW SELECTION
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          className="rounded-none h-7 px-3 font-terminal text-xs"
-                          disabled={materials.length === 0 || clearMaterialsMutation.isPending}
+                        </HudButton>
+                        <HudButton
+                          variant="outline"
+                          className="w-auto min-h-[32px] rounded-none border-destructive/50 px-3 text-xs text-destructive hover:bg-destructive/10"
+                          disabled={
+                            materials.length === 0 ||
+                            clearMaterialsMutation.isPending
+                          }
                           onClick={() => {
                             const safeCount = materials.length;
                             if (!safeCount) return;
-                            if (!window.confirm(`Delete all ${safeCount} materials from tutor library? This will not delete your local PT School files.`)) return;
-                            clearMaterialsMutation.mutate(materials.map((m) => m.id));
+                            if (
+                              !window.confirm(
+                                `Delete all ${safeCount} materials from tutor library? This will not delete your local PT School files.`,
+                              )
+                            )
+                              return;
+                            clearMaterialsMutation.mutate(
+                              materials.map((m) => m.id),
+                            );
                           }}
                         >
                           {clearMaterialsMutation.isPending ? (
-                            <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
+                            <Loader2
+                              className={`${ICON_SM} animate-spin mr-1`}
+                            />
                           ) : (
                             <Trash2 className={`${ICON_SM} mr-1`} />
                           )}
                           DELETE ALL LIBRARY FILES
-                        </Button>
+                        </HudButton>
                       </div>
-                    </div>
+                    </HudPanel>
                   </div>
                 </div>
 
                 {hiddenTutorSelectionCount > 0 ? (
                   <div className="border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-xs font-terminal text-yellow-100">
-                    The Tutor queue still includes {hiddenTutorSelectionCount} file{hiddenTutorSelectionCount === 1 ? "" : "s"} from other views. Use <span className="text-white">REPLACE WITH VIEW</span> if you want Tutor to use only what is visible right now.
+                    The Tutor queue still includes {hiddenTutorSelectionCount}{" "}
+                    file{hiddenTutorSelectionCount === 1 ? "" : "s"} from other
+                    views. Use{" "}
+                    <span className="text-white">REPLACE WITH VIEW</span> if you
+                    want Tutor to use only what is visible right now.
                   </div>
                 ) : null}
 
-                <div className="flex-1 min-h-0 border border-primary/25 bg-black/30 overflow-hidden">
+                <HudPanel
+                  variant="b"
+                  className="flex-1 min-h-0 overflow-hidden bg-transparent backdrop-blur-lg"
+                >
                   {isLoading ? (
                     <div className="flex items-center justify-center py-8">
-                      <Loader2 className={`${ICON_MD} animate-spin text-muted-foreground`} />
+                      <Loader2
+                        className={`${ICON_MD} animate-spin text-muted-foreground`}
+                      />
                     </div>
                   ) : materials.length === 0 ? (
                     <div className="text-center py-10">
                       <FileText className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
-                      <div className={TEXT_MUTED}>No materials uploaded yet</div>
+                      <div className={TEXT_MUTED}>
+                        No materials uploaded yet
+                      </div>
                       <div className={`${TEXT_MUTED} opacity-60`}>
                         Upload PDF, DOCX, PPTX, MD, or TXT files above
                       </div>
@@ -1768,25 +2144,34 @@ function useLibraryPageController() {
                   ) : visibleMaterials.length === 0 ? (
                     <div className="text-center py-10">
                       <FileText className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
-                      <div className={TEXT_MUTED}>No materials found in this folder view.</div>
+                      <div className={TEXT_MUTED}>
+                        No materials found in this folder view.
+                      </div>
                     </div>
                   ) : (
                     <div className="h-full min-h-0 overflow-auto">
                       <div className="min-w-[900px]">
                         <div
                           className="grid gap-2 px-2 py-1 border-b border-primary/20 bg-black/60 sticky top-0 z-10"
-                          style={{ gridTemplateColumns: "28px minmax(210px,1.6fr) minmax(140px,1fr) 64px 72px 84px 116px" }}
+                          style={{
+                            gridTemplateColumns:
+                              "28px minmax(210px,1.6fr) minmax(140px,1fr) 64px 72px 84px 116px",
+                          }}
                         >
                           <div
                             className="flex items-center justify-center"
                             title={
-                              allTutorMaterialsSelected ? "Unselect all visible tutor materials" : "Select all visible tutor materials"
+                              allTutorMaterialsSelected
+                                ? "Unselect all visible tutor materials"
+                                : "Select all visible tutor materials"
                             }
                           >
                             <Checkbox
                               checked={allTutorMaterialsSelected}
                               onCheckedChange={toggleAllMaterialsForTutor}
-                              disabled={selectableVisibleMaterialIds.length === 0}
+                              disabled={
+                                selectableVisibleMaterialIds.length === 0
+                              }
                               aria-label={
                                 allTutorMaterialsSelected
                                   ? "Unselect all visible tutor materials"
@@ -1799,12 +2184,16 @@ function useLibraryPageController() {
                           <div className={TEXT_MUTED}>Type</div>
                           <div className={TEXT_MUTED}>Size</div>
                           <div className={TEXT_MUTED}>Status</div>
-                          <div className={`${TEXT_MUTED} text-right`}>Actions</div>
+                          <div className={`${TEXT_MUTED} text-right`}>
+                            Actions
+                          </div>
                         </div>
-                        {visibleMaterials.map((mat) => (
+                        {visibleMaterials.map((mat) =>
                           renderMaterialRow(
                             mat,
-                            Boolean(mat.checksum && dupeChecksums.has(mat.checksum)),
+                            Boolean(
+                              mat.checksum && dupeChecksums.has(mat.checksum),
+                            ),
                             selectedForTutor,
                             editingId,
                             editTitle,
@@ -1820,18 +2209,24 @@ function useLibraryPageController() {
                             setViewingMaterialId,
                             reextractMaterial,
                             reextractingMaterialIds.includes(mat.id),
-                          )
-                        ))}
+                          ),
+                        )}
                       </div>
                     </div>
                   )}
-                </div>
+                </HudPanel>
               </div>
-            </section>
-          </div>
+            </HudPanel>
+          </section>
         </div>
+      </div>
 
-      <Dialog open={viewingMaterialId !== null} onOpenChange={(open) => { if (!open) setViewingMaterialId(null); }}>
+      <Dialog
+        open={viewingMaterialId !== null}
+        onOpenChange={(open) => {
+          if (!open) setViewingMaterialId(null);
+        }}
+      >
         <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col gap-0">
           <DialogHeader className="shrink-0 pb-3">
             <DialogTitle className="flex items-center gap-2">
@@ -1845,29 +2240,42 @@ function useLibraryPageController() {
                 </Badge>
               )}
               {materialContent?.char_count !== undefined && (
-                <span>{materialContent.char_count.toLocaleString()} characters</span>
+                <span>
+                  {materialContent.char_count.toLocaleString()} characters
+                </span>
               )}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 min-h-0 overflow-y-auto border border-primary/20 bg-black/40 p-5">
+          <HudPanel
+            variant="b"
+            className="flex-1 min-h-0 overflow-y-auto bg-black/40 p-5"
+          >
             {isContentLoading ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className={`${ICON_MD} animate-spin text-muted-foreground`} />
+                <Loader2
+                  className={`${ICON_MD} animate-spin text-muted-foreground`}
+                />
               </div>
             ) : materialContent?.extraction_lossy ? (
               <div className="space-y-4">
                 <div className="flex items-start gap-2 border border-yellow-500/40 bg-yellow-500/10 p-3">
                   <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-arcade text-sm text-yellow-400">EXTRACTION INCOMPLETE</div>
+                    <div className="font-arcade text-sm text-yellow-400">
+                      EXTRACTION INCOMPLETE
+                    </div>
                     <div className={`${TEXT_MUTED} text-xs mt-1`}>
-                      {Math.round(materialContent.replacement_ratio * 100)}% of this PDF could not be decoded — it may use scanned images or an embedded font.
-                      The readable portions are shown below. Consider re-uploading with an OCR-processed version.
+                      {Math.round(materialContent.replacement_ratio * 100)}% of
+                      this PDF could not be decoded — it may use scanned images
+                      or an embedded font. The readable portions are shown
+                      below. Consider re-uploading with an OCR-processed
+                      version.
                     </div>
                   </div>
                 </div>
                 {materialContent.content ? (
-                  <div className="prose prose-invert prose-sm max-w-none font-terminal
+                  <div
+                    className="prose prose-invert prose-sm max-w-none font-terminal
                     prose-headings:font-arcade prose-headings:text-primary prose-headings:border-b prose-headings:border-primary/20 prose-headings:pb-1
                     prose-h1:text-lg prose-h2:text-base prose-h3:text-sm
                     prose-p:text-foreground/90 prose-p:leading-relaxed
@@ -1882,7 +2290,10 @@ function useLibraryPageController() {
                       remarkPlugins={[remarkGfm]}
                       components={{
                         img: ({ src, alt }: { src?: string; alt?: string }) => {
-                          const resolvedSrc = resolveMaterialAssetUrl(src, materialContent.id);
+                          const resolvedSrc = resolveMaterialAssetUrl(
+                            src,
+                            materialContent.id,
+                          );
                           if (!resolvedSrc) return null;
                           return (
                             <img
@@ -1899,11 +2310,14 @@ function useLibraryPageController() {
                     </ReactMarkdown>
                   </div>
                 ) : (
-                  <div className={`${TEXT_MUTED} text-center py-4`}>No readable text could be recovered.</div>
+                  <div className={`${TEXT_MUTED} text-center py-4`}>
+                    No readable text could be recovered.
+                  </div>
                 )}
               </div>
             ) : materialContent?.content ? (
-              <div className="prose prose-invert prose-sm max-w-none font-terminal
+              <div
+                className="prose prose-invert prose-sm max-w-none font-terminal
                 prose-headings:font-arcade prose-headings:text-primary prose-headings:border-b prose-headings:border-primary/20 prose-headings:pb-1
                 prose-h1:text-lg prose-h2:text-base prose-h3:text-sm
                 prose-p:text-foreground/90 prose-p:leading-relaxed
@@ -1918,7 +2332,10 @@ function useLibraryPageController() {
                   remarkPlugins={[remarkGfm]}
                   components={{
                     img: ({ src, alt }: { src?: string; alt?: string }) => {
-                      const resolvedSrc = resolveMaterialAssetUrl(src, materialContent.id);
+                      const resolvedSrc = resolveMaterialAssetUrl(
+                        src,
+                        materialContent.id,
+                      );
                       if (!resolvedSrc) return null;
                       return (
                         <img
@@ -1939,10 +2356,10 @@ function useLibraryPageController() {
                 No extracted content available for this material.
               </div>
             )}
-          </div>
+          </HudPanel>
         </DialogContent>
       </Dialog>
-      </PageScaffold>
+    </PageScaffold>
   );
 }
 

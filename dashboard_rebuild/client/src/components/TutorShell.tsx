@@ -1,11 +1,11 @@
 import { TutorErrorBoundary } from "@/components/TutorErrorBoundary";
 import { TutorEmptyState } from "@/components/TutorEmptyState";
-import { TutorWorkflowLaunchHub } from "@/components/TutorWorkflowLaunchHub";
 import { TutorWorkflowPrimingPanel } from "@/components/TutorWorkflowPrimingPanel";
 import { TutorWorkflowPolishStudio } from "@/components/TutorWorkflowPolishStudio";
 import { TutorWorkflowFinalSync } from "@/components/TutorWorkflowFinalSync";
 import { TutorChat } from "@/components/TutorChat";
 import { TutorArtifacts } from "@/components/TutorArtifacts";
+import { TutorWorkflowLaunchHub } from "@/components/TutorWorkflowLaunchHub";
 import { TutorStudioHome } from "@/components/TutorStudioHome";
 import { TutorStudioMode } from "@/components/TutorStudioMode";
 import type { TutorStudioEntryRequest } from "@/components/TutorStudioMode";
@@ -102,16 +102,16 @@ export interface TutorShellProps {
 }
 
 const TUTOR_GLASS_PANEL =
-  "border border-[rgba(255,108,132,0.18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(0,0,0,0.1)_18%,rgba(0,0,0,0.24)_100%),linear-gradient(135deg,rgba(255,42,76,0.08),rgba(18,7,11,0.26)_52%,rgba(0,0,0,0.18)_100%)] backdrop-blur-sm";
+  "border border-[rgba(255,108,132,0.18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.06)_18%,rgba(0,0,0,0.16)_100%),linear-gradient(135deg,rgba(255,42,76,0.06),rgba(18,7,11,0.18)_52%,rgba(0,0,0,0.1)_100%)] backdrop-blur-sm";
 
 const TUTOR_GLASS_PANEL_SOFT =
-  "border border-[rgba(255,108,132,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.08)_18%,rgba(0,0,0,0.18)_100%),linear-gradient(135deg,rgba(255,42,76,0.06),rgba(18,7,11,0.18)_52%,rgba(0,0,0,0.12)_100%)] backdrop-blur-sm";
+  "border border-[rgba(255,108,132,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.024),rgba(0,0,0,0.05)_18%,rgba(0,0,0,0.12)_100%),linear-gradient(135deg,rgba(255,42,76,0.05),rgba(18,7,11,0.14)_52%,rgba(0,0,0,0.08)_100%)] backdrop-blur-sm";
 
 const TUTOR_FIELD_SURFACE =
-  "rounded-none border-[rgba(255,108,132,0.2)] bg-[linear-gradient(180deg,rgba(255,255,255,0.024),rgba(0,0,0,0.12)_30%,rgba(0,0,0,0.22)_100%)]";
+  "rounded-none border-[rgba(255,108,132,0.2)] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.06)_30%,rgba(0,0,0,0.14)_100%)]";
 
 const TUTOR_SHELL_BACKDROP =
-  "bg-[linear-gradient(180deg,rgba(12,3,6,0.14),rgba(0,0,0,0.08)_32%,rgba(0,0,0,0.16)_100%)] backdrop-blur-[2px]";
+  "bg-[linear-gradient(180deg,rgba(12,3,6,0.06),rgba(0,0,0,0.03)_32%,rgba(0,0,0,0.08)_100%)] backdrop-blur-[2px]";
 
 export function TutorShell({
   shellMode,
@@ -444,40 +444,7 @@ export function TutorShell({
           role="tabpanel"
           aria-labelledby={`tutor-tab-${shellMode}`}
         >
-          {shellMode === "launch" ? (
-            <div
-              key="launch-panel"
-              className="flex-1 min-h-0 overflow-y-auto w-full p-4 animate-fade-slide-in"
-            >
-              <TutorErrorBoundary fallbackLabel="Launch">
-                <TutorWorkflowLaunchHub
-                  workflows={workflow.filteredWorkflows}
-                  totalCount={workflow.workflows.length}
-                  courses={hub.tutorContentSources?.courses || []}
-                  filters={workflow.workflowFilters}
-                  onFiltersChange={workflow.setWorkflowFilters}
-                  onStartNew={() => {
-                    void workflow.createWorkflowAndOpenPriming();
-                  }}
-                  onResumeCandidate={(candidate) => {
-                    void onResumeHubCandidate(candidate);
-                  }}
-                  onOpenWorkflow={(wf) => {
-                    void workflow.openWorkflowRecord(wf);
-                  }}
-                  onDeleteWorkflow={(wf) => {
-                    void workflow.deleteWorkflowRecord(wf);
-                  }}
-                  resumeCandidate={hub.tutorHub?.resume_candidate ?? null}
-                  tutorHub={hub.tutorHub}
-                  tutorHubLoading={hub.tutorHubLoading}
-                  activeWorkflowId={workflow.activeWorkflowId}
-                  isCreating={workflow.creatingWorkflow}
-                  deletingWorkflowId={workflow.deletingWorkflowId}
-                />
-              </TutorErrorBoundary>
-            </div>
-          ) : shellMode === "studio" ? (
+          {shellMode === "studio" ? (
             <div
               key={`studio-${workflow.studioView}`}
               className="flex-1 min-h-0 flex flex-col animate-fade-slide-in"
@@ -569,6 +536,27 @@ export function TutorShell({
                             }
                           : null
                       }
+                      launchHub={
+                        <TutorWorkflowLaunchHub
+                          workflows={workflow.filteredWorkflows}
+                          totalCount={workflow.workflowCount}
+                          courses={hub.tutorContentSources?.courses || []}
+                          filters={workflow.workflowFilters}
+                          onFiltersChange={workflow.setWorkflowFilters}
+                          onStartNew={() => {
+                            void workflow.createWorkflowAndOpenPriming();
+                          }}
+                          onResumeCandidate={onResumeHubCandidate}
+                          onOpenWorkflow={workflow.openWorkflowRecord}
+                          onDeleteWorkflow={workflow.deleteWorkflowRecord}
+                          resumeCandidate={hub.tutorHub?.resume_candidate ?? null}
+                          tutorHub={hub.tutorHub}
+                          tutorHubLoading={hub.tutorHubLoading}
+                          activeWorkflowId={workflow.activeWorkflowId}
+                          isCreating={workflow.creatingWorkflow}
+                          deletingWorkflowId={workflow.deletingWorkflowId}
+                        />
+                      }
                       courseName={
                         hub.courseLabel ||
                         workflow.activeWorkflowDetail?.workflow?.course_name ||
@@ -588,8 +576,12 @@ export function TutorShell({
                       hasTutorWork={hasTutorWork}
                       hasFinalSyncAccess={hasFinalSyncAccess}
                       hasActiveSession={Boolean(activeSessionId)}
+                      resumeCandidate={hub.tutorHub?.resume_candidate ?? null}
                       bootstrappingPriming={workflow.bootstrappingPriming}
                       onResumeTutor={() => setShellMode("tutor")}
+                      onResumeCandidate={(candidate) => {
+                        void onResumeHubCandidate(candidate);
+                      }}
                       onOpenPriming={() => {
                         void workflow.openStudioPriming();
                       }}
@@ -616,7 +608,7 @@ export function TutorShell({
                           onCourseChange={(id) => hub.setCourseId(id)}
                           onLaunchSession={() => {
                             workflow.setStudioView("workbench");
-                            setShellMode("launch");
+                            setShellMode("studio");
                             setShowSetup(false);
                           }}
                           entryRequest={studioEntryRequest}
@@ -674,9 +666,9 @@ export function TutorShell({
                       preflightBlockers={session.preflight?.blockers || []}
                       preflightLoading={session.preflightLoading}
                       preflightError={session.preflightError}
-                      onBackToLaunch={() => {
+                      onBackToStudio={() => {
                         workflow.setStudioView("workbench");
-                        setShellMode("launch");
+                        setShellMode("studio");
                       }}
                       onSaveDraft={() => {
                         void workflow.saveWorkflowPriming("draft");
@@ -1173,16 +1165,16 @@ export function TutorShell({
                   <TutorEmptyState
                     icon={MessageSquare}
                     title="READY TO RUN A STUDY SESSION"
-                    description="Tutor is the live study surface. Start or resume from Launch, or switch to Studio to prepare notes and captures before studying."
+                    description="Tutor is the live study surface. Start or resume from Studio, or switch into Studio to prepare notes and captures before studying."
                     actions={[
                       {
-                        label: "GO TO LAUNCH",
+                        label: "GO TO STUDIO HOME",
                         icon: ListChecks,
-                        onClick: () => setShellMode("launch"),
+                        onClick: () => setShellMode("studio"),
                         variant: "primary",
                       },
                       {
-                        label: "GO TO STUDIO",
+                        label: "OPEN STUDIO WORKBENCH",
                         icon: PenTool,
                         onClick: () => {
                           workflow.setStudioView("workbench");

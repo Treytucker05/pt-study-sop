@@ -1,41 +1,5 @@
 {
   "mcpServers": {
-    "filesystem": {
-      "command": "cmd",
-      "args": [
-        "/c",
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "."
-      ]
-    },
-    "stealth-computer-use": {
-      "command": "python",
-      "args": [
-        "C:\\Users\\treyt\\OneDrive\\Desktop\\MCP Servers\\Stealth-Computer-Use\\server.py"
-      ]
-    },
-    "mcp-toolz": {
-      "command": "mcp-toolz",
-      "args": []
-    },
-    "notebooklm-mcp": {
-      "command": "notebooklm-mcp",
-      "args": []
-    },
-    "obsidian-mcp": {
-      "command": "obsidian-mcp",
-      "args": []
-    },
-    "openpencil-mcp": {
-      "command": "openpencil-mcp",
-      "args": []
-    },
-    "mcp-pyautogui": {
-      "command": "mcp-pyautogui",
-      "args": []
-    },
     "github": {
       "command": "mcp-server-github",
       "args": [],
@@ -45,10 +9,6 @@
     },
     "memory": {
       "command": "mcp-server-memory",
-      "args": []
-    },
-    "context7": {
-      "command": "context7-mcp",
       "args": []
     },
     "codex-cli": {

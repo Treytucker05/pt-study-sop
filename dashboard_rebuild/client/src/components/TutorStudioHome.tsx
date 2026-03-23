@@ -23,6 +23,7 @@ import {
 import { BTN_OUTLINE, BTN_PRIMARY } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { formatWorkflowStatus, truncateWorkflowId } from "@/lib/workflowStatus";
+import type { TutorHubResumeCandidate } from "@/lib/api";
 
 type StudioWorkflowSummary = {
   workflowId: string | null;
@@ -40,8 +41,11 @@ type TutorStudioHomeProps = {
   hasTutorWork: boolean;
   hasFinalSyncAccess: boolean;
   hasActiveSession: boolean;
+  resumeCandidate: TutorHubResumeCandidate | null;
   bootstrappingPriming: boolean;
+  launchHub?: ReactNode;
   onResumeTutor: () => void;
+  onResumeCandidate: (candidate: TutorHubResumeCandidate) => void;
   onOpenPriming: () => void;
   onOpenPolish: () => void;
   onOpenFinalSync: () => void;
@@ -147,8 +151,11 @@ export function TutorStudioHome({
   hasTutorWork,
   hasFinalSyncAccess,
   hasActiveSession,
+  resumeCandidate,
   bootstrappingPriming,
+  launchHub,
   onResumeTutor,
+  onResumeCandidate,
   onOpenPriming,
   onOpenPolish,
   onOpenFinalSync,
@@ -175,6 +182,14 @@ export function TutorStudioHome({
         detail:
           "You already have a live Tutor session running. Resume that surface first.",
         onClick: onResumeTutor,
+      };
+    }
+    if (resumeCandidate?.can_resume && resumeCandidate.session_id) {
+      return {
+        label: "RESUME WHERE I LEFT OFF",
+        detail:
+          "Jump back into the most recent live Tutor session before continuing in Studio.",
+        onClick: () => onResumeCandidate(resumeCandidate),
       };
     }
     if (hasFinalSyncAccess) {
@@ -216,7 +231,9 @@ export function TutorStudioHome({
     onOpenPolish,
     onOpenPriming,
     onResumeTutor,
+    onResumeCandidate,
     primingPreferred,
+    resumeCandidate,
     workflow?.workflowId,
   ]);
 
@@ -346,6 +363,8 @@ export function TutorStudioHome({
           </CardContent>
         </Card>
 
+        {launchHub ? <div className="space-y-4">{launchHub}</div> : null}
+
         <div className="grid gap-4 xl:grid-cols-4">
           <StudioActionCard
             title="PRIMING"
@@ -353,7 +372,7 @@ export function TutorStudioHome({
             helperText={
               workflow?.workflowId
                 ? "Continue the existing workflow in Priming or reopen the priming setup from Studio."
-                : "Start Priming directly from Studio. The workflow will be bootstrapped inline without sending you back to Launch."
+                : "Start Priming directly from Studio. The workflow will be bootstrapped inline without leaving Studio."
             }
             buttonLabel={
               workflow?.workflowId ? "CONTINUE PRIMING" : "START PRIMING"

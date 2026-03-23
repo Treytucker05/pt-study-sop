@@ -1,5 +1,6 @@
-import { type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { type ReactNode, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useLocation } from "wouter";
 
 import { cn } from "@/lib/utils";
 
@@ -17,12 +18,24 @@ interface PageScaffoldProps {
   eyebrow?: string;
   stats?: PageScaffoldStat[];
   actions?: ReactNode;
+  heroFooter?: ReactNode;
   children: ReactNode;
   className?: string;
   contentClassName?: string;
 }
 
 const EMPTY_PAGE_STATS: PageScaffoldStat[] = [];
+
+function isHiddenByDisplayNone(node: HTMLElement) {
+  let current: HTMLElement | null = node;
+  while (current) {
+    if (window.getComputedStyle(current).display === "none") {
+      return true;
+    }
+    current = current.parentElement;
+  }
+  return false;
+}
 
 function statToneClass(tone: PageScaffoldTone | undefined) {
   switch (tone) {
@@ -48,39 +61,43 @@ export function PageScaffold({
   eyebrow,
   stats = EMPTY_PAGE_STATS,
   actions,
+  heroFooter,
   children,
   className,
   contentClassName,
 }: PageScaffoldProps) {
+  const [location] = useLocation();
   const dipLayerId = useId().replace(/:/g, "");
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+  const shellRef = useRef<HTMLDivElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const portal = document.getElementById(HERO_PORTAL_ID);
-    if (!portal) return;
+    const shell = shellRef.current;
+    if (!portal || !shell) return;
 
-    // Create a dedicated wrapper for THIS scaffold's hero
-    const wrapper = document.createElement("div");
-    portal.innerHTML = ""; // Clear any previous hero
-    portal.appendChild(wrapper);
+    if (isHiddenByDisplayNone(shell)) {
+      return;
+    }
+
+    const wrapper = wrapperRef.current ?? document.createElement("div");
     wrapperRef.current = wrapper;
+    portal.replaceChildren(wrapper);
     setPortalTarget(wrapper);
 
     return () => {
-      // Remove this hero on unmount
       if (wrapper.parentNode) {
         wrapper.parentNode.removeChild(wrapper);
       }
-      wrapperRef.current = null;
     };
-  }, []);
+  }, [location]);
 
   const glowId = `page-dipline-glow-${dipLayerId}`;
   const blurId = `page-dipline-blur-${dipLayerId}`;
 
   const heroContent = (
-    <section className="page-shell__hero">
+    <section className="page-shell__hero page-shell__hero--glass">
       <div className="page-shell__grid" aria-hidden="true" />
       <div className="page-shell__header">
         <div className="page-shell__title-block min-w-0">
@@ -131,24 +148,33 @@ export function PageScaffold({
         </div>
         {(stats.length > 0 || actions) ? (
           <div className="page-shell__meta">
-            {stats.map((stat) => (
-              <div
-                key={stat.label}
-                className={cn("page-shell__stat", statToneClass(stat.tone))}
-              >
-                <span className="page-shell__stat-label">{stat.label}</span>
-                <span className="page-shell__stat-value">{stat.value}</span>
+            {stats.length > 0 ? (
+              <div className="page-shell__stat-grid">
+                {stats.map((stat) => (
+                  <div
+                    key={stat.label}
+                    className={cn("page-shell__stat", statToneClass(stat.tone))}
+                  >
+                    <span className="page-shell__stat-label">{stat.label}</span>
+                    <span className="page-shell__stat-value">{stat.value}</span>
+                  </div>
+                ))}
               </div>
-            ))}
+            ) : null}
             {actions ? <div className="page-shell__actions">{actions}</div> : null}
           </div>
         ) : null}
       </div>
+      {heroFooter ? (
+        <div className="page-shell__hero-footer relative z-[3] mt-2 w-full">
+          {heroFooter}
+        </div>
+      ) : null}
     </section>
   );
 
   return (
-    <div className={cn("page-shell", className)}>
+    <div ref={shellRef} className={cn("page-shell", className)}>
       {portalTarget ? createPortal(heroContent, portalTarget) : null}
       <div className={cn("page-shell__content", contentClassName)}>{children}</div>
     </div>

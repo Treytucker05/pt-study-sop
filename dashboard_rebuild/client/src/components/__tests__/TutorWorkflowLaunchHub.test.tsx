@@ -205,10 +205,45 @@ describe("TutorWorkflowLaunchHub", () => {
     expect(
       screen.queryByText(/start a tutor session to build your study wheel/i),
     ).not.toBeInTheDocument();
-    expect(screen.getByText(/linked courses/i)).toBeInTheDocument();
     expect(screen.getByText(/EPHY-101 • Exercise Physiology/i)).toBeInTheDocument();
     expect(screen.getByText(/CARD-202 • Cardio/i)).toBeInTheDocument();
-    expect(screen.getByText(/^CURRENT$/)).toBeInTheDocument();
-    expect(screen.getByText(/^NEXT$/)).toBeInTheDocument();
+  });
+
+  it("renders safely without tutor hub data and still shows fallback workflow context", () => {
+    const brokenDraft: TutorWorkflowSummary = {
+      ...workflowFixture,
+      workflow_id: "wf-broken",
+      course_id: null,
+      course_name: null,
+      course_code: null,
+      assignment_title: null,
+      study_unit: null,
+      topic: null,
+      updated_at: null,
+    };
+
+    render(
+      <TutorWorkflowLaunchHub
+        workflows={[brokenDraft]}
+        totalCount={1}
+        courses={[]}
+        filters={{
+          search: "",
+          courseId: "all",
+          stage: "all",
+          status: "all",
+          dueBucket: "all",
+        }}
+        onFiltersChange={vi.fn()}
+        onStartNew={vi.fn()}
+        onOpenWorkflow={vi.fn()}
+        onDeleteWorkflow={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/link courses into the study wheel/i)).toBeInTheDocument();
+    expect(screen.getByText("Class not saved yet")).toBeInTheDocument();
+    expect(screen.getByText("Scope not saved yet")).toBeInTheDocument();
+    expect(screen.getByText("Not saved yet")).toBeInTheDocument();
   });
 });

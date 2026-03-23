@@ -138,6 +138,7 @@ Use this file during guided study passes.
 - Status: triaged
 - Implementation update (2026-03-21): Tutor launch blockers are now surfaced inline, the handoff buttons disable when launch is not actually ready, and Priming saves extracted objectives into the handoff bundle for Tutor preflight. Needs live retest from Priming into Tutor.
 - Learner retest note (2026-03-21 late pass): the handoff is still blocked in practice. The learner hit a blocker message about needing to save approved objectives before running Tutor preflight, did not understand what `Tutor preflight` meant, clicked `Save Draft`, and saw `500 INTERNAL SERVER ERROR` on `PUT /api/tutor/workflows/153cbe9b-f4ae-4166-94df-7554e423c182/priming-bundle`. `Mark Ready` and `Start Tutor Session` remained unavailable afterward.
+- Implementation update (2026-03-21 TutorArchitect wave): fixed the first-save `priming-bundle` insert path so `Save Draft` no longer 500s, mirrored `course_id` / `study_unit` / `topic` back onto the workflow row so Launch can still identify failed or early drafts, and normalized handoff copy from raw `Tutor preflight` wording to learner-facing `Tutor launch check`. Needs live retest through the real Priming handoff.
 
 #### TGSL-PR-006
 - Stage: Priming
@@ -178,6 +179,7 @@ Use this file during guided study passes.
 - Workaround: Treat the `Setup` step as scope-only, ignore the Tutor-launch framing there, and continue to `Materials` and `PRIME Methods` before evaluating readiness.
 - Likely owner: frontend
 - Status: triaged
+- Implementation update (2026-03-21 TutorArchitect wave): `Setup` is now scope-only and the real Tutor launch contract lives in the `Tutor Handoff` step instead of front-loading the first screen. Needs learner retest for whether the step order now reads naturally.
 
 #### TGSL-PR-009
 - Stage: Priming
@@ -192,6 +194,7 @@ Use this file during guided study passes.
 - Workaround: Continue with the cramped inline viewer or leave the flow to inspect the source elsewhere.
 - Likely owner: frontend
 - Status: triaged
+- Implementation update (2026-03-21 TutorArchitect wave): the `Materials` step now includes a full-width dedicated reader plus a `POPOUT READER` action, and the split sidecar source viewer hides while the learner is on `Materials`. Needs learner retest for actual reading comfort.
 
 #### TGSL-PR-010
 - Stage: Priming
@@ -206,6 +209,7 @@ Use this file during guided study passes.
 - Workaround: Rerun individual methods manually and mentally compare the outputs outside the product.
 - Likely owner: multi-surface
 - Status: triaged
+- Implementation update (2026-03-21 TutorArchitect wave): the method picker now uses larger full-card selections with whole-card active styling, outputs render additional structured keys instead of silently dropping non-summary fields, and stored outputs from earlier runs stay visible in a clearer separate section. Needs learner retest for whether Priming now feels enough like a real workspace.
 
 #### TGSL-CR-001
 - Stage: Cross-stage
@@ -253,6 +257,7 @@ Use this file during guided study passes.
 - Likely owner: backend
 - Status: triaged
 - Learner retest note (2026-03-21 late pass): the broken Priming draft did appear in `Recent Workflows`, but the row still showed no class, no assignment/topic/scope, and no meaningful time context. The current Launch row renderer falls back to `Unassigned class`, `Untitled workflow`, and `No study unit set`, while the date column only shows a date label rather than a precise time, which makes failed drafts even harder to identify confidently.
+- Implementation update (2026-03-21 TutorArchitect wave): Launch now coalesces workflow context from the Priming bundle when the workflow row is thin, mirrors Priming context back onto the workflow row on save, shows a precise updated timestamp, and uses stronger fallback labels like `Class not saved yet` / `Scope not saved yet`. Needs live retest with broken and partial drafts.
 
 #### TGSL-LA-004
 - Stage: Launch
@@ -267,6 +272,7 @@ Use this file during guided study passes.
 - Workaround: None reliable from the learner side beyond refreshing and hoping the hub data is already loaded.
 - Likely owner: frontend
 - Status: triaged
+- Implementation update (2026-03-21 TutorArchitect wave): `TutorWorkflowLaunchHub` now computes wheel presence from a safe local `wheelSnapshot` instead of dereferencing `tutorHub!.study_wheel` through a false-positive null guard. Regression coverage now includes the no-hub render path.
 
 #### TGSL-TU-002
 - Stage: Tutor

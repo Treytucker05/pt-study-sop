@@ -109,6 +109,14 @@ Codex MCP's `ask-codex` ignores full diff/code embedded in the prompt and asks f
 - Do not mix structural layout resets and micro-alignment polish in the same pass.
 - Keep a visible build marker during iterative UI work so the rendered screenshot can be tied to the actual bundle under review.
 
+### Tutor Pattern Button Rail Rule
+
+Patterned Tutor row buttons should keep the animated grid/glow on a pseudo-layer and the top/bottom rails on that same stable layer. Do not rely on the main element background or `border-image` alone for the rail line, because hover-size changes can visually eat the top edge even when the row height looks correct.
+
+If the Tutor row uses the shared `Button` primitive with `variant="ghost"`, explicitly neutralize `transform` on the Tutor-specific class for base, hover, and active states. The shared ghost variant still carries hover/active translate utilities, and those can lift the button into the strip edge even when padding looks generous.
+
+When the Tutor tablist uses `overflow-x-auto`, the browser computes `overflow-y: auto` too. If the tablist height matches the button height exactly, the row becomes the clipping boundary and the hover state will look cropped even with `transform: none`. Leave explicit vertical slack in the row and button geometry instead of relying on font-size math alone.
+
 ### Destructive Async UI State Rule (Tutor/Brain)
 
 **Problem:** Repeated regressions around delete/edit flows caused stuck overlays, overlapping modals, and duplicate destructive actions.  

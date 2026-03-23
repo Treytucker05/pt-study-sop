@@ -158,7 +158,7 @@ function ScheduleOverviewCard({
         {launchIntent ? (
           <div className="border border-primary/30 bg-primary/10 p-3">
             <div className="font-terminal text-ui-xs uppercase tracking-[0.18em] text-primary/80">
-              Launch focus
+              Entry focus
             </div>
             <div className="mt-1 font-terminal text-sm text-foreground">
               {launchIntent.kind === "manage_exam"
