@@ -464,10 +464,9 @@ function useTutorPageController() {
     const lastTab = (() => {
       try {
         const stored = localStorage.getItem("tutor-studio-last-tab");
-        if (stored === "priming" || stored === "polish" || stored === "final_sync") return stored;
-        if (stored === "workbench") return "priming";
+        if (stored === "workspace" || stored === "priming" || stored === "polish" || stored === "final_sync" || stored === "workbench") return stored;
       } catch { /* ignore */ }
-      return "priming";
+      return "workspace";
     })();
     workflow.setStudioView(lastTab);
     setShellMode("studio");

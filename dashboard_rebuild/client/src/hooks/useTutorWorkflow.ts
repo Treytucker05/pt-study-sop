@@ -192,12 +192,11 @@ export function useTutorWorkflow({
   const [studioView, setStudioViewRaw] = useState<TutorStudioView>(() => {
     try {
       const stored = localStorage.getItem(STUDIO_TAB_KEY);
-      if (stored === "priming" || stored === "polish" || stored === "final_sync" || stored === "workbench") {
-        // Default landing is priming; "workbench" is still valid but not the default
-        return stored === "workbench" ? "priming" : stored;
+      if (stored === "workspace" || stored === "priming" || stored === "polish" || stored === "final_sync" || stored === "workbench") {
+        return stored;
       }
     } catch { /* ignore */ }
-    return "priming";
+    return "workspace";
   });
   const setStudioView = useCallback((view: TutorStudioView) => {
     setStudioViewRaw(view);
