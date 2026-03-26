@@ -61,6 +61,19 @@ def _normalize_json_dict(value: Any, *, field_name: str) -> dict[str, Any] | Non
     return value
 
 
+def _normalize_json_object_list(value: Any, *, field_name: str) -> list[dict[str, Any]]:
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise ValueError(f"{field_name} must be a list of objects")
+    normalized: list[dict[str, Any]] = []
+    for item in value:
+        if not isinstance(item, dict):
+            raise ValueError(f"{field_name} must contain only objects")
+        normalized.append(item)
+    return normalized
+
+
 def _normalize_material_ids(value: Any) -> list[int]:
     if value is None:
         return []
@@ -90,6 +103,8 @@ def _serialize_workspace_state(row: sqlite3.Row | None) -> dict[str, Any]:
             "active_board_scope": "project",
             "active_board_id": None,
             "viewer_state": None,
+            "prime_packet_promoted_objects": [],
+            "polish_packet_promoted_notes": [],
             "selected_material_ids": [],
             "revision": 0,
             "updated_at": None,
@@ -109,12 +124,34 @@ def _serialize_workspace_state(row: sqlite3.Row | None) -> dict[str, Any]:
                 selected_material_ids = [int(item) for item in parsed_ids]
         except (TypeError, ValueError, json.JSONDecodeError):
             selected_material_ids = []
+    prime_packet_promoted_objects: list[dict[str, Any]] = []
+    if row["prime_packet_promoted_objects_json"]:
+        try:
+            parsed_objects = json.loads(row["prime_packet_promoted_objects_json"])
+            if isinstance(parsed_objects, list):
+                prime_packet_promoted_objects = [
+                    item for item in parsed_objects if isinstance(item, dict)
+                ]
+        except json.JSONDecodeError:
+            prime_packet_promoted_objects = []
+    polish_packet_promoted_notes: list[dict[str, Any]] = []
+    if "polish_packet_promoted_notes_json" in row.keys() and row["polish_packet_promoted_notes_json"]:
+        try:
+            parsed_notes = json.loads(row["polish_packet_promoted_notes_json"])
+            if isinstance(parsed_notes, list):
+                polish_packet_promoted_notes = [
+                    item for item in parsed_notes if isinstance(item, dict)
+                ]
+        except json.JSONDecodeError:
+            polish_packet_promoted_notes = []
     return {
         "active_tutor_session_id": row["active_tutor_session_id"],
         "last_mode": row["last_mode"] or "studio",
         "active_board_scope": row["active_board_scope"] or "project",
         "active_board_id": row["active_board_id"],
         "viewer_state": viewer_state,
+        "prime_packet_promoted_objects": prime_packet_promoted_objects,
+        "polish_packet_promoted_notes": polish_packet_promoted_notes,
         "selected_material_ids": selected_material_ids,
         "revision": int(row["revision"] or 0),
         "updated_at": row["updated_at"],
@@ -604,7 +641,9 @@ def get_project_shell():
         cur.execute(
             """
             SELECT course_id, active_tutor_session_id, last_mode, active_board_scope,
-                   active_board_id, viewer_state_json, selected_material_ids_json,
+                   active_board_id, viewer_state_json, prime_packet_promoted_objects_json,
+                   polish_packet_promoted_notes_json,
+                   selected_material_ids_json,
                    revision, updated_at
             FROM project_workspace_state
             WHERE course_id = ?
@@ -728,6 +767,14 @@ def save_project_shell_state():
 
     try:
         viewer_state = _normalize_json_dict(data.get("viewer_state"), field_name="viewer_state")
+        prime_packet_promoted_objects = _normalize_json_object_list(
+            data.get("prime_packet_promoted_objects"),
+            field_name="prime_packet_promoted_objects",
+        )
+        polish_packet_promoted_notes = _normalize_json_object_list(
+            data.get("polish_packet_promoted_notes"),
+            field_name="polish_packet_promoted_notes",
+        )
         selected_material_ids = _normalize_material_ids(data.get("selected_material_ids"))
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
@@ -785,6 +832,8 @@ def save_project_shell_state():
             active_board_scope,
             active_board_id,
             json.dumps(viewer_state) if viewer_state is not None else None,
+            json.dumps(prime_packet_promoted_objects),
+            json.dumps(polish_packet_promoted_notes),
             json.dumps(selected_material_ids),
             new_revision,
             now,
@@ -798,18 +847,22 @@ def save_project_shell_state():
                 active_board_scope,
                 active_board_id,
                 viewer_state_json,
+                prime_packet_promoted_objects_json,
+                polish_packet_promoted_notes_json,
                 selected_material_ids_json,
                 revision,
                 updated_at,
                 course_id
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(course_id) DO UPDATE SET
                 active_tutor_session_id = excluded.active_tutor_session_id,
                 last_mode = excluded.last_mode,
                 active_board_scope = excluded.active_board_scope,
                 active_board_id = excluded.active_board_id,
                 viewer_state_json = excluded.viewer_state_json,
+                prime_packet_promoted_objects_json = excluded.prime_packet_promoted_objects_json,
+                polish_packet_promoted_notes_json = excluded.polish_packet_promoted_notes_json,
                 selected_material_ids_json = excluded.selected_material_ids_json,
                 revision = excluded.revision,
                 updated_at = excluded.updated_at
@@ -821,7 +874,9 @@ def save_project_shell_state():
         cur.execute(
             """
             SELECT course_id, active_tutor_session_id, last_mode, active_board_scope,
-                   active_board_id, viewer_state_json, selected_material_ids_json,
+                   active_board_id, viewer_state_json, prime_packet_promoted_objects_json,
+                   polish_packet_promoted_notes_json,
+                   selected_material_ids_json,
                    revision, updated_at
             FROM project_workspace_state
             WHERE course_id = ?

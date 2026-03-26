@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { useEffect, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -297,28 +297,68 @@ describe("Tutor studio route integration", () => {
     saveFileMock.mockResolvedValue({ success: true, path: "Tutor Workspace/Tutor Note.md" });
     getProjectShellMock.mockResolvedValue(makeProjectShell(1));
     saveProjectShellStateMock.mockImplementation(async () => ({
-      workspace_state: {
-        active_tutor_session_id: null,
-        last_mode: "studio",
-        active_board_scope: "project",
-        active_board_id: null,
-        viewer_state: null,
-        selected_material_ids: [],
-        revision: 2,
-        updated_at: new Date("2026-03-13T00:00:00Z").toISOString(),
+    workspace_state: {
+      active_tutor_session_id: null,
+      last_mode: "studio",
+      active_board_scope: "project",
+      active_board_id: null,
+      viewer_state: null,
+      prime_packet_promoted_objects: [],
+      selected_material_ids: [],
+      revision: 2,
+      updated_at: new Date("2026-03-13T00:00:00Z").toISOString(),
       },
     }));
     restoreStudioItemsMock.mockResolvedValue({ items: [] });
+  });
+
+  it("lands Studio entry inside the anchored Studio shell frame", async () => {
+    renderTutor();
+
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-stage-nav")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-workspace-panel")).toBeInTheDocument();
+    expect(screen.getByText("WORKSPACE HOME")).toBeInTheDocument();
+    expect(screen.queryByTestId("studio-source-shelf")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-document-dock")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-run-config")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-tutor-status")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-memory")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-prime-packet")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-polish-packet")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-assistant-dock")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("sidebar-rail")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("brain-tool-profile")).not.toBeInTheDocument();
   });
 
   it("renders the Studio prep surface from Studio mode without reviving Brain chrome", async () => {
     window.history.replaceState({}, "", "/tutor?course_id=1&mode=studio");
     renderTutor();
 
-    expect(await screen.findByText("NO CHAIN SELECTED")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /open studio/i })).toBeInTheDocument();
+    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
+    expect(screen.getByText("OPEN WORKSPACE")).toBeInTheDocument();
     expect(screen.queryByTestId("sidebar-rail")).not.toBeInTheDocument();
     expect(screen.queryByTestId("brain-tool-profile")).not.toBeInTheDocument();
+  });
+
+  it("enforces the visible v1 nav contract even when a legacy schedule query is present", async () => {
+    window.history.replaceState({}, "", "/tutor?course_id=1&mode=schedule");
+
+    renderTutor();
+
+    expect(screen.queryByRole("tab", { name: /^workspace$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: /^schedule$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: /^settings$/i })).not.toBeInTheDocument();
+    expect(screen.queryByText("OPEN WORKBENCH")).not.toBeInTheDocument();
+    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /^open workspace$/i }));
+
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
+    expect(screen.queryByText("WORKSPACE HOME")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^open workspace$/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("falls back to the Studio hub when the active session restore is stale", async () => {

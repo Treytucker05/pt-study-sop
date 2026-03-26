@@ -19,6 +19,7 @@ $TargetRoots = [ordered]@{
     opencode    = "$env:USERPROFILE\.opencode\skills"
     gemini      = "$env:USERPROFILE\.gemini\skills"
     antigravity = "$env:USERPROFILE\.antigravity\skills"
+    kimi        = "$env:USERPROFILE\.kimi\skills"
 }
 
 $LocalOnlyNames = @{
@@ -28,7 +29,6 @@ $LocalOnlyNames = @{
         "agent-skills",
         "chrome-cdp",
         "context7",
-        "dev-browser",
         "gemini-computer-use",
         "llm-council",
         "markdown-url",
@@ -47,6 +47,7 @@ $LocalOnlyNames = @{
     opencode    = @("agent-strategy", "ensure-agent-workflow")
     gemini      = @()
     antigravity = @()
+    kimi        = @()
 }
 
 function Write-PlanLine([string]$status, [string]$message) {

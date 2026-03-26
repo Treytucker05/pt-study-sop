@@ -621,6 +621,7 @@ export function TutorChat({
   onCaptureNote,
   onFeedback,
   onSaveGist,
+  onPromoteToPolishPacket,
   onSaveExact,
   onLike,
   onDislike,
@@ -876,6 +877,7 @@ export function TutorChat({
           onCaptureNote={onCaptureNote}
           onFeedback={onFeedback}
           onSaveGist={onSaveGist}
+          onPromoteToPolishPacket={onPromoteToPolishPacket}
           onSaveExact={onSaveExact}
           onLike={onLike}
           onDislike={onDislike}

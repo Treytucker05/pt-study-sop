@@ -12,6 +12,7 @@ const deleteWorkflowMock = vi.fn();
 const createWorkflowMock = vi.fn();
 const savePrimingBundleMock = vi.fn();
 const updateWorkflowStageMock = vi.fn();
+const runPrimingAssistMock = vi.fn();
 const captureWorkflowNoteMock = vi.fn();
 const saveWorkflowFeedbackMock = vi.fn();
 const createMemoryCapsuleMock = vi.fn();
@@ -27,7 +28,7 @@ vi.mock("@/lib/api", () => ({
       createWorkflow: (...args: unknown[]) => createWorkflowMock(...args),
       savePrimingBundle: (...args: unknown[]) => savePrimingBundleMock(...args),
       updateWorkflowStage: (...args: unknown[]) => updateWorkflowStageMock(...args),
-      runPrimingAssist: vi.fn(),
+      runPrimingAssist: (...args: unknown[]) => runPrimingAssistMock(...args),
       savePolishBundle: vi.fn(),
       captureWorkflowNote: (...args: unknown[]) => captureWorkflowNoteMock(...args),
       saveWorkflowFeedback: (...args: unknown[]) => saveWorkflowFeedbackMock(...args),
@@ -143,6 +144,18 @@ describe("useTutorWorkflow", () => {
     });
     savePrimingBundleMock.mockResolvedValue({ priming_bundle: null });
     updateWorkflowStageMock.mockResolvedValue({ ok: true });
+    runPrimingAssistMock.mockResolvedValue({
+      source_inventory: [],
+      priming_method_runs: [],
+      aggregate: {
+        summaries: [],
+        concepts: [],
+        terminology: [],
+        root_explanations: [],
+        identified_gaps: [],
+        learning_objectives: [],
+      },
+    });
     captureWorkflowNoteMock.mockResolvedValue({ note: { id: 1 } });
     saveWorkflowFeedbackMock.mockResolvedValue({ feedback_event: { id: 1 } });
     createMemoryCapsuleMock.mockResolvedValue({ capsule: { id: 1 } });
@@ -159,7 +172,7 @@ describe("useTutorWorkflow", () => {
           hub: hub as never,
           session: session as never,
           activeSessionId: "sess-1",
-          shellMode: "launch",
+          shellMode: "studio",
           setShellMode: vi.fn(),
           hasRestored: true,
         }),
@@ -185,7 +198,7 @@ describe("useTutorWorkflow", () => {
 
     expect(deleteWorkflowMock).toHaveBeenCalledWith(workflowFixture.workflow_id);
     expect(result.current.activeWorkflowId).toBeNull();
-    expect(result.current.studioView).toBe("workbench");
+    expect(result.current.studioView).toBe("home");
     expect(session.clearActiveSessionState).toHaveBeenCalled();
     expect(hub.setSelectedMaterials).toHaveBeenCalledWith([]);
     expect(toastSuccessMock).toHaveBeenCalledWith("Study plan deleted");
@@ -255,7 +268,7 @@ describe("useTutorWorkflow", () => {
           hub: hub as never,
           session: session as never,
           activeSessionId: null,
-          shellMode: "launch",
+          shellMode: "studio",
           setShellMode: vi.fn(),
           hasRestored: true,
         }),
@@ -328,7 +341,7 @@ describe("useTutorWorkflow", () => {
           hub: hub as never,
           session: session as never,
           activeSessionId: null,
-          shellMode: "launch",
+          shellMode: "studio",
           setShellMode: vi.fn(),
           hasRestored: true,
         }),
@@ -482,6 +495,104 @@ describe("useTutorWorkflow", () => {
     ]);
   });
 
+  it("forwards packet context when Priming Assist runs from the Studio packet", async () => {
+    const hub = {
+      ...createHubMock(),
+      topic: "Cardiovascular regulation",
+      selectedMaterials: [101],
+    };
+    const session = createSessionMock();
+    const wrapper = createWrapper();
+
+    const { result } = renderHook(
+      () =>
+        useTutorWorkflow({
+          hub: hub as never,
+          session: session as never,
+          activeSessionId: null,
+          shellMode: "studio",
+          setShellMode: vi.fn(),
+          hasRestored: true,
+        }),
+      { wrapper },
+    );
+
+    act(() => {
+      result.current.setActiveWorkflowId(workflowFixture.workflow_id);
+      result.current.setPrimingMethods(["summary_first"]);
+    });
+
+    await act(async () => {
+      await result.current.runWorkflowPrimingAssist([101], {
+        packet_context:
+          "## Primed Artifacts\n- Misconception to repair :: Learner mixed preload effects with heart-rate regulation.",
+      });
+    });
+
+    expect(runPrimingAssistMock).toHaveBeenCalledWith(
+      workflowFixture.workflow_id,
+      expect.objectContaining({
+        material_ids: [101],
+        packet_context:
+          "## Primed Artifacts\n- Misconception to repair :: Learner mixed preload effects with heart-rate regulation.",
+      }),
+    );
+  });
+
+  it("forwards packet context when Tutor starts from the Studio packet", async () => {
+    const hub = {
+      ...createHubMock(),
+      selectedMaterials: [101],
+      selectedObjectiveGroup: "Week 7",
+      scopedObjectives: [
+        {
+          id: "OBJ-1",
+          loCode: "OBJ-1",
+          title: "Explain cardiac output",
+          status: "active",
+          groupName: "Week 7",
+        },
+      ],
+    };
+    const session = createSessionMock();
+    session.startSession.mockResolvedValue({ session_id: "sess-2" });
+    const wrapper = createWrapper();
+
+    const { result } = renderHook(
+      () =>
+        useTutorWorkflow({
+          hub: hub as never,
+          session: session as never,
+          activeSessionId: null,
+          shellMode: "studio",
+          setShellMode: vi.fn(),
+          hasRestored: true,
+        }),
+      { wrapper },
+    );
+
+    act(() => {
+      result.current.setActiveWorkflowId(workflowFixture.workflow_id);
+      result.current.setPrimingMethods(["summary_first"]);
+    });
+
+    await waitFor(() => {
+      expect(result.current.activeWorkflowId).toBe(workflowFixture.workflow_id);
+    });
+
+    await act(async () => {
+      await result.current.startTutorFromWorkflow({
+        packet_context:
+          "## Primed Artifacts\n- Misconception to repair :: Learner mixed preload effects with heart-rate regulation.",
+      });
+    });
+
+    expect(session.startSession).toHaveBeenCalledWith({
+      packet_context:
+        "## Primed Artifacts\n- Misconception to repair :: Learner mixed preload effects with heart-rate regulation.",
+    });
+  });
+
   it("clears a stale live Tutor session when Studio opens a workflow from a different course", async () => {
     const hub = {
       ...createHubMock(),
@@ -497,7 +608,7 @@ describe("useTutorWorkflow", () => {
           hub: hub as never,
           session: session as never,
           activeSessionId: "sess-1",
-          shellMode: "launch",
+          shellMode: "studio",
           setShellMode,
           hasRestored: true,
         }),

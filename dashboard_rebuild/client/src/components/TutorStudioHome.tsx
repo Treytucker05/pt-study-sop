@@ -1,11 +1,10 @@
-import { useMemo, useRef, type ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import {
   ArrowRight,
   CheckCircle2,
   Compass,
-  Layers3,
   MessageSquare,
-  Wrench,
+  PanelTopOpen,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +31,7 @@ type StudioWorkflowSummary = {
   updatedAt: string | null;
 };
 
-type TutorStudioHomeProps = {
+export type TutorStudioHomeProps = {
   workflow: StudioWorkflowSummary | null;
   courseName: string | null;
   studyUnit: string | null;
@@ -46,10 +45,12 @@ type TutorStudioHomeProps = {
   launchHub?: ReactNode;
   onResumeTutor: () => void;
   onResumeCandidate: (candidate: TutorHubResumeCandidate) => void;
+  onOpenWorkspace: () => void;
   onOpenPriming: () => void;
   onOpenPolish: () => void;
   onOpenFinalSync: () => void;
-  workbenchPanel: ReactNode;
+  homeTitle?: string;
+  homeCopy?: string;
 };
 
 type StudioActionCardProps = {
@@ -156,24 +157,18 @@ export function TutorStudioHome({
   launchHub,
   onResumeTutor,
   onResumeCandidate,
+  onOpenWorkspace,
   onOpenPriming,
   onOpenPolish,
   onOpenFinalSync,
-  workbenchPanel,
+  homeTitle = "STUDIO HOME",
+  homeCopy = "Studio is where prep and wrap-up live. Start from the next recommended action, then open the Workspace when you need the canvas, source shelf, and packet flow.",
 }: TutorStudioHomeProps) {
-  const workbenchRef = useRef<HTMLDivElement | null>(null);
   const currentStage = workflow?.currentStage ?? null;
   const primingPreferred =
     !workflow?.workflowId ||
     currentStage === "launch" ||
     currentStage === "priming";
-
-  const openWorkbench = () => {
-    workbenchRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  };
 
   const primaryAction = useMemo(() => {
     if (hasActiveSession) {
@@ -218,10 +213,10 @@ export function TutorStudioHome({
       };
     }
     return {
-      label: "OPEN WORKBENCH",
+      label: "OPEN WORKSPACE",
       detail:
-        "No workflow step needs immediate attention. Drop into the workbench tools from Home.",
-      onClick: openWorkbench,
+        "No workflow step needs immediate attention. Open the Workspace and keep shaping sources, notes, and repair items there.",
+      onClick: onOpenWorkspace,
     };
   }, [
     hasActiveSession,
@@ -230,6 +225,7 @@ export function TutorStudioHome({
     onOpenFinalSync,
     onOpenPolish,
     onOpenPriming,
+    onOpenWorkspace,
     onResumeTutor,
     onResumeCandidate,
     primingPreferred,
@@ -250,7 +246,7 @@ export function TutorStudioHome({
     {
       label: "Course",
       value: courseName || "No course selected",
-      helper: studyUnit || "Select the study unit in Priming or the workbench.",
+      helper: studyUnit || "Select the study unit in Priming or the Workspace.",
     },
     {
       label: "Topic",
@@ -280,12 +276,10 @@ export function TutorStudioHome({
             <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
               <div className="space-y-2">
                 <CardTitle className="font-arcade text-xs text-primary">
-                  STUDIO HOME
+                  {homeTitle}
                 </CardTitle>
                 <p className={CONTROL_COPY}>
-                  Studio is where prep and wrap-up live. Start from the next
-                  recommended action, then drop into the workbench below when
-                  you need open-ended class tools.
+                  {homeCopy}
                 </p>
               </div>
               <Button
@@ -383,13 +377,13 @@ export function TutorStudioHome({
             onClick={onOpenPriming}
           />
           <StudioActionCard
-            title="WORKBENCH"
-            subtitle="Boards, captures, material viewing, and open-ended class prep."
-            helperText="The workbench stays available under Home so you can keep using Studio tools without leaving the overview."
-            buttonLabel="OPEN WORKBENCH"
+            title="WORKSPACE"
+            subtitle="Canvas, source shaping, captures, material viewing, and packet-ready study prep."
+            helperText="Open the Workspace when you need the source-linked canvas and document dock."
+            buttonLabel="OPEN WORKSPACE"
             enabled
-            icon={Wrench}
-            onClick={openWorkbench}
+            icon={PanelTopOpen}
+            onClick={onOpenWorkspace}
           />
           <StudioActionCard
             title="POLISH"
@@ -419,36 +413,6 @@ export function TutorStudioHome({
             tone={hasFinalSyncAccess ? "success" : "default"}
           />
         </div>
-
-        <Card className={CONTROL_DECK} ref={workbenchRef}>
-          <div className={CONTROL_DECK_INSET} />
-          <div className={CONTROL_DECK_TOPLINE} />
-          <div className={CONTROL_DECK_BOTTOMLINE} />
-          <CardHeader className="relative z-10 border-b border-primary/15 pb-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="space-y-2">
-                <CardTitle className="font-arcade text-xs text-primary">
-                  WORKBENCH
-                </CardTitle>
-                <p className={CONTROL_COPY}>
-                  Keep using the class picker, course detail, boards, material
-                  viewer, and workspace tools from here without losing the Home
-                  overview.
-                </p>
-              </div>
-              <Badge
-                variant="outline"
-                className="rounded-full border-primary/25 px-3 py-1 font-terminal text-ui-2xs text-primary/80"
-              >
-                <Layers3 className="mr-2 h-3.5 w-3.5" />
-                EMBEDDED
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="relative z-10 p-0">
-            <div className="h-[46rem] min-h-[70vh]">{workbenchPanel}</div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

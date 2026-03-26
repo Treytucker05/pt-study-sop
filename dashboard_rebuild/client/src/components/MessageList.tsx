@@ -227,6 +227,10 @@ interface MessageListProps {
     index: number;
   }) => void;
   onSaveGist?: (content: string) => void;
+  onPromoteToPolishPacket?: (payload: {
+    message: ChatMessage;
+    index: number;
+  }) => void;
   onSaveExact?: (content: string) => void;
   onLike?: (content: string) => void;
   onDislike?: (content: string) => void;
@@ -298,7 +302,19 @@ function getChatMessageKey(msg: ChatMessage) {
 
 export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
   function MessageList(
-    { messages, teachRuntime, onArtifactCreated, onStudioCapture, onCaptureNote, onFeedback, onSaveGist, onSaveExact, onLike, onDislike },
+    {
+      messages,
+      teachRuntime,
+      onArtifactCreated,
+      onStudioCapture,
+      onCaptureNote,
+      onFeedback,
+      onSaveGist,
+      onPromoteToPolishPacket,
+      onSaveExact,
+      onLike,
+      onDislike,
+    },
     ref,
   ) {
     const [openStudioMenuIndex, setOpenStudioMenuIndex] = useState<number | null>(null);
@@ -432,6 +448,19 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                       className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
                     >
                       <BookmarkMinus className={`${ICON_SM} text-primary/60`} /> Save Gist
+                    </button>
+                  ) : null}
+                  {onPromoteToPolishPacket ? (
+                    <button
+                      onClick={() =>
+                        onPromoteToPolishPacket({
+                          message: msg,
+                          index: i,
+                        })
+                      }
+                      className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
+                    >
+                      <StickyNote className={`${ICON_SM} text-primary/60`} /> Promote to Polish Packet
                     </button>
                   ) : null}
                   {onSaveExact ? (

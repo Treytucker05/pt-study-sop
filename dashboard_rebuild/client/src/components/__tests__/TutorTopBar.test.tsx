@@ -82,7 +82,7 @@ describe("TutorTopBar", () => {
         activeWorkflowDetail={undefined}
         studioView="priming"
         studioSubTabs={[
-          { key: "workbench", label: "HOME", available: true },
+          { key: "home", label: "HOME", available: true },
           { key: "priming", label: "PRIMING", available: true },
           { key: "polish", label: "POLISH", available: false },
           { key: "final_sync", label: "FINAL SYNC", available: false },
@@ -110,5 +110,36 @@ describe("TutorTopBar", () => {
     expect(
       screen.queryByTestId("workspace-tab-bar"),
     ).not.toBeInTheDocument();
+  });
+
+  it("does not show the live-session badge when the backend session is not validated active", () => {
+    render(
+      <TutorTopBar
+        shellMode="tutor"
+        isTutorSessionView={false}
+        brainLaunchContext={null}
+        topic="Neuro"
+        turnCount={3}
+        startedAt="2026-03-20T15:00:00Z"
+        hasChain={false}
+        currentBlock={null}
+        isChainComplete={false}
+        blockTimerSeconds={null}
+        timerPaused={false}
+        progressCount={0}
+        chainBlocksLength={0}
+        formatTimer={(seconds) => `${seconds}s`}
+        onSetTimerPaused={vi.fn()}
+        onAdvanceBlock={vi.fn()}
+        activeWorkflowId="wf-1"
+        activeWorkflowDetail={undefined}
+        studioView="workspace"
+        studioSubTabs={[{ key: "workspace", label: "WORKSPACE", available: true }]}
+        activeSessionId="sess-stale"
+        teachRuntime={null}
+      />,
+    );
+
+    expect(screen.queryByText("LIVE SESSION")).not.toBeInTheDocument();
   });
 });

@@ -11,6 +11,7 @@ import type {
   TutorSessionPreflightResponse,
   TutorSessionWithTurns,
   TutorStrategyFeedback,
+  TutorTurn,
   TutorTemplateChain,
   TutorWorkflowDetailResponse,
 } from "@/lib/api";
@@ -41,6 +42,58 @@ export interface UseTutorSessionParams {
   hasRestored: boolean;
   activeWorkflowId: string | null;
   activeWorkflowDetail: TutorWorkflowDetailResponse | null;
+}
+
+function getCommittedAssistantMessageKey(message: ChatMessage): string {
+  if (typeof message.messageId === "string" && message.messageId.trim()) {
+    return `message:${message.messageId.trim()}`;
+  }
+  if (message.turnId !== undefined && message.turnId !== null) {
+    return `turn:${String(message.turnId)}`;
+  }
+  if (
+    typeof message.sessionTurnNumber === "number" &&
+    Number.isFinite(message.sessionTurnNumber)
+  ) {
+    return `session-turn:${message.sessionTurnNumber}`;
+  }
+  return `content:${message.content.trim().toLowerCase()}`;
+}
+
+function upsertCommittedAssistantMessage(
+  messages: ChatMessage[],
+  nextMessage: ChatMessage,
+): ChatMessage[] {
+  const nextKey = getCommittedAssistantMessageKey(nextMessage);
+  const existingIndex = messages.findIndex(
+    (message) => getCommittedAssistantMessageKey(message) === nextKey,
+  );
+  if (existingIndex === -1) {
+    return [...messages, nextMessage];
+  }
+  const nextMessages = [...messages];
+  nextMessages[existingIndex] = nextMessage;
+  return nextMessages;
+}
+
+function buildCommittedAssistantMessageFromTurn(turn: TutorTurn): ChatMessage | null {
+  if (typeof turn.answer !== "string" || !turn.answer.trim()) return null;
+
+  return {
+    messageId: `session-turn-${turn.id}`,
+    turnId: turn.id,
+    createdAt: turn.created_at,
+    sessionTurnNumber: turn.turn_number,
+    role: "assistant",
+    content: turn.answer,
+    citations: Array.isArray(turn.citations_json) ? turn.citations_json : undefined,
+    verdict: turn.verdict ?? undefined,
+    teachBackRubric: turn.teach_back_rubric ?? undefined,
+  };
+}
+
+function isTutorSessionActive(status: string | null | undefined): boolean {
+  return typeof status === "string" && status.trim().toLowerCase() === "active";
 }
 
 export function useTutorSession({
@@ -121,6 +174,10 @@ export function useTutorSession({
   const [strategyFeedback, setStrategyFeedback] = useState<TutorStrategyFeedback | null>(null);
   const [strategyNotes, setStrategyNotes] = useState("");
   const [savingStrategyFeedback, setSavingStrategyFeedback] = useState(false);
+  const [activeSessionStatus, setActiveSessionStatus] = useState<string | null>(null);
+  const [committedAssistantMessages, setCommittedAssistantMessages] = useState<
+    ChatMessage[]
+  >([]);
   const [latestCommittedAssistantMessage, setLatestCommittedAssistantMessage] =
     useState<ChatMessage | null>(null);
 
@@ -234,9 +291,35 @@ export function useTutorSession({
     staleTime: 15 * 1000,
   });
 
+  // ─── Clear session ───
+  const clearActiveSessionState = useCallback(
+    (options?: { nextShellMode?: TutorPageMode }) => {
+      setActiveSessionId(null);
+      setActiveSessionStatus(null);
+      setCommittedAssistantMessages([]);
+      setLatestCommittedAssistantMessage(null);
+      setRestoredTurns(undefined);
+      setArtifacts([]);
+      setTurnCount(0);
+      setStartedAt(null);
+      setCurrentBlockIndex(0);
+      setChainBlocks([]);
+      setScholarStrategy(null);
+      setStrategyFeedback(null);
+      setStrategyNotes("");
+      setShowSetup(false);
+      setShowArtifacts(false);
+      setShowEndConfirm(false);
+      setShellMode(options?.nextShellMode ?? "studio");
+      clearTutorActiveSessionId();
+    },
+    [setActiveSessionId, setRestoredTurns, setShellMode, setShowSetup],
+  );
+
   // ─── Apply session state from server ───
   const applySessionState = useCallback((session: TutorSessionWithTurns) => {
     setActiveSessionId(session.session_id);
+    setActiveSessionStatus(session.status ?? null);
     setShellMode("tutor");
     setShowSetup(false);
     setTurnCount(session.turn_count);
@@ -304,6 +387,14 @@ export function useTutorSession({
     } else {
       setArtifacts([]);
     }
+    const restoredAssistantMessages =
+      session.turns
+        ?.map(buildCommittedAssistantMessageFromTurn)
+        .filter((message): message is ChatMessage => message !== null) ?? [];
+    setCommittedAssistantMessages(restoredAssistantMessages);
+    setLatestCommittedAssistantMessage(
+      restoredAssistantMessages[restoredAssistantMessages.length - 1] ?? null,
+    );
     if (session.turns && session.turns.length > 0) {
       setRestoredTurns(session.turns.map((t) => ({ question: t.question, answer: t.answer })));
     } else {
@@ -312,25 +403,12 @@ export function useTutorSession({
     writeTutorActiveSessionId(session.session_id);
   }, [hub, setActiveSessionId, setRestoredTurns, setShellMode, setShowSetup]);
 
-  // ─── Clear session ───
-  const clearActiveSessionState = useCallback(() => {
-    setActiveSessionId(null);
-    setLatestCommittedAssistantMessage(null);
-    setRestoredTurns(undefined);
-    setArtifacts([]);
-    setTurnCount(0);
-    setStartedAt(null);
-    setCurrentBlockIndex(0);
-    setChainBlocks([]);
-    setScholarStrategy(null);
-    setStrategyFeedback(null);
-    setStrategyNotes("");
-    setShowSetup(false);
-    setShowArtifacts(false);
-    setShowEndConfirm(false);
-    setShellMode("studio");
-    clearTutorActiveSessionId();
-  }, [setActiveSessionId, setRestoredTurns, setShellMode, setShowSetup]);
+  const commitAssistantMessage = useCallback((assistantMessage: ChatMessage) => {
+    setCommittedAssistantMessages((prev) =>
+      upsertCommittedAssistantMessage(prev, assistantMessage),
+    );
+    setLatestCommittedAssistantMessage(assistantMessage);
+  }, []);
 
   // ─── Stage timer persistence ───
   const persistStageTimeSlice = useCallback(
@@ -503,6 +581,11 @@ export function useTutorSession({
     async (sessionId: string) => {
       try {
         const session = await api.tutor.getSession(sessionId);
+        if (!isTutorSessionActive(session.status)) {
+          clearActiveSessionState({ nextShellMode: "tutor" });
+          toast.error("Session is not active. Start a new Tutor run from this surface.");
+          return;
+        }
         applySessionState(session);
         setShellMode("tutor");
         toast.success("Session resumed");
@@ -510,7 +593,7 @@ export function useTutorSession({
         toast.error(`Failed to resume session: ${err instanceof Error ? err.message : "Unknown"}`);
       }
     },
-    [applySessionState, setShellMode]
+    [applySessionState, clearActiveSessionState, setShellMode]
   );
 
   // ─── Artifact handling ───
@@ -801,7 +884,9 @@ export function useTutorSession({
   const progressCount = hasChain ? Math.min(currentBlockIndex + 1, chainBlocks.length) : 0;
   const promotedStudioItems =
     projectStudioItems?.items.filter((item) => item.status === "promoted") || [];
-  const isTutorSessionView = shellMode === "tutor" && Boolean(activeSessionId);
+  const hasActiveTutorSession =
+    Boolean(activeSessionId) && isTutorSessionActive(activeSessionStatus);
+  const isTutorSessionView = shellMode === "tutor" && hasActiveTutorSession;
 
   return {
     // Session state
@@ -828,8 +913,10 @@ export function useTutorSession({
     strategyNotes,
     setStrategyNotes,
     savingStrategyFeedback,
+    committedAssistantMessages,
     latestCommittedAssistantMessage,
     setLatestCommittedAssistantMessage,
+    commitAssistantMessage,
 
     // Stage timer
     stageTimerRunning,
@@ -855,6 +942,8 @@ export function useTutorSession({
     progressCount,
     formatTimer,
     promotedStudioItems,
+    activeSessionStatus,
+    hasActiveTutorSession,
     isTutorSessionView,
 
     // Actions

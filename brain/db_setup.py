@@ -2249,6 +2249,8 @@ def init_database():
             active_board_scope TEXT NOT NULL DEFAULT 'project',
             active_board_id INTEGER,
             viewer_state_json TEXT,
+            prime_packet_promoted_objects_json TEXT NOT NULL DEFAULT '[]',
+            polish_packet_promoted_notes_json TEXT NOT NULL DEFAULT '[]',
             selected_material_ids_json TEXT NOT NULL DEFAULT '[]',
             revision INTEGER NOT NULL DEFAULT 0,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -2264,6 +2266,22 @@ def init_database():
         ON project_workspace_state(course_id)
         """
     )
+    cursor.execute("PRAGMA table_info(project_workspace_state)")
+    workspace_state_columns = {row[1] for row in cursor.fetchall()}
+    if "prime_packet_promoted_objects_json" not in workspace_state_columns:
+        cursor.execute(
+            """
+            ALTER TABLE project_workspace_state
+            ADD COLUMN prime_packet_promoted_objects_json TEXT NOT NULL DEFAULT '[]'
+            """
+        )
+    if "polish_packet_promoted_notes_json" not in workspace_state_columns:
+        cursor.execute(
+            """
+            ALTER TABLE project_workspace_state
+            ADD COLUMN polish_packet_promoted_notes_json TEXT NOT NULL DEFAULT '[]'
+            """
+        )
 
     cursor.execute(
         """

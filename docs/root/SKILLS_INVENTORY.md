@@ -1,14 +1,14 @@
 # Skills Inventory
 
-Date: 2026-03-13
-Purpose: document the current shared-skill topology after the `agent-ecosystem-hygiene_20260313` repair pass.
+Date: 2026-03-25
+Purpose: document the current shared-skill topology after the `agent-ecosystem-hygiene_20260313` repair pass and the shared `dev-browser` promotion.
 
 ## 1. Canonical Upstream
 
 - Canonical shared root: `C:\Users\treyt\.agents\skills`
 - Current upstream shape:
-  - `83` directories total
-  - `81` valid shared skill packages with `SKILL.md`
+  - `35` directories total
+  - `33` valid shared skill packages with `SKILL.md`
   - `2` malformed non-package directories:
     - `artifacts-builder`
     - `ui-ux-pro-max`
@@ -24,12 +24,13 @@ These roots are the supported active shared-skill consumers and should mirror th
 
 | Root | Current State | Local Exceptions |
 |---|---|---|
-| `C:\Users\treyt\.codex\skills` | `81` junctions, `0` broken | `.system`, `agent-skills`, `dev-browser` |
-| `C:\Users\treyt\.claude\skills` | `81` junctions, `0` broken | `continuous-learning`, `learned` |
-| `C:\Users\treyt\.cursor\skills` | `81` junctions, `0` broken | none in this root; Cursor-local skills live in `C:\Users\treyt\.cursor\skills-cursor` |
-| `C:\Users\treyt\.opencode\skills` | `81` junctions, `0` broken | `agent-strategy`, `ensure-agent-workflow` |
-| `C:\Users\treyt\.gemini\skills` | `81` junctions, `0` broken | none |
-| `C:\Users\treyt\.antigravity\skills` | `81` junctions, `0` broken | none |
+| `C:\Users\treyt\.codex\skills` | `33` shared junctions, `0` broken | see `scripts/sync_agent_skills.ps1` `LocalOnlyNames.codex`; `dev-browser` is now shared |
+| `C:\Users\treyt\.claude\skills` | `33` shared junctions, `0` broken | `continuous-learning`, `learned` |
+| `C:\Users\treyt\.cursor\skills` | `33` shared junctions, `0` broken | none in this root; Cursor-local skills live in `C:\Users\treyt\.cursor\skills-cursor` |
+| `C:\Users\treyt\.opencode\skills` | `33` shared junctions, `0` broken | `agent-strategy`, `ensure-agent-workflow` |
+| `C:\Users\treyt\.gemini\skills` | `33` shared junctions, `0` broken | none |
+| `C:\Users\treyt\.antigravity\skills` | `33` shared junctions, `0` broken | none |
+| `C:\Users\treyt\.kimi\skills` | `33` shared junctions, `0` broken | none |
 
 ## 3. Tool-Local And Non-Projection Surfaces
 
@@ -97,7 +98,7 @@ Fixture harness:
 Expected post-sync validation state:
 
 - every supported projection root listed in section 2 shows `0` broken junctions
-- documented local exceptions remain in place
+- documented local exceptions remain in place, and shared `dev-browser` projects into every supported root
 - Kimi and Conduit stay out of shared-skill sync
 - the Gemini embedded Antigravity subtree stays out of the supported health gate
 
@@ -106,4 +107,5 @@ Expected post-sync validation state:
 - Treat `C:\Users\treyt\.agents\skills` as the shared upstream until a new canonical source is explicitly adopted.
 - Preserve the documented local exceptions when repairing shared projections.
 - Do not silently promote local-only tool packages into the shared upstream.
+- Shared `dev-browser` is no longer a Codex-only local exception; keep it in the canonical shared root.
 - Do not reactivate the embedded Gemini Antigravity skill roots without fresh runtime proof.

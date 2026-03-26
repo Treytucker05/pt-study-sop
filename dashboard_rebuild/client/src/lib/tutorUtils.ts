@@ -12,8 +12,13 @@ const CODE_BLOCK_RE = /^```/;
 
 // ─── Query-string helpers ───
 
-export type TutorPageMode = Exclude<TutorShellMode, "publish" | "launch">;
-export type TutorStudioView = "workbench" | "priming" | "polish" | "final_sync" | "workspace";
+export type TutorPageMode = Exclude<TutorShellMode, "publish" | "launch" | "schedule">;
+export type TutorStudioView =
+  | "home"
+  | "workspace"
+  | "priming"
+  | "polish"
+  | "final_sync";
 
 export type TutorShellQuery = {
   courseId?: number;
@@ -24,10 +29,15 @@ export type TutorShellQuery = {
 };
 
 export function normalizeTutorPageMode(value: string | null | undefined): TutorPageMode | undefined {
-  if (value === "studio" || value === "tutor" || value === "schedule") {
+  if (value === "studio" || value === "tutor") {
     return value;
   }
-  if (value === "launch" || value === "dashboard" || value === "publish") {
+  if (
+    value === "launch" ||
+    value === "dashboard" ||
+    value === "publish" ||
+    value === "schedule"
+  ) {
     return "studio";
   }
   return undefined;
@@ -37,7 +47,7 @@ export function normalizeTutorStudioView(
   value: string | null | undefined,
 ): TutorStudioView | undefined {
   if (
-    value === "workbench" ||
+    value === "home" ||
     value === "priming" ||
     value === "polish" ||
     value === "final_sync" ||
@@ -52,7 +62,7 @@ export function resolveStudioViewFromWorkflowStage(stage: string | null | undefi
   if (stage === "final_sync") return "final_sync";
   if (stage === "polish") return "polish";
   if (stage === "priming" || stage === "launch") return "priming";
-  return "workbench";
+  return "home";
 }
 
 export function readTutorShellQuery(): TutorShellQuery {

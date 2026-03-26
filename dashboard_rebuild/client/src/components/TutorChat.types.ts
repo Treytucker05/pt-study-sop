@@ -63,6 +63,10 @@ export interface TutorChatProps {
     index: number;
   }) => void;
   onSaveGist?: (content: string) => void;
+  onPromoteToPolishPacket?: (payload: {
+    message: ChatMessage;
+    index: number;
+  }) => void;
   onSaveExact?: (content: string) => void;
   onLike?: (content: string) => void;
   onDislike?: (content: string) => void;

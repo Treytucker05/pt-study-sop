@@ -182,6 +182,65 @@ def test_priming_assist_returns_source_linked_outputs(client, mock_llm):
     assert "Coverage mode: full material coverage" in mock_llm.last_args["user_prompt"]
 
 
+def test_priming_assist_includes_prime_packet_context_in_prompt(client, mock_llm):
+    course_id = 9011
+    _insert_course(course_id, "Cardio")
+    _insert_material(
+        111,
+        course_id=course_id,
+        title="Cardiac Output Notes",
+        source_path="/tmp/cardiac-output.txt",
+        file_type="txt",
+        content="Cardiac output depends on stroke volume and heart rate.",
+    )
+
+    workflow_response = client.post(
+        "/api/tutor/workflows",
+        json={
+            "course_id": course_id,
+            "study_unit": "Week 7",
+            "topic": "Cardiac output",
+            "current_stage": "priming",
+            "status": "priming_in_progress",
+        },
+    )
+    assert workflow_response.status_code == 200
+    workflow_id = workflow_response.get_json()["workflow"]["workflow_id"]
+
+    mock_llm.set_response(
+        json.dumps(
+            {
+                "method_outputs": {
+                    "M-PRE-013": {
+                        "summary": "Cardiac output is the product of stroke volume and heart rate.",
+                        "major_sections": ["determinants"],
+                    }
+                }
+            }
+        )
+    )
+
+    response = client.post(
+        f"/api/tutor/workflows/{workflow_id}/priming-assist",
+        json={
+            "material_ids": [111],
+            "study_unit": "Week 7",
+            "topic": "Cardiac output",
+            "priming_methods": ["summary_first"],
+            "packet_context": (
+                "## Primed Artifacts\n"
+                "- Misconception to repair :: Learner mixed preload effects with heart-rate regulation."
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+    prompt = mock_llm.last_args["user_prompt"]
+    assert "Prime Packet context already staged for this run:" in prompt
+    assert "Misconception to repair" in prompt
+    assert "Learner mixed preload effects with heart-rate regulation." in prompt
+
+
 def test_priming_assist_merges_new_method_outputs_into_existing_inventory(client, mock_llm):
     course_id = 902
     _insert_course(course_id, "Neuro")

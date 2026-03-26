@@ -352,6 +352,30 @@ def test_project_shell_state_persists_and_increments_revision(client):
             "active_board_scope": "session",
             "selected_material_ids": [4, "7", 4],
             "viewer_state": {"sourcePath": "Uploads/brainstem.pdf", "page": 3},
+            "prime_packet_promoted_objects": [
+                {
+                    "id": "excerpt:101:abc123",
+                    "kind": "excerpt",
+                    "title": "Excerpt: Cardiac Output Lecture",
+                    "detail": "Cardiac output is determined by stroke volume multiplied by heart rate.",
+                    "badge": "EXCERPT",
+                    "provenance": {
+                        "materialId": 101,
+                        "sourcePath": "uploads/cardio-output.pdf",
+                        "fileType": "pdf",
+                        "sourceTitle": "Cardiac Output Lecture",
+                        "selectionLabel": "Paragraph 1",
+                    },
+                }
+            ],
+            "polish_packet_promoted_notes": [
+                {
+                    "id": "assistant-1",
+                    "title": "Tutor Reply 3",
+                    "content": "Cardiac output is determined by stroke volume multiplied by heart rate.",
+                    "badge": "TUTOR",
+                }
+            ],
             "revision": 0,
         },
     )
@@ -362,12 +386,21 @@ def test_project_shell_state_persists_and_increments_revision(client):
     assert saved["selected_material_ids"] == [4, 7]
     assert saved["last_mode"] == "tutor"
     assert saved["active_tutor_session_id"] == "tutor-shell-102"
+    assert len(saved["prime_packet_promoted_objects"]) == 1
+    assert len(saved["polish_packet_promoted_notes"]) == 1
+    assert (
+        saved["prime_packet_promoted_objects"][0]["detail"]
+        == "Cardiac output is determined by stroke volume multiplied by heart rate."
+    )
+    assert saved["polish_packet_promoted_notes"][0]["title"] == "Tutor Reply 3"
 
     shell_response = client.get("/api/tutor/project-shell?course_id=102")
     assert shell_response.status_code == 200
     shell = shell_response.get_json()
     assert shell["workspace_state"]["revision"] == 1
     assert shell["workspace_state"]["viewer_state"]["page"] == 3
+    assert len(shell["workspace_state"]["prime_packet_promoted_objects"]) == 1
+    assert len(shell["workspace_state"]["polish_packet_promoted_notes"]) == 1
     assert shell["continuation"]["can_resume"] is True
     assert shell["active_session"]["session_id"] == "tutor-shell-102"
 
@@ -380,6 +413,8 @@ def test_project_shell_state_persists_and_increments_revision(client):
             "active_board_scope": "project",
             "selected_material_ids": [9],
             "viewer_state": {"sourcePath": "Uploads/brainstem.pdf", "page": 5},
+            "prime_packet_promoted_objects": [],
+            "polish_packet_promoted_notes": [],
             "revision": 1,
         },
     )
@@ -389,6 +424,8 @@ def test_project_shell_state_persists_and_increments_revision(client):
     assert updated["revision"] == 2
     assert updated["last_mode"] == "studio"
     assert updated["selected_material_ids"] == [9]
+    assert updated["prime_packet_promoted_objects"] == []
+    assert updated["polish_packet_promoted_notes"] == []
 
 
 def test_project_shell_state_rejects_stale_revision(client):
@@ -702,6 +739,120 @@ def test_material_file_route_streams_original_file(client, tmp_path):
 
     assert response.status_code == 200
     assert response.data == b"%PDF-1.4 test"
+
+
+def test_studio_run_returns_combined_shell_and_studio_state(client):
+    _insert_course(120, "Physiology")
+    _insert_tutor_session(120, "studio-run-120", "Cardiac Output")
+
+    save_response = client.put(
+        "/api/tutor/project-shell/state",
+        json={
+            "course_id": 120,
+            "active_tutor_session_id": "studio-run-120",
+            "last_mode": "studio",
+            "active_board_scope": "project",
+            "prime_packet_promoted_objects": [],
+            "polish_packet_promoted_notes": [
+                {
+                    "id": "assistant-12",
+                    "title": "Tutor Reply 12",
+                    "content": "Afterload raises ventricular work.",
+                    "badge": "TUTOR",
+                }
+            ],
+            "selected_material_ids": [12],
+            "revision": 0,
+        },
+    )
+    assert save_response.status_code == 200
+
+    capture_response = client.post(
+        "/api/tutor/studio/capture",
+        json={
+            "course_id": 120,
+            "tutor_session_id": "studio-run-120",
+            "scope": "session",
+            "item_type": "note",
+            "title": "Repair note",
+            "body_markdown": "Revisit preload vs afterload.",
+            "status": "boarded",
+        },
+    )
+    assert capture_response.status_code == 201
+
+    response = client.get(
+        "/api/tutor/studio-run",
+        query_string={
+            "course_id": 120,
+            "tutor_session_id": "studio-run-120",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["course"]["id"] == 120
+    assert body["workspace_state"]["active_tutor_session_id"] == "studio-run-120"
+    assert len(body["workspace_state"]["polish_packet_promoted_notes"]) == 1
+    assert body["workspace_state"]["polish_packet_promoted_notes"][0]["title"] == "Tutor Reply 12"
+    assert body["studio_restore"]["counts"]["total"] == 1
+    assert body["studio_restore"]["items"][0]["title"] == "Repair note"
+    assert body["publish_confirmation_required"] is True
+
+
+def test_studio_run_put_persists_workspace_state_and_blocks_publish(client):
+    _insert_course(121, "Renal")
+    _insert_tutor_session(121, "studio-run-121", "Filtration")
+
+    blocked_response = client.put(
+        "/api/tutor/studio-run",
+        json={
+            "course_id": 121,
+            "workspace_state": {"revision": 0},
+            "request_publish": True,
+        },
+    )
+    assert blocked_response.status_code == 400
+    assert blocked_response.get_json()["error"] == "publish requires explicit user confirmation"
+
+    response = client.put(
+        "/api/tutor/studio-run",
+        json={
+            "course_id": 121,
+            "tutor_session_id": "studio-run-121",
+            "workspace_state": {
+                "active_tutor_session_id": "studio-run-121",
+                "last_mode": "studio",
+                "active_board_scope": "project",
+                "active_board_id": None,
+                "viewer_state": {"sourcePath": "Uploads/renal.pdf", "page": 2},
+                "prime_packet_promoted_objects": [],
+                "polish_packet_promoted_notes": [
+                    {
+                        "id": "assistant-2",
+                        "title": "Tutor Reply 2",
+                        "content": "Filtration fraction depends on GFR relative to renal plasma flow.",
+                        "badge": "TUTOR",
+                    }
+                ],
+                "selected_material_ids": [21],
+                "revision": 0,
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["workspace_state"]["revision"] == 1
+    assert body["workspace_state"]["viewer_state"]["page"] == 2
+    assert len(body["workspace_state"]["polish_packet_promoted_notes"]) == 1
+    assert body["publish_confirmation_required"] is True
+
+    restore_response = client.get("/api/tutor/studio-run", query_string={"course_id": 121})
+    assert restore_response.status_code == 200
+    restored = restore_response.get_json()
+    assert restored["workspace_state"]["selected_material_ids"] == [21]
+    assert restored["workspace_state"]["polish_packet_promoted_notes"][0]["title"] == "Tutor Reply 2"
 
 
 def test_material_file_route_returns_404_when_file_missing(client):

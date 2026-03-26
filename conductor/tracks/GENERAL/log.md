@@ -1496,3 +1496,18 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `npx skills add mattpocock/skills -g --all -y`
   - `pwsh -NoProfile -ExecutionPolicy Bypass -File C:\pt-study-sop\scripts\sync_agent_skills.ps1 -Mode Apply`
   - `pwsh -NoProfile -ExecutionPolicy Bypass -File C:\pt-study-sop\scripts\sync_agent_skills.ps1 -Mode Check`
+
+## 2026-03-25 - Global dev-browser install and shared skill projection
+
+- Installed `dev-browser@0.2.3` globally with `npm i -g dev-browser`.
+- Used `dev-browser install-skill` to add the embedded `dev-browser` skill into `C:\Users\treyt\.agents\skills` and `C:\Users\treyt\.claude\skills`.
+- Promoted `dev-browser` out of the Codex local-only allowlist so `scripts/sync_agent_skills.ps1` can project it into every supported agent root.
+- Synced the shared skill topology, which relinked Codex and Claude to the canonical shared `dev-browser` skill and linked the skill into Cursor, OpenCode, Gemini, Antigravity, and Kimi.
+- Validation passed:
+  - `dev-browser --help`
+  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync_agent_config.ps1 -Mode Check`
+  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync_agent_skills.ps1 -Mode Apply`
+  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync_agent_skills.ps1 -Mode Check`
+  - `dev-browser install`
+  - `dev-browser status`
+  - `dev-browser browsers`

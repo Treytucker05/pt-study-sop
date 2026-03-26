@@ -1228,6 +1228,8 @@ export interface TutorTurn {
   citations_json: TutorCitation[] | string | null;
   phase: string | null;
   artifacts_json: unknown;
+  verdict?: TutorVerdict | null;
+  teach_back_rubric?: TeachBackRubric | null;
   strategy_snapshot_json?: TutorScholarStrategy | string | null;
   created_at: string;
 }
@@ -1336,6 +1338,8 @@ export interface TutorProjectShellState {
   active_board_scope: TutorBoardScope;
   active_board_id: number | null;
   viewer_state: Record<string, unknown> | null;
+  prime_packet_promoted_objects: Record<string, unknown>[];
+  polish_packet_promoted_notes: Record<string, unknown>[];
   selected_material_ids: number[];
   revision: number;
   updated_at: string | null;
@@ -1348,6 +1352,8 @@ export interface TutorProjectShellStateRequest {
   active_board_scope?: TutorBoardScope;
   active_board_id?: number | null;
   viewer_state?: Record<string, unknown> | null;
+  prime_packet_promoted_objects?: Record<string, unknown>[];
+  polish_packet_promoted_notes?: Record<string, unknown>[];
   selected_material_ids?: number[];
   revision?: number;
 }
@@ -1389,6 +1395,25 @@ export interface TutorProjectShellResponse {
     studio_promoted_items: number;
     pending_schedule_events: number;
   };
+}
+
+export interface TutorStudioRunResponse {
+  course: TutorProjectShellResponse["course"];
+  workspace_state: TutorProjectShellState;
+  continuation: TutorProjectShellResponse["continuation"];
+  active_session: TutorProjectShellResponse["active_session"];
+  recent_sessions: TutorProjectShellResponse["recent_sessions"];
+  counts: TutorProjectShellResponse["counts"];
+  studio_restore: TutorStudioRestoreResponse;
+  publish_confirmation_required: boolean;
+}
+
+export interface TutorStudioRunRequest {
+  course_id: number;
+  tutor_session_id?: string | null;
+  include_archived?: boolean;
+  workspace_state: Omit<TutorProjectShellStateRequest, "course_id">;
+  request_publish?: boolean;
 }
 
 export interface TutorHubRecommendedAction {
@@ -1639,6 +1664,7 @@ export interface TutorPrimingAssistRequest {
   priming_method?: string | null;
   priming_chain_id?: string | null;
   source_inventory?: TutorPrimingSourceInventoryItem[];
+  packet_context?: string | null;
 }
 
 export interface TutorPrimingAssistAggregate {

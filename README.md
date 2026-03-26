@@ -17,7 +17,7 @@ If another active doc disagrees with this file on product meaning, route ownersh
 - [Ownership And Routes](#ownership-and-routes)
 - [Tutor Page — Complete Reference](#tutor-page--complete-reference)
   - [Product Model](#product-model)
-  - [Screen Inventory (7 screens)](#screen-inventory-7-screens)
+  - [Screen Inventory (6 user-facing surfaces)](#screen-inventory-6-user-facing-surfaces)
   - [Shell Infrastructure](#shell-infrastructure)
   - [Landed vs Planned — Full Status](#landed-vs-planned--full-status)
 - [Locked Operating Laws](#locked-operating-laws)
@@ -77,7 +77,7 @@ The system is not a generic chatbot, not a set of equal peer pages fighting for 
 | Route | Meaning |
 |------|---------|
 | `/` and `/brain` | Brain home |
-| `/tutor` | Tutor surface-first study shell after Brain handoff. Global nav owns `Launch`, `Tutor`, `Studio`, `Schedule`, and `Settings`; `Studio` opens on `Home` and owns the workflow sub-tabs `Workbench`, `Priming`, `Polish`, and `Final Sync`. |
+| `/tutor` | Tutor surface-first study shell after Brain handoff. The visible v1 nav is `Studio` and `Tutor`. `Studio` opens on `Workspace Home` and routes into `Workspace`, `Priming`, `Polish`, and `Final Sync`. |
 | `/tutor?course_id=&session_id=&mode=&board_scope=` | Deep-link into specific project/session/mode state |
 | `/scholar` | Scholar investigation console |
 | `/library` | Library support system |
@@ -97,22 +97,21 @@ Tutor is **not a setup wizard**. It is a **Brain-launched, course-backed study w
 | Principle | Detail |
 |-----------|--------|
 | **Brain owns launch context** | Brain decides "what am I working on and why am I entering Tutor" — course, project context, entry point |
-| **Tutor owns the surface-first study shell** | Tutor handles "now I am studying inside this workspace" through one global nav (`Launch`, `Tutor`, `Studio`, `Schedule`, `Settings`) plus session execution, artifacts, and resume/restore |
-| **Studio owns workflow prep and wrap-up** | Workflow setup/refinement lives inside `Studio`, which opens on `Home` and then exposes local sub-tabs: `Workbench`, `Priming`, `Polish`, and `Final Sync` |
+| **Tutor owns the surface-first study shell** | Tutor handles "now I am studying inside this workspace" through a Studio-first shell plus live Tutor execution, artifacts, and resume/restore |
+| **Studio owns workflow prep and wrap-up** | Workflow setup/refinement lives inside `Studio`, which opens on `Workspace Home` and then routes into `Workspace`, `Priming`, `Polish`, and `Final Sync` |
 | **No wizard funnel** | Tutor should not force the user through a large multi-step launch wizard every time. The old TutorWizard is demoted to a thin start panel, and setup work moves into explicit downstream stages instead of one mixed launch surface. |
 | **Project == Course** | In v1, every project is a thin wrapper around an existing `course_id`. No freeform projects. |
 | **Bidirectional flow** | Studio preloads and organizes material → transfers to Tutor for study. Tutor sends notes and artifacts back → Studio captures and organizes them. They feed each other. |
 
 **Current surface/workflow model:**
-- `Launch`: workflow inbox, resume, recents, and study-wheel context
-- `Tutor`: live teaching against a primed bundle plus session-time capture and memory compaction
-- `Studio > Home`: workflow overview, next recommended action, disabled-state guidance, and embedded workbench access
-- `Studio > Workbench`: general class/workspace prep and organization
+- `Studio > Workspace Home`: workflow overview plus the next recommended action
+- `Studio > Workspace`: source-linked canvas, source shelf, document dock, packets, and adaptive side panels
 - `Studio > Priming`: step-based flow for setup, material scope, PRIME methods, outputs, and Tutor handoff
+- `Tutor`: live teaching against a primed bundle plus session-time capture, validation, repair signaling, and memory compaction
 - `Studio > Polish`: mandatory review, Studio organization, summarization, and QA
 - `Studio > Final Sync`: publish approved notes to Obsidian, cards to Anki, and Brain telemetry/index saves
 
-Tutor now uses one global surface nav. Workflow progression is contextual inside that shell instead of a second top-level stage rail competing with the surface tabs.
+Tutor now uses one visible v1 surface nav. Workflow progression is contextual inside Studio instead of a second global rail competing with the main surface.
 
 **System boundary:**
 - **Brain owns:** broad launch orchestration, course/project selection, pre-launch context
@@ -120,13 +119,13 @@ Tutor now uses one global surface nav. Workflow progression is contextual inside
 - **Library owns:** what Tutor can teach (material scope)
 - **SOP owns:** how Tutor teaches (stages, methods, chains, rules)
 
-### Screen Inventory (7 screens)
+### Screen Inventory (6 user-facing surfaces)
 
-The Tutor page contains **7 distinct screens** across 1 entry gate + 4 shell modes + 1 settings modal. Every screen is listed here with its name, goal, content, and build status.
+The Tutor page currently exposes **two visible top-level surfaces** (`Studio`, `Tutor`) with **five Studio sub-surfaces** (`Workspace Home`, `Workspace`, `Priming`, `Polish`, `Final Sync`). Every screen is listed here with its name, goal, content, and build status.
 
-**Mode tab bar:** STUDIO | TUTOR | SCHEDULE | PUBLISH | **START** (shortcut button, pink) | **SETTINGS** (opens modal)
+**Visible v1 top nav:** STUDIO | TUTOR
 
-The START button in the tab bar is a shortcut to the Start Panel. SETTINGS opens a modal dialog, not a separate mode view.
+Workflow movement happens inside Studio instead of through extra top-level nav modes.
 
 ---
 
@@ -399,7 +398,6 @@ Implementation: `MessageList.tsx` lines 298-421.
 | Studio L2 Class Detail (6 tabs) | LANDED | `StudioClassDetail.tsx` |
 | Note compaction (SUMMARY auto-compact) | PLANNED | UI button exists in MessageList, backend not wired |
 | Publish readiness workflow | PARTIAL | Project Resources section with promoted-only gate landed; partial-failure retry and Brain target not built |
-| Settings modal (custom instructions) | LANDED | Modal with editable system prompt, restore defaults, save |
 | Schedule ↔ Calendar wiring | PLANNED | Mode exists, not connected to Calendar for creation or ship-to-calendar |
 | Source clipping with provenance | PLANNED | PDF page / video timestamp → Studio capture with file/page/time metadata |
 | Brain-to-Tutor deep-link launch | PLANNED | Brain should launch directly into correct project/session/mode |

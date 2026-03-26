@@ -1104,6 +1104,64 @@ def test_send_turn_includes_selected_material_scope_in_prompt(client, monkeypatc
     assert "Beta Notes" in prompt
 
 
+def test_send_turn_includes_packet_context_in_system_prompt(client, monkeypatch):
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "mode": "Core",
+            "topic": "Packet Context Test",
+            "packet_context": (
+                "## Primed Artifacts\n"
+                "- [MISCONCEPTION] Misconception to repair :: "
+                "Learner mixed preload effects with heart-rate regulation."
+            ),
+        },
+    )
+    assert resp.status_code == 201
+    tutor_sid = resp.get_json()["session_id"]
+
+    monkeypatch.setattr(
+        tutor_context,
+        "build_context",
+        lambda *_a, **_k: {
+            "materials": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        },
+    )
+    monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
+
+    captured: dict[str, str] = {"system_prompt": ""}
+
+    def fake_stream(system_prompt, _user_prompt, **_kwargs):
+        captured["system_prompt"] = system_prompt
+        yield {"type": "delta", "text": "ok"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-packet",
+            "thread_id": "thread-packet",
+        }
+
+    monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
+
+    turn_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/turn",
+        json={"message": "What should I repair next?"},
+    )
+    assert turn_resp.status_code == 200
+    _ = turn_resp.get_data(as_text=True)
+
+    prompt = captured["system_prompt"]
+    assert "Student's Study Packet" in prompt
+    assert "Misconception to repair" in prompt
+    assert "Learner mixed preload effects with heart-rate regulation." in prompt
+
+
 def test_send_turn_material_count_question_uses_selected_scope(client, monkeypatch):
     conn = sqlite3.connect(config.DB_PATH)
     cur = conn.cursor()

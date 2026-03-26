@@ -1810,6 +1810,7 @@ def run_tutor_priming_assist(workflow_id: str):
 
     study_unit = _normalize_text(data.get("study_unit"))
     topic = _normalize_text(data.get("topic"))
+    packet_context = _normalize_text(data.get("packet_context"))
     priming_methods = _normalize_priming_methods(
         data.get("priming_methods"),
         data.get("priming_method"),
@@ -1882,6 +1883,12 @@ Only include the selected method IDs. Do not emit outputs for unselected methods
         explicit_objectives_json = (
             _json_dumps(explicit_learning_objectives) if explicit_learning_objectives else "[]"
         )
+        packet_context_block = (
+            "Prime Packet context already staged for this run:\n"
+            f"{packet_context}\n\n"
+            if packet_context
+            else ""
+        )
         chunk_outputs: list[dict[str, Any]] = []
         material_error: str | None = None
 
@@ -1902,6 +1909,7 @@ Only include the selected method IDs. Do not emit outputs for unselected methods
                 f"{existing_selected_runs_json}\n\n"
                 "Explicit learning objectives already present in the source material:\n"
                 f"{explicit_objectives_json}\n\n"
+                f"{packet_context_block}"
                 "Global output rules:\n"
                 "- stay structural, orientation-level, and source-grounded\n"
                 "- reason from the source before drafting outputs; do not guess or pad the result\n"
@@ -1976,6 +1984,7 @@ Do not emit outputs for unselected methods.
                 f"{existing_selected_runs_json}\n\n"
                 "Explicit learning objectives already present in the source material:\n"
                 f"{explicit_objectives_json}\n\n"
+                f"{packet_context_block}"
                 "Chunk-level outputs covering the full material:\n"
                 f"{_json_dumps(chunk_outputs)}\n\n"
                 "Consolidation rules:\n"

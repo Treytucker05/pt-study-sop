@@ -44,6 +44,7 @@ import type {
   TutorHubResponse,
   TutorStudioOverviewResponse,
   TutorProjectShellResponse, TutorProjectShellState, TutorProjectShellStateRequest,
+  TutorStudioRunRequest, TutorStudioRunResponse,
   TutorStudioCaptureRequest, TutorStudioCaptureResponse, TutorStudioRestoreResponse,
   TutorStudioPromoteRequest, TutorStudioItemRevisionsResponse, TutorStudioUpdateRequest,
   TutorStudioUpdateResponse,
@@ -712,6 +713,16 @@ export const api = {
       if (params.session_id) qs.set("session_id", params.session_id);
       return request<TutorProjectShellResponse>(`/tutor/project-shell?${qs.toString()}`);
     },
+    getStudioRun: (params: {
+      course_id: number;
+      tutor_session_id?: string;
+      include_archived?: boolean;
+    }) => {
+      const qs = new URLSearchParams({ course_id: String(params.course_id) });
+      if (params.tutor_session_id) qs.set("tutor_session_id", params.tutor_session_id);
+      if (params.include_archived) qs.set("include_archived", "true");
+      return request<TutorStudioRunResponse>(`/tutor/studio-run?${qs.toString()}`);
+    },
     getHub: () => request<TutorHubResponse>("/tutor/hub"),
     listWorkflows: (params?: {
       course_id?: number;
@@ -865,6 +876,11 @@ export const api = {
           body: JSON.stringify(data),
         },
       ),
+    saveStudioRun: (data: TutorStudioRunRequest) =>
+      request<TutorStudioRunResponse>("/tutor/studio-run", {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
     getSession: (sessionId: string) =>
       request<TutorSessionWithTurns>(`/tutor/session/${sessionId}`),
     saveStrategyFeedback: (

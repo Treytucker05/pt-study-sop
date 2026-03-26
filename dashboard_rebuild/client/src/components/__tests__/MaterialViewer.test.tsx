@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 import { MaterialViewer } from "@/components/MaterialViewer";
 import { resolveMaterialViewerKind } from "@/lib/materialViewer";
@@ -53,6 +53,41 @@ describe("MaterialViewer", () => {
     expect(screen.getByTestId("material-viewer-text-preview")).toHaveTextContent(
       "Cell respiration summary",
     );
+  });
+
+  it("reports real text selection from the extracted text preview", () => {
+    const handleSelectionChange = vi.fn();
+
+    render(
+      <MaterialViewer
+        source={{
+          title: "Worksheet",
+          fileName: "worksheet.docx",
+          textContent: "Cell respiration summary",
+        }}
+        onTextSelectionChange={handleSelectionChange}
+      />,
+    );
+
+    const preview = screen.getByTestId("material-viewer-text-preview");
+    const textNode = preview.firstChild;
+
+    expect(textNode).not.toBeNull();
+
+    const range = document.createRange();
+    range.setStart(textNode!, 0);
+    range.setEnd(textNode!, "Cell respiration".length);
+
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    fireEvent.mouseUp(preview);
+
+    expect(handleSelectionChange).toHaveBeenCalledWith({
+      text: "Cell respiration",
+      label: "Viewer selection",
+    });
   });
 });
 

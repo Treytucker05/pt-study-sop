@@ -313,6 +313,8 @@ function makeProjectShell(
     last_mode: "studio" | "tutor" | "schedule" | "publish";
     active_session_id: string | null;
     active_board_scope: "session" | "project" | "overall";
+    prime_packet_promoted_objects: Record<string, unknown>[];
+    polish_packet_promoted_notes: Record<string, unknown>[];
     selected_material_ids: number[];
   }> = {},
 ) {
@@ -336,6 +338,10 @@ function makeProjectShell(
       active_board_scope: overrides.active_board_scope || "project",
       active_board_id: null,
       viewer_state: null,
+      prime_packet_promoted_objects:
+        overrides.prime_packet_promoted_objects || [],
+      polish_packet_promoted_notes:
+        overrides.polish_packet_promoted_notes || [],
       selected_material_ids: overrides.selected_material_ids || [],
       revision: 1,
       updated_at: new Date("2026-03-13T00:00:00Z").toISOString(),
@@ -533,6 +539,8 @@ describe("Tutor page restore", () => {
         last_mode?: "studio" | "tutor" | "schedule" | "publish";
         active_tutor_session_id?: string | null;
         active_board_scope?: "session" | "project" | "overall";
+        prime_packet_promoted_objects?: Record<string, unknown>[];
+        polish_packet_promoted_notes?: Record<string, unknown>[];
         selected_material_ids?: number[];
         revision?: number;
       }) => ({
@@ -542,6 +550,10 @@ describe("Tutor page restore", () => {
           active_board_scope: data.active_board_scope || "project",
           active_board_id: null,
           viewer_state: null,
+          prime_packet_promoted_objects:
+            data.prime_packet_promoted_objects || [],
+          polish_packet_promoted_notes:
+            data.polish_packet_promoted_notes || [],
           selected_material_ids: data.selected_material_ids || [],
           revision: (data.revision || 0) + 1,
           updated_at: new Date("2026-03-13T00:00:00Z").toISOString(),
@@ -602,7 +614,7 @@ describe("Tutor page restore", () => {
   it("renders Studio as the default shell page", async () => {
     renderTutor();
 
-    expect(await screen.findByText("STUDIO HOME")).toBeInTheDocument();
+    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
     expect(screen.getByTestId("tutor-launch-hub")).toBeInTheDocument();
     expect(screen.getByText("STUDIO HUB")).toBeInTheDocument();
     expect(
@@ -613,14 +625,23 @@ describe("Tutor page restore", () => {
     const heroPortal = document.getElementById("page-hero-portal");
     expect(heroPortal).not.toBeNull();
     expect(heroPortal).toContainElement(tabBar);
-    const tabs = within(tabBar).getAllByRole("tab");
-    expect(tabs[0]).toHaveAttribute("id", "tutor-tab-studio");
-    expect(tabs[1]).toHaveAttribute("id", "tutor-tab-tutor");
-    expect(tabs[2]).toHaveAttribute("id", "tutor-tab-schedule");
-    expect(tabs[3]).toHaveAttribute("id", "tutor-tab-settings");
-    expect(screen.queryByRole("tab", { name: /^launch$/i })).not.toBeInTheDocument();
     expect(
-      tabBar.compareDocumentPosition(screen.getByText("STUDIO HOME")) &
+      within(tabBar).getByRole("tab", { name: /^studio$/i }),
+    ).toHaveAttribute("id", "tutor-tab-studio");
+    expect(
+      within(tabBar).getByRole("tab", { name: /^tutor$/i }),
+    ).toHaveAttribute("id", "tutor-tab-tutor");
+    expect(
+      within(tabBar).queryByRole("tab", { name: /^schedule$/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(tabBar).queryByRole("tab", { name: /^settings$/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: /^launch$/i })).not.toBeInTheDocument();
+    expect(screen.queryByText("OPEN WORKBENCH")).not.toBeInTheDocument();
+    expect(screen.getByText("OPEN WORKSPACE")).toBeInTheDocument();
+    expect(
+      tabBar.compareDocumentPosition(screen.getByText("WORKSPACE HOME")) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: /^refresh$/i })).toHaveAttribute(
@@ -636,32 +657,73 @@ describe("Tutor page restore", () => {
   it("keeps Tutor as a separate live study surface from Studio", async () => {
     renderTutor();
 
-    expect(await screen.findByText("STUDIO HOME")).toBeInTheDocument();
+    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: /^tutor$/i }));
     expect(
       await screen.findByText("READY TO RUN A STUDY SESSION"),
     ).toBeInTheDocument();
-    expect(screen.queryByText("STUDIO HOME")).not.toBeInTheDocument();
+    expect(screen.queryByText("WORKSPACE HOME")).not.toBeInTheDocument();
   });
 
-  it("routes the global Schedule tab into Tutor Schedule", async () => {
+  it("does not surface a completed backend session as a live Tutor session", async () => {
+    window.history.replaceState({}, "", "/tutor?course_id=77&mode=tutor");
+    getProjectShellMock.mockResolvedValue(
+      makeProjectShell(77, {
+        last_mode: "tutor",
+        active_session_id: "sess-complete",
+      }),
+    );
+    getSessionMock.mockResolvedValueOnce({
+      session_id: "sess-complete",
+      status: "completed",
+      turn_count: 2,
+      started_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+      topic: "Completed Session",
+      course_id: 77,
+      method_chain_id: null,
+      current_block_index: 0,
+      chain_blocks: [],
+      content_filter: {
+        material_ids: [],
+        accuracy_profile: "strict",
+        objective_scope: "module_all",
+      },
+      artifacts_json: "[]",
+      turns: [],
+    });
+
     renderTutor();
 
-    fireEvent.click(await screen.findByRole("tab", { name: /^schedule$/i }));
-
-    expect(await screen.findByTestId("tutor-schedule-mode")).toHaveTextContent(
-      "schedule mode",
-    );
+    await waitFor(() => {
+      expect(getSessionMock).toHaveBeenCalledWith("sess-complete");
+    });
+    expect(
+      await screen.findByText("READY TO RUN A STUDY SESSION"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("LIVE SESSION")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("tutor-chat")).not.toBeInTheDocument();
   });
 
-  it("returns to Studio Home from Tutor", async () => {
+  it("keeps deferred Schedule and Settings tabs hidden from the Tutor nav", async () => {
+    renderTutor();
+
+    const tabBar = await screen.findByTestId("workspace-tab-bar");
+    expect(
+      within(tabBar).queryByRole("tab", { name: /^schedule$/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(tabBar).queryByRole("tab", { name: /^settings$/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("returns to Workspace Home from Tutor", async () => {
     renderTutor();
 
     fireEvent.click(await screen.findByRole("tab", { name: /^tutor$/i }));
     fireEvent.click(await screen.findByRole("tab", { name: /^studio$/i }));
 
-    expect(await screen.findByText("STUDIO HOME")).toBeInTheDocument();
+    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
   });
 
   it("resumes the most recent Tutor session from Studio", async () => {
@@ -754,7 +816,7 @@ describe("Tutor page restore", () => {
     expect(getSessionMock).toHaveBeenCalledWith("sess-route");
   });
 
-  it("honors schedule mode from Tutor shell query params", async () => {
+  it("normalizes legacy schedule mode query params into the Studio v1 flow", async () => {
     window.history.replaceState({}, "", "/tutor?course_id=77&mode=schedule");
     getProjectShellMock.mockResolvedValue(
       makeProjectShell(77, {
@@ -764,13 +826,13 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    expect(
-      await screen.findByTestId("tutor-schedule-mode"),
-    ).toBeInTheDocument();
-    expect(screen.queryByTestId("tutor-launch-hub")).not.toBeInTheDocument();
+    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: /^schedule$/i })).not.toBeInTheDocument();
+    expect(screen.queryByText("OPEN WORKBENCH")).not.toBeInTheDocument();
+    expect(screen.getByText("OPEN WORKSPACE")).toBeInTheDocument();
   });
 
-  it("keeps explicit Studio mode on Studio Home even when project shell has an active tutor session", async () => {
+  it("keeps explicit Studio mode on Workspace Home even when project shell has an active tutor session", async () => {
     window.history.replaceState({}, "", "/tutor?course_id=77&mode=studio");
     getProjectShellMock.mockResolvedValue(
       makeProjectShell(77, {
@@ -782,9 +844,139 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    expect(await screen.findByText("STUDIO HOME")).toBeInTheDocument();
+    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
     expect(screen.queryByTestId("tutor-chat")).not.toBeInTheDocument();
     expect(getSessionMock).not.toHaveBeenCalled();
+  });
+
+  it("hydrates persisted Prime Packet promoted excerpts from project shell state", async () => {
+    window.history.replaceState({}, "", "/tutor?course_id=77&mode=studio");
+    getProjectShellMock.mockResolvedValue(
+      makeProjectShell(77, {
+        prime_packet_promoted_objects: [
+          {
+            id: "excerpt:101:abc123",
+            kind: "excerpt",
+            title: "Excerpt: Cardiac Output Lecture",
+            detail:
+              "Cardiac output is determined by stroke volume multiplied by heart rate.",
+            badge: "EXCERPT",
+            provenance: {
+              materialId: 101,
+              sourcePath: "uploads/cardio-output.pdf",
+              fileType: "pdf",
+              sourceTitle: "Cardiac Output Lecture",
+              selectionLabel: "Paragraph 1",
+            },
+          },
+        ],
+      }),
+    );
+
+    renderTutor();
+
+    fireEvent.click(await screen.findByRole("button", { name: /^open workspace$/i }));
+
+    const primePacket = await screen.findByTestId("studio-prime-packet");
+    await within(primePacket).findByText("Workspace Excerpt");
+    await waitFor(() => {
+      expect(primePacket).toHaveTextContent(
+        "Cardiac output is determined by stroke volume multiplied by heart rate.",
+      );
+    });
+  });
+
+  it("hydrates persisted Prime Packet repair notes from project shell state", async () => {
+    window.history.replaceState({}, "", "/tutor?course_id=77&mode=studio");
+    getProjectShellMock.mockResolvedValue(
+      makeProjectShell(77, {
+        prime_packet_promoted_objects: [
+          {
+            id: "repair-note:repair:verdict:abc123",
+            kind: "text_note",
+            title: "Misconception to repair",
+            detail:
+              "The reply mixed preload effects with heart-rate regulation.",
+            badge: "MISCONCEPTION",
+            provenance: {
+              sourceType: "repair_candidate",
+              candidateId: "repair:verdict:abc123",
+              sourceLabel: "Latest verdict",
+            },
+          },
+        ],
+      }),
+    );
+
+    renderTutor();
+
+    fireEvent.click(await screen.findByRole("button", { name: /^open workspace$/i }));
+
+    const primePacket = await screen.findByTestId("studio-prime-packet");
+    await within(primePacket).findByText("Misconception to repair");
+    await waitFor(() => {
+      expect(primePacket).toHaveTextContent(
+        "The reply mixed preload effects with heart-rate regulation.",
+      );
+    });
+    await waitFor(() => {
+      expect(saveProjectShellStateMock).toHaveBeenCalled();
+      const lastCall =
+        saveProjectShellStateMock.mock.calls[
+          saveProjectShellStateMock.mock.calls.length - 1
+        ]?.[0];
+      expect(lastCall?.prime_packet_promoted_objects).toEqual([
+        expect.objectContaining({
+          kind: "text_note",
+          title: "Misconception to repair",
+          detail:
+            "The reply mixed preload effects with heart-rate regulation.",
+        }),
+      ]);
+    });
+  });
+
+  it("hydrates persisted Polish Packet promoted notes from project shell state", async () => {
+    window.history.replaceState({}, "", "/tutor?course_id=77&mode=studio");
+    localStorage.setItem("tutor-studio-last-tab", "polish");
+    getProjectShellMock.mockResolvedValue(
+      makeProjectShell(77, {
+        polish_packet_promoted_notes: [
+          {
+            id: "assistant-1",
+            title: "Tutor Reply 3",
+            content:
+              "Cardiac output is determined by stroke volume multiplied by heart rate.",
+            badge: "TUTOR",
+          },
+        ],
+      }),
+    );
+
+    renderTutor();
+
+    const polishPacket = await screen.findByTestId("studio-polish-packet");
+    await within(polishPacket).findByText("Tutor Reply 3");
+    await waitFor(() => {
+      expect(polishPacket).toHaveTextContent(
+        "Cardiac output is determined by stroke volume multiplied by heart rate.",
+      );
+    });
+    await waitFor(() => {
+      expect(saveProjectShellStateMock).toHaveBeenCalled();
+      const lastCall =
+        saveProjectShellStateMock.mock.calls[
+          saveProjectShellStateMock.mock.calls.length - 1
+        ]?.[0];
+      expect(lastCall?.polish_packet_promoted_notes).toEqual([
+        expect.objectContaining({
+          id: "assistant-1",
+          title: "Tutor Reply 3",
+          content:
+            "Cardiac output is determined by stroke volume multiplied by heart rate.",
+        }),
+      ]);
+    });
   });
 
   it("routes publish restore into Studio", async () => {
@@ -797,7 +989,7 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    expect(await screen.findByText("STUDIO HOME")).toBeInTheDocument();
+    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
     expect(screen.queryByTestId("tutor-publish-mode")).not.toBeInTheDocument();
   });
 
@@ -841,10 +1033,8 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    expect(await screen.findByText("NO CHAIN SELECTED")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /open studio/i }),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
+    expect(screen.getByText("OPEN WORKSPACE")).toBeInTheDocument();
     expect(screen.queryByTestId("brain-home")).not.toBeInTheDocument();
   });
 
@@ -889,7 +1079,7 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    expect(await screen.findByText("STUDIO HOME")).toBeInTheDocument();
+    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
     expect(getCurrentCourseMock).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem("tutor.selected_material_ids.v2")).toBe(
       JSON.stringify([101, 102]),
@@ -909,7 +1099,7 @@ describe("Tutor page restore", () => {
     await waitFor(() => {
       expect(getCurrentCourseMock).toHaveBeenCalledTimes(1);
     });
-    expect(await screen.findByText("STUDIO HOME")).toBeInTheDocument();
+    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
     expect(localStorage.getItem("tutor.selected_material_ids.v2")).toBe(
       JSON.stringify([101]),
     );
@@ -924,7 +1114,7 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    expect(await screen.findByText("STUDIO HOME")).toBeInTheDocument();
+    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
     expect(localStorage.getItem("tutor.selected_material_ids.v2")).toBe(
       JSON.stringify([301, 302]),
     );
@@ -954,7 +1144,7 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    expect(await screen.findByText("STUDIO HOME")).toBeInTheDocument();
+    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
     expect(localStorage.getItem("tutor.selected_material_ids.v2")).toBe(
       JSON.stringify([909]),
     );
@@ -986,7 +1176,7 @@ describe("Tutor page restore", () => {
     await waitFor(() => {
       expect(getSessionMock).toHaveBeenCalledWith("sess-complete");
     });
-    expect(await screen.findByText("STUDIO HOME")).toBeInTheDocument();
+    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
     expect(localStorage.getItem("tutor.active_session.v1")).toBeNull();
   });
 });

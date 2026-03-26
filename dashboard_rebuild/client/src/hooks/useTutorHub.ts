@@ -34,6 +34,7 @@ export interface UseTutorHubParams {
   hasRestored: boolean;
   shellMode: TutorPageMode;
   activeSessionId: string | null;
+  persistClientState?: boolean;
 }
 
 export function useTutorHub({
@@ -41,6 +42,7 @@ export function useTutorHub({
   hasRestored,
   shellMode,
   activeSessionId,
+  persistClientState = true,
 }: UseTutorHubParams) {
   const queryClient = useQueryClient();
 
@@ -76,22 +78,27 @@ export function useTutorHub({
 
   // ─── Persist to localStorage ───
   useEffect(() => {
+    if (!persistClientState) return;
     writeTutorSelectedMaterialIds(selectedMaterials);
-  }, [selectedMaterials]);
+  }, [persistClientState, selectedMaterials]);
 
   useEffect(() => {
+    if (!persistClientState) return;
     writeTutorAccuracyProfile(accuracyProfile);
-  }, [accuracyProfile]);
+  }, [accuracyProfile, persistClientState]);
 
   useEffect(() => {
+    if (!persistClientState) return;
     writeTutorObjectiveScope(objectiveScope);
-  }, [objectiveScope]);
+  }, [objectiveScope, persistClientState]);
 
   useEffect(() => {
+    if (!persistClientState) return;
     writeTutorVaultFolder(vaultFolder);
-  }, [vaultFolder]);
+  }, [persistClientState, vaultFolder]);
 
   useEffect(() => {
+    if (!persistClientState) return;
     writeTutorStoredStartState({
       courseId,
       topic,
@@ -110,6 +117,7 @@ export function useTutorHub({
     courseId,
     customBlockIds,
     objectiveScope,
+    persistClientState,
     selectedMaterials,
     selectedObjectiveGroup,
     selectedObjectiveId,
@@ -268,19 +276,23 @@ export function useTutorHub({
   const toggleMaterial = useCallback((id: number) => {
     setSelectedMaterials((prev) => {
       const next = prev.includes(id) ? prev.filter((mid) => mid !== id) : [...prev, id];
-      return writeTutorSelectedMaterialIds(next);
+      return persistClientState ? writeTutorSelectedMaterialIds(next) : next;
     });
-  }, []);
+  }, [persistClientState]);
 
   const selectAllMaterials = useCallback(() => {
     const allIds = chatMaterials.map((m) => m.id);
-    setSelectedMaterials(writeTutorSelectedMaterialIds(allIds));
-  }, [chatMaterials]);
+    setSelectedMaterials(
+      persistClientState ? writeTutorSelectedMaterialIds(allIds) : allIds,
+    );
+  }, [chatMaterials, persistClientState]);
 
   const clearMaterialSelection = useCallback(() => {
     setSelectedMaterials([]);
-    writeTutorSelectedMaterialIds([]);
-  }, []);
+    if (persistClientState) {
+      writeTutorSelectedMaterialIds([]);
+    }
+  }, [persistClientState]);
 
   const refreshChatMaterials = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ["tutor-chat-materials-all-enabled"] });

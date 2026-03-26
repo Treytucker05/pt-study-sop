@@ -11,6 +11,7 @@ const configCheckMock = vi.fn();
 const logWorkflowStageTimeMock = vi.fn();
 const getProjectShellMock = vi.fn();
 const restoreStudioItemsMock = vi.fn();
+const getSessionMock = vi.fn();
 
 vi.mock("@/lib/api", () => ({
   api: {
@@ -22,7 +23,7 @@ vi.mock("@/lib/api", () => ({
       restoreStudioItems: (...args: unknown[]) => restoreStudioItemsMock(...args),
       createCustomChain: vi.fn(),
       createSession: vi.fn(),
-      getSession: vi.fn(),
+      getSession: (...args: unknown[]) => getSessionMock(...args),
       deleteArtifacts: vi.fn(),
       advanceBlock: vi.fn(),
       createArtifact: vi.fn(),
@@ -100,6 +101,7 @@ describe("useTutorSession", () => {
     logWorkflowStageTimeMock.mockResolvedValue({ ok: true });
     getProjectShellMock.mockResolvedValue({});
     restoreStudioItemsMock.mockResolvedValue({ items: [] });
+    getSessionMock.mockReset();
   });
 
   it("uses carried-forward priming objectives in Tutor preflight when no approved objectives are loaded", () => {
@@ -210,7 +212,7 @@ describe("useTutorSession", () => {
           activeSessionId: "sess-1",
           setActiveSessionId: vi.fn(),
           shellMode: "tutor",
-          studioView: "workbench",
+          studioView: "home",
           setShellMode: vi.fn(),
           setShowSetup: vi.fn(),
           setRestoredTurns: vi.fn(),
@@ -254,5 +256,128 @@ describe("useTutorSession", () => {
     );
 
     vi.useRealTimers();
+  });
+
+  it("hydrates committed assistant history from restored session turns", async () => {
+    const wrapper = createWrapper();
+    const hub = createHubMock();
+    const setActiveSessionId = vi.fn();
+    const setShellMode = vi.fn();
+    const setShowSetup = vi.fn();
+    const setRestoredTurns = vi.fn();
+
+    getSessionMock.mockResolvedValue({
+      session_id: "sess-restore",
+      topic: "Cardiovascular regulation",
+      course_id: 1,
+      method_chain_id: null,
+      current_block_index: 0,
+      chain_blocks: [],
+      content_filter: {
+        material_ids: [101],
+        accuracy_profile: "strict",
+        objective_scope: "module_all",
+      },
+      scholar_strategy: null,
+      strategy_feedback: null,
+      artifacts_json: null,
+      turn_count: 2,
+      started_at: "2026-03-25T10:00:00Z",
+      turns: [
+        {
+          id: 1,
+          turn_number: 1,
+          question: "How does preload affect stroke volume?",
+          answer: "It increases stroke volume through ventricular stretch.",
+          citations_json: null,
+          phase: "first_pass",
+          artifacts_json: null,
+          verdict: {
+            verdict: "partial",
+            confidence: 0.72,
+            why_wrong: "The answer omitted the Frank-Starling mechanism.",
+          },
+          teach_back_rubric: {
+            overall_rating: "partial",
+            accuracy_score: 0.6,
+            breadth_score: 0.5,
+            synthesis_score: 0.5,
+            confidence: 0.7,
+            misconceptions: ["The answer skipped ventricular stretch."],
+          },
+          created_at: "2026-03-25T10:01:00Z",
+        },
+        {
+          id: 2,
+          turn_number: 2,
+          question: "How does heart rate affect cardiac output?",
+          answer: "It changes cardiac output by changing beats per minute.",
+          citations_json: null,
+          phase: "first_pass",
+          artifacts_json: null,
+          verdict: {
+            verdict: "partial",
+            confidence: 0.8,
+            why_wrong:
+              "The answer treated heart-rate control as identical to preload regulation.",
+            _validation_issues: ["Missing citation support for the rate-control claim."],
+          },
+          teach_back_rubric: null,
+          created_at: "2026-03-25T10:02:00Z",
+        },
+      ],
+    });
+
+    const { result } = renderHook(
+      () =>
+        useTutorSession({
+          initialRouteQuery: {},
+          hub: hub as never,
+          activeSessionId: null,
+          setActiveSessionId,
+          shellMode: "studio",
+          studioView: "home",
+          setShellMode,
+          setShowSetup,
+          setRestoredTurns,
+          hasRestored: true,
+          activeWorkflowId: null,
+          activeWorkflowDetail: null,
+        }),
+      { wrapper },
+    );
+
+    await act(async () => {
+      await result.current.resumeSession("sess-restore");
+    });
+
+    expect(result.current.committedAssistantMessages).toHaveLength(2);
+    expect(result.current.committedAssistantMessages[0]).toMatchObject({
+      sessionTurnNumber: 1,
+      content: "It increases stroke volume through ventricular stretch.",
+      verdict: expect.objectContaining({
+        why_wrong: "The answer omitted the Frank-Starling mechanism.",
+      }),
+      teachBackRubric: expect.objectContaining({
+        misconceptions: ["The answer skipped ventricular stretch."],
+      }),
+    });
+    expect(result.current.latestCommittedAssistantMessage).toMatchObject({
+      sessionTurnNumber: 2,
+      verdict: expect.objectContaining({
+        why_wrong:
+          "The answer treated heart-rate control as identical to preload regulation.",
+      }),
+    });
+    expect(setRestoredTurns).toHaveBeenCalledWith([
+      {
+        question: "How does preload affect stroke volume?",
+        answer: "It increases stroke volume through ventricular stretch.",
+      },
+      {
+        question: "How does heart rate affect cardiac output?",
+        answer: "It changes cardiac output by changing beats per minute.",
+      },
+    ]);
   });
 });

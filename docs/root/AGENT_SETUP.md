@@ -38,17 +38,16 @@ Supported active projection roots:
 - `C:\Users\treyt\.opencode\skills`
 - `C:\Users\treyt\.gemini\skills`
 - `C:\Users\treyt\.antigravity\skills`
+- `C:\Users\treyt\.kimi\skills`
 
 Documented local exceptions:
 
-- Codex: `.system`, `agent-skills`, `dev-browser`
+- Codex: see `scripts/sync_agent_skills.ps1` `LocalOnlyNames.codex` for the current local-only allowlist; `dev-browser` is now a shared skill projected from `C:\Users\treyt\.agents\skills`
 - Claude: `continuous-learning`, `learned`
 - Cursor: `C:\Users\treyt\.cursor\skills-cursor`
 - OpenCode: `agent-strategy`, `ensure-agent-workflow`
 
 Excluded from shared-skill sync:
-
-- `C:\Users\treyt\.kimi` (config-only)
 - `C:\Users\treyt\.conduit` (config-only)
 - `C:\Users\treyt\.gemini\antigravity\skills`
 - `C:\Users\treyt\.gemini\antigravity\global_skills`
@@ -204,7 +203,9 @@ Inventory result on this machine:
 - `C:\Users\treyt\.conduit`
   - Uses `config.toml`, not an agent-role markdown catalog
 - `C:\Users\treyt\.kimi`
-  - Uses `config.toml`, not a shared-skill root or agent-role markdown catalog
+  - Has config in `config.toml` and `kimi.json`
+  - Has a supported shared-skill projection root at `skills\`
+  - Has one agent: `agents\self-improve`
 
 Practical rule:
 

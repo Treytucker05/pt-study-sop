@@ -27,9 +27,18 @@ import { toast } from "sonner";
 import type { UseTutorHubReturn } from "./useTutorHub";
 import type { UseTutorSessionReturn } from "./useTutorSession";
 
+export interface TutorWorkflowSessionBridge {
+  startSession: UseTutorSessionReturn["startSession"];
+  resumeSession: UseTutorSessionReturn["resumeSession"];
+  clearActiveSessionState: UseTutorSessionReturn["clearActiveSessionState"];
+  checkpointWorkflowStudyTimer: UseTutorSessionReturn["checkpointWorkflowStudyTimer"];
+  latestCommittedAssistantMessage: UseTutorSessionReturn["latestCommittedAssistantMessage"];
+  artifacts: UseTutorSessionReturn["artifacts"];
+}
+
 export interface UseTutorWorkflowParams {
   hub: UseTutorHubReturn;
-  session: UseTutorSessionReturn;
+  session: TutorWorkflowSessionBridge;
   activeSessionId: string | null;
   shellMode: TutorPageMode;
   setShellMode: (mode: TutorPageMode) => void;
@@ -192,11 +201,17 @@ export function useTutorWorkflow({
   const [studioView, setStudioViewRaw] = useState<TutorStudioView>(() => {
     try {
       const stored = localStorage.getItem(STUDIO_TAB_KEY);
-      if (stored === "workspace" || stored === "priming" || stored === "polish" || stored === "final_sync" || stored === "workbench") {
+      if (
+        stored === "home" ||
+        stored === "workspace" ||
+        stored === "priming" ||
+        stored === "polish" ||
+        stored === "final_sync"
+      ) {
         return stored;
       }
     } catch { /* ignore */ }
-    return "workspace";
+    return "home";
   });
   const setStudioView = useCallback((view: TutorStudioView) => {
     setStudioViewRaw(view);
@@ -605,7 +620,7 @@ export function useTutorWorkflow({
 
   // ─── Run priming assist ───
   const runWorkflowPrimingAssist = useCallback(
-    async (materialIds: number[]) => {
+    async (materialIds: number[], opts?: { packet_context?: string }) => {
       if (!activeWorkflowId) {
         toast.error("Open a study plan before running Priming Assist.");
         return;
@@ -628,6 +643,7 @@ export function useTutorWorkflow({
           priming_methods: primingMethods,
           priming_method: primingMethods[0] || null,
           source_inventory: mergedPrimingSourceInventory,
+          ...(opts?.packet_context ? { packet_context: opts.packet_context } : {}),
         });
         setPrimingSourceInventory(response.source_inventory);
         setPrimingMethodRuns(normalizePrimingMethodRuns(response.priming_method_runs));
@@ -767,7 +783,7 @@ export function useTutorWorkflow({
         if (deletingActiveWorkflow) {
           resetPrimingDraft();
           setActiveWorkflowId(null);
-          setStudioView("workbench");
+          setStudioView("home");
           setShellMode("studio");
           if (
             activeSessionId &&

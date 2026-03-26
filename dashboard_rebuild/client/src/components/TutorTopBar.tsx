@@ -150,7 +150,7 @@ export function TutorTopBar({
     : null;
   const surfaceLabel =
     shellMode === "studio"
-      ? `STUDIO / ${studioView === "workbench" ? "HOME" : studioView.replace(/_/g, " ").toUpperCase()}`
+      ? `STUDIO / ${studioView === "home" ? "HOME" : studioView.replace(/_/g, " ").toUpperCase()}`
       : shellMode.toUpperCase();
 
   return (
@@ -173,7 +173,7 @@ export function TutorTopBar({
       ) : null}
 
       <div className="space-y-3">
-        {activeWorkflowId || workflowStageLabel || activeSessionId ? (
+        {activeWorkflowId || workflowStageLabel || isTutorSessionView ? (
           <div
             className={cn(TUTOR_STRIP, "flex flex-wrap items-center gap-2.5")}
           >
@@ -200,7 +200,7 @@ export function TutorTopBar({
                 {workflowStatusLabel}
               </Badge>
             ) : null}
-            {activeSessionId ? (
+            {isTutorSessionView ? (
               <Badge
                 variant="outline"
                 className="rounded-[0.2rem] border-emerald-500/26 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em] text-emerald-300"

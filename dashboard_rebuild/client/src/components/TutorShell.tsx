@@ -1,65 +1,49 @@
-import { useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { TutorErrorBoundary } from "@/components/TutorErrorBoundary";
-import { TutorEmptyState } from "@/components/TutorEmptyState";
-import { TutorWorkflowPrimingPanel } from "@/components/TutorWorkflowPrimingPanel";
-import { TutorWorkflowPolishStudio } from "@/components/TutorWorkflowPolishStudio";
-import { TutorWorkflowFinalSync } from "@/components/TutorWorkflowFinalSync";
-import { TutorChat } from "@/components/TutorChat";
-import { TutorArtifacts } from "@/components/TutorArtifacts";
 import { TutorWorkflowLaunchHub } from "@/components/TutorWorkflowLaunchHub";
-import { TutorStudioHome } from "@/components/TutorStudioHome";
-import { TutorStudioMode } from "@/components/TutorStudioMode";
-import type { TutorStudioEntryRequest } from "@/components/TutorStudioMode";
-import { TutorScheduleMode } from "@/components/TutorScheduleMode";
-import { WorkspaceStudio, type ChainSelection } from "@/components/WorkspaceStudio";
-import type { TutorScheduleLaunchIntent } from "@/components/TutorScheduleMode";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { SourceShelf } from "@/components/studio/SourceShelf";
+import { RunConfigPanel } from "@/components/studio/RunConfigPanel";
+import { StudioDocumentDock } from "@/components/studio/StudioDocumentDock";
+import { StudioTldrawWorkspaceLazy } from "@/components/studio/StudioTldrawWorkspaceLazy";
+import { StudioWorkspaceHome } from "@/components/studio/StudioWorkspaceHome";
+import { PrimePacketPanel } from "@/components/studio/PrimePacketPanel";
+import { PolishPacketPanel } from "@/components/studio/PolishPacketPanel";
+import { TutorStatusPanel } from "@/components/studio/TutorStatusPanel";
+import { MemoryPanel } from "@/components/studio/MemoryPanel";
+import { RepairCandidatesPanel } from "@/components/studio/RepairCandidatesPanel";
+import { TutorArtifactsDrawer } from "@/components/tutor-shell/TutorArtifactsDrawer";
+import { TutorLiveStudyPane } from "@/components/tutor-shell/TutorLiveStudyPane";
+import { TutorScholarStrategyPanel } from "@/components/tutor-shell/TutorScholarStrategyPanel";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  ChevronDown,
-  ListChecks,
-  PenTool,
-  MessageSquare,
-  Loader2,
-  Send,
-  Square,
-  X,
-  Eye,
-  EyeOff,
-} from "lucide-react";
-import {
-  TEXT_MUTED,
-  TEXT_BADGE,
-  ICON_MD,
-  BTN_TOOLBAR,
-  BTN_TOOLBAR_ACTIVE,
-  BTN_PRIMARY,
-  CARD_BORDER,
-} from "@/lib/theme";
-import { CONTROL_PLANE_COLORS } from "@/lib/colors";
+  TutorWorkflowFinalSyncLazy,
+  TutorWorkflowPolishStudioLazy,
+  TutorWorkflowPrimingPanelLazy,
+} from "@/components/tutor-shell/TutorShellDeferredPanels";
+import { TutorStudioShellPane } from "@/components/tutor-shell/TutorStudioShellPane";
 import { cn } from "@/lib/utils";
 import {
-  CONTROL_KICKER,
-} from "@/components/shell/controlStyles";
+  buildStudioWorkspaceObjects,
+  createStudioRepairWorkspaceObject,
+  type StudioWorkspaceObject,
+} from "@/lib/studioWorkspaceObjects";
 import {
-  formatElapsedDuration,
-  INPUT_BASE,
-  SELECT_BASE,
-} from "@/lib/tutorUtils";
+  buildPolishPacketSections,
+  buildPrimePacketSections,
+  type StudioPolishPromotedNote,
+} from "@/lib/studioPacketSections";
+import { serializeStudioPacketSectionsForTutor } from "@/lib/studioPacketSerializer";
+import { buildStudioMemoryStatus } from "@/lib/studioMemoryStatus";
+import {
+  buildStudioRepairCandidates,
+  type StudioRepairCandidate,
+} from "@/lib/studioRepairCandidates";
+import { buildStudioTutorStatus } from "@/lib/studioTutorStatus";
+import type { ChatMessage } from "@/components/TutorChat.types";
 import type { TutorPageMode } from "@/lib/tutorUtils";
 import { api } from "@/lib/api";
-import type { TutorTemplateChain, MethodBlock } from "@/lib/api";
+import type { TutorTemplateChain } from "@/lib/api";
 import type { TutorHubResumeCandidate } from "@/lib/api";
 import type { UseTutorHubReturn } from "@/hooks/useTutorHub";
 import type { UseTutorSessionReturn } from "@/hooks/useTutorSession";
@@ -67,6 +51,12 @@ import type { UseTutorWorkflowReturn } from "@/hooks/useTutorWorkflow";
 import { useBrainFeedback } from "@/hooks/useBrainFeedback";
 import type { TutorBoardScope } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
+import { TUTOR_SHELL_BACKDROP } from "@/components/tutor-shell/tutorShellStyles";
+
+type PrimePromotedWorkspaceObject = Extract<
+  StudioWorkspaceObject,
+  { kind: "excerpt" | "text_note" }
+>;
 
 export interface TutorShellProps {
   shellMode: TutorPageMode;
@@ -76,8 +66,6 @@ export interface TutorShellProps {
   session: UseTutorSessionReturn;
   workflow: UseTutorWorkflowReturn;
   restoredTurns: { question: string; answer: string | null }[] | undefined;
-  studioEntryRequest: TutorStudioEntryRequest | null;
-  scheduleLaunchIntent: TutorScheduleLaunchIntent | null;
   activeBoardScope: TutorBoardScope;
   activeBoardId: number | null;
   viewerState: Record<string, unknown> | null;
@@ -88,33 +76,16 @@ export interface TutorShellProps {
   queryClient: ReturnType<
     typeof import("@tanstack/react-query").useQueryClient
   >;
-  // Settings
-  showSettings: boolean;
-  setShowSettings: (show: boolean) => void;
-  customInstructions: string;
-  setCustomInstructions: (value: string) => void;
-  settingsLoading: boolean;
-  settingsSaving: boolean;
-  isPreviewMode: boolean;
-  setIsPreviewMode: (value: boolean) => void;
-  saveSettings: () => void;
-  restoreDefaultInstructions: () => void;
+  promotedPrimePacketObjects?: PrimePromotedWorkspaceObject[];
+  promotedPolishPacketNotes?: StudioPolishPromotedNote[];
+  onPromotePrimePacketObject?: (
+    workspaceObject: PrimePromotedWorkspaceObject,
+  ) => void;
+  onPromotePolishPacketNote?: (note: StudioPolishPromotedNote) => void;
   onResumeHubCandidate: (
     candidate: TutorHubResumeCandidate,
   ) => void | Promise<void>;
 }
-
-const TUTOR_GLASS_PANEL =
-  "border border-[rgba(255,108,132,0.18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.06)_18%,rgba(0,0,0,0.16)_100%),linear-gradient(135deg,rgba(255,42,76,0.06),rgba(18,7,11,0.18)_52%,rgba(0,0,0,0.1)_100%)] backdrop-blur-sm";
-
-const TUTOR_GLASS_PANEL_SOFT =
-  "border border-[rgba(255,108,132,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.024),rgba(0,0,0,0.05)_18%,rgba(0,0,0,0.12)_100%),linear-gradient(135deg,rgba(255,42,76,0.05),rgba(18,7,11,0.14)_52%,rgba(0,0,0,0.08)_100%)] backdrop-blur-sm";
-
-const TUTOR_FIELD_SURFACE =
-  "rounded-none border-[rgba(255,108,132,0.2)] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.06)_30%,rgba(0,0,0,0.14)_100%)]";
-
-const TUTOR_SHELL_BACKDROP =
-  "bg-[linear-gradient(180deg,rgba(12,3,6,0.06),rgba(0,0,0,0.03)_32%,rgba(0,0,0,0.08)_100%)] backdrop-blur-[2px]";
 
 export function TutorShell({
   shellMode,
@@ -124,8 +95,6 @@ export function TutorShell({
   session,
   workflow,
   restoredTurns,
-  studioEntryRequest,
-  scheduleLaunchIntent,
   activeBoardScope,
   activeBoardId,
   viewerState,
@@ -134,34 +103,304 @@ export function TutorShell({
   setViewerState,
   setShowSetup,
   queryClient,
-  showSettings,
-  setShowSettings,
-  customInstructions,
-  setCustomInstructions,
-  settingsLoading,
-  settingsSaving,
-  isPreviewMode,
-  setIsPreviewMode,
-  saveSettings,
-  restoreDefaultInstructions,
+  promotedPrimePacketObjects: controlledPromotedPrimePacketObjects,
+  promotedPolishPacketNotes: controlledPromotedPolishPacketNotes,
+  onPromotePrimePacketObject,
+  onPromotePolishPacketNote,
   onResumeHubCandidate,
 }: TutorShellProps) {
+  const currentRunWorkspaceObjects = useMemo(
+    () =>
+      buildStudioWorkspaceObjects({
+        materials: hub.chatMaterials,
+        selectedMaterialIds: hub.selectedMaterials,
+        selectedPaths: hub.selectedPaths,
+      }),
+    [hub.chatMaterials, hub.selectedMaterials, hub.selectedPaths],
+  );
+  const [canvasObjectIds, setCanvasObjectIds] = useState<string[]>([]);
+  const [workspaceDraftObjects, setWorkspaceDraftObjects] = useState<
+    StudioWorkspaceObject[]
+  >([]);
+  const [localPromotedPrimePacketObjects, setLocalPromotedPrimePacketObjects] =
+    useState<PrimePromotedWorkspaceObject[]>([]);
+  const [localPromotedPolishNotes, setLocalPromotedPolishNotes] = useState<
+    StudioPolishPromotedNote[]
+  >([]);
+  const promotedPrimePacketObjects = useMemo(() => {
+    const merged = new Map<string, PrimePromotedWorkspaceObject>();
+
+    for (const workspaceObject of controlledPromotedPrimePacketObjects ?? []) {
+      merged.set(workspaceObject.id, workspaceObject);
+    }
+
+    for (const workspaceObject of localPromotedPrimePacketObjects) {
+      merged.set(workspaceObject.id, workspaceObject);
+    }
+
+    return Array.from(merged.values());
+  }, [controlledPromotedPrimePacketObjects, localPromotedPrimePacketObjects]);
+  const promotedPrimeObjectIds = useMemo(
+    () => promotedPrimePacketObjects.map((workspaceObject) => workspaceObject.id),
+    [promotedPrimePacketObjects],
+  );
+  const promotedPolishPacketNotes = useMemo(() => {
+    const merged = new Map<string, StudioPolishPromotedNote>();
+
+    for (const note of controlledPromotedPolishPacketNotes ?? []) {
+      merged.set(note.id, note);
+    }
+
+    for (const note of localPromotedPolishNotes) {
+      merged.set(note.id, note);
+    }
+
+    return Array.from(merged.values());
+  }, [controlledPromotedPolishPacketNotes, localPromotedPolishNotes]);
+  const canvasObjects = useMemo(
+    () => [
+      ...currentRunWorkspaceObjects.filter((workspaceObject) =>
+        canvasObjectIds.includes(workspaceObject.id),
+      ),
+      ...workspaceDraftObjects,
+    ],
+    [canvasObjectIds, currentRunWorkspaceObjects, workspaceDraftObjects],
+  );
+  const promotedPrimeExcerptObjects = useMemo(
+    () =>
+      promotedPrimePacketObjects.filter(
+        (
+          workspaceObject,
+        ): workspaceObject is Extract<StudioWorkspaceObject, { kind: "excerpt" }> =>
+          workspaceObject.kind === "excerpt",
+      ),
+    [promotedPrimePacketObjects],
+  );
+  const promotedPrimeTextNoteObjects = useMemo(
+    () =>
+      promotedPrimePacketObjects.filter(
+        (
+          workspaceObject,
+        ): workspaceObject is Extract<StudioWorkspaceObject, { kind: "text_note" }> =>
+          workspaceObject.kind === "text_note",
+      ),
+    [promotedPrimePacketObjects],
+  );
+  const workspaceRepairCandidateIds = useMemo(
+    () =>
+      workspaceDraftObjects.flatMap((workspaceObject) =>
+        workspaceObject.kind === "text_note" &&
+        workspaceObject.provenance.sourceType === "repair_candidate"
+          ? [workspaceObject.provenance.candidateId]
+          : [],
+      ),
+    [workspaceDraftObjects],
+  );
+  const primePacketSections = useMemo(
+    () =>
+      buildPrimePacketSections({
+        materials: hub.chatMaterials,
+        selectedMaterialIds: hub.selectedMaterials,
+        selectedPaths: hub.selectedPaths,
+        primingBundle: workflow.activeWorkflowDetail?.priming_bundle ?? null,
+        primingSummaryText: workflow.primingSummaryText,
+        primingConceptsText: workflow.primingConceptsText,
+        primingTerminologyText: workflow.primingTerminologyText,
+        primingRootExplanationText: workflow.primingRootExplanationText,
+        primingGapsText: workflow.primingGapsText,
+        primingStrategyText: workflow.primingStrategyText,
+        promotedExcerptObjects: promotedPrimeExcerptObjects,
+        promotedNoteObjects: promotedPrimeTextNoteObjects,
+      }),
+    [
+      hub.chatMaterials,
+      hub.selectedMaterials,
+      hub.selectedPaths,
+      workflow.activeWorkflowDetail?.priming_bundle,
+      workflow.primingSummaryText,
+      workflow.primingConceptsText,
+      workflow.primingTerminologyText,
+      workflow.primingRootExplanationText,
+      workflow.primingGapsText,
+      workflow.primingStrategyText,
+      promotedPrimeExcerptObjects,
+      promotedPrimeTextNoteObjects,
+    ],
+  );
+  const primePacketContext = useMemo(
+    () => serializeStudioPacketSectionsForTutor(primePacketSections),
+    [primePacketSections],
+  );
+  const polishPacketSections = useMemo(
+    () =>
+      buildPolishPacketSections({
+        promotedNotes: promotedPolishPacketNotes,
+        capturedNotes: workflow.activeWorkflowDetail?.captured_notes ?? [],
+        polishBundle: workflow.activeWorkflowDetail?.polish_bundle ?? null,
+        publishResults: workflow.activeWorkflowDetail?.publish_results ?? [],
+      }),
+    [
+      promotedPolishPacketNotes,
+      workflow.activeWorkflowDetail?.captured_notes,
+      workflow.activeWorkflowDetail?.polish_bundle,
+      workflow.activeWorkflowDetail?.publish_results,
+    ],
+  );
+  const tutorStatus = useMemo(
+    () =>
+      buildStudioTutorStatus({
+        scholarStrategy: session.scholarStrategy,
+        turnCount: session.turnCount ?? 0,
+        memoryCapsuleCount:
+          workflow.activeWorkflowDetail?.memory_capsules?.length ?? 0,
+        latestAssistantContent:
+          session.latestCommittedAssistantMessage?.content ?? null,
+        latestVerdict: session.latestCommittedAssistantMessage?.verdict ?? null,
+        latestTeachBackRubric:
+          session.latestCommittedAssistantMessage?.teachBackRubric ?? null,
+        stageTimerDisplaySeconds: session.stageTimerDisplaySeconds ?? 0,
+        stageTimerRunning: session.stageTimerRunning ?? false,
+      }),
+    [
+      session.scholarStrategy,
+      session.turnCount,
+      workflow.activeWorkflowDetail?.memory_capsules?.length,
+      session.latestCommittedAssistantMessage?.content,
+      session.latestCommittedAssistantMessage?.verdict,
+      session.latestCommittedAssistantMessage?.teachBackRubric,
+      session.stageTimerDisplaySeconds,
+      session.stageTimerRunning,
+    ],
+  );
+  const repairCandidates = useMemo(
+    () =>
+      buildStudioRepairCandidates({
+        messageHistory: session.committedAssistantMessages.map((message) => ({
+          sessionTurnNumber: message.sessionTurnNumber,
+          verdict: message.verdict ?? null,
+          teachBackRubric: message.teachBackRubric ?? null,
+        })),
+        latestVerdict: session.latestCommittedAssistantMessage?.verdict ?? null,
+        latestTeachBackRubric:
+          session.latestCommittedAssistantMessage?.teachBackRubric ?? null,
+      }),
+    [
+      session.committedAssistantMessages,
+      session.latestCommittedAssistantMessage?.verdict,
+      session.latestCommittedAssistantMessage?.teachBackRubric,
+    ],
+  );
+  const memoryStatus = useMemo(
+    () =>
+      buildStudioMemoryStatus({
+        memoryCapsules: workflow.activeWorkflowDetail?.memory_capsules ?? [],
+        turnCount: session.turnCount ?? 0,
+        latestAssistantContent:
+          session.latestCommittedAssistantMessage?.content ?? null,
+        stageTimerDisplaySeconds: session.stageTimerDisplaySeconds ?? 0,
+      }),
+    [
+      workflow.activeWorkflowDetail?.memory_capsules,
+      session.turnCount,
+      session.latestCommittedAssistantMessage?.content,
+      session.stageTimerDisplaySeconds,
+    ],
+  );
+  const handleAddWorkspaceObject = useCallback(
+    (workspaceObject: StudioWorkspaceObject) => {
+      setCanvasObjectIds((prev) =>
+        prev.includes(workspaceObject.id) ? prev : [...prev, workspaceObject.id],
+      );
+    },
+    [],
+  );
+  const handleClipExcerpt = useCallback((workspaceObject: StudioWorkspaceObject) => {
+    setWorkspaceDraftObjects((prev) =>
+      prev.some((existingObject) => existingObject.id === workspaceObject.id)
+        ? prev
+        : [...prev, workspaceObject],
+    );
+  }, []);
+  const handlePromoteExcerptToPrime = useCallback(
+    (workspaceObject: Extract<StudioWorkspaceObject, { kind: "excerpt" }>) => {
+      if (onPromotePrimePacketObject) {
+        onPromotePrimePacketObject(workspaceObject);
+        return;
+      }
+      setLocalPromotedPrimePacketObjects((prev) =>
+        prev.some((existingObject) => existingObject.id === workspaceObject.id)
+          ? prev
+          : [...prev, workspaceObject],
+      );
+    },
+    [onPromotePrimePacketObject],
+  );
+  const handlePromoteTextNoteToPrime = useCallback(
+    (workspaceObject: Extract<StudioWorkspaceObject, { kind: "text_note" }>) => {
+      if (onPromotePrimePacketObject) {
+        onPromotePrimePacketObject(workspaceObject);
+        return;
+      }
+      setLocalPromotedPrimePacketObjects((prev) =>
+        prev.some((existingObject) => existingObject.id === workspaceObject.id)
+          ? prev
+          : [...prev, workspaceObject],
+      );
+    },
+    [onPromotePrimePacketObject],
+  );
+  const handlePromoteTutorReplyToPolish = useCallback(
+    (payload: { message: ChatMessage; index: number }) => {
+      const content = payload.message.content.trim();
+      if (!content) return;
+
+      const turnNumber = payload.message.sessionTurnNumber ?? payload.index + 1;
+      const noteId = payload.message.messageId || `assistant-message-${turnNumber}`;
+      const promotedNote = {
+        id: noteId,
+        title: `Tutor Reply ${turnNumber}`,
+        content,
+        badge: "TUTOR",
+      } satisfies StudioPolishPromotedNote;
+
+      if (onPromotePolishPacketNote) {
+        onPromotePolishPacketNote(promotedNote);
+        toast.success("Promoted to Polish Packet");
+        return;
+      }
+
+      setLocalPromotedPolishNotes((prev) =>
+        prev.some((note) => note.id === noteId)
+          ? prev
+          : [
+              ...prev,
+              promotedNote,
+            ],
+      );
+      toast.success("Promoted to Polish Packet");
+    },
+    [onPromotePolishPacketNote],
+  );
+  const handleSendRepairCandidateToWorkspace = useCallback(
+    (candidate: StudioRepairCandidate) => {
+      const workspaceObject = createStudioRepairWorkspaceObject(candidate);
+      setWorkspaceDraftObjects((prev) =>
+        prev.some((existingObject) => existingObject.id === workspaceObject.id)
+          ? prev
+          : [...prev, workspaceObject],
+      );
+      toast.success("Repair candidate sent to Workspace");
+    },
+    [],
+  );
+
   const { data: templateChains = [], isLoading: templateChainsLoading } =
     useQuery<TutorTemplateChain[]>({
       queryKey: ["tutor-chains-templates"],
       queryFn: () => api.tutor.getTemplateChains(),
-      enabled:
-        shellMode === "studio" &&
-        (workflow.studioView === "priming" || workflow.studioView === "workspace"),
+      enabled: shellMode === "studio" && workflow.studioView === "priming",
       staleTime: 60 * 1000,
     });
-
-  const { data: methodBlocks = [] } = useQuery<MethodBlock[]>({
-    queryKey: ["method-blocks"],
-    queryFn: () => api.tutor.getMethodBlocks(),
-    enabled: shellMode === "studio" && workflow.studioView === "workspace",
-    staleTime: 60 * 1000,
-  });
 
   const { submitBrainFeedback } = useBrainFeedback();
 
@@ -176,45 +415,52 @@ export function TutorShell({
   const hasFinalSyncAccess =
     Boolean(workflow.activeWorkflowDetail?.polish_bundle) ||
     currentWorkflowStage === "final_sync";
-
-  // ── Workspace "Start Tutor" handler ──
-  // Auto-creates a workflow when none exists, then starts the tutor session.
-  // Applies the chain/method selection from the workspace picker before starting.
-  const handleWorkspaceStartTutor = useCallback(async (chain: ChainSelection, packetContext: string) => {
-    // Apply the chain selection to the hub so startSession picks it up
-    if (chain.chainMode === "template" && chain.chainId != null) {
-      hub.setChainId(chain.chainId);
-      hub.setCustomBlockIds([]);
-    } else if (chain.chainMode === "solo" && chain.methodId != null) {
-      // Find the method block by method_id and set it as a single custom block
-      const block = methodBlocks.find((m) => m.method_id === chain.methodId);
-      if (block) {
-        hub.setChainId(undefined);
-        hub.setCustomBlockIds([block.id]);
-      } else {
-        hub.setChainId(undefined);
-        hub.setCustomBlockIds([]);
-      }
-    } else {
-      // auto / custom / no selection -- freestyle (no chain)
-      hub.setChainId(undefined);
-      hub.setCustomBlockIds([]);
-    }
-
-    if (!workflow.activeWorkflowId) {
-      const result = await api.tutor.createWorkflow({
-        course_id: hub.courseId ?? null,
-        study_unit: hub.selectedObjectiveGroup || null,
-        topic: hub.topic || null,
-        current_stage: "tutor",
-        status: "tutor_in_progress",
-      });
-      workflow.setActiveWorkflowId(result.workflow.workflow_id);
-    }
-    await workflow.startTutorFromWorkflow(
-      packetContext ? { packet_context: packetContext } : undefined,
-    );
-  }, [workflow, hub, methodBlocks]);
+  const studioStageNav = (
+    <>
+      {[
+        { key: "home", label: "HOME", available: true },
+        { key: "workspace", label: "WORKSPACE", available: true },
+        {
+          key: "priming",
+          label: workflow.bootstrappingPriming ? "PRIMING..." : "PRIMING",
+          available: !workflow.bootstrappingPriming,
+        },
+        { key: "polish", label: "POLISH", available: hasTutorWork },
+        {
+          key: "final_sync",
+          label: "FINAL SYNC",
+          available: hasFinalSyncAccess,
+        },
+      ].map((stage) => {
+        const isActive = workflow.studioView === stage.key;
+        return (
+          <Button
+            key={stage.key}
+            type="button"
+            variant="ghost"
+            disabled={!stage.available}
+            aria-pressed={isActive}
+            onClick={() => {
+              if (stage.key === "priming") {
+                void workflow.openStudioPriming();
+                return;
+              }
+              workflow.setStudioView(stage.key as typeof workflow.studioView);
+            }}
+            className={cn(
+              "h-9 rounded-full border px-3 font-mono text-[10px] uppercase tracking-[0.18em]",
+              isActive
+                ? "border-[rgba(255,112,138,0.40)] bg-[linear-gradient(180deg,rgba(255,72,104,0.18),rgba(12,2,5,0.94)_52%,rgba(0,0,0,0.98)_100%)] text-white"
+                : "border-[rgba(255,70,104,0.12)] bg-black/25 text-[#ffd4dc]/78 hover:border-[rgba(255,108,136,0.26)] hover:text-white",
+              !stage.available && "cursor-not-allowed opacity-35",
+            )}
+          >
+            {stage.label}
+          </Button>
+        );
+      })}
+    </>
+  );
 
   // ── Save Gist: summarize a reply via LLM and capture as workflow note ──
   const handleSaveGist = useCallback(
@@ -251,239 +497,195 @@ export function TutorShell({
     [activeSessionId, workflow.activeWorkflowId, queryClient],
   );
 
+  const studioWorkspaceContent =
+    workflow.studioView === "home" ? (
+      <StudioWorkspaceHome
+        workflow={
+          workflow.activeWorkflowDetail?.workflow
+            ? {
+                workflowId: workflow.activeWorkflowDetail.workflow.workflow_id,
+                currentStage:
+                  workflow.activeWorkflowDetail.workflow.current_stage,
+                status: workflow.activeWorkflowDetail.workflow.status,
+                updatedAt: workflow.activeWorkflowDetail.workflow.updated_at,
+              }
+            : null
+        }
+        launchHub={
+          <TutorWorkflowLaunchHub
+            workflows={workflow.filteredWorkflows}
+            totalCount={workflow.workflowCount}
+            courses={hub.tutorContentSources?.courses || []}
+            filters={workflow.workflowFilters}
+            onFiltersChange={workflow.setWorkflowFilters}
+            onStartNew={() => {
+              void workflow.createWorkflowAndOpenPriming();
+            }}
+            onResumeCandidate={onResumeHubCandidate}
+            onOpenWorkflow={workflow.openWorkflowRecord}
+            onDeleteWorkflow={workflow.deleteWorkflowRecord}
+            resumeCandidate={hub.tutorHub?.resume_candidate ?? null}
+            tutorHub={hub.tutorHub}
+            tutorHubLoading={hub.tutorHubLoading}
+            activeWorkflowId={workflow.activeWorkflowId}
+            isCreating={workflow.creatingWorkflow}
+            deletingWorkflowId={workflow.deletingWorkflowId}
+          />
+        }
+        courseName={
+          hub.courseLabel ||
+          workflow.activeWorkflowDetail?.workflow?.course_name ||
+          null
+        }
+        studyUnit={
+          hub.selectedObjectiveGroup ||
+          workflow.activeWorkflowDetail?.workflow?.study_unit ||
+          null
+        }
+        topic={
+          hub.topic || workflow.activeWorkflowDetail?.workflow?.topic || null
+        }
+        selectedMaterialCount={hub.selectedMaterials.length}
+        hasTutorWork={hasTutorWork}
+        hasFinalSyncAccess={hasFinalSyncAccess}
+        hasActiveSession={Boolean(activeSessionId)}
+        resumeCandidate={hub.tutorHub?.resume_candidate ?? null}
+        bootstrappingPriming={workflow.bootstrappingPriming}
+        onResumeTutor={() => setShellMode("tutor")}
+        onResumeCandidate={(candidate) => {
+          void onResumeHubCandidate(candidate);
+        }}
+        onOpenWorkspace={() => workflow.setStudioView("workspace")}
+        onOpenPriming={() => {
+          void workflow.openStudioPriming();
+        }}
+        onOpenPolish={() => workflow.setStudioView("polish")}
+        onOpenFinalSync={() => workflow.setStudioView("final_sync")}
+      />
+    ) : workflow.studioView === "workspace" ? (
+      <div className="flex-1 min-h-0 flex flex-col">
+        <StudioTldrawWorkspaceLazy
+          canvasObjects={canvasObjects}
+          courseName={hub.courseLabel || null}
+          currentRunObjects={currentRunWorkspaceObjects}
+          promotedPrimeObjectIds={promotedPrimeObjectIds}
+          selectedMaterialCount={hub.selectedMaterials.length}
+          onPromoteExcerptToPrime={handlePromoteExcerptToPrime}
+          onPromoteTextNoteToPrime={handlePromoteTextNoteToPrime}
+        />
+      </div>
+    ) : workflow.studioView === "priming" ? (
+      <div className="flex-1 min-h-0 overflow-y-auto w-full p-4">
+        <TutorWorkflowPrimingPanelLazy
+          workflow={workflow.activeWorkflowDetail?.workflow || null}
+          courses={hub.tutorContentSources?.courses || []}
+          courseId={hub.courseId}
+          setCourseId={hub.setCourseId}
+          selectedMaterials={hub.selectedMaterials}
+          setSelectedMaterials={hub.setSelectedMaterials}
+          topic={hub.topic}
+          setTopic={hub.setTopic}
+          objectiveScope={hub.objectiveScope}
+          setObjectiveScope={hub.setObjectiveScope}
+          selectedObjectiveId={hub.selectedObjectiveId}
+          setSelectedObjectiveId={hub.setSelectedObjectiveId}
+          selectedObjectiveGroup={hub.selectedObjectiveGroup}
+          setSelectedObjectiveGroup={hub.setSelectedObjectiveGroup}
+          availableObjectives={hub.availableObjectives}
+          studyUnitOptions={hub.studyUnitOptions}
+          primingMethods={workflow.primingMethods}
+          setPrimingMethods={workflow.setPrimingMethods}
+          primingMethodRuns={workflow.primingMethodRuns}
+          chainId={hub.chainId}
+          setChainId={hub.setChainId}
+          customBlockIds={hub.customBlockIds}
+          setCustomBlockIds={hub.setCustomBlockIds}
+          templateChains={templateChains}
+          templateChainsLoading={templateChainsLoading}
+          summaryText={workflow.primingSummaryText}
+          setSummaryText={workflow.setPrimingSummaryText}
+          conceptsText={workflow.primingConceptsText}
+          setConceptsText={workflow.setPrimingConceptsText}
+          terminologyText={workflow.primingTerminologyText}
+          setTerminologyText={workflow.setPrimingTerminologyText}
+          rootExplanationText={workflow.primingRootExplanationText}
+          setRootExplanationText={workflow.setPrimingRootExplanationText}
+          gapsText={workflow.primingGapsText}
+          setGapsText={workflow.setPrimingGapsText}
+          recommendedStrategyText={workflow.primingStrategyText}
+          setRecommendedStrategyText={workflow.setPrimingStrategyText}
+          sourceInventory={workflow.mergedPrimingSourceInventory}
+          vaultFolderPreview={hub.derivedVaultFolder}
+          readinessItems={workflow.primingReadinessItems}
+          preflightBlockers={session.preflight?.blockers || []}
+          preflightLoading={session.preflightLoading}
+          preflightError={session.preflightError}
+          onBackToStudio={() => {
+            workflow.setStudioView("home");
+            setShellMode("studio");
+          }}
+          onSaveDraft={() => {
+            void workflow.saveWorkflowPriming("draft");
+          }}
+          onMarkReady={() => {
+            void workflow.saveWorkflowPriming("ready");
+          }}
+          onStartTutor={() => {
+            void workflow.startTutorFromWorkflow(
+              primePacketContext ? { packet_context: primePacketContext } : undefined,
+            );
+          }}
+          onRunAssistForSelected={() => {
+            void workflow.runWorkflowPrimingAssist(
+              hub.selectedMaterials,
+              primePacketContext ? { packet_context: primePacketContext } : undefined,
+            );
+          }}
+          onRunAssistForMaterial={(materialId) => {
+            void workflow.runWorkflowPrimingAssist(
+              [materialId],
+              primePacketContext ? { packet_context: primePacketContext } : undefined,
+            );
+          }}
+          isSaving={workflow.savingPrimingBundle}
+          isStartingTutor={session.isStarting}
+          isRunningAssist={workflow.runningPrimingAssist}
+          assistTargetMaterialId={workflow.primingAssistTargetMaterialId}
+        />
+      </div>
+    ) : workflow.studioView === "polish" ? (
+      <div className="flex-1 min-h-0 overflow-y-auto w-full p-4">
+        <TutorWorkflowPolishStudioLazy
+          workflow={workflow.activeWorkflowDetail?.workflow || null}
+          primingBundleId={workflow.activeWorkflowDetail?.priming_bundle?.id || null}
+          capturedNotes={workflow.activeWorkflowDetail?.captured_notes || []}
+          feedbackEvents={workflow.activeWorkflowDetail?.feedback_events || []}
+          memoryCapsules={workflow.activeWorkflowDetail?.memory_capsules || []}
+          existingBundle={workflow.activeWorkflowDetail?.polish_bundle || null}
+          onBackToTutor={() => setShellMode("tutor")}
+          onSaveDraft={(payload) => {
+            void workflow.saveWorkflowPolish(payload, false);
+          }}
+          onFinalize={(payload) => {
+            void workflow.saveWorkflowPolish(payload, true);
+          }}
+          isSaving={workflow.savingPolishBundle}
+        />
+      </div>
+    ) : (
+      <div className="flex-1 min-h-0 overflow-y-auto w-full p-4">
+        <TutorWorkflowFinalSyncLazy
+          workflowDetail={workflow.activeWorkflowDetail || null}
+          onBackToPolish={() => workflow.setStudioView("polish")}
+        />
+      </div>
+    );
+
   return (
     <>
       {/* Scholar strategy panel */}
       {shellMode === "tutor" && activeSessionId && session.scholarStrategy && (
-        <div className="flex-none">
-          <button
-            type="button"
-            onClick={() =>
-              session.setScholarStrategyExpanded((prev: boolean) => !prev)
-            }
-            className={cn(
-              "w-full flex items-center gap-2 px-4 py-1.5 border-b border-primary/15 transition-colors text-left hover:border-primary/24",
-              TUTOR_GLASS_PANEL_SOFT,
-            )}
-          >
-            <ChevronDown
-              className={`h-3 w-3 text-primary/60 transition-transform duration-200 ${session.scholarStrategyExpanded ? "" : "-rotate-90"}`}
-            />
-            <span className={TEXT_BADGE}>SCHOLAR STRATEGY</span>
-            <span className="font-mono text-sm leading-6 text-foreground/72 truncate flex-1">
-              {session.scholarStrategy.hybridArchetype?.label || ""}
-            </span>
-          </button>
-          {session.scholarStrategyExpanded && (
-            <Card
-              className={cn(
-                "mx-4 mt-1 mb-2 rounded-none border-primary/30",
-                CARD_BORDER,
-                TUTOR_GLASS_PANEL,
-              )}
-            >
-              <div className="p-3 space-y-3">
-                <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="space-y-1">
-                    <div className="font-mono text-base leading-7 text-foreground/78 max-w-3xl">
-                      {session.scholarStrategy.summary}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge
-                        variant="outline"
-                        className="rounded-none text-ui-2xs border-primary/40"
-                      >
-                        BRAIN SNAPSHOT{" "}
-                        {session.scholarStrategy.profileSnapshotId ?? "N/A"}
-                      </Badge>
-                      <Badge
-                        variant="outline"
-                        className="rounded-none text-ui-2xs border-primary/40"
-                      >
-                        {session.scholarStrategy.hybridArchetype?.label ||
-                          "EMERGING PATTERN"}
-                      </Badge>
-                      {session.scholarStrategy.activeInvestigation?.title && (
-                        <Badge
-                          variant="outline"
-                          className="rounded-none text-ui-2xs border-secondary/40"
-                        >
-                          RESEARCH:{" "}
-                          {session.scholarStrategy.activeInvestigation.title}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  <div className="font-mono text-sm leading-6 text-foreground/72 max-w-sm">
-                    {session.scholarStrategy.boundedBy?.note}
-                  </div>
-                </div>
-
-                <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-                  {Object.entries(session.scholarStrategy.fields || {}).map(
-                    ([fieldKey, field]) => (
-                      <div
-                        key={fieldKey}
-                        className={cn(
-                          "p-2 rounded-none space-y-1",
-                          TUTOR_GLASS_PANEL_SOFT,
-                        )}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-arcade text-ui-2xs text-primary/80">
-                            {fieldKey}
-                          </span>
-                          <Badge
-                            variant="outline"
-                            className="rounded-none text-ui-2xs border-primary/30"
-                          >
-                            {field.value}
-                          </Badge>
-                        </div>
-                        <div className="font-mono text-sm leading-6 text-foreground/72">
-                          {field.rationale}
-                        </div>
-                      </div>
-                    ),
-                  )}
-                </div>
-
-                <div className="grid gap-3 xl:grid-cols-[1.2fr_0.8fr]">
-                  <div className="space-y-2">
-                    <div className={TEXT_BADGE}>LEARNER FIT FEEDBACK</div>
-                    <div className="grid gap-2 md:grid-cols-2">
-                      {[
-                        {
-                          key: "pacing",
-                          label: "PACING",
-                          options: ["slower", "good", "faster"],
-                        },
-                        {
-                          key: "scaffolds",
-                          label: "SCAFFOLDS",
-                          options: ["less", "good", "more"],
-                        },
-                        {
-                          key: "retrievalPressure",
-                          label: "RETRIEVAL",
-                          options: ["lighter", "good", "harder"],
-                        },
-                        {
-                          key: "explanationDensity",
-                          label: "EXPLANATIONS",
-                          options: ["leaner", "good", "denser"],
-                        },
-                      ].map((control) => (
-                        <div
-                          key={control.key}
-                          className={cn(
-                            "p-2 rounded-none space-y-2",
-                            TUTOR_GLASS_PANEL_SOFT,
-                          )}
-                        >
-                          <div className="font-arcade text-ui-2xs text-primary/80">
-                            {control.label}
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            {control.options.map((option) => {
-                              const active =
-                                (session.strategyFeedback?.[
-                                  control.key as keyof typeof session.strategyFeedback
-                                ] || "") === option;
-                              return (
-                                <Button
-                                  key={option}
-                                  variant="ghost"
-                                  size="sm"
-                                  disabled={session.savingStrategyFeedback}
-                                  onClick={() => {
-                                    void session.saveScholarStrategyFeedback(
-                                      control.key as
-                                        | "pacing"
-                                        | "scaffolds"
-                                        | "retrievalPressure"
-                                        | "explanationDensity",
-                                      option,
-                                    );
-                                  }}
-                                  className={
-                                    active ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR
-                                  }
-                                >
-                                  {option.toUpperCase()}
-                                </Button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="space-y-2">
-                      <Textarea
-                        value={session.strategyNotes}
-                        onChange={(event) =>
-                          session.setStrategyNotes(event.target.value)
-                        }
-                        placeholder="What about the strategy is helping or hurting right now?"
-                        className={cn("min-h-[90px]", TUTOR_FIELD_SURFACE)}
-                      />
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="font-mono text-sm leading-6 text-foreground/72">
-                          Feedback is stored on the Tutor session so Brain and
-                          Scholar can inspect it later.
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled={session.savingStrategyFeedback}
-                          onClick={() => {
-                            void session.saveScholarStrategyNotes();
-                          }}
-                          className={BTN_TOOLBAR}
-                        >
-                          SAVE FEEDBACK
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    className={cn(
-                      "space-y-2 p-3 rounded-none border-secondary/20",
-                      TUTOR_GLASS_PANEL_SOFT,
-                    )}
-                  >
-                    <div className={TEXT_BADGE}>BOUNDARIES</div>
-                    <div className="font-mono text-sm leading-6 text-foreground/72 space-y-2">
-                      <div>
-                        Allowed:{" "}
-                        {session.scholarStrategy.boundedBy?.allowedFields?.join(
-                          ", ",
-                        )}
-                      </div>
-                      <div>
-                        Fixed:{" "}
-                        {session.scholarStrategy.boundedBy?.forbiddenFields?.join(
-                          ", ",
-                        )}
-                      </div>
-                      {session.scholarStrategy.activeInvestigation
-                        ?.topFinding && (
-                        <div>
-                          Latest finding:{" "}
-                          {
-                            session.scholarStrategy.activeInvestigation
-                              .topFinding
-                          }
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          )}
-        </div>
+        <TutorScholarStrategyPanel session={session} />
       )}
 
       {/* Main content area */}
@@ -494,975 +696,96 @@ export function TutorShell({
           aria-labelledby={`tutor-tab-${shellMode}`}
         >
           {shellMode === "studio" ? (
-            <div
-              key={`studio-${workflow.studioView}`}
-              className="flex-1 min-h-0 flex flex-col animate-fade-slide-in"
-            >
-              <TutorErrorBoundary fallbackLabel="Studio">
-                {workflow.studioView === "workbench" ? (
-                  <div className="flex-1 min-h-0">
-                    <TutorStudioHome
-                      workflow={
-                        workflow.activeWorkflowDetail?.workflow
-                          ? {
-                              workflowId:
-                                workflow.activeWorkflowDetail.workflow
-                                  .workflow_id,
-                              currentStage:
-                                workflow.activeWorkflowDetail.workflow
-                                  .current_stage,
-                              status:
-                                workflow.activeWorkflowDetail.workflow.status,
-                              updatedAt:
-                                workflow.activeWorkflowDetail.workflow
-                                  .updated_at,
-                            }
-                          : null
-                      }
-                      launchHub={
-                        <TutorWorkflowLaunchHub
-                          workflows={workflow.filteredWorkflows}
-                          totalCount={workflow.workflowCount}
-                          courses={hub.tutorContentSources?.courses || []}
-                          filters={workflow.workflowFilters}
-                          onFiltersChange={workflow.setWorkflowFilters}
-                          onStartNew={() => {
-                            void workflow.createWorkflowAndOpenPriming();
-                          }}
-                          onResumeCandidate={onResumeHubCandidate}
-                          onOpenWorkflow={workflow.openWorkflowRecord}
-                          onDeleteWorkflow={workflow.deleteWorkflowRecord}
-                          resumeCandidate={hub.tutorHub?.resume_candidate ?? null}
-                          tutorHub={hub.tutorHub}
-                          tutorHubLoading={hub.tutorHubLoading}
-                          activeWorkflowId={workflow.activeWorkflowId}
-                          isCreating={workflow.creatingWorkflow}
-                          deletingWorkflowId={workflow.deletingWorkflowId}
-                        />
-                      }
-                      courseName={
-                        hub.courseLabel ||
-                        workflow.activeWorkflowDetail?.workflow?.course_name ||
-                        null
-                      }
-                      studyUnit={
-                        hub.selectedObjectiveGroup ||
-                        workflow.activeWorkflowDetail?.workflow?.study_unit ||
-                        null
-                      }
-                      topic={
-                        hub.topic ||
-                        workflow.activeWorkflowDetail?.workflow?.topic ||
-                        null
-                      }
-                      selectedMaterialCount={hub.selectedMaterials.length}
-                      hasTutorWork={hasTutorWork}
-                      hasFinalSyncAccess={hasFinalSyncAccess}
-                      hasActiveSession={Boolean(activeSessionId)}
-                      resumeCandidate={hub.tutorHub?.resume_candidate ?? null}
-                      bootstrappingPriming={workflow.bootstrappingPriming}
-                      onResumeTutor={() => setShellMode("tutor")}
-                      onResumeCandidate={(candidate) => {
-                        void onResumeHubCandidate(candidate);
-                      }}
-                      onOpenPriming={() => {
-                        void workflow.openStudioPriming();
-                      }}
-                      onOpenPolish={() => workflow.setStudioView("polish")}
-                      onOpenFinalSync={() =>
-                        workflow.setStudioView("final_sync")
-                      }
-                      workbenchPanel={
-                        <TutorStudioMode
-                          courseId={hub.courseId}
-                          chainId={hub.chainId}
-                          activeSessionId={activeSessionId}
-                          availableMaterials={hub.chatMaterials}
-                          selectedMaterialIds={hub.selectedMaterials}
-                          activeBoardScope={activeBoardScope}
-                          activeBoardId={activeBoardId}
-                          viewerState={viewerState}
-                          onBoardScopeChange={(scope) => {
-                            setActiveBoardScope(scope);
-                            setActiveBoardId(null);
-                          }}
-                          onActiveBoardIdChange={setActiveBoardId}
-                          onViewerStateChange={setViewerState}
-                          onCourseChange={(id) => hub.setCourseId(id)}
-                          onLaunchSession={() => {
-                            workflow.setStudioView("workbench");
-                            setShellMode("studio");
-                            setShowSetup(false);
-                          }}
-                          entryRequest={studioEntryRequest}
-                        />
-                      }
-                    />
-                  </div>
-                ) : workflow.studioView === "workspace" ? (
-                  <div className="flex-1 min-h-0 flex flex-col">
-                    <WorkspaceStudio
-                      courseId={hub.courseId ?? null}
-                      courseName={hub.courseLabel}
-                      courses={(hub.tutorContentSources?.courses || [])
-                        .filter((c): c is typeof c & { id: number } => c.id != null)
-                        .map((c) => ({ id: c.id, name: c.name }))}
-                      onCourseChange={(id) => hub.setCourseId(id)}
-                      selectedMaterialIds={hub.selectedMaterials}
-                      activeSessionId={activeSessionId}
-                      workflowId={workflow.activeWorkflowId}
-                      onStartTutorSession={handleWorkspaceStartTutor}
-                      availableChains={templateChains.map((tc) => ({
-                        id: tc.id,
-                        title: tc.name,
-                        block_count: tc.blocks.length,
-                      }))}
-                      availableMethods={methodBlocks
-                        .filter((m): m is typeof m & { method_id: string } => m.method_id != null)
-                        .map((m) => ({
-                          id: m.id,
-                          method_id: m.method_id,
-                          title: m.name,
-                        }))}
-                      onEndSession={session.endSession}
-                      onFinalCompact={workflow.quickCompactWorkflowMemory}
-                    />
-                  </div>
-                ) : workflow.studioView === "priming" ? (
-                  <div className="flex-1 min-h-0 overflow-y-auto w-full p-4">
-                    <TutorWorkflowPrimingPanel
-                      workflow={workflow.activeWorkflowDetail?.workflow || null}
-                      courses={hub.tutorContentSources?.courses || []}
-                      courseId={hub.courseId}
-                      setCourseId={hub.setCourseId}
-                      selectedMaterials={hub.selectedMaterials}
-                      setSelectedMaterials={hub.setSelectedMaterials}
-                      topic={hub.topic}
-                      setTopic={hub.setTopic}
-                      objectiveScope={hub.objectiveScope}
-                      setObjectiveScope={hub.setObjectiveScope}
-                      selectedObjectiveId={hub.selectedObjectiveId}
-                      setSelectedObjectiveId={hub.setSelectedObjectiveId}
-                      selectedObjectiveGroup={hub.selectedObjectiveGroup}
-                      setSelectedObjectiveGroup={hub.setSelectedObjectiveGroup}
-                      availableObjectives={hub.availableObjectives}
-                      studyUnitOptions={hub.studyUnitOptions}
-                      primingMethods={workflow.primingMethods}
-                      setPrimingMethods={workflow.setPrimingMethods}
-                      primingMethodRuns={workflow.primingMethodRuns}
-                      chainId={hub.chainId}
-                      setChainId={hub.setChainId}
-                      customBlockIds={hub.customBlockIds}
-                      setCustomBlockIds={hub.setCustomBlockIds}
-                      templateChains={templateChains}
-                      templateChainsLoading={templateChainsLoading}
-                      summaryText={workflow.primingSummaryText}
-                      setSummaryText={workflow.setPrimingSummaryText}
-                      conceptsText={workflow.primingConceptsText}
-                      setConceptsText={workflow.setPrimingConceptsText}
-                      terminologyText={workflow.primingTerminologyText}
-                      setTerminologyText={workflow.setPrimingTerminologyText}
-                      rootExplanationText={workflow.primingRootExplanationText}
-                      setRootExplanationText={
-                        workflow.setPrimingRootExplanationText
-                      }
-                      gapsText={workflow.primingGapsText}
-                      setGapsText={workflow.setPrimingGapsText}
-                      recommendedStrategyText={workflow.primingStrategyText}
-                      setRecommendedStrategyText={
-                        workflow.setPrimingStrategyText
-                      }
-                      sourceInventory={workflow.mergedPrimingSourceInventory}
-                      vaultFolderPreview={hub.derivedVaultFolder}
-                      readinessItems={workflow.primingReadinessItems}
-                      preflightBlockers={session.preflight?.blockers || []}
-                      preflightLoading={session.preflightLoading}
-                      preflightError={session.preflightError}
-                      onBackToStudio={() => {
-                        workflow.setStudioView("workbench");
-                        setShellMode("studio");
-                      }}
-                      onSaveDraft={() => {
-                        void workflow.saveWorkflowPriming("draft");
-                      }}
-                      onMarkReady={() => {
-                        void workflow.saveWorkflowPriming("ready");
-                      }}
-                      onStartTutor={() => {
-                        void workflow.startTutorFromWorkflow();
-                      }}
-                      onRunAssistForSelected={() => {
-                        void workflow.runWorkflowPrimingAssist(
-                          hub.selectedMaterials,
-                        );
-                      }}
-                      onRunAssistForMaterial={(materialId) => {
-                        void workflow.runWorkflowPrimingAssist([materialId]);
-                      }}
-                      isSaving={workflow.savingPrimingBundle}
-                      isStartingTutor={session.isStarting}
-                      isRunningAssist={workflow.runningPrimingAssist}
-                      assistTargetMaterialId={
-                        workflow.primingAssistTargetMaterialId
-                      }
-                    />
-                  </div>
-                ) : workflow.studioView === "polish" ? (
-                  <div className="flex-1 min-h-0 overflow-y-auto w-full p-4">
-                    <TutorWorkflowPolishStudio
-                      workflow={workflow.activeWorkflowDetail?.workflow || null}
-                      primingBundleId={
-                        workflow.activeWorkflowDetail?.priming_bundle?.id ||
-                        null
-                      }
-                      capturedNotes={
-                        workflow.activeWorkflowDetail?.captured_notes || []
-                      }
-                      feedbackEvents={
-                        workflow.activeWorkflowDetail?.feedback_events || []
-                      }
-                      memoryCapsules={
-                        workflow.activeWorkflowDetail?.memory_capsules || []
-                      }
-                      existingBundle={
-                        workflow.activeWorkflowDetail?.polish_bundle || null
-                      }
-                      onBackToTutor={() => setShellMode("tutor")}
-                      onSaveDraft={(payload) => {
-                        void workflow.saveWorkflowPolish(payload, false);
-                      }}
-                      onFinalize={(payload) => {
-                        void workflow.saveWorkflowPolish(payload, true);
-                      }}
-                      isSaving={workflow.savingPolishBundle}
-                    />
-                  </div>
-                ) : (
-                  <div className="flex-1 min-h-0 overflow-y-auto w-full p-4">
-                    <TutorWorkflowFinalSync
-                      workflowDetail={workflow.activeWorkflowDetail || null}
-                      onBackToPolish={() => workflow.setStudioView("polish")}
-                    />
-                  </div>
-                )}
-              </TutorErrorBoundary>
-            </div>
-          ) : shellMode === "schedule" ? (
-            <div
-              key="schedule"
-              className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden p-4 animate-fade-slide-in"
-            >
-              <TutorErrorBoundary fallbackLabel="Schedule">
-                <div className="mx-auto h-full w-full max-w-7xl overflow-hidden">
-                  <TutorScheduleMode
-                    courseId={hub.courseId ?? null}
-                    courseName={hub.courseLabel || null}
-                    focusTopic={hub.topic || null}
-                    launchIntent={scheduleLaunchIntent}
-                  />
-                </div>
-              </TutorErrorBoundary>
-            </div>
+            <TutorStudioShellPane
+              view={workflow.studioView}
+              sourceShelf={
+                <SourceShelf
+                  courseName={
+                    hub.courseLabel ||
+                    workflow.activeWorkflowDetail?.workflow?.course_name ||
+                    null
+                  }
+                  studyUnit={
+                    hub.selectedObjectiveGroup ||
+                    workflow.activeWorkflowDetail?.workflow?.study_unit ||
+                    null
+                  }
+                  topic={
+                    hub.topic ||
+                    workflow.activeWorkflowDetail?.workflow?.topic ||
+                    null
+                  }
+                  materials={hub.chatMaterials}
+                  selectedMaterialIds={hub.selectedMaterials}
+                  selectedMaterialCount={hub.selectedMaterials.length}
+                  selectedPaths={hub.selectedPaths}
+                  vaultFolder={hub.derivedVaultFolder || null}
+                  workspaceObjectIds={canvasObjectIds}
+                  onAddToWorkspace={handleAddWorkspaceObject}
+                />
+              }
+              documentDock={
+                <StudioDocumentDock
+                  materials={hub.chatMaterials}
+                  selectedMaterialIds={hub.selectedMaterials}
+                  selectedPaths={hub.selectedPaths}
+                  viewerState={viewerState}
+                  onClipExcerpt={handleClipExcerpt}
+                />
+              }
+              runConfig={
+                <RunConfigPanel
+                  primingMethodIds={workflow.primingMethods}
+                  chainId={hub.chainId}
+                  customBlockIds={hub.customBlockIds}
+                  hasActiveSession={Boolean(activeSessionId)}
+                />
+              }
+              tutorStatus={<TutorStatusPanel status={tutorStatus} />}
+              repairCandidates={
+                <RepairCandidatesPanel
+                  candidates={repairCandidates}
+                  sentCandidateIds={workspaceRepairCandidateIds}
+                  onSendToWorkspace={handleSendRepairCandidateToWorkspace}
+                />
+              }
+              memory={<MemoryPanel status={memoryStatus} />}
+              primePacket={<PrimePacketPanel sections={primePacketSections} />}
+              polishPacket={<PolishPacketPanel sections={polishPacketSections} />}
+              workspace={studioWorkspaceContent}
+              stageNav={studioStageNav}
+            />
           ) : (
             <div
               key="chat"
               className="flex-1 flex flex-col min-h-0 animate-fade-slide-in"
             >
               <TutorErrorBoundary fallbackLabel="Tutor">
-                {activeSessionId ? (
-                  <div className="flex h-full min-h-0 flex-col gap-4">
-                    <Card className="overflow-hidden rounded-[1.15rem] border-[rgba(255,122,146,0.24)] bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.02)_18%,rgba(0,0,0,0.22)_100%),linear-gradient(135deg,rgba(110,14,34,0.18),rgba(12,5,8,0.46)_58%,rgba(0,0,0,0.34)_100%)] backdrop-blur-[10px] shadow-[0_18px_36px_rgba(0,0,0,0.22),0_0_0_1px_rgba(255,86,118,0.12)]">
-                      <CardHeader className="border-b border-primary/15 pb-3">
-                        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                          <div>
-                            <div className={CONTROL_KICKER}>Study Session</div>
-                            <div className="mt-2 max-w-3xl font-mono text-base leading-7 text-foreground/78">
-                              Your notes, feedback, and timer are connected to
-                              this study plan.
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            <Badge
-                              variant="outline"
-                              className="rounded-none border-primary/30 px-2 py-1 font-arcade text-ui-2xs tracking-[0.18em] text-primary/88"
-                            >
-                              {workflow.activeWorkflowId
-                                ? "STUDY PLAN ACTIVE"
-                                : "NO STUDY PLAN"}
-                            </Badge>
-                            {workflow.activeWorkflowDetail?.captured_notes ? (
-                              <Badge
-                                variant="outline"
-                                className="rounded-none border-primary/20 px-2 py-1 font-mono text-ui-2xs text-foreground/72"
-                              >
-                                {
-                                  workflow.activeWorkflowDetail.captured_notes
-                                    .length
-                                }{" "}
-                                NOTES
-                              </Badge>
-                            ) : null}
-                            {workflow.activeWorkflowDetail?.feedback_events ? (
-                              <Badge
-                                variant="outline"
-                                className="rounded-none border-primary/20 px-2 py-1 font-mono text-ui-2xs text-foreground/72"
-                              >
-                                {
-                                  workflow.activeWorkflowDetail.feedback_events
-                                    .length
-                                }{" "}
-                                FEEDBACK
-                              </Badge>
-                            ) : null}
-                            {workflow.activeWorkflowDetail?.memory_capsules ? (
-                              <Badge
-                                variant="outline"
-                                className="rounded-none border-primary/20 px-2 py-1 font-mono text-ui-2xs text-foreground/72"
-                              >
-                                {
-                                  workflow.activeWorkflowDetail.memory_capsules
-                                    .length
-                                }{" "}
-                                CAPSULES
-                              </Badge>
-                            ) : null}
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="grid gap-4 pt-4 xl:grid-cols-[0.92fr_1.08fr_1.02fr]">
-                        {/* Timer + Exact Note */}
-                        <div className="space-y-4">
-                          <div className={cn("p-3", TUTOR_GLASS_PANEL_SOFT)}>
-                            <div className="font-arcade text-ui-2xs text-primary/80">
-                              STUDY TIMER
-                            </div>
-                            <div className="mt-2 font-terminal text-2xl text-foreground">
-                              {formatElapsedDuration(
-                                session.stageTimerDisplaySeconds,
-                              )}
-                            </div>
-                            <div className="mt-1 font-mono text-sm leading-6 text-foreground/72">
-                              Pause count {session.stageTimerPauseCount}
-                            </div>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              <Button
-                                variant="outline"
-                                className="rounded-none font-arcade text-ui-2xs"
-                                onClick={() => {
-                                  void session.toggleWorkflowStudyTimer();
-                                }}
-                                disabled={!workflow.activeWorkflowId}
-                              >
-                                {session.stageTimerRunning
-                                  ? "PAUSE TIMER"
-                                  : "RESUME TIMER"}
-                              </Button>
-                              <Button
-                                variant="outline"
-                                className="rounded-none font-arcade text-ui-2xs"
-                                onClick={() => {
-                                  void (async () => {
-                                    try {
-                                      const sliceSeconds =
-                                        await session.persistStageTimeSlice(
-                                          "manual_save",
-                                          [
-                                            {
-                                              kind: "study_timer",
-                                              session_id: activeSessionId,
-                                            },
-                                          ],
-                                        );
-                                      if (sliceSeconds > 0) {
-                                        // Timer will auto-restart via the effect
-                                      }
-                                    } catch (err) {
-                                      // toast handled in persistStageTimeSlice
-                                    }
-                                  })();
-                                }}
-                                disabled={
-                                  !workflow.activeWorkflowId ||
-                                  !session.stageTimerRunning
-                                }
-                              >
-                                SAVE SLICE
-                              </Button>
-                            </div>
-                          </div>
-
-                          <div
-                            className={cn(
-                              "space-y-3 p-3",
-                              TUTOR_GLASS_PANEL_SOFT,
-                            )}
-                          >
-                            <div className="font-arcade text-ui-2xs text-primary/80">
-                              SAVE EXACT NOTE
-                            </div>
-                            <input
-                              value={workflow.exactNoteTitle}
-                              onChange={(event) =>
-                                workflow.setExactNoteTitle(event.target.value)
-                              }
-                              placeholder="Optional exact note title"
-                              className={INPUT_BASE}
-                            />
-                            <Textarea
-                              value={workflow.exactNoteContent}
-                              onChange={(event) =>
-                                workflow.setExactNoteContent(event.target.value)
-                              }
-                              placeholder="Paste the exact wording you want preserved."
-                              className={cn(
-                                "min-h-[110px]",
-                                TUTOR_FIELD_SURFACE,
-                              )}
-                            />
-                            <Button
-                              variant="outline"
-                              className="rounded-none font-arcade text-ui-2xs"
-                              onClick={() => {
-                                void workflow.saveWorkflowNoteCapture("exact");
-                              }}
-                              disabled={
-                                !workflow.activeWorkflowId ||
-                                workflow.savingRuntimeEvent
-                              }
-                            >
-                              SAVE EXACT
-                            </Button>
-                          </div>
-                        </div>
-
-                        {/* Editable Note + Feedback */}
-                        <div className="space-y-4">
-                          <div
-                            className={cn(
-                              "space-y-3 p-3",
-                              TUTOR_GLASS_PANEL_SOFT,
-                            )}
-                          >
-                            <div className="font-arcade text-ui-2xs text-primary/80">
-                              SAVE EDITABLE NOTE
-                            </div>
-                            <input
-                              value={workflow.editableNoteTitle}
-                              onChange={(event) =>
-                                workflow.setEditableNoteTitle(
-                                  event.target.value,
-                                )
-                              }
-                              placeholder="Optional editable note title"
-                              className={INPUT_BASE}
-                            />
-                            <Textarea
-                              value={workflow.editableNoteContent}
-                              onChange={(event) =>
-                                workflow.setEditableNoteContent(
-                                  event.target.value,
-                                )
-                              }
-                              placeholder="Save a revisable note for Polish and Obsidian."
-                              className={cn(
-                                "min-h-[110px]",
-                                TUTOR_FIELD_SURFACE,
-                              )}
-                            />
-                            <Button
-                              variant="outline"
-                              className="rounded-none font-arcade text-ui-2xs"
-                              onClick={() => {
-                                void workflow.saveWorkflowNoteCapture(
-                                  "editable",
-                                );
-                              }}
-                              disabled={
-                                !workflow.activeWorkflowId ||
-                                workflow.savingRuntimeEvent
-                              }
-                            >
-                              SAVE EDITABLE
-                            </Button>
-                          </div>
-
-                          <div
-                            className={cn(
-                              "space-y-3 p-3",
-                              TUTOR_GLASS_PANEL_SOFT,
-                            )}
-                          >
-                            <div className="font-arcade text-ui-2xs text-primary/80">
-                              SESSION FEEDBACK
-                            </div>
-                            <div className="grid gap-3 md:grid-cols-2">
-                              <select
-                                value={workflow.feedbackSentiment}
-                                onChange={(event) =>
-                                  workflow.setFeedbackSentiment(
-                                    event.target.value as "liked" | "disliked",
-                                  )
-                                }
-                                className={SELECT_BASE}
-                              >
-                                <option value="liked">Liked</option>
-                                <option value="disliked">Disliked</option>
-                              </select>
-                              <select
-                                value={workflow.feedbackIssueType}
-                                onChange={(event) =>
-                                  workflow.setFeedbackIssueType(
-                                    event.target.value,
-                                  )
-                                }
-                                className={SELECT_BASE}
-                              >
-                                <option value="good">Good</option>
-                                <option value="mistake">Mistake</option>
-                                <option value="incorrect">Incorrect</option>
-                                <option value="unclear">Unclear</option>
-                                <option value="missing_context">
-                                  Missing context
-                                </option>
-                              </select>
-                            </div>
-                            <Textarea
-                              value={workflow.feedbackMessage}
-                              onChange={(event) =>
-                                workflow.setFeedbackMessage(event.target.value)
-                              }
-                              placeholder="What worked or failed in this tutor run?"
-                              className={cn(
-                                "min-h-[100px]",
-                                TUTOR_FIELD_SURFACE,
-                              )}
-                            />
-                            <Button
-                              variant="outline"
-                              className="rounded-none font-arcade text-ui-2xs"
-                              onClick={() => {
-                                void workflow.saveWorkflowFeedbackEvent();
-                              }}
-                              disabled={
-                                !workflow.activeWorkflowId ||
-                                workflow.savingRuntimeEvent
-                              }
-                            >
-                              SAVE FEEDBACK
-                            </Button>
-                          </div>
-                        </div>
-
-                        {/* Memory capsule */}
-                        <div
-                          className={cn(
-                            "space-y-3 p-3",
-                            TUTOR_GLASS_PANEL_SOFT,
-                          )}
-                        >
-                          <div className="font-arcade text-ui-2xs text-primary/80">
-                            MEMORY CAPSULE
-                          </div>
-                          <Textarea
-                            value={workflow.memorySummaryText}
-                            onChange={(event) =>
-                              workflow.setMemorySummaryText(event.target.value)
-                            }
-                            placeholder="Compaction summary for the finished portion of the session."
-                            className={cn("min-h-[90px]", TUTOR_FIELD_SURFACE)}
-                          />
-                          <Textarea
-                            value={workflow.memoryWeakPointsText}
-                            onChange={(event) =>
-                              workflow.setMemoryWeakPointsText(
-                                event.target.value,
-                              )
-                            }
-                            placeholder={"Weak points\nOne per line"}
-                            className={cn("min-h-[75px]", TUTOR_FIELD_SURFACE)}
-                          />
-                          <Textarea
-                            value={workflow.memoryUnresolvedText}
-                            onChange={(event) =>
-                              workflow.setMemoryUnresolvedText(
-                                event.target.value,
-                              )
-                            }
-                            placeholder={"Unresolved questions\nOne per line"}
-                            className={cn("min-h-[75px]", TUTOR_FIELD_SURFACE)}
-                          />
-                          <Textarea
-                            value={workflow.memoryCardRequestsText}
-                            onChange={(event) =>
-                              workflow.setMemoryCardRequestsText(
-                                event.target.value,
-                              )
-                            }
-                            placeholder={"Queued card requests\nOne per line"}
-                            className={cn("min-h-[75px]", TUTOR_FIELD_SURFACE)}
-                          />
-                          <Button
-                            variant="outline"
-                            className="rounded-none font-arcade text-ui-2xs"
-                            onClick={() => {
-                              void workflow.createWorkflowMemoryCapsule();
-                            }}
-                            disabled={
-                              !workflow.activeWorkflowId ||
-                              workflow.savingRuntimeEvent
-                            }
-                          >
-                            CREATE CAPSULE
-                          </Button>
-                          <Button
-                            variant="outline"
-                            className="rounded-none font-arcade text-ui-2xs"
-                            onClick={() => {
-                              void workflow.openWorkflowPolish();
-                            }}
-                            disabled={!workflow.activeWorkflowId}
-                          >
-                            OPEN POLISH
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <div className="min-h-0 flex-1">
-                      <TutorChat
-                        sessionId={activeSessionId}
-                        courseId={hub.courseId}
-                        availableMaterials={hub.chatMaterials}
-                        selectedMaterialIds={hub.selectedMaterials}
-                        accuracyProfile={hub.accuracyProfile}
-                        onAccuracyProfileChange={hub.setAccuracyProfile}
-                        onSelectedMaterialIdsChange={hub.setSelectedMaterials}
-                        onMaterialsChanged={hub.refreshChatMaterials}
-                        onArtifactCreated={session.handleArtifactCreated}
-                        onStudioCapture={session.handleStudioCapture}
-                        onCaptureNote={(payload) => {
-                          void workflow.captureWorkflowMessageNote(payload);
-                        }}
-                        onSaveGist={(content) => {
-                          void handleSaveGist(content);
-                        }}
-                        onFeedback={(payload) => {
-                          void workflow.saveWorkflowMessageFeedback(payload);
-                          void submitBrainFeedback({
-                            ...payload,
-                            sessionId: activeSessionId,
-                          });
-                        }}
-                        onCompact={() => {
-                          void workflow.quickCompactWorkflowMemory();
-                        }}
-                        timerState={{
-                          elapsedSeconds: session.stageTimerDisplaySeconds,
-                          paused: !session.stageTimerRunning,
-                        }}
-                        onToggleTimer={() => {
-                          void session.toggleWorkflowStudyTimer();
-                        }}
-                        onAssistantTurnCommitted={({ assistantMessage }) => {
-                          session.setLatestCommittedAssistantMessage(
-                            assistantMessage,
-                          );
-                        }}
-                        initialTurns={restoredTurns}
-                        onTurnComplete={(masteryUpdate) => {
-                          session.setTurnCount((prev: number) => prev + 1);
-                          if (masteryUpdate) {
-                            queryClient.invalidateQueries({
-                              queryKey: ["mastery-dashboard"],
-                            });
-                          }
-                        }}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <TutorEmptyState
-                    icon={MessageSquare}
-                    title="READY TO RUN A STUDY SESSION"
-                    description="Tutor is the live study surface. Start or resume from Studio, or switch into Studio to prepare notes and captures before studying."
-                    actions={[
-                      {
-                        label: "GO TO STUDIO HOME",
-                        icon: ListChecks,
-                        onClick: () => setShellMode("studio"),
-                        variant: "primary",
-                      },
-                      {
-                        label: "OPEN STUDIO WORKBENCH",
-                        icon: PenTool,
-                        onClick: () => {
-                          workflow.setStudioView("workbench");
-                          setShellMode("studio");
-                        },
-                        variant: "ghost",
-                      },
-                    ]}
-                  />
-                )}
+                <TutorLiveStudyPane
+                  activeSessionId={activeSessionId}
+                  hub={hub}
+                  session={session}
+                  workflow={workflow}
+                  restoredTurns={restoredTurns}
+                  queryClient={queryClient}
+                  setShellMode={setShellMode}
+                  onSaveGist={handleSaveGist}
+                  onPromoteTutorReplyToPolish={handlePromoteTutorReplyToPolish}
+                  submitBrainFeedback={submitBrainFeedback}
+                />
               </TutorErrorBoundary>
-
-              {session.showEndConfirm && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 animate-fade-slide-in">
-                  <div className="bg-black/95 border-2 border-primary/50 rounded-lg p-6 shadow-[0_0_60px_rgba(0,0,0,0.9)] max-w-md w-full mx-4 space-y-3">
-                    <div className="section-header">SESSION COMPLETE</div>
-                    <div
-                      className={`flex items-center gap-4 ${TEXT_MUTED} text-xs`}
-                    >
-                      <span className="text-foreground">
-                        {hub.topic || "No topic"}
-                      </span>
-                      <span>{session.turnCount} turns</span>
-                      {session.startedAt && (
-                        <span>
-                          {Math.round(
-                            (Date.now() -
-                              new Date(session.startedAt).getTime()) /
-                              60000,
-                          )}{" "}
-                          min
-                        </span>
-                      )}
-                      {session.artifacts.length > 0 && (
-                        <span>{session.artifacts.length} artifacts</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 pt-1">
-                      <Button
-                        onClick={session.shipToBrainAndEnd}
-                        disabled={session.isShipping}
-                        className={`${BTN_PRIMARY} w-auto gap-1.5 h-9 px-4`}
-                      >
-                        {session.isShipping ? (
-                          <Loader2 className={`${ICON_MD} animate-spin`} />
-                        ) : (
-                          <Send className={ICON_MD} />
-                        )}
-                        {session.isShipping ? "SHIPPING..." : "SHIP TO BRAIN"}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => {
-                          session.endSession();
-                          session.setShowEndConfirm(false);
-                        }}
-                        disabled={session.isShipping}
-                        className={BTN_TOOLBAR}
-                      >
-                        END WITHOUT SAVING
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => session.setShowEndConfirm(false)}
-                        disabled={session.isShipping}
-                        className={`${BTN_TOOLBAR} ml-auto`}
-                      >
-                        CANCEL
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
 
         {/* Right side artifact panel */}
-        {activeSessionId && shellMode === "tutor" && session.showArtifacts && (
-          <>
-            <div
-              className="fixed inset-0 z-20 bg-black/60 lg:hidden"
-              onClick={() => session.setShowArtifacts(false)}
-              aria-hidden="true"
-            />
-            <div className="absolute lg:static right-0 inset-y-0 z-30 w-[320px] shrink-0 border-l-2 border-primary/30 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.16)_18%,rgba(0,0,0,0.52)_100%)] backdrop-blur-md flex flex-col shadow-[-10px_0_20px_rgba(0,0,0,0.36)] lg:shadow-none animate-fade-slide-in">
-              <div className="flex items-center justify-between p-2 border-b-2 border-primary/20 bg-primary/5">
-                <span className="section-header px-2">ARTIFACTS</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0 text-muted-foreground hover:text-primary rounded-none"
-                  onClick={() => session.setShowArtifacts(false)}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-              <div className="flex-1 min-h-0 overflow-y-auto">
-                <TutorArtifacts
-                  sessionId={activeSessionId}
-                  artifacts={session.artifacts}
-                  turnCount={session.turnCount}
-                  topic={hub.topic}
-                  startedAt={session.startedAt}
-                  onCreateArtifact={session.handleArtifactCreated}
-                  recentSessions={hub.recentSessions}
-                  onResumeSession={session.resumeSession}
-                  onDeleteArtifacts={session.handleDeleteArtifacts}
-                  onEndSession={session.endSessionById}
-                  onClearActiveSession={session.clearActiveSessionState}
-                />
-              </div>
-            </div>
-          </>
-        )}
+        <TutorArtifactsDrawer
+          activeSessionId={activeSessionId}
+          shellMode={shellMode}
+          hub={hub}
+          session={session}
+        />
       </div>
-
-      {/* Settings Dialog */}
-      <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent className={`bg-black ${CARD_BORDER} max-w-lg`}>
-          <DialogTitle className="section-header">TUTOR SETTINGS</DialogTitle>
-          <DialogDescription className="sr-only">
-            Configure tutor model, speed tier, and custom instructions
-          </DialogDescription>
-          <div className="space-y-3 mt-2">
-            <div className="flex items-center justify-between">
-              <label
-                htmlFor="tutor-custom-instructions"
-                className="section-header text-muted-foreground"
-              >
-                Custom Instructions
-              </label>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsPreviewMode(!isPreviewMode)}
-                disabled={settingsLoading}
-                className={BTN_TOOLBAR}
-              >
-                {isPreviewMode ? (
-                  <>
-                    <EyeOff className="w-3.5 h-3.5 mr-1" /> EDIT
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-3.5 h-3.5 mr-1" /> PREVIEW
-                  </>
-                )}
-              </Button>
-            </div>
-            {settingsLoading ? (
-              <div className="flex items-center justify-center py-8 text-muted-foreground">
-                <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                Loading...
-              </div>
-            ) : isPreviewMode ? (
-              <div className="bg-black border-2 border-primary/40 rounded-none font-terminal text-sm p-3 min-h-[240px] max-h-[400px] overflow-y-auto text-foreground">
-                {customInstructions ? (
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      h1: ({ children }) => (
-                        <h1 className="font-arcade text-base text-primary mb-2 mt-3 first:mt-0">
-                          {children}
-                        </h1>
-                      ),
-                      h2: ({ children }) => (
-                        <h2 className="font-arcade text-sm text-primary/90 mb-1.5 mt-2.5">
-                          {children}
-                        </h2>
-                      ),
-                      h3: ({ children }) => (
-                        <h3 className="font-arcade text-xs text-primary/80 mb-1 mt-2">
-                          {children}
-                        </h3>
-                      ),
-                      p: ({ children }) => (
-                        <p className="mb-2 leading-relaxed">{children}</p>
-                      ),
-                      ul: ({ children }) => (
-                        <ul className="list-disc list-inside mb-2 space-y-0.5">
-                          {children}
-                        </ul>
-                      ),
-                      ol: ({ children }) => (
-                        <ol className="list-decimal list-inside mb-2 space-y-0.5">
-                          {children}
-                        </ol>
-                      ),
-                      li: ({ children }) => (
-                        <li className="text-muted-foreground">{children}</li>
-                      ),
-                      strong: ({ children }) => (
-                        <strong className="text-foreground font-bold">
-                          {children}
-                        </strong>
-                      ),
-                      em: ({ children }) => (
-                        <em className="text-primary/70">{children}</em>
-                      ),
-                      code: ({ children }) => (
-                        <code className="bg-primary/10 text-primary px-1 rounded text-xs">
-                          {children}
-                        </code>
-                      ),
-                      blockquote: ({ children }) => (
-                        <blockquote className="border-l-2 border-primary/40 pl-3 my-2 text-muted-foreground italic">
-                          {children}
-                        </blockquote>
-                      ),
-                    }}
-                  >
-                    {customInstructions}
-                  </ReactMarkdown>
-                ) : (
-                  <span className="text-muted-foreground italic">
-                    No custom instructions set.
-                  </span>
-                )}
-              </div>
-            ) : (
-              <Textarea
-                id="tutor-custom-instructions"
-                value={customInstructions}
-                onChange={(e) => setCustomInstructions(e.target.value)}
-                rows={10}
-                className="bg-black border-2 border-primary/40 rounded-none font-terminal text-sm resize-y"
-                placeholder="Enter custom instructions for the tutor..."
-              />
-            )}
-            <div className="flex items-center justify-between pt-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={restoreDefaultInstructions}
-                disabled={settingsLoading || settingsSaving}
-                className={BTN_TOOLBAR}
-              >
-                RESTORE DEFAULTS
-              </Button>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowSettings(false)}
-                  className={BTN_TOOLBAR}
-                >
-                  CANCEL
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={saveSettings}
-                  disabled={settingsLoading || settingsSaving}
-                  className="h-8 rounded-none font-arcade text-xs bg-primary text-primary-foreground hover:bg-primary/80 border-2 border-primary"
-                >
-                  {settingsSaving ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />{" "}
-                      SAVING...
-                    </>
-                  ) : (
-                    "SAVE"
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

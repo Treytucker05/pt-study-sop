@@ -1,4 +1,5 @@
 import { FileText, Film, FileWarning, ExternalLink } from "lucide-react";
+import { useCallback, useRef } from "react";
 
 import { cn } from "@/lib/utils";
 import {
@@ -13,6 +14,10 @@ import {
 interface MaterialViewerProps {
   source: MaterialViewerSource;
   className?: string;
+  onTextSelectionChange?: ((selection: {
+    text: string;
+    label: string | null;
+  }) => void) | null;
 }
 
 function MaterialViewerHeader({
@@ -66,10 +71,39 @@ function MaterialViewerHeader({
 function FallbackPanel({
   message,
   textContent,
+  onTextSelectionChange,
 }: {
   message: string;
   textContent: string | null;
+  onTextSelectionChange?: ((selection: {
+    text: string;
+    label: string | null;
+  }) => void) | null;
 }) {
+  const textPreviewRef = useRef<HTMLPreElement | null>(null);
+  const handleSelectionChange = useCallback(() => {
+    if (!onTextSelectionChange || !textPreviewRef.current) return;
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const selectedText = selection.toString().trim();
+    if (!selectedText) return;
+
+    const commonAncestor = selection.getRangeAt(0).commonAncestorContainer;
+    const selectionRoot =
+      commonAncestor.nodeType === window.Node.TEXT_NODE
+        ? commonAncestor.parentElement
+        : commonAncestor;
+
+    if (!selectionRoot || !textPreviewRef.current.contains(selectionRoot)) return;
+
+    onTextSelectionChange({
+      text: selectedText,
+      label: "Viewer selection",
+    });
+  }, [onTextSelectionChange]);
+
   return (
     <div
       data-testid="material-viewer-fallback"
@@ -85,6 +119,9 @@ function FallbackPanel({
           </div>
           <pre
             data-testid="material-viewer-text-preview"
+            ref={textPreviewRef}
+            onMouseUp={handleSelectionChange}
+            onKeyUp={handleSelectionChange}
             className="whitespace-pre-wrap font-terminal text-xs leading-6 text-foreground"
           >
             {textContent}
@@ -95,7 +132,11 @@ function FallbackPanel({
   );
 }
 
-export function MaterialViewer({ source, className }: MaterialViewerProps) {
+export function MaterialViewer({
+  source,
+  className,
+  onTextSelectionChange = null,
+}: MaterialViewerProps) {
   const kind = resolveMaterialViewerKind(source);
   const title = getMaterialViewerTitle(source);
   const url = source.url ? String(source.url) : null;
@@ -140,6 +181,7 @@ export function MaterialViewer({ source, className }: MaterialViewerProps) {
         <FallbackPanel
           message={getMaterialViewerFallbackMessage(kind, source)}
           textContent={textContent}
+          onTextSelectionChange={onTextSelectionChange}
         />
       ) : null}
     </section>

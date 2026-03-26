@@ -5,105 +5,102 @@ import { TutorTopBar } from "@/components/TutorTopBar";
 import { TutorTabBar } from "@/components/TutorTabBar";
 import type { StudioSubTab } from "@/components/TutorTabBar";
 import { useTutorHub } from "@/hooks/useTutorHub";
+import { useStudioRun } from "@/hooks/useStudioRun";
 import { useTutorSession } from "@/hooks/useTutorSession";
-import { useTutorWorkflow } from "@/hooks/useTutorWorkflow";
+import {
+  useTutorWorkflow,
+  type TutorWorkflowSessionBridge,
+} from "@/hooks/useTutorWorkflow";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type {
   TutorBoardScope,
-  TutorHubEventSummary,
-  TutorHubRecommendedAction,
   TutorHubResumeCandidate,
   TutorProjectShellResponse,
-  TutorShellMode,
 } from "@/lib/api";
 import {
+  writeTutorAccuracyProfile,
   clearTutorActiveSessionId,
   consumeTutorLaunchHandoff,
   peekTutorLaunchHandoff,
   readTutorActiveSessionId,
   readTutorSelectedMaterialIds,
   readTutorStoredStartState,
-  writeTutorActiveSessionId,
+  writeTutorObjectiveScope,
   writeTutorSelectedMaterialIds,
-  writeLibraryLaunchFromTutor,
-  type TutorBrainLaunchContext,
+  writeTutorStoredStartState,
+  writeTutorVaultFolder,
 } from "@/lib/tutorClientState";
-import type { TutorStudioEntryRequest } from "@/components/TutorStudioMode";
-import type { TutorScheduleLaunchIntent } from "@/components/TutorScheduleMode";
 import { HudButton } from "@/components/ui/HudButton";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useLocation } from "wouter";
 import { Palette, RefreshCw } from "lucide-react";
-import { toast } from "sonner";
 import { readTutorShellQuery, writeTutorShellQuery } from "@/lib/tutorUtils";
 import type { TutorPageMode, TutorShellQuery, TutorStudioView } from "@/lib/tutorUtils";
 import { resolveTutorTeachRuntime } from "@/components/TutorChat.types";
+import {
+  normalizeStudioWorkspaceObjects,
+} from "@/lib/studioWorkspaceObjects";
+import { normalizeStudioPolishPromotedNotes } from "@/lib/studioPacketSections";
 
 function useTutorPageController() {
-  const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const initialRouteQuery = useMemo(() => readTutorShellQuery(), []);
-  const navigationTokenRef = useRef(0);
   const explicitShellModeRef = useRef<{
     courseId: number;
-    mode: TutorShellMode;
+    mode: TutorPageMode;
   } | null>(null);
   const lastPersistedShellKeyRef = useRef("");
   const resumedFromProjectShellRef = useRef(false);
 
   // ─── Shell state ───
-  const pendingLaunchHandoff = peekTutorLaunchHandoff();
-  const shouldSuppressStoredSessionResume =
-    !initialRouteQuery.sessionId &&
-    (pendingLaunchHandoff.fromLibraryHandoff ||
-      Boolean(pendingLaunchHandoff.brainLaunchContext));
-  const storedActiveSessionId = shouldSuppressStoredSessionResume
-    ? null
-    : readTutorActiveSessionId();
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(
-    initialRouteQuery.sessionId || storedActiveSessionId,
-  );
-  const [hasRestored, setHasRestored] = useState(false);
-  const [restoredTurns, setRestoredTurns] = useState<
-    { question: string; answer: string | null }[] | undefined
-  >();
-  const initialShellMode =
-    initialRouteQuery.mode ||
-    (initialRouteQuery.sessionId || storedActiveSessionId ? "tutor" : "studio");
-  const [shellMode, setShellMode] = useState<TutorPageMode>(initialShellMode);
-  const [studioEntryRequest, setStudioEntryRequest] =
-    useState<TutorStudioEntryRequest | null>(null);
-  const [scheduleLaunchIntent, setScheduleLaunchIntent] =
-    useState<TutorScheduleLaunchIntent | null>(null);
-  const [activeBoardScope, setActiveBoardScope] = useState<TutorBoardScope>(
-    initialRouteQuery.boardScope || "project",
-  );
-  const [activeBoardId, setActiveBoardId] = useState<number | null>(
-    initialRouteQuery.boardId ?? null,
-  );
-  const [viewerState, setViewerState] = useState<Record<
-    string,
-    unknown
-  > | null>(null);
-  const [shellRevision, setShellRevision] = useState(0);
-  const [shellHydratedCourseId, setShellHydratedCourseId] = useState<
-    number | null
-  >(null);
-  const [showSetup, setShowSetup] = useState<boolean>(
-    () => !Boolean(initialRouteQuery.sessionId || storedActiveSessionId),
-  );
-  const [brainLaunchContext, setBrainLaunchContext] =
-    useState<TutorBrainLaunchContext | null>(null);
-
-  // ─── Settings state ───
-  const [showSettings, setShowSettings] = useState(false);
-  const [customInstructions, setCustomInstructions] = useState("");
-  const [settingsLoading, setSettingsLoading] = useState(false);
-  const [settingsSaving, setSettingsSaving] = useState(false);
-  const [isPreviewMode, setIsPreviewMode] = useState(true);
+  const pendingLaunchHandoff = useMemo(() => peekTutorLaunchHandoff(), []);
+  const storedActiveSessionId = useMemo(() => readTutorActiveSessionId(), []);
+  const studioRun = useStudioRun({
+    initialRouteQuery,
+    storedActiveSessionId,
+    pendingLaunchHandoff,
+    persistStartState: false,
+    persistShellQuery: false,
+    topic: "",
+    selectedMaterialIds: [],
+    customBlockIds: [],
+    accuracyProfile: "strict",
+    objectiveScope: "module_all",
+    selectedObjectiveId: "",
+    selectedObjectiveGroup: "",
+    selectedPaths: [],
+    vaultFolder: "",
+  });
+  const {
+    activeSessionId,
+    setActiveSessionId,
+    hasRestored,
+    setHasRestored,
+    restoredTurns,
+    setRestoredTurns,
+    shellMode,
+    setShellMode,
+    activeBoardScope,
+    setActiveBoardScope,
+    activeBoardId,
+    setActiveBoardId,
+    viewerState,
+    setViewerState,
+    showSetup,
+    setShowSetup,
+    brainLaunchContext,
+    setBrainLaunchContext,
+    shellRevision,
+    setShellRevision,
+    shellHydratedCourseId,
+    setShellHydratedCourseId,
+    promotedPrimePacketObjects,
+    setPromotedPrimePacketObjects,
+    promotedPolishPacketNotes,
+    setPromotedPolishPacketNotes,
+  } = studioRun;
 
   // ─── Compose hooks ───
   const hub = useTutorHub({
@@ -111,34 +108,59 @@ function useTutorPageController() {
     hasRestored,
     shellMode,
     activeSessionId,
+    persistClientState: false,
   });
 
-  const session = useTutorSession({
-    initialRouteQuery,
-    hub,
-    activeSessionId,
-    setActiveSessionId,
-    shellMode,
-    studioView: "workbench",
-    setShellMode,
-    setShowSetup,
-    setRestoredTurns,
-    hasRestored,
-    activeWorkflowId: null, // will be set after workflow hook
-    activeWorkflowDetail: null,
+  useEffect(() => {
+    writeTutorSelectedMaterialIds(hub.selectedMaterials);
+    writeTutorAccuracyProfile(hub.accuracyProfile);
+    writeTutorObjectiveScope(hub.objectiveScope);
+    writeTutorVaultFolder(hub.vaultFolder);
+    writeTutorStoredStartState({
+      courseId: hub.courseId,
+      topic: hub.topic,
+      selectedMaterials: hub.selectedMaterials,
+      chainId: hub.chainId,
+      customBlockIds: hub.customBlockIds,
+      accuracyProfile: hub.accuracyProfile,
+      objectiveScope: hub.objectiveScope,
+      selectedObjectiveId: hub.selectedObjectiveId,
+      selectedObjectiveGroup: hub.selectedObjectiveGroup,
+      selectedPaths: hub.selectedPaths,
+    });
+  }, [
+    hub.accuracyProfile,
+    hub.chainId,
+    hub.courseId,
+    hub.customBlockIds,
+    hub.objectiveScope,
+    hub.selectedMaterials,
+    hub.selectedObjectiveGroup,
+    hub.selectedObjectiveId,
+    hub.selectedPaths,
+    hub.topic,
+    hub.vaultFolder,
+  ]);
+
+  const sessionBridgeRef = useRef<TutorWorkflowSessionBridge>({
+    startSession: async () => null,
+    resumeSession: async () => null,
+    clearActiveSessionState: () => undefined,
+    checkpointWorkflowStudyTimer: async () => 0,
+    latestCommittedAssistantMessage: null,
+    artifacts: [],
   });
 
   const workflow = useTutorWorkflow({
     hub,
-    session,
+    session: sessionBridgeRef.current,
     activeSessionId,
     shellMode,
     setShellMode,
     hasRestored,
   });
 
-  // Re-create session with workflow context for stage timer
-  const sessionWithWorkflow = useTutorSession({
+  const session = useTutorSession({
     initialRouteQuery,
     hub,
     activeSessionId,
@@ -153,130 +175,15 @@ function useTutorPageController() {
     activeWorkflowDetail: workflow.activeWorkflowDetail ?? null,
   });
 
-  // ─── Settings callbacks ───
-  const openSettings = useCallback(async () => {
-    setShowSettings(true);
-    setSettingsLoading(true);
-    try {
-      const data = await api.tutor.getSettings();
-      setCustomInstructions(data.custom_instructions);
-    } catch {
-      toast.error("Failed to load tutor settings");
-    } finally {
-      setSettingsLoading(false);
-    }
-  }, []);
-
-  const saveSettings = useCallback(async () => {
-    setSettingsSaving(true);
-    try {
-      await api.tutor.saveSettings({ custom_instructions: customInstructions });
-      toast.success("Custom instructions saved");
-      setShowSettings(false);
-    } catch {
-      toast.error("Failed to save settings");
-    } finally {
-      setSettingsSaving(false);
-    }
-  }, [customInstructions]);
-
-  const restoreDefaultInstructions = useCallback(async () => {
-    setSettingsLoading(true);
-    try {
-      await api.tutor.saveSettings({ custom_instructions: "" });
-      const data = await api.tutor.getSettings();
-      setCustomInstructions(data.custom_instructions);
-      toast.success("Restored default instructions");
-    } catch {
-      toast.error("Failed to restore defaults");
-    } finally {
-      setSettingsLoading(false);
-    }
-  }, []);
+  useEffect(() => {
+    sessionBridgeRef.current = session;
+  }, [session]);
 
   // ─── Navigation helpers ───
-  const nextNavigationToken = useCallback(() => {
-    navigationTokenRef.current += 1;
-    return navigationTokenRef.current;
-  }, []);
-
-  const openProjectFromHub = useCallback(
-    (nextCourseId: number) => {
-      explicitShellModeRef.current = { courseId: nextCourseId, mode: "studio" };
-      hub.setCourseId(nextCourseId);
-      workflow.setStudioView("workbench");
-      setShellMode("studio");
-      setShowSetup(false);
-      setScheduleLaunchIntent(null);
-      setStudioEntryRequest({ level: 2, token: nextNavigationToken() });
-    },
-    [hub, nextNavigationToken, workflow],
-  );
-
-  const openScheduleCourseFromHub = useCallback(
-    (nextCourseId: number, kind: "manage_event" | "manage_exam") => {
-      explicitShellModeRef.current = {
-        courseId: nextCourseId,
-        mode: "schedule",
-      };
-      hub.setCourseId(nextCourseId);
-      setShellMode("schedule");
-      setShowSetup(false);
-      setStudioEntryRequest(null);
-      setScheduleLaunchIntent({
-        token: nextNavigationToken(),
-        kind,
-        courseId: nextCourseId,
-      });
-    },
-    [hub, nextNavigationToken],
-  );
-
-  const openScheduleEventFromHub = useCallback(
-    (event: TutorHubEventSummary) => {
-      explicitShellModeRef.current = {
-        courseId: event.course_id,
-        mode: "schedule",
-      };
-      hub.setCourseId(event.course_id);
-      setShellMode("schedule");
-      setShowSetup(false);
-      setStudioEntryRequest(null);
-      setScheduleLaunchIntent({
-        token: nextNavigationToken(),
-        kind: "open_event",
-        courseId: event.course_id,
-        courseEventId: event.id,
-      });
-    },
-    [hub, nextNavigationToken],
-  );
-
-  const openLibraryFromHub = useCallback(
-    (params: {
-      source: "assignment" | "exam" | "course";
-      courseId: number;
-      courseName?: string | null;
-      courseEventId?: number;
-      eventType?: string | null;
-    }) => {
-      writeLibraryLaunchFromTutor({
-        source: params.source,
-        courseId: params.courseId,
-        courseName: params.courseName || undefined,
-        courseEventId: params.courseEventId,
-        eventType: params.eventType || null,
-        target: "load_materials",
-      });
-      setLocation("/library");
-    },
-    [setLocation],
-  );
-
   const resumeFromHubCandidate = useCallback(
     async (candidate: TutorHubResumeCandidate) => {
       if (candidate.can_resume && candidate.session_id) {
-        await sessionWithWorkflow.resumeSession(candidate.session_id);
+        await session.resumeSession(candidate.session_id);
         setShowSetup(false);
         setShellMode("tutor");
         return;
@@ -286,88 +193,25 @@ function useTutorPageController() {
 
       explicitShellModeRef.current = {
         courseId: candidate.course_id,
-        mode: candidate.last_mode === "launch" ? "studio" : candidate.last_mode || "studio",
+        mode: candidate.last_mode === "tutor" ? "tutor" : "studio",
       };
       hub.setCourseId(candidate.course_id);
-      setStudioEntryRequest(null);
-      setScheduleLaunchIntent(null);
 
       if (!candidate.session_id) {
         clearTutorActiveSessionId();
         setActiveSessionId(null);
       }
 
-      if (candidate.last_mode === "schedule") {
-        setShellMode("schedule");
-        setShowSetup(false);
-        return;
-      }
-      if (candidate.last_mode === "publish") {
-        workflow.setStudioView("workbench");
+      if (candidate.last_mode !== "tutor") {
+        workflow.setStudioView("home");
         setShellMode("studio");
         setShowSetup(false);
         return;
       }
-      if (candidate.last_mode === "studio") {
-        workflow.setStudioView("workbench");
-        setShellMode("studio");
-        setShowSetup(false);
-        return;
-      }
-      setShellMode("studio");
+      setShellMode("tutor");
       setShowSetup(false);
     },
-    [hub, sessionWithWorkflow, workflow],
-  );
-
-  const runRecommendedAction = useCallback(
-    async (action: TutorHubRecommendedAction) => {
-      if (action.kind === "resume_session" && action.session_id) {
-        await sessionWithWorkflow.resumeSession(action.session_id);
-        setShowSetup(false);
-        setShellMode("tutor");
-        return;
-      }
-
-      if (
-        action.kind === "wheel_course" &&
-        typeof action.course_id === "number"
-      ) {
-        openProjectFromHub(action.course_id);
-        return;
-      }
-
-      if (
-        (action.kind === "planner_task" ||
-          action.kind === "exam" ||
-          action.kind === "assignment") &&
-        typeof action.course_id === "number"
-      ) {
-        if (typeof action.course_event_id === "number") {
-          openScheduleEventFromHub({
-            id: action.course_event_id,
-            course_id: action.course_id,
-            course_name: action.course_name || action.course_code || "Course",
-            course_code: action.course_code,
-            title: action.title,
-            type: action.event_type || "other",
-            scheduled_date: null,
-            status: "pending",
-          });
-          return;
-        }
-        openScheduleCourseFromHub(
-          action.course_id,
-          action.kind === "exam" ? "manage_exam" : "manage_event",
-        );
-      }
-    },
-    [
-      openProjectFromHub,
-      openScheduleCourseFromHub,
-      openScheduleEventFromHub,
-      sessionWithWorkflow,
-    ],
+    [hub, session, workflow],
   );
 
   // ─── Stored start state ───
@@ -414,14 +258,11 @@ function useTutorPageController() {
         !workflow.activeWorkflowId &&
         nextProjectShell.workspace_state.last_mode
       ) {
-        if (nextProjectShell.workspace_state.last_mode === "studio") {
-          workflow.setStudioView("workbench");
+        if (nextProjectShell.workspace_state.last_mode !== "tutor") {
+          workflow.setStudioView("home");
         }
         setShellMode(
-          nextProjectShell.workspace_state.last_mode === "publish" ||
-          nextProjectShell.workspace_state.last_mode === "launch"
-            ? "studio"
-            : nextProjectShell.workspace_state.last_mode,
+          nextProjectShell.workspace_state.last_mode === "tutor" ? "tutor" : "studio",
         );
       }
       if (
@@ -440,6 +281,16 @@ function useTutorPageController() {
         setActiveBoardId(nextProjectShell.workspace_state.active_board_id);
       }
       setViewerState(nextProjectShell.workspace_state.viewer_state || null);
+      setPromotedPrimePacketObjects(
+        normalizeStudioWorkspaceObjects(
+          nextProjectShell.workspace_state.prime_packet_promoted_objects,
+        ),
+      );
+      setPromotedPolishPacketNotes(
+        normalizeStudioPolishPromotedNotes(
+          nextProjectShell.workspace_state.polish_packet_promoted_notes,
+        ),
+      );
       if (
         hub.selectedMaterials.length === 0 &&
         Array.isArray(nextProjectShell.workspace_state.selected_material_ids) &&
@@ -452,16 +303,21 @@ function useTutorPageController() {
         );
       }
     },
-    [activeBoardScope, hub, initialRouteQuery, shellMode, workflow],
+    [
+      activeBoardScope,
+      hub,
+      initialRouteQuery,
+      setPromotedPolishPacketNotes,
+      shellMode,
+      workflow,
+    ],
   );
 
   const openStudioHome = useCallback(() => {
     if (typeof hub.courseId === "number") {
       explicitShellModeRef.current = { courseId: hub.courseId, mode: "studio" };
     }
-    setStudioEntryRequest(null);
-    setScheduleLaunchIntent(null);
-    workflow.setStudioView("workspace");
+    workflow.setStudioView("home");
     setShellMode("studio");
     setShowSetup(false);
   }, [hub.courseId, workflow]);
@@ -485,7 +341,7 @@ function useTutorPageController() {
       if (resumeCandidateSessionId) {
         const s = await api.tutor.getSession(resumeCandidateSessionId);
         if (s.status === "active") {
-          sessionWithWorkflow.applySessionState(s);
+          session.applySessionState(s);
           setShowSetup(false);
           return;
         }
@@ -526,7 +382,7 @@ function useTutorPageController() {
         /* ignore */
       }
     }
-  }, [applyStoredStartState, hub, initialRouteQuery, sessionWithWorkflow]);
+  }, [applyStoredStartState, hub, initialRouteQuery, session]);
 
   // ─── Effects ───
   useEffect(() => {
@@ -536,14 +392,14 @@ function useTutorPageController() {
   }, [hasRestored, restoreTutorShellState]);
 
   useEffect(() => {
-    if (!sessionWithWorkflow.projectShell || typeof hub.courseId !== "number")
+    if (!session.projectShell || typeof hub.courseId !== "number")
       return;
     const explicitShellMode = explicitShellModeRef.current;
     const hasExplicitModeOverride =
       explicitShellMode?.courseId === hub.courseId;
     if (shellHydratedCourseId !== hub.courseId) {
       hydrateProjectShellState(
-        sessionWithWorkflow.projectShell,
+        session.projectShell,
         hub.courseId,
         hasExplicitModeOverride,
       );
@@ -557,13 +413,19 @@ function useTutorPageController() {
       !brainLaunchContext &&
       !workflow.activeWorkflowId &&
       shellMode === "tutor" &&
-      sessionWithWorkflow.projectShell.active_session?.session_id
+      session.projectShell.active_session?.session_id
     ) {
       resumedFromProjectShellRef.current = true;
       void api.tutor
-        .getSession(sessionWithWorkflow.projectShell.active_session.session_id)
+        .getSession(session.projectShell.active_session.session_id)
         .then((s) => {
-          sessionWithWorkflow.applySessionState(s);
+          if (s.status !== "active") {
+            session.clearActiveSessionState({
+              nextShellMode: initialRouteQuery.mode === "tutor" ? "tutor" : "studio",
+            });
+            return;
+          }
+          session.applySessionState(s);
           setShowSetup(false);
         })
         .catch(() => {
@@ -575,8 +437,9 @@ function useTutorPageController() {
     brainLaunchContext,
     hub.courseId,
     hydrateProjectShellState,
+    initialRouteQuery.mode,
     shellMode,
-    sessionWithWorkflow,
+    session,
     workflow.activeWorkflowId,
     shellHydratedCourseId,
   ]);
@@ -622,6 +485,8 @@ function useTutorPageController() {
       activeBoardScope,
       activeBoardId,
       viewerState,
+      promotedPrimePacketObjects,
+      promotedPolishPacketNotes,
       selectedMaterialIds: hub.selectedMaterials,
     });
     if (persistKey === lastPersistedShellKeyRef.current) return;
@@ -636,6 +501,8 @@ function useTutorPageController() {
           active_board_scope: activeBoardScope,
           active_board_id: activeBoardId,
           viewer_state: viewerState,
+          prime_packet_promoted_objects: promotedPrimePacketObjects,
+          polish_packet_promoted_notes: promotedPolishPacketNotes,
           selected_material_ids: hub.selectedMaterials,
           revision: shellRevision,
         });
@@ -662,10 +529,15 @@ function useTutorPageController() {
     shellHydratedCourseId,
     shellRevision,
     viewerState,
+    promotedPrimePacketObjects,
+    promotedPolishPacketNotes,
   ]);
 
   // ─── Derived ───
-  const isTutorSessionView = shellMode === "tutor" && Boolean(activeSessionId);
+  const isTutorSessionView = session.isTutorSessionView;
+  const liveTutorSessionId = session.hasActiveTutorSession
+    ? activeSessionId
+    : null;
 
   const tutorHeroStats = [
     { label: "Mode", value: shellMode.toUpperCase() },
@@ -691,20 +563,20 @@ function useTutorPageController() {
       resolveTutorTeachRuntime({
         workflowDetail: workflow.activeWorkflowDetail as unknown,
         workflowStage:
-          sessionWithWorkflow.currentBlock?.control_stage ||
-          sessionWithWorkflow.currentBlock?.category ||
+          session.currentBlock?.control_stage ||
+          session.currentBlock?.category ||
           workflow.activeWorkflowDetail?.workflow?.current_stage ||
           null,
-        currentBlock: sessionWithWorkflow.currentBlock,
+        currentBlock: session.currentBlock,
       }),
-    [sessionWithWorkflow.currentBlock, workflow.activeWorkflowDetail],
+    [session.currentBlock, workflow.activeWorkflowDetail],
   );
 
   // ─── Studio sub-tabs ───
   const currentWorkflowStage =
     workflow.activeWorkflowDetail?.workflow?.current_stage ?? null;
   const hasTutorWork =
-    Boolean(activeSessionId) ||
+    Boolean(liveTutorSessionId) ||
     currentWorkflowStage === "tutor" ||
     currentWorkflowStage === "polish" ||
     currentWorkflowStage === "final_sync" ||
@@ -715,7 +587,6 @@ function useTutorPageController() {
 
   const studioSubTabs: StudioSubTab[] = useMemo(
     () => [
-      // { key: "workbench" as TutorStudioView, label: "WORKBENCH", available: true },
       // {
       //   key: "priming" as TutorStudioView,
       //   label: workflow.bootstrappingPriming ? "PRIMING..." : "PRIMING",
@@ -728,18 +599,6 @@ function useTutorPageController() {
     [workflow.bootstrappingPriming, hasTutorWork, hasFinalSyncAccess],
   );
 
-  const handleStudioSubTabClick = useCallback(
-    (key: TutorStudioView) => {
-      if (key === "priming") {
-        void workflow.openStudioPriming();
-      } else {
-        workflow.setStudioView(key);
-      }
-      setShellMode("studio");
-    },
-    [workflow, setShellMode],
-  );
-
   // ─── Top bar ───
   const tutorShellTopBar = (
     <TutorTopBar
@@ -747,24 +606,24 @@ function useTutorPageController() {
       isTutorSessionView={isTutorSessionView}
       brainLaunchContext={brainLaunchContext}
       topic={hub.topic || "Freeform"}
-      turnCount={sessionWithWorkflow.turnCount}
-      startedAt={sessionWithWorkflow.startedAt}
-      hasChain={sessionWithWorkflow.hasChain}
-      currentBlock={sessionWithWorkflow.currentBlock}
-      isChainComplete={sessionWithWorkflow.isChainComplete}
-      blockTimerSeconds={sessionWithWorkflow.blockTimerSeconds}
-      timerPaused={sessionWithWorkflow.timerPaused}
-      progressCount={sessionWithWorkflow.progressCount}
-      chainBlocksLength={sessionWithWorkflow.chainBlocks.length}
-      formatTimer={sessionWithWorkflow.formatTimer}
-      onSetTimerPaused={sessionWithWorkflow.setTimerPaused}
-      onAdvanceBlock={sessionWithWorkflow.advanceBlock}
+      turnCount={session.turnCount}
+      startedAt={session.startedAt}
+      hasChain={session.hasChain}
+      currentBlock={session.currentBlock}
+      isChainComplete={session.isChainComplete}
+      blockTimerSeconds={session.blockTimerSeconds}
+      timerPaused={session.timerPaused}
+      progressCount={session.progressCount}
+      chainBlocksLength={session.chainBlocks.length}
+      formatTimer={session.formatTimer}
+      onSetTimerPaused={session.setTimerPaused}
+      onAdvanceBlock={session.advanceBlock}
       activeWorkflowId={workflow.activeWorkflowId}
       activeWorkflowDetail={workflow.activeWorkflowDetail}
       studioView={workflow.studioView}
       studioSubTabs={studioSubTabs}
       teachRuntime={teachRuntime}
-      activeSessionId={activeSessionId}
+      activeSessionId={liveTutorSessionId}
     />
   );
 
@@ -772,19 +631,13 @@ function useTutorPageController() {
     <div className="px-2 md:px-3">
       <TutorTabBar
         shellMode={shellMode}
-        activeSessionId={activeSessionId}
-        showArtifacts={sessionWithWorkflow.showArtifacts}
-        artifacts={sessionWithWorkflow.artifacts}
+        activeSessionId={liveTutorSessionId}
+        showArtifacts={session.showArtifacts}
+        artifacts={session.artifacts}
         onSetShellMode={setShellMode}
         onOpenStudioHome={openStudioHome}
-        onSetShowArtifacts={sessionWithWorkflow.setShowArtifacts}
-        onSetShowEndConfirm={sessionWithWorkflow.setShowEndConfirm}
-        onOpenSettings={openSettings}
-        onSetStudioEntryRequest={setStudioEntryRequest}
-        onSetScheduleLaunchIntent={setScheduleLaunchIntent}
-        studioSubTabs={studioSubTabs}
-        studioView={workflow.studioView}
-        onStudioSubTabClick={handleStudioSubTabClick}
+        onSetShowArtifacts={session.setShowArtifacts}
+        onSetShowEndConfirm={session.setShowEndConfirm}
       />
     </div>
   );
@@ -794,7 +647,7 @@ function useTutorPageController() {
     <PageScaffold
       eyebrow="Live Study Core"
       title="Tutor"
-      subtitle="Run your study plan from Studio through Priming, then move into Tutor, schedule, and Final Sync without losing context. [v0.9.0-workspace]"
+      subtitle="Run your study plan from Workspace Home through Priming, then move into Tutor and Final Sync without losing context. [v0.9.1-clarity]"
       className="h-full min-h-0 [&_.page-shell\_\_horizon]:hidden [&_.page-shell\_\_hero]:border-transparent [&_.page-shell\_\_hero]:before:hidden"
       contentClassName="gap-6"
       stats={tutorHeroStats}
@@ -851,13 +704,11 @@ function useTutorPageController() {
         <TutorShell
           shellMode={shellMode}
           setShellMode={setShellMode}
-          activeSessionId={activeSessionId}
+          activeSessionId={liveTutorSessionId}
           hub={hub}
-          session={sessionWithWorkflow}
+          session={session}
           workflow={workflow}
           restoredTurns={restoredTurns}
-          studioEntryRequest={studioEntryRequest}
-          scheduleLaunchIntent={scheduleLaunchIntent}
           activeBoardScope={activeBoardScope}
           activeBoardId={activeBoardId}
           viewerState={viewerState}
@@ -866,16 +717,22 @@ function useTutorPageController() {
           setViewerState={setViewerState}
           setShowSetup={setShowSetup}
           queryClient={queryClient}
-          showSettings={showSettings}
-          setShowSettings={setShowSettings}
-          customInstructions={customInstructions}
-          setCustomInstructions={setCustomInstructions}
-          settingsLoading={settingsLoading}
-          settingsSaving={settingsSaving}
-          isPreviewMode={isPreviewMode}
-          setIsPreviewMode={setIsPreviewMode}
-          saveSettings={saveSettings}
-          restoreDefaultInstructions={restoreDefaultInstructions}
+          promotedPrimePacketObjects={promotedPrimePacketObjects}
+          promotedPolishPacketNotes={promotedPolishPacketNotes}
+          onPromotePrimePacketObject={(workspaceObject) => {
+            setPromotedPrimePacketObjects((prev) =>
+              prev.some((existingObject) => existingObject.id === workspaceObject.id)
+                ? prev
+                : [...prev, workspaceObject],
+            );
+          }}
+          onPromotePolishPacketNote={(note) => {
+            setPromotedPolishPacketNotes((prev) =>
+              prev.some((existingNote) => existingNote.id === note.id)
+                ? prev
+                : [...prev, note],
+            );
+          }}
           onResumeHubCandidate={resumeFromHubCandidate}
         />
       </CoreWorkspaceFrame>

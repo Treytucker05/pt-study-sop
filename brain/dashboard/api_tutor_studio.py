@@ -23,6 +23,11 @@ from db_setup import get_connection
 
 from dashboard.api_tutor import tutor_bp  # noqa: E402
 from dashboard.api_tutor_projects import (  # noqa: E402
+    VALID_BOARD_SCOPES,
+    VALID_SHELL_MODES,
+    _normalize_json_dict,
+    _normalize_json_object_list,
+    _normalize_material_ids,
     _require_course as _require_project_course,
     _require_course_session,
     _serialize_workspace_state,
@@ -185,6 +190,177 @@ def _serialize_revision(row: sqlite3.Row) -> dict[str, Any]:
         "payload": _load_json(row["payload_json"]),
         "source_locator": _load_json(row["source_locator_json"]),
         "created_at": row["created_at"],
+    }
+
+
+def _serialize_session_summary(row: sqlite3.Row) -> dict[str, Any]:
+    return {
+        "session_id": row["session_id"],
+        "course_id": int(row["course_id"]) if row["course_id"] is not None else None,
+        "phase": row["phase"],
+        "topic": row["topic"] or "",
+        "status": row["status"],
+        "turn_count": int(row["turn_count"] or 0),
+        "started_at": row["started_at"],
+        "ended_at": row["ended_at"],
+    }
+
+
+def _load_workspace_state_row(
+    conn: sqlite3.Connection,
+    course_id: int,
+) -> sqlite3.Row | None:
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT course_id, active_tutor_session_id, last_mode, active_board_scope,
+               active_board_id, viewer_state_json, prime_packet_promoted_objects_json,
+               polish_packet_promoted_notes_json,
+               selected_material_ids_json,
+               revision, updated_at
+        FROM project_workspace_state
+        WHERE course_id = ?
+        """,
+        (course_id,),
+    )
+    return cur.fetchone()
+
+
+def _build_studio_restore_payload(
+    conn: sqlite3.Connection,
+    *,
+    course_id: int,
+    tutor_session_id: str | None = None,
+    scope: str | None = None,
+    include_archived: bool = False,
+) -> dict[str, Any]:
+    conditions = ["course_id = ?", "deleted_at IS NULL"]
+    params: list[Any] = [course_id]
+    if not include_archived:
+        conditions.append("status != 'archived'")
+    if scope:
+        conditions.append("scope = ?")
+        params.append(scope)
+    if tutor_session_id:
+        conditions.append("(tutor_session_id = ? OR (scope = 'project' AND tutor_session_id IS NULL))")
+        params.append(tutor_session_id)
+
+    cur = conn.cursor()
+    cur.execute(
+        f"""
+        SELECT *
+        FROM studio_items
+        WHERE {' AND '.join(conditions)}
+        ORDER BY datetime(created_at) DESC, id DESC
+        """,
+        tuple(params),
+    )
+    items = [_serialize_item(row) for row in cur.fetchall()]
+    counts = {
+        "total": len(items),
+        "captured": sum(1 for item in items if item["status"] == "captured"),
+        "boarded": sum(1 for item in items if item["status"] == "boarded"),
+        "promoted": sum(1 for item in items if item["status"] == "promoted"),
+        "archived": sum(1 for item in items if item["status"] == "archived"),
+    }
+    return {"course_id": course_id, "items": items, "counts": counts}
+
+
+def _build_studio_run_payload(
+    conn: sqlite3.Connection,
+    *,
+    course_id: int,
+    requested_session_id: str | None = None,
+    include_archived: bool = False,
+) -> dict[str, Any]:
+    course_row = _require_course(conn, course_id)
+    if course_row is None:
+        raise LookupError("course not found")
+
+    workspace_state = _serialize_workspace_state(_load_workspace_state_row(conn, course_id))
+    resolved_session_id = requested_session_id or workspace_state["active_tutor_session_id"]
+
+    active_session = None
+    if resolved_session_id:
+        session_row = _require_course_session(conn, course_id, str(resolved_session_id))
+        if session_row is None and requested_session_id:
+            raise LookupError("session not found for course")
+        if session_row is not None:
+            active_session = _serialize_session_summary(session_row)
+
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT session_id, course_id, phase, topic, status, turn_count, started_at, ended_at
+        FROM tutor_sessions
+        WHERE course_id = ?
+        ORDER BY datetime(started_at) DESC, id DESC
+        LIMIT 10
+        """,
+        (course_id,),
+    )
+    recent_sessions = [_serialize_session_summary(row) for row in cur.fetchall()]
+
+    cur.execute(
+        """
+        SELECT
+            COUNT(*) AS total_items,
+            SUM(CASE WHEN status = 'captured' THEN 1 ELSE 0 END) AS captured_items,
+            SUM(CASE WHEN status = 'promoted' THEN 1 ELSE 0 END) AS promoted_items
+        FROM studio_items
+        WHERE course_id = ? AND deleted_at IS NULL
+        """,
+        (course_id,),
+    )
+    studio_counts = cur.fetchone()
+
+    cur.execute(
+        """
+        SELECT
+            SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) AS active_sessions,
+            COUNT(*) AS session_count
+        FROM tutor_sessions
+        WHERE course_id = ?
+        """,
+        (course_id,),
+    )
+    session_counts = cur.fetchone()
+
+    cur.execute(
+        """
+        SELECT COUNT(*) AS pending_events
+        FROM course_events
+        WHERE course_id = ? AND COALESCE(status, 'pending') = 'pending'
+        """,
+        (course_id,),
+    )
+    pending_events = cur.fetchone()
+
+    return {
+        "course": dict(course_row),
+        "workspace_state": workspace_state,
+        "continuation": {
+            "can_resume": active_session is not None,
+            "active_tutor_session_id": active_session["session_id"] if active_session else None,
+            "last_mode": workspace_state["last_mode"],
+        },
+        "active_session": active_session,
+        "recent_sessions": recent_sessions,
+        "counts": {
+            "active_sessions": int((session_counts["active_sessions"] or 0) if session_counts else 0),
+            "session_count": int((session_counts["session_count"] or 0) if session_counts else 0),
+            "studio_total_items": int((studio_counts["total_items"] or 0) if studio_counts else 0),
+            "studio_captured_items": int((studio_counts["captured_items"] or 0) if studio_counts else 0),
+            "studio_promoted_items": int((studio_counts["promoted_items"] or 0) if studio_counts else 0),
+            "pending_schedule_events": int((pending_events["pending_events"] or 0) if pending_events else 0),
+        },
+        "studio_restore": _build_studio_restore_payload(
+            conn,
+            course_id=course_id,
+            tutor_session_id=resolved_session_id,
+            include_archived=include_archived,
+        ),
+        "publish_confirmation_required": True,
     }
 
 
@@ -670,37 +846,215 @@ def restore_studio_items():
             return jsonify({"error": "course not found"}), 404
         if tutor_session_id and _require_course_session(conn, course_id, tutor_session_id) is None:
             return jsonify({"error": "tutor_session_id must belong to the selected course"}), 400
+        return jsonify(
+            _build_studio_restore_payload(
+                conn,
+                course_id=course_id,
+                tutor_session_id=tutor_session_id,
+                scope=scope,
+                include_archived=include_archived,
+            )
+        )
+    finally:
+        conn.close()
 
-        conditions = ["course_id = ?", "deleted_at IS NULL"]
-        params: list[Any] = [course_id]
-        if not include_archived:
-            conditions.append("status != 'archived'")
-        if scope:
-            conditions.append("scope = ?")
-            params.append(scope)
-        if tutor_session_id:
-            conditions.append("(tutor_session_id = ? OR (scope = 'project' AND tutor_session_id IS NULL))")
-            params.append(tutor_session_id)
+
+@tutor_bp.route("/studio-run", methods=["GET"])
+def get_studio_run():
+    raw_course_id = request.args.get("course_id")
+    if raw_course_id is None:
+        return jsonify({"error": "course_id is required"}), 400
+    try:
+        course_id = int(raw_course_id)
+    except (TypeError, ValueError):
+        return jsonify({"error": "course_id must be an integer"}), 400
+
+    tutor_session_id = request.args.get("tutor_session_id")
+    include_archived = str(request.args.get("include_archived") or "").strip().lower() in TRUTHY_QUERY_VALUES
+
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    try:
+        if tutor_session_id and _require_course_session(conn, course_id, tutor_session_id) is None:
+            return jsonify({"error": "tutor_session_id must belong to the selected course"}), 400
+        try:
+            return jsonify(
+                _build_studio_run_payload(
+                    conn,
+                    course_id=course_id,
+                    requested_session_id=tutor_session_id,
+                    include_archived=include_archived,
+                )
+            )
+        except LookupError as exc:
+            message = str(exc)
+            if message == "course not found":
+                return jsonify({"error": message}), 404
+            return jsonify({"error": message}), 404
+    finally:
+        conn.close()
+
+
+@tutor_bp.route("/studio-run", methods=["PUT"])
+def save_studio_run():
+    data = request.get_json(silent=True) or {}
+    raw_course_id = data.get("course_id")
+    if raw_course_id is None:
+        return jsonify({"error": "course_id is required"}), 400
+    try:
+        course_id = int(raw_course_id)
+    except (TypeError, ValueError):
+        return jsonify({"error": "course_id must be an integer"}), 400
+
+    if data.get("request_publish"):
+        return jsonify({"error": "publish requires explicit user confirmation"}), 400
+
+    workspace_state = data.get("workspace_state")
+    if not isinstance(workspace_state, dict):
+        return jsonify({"error": "workspace_state is required"}), 400
+
+    last_mode = workspace_state.get("last_mode", "studio")
+    if last_mode not in VALID_SHELL_MODES:
+        return jsonify({"error": f"last_mode must be one of {sorted(VALID_SHELL_MODES)}"}), 400
+
+    active_board_scope = workspace_state.get("active_board_scope", "project")
+    if active_board_scope not in VALID_BOARD_SCOPES:
+        return jsonify(
+            {"error": f"active_board_scope must be one of {sorted(VALID_BOARD_SCOPES)}"}
+        ), 400
+
+    active_tutor_session_id = workspace_state.get("active_tutor_session_id")
+    if active_tutor_session_id is not None and not isinstance(active_tutor_session_id, str):
+        return jsonify({"error": "active_tutor_session_id must be a string"}), 400
+
+    active_board_id = workspace_state.get("active_board_id")
+    if active_board_id is not None:
+        try:
+            active_board_id = int(active_board_id)
+        except (TypeError, ValueError):
+            return jsonify({"error": "active_board_id must be an integer"}), 400
+
+    try:
+        viewer_state = _normalize_json_dict(
+            workspace_state.get("viewer_state"),
+            field_name="viewer_state",
+        )
+        prime_packet_promoted_objects = _normalize_json_object_list(
+            workspace_state.get("prime_packet_promoted_objects"),
+            field_name="prime_packet_promoted_objects",
+        )
+        polish_packet_promoted_notes = _normalize_json_object_list(
+            workspace_state.get("polish_packet_promoted_notes"),
+            field_name="polish_packet_promoted_notes",
+        )
+        selected_material_ids = _normalize_material_ids(
+            workspace_state.get("selected_material_ids")
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    raw_revision = workspace_state.get("revision")
+    if raw_revision is None:
+        requested_revision = None
+    else:
+        try:
+            requested_revision = int(raw_revision)
+        except (TypeError, ValueError):
+            return jsonify({"error": "revision must be an integer"}), 400
+
+    tutor_session_id = data.get("tutor_session_id")
+    if tutor_session_id is not None and not isinstance(tutor_session_id, str):
+        return jsonify({"error": "tutor_session_id must be a string"}), 400
+    include_archived = bool(data.get("include_archived"))
+
+    now = datetime.now(timezone.utc).isoformat()
+
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    try:
+        if _require_course(conn, course_id) is None:
+            return jsonify({"error": "course not found"}), 404
+        if active_tutor_session_id and _require_course_session(conn, course_id, active_tutor_session_id) is None:
+            return jsonify({"error": "active_tutor_session_id must belong to the selected course"}), 400
+        if tutor_session_id and _require_course_session(conn, course_id, tutor_session_id) is None:
+            return jsonify({"error": "tutor_session_id must belong to the selected course"}), 400
 
         cur = conn.cursor()
         cur.execute(
-            f"""
-            SELECT *
-            FROM studio_items
-            WHERE {' AND '.join(conditions)}
-            ORDER BY datetime(created_at) DESC, id DESC
+            """
+            SELECT id, revision
+            FROM project_workspace_state
+            WHERE course_id = ?
             """,
-            tuple(params),
+            (course_id,),
         )
-        items = [_serialize_item(row) for row in cur.fetchall()]
-        counts = {
-            "total": len(items),
-            "captured": sum(1 for item in items if item["status"] == "captured"),
-            "boarded": sum(1 for item in items if item["status"] == "boarded"),
-            "promoted": sum(1 for item in items if item["status"] == "promoted"),
-            "archived": sum(1 for item in items if item["status"] == "archived"),
-        }
-        return jsonify({"course_id": course_id, "items": items, "counts": counts})
+        existing = cur.fetchone()
+        current_revision = int(existing["revision"]) if existing is not None else 0
+        if requested_revision is not None and requested_revision != current_revision:
+            return (
+                jsonify(
+                    {
+                        "error": "revision conflict",
+                        "code": "REVISION_CONFLICT",
+                        "expected_revision": current_revision,
+                    }
+                ),
+                409,
+            )
+
+        new_revision = current_revision + 1
+        cur.execute(
+            """
+            INSERT INTO project_workspace_state (
+                active_tutor_session_id,
+                last_mode,
+                active_board_scope,
+                active_board_id,
+                viewer_state_json,
+                prime_packet_promoted_objects_json,
+                polish_packet_promoted_notes_json,
+                selected_material_ids_json,
+                revision,
+                updated_at,
+                course_id
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(course_id) DO UPDATE SET
+                active_tutor_session_id = excluded.active_tutor_session_id,
+                last_mode = excluded.last_mode,
+                active_board_scope = excluded.active_board_scope,
+                active_board_id = excluded.active_board_id,
+                viewer_state_json = excluded.viewer_state_json,
+                prime_packet_promoted_objects_json = excluded.prime_packet_promoted_objects_json,
+                polish_packet_promoted_notes_json = excluded.polish_packet_promoted_notes_json,
+                selected_material_ids_json = excluded.selected_material_ids_json,
+                revision = excluded.revision,
+                updated_at = excluded.updated_at
+            """,
+            (
+                active_tutor_session_id,
+                last_mode,
+                active_board_scope,
+                active_board_id,
+                json.dumps(viewer_state) if viewer_state is not None else None,
+                json.dumps(prime_packet_promoted_objects),
+                json.dumps(polish_packet_promoted_notes),
+                json.dumps(selected_material_ids),
+                new_revision,
+                now,
+                course_id,
+            ),
+        )
+        conn.commit()
+
+        return jsonify(
+            _build_studio_run_payload(
+                conn,
+                course_id=course_id,
+                requested_session_id=tutor_session_id or active_tutor_session_id,
+                include_archived=include_archived,
+            )
+        )
     finally:
         conn.close()
 

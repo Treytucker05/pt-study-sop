@@ -602,6 +602,46 @@ describe("api.tutor", () => {
     );
   });
 
+  it("getStudioRun builds the StudioRun query", async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({
+        course: { id: 1 },
+        workspace_state: {},
+        studio_restore: { course_id: 1, items: [], counts: { total: 0 } },
+        publish_confirmation_required: true,
+      }),
+    );
+    await api.tutor.getStudioRun({
+      course_id: 1,
+      tutor_session_id: "tutor-123",
+      include_archived: true,
+    });
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).toContain("/api/tutor/studio-run?");
+    expect(url).toContain("course_id=1");
+    expect(url).toContain("tutor_session_id=tutor-123");
+    expect(url).toContain("include_archived=true");
+  });
+
+  it("saveStudioRun sends PUT", async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({
+        course: { id: 1 },
+        workspace_state: { revision: 1 },
+        studio_restore: { course_id: 1, items: [], counts: { total: 0 } },
+        publish_confirmation_required: true,
+      }),
+    );
+    await api.tutor.saveStudioRun({
+      course_id: 1,
+      workspace_state: { revision: 0 },
+    });
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/tutor/studio-run",
+      expect.objectContaining({ method: "PUT" })
+    );
+  });
+
   it("endSession sends POST", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse({ ended: true }));
     await api.tutor.endSession("tutor-123");

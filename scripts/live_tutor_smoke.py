@@ -22,6 +22,7 @@ import json
 import os
 import socket
 import sys
+from collections import OrderedDict
 from urllib.parse import urlparse
 
 import requests
@@ -91,6 +92,143 @@ def _run_turn(session: requests.Session, base_url: str, session_id: str) -> str:
         return _read_sse_response(resp)
 
 
+def _group_objectives_by_study_unit(
+    objectives: list[dict],
+) -> list[tuple[str, list[dict]]]:
+    grouped: "OrderedDict[str, list[dict]]" = OrderedDict()
+    for objective in objectives:
+        group_name = str(
+            objective.get("groupName") or objective.get("group_name") or ""
+        ).strip()
+        title = str(objective.get("title") or "").strip()
+        if not group_name or not title:
+            continue
+        grouped.setdefault(group_name, []).append(objective)
+    return list(grouped.items())
+
+
+def _build_preflight_payload(
+    *,
+    course_id: int,
+    study_unit: str,
+    objectives: list[dict],
+    selected_material_ids: list[int],
+) -> dict:
+    return {
+        "course_id": course_id,
+        "study_unit": study_unit,
+        "topic": study_unit,
+        "objective_scope": "module_all",
+        "learning_objectives": [
+            {
+                "lo_code": lo.get("loCode") or lo.get("lo_code") or f"OBJ-{idx + 1}",
+                "title": lo.get("title") or "",
+                "group": study_unit,
+            }
+            for idx, lo in enumerate(objectives[:8])
+            if str(lo.get("title") or "").strip()
+        ],
+        "content_filter": {
+            "material_ids": selected_material_ids,
+            "accuracy_profile": "strict",
+        },
+    }
+
+
+def select_preflight_ready_scope(
+    *,
+    session: requests.Session,
+    base_url: str,
+    course_candidates: list[dict],
+) -> dict:
+    last_failure: str | None = None
+
+    for course in course_candidates:
+        course_id = course.get("id")
+        if not course_id:
+            continue
+
+        materials_resp = session.get(
+            f"{base_url}/api/tutor/materials",
+            params={"course_id": course_id, "enabled": 1},
+            timeout=20,
+        )
+        materials_resp.raise_for_status()
+        materials = materials_resp.json()
+        selected_material_ids = [
+            int(material["id"])
+            for material in materials[:3]
+            if isinstance(material.get("id"), int)
+        ]
+        if not selected_material_ids:
+            continue
+
+        objectives_resp = session.get(
+            f"{base_url}/api/learning-objectives",
+            params={"courseId": course_id},
+            timeout=20,
+        )
+        objectives_resp.raise_for_status()
+        learning_objectives = objectives_resp.json()
+        grouped_units = _group_objectives_by_study_unit(learning_objectives)
+        if not grouped_units:
+            continue
+
+        for study_unit, unit_objectives in grouped_units:
+            payload = _build_preflight_payload(
+                course_id=int(course_id),
+                study_unit=study_unit,
+                objectives=unit_objectives,
+                selected_material_ids=selected_material_ids,
+            )
+            resp = session.post(
+                f"{base_url}/api/tutor/session/preflight",
+                json=payload,
+                timeout=30,
+            )
+            if resp.status_code >= 400:
+                try:
+                    error_payload = resp.json()
+                except Exception:
+                    error_payload = resp.text
+                last_failure = (
+                    f"course={course.get('name') or course_id}, "
+                    f"study_unit={study_unit}, "
+                    f"error={error_payload}"
+                )
+                continue
+
+            preflight = resp.json()
+            if preflight.get("ok"):
+                grouped_objectives = [
+                    objective
+                    for _, grouped_objectives in grouped_units
+                    for objective in grouped_objectives
+                ]
+                return {
+                    "course": course,
+                    "materials": materials,
+                    "learning_objectives": learning_objectives,
+                    "grouped_objectives": grouped_objectives,
+                    "study_unit": study_unit,
+                    "unit_objectives": unit_objectives,
+                    "selected_material_ids": selected_material_ids,
+                    "preflight_payload": payload,
+                    "preflight": preflight,
+                }
+
+            last_failure = (
+                f"course={course.get('name') or course_id}, "
+                f"study_unit={study_unit}, "
+                f"preflight={preflight}"
+            )
+
+    raise RuntimeError(
+        "No course has a preflight-ready study unit."
+        + (f" Last failure: {last_failure}" if last_failure else "")
+    )
+
+
 def smoke(base_url: str) -> None:
     session = requests.Session()
     failures: list[str] = []
@@ -130,47 +268,24 @@ def smoke(base_url: str) -> None:
         sys.exit(1)
 
     course_candidates = courses.get("courses", []) if isinstance(courses, dict) else courses
-    selected_course = None
-    materials = []
-    learning_objectives = []
-    grouped_objectives = []
-    for course in course_candidates:
-        candidate_id = course.get("id")
-        if not candidate_id:
-            continue
-        candidate_materials_resp = session.get(
-            f"{base_url}/api/tutor/materials",
-            params={"course_id": candidate_id, "enabled": 1},
-            timeout=20,
+    try:
+        selected_scope = select_preflight_ready_scope(
+            session=session,
+            base_url=base_url,
+            course_candidates=course_candidates,
         )
-        candidate_materials_resp.raise_for_status()
-        candidate_materials = candidate_materials_resp.json()
-
-        candidate_objectives_resp = session.get(
-            f"{base_url}/api/learning-objectives",
-            params={"courseId": candidate_id},
-            timeout=20,
-        )
-        candidate_objectives_resp.raise_for_status()
-        candidate_objectives = candidate_objectives_resp.json()
-
-        candidate_grouped_objectives = [
-            lo
-            for lo in candidate_objectives
-            if str(lo.get("groupName") or lo.get("group_name") or "").strip()
-            and str(lo.get("title") or "").strip()
-        ]
-        if candidate_materials and candidate_grouped_objectives:
-            selected_course = course
-            materials = candidate_materials
-            learning_objectives = candidate_objectives
-            grouped_objectives = candidate_grouped_objectives
-            break
-
-    if selected_course is None:
-        print("FATAL: No course has both enabled Tutor materials and grouped learning objectives.")
+    except Exception as exc:
+        print(f"FATAL: {exc}")
         sys.exit(1)
 
+    selected_course = selected_scope["course"]
+    materials = selected_scope["materials"]
+    learning_objectives = selected_scope["learning_objectives"]
+    grouped_objectives = selected_scope["grouped_objectives"]
+    study_unit = selected_scope["study_unit"]
+    unit_objectives = selected_scope["unit_objectives"]
+    selected_material_ids = selected_scope["selected_material_ids"]
+    preflight_payload = selected_scope["preflight_payload"]
     course_id = selected_course.get("id")
     course_name = selected_course.get("name") or "Unknown Course"
     print(
@@ -180,54 +295,9 @@ def smoke(base_url: str) -> None:
     print("  [Tutor: list materials] OK")
     print("  [Tutor: list objectives] OK")
 
-    study_unit = str(
-        grouped_objectives[0].get("groupName") or grouped_objectives[0].get("group_name") or ""
-    ).strip()
-    unit_objectives = [
-        lo
-        for lo in grouped_objectives
-        if str(lo.get("groupName") or lo.get("group_name") or "").strip() == study_unit
-    ]
-    selected_material_ids = [
-        int(material["id"])
-        for material in materials[:3]
-        if isinstance(material.get("id"), int)
-    ]
-    if not selected_material_ids:
-        print("FATAL: Could not derive selected material IDs for preflight.")
-        sys.exit(1)
-
-    preflight_payload = {
-        "course_id": course_id,
-        "study_unit": study_unit,
-        "topic": study_unit,
-        "objective_scope": "module_all",
-        "learning_objectives": [
-            {
-                "lo_code": lo.get("loCode") or lo.get("lo_code") or f"OBJ-{idx + 1}",
-                "title": lo.get("title") or "",
-                "group": study_unit,
-            }
-            for idx, lo in enumerate(unit_objectives[:8])
-            if str(lo.get("title") or "").strip()
-        ],
-        "content_filter": {
-            "material_ids": selected_material_ids,
-            "accuracy_profile": "strict",
-        },
-    }
-
     preflight = step(
         "Tutor: preflight",
-        lambda: (
-            resp := session.post(
-                f"{base_url}/api/tutor/session/preflight",
-                json=preflight_payload,
-                timeout=30,
-            ),
-            resp.raise_for_status(),
-            resp.json(),
-        )[-1],
+        lambda: selected_scope["preflight"],
     )
     if not preflight or not preflight.get("ok"):
         print("FATAL: Tutor preflight did not return ok=true.")

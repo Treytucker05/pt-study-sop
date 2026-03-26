@@ -13,6 +13,7 @@ import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
@@ -270,6 +271,7 @@ export function TutorWorkflowFinalSync({
   const [pathTouched, setPathTouched] = useState(false);
   const [markdownDraft, setMarkdownDraft] = useState(() => buildMarkdown(workflowDetail));
   const [isRunning, setIsRunning] = useState(false);
+  const [isFinalSyncConfirmed, setIsFinalSyncConfirmed] = useState(false);
 
   const { data: obsidianStatus } = useQuery({
     queryKey: ["obsidian", "status"],
@@ -293,6 +295,10 @@ export function TutorWorkflowFinalSync({
   useEffect(() => {
     setMarkdownDraft(buildMarkdown(workflowDetail));
   }, [workflowDetail]);
+
+  useEffect(() => {
+    setIsFinalSyncConfirmed(false);
+  }, [workflow?.workflow_id, polishBundle?.id]);
 
   const runFinalSync = async () => {
     if (!workflow?.workflow_id || !polishBundle) {
@@ -448,7 +454,7 @@ export function TutorWorkflowFinalSync({
             onClick={() => {
               void runFinalSync();
             }}
-            disabled={isRunning || !workflow || !polishBundle}
+            disabled={isRunning || !workflow || !polishBundle || !isFinalSyncConfirmed}
           >
             <Send className="mr-2 h-3.5 w-3.5" />
             {isRunning ? "RUNNING..." : "RUN FINAL SYNC"}
@@ -470,6 +476,39 @@ export function TutorWorkflowFinalSync({
         </Card>
       ) : (
         <>
+          <Card className="rounded-none border-amber-500/30 bg-black/40">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 font-arcade text-xs text-amber-400">
+                <TriangleAlert className="h-4 w-4" />
+                CONFIRM FINAL SYNC
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 font-terminal text-ui-2xs">
+              <div className="text-muted-foreground">
+                Final Sync writes to your publish targets and records a stored workflow result. Arm this step explicitly before running it.
+              </div>
+              <label
+                htmlFor="final-sync-confirm"
+                className="flex cursor-pointer items-start gap-3 border border-amber-500/20 bg-black/30 p-3"
+              >
+                <Checkbox
+                  id="final-sync-confirm"
+                  checked={isFinalSyncConfirmed}
+                  onCheckedChange={(checked) => setIsFinalSyncConfirmed(checked === true)}
+                  aria-label="I confirm final sync"
+                />
+                <div className="space-y-1">
+                  <div className="font-arcade text-ui-2xs text-amber-300">
+                    I confirm Final Sync
+                  </div>
+                  <div className="text-muted-foreground">
+                    This enables publish to Obsidian/Anki and stores the workflow outcome.
+                  </div>
+                </div>
+              </label>
+            </CardContent>
+          </Card>
+
           <Card className="rounded-none border-green-500/30 bg-black/40">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 font-arcade text-xs text-green-400">

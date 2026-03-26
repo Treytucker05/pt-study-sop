@@ -20,12 +20,13 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - `docs/archive/TUTOR_TODO_history_2026-03-14.md`
   - `docs/archive/TUTOR_TODO_history_2026-03-15_workspace_cleanup.md`
 - Historical note: if any archived wording conflicts with the canon, the canon wins.
-- Launch-model note: the active Tutor direction is Brain-owned launch plus the `/tutor` shell with one global surface nav (`Launch`, `Tutor`, `Studio`, `Schedule`, `Settings`), where `Launch` is the workflow inbox/home, `Tutor` is the live session surface, and `Studio` owns `Workbench`, `Priming`, `Polish`, and `Final Sync`.
+- Launch-model note: the active Tutor direction is a Studio-first `/tutor` shell where the visible v1 nav is `Studio` and `Tutor`, and `Studio` owns `Workspace Home`, `Workspace`, `Priming`, `Polish`, and `Final Sync`.
 
 ## Active Sprint 2026-03-15
 
 - Active execution note: the current dirty frontend Tutor/shared-page rewrite set is intentionally left in place during this cleanup pass. Treat those source edits as in-progress local work, not workspace noise.
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
+- Ops note (2026-03-25): `dev-browser` is now a shared agent skill projected into every supported agent root; this does not change Tutor sprint priority.
 
 - [x] HUD-230. Restyle the shared HUD buttons to a red/orange patterned glass treatment so Tutor, Library, Methods, Scholar, and PageScaffold hero actions share the same visual language without drifting green.
   - Scope:
@@ -92,6 +93,8 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - launch-oriented entry points and restore states normalize into Studio instead of reopening a standalone Launch page
     - the visible Studio and Priming copy no longer sends the user back to Launch
     - the Tutor page regression tests and production frontend build pass
+  - Execution note:
+    - do not execute this as a standalone shell tweak; fold it into `HUD-236` so the nav change ships with the unified StudioRun cutover instead of another partial Tutor-shell pass
 - [x] HUD-235. Build a standalone Studio layout playground with draggable and resizable cards for the main Studio modules so the surface can be rearranged visually.
   - Scope:
     - `docs/design/studio-playground.html`
@@ -102,6 +105,182 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - the canvas supports presets, clear/reset, and live prompt output with copy support
     - the HTML file opens cleanly in a browser without any external dependencies
   - Completed 2026-03-22: created `docs/design/studio-playground.html` as a single-file Studio layout playground with Studio-specific palette items, presets, drag-to-place cards, corner resize handles, clear/reset controls, and live prompt output; fixed the script parse break during refinement; and verified the page in a browser by dragging and resizing a card.
+- [x] HUD-236. Execute the Unified Studio incremental cutover on `/tutor` with a single `StudioRun` authority, anchored Studio surfaces, source-linked workspace objects, explicit Prime/Polish packet flow, adaptive Tutor status, and guarded Final Sync publishing.
+  - PRD:
+    - GitHub issue `#139` (`PRD: Unified Studio — source-linked workspace for priming, tutor, and polish`)
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/hooks/useTutorSession.ts`
+    - `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts`
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+    - `dashboard_rebuild/client/src/components/TutorTabBar.tsx`
+    - `dashboard_rebuild/client/src/components/TutorTopBar.tsx`
+    - `dashboard_rebuild/client/src/components/WorkspaceStudio.tsx`
+    - `dashboard_rebuild/client/src/components/WorkspaceCanvas.tsx`
+    - `dashboard_rebuild/client/src/components/workspace/PacketPanel.tsx`
+    - new `dashboard_rebuild/client/src/components/studio/`
+    - new `dashboard_rebuild/client/src/hooks/useStudioRun.ts`
+    - new `dashboard_rebuild/client/src/lib/studio*.ts`
+    - `dashboard_rebuild/client/src/api.types.ts`
+    - `dashboard_rebuild/package.json`
+    - `brain/dashboard/api_tutor_studio.py`
+    - `brain/dashboard/api_tutor_sessions.py`
+    - `brain/dashboard/api_tutor_turns.py`
+    - `brain/dashboard/api_tutor_workflows.py`
+    - `brain/db_setup.py`
+    - `brain/tests/`
+    - `scripts/live_tutor_smoke.py`
+  - Done when:
+    - `/tutor` resolves through one persisted `StudioRun` authority into exactly `Workspace Home` or `Exact Resume`
+    - the new Studio shell owns `Source Shelf`, document dock, workspace, `Run Config`, `Tutor Status`, `Memory`, `Prime Packet`, `Polish Packet`, and the assistant dock without reopening Launch as a separate surface
+    - the center workspace uses source-linked object intake (`excerpt`, `image/screenshot`, `text note`, `diagram/sketch`, `link/reference`) and keeps canvas edits workspace-local by default
+    - selected study-run sources auto-link into the Prime Packet, assistant output lands in the workspace first, and promotion into Prime/Polish stays explicit
+    - Tutor runtime exposes adaptive strategy, context-health, validation, repair-candidate, and memory-compaction status as visible Studio surfaces
+    - Final Sync remains explicit, publish actions remain user-confirmed, and the external StudioRun API can prepare state without silently publishing
+    - each implementation phase clears its targeted tests plus `cd dashboard_rebuild && npm run build` before the next phase starts
+    - final closeout passes `pytest brain/tests/`, `cd dashboard_rebuild && npm run build`, and `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5000`
+  - Assignee: @codex-cli
+  - Execution note:
+    - roll this out as an incremental cutover inside the existing `/tutor` route; keep compatibility paths working until the final switch
+    - before any Phase 1 coding, run `improve-codebase-architecture` against `dashboard_rebuild/client/src` and fold the findings into the phase gates
+    - implement each phase under TDD; do not start the next phase until the current phase clears its targeted tests and frontend build
+  - Progress note (2026-03-24):
+    - Phase 1 is green: added `useStudioRun` as the first `StudioRun` authority seam, removed the duplicate `useTutorSession()` controller composition in `tutor.tsx`, centralized page-owned start-state persistence, disabled competing `useTutorHub` local persistence when the page owns the shell, updated workflow/controller tests to the Studio-first shell contract, and cleared the targeted frontend tests, workspace integration smoke, frontend build, plus `pytest brain/tests/test_tutor_project_shell.py brain/tests/test_tutor_studio.py`
+    - Phase 2 has started under TDD: added the first anchored `StudioShell` frame around the default Studio landing path, verified it with a new integration test, and kept the existing Tutor/Studio page tests plus frontend build green while the deeper `TutorShell` branch extraction is still in progress
+    - Phase 2 slice 2 is green: extracted `StudioWorkspaceHome` from the old Tutor home surface, switched the landing contract to `WORKSPACE HOME`, routed `workbench`, `workspace`, `priming`, `polish`, and `final_sync` through `StudioShell`, and cleared the targeted TutorShell/page tests plus frontend build
+    - Phase 2 slice 3 is green: replaced the placeholder `Source Shelf` and `Run Config` shell slots with first real Studio-owned panels driven off current hub/workflow state, added TDD coverage for current-run context plus run-configuration summaries inside `StudioShell`, and cleared the targeted TutorShell/page tests plus frontend build again
+    - Phase 2 slice 4 is green: replaced the placeholder `Document Dock` shell slot with a first real Studio-owned dock panel driven off selected materials, linked vault paths, and persisted viewer state, added TDD coverage for active document context inside `StudioShell`, and cleared the targeted TutorShell/page tests plus frontend build again
+    - Phase 3 slice 1 is green: installed `tldraw@4.0.0` as the first React-19-compatible workspace dependency, replaced the old `WorkspaceStudio` branch in the `workspace` Studio view with a new `StudioTldrawWorkspace` surface inside `StudioShell`, and cleared the targeted TutorShell/page tests plus frontend build with the expected larger chunk-size warning
+    - Phase 3 slice 2 is green: seeded the new `StudioTldrawWorkspace` surface with Studio-owned current-run source objects built from selected materials and linked vault paths, added TDD coverage for seeded workspace objects in the `workspace` Studio view, and cleared the targeted TutorShell/page tests plus frontend build again
+    - Phase 3 slice 3 is green: added the first deliberate `Source Shelf` -> workspace intake loop so current-run sources can be sent into `Canvas Objects` from the shelf, kept the workspace seeded-object section intact, added TDD coverage for the cross-panel add-to-workspace behavior, and cleared the targeted TutorShell/page tests plus frontend build again
+    - Phase 3 slice 4 is green: replaced the overlay-style canvas-object cards with real `tldraw`-managed note shape placement driven by the same `Add to Workspace` action, added a stable Studio canvas-shape helper plus TDD coverage that the shell click path calls `editor.createShapes(...)`, and cleared the targeted TutorShell/page tests plus frontend build again
+    - Phase 3 slice 5 is green: added the first real `Document Dock` -> workspace excerpt clip path with provenance-backed `excerpt` objects, wired the dock clip action into the same Studio/tldraw sync loop, added TDD coverage for both the excerpt object builder and the dock-to-canvas shape creation path, and cleared the targeted TutorShell/page tests plus frontend build again
+    - Phase 3 slice 6 is green: upgraded `Document Dock` into the first real Studio-owned viewer surface by rendering `MaterialViewer`, exposed actual extracted-text selection from the viewer back into the dock clip flow, added TDD coverage for viewer-level selection reporting plus shell-level selection-to-canvas clipping, and cleared the targeted MaterialViewer/TutorShell/page tests plus frontend build again; Phase 3 intake/provenance gate is now met for clip/drag/paste foundations without mutating source
+    - Phase 4 slice 1 is green: replaced the placeholder `Prime Packet` and `Polish Packet` shell slots with real section-backed packet panels, added explicit Studio packet-section builders for `Source Context`/`Primed Artifacts` and `Notes`/`Summaries`/`Cards`/`Assets`, wired those panels to current run materials plus workflow detail state, and cleared the targeted packet-builder/TutorShell/page tests plus frontend build again
+    - Phase 4 slice 2 is green: added the first deliberate workspace excerpt -> Prime Packet promotion loop by tracking promoted excerpt ids in the Studio shell, exposing excerpt promotion controls inside the `tldraw` workspace overlay, extending `Prime Packet -> Primed Artifacts` to accept promoted workspace excerpts, and clearing the targeted packet-builder/TutorShell/page tests plus frontend build again
+    - Phase 4 slice 3 is green: persisted promoted Prime Packet excerpt objects through `StudioRun` and project-shell state, restored them on hydrate via the `StudioRun` authority seam, extended the project-shell API/schema with `prime_packet_promoted_objects`, and cleared the targeted hook/page/backend tests plus the Tutor page integration tests and frontend build again
+    - Phase 4 slice 4 is green: mirrored the packet-promotion pattern for `Polish Packet -> Notes` by adding an explicit `Promote to Polish Packet` Tutor reply action, projecting those promoted Tutor replies into the Polish packet-section builder ahead of captured notes, and clearing the targeted packet-builder/TutorShell tests plus the Tutor page integration tests and frontend build again
+    - Phase 5 slice 1 is green: replaced the placeholder `Tutor Status` shell slot with a real Studio-owned panel driven by existing session/workflow state, added a first visible context-health indicator plus runtime metrics (strategy label, turns, stage timer, capsules, live/paused state), covered the new context-health transitions and Studio shell rendering under TDD, and cleared the targeted TutorStatus/TutorShell/page tests plus the frontend build again
+    - Phase 5 slice 2 is green: replaced the placeholder `Memory` shell slot with a real Studio-owned panel that surfaces the latest capsule, capsule history, and compaction state from workflow/session data, kept compaction state aligned with the Tutor Status context-health signal, covered the new memory-status projection plus shell rendering under TDD, and cleared the targeted Memory/TutorShell/page tests plus the frontend build again
+    - Phase 5 slice 3 is green: surfaced soft per-turn validation inside `Tutor Status` by projecting the latest verdict/rubric data into rules-following, provenance-confidence, and repair-signal fields, wired those signals from the committed assistant message without changing backend contracts, and cleared the targeted TutorStatus/TutorShell/page tests plus the frontend build again
+    - Phase 5 slice 4 is green: added a real `Repair Candidates` Studio panel driven by the latest verdict/rubric cues, projected misconception/validation/gap detections into explicit repair candidates, wired `Send to Workspace` so a candidate becomes a real `tldraw` note-backed workspace object instead of a status-only label, and cleared the targeted repair-candidate/TutorShell/page tests plus the frontend build again
+    - Phase 5 slice 5 is green: extended the Prime Packet promotion loop beyond excerpts by letting repair-backed workspace notes promote into `Primed Artifacts`, merged local note promotions with persisted excerpt promotions inside the shell, exposed `Promote to Prime Packet` controls for workspace notes, and cleared the targeted packet-builder/TutorShell/page tests plus the frontend build again
+    - Phase 5 slice 6 is green: persisted repair-note Prime Packet promotions through the `StudioRun`/project-shell seam by widening page hydrate/save logic beyond excerpt-only promoted objects, handed repair-note promotions back from the Studio shell to the page controller for persistence, and cleared the targeted hook/TutorShell/Tutor page tests plus the frontend build again
+    - Phase 5 slice 7 is green: taught the Studio shell to serialize `Prime Packet -> Primed Artifacts` into real `packet_context`, passed that context into both Tutor startup and Priming Assist, injected Prime Packet context into the priming-assist backend prompt, added Tutor/Priming packet-context tests across the shell/workflow/backend seams, and cleared the targeted hook/shell/page/backend tests plus the frontend build again
+    - Phase 5 slice 8 is green: widened repair handling beyond the latest judged turn by hydrating committed assistant history from restored session turns, routing live assistant commits through the same history seam, projecting repair candidates newest-first across that accumulated history with per-turn labels, and clearing the targeted repair-builder/session/shell tests plus the Tutor page integration tests and frontend build again
+    - Phase 5 slice 9 is green: persisted `Polish Packet` promoted notes through the `StudioRun`/project-shell seam by widening page hydrate/save logic and backend shell serialization to round-trip `polish_packet_promoted_notes`, added TDD coverage across the Tutor shell, Tutor page hydrate path, and project-shell API revision tests, and cleared the targeted frontend/backend tests plus the broader Tutor shell/page verification set and frontend build again
+    - Phase 6 slice 1 is green: added explicit Final Sync confirmation by requiring the user to arm publish with a dedicated confirmation control before `RUN FINAL SYNC` becomes available, covered the confirmation gate at the component boundary under TDD, and cleared the targeted Final Sync component test plus a fresh frontend build again
+    - Phase 6 slice 2 is green: added a stable external `StudioRun` read/write API at `/api/tutor/studio-run`, exposed matching frontend client methods and types, combined project-shell state with Studio item restore data in one response, hard-blocked publish requests without explicit confirmation, covered the new client/backend contract under TDD, and cleared the targeted StudioRun API tests plus the full project-shell backend file and frontend build again
+    - Release gate is green: fixed the live smoke selector so `scripts/live_tutor_smoke.py` skips non-preflightable study units and chooses the first real preflight-ready unit, added TDD coverage for that fallback path, then cleared `pytest brain/tests/` (`1101 passed, 2 skipped`), a fresh frontend build, and the live smoke against `http://127.0.0.1:5000` before starting the cleanup tasks
+    - Cleanup step 2 is green: split `TutorShell.tsx` into smaller orchestration modules by extracting the Studio shell pane, live tutor study pane, scholar strategy panel, artifacts drawer, end-session dialog, settings dialog, and shared tutor-shell styles, cut `TutorShell.tsx` from ~77 KB to ~32 KB, added TDD coverage for the extracted settings dialog, and cleared the targeted Tutor shell/settings/workspace integration tests before moving on to chunking
+    - Cleanup step 3 is green: finished the async bundle cleanup by lazy-loading the remaining heavy legacy Studio branches (`TutorStudioMode`, `TutorWorkflowPrimingPanel`, `TutorWorkflowPolishStudio`, and `TutorWorkflowFinalSync`) behind shared shell suspense fallbacks, added TDD coverage for deferred panel loading, updated the Tutor shell routing tests for async panel mounts, and cleared the targeted Tutor shell/deferred-panel/workspace integration tests plus the frontend build with the last Vite large-chunk warning removed
+    - Final closeout is green on the post-cleanup code state: reran `pytest brain/tests/` (`1102 passed, 2 skipped`), reran `cd dashboard_rebuild && npm run build` with the new async bundles and no large-chunk warning, reran `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5000`, and confirmed the full Unified Studio cutover closes against the required release gate
+- [x] HUD-237. Run a Tutor clarity pass so `/tutor` reads as one Studio-first flow instead of mixed Workspace/Workbench/legacy shell destinations.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `README.md`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/components/TutorTabBar.tsx`
+    - `dashboard_rebuild/client/src/components/TutorTopBar.tsx`
+    - `dashboard_rebuild/client/src/components/TutorStudioHome.tsx`
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+    - `dashboard_rebuild/client/src/components/tutor-shell/TutorLiveStudyPane.tsx`
+    - `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts`
+    - `dashboard_rebuild/client/src/lib/tutorUtils.ts`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+  - Done when:
+    - the visible Studio flow reads `Workspace Home -> Workspace -> Priming -> Tutor -> Polish -> Final Sync`
+    - `Workbench` is no longer a separate user-facing Studio destination or call-to-action; legacy `workbench` restore/query state normalizes into the `Workspace Home` / `Workspace` flow
+    - `Schedule` and `Settings` no longer render as visible Tutor top-level tabs in v1
+    - the Tutor shell/home copy no longer tells the user to choose between `Workspace` and `Workbench`
+    - targeted Tutor shell/page tests and `cd dashboard_rebuild && npm run build` pass
+  - Assignee: @codex-cli
+  - Execution note:
+    - implement this as one clarity sweep, not three partial passes
+    - keep compatibility for stored/query `schedule` and `workbench` values where needed, but remove the visible v1 drift from the main nav and Studio home surfaces
+  - Completed 2026-03-25: hid the deferred `Schedule` and `Settings` tabs from `dashboard_rebuild/client/src/components/TutorTabBar.tsx` while keeping underlying compatibility paths intact, introduced a real `home` Studio view so `workbench` stops being a visible Studio destination, rewired `dashboard_rebuild/client/src/components/TutorStudioHome.tsx`, `dashboard_rebuild/client/src/components/TutorShell.tsx`, `dashboard_rebuild/client/src/components/tutor-shell/TutorLiveStudyPane.tsx`, `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts`, `dashboard_rebuild/client/src/lib/tutorUtils.ts`, and `dashboard_rebuild/client/src/pages/tutor.tsx` to the clarified `Workspace Home -> Workspace -> Priming -> Tutor -> Polish -> Final Sync` flow, updated README and the focused Tutor regressions to the new visible contract, passed `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.test.tsx client/src/hooks/__tests__/useTutorWorkflow.test.tsx client/src/components/__tests__/TutorShell.test.tsx client/src/hooks/__tests__/useTutorSession.test.tsx client/src/components/__tests__/TutorTopBar.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`, and passed `cd dashboard_rebuild && npm run build`.
+- [x] HUD-238. Lock the visible Tutor v1 nav contract with one integration test, then remove the remaining hidden `workbench`/`schedule` compatibility branches and dead Studio entry plumbing.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/lib/tutorUtils.ts`
+    - `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts`
+    - `dashboard_rebuild/client/src/hooks/useStudioRun.ts`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+    - `dashboard_rebuild/client/src/components/TutorTabBar.tsx`
+    - `dashboard_rebuild/client/src/components/TutorStudioHome.tsx`
+    - `dashboard_rebuild/client/src/components/tutor-shell/TutorLiveStudyPane.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+    - `dashboard_rebuild/client/src/hooks/__tests__/useTutorWorkflow.test.tsx`
+  - Done when:
+    - one integration test asserts the visible v1 nav contract: no `Schedule`, no `Settings`, no `Open Workbench`, and `Workspace Home -> Workspace` movement works
+    - legacy `workbench` aliases are removed from active `/tutor` routing and restore logic instead of being silently normalized
+    - the hidden `schedule` shell path is removed from the active `/tutor` controller/shell flow instead of staying as a deferred compatibility branch
+    - unused `studioEntryRequest` plumbing is removed from the active `/tutor` flow
+    - targeted Tutor shell/page tests and `cd dashboard_rebuild && npm run build` pass
+  - Assignee: @codex-cli
+  - Execution note:
+    - do this as one TDD cleanup sweep so the new integration test guards the visible contract before the hidden branches are deleted
+  - Completed 2026-03-25: added a focused Tutor workspace integration test that locks the visible v1 nav contract even under a legacy `?mode=schedule` query, removed active `/tutor` support for the hidden `schedule` shell path and legacy `workbench` aliasing from `dashboard_rebuild/client/src/lib/tutorUtils.ts`, `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts`, `dashboard_rebuild/client/src/pages/tutor.tsx`, and `dashboard_rebuild/client/src/components/TutorShell.tsx`, deleted the dead `studioEntryRequest` threading from the page/controller/shell path, updated the focused Tutor page/hook/shell tests to the Studio/Tutor-only contract, refreshed the top-level README/TODO wording to match the live surface model, passed `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.workspace.integration.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/hooks/__tests__/useTutorWorkflow.test.tsx client/src/hooks/__tests__/useStudioRun.test.tsx client/src/components/__tests__/TutorShell.test.tsx`, and passed `cd dashboard_rebuild && npm run build`.
+- [x] HUD-239. Remove the remaining hidden Tutor settings-dialog plumbing so `/tutor` is a strict two-surface model in both UI and code.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `README.md`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+    - delete `dashboard_rebuild/client/src/components/tutor-shell/TutorShellSettingsDialog.tsx`
+    - delete `dashboard_rebuild/client/src/components/tutor-shell/__tests__/TutorShellSettingsDialog.test.tsx`
+  - Done when:
+    - the visible nav contract still shows only `Studio` and `Tutor`
+    - the page/controller no longer owns dead settings state, callbacks, or props
+    - the Tutor shell no longer mounts or imports the hidden settings dialog
+    - the old settings dialog component/test are removed
+    - targeted Tutor shell/page tests and `cd dashboard_rebuild && npm run build` pass
+  - Assignee: @codex-cli
+  - Execution note:
+    - rely on the existing visible-nav regression to guard against reintroducing a settings path while deleting the dead internal plumbing
+  - Completed 2026-03-25: removed the dead settings state/callbacks from `dashboard_rebuild/client/src/pages/tutor.tsx`, removed the hidden settings props/import/render path from `dashboard_rebuild/client/src/components/TutorShell.tsx`, deleted `dashboard_rebuild/client/src/components/tutor-shell/TutorShellSettingsDialog.tsx` plus its dedicated test, refreshed the TutorShell helper tests and README screen inventory language to the strict two-surface model, passed `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.workspace.integration.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorShell.test.tsx client/src/hooks/__tests__/useTutorWorkflow.test.tsx client/src/hooks/__tests__/useStudioRun.test.tsx`, and passed `cd dashboard_rebuild && npm run build`.
+- [x] HUD-240. Fix stale Tutor live-session truth and complete the `/tutor` hierarchy pass so runtime state, nav hierarchy, and stage emphasis match the Studio-first v1 contract.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/hooks/useTutorSession.ts`
+    - `dashboard_rebuild/client/src/components/TutorTopBar.tsx`
+    - `dashboard_rebuild/client/src/components/TutorTabBar.tsx`
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+    - `dashboard_rebuild/client/src/components/tutor-shell/TutorLiveStudyPane.tsx`
+    - `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`
+    - `dashboard_rebuild/client/src/components/studio/StudioTldrawWorkspace.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorTopBar.test.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - Done when:
+    - stale or inactive backend Tutor sessions no longer surface as `LIVE SESSION` or mount the live Tutor surface
+    - Studio and Tutor are the only peer nav choices, with stage switching living inside Studio instead of the hero peer tabs
+    - stage-irrelevant side rails are demoted so `Workspace`, `Priming`, and `Polish` each present one dominant action area
+    - the tldraw production-license CTA is suppressed from the product surface
+    - targeted Tutor page/shell/top-bar tests and `cd dashboard_rebuild && npm run build` pass
+  - Assignee: @codex-cli
+  - Execution note:
+    - do this in TDD slices: fix validated live-session gating first, then lock the visible hierarchy contract before simplifying the stage layout
+  - Progress 2026-03-25 slice 1:
+    - added failing Tutor page/top-bar coverage for stale backend sessions showing `LIVE SESSION`, then updated the `useTutorSession` runtime model so live Tutor state requires validated backend `status === active`
+    - gated the Tutor hero/session strip and live Tutor pane off validated session state instead of the raw `activeSessionId`, and made project-shell resume refuse completed sessions
+    - passed `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorTopBar.test.tsx`
+  - Progress 2026-03-25 slice 2:
+    - added failing Tutor shell/page integration coverage for the Studio-first hierarchy contract, then simplified the visible nav so `Studio` and `Tutor` are the only peer surfaces while stage switching lives inside the Studio shell
+    - rewrote `dashboard_rebuild/client/src/components/studio/StudioShell.tsx` into a stage-aware layout so `Workspace Home`, `Workspace`, `Priming`, `Polish`, and `Final Sync` each emphasize one dominant action area and demote irrelevant rails instead of showing the full shell stack everywhere
+    - hid the default `tldraw` product UI with `hideUi` so the production-license CTA stops leaking into the study workspace surface
+    - updated the Tutor page restore/hydration tests to navigate the new stage model correctly, then passed `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx client/src/components/__tests__/TutorShell.test.tsx client/src/components/__tests__/TutorTopBar.test.tsx`
+  - Completed 2026-03-25: fixed stale Tutor live-session truth so `SESSION LIVE` only appears for backend-validated active sessions, simplified the visible `/tutor` hierarchy to Studio/Tutor peer nav with internal Studio stage navigation, demoted stage-irrelevant rails across Home/Priming/Polish, suppressed the `tldraw` license CTA from the product surface, passed `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx client/src/components/__tests__/TutorShell.test.tsx client/src/components/__tests__/TutorTopBar.test.tsx`, and passed `cd dashboard_rebuild && npm run build`.
 
 ### Sprint: Repo-Wide Quality Audit Backlog (2026-03-16)
 
