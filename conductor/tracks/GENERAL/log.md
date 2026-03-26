@@ -1656,3 +1656,14 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Live `dev-browser` verification passed:
   - tutor surface capture: `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint3-tutor-panels-current.png`, `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint3-tutor-panels-current-dom.html`
   - library handoff capture: `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint3-library-handoff.png`, `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint3-library-handoff-dom.html`
+
+## 2026-03-26 - Checkpoint 4A telemetry-driven compaction runtime
+
+- Removed the old heuristic compaction-pressure model from the live Tutor shell and replaced it with backend telemetry plus an explicit `Awaiting telemetry` fallback when no completed turn has reported live context usage yet.
+- Replaced the hard-coded 20-assistant-message auto-compaction trigger in `dashboard_rebuild/client/src/components/TutorChat.tsx` with telemetry-driven auto-compaction keyed off backend `pressureLevel: high`.
+- Added explicit regression coverage proving the active memory capsule becomes the next-turn Tutor context after compaction instead of merely being stored in project/runtime state.
+- Added explicit rule reinforcement after compaction/resume by carrying merged `session_rules` through Tutor session start and live turn requests; active capsule `rule_snapshot_text` is now reattached as first-class session rules instead of relying only on summary text embedded in the capsule context blob.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/lib/__tests__/studioTutorStatus.test.ts client/src/lib/__tests__/studioMemoryStatus.test.ts client/src/components/__tests__/TutorChat.test.tsx client/src/hooks/__tests__/useTutorSession.test.tsx client/src/components/__tests__/TutorShell.test.tsx`
+  - `pytest brain/tests/test_tutor_turn_stream_contract.py brain/tests/test_tutor_session_linking.py -q`
+  - `cd dashboard_rebuild && npm run build`

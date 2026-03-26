@@ -1228,6 +1228,64 @@ def test_send_turn_includes_active_memory_capsule_in_system_prompt(
     assert "Differentiate preload determinants from chronotropy." in prompt
 
 
+def test_send_turn_includes_session_rules_in_system_prompt(client, monkeypatch):
+    tutor_sid = _create_tutor_session(client)
+
+    monkeypatch.setattr(
+        tutor_context,
+        "build_context",
+        lambda *_a, **_k: {
+            "materials": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        },
+    )
+    monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
+
+    captured: dict[str, str] = {"system_prompt": ""}
+
+    def fake_stream(system_prompt, _user_prompt, **_kwargs):
+        captured["system_prompt"] = system_prompt
+        yield {"type": "delta", "text": "ok"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-rules",
+            "thread_id": "thread-rules",
+        }
+
+    monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
+
+    turn_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/turn",
+        json={
+            "message": "What should I review next?",
+            "content_filter": {
+                "session_rules": [
+                    "Always force a function confirmation before L4 precision.",
+                    "Stay inside the assigned provenance boundary.",
+                ],
+                "memory_capsule_context": (
+                    "Summary: Learner still mixes preload with heart-rate control.\n"
+                    "Current objective: Differentiate preload determinants from chronotropy."
+                ),
+            },
+        },
+    )
+    assert turn_resp.status_code == 200
+    _ = turn_resp.get_data(as_text=True)
+
+    prompt = captured["system_prompt"]
+    assert "Session Rules (Current Session Only)" in prompt
+    assert "Always force a function confirmation before L4 precision." in prompt
+    assert "Stay inside the assigned provenance boundary." in prompt
+    assert "Active Memory Capsule" in prompt
+
+
 def test_workflow_memory_capsule_persists_rule_snapshot(client):
     workflow_resp = client.post(
         "/api/tutor/workflows",

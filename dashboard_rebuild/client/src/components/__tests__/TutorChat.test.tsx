@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { TutorChat } from "@/components/TutorChat";
 
 function createWrapper() {
@@ -268,6 +268,77 @@ describe("TutorChat", () => {
     });
   });
 
+  it("does not auto-compact just because the restored session already has 20 assistant replies", async () => {
+    const onCompact = vi.fn();
+
+    render(
+      <TutorChat
+        sessionId="sess-restored"
+        availableMaterials={[]}
+        selectedMaterialIds={[]}
+        accuracyProfile="balanced"
+        initialTurns={Array.from({ length: 20 }, (_, index) => ({
+          question: `Question ${index + 1}`,
+          answer: `Answer ${index + 1}`,
+        }))}
+        onAccuracyProfileChange={vi.fn()}
+        onSelectedMaterialIdsChange={vi.fn()}
+        onArtifactCreated={vi.fn()}
+        onTurnComplete={vi.fn()}
+        onCompact={onCompact}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Answer 20")).toBeInTheDocument();
+    });
+
+    expect(onCompact).not.toHaveBeenCalled();
+  });
+
+  it("auto-compacts when backend telemetry reports high context pressure", async () => {
+    const onCompact = vi.fn();
+    mockFetchForTutor([
+      { type: "token", content: "Compaction-aware answer" },
+      {
+        type: "done",
+        model: "codex",
+        compaction_telemetry: {
+          inputTokens: 12_000,
+          outputTokens: 3_600,
+          tokenCount: 15_600,
+          contextWindow: 24_000,
+          pressureLevel: "high",
+        },
+      },
+    ]);
+
+    render(
+      <TutorChat
+        sessionId="sess-auto-compact"
+        availableMaterials={[]}
+        selectedMaterialIds={[]}
+        accuracyProfile="balanced"
+        onAccuracyProfileChange={vi.fn()}
+        onSelectedMaterialIdsChange={vi.fn()}
+        onArtifactCreated={vi.fn()}
+        onTurnComplete={vi.fn()}
+        onCompact={onCompact}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("Ask a question..."), {
+      target: { value: "Keep explaining preload" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    await waitFor(() => {
+      expect(onCompact).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it("sends active memory capsule context in turn content filter", async () => {
     const fetchSpy = mockFetchForTutor([
       { type: "token", content: "ok" },
@@ -303,6 +374,153 @@ describe("TutorChat", () => {
       );
       expect(turnCall).toBeDefined();
       const [, init] = turnCall!;
+      const body = JSON.parse(String((init as RequestInit).body));
+      expect(body.content_filter.memory_capsule_context).toContain(
+        "Learner still mixes preload with heart-rate control.",
+      );
+      expect(body.content_filter.memory_capsule_context).toContain(
+        "Differentiate preload determinants from chronotropy.",
+      );
+    });
+  });
+
+  it("sends active session rules in the turn content filter", async () => {
+    const fetchSpy = mockFetchForTutor([
+      { type: "token", content: "ok" },
+      { type: "done", model: "codex" },
+    ]);
+
+    render(
+      <TutorChat
+        sessionId="sess-rules"
+        availableMaterials={[]}
+        selectedMaterialIds={[]}
+        accuracyProfile="balanced"
+        sessionRules={[
+          "Always force a function confirmation before L4 precision.",
+          "Stay inside the assigned provenance boundary.",
+        ]}
+        onAccuracyProfileChange={vi.fn()}
+        onSelectedMaterialIdsChange={vi.fn()}
+        onArtifactCreated={vi.fn()}
+        onTurnComplete={vi.fn()}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("Ask a question..."), {
+      target: { value: "What should I review next?" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    await waitFor(() => {
+      const turnCall = fetchSpy.mock.calls.find(([url]) =>
+        String(url).includes("/turn"),
+      );
+      expect(turnCall).toBeDefined();
+      const [, init] = turnCall!;
+      const body = JSON.parse(String((init as RequestInit).body));
+      expect(body.content_filter.session_rules).toEqual([
+        "Always force a function confirmation before L4 precision.",
+        "Stay inside the assigned provenance boundary.",
+      ]);
+    });
+  });
+
+  it("uses the newly activated memory capsule on the next Tutor turn after compaction", async () => {
+    const fetchResponses = [
+      makeSseResponse([
+        {
+          type: "done",
+          model: "codex",
+          compaction_telemetry: {
+            inputTokens: 12_000,
+            outputTokens: 3_600,
+            tokenCount: 15_600,
+            contextWindow: 24_000,
+            pressureLevel: "high",
+          },
+        },
+      ]),
+      makeSseResponse([{ type: "done", model: "codex" }]),
+    ];
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : (input as Request).url;
+
+      if (url.includes("/turn")) {
+        return fetchResponses.shift() ?? makeSseResponse([{ type: "done", model: "codex" }]);
+      }
+
+      return new Response(JSON.stringify({}), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+
+    function Harness() {
+      const [memoryCapsuleContext, setMemoryCapsuleContext] = useState<string | null>(
+        null,
+      );
+
+      return (
+        <>
+          <div data-testid="capsule-context">
+            {memoryCapsuleContext ?? "none"}
+          </div>
+          <TutorChat
+            sessionId="sess-capsule-next-turn"
+            availableMaterials={[]}
+            selectedMaterialIds={[]}
+            accuracyProfile="balanced"
+            memoryCapsuleContext={memoryCapsuleContext}
+            onAccuracyProfileChange={vi.fn()}
+            onSelectedMaterialIdsChange={vi.fn()}
+            onArtifactCreated={vi.fn()}
+            onTurnComplete={vi.fn()}
+            onCompact={() => {
+              setMemoryCapsuleContext(
+                "Summary: Learner still mixes preload with heart-rate control.\n" +
+                  "Current objective: Differentiate preload determinants from chronotropy.",
+              );
+            }}
+          />
+        </>
+      );
+    }
+
+    render(<Harness />, { wrapper: createWrapper() });
+
+    fireEvent.change(screen.getByPlaceholderText("Ask a question..."), {
+      target: { value: "What should I review first?" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    await waitFor(() => {
+      expect(fetchSpy.mock.calls.filter(([url]) => String(url).includes("/turn"))).toHaveLength(1);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("capsule-context")).toHaveTextContent(
+        "Learner still mixes preload with heart-rate control.",
+      );
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("Ask a question..."), {
+      target: { value: "What should I review next?" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    await waitFor(() => {
+      const turnCalls = fetchSpy.mock.calls.filter(([url]) =>
+        String(url).includes("/turn"),
+      );
+      expect(turnCalls).toHaveLength(2);
+      const [, init] = turnCalls[1]!;
       const body = JSON.parse(String((init as RequestInit).body));
       expect(body.content_filter.memory_capsule_context).toContain(
         "Learner still mixes preload with heart-rate control.",

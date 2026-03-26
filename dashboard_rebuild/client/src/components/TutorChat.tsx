@@ -47,6 +47,7 @@ import { useSSEStream } from "./useSSEStream";
 import { MessageList } from "./MessageList";
 import { SourcesPanel } from "./SourcesPanel";
 import { useChromiumDictation } from "@/lib/useChromiumDictation";
+import type { TutorTurnCompletePayload } from "./TutorChat.types";
 
 type TutorChatState = {
   isSourcesOpen: boolean;
@@ -94,6 +95,36 @@ const BEHAVIOR_TITLES: Record<BehaviorOverride, string> = {
   concept_map: "Concept Map — generate Mermaid diagram",
   teach_back: "Teach-Back — explain as if teaching a novice",
 };
+
+function readTelemetryPressureLevel(
+  telemetry: Record<string, unknown> | null | undefined,
+): string {
+  return typeof telemetry?.pressureLevel === "string"
+    ? telemetry.pressureLevel.trim().toLowerCase()
+    : "";
+}
+
+function buildTelemetrySignature(
+  telemetry: Record<string, unknown> | null | undefined,
+): string | null {
+  if (!telemetry || typeof telemetry !== "object") {
+    return null;
+  }
+
+  const tokenCount = telemetry.tokenCount;
+  const contextWindow = telemetry.contextWindow;
+  const pressureLevel = readTelemetryPressureLevel(telemetry);
+  if (
+    typeof tokenCount !== "number" ||
+    typeof contextWindow !== "number" ||
+    !Number.isFinite(tokenCount) ||
+    !Number.isFinite(contextWindow) ||
+    !pressureLevel
+  ) {
+    return null;
+  }
+  return `${pressureLevel}:${tokenCount}:${contextWindow}`;
+}
 
 function createTutorChatState({
   vaultSelectionKey,
@@ -646,6 +677,7 @@ export function TutorChat({
   defaultMaterialsOn = false,
   accuracyProfile,
   memoryCapsuleContext,
+  sessionRules,
   onAccuracyProfileChange,
   onSelectedMaterialIdsChange,
   onMaterialsChanged,
@@ -674,6 +706,10 @@ export function TutorChat({
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [latestCompactionTelemetry, setLatestCompactionTelemetry] = useState<
+    Record<string, unknown> | null
+  >(null);
+  const lastAutoCompactionSignatureRef = useRef<string | null>(null);
   const dictation = useChromiumDictation({
     onText: (text) => {
       setInput((current) => (current ? `${current} ${text}`.trim() : text));
@@ -717,6 +753,7 @@ export function TutorChat({
     selectedVaultPaths: chatState.selectedVaultPaths,
     accuracyProfile,
     memoryCapsuleContext,
+    sessionRules,
     behaviorOverride: chatState.behaviorOverride,
     onBehaviorOverrideReset: useCallback(
       () => patchChatState({ behaviorOverride: null }),
@@ -724,7 +761,13 @@ export function TutorChat({
     ),
     onArtifactCreated,
     onAssistantTurnCommitted,
-    onTurnComplete,
+    onTurnComplete: useCallback(
+      (payload?: TutorTurnCompletePayload) => {
+        setLatestCompactionTelemetry(payload?.compactionTelemetry ?? null);
+        onTurnComplete?.(payload);
+      },
+      [onTurnComplete],
+    ),
     initialTurns,
     materialsOn: effectiveMaterialsOn,
     obsidianOn: chatState.obsidianOn,
@@ -738,21 +781,25 @@ export function TutorChat({
     streamAbortRef.current = null;
   }, [streamAbortRef]);
 
-  /* ── Auto-compaction after 20 assistant messages ──────────────────── */
-  const AUTO_COMPACT_THRESHOLD = 20;
-  const autoCompactedRef = useRef(false);
+  useEffect(() => {
+    if (!onCompact || isStreaming) return;
+    if (readTelemetryPressureLevel(latestCompactionTelemetry) !== "high") {
+      return;
+    }
+    const signature = buildTelemetrySignature(latestCompactionTelemetry);
+    if (!signature || lastAutoCompactionSignatureRef.current === signature) {
+      return;
+    }
+
+    lastAutoCompactionSignatureRef.current = signature;
+    onCompact();
+    toast.success("Session auto-summarized — notes saved");
+  }, [latestCompactionTelemetry, onCompact, isStreaming]);
 
   useEffect(() => {
-    if (!onCompact || autoCompactedRef.current || isStreaming) return;
-    const assistantCount = messages.filter(
-      (m) => m.role === "assistant" && !m.isStreaming,
-    ).length;
-    if (assistantCount >= AUTO_COMPACT_THRESHOLD) {
-      autoCompactedRef.current = true;
-      onCompact();
-      toast.success("Session auto-summarized \u2014 notes saved");
-    }
-  }, [messages, onCompact, isStreaming]);
+    setLatestCompactionTelemetry(null);
+    lastAutoCompactionSignatureRef.current = null;
+  }, [sessionId]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -774,7 +821,6 @@ export function TutorChat({
 
   useEffect(() => {
     patchChatState({ materialsPreference: null, behaviorOverride: null });
-    autoCompactedRef.current = false;
   }, [sessionId]);
 
   useEffect(() => {

@@ -68,8 +68,8 @@ describe("buildStudioMemoryStatus", () => {
         { versionLabel: "Capsule v1" },
       ],
       compactionState: {
-        label: "Compaction soon",
-        level: "critical",
+        label: "Awaiting telemetry",
+        level: "healthy",
       },
     });
   });

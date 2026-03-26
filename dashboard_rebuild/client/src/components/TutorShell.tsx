@@ -119,6 +119,16 @@ function serializeMemoryCapsuleContext(capsule: TutorMemoryCapsule | null | unde
   return lines.join("\n").trim();
 }
 
+function parseRuleSnapshotLines(value: string | null | undefined): string[] {
+  if (typeof value !== "string") {
+    return [];
+  }
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => Boolean(line));
+}
+
 export interface TutorShellProps {
   activeSessionId: string | null;
   hub: UseTutorHubReturn;
@@ -440,18 +450,42 @@ export function TutorShell({
       runtimeState?.compactionTelemetry,
     ],
   );
-  const activeMemoryCapsuleContext = useMemo(() => {
+  const activeMemoryCapsule = useMemo(() => {
     const memoryCapsules = workflow.activeWorkflowDetail?.memory_capsules ?? [];
-    if (!runtimeState?.activeMemoryCapsuleId) return "";
+    if (!runtimeState?.activeMemoryCapsuleId) return null;
 
     const activeCapsule =
       memoryCapsules.find((capsule) => capsule.id === runtimeState.activeMemoryCapsuleId) ??
       null;
-    return serializeMemoryCapsuleContext(activeCapsule);
+    return activeCapsule;
   }, [
     runtimeState?.activeMemoryCapsuleId,
     workflow.activeWorkflowDetail?.memory_capsules,
   ]);
+  const activeMemoryCapsuleContext = useMemo(
+    () => serializeMemoryCapsuleContext(activeMemoryCapsule),
+    [activeMemoryCapsule],
+  );
+  const activeTutorSessionRules = useMemo(() => {
+    const merged = new Map<string, string>();
+    const existingSessionRules = Array.isArray(session.activeContentFilter?.session_rules)
+      ? session.activeContentFilter.session_rules
+      : [];
+    for (const rule of existingSessionRules) {
+      const normalizedRule = String(rule || "").trim();
+      if (normalizedRule) {
+        merged.set(normalizedRule, normalizedRule);
+      }
+    }
+
+    if (activeMemoryCapsule) {
+      for (const rule of parseRuleSnapshotLines(activeMemoryCapsule.rule_snapshot_text)) {
+        merged.set(rule, rule);
+      }
+    }
+
+    return Array.from(merged.values());
+  }, [activeMemoryCapsule, session.activeContentFilter?.session_rules]);
   const handleAddWorkspaceObject = useCallback(
     (workspaceObject: StudioWorkspaceObject) => {
       setCanvasObjectIds((prev) =>
@@ -1001,10 +1035,14 @@ export function TutorShell({
               ...(activeMemoryCapsuleContext
                 ? { memory_capsule_context: activeMemoryCapsuleContext }
                 : {}),
+              ...(activeTutorSessionRules.length > 0
+                ? { session_rules: activeTutorSessionRules }
+                : {}),
             },
           );
         }}
         activeMemoryCapsuleContext={activeMemoryCapsuleContext}
+        sessionRules={activeTutorSessionRules}
         onActivateMemoryCapsule={setActiveMemoryCapsuleId}
         onDirectNoteSaveStatus={setDirectNoteSaveStatus}
         onSaveGist={handleSaveGist}

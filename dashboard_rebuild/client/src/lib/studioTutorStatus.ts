@@ -240,10 +240,10 @@ function buildDirectNoteSaveSignal(
 }
 
 export function getStudioTutorContextHealth({
-  turnCount,
-  memoryCapsuleCount,
-  latestAssistantCharacters,
-  stageTimerDisplaySeconds,
+  turnCount: _turnCount,
+  memoryCapsuleCount: _memoryCapsuleCount,
+  latestAssistantCharacters: _latestAssistantCharacters,
+  stageTimerDisplaySeconds: _stageTimerDisplaySeconds,
   compactionTelemetry,
 }: StudioTutorContextHealthInput): StudioTutorContextHealth {
   const telemetryHealth = getTelemetryContextHealth(compactionTelemetry);
@@ -251,37 +251,11 @@ export function getStudioTutorContextHealth({
     return telemetryHealth;
   }
 
-  let pressureScore = 0;
-
-  if (turnCount >= 8) pressureScore += 1;
-  if (turnCount >= 12) pressureScore += 1;
-  if (memoryCapsuleCount >= 1) pressureScore += 1;
-  if (memoryCapsuleCount >= 2) pressureScore += 1;
-  if (latestAssistantCharacters >= 900) pressureScore += 1;
-  if (stageTimerDisplaySeconds >= 45 * 60) pressureScore += 1;
-
-  if (pressureScore >= 4) {
-    return {
-      level: "critical",
-      label: "Compaction soon",
-      detail:
-        "Session context is dense enough that automatic compaction is likely soon.",
-    };
-  }
-
-  if (pressureScore >= 2) {
-    return {
-      level: "warning",
-      label: "Getting heavy",
-      detail:
-        "Context is building. Keep an eye on compaction if long replies and more turns keep stacking.",
-    };
-  }
-
   return {
     level: "healthy",
-    label: "Healthy",
-    detail: "Context still has room before compaction pressure starts building.",
+    label: "Awaiting telemetry",
+    detail:
+      "Live context telemetry appears after the first completed Tutor turn.",
   };
 }
 

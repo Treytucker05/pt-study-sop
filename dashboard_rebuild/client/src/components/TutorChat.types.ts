@@ -45,6 +45,7 @@ export interface TutorChatProps {
   defaultMaterialsOn?: boolean;
   accuracyProfile: TutorAccuracyProfile;
   memoryCapsuleContext?: string | null;
+  sessionRules?: string[];
   onAccuracyProfileChange: (profile: TutorAccuracyProfile) => void;
   onSelectedMaterialIdsChange: (ids: number[]) => void;
   onMaterialsChanged?: () => Promise<void> | void;

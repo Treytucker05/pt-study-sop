@@ -1069,6 +1069,7 @@ export interface TutorCreateSessionRequest {
     focus_objective_id?: string;
     vault_folder?: string;
     memory_capsule_context?: string;
+    session_rules?: string[];
     north_star_refresh?: boolean;
     force_full_docs?: boolean;
     default_mode?: {

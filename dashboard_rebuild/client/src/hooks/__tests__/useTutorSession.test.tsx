@@ -510,6 +510,77 @@ describe("useTutorSession", () => {
     );
   });
 
+  it("forwards active session rules when Tutor starts from a compacted capsule", async () => {
+    const wrapper = createWrapper();
+    const hub = createHubMock();
+
+    getSessionMock.mockResolvedValue({
+      session_id: "sess-started",
+      status: "active",
+      turn_count: 0,
+      started_at: "2026-03-25T12:00:00Z",
+      topic: "Cardiovascular regulation",
+      course_id: 1,
+      method_chain_id: 77,
+      current_block_index: 0,
+      chain_blocks: [],
+      content_filter: {
+        material_ids: [101],
+        accuracy_profile: "strict",
+        objective_scope: "module_all",
+        session_rules: [
+          "Always force a function confirmation before L4 precision.",
+          "Stay inside the assigned provenance boundary.",
+        ],
+      },
+      artifacts_json: "[]",
+      turns: [],
+    });
+
+    const { result } = renderHook(
+      () =>
+        useTutorSession({
+          initialRouteQuery: {},
+          hub: hub as never,
+          tutorChainId: 77,
+          tutorCustomBlockIds: [],
+          setTutorChainId: vi.fn(),
+          setTutorCustomBlockIds: vi.fn(),
+          activeSessionId: null,
+          setActiveSessionId: vi.fn(),
+          shellMode: "studio",
+          studioView: "priming",
+          setShellMode: vi.fn(),
+          setShowSetup: vi.fn(),
+          setRestoredTurns: vi.fn(),
+          hasRestored: true,
+          activeWorkflowId: null,
+          activeWorkflowDetail: null,
+        }),
+      { wrapper },
+    );
+
+    await act(async () => {
+      await result.current.startSession({
+        session_rules: [
+          "Always force a function confirmation before L4 precision.",
+          "Stay inside the assigned provenance boundary.",
+        ],
+      });
+    });
+
+    expect(createSessionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content_filter: {
+          session_rules: [
+            "Always force a function confirmation before L4 precision.",
+            "Stay inside the assigned provenance boundary.",
+          ],
+        },
+      }),
+    );
+  });
+
   it("falls back to an inferred study unit when Tutor starts without an explicit study unit", async () => {
     const wrapper = createWrapper();
     const hub = {

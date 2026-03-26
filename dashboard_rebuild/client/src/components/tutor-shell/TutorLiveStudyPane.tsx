@@ -18,6 +18,7 @@ interface TutorLiveStudyPaneProps {
   queryClient: QueryClient;
   onStartSession: () => void | Promise<void>;
   activeMemoryCapsuleContext?: string | null;
+  sessionRules?: string[];
   onActivateMemoryCapsule?: (capsuleId: number | null) => void;
   onDirectNoteSaveStatus?: (status: Record<string, unknown> | null) => void;
   onSaveGist: (content: string) => void;
@@ -43,6 +44,7 @@ export function TutorLiveStudyPane({
   queryClient,
   onStartSession,
   activeMemoryCapsuleContext,
+  sessionRules,
   onActivateMemoryCapsule,
   onDirectNoteSaveStatus,
   onSaveGist,
@@ -118,6 +120,7 @@ export function TutorLiveStudyPane({
           selectedMaterialIds={hub.selectedMaterials}
           accuracyProfile={hub.accuracyProfile}
           memoryCapsuleContext={activeMemoryCapsuleContext}
+          sessionRules={sessionRules}
           onAccuracyProfileChange={hub.setAccuracyProfile}
           onSelectedMaterialIdsChange={hub.setSelectedMaterials}
           onMaterialsChanged={hub.refreshChatMaterials}

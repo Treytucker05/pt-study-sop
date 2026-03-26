@@ -6,35 +6,7 @@ import {
 } from "@/lib/studioTutorStatus";
 
 describe("getStudioTutorContextHealth", () => {
-  it("reports healthy when the current session load is light", () => {
-    expect(
-      getStudioTutorContextHealth({
-        turnCount: 2,
-        memoryCapsuleCount: 0,
-        latestAssistantCharacters: 120,
-        stageTimerDisplaySeconds: 600,
-      }),
-    ).toMatchObject({
-      level: "healthy",
-      label: "Healthy",
-    });
-  });
-
-  it("reports getting heavy when session load starts building", () => {
-    expect(
-      getStudioTutorContextHealth({
-        turnCount: 9,
-        memoryCapsuleCount: 1,
-        latestAssistantCharacters: 500,
-        stageTimerDisplaySeconds: 2_700,
-      }),
-    ).toMatchObject({
-      level: "warning",
-      label: "Getting heavy",
-    });
-  });
-
-  it("reports compaction soon when context pressure is high", () => {
+  it("waits for backend telemetry instead of projecting heuristic pressure", () => {
     expect(
       getStudioTutorContextHealth({
         turnCount: 11,
@@ -43,8 +15,8 @@ describe("getStudioTutorContextHealth", () => {
         stageTimerDisplaySeconds: 4_200,
       }),
     ).toMatchObject({
-      level: "critical",
-      label: "Compaction soon",
+      level: "healthy",
+      label: "Awaiting telemetry",
     });
   });
 
@@ -108,13 +80,13 @@ describe("buildStudioTutorStatus", () => {
         },
         stageTimerDisplaySeconds: 4_200,
         stageTimerRunning: true,
-        directNoteSaveStatus: {
-          state: "saved",
-          mode: "exact",
-          path: "Courses/Exercise Physiology/Tutor Notes/Week 7 Study Plan/Exact - Cardiac output.md",
-        },
-      }),
-    ).toMatchObject({
+      directNoteSaveStatus: {
+        state: "saved",
+        mode: "exact",
+        path: "Courses/Exercise Physiology/Tutor Notes/Week 7 Study Plan/Exact - Cardiac output.md",
+      },
+    }),
+  ).toMatchObject({
       strategyLabel: "Adaptive Retrieval Coach",
       strategySummary: "Fade scaffolds slowly while pushing retrieval first.",
       turnCountLabel: "11 turns",
@@ -122,8 +94,8 @@ describe("buildStudioTutorStatus", () => {
       memoryCapsuleLabel: "2 capsules",
       runtimeStateLabel: "Live",
       contextHealth: {
-        label: "Compaction soon",
-        level: "critical",
+        label: "Awaiting telemetry",
+        level: "healthy",
       },
       rulesFollowingLabel: "2 validation issues",
       provenanceConfidenceLabel: "82% confidence",

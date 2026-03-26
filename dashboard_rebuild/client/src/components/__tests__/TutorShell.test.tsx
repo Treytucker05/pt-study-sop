@@ -998,7 +998,7 @@ describe("TutorShell studio routing", () => {
     expect(tutorStatus).toHaveTextContent(
       "Fade scaffolds slowly while pushing retrieval first.",
     );
-    expect(tutorStatus).toHaveTextContent("Compaction soon");
+    expect(tutorStatus).toHaveTextContent("Awaiting telemetry");
     expect(tutorStatus).toHaveTextContent("11 turns");
     expect(tutorStatus).toHaveTextContent("1:10:00");
     expect(tutorStatus).toHaveTextContent("2 capsules");
@@ -1113,7 +1113,7 @@ describe("TutorShell studio routing", () => {
     expect(memory).toHaveTextContent(
       "Captured the misconception about preload versus heart rate.",
     );
-    expect(memory).toHaveTextContent("Compaction soon");
+    expect(memory).toHaveTextContent("Awaiting telemetry");
     expect(memory).toHaveTextContent("2 capsules total");
     expect(memory).toHaveTextContent("Capsule v1");
     expect(memory).not.toHaveTextContent(

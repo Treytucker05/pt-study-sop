@@ -1622,3 +1622,26 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Live handoff capture from `/library` into `/tutor`: `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint3-library-handoff.png`, `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint3-library-handoff-dom.html`
   - The live tutor capture confirmed `Source Shelf`, `Linked Vault Paths`, `Run Config`, `Runtime rules`, `Document Dock`, and `Tutor chain` were all present on the current `/tutor` route.
   - The live handoff capture confirmed `OPEN TUTOR` on `/library` navigates to `/tutor?course_id=1&board_scope=project&session_id=tutor-20260325-233531-579b28` with the floating `studio-shell` active.
+
+## 2026-03-26 - Checkpoint 4A telemetry-driven compaction runtime
+
+- Slice 4A.1 green: replaced heuristic context-pressure behavior with backend compaction telemetry in the live Tutor surfaces.
+  - `dashboard_rebuild/client/src/lib/studioTutorStatus.ts` and the matching memory state projections now surface `Awaiting telemetry` instead of synthesizing compaction pressure when the backend has not reported live usage yet.
+  - `dashboard_rebuild/client/src/components/TutorChat.tsx` no longer auto-compacts after a hard-coded 20 assistant messages. Auto-compaction now triggers only when backend turn telemetry reports `pressureLevel: high`, keyed by a telemetry signature so the same pressure event does not re-trigger duplicate compactions.
+- Slice 4A.2 green: revalidated capsule-backed continuation as the real next-turn path and added explicit regression coverage.
+  - `dashboard_rebuild/client/src/components/TutorChat.tsx`, `dashboard_rebuild/client/src/components/useSSEStream.ts`, `dashboard_rebuild/client/src/components/TutorShell.tsx`, and `dashboard_rebuild/client/src/components/tutor-shell/TutorLiveStudyPane.tsx` now preserve the active capsule as the live next-turn continuation source after compaction.
+  - `dashboard_rebuild/client/src/components/__tests__/TutorChat.test.tsx` now proves a newly activated capsule is used on the next Tutor turn.
+- Slice 4A.3 green: added explicit rule reinforcement after compaction/resume instead of relying on rule text being buried only inside capsule summaries.
+  - `dashboard_rebuild/client/src/components/TutorChat.types.ts`, `dashboard_rebuild/client/src/components/TutorChat.tsx`, `dashboard_rebuild/client/src/components/useSSEStream.ts`, `dashboard_rebuild/client/src/hooks/useTutorSession.ts`, `dashboard_rebuild/client/src/components/TutorShell.tsx`, `dashboard_rebuild/client/src/components/tutor-shell/TutorLiveStudyPane.tsx`, `dashboard_rebuild/client/src/api.types.ts`, and `brain/tests/test_tutor_session_linking.py` now carry explicit `session_rules` through Tutor session start and live `/turn` calls.
+  - Active capsule `rule_snapshot_text` is parsed and reattached as live Tutor session rules, merged with any existing session-scoped rules, so post-compaction turns receive the same teaching contract as first-class runtime input.
+- Added/updated regressions for the full 4A gate:
+  - `dashboard_rebuild/client/src/lib/__tests__/studioTutorStatus.test.ts`
+  - `dashboard_rebuild/client/src/lib/__tests__/studioMemoryStatus.test.ts`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorChat.test.tsx`
+  - `dashboard_rebuild/client/src/hooks/__tests__/useTutorSession.test.tsx`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+  - `brain/tests/test_tutor_session_linking.py`
+- Checkpoint 4A verification passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/lib/__tests__/studioTutorStatus.test.ts client/src/lib/__tests__/studioMemoryStatus.test.ts client/src/components/__tests__/TutorChat.test.tsx client/src/hooks/__tests__/useTutorSession.test.tsx client/src/components/__tests__/TutorShell.test.tsx`
+  - `pytest brain/tests/test_tutor_turn_stream_contract.py brain/tests/test_tutor_session_linking.py -q`
+  - `cd dashboard_rebuild && npm run build`

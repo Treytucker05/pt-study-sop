@@ -13,6 +13,7 @@ interface UseSSEStreamOptions {
   selectedVaultPaths: string[];
   accuracyProfile: TutorAccuracyProfile;
   memoryCapsuleContext?: string | null;
+  sessionRules?: string[];
   behaviorOverride: BehaviorOverride | null;
   onBehaviorOverrideReset: () => void;
   onArtifactCreated: (artifact: { type: string; content: string; title?: string }) => void;
@@ -58,6 +59,7 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
     selectedVaultPaths,
     accuracyProfile,
     memoryCapsuleContext,
+    sessionRules,
     behaviorOverride,
     onBehaviorOverrideReset,
     onArtifactCreated,
@@ -167,6 +169,9 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
             ...(referenceTargets.length > 0 ? { reference_targets: referenceTargets } : {}),
             ...(memoryCapsuleContext
               ? { memory_capsule_context: memoryCapsuleContext }
+              : {}),
+            ...(sessionRules && sessionRules.length > 0
+              ? { session_rules: sessionRules }
               : {}),
           },
           behavior_override: activeBehavior,
@@ -507,6 +512,7 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
     selectedVaultPaths,
     accuracyProfile,
     memoryCapsuleContext,
+    sessionRules,
     materialsOn,
     obsidianOn,
     webSearchOn,

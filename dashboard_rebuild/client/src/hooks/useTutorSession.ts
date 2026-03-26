@@ -535,6 +535,7 @@ export function useTutorSession({
   const startSession = useCallback(async (opts?: {
     packet_context?: string;
     memory_capsule_context?: string;
+    session_rules?: string[];
   }) => {
     setIsStarting(true);
     try {
@@ -569,6 +570,13 @@ export function useTutorSession({
         ...(opts?.packet_context ? { packet_context: opts.packet_context } : {}),
         ...(opts?.memory_capsule_context
           ? { memory_capsule_context: opts.memory_capsule_context }
+          : {}),
+        ...(opts?.session_rules && opts.session_rules.length > 0
+          ? {
+              content_filter: {
+                session_rules: opts.session_rules,
+              },
+            }
           : {}),
       });
       const full = await api.tutor.getSession(session.session_id);
