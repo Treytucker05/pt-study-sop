@@ -51,6 +51,33 @@ vi.mock("@/components/layout", () => ({
   default: ({ children }: { children: ReactNode }) => <div data-testid="tutor-layout">{children}</div>,
 }));
 
+vi.mock("react-zoom-pan-pinch", () => ({
+  TransformWrapper: ({
+    children,
+  }: {
+    children:
+      | ReactNode
+      | ((controls: {
+        zoomIn: () => void;
+        zoomOut: () => void;
+        resetTransform: () => void;
+      }) => ReactNode);
+  }) => (
+    <div data-testid="mock-transform-wrapper">
+      {typeof children === "function"
+        ? children({
+            zoomIn: vi.fn(),
+            zoomOut: vi.fn(),
+            resetTransform: vi.fn(),
+          })
+        : children}
+    </div>
+  ),
+  TransformComponent: ({ children }: { children: ReactNode }) => (
+    <div data-testid="mock-transform-component">{children}</div>
+  ),
+}));
+
 vi.mock("@/components/ContentFilter", () => ({
   ContentFilter: () => <div data-testid="content-filter" />,
 }));
@@ -79,6 +106,12 @@ vi.mock("@/components/TutorWorkflowFinalSync", () => ({
 
 vi.mock("@/components/TutorArtifacts", () => ({
   TutorArtifacts: () => <div data-testid="tutor-artifacts">artifacts</div>,
+}));
+
+vi.mock("@/components/studio/StudioTldrawWorkspaceLazy", () => ({
+  StudioTldrawWorkspaceLazy: () => (
+    <div data-testid="page-studio-workspace">workspace canvas</div>
+  ),
 }));
 
 vi.mock("@/hooks/use-toast", () => ({
@@ -140,6 +173,7 @@ vi.mock("@/lib/api", () => ({
       getProjectShell: getProjectShellMock,
       saveProjectShellState: saveProjectShellStateMock,
       restoreStudioItems: restoreStudioItemsMock,
+      getMaterialFileUrl: (id: number) => `/api/tutor/materials/${id}/file`,
       getSettings: vi.fn().mockResolvedValue({ custom_instructions: "" }),
       saveSettings: vi.fn().mockResolvedValue({ custom_instructions: "" }),
       createArtifact: vi.fn(),
@@ -287,6 +321,8 @@ describe("Tutor studio route integration", () => {
     localStorage.clear();
     sessionStorage.clear();
     window.history.replaceState({}, "", "/tutor");
+    window.scrollTo = vi.fn();
+    Element.prototype.scrollTo = vi.fn();
     getMaterialsMock.mockResolvedValue([]);
     listSessionsMock.mockResolvedValue([]);
     getHubMock.mockResolvedValue(makeTutorHub());
@@ -347,9 +383,12 @@ describe("Tutor studio route integration", () => {
     renderTutor();
 
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
-    expect(screen.getByTestId("studio-stage-nav")).toBeInTheDocument();
-    expect(screen.getByTestId("studio-workspace-panel")).toBeInTheDocument();
-    expect(screen.getByText("WORKSPACE HOME")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-toolbar")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-canvas")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-entry-state")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /start priming/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /open full studio/i })).toBeInTheDocument();
+    expect(screen.queryByTestId("studio-stage-nav")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-source-shelf")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-document-dock")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-run-config")).not.toBeInTheDocument();
@@ -357,17 +396,18 @@ describe("Tutor studio route integration", () => {
     expect(screen.queryByTestId("studio-memory")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-prime-packet")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-polish-packet")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("studio-assistant-dock")).not.toBeInTheDocument();
     expect(screen.queryByTestId("sidebar-rail")).not.toBeInTheDocument();
     expect(screen.queryByTestId("brain-tool-profile")).not.toBeInTheDocument();
   });
 
-  it("renders the Studio prep surface from Studio mode without reviving Brain chrome", async () => {
+  it("normalizes explicit Studio mode into the same floating canvas surface", async () => {
     window.history.replaceState({}, "", "/tutor?course_id=1&mode=studio");
     renderTutor();
 
-    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
-    expect(screen.getByText("OPEN WORKSPACE")).toBeInTheDocument();
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-entry-state")).toBeInTheDocument();
+    expect(screen.queryByTestId("workspace-tab-bar")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-stage-nav")).not.toBeInTheDocument();
     expect(screen.queryByTestId("sidebar-rail")).not.toBeInTheDocument();
     expect(screen.queryByTestId("brain-tool-profile")).not.toBeInTheDocument();
   });
@@ -417,10 +457,11 @@ describe("Tutor studio route integration", () => {
 
     renderTutor();
 
-    expect(await screen.findByTestId("studio-floating-shell")).toBeInTheDocument();
-    expect(screen.getByTestId("studio-source-shelf")).toBeInTheDocument();
-    expect(screen.getByTestId("studio-document-dock")).toBeInTheDocument();
-    expect(screen.getByTestId("studio-workspace-panel")).toBeInTheDocument();
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
+    expect(await screen.findByTestId("studio-source-shelf")).toBeInTheDocument();
+    expect(await screen.findByTestId("studio-document-dock")).toBeInTheDocument();
+    expect(await screen.findByTestId("studio-workspace-panel")).toBeInTheDocument();
+    expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
     expect(
       within(screen.getByTestId("studio-source-shelf")).getByText(/source shelf/i),
     ).toBeInTheDocument();
@@ -472,7 +513,7 @@ describe("Tutor studio route integration", () => {
 
     renderTutor();
 
-    expect(await screen.findByTestId("studio-floating-shell")).toBeInTheDocument();
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
     expect(await screen.findByTestId("studio-priming-panel")).toBeInTheDocument();
     expect(await screen.findByTestId("studio-tutor-panel")).toBeInTheDocument();
     expect(await screen.findByTestId("studio-polish-panel")).toBeInTheDocument();
@@ -523,12 +564,16 @@ describe("Tutor studio route integration", () => {
 
     renderTutor();
 
+    fireEvent.click(
+      await screen.findByRole("button", { name: /open source shelf panel/i }),
+    );
+
     const sourceShelf = await screen.findByTestId("studio-source-shelf");
     expect(sourceShelf).toHaveTextContent("1 materials in run");
-    expect(screen.queryByText("WORKSPACE HOME")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
   });
 
-  it("enforces the visible v1 nav contract even when a legacy schedule query is present", async () => {
+  it("normalizes a legacy schedule query into the same floating canvas contract", async () => {
     window.history.replaceState({}, "", "/tutor?course_id=1&mode=schedule");
 
     renderTutor();
@@ -537,26 +582,21 @@ describe("Tutor studio route integration", () => {
     expect(screen.queryByRole("tab", { name: /^schedule$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: /^settings$/i })).not.toBeInTheDocument();
     expect(screen.queryByText("OPEN WORKBENCH")).not.toBeInTheDocument();
-    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: /^open workspace$/i }));
-
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
-    expect(screen.queryByText("WORKSPACE HOME")).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /^open workspace$/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("studio-entry-state")).toBeInTheDocument();
+    expect(screen.queryByTestId("workspace-tab-bar")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-stage-nav")).not.toBeInTheDocument();
   });
 
-  it("falls back to Workspace Home when the active session restore is stale", async () => {
+  it("falls back to the floating canvas entry state when the active session restore is stale", async () => {
     localStorage.setItem("tutor.active_session.v1", "sess-active");
     getSessionMock.mockRejectedValueOnce(new Error("missing"));
 
     renderTutor();
 
-    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
+    expect(await screen.findByTestId("studio-entry-state")).toBeInTheDocument();
     expect(screen.queryByTestId("tutor-launch-hub")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /scholar strategy/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /open workspace/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /start priming/i })).toBeInTheDocument();
   });
 });

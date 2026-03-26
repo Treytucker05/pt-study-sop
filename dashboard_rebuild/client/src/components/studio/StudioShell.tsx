@@ -1,350 +1,528 @@
-import type { ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  BookOpen,
+  Brain,
+  FileText,
+  GitBranch,
+  MessageSquare,
+  Network,
+  NotebookPen,
+  Package,
+  PencilRuler,
+  RefreshCcw,
+  Settings2,
+  Sparkles,
+  StickyNote,
+  Wrench,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
+import {
+  TransformComponent,
+  TransformWrapper,
+  type ReactZoomPanPinchRef,
+} from "react-zoom-pan-pinch";
 
 import { WorkspacePanel } from "@/components/ui/WorkspacePanel";
+import { Button } from "@/components/ui/button";
 import type { StudioPanelLayoutItem } from "@/lib/studioPanelLayout";
-import type { TutorStudioView } from "@/lib/tutorUtils";
 import { cn } from "@/lib/utils";
 
-type StudioFloatingPanel = {
-  id: string;
+export type StudioShellPreset =
+  | "priming"
+  | "study"
+  | "polish"
+  | "full_studio"
+  | "minimal";
+
+type StudioPanelDefinition = {
   panel: string;
   title: string;
   testId: string;
-  content: ReactNode;
+  icon: typeof FileText;
+  allowMultiple?: boolean;
   defaultPosition: { x: number; y: number };
   defaultSize: { width: number; height: number };
   minWidth?: number;
   minHeight?: number;
+  content: ReactNode;
 };
 
-function getWorkspaceTitle(view: TutorStudioView): string {
-  switch (view) {
-    case "home":
-      return "Workspace Home";
-    case "priming":
-      return "Priming";
-    case "polish":
-      return "Polish";
-    case "final_sync":
-      return "Final Sync";
-    default:
-      return "Workspace";
+const PANEL_ALIASES: Record<string, string> = {
+  priming: "priming_chat",
+  tutor: "tutor_chat",
+  polish: "polish_chat",
+  source_shelf: "source_shelf",
+  document_dock: "document_dock",
+  workspace: "workspace",
+  run_config: "run_config",
+  tutor_status: "tutor_status",
+  repair_candidates: "repair_candidates",
+  memory: "memory",
+  prime_packet: "prime_packet",
+  polish_packet: "polish_packet",
+};
+
+const PRESET_PANEL_KEYS: Record<StudioShellPreset, string[]> = {
+  priming: [
+    "source_shelf",
+    "document_dock",
+    "priming_chat",
+    "prime_packet",
+    "run_config",
+  ],
+  study: [
+    "document_dock",
+    "workspace",
+    "tutor_chat",
+    "tutor_status",
+    "memory",
+  ],
+  polish: ["polish_chat", "polish_packet", "workspace"],
+  full_studio: [
+    "source_shelf",
+    "document_dock",
+    "workspace",
+    "priming_chat",
+    "tutor_chat",
+    "polish_chat",
+    "prime_packet",
+    "polish_packet",
+    "run_config",
+    "tutor_status",
+    "repair_candidates",
+    "memory",
+    "notes",
+  ],
+  minimal: ["tutor_chat"],
+};
+
+const CANVAS_WIDTH = 4400;
+const CANVAS_HEIGHT = 3200;
+const TILE_START_X = 56;
+const TILE_START_Y = 56;
+const TILE_GAP_X = 32;
+const TILE_GAP_Y = 32;
+const TILE_LAYOUT_MAX_WIDTH = 2600;
+const VIEWPORT_PADDING_X = 64;
+const VIEWPORT_PADDING_TOP = 56;
+const VIEWPORT_PADDING_BOTTOM = 96;
+const MIN_VIEWPORT_FOCUS_SCALE = 0.6;
+const MAX_VIEWPORT_FOCUS_SCALE = 1;
+const PRESET_LAYOUT_DEFAULTS: Record<
+  string,
+  {
+    defaultPosition: { x: number; y: number };
+    defaultSize: { width: number; height: number };
   }
+> = {
+  source_shelf: {
+    defaultPosition: { x: 72, y: 120 },
+    defaultSize: { width: 360, height: 640 },
+  },
+  document_dock: {
+    defaultPosition: { x: 472, y: 120 },
+    defaultSize: { width: 840, height: 760 },
+  },
+  workspace: {
+    defaultPosition: { x: 1360, y: 120 },
+    defaultSize: { width: 940, height: 760 },
+  },
+  priming_chat: {
+    defaultPosition: { x: 2360, y: 120 },
+    defaultSize: { width: 560, height: 760 },
+  },
+  tutor_chat: {
+    defaultPosition: { x: 2360, y: 920 },
+    defaultSize: { width: 680, height: 940 },
+  },
+  polish_chat: {
+    defaultPosition: { x: 2360, y: 120 },
+    defaultSize: { width: 560, height: 760 },
+  },
+  prime_packet: {
+    defaultPosition: { x: 72, y: 820 },
+    defaultSize: { width: 420, height: 520 },
+  },
+  polish_packet: {
+    defaultPosition: { x: 532, y: 820 },
+    defaultSize: { width: 420, height: 520 },
+  },
+  run_config: {
+    defaultPosition: { x: 992, y: 920 },
+    defaultSize: { width: 420, height: 520 },
+  },
+  tutor_status: {
+    defaultPosition: { x: 1452, y: 920 },
+    defaultSize: { width: 420, height: 420 },
+  },
+  repair_candidates: {
+    defaultPosition: { x: 1912, y: 920 },
+    defaultSize: { width: 420, height: 420 },
+  },
+  memory: {
+    defaultPosition: { x: 1452, y: 1380 },
+    defaultSize: { width: 420, height: 420 },
+  },
+  notes: {
+    defaultPosition: { x: 1912, y: 1380 },
+    defaultSize: { width: 460, height: 420 },
+  },
+};
+
+function normalizePanelKey(panel: string): string {
+  return PANEL_ALIASES[panel] ?? panel;
 }
 
-function buildDefaultPanelLayoutItem(
-  panel: StudioFloatingPanel,
-): StudioPanelLayoutItem {
+function buildPanelId(
+  definition: StudioPanelDefinition,
+  instanceNumber = 1,
+): string {
+  if (definition.allowMultiple) {
+    return `panel-${definition.panel}-${instanceNumber}`;
+  }
+  return `panel-${definition.panel}`;
+}
+
+function buildPanelLayoutItem(
+  definition: StudioPanelDefinition,
+  instanceNumber = 1,
+): Omit<StudioPanelLayoutItem, "position"> {
   return {
-    id: panel.id,
-    panel: panel.panel,
-    position: panel.defaultPosition,
-    size: panel.defaultSize,
-    zIndex: 1,
+    id: buildPanelId(definition, instanceNumber),
+    panel: definition.panel,
+    size: definition.defaultSize,
+    zIndex: instanceNumber,
     collapsed: false,
   };
 }
 
-function getFloatingPanels({
-  view,
-  workspace,
-  primingPanel,
-  tutorPanel,
-  polishPanel,
-  sourceShelf,
-  documentDock,
-  runConfig,
-  tutorStatus,
-  repairCandidates,
-  memory,
-  primePacket,
-  polishPacket,
-  assistantDock,
-}: {
-  view: TutorStudioView;
-  workspace: ReactNode;
-  primingPanel?: ReactNode;
-  tutorPanel?: ReactNode;
-  polishPanel?: ReactNode;
-  sourceShelf?: ReactNode;
-  documentDock?: ReactNode;
-  runConfig?: ReactNode;
-  tutorStatus?: ReactNode;
-  repairCandidates?: ReactNode;
-  memory?: ReactNode;
-  primePacket?: ReactNode;
-  polishPacket?: ReactNode;
-  assistantDock?: ReactNode;
-}): StudioFloatingPanel[] {
-  const workspacePanel: StudioFloatingPanel = {
-    id: "panel-workspace",
-    panel: "workspace",
-    testId: "studio-workspace-panel",
-    title: getWorkspaceTitle(view),
-    content: workspace,
-    defaultPosition: view === "home" ? { x: 56, y: 48 } : { x: 380, y: 332 },
-    defaultSize: view === "home"
-      ? { width: 1080, height: 680 }
-      : { width: 760, height: 460 },
-    minWidth: 420,
-    minHeight: 240,
+function tilePanelLayout(
+  items: Omit<StudioPanelLayoutItem, "position">[],
+): StudioPanelLayoutItem[] {
+  let cursorX = TILE_START_X;
+  let cursorY = TILE_START_Y;
+  let rowHeight = 0;
+
+  return items.map((item, index) => {
+    const rowLimit = TILE_START_X + TILE_LAYOUT_MAX_WIDTH;
+    const wouldOverflowRow =
+      cursorX !== TILE_START_X && cursorX + item.size.width > rowLimit;
+
+    if (wouldOverflowRow) {
+      cursorX = TILE_START_X;
+      cursorY += rowHeight + TILE_GAP_Y;
+      rowHeight = 0;
+    }
+
+    const position = { x: cursorX, y: cursorY };
+    cursorX += item.size.width + TILE_GAP_X;
+    rowHeight = Math.max(rowHeight, item.size.height);
+
+    return {
+      ...item,
+      position,
+      zIndex: item.zIndex || index + 1,
+    };
+  });
+}
+
+function makePlaceholder(
+  title: string,
+  description: string,
+): ReactNode {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-3 rounded-[0.9rem] border border-dashed border-[rgba(255,104,132,0.24)] bg-black/20 p-4 text-center">
+      <div className="font-mono text-sm uppercase tracking-[0.18em] text-[#ffd6de]">
+        {title}
+      </div>
+      <p className="max-w-sm font-mono text-xs leading-6 text-[#ffc8d3]/72">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function createPresetLayout(
+  preset: StudioShellPreset,
+  definitions: StudioPanelDefinition[],
+): StudioPanelLayoutItem[] {
+  const orderedDefinitions = PRESET_PANEL_KEYS[preset]
+    .map((panelKey) =>
+      definitions.find((definition) => definition.panel === panelKey),
+    )
+    .filter((definition): definition is StudioPanelDefinition =>
+      Boolean(definition),
+    );
+
+  return tilePanelLayout(
+    orderedDefinitions.map((definition, index) => ({
+      ...buildPanelLayoutItem(definition),
+      zIndex: index + 1,
+    })),
+  );
+}
+
+export function buildStudioShellPresetLayout(
+  preset: StudioShellPreset,
+): StudioPanelLayoutItem[] {
+  const seeds = PRESET_PANEL_KEYS[preset]
+    .map((panelKey, index) => {
+      const defaults = PRESET_LAYOUT_DEFAULTS[panelKey];
+      if (!defaults) return null;
+      return {
+        id: `panel-${panelKey}`,
+        panel: panelKey,
+        size: defaults.defaultSize,
+        zIndex: index + 1,
+        collapsed: false,
+      } satisfies Omit<StudioPanelLayoutItem, "position">;
+    })
+    .filter(
+      (item): item is Omit<StudioPanelLayoutItem, "position"> => Boolean(item),
+    );
+
+  return tilePanelLayout(seeds);
+}
+
+type StudioShellViewportFocus = {
+  scale: number;
+  positionX: number;
+  positionY: number;
+};
+
+function getLayoutBounds(layout: StudioPanelLayoutItem[]) {
+  const minX = Math.min(...layout.map((item) => item.position.x));
+  const minY = Math.min(...layout.map((item) => item.position.y));
+  const maxX = Math.max(
+    ...layout.map((item) => item.position.x + item.size.width),
+  );
+  const maxY = Math.max(
+    ...layout.map((item) => item.position.y + item.size.height),
+  );
+
+  return {
+    minX,
+    minY,
+    maxX,
+    maxY,
+    width: Math.max(maxX - minX, 1),
+    height: Math.max(maxY - minY, 1),
   };
+}
 
-  if (view === "home") {
-    return [workspacePanel];
+export function buildStudioShellViewportFocus(
+  layout: StudioPanelLayoutItem[],
+  viewportWidth: number,
+  viewportHeight: number,
+): StudioShellViewportFocus {
+  if (layout.length === 0 || viewportWidth <= 0 || viewportHeight <= 0) {
+    return {
+      scale: 1,
+      positionX: 0,
+      positionY: 0,
+    };
   }
 
-  if (view === "priming") {
-    return [
-      {
-        id: "panel-source-shelf",
-        panel: "source_shelf",
-        testId: "studio-source-shelf",
-        title: "Source Shelf",
-        content: sourceShelf,
-        defaultPosition: { x: 24, y: 88 },
-        defaultSize: { width: 320, height: 720 },
-        minWidth: 260,
-        minHeight: 220,
-      },
-      {
-        id: "panel-run-config",
-        panel: "run_config",
-        testId: "studio-run-config",
-        title: "Run Config",
-        content: runConfig,
-        defaultPosition: { x: 1180, y: 88 },
-        defaultSize: { width: 320, height: 260 },
-        minWidth: 260,
-        minHeight: 180,
-      },
-      {
-        id: "panel-prime-packet",
-        panel: "prime_packet",
-        testId: "studio-prime-packet",
-        title: "Prime Packet",
-        content: primePacket,
-        defaultPosition: { x: 1180, y: 364 },
-        defaultSize: { width: 320, height: 444 },
-        minWidth: 260,
-        minHeight: 220,
-      },
-      workspacePanel,
-    ];
+  const bounds = getLayoutBounds(layout);
+  const availableWidth = Math.max(viewportWidth - VIEWPORT_PADDING_X * 2, 320);
+  const availableHeight = Math.max(
+    viewportHeight - VIEWPORT_PADDING_TOP - VIEWPORT_PADDING_BOTTOM,
+    320,
+  );
+  const fitScale = Math.min(
+    availableWidth / bounds.width,
+    availableHeight / bounds.height,
+    MAX_VIEWPORT_FOCUS_SCALE,
+  );
+  const scale = Math.max(MIN_VIEWPORT_FOCUS_SCALE, fitScale);
+
+  return {
+    scale,
+    positionX: (viewportWidth - bounds.width * scale) / 2 - bounds.minX * scale,
+    positionY: VIEWPORT_PADDING_TOP - bounds.minY * scale,
+  };
+}
+
+function spawnPanelLayout(
+  current: StudioPanelLayoutItem[],
+  definition: StudioPanelDefinition,
+): StudioPanelLayoutItem[] {
+  const normalizedCurrent = current.map((item) => ({
+    ...item,
+    panel: normalizePanelKey(item.panel),
+  }));
+
+  if (!definition.allowMultiple) {
+    const existing = normalizedCurrent.find(
+      (item) => item.panel === definition.panel,
+    );
+    if (existing) {
+      return normalizedCurrent.map((item) =>
+        item.id === existing.id ? { ...item, collapsed: false } : item,
+      );
+    }
   }
 
-  if (view === "polish" || view === "final_sync") {
-    return [
-      workspacePanel,
-      {
-        id: "panel-polish-packet",
-        panel: "polish_packet",
-        testId: "studio-polish-packet",
-        title: "Polish Packet",
-        content: polishPacket,
-        defaultPosition: { x: 1180, y: 88 },
-        defaultSize: { width: 320, height: 720 },
-        minWidth: 260,
-        minHeight: 220,
-      },
-    ];
-  }
+  const nextZIndex =
+    normalizedCurrent.reduce(
+      (highest, item) => Math.max(highest, item.zIndex || 0),
+      0,
+    ) + 1;
+  const instanceNumber =
+    normalizedCurrent.filter((item) => item.panel === definition.panel).length + 1;
+  const nextItem = {
+    ...buildPanelLayoutItem(definition, instanceNumber),
+    zIndex: nextZIndex,
+  };
+  const tiledLayout = tilePanelLayout(
+    [...normalizedCurrent, nextItem].map((item, index) => ({
+      id: item.id,
+      panel: item.panel,
+      size: item.size,
+      collapsed: item.collapsed,
+      zIndex: item.zIndex || index + 1,
+    })),
+  );
+  const tiledNextItem = tiledLayout[tiledLayout.length - 1];
 
   return [
+    ...normalizedCurrent,
     {
-      id: "panel-source-shelf",
-      panel: "source_shelf",
-      testId: "studio-source-shelf",
-      title: "Source Shelf",
-      content: sourceShelf,
-      defaultPosition: { x: 24, y: 88 },
-      defaultSize: { width: 320, height: 720 },
-      minWidth: 260,
-      minHeight: 220,
+      ...nextItem,
+      position: tiledNextItem.position,
     },
-    {
-      id: "panel-document-dock",
-      panel: "document_dock",
-      testId: "studio-document-dock",
-      title: "Document Dock",
-      content: documentDock,
-      defaultPosition: { x: 380, y: 88 },
-      defaultSize: { width: 760, height: 228 },
-      minWidth: 400,
-      minHeight: 160,
-    },
-    workspacePanel,
-    {
-      id: "panel-run-config",
-      panel: "run_config",
-      testId: "studio-run-config",
-      title: "Run Config",
-      content: runConfig,
-      defaultPosition: { x: 1180, y: 88 },
-      defaultSize: { width: 320, height: 190 },
-      minWidth: 260,
-      minHeight: 140,
-    },
-    {
-      id: "panel-tutor-status",
-      panel: "tutor_status",
-      testId: "studio-tutor-status",
-      title: "Tutor Status",
-      content: tutorStatus,
-      defaultPosition: { x: 1180, y: 292 },
-      defaultSize: { width: 320, height: 180 },
-      minWidth: 260,
-      minHeight: 140,
-    },
-    {
-      id: "panel-repair-candidates",
-      panel: "repair_candidates",
-      testId: "studio-repair-candidates",
-      title: "Repair Candidates",
-      content: repairCandidates,
-      defaultPosition: { x: 1180, y: 486 },
-      defaultSize: { width: 320, height: 170 },
-      minWidth: 260,
-      minHeight: 140,
-    },
-    {
-      id: "panel-memory",
-      panel: "memory",
-      testId: "studio-memory",
-      title: "Memory",
-      content: memory,
-      defaultPosition: { x: 1180, y: 670 },
-      defaultSize: { width: 320, height: 170 },
-      minWidth: 260,
-      minHeight: 140,
-    },
-    {
-      id: "panel-prime-packet",
-      panel: "prime_packet",
-      testId: "studio-prime-packet",
-      title: "Prime Packet",
-      content: primePacket,
-      defaultPosition: { x: 24, y: 824 },
-      defaultSize: { width: 520, height: 240 },
-      minWidth: 320,
-      minHeight: 180,
-    },
-    {
-      id: "panel-polish-packet",
-      panel: "polish_packet",
-      testId: "studio-polish-packet",
-      title: "Polish Packet",
-      content: polishPacket,
-      defaultPosition: { x: 564, y: 824 },
-      defaultSize: { width: 576, height: 240 },
-      minWidth: 320,
-      minHeight: 180,
-    },
-    ...(assistantDock
-      ? [
-          {
-            id: "panel-assistant-dock",
-            panel: "assistant_dock",
-            testId: "studio-assistant-dock",
-            title: "Assistant Dock",
-            content: assistantDock,
-            defaultPosition: { x: 1180, y: 854 },
-            defaultSize: { width: 320, height: 210 },
-            minWidth: 260,
-            minHeight: 160,
-          } satisfies StudioFloatingPanel,
-        ]
-      : []),
-    ...(primingPanel
-      ? [
-          {
-            id: "panel-priming",
-            panel: "priming",
-            testId: "studio-priming-panel",
-            title: "Priming",
-            content: primingPanel,
-            defaultPosition: { x: 1560, y: 88 },
-            defaultSize: { width: 680, height: 440 },
-            minWidth: 420,
-            minHeight: 240,
-          } satisfies StudioFloatingPanel,
-        ]
-      : []),
-    ...(tutorPanel
-      ? [
-          {
-            id: "panel-tutor",
-            panel: "tutor",
-            testId: "studio-tutor-panel",
-            title: "Tutor",
-            content: tutorPanel,
-            defaultPosition: { x: 1560, y: 548 },
-            defaultSize: { width: 680, height: 520 },
-            minWidth: 420,
-            minHeight: 260,
-          } satisfies StudioFloatingPanel,
-        ]
-      : []),
-    ...(polishPanel
-      ? [
-          {
-            id: "panel-polish",
-            panel: "polish",
-            testId: "studio-polish-panel",
-            title: "Polish",
-            content: polishPanel,
-            defaultPosition: { x: 2260, y: 88 },
-            defaultSize: { width: 680, height: 440 },
-            minWidth: 420,
-            minHeight: 240,
-          } satisfies StudioFloatingPanel,
-        ]
-      : []),
   ];
 }
 
-function upsertPanelLayoutItem(
-  current: StudioPanelLayoutItem[],
-  panel: StudioFloatingPanel,
-  update: Partial<StudioPanelLayoutItem>,
-): StudioPanelLayoutItem[] {
-  const existingIndex = current.findIndex(
-    (item) => item.panel === panel.panel || item.id === panel.id,
-  );
-  const baseline =
-    existingIndex >= 0
-      ? current[existingIndex]
-      : buildDefaultPanelLayoutItem(panel);
-  const nextItem: StudioPanelLayoutItem = {
-    ...baseline,
-    ...update,
-    panel: panel.panel,
-    id: update.id ?? baseline.id ?? panel.id,
-  };
+function getGroupMembers(
+  layout: StudioPanelLayoutItem[],
+  groupId: string | null | undefined,
+): string[] {
+  if (!groupId) return [];
+  return layout
+    .filter((item) => item.groupId === groupId)
+    .map((item) => item.id);
+}
 
-  if (existingIndex < 0) {
-    return [...current, nextItem];
+function resolvePanelSelection(
+  layout: StudioPanelLayoutItem[],
+  currentSelection: string[],
+  panelId: string,
+  additive: boolean,
+): string[] {
+  const panel = layout.find((item) => item.id === panelId);
+  if (!panel) return currentSelection;
+
+  const targetIds = panel.groupId
+    ? getGroupMembers(layout, panel.groupId)
+    : [panelId];
+
+  if (!additive) {
+    return targetIds;
   }
 
-  return current.map((item, index) => (index === existingIndex ? nextItem : item));
+  const next = new Set(currentSelection);
+  const allSelected = targetIds.every((id) => next.has(id));
+
+  targetIds.forEach((id) => {
+    if (allSelected) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+  });
+
+  return Array.from(next);
+}
+
+function resolveDragTargetIds(
+  layout: StudioPanelLayoutItem[],
+  anchorId: string,
+  selectedPanelIds: string[],
+): string[] {
+  if (selectedPanelIds.includes(anchorId) && selectedPanelIds.length > 1) {
+    return selectedPanelIds;
+  }
+
+  const anchor = layout.find((item) => item.id === anchorId);
+  if (!anchor) return [anchorId];
+
+  if (anchor.groupId) {
+    return getGroupMembers(layout, anchor.groupId);
+  }
+
+  return [anchorId];
+}
+
+function applyGroupIdToPanels(
+  layout: StudioPanelLayoutItem[],
+  panelIds: string[],
+  groupId: string | null,
+): StudioPanelLayoutItem[] {
+  const targetIds = new Set(panelIds);
+  return layout.map((item) =>
+    targetIds.has(item.id)
+      ? {
+          ...item,
+          groupId,
+        }
+      : item,
+  );
+}
+
+export function applyStudioShellPanelPositionUpdate(
+  layout: StudioPanelLayoutItem[],
+  anchorId: string,
+  nextPosition: { x: number; y: number },
+  selectedPanelIds: string[],
+): StudioPanelLayoutItem[] {
+  const anchor = layout.find((item) => item.id === anchorId);
+  if (!anchor) return layout;
+
+  const deltaX = nextPosition.x - anchor.position.x;
+  const deltaY = nextPosition.y - anchor.position.y;
+  const targetIds = new Set(
+    resolveDragTargetIds(layout, anchorId, selectedPanelIds),
+  );
+
+  return layout.map((item) =>
+    targetIds.has(item.id)
+      ? {
+          ...item,
+          position: {
+            x: item.position.x + deltaX,
+            y: item.position.y + deltaY,
+          },
+        }
+      : item,
+  );
 }
 
 export interface StudioShellProps {
-  view: TutorStudioView;
-  workspace: ReactNode;
+  entryCard?: ReactNode;
+  defaultPreset?: StudioShellPreset;
+  workspace?: ReactNode;
+  sourceShelf?: ReactNode;
+  documentDock?: ReactNode;
+  mindMapPanel?: ReactNode;
   primingPanel?: ReactNode;
   tutorPanel?: ReactNode;
   polishPanel?: ReactNode;
-  sourceShelf?: ReactNode;
-  documentDock?: ReactNode;
   runConfig?: ReactNode;
   tutorStatus?: ReactNode;
   repairCandidates?: ReactNode;
   memory?: ReactNode;
   primePacket?: ReactNode;
   polishPacket?: ReactNode;
-  assistantDock?: ReactNode;
-  stageNav?: ReactNode;
+  notesPanel?: ReactNode;
   panelLayout: StudioPanelLayoutItem[];
   setPanelLayout: (
     next:
@@ -354,136 +532,853 @@ export interface StudioShellProps {
 }
 
 export function StudioShell({
-  view,
+  entryCard,
+  defaultPreset = "minimal",
   workspace,
+  sourceShelf,
+  documentDock,
+  mindMapPanel,
   primingPanel,
   tutorPanel,
   polishPanel,
-  sourceShelf,
-  documentDock,
   runConfig,
   tutorStatus,
   repairCandidates,
   memory,
   primePacket,
   polishPacket,
-  assistantDock,
-  stageNav,
+  notesPanel,
   panelLayout,
   setPanelLayout,
 }: StudioShellProps) {
-  const stageNavigator = stageNav ? (
-    <div
-      data-testid="studio-stage-nav"
-      className="flex flex-wrap items-center gap-2 rounded-[0.95rem] border border-[rgba(255,122,146,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.16)_100%)] px-3 py-2 shadow-[0_10px_22px_rgba(0,0,0,0.18)]"
-    >
-      {stageNav}
-    </div>
-  ) : null;
-
-  const panelDefinitions = getFloatingPanels({
-    view,
-    workspace,
-    primingPanel,
-    tutorPanel,
-    polishPanel,
-    sourceShelf,
-    documentDock,
-    runConfig,
-    tutorStatus,
-    repairCandidates,
-    memory,
-    primePacket,
-    polishPacket,
-    assistantDock,
+  const [canvasScale, setCanvasScale] = useState(0.85);
+  const [isCanvasDragging, setIsCanvasDragging] = useState(false);
+  const [selectedPanelIds, setSelectedPanelIds] = useState<string[]>([]);
+  const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
+  const canvasTransformRef = useRef({
+    scale: 1,
+    positionX: 0,
+    positionY: 0,
   });
-
-  const savedPanelsByKey = new Map<string, StudioPanelLayoutItem>();
-  for (const item of panelLayout) {
-    savedPanelsByKey.set(item.panel, item);
-    savedPanelsByKey.set(item.id, item);
-  }
-
-  const restoredPanels = panelDefinitions.filter(
-    (panel) =>
-      savedPanelsByKey.has(panel.panel) || savedPanelsByKey.has(panel.id),
+  const canvasDragRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    positionX: number;
+    positionY: number;
+  } | null>(null);
+  const canvasViewportRef = useRef<HTMLDivElement | null>(null);
+  const hasAutoFocusedLayoutRef = useRef(false);
+  const groupSequenceRef = useRef(1);
+  const [shouldFocusLayout, setShouldFocusLayout] = useState(false);
+  const panelDefinitions = useMemo<StudioPanelDefinition[]>(
+    () => [
+      {
+        panel: "source_shelf",
+        title: "Source Shelf",
+        testId: "studio-source-shelf",
+        icon: BookOpen,
+        defaultPosition: { x: 72, y: 120 },
+        defaultSize: { width: 360, height: 640 },
+        minWidth: 320,
+        minHeight: 300,
+        content:
+          sourceShelf ??
+          makePlaceholder(
+            "Source Shelf",
+            "Browse Current Run, Library, and Vault sources from the floating workspace.",
+          ),
+      },
+      {
+        panel: "document_dock",
+        title: "Document Dock",
+        testId: "studio-document-dock",
+        icon: FileText,
+        defaultPosition: { x: 424, y: 120 },
+        defaultSize: { width: 840, height: 760 },
+        minWidth: 560,
+        minHeight: 360,
+        content:
+          documentDock ??
+          makePlaceholder(
+            "Document Dock",
+            "Open documents as tabs, read them, and clip source-linked workspace objects.",
+          ),
+      },
+      {
+        panel: "workspace",
+        title: "Workspace",
+        testId: "studio-workspace-panel",
+        icon: StickyNote,
+        defaultPosition: { x: 1090, y: 120 },
+        defaultSize: { width: 940, height: 760 },
+        minWidth: 700,
+        minHeight: 420,
+        content:
+          workspace ??
+          makePlaceholder(
+            "Workspace",
+            "Arrange study objects, excerpts, and repair notes inside the shared board.",
+          ),
+      },
+      {
+        panel: "mind_map",
+        title: "Mind Map",
+        testId: "studio-mind-map-panel",
+        icon: Brain,
+        defaultPosition: { x: 72, y: 1180 },
+        defaultSize: { width: 600, height: 500 },
+        minWidth: 420,
+        minHeight: 320,
+        content:
+          mindMapPanel ??
+          makePlaceholder(
+            "Mind Map",
+            "Open the live mind map board to spatialize concepts and study relationships.",
+          ),
+      },
+      {
+        panel: "priming_chat",
+        title: "Priming",
+        testId: "studio-priming-panel",
+        icon: Sparkles,
+        defaultPosition: { x: 1840, y: 120 },
+        defaultSize: { width: 560, height: 760 },
+        minWidth: 420,
+        minHeight: 360,
+        content:
+          primingPanel ??
+          makePlaceholder(
+            "Priming",
+            "Priming chat becomes available here with method and chain selection in-panel.",
+          ),
+      },
+      {
+        panel: "tutor_chat",
+        title: "Tutor",
+        testId: "studio-tutor-panel",
+        icon: MessageSquare,
+        defaultPosition: { x: 1840, y: 720 },
+        defaultSize: { width: 680, height: 940 },
+        minWidth: 520,
+        minHeight: 420,
+        content:
+          tutorPanel ??
+          makePlaceholder(
+            "Tutor",
+            "Tutor chat lives here and can start or resume a live session from inside the panel.",
+          ),
+      },
+      {
+        panel: "polish_chat",
+        title: "Polish",
+        testId: "studio-polish-panel",
+        icon: Sparkles,
+        defaultPosition: { x: 2340, y: 120 },
+        defaultSize: { width: 560, height: 760 },
+        minWidth: 420,
+        minHeight: 360,
+        content:
+          polishPanel ??
+          makePlaceholder(
+            "Polish",
+            "Review captured notes, summaries, and packaging work inside the floating Polish panel.",
+          ),
+      },
+      {
+        panel: "prime_packet",
+        title: "Prime Packet",
+        testId: "studio-prime-packet",
+        icon: Package,
+        defaultPosition: { x: 72, y: 720 },
+        defaultSize: { width: 420, height: 520 },
+        minWidth: 360,
+        minHeight: 280,
+        content:
+          primePacket ??
+          makePlaceholder(
+            "Prime Packet",
+            "Promoted excerpts and repair notes live here as tutor context inputs.",
+          ),
+      },
+      {
+        panel: "polish_packet",
+        title: "Polish Packet",
+        testId: "studio-polish-packet",
+        icon: Package,
+        defaultPosition: { x: 472, y: 720 },
+        defaultSize: { width: 420, height: 520 },
+        minWidth: 360,
+        minHeight: 280,
+        content:
+          polishPacket ??
+          makePlaceholder(
+            "Polish Packet",
+            "Tutor replies, notes, summaries, cards, and assets are staged here.",
+          ),
+      },
+      {
+        panel: "run_config",
+        title: "Run Config",
+        testId: "studio-run-config",
+        icon: Settings2,
+        defaultPosition: { x: 872, y: 720 },
+        defaultSize: { width: 420, height: 520 },
+        minWidth: 360,
+        minHeight: 280,
+        content:
+          runConfig ??
+          makePlaceholder(
+            "Run Config",
+            "Configure run defaults, rules, and panel-level study behavior here.",
+          ),
+      },
+      {
+        panel: "tutor_status",
+        title: "Tutor Status",
+        testId: "studio-tutor-status",
+        icon: Brain,
+        defaultPosition: { x: 1232, y: 720 },
+        defaultSize: { width: 420, height: 420 },
+        minWidth: 340,
+        minHeight: 260,
+        content:
+          tutorStatus ??
+          makePlaceholder(
+            "Tutor Status",
+            "Adaptive strategy, context health, and validation surface here in real time.",
+          ),
+      },
+      {
+        panel: "repair_candidates",
+        title: "Repair Candidates",
+        testId: "studio-repair-candidates",
+        icon: Wrench,
+        defaultPosition: { x: 1592, y: 720 },
+        defaultSize: { width: 420, height: 420 },
+        minWidth: 340,
+        minHeight: 260,
+        content:
+          repairCandidates ??
+          makePlaceholder(
+            "Repair Candidates",
+            "Misconceptions and missing-context detections become explicit workspace-ready objects here.",
+          ),
+      },
+      {
+        panel: "memory",
+        title: "Memory",
+        testId: "studio-memory",
+        icon: Brain,
+        defaultPosition: { x: 1952, y: 720 },
+        defaultSize: { width: 420, height: 420 },
+        minWidth: 340,
+        minHeight: 260,
+        content:
+          memory ??
+          makePlaceholder(
+            "Memory",
+            "Memory capsules, compaction state, and resume controls live here.",
+          ),
+      },
+      {
+        panel: "notes",
+        title: "Notes",
+        testId: "studio-notes-panel",
+        icon: NotebookPen,
+        allowMultiple: true,
+        defaultPosition: { x: 2312, y: 720 },
+        defaultSize: { width: 460, height: 420 },
+        minWidth: 320,
+        minHeight: 260,
+        content:
+          notesPanel ??
+          makePlaceholder(
+            "Notes",
+            "Use freeform notes for side writing, scratch work, or quick captures.",
+          ),
+      },
+      {
+        panel: "objectives",
+        title: "Objectives",
+        testId: "studio-objectives-panel",
+        icon: BookOpen,
+        defaultPosition: { x: 2712, y: 120 },
+        defaultSize: { width: 320, height: 360 },
+        minWidth: 280,
+        minHeight: 220,
+        content: makePlaceholder(
+          "Objectives",
+          "Track learning objectives from the live course scope here.",
+        ),
+      },
+      {
+        panel: "method_runner",
+        title: "Method Runner",
+        testId: "studio-method-runner-panel",
+        icon: Wrench,
+        allowMultiple: true,
+        defaultPosition: { x: 2712, y: 520 },
+        defaultSize: { width: 360, height: 380 },
+        minWidth: 300,
+        minHeight: 220,
+        content: makePlaceholder(
+          "Method Runner",
+          "Run study methods as floating tools alongside the assistant panels.",
+        ),
+      },
+      {
+        panel: "tldraw_sketch",
+        title: "Sketch",
+        testId: "studio-sketch-panel",
+        icon: PencilRuler,
+        defaultPosition: { x: 72, y: 1180 },
+        defaultSize: { width: 560, height: 420 },
+        minWidth: 360,
+        minHeight: 260,
+        content: makePlaceholder(
+          "Sketch",
+          "The sketch panel is reserved for visual diagramming and freehand study work.",
+        ),
+      },
+      {
+        panel: "concept_map",
+        title: "Concept Map",
+        testId: "studio-concept-map-panel",
+        icon: Network,
+        defaultPosition: { x: 672, y: 1180 },
+        defaultSize: { width: 560, height: 420 },
+        minWidth: 360,
+        minHeight: 260,
+        content: makePlaceholder(
+          "Concept Map",
+          "Use concept maps to spatialize relationships across the current run.",
+        ),
+      },
+      {
+        panel: "vault_graph",
+        title: "Vault Graph",
+        testId: "studio-vault-graph-panel",
+        icon: GitBranch,
+        defaultPosition: { x: 1272, y: 1180 },
+        defaultSize: { width: 560, height: 420 },
+        minWidth: 360,
+        minHeight: 260,
+        content: makePlaceholder(
+          "Vault Graph",
+          "Browse related note connections from the vault graph inside the Studio canvas.",
+        ),
+      },
+      {
+        panel: "obsidian",
+        title: "Obsidian",
+        testId: "studio-obsidian-panel",
+        icon: BookOpen,
+        defaultPosition: { x: 1872, y: 1180 },
+        defaultSize: { width: 420, height: 420 },
+        minWidth: 320,
+        minHeight: 260,
+        content: makePlaceholder(
+          "Obsidian",
+          "Open note read/write flows here without leaving the Studio canvas.",
+        ),
+      },
+      {
+        panel: "anki",
+        title: "Anki",
+        testId: "studio-anki-panel",
+        icon: Brain,
+        defaultPosition: { x: 2332, y: 1180 },
+        defaultSize: { width: 360, height: 360 },
+        minWidth: 300,
+        minHeight: 220,
+        content: makePlaceholder(
+          "Anki",
+          "Review due cards and draft card outputs alongside the study workspace.",
+        ),
+      },
+    ],
+    [
+      documentDock,
+      memory,
+      mindMapPanel,
+      notesPanel,
+      polishPacket,
+      polishPanel,
+      primePacket,
+      primingPanel,
+      repairCandidates,
+      runConfig,
+      sourceShelf,
+      tutorPanel,
+      tutorStatus,
+      workspace,
+    ],
   );
-  const panelsToRender =
-    panelLayout.length > 0 && restoredPanels.length > 0
-      ? restoredPanels
-      : panelDefinitions;
+
+  const panelsByKey = useMemo(
+    () =>
+      new Map(
+        panelDefinitions.map((definition) => [definition.panel, definition]),
+      ),
+    [panelDefinitions],
+  );
+
+  const resolvedLayout = useMemo(
+    () =>
+      panelLayout
+        .map((item) => ({
+          ...item,
+          panel: normalizePanelKey(item.panel),
+        }))
+        .filter((item) => panelsByKey.has(item.panel)),
+    [panelLayout, panelsByKey],
+  );
+
+  useEffect(() => {
+    if (resolvedLayout.length > 0 || entryCard) return;
+    setPanelLayout((current) =>
+      current.length > 0 ? current : createPresetLayout(defaultPreset, panelDefinitions),
+    );
+  }, [defaultPreset, entryCard, panelDefinitions, resolvedLayout.length, setPanelLayout]);
+
+  useEffect(() => {
+    const validIds = new Set(resolvedLayout.map((item) => item.id));
+    setSelectedPanelIds((current) =>
+      current.filter((panelId) => validIds.has(panelId)),
+    );
+  }, [resolvedLayout]);
+
+  useEffect(() => {
+    const highestGroupSequence = resolvedLayout.reduce((highest, item) => {
+      if (!item.groupId?.startsWith("group-")) return highest;
+      const parsed = Number.parseInt(item.groupId.slice("group-".length), 10);
+      if (!Number.isFinite(parsed)) return highest;
+      return Math.max(highest, parsed);
+    }, 0);
+
+    groupSequenceRef.current = highestGroupSequence + 1;
+  }, [resolvedLayout]);
+
+  const selectedPanels = useMemo(
+    () => resolvedLayout.filter((item) => selectedPanelIds.includes(item.id)),
+    [resolvedLayout, selectedPanelIds],
+  );
+  const canGroupSelection = selectedPanelIds.length >= 2;
+  const canUngroupSelection = selectedPanels.some((item) => item.groupId);
+
+  const nextGroupId = useCallback(() => {
+    const nextId = `group-${groupSequenceRef.current}`;
+    groupSequenceRef.current += 1;
+    return nextId;
+  }, []);
+
+  const focusOpenPanels = useCallback(() => {
+    if (!transformRef.current || !canvasViewportRef.current || resolvedLayout.length === 0) {
+      return;
+    }
+
+    const activeElement = document.activeElement;
+    if (
+      activeElement instanceof HTMLElement &&
+      canvasViewportRef.current.contains(activeElement)
+    ) {
+      activeElement.blur();
+    }
+
+    const rect = canvasViewportRef.current.getBoundingClientRect();
+    const focus = buildStudioShellViewportFocus(
+      resolvedLayout,
+      rect.width,
+      rect.height,
+    );
+    transformRef.current.setTransform(
+      focus.positionX,
+      focus.positionY,
+      focus.scale,
+      180,
+    );
+    canvasTransformRef.current = {
+      scale: focus.scale,
+      positionX: focus.positionX,
+      positionY: focus.positionY,
+    };
+    setCanvasScale(focus.scale);
+    if (typeof canvasViewportRef.current.scrollIntoView === "function") {
+      canvasViewportRef.current.scrollIntoView({
+        block: "start",
+        inline: "nearest",
+        behavior: "smooth",
+      });
+    }
+  }, [resolvedLayout]);
+
+  useEffect(() => {
+    if (resolvedLayout.length === 0) {
+      hasAutoFocusedLayoutRef.current = false;
+      return;
+    }
+    if (!hasAutoFocusedLayoutRef.current) {
+      hasAutoFocusedLayoutRef.current = true;
+      setShouldFocusLayout(true);
+    }
+  }, [resolvedLayout.length]);
+
+  useEffect(() => {
+    if (!shouldFocusLayout) return;
+
+    const frame = requestAnimationFrame(() => {
+      focusOpenPanels();
+      setShouldFocusLayout(false);
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [focusOpenPanels, shouldFocusLayout]);
 
   return (
-    <div data-testid="studio-shell" className="flex h-full min-h-0 flex-col gap-3 p-3">
-      {stageNavigator}
-      <div
-        data-testid="studio-floating-shell"
-        className={cn(
-          "relative flex-1 overflow-auto rounded-[1rem] border border-[rgba(255,122,146,0.14)]",
-          "bg-[radial-gradient(circle_at_top,rgba(255,70,104,0.10),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.24))]",
-        )}
-      >
-        <div className="absolute inset-0 min-h-[1120px] min-w-[1560px]">
-          {panelsToRender.map((panel, index) => {
-            const savedLayout =
-              savedPanelsByKey.get(panel.panel) ?? savedPanelsByKey.get(panel.id);
-            const resolvedLayout = savedLayout ?? buildDefaultPanelLayoutItem(panel);
-
-            return (
-              <WorkspacePanel
-                key={`${resolvedLayout.id}:${resolvedLayout.position.x}:${resolvedLayout.position.y}:${resolvedLayout.size.width}:${resolvedLayout.size.height}:${resolvedLayout.collapsed}`}
-                id={resolvedLayout.id}
-                title={panel.title}
-                dataTestId={panel.testId}
-                position={resolvedLayout.position}
-                size={resolvedLayout.size}
-                defaultPosition={panel.defaultPosition}
-                defaultSize={panel.defaultSize}
-                minWidth={panel.minWidth}
-                minHeight={panel.minHeight}
-                collapsed={resolvedLayout.collapsed}
-                className="bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02)_12%,rgba(0,0,0,0.18)_100%),linear-gradient(135deg,rgba(124,14,38,0.18),rgba(18,5,10,0.86)_58%,rgba(0,0,0,0.96)_100%)] shadow-[0_14px_32px_rgba(0,0,0,0.28),0_0_0_1px_rgba(255,86,118,0.12)]"
-                onCollapsedChange={(collapsed) => {
-                  setPanelLayout((current) =>
-                    upsertPanelLayoutItem(current, panel, {
-                      ...resolvedLayout,
-                      collapsed,
-                    }),
-                  );
-                }}
-                onPositionChange={(position) => {
-                  setPanelLayout((current) =>
-                    upsertPanelLayoutItem(current, panel, {
-                      ...resolvedLayout,
-                      position,
-                      zIndex: resolvedLayout.zIndex || index + 1,
-                    }),
-                  );
-                }}
-                onSizeChange={(size) => {
-                  setPanelLayout((current) =>
-                    upsertPanelLayoutItem(current, panel, {
-                      ...resolvedLayout,
-                      size,
-                      zIndex: resolvedLayout.zIndex || index + 1,
-                    }),
-                  );
-                }}
-              >
-                <div
-                  data-panel-layout-id={resolvedLayout.id}
-                  data-panel-kind={panel.panel}
-                  data-panel-position={`${resolvedLayout.position.x},${resolvedLayout.position.y}`}
-                  data-panel-size={`${resolvedLayout.size.width},${resolvedLayout.size.height}`}
-                  className="h-full min-h-0"
+    <TransformWrapper
+      initialScale={1}
+      minScale={0.45}
+      maxScale={1.8}
+      onInit={(ref) => {
+        transformRef.current = ref;
+      }}
+      wheel={{ step: 0.08, activationKeys: ["Control"] }}
+      doubleClick={{ disabled: true }}
+      panning={{
+        disabled: true,
+      }}
+      onTransformed={(_ref, state) => {
+        setCanvasScale(state.scale);
+        canvasTransformRef.current = {
+          scale: state.scale,
+          positionX: state.positionX,
+          positionY: state.positionY,
+        };
+      }}
+    >
+      {({ zoomIn, zoomOut, resetTransform }) => (
+        <div
+          data-testid="studio-shell"
+          className="flex h-full min-h-0 flex-col gap-3"
+        >
+          <div
+            data-testid="studio-toolbar"
+            className="flex flex-wrap items-center gap-2 rounded-[1rem] border border-[rgba(255,118,144,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.14)_100%)] px-3 py-3 shadow-[0_14px_28px_rgba(0,0,0,0.2)]"
+          >
+            {panelDefinitions.map((definition) => {
+              const panelAlreadyOpen = resolvedLayout.some(
+                (item) => item.panel === definition.panel,
+              );
+              return (
+                <Button
+                  key={definition.panel}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  aria-label={`Open ${definition.title} panel`}
+                  onClick={() => {
+                    setPanelLayout((current) =>
+                      spawnPanelLayout(current, definition),
+                    );
+                    if (resolvedLayout.length === 0) {
+                      setShouldFocusLayout(true);
+                    }
+                  }}
+                  className={cn(
+                    "rounded-full border-[rgba(255,120,146,0.18)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]",
+                    panelAlreadyOpen &&
+                      !definition.allowMultiple &&
+                      "border-[rgba(255,124,150,0.36)] bg-[rgba(255,78,108,0.14)] text-white",
+                  )}
                 >
-                  {panel.content}
+                  <definition.icon className="mr-1.5 h-3.5 w-3.5" />
+                  {definition.title}
+                </Button>
+              );
+            })}
+
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-[rgba(255,118,144,0.12)] bg-black/20 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffc9d5]">
+                {selectedPanelIds.length} Selected
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label="Group selected windows"
+                disabled={!canGroupSelection}
+                onClick={() => {
+                  const groupId = nextGroupId();
+                  setPanelLayout((current) =>
+                    applyGroupIdToPanels(current, selectedPanelIds, groupId),
+                  );
+                }}
+                className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white disabled:opacity-40"
+              >
+                Group
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label="Ungroup selected windows"
+                disabled={!canUngroupSelection}
+                onClick={() => {
+                  setPanelLayout((current) =>
+                    applyGroupIdToPanels(current, selectedPanelIds, null),
+                  );
+                }}
+                className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white disabled:opacity-40"
+              >
+                Ungroup
+              </Button>
+              {([
+                ["priming", "Priming"],
+                ["study", "Study"],
+                ["polish", "Polish"],
+                ["full_studio", "Full Studio"],
+                ["minimal", "Minimal"],
+              ] as const).map(([preset, label]) => (
+                <Button
+                  key={preset}
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  aria-label={`Apply ${label} preset`}
+                  onClick={() => {
+                    setPanelLayout(createPresetLayout(preset, panelDefinitions));
+                    setShouldFocusLayout(true);
+                  }}
+                  className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white"
+                >
+                  {label}
+                </Button>
+              ))}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label="Center Windows"
+                onClick={() => {
+                  if (resolvedLayout.length > 0) {
+                    focusOpenPanels();
+                  }
+                }}
+                className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white"
+              >
+                Center Windows
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Reset canvas view"
+                onClick={() => {
+                  if (resolvedLayout.length === 0) {
+                    setPanelLayout(
+                      createPresetLayout(defaultPreset, panelDefinitions),
+                    );
+                    setShouldFocusLayout(true);
+                    return;
+                  }
+                  focusOpenPanels();
+                }}
+                className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 text-[#ffd6de] hover:text-white"
+              >
+                <RefreshCcw className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Zoom in"
+                onClick={() => zoomIn()}
+                className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 text-[#ffd6de] hover:text-white"
+              >
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Zoom out"
+                onClick={() => zoomOut()}
+                className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 text-[#ffd6de] hover:text-white"
+              >
+                <ZoomOut className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div
+            data-testid="studio-canvas"
+            ref={canvasViewportRef}
+            className={cn(
+              "relative flex-1 scroll-mt-4 select-none overflow-hidden rounded-[1rem] border border-[rgba(255,118,144,0.16)]",
+              isCanvasDragging ? "cursor-grabbing" : "cursor-grab",
+              "bg-[radial-gradient(circle_at_top,rgba(255,70,104,0.10),transparent_20%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.24))]",
+            )}
+            onPointerDown={(event) => {
+              const target = event.target as HTMLElement | null;
+              if (target?.closest(".workspace-panel-root")) return;
+              if (target?.closest('[data-canvas-drag-disabled="true"]')) return;
+
+              setSelectedPanelIds([]);
+              canvasDragRef.current = {
+                pointerId: event.pointerId,
+                startX: event.clientX,
+                startY: event.clientY,
+                positionX: canvasTransformRef.current.positionX,
+                positionY: canvasTransformRef.current.positionY,
+              };
+              setIsCanvasDragging(true);
+              try {
+                event.currentTarget.setPointerCapture?.(event.pointerId);
+              } catch {
+                // Synthetic pointer events in tests/browser tooling may not have an active pointer capture target.
+              }
+              event.preventDefault();
+            }}
+            onPointerMove={(event) => {
+              const dragState = canvasDragRef.current;
+              if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+              const deltaX = event.clientX - dragState.startX;
+              const deltaY = event.clientY - dragState.startY;
+              const nextPositionX = dragState.positionX + deltaX;
+              const nextPositionY = dragState.positionY + deltaY;
+
+              transformRef.current?.setTransform(
+                nextPositionX,
+                nextPositionY,
+                canvasTransformRef.current.scale,
+                0,
+              );
+              canvasTransformRef.current = {
+                ...canvasTransformRef.current,
+                positionX: nextPositionX,
+                positionY: nextPositionY,
+              };
+              event.preventDefault();
+            }}
+            onPointerUp={(event) => {
+              if (canvasDragRef.current?.pointerId !== event.pointerId) return;
+              canvasDragRef.current = null;
+              setIsCanvasDragging(false);
+              try {
+                event.currentTarget.releasePointerCapture?.(event.pointerId);
+              } catch {
+                // Ignore environments without active pointer capture.
+              }
+            }}
+            onPointerCancel={(event) => {
+              if (canvasDragRef.current?.pointerId !== event.pointerId) return;
+              canvasDragRef.current = null;
+              setIsCanvasDragging(false);
+              try {
+                event.currentTarget.releasePointerCapture?.(event.pointerId);
+              } catch {
+                // Ignore environments without active pointer capture.
+              }
+            }}
+          >
+            <TransformComponent
+              wrapperStyle={{ width: "100%", height: "100%" }}
+              contentStyle={{
+                width: `${CANVAS_WIDTH}px`,
+                height: `${CANVAS_HEIGHT}px`,
+                position: "relative",
+              }}
+            >
+              {resolvedLayout.length === 0 && entryCard ? (
+                <div
+                  data-testid="studio-entry-state"
+                  data-canvas-drag-disabled="true"
+                  className="absolute left-1/2 top-1/2 z-10 w-[min(34rem,calc(100vw-4rem))] -translate-x-1/2 -translate-y-1/2 rounded-[1.2rem] border border-[rgba(255,116,142,0.22)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(0,0,0,0.2)_100%)] p-6 shadow-[0_20px_46px_rgba(0,0,0,0.28)]"
+                >
+                  {entryCard}
                 </div>
-              </WorkspacePanel>
-            );
-          })}
+              ) : null}
+
+              {resolvedLayout.map((layoutItem) => {
+                const definition = panelsByKey.get(layoutItem.panel);
+                if (!definition) return null;
+
+                return (
+                  <WorkspacePanel
+                    key={`${layoutItem.id}:${layoutItem.position.x}:${layoutItem.position.y}:${layoutItem.size.width}:${layoutItem.size.height}:${layoutItem.collapsed}`}
+                    id={layoutItem.id}
+                    title={definition.title}
+                    dataTestId={definition.testId}
+                    position={layoutItem.position}
+                    size={layoutItem.size}
+                    defaultPosition={definition.defaultPosition}
+                    defaultSize={definition.defaultSize}
+                    minWidth={definition.minWidth}
+                    minHeight={definition.minHeight}
+                    collapsed={layoutItem.collapsed}
+                    scale={canvasScale}
+                    selected={selectedPanelIds.includes(layoutItem.id)}
+                    grouped={Boolean(layoutItem.groupId)}
+                    style={{ zIndex: layoutItem.zIndex }}
+                    className="bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02)_12%,rgba(0,0,0,0.18)_100%),linear-gradient(135deg,rgba(124,14,38,0.18),rgba(18,5,10,0.86)_58%,rgba(0,0,0,0.96)_100%)] shadow-[0_14px_32px_rgba(0,0,0,0.28),0_0_0_1px_rgba(255,86,118,0.12)]"
+                    onTitlePointerDown={(event) => {
+                      setSelectedPanelIds((current) =>
+                        resolvePanelSelection(
+                          resolvedLayout,
+                          current,
+                          layoutItem.id,
+                          event.shiftKey || event.metaKey || event.ctrlKey,
+                        ),
+                      );
+                    }}
+                    onClose={() => {
+                      setPanelLayout((current) =>
+                        current.filter((item) => item.id !== layoutItem.id),
+                      );
+                    }}
+                    onCollapsedChange={(collapsed) => {
+                      setPanelLayout((current) =>
+                        current.map((item) =>
+                          item.id === layoutItem.id ? { ...item, collapsed } : item,
+                        ),
+                      );
+                    }}
+                    onPositionChange={(position) => {
+                      setPanelLayout((current) =>
+                        applyStudioShellPanelPositionUpdate(
+                          current,
+                          layoutItem.id,
+                          position,
+                          selectedPanelIds,
+                        ),
+                      );
+                    }}
+                    onSizeChange={(size) => {
+                      setPanelLayout((current) =>
+                        current.map((item) =>
+                          item.id === layoutItem.id ? { ...item, size } : item,
+                        ),
+                      );
+                    }}
+                  >
+                    <div
+                      data-panel-layout-id={layoutItem.id}
+                      data-panel-kind={layoutItem.panel}
+                      data-panel-position={`${layoutItem.position.x},${layoutItem.position.y}`}
+                      data-panel-size={`${layoutItem.size.width},${layoutItem.size.height}`}
+                      className="h-full min-h-0"
+                    >
+                      {definition.content}
+                    </div>
+                  </WorkspacePanel>
+                );
+              })}
+            </TransformComponent>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </TransformWrapper>
   );
 }

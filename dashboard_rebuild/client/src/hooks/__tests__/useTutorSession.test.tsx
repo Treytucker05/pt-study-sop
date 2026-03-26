@@ -274,7 +274,6 @@ describe("useTutorSession", () => {
     const wrapper = createWrapper();
     const hub = createHubMock();
     const setActiveSessionId = vi.fn();
-    const setShellMode = vi.fn();
     const setShowSetup = vi.fn();
     const setRestoredTurns = vi.fn();
     const setTutorChainId = vi.fn();
@@ -353,9 +352,6 @@ describe("useTutorSession", () => {
           setTutorCustomBlockIds,
           activeSessionId: null,
           setActiveSessionId,
-          shellMode: "studio",
-          studioView: "home",
-          setShellMode,
           setShowSetup,
           setRestoredTurns,
           hasRestored: true,
@@ -369,7 +365,6 @@ describe("useTutorSession", () => {
       result.current.applySessionState(restoredSession as never);
     });
 
-    expect(setShellMode).toHaveBeenCalledWith("tutor");
     expect(setShowSetup).toHaveBeenCalledWith(false);
     expect(hub.setTopic).toHaveBeenCalledWith("Cardiovascular regulation");
     expect(setTutorChainId).toHaveBeenCalledWith(undefined);

@@ -1304,9 +1304,9 @@ export function TutorWorkflowPrimingPanel({
             <div className="space-y-3 border border-primary/20 bg-black/30 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <div className="font-arcade text-xs text-primary">TUTOR CHAIN</div>
+                  <div className="font-arcade text-xs text-primary">PRIMING CHAIN</div>
                   <div className={`${TEXT_MUTED} mt-2 text-xs`}>
-                    This applies to the Tutor session start, not to the Priming extraction.
+                    This applies only to Priming scope inside this panel. Tutor start mode is configured separately.
                   </div>
                 </div>
               <Badge variant="outline" className="rounded-none border-primary/25 text-primary/80">

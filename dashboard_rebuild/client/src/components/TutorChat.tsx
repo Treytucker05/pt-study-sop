@@ -11,6 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Archive,
   Clock3,
+  Mic,
   Pause,
   Play,
   Send,
@@ -45,6 +46,7 @@ import {
 import { useSSEStream } from "./useSSEStream";
 import { MessageList } from "./MessageList";
 import { SourcesPanel } from "./SourcesPanel";
+import { useChromiumDictation } from "@/lib/useChromiumDictation";
 
 type TutorChatState = {
   isSourcesOpen: boolean;
@@ -559,6 +561,7 @@ function TutorInputComposer({
   input,
   isStreaming,
   inputRef,
+  dictation,
   onInputChange,
   onKeyDown,
   onSend,
@@ -567,41 +570,70 @@ function TutorInputComposer({
   input: string;
   isStreaming: boolean;
   inputRef: RefObject<HTMLInputElement | null>;
+  dictation: ReturnType<typeof useChromiumDictation>;
   onInputChange: (value: string) => void;
   onKeyDown: (event: KeyboardEvent) => void;
   onSend: () => void;
   onAbort: () => void;
 }) {
   return (
-    <div className="flex flex-row items-center gap-2">
-      <input
-        ref={inputRef}
-        value={input}
-        onChange={(event) => onInputChange(event.target.value)}
-        onKeyDown={onKeyDown}
-        placeholder="Ask a question..."
-        disabled={isStreaming}
-        className={`flex-1 min-w-[180px] ${INPUT_BASE} disabled:opacity-50 shadow-none`}
-      />
-      {isStreaming ? (
+    <div className="flex flex-col gap-2">
+      {dictation.isListening || dictation.interimTranscript || dictation.error ? (
+        <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-primary/74">
+          {dictation.error
+            ? `Dictation ${dictation.error}`
+            : dictation.interimTranscript
+              ? `Listening: ${dictation.interimTranscript}`
+              : "Listening..."}
+        </div>
+      ) : null}
+      <div className="flex flex-row items-center gap-2">
+        <input
+          ref={inputRef}
+          value={input}
+          onChange={(event) => onInputChange(event.target.value)}
+          onKeyDown={onKeyDown}
+          placeholder="Ask a question..."
+          disabled={isStreaming}
+          className={`flex-1 min-w-[180px] ${INPUT_BASE} disabled:opacity-50 shadow-none`}
+        />
         <Button
-          onClick={onAbort}
-          aria-label="Stop generating"
-          title="Stop generating"
-          className="rounded-none border-[3px] border-double border-destructive h-11 w-11 p-0 shrink-0 hover:bg-destructive/20"
+          type="button"
+          variant="ghost"
+          onClick={() => {
+            dictation.toggle();
+          }}
+          aria-label="Voice dictation"
+          title={dictation.isListening ? "Stop voice dictation" : "Start voice dictation"}
+          className={cn(
+            "rounded-none border-[3px] border-double h-11 w-11 p-0 shrink-0",
+            dictation.isListening
+              ? "border-primary bg-primary/18 text-primary"
+              : "border-primary/28 text-primary/78 hover:bg-primary/12",
+          )}
         >
-          <Square className="w-5 h-5 mx-auto text-destructive" />
+          <Mic className="w-5 h-5 mx-auto" />
         </Button>
-      ) : (
-        <Button
-          onClick={onSend}
-          disabled={!input.trim()}
-          aria-label="Send message"
-          className="rounded-none border-[3px] border-double border-primary h-11 w-11 p-0 shrink-0"
-        >
-          <Send className="w-5 h-5 mx-auto" />
-        </Button>
-      )}
+        {isStreaming ? (
+          <Button
+            onClick={onAbort}
+            aria-label="Stop generating"
+            title="Stop generating"
+            className="rounded-none border-[3px] border-double border-destructive h-11 w-11 p-0 shrink-0 hover:bg-destructive/20"
+          >
+            <Square className="w-5 h-5 mx-auto text-destructive" />
+          </Button>
+        ) : (
+          <Button
+            onClick={onSend}
+            disabled={!input.trim()}
+            aria-label="Send message"
+            className="rounded-none border-[3px] border-double border-primary h-11 w-11 p-0 shrink-0"
+          >
+            <Send className="w-5 h-5 mx-auto" />
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
@@ -642,6 +674,12 @@ export function TutorChat({
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dictation = useChromiumDictation({
+    onText: (text) => {
+      setInput((current) => (current ? `${current} ${text}`.trim() : text));
+      inputRef.current?.focus({ preventScroll: true });
+    },
+  });
   const sessionContextQuery = useTutorSessionContext(
     sessionId,
     defaultMaterialsOn,
@@ -726,7 +764,12 @@ export function TutorChat({
   }, [messages]);
 
   useEffect(() => {
-    inputRef.current?.focus();
+    if (!inputRef.current) return;
+    try {
+      inputRef.current.focus({ preventScroll: true });
+    } catch {
+      inputRef.current.focus();
+    }
   }, [sessionId]);
 
   useEffect(() => {
@@ -924,6 +967,7 @@ export function TutorChat({
             input={input}
             isStreaming={isStreaming}
             inputRef={inputRef}
+            dictation={dictation}
             onInputChange={setInput}
             onKeyDown={handleKeyDown}
             onSend={sendMessage}

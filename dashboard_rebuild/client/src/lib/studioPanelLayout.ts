@@ -5,6 +5,7 @@ export interface StudioPanelLayoutItem {
   size: { width: number; height: number };
   zIndex: number;
   collapsed: boolean;
+  groupId?: string | null;
 }
 
 export interface StudioDocumentTab {
@@ -38,6 +39,13 @@ export function isStudioPanelLayoutItem(
     !isFiniteNumber(value.size.height) ||
     !isFiniteNumber(value.zIndex) ||
     typeof value.collapsed !== "boolean"
+  ) {
+    return false;
+  }
+  if (
+    value.groupId !== undefined &&
+    value.groupId !== null &&
+    typeof value.groupId !== "string"
   ) {
     return false;
   }

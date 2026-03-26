@@ -25,7 +25,7 @@ import {
   writeTutorSelectedMaterialIds,
 } from "@/lib/tutorClientState";
 import { normalizeArtifactType } from "@/lib/tutorUtils";
-import type { TutorPageMode, TutorShellQuery, TutorStudioView } from "@/lib/tutorUtils";
+import type { TutorShellQuery } from "@/lib/tutorUtils";
 import { toast } from "sonner";
 import type { UseTutorHubReturn } from "./useTutorHub";
 
@@ -38,9 +38,6 @@ export interface UseTutorSessionParams {
   setTutorCustomBlockIds: (ids: number[]) => void;
   activeSessionId: string | null;
   setActiveSessionId: (id: string | null) => void;
-  shellMode: TutorPageMode;
-  studioView: TutorStudioView;
-  setShellMode: (mode: TutorPageMode) => void;
   setShowSetup: (show: boolean) => void;
   setRestoredTurns: (turns: { question: string; answer: string | null }[] | undefined) => void;
   hasRestored: boolean;
@@ -109,9 +106,6 @@ export function useTutorSession({
   setTutorCustomBlockIds,
   activeSessionId,
   setActiveSessionId,
-  shellMode,
-  studioView,
-  setShellMode,
   setShowSetup,
   setRestoredTurns,
   hasRestored,
@@ -255,11 +249,7 @@ export function useTutorSession({
       JSON.stringify(preflightPayload || {}),
     ],
     queryFn: () => api.tutor.preflightSession(preflightPayload!),
-    enabled:
-      shellMode === "studio" &&
-      studioView === "priming" &&
-      !!preflightPayload &&
-      hub.selectedMaterials.length > 0,
+    enabled: !!preflightPayload && hub.selectedMaterials.length > 0,
     staleTime: 30 * 1000,
   });
 
@@ -302,37 +292,32 @@ export function useTutorSession({
   });
 
   // ─── Clear session ───
-  const clearActiveSessionState = useCallback(
-    (options?: { nextShellMode?: TutorPageMode }) => {
-      setActiveSessionId(null);
-      setActiveSessionStatus(null);
-      setActiveContentFilter(null);
-      setCommittedAssistantMessages([]);
-      setLatestCommittedAssistantMessage(null);
-      setRestoredTurns(undefined);
-      setArtifacts([]);
-      setTurnCount(0);
-      setStartedAt(null);
-      setCurrentBlockIndex(0);
-      setChainBlocks([]);
-      setScholarStrategy(null);
-      setStrategyFeedback(null);
-      setStrategyNotes("");
-      setShowSetup(false);
-      setShowArtifacts(false);
-      setShowEndConfirm(false);
-      setShellMode(options?.nextShellMode ?? "studio");
-      clearTutorActiveSessionId();
-    },
-    [setActiveSessionId, setRestoredTurns, setShellMode, setShowSetup],
-  );
+  const clearActiveSessionState = useCallback(() => {
+    setActiveSessionId(null);
+    setActiveSessionStatus(null);
+    setActiveContentFilter(null);
+    setCommittedAssistantMessages([]);
+    setLatestCommittedAssistantMessage(null);
+    setRestoredTurns(undefined);
+    setArtifacts([]);
+    setTurnCount(0);
+    setStartedAt(null);
+    setCurrentBlockIndex(0);
+    setChainBlocks([]);
+    setScholarStrategy(null);
+    setStrategyFeedback(null);
+    setStrategyNotes("");
+    setShowSetup(false);
+    setShowArtifacts(false);
+    setShowEndConfirm(false);
+    clearTutorActiveSessionId();
+  }, [setActiveSessionId, setRestoredTurns, setShowSetup]);
 
   // ─── Apply session state from server ───
   const applySessionState = useCallback((session: TutorSessionWithTurns) => {
     setActiveSessionId(session.session_id);
     setActiveSessionStatus(session.status ?? null);
     setActiveContentFilter(session.content_filter ?? null);
-    setShellMode("tutor");
     setShowSetup(false);
     setTurnCount(session.turn_count);
     setStartedAt(session.started_at);
@@ -418,7 +403,6 @@ export function useTutorSession({
     hub,
     setActiveSessionId,
     setRestoredTurns,
-    setShellMode,
     setShowSetup,
     setTutorChainId,
     setTutorCustomBlockIds,
@@ -591,7 +575,6 @@ export function useTutorSession({
       applySessionState(full);
       queryClient.invalidateQueries({ queryKey: ["tutor-chat-materials-all-enabled"] });
       setShowSetup(false);
-      setShellMode("tutor");
 
       toast.success("Tutor session started");
       queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
@@ -609,7 +592,6 @@ export function useTutorSession({
     hub.effectiveTopic,
     queryClient,
     applySessionState,
-    setShellMode,
     setShowSetup,
     setTutorChainId,
     tutorChainId,
@@ -622,18 +604,17 @@ export function useTutorSession({
       try {
         const session = await api.tutor.getSession(sessionId);
         if (!isTutorSessionActive(session.status)) {
-          clearActiveSessionState({ nextShellMode: "tutor" });
+          clearActiveSessionState();
           toast.error("Session is not active. Start a new Tutor run from this surface.");
           return;
         }
         applySessionState(session);
-        setShellMode("tutor");
         toast.success("Session resumed");
       } catch (err) {
         toast.error(`Failed to resume session: ${err instanceof Error ? err.message : "Unknown"}`);
       }
     },
-    [applySessionState, clearActiveSessionState, setShellMode]
+    [applySessionState, clearActiveSessionState]
   );
 
   // ─── Artifact handling ───
@@ -697,7 +678,6 @@ export function useTutorSession({
           source_locator: capture.sourceLocator,
           status: capture.target === "summary_board" ? "boarded" : "captured",
         });
-        setShellMode("studio");
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["tutor-studio-restore"] }),
           queryClient.invalidateQueries({ queryKey: ["tutor-project-shell"] }),
@@ -711,7 +691,7 @@ export function useTutorSession({
         toast.error(error instanceof Error ? error.message : "Failed to send item to Studio");
       }
     },
-    [activeSessionId, hub.courseId, queryClient, setShellMode],
+    [activeSessionId, hub.courseId, queryClient],
   );
 
   // ─── Block advancement ───
@@ -864,7 +844,7 @@ export function useTutorSession({
 
   // ─── Stage timer initialization ───
   useEffect(() => {
-    if (shellMode !== "tutor" || !activeSessionId) {
+    if (!activeSessionId) {
       stageTimerSessionRef.current = null;
       setStageTimerRunning(false);
       setStageTimerStartedAt(null);
@@ -889,7 +869,6 @@ export function useTutorSession({
     activeSessionId,
     activeWorkflowDetail?.stage_time_logs,
     activeWorkflowId,
-    shellMode,
     stageTimerAccumulatedSeconds,
   ]);
 
@@ -926,7 +905,7 @@ export function useTutorSession({
     projectStudioItems?.items.filter((item) => item.status === "promoted") || [];
   const hasActiveTutorSession =
     Boolean(activeSessionId) && isTutorSessionActive(activeSessionStatus);
-  const isTutorSessionView = shellMode === "tutor" && hasActiveTutorSession;
+  const isTutorSessionView = hasActiveTutorSession;
 
   return {
     // Session state

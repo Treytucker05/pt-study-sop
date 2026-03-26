@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { Rnd } from "react-rnd";
 import { ChevronDown, ChevronRight, ExternalLink, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,11 +22,16 @@ export interface WorkspacePanelProps {
   onClose?: () => void;
   onPopOut?: () => void;
   onSendBack?: () => void;
+  onTitlePointerDown?: (event: ReactPointerEvent<HTMLDivElement>) => void;
   className?: string;
+  style?: CSSProperties;
+  scale?: number;
+  selected?: boolean;
+  grouped?: boolean;
 }
 
 const TITLE_BAR_CLASSES =
-  "flex items-center justify-between px-3 py-1.5 bg-background/90 border-b border-primary/20 select-none cursor-move";
+  "flex items-center justify-between px-3 py-2 bg-[linear-gradient(180deg,rgba(255,110,140,0.18),rgba(18,6,12,0.92))] border-b border-primary/25 select-none cursor-move shadow-[inset_0_-1px_0_rgba(255,120,146,0.14)]";
 
 const TITLE_TEXT_CLASSES =
   "font-terminal text-sm tracking-wider text-primary/80 uppercase truncate";
@@ -53,10 +58,23 @@ export function WorkspacePanel({
   onClose,
   onPopOut,
   onSendBack,
+  onTitlePointerDown,
   className,
+  style,
+  scale = 1,
+  selected = false,
+  grouped = false,
 }: WorkspacePanelProps) {
   const handleToggleCollapse = () => {
     onCollapsedChange?.(!collapsed);
+  };
+
+  const handleTitlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest("button")) {
+      return;
+    }
+    onTitlePointerDown?.(event);
   };
 
   // ── Collapsed chip view ───────────────────────────────────────────
@@ -69,18 +87,20 @@ export function WorkspacePanel({
           width: "auto",
           height: "auto",
         }}
-        position={position}
-        enableResizing={false}
+      position={position}
+      scale={scale}
+      enableResizing={false}
         onDragStop={(_e, d) => {
           onPositionChange?.({ x: d.x, y: d.y });
         }}
         onResizeStop={() => {}}
         data-testid={dataTestId}
         className={cn(
-          "inline-flex items-center gap-2 px-3 py-1.5 rounded-full",
+          "workspace-panel-root inline-flex items-center gap-2 px-3 py-1.5 rounded-full",
           "bg-background/80 border border-primary/20 backdrop-blur-sm",
           "shadow-[0_4px_12px_rgba(0,0,0,0.3)]",
           "font-terminal text-xs tracking-wider text-primary/80 uppercase",
+          selected && "border-primary/70 text-white shadow-[0_0_0_1px_rgba(255,110,140,0.38),0_12px_22px_rgba(0,0,0,0.34)]",
           className,
         )}
       >
@@ -108,9 +128,13 @@ export function WorkspacePanel({
       }}
       position={position}
       size={size}
+      scale={scale}
       minWidth={minWidth}
       minHeight={minHeight}
       dragHandleClassName="workspace-panel-drag-handle"
+      onDrag={(_e, d) => {
+        onPositionChange?.({ x: d.x, y: d.y });
+      }}
       onDragStop={(_e, d) => {
         onPositionChange?.({ x: d.x, y: d.y });
       }}
@@ -122,18 +146,33 @@ export function WorkspacePanel({
         onPositionChange?.(position);
       }}
       className={cn(
-        "flex flex-col bg-background/60 backdrop-blur-sm border border-primary/15 rounded-sm",
-        "shadow-[0_4px_12px_rgba(0,0,0,0.3)]",
+        "workspace-panel-root flex min-w-0 min-h-0 flex-col overflow-hidden border border-primary/15 rounded-[0.95rem] bg-background/60 backdrop-blur-sm",
+        "shadow-[0_18px_36px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,110,140,0.08)]",
+        selected &&
+          "border-primary/65 shadow-[0_0_0_1px_rgba(255,116,142,0.44),0_20px_40px_rgba(0,0,0,0.34),0_0_24px_rgba(255,92,128,0.08)]",
         className,
       )}
+      style={style}
       data-testid={dataTestId}
     >
       {/* Title bar */}
-      <div className={cn(TITLE_BAR_CLASSES, "workspace-panel-drag-handle rounded-t-sm")}>
-        <span className="flex items-center gap-2">
+      <div
+        className={cn(
+          TITLE_BAR_CLASSES,
+          "workspace-panel-drag-handle rounded-t-[0.95rem]",
+          selected && "bg-[linear-gradient(180deg,rgba(255,122,146,0.28),rgba(18,6,12,0.94))]",
+        )}
+        onPointerDown={handleTitlePointerDown}
+      >
+        <span className="flex min-w-0 items-center gap-2">
           {isPoppedOut && (
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" title="Synced to pop-out window" />
           )}
+          {grouped ? (
+            <span className="rounded-full border border-primary/35 bg-primary/10 px-1.5 py-0.5 font-terminal text-[9px] uppercase tracking-[0.16em] text-primary/80">
+              Group
+            </span>
+          ) : null}
           <span className={TITLE_TEXT_CLASSES}>{title}</span>
         </span>
 
@@ -172,7 +211,8 @@ export function WorkspacePanel({
       </div>
 
       {/* Panel body */}
-      <div className="flex-1 overflow-auto p-3 relative">
+      <div className="relative flex-1 min-h-0 min-w-0 overflow-hidden p-3">
+        <div className="h-full min-h-0 min-w-0 overflow-auto [overflow-wrap:anywhere]">
         {isPoppedOut ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm z-10">
             <div className="flex items-center gap-2">
@@ -197,6 +237,7 @@ export function WorkspacePanel({
           </div>
         ) : null}
         {children}
+        </div>
       </div>
     </Rnd>
   );

@@ -42,7 +42,6 @@ describe("useStudioRun", () => {
 
     expect(result.current.entryKind).toBe("workspace_home");
     expect(result.current.activeSessionId).toBeNull();
-    expect(result.current.shellMode).toBe("studio");
     expect(result.current.showSetup).toBe(true);
   });
 
@@ -56,7 +55,6 @@ describe("useStudioRun", () => {
 
     expect(result.current.entryKind).toBe("exact_resume");
     expect(result.current.activeSessionId).toBe("sess-restore");
-    expect(result.current.shellMode).toBe("tutor");
     expect(result.current.showSetup).toBe(false);
   });
 
@@ -75,7 +73,6 @@ describe("useStudioRun", () => {
     expect(result.current.shouldSuppressStoredSessionResume).toBe(true);
     expect(result.current.entryKind).toBe("workspace_home");
     expect(result.current.activeSessionId).toBeNull();
-    expect(result.current.shellMode).toBe("studio");
   });
 
   it("persists canonical Tutor startup state and shell query through StudioRun", async () => {
@@ -112,7 +109,6 @@ describe("useStudioRun", () => {
       });
 
     act(() => {
-      result.current.setShellMode("studio");
       result.current.setActiveBoardScope("session");
       result.current.setActiveBoardId(88);
     });
@@ -129,7 +125,6 @@ describe("useStudioRun", () => {
 
     await waitFor(() => {
       expect(window.location.search).toContain("course_id=77");
-      expect(window.location.search).toContain("mode=studio");
       expect(window.location.search).toContain("board_scope=session");
       expect(window.location.search).toContain("board_id=88");
     });
@@ -334,6 +329,9 @@ describe("useStudioRun", () => {
       activeMemoryCapsuleId: null,
       compactionTelemetry: null,
       directNoteSaveStatus: null,
+      primingMethodIds: [],
+      primingChainId: null,
+      primingCustomBlockIds: [],
     });
 
     act(() => {
@@ -360,6 +358,9 @@ describe("useStudioRun", () => {
         state: "saved",
         path: "Tutor Workspace/Cardio Note.md",
       },
+      primingMethodIds: [],
+      primingChainId: null,
+      primingCustomBlockIds: [],
     });
   });
 });

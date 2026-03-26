@@ -15,6 +15,8 @@ vi.mock("react-rnd", () => {
         default: _default,
         minWidth: _mw,
         minHeight: _mh,
+        ["data-testid"]: dataTestId,
+        scale,
         ...rest
       }: any,
       ref: any,
@@ -22,9 +24,10 @@ vi.mock("react-rnd", () => {
       return (
         <div
           ref={ref}
-          data-testid="rnd-wrapper"
+          data-testid={dataTestId || "rnd-wrapper"}
           data-ondragstop={onDragStop ? "true" : undefined}
           data-onresizestop={onResizeStop ? "true" : undefined}
+          data-scale={scale}
           onMouseUp={(e: any) => {
             // Simulate drag stop when data attribute is present
             if (onDragStop && e.currentTarget.dataset.simulatedrag) {
@@ -171,6 +174,16 @@ describe("WorkspacePanel", () => {
     );
     const rnd = screen.getByTestId("rnd-wrapper");
     expect(rnd.dataset.onresizestop).toBe("true");
+  });
+
+  it("forwards the current canvas scale to react-rnd", () => {
+    render(
+      <WorkspacePanel id="p1" title="Panel" scale={0.85}>
+        <p>content</p>
+      </WorkspacePanel>,
+    );
+    const rnd = screen.getByTestId("rnd-wrapper");
+    expect(rnd.dataset.scale).toBe("0.85");
   });
 
   // ── 7. Title bar buttons are present ────────────────────────────────

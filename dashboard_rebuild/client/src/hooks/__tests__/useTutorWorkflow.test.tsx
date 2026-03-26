@@ -191,7 +191,6 @@ describe("useTutorWorkflow", () => {
 
     act(() => {
       result.current.setActiveWorkflowId(workflowFixture.workflow_id);
-      result.current.setStudioView("priming");
     });
 
     await waitFor(() => {
@@ -204,7 +203,6 @@ describe("useTutorWorkflow", () => {
 
     expect(deleteWorkflowMock).toHaveBeenCalledWith(workflowFixture.workflow_id);
     expect(result.current.activeWorkflowId).toBeNull();
-    expect(result.current.studioView).toBe("home");
     expect(session.clearActiveSessionState).toHaveBeenCalled();
     expect(hub.setSelectedMaterials).toHaveBeenCalledWith([]);
     expect(toastSuccessMock).toHaveBeenCalledWith("Study plan deleted");
@@ -287,7 +285,6 @@ describe("useTutorWorkflow", () => {
 
     act(() => {
       result.current.setActiveWorkflowId(workflowFixture.workflow_id);
-      result.current.setStudioView("priming");
     });
 
     await waitFor(() => {
@@ -397,7 +394,6 @@ describe("useTutorWorkflow", () => {
       selectedObjectiveGroup: "Week 7",
     };
     const session = createSessionMock();
-    const setShellMode = vi.fn();
     const wrapper = createWrapper();
 
     const { result } = renderHook(
@@ -406,8 +402,6 @@ describe("useTutorWorkflow", () => {
           hub: hub as never,
           session: session as never,
           activeSessionId: null,
-          shellMode: "studio",
-          setShellMode,
           hasRestored: true,
         }),
       { wrapper },
@@ -445,8 +439,6 @@ describe("useTutorWorkflow", () => {
     });
 
     expect(result.current.activeWorkflowId).toBe("wf-studio");
-    expect(result.current.studioView).toBe("priming");
-    expect(setShellMode).toHaveBeenCalledWith("studio");
     expect(result.current.bootstrappingPriming).toBe(false);
     expect(toastSuccessMock).toHaveBeenCalledWith("Priming workspace ready");
     await waitFor(() => {
@@ -697,7 +689,6 @@ describe("useTutorWorkflow", () => {
       courseId: 101,
     };
     const session = createSessionMock();
-    const setShellMode = vi.fn();
     const wrapper = createWrapper();
 
     const { result } = renderHook(
@@ -706,8 +697,6 @@ describe("useTutorWorkflow", () => {
           hub: hub as never,
           session: session as never,
           activeSessionId: "sess-1",
-          shellMode: "studio",
-          setShellMode,
           hasRestored: true,
         }),
       { wrapper },
@@ -734,8 +723,6 @@ describe("useTutorWorkflow", () => {
     expect(session.clearActiveSessionState).toHaveBeenCalledTimes(1);
     expect(session.resumeSession).not.toHaveBeenCalled();
     expect(hub.setCourseId).toHaveBeenCalledWith(303);
-    expect(setShellMode).toHaveBeenCalledWith("studio");
     expect(result.current.activeWorkflowId).toBe("wf-final-sync");
-    expect(result.current.studioView).toBe("final_sync");
   });
 });

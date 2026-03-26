@@ -1457,3 +1457,168 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 
 - [x] SWARM-101. [PHASE 3] Migration: scholar, library, methods (Lead: @DesignSystemEngineer)
   - Completed 2026-03-22: remapped Scholar, Library, and Methods route-level shells onto `HudPanel` / `HudButton`, removed remaining shadcn `Card` usage from those target pages, and verified the migration with focused page tests plus successful frontend builds during the per-page migration pass.
+
+## 2026-03-26 - Floating canvas corrective pass
+
+- Corrected the `/tutor` Studio shell to match `docs/design/STUDIO_LAYOUT_SPEC_v2.md` instead of the previous view-switching wrapper:
+  - removed visible stage navigation and STUDIO/TUTOR tab switching from the rendered Tutor surface
+  - converted `StudioShell` into a toolbar-spawned floating canvas with `react-zoom-pan-pinch`, preset layout buttons, and empty-canvas entry state
+  - updated `TutorShell` so live sessions no longer reuse the empty entry card and instead fall straight into the study preset
+  - changed the Tutor empty panel to own `START SESSION` / `RESUME SESSION` directly inside the floating Tutor panel
+- Added regression coverage for the corrected floating-canvas contract in:
+  - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `dashboard_rebuild/client/src/test/setup.ts`
+- Verification passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-26 - Floating canvas UX pass
+
+- Tightened the floating-panel canvas interaction model for real study use:
+  - changed canvas zoom so wheel zoom only activates on `Ctrl + mouse wheel`
+  - passed the live canvas scale into `react-rnd` panels so horizontal dragging tracks correctly inside the transformed canvas
+  - increased the default and preset panel sizes so Tutor, Document Dock, Workspace, Status, and Memory open large enough to fit their material instead of forcing immediate resize
+  - hardened panel chrome/body overflow so long text wraps and panel content stays clipped inside the window bounds
+- Added regression coverage for the UX fixes in:
+  - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+  - `dashboard_rebuild/client/src/components/__tests__/WorkspacePanel.test.tsx`
+- Verification passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/components/__tests__/WorkspacePanel.test.tsx client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - `dev-browser --headless --timeout 30 run <wheel-check script>` confirmed plain wheel leaves the transform unchanged while `Ctrl + wheel` changes scale
+  - `dev-browser --headless --timeout 20 run <memory-panel drag script>` confirmed the visible Memory panel moves right and back left while holding the same y-position
+
+## 2026-03-26 - Floating canvas window centering pass
+
+- Finished the remaining floating-window visibility fix on `/tutor`:
+  - kept the normal Tutor page flow intact instead of forcing the whole route into a fixed-height viewport
+  - updated `StudioShell` so `Center Windows` and first-load auto focus now scroll the page to the canvas and anchor the open panel set to the top of that canvas
+  - kept preset application tied to the same focus behavior so preset windows land in-frame after layout changes
+  - preserved the earlier `Ctrl + wheel` zoom and panel drag fixes while making the panel title bars visible as real window chrome on live load
+- Added regression coverage for the centering behavior in:
+  - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+- Verification passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/components/__tests__/TutorChat.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx client/src/components/__tests__/layout.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live browser verification confirmed `/tutor` now lands on the canvas with panel title bars visible instead of dropping into the middle of panel content
+
+## 2026-03-26 - Floating window tiling pass
+
+- Changed default floating-panel placement so windows now tile from the top-left of the canvas, continue left-to-right until the working row is full, then wrap to a new row starting back on the left.
+- Applied the same tiling rule to:
+  - first-load preset layouts
+  - preset buttons
+  - toolbar-spawned panels
+- Added regression coverage for the tiling behavior in:
+  - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+- Verification passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live browser verification confirmed the default open window set now starts at the top-left and wraps into a second row
+
+## 2026-03-26 - Floating window multi-select, grouping, and hand-pan
+
+- Extended the floating window model so study panels can be selected, grouped, and moved together:
+  - added persistent `groupId` support to `dashboard_rebuild/client/src/lib/studioPanelLayout.ts`
+  - added title-bar selection, grouped badges, selected window styling, and live multi-panel drag propagation in `dashboard_rebuild/client/src/components/ui/WorkspacePanel.tsx` and `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`
+  - added toolbar `Group` / `Ungroup` actions plus restored group-sequence safety so refreshed grouped layouts do not collide with new group ids
+  - switched canvas panning to plain mouse drag on the background while keeping zoom gated behind `Ctrl + mouse wheel`
+- Added regression coverage for:
+  - grouping and ungrouping selected windows
+  - moving selected windows together
+  - keeping grouped windows linked during drag
+  - plain-mouse canvas panning configuration
+- Verification passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live browser verification on `http://127.0.0.1:5000/tutor` confirmed the canvas uses the hand-drag class, the selected-count badge updates, and grouped panel chrome appears on the active windows
+
+## 2026-03-26 - Empty-canvas pan fix
+
+- Replaced the generic `react-zoom-pan-pinch` mouse panning path with explicit background-only canvas drag handling in `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`.
+- The new pan behavior now:
+  - starts only when the pointer begins on empty canvas, never when it begins on a window
+  - updates the transform directly through the shared `setTransform` ref
+  - keeps the hand/grabbing cursor tied to actual canvas-drag state instead of CSS `:active` alone
+  - guards pointer capture so synthetic/browser-tool events do not throw while real pointer drags still work
+- Added regression coverage in `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx` for:
+  - empty canvas drag calling `setTransform`
+  - panel title drags not leaking into canvas movement
+- Verification passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-26 - Tutor route chrome removal
+
+- Removed the remaining legacy page-level Tutor chrome above the floating canvas in `dashboard_rebuild/client/src/pages/tutor.tsx`:
+  - deleted the `PageScaffold` hero wrapper (`Live Study Core`, stats badges, and `REFRESH`)
+  - removed the inline `TutorTopBar` runtime strip (`ACTIVE WORKFLOW` / `LIVE TEACH RUNTIME`)
+  - kept only a minimal `CoreWorkspaceFrame` around the floating `TutorShell`
+- Updated route regressions in `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx` so the Tutor page now asserts the canvas-owned contract instead of the old hero/top-bar behavior.
+- Verification passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/pages/__tests__/tutor.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live `dev-browser` verification on `http://127.0.0.1:5000/tutor` confirmed no hero, no inline teach runtime, and no page-level refresh action between the nav and the floating toolbar
+
+## 2026-03-26 - Checkpoint 2 panel contract completion
+
+- Added the missing `Mind Map` panel to the floating toolbar and registry in `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`, then wired `MindMapView` into the live shell from `dashboard_rebuild/client/src/components/TutorShell.tsx`.
+- Replaced the Priming placeholder with the real `TutorWorkflowPrimingPanel` plus a persisted Priming-owned selector bar:
+  - `primingMethodIds`, `primingChainId`, and `primingCustomBlockIds` now persist through `dashboard_rebuild/client/src/lib/studioRunRuntimeState.ts`, `dashboard_rebuild/client/src/hooks/useStudioRun.ts`, `dashboard_rebuild/client/src/api.types.ts`, and `brain/dashboard/api_tutor_projects.py`
+  - changing the Priming selector bar no longer mutates Tutor-owned chain state
+- Reworked the Tutor floating panel so it now presents:
+  - a Tutor-owned chain/template selector bar at the top
+  - the existing behavior override buttons inside `dashboard_rebuild/client/src/components/TutorChat.tsx`
+  - live voice dictation from `useChromiumDictation.ts`
+  - the existing SSE chat/runtime flow below the selector bar
+- Added the centered empty-canvas entry card and fixed the real browser click path for `Start Priming`:
+  - protected user-opened layouts from async project-shell hydration in `dashboard_rebuild/client/src/pages/tutor.tsx`
+  - prevented canvas drag capture from swallowing entry-card clicks in `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`
+- Added regression coverage in:
+  - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+- Verification passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/tutor.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live `dev-browser` verification on `http://127.0.0.1:5000/tutor` produced:
+    - entry-state screenshot + DOM: `C:\\Users\\treyt\\.dev-browser\\tmp\\tutor-entry-force.png`, `C:\\Users\\treyt\\.dev-browser\\tmp\\tutor-entry-force-dom.html`
+    - `Start Priming` screenshot + DOM: `C:\\Users\\treyt\\.dev-browser\\tmp\\tutor-entry-start-priming.png`, `C:\\Users\\treyt\\.dev-browser\\tmp\\tutor-entry-start-priming-dom.html`
+    - panel wiring screenshot + DOM: `C:\\Users\\treyt\\.dev-browser\\tmp\\tutor-panel-wiring.png`, `C:\\Users\\treyt\\.dev-browser\\tmp\\tutor-panel-wiring-dom.html`
+  - live selector independence check confirmed Priming and Tutor chain selectors stay isolated:
+    - after setting Priming to `template:158`, Tutor remained `auto`
+    - after setting Tutor to `template:160`, Priming remained `template:158`
+
+## 2026-03-26 - Pre-Checkpoint 3 legacy shell/view state purge
+
+- Removed the remaining internal `shellMode` / `studioView` compatibility plumbing from the live Tutor runtime path:
+  - `dashboard_rebuild/client/src/hooks/useStudioRun.ts` no longer creates or persists `shellMode` and no longer writes `mode` into the Tutor shell query
+  - `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts` no longer accepts `shellMode` / `setShellMode`, no longer owns `studioView`, and no longer drives workflow actions through hidden stage-view transitions
+  - `dashboard_rebuild/client/src/hooks/useTutorSession.ts` no longer accepts or mutates `shellMode` / `studioView`, and session restore/start/resume now operate only on real session state
+  - `dashboard_rebuild/client/src/pages/tutor.tsx` no longer restores, persists, or branches on `shellMode`, `studioView`, or `last_mode`; the route now restores from actual session/project state only
+- Updated the impacted regression suites so they assert the single-canvas contract instead of the deleted compatibility model:
+  - `dashboard_rebuild/client/src/hooks/__tests__/useStudioRun.test.tsx`
+  - `dashboard_rebuild/client/src/hooks/__tests__/useTutorWorkflow.test.tsx`
+  - `dashboard_rebuild/client/src/hooks/__tests__/useTutorSession.test.tsx`
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+- Verification passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/hooks/__tests__/useStudioRun.test.tsx client/src/hooks/__tests__/useTutorWorkflow.test.tsx client/src/hooks/__tests__/useTutorSession.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorShell.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-26 - Checkpoint 3 revalidation after legacy shell/view purge
+
+- Revalidated the already-landed Checkpoint 3 slices against the current single-canvas runtime after removing the dead `shellMode` / `studioView` compatibility layer:
+  - Slice 3.1: `Source Shelf` still exposes real `Current Run`, `Library`, and `Vault` working surfaces in the floating shell.
+  - Slice 3.2: `Document Dock` multi-document behavior remains covered by the routed Tutor workspace tests and restore tests.
+  - Slice 3.3: `Run Config` still operates as a live control surface with Tutor-owned selector controls plus runtime rule controls.
+  - Slice 3.4: `Library -> Tutor` handoff still writes run context and lands in the floating Studio shell rather than a dead landing view.
+- Regression/build verification passed after the purge:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/library.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/hooks/__tests__/useTutorSession.test.tsx client/src/hooks/__tests__/useTutorWorkflow.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+- Live `dev-browser` verification passed:
+  - Tutor panel surface capture: `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint3-tutor-panels-current.png`, `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint3-tutor-panels-current-dom.html`
+  - Live handoff capture from `/library` into `/tutor`: `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint3-library-handoff.png`, `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint3-library-handoff-dom.html`
+  - The live tutor capture confirmed `Source Shelf`, `Linked Vault Paths`, `Run Config`, `Runtime rules`, `Document Dock`, and `Tutor chain` were all present on the current `/tutor` route.
+  - The live handoff capture confirmed `OPEN TUTOR` on `/library` navigates to `/tutor?course_id=1&board_scope=project&session_id=tutor-20260325-233531-579b28` with the floating `studio-shell` active.

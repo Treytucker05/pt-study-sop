@@ -27,7 +27,7 @@ import {
   inferStudyUnitFromMaterial,
   deriveVaultFolder,
 } from "@/lib/tutorUtils";
-import type { TutorShellQuery, TutorPageMode } from "@/lib/tutorUtils";
+import type { TutorShellQuery } from "@/lib/tutorUtils";
 
 function collectStudyUnitMaterialCandidates(material: Material): string[] {
   const candidates = new Set<string>();
@@ -79,7 +79,6 @@ function inferStudyUnitFromSelection(
 export interface UseTutorHubParams {
   initialRouteQuery: TutorShellQuery;
   hasRestored: boolean;
-  shellMode: TutorPageMode;
   activeSessionId: string | null;
   persistClientState?: boolean;
 }
@@ -87,7 +86,6 @@ export interface UseTutorHubParams {
 export function useTutorHub({
   initialRouteQuery,
   hasRestored,
-  shellMode,
   activeSessionId,
   persistClientState = true,
 }: UseTutorHubParams) {
@@ -303,7 +301,7 @@ export function useTutorHub({
   const { data: tutorHub, isFetching: tutorHubLoading } = useQuery<TutorHubResponse>({
     queryKey: ["tutor-hub", activeSessionId],
     queryFn: () => api.tutor.getHub(),
-    enabled: hasRestored && shellMode === "studio",
+    enabled: hasRestored,
     staleTime: 15 * 1000,
   });
 

@@ -20,7 +20,7 @@ import type {
 import type { StudioWorkspaceObject } from "@/lib/studioWorkspaceObjects";
 import type { StudioPolishPromotedNote } from "@/lib/studioPacketSections";
 import type { StudioRunRuntimeState } from "@/lib/studioRunRuntimeState";
-import type { TutorPageMode, TutorShellQuery } from "@/lib/tutorUtils";
+import type { TutorShellQuery } from "@/lib/tutorUtils";
 import { writeTutorShellQuery } from "@/lib/tutorUtils";
 
 export type StudioRunEntryKind = "workspace_home" | "exact_resume";
@@ -81,8 +81,6 @@ export function useStudioRun({
     ? null
     : storedActiveSessionId;
   const initialSessionId = initialRouteQuery.sessionId || resolvedStoredSessionId;
-  const initialShellMode: TutorPageMode =
-    initialRouteQuery.mode || (initialSessionId ? "tutor" : "studio");
 
   const [activeSessionId, setActiveSessionId] = useState<string | null>(
     initialSessionId,
@@ -91,7 +89,6 @@ export function useStudioRun({
   const [restoredTurns, setRestoredTurns] = useState<
     { question: string; answer: string | null }[] | undefined
   >();
-  const [shellMode, setShellMode] = useState<TutorPageMode>(initialShellMode);
   const [activeBoardScope, setActiveBoardScope] =
     useState<TutorBoardScope>(initialRouteQuery.boardScope || "project");
   const [activeBoardId, setActiveBoardId] = useState<number | null>(
@@ -109,6 +106,9 @@ export function useStudioRun({
     activeMemoryCapsuleId: null,
     compactionTelemetry: null,
     directNoteSaveStatus: null,
+    primingMethodIds: [],
+    primingChainId: null,
+    primingCustomBlockIds: [],
   });
   const [tutorChainId, setTutorChainId] = useState<number | undefined>(chainId);
   const [tutorCustomBlockIds, setTutorCustomBlockIds] = useState<number[]>(
@@ -172,7 +172,6 @@ export function useStudioRun({
     writeTutorShellQuery({
       courseId,
       sessionId: activeSessionId || undefined,
-      mode: shellMode,
       boardScope: activeBoardScope,
       boardId: activeBoardId ?? undefined,
     });
@@ -182,7 +181,6 @@ export function useStudioRun({
     activeSessionId,
     courseId,
     persistShellQuery,
-    shellMode,
   ]);
 
   return {
@@ -195,8 +193,6 @@ export function useStudioRun({
     setHasRestored,
     restoredTurns,
     setRestoredTurns,
-    shellMode,
-    setShellMode,
     activeBoardScope,
     setActiveBoardScope,
     activeBoardId,
@@ -229,6 +225,21 @@ export function useStudioRun({
       setRuntimeState((current) => ({
         ...current,
         directNoteSaveStatus,
+      })),
+    setPrimingMethodIds: (primingMethodIds: string[]) =>
+      setRuntimeState((current) => ({
+        ...current,
+        primingMethodIds,
+      })),
+    setPrimingChainId: (primingChainId: number | null) =>
+      setRuntimeState((current) => ({
+        ...current,
+        primingChainId,
+      })),
+    setPrimingCustomBlockIds: (primingCustomBlockIds: number[]) =>
+      setRuntimeState((current) => ({
+        ...current,
+        primingCustomBlockIds,
       })),
     tutorChainId,
     setTutorChainId,

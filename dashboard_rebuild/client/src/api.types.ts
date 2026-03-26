@@ -1350,6 +1350,9 @@ export interface TutorProjectShellState {
     active_memory_capsule_id: number | null;
     compaction_telemetry: Record<string, unknown> | null;
     direct_note_save_status: Record<string, unknown> | null;
+    priming_method_ids: string[];
+    priming_chain_id: number | null;
+    priming_custom_block_ids: number[];
   } | null;
   tutor_chain_id: number | null;
   tutor_custom_block_ids: number[];
@@ -1374,6 +1377,9 @@ export interface TutorProjectShellStateRequest {
     active_memory_capsule_id: number | null;
     compaction_telemetry: Record<string, unknown> | null;
     direct_note_save_status: Record<string, unknown> | null;
+    priming_method_ids: string[];
+    priming_chain_id: number | null;
+    priming_custom_block_ids: number[];
   } | null;
   tutor_chain_id?: number | null;
   tutor_custom_block_ids?: number[];

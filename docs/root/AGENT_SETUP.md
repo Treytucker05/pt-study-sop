@@ -13,6 +13,7 @@ All repo-local product/system truth should be taken from `C:\pt-study-sop\README
 - Global Claude defaults: `C:\Users\treyt\.claude\CLAUDE.md`, `C:\Users\treyt\.claude\rules\*`, `C:\Users\treyt\.claude\agents\*`
 - Global Codex defaults: `C:\Users\treyt\.codex\AGENTS.md`, `C:\Users\treyt\.codex\config.toml`, `C:\Users\treyt\.codex\agents\*.toml`, `C:\Users\treyt\.codex\rules\default.rules`
 - Global Gemini defaults: `C:\Users\treyt\.gemini\GEMINI.md`, `C:\Users\treyt\.gemini\settings.json`
+- Global Hermes defaults: `C:\Users\treyt\.hermes\config.yaml`, `C:\Users\treyt\.hermes\SOUL.md`
 - Multi-agent coordination board: `docs/root/AGENT_BOARD.md`
 
 ## Coordination Surfaces
@@ -39,6 +40,7 @@ Supported active projection roots:
 - `C:\Users\treyt\.gemini\skills`
 - `C:\Users\treyt\.antigravity\skills`
 - `C:\Users\treyt\.kimi\skills`
+- `C:\Users\treyt\.hermes\skills`
 
 Documented local exceptions:
 
@@ -46,6 +48,7 @@ Documented local exceptions:
 - Claude: `continuous-learning`, `learned`
 - Cursor: `C:\Users\treyt\.cursor\skills-cursor`
 - OpenCode: `agent-strategy`, `ensure-agent-workflow`
+- Hermes: 113 bundled skills preserved as local-only; see `scripts/sync_agent_skills.ps1` `LocalOnlyNames.hermes` for the full allowlist
 
 Excluded from shared-skill sync:
 - `C:\Users\treyt\.conduit` (config-only)
@@ -77,7 +80,7 @@ Files under `.claude/agents/*` are allowed to define role behavior, but they mus
 
 ### 5. Global defaults are cross-project only
 
-`C:\Users\treyt\.claude\*`, `C:\Users\treyt\.codex\*`, and `C:\Users\treyt\.gemini\*` are reusable defaults. They must defer to the repo canon whenever this project is active.
+`C:\Users\treyt\.claude\*`, `C:\Users\treyt\.codex\*`, `C:\Users\treyt\.gemini\*`, and `C:\Users\treyt\.hermes\*` are reusable defaults. They must defer to the repo canon whenever this project is active.
 
 When those fallback defaults do apply, they should still start from user intent first: find the best way to accomplish what the user wants, present tradeoffs without substituting agent preference, and avoid assuming the user is unaware of the tradeoffs they are choosing.
 
@@ -91,7 +94,7 @@ If a repo-local agent name overlaps with a global agent name, the repo-local one
 2. Nearest nested/module `AGENTS.md` that applies to the current file or task scope
 3. Repo compatibility files only when a tool requires them (`CLAUDE.md`, `.claude/AGENTS.md`, `.claude/CLAUDE.md`)
 4. Explicitly invoked repo-local agents under `.claude/agents/*`
-5. Tool-specific global defaults only as fallback/runtime surfaces (`C:\Users\treyt\.claude\CLAUDE.md`, `C:\Users\treyt\.claude\rules\*`, `C:\Users\treyt\.codex\AGENTS.md`, `C:\Users\treyt\.codex\config.toml`, `C:\Users\treyt\.gemini\GEMINI.md`, `C:\Users\treyt\.gemini\settings.json`)
+5. Tool-specific global defaults only as fallback/runtime surfaces (`C:\Users\treyt\.claude\CLAUDE.md`, `C:\Users\treyt\.claude\rules\*`, `C:\Users\treyt\.codex\AGENTS.md`, `C:\Users\treyt\.codex\config.toml`, `C:\Users\treyt\.gemini\GEMINI.md`, `C:\Users\treyt\.gemini\settings.json`, `C:\Users\treyt\.hermes\config.yaml`, `C:\Users\treyt\.hermes\SOUL.md`)
 6. Global reusable agents (`C:\Users\treyt\.claude\agents\*`)
 
 Rule:
@@ -123,6 +126,8 @@ Collision rule:
 | `C:\Users\treyt\.codex\rules\default.rules` | Global Codex permission/rule surface | No project policy |
 | `C:\Users\treyt\.gemini\GEMINI.md` | Global Gemini defaults | No |
 | `C:\Users\treyt\.gemini\settings.json` | Gemini runtime settings | No project policy |
+| `C:\Users\treyt\.hermes\config.yaml` | Global Hermes defaults | No |
+| `C:\Users\treyt\.hermes\SOUL.md` | Hermes agent identity/personality | No project policy |
 
 ## Safe Change Rules
 
@@ -206,6 +211,13 @@ Inventory result on this machine:
   - Has config in `config.toml` and `kimi.json`
   - Has a supported shared-skill projection root at `skills\`
   - Has one agent: `agents\self-improve`
+- `C:\Users\treyt\.hermes`
+  - Has primary config in `config.yaml` and secrets in `.env`
+  - Has agent identity/personality in `SOUL.md`
+  - Has a supported shared-skill projection root at `skills\`
+  - Has 113 bundled local-only skills preserved alongside shared projections
+  - Has MCP server config inline in `config.yaml` under `mcp_servers`
+  - Uses `agent: "hermes"` as identity in shared stores
 
 Practical rule:
 

@@ -1382,8 +1382,8 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
           className={cn(
             "page-enter",
             isWorkspaceRoute
-              ? "min-h-full flex flex-col"
-              : "app-route-shell min-h-full",
+                ? "min-h-full flex flex-col"
+                : "app-route-shell min-h-full",
           )}
         >
           {children}

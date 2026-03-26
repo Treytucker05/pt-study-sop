@@ -20,8 +20,6 @@ import {
   getMethodStageBadgeLabel,
   getMethodStageColorKey,
 } from "@/lib/controlStages";
-import type { TutorPageMode, TutorStudioView } from "@/lib/tutorUtils";
-import type { StudioSubTab } from "@/components/TutorTabBar";
 import type { TutorWorkflowDetailResponse } from "@/lib/api";
 import type { TutorBrainLaunchContext } from "@/lib/tutorClientState";
 import type { TutorTemplateChain } from "@/lib/api";
@@ -32,7 +30,6 @@ import type {
 } from "@/components/TutorChat.types";
 
 export interface TutorTopBarProps {
-  shellMode: TutorPageMode;
   isTutorSessionView: boolean;
   brainLaunchContext: TutorBrainLaunchContext | null;
   topic: string;
@@ -50,8 +47,6 @@ export interface TutorTopBarProps {
   onAdvanceBlock: () => void;
   activeWorkflowId: string | null;
   activeWorkflowDetail: TutorWorkflowDetailResponse | undefined;
-  studioView: TutorStudioView;
-  studioSubTabs: StudioSubTab[];
   activeSessionId: string | null;
   teachRuntime: TutorTeachRuntimeViewModel | null;
 }
@@ -117,7 +112,6 @@ function RuntimeValue({
 }
 
 export function TutorTopBar({
-  shellMode,
   isTutorSessionView,
   brainLaunchContext,
   topic,
@@ -135,8 +129,6 @@ export function TutorTopBar({
   onAdvanceBlock,
   activeWorkflowId,
   activeWorkflowDetail,
-  studioView,
-  studioSubTabs,
   activeSessionId,
   teachRuntime,
 }: TutorTopBarProps) {
@@ -148,10 +140,7 @@ export function TutorTopBar({
   const workflowStatusLabel = activeWorkflowDetail?.workflow?.status
     ? activeWorkflowDetail.workflow.status.replace(/_/g, " ").toUpperCase()
     : null;
-  const surfaceLabel =
-    shellMode === "studio"
-      ? `STUDIO / ${studioView === "home" ? "HOME" : studioView.replace(/_/g, " ").toUpperCase()}`
-      : shellMode.toUpperCase();
+  const surfaceLabel = "STUDIO CANVAS";
 
   return (
     <div className="flex flex-col gap-4">

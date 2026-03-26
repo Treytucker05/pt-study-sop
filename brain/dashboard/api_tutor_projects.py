@@ -117,6 +117,9 @@ def _normalize_runtime_state(value: Any) -> dict[str, Any]:
             "active_memory_capsule_id": None,
             "compaction_telemetry": None,
             "direct_note_save_status": None,
+            "priming_method_ids": [],
+            "priming_chain_id": None,
+            "priming_custom_block_ids": [],
         }
     if not isinstance(value, dict):
         raise ValueError("runtime_state must be an object")
@@ -134,6 +137,19 @@ def _normalize_runtime_state(value: Any) -> dict[str, Any]:
                 "runtime_state.active_memory_capsule_id must be an integer"
             ) from exc
 
+    raw_priming_chain_id = value.get("priming_chain_id")
+    if raw_priming_chain_id is None:
+        priming_chain_id = None
+    elif isinstance(raw_priming_chain_id, bool):
+        raise ValueError("runtime_state.priming_chain_id must be an integer")
+    else:
+        try:
+            priming_chain_id = int(raw_priming_chain_id)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "runtime_state.priming_chain_id must be an integer"
+            ) from exc
+
     return {
         "active_memory_capsule_id": active_memory_capsule_id,
         "compaction_telemetry": _normalize_json_dict(
@@ -143,6 +159,18 @@ def _normalize_runtime_state(value: Any) -> dict[str, Any]:
         "direct_note_save_status": _normalize_json_dict(
             value.get("direct_note_save_status"),
             field_name="runtime_state.direct_note_save_status",
+        ),
+        "priming_method_ids": [
+            item
+            for item in value.get("priming_method_ids", [])
+            if isinstance(item, str) and item.strip()
+        ]
+        if isinstance(value.get("priming_method_ids"), list)
+        else [],
+        "priming_chain_id": priming_chain_id,
+        "priming_custom_block_ids": _normalize_int_list(
+            value.get("priming_custom_block_ids"),
+            field_name="runtime_state.priming_custom_block_ids",
         ),
     }
 
@@ -202,6 +230,9 @@ def _serialize_workspace_state(row: sqlite3.Row | None) -> dict[str, Any]:
         "active_memory_capsule_id": None,
         "compaction_telemetry": None,
         "direct_note_save_status": None,
+        "priming_method_ids": [],
+        "priming_chain_id": None,
+        "priming_custom_block_ids": [],
     }
     if "runtime_state_json" in row.keys() and row["runtime_state_json"]:
         try:
@@ -211,6 +242,9 @@ def _serialize_workspace_state(row: sqlite3.Row | None) -> dict[str, Any]:
                 "active_memory_capsule_id": None,
                 "compaction_telemetry": None,
                 "direct_note_save_status": None,
+                "priming_method_ids": [],
+                "priming_chain_id": None,
+                "priming_custom_block_ids": [],
             }
     tutor_custom_block_ids: list[int] = []
     if "tutor_custom_block_ids_json" in row.keys() and row["tutor_custom_block_ids_json"]:

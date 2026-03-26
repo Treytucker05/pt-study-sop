@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TutorShell } from "@/components/TutorShell";
+import { buildStudioShellPresetLayout } from "@/components/studio/StudioShell";
 import { getStudioCanvasShapeId } from "@/lib/studioCanvasShapes";
 import { getStudioRepairCandidateId } from "@/lib/studioRepairCandidates";
 import { getStudioExcerptObjectId } from "@/lib/studioWorkspaceObjects";
@@ -75,6 +76,13 @@ vi.mock("@/components/TutorChat", () => ({
     }) => void;
   }) => (
     <div data-testid="mock-tutor-chat">
+      <div data-testid="mock-tutor-chat-toolbar">
+        <button type="button">ASK / SOCRATIC</button>
+        <button type="button">EVALUATE</button>
+        <button type="button">CONCEPT MAP</button>
+        <button type="button">TEACH-BACK</button>
+        <button type="button">Voice Dictation</button>
+      </div>
       <button type="button" onClick={() => onCompact?.()}>
         Compact Tutor memory
       </button>
@@ -144,6 +152,33 @@ vi.mock("@/components/brain/ConceptMapStructured", () => ({
 
 vi.mock("@/hooks/useBrainFeedback", () => ({
   useBrainFeedback: () => ({ submitBrainFeedback: vi.fn() }),
+}));
+
+vi.mock("react-zoom-pan-pinch", () => ({
+  TransformWrapper: ({
+    children,
+  }: {
+    children:
+      | ReactNode
+      | ((controls: {
+        zoomIn: () => void;
+        zoomOut: () => void;
+        resetTransform: () => void;
+      }) => ReactNode);
+  }) => (
+    <div data-testid="mock-transform-wrapper">
+      {typeof children === "function"
+        ? children({
+            zoomIn: vi.fn(),
+            zoomOut: vi.fn(),
+            resetTransform: vi.fn(),
+          })
+        : children}
+    </div>
+  ),
+  TransformComponent: ({ children }: { children: ReactNode }) => (
+    <div data-testid="mock-transform-component">{children}</div>
+  ),
 }));
 
 vi.mock("sonner", () => ({
@@ -390,14 +425,12 @@ function renderTutorShell(
     workflowOverrides,
     viewerState,
     shellOverrides,
-    shellMode = "studio",
     activeSessionId = null,
   }: {
     hubOverrides?: HubOverrides;
     sessionOverrides?: SessionOverrides;
     workflowOverrides?: WorkflowOverrides;
     viewerState?: Record<string, unknown> | null;
-    shellMode?: "studio" | "tutor";
     activeSessionId?: string | null;
     shellOverrides?: {
       promotedPrimePacketObjects?: unknown[];
@@ -414,62 +447,84 @@ function renderTutorShell(
       tutorCustomBlockIds?: number[];
       setTutorChainId?: (...args: unknown[]) => void;
       setTutorCustomBlockIds?: (...args: unknown[]) => void;
+      primingMethodIds?: string[];
+      primingChainId?: number;
+      primingCustomBlockIds?: number[];
+      setPrimingMethodIds?: (...args: unknown[]) => void;
+      setPrimingChainId?: (...args: unknown[]) => void;
+      setPrimingCustomBlockIds?: (...args: unknown[]) => void;
     };
   } = {},
 ) {
   const wrapper = createQueryWrapper();
 
-  return render(
-    <TutorShell
-      shellMode={shellMode}
-      setShellMode={vi.fn()}
-      activeSessionId={activeSessionId}
-      hub={makeHubWithOverrides(hubOverrides) as never}
-      session={makeSessionWithOverrides(sessionOverrides) as never}
-      workflow={makeWorkflowWithOverrides(studioView, workflowOverrides) as never}
-      restoredTurns={undefined}
-      activeBoardScope="project"
-      activeBoardId={null}
-      viewerState={viewerState ?? null}
-      runtimeState={shellOverrides?.runtimeState as never}
-      tutorChainId={shellOverrides?.tutorChainId as never}
-      tutorCustomBlockIds={shellOverrides?.tutorCustomBlockIds as never}
-      setActiveBoardScope={vi.fn()}
-      setActiveBoardId={vi.fn()}
-      setViewerState={vi.fn()}
-      setShowSetup={vi.fn()}
-      queryClient={new QueryClient()}
-      panelLayout={shellOverrides?.panelLayout as never}
-      setPanelLayout={shellOverrides?.setPanelLayout as never}
-      setCompactionTelemetry={shellOverrides?.setCompactionTelemetry as never}
-      setActiveMemoryCapsuleId={shellOverrides?.setActiveMemoryCapsuleId as never}
-      setDirectNoteSaveStatus={shellOverrides?.setDirectNoteSaveStatus as never}
-      setTutorChainId={shellOverrides?.setTutorChainId as never}
-      setTutorCustomBlockIds={shellOverrides?.setTutorCustomBlockIds as never}
-      promotedPrimePacketObjects={
-        shellOverrides?.promotedPrimePacketObjects as never
-      }
-      onPromotePrimePacketObject={
-        shellOverrides?.onPromotePrimePacketObject as never
-      }
-      promotedPolishPacketNotes={
-        shellOverrides?.promotedPolishPacketNotes as never
-      }
-      onPromotePolishPacketNote={
-        shellOverrides?.onPromotePolishPacketNote as never
-      }
-      onResumeHubCandidate={vi.fn()}
-    />,
-    { wrapper },
-  );
+  function Harness() {
+    const [panelLayout, setPanelLayout] = useState<unknown[]>(
+      shellOverrides?.panelLayout ?? buildStudioShellPresetLayout("full_studio"),
+    );
+
+    return (
+      <TutorShell
+        activeSessionId={activeSessionId}
+        hub={makeHubWithOverrides(hubOverrides) as never}
+        session={makeSessionWithOverrides(sessionOverrides) as never}
+        workflow={makeWorkflowWithOverrides(studioView, workflowOverrides) as never}
+        restoredTurns={undefined}
+        activeBoardScope="project"
+        activeBoardId={null}
+        viewerState={viewerState ?? null}
+        runtimeState={shellOverrides?.runtimeState as never}
+        tutorChainId={shellOverrides?.tutorChainId as never}
+        tutorCustomBlockIds={shellOverrides?.tutorCustomBlockIds as never}
+        setActiveBoardScope={vi.fn()}
+        setActiveBoardId={vi.fn()}
+        setViewerState={vi.fn()}
+        setShowSetup={vi.fn()}
+        queryClient={new QueryClient()}
+        panelLayout={panelLayout as never}
+        setPanelLayout={
+          (shellOverrides?.setPanelLayout as never) ??
+          (setPanelLayout as never)
+        }
+        setCompactionTelemetry={shellOverrides?.setCompactionTelemetry as never}
+        setActiveMemoryCapsuleId={shellOverrides?.setActiveMemoryCapsuleId as never}
+        setDirectNoteSaveStatus={shellOverrides?.setDirectNoteSaveStatus as never}
+        setTutorChainId={shellOverrides?.setTutorChainId as never}
+        setTutorCustomBlockIds={shellOverrides?.setTutorCustomBlockIds as never}
+        primingMethodIds={shellOverrides?.primingMethodIds as never}
+        primingChainId={shellOverrides?.primingChainId as never}
+        primingCustomBlockIds={shellOverrides?.primingCustomBlockIds as never}
+        setPrimingMethodIds={shellOverrides?.setPrimingMethodIds as never}
+        setPrimingChainId={shellOverrides?.setPrimingChainId as never}
+        setPrimingCustomBlockIds={shellOverrides?.setPrimingCustomBlockIds as never}
+        promotedPrimePacketObjects={
+          shellOverrides?.promotedPrimePacketObjects as never
+        }
+        onPromotePrimePacketObject={
+          shellOverrides?.onPromotePrimePacketObject as never
+        }
+        promotedPolishPacketNotes={
+          shellOverrides?.promotedPolishPacketNotes as never
+        }
+        onPromotePolishPacketNote={
+          shellOverrides?.onPromotePolishPacketNote as never
+        }
+        onResumeHubCandidate={vi.fn()}
+      />
+    );
+  }
+
+  return render(<Harness />, { wrapper });
 }
 
 function renderTutorShellTutorHarness() {
   const wrapper = createQueryWrapper();
 
   function Harness() {
-    const [shellMode, setShellMode] = useState<"studio" | "tutor">("tutor");
     const [studioView, setStudioView] = useState<WorkflowView>("home");
+    const [panelLayout, setPanelLayout] = useState(
+      buildStudioShellPresetLayout("full_studio"),
+    );
 
     const workflow = useMemo(
       () =>
@@ -477,7 +532,6 @@ function renderTutorShellTutorHarness() {
           activeWorkflowId: 77,
           openWorkflowPolish: vi.fn(() => {
             setStudioView("polish");
-            setShellMode("studio");
           }),
         }),
       [studioView],
@@ -485,8 +539,6 @@ function renderTutorShellTutorHarness() {
 
     return (
       <TutorShell
-        shellMode={shellMode}
-        setShellMode={setShellMode}
         activeSessionId="sess-1"
         hub={
           makeHubWithOverrides({
@@ -507,6 +559,8 @@ function renderTutorShellTutorHarness() {
         setViewerState={vi.fn()}
         setShowSetup={vi.fn()}
         queryClient={new QueryClient()}
+        panelLayout={panelLayout as never}
+        setPanelLayout={setPanelLayout as never}
         setTutorChainId={vi.fn()}
         setTutorCustomBlockIds={vi.fn()}
         onResumeHubCandidate={vi.fn()}
@@ -639,18 +693,48 @@ describe("TutorShell studio routing", () => {
     ).toHaveTextContent("In Workspace");
   });
 
-  it("keeps Workspace Home focused on the main launch surface instead of the full Studio rail stack", async () => {
-    renderTutorShell("home");
+  it("shows a minimal entry state when the canvas has no open panels", async () => {
+    renderTutorShell("home", {
+      shellOverrides: {
+        panelLayout: [],
+      },
+    });
 
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
-    expect(screen.getByTestId("studio-stage-nav")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-entry-state")).toBeInTheDocument();
+    expect(screen.queryByTestId("studio-stage-nav")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-source-shelf")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-document-dock")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-run-config")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("studio-tutor-status")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("studio-memory")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-prime-packet")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("studio-polish-packet")).not.toBeInTheDocument();
+  });
+
+  it("shows the centered start card and opens the Priming preset from the empty canvas", async () => {
+    const user = userEvent.setup();
+
+    renderTutorShell("home", {
+      activeSessionId: null,
+      sessionOverrides: {
+        hasActiveTutorSession: false,
+      },
+      hubOverrides: {
+        courseLabel: "Exercise Physiology",
+        selectedObjectiveGroup: "Week 7",
+        topic: "Cardiac output",
+      },
+      shellOverrides: {
+        panelLayout: [],
+      },
+    });
+
+    expect(await screen.findByTestId("studio-entry-state")).toHaveTextContent(
+      "Exercise Physiology",
+    );
+
+    await user.click(screen.getByRole("button", { name: /start priming/i }));
+
+    expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
+    expect(await screen.findByTestId("studio-priming-panel")).toBeInTheDocument();
   });
 
   it("shows the active run configuration summary inside Run Config", async () => {
@@ -749,14 +833,111 @@ describe("TutorShell studio routing", () => {
     expect(setObjectiveScope).toHaveBeenCalledWith("single_focus");
   });
 
+  it("renders a Priming selector bar that updates Priming-owned state without mutating Tutor selectors", async () => {
+    const user = userEvent.setup();
+    const setPrimingMethodIds = vi.fn();
+    const setPrimingChainId = vi.fn();
+    const setTutorChainId = vi.fn();
+
+    getTemplateChainsMock.mockResolvedValueOnce([
+      {
+        id: 17,
+        name: "Cardio Deep Dive",
+        title: "Cardio Deep Dive",
+        description: "",
+        blocks: [],
+      },
+    ]);
+
+    renderTutorShell("workspace", {
+      workflowOverrides: {
+        primingMethods: ["M-PRE-010"],
+      },
+      shellOverrides: {
+        primingMethodIds: ["M-PRE-010"],
+        primingChainId: undefined,
+        setPrimingMethodIds,
+        setPrimingChainId,
+        tutorChainId: 41,
+        setTutorChainId,
+      },
+    });
+
+    const primingPanel = await screen.findByTestId("studio-priming-panel");
+    expect(
+      within(primingPanel).getByTestId("priming-selector-bar"),
+    ).toBeInTheDocument();
+
+    await user.click(
+      within(primingPanel).getByRole("button", { name: /bridge/i }),
+    );
+    expect(setPrimingMethodIds).toHaveBeenCalledWith(["M-PRE-010", "M-PRE-008"]);
+    expect(setTutorChainId).not.toHaveBeenCalled();
+
+    await user.selectOptions(
+      within(primingPanel).getByLabelText(/priming chain template/i),
+      "template:17",
+    );
+    expect(setPrimingChainId).toHaveBeenCalledWith(17);
+    expect(setTutorChainId).not.toHaveBeenCalled();
+  });
+
+  it("renders a Tutor selector bar above the behavior controls and keeps Tutor selectors independent from Priming", async () => {
+    const user = userEvent.setup();
+    const setTutorChainId = vi.fn();
+    const setPrimingChainId = vi.fn();
+
+    getTemplateChainsMock.mockResolvedValueOnce([
+      {
+        id: 23,
+        name: "Teach Back Chain",
+        title: "Teach Back Chain",
+        description: "",
+        blocks: [],
+      },
+    ]);
+
+    renderTutorShell("workspace", {
+      activeSessionId: "sess-1",
+      sessionOverrides: {
+        hasActiveTutorSession: true,
+      },
+      shellOverrides: {
+        tutorChainId: undefined,
+        setTutorChainId,
+        primingChainId: 17,
+        setPrimingChainId,
+      },
+    });
+
+    const tutorPanel = await screen.findByTestId("studio-tutor-panel");
+    expect(within(tutorPanel).getByTestId("tutor-selector-bar")).toBeInTheDocument();
+    expect(within(tutorPanel).getByText("ASK / SOCRATIC")).toBeInTheDocument();
+    expect(
+      within(tutorPanel).getByRole("button", { name: /voice dictation/i }),
+    ).toBeInTheDocument();
+
+    await user.selectOptions(
+      within(tutorPanel).getByLabelText(/tutor chain template/i),
+      "template:23",
+    );
+    expect(setTutorChainId).toHaveBeenCalledWith(23);
+    expect(setPrimingChainId).not.toHaveBeenCalled();
+  });
+
   it("reduces Priming chrome to source context, run config, and Prime Packet", async () => {
-    renderTutorShell("priming");
+    renderTutorShell("priming", {
+      shellOverrides: {
+        panelLayout: buildStudioShellPresetLayout("priming"),
+      },
+    });
 
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
     expect(screen.getByTestId("studio-source-shelf")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-document-dock")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-priming-panel")).toBeInTheDocument();
     expect(screen.getByTestId("studio-run-config")).toBeInTheDocument();
     expect(screen.getByTestId("studio-prime-packet")).toBeInTheDocument();
-    expect(screen.queryByTestId("studio-document-dock")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-tutor-status")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-repair-candidates")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-memory")).not.toBeInTheDocument();
@@ -992,7 +1173,6 @@ describe("TutorShell studio routing", () => {
     const setDirectNoteSaveStatus = vi.fn();
 
     renderTutorShell("workspace", {
-      shellMode: "tutor",
       activeSessionId: "sess-1",
       workflowOverrides: {
         activeWorkflowId: "wf-1",
@@ -1264,13 +1444,17 @@ describe("TutorShell studio routing", () => {
   });
 
   it("reduces Polish chrome to the main polish surface and Polish Packet", async () => {
-    renderTutorShell("polish");
+    renderTutorShell("polish", {
+      shellOverrides: {
+        panelLayout: buildStudioShellPresetLayout("polish"),
+      },
+    });
 
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-polish-panel")).toBeInTheDocument();
     expect(screen.getByTestId("studio-polish-packet")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-workspace-panel")).toBeInTheDocument();
     expect(screen.queryByTestId("studio-source-shelf")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("studio-document-dock")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("studio-run-config")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-tutor-status")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-repair-candidates")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-memory")).not.toBeInTheDocument();
@@ -2071,12 +2255,6 @@ describe("TutorShell studio routing", () => {
       }),
     );
 
-    await user.click(
-      screen.getByRole("button", {
-        name: /OPEN POLISH/i,
-      }),
-    );
-
     const polishPacket = await screen.findByTestId("studio-polish-packet");
     expect(polishPacket).toHaveTextContent("Tutor Reply 3");
     expect(polishPacket).toHaveTextContent(
@@ -2089,7 +2267,6 @@ describe("TutorShell studio routing", () => {
     const onPromotePolishPacketNote = vi.fn();
 
     renderTutorShell("home", {
-      shellMode: "tutor",
       activeSessionId: "sess-1",
       shellOverrides: {
         promotedPolishPacketNotes: [],
@@ -2123,7 +2300,6 @@ describe("TutorShell studio routing", () => {
     });
 
     renderTutorShell("workspace", {
-      shellMode: "tutor",
       activeSessionId: null,
       sessionOverrides: {
         startSession,
@@ -2172,7 +2348,6 @@ describe("TutorShell studio routing", () => {
     });
 
     renderTutorShell("workspace", {
-      shellMode: "tutor",
       activeSessionId: null,
       sessionOverrides: {
         startSession,
@@ -2250,7 +2425,6 @@ describe("TutorShell studio routing", () => {
     const setActiveMemoryCapsuleId = vi.fn();
 
     renderTutorShell("workspace", {
-      shellMode: "tutor",
       activeSessionId: "sess-1",
       workflowOverrides: {
         quickCompactWorkflowMemory,
@@ -2272,7 +2446,6 @@ describe("TutorShell studio routing", () => {
 
   it("does not treat a stale Tutor session id as a live Tutor pane", async () => {
     renderTutorShell("workspace", {
-      shellMode: "tutor",
       activeSessionId: "sess-stale",
       sessionOverrides: {
         hasActiveTutorSession: false,
@@ -2329,11 +2502,60 @@ describe("TutorShell studio routing", () => {
     expect(screen.getByTestId("mock-polish-panel")).toBeInTheDocument();
   });
 
+  it("renders a toolbar-driven canvas instead of stage navigation", async () => {
+    renderTutorShell("home", {
+      workflowOverrides: {
+        activeWorkflowDetail: null,
+      },
+      shellOverrides: {
+        panelLayout: [],
+      },
+    });
+
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-toolbar")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-canvas")).toBeInTheDocument();
+    expect(screen.queryByTestId("studio-stage-nav")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /open source shelf panel/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /open priming panel/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /open tutor panel/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /open polish panel/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("lets the user open priming, tutor, and polish panels from the toolbar at the same time", async () => {
+    const user = userEvent.setup();
+    renderTutorShell("home", {
+      workflowOverrides: {
+        activeWorkflowDetail: null,
+      },
+      shellOverrides: {
+        panelLayout: [],
+      },
+    });
+
+    await user.click(
+      await screen.findByRole("button", { name: /open priming panel/i }),
+    );
+    await user.click(screen.getByRole("button", { name: /open tutor panel/i }));
+    await user.click(screen.getByRole("button", { name: /open polish panel/i }));
+
+    expect(await screen.findByTestId("studio-priming-panel")).toBeInTheDocument();
+    expect(await screen.findByTestId("studio-tutor-panel")).toBeInTheDocument();
+    expect(await screen.findByTestId("studio-polish-panel")).toBeInTheDocument();
+  });
+
   it.each([
     ["workspace", "studio-tldraw-workspace"],
     ["priming", "mock-priming-panel"],
     ["polish", "mock-polish-panel"],
-    ["final_sync", "mock-final-sync-panel"],
   ] as const)(
     "keeps the %s Studio view inside StudioShell",
     async (studioView, testId) => {
@@ -2343,4 +2565,14 @@ describe("TutorShell studio routing", () => {
       expect(await screen.findByTestId(testId)).toBeInTheDocument();
     },
   );
+
+  it("keeps Final Sync out of the floating panel registry", async () => {
+    renderTutorShell("final_sync");
+
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /open final sync panel/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("mock-final-sync-panel")).not.toBeInTheDocument();
+  });
 });

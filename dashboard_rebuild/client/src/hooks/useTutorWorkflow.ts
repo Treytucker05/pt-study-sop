@@ -20,9 +20,7 @@ import {
   formatSourceBlockText,
   formatSourceLineText,
   mergePrimingSourceInventory,
-  resolveStudioViewFromWorkflowStage,
 } from "@/lib/tutorUtils";
-import type { TutorPageMode, TutorStudioView } from "@/lib/tutorUtils";
 import { toast } from "sonner";
 import type { UseTutorHubReturn } from "./useTutorHub";
 import type { UseTutorSessionReturn } from "./useTutorSession";
@@ -40,8 +38,6 @@ export interface UseTutorWorkflowParams {
   hub: UseTutorHubReturn;
   session: TutorWorkflowSessionBridge;
   activeSessionId: string | null;
-  shellMode: TutorPageMode;
-  setShellMode: (mode: TutorPageMode) => void;
   hasRestored: boolean;
 }
 
@@ -247,33 +243,9 @@ export function useTutorWorkflow({
   hub,
   session,
   activeSessionId,
-  shellMode,
-  setShellMode,
   hasRestored,
 }: UseTutorWorkflowParams) {
   const queryClient = useQueryClient();
-
-  // ─── Workflow view state ───
-  const STUDIO_TAB_KEY = "tutor-studio-last-tab";
-  const [studioView, setStudioViewRaw] = useState<TutorStudioView>(() => {
-    try {
-      const stored = localStorage.getItem(STUDIO_TAB_KEY);
-      if (
-        stored === "home" ||
-        stored === "workspace" ||
-        stored === "priming" ||
-        stored === "polish" ||
-        stored === "final_sync"
-      ) {
-        return stored;
-      }
-    } catch { /* ignore */ }
-    return "home";
-  });
-  const setStudioView = useCallback((view: TutorStudioView) => {
-    setStudioViewRaw(view);
-    try { localStorage.setItem(STUDIO_TAB_KEY, view); } catch { /* ignore */ }
-  }, []);
   const [activeWorkflowId, setActiveWorkflowId] = useState<string | null>(null);
   const [workflowFilters, setWorkflowFilters] = useState<TutorWorkflowLaunchFilters>({
     search: "",
@@ -347,7 +319,7 @@ export function useTutorWorkflow({
         ...(workflowFilters.status !== "all" ? { status: workflowFilters.status } : {}),
         limit: 50,
       }),
-    enabled: hasRestored && shellMode === "studio",
+    enabled: hasRestored,
     staleTime: 15 * 1000,
   });
 
@@ -760,8 +732,6 @@ export function useTutorWorkflow({
         status: "priming_in_progress",
       });
       setActiveWorkflowId(result.workflow.workflow_id);
-      setStudioView("priming");
-      setShellMode("studio");
       await queryClient.invalidateQueries({ queryKey: ["tutor-workflows"] });
       toast.success("New study plan created");
     } catch (err) {
@@ -771,12 +741,10 @@ export function useTutorWorkflow({
     } finally {
       setCreatingWorkflow(false);
     }
-  }, [queryClient, resetPrimingDraft, setShellMode]);
+  }, [hub.courseId, hub.selectedObjectiveGroup, hub.topic, queryClient, resetPrimingDraft]);
 
   const openStudioPriming = useCallback(async () => {
     if (activeWorkflowId) {
-      setShellMode("studio");
-      setStudioView("priming");
       return activeWorkflowId;
     }
     if (creatingWorkflow || primingBootstrapInFlightRef.current) {
@@ -804,8 +772,6 @@ export function useTutorWorkflow({
         status: "priming_in_progress",
       });
       setActiveWorkflowId(result.workflow.workflow_id);
-      setStudioView("priming");
-      setShellMode("studio");
       await queryClient.invalidateQueries({ queryKey: ["tutor-workflows"] });
       toast.success("Priming workspace ready");
       return result.workflow.workflow_id;
@@ -830,7 +796,6 @@ export function useTutorWorkflow({
     hub.topic,
     queryClient,
     resetPrimingArtifacts,
-    setShellMode,
   ]);
 
   // ─── Delete workflow ───
@@ -852,8 +817,6 @@ export function useTutorWorkflow({
         if (deletingActiveWorkflow) {
           resetPrimingDraft();
           setActiveWorkflowId(null);
-          setStudioView("home");
-          setShellMode("studio");
           if (
             activeSessionId &&
             workflow.active_tutor_session_id &&
@@ -883,7 +846,6 @@ export function useTutorWorkflow({
       queryClient,
       resetPrimingDraft,
       session,
-      setShellMode,
     ],
   );
 
@@ -949,10 +911,7 @@ export function useTutorWorkflow({
       );
       return;
     }
-
-    setShellMode("studio");
-    setStudioView("polish");
-  }, [activeWorkflowId, queryClient, setShellMode]);
+  }, [activeWorkflowId, queryClient]);
 
   // ─── Save Polish bundle ───
   const saveWorkflowPolish = useCallback(
@@ -981,8 +940,6 @@ export function useTutorWorkflow({
           queryClient.invalidateQueries({ queryKey: ["tutor-workflow-detail", activeWorkflowId] }),
         ]);
 
-        setShellMode("studio");
-        setStudioView(finalize ? "final_sync" : "polish");
         toast.success(finalize ? "Polish bundle finalized for final sync." : "Polish bundle saved.");
         return true;
       } catch (err) {
@@ -994,7 +951,7 @@ export function useTutorWorkflow({
         setSavingPolishBundle(false);
       }
     },
-    [activeSessionId, activeWorkflowDetail?.priming_bundle?.id, activeWorkflowId, queryClient, setShellMode],
+    [activeSessionId, activeWorkflowDetail?.priming_bundle?.id, activeWorkflowId, queryClient],
   );
 
   // ─── Open workflow record ───
@@ -1034,15 +991,9 @@ export function useTutorWorkflow({
         }
       }
 
-      if (resolvedStage === "tutor") {
-        setShellMode("tutor");
-        return;
-      }
-
-      setShellMode("studio");
-      setStudioView(resolveStudioViewFromWorkflowStage(resolvedStage));
+      if (resolvedStage === "tutor") return;
     },
-    [activeSessionId, hub, queryClient, session, setShellMode],
+    [activeSessionId, hub, queryClient, session],
   );
 
   // ─── Note capture ───
@@ -1437,9 +1388,6 @@ export function useTutorWorkflow({
   }, [createWorkflowMemoryCapsule, session.latestCommittedAssistantMessage, memorySummaryText]);
 
   return {
-    // Workflow view state
-    studioView,
-    setStudioView,
     activeWorkflowId,
     setActiveWorkflowId,
     workflowFilters,

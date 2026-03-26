@@ -41,7 +41,7 @@ Preferred response shape: "Here is the best way to give you full access in one s
 - This file is the only project-specific policy source for `C:\pt-study-sop`.
 - Repo compatibility entrypoints (`CLAUDE.md`, `.claude/AGENTS.md`, `.claude/CLAUDE.md`) must defer to this file and must not carry independent project policy.
 - Repo-local Claude agents (`.claude/agents/*`) and command shims (`.claude/commands/*`) must read this file first, then apply only their role-specific delta.
-- Global home-directory tool files (`C:\Users\treyt\.claude\CLAUDE.md`, `C:\Users\treyt\.claude\rules\*`, `C:\Users\treyt\.claude\agents\*`, `C:\Users\treyt\.codex\AGENTS.md`, `C:\Users\treyt\.codex\config.toml`, `C:\Users\treyt\.codex\agents\*.toml`, `C:\Users\treyt\.codex\rules\default.rules`) stay cross-project only and must defer to repo canon when this repo is active.
+- Global home-directory tool files (`C:\Users\treyt\.claude\CLAUDE.md`, `C:\Users\treyt\.claude\rules\*`, `C:\Users\treyt\.claude\agents\*`, `C:\Users\treyt\.codex\AGENTS.md`, `C:\Users\treyt\.codex\config.toml`, `C:\Users\treyt\.codex\agents\*.toml`, `C:\Users\treyt\.codex\rules\default.rules`, `C:\Users\treyt\.hermes\config.yaml`, `C:\Users\treyt\.hermes\SOUL.md`) stay cross-project only and must defer to repo canon when this repo is active.
 - Tool/runtime settings may still live in tool-specific config files, but instruction authority for this repo stays in root `AGENTS.md`.
 - If a repo-local agent name overlaps with a home-directory agent name, the repo-local agent wins for this project.
 - If nested/module `AGENTS.md` files are added later, they override this root file only for their own subtree and still stay above home-directory defaults because they are repo-local canon.

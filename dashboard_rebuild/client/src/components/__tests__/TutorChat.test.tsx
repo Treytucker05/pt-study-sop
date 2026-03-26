@@ -81,6 +81,28 @@ describe("TutorChat", () => {
     vi.restoreAllMocks();
   });
 
+  it("focuses the composer without scrolling the page on session restore", () => {
+    const focusSpy = vi
+      .spyOn(HTMLInputElement.prototype, "focus")
+      .mockImplementation(() => {});
+
+    render(
+      <TutorChat
+        sessionId="sess-focus"
+        availableMaterials={[]}
+        selectedMaterialIds={[]}
+        accuracyProfile="balanced"
+        onAccuracyProfileChange={vi.fn()}
+        onSelectedMaterialIdsChange={vi.fn()}
+        onArtifactCreated={vi.fn()}
+        onTurnComplete={vi.fn()}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    expect(focusSpy).toHaveBeenCalledWith({ preventScroll: true });
+  });
+
   it("creates artifact from slash command after stream completes", async () => {
     const onArtifactCreated = vi.fn();
     const onTurnComplete = vi.fn();
