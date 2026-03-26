@@ -1645,3 +1645,25 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - `cd dashboard_rebuild && npx vitest run client/src/lib/__tests__/studioTutorStatus.test.ts client/src/lib/__tests__/studioMemoryStatus.test.ts client/src/components/__tests__/TutorChat.test.tsx client/src/hooks/__tests__/useTutorSession.test.tsx client/src/components/__tests__/TutorShell.test.tsx`
   - `pytest brain/tests/test_tutor_turn_stream_contract.py brain/tests/test_tutor_session_linking.py -q`
   - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-26 - Checkpoint 4B capsule resume and direct Tutor vault save revalidation
+
+- Revalidated the already-landed Checkpoint 4B slices after committing 4A. No additional implementation changes were required because the live runtime and public-interface tests already covered the requested behavior.
+- Slice 4B.1 green: manual resume-from-capsule flow remains live.
+  - `dashboard_rebuild/client/src/components/studio/MemoryPanel.tsx` still exposes `Resume from Capsule vN` actions.
+  - `dashboard_rebuild/client/src/components/TutorShell.tsx` still routes capsule activation through StudioRun-owned `activeMemoryCapsuleId`.
+  - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx` still proves a user can activate a specific capsule from the Memory panel.
+- Slice 4B.2 green: direct Tutor note -> vault save remains live.
+  - `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts` still writes exact/editable Tutor notes straight to Obsidian through `api.obsidian.saveFile(...)` without routing through Polish.
+  - `dashboard_rebuild/client/src/components/tutor-shell/TutorLiveStudyPane.tsx` still exposes `SAVE EXACT TO VAULT` and `SAVE EDITABLE TO VAULT` inside the Tutor panel.
+  - `dashboard_rebuild/client/src/hooks/__tests__/useTutorWorkflow.test.tsx` and `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx` still prove the direct vault-save path works from both the workflow and panel layers.
+- Slice 4B.3 green: direct note-save status persistence and surface remain live.
+  - `dashboard_rebuild/client/src/hooks/useStudioRun.ts` still persists `directNoteSaveStatus` and `activeMemoryCapsuleId` inside StudioRun runtime authority.
+  - `dashboard_rebuild/client/src/lib/studioTutorStatus.ts` still projects that runtime state into the Tutor Status surface with `Saving to vault`, `Saved to vault`, and `Vault save failed`.
+  - `dashboard_rebuild/client/src/hooks/__tests__/useStudioRun.test.tsx`, `dashboard_rebuild/client/src/lib/__tests__/studioTutorStatus.test.ts`, and `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx` still prove the persisted status is restored and visible.
+- Checkpoint 4B verification passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/hooks/__tests__/useTutorWorkflow.test.tsx client/src/hooks/__tests__/useStudioRun.test.tsx client/src/lib/__tests__/studioTutorStatus.test.ts`
+  - `cd dashboard_rebuild && npm run build`
+  - live `dev-browser` verification on `http://127.0.0.1:5000/tutor` confirmed the Tutor panel still exposes the direct vault-save controls:
+    - screenshot: `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint4b-tutor.png`
+    - DOM snapshot: `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint4b-tutor-dom.txt`

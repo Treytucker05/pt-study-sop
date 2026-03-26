@@ -1667,3 +1667,14 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npx vitest run client/src/lib/__tests__/studioTutorStatus.test.ts client/src/lib/__tests__/studioMemoryStatus.test.ts client/src/components/__tests__/TutorChat.test.tsx client/src/hooks/__tests__/useTutorSession.test.tsx client/src/components/__tests__/TutorShell.test.tsx`
   - `pytest brain/tests/test_tutor_turn_stream_contract.py brain/tests/test_tutor_session_linking.py -q`
   - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-26 - Checkpoint 4B capsule resume and direct Tutor vault save revalidation
+
+- Revalidated the already-landed Checkpoint 4B behavior after committing 4A; no additional implementation change was required.
+- Capsule resume remains wired through `MemoryPanel` -> `TutorShell` -> StudioRun `activeMemoryCapsuleId`, and the public Tutor shell test still proves users can activate a specific capsule from the Memory panel.
+- Direct Tutor note -> vault save remains wired through `useTutorWorkflow.saveWorkflowNoteToVault(...)` and the Tutor panel save buttons, without routing through Polish.
+- Direct vault-save runtime state remains persisted in StudioRun and projected into Tutor Status as `Saving to vault`, `Saved to vault`, or `Vault save failed`.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/hooks/__tests__/useTutorWorkflow.test.tsx client/src/hooks/__tests__/useStudioRun.test.tsx client/src/lib/__tests__/studioTutorStatus.test.ts`
+  - `cd dashboard_rebuild && npm run build`
+  - live `dev-browser` verification on `http://127.0.0.1:5000/tutor` produced `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint4b-tutor.png` and `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint4b-tutor-dom.txt`
