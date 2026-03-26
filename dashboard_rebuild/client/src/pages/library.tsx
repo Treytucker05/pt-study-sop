@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import {
   consumeLibraryLaunchFromTutor,
   readTutorSelectedMaterialIds,
+  writeTutorStoredStartState,
   writeTutorSelectedMaterialIds,
 } from "@/lib/tutorClientState";
 import type {
@@ -850,9 +851,39 @@ function useLibraryPageController() {
       toast.error("Choose files for the Tutor queue before opening Tutor.");
       return;
     }
+    const selectedTutorMaterials = materials.filter((material) =>
+      selectedForTutor.includes(material.id),
+    );
+    const selectedCourseIds = Array.from(
+      new Set(
+        selectedTutorMaterials
+          .map((material) => material.course_id)
+          .filter((value): value is number => typeof value === "number" && value > 0),
+      ),
+    );
+    const handoffCourseId =
+      selectedCourseIds.length === 1
+        ? selectedCourseIds[0]
+        : typeof selectedCourseId === "number"
+          ? selectedCourseId
+          : undefined;
+
     writeTutorSelectedMaterialIds(selectedForTutor);
+    writeTutorStoredStartState({
+      courseId: handoffCourseId,
+      topic: "",
+      selectedMaterials: selectedForTutor,
+      chainId: undefined,
+      customBlockIds: [],
+      accuracyProfile: "strict",
+      objectiveScope: "module_all",
+      selectedObjectiveId: "",
+      selectedObjectiveGroup: "",
+      selectedPaths: [],
+    });
     try {
       localStorage.removeItem("tutor.wizard.progress.v1");
+      localStorage.setItem("tutor-studio-last-tab", "workspace");
     } catch {
       /* localStorage unavailable — ignore */
     }
@@ -861,7 +892,11 @@ function useLibraryPageController() {
     } catch {
       /* sessionStorage unavailable — ignore */
     }
-    setLocation("/tutor");
+    setLocation(
+      handoffCourseId
+        ? `/tutor?course_id=${handoffCourseId}&mode=studio`
+        : "/tutor?mode=studio",
+    );
   };
 
   const replaceTutorQueueWithVisible = () => {

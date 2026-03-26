@@ -25,6 +25,7 @@ export interface BuildStudioMemoryStatusInput {
   turnCount: number;
   latestAssistantContent?: string | null;
   stageTimerDisplaySeconds: number;
+  compactionTelemetry?: Record<string, unknown> | null;
 }
 
 function formatCapsuleTimestamp(value: string): string {
@@ -58,6 +59,7 @@ export function buildStudioMemoryStatus({
   turnCount,
   latestAssistantContent,
   stageTimerDisplaySeconds,
+  compactionTelemetry,
 }: BuildStudioMemoryStatusInput): StudioMemoryStatusModel {
   const sortedCapsules = [...memoryCapsules].sort((left, right) => {
     if (right.capsule_version !== left.capsule_version) {
@@ -76,6 +78,7 @@ export function buildStudioMemoryStatus({
       memoryCapsuleCount: memoryCapsules.length,
       latestAssistantCharacters: latestAssistantContent?.trim().length ?? 0,
       stageTimerDisplaySeconds,
+      compactionTelemetry,
     }),
   };
 }

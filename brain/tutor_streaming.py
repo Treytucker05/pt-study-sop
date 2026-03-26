@@ -23,6 +23,7 @@ def format_sse_done(
     summary: Optional[str] = None,
     model: Optional[str] = None,
     retrieval_debug: Optional[dict] = None,
+    compaction_telemetry: Optional[dict] = None,
     timing: Optional[dict] = None,
     behavior_override: Optional[str] = None,
     verdict: Optional[dict] = None,
@@ -42,6 +43,8 @@ def format_sse_done(
         payload["model"] = model
     if retrieval_debug:
         payload["retrieval_debug"] = retrieval_debug
+    if compaction_telemetry:
+        payload["compaction_telemetry"] = compaction_telemetry
     if timing:
         payload["timing"] = timing
     if behavior_override:

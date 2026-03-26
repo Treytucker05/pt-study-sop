@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect, useCallback, type Dispatch, type SetStateAction } from "react";
 import type { TutorCitation, TutorRetrievalDebug, TutorSSEChunk, TutorVerdict, TeachBackRubric, BehaviorOverride, TutorAccuracyProfile } from "@/lib/api";
-import type { ChatMessage, ToolAction } from "./TutorChat.types";
+import type {
+  ChatMessage,
+  ToolAction,
+  TutorTurnCompletePayload,
+} from "./TutorChat.types";
 import { normalizeArtifactType, parseArtifactCommand, detectMarkdownTable, detectMermaidBlock, TOOL_LABELS } from "./TutorChat.types";
 
 interface UseSSEStreamOptions {
@@ -8,6 +12,7 @@ interface UseSSEStreamOptions {
   selectedMaterialIds: number[];
   selectedVaultPaths: string[];
   accuracyProfile: TutorAccuracyProfile;
+  memoryCapsuleContext?: string | null;
   behaviorOverride: BehaviorOverride | null;
   onBehaviorOverrideReset: () => void;
   onArtifactCreated: (artifact: { type: string; content: string; title?: string }) => void;
@@ -15,7 +20,7 @@ interface UseSSEStreamOptions {
     userMessage: string;
     assistantMessage: ChatMessage;
   }) => void;
-  onTurnComplete?: (masteryUpdate?: { skill_id: string; new_mastery: number; correct: boolean }) => void;
+  onTurnComplete?: (payload?: TutorTurnCompletePayload) => void;
   initialTurns?: { question: string; answer: string | null }[];
   materialsOn: boolean;
   obsidianOn: boolean;
@@ -52,6 +57,7 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
     selectedMaterialIds,
     selectedVaultPaths,
     accuracyProfile,
+    memoryCapsuleContext,
     behaviorOverride,
     onBehaviorOverrideReset,
     onArtifactCreated,
@@ -159,6 +165,9 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
             accuracy_profile: accuracyProfile,
             ...(selectedVaultPaths.length > 0 ? { folders: selectedVaultPaths } : {}),
             ...(referenceTargets.length > 0 ? { reference_targets: referenceTargets } : {}),
+            ...(memoryCapsuleContext
+              ? { memory_capsule_context: memoryCapsuleContext }
+              : {}),
           },
           behavior_override: activeBehavior,
           mode: {
@@ -203,6 +212,7 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
       let verdictData: TutorVerdict | undefined;
       let teachBackData: TeachBackRubric | undefined;
       let masteryUpdateData: { skill_id: string; new_mastery: number; correct: boolean } | undefined;
+      let compactionTelemetryData: Record<string, unknown> | null = null;
       let parseErrorCount = 0;
       let streamErrored = false;
       let doneSignal = false;
@@ -331,6 +341,7 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
               citations = parsed.citations ?? [];
               modelId = parsed.model;
               retrievalDebug = parsed.retrieval_debug;
+              compactionTelemetryData = parsed.compaction_telemetry ?? null;
               verdictData = parsed.verdict;
               teachBackData = parsed.teach_back_rubric;
               masteryUpdateData = parsed.mastery_update;
@@ -413,8 +424,10 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
         assistantMessage: finalAssistantMessage,
       });
 
-      // Notify turn completion (with mastery update if present)
-      onTurnComplete?.(masteryUpdateData);
+      onTurnComplete?.({
+        masteryUpdate: masteryUpdateData,
+        compactionTelemetry: compactionTelemetryData,
+      });
 
       // Handle artifact slash commands after response
       if (command.type) {
@@ -493,6 +506,7 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
     selectedMaterialIds,
     selectedVaultPaths,
     accuracyProfile,
+    memoryCapsuleContext,
     materialsOn,
     obsidianOn,
     webSearchOn,

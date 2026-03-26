@@ -19,8 +19,12 @@ from db_setup import get_connection
 
 from dashboard.api_tutor import tutor_bp  # noqa: E402
 
-VALID_SHELL_MODES = {"studio", "tutor", "schedule", "publish"}
+VALID_SHELL_MODES = {"studio", "tutor"}
 VALID_BOARD_SCOPES = {"session", "project", "overall"}
+
+
+def _normalize_shell_mode(value: Any) -> str:
+    return "tutor" if value == "tutor" else "studio"
 
 
 def _require_course(conn: sqlite3.Connection, course_id: int) -> sqlite3.Row | None:
@@ -74,25 +78,73 @@ def _normalize_json_object_list(value: Any, *, field_name: str) -> list[dict[str
     return normalized
 
 
-def _normalize_material_ids(value: Any) -> list[int]:
+def _normalize_optional_string(value: Any, *, field_name: str) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a string")
+    return value
+
+
+def _normalize_int_list(value: Any, *, field_name: str) -> list[int]:
     if value is None:
         return []
     if not isinstance(value, list):
-        raise ValueError("selected_material_ids must be a list of integers")
+        raise ValueError(f"{field_name} must be a list of integers")
     deduped: list[int] = []
     seen: set[int] = set()
     for raw in value:
         if isinstance(raw, bool):
-            raise ValueError("selected_material_ids must contain only integers")
+            raise ValueError(f"{field_name} must contain only integers")
         try:
             parsed = int(raw)
         except (TypeError, ValueError) as exc:
-            raise ValueError("selected_material_ids must contain only integers") from exc
+            raise ValueError(f"{field_name} must contain only integers") from exc
         if parsed in seen:
             continue
         seen.add(parsed)
         deduped.append(parsed)
     return deduped
+
+
+def _normalize_material_ids(value: Any) -> list[int]:
+    return _normalize_int_list(value, field_name="selected_material_ids")
+
+
+def _normalize_runtime_state(value: Any) -> dict[str, Any]:
+    if value is None:
+        return {
+            "active_memory_capsule_id": None,
+            "compaction_telemetry": None,
+            "direct_note_save_status": None,
+        }
+    if not isinstance(value, dict):
+        raise ValueError("runtime_state must be an object")
+
+    raw_active_memory_capsule_id = value.get("active_memory_capsule_id")
+    if raw_active_memory_capsule_id is None:
+        active_memory_capsule_id = None
+    elif isinstance(raw_active_memory_capsule_id, bool):
+        raise ValueError("runtime_state.active_memory_capsule_id must be an integer")
+    else:
+        try:
+            active_memory_capsule_id = int(raw_active_memory_capsule_id)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "runtime_state.active_memory_capsule_id must be an integer"
+            ) from exc
+
+    return {
+        "active_memory_capsule_id": active_memory_capsule_id,
+        "compaction_telemetry": _normalize_json_dict(
+            value.get("compaction_telemetry"),
+            field_name="runtime_state.compaction_telemetry",
+        ),
+        "direct_note_save_status": _normalize_json_dict(
+            value.get("direct_note_save_status"),
+            field_name="runtime_state.direct_note_save_status",
+        ),
+    }
 
 
 def _serialize_workspace_state(row: sqlite3.Row | None) -> dict[str, Any]:
@@ -103,6 +155,12 @@ def _serialize_workspace_state(row: sqlite3.Row | None) -> dict[str, Any]:
             "active_board_scope": "project",
             "active_board_id": None,
             "viewer_state": None,
+            "panel_layout": [],
+            "document_tabs": [],
+            "active_document_tab_id": None,
+            "runtime_state": None,
+            "tutor_chain_id": None,
+            "tutor_custom_block_ids": [],
             "prime_packet_promoted_objects": [],
             "polish_packet_promoted_notes": [],
             "selected_material_ids": [],
@@ -124,6 +182,46 @@ def _serialize_workspace_state(row: sqlite3.Row | None) -> dict[str, Any]:
                 selected_material_ids = [int(item) for item in parsed_ids]
         except (TypeError, ValueError, json.JSONDecodeError):
             selected_material_ids = []
+    panel_layout: list[dict[str, Any]] = []
+    if "panel_layout_json" in row.keys() and row["panel_layout_json"]:
+        try:
+            parsed_layout = json.loads(row["panel_layout_json"])
+            if isinstance(parsed_layout, list):
+                panel_layout = [item for item in parsed_layout if isinstance(item, dict)]
+        except json.JSONDecodeError:
+            panel_layout = []
+    document_tabs: list[dict[str, Any]] = []
+    if "document_tabs_json" in row.keys() and row["document_tabs_json"]:
+        try:
+            parsed_tabs = json.loads(row["document_tabs_json"])
+            if isinstance(parsed_tabs, list):
+                document_tabs = [item for item in parsed_tabs if isinstance(item, dict)]
+        except json.JSONDecodeError:
+            document_tabs = []
+    runtime_state = {
+        "active_memory_capsule_id": None,
+        "compaction_telemetry": None,
+        "direct_note_save_status": None,
+    }
+    if "runtime_state_json" in row.keys() and row["runtime_state_json"]:
+        try:
+            runtime_state = _normalize_runtime_state(json.loads(row["runtime_state_json"]))
+        except (TypeError, ValueError, json.JSONDecodeError):
+            runtime_state = {
+                "active_memory_capsule_id": None,
+                "compaction_telemetry": None,
+                "direct_note_save_status": None,
+            }
+    tutor_custom_block_ids: list[int] = []
+    if "tutor_custom_block_ids_json" in row.keys() and row["tutor_custom_block_ids_json"]:
+        try:
+            parsed_tutor_block_ids = json.loads(row["tutor_custom_block_ids_json"])
+            tutor_custom_block_ids = _normalize_int_list(
+                parsed_tutor_block_ids,
+                field_name="tutor_custom_block_ids",
+            )
+        except (TypeError, ValueError, json.JSONDecodeError):
+            tutor_custom_block_ids = []
     prime_packet_promoted_objects: list[dict[str, Any]] = []
     if row["prime_packet_promoted_objects_json"]:
         try:
@@ -146,10 +244,16 @@ def _serialize_workspace_state(row: sqlite3.Row | None) -> dict[str, Any]:
             polish_packet_promoted_notes = []
     return {
         "active_tutor_session_id": row["active_tutor_session_id"],
-        "last_mode": row["last_mode"] or "studio",
+        "last_mode": _normalize_shell_mode(row["last_mode"]),
         "active_board_scope": row["active_board_scope"] or "project",
         "active_board_id": row["active_board_id"],
         "viewer_state": viewer_state,
+        "panel_layout": panel_layout,
+        "document_tabs": document_tabs,
+        "active_document_tab_id": row["active_document_tab_id"],
+        "runtime_state": runtime_state,
+        "tutor_chain_id": row["tutor_chain_id"] if "tutor_chain_id" in row.keys() else None,
+        "tutor_custom_block_ids": tutor_custom_block_ids,
         "prime_packet_promoted_objects": prime_packet_promoted_objects,
         "polish_packet_promoted_notes": polish_packet_promoted_notes,
         "selected_material_ids": selected_material_ids,
@@ -214,12 +318,8 @@ def _serialize_hub_event(row: sqlite3.Row | dict[str, Any]) -> dict[str, Any]:
 
 
 def _format_resume_label(last_mode: str | None, topic: str | None) -> str:
-    if last_mode == "studio":
+    if _normalize_shell_mode(last_mode) == "studio":
         return "Resume Studio Workspace"
-    if last_mode == "schedule":
-        return "Resume Schedule"
-    if last_mode == "publish":
-        return "Resume Publish"
     if topic:
         return "Resume Tutor Session"
     return "Resume Tutor"
@@ -499,7 +599,7 @@ def get_tutor_hub():
                 "session_id": None,
                 "course_event_id": int(planner_task["course_event_id"]) if planner_task["course_event_id"] is not None else None,
                 "event_type": planner_task["event_type"],
-                "shell_mode": "schedule",
+                "shell_mode": "studio",
                 "action_label": _format_action_label("planner_task"),
             }
         elif tests:
@@ -514,7 +614,7 @@ def get_tutor_hub():
                 "session_id": None,
                 "course_event_id": top_test["id"],
                 "event_type": top_test["type"],
-                "shell_mode": "schedule",
+                "shell_mode": "studio",
                 "action_label": _format_action_label("exam"),
             }
         elif assignments:
@@ -529,7 +629,7 @@ def get_tutor_hub():
                 "session_id": None,
                 "course_event_id": top_assignment["id"],
                 "event_type": top_assignment["type"],
-                "shell_mode": "schedule",
+                "shell_mode": "studio",
                 "action_label": _format_action_label("assignment"),
             }
         elif current_wheel is not None:
@@ -641,7 +741,9 @@ def get_project_shell():
         cur.execute(
             """
             SELECT course_id, active_tutor_session_id, last_mode, active_board_scope,
-                   active_board_id, viewer_state_json, prime_packet_promoted_objects_json,
+                   active_board_id, viewer_state_json, panel_layout_json, document_tabs_json,
+                   active_document_tab_id, runtime_state_json, tutor_chain_id, tutor_custom_block_ids_json,
+                   prime_packet_promoted_objects_json,
                    polish_packet_promoted_notes_json,
                    selected_material_ids_json,
                    revision, updated_at
@@ -767,6 +869,33 @@ def save_project_shell_state():
 
     try:
         viewer_state = _normalize_json_dict(data.get("viewer_state"), field_name="viewer_state")
+        panel_layout = _normalize_json_object_list(
+            data.get("panel_layout"),
+            field_name="panel_layout",
+        )
+        document_tabs = _normalize_json_object_list(
+            data.get("document_tabs"),
+            field_name="document_tabs",
+        )
+        active_document_tab_id = _normalize_optional_string(
+            data.get("active_document_tab_id"),
+            field_name="active_document_tab_id",
+        )
+        runtime_state = _normalize_runtime_state(data.get("runtime_state"))
+        raw_tutor_chain_id = data.get("tutor_chain_id")
+        if raw_tutor_chain_id is None:
+            tutor_chain_id = None
+        elif isinstance(raw_tutor_chain_id, bool):
+            raise ValueError("tutor_chain_id must be an integer")
+        else:
+            try:
+                tutor_chain_id = int(raw_tutor_chain_id)
+            except (TypeError, ValueError) as exc:
+                raise ValueError("tutor_chain_id must be an integer") from exc
+        tutor_custom_block_ids = _normalize_int_list(
+            data.get("tutor_custom_block_ids"),
+            field_name="tutor_custom_block_ids",
+        )
         prime_packet_promoted_objects = _normalize_json_object_list(
             data.get("prime_packet_promoted_objects"),
             field_name="prime_packet_promoted_objects",
@@ -832,6 +961,12 @@ def save_project_shell_state():
             active_board_scope,
             active_board_id,
             json.dumps(viewer_state) if viewer_state is not None else None,
+            json.dumps(panel_layout),
+            json.dumps(document_tabs),
+            active_document_tab_id,
+            json.dumps(runtime_state),
+            tutor_chain_id,
+            json.dumps(tutor_custom_block_ids),
             json.dumps(prime_packet_promoted_objects),
             json.dumps(polish_packet_promoted_notes),
             json.dumps(selected_material_ids),
@@ -847,6 +982,12 @@ def save_project_shell_state():
                 active_board_scope,
                 active_board_id,
                 viewer_state_json,
+                panel_layout_json,
+                document_tabs_json,
+                active_document_tab_id,
+                runtime_state_json,
+                tutor_chain_id,
+                tutor_custom_block_ids_json,
                 prime_packet_promoted_objects_json,
                 polish_packet_promoted_notes_json,
                 selected_material_ids_json,
@@ -854,13 +995,19 @@ def save_project_shell_state():
                 updated_at,
                 course_id
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(course_id) DO UPDATE SET
                 active_tutor_session_id = excluded.active_tutor_session_id,
                 last_mode = excluded.last_mode,
                 active_board_scope = excluded.active_board_scope,
                 active_board_id = excluded.active_board_id,
                 viewer_state_json = excluded.viewer_state_json,
+                panel_layout_json = excluded.panel_layout_json,
+                document_tabs_json = excluded.document_tabs_json,
+                active_document_tab_id = excluded.active_document_tab_id,
+                runtime_state_json = excluded.runtime_state_json,
+                tutor_chain_id = excluded.tutor_chain_id,
+                tutor_custom_block_ids_json = excluded.tutor_custom_block_ids_json,
                 prime_packet_promoted_objects_json = excluded.prime_packet_promoted_objects_json,
                 polish_packet_promoted_notes_json = excluded.polish_packet_promoted_notes_json,
                 selected_material_ids_json = excluded.selected_material_ids_json,
@@ -874,7 +1021,9 @@ def save_project_shell_state():
         cur.execute(
             """
             SELECT course_id, active_tutor_session_id, last_mode, active_board_scope,
-                   active_board_id, viewer_state_json, prime_packet_promoted_objects_json,
+                   active_board_id, viewer_state_json, panel_layout_json, document_tabs_json,
+                   active_document_tab_id, runtime_state_json, tutor_chain_id, tutor_custom_block_ids_json,
+                   prime_packet_promoted_objects_json,
                    polish_packet_promoted_notes_json,
                    selected_material_ids_json,
                    revision, updated_at

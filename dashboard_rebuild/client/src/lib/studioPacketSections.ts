@@ -139,6 +139,44 @@ function buildFallbackSourceEntries(
   }));
 }
 
+function buildPromotedArtifactEntry(
+  workspaceObject: Exclude<StudioWorkspaceObject, { kind: "material" | "vault_path" | "excerpt" }>,
+): StudioPacketEntry {
+  if (workspaceObject.kind === "link_reference") {
+    return {
+      id: `workspace-link:${workspaceObject.id}`,
+      title: workspaceObject.title,
+      detail: `${workspaceObject.detail} • ${workspaceObject.href}`,
+      badge: workspaceObject.badge,
+    };
+  }
+
+  if (workspaceObject.kind === "image") {
+    return {
+      id: `workspace-image:${workspaceObject.id}`,
+      title: workspaceObject.title,
+      detail: workspaceObject.detail,
+      badge: workspaceObject.badge,
+    };
+  }
+
+  if (workspaceObject.kind === "diagram_sketch") {
+    return {
+      id: `workspace-diagram:${workspaceObject.id}`,
+      title: workspaceObject.title,
+      detail: workspaceObject.detail,
+      badge: workspaceObject.badge,
+    };
+  }
+
+  return {
+    id: `workspace-note:${workspaceObject.id}`,
+    title: workspaceObject.title,
+    detail: workspaceObject.detail,
+    badge: workspaceObject.badge,
+  };
+}
+
 export function buildPrimePacketSections({
   materials,
   selectedMaterialIds,
@@ -276,15 +314,15 @@ export function buildPrimePacketSections({
       .filter(
         (
           workspaceObject,
-        ): workspaceObject is Extract<StudioWorkspaceObject, { kind: "text_note" }> =>
-          workspaceObject.kind === "text_note",
+        ): workspaceObject is Exclude<
+          StudioWorkspaceObject,
+          { kind: "material" | "vault_path" | "excerpt" }
+        > =>
+          workspaceObject.kind !== "material" &&
+          workspaceObject.kind !== "vault_path" &&
+          workspaceObject.kind !== "excerpt",
       )
-      .map((workspaceObject) => ({
-        id: `workspace-note:${workspaceObject.id}`,
-        title: workspaceObject.title,
-        detail: workspaceObject.detail,
-        badge: workspaceObject.badge,
-      })),
+      .map(buildPromotedArtifactEntry),
   );
 
   return [

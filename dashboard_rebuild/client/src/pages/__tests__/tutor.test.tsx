@@ -13,6 +13,7 @@ const {
   getTemplateChainsMock,
   listWorkflowsMock,
   preflightSessionMock,
+  createSessionMock,
   getLearningObjectivesByCourseMock,
   getCurrentCourseMock,
   fetchCourseMapMock,
@@ -36,6 +37,7 @@ const {
   getTemplateChainsMock: vi.fn(),
   listWorkflowsMock: vi.fn(),
   preflightSessionMock: vi.fn(),
+  createSessionMock: vi.fn(),
   getLearningObjectivesByCourseMock: vi.fn(),
   getCurrentCourseMock: vi.fn(),
   fetchCourseMapMock: vi.fn(),
@@ -272,6 +274,7 @@ vi.mock("@/lib/api", () => ({
       listWorkflows: listWorkflowsMock,
       preflightSession: preflightSessionMock,
       getSession: getSessionMock,
+      createSession: createSessionMock,
       getSettings: vi.fn().mockResolvedValue({ custom_instructions: "" }),
       saveSettings: vi.fn().mockResolvedValue({ custom_instructions: "" }),
       getProjectShell: getProjectShellMock,
@@ -280,7 +283,6 @@ vi.mock("@/lib/api", () => ({
       promoteStudioItem: promoteStudioItemMock,
       createArtifact: vi.fn(),
       deleteArtifacts: vi.fn(),
-      createSession: vi.fn(),
       createCustomChain: vi.fn(),
       endSession: vi.fn(),
       advanceBlock: vi.fn(),
@@ -313,6 +315,12 @@ function makeProjectShell(
     last_mode: "studio" | "tutor" | "schedule" | "publish";
     active_session_id: string | null;
     active_board_scope: "session" | "project" | "overall";
+    panel_layout: Record<string, unknown>[];
+    document_tabs: Record<string, unknown>[];
+    active_document_tab_id: string | null;
+    runtime_state: Record<string, unknown> | null;
+    tutor_chain_id: number | null;
+    tutor_custom_block_ids: number[];
     prime_packet_promoted_objects: Record<string, unknown>[];
     polish_packet_promoted_notes: Record<string, unknown>[];
     selected_material_ids: number[];
@@ -338,6 +346,12 @@ function makeProjectShell(
       active_board_scope: overrides.active_board_scope || "project",
       active_board_id: null,
       viewer_state: null,
+      panel_layout: overrides.panel_layout || [],
+      document_tabs: overrides.document_tabs || [],
+      active_document_tab_id: overrides.active_document_tab_id || null,
+      runtime_state: overrides.runtime_state || null,
+      tutor_chain_id: overrides.tutor_chain_id ?? null,
+      tutor_custom_block_ids: overrides.tutor_custom_block_ids || [],
       prime_packet_promoted_objects:
         overrides.prime_packet_promoted_objects || [],
       polish_packet_promoted_notes:
@@ -497,6 +511,7 @@ describe("Tutor page restore", () => {
     getContentSourcesMock.mockResolvedValue({ courses: [] });
     getTemplateChainsMock.mockResolvedValue([]);
     listWorkflowsMock.mockResolvedValue({ items: [], count: 0 });
+    createSessionMock.mockResolvedValue({ session_id: "sess-started" });
     preflightSessionMock.mockResolvedValue({
       ok: true,
       preflight_id: "preflight-test",
@@ -542,6 +557,9 @@ describe("Tutor page restore", () => {
         prime_packet_promoted_objects?: Record<string, unknown>[];
         polish_packet_promoted_notes?: Record<string, unknown>[];
         selected_material_ids?: number[];
+        runtime_state?: Record<string, unknown> | null;
+        tutor_chain_id?: number | null;
+        tutor_custom_block_ids?: number[];
         revision?: number;
       }) => ({
         workspace_state: {
@@ -550,6 +568,12 @@ describe("Tutor page restore", () => {
           active_board_scope: data.active_board_scope || "project",
           active_board_id: null,
           viewer_state: null,
+          panel_layout: [],
+          document_tabs: [],
+          active_document_tab_id: null,
+          runtime_state: data.runtime_state || null,
+          tutor_chain_id: data.tutor_chain_id ?? null,
+          tutor_custom_block_ids: data.tutor_custom_block_ids || [],
           prime_packet_promoted_objects:
             data.prime_packet_promoted_objects || [],
           polish_packet_promoted_notes:
@@ -615,11 +639,9 @@ describe("Tutor page restore", () => {
     renderTutor();
 
     expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
-    expect(screen.getByTestId("tutor-launch-hub")).toBeInTheDocument();
-    expect(screen.getByText("STUDIO HUB")).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /theme lab/i }),
-    ).toBeInTheDocument();
+    expect(screen.queryByTestId("tutor-launch-hub")).not.toBeInTheDocument();
+    expect(screen.queryByText("STUDIO HUB")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /theme lab/i })).not.toBeInTheDocument();
     const tabBar = screen.getByTestId("workspace-tab-bar");
     expect(tabBar).toBeInTheDocument();
     const heroPortal = document.getElementById("page-hero-portal");
@@ -664,6 +686,124 @@ describe("Tutor page restore", () => {
       await screen.findByText("READY TO RUN A STUDY SESSION"),
     ).toBeInTheDocument();
     expect(screen.queryByText("WORKSPACE HOME")).not.toBeInTheDocument();
+  });
+
+  it("starts a Tutor session directly from the Tutor panel", async () => {
+    window.history.replaceState({}, "", "/tutor?course_id=77&mode=tutor");
+    getSessionMock.mockResolvedValueOnce({
+      session_id: "sess-started",
+      status: "active",
+      turn_count: 0,
+      started_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+      topic: "Tutor Panel Session",
+      course_id: 77,
+      method_chain_id: null,
+      current_block_index: 0,
+      chain_blocks: [],
+      content_filter: {
+        material_ids: [],
+        accuracy_profile: "strict",
+        objective_scope: "module_all",
+      },
+      artifacts_json: "[]",
+      turns: [],
+    });
+
+    renderTutor();
+
+    expect(
+      await screen.findByText("READY TO RUN A STUDY SESSION"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /^start session$/i }));
+
+    await waitFor(() => {
+      expect(createSessionMock).toHaveBeenCalled();
+    });
+    await waitFor(() => {
+      expect(getSessionMock).toHaveBeenCalledWith("sess-started");
+    });
+    expect(await screen.findByTestId("tutor-chat")).toBeInTheDocument();
+  });
+
+  it("infers the Tutor study unit from the scoped material when starting from the panel", async () => {
+    window.history.replaceState({}, "", "/tutor?course_id=1&mode=tutor");
+    localStorage.setItem("tutor.selected_material_ids.v2", JSON.stringify([561]));
+    getMaterialsMock.mockResolvedValue([
+      {
+        id: 561,
+        course_id: 1,
+        title: "Cardiovascular",
+        source_path: "C:\\pt-study-sop\\brain\\data\\uploads\\b9b96302c2b9_Cardiovascular.pdf",
+        file_type: "pdf",
+        folder_path: "",
+        enabled: 1,
+      },
+    ]);
+    getContentSourcesMock.mockResolvedValue({
+      courses: [{ id: 1, name: "Exercise Physiology" }],
+    });
+    getLearningObjectivesByCourseMock.mockResolvedValue([
+      {
+        id: 80,
+        courseId: 1,
+        loCode: "OBJ-001",
+        title: "Describe the major functions of the cardiovascular system",
+        groupName: "Cardiovascular",
+        status: "active",
+        moduleId: null,
+        createdAt: "2026-03-21T01:25:09.53225",
+        updatedAt: "2026-03-21T01:25:09.53225",
+        lastSessionDate: null,
+        lastSessionId: null,
+        nextAction: null,
+        managedByTutor: true,
+      },
+    ]);
+    getSessionMock.mockResolvedValueOnce({
+      session_id: "sess-started",
+      status: "active",
+      turn_count: 0,
+      started_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+      topic: "Cardiovascular",
+      course_id: 1,
+      method_chain_id: null,
+      current_block_index: 0,
+      chain_blocks: [],
+      content_filter: {
+        material_ids: [561],
+        accuracy_profile: "strict",
+        objective_scope: "module_all",
+        vault_folder: "Courses/Exercise Physiology/Cardiovascular",
+      },
+      artifacts_json: "[]",
+      turns: [],
+    });
+
+    renderTutor();
+
+    expect(
+      await screen.findByText("READY TO RUN A STUDY SESSION"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /^start session$/i }));
+
+    await waitFor(() => {
+      expect(preflightSessionMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          topic: "Cardiovascular",
+          study_unit: "Cardiovascular",
+          module_name: "Cardiovascular",
+          content_filter: expect.objectContaining({
+            material_ids: [561],
+            vault_folder: "Courses/Exercise Physiology/Cardiovascular",
+          }),
+        }),
+      );
+    });
+    await waitFor(() => {
+      expect(createSessionMock).toHaveBeenCalled();
+    });
   });
 
   it("does not surface a completed backend session as a live Tutor session", async () => {
@@ -766,8 +906,8 @@ describe("Tutor page restore", () => {
     renderTutor();
 
     fireEvent.click(
-      within(await screen.findByTestId("tutor-launch-hub")).getByRole("button", {
-        name: /^resume$/i,
+      await screen.findByRole("button", {
+        name: /resume where i left off/i,
       }),
     );
 
@@ -993,6 +1133,219 @@ describe("Tutor page restore", () => {
     expect(screen.queryByTestId("tutor-publish-mode")).not.toBeInTheDocument();
   });
 
+  it("hydrates floating panel layout and document tabs from StudioRun authority", async () => {
+    getProjectShellMock.mockResolvedValue(
+      makeProjectShell(77, {
+        panel_layout: [
+          {
+            id: "panel-source-shelf",
+            panel: "source_shelf",
+            position: { x: 24, y: 32 },
+            size: { width: 320, height: 680 },
+            zIndex: 2,
+            collapsed: false,
+          },
+          {
+            id: "panel-document-dock",
+            panel: "document_dock",
+            position: { x: 360, y: 32 },
+            size: { width: 640, height: 280 },
+            zIndex: 3,
+            collapsed: false,
+          },
+        ],
+        document_tabs: [
+          {
+            id: "doc-material-101",
+            kind: "material",
+            title: "Cardiac Output Lecture",
+            sourceId: 101,
+          },
+        ],
+        active_document_tab_id: "doc-material-101",
+      }),
+    );
+    getCurrentCourseMock.mockResolvedValue({ currentCourse: { id: 77 } });
+
+    renderTutor();
+
+    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(saveProjectShellStateMock).toHaveBeenCalled();
+      const lastCall =
+        saveProjectShellStateMock.mock.calls[
+          saveProjectShellStateMock.mock.calls.length - 1
+        ]?.[0];
+      expect(lastCall?.panel_layout).toEqual([
+        expect.objectContaining({
+          id: "panel-source-shelf",
+          panel: "source_shelf",
+          zIndex: 2,
+        }),
+        expect.objectContaining({
+          id: "panel-document-dock",
+          panel: "document_dock",
+          zIndex: 3,
+        }),
+      ]);
+      expect(lastCall?.document_tabs).toEqual([
+        expect.objectContaining({
+          id: "doc-material-101",
+          kind: "material",
+          title: "Cardiac Output Lecture",
+          sourceId: 101,
+        }),
+      ]);
+      expect(lastCall?.active_document_tab_id).toBe("doc-material-101");
+    });
+  });
+
+  it("hydrates multiple document tabs and the active restored tab from StudioRun authority", async () => {
+    getProjectShellMock.mockResolvedValue(
+      makeProjectShell(77, {
+        panel_layout: [
+          {
+            id: "panel-document-dock",
+            panel: "document_dock",
+            position: { x: 360, y: 32 },
+            size: { width: 640, height: 280 },
+            zIndex: 3,
+            collapsed: false,
+          },
+        ],
+        document_tabs: [
+          {
+            id: "doc-material-101",
+            kind: "material",
+            title: "Cardiac Output Lecture",
+            sourceId: 101,
+          },
+          {
+            id: "doc-material-102",
+            kind: "material",
+            title: "Afterload Drill",
+            sourceId: 102,
+            sourcePath: "uploads/afterload-drill.txt",
+          },
+        ],
+        active_document_tab_id: "doc-material-102",
+      }),
+    );
+    getCurrentCourseMock.mockResolvedValue({ currentCourse: { id: 77 } });
+
+    renderTutor();
+
+    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(saveProjectShellStateMock).toHaveBeenCalled();
+      const lastCall =
+        saveProjectShellStateMock.mock.calls[
+          saveProjectShellStateMock.mock.calls.length - 1
+        ]?.[0];
+      expect(lastCall?.document_tabs).toEqual([
+        expect.objectContaining({
+          id: "doc-material-101",
+          kind: "material",
+          title: "Cardiac Output Lecture",
+          sourceId: 101,
+        }),
+        expect.objectContaining({
+          id: "doc-material-102",
+          kind: "material",
+          title: "Afterload Drill",
+          sourceId: 102,
+          sourcePath: "uploads/afterload-drill.txt",
+        }),
+      ]);
+      expect(lastCall?.active_document_tab_id).toBe("doc-material-102");
+    });
+  });
+
+  it("hydrates tutor selector state independently from the priming start-state", async () => {
+    getProjectShellMock.mockResolvedValue(
+      makeProjectShell(77, {
+        tutor_chain_id: 77,
+        tutor_custom_block_ids: [91, 92],
+      }),
+    );
+    getCurrentCourseMock.mockResolvedValue({ currentCourse: { id: 77 } });
+    localStorage.setItem(
+      "tutor.start.state.v2",
+      JSON.stringify({
+        courseId: 77,
+        topic: "Cardiovascular regulation",
+        selectedMaterials: [101],
+        chainId: 5,
+        customBlockIds: [11, 12],
+        accuracyProfile: "strict",
+        objectiveScope: "module_all",
+        selectedObjectiveId: "",
+        selectedObjectiveGroup: "Week 7",
+        selectedPaths: [],
+      }),
+    );
+
+    renderTutor();
+
+    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(saveProjectShellStateMock).toHaveBeenCalled();
+      const lastCall =
+        saveProjectShellStateMock.mock.calls[
+          saveProjectShellStateMock.mock.calls.length - 1
+        ]?.[0];
+      expect(lastCall?.tutor_chain_id).toBe(77);
+      expect(lastCall?.tutor_custom_block_ids).toEqual([91, 92]);
+    });
+  });
+
+  it("hydrates runtime persistence fields from StudioRun authority", async () => {
+    getProjectShellMock.mockResolvedValue(
+      makeProjectShell(77, {
+        runtime_state: {
+          active_memory_capsule_id: 12,
+          compaction_telemetry: {
+            tokenCount: 18750,
+            contextWindow: 24000,
+            pressureLevel: "high",
+          },
+          direct_note_save_status: {
+            state: "saved",
+            path: "Tutor Workspace/Cardio Note.md",
+          },
+        },
+      }),
+    );
+    getCurrentCourseMock.mockResolvedValue({ currentCourse: { id: 77 } });
+
+    renderTutor();
+
+    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(saveProjectShellStateMock).toHaveBeenCalled();
+      const lastCall =
+        saveProjectShellStateMock.mock.calls[
+          saveProjectShellStateMock.mock.calls.length - 1
+        ]?.[0];
+      expect(lastCall?.runtime_state).toEqual({
+        active_memory_capsule_id: 12,
+        compaction_telemetry: {
+          tokenCount: 18750,
+          contextWindow: 24000,
+          pressureLevel: "high",
+        },
+        direct_note_save_status: {
+          state: "saved",
+          path: "Tutor Workspace/Cardio Note.md",
+        },
+      });
+    });
+  });
+
   it("hydrates board_scope and board_id from query params and persists to shell state", async () => {
     window.history.replaceState(
       {},
@@ -1131,7 +1484,8 @@ describe("Tutor page restore", () => {
     await waitFor(() => {
       expect(getSessionMock).toHaveBeenCalledWith("sess-stale");
     });
-    expect(await screen.findByTestId("tutor-launch-hub")).toBeInTheDocument();
+    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
+    expect(screen.queryByTestId("tutor-launch-hub")).not.toBeInTheDocument();
     expect(localStorage.getItem("tutor.active_session.v1")).toBeNull();
   });
 

@@ -1,7 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { TutorErrorBoundary } from "@/components/TutorErrorBoundary";
-import { TutorWorkflowLaunchHub } from "@/components/TutorWorkflowLaunchHub";
 import { Button } from "@/components/ui/button";
 import { SourceShelf } from "@/components/studio/SourceShelf";
 import { RunConfigPanel } from "@/components/studio/RunConfigPanel";
@@ -22,6 +21,11 @@ import {
   TutorWorkflowPrimingPanelLazy,
 } from "@/components/tutor-shell/TutorShellDeferredPanels";
 import { TutorStudioShellPane } from "@/components/tutor-shell/TutorStudioShellPane";
+import type {
+  StudioDocumentTab,
+  StudioPanelLayoutItem,
+} from "@/lib/studioPanelLayout";
+import type { StudioRunRuntimeState } from "@/lib/studioRunRuntimeState";
 import { cn } from "@/lib/utils";
 import {
   buildStudioWorkspaceObjects,
@@ -43,7 +47,7 @@ import { buildStudioTutorStatus } from "@/lib/studioTutorStatus";
 import type { ChatMessage } from "@/components/TutorChat.types";
 import type { TutorPageMode } from "@/lib/tutorUtils";
 import { api } from "@/lib/api";
-import type { TutorTemplateChain } from "@/lib/api";
+import type { TutorMemoryCapsule, TutorTemplateChain } from "@/lib/api";
 import type { TutorHubResumeCandidate } from "@/lib/api";
 import type { UseTutorHubReturn } from "@/hooks/useTutorHub";
 import type { UseTutorSessionReturn } from "@/hooks/useTutorSession";
@@ -58,6 +62,53 @@ type PrimePromotedWorkspaceObject = Extract<
   { kind: "excerpt" | "text_note" }
 >;
 
+function readCapsuleRecordLabel(record: Record<string, unknown> | null | undefined): string | null {
+  if (!record) return null;
+  for (const key of ["label", "title", "content", "message", "text", "concept", "question"]) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return null;
+}
+
+function serializeMemoryCapsuleContext(capsule: TutorMemoryCapsule | null | undefined): string {
+  if (!capsule) return "";
+
+  const lines: string[] = [];
+  const summaryText = capsule.summary_text?.trim();
+  const ruleSnapshotText = capsule.rule_snapshot_text?.trim();
+  const currentObjective = capsule.current_objective?.trim();
+  const studyUnit = capsule.study_unit?.trim();
+
+  if (summaryText) lines.push(`Summary: ${summaryText}`);
+  if (ruleSnapshotText) {
+    lines.push("Rule reinforcement:");
+    lines.push(ruleSnapshotText);
+  }
+  if (currentObjective) lines.push(`Current objective: ${currentObjective}`);
+  if (studyUnit) lines.push(`Study unit: ${studyUnit}`);
+
+  const weakPoints = (capsule.weak_points || [])
+    .map((record) => readCapsuleRecordLabel(record))
+    .filter((value): value is string => Boolean(value));
+  if (weakPoints.length > 0) {
+    lines.push("Weak points:");
+    lines.push(...weakPoints.map((value) => `- ${value}`));
+  }
+
+  const unresolvedQuestions = (capsule.unresolved_questions || [])
+    .map((record) => readCapsuleRecordLabel(record))
+    .filter((value): value is string => Boolean(value));
+  if (unresolvedQuestions.length > 0) {
+    lines.push("Unresolved questions:");
+    lines.push(...unresolvedQuestions.map((value) => `- ${value}`));
+  }
+
+  return lines.join("\n").trim();
+}
+
 export interface TutorShellProps {
   shellMode: TutorPageMode;
   setShellMode: (mode: TutorPageMode) => void;
@@ -69,9 +120,35 @@ export interface TutorShellProps {
   activeBoardScope: TutorBoardScope;
   activeBoardId: number | null;
   viewerState: Record<string, unknown> | null;
+  documentTabs?: StudioDocumentTab[];
+  activeDocumentTabId?: string | null;
+  panelLayout?: StudioPanelLayoutItem[];
+  runtimeState?: StudioRunRuntimeState;
+  tutorChainId?: number;
+  tutorCustomBlockIds?: number[];
   setActiveBoardScope: (scope: TutorBoardScope) => void;
   setActiveBoardId: (id: number | null) => void;
   setViewerState: (state: Record<string, unknown> | null) => void;
+  setDocumentTabs?: (
+    next:
+      | StudioDocumentTab[]
+      | ((current: StudioDocumentTab[]) => StudioDocumentTab[]),
+  ) => void;
+  setActiveDocumentTabId?: (id: string | null) => void;
+  setPanelLayout?: (
+    next:
+      | StudioPanelLayoutItem[]
+      | ((current: StudioPanelLayoutItem[]) => StudioPanelLayoutItem[]),
+  ) => void;
+  setActiveMemoryCapsuleId?: (id: number | null) => void;
+  setCompactionTelemetry?: (
+    compactionTelemetry: Record<string, unknown> | null,
+  ) => void;
+  setDirectNoteSaveStatus?: (
+    directNoteSaveStatus: Record<string, unknown> | null,
+  ) => void;
+  setTutorChainId?: (id: number | undefined) => void;
+  setTutorCustomBlockIds?: (ids: number[]) => void;
   setShowSetup: (show: boolean) => void;
   queryClient: ReturnType<
     typeof import("@tanstack/react-query").useQueryClient
@@ -98,9 +175,23 @@ export function TutorShell({
   activeBoardScope,
   activeBoardId,
   viewerState,
+  documentTabs: controlledDocumentTabs,
+  activeDocumentTabId: controlledActiveDocumentTabId,
+  panelLayout = [],
+  runtimeState,
+  tutorChainId,
+  tutorCustomBlockIds = [],
   setActiveBoardScope,
   setActiveBoardId,
   setViewerState,
+  setDocumentTabs: controlledSetDocumentTabs,
+  setActiveDocumentTabId: controlledSetActiveDocumentTabId,
+  setPanelLayout = () => undefined,
+  setActiveMemoryCapsuleId,
+  setCompactionTelemetry,
+  setDirectNoteSaveStatus,
+  setTutorChainId,
+  setTutorCustomBlockIds,
   setShowSetup,
   queryClient,
   promotedPrimePacketObjects: controlledPromotedPrimePacketObjects,
@@ -122,6 +213,12 @@ export function TutorShell({
   const [workspaceDraftObjects, setWorkspaceDraftObjects] = useState<
     StudioWorkspaceObject[]
   >([]);
+  const [localDocumentTabs, setLocalDocumentTabs] = useState<StudioDocumentTab[]>(
+    controlledDocumentTabs ?? [],
+  );
+  const [localActiveDocumentTabId, setLocalActiveDocumentTabId] = useState<
+    string | null
+  >(controlledActiveDocumentTabId ?? null);
   const [localPromotedPrimePacketObjects, setLocalPromotedPrimePacketObjects] =
     useState<PrimePromotedWorkspaceObject[]>([]);
   const [localPromotedPolishNotes, setLocalPromotedPolishNotes] = useState<
@@ -144,6 +241,13 @@ export function TutorShell({
     () => promotedPrimePacketObjects.map((workspaceObject) => workspaceObject.id),
     [promotedPrimePacketObjects],
   );
+  const documentTabs = controlledDocumentTabs ?? localDocumentTabs;
+  const activeDocumentTabId =
+    controlledActiveDocumentTabId ?? localActiveDocumentTabId;
+  const setDocumentTabs =
+    controlledSetDocumentTabs ?? setLocalDocumentTabs;
+  const setActiveDocumentTabId =
+    controlledSetActiveDocumentTabId ?? setLocalActiveDocumentTabId;
   const promotedPolishPacketNotes = useMemo(() => {
     const merged = new Map<string, StudioPolishPromotedNote>();
 
@@ -157,6 +261,18 @@ export function TutorShell({
 
     return Array.from(merged.values());
   }, [controlledPromotedPolishPacketNotes, localPromotedPolishNotes]);
+  const hasFloatingPrimingPanel = useMemo(
+    () => panelLayout.some((item) => item.panel === "priming"),
+    [panelLayout],
+  );
+  const hasFloatingTutorPanel = useMemo(
+    () => panelLayout.some((item) => item.panel === "tutor"),
+    [panelLayout],
+  );
+  const hasFloatingPolishPanel = useMemo(
+    () => panelLayout.some((item) => item.panel === "polish"),
+    [panelLayout],
+  );
   const canvasObjects = useMemo(
     () => [
       ...currentRunWorkspaceObjects.filter((workspaceObject) =>
@@ -176,13 +292,18 @@ export function TutorShell({
       ),
     [promotedPrimePacketObjects],
   );
-  const promotedPrimeTextNoteObjects = useMemo(
+  const promotedPrimeArtifactObjects = useMemo(
     () =>
       promotedPrimePacketObjects.filter(
         (
           workspaceObject,
-        ): workspaceObject is Extract<StudioWorkspaceObject, { kind: "text_note" }> =>
-          workspaceObject.kind === "text_note",
+        ): workspaceObject is Exclude<
+          StudioWorkspaceObject,
+          { kind: "material" | "vault_path" | "excerpt" }
+        > =>
+          workspaceObject.kind !== "material" &&
+          workspaceObject.kind !== "vault_path" &&
+          workspaceObject.kind !== "excerpt",
       ),
     [promotedPrimePacketObjects],
   );
@@ -210,7 +331,7 @@ export function TutorShell({
         primingGapsText: workflow.primingGapsText,
         primingStrategyText: workflow.primingStrategyText,
         promotedExcerptObjects: promotedPrimeExcerptObjects,
-        promotedNoteObjects: promotedPrimeTextNoteObjects,
+        promotedNoteObjects: promotedPrimeArtifactObjects,
       }),
     [
       hub.chatMaterials,
@@ -224,7 +345,7 @@ export function TutorShell({
       workflow.primingGapsText,
       workflow.primingStrategyText,
       promotedPrimeExcerptObjects,
-      promotedPrimeTextNoteObjects,
+      promotedPrimeArtifactObjects,
     ],
   );
   const primePacketContext = useMemo(
@@ -255,6 +376,8 @@ export function TutorShell({
           workflow.activeWorkflowDetail?.memory_capsules?.length ?? 0,
         latestAssistantContent:
           session.latestCommittedAssistantMessage?.content ?? null,
+        compactionTelemetry: runtimeState?.compactionTelemetry ?? null,
+        directNoteSaveStatus: runtimeState?.directNoteSaveStatus ?? null,
         latestVerdict: session.latestCommittedAssistantMessage?.verdict ?? null,
         latestTeachBackRubric:
           session.latestCommittedAssistantMessage?.teachBackRubric ?? null,
@@ -266,6 +389,8 @@ export function TutorShell({
       session.turnCount,
       workflow.activeWorkflowDetail?.memory_capsules?.length,
       session.latestCommittedAssistantMessage?.content,
+      runtimeState?.compactionTelemetry,
+      runtimeState?.directNoteSaveStatus,
       session.latestCommittedAssistantMessage?.verdict,
       session.latestCommittedAssistantMessage?.teachBackRubric,
       session.stageTimerDisplaySeconds,
@@ -298,14 +423,28 @@ export function TutorShell({
         latestAssistantContent:
           session.latestCommittedAssistantMessage?.content ?? null,
         stageTimerDisplaySeconds: session.stageTimerDisplaySeconds ?? 0,
+        compactionTelemetry: runtimeState?.compactionTelemetry ?? null,
       }),
     [
       workflow.activeWorkflowDetail?.memory_capsules,
       session.turnCount,
       session.latestCommittedAssistantMessage?.content,
       session.stageTimerDisplaySeconds,
+      runtimeState?.compactionTelemetry,
     ],
   );
+  const activeMemoryCapsuleContext = useMemo(() => {
+    const memoryCapsules = workflow.activeWorkflowDetail?.memory_capsules ?? [];
+    if (!runtimeState?.activeMemoryCapsuleId) return "";
+
+    const activeCapsule =
+      memoryCapsules.find((capsule) => capsule.id === runtimeState.activeMemoryCapsuleId) ??
+      null;
+    return serializeMemoryCapsuleContext(activeCapsule);
+  }, [
+    runtimeState?.activeMemoryCapsuleId,
+    workflow.activeWorkflowDetail?.memory_capsules,
+  ]);
   const handleAddWorkspaceObject = useCallback(
     (workspaceObject: StudioWorkspaceObject) => {
       setCanvasObjectIds((prev) =>
@@ -314,6 +453,63 @@ export function TutorShell({
     },
     [],
   );
+  const handleOpenSourceInDocumentDock = useCallback(
+    (workspaceObject: Extract<StudioWorkspaceObject, { kind: "material" }>) => {
+      const materialId = Number.parseInt(
+        workspaceObject.id.replace(/^material:/, ""),
+        10,
+      );
+      if (!Number.isFinite(materialId)) return;
+      const tabId = `doc-material-${materialId}`;
+
+      setDocumentTabs((current) =>
+        current.some((tab) => tab.id === tabId)
+          ? current
+          : [
+              ...current,
+              {
+                id: tabId,
+                kind: "material",
+                title: workspaceObject.title,
+                sourceId: materialId,
+                sourcePath: workspaceObject.detail || null,
+              },
+            ],
+      );
+      setActiveDocumentTabId(tabId);
+      setViewerState({
+        material_id: materialId,
+        source_path: workspaceObject.detail || null,
+        file_type: workspaceObject.badge || null,
+      });
+    },
+    [setActiveDocumentTabId, setDocumentTabs, setViewerState],
+  );
+  const handleSelectDocumentTab = useCallback(
+    (tabId: string) => {
+      setActiveDocumentTabId(tabId);
+      const nextTab = documentTabs.find((tab) => tab.id === tabId) || null;
+      if (!nextTab) return;
+
+      if (nextTab.kind === "material" && typeof nextTab.sourceId === "number") {
+        const material = hub.chatMaterials.find(
+          (candidate) => candidate.id === nextTab.sourceId,
+        );
+        setViewerState({
+          material_id: nextTab.sourceId,
+          source_path: nextTab.sourcePath ?? material?.source_path ?? null,
+          file_type: material?.file_type ?? null,
+          source_title: nextTab.title,
+        });
+      }
+    },
+    [
+      documentTabs,
+      hub.chatMaterials,
+      setActiveDocumentTabId,
+      setViewerState,
+    ],
+  );
   const handleClipExcerpt = useCallback((workspaceObject: StudioWorkspaceObject) => {
     setWorkspaceDraftObjects((prev) =>
       prev.some((existingObject) => existingObject.id === workspaceObject.id)
@@ -321,6 +517,42 @@ export function TutorShell({
         : [...prev, workspaceObject],
     );
   }, []);
+  useEffect(() => {
+    if (!activeDocumentTabId) return;
+    const activeTab = documentTabs.find((tab) => tab.id === activeDocumentTabId);
+    if (!activeTab) return;
+    if (activeTab.kind !== "material" || typeof activeTab.sourceId !== "number") {
+      return;
+    }
+
+    const material = hub.chatMaterials.find(
+      (candidate) => candidate.id === activeTab.sourceId,
+    );
+    const nextSourcePath = activeTab.sourcePath ?? material?.source_path ?? null;
+    const nextFileType = material?.file_type ?? null;
+
+    if (
+      viewerState?.material_id === activeTab.sourceId &&
+      viewerState?.source_path === nextSourcePath &&
+      viewerState?.file_type === nextFileType &&
+      viewerState?.source_title === activeTab.title
+    ) {
+      return;
+    }
+
+    setViewerState({
+      material_id: activeTab.sourceId,
+      source_path: nextSourcePath,
+      file_type: nextFileType,
+      source_title: activeTab.title,
+    });
+  }, [
+    activeDocumentTabId,
+    documentTabs,
+    hub.chatMaterials,
+    setViewerState,
+    viewerState,
+  ]);
   const handlePromoteExcerptToPrime = useCallback(
     (workspaceObject: Extract<StudioWorkspaceObject, { kind: "excerpt" }>) => {
       if (onPromotePrimePacketObject) {
@@ -398,16 +630,19 @@ export function TutorShell({
     useQuery<TutorTemplateChain[]>({
       queryKey: ["tutor-chains-templates"],
       queryFn: () => api.tutor.getTemplateChains(),
-      enabled: shellMode === "studio" && workflow.studioView === "priming",
+      enabled: shellMode === "studio",
       staleTime: 60 * 1000,
     });
 
   const { submitBrainFeedback } = useBrainFeedback();
+  const liveTutorSessionId = session.hasActiveTutorSession
+    ? activeSessionId
+    : null;
 
   const currentWorkflowStage =
     workflow.activeWorkflowDetail?.workflow?.current_stage ?? null;
   const hasTutorWork =
-    Boolean(activeSessionId) ||
+    Boolean(liveTutorSessionId) ||
     currentWorkflowStage === "tutor" ||
     currentWorkflowStage === "polish" ||
     currentWorkflowStage === "final_sync" ||
@@ -465,18 +700,18 @@ export function TutorShell({
   // ── Save Gist: summarize a reply via LLM and capture as workflow note ──
   const handleSaveGist = useCallback(
     async (content: string) => {
-      if (!activeSessionId) {
+      if (!liveTutorSessionId) {
         toast.error("No active session");
         return;
       }
       try {
         const { summary } = await api.tutor.summarizeReply(
-          activeSessionId,
+          liveTutorSessionId,
           content,
         );
         if (workflow.activeWorkflowId) {
           await api.tutor.captureWorkflowNote(workflow.activeWorkflowId, {
-            tutor_session_id: activeSessionId,
+            tutor_session_id: liveTutorSessionId,
             stage: "tutor",
             note_mode: "exact",
             title: `[Gist] ${summary.slice(0, 50)}`,
@@ -494,12 +729,11 @@ export function TutorShell({
         );
       }
     },
-    [activeSessionId, workflow.activeWorkflowId, queryClient],
+    [liveTutorSessionId, workflow.activeWorkflowId, queryClient],
   );
 
-  const studioWorkspaceContent =
-    workflow.studioView === "home" ? (
-      <StudioWorkspaceHome
+  const studioWorkspaceContentHome = (
+    <StudioWorkspaceHome
         workflow={
           workflow.activeWorkflowDetail?.workflow
             ? {
@@ -511,44 +745,25 @@ export function TutorShell({
               }
             : null
         }
-        launchHub={
-          <TutorWorkflowLaunchHub
-            workflows={workflow.filteredWorkflows}
-            totalCount={workflow.workflowCount}
-            courses={hub.tutorContentSources?.courses || []}
-            filters={workflow.workflowFilters}
-            onFiltersChange={workflow.setWorkflowFilters}
-            onStartNew={() => {
-              void workflow.createWorkflowAndOpenPriming();
-            }}
-            onResumeCandidate={onResumeHubCandidate}
-            onOpenWorkflow={workflow.openWorkflowRecord}
-            onDeleteWorkflow={workflow.deleteWorkflowRecord}
-            resumeCandidate={hub.tutorHub?.resume_candidate ?? null}
-            tutorHub={hub.tutorHub}
-            tutorHubLoading={hub.tutorHubLoading}
-            activeWorkflowId={workflow.activeWorkflowId}
-            isCreating={workflow.creatingWorkflow}
-            deletingWorkflowId={workflow.deletingWorkflowId}
-          />
-        }
         courseName={
           hub.courseLabel ||
           workflow.activeWorkflowDetail?.workflow?.course_name ||
           null
         }
         studyUnit={
-          hub.selectedObjectiveGroup ||
+          hub.effectiveStudyUnit ||
           workflow.activeWorkflowDetail?.workflow?.study_unit ||
           null
         }
         topic={
-          hub.topic || workflow.activeWorkflowDetail?.workflow?.topic || null
+          hub.effectiveTopic ||
+          workflow.activeWorkflowDetail?.workflow?.topic ||
+          null
         }
         selectedMaterialCount={hub.selectedMaterials.length}
         hasTutorWork={hasTutorWork}
         hasFinalSyncAccess={hasFinalSyncAccess}
-        hasActiveSession={Boolean(activeSessionId)}
+        hasActiveSession={Boolean(liveTutorSessionId)}
         resumeCandidate={hub.tutorHub?.resume_candidate ?? null}
         bootstrappingPriming={workflow.bootstrappingPriming}
         onResumeTutor={() => setShellMode("tutor")}
@@ -562,129 +777,198 @@ export function TutorShell({
         onOpenPolish={() => workflow.setStudioView("polish")}
         onOpenFinalSync={() => workflow.setStudioView("final_sync")}
       />
+  );
+
+  const workspaceStudioContent = (
+    <div className="flex-1 min-h-0 flex flex-col">
+      <StudioTldrawWorkspaceLazy
+        canvasObjects={canvasObjects}
+        courseName={hub.courseLabel || null}
+        currentRunObjects={currentRunWorkspaceObjects}
+        promotedPrimeObjectIds={promotedPrimeObjectIds}
+        selectedMaterialCount={hub.selectedMaterials.length}
+        onPromoteExcerptToPrime={handlePromoteExcerptToPrime}
+        onPromoteTextNoteToPrime={handlePromoteTextNoteToPrime}
+      />
+    </div>
+  );
+
+  const primingStudioContent = (
+    <div className="flex-1 min-h-0 overflow-y-auto w-full p-4">
+      <TutorWorkflowPrimingPanelLazy
+        workflow={workflow.activeWorkflowDetail?.workflow || null}
+        courses={hub.tutorContentSources?.courses || []}
+        courseId={hub.courseId}
+        setCourseId={hub.setCourseId}
+        selectedMaterials={hub.selectedMaterials}
+        setSelectedMaterials={hub.setSelectedMaterials}
+        topic={hub.topic}
+        setTopic={hub.setTopic}
+        objectiveScope={hub.objectiveScope}
+        setObjectiveScope={hub.setObjectiveScope}
+        selectedObjectiveId={hub.selectedObjectiveId}
+        setSelectedObjectiveId={hub.setSelectedObjectiveId}
+        selectedObjectiveGroup={hub.selectedObjectiveGroup}
+        setSelectedObjectiveGroup={hub.setSelectedObjectiveGroup}
+        availableObjectives={hub.availableObjectives}
+        studyUnitOptions={hub.studyUnitOptions}
+        primingMethods={workflow.primingMethods}
+        setPrimingMethods={workflow.setPrimingMethods}
+        primingMethodRuns={workflow.primingMethodRuns}
+        chainId={hub.chainId}
+        setChainId={hub.setChainId}
+        customBlockIds={hub.customBlockIds}
+        setCustomBlockIds={hub.setCustomBlockIds}
+        templateChains={templateChains}
+        templateChainsLoading={templateChainsLoading}
+        summaryText={workflow.primingSummaryText}
+        setSummaryText={workflow.setPrimingSummaryText}
+        conceptsText={workflow.primingConceptsText}
+        setConceptsText={workflow.setPrimingConceptsText}
+        terminologyText={workflow.primingTerminologyText}
+        setTerminologyText={workflow.setPrimingTerminologyText}
+        rootExplanationText={workflow.primingRootExplanationText}
+        setRootExplanationText={workflow.setPrimingRootExplanationText}
+        gapsText={workflow.primingGapsText}
+        setGapsText={workflow.setPrimingGapsText}
+        recommendedStrategyText={workflow.primingStrategyText}
+        setRecommendedStrategyText={workflow.setPrimingStrategyText}
+        sourceInventory={workflow.mergedPrimingSourceInventory}
+        vaultFolderPreview={hub.derivedVaultFolder}
+        readinessItems={workflow.primingReadinessItems}
+        preflightBlockers={session.preflight?.blockers || []}
+        preflightLoading={session.preflightLoading}
+        preflightError={session.preflightError}
+        onBackToStudio={() => {
+          workflow.setStudioView("home");
+          setShellMode("studio");
+        }}
+        onSaveDraft={() => {
+          void workflow.saveWorkflowPriming("draft");
+        }}
+        onMarkReady={() => {
+          void workflow.saveWorkflowPriming("ready");
+        }}
+        onStartTutor={() => {
+          void workflow.startTutorFromWorkflow(
+            {
+              ...(primePacketContext ? { packet_context: primePacketContext } : {}),
+              ...(activeMemoryCapsuleContext
+                ? { memory_capsule_context: activeMemoryCapsuleContext }
+                : {}),
+            },
+          );
+        }}
+        onRunAssistForSelected={() => {
+          void workflow.runWorkflowPrimingAssist(
+            hub.selectedMaterials,
+            {
+              ...(primePacketContext ? { packet_context: primePacketContext } : {}),
+              ...(activeMemoryCapsuleContext
+                ? { memory_capsule_context: activeMemoryCapsuleContext }
+                : {}),
+            },
+          );
+        }}
+        onRunAssistForMaterial={(materialId) => {
+          void workflow.runWorkflowPrimingAssist(
+            [materialId],
+            {
+              ...(primePacketContext ? { packet_context: primePacketContext } : {}),
+              ...(activeMemoryCapsuleContext
+                ? { memory_capsule_context: activeMemoryCapsuleContext }
+                : {}),
+            },
+          );
+        }}
+        isSaving={workflow.savingPrimingBundle}
+        isStartingTutor={session.isStarting}
+        isRunningAssist={workflow.runningPrimingAssist}
+        assistTargetMaterialId={workflow.primingAssistTargetMaterialId}
+      />
+    </div>
+  );
+
+  const tutorStudioContent = (
+    <div className="flex-1 flex flex-col min-h-0">
+      <TutorLiveStudyPane
+        activeSessionId={liveTutorSessionId}
+        hub={hub}
+        session={session}
+        workflow={workflow}
+        restoredTurns={restoredTurns}
+        queryClient={queryClient}
+        setShellMode={setShellMode}
+        onStartSession={() => {
+          void session.startSession(
+            {
+              ...(primePacketContext ? { packet_context: primePacketContext } : {}),
+              ...(activeMemoryCapsuleContext
+                ? { memory_capsule_context: activeMemoryCapsuleContext }
+                : {}),
+            },
+          );
+        }}
+        activeMemoryCapsuleContext={activeMemoryCapsuleContext}
+        onActivateMemoryCapsule={setActiveMemoryCapsuleId}
+        onDirectNoteSaveStatus={setDirectNoteSaveStatus}
+        onSaveGist={handleSaveGist}
+        onPromoteTutorReplyToPolish={handlePromoteTutorReplyToPolish}
+        onCompactionTelemetry={(telemetry) => {
+          setCompactionTelemetry?.(telemetry);
+        }}
+        submitBrainFeedback={submitBrainFeedback}
+      />
+    </div>
+  );
+
+  const polishStudioContent = (
+    <div className="flex-1 min-h-0 overflow-y-auto w-full p-4">
+      <TutorWorkflowPolishStudioLazy
+        workflow={workflow.activeWorkflowDetail?.workflow || null}
+        primingBundleId={workflow.activeWorkflowDetail?.priming_bundle?.id || null}
+        capturedNotes={workflow.activeWorkflowDetail?.captured_notes || []}
+        feedbackEvents={workflow.activeWorkflowDetail?.feedback_events || []}
+        memoryCapsules={workflow.activeWorkflowDetail?.memory_capsules || []}
+        existingBundle={workflow.activeWorkflowDetail?.polish_bundle || null}
+        onBackToTutor={() => setShellMode("tutor")}
+        onSaveDraft={(payload) => {
+          void workflow.saveWorkflowPolish(payload, false);
+        }}
+        onFinalize={(payload) => {
+          void workflow.saveWorkflowPolish(payload, true);
+        }}
+        isSaving={workflow.savingPolishBundle}
+      />
+    </div>
+  );
+
+  const finalSyncStudioContent = (
+    <div className="flex-1 min-h-0 overflow-y-auto w-full p-4">
+      <TutorWorkflowFinalSyncLazy
+        workflowDetail={workflow.activeWorkflowDetail || null}
+        onBackToPolish={() => workflow.setStudioView("polish")}
+      />
+    </div>
+  );
+
+  const studioWorkspaceContent =
+    workflow.studioView === "home" ? (
+      studioWorkspaceContentHome
     ) : workflow.studioView === "workspace" ? (
-      <div className="flex-1 min-h-0 flex flex-col">
-        <StudioTldrawWorkspaceLazy
-          canvasObjects={canvasObjects}
-          courseName={hub.courseLabel || null}
-          currentRunObjects={currentRunWorkspaceObjects}
-          promotedPrimeObjectIds={promotedPrimeObjectIds}
-          selectedMaterialCount={hub.selectedMaterials.length}
-          onPromoteExcerptToPrime={handlePromoteExcerptToPrime}
-          onPromoteTextNoteToPrime={handlePromoteTextNoteToPrime}
-        />
-      </div>
+      workspaceStudioContent
     ) : workflow.studioView === "priming" ? (
-      <div className="flex-1 min-h-0 overflow-y-auto w-full p-4">
-        <TutorWorkflowPrimingPanelLazy
-          workflow={workflow.activeWorkflowDetail?.workflow || null}
-          courses={hub.tutorContentSources?.courses || []}
-          courseId={hub.courseId}
-          setCourseId={hub.setCourseId}
-          selectedMaterials={hub.selectedMaterials}
-          setSelectedMaterials={hub.setSelectedMaterials}
-          topic={hub.topic}
-          setTopic={hub.setTopic}
-          objectiveScope={hub.objectiveScope}
-          setObjectiveScope={hub.setObjectiveScope}
-          selectedObjectiveId={hub.selectedObjectiveId}
-          setSelectedObjectiveId={hub.setSelectedObjectiveId}
-          selectedObjectiveGroup={hub.selectedObjectiveGroup}
-          setSelectedObjectiveGroup={hub.setSelectedObjectiveGroup}
-          availableObjectives={hub.availableObjectives}
-          studyUnitOptions={hub.studyUnitOptions}
-          primingMethods={workflow.primingMethods}
-          setPrimingMethods={workflow.setPrimingMethods}
-          primingMethodRuns={workflow.primingMethodRuns}
-          chainId={hub.chainId}
-          setChainId={hub.setChainId}
-          customBlockIds={hub.customBlockIds}
-          setCustomBlockIds={hub.setCustomBlockIds}
-          templateChains={templateChains}
-          templateChainsLoading={templateChainsLoading}
-          summaryText={workflow.primingSummaryText}
-          setSummaryText={workflow.setPrimingSummaryText}
-          conceptsText={workflow.primingConceptsText}
-          setConceptsText={workflow.setPrimingConceptsText}
-          terminologyText={workflow.primingTerminologyText}
-          setTerminologyText={workflow.setPrimingTerminologyText}
-          rootExplanationText={workflow.primingRootExplanationText}
-          setRootExplanationText={workflow.setPrimingRootExplanationText}
-          gapsText={workflow.primingGapsText}
-          setGapsText={workflow.setPrimingGapsText}
-          recommendedStrategyText={workflow.primingStrategyText}
-          setRecommendedStrategyText={workflow.setPrimingStrategyText}
-          sourceInventory={workflow.mergedPrimingSourceInventory}
-          vaultFolderPreview={hub.derivedVaultFolder}
-          readinessItems={workflow.primingReadinessItems}
-          preflightBlockers={session.preflight?.blockers || []}
-          preflightLoading={session.preflightLoading}
-          preflightError={session.preflightError}
-          onBackToStudio={() => {
-            workflow.setStudioView("home");
-            setShellMode("studio");
-          }}
-          onSaveDraft={() => {
-            void workflow.saveWorkflowPriming("draft");
-          }}
-          onMarkReady={() => {
-            void workflow.saveWorkflowPriming("ready");
-          }}
-          onStartTutor={() => {
-            void workflow.startTutorFromWorkflow(
-              primePacketContext ? { packet_context: primePacketContext } : undefined,
-            );
-          }}
-          onRunAssistForSelected={() => {
-            void workflow.runWorkflowPrimingAssist(
-              hub.selectedMaterials,
-              primePacketContext ? { packet_context: primePacketContext } : undefined,
-            );
-          }}
-          onRunAssistForMaterial={(materialId) => {
-            void workflow.runWorkflowPrimingAssist(
-              [materialId],
-              primePacketContext ? { packet_context: primePacketContext } : undefined,
-            );
-          }}
-          isSaving={workflow.savingPrimingBundle}
-          isStartingTutor={session.isStarting}
-          isRunningAssist={workflow.runningPrimingAssist}
-          assistTargetMaterialId={workflow.primingAssistTargetMaterialId}
-        />
-      </div>
+      primingStudioContent
     ) : workflow.studioView === "polish" ? (
-      <div className="flex-1 min-h-0 overflow-y-auto w-full p-4">
-        <TutorWorkflowPolishStudioLazy
-          workflow={workflow.activeWorkflowDetail?.workflow || null}
-          primingBundleId={workflow.activeWorkflowDetail?.priming_bundle?.id || null}
-          capturedNotes={workflow.activeWorkflowDetail?.captured_notes || []}
-          feedbackEvents={workflow.activeWorkflowDetail?.feedback_events || []}
-          memoryCapsules={workflow.activeWorkflowDetail?.memory_capsules || []}
-          existingBundle={workflow.activeWorkflowDetail?.polish_bundle || null}
-          onBackToTutor={() => setShellMode("tutor")}
-          onSaveDraft={(payload) => {
-            void workflow.saveWorkflowPolish(payload, false);
-          }}
-          onFinalize={(payload) => {
-            void workflow.saveWorkflowPolish(payload, true);
-          }}
-          isSaving={workflow.savingPolishBundle}
-        />
-      </div>
+      polishStudioContent
     ) : (
-      <div className="flex-1 min-h-0 overflow-y-auto w-full p-4">
-        <TutorWorkflowFinalSyncLazy
-          workflowDetail={workflow.activeWorkflowDetail || null}
-          onBackToPolish={() => workflow.setStudioView("polish")}
-        />
-      </div>
+      finalSyncStudioContent
     );
 
   return (
     <>
       {/* Scholar strategy panel */}
-      {shellMode === "tutor" && activeSessionId && session.scholarStrategy && (
+      {shellMode === "tutor" && liveTutorSessionId && session.scholarStrategy && (
         <TutorScholarStrategyPanel session={session} />
       )}
 
@@ -698,6 +982,9 @@ export function TutorShell({
           {shellMode === "studio" ? (
             <TutorStudioShellPane
               view={workflow.studioView}
+              primingPanel={hasFloatingPrimingPanel ? primingStudioContent : undefined}
+              tutorPanel={hasFloatingTutorPanel ? tutorStudioContent : undefined}
+              polishPanel={hasFloatingPolishPanel ? polishStudioContent : undefined}
               sourceShelf={
                 <SourceShelf
                   courseName={
@@ -706,12 +993,12 @@ export function TutorShell({
                     null
                   }
                   studyUnit={
-                    hub.selectedObjectiveGroup ||
+                    hub.effectiveStudyUnit ||
                     workflow.activeWorkflowDetail?.workflow?.study_unit ||
                     null
                   }
                   topic={
-                    hub.topic ||
+                    hub.effectiveTopic ||
                     workflow.activeWorkflowDetail?.workflow?.topic ||
                     null
                   }
@@ -722,6 +1009,7 @@ export function TutorShell({
                   vaultFolder={hub.derivedVaultFolder || null}
                   workspaceObjectIds={canvasObjectIds}
                   onAddToWorkspace={handleAddWorkspaceObject}
+                  onOpenInDocumentDock={handleOpenSourceInDocumentDock}
                 />
               }
               documentDock={
@@ -730,15 +1018,27 @@ export function TutorShell({
                   selectedMaterialIds={hub.selectedMaterials}
                   selectedPaths={hub.selectedPaths}
                   viewerState={viewerState}
+                  documentTabs={documentTabs}
+                  activeDocumentTabId={activeDocumentTabId}
+                  onSelectDocumentTab={handleSelectDocumentTab}
                   onClipExcerpt={handleClipExcerpt}
                 />
               }
               runConfig={
                 <RunConfigPanel
                   primingMethodIds={workflow.primingMethods}
-                  chainId={hub.chainId}
-                  customBlockIds={hub.customBlockIds}
-                  hasActiveSession={Boolean(activeSessionId)}
+                  setPrimingMethods={workflow.setPrimingMethods}
+                  tutorChainId={tutorChainId}
+                  setTutorChainId={setTutorChainId}
+                  tutorCustomBlockIds={tutorCustomBlockIds}
+                  setTutorCustomBlockIds={setTutorCustomBlockIds}
+                  accuracyProfile={hub.accuracyProfile}
+                  setAccuracyProfile={hub.setAccuracyProfile}
+                  objectiveScope={hub.objectiveScope}
+                  setObjectiveScope={hub.setObjectiveScope}
+                  templateChains={templateChains}
+                  templateChainsLoading={templateChainsLoading}
+                  hasActiveSession={Boolean(liveTutorSessionId)}
                 />
               }
               tutorStatus={<TutorStatusPanel status={tutorStatus} />}
@@ -749,11 +1049,19 @@ export function TutorShell({
                   onSendToWorkspace={handleSendRepairCandidateToWorkspace}
                 />
               }
-              memory={<MemoryPanel status={memoryStatus} />}
+              memory={
+                <MemoryPanel
+                  status={memoryStatus}
+                  activeCapsuleId={runtimeState?.activeMemoryCapsuleId ?? null}
+                  onActivateCapsule={setActiveMemoryCapsuleId}
+                />
+              }
               primePacket={<PrimePacketPanel sections={primePacketSections} />}
               polishPacket={<PolishPacketPanel sections={polishPacketSections} />}
               workspace={studioWorkspaceContent}
               stageNav={studioStageNav}
+              panelLayout={panelLayout}
+              setPanelLayout={setPanelLayout}
             />
           ) : (
             <div
@@ -762,15 +1070,31 @@ export function TutorShell({
             >
               <TutorErrorBoundary fallbackLabel="Tutor">
                 <TutorLiveStudyPane
-                  activeSessionId={activeSessionId}
+                  activeSessionId={liveTutorSessionId}
                   hub={hub}
                   session={session}
                   workflow={workflow}
                   restoredTurns={restoredTurns}
                   queryClient={queryClient}
                   setShellMode={setShellMode}
+                  onStartSession={() => {
+                    void session.startSession(
+                      {
+                        ...(primePacketContext ? { packet_context: primePacketContext } : {}),
+                        ...(activeMemoryCapsuleContext
+                          ? { memory_capsule_context: activeMemoryCapsuleContext }
+                          : {}),
+                      },
+                    );
+                  }}
+                  activeMemoryCapsuleContext={activeMemoryCapsuleContext}
+                  onActivateMemoryCapsule={setActiveMemoryCapsuleId}
+                  onDirectNoteSaveStatus={setDirectNoteSaveStatus}
                   onSaveGist={handleSaveGist}
                   onPromoteTutorReplyToPolish={handlePromoteTutorReplyToPolish}
+                  onCompactionTelemetry={(telemetry) => {
+                    setCompactionTelemetry?.(telemetry);
+                  }}
                   submitBrainFeedback={submitBrainFeedback}
                 />
               </TutorErrorBoundary>
@@ -780,7 +1104,7 @@ export function TutorShell({
 
         {/* Right side artifact panel */}
         <TutorArtifactsDrawer
-          activeSessionId={activeSessionId}
+          activeSessionId={liveTutorSessionId}
           shellMode={shellMode}
           hub={hub}
           session={session}

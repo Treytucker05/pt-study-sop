@@ -18,6 +18,8 @@ export interface BuildStudioTutorStatusInput {
   turnCount: number;
   memoryCapsuleCount: number;
   latestAssistantContent?: string | null;
+  compactionTelemetry?: Record<string, unknown> | null;
+  directNoteSaveStatus?: Record<string, unknown> | null;
   latestVerdict?: TutorVerdict | null;
   latestTeachBackRubric?: TeachBackRubric | null;
   stageTimerDisplaySeconds: number;
@@ -39,6 +41,10 @@ export interface StudioTutorStatusModel {
     label: string;
     detail: string;
   };
+  directNoteSave: {
+    label: string;
+    detail: string;
+  };
 }
 
 export interface StudioTutorContextHealthInput {
@@ -46,6 +52,62 @@ export interface StudioTutorContextHealthInput {
   memoryCapsuleCount: number;
   latestAssistantCharacters: number;
   stageTimerDisplaySeconds: number;
+  compactionTelemetry?: Record<string, unknown> | null;
+}
+
+function normalizePositiveInteger(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? Math.round(value)
+    : null;
+}
+
+function formatTokenCount(value: number): string {
+  return new Intl.NumberFormat("en-US").format(value);
+}
+
+function getTelemetryContextHealth(
+  compactionTelemetry: Record<string, unknown> | null | undefined,
+): StudioTutorContextHealth | null {
+  if (!compactionTelemetry || typeof compactionTelemetry !== "object") {
+    return null;
+  }
+
+  const tokenCount = normalizePositiveInteger(compactionTelemetry.tokenCount);
+  const contextWindow = normalizePositiveInteger(
+    compactionTelemetry.contextWindow,
+  );
+  const pressureLevel =
+    typeof compactionTelemetry.pressureLevel === "string"
+      ? compactionTelemetry.pressureLevel.trim().toLowerCase()
+      : "";
+
+  if (!tokenCount || !contextWindow || !pressureLevel) {
+    return null;
+  }
+
+  const detail = `Using ${formatTokenCount(tokenCount)} / ${formatTokenCount(contextWindow)} tokens of live context.`;
+
+  if (pressureLevel === "high") {
+    return {
+      level: "critical",
+      label: "Compaction soon",
+      detail,
+    };
+  }
+
+  if (pressureLevel === "medium") {
+    return {
+      level: "warning",
+      label: "Getting heavy",
+      detail,
+    };
+  }
+
+  return {
+    level: "healthy",
+    label: "Healthy",
+    detail,
+  };
 }
 
 function normalizeConfidenceScore(value: number | null | undefined): string {
@@ -123,12 +185,72 @@ function buildValidationSignals(
   };
 }
 
+function buildDirectNoteSaveSignal(
+  directNoteSaveStatus: Record<string, unknown> | null | undefined,
+): StudioTutorStatusModel["directNoteSave"] {
+  if (!directNoteSaveStatus || typeof directNoteSaveStatus !== "object") {
+    return {
+      label: "No vault save yet",
+      detail: "Direct Tutor note saves will report their latest vault status here.",
+    };
+  }
+
+  const state =
+    typeof directNoteSaveStatus.state === "string"
+      ? directNoteSaveStatus.state.trim().toLowerCase()
+      : "";
+  const mode =
+    typeof directNoteSaveStatus.mode === "string"
+      ? directNoteSaveStatus.mode.trim().toLowerCase()
+      : "note";
+  const path =
+    typeof directNoteSaveStatus.path === "string"
+      ? directNoteSaveStatus.path.trim()
+      : "";
+  const error =
+    typeof directNoteSaveStatus.error === "string"
+      ? directNoteSaveStatus.error.trim()
+      : "";
+
+  if (state === "saving") {
+    return {
+      label: "Saving to vault",
+      detail: `Writing the ${mode} Tutor note to Obsidian now.`,
+    };
+  }
+
+  if (state === "saved") {
+    return {
+      label: "Saved to vault",
+      detail: path || `The latest ${mode} Tutor note was written to Obsidian.`,
+    };
+  }
+
+  if (state === "failed") {
+    return {
+      label: "Vault save failed",
+      detail: error || `The latest ${mode} Tutor note could not be written to Obsidian.`,
+    };
+  }
+
+  return {
+    label: "No vault save yet",
+    detail: "Direct Tutor note saves will report their latest vault status here.",
+  };
+}
+
 export function getStudioTutorContextHealth({
   turnCount,
   memoryCapsuleCount,
   latestAssistantCharacters,
   stageTimerDisplaySeconds,
+  compactionTelemetry,
 }: StudioTutorContextHealthInput): StudioTutorContextHealth {
+  const telemetryHealth = getTelemetryContextHealth(compactionTelemetry);
+  if (telemetryHealth) {
+    return telemetryHealth;
+  }
+
   let pressureScore = 0;
 
   if (turnCount >= 8) pressureScore += 1;
@@ -168,6 +290,8 @@ export function buildStudioTutorStatus({
   turnCount,
   memoryCapsuleCount,
   latestAssistantContent,
+  compactionTelemetry,
+  directNoteSaveStatus,
   latestVerdict,
   latestTeachBackRubric,
   stageTimerDisplaySeconds,
@@ -187,6 +311,7 @@ export function buildStudioTutorStatus({
     latestVerdict,
     latestTeachBackRubric,
   );
+  const directNoteSave = buildDirectNoteSaveSignal(directNoteSaveStatus);
 
   return {
     strategyLabel,
@@ -200,7 +325,9 @@ export function buildStudioTutorStatus({
       memoryCapsuleCount,
       latestAssistantCharacters: latestAssistantContent?.trim().length ?? 0,
       stageTimerDisplaySeconds,
+      compactionTelemetry,
     }),
     ...validationSignals,
+    directNoteSave,
   };
 }

@@ -149,6 +149,58 @@ def test_send_turn_stream_emits_delta_done_and_timing_metadata(client, monkeypat
     assert done_event["timing"]["first_chunk_ms"] >= 0
 
 
+def test_send_turn_stream_emits_compaction_telemetry_from_usage(client, monkeypatch):
+    session_id = _create_tutor_session(client)
+
+    monkeypatch.setattr(
+        tutor_context,
+        "build_context",
+        lambda *_a, **_k: {
+            "materials": "",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        },
+    )
+    monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
+    monkeypatch.setattr(
+        tutor_tools,
+        "execute_tool",
+        lambda *_a, **_k: {"success": True},
+    )
+
+    def fake_stream(_system_prompt, _user_prompt, **_kwargs):
+        yield {"type": "delta", "text": "Telemetry-backed answer"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-telemetry",
+            "thread_id": "thread-telemetry",
+            "usage": {"input_tokens": 12_000, "output_tokens": 3_600},
+        }
+
+    monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
+
+    resp = client.post(
+        f"/api/tutor/session/{session_id}/turn",
+        json={"message": "Explain Starling forces"},
+    )
+    assert resp.status_code == 200
+
+    events = _parse_sse_events(resp.get_data(as_text=True))
+    payloads = [event for event in events if isinstance(event, dict)]
+    done_event = next(event for event in payloads if event.get("type") == "done")
+
+    assert done_event["compaction_telemetry"] == {
+        "inputTokens": 12_000,
+        "outputTokens": 3_600,
+        "tokenCount": 15_600,
+        "contextWindow": 24_000,
+        "pressureLevel": "high",
+    }
+
+
 def test_send_turn_stream_emits_tool_round_frames_before_done(client, monkeypatch):
     session_id = _create_tutor_session(client)
     execute_calls: list[tuple[str, dict]] = []

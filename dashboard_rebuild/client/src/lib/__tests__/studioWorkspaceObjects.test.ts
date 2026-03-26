@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   createStudioExcerptWorkspaceObject,
   getStudioExcerptObjectId,
+  normalizeStudioWorkspaceObjects,
 } from "@/lib/studioWorkspaceObjects";
 
 describe("studioWorkspaceObjects", () => {
@@ -37,5 +38,62 @@ describe("studioWorkspaceObjects", () => {
         selectionLabel: "Paragraph 1",
       },
     });
+  });
+
+  it("normalizes image, diagram, and link workspace object types", () => {
+    const normalized = normalizeStudioWorkspaceObjects([
+      {
+        id: "image:source-1",
+        kind: "image",
+        title: "Screenshot: Frank-Starling graph",
+        detail: "Pressure-volume loop screenshot for the current study unit.",
+        badge: "SCREENSHOT",
+        asset: {
+          url: "https://example.com/pv-loop.png",
+          mimeType: "image/png",
+        },
+      },
+      {
+        id: "diagram:source-1",
+        kind: "diagram_sketch",
+        title: "PV loop sketch",
+        detail: "Manual sketch of ventricular phases.",
+        badge: "SKETCH",
+        content: {
+          format: "text/markdown",
+          data: "A -> B -> C -> D",
+        },
+      },
+      {
+        id: "link:source-1",
+        kind: "link_reference",
+        title: "Frank-Starling review",
+        detail: "External review article for follow-up reading.",
+        badge: "REFERENCE",
+        href: "https://example.com/frank-starling",
+      },
+    ]);
+
+    expect(normalized).toEqual([
+      expect.objectContaining({
+        kind: "image",
+        badge: "SCREENSHOT",
+        asset: expect.objectContaining({
+          url: "https://example.com/pv-loop.png",
+        }),
+      }),
+      expect.objectContaining({
+        kind: "diagram_sketch",
+        badge: "SKETCH",
+        content: expect.objectContaining({
+          data: "A -> B -> C -> D",
+        }),
+      }),
+      expect.objectContaining({
+        kind: "link_reference",
+        badge: "REFERENCE",
+        href: "https://example.com/frank-starling",
+      }),
+    ]);
   });
 });

@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { MaterialViewer } from "@/components/MaterialViewer";
 import { api } from "@/lib/api";
 import type { Material, MaterialContent } from "@/lib/api";
+import type { StudioDocumentTab } from "@/lib/studioPanelLayout";
 import {
   createStudioExcerptWorkspaceObject,
   type StudioWorkspaceObject,
@@ -17,6 +18,9 @@ export interface StudioDocumentDockProps {
   selectedMaterialIds: number[];
   selectedPaths: string[];
   viewerState: Record<string, unknown> | null;
+  documentTabs?: StudioDocumentTab[];
+  activeDocumentTabId?: string | null;
+  onSelectDocumentTab?: (tabId: string) => void;
   onClipExcerpt?: (workspaceObject: StudioWorkspaceObject) => void;
 }
 
@@ -30,23 +34,51 @@ export function StudioDocumentDock({
   selectedMaterialIds,
   selectedPaths,
   viewerState,
+  documentTabs = [],
+  activeDocumentTabId = null,
+  onSelectDocumentTab,
   onClipExcerpt,
 }: StudioDocumentDockProps) {
+  const activeTab = useMemo(
+    () => documentTabs.find((tab) => tab.id === activeDocumentTabId) || null,
+    [activeDocumentTabId, documentTabs],
+  );
   const selectedMaterials =
     selectedMaterialIds.length > 0
       ? materials.filter((material) => selectedMaterialIds.includes(material.id))
       : [];
+  const materialById = useMemo(
+    () =>
+      new Map(
+        materials.map((material) => [material.id, material] as const),
+      ),
+    [materials],
+  );
 
   const viewerMaterialId =
     typeof viewerState?.material_id === "number" ? viewerState.material_id : null;
+  const activeTabMaterialId =
+    typeof activeTab?.sourceId === "number" ? activeTab.sourceId : null;
   const activeMaterial =
-    selectedMaterials.find((material) => material.id === viewerMaterialId) ||
+    (activeTabMaterialId !== null ? materialById.get(activeTabMaterialId) : null) ||
+    (viewerMaterialId !== null ? materialById.get(viewerMaterialId) : null) ||
     selectedMaterials[0] ||
     null;
+  const activeDocumentTitle =
+    activeTab?.title ||
+    activeMaterial?.title ||
+    (typeof viewerState?.source_title === "string" ? viewerState.source_title : null) ||
+    "No document selected";
+  const activeDocumentPath =
+    activeTab?.sourcePath ||
+    activeMaterial?.source_path ||
+    (typeof viewerState?.source_path === "string"
+      ? viewerState.source_path
+      : "Select a file from the current run to open it here.");
   const activeFileType =
     typeof viewerState?.file_type === "string"
       ? viewerState.file_type
-      : activeMaterial?.file_type;
+      : activeMaterial?.file_type || activeTab?.kind;
   const { data: activeMaterialContent, isLoading: activeMaterialLoading } =
     useQuery<MaterialContent>({
       queryKey: ["studio-document-dock", "material-content", activeMaterial?.id],
@@ -93,19 +125,39 @@ export function StudioDocumentDock({
   return (
     <div className="space-y-4 font-mono text-sm text-foreground/78">
       <div className="rounded-[0.85rem] border border-primary/15 bg-black/15 p-3">
+        {documentTabs.length > 0 ? (
+          <div className="mb-3 flex flex-wrap gap-2">
+            {documentTabs.map((tab) => {
+              const isActive = tab.id === activeDocumentTabId;
+              return (
+                <Button
+                  key={tab.id}
+                  type="button"
+                  variant="outline"
+                  onClick={() => onSelectDocumentTab?.(tab.id)}
+                  aria-pressed={isActive}
+                  className={
+                    isActive
+                      ? "h-8 rounded-full border-primary/30 bg-primary/16 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-primary"
+                      : "h-8 rounded-full border-primary/14 bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-foreground/72"
+                  }
+                >
+                  {tab.title}
+                </Button>
+              );
+            })}
+          </div>
+        ) : null}
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
               Active document
             </div>
             <div className="mt-1 text-sm text-foreground">
-              {activeMaterial?.title || "No document selected"}
+              {activeDocumentTitle}
             </div>
             <div className="mt-1 break-all text-sm text-foreground/72">
-              {activeMaterial?.source_path ||
-                (typeof viewerState?.source_path === "string"
-                  ? viewerState.source_path
-                  : "Select a file from the current run to open it here.")}
+              {activeDocumentPath}
             </div>
           </div>
           <Badge

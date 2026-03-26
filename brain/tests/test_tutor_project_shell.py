@@ -352,6 +352,39 @@ def test_project_shell_state_persists_and_increments_revision(client):
             "active_board_scope": "session",
             "selected_material_ids": [4, "7", 4],
             "viewer_state": {"sourcePath": "Uploads/brainstem.pdf", "page": 3},
+            "panel_layout": [
+                {
+                    "id": "panel-source-shelf",
+                    "panel": "source_shelf",
+                    "position": {"x": 24, "y": 32},
+                    "size": {"width": 320, "height": 680},
+                    "zIndex": 2,
+                    "collapsed": False,
+                }
+            ],
+            "document_tabs": [
+                {
+                    "id": "doc-material-101",
+                    "kind": "material",
+                    "title": "Cardiac Output Lecture",
+                    "sourceId": 101,
+                }
+            ],
+            "active_document_tab_id": "doc-material-101",
+            "runtime_state": {
+                "active_memory_capsule_id": 12,
+                "compaction_telemetry": {
+                    "tokenCount": 18750,
+                    "contextWindow": 24000,
+                    "pressureLevel": "high",
+                },
+                "direct_note_save_status": {
+                    "state": "saved",
+                    "path": "Tutor Workspace/Cardio Note.md",
+                },
+            },
+            "tutor_chain_id": 77,
+            "tutor_custom_block_ids": [91, 92],
             "prime_packet_promoted_objects": [
                 {
                     "id": "excerpt:101:abc123",
@@ -386,6 +419,14 @@ def test_project_shell_state_persists_and_increments_revision(client):
     assert saved["selected_material_ids"] == [4, 7]
     assert saved["last_mode"] == "tutor"
     assert saved["active_tutor_session_id"] == "tutor-shell-102"
+    assert saved["panel_layout"][0]["panel"] == "source_shelf"
+    assert saved["document_tabs"][0]["title"] == "Cardiac Output Lecture"
+    assert saved["active_document_tab_id"] == "doc-material-101"
+    assert saved["runtime_state"]["active_memory_capsule_id"] == 12
+    assert saved["runtime_state"]["compaction_telemetry"]["pressureLevel"] == "high"
+    assert saved["runtime_state"]["direct_note_save_status"]["state"] == "saved"
+    assert saved["tutor_chain_id"] == 77
+    assert saved["tutor_custom_block_ids"] == [91, 92]
     assert len(saved["prime_packet_promoted_objects"]) == 1
     assert len(saved["polish_packet_promoted_notes"]) == 1
     assert (
@@ -399,6 +440,12 @@ def test_project_shell_state_persists_and_increments_revision(client):
     shell = shell_response.get_json()
     assert shell["workspace_state"]["revision"] == 1
     assert shell["workspace_state"]["viewer_state"]["page"] == 3
+    assert shell["workspace_state"]["panel_layout"][0]["panel"] == "source_shelf"
+    assert shell["workspace_state"]["document_tabs"][0]["id"] == "doc-material-101"
+    assert shell["workspace_state"]["active_document_tab_id"] == "doc-material-101"
+    assert shell["workspace_state"]["runtime_state"]["active_memory_capsule_id"] == 12
+    assert shell["workspace_state"]["tutor_chain_id"] == 77
+    assert shell["workspace_state"]["tutor_custom_block_ids"] == [91, 92]
     assert len(shell["workspace_state"]["prime_packet_promoted_objects"]) == 1
     assert len(shell["workspace_state"]["polish_packet_promoted_notes"]) == 1
     assert shell["continuation"]["can_resume"] is True
@@ -413,6 +460,16 @@ def test_project_shell_state_persists_and_increments_revision(client):
             "active_board_scope": "project",
             "selected_material_ids": [9],
             "viewer_state": {"sourcePath": "Uploads/brainstem.pdf", "page": 5},
+            "panel_layout": [],
+            "document_tabs": [],
+            "active_document_tab_id": None,
+            "runtime_state": {
+                "active_memory_capsule_id": None,
+                "compaction_telemetry": None,
+                "direct_note_save_status": None,
+            },
+            "tutor_chain_id": None,
+            "tutor_custom_block_ids": [],
             "prime_packet_promoted_objects": [],
             "polish_packet_promoted_notes": [],
             "revision": 1,
@@ -424,6 +481,12 @@ def test_project_shell_state_persists_and_increments_revision(client):
     assert updated["revision"] == 2
     assert updated["last_mode"] == "studio"
     assert updated["selected_material_ids"] == [9]
+    assert updated["panel_layout"] == []
+    assert updated["document_tabs"] == []
+    assert updated["active_document_tab_id"] is None
+    assert updated["runtime_state"]["active_memory_capsule_id"] is None
+    assert updated["tutor_chain_id"] is None
+    assert updated["tutor_custom_block_ids"] == []
     assert updated["prime_packet_promoted_objects"] == []
     assert updated["polish_packet_promoted_notes"] == []
 
@@ -439,13 +502,26 @@ def test_project_shell_state_rejects_stale_revision(client):
 
     stale_write = client.put(
         "/api/tutor/project-shell/state",
-        json={"course_id": 103, "last_mode": "publish", "revision": 0},
+        json={"course_id": 103, "last_mode": "tutor", "revision": 0},
     )
 
     assert stale_write.status_code == 409
     body = stale_write.get_json()
     assert body["code"] == "REVISION_CONFLICT"
     assert body["expected_revision"] == 1
+
+
+@pytest.mark.parametrize("last_mode", ["schedule", "publish"])
+def test_project_shell_state_rejects_unshipped_shell_modes(client, last_mode):
+    _insert_course(103, "MSK")
+
+    response = client.put(
+        "/api/tutor/project-shell/state",
+        json={"course_id": 103, "last_mode": last_mode, "revision": 0},
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "last_mode must be one of ['studio', 'tutor']"
 
 
 def test_project_shell_state_rejects_session_from_another_course(client):
@@ -826,6 +902,20 @@ def test_studio_run_put_persists_workspace_state_and_blocks_publish(client):
                 "active_board_scope": "project",
                 "active_board_id": None,
                 "viewer_state": {"sourcePath": "Uploads/renal.pdf", "page": 2},
+                "runtime_state": {
+                    "active_memory_capsule_id": 22,
+                    "compaction_telemetry": {
+                        "tokenCount": 9900,
+                        "contextWindow": 24000,
+                        "pressureLevel": "medium",
+                    },
+                    "direct_note_save_status": {
+                        "state": "saved",
+                        "path": "Tutor Workspace/Renal Note.md",
+                    },
+                },
+                "tutor_chain_id": 55,
+                "tutor_custom_block_ids": [7, 8],
                 "prime_packet_promoted_objects": [],
                 "polish_packet_promoted_notes": [
                     {
@@ -845,6 +935,9 @@ def test_studio_run_put_persists_workspace_state_and_blocks_publish(client):
     body = response.get_json()
     assert body["workspace_state"]["revision"] == 1
     assert body["workspace_state"]["viewer_state"]["page"] == 2
+    assert body["workspace_state"]["runtime_state"]["active_memory_capsule_id"] == 22
+    assert body["workspace_state"]["tutor_chain_id"] == 55
+    assert body["workspace_state"]["tutor_custom_block_ids"] == [7, 8]
     assert len(body["workspace_state"]["polish_packet_promoted_notes"]) == 1
     assert body["publish_confirmation_required"] is True
 
@@ -852,6 +945,9 @@ def test_studio_run_put_persists_workspace_state_and_blocks_publish(client):
     assert restore_response.status_code == 200
     restored = restore_response.get_json()
     assert restored["workspace_state"]["selected_material_ids"] == [21]
+    assert restored["workspace_state"]["runtime_state"]["direct_note_save_status"]["state"] == "saved"
+    assert restored["workspace_state"]["tutor_chain_id"] == 55
+    assert restored["workspace_state"]["tutor_custom_block_ids"] == [7, 8]
     assert restored["workspace_state"]["polish_packet_promoted_notes"][0]["title"] == "Tutor Reply 2"
 
 

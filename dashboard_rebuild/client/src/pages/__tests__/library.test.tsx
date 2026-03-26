@@ -18,6 +18,8 @@ const {
   reextractMaterialMock,
   readTutorSelectedMaterialIdsMock,
   writeTutorSelectedMaterialIdsMock,
+  writeTutorStoredStartStateMock,
+  setLocationMock,
 } = vi.hoisted(() => ({
   consumeLibraryLaunchFromTutorMock: vi.fn(),
   getMaterialsMock: vi.fn(),
@@ -33,6 +35,8 @@ const {
   reextractMaterialMock: vi.fn(),
   readTutorSelectedMaterialIdsMock: vi.fn(),
   writeTutorSelectedMaterialIdsMock: vi.fn(),
+  writeTutorStoredStartStateMock: vi.fn(),
+  setLocationMock: vi.fn(),
 }));
 
 vi.mock("@/components/layout", () => ({
@@ -47,6 +51,11 @@ vi.mock("@/lib/tutorClientState", () => ({
   consumeLibraryLaunchFromTutor: consumeLibraryLaunchFromTutorMock,
   readTutorSelectedMaterialIds: readTutorSelectedMaterialIdsMock,
   writeTutorSelectedMaterialIds: writeTutorSelectedMaterialIdsMock,
+  writeTutorStoredStartState: writeTutorStoredStartStateMock,
+}));
+
+vi.mock("wouter", () => ({
+  useLocation: () => ["/library", setLocationMock],
 }));
 
 vi.mock("@/lib/api", () => ({
@@ -141,6 +150,22 @@ describe("Library tutor handoff", () => {
   });
 
   it("writes selected tutor materials and clears stale wizard progress on open", async () => {
+    getMaterialsMock.mockResolvedValue([
+      {
+        id: 1,
+        title: "Intro Notes",
+        source_path: "Uploaded Files/intro-notes.pdf",
+        folder_path: "Uploaded Files",
+        file_type: "pdf",
+        file_size: 1024,
+        course_id: 9,
+        enabled: true,
+        extraction_error: null,
+        checksum: "abc123",
+        created_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+        updated_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+      },
+    ]);
     localStorage.setItem(
       "tutor.wizard.progress.v1",
       JSON.stringify({ step: 2, chainMode: "template" }),
@@ -164,8 +189,23 @@ describe("Library tutor handoff", () => {
     fireEvent.click(screen.getByRole("button", { name: /open tutor/i }));
 
     expect(writeTutorSelectedMaterialIdsMock).toHaveBeenCalledWith([1]);
+    expect(writeTutorStoredStartStateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        courseId: 9,
+        selectedMaterials: [1],
+        chainId: undefined,
+        customBlockIds: [],
+        accuracyProfile: "strict",
+        objectiveScope: "module_all",
+        selectedObjectiveId: "",
+        selectedObjectiveGroup: "",
+        selectedPaths: [],
+      }),
+    );
     expect(localStorage.getItem("tutor.wizard.progress.v1")).toBeNull();
+    expect(localStorage.getItem("tutor-studio-last-tab")).toBe("workspace");
     expect(sessionStorage.getItem("tutor.open_from_library.v1")).toBe("1");
+    expect(setLocationMock).toHaveBeenCalledWith("/tutor?course_id=9&mode=studio");
   });
 
   it("consumes Tutor Page 1 handoff and preselects the course intake target", async () => {

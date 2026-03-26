@@ -109,6 +109,12 @@ export function TutorStatusPanel({ status }: TutorStatusPanelProps) {
           detail={status.repairSignal.detail}
         />
       </div>
+
+      <MetricCard
+        label="Vault note save"
+        value={status.directNoteSave.label}
+        detail={status.directNoteSave.detail}
+      />
     </div>
   );
 }

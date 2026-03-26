@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Suspense, lazy, useState, useEffect } from "react";
+import { Suspense, lazy } from "react";
 import { queryClient } from "./queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -14,7 +14,6 @@ const Methods = lazy(() => import("@/pages/methods"));
 const Mastery = lazy(() => import("@/pages/mastery"));
 const Library = lazy(() => import("@/pages/library"));
 const VaultHealth = lazy(() => import("@/pages/vault-health"));
-const NavLab = lazy(() => import("@/pages/nav-lab"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 const ROUTES = [
@@ -26,7 +25,6 @@ const ROUTES = [
   { path: "/mastery", Component: Mastery },
   { path: "/library", Component: Library },
   { path: "/vault-health", Component: VaultHealth },
-  { path: "/nav-lab", Component: NavLab },
 ];
 
 function normalizeRoutePath(path: string) {
@@ -42,50 +40,24 @@ const LoadingFallback = () => (
   </div>
 );
 
-function KeepAliveRouter() {
+function AppRouter() {
   const [location] = useLocation();
   const normalizedLocation = normalizeRoutePath(location);
-  const [visited, setVisited] = useState<Set<string>>(
-    () =>
-      new Set(
-        ROUTES.some((route) => route.path === normalizedLocation)
-          ? [normalizedLocation]
-          : [],
-      ),
-  );
+  const match = ROUTES.find((route) => route.path === normalizedLocation);
 
-  useEffect(() => {
-    const match = ROUTES.find((r) => r.path === normalizedLocation);
-    if (match && !visited.has(match.path)) {
-      setVisited((prev) => new Set([...prev, match.path]));
-    }
-  }, [normalizedLocation, visited]);
+  if (!match) {
+    return (
+      <Suspense fallback={<LoadingFallback />}>
+        <NotFound />
+      </Suspense>
+    );
+  }
 
-  const isKnownRoute = ROUTES.some((r) => r.path === normalizedLocation);
-
+  const Component = match.Component;
   return (
-    <>
-      {ROUTES.map(({ path, Component }) => {
-        if (!visited.has(path)) return null;
-        const isActive = path === normalizedLocation;
-        return (
-          <div
-            key={path}
-            className="contents"
-            style={isActive ? undefined : { display: "none" }}
-          >
-            <Suspense fallback={<LoadingFallback />}>
-              <Component />
-            </Suspense>
-          </div>
-        );
-      })}
-      {!isKnownRoute && (
-        <Suspense fallback={<LoadingFallback />}>
-          <NotFound />
-        </Suspense>
-      )}
-    </>
+    <Suspense fallback={<LoadingFallback />}>
+      <Component />
+    </Suspense>
   );
 }
 
@@ -95,7 +67,7 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Layout>
-          <KeepAliveRouter />
+          <AppRouter />
         </Layout>
       </TooltipProvider>
     </QueryClientProvider>

@@ -27,6 +27,10 @@ interface TutorLiveStudyPaneProps {
   restoredTurns: { question: string; answer: string | null }[] | undefined;
   queryClient: QueryClient;
   setShellMode: (mode: "studio" | "tutor") => void;
+  onStartSession: () => void | Promise<void>;
+  activeMemoryCapsuleContext?: string | null;
+  onActivateMemoryCapsule?: (capsuleId: number | null) => void;
+  onDirectNoteSaveStatus?: (status: Record<string, unknown> | null) => void;
   onSaveGist: (content: string) => void;
   onPromoteTutorReplyToPolish: (payload: {
     message: {
@@ -37,6 +41,7 @@ interface TutorLiveStudyPaneProps {
     };
     index: number;
   }) => void;
+  onCompactionTelemetry: (telemetry: Record<string, unknown> | null) => void;
   submitBrainFeedback: (payload: Record<string, unknown>) => void | Promise<void>;
 }
 
@@ -48,17 +53,51 @@ export function TutorLiveStudyPane({
   restoredTurns,
   queryClient,
   setShellMode,
+  onStartSession,
+  activeMemoryCapsuleContext,
+  onActivateMemoryCapsule,
+  onDirectNoteSaveStatus,
   onSaveGist,
   onPromoteTutorReplyToPolish,
+  onCompactionTelemetry,
   submitBrainFeedback,
 }: TutorLiveStudyPaneProps) {
+  const handleActivateCapsule = async (
+    action: () => Promise<{ id?: number } | null | undefined> | { id?: number } | null | undefined,
+  ) => {
+    const capsule = await action();
+    if (typeof capsule?.id === "number") {
+      onActivateMemoryCapsule?.(capsule.id);
+    }
+  };
+
+  const handleSaveNoteToVault = async (mode: "exact" | "editable") => {
+    onDirectNoteSaveStatus?.({
+      state: "saving",
+      mode,
+      savedAt: new Date().toISOString(),
+    });
+    const result = await workflow.saveWorkflowNoteToVault(mode);
+    if (result) {
+      onDirectNoteSaveStatus?.(result);
+    }
+  };
+
   if (!activeSessionId) {
     return (
       <TutorEmptyState
         icon={MessageSquare}
         title="READY TO RUN A STUDY SESSION"
-        description="Tutor is the live study surface. Start or resume from Studio, or switch into Studio to prepare notes and captures before studying."
+        description="Tutor is the live study surface. Start directly from this panel with the current Prime Packet context, or switch into Studio to prepare more notes and captures before studying."
         actions={[
+          {
+            label: "START SESSION",
+            icon: MessageSquare,
+            onClick: () => {
+              void onStartSession();
+            },
+            variant: "primary",
+          },
           {
             label: "GO TO WORKSPACE HOME",
             icon: ListChecks,
@@ -66,7 +105,7 @@ export function TutorLiveStudyPane({
               workflow.setStudioView("home");
               setShellMode("studio");
             },
-            variant: "primary",
+            variant: "ghost",
           },
           {
             label: "OPEN WORKSPACE",
@@ -196,6 +235,16 @@ export function TutorLiveStudyPane({
               >
                 SAVE EXACT
               </Button>
+              <Button
+                variant="outline"
+                className="rounded-none font-arcade text-ui-2xs"
+                onClick={() => {
+                  void handleSaveNoteToVault("exact");
+                }}
+                disabled={!workflow.activeWorkflowId || workflow.savingRuntimeEvent}
+              >
+                SAVE EXACT TO VAULT
+              </Button>
             </div>
           </div>
 
@@ -223,6 +272,16 @@ export function TutorLiveStudyPane({
                 disabled={!workflow.activeWorkflowId || workflow.savingRuntimeEvent}
               >
                 SAVE EDITABLE
+              </Button>
+              <Button
+                variant="outline"
+                className="rounded-none font-arcade text-ui-2xs"
+                onClick={() => {
+                  void handleSaveNoteToVault("editable");
+                }}
+                disabled={!workflow.activeWorkflowId || workflow.savingRuntimeEvent}
+              >
+                SAVE EDITABLE TO VAULT
               </Button>
             </div>
 
@@ -300,7 +359,7 @@ export function TutorLiveStudyPane({
               variant="outline"
               className="rounded-none font-arcade text-ui-2xs"
               onClick={() => {
-                void workflow.createWorkflowMemoryCapsule();
+                void handleActivateCapsule(() => workflow.createWorkflowMemoryCapsule());
               }}
               disabled={!workflow.activeWorkflowId || workflow.savingRuntimeEvent}
             >
@@ -327,6 +386,7 @@ export function TutorLiveStudyPane({
           availableMaterials={hub.chatMaterials}
           selectedMaterialIds={hub.selectedMaterials}
           accuracyProfile={hub.accuracyProfile}
+          memoryCapsuleContext={activeMemoryCapsuleContext}
           onAccuracyProfileChange={hub.setAccuracyProfile}
           onSelectedMaterialIdsChange={hub.setSelectedMaterials}
           onMaterialsChanged={hub.refreshChatMaterials}
@@ -349,7 +409,7 @@ export function TutorLiveStudyPane({
             });
           }}
           onCompact={() => {
-            void workflow.quickCompactWorkflowMemory();
+            void handleActivateCapsule(() => workflow.quickCompactWorkflowMemory());
           }}
           timerState={{
             elapsedSeconds: session.stageTimerDisplaySeconds,
@@ -362,9 +422,10 @@ export function TutorLiveStudyPane({
             session.commitAssistantMessage(assistantMessage);
           }}
           initialTurns={restoredTurns}
-          onTurnComplete={(masteryUpdate) => {
+          onTurnComplete={(payload) => {
             session.setTurnCount((prev: number) => prev + 1);
-            if (masteryUpdate) {
+            onCompactionTelemetry(payload?.compactionTelemetry ?? null);
+            if (payload?.masteryUpdate) {
               queryClient.invalidateQueries({
                 queryKey: ["mastery-dashboard"],
               });

@@ -32,6 +32,11 @@ export interface ChatMessage {
   teachBackRubric?: TeachBackRubric;
 }
 
+export interface TutorTurnCompletePayload {
+  masteryUpdate?: { skill_id: string; new_mastery: number; correct: boolean };
+  compactionTelemetry?: Record<string, unknown> | null;
+}
+
 export interface TutorChatProps {
   sessionId: string | null;
   courseId?: number;
@@ -39,6 +44,7 @@ export interface TutorChatProps {
   selectedMaterialIds: number[];
   defaultMaterialsOn?: boolean;
   accuracyProfile: TutorAccuracyProfile;
+  memoryCapsuleContext?: string | null;
   onAccuracyProfileChange: (profile: TutorAccuracyProfile) => void;
   onSelectedMaterialIdsChange: (ids: number[]) => void;
   onMaterialsChanged?: () => Promise<void> | void;
@@ -80,7 +86,7 @@ export interface TutorChatProps {
     userMessage: string;
     assistantMessage: ChatMessage;
   }) => void;
-  onTurnComplete?: (masteryUpdate?: { skill_id: string; new_mastery: number; correct: boolean }) => void;
+  onTurnComplete?: (payload?: TutorTurnCompletePayload) => void;
   initialTurns?: { question: string; answer: string | null }[];
 }
 

@@ -1162,6 +1162,100 @@ def test_send_turn_includes_packet_context_in_system_prompt(client, monkeypatch)
     assert "Learner mixed preload effects with heart-rate regulation." in prompt
 
 
+def test_send_turn_includes_active_memory_capsule_in_system_prompt(
+    client, monkeypatch
+):
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "mode": "Core",
+            "topic": "Capsule Context Test",
+        },
+    )
+    assert resp.status_code == 201
+    tutor_sid = resp.get_json()["session_id"]
+
+    monkeypatch.setattr(
+        tutor_context,
+        "build_context",
+        lambda *_a, **_k: {
+            "materials": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        },
+    )
+    monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
+
+    captured: dict[str, str] = {"system_prompt": ""}
+
+    def fake_stream(system_prompt, _user_prompt, **_kwargs):
+        captured["system_prompt"] = system_prompt
+        yield {"type": "delta", "text": "ok"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-capsule",
+            "thread_id": "thread-capsule",
+        }
+
+    monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
+
+    turn_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/turn",
+        json={
+            "message": "What should I review next?",
+            "content_filter": {
+                "memory_capsule_context": (
+                    "Summary: Learner still mixes preload with heart-rate control.\n"
+                    "Rule reinforcement:\n"
+                    "Always force a function confirmation before L4 precision.\n"
+                    "Current objective: Differentiate preload determinants from chronotropy."
+                )
+            },
+        },
+    )
+    assert turn_resp.status_code == 200
+    _ = turn_resp.get_data(as_text=True)
+
+    prompt = captured["system_prompt"]
+    assert "Active Memory Capsule" in prompt
+    assert "Learner still mixes preload with heart-rate control." in prompt
+    assert "Always force a function confirmation before L4 precision." in prompt
+    assert "Differentiate preload determinants from chronotropy." in prompt
+
+
+def test_workflow_memory_capsule_persists_rule_snapshot(client):
+    workflow_resp = client.post(
+        "/api/tutor/workflows",
+        json={
+            "topic": "Rule Snapshot Capsule",
+            "current_stage": "tutor",
+            "status": "tutor_in_progress",
+        },
+    )
+    assert workflow_resp.status_code == 200
+    workflow_id = workflow_resp.get_json()["workflow"]["workflow_id"]
+
+    capsule_resp = client.post(
+        f"/api/tutor/workflows/{workflow_id}/memory-capsules",
+        json={
+            "stage": "tutor",
+            "summary_text": "Captured the preload misconception.",
+            "rule_snapshot_text": "Always force a function confirmation before L4 precision.",
+        },
+    )
+    assert capsule_resp.status_code == 200
+    body = capsule_resp.get_json()["memory_capsule"]
+    assert (
+        body["rule_snapshot_text"]
+        == "Always force a function confirmation before L4 precision."
+    )
+
+
 def test_send_turn_material_count_question_uses_selected_scope(client, monkeypatch):
     conn = sqlite3.connect(config.DB_PATH)
     cur = conn.cursor()

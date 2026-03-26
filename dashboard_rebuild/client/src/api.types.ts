@@ -982,6 +982,7 @@ export interface TutorSessionPreflightRequest {
     objective_scope?: TutorObjectiveScope;
     focus_objective_id?: string;
     vault_folder?: string;
+    memory_capsule_context?: string;
     force_full_docs?: boolean;
     default_mode?: {
       materials?: boolean;
@@ -1067,6 +1068,7 @@ export interface TutorCreateSessionRequest {
     objective_scope?: TutorObjectiveScope;
     focus_objective_id?: string;
     vault_folder?: string;
+    memory_capsule_context?: string;
     north_star_refresh?: boolean;
     force_full_docs?: boolean;
     default_mode?: {
@@ -1079,6 +1081,7 @@ export interface TutorCreateSessionRequest {
   };
   method_chain_id?: number;
   packet_context?: string;
+  memory_capsule_context?: string;
 }
 
 export interface TutorTemplateChain {
@@ -1252,6 +1255,8 @@ export interface TutorSessionWithTurns extends TutorSession {
     accuracy_profile?: TutorAccuracyProfile;
     objective_scope?: TutorObjectiveScope;
     focus_objective_id?: string;
+    memory_capsule_context?: string;
+    session_rules?: string[];
     force_full_docs?: boolean;
     default_mode?: {
       materials?: boolean;
@@ -1338,6 +1343,16 @@ export interface TutorProjectShellState {
   active_board_scope: TutorBoardScope;
   active_board_id: number | null;
   viewer_state: Record<string, unknown> | null;
+  panel_layout: Record<string, unknown>[];
+  document_tabs: Record<string, unknown>[];
+  active_document_tab_id: string | null;
+  runtime_state: {
+    active_memory_capsule_id: number | null;
+    compaction_telemetry: Record<string, unknown> | null;
+    direct_note_save_status: Record<string, unknown> | null;
+  } | null;
+  tutor_chain_id: number | null;
+  tutor_custom_block_ids: number[];
   prime_packet_promoted_objects: Record<string, unknown>[];
   polish_packet_promoted_notes: Record<string, unknown>[];
   selected_material_ids: number[];
@@ -1352,6 +1367,16 @@ export interface TutorProjectShellStateRequest {
   active_board_scope?: TutorBoardScope;
   active_board_id?: number | null;
   viewer_state?: Record<string, unknown> | null;
+  panel_layout?: Record<string, unknown>[];
+  document_tabs?: Record<string, unknown>[];
+  active_document_tab_id?: string | null;
+  runtime_state?: {
+    active_memory_capsule_id: number | null;
+    compaction_telemetry: Record<string, unknown> | null;
+    direct_note_save_status: Record<string, unknown> | null;
+  } | null;
+  tutor_chain_id?: number | null;
+  tutor_custom_block_ids?: number[];
   prime_packet_promoted_objects?: Record<string, unknown>[];
   polish_packet_promoted_notes?: Record<string, unknown>[];
   selected_material_ids?: number[];
@@ -1665,6 +1690,7 @@ export interface TutorPrimingAssistRequest {
   priming_chain_id?: string | null;
   source_inventory?: TutorPrimingSourceInventoryItem[];
   packet_context?: string | null;
+  memory_capsule_context?: string | null;
 }
 
 export interface TutorPrimingAssistAggregate {
@@ -1761,6 +1787,7 @@ export interface TutorMemoryCapsule {
   stage: TutorWorkflowStage;
   capsule_version: number;
   summary_text: string | null;
+  rule_snapshot_text?: string | null;
   current_objective: string | null;
   study_unit: string | null;
   concept_focus: Record<string, unknown>[];
@@ -1779,6 +1806,7 @@ export interface TutorMemoryCapsuleRequest {
   tutor_session_id?: string | null;
   stage?: TutorWorkflowStage;
   summary_text?: string | null;
+  rule_snapshot_text?: string | null;
   current_objective?: string | null;
   study_unit?: string | null;
   concept_focus?: Record<string, unknown>[];
@@ -2339,6 +2367,7 @@ export interface TutorSSEChunk {
   summary?: string;
   model?: string;
   retrieval_debug?: TutorRetrievalDebug;
+  compaction_telemetry?: Record<string, unknown>;
   behavior_override?: BehaviorOverride;
   verdict?: TutorVerdict;
   concept_map?: unknown;

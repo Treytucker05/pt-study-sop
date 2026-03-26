@@ -11,6 +11,22 @@ import {
 import { Tldraw } from "tldraw";
 import "tldraw/tldraw.css";
 
+const TLDRAW_VENDOR_CTA_RE = /get a license for production|made with tldraw/i;
+
+function stripVendorCtas(root: ParentNode) {
+  root.querySelectorAll("a, button").forEach((element) => {
+    const href = element.getAttribute("href") || "";
+    const text = element.textContent || "";
+    if (
+      href.includes("tldraw.dev") ||
+      href.includes("pricing") ||
+      TLDRAW_VENDOR_CTA_RE.test(text)
+    ) {
+      element.remove();
+    }
+  });
+}
+
 export interface StudioTldrawWorkspaceProps {
   courseName: string | null;
   canvasObjects: StudioWorkspaceObject[];
@@ -36,6 +52,7 @@ export function StudioTldrawWorkspace({
 }: StudioTldrawWorkspaceProps) {
   const [editor, setEditor] = useState<Editor | null>(null);
   const syncedObjectIdsRef = useRef<string[]>([]);
+  const workspaceRootRef = useRef<HTMLDivElement | null>(null);
   const excerptObjects = canvasObjects.filter(
     (
       workspaceObject,
@@ -84,8 +101,23 @@ export function StudioTldrawWorkspace({
     syncedObjectIdsRef.current = nextObjectIds;
   }, [canvasObjects, editor]);
 
+  useEffect(() => {
+    const root = workspaceRootRef.current;
+    if (!root) return;
+
+    stripVendorCtas(root);
+
+    const observer = new MutationObserver(() => {
+      stripVendorCtas(root);
+    });
+
+    observer.observe(root, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div
+      ref={workspaceRootRef}
       data-testid="studio-tldraw-workspace"
       className="flex h-full min-h-0 flex-col rounded-[0.85rem] border border-primary/15 bg-black/20"
     >

@@ -25,9 +25,12 @@ from dashboard.api_tutor import tutor_bp  # noqa: E402
 from dashboard.api_tutor_projects import (  # noqa: E402
     VALID_BOARD_SCOPES,
     VALID_SHELL_MODES,
+    _normalize_int_list,
     _normalize_json_dict,
     _normalize_json_object_list,
+    _normalize_optional_string,
     _normalize_material_ids,
+    _normalize_runtime_state,
     _require_course as _require_project_course,
     _require_course_session,
     _serialize_workspace_state,
@@ -214,7 +217,9 @@ def _load_workspace_state_row(
     cur.execute(
         """
         SELECT course_id, active_tutor_session_id, last_mode, active_board_scope,
-               active_board_id, viewer_state_json, prime_packet_promoted_objects_json,
+               active_board_id, viewer_state_json, panel_layout_json, document_tabs_json,
+               active_document_tab_id, runtime_state_json, tutor_chain_id, tutor_custom_block_ids_json,
+               prime_packet_promoted_objects_json,
                polish_packet_promoted_notes_json,
                selected_material_ids_json,
                revision, updated_at
@@ -939,6 +944,33 @@ def save_studio_run():
             workspace_state.get("viewer_state"),
             field_name="viewer_state",
         )
+        panel_layout = _normalize_json_object_list(
+            workspace_state.get("panel_layout"),
+            field_name="panel_layout",
+        )
+        document_tabs = _normalize_json_object_list(
+            workspace_state.get("document_tabs"),
+            field_name="document_tabs",
+        )
+        active_document_tab_id = _normalize_optional_string(
+            workspace_state.get("active_document_tab_id"),
+            field_name="active_document_tab_id",
+        )
+        runtime_state = _normalize_runtime_state(workspace_state.get("runtime_state"))
+        raw_tutor_chain_id = workspace_state.get("tutor_chain_id")
+        if raw_tutor_chain_id is None:
+            tutor_chain_id = None
+        elif isinstance(raw_tutor_chain_id, bool):
+            raise ValueError("tutor_chain_id must be an integer")
+        else:
+            try:
+                tutor_chain_id = int(raw_tutor_chain_id)
+            except (TypeError, ValueError) as exc:
+                raise ValueError("tutor_chain_id must be an integer") from exc
+        tutor_custom_block_ids = _normalize_int_list(
+            workspace_state.get("tutor_custom_block_ids"),
+            field_name="tutor_custom_block_ids",
+        )
         prime_packet_promoted_objects = _normalize_json_object_list(
             workspace_state.get("prime_packet_promoted_objects"),
             field_name="prime_packet_promoted_objects",
@@ -1011,6 +1043,12 @@ def save_studio_run():
                 active_board_scope,
                 active_board_id,
                 viewer_state_json,
+                panel_layout_json,
+                document_tabs_json,
+                active_document_tab_id,
+                runtime_state_json,
+                tutor_chain_id,
+                tutor_custom_block_ids_json,
                 prime_packet_promoted_objects_json,
                 polish_packet_promoted_notes_json,
                 selected_material_ids_json,
@@ -1018,13 +1056,19 @@ def save_studio_run():
                 updated_at,
                 course_id
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(course_id) DO UPDATE SET
                 active_tutor_session_id = excluded.active_tutor_session_id,
                 last_mode = excluded.last_mode,
                 active_board_scope = excluded.active_board_scope,
                 active_board_id = excluded.active_board_id,
                 viewer_state_json = excluded.viewer_state_json,
+                panel_layout_json = excluded.panel_layout_json,
+                document_tabs_json = excluded.document_tabs_json,
+                active_document_tab_id = excluded.active_document_tab_id,
+                runtime_state_json = excluded.runtime_state_json,
+                tutor_chain_id = excluded.tutor_chain_id,
+                tutor_custom_block_ids_json = excluded.tutor_custom_block_ids_json,
                 prime_packet_promoted_objects_json = excluded.prime_packet_promoted_objects_json,
                 polish_packet_promoted_notes_json = excluded.polish_packet_promoted_notes_json,
                 selected_material_ids_json = excluded.selected_material_ids_json,
@@ -1037,6 +1081,12 @@ def save_studio_run():
                 active_board_scope,
                 active_board_id,
                 json.dumps(viewer_state) if viewer_state is not None else None,
+                json.dumps(panel_layout),
+                json.dumps(document_tabs),
+                active_document_tab_id,
+                json.dumps(runtime_state),
+                tutor_chain_id,
+                json.dumps(tutor_custom_block_ids),
                 json.dumps(prime_packet_promoted_objects),
                 json.dumps(polish_packet_promoted_notes),
                 json.dumps(selected_material_ids),

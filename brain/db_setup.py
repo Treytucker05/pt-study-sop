@@ -2249,6 +2249,12 @@ def init_database():
             active_board_scope TEXT NOT NULL DEFAULT 'project',
             active_board_id INTEGER,
             viewer_state_json TEXT,
+            panel_layout_json TEXT NOT NULL DEFAULT '[]',
+            document_tabs_json TEXT NOT NULL DEFAULT '[]',
+            active_document_tab_id TEXT,
+            runtime_state_json TEXT NOT NULL DEFAULT '{}',
+            tutor_chain_id INTEGER,
+            tutor_custom_block_ids_json TEXT NOT NULL DEFAULT '[]',
             prime_packet_promoted_objects_json TEXT NOT NULL DEFAULT '[]',
             polish_packet_promoted_notes_json TEXT NOT NULL DEFAULT '[]',
             selected_material_ids_json TEXT NOT NULL DEFAULT '[]',
@@ -2280,6 +2286,48 @@ def init_database():
             """
             ALTER TABLE project_workspace_state
             ADD COLUMN polish_packet_promoted_notes_json TEXT NOT NULL DEFAULT '[]'
+            """
+        )
+    if "panel_layout_json" not in workspace_state_columns:
+        cursor.execute(
+            """
+            ALTER TABLE project_workspace_state
+            ADD COLUMN panel_layout_json TEXT NOT NULL DEFAULT '[]'
+            """
+        )
+    if "document_tabs_json" not in workspace_state_columns:
+        cursor.execute(
+            """
+            ALTER TABLE project_workspace_state
+            ADD COLUMN document_tabs_json TEXT NOT NULL DEFAULT '[]'
+            """
+        )
+    if "active_document_tab_id" not in workspace_state_columns:
+        cursor.execute(
+            """
+            ALTER TABLE project_workspace_state
+            ADD COLUMN active_document_tab_id TEXT
+            """
+        )
+    if "runtime_state_json" not in workspace_state_columns:
+        cursor.execute(
+            """
+            ALTER TABLE project_workspace_state
+            ADD COLUMN runtime_state_json TEXT NOT NULL DEFAULT '{}'
+            """
+        )
+    if "tutor_chain_id" not in workspace_state_columns:
+        cursor.execute(
+            """
+            ALTER TABLE project_workspace_state
+            ADD COLUMN tutor_chain_id INTEGER
+            """
+        )
+    if "tutor_custom_block_ids_json" not in workspace_state_columns:
+        cursor.execute(
+            """
+            ALTER TABLE project_workspace_state
+            ADD COLUMN tutor_custom_block_ids_json TEXT NOT NULL DEFAULT '[]'
             """
         )
 
@@ -2638,6 +2686,7 @@ def init_database():
             stage TEXT NOT NULL DEFAULT 'tutor',
             capsule_version INTEGER NOT NULL,
             summary_text TEXT,
+            rule_snapshot_text TEXT,
             current_objective TEXT,
             study_unit TEXT,
             concept_focus_json TEXT NOT NULL DEFAULT '[]',
@@ -2662,6 +2711,17 @@ def init_database():
         ON tutor_memory_capsules(workflow_id, created_at DESC)
         """
     )
+
+    cursor.execute("PRAGMA table_info(tutor_memory_capsules)")
+    memory_capsule_cols = {col[1] for col in cursor.fetchall()}
+    if "rule_snapshot_text" not in memory_capsule_cols:
+        try:
+            cursor.execute(
+                "ALTER TABLE tutor_memory_capsules ADD COLUMN rule_snapshot_text TEXT"
+            )
+            print("[INFO] Added 'rule_snapshot_text' column to tutor_memory_capsules table")
+        except sqlite3.OperationalError:
+            pass
 
     cursor.execute(
         """

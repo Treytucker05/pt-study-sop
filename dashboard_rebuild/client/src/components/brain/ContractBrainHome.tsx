@@ -1,6 +1,7 @@
 import type { ChangeEvent, ComponentType, ReactNode } from "react";
 import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { format } from "date-fns";
 import {
   AlertTriangle,
@@ -12,7 +13,15 @@ import {
 } from "lucide-react";
 
 import { api } from "@/lib/api";
-import type { BrainOrganizePreviewResponse } from "@/lib/api";
+import type {
+  BrainOrganizePreviewResponse,
+  TutorHubResumeCandidate,
+  TutorWorkflowSummary,
+} from "@/lib/api";
+import {
+  TutorWorkflowLaunchHub,
+  type TutorWorkflowLaunchFilters,
+} from "@/components/TutorWorkflowLaunchHub";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -85,6 +94,58 @@ function previewList(value: unknown, empty = "None logged") {
   return items.length > 2 ? `${preview} +${items.length - 2}` : preview;
 }
 
+function buildTutorPath(options?: {
+  courseId?: number | null;
+  mode?: "studio" | "tutor";
+  sessionId?: string | null;
+}) {
+  const params = new URLSearchParams();
+  if (typeof options?.courseId === "number") {
+    params.set("course_id", String(options.courseId));
+  }
+  if (options?.mode) {
+    params.set("mode", options.mode);
+  }
+  if (options?.sessionId) {
+    params.set("session_id", options.sessionId);
+  }
+  const query = params.toString();
+  return query ? `/tutor?${query}` : "/tutor";
+}
+
+function filterTutorWorkflows(
+  workflows: TutorWorkflowSummary[],
+  filters: TutorWorkflowLaunchFilters,
+) {
+  const search = filters.search.trim().toLowerCase();
+  const now = Date.now();
+
+  return workflows.filter((workflow) => {
+    if (search) {
+      const haystack = [
+        workflow.course_name,
+        workflow.course_code,
+        workflow.assignment_title,
+        workflow.topic,
+        workflow.study_unit,
+      ]
+        .filter((value): value is string => typeof value === "string")
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+
+    if (filters.dueBucket === "all") return true;
+    if (!workflow.due_date) return filters.dueBucket === "undated";
+
+    const dueTime = new Date(workflow.due_date).getTime();
+    if (!Number.isFinite(dueTime)) return filters.dueBucket === "undated";
+    if (filters.dueBucket === "overdue") return dueTime < now;
+    if (filters.dueBucket === "upcoming") return dueTime >= now;
+    return false;
+  });
+}
+
 function buildLowYieldSessions(sessions: Session[]) {
   return sessions.filter((session) => {
     const friction =
@@ -131,9 +192,22 @@ export function ContractBrainHome({
 }: {
   workspace: BrainWorkspace;
 }) {
+  const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [courseHint, setCourseHint] = useState("");
   const [rawNotes, setRawNotes] = useState("");
   const [uploadedFileName, setUploadedFileName] = useState("");
+  const [workflowFilters, setWorkflowFilters] =
+    useState<TutorWorkflowLaunchFilters>({
+      search: "",
+      courseId: "all",
+      stage: "all",
+      status: "all",
+      dueBucket: "all",
+    });
+  const [deletingWorkflowId, setDeletingWorkflowId] = useState<string | null>(
+    null,
+  );
 
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
     queryKey: ["brain", "sessions", "evidence"],
@@ -145,6 +219,38 @@ export function ContractBrainHome({
     queryFn: () => api.anki.getDue(),
     staleTime: 60_000,
     retry: false,
+  });
+  const { data: tutorHub, isFetching: tutorHubLoading } = useQuery({
+    queryKey: ["brain", "tutor-home-hub"],
+    queryFn: () => api.tutor.getHub(),
+    staleTime: 60_000,
+  });
+  const { data: tutorContentSources } = useQuery({
+    queryKey: ["brain", "tutor-content-sources"],
+    queryFn: () => api.tutor.getContentSources(),
+    staleTime: 60_000,
+  });
+  const { data: tutorWorkflowList } = useQuery({
+    queryKey: [
+      "brain",
+      "tutor-workflows",
+      workflowFilters.courseId,
+      workflowFilters.stage,
+      workflowFilters.status,
+    ],
+    queryFn: () =>
+      api.tutor.listWorkflows({
+        ...(typeof workflowFilters.courseId === "number"
+          ? { course_id: workflowFilters.courseId }
+          : {}),
+        ...(workflowFilters.stage !== "all"
+          ? { stage: workflowFilters.stage }
+          : {}),
+        ...(workflowFilters.status !== "all"
+          ? { status: workflowFilters.status }
+          : {}),
+      }),
+    staleTime: 60_000,
   });
   const organizeMutation = useMutation({
     mutationFn: (payload: { rawNotes: string; course?: string }) =>
@@ -167,6 +273,55 @@ export function ContractBrainHome({
     (sum, item) => sum + (item.count || 0),
     0,
   );
+  const tutorWorkflows = tutorWorkflowList?.items ?? [];
+  const filteredTutorWorkflows = useMemo(
+    () => filterTutorWorkflows(tutorWorkflows, workflowFilters),
+    [tutorWorkflows, workflowFilters],
+  );
+  const tutorWorkflowCount = tutorWorkflowList?.count ?? tutorWorkflows.length;
+
+  const openTutorFromHome = (options: {
+    courseId?: number | null;
+    mode?: "studio" | "tutor";
+    sessionId?: string | null;
+  }) => {
+    setLocation(buildTutorPath(options));
+  };
+
+  const handleResumeTutorCandidate = (candidate: TutorHubResumeCandidate) => {
+    openTutorFromHome({
+      courseId: candidate.course_id ?? null,
+      mode: candidate.session_id ? "tutor" : "studio",
+      sessionId: candidate.session_id ?? null,
+    });
+  };
+
+  const handleOpenTutorWorkflow = (workflow: TutorWorkflowSummary) => {
+    openTutorFromHome({
+      courseId: workflow.course_id ?? null,
+      mode:
+        workflow.current_stage === "tutor" &&
+        typeof workflow.active_tutor_session_id === "string"
+          ? "tutor"
+          : "studio",
+      sessionId:
+        workflow.current_stage === "tutor"
+          ? workflow.active_tutor_session_id
+          : null,
+    });
+  };
+
+  const handleDeleteTutorWorkflow = async (workflow: TutorWorkflowSummary) => {
+    setDeletingWorkflowId(workflow.workflow_id);
+    try {
+      await api.tutor.deleteWorkflow(workflow.workflow_id);
+      await queryClient.invalidateQueries({ queryKey: ["brain", "tutor-workflows"] });
+    } finally {
+      setDeletingWorkflowId((current) =>
+        current === workflow.workflow_id ? null : current,
+      );
+    }
+  };
 
   async function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -190,13 +345,10 @@ export function ContractBrainHome({
               <div className="space-y-3">
                 <div className={CONTROL_KICKER}>Brain Evidence Ledger</div>
                 <CardTitle className="max-w-4xl font-arcade text-lg text-white">
-                  Raw WRAP evidence, transparent metrics, failure patterns, and
-                  annotation support.
+                  Brain owns the home dashboard, learner telemetry, and Tutor handoff.
                 </CardTitle>
                 <CardDescription className="max-w-4xl font-mono text-base leading-7 text-foreground/72">
-                  Brain is read-only here. No launch controls, no planning
-                  controls, no Scholar recommendations, and no live-study
-                  actions.
+                  Review the evidence ledger, inspect health signals, then hand off into Tutor from Home without reopening launch widgets inside `/tutor`.
                 </CardDescription>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -204,19 +356,19 @@ export function ContractBrainHome({
                   variant="outline"
                   className="rounded-full border-primary/35 px-2.5 py-1 text-ui-2xs tracking-[0.14em] text-primary"
                 >
-                  READ ONLY
+                  BRAIN HOME
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="rounded-full border-primary/35 px-2.5 py-1 text-ui-2xs tracking-[0.14em] text-primary"
+                >
+                  TUTOR HANDOFF
                 </Badge>
                 <Badge
                   variant="outline"
                   className="rounded-full border-primary/35 px-2.5 py-1 text-ui-2xs tracking-[0.14em] text-primary"
                 >
                   WRAP TRACEABLE
-                </Badge>
-                <Badge
-                  variant="outline"
-                  className="rounded-full border-primary/35 px-2.5 py-1 text-ui-2xs tracking-[0.14em] text-primary"
-                >
-                  ANNOTATION ONLY
                 </Badge>
               </div>
             </div>
@@ -267,6 +419,29 @@ export function ContractBrainHome({
             </div>
           </CardContent>
         </Card>
+
+        <TutorWorkflowLaunchHub
+          workflows={filteredTutorWorkflows}
+          totalCount={tutorWorkflowCount}
+          courses={tutorContentSources?.courses || []}
+          filters={workflowFilters}
+          onFiltersChange={setWorkflowFilters}
+          onStartNew={() =>
+            openTutorFromHome({
+              courseId: null,
+              mode: "studio",
+            })
+          }
+          onResumeCandidate={handleResumeTutorCandidate}
+          onOpenWorkflow={handleOpenTutorWorkflow}
+          onDeleteWorkflow={handleDeleteTutorWorkflow}
+          resumeCandidate={tutorHub?.resume_candidate ?? null}
+          tutorHub={tutorHub}
+          tutorHubLoading={tutorHubLoading}
+          activeWorkflowId={null}
+          isCreating={false}
+          deletingWorkflowId={deletingWorkflowId}
+        />
 
         <SectionCard
           icon={Database}

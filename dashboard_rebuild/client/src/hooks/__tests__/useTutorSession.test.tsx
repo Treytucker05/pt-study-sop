@@ -12,6 +12,7 @@ const logWorkflowStageTimeMock = vi.fn();
 const getProjectShellMock = vi.fn();
 const restoreStudioItemsMock = vi.fn();
 const getSessionMock = vi.fn();
+const createSessionMock = vi.fn();
 
 vi.mock("@/lib/api", () => ({
   api: {
@@ -22,7 +23,7 @@ vi.mock("@/lib/api", () => ({
       getProjectShell: (...args: unknown[]) => getProjectShellMock(...args),
       restoreStudioItems: (...args: unknown[]) => restoreStudioItemsMock(...args),
       createCustomChain: vi.fn(),
-      createSession: vi.fn(),
+      createSession: (...args: unknown[]) => createSessionMock(...args),
       getSession: (...args: unknown[]) => getSessionMock(...args),
       deleteArtifacts: vi.fn(),
       advanceBlock: vi.fn(),
@@ -54,6 +55,7 @@ function createHubMock() {
   return {
     courseId: 1,
     effectiveTopic: "Cardiovascular regulation",
+    effectiveStudyUnit: "Week 7",
     topic: "Cardiovascular regulation",
     selectedObjectiveGroup: "Week 7",
     selectedObjectiveId: "",
@@ -102,6 +104,8 @@ describe("useTutorSession", () => {
     getProjectShellMock.mockResolvedValue({});
     restoreStudioItemsMock.mockResolvedValue({ items: [] });
     getSessionMock.mockReset();
+    createSessionMock.mockReset();
+    createSessionMock.mockResolvedValue({ session_id: "sess-started" });
   });
 
   it("uses carried-forward priming objectives in Tutor preflight when no approved objectives are loaded", () => {
@@ -168,6 +172,10 @@ describe("useTutorSession", () => {
         useTutorSession({
           initialRouteQuery: {},
           hub: hub as never,
+          tutorChainId: undefined,
+          tutorCustomBlockIds: [],
+          setTutorChainId: vi.fn(),
+          setTutorCustomBlockIds: vi.fn(),
           activeSessionId: null,
           setActiveSessionId: vi.fn(),
           shellMode: "studio",
@@ -209,6 +217,10 @@ describe("useTutorSession", () => {
         useTutorSession({
           initialRouteQuery: {},
           hub: hub as never,
+          tutorChainId: undefined,
+          tutorCustomBlockIds: [],
+          setTutorChainId: vi.fn(),
+          setTutorCustomBlockIds: vi.fn(),
           activeSessionId: "sess-1",
           setActiveSessionId: vi.fn(),
           shellMode: "tutor",
@@ -258,15 +270,17 @@ describe("useTutorSession", () => {
     vi.useRealTimers();
   });
 
-  it("hydrates committed assistant history from restored session turns", async () => {
+  it("hydrates restored session metadata and raw turns when resuming a session", async () => {
     const wrapper = createWrapper();
     const hub = createHubMock();
     const setActiveSessionId = vi.fn();
     const setShellMode = vi.fn();
     const setShowSetup = vi.fn();
     const setRestoredTurns = vi.fn();
+    const setTutorChainId = vi.fn();
+    const setTutorCustomBlockIds = vi.fn();
 
-    getSessionMock.mockResolvedValue({
+    const restoredSession = {
       session_id: "sess-restore",
       topic: "Cardiovascular regulation",
       course_id: 1,
@@ -326,13 +340,17 @@ describe("useTutorSession", () => {
           created_at: "2026-03-25T10:02:00Z",
         },
       ],
-    });
+    };
 
     const { result } = renderHook(
       () =>
         useTutorSession({
           initialRouteQuery: {},
           hub: hub as never,
+          tutorChainId: undefined,
+          tutorCustomBlockIds: [],
+          setTutorChainId,
+          setTutorCustomBlockIds,
           activeSessionId: null,
           setActiveSessionId,
           shellMode: "studio",
@@ -348,27 +366,14 @@ describe("useTutorSession", () => {
     );
 
     await act(async () => {
-      await result.current.resumeSession("sess-restore");
+      result.current.applySessionState(restoredSession as never);
     });
 
-    expect(result.current.committedAssistantMessages).toHaveLength(2);
-    expect(result.current.committedAssistantMessages[0]).toMatchObject({
-      sessionTurnNumber: 1,
-      content: "It increases stroke volume through ventricular stretch.",
-      verdict: expect.objectContaining({
-        why_wrong: "The answer omitted the Frank-Starling mechanism.",
-      }),
-      teachBackRubric: expect.objectContaining({
-        misconceptions: ["The answer skipped ventricular stretch."],
-      }),
-    });
-    expect(result.current.latestCommittedAssistantMessage).toMatchObject({
-      sessionTurnNumber: 2,
-      verdict: expect.objectContaining({
-        why_wrong:
-          "The answer treated heart-rate control as identical to preload regulation.",
-      }),
-    });
+    expect(setShellMode).toHaveBeenCalledWith("tutor");
+    expect(setShowSetup).toHaveBeenCalledWith(false);
+    expect(hub.setTopic).toHaveBeenCalledWith("Cardiovascular regulation");
+    expect(setTutorChainId).toHaveBeenCalledWith(undefined);
+    expect(setTutorCustomBlockIds).toHaveBeenCalledWith([]);
     expect(setRestoredTurns).toHaveBeenCalledWith([
       {
         question: "How does preload affect stroke volume?",
@@ -379,5 +384,211 @@ describe("useTutorSession", () => {
         answer: "It changes cardiac output by changing beats per minute.",
       },
     ]);
+  });
+
+  it("starts Tutor with tutor-owned selector state instead of hub chain state", async () => {
+    const wrapper = createWrapper();
+    const hub = {
+      ...createHubMock(),
+      chainId: 5,
+      customBlockIds: [11, 12],
+    };
+    const setTutorChainId = vi.fn();
+    const setTutorCustomBlockIds = vi.fn();
+
+    getSessionMock.mockResolvedValue({
+      session_id: "sess-started",
+      status: "active",
+      turn_count: 0,
+      started_at: "2026-03-25T12:00:00Z",
+      topic: "Cardiovascular regulation",
+      course_id: 1,
+      method_chain_id: 77,
+      current_block_index: 0,
+      chain_blocks: [],
+      content_filter: {
+        material_ids: [101],
+        accuracy_profile: "strict",
+        objective_scope: "module_all",
+      },
+      artifacts_json: "[]",
+      turns: [],
+    });
+
+    const { result } = renderHook(
+      () =>
+        useTutorSession({
+          initialRouteQuery: {},
+          hub: hub as never,
+          tutorChainId: 77,
+          tutorCustomBlockIds: [91, 92],
+          setTutorChainId,
+          setTutorCustomBlockIds,
+          activeSessionId: null,
+          setActiveSessionId: vi.fn(),
+          shellMode: "studio",
+          studioView: "priming",
+          setShellMode: vi.fn(),
+          setShowSetup: vi.fn(),
+          setRestoredTurns: vi.fn(),
+          hasRestored: true,
+          activeWorkflowId: null,
+          activeWorkflowDetail: null,
+        }),
+      { wrapper },
+    );
+
+    await act(async () => {
+      await result.current.startSession();
+    });
+
+    expect(createSessionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method_chain_id: 77,
+      }),
+    );
+    expect(createSessionMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        method_chain_id: 5,
+      }),
+    );
+    expect(setTutorChainId).toHaveBeenCalledWith(77);
+    expect(setTutorCustomBlockIds).toHaveBeenCalledWith([]);
+  });
+
+  it("forwards Prime Packet context when Tutor starts from the panel path", async () => {
+    const wrapper = createWrapper();
+    const hub = createHubMock();
+
+    getSessionMock.mockResolvedValue({
+      session_id: "sess-started",
+      status: "active",
+      turn_count: 0,
+      started_at: "2026-03-25T12:00:00Z",
+      topic: "Cardiovascular regulation",
+      course_id: 1,
+      method_chain_id: 77,
+      current_block_index: 0,
+      chain_blocks: [],
+      content_filter: {
+        material_ids: [101],
+        accuracy_profile: "strict",
+        objective_scope: "module_all",
+      },
+      artifacts_json: "[]",
+      turns: [],
+    });
+
+    const { result } = renderHook(
+      () =>
+        useTutorSession({
+          initialRouteQuery: {},
+          hub: hub as never,
+          tutorChainId: 77,
+          tutorCustomBlockIds: [],
+          setTutorChainId: vi.fn(),
+          setTutorCustomBlockIds: vi.fn(),
+          activeSessionId: null,
+          setActiveSessionId: vi.fn(),
+          shellMode: "studio",
+          studioView: "priming",
+          setShellMode: vi.fn(),
+          setShowSetup: vi.fn(),
+          setRestoredTurns: vi.fn(),
+          hasRestored: true,
+          activeWorkflowId: null,
+          activeWorkflowDetail: null,
+        }),
+      { wrapper },
+    );
+
+    await act(async () => {
+      await result.current.startSession({
+        packet_context: "Prime Packet\n- Cardiac Output Lecture",
+      });
+    });
+
+    expect(createSessionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        packet_context: "Prime Packet\n- Cardiac Output Lecture",
+      }),
+    );
+  });
+
+  it("falls back to an inferred study unit when Tutor starts without an explicit study unit", async () => {
+    const wrapper = createWrapper();
+    const hub = {
+      ...createHubMock(),
+      effectiveTopic: "Cardiovascular",
+      effectiveStudyUnit: "Cardiovascular",
+      selectedObjectiveGroup: "",
+      selectedMaterials: [561],
+      derivedVaultFolder: "Courses/Exercise Physiology/Cardiovascular",
+      scopedObjectives: [],
+    };
+
+    getSessionMock.mockResolvedValue({
+      session_id: "sess-started",
+      status: "active",
+      turn_count: 0,
+      started_at: "2026-03-25T12:00:00Z",
+      topic: "Cardiovascular",
+      course_id: 1,
+      method_chain_id: 77,
+      current_block_index: 0,
+      chain_blocks: [],
+      content_filter: {
+        material_ids: [561],
+        accuracy_profile: "strict",
+        objective_scope: "module_all",
+        vault_folder: "Courses/Exercise Physiology/Cardiovascular",
+      },
+      artifacts_json: "[]",
+      turns: [],
+    });
+
+    const { result } = renderHook(
+      () =>
+        useTutorSession({
+          initialRouteQuery: {},
+          hub: hub as never,
+          tutorChainId: 77,
+          tutorCustomBlockIds: [],
+          setTutorChainId: vi.fn(),
+          setTutorCustomBlockIds: vi.fn(),
+          activeSessionId: null,
+          setActiveSessionId: vi.fn(),
+          shellMode: "tutor",
+          studioView: "workspace",
+          setShellMode: vi.fn(),
+          setShowSetup: vi.fn(),
+          setRestoredTurns: vi.fn(),
+          hasRestored: true,
+          activeWorkflowId: null,
+          activeWorkflowDetail: null,
+        }),
+      { wrapper },
+    );
+
+    await act(async () => {
+      await result.current.startSession();
+    });
+
+    expect(preflightSessionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        topic: "Cardiovascular",
+        study_unit: "Cardiovascular",
+        module_name: "Cardiovascular",
+        content_filter: expect.objectContaining({
+          material_ids: [561],
+          vault_folder: "Courses/Exercise Physiology/Cardiovascular",
+        }),
+      }),
+    );
+    expect(createSessionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        preflight_id: "preflight-1",
+      }),
+    );
   });
 });

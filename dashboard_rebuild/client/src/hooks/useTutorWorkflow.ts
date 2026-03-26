@@ -45,6 +45,14 @@ export interface UseTutorWorkflowParams {
   hasRestored: boolean;
 }
 
+export interface TutorDirectNoteSaveStatus {
+  state: "saving" | "saved" | "failed";
+  mode: "exact" | "editable";
+  path?: string | null;
+  error?: string | null;
+  savedAt?: string | null;
+}
+
 type PrimingObjectiveRecord = {
   lo_code?: string;
   title: string;
@@ -63,6 +71,55 @@ const LEGACY_PRIMING_METHOD_MAP: Record<string, string> = {
 const DEFAULT_PRIMING_METHOD_IDS = ["M-PRE-010", "M-PRE-008"];
 const PRIME_OBJECTIVE_METHOD_IDS = new Set(["M-PRE-010"]);
 const PRIME_STRUCTURAL_METHOD_IDS = new Set(["M-PRE-004", "M-PRE-005", "M-PRE-006", "M-PRE-008", "M-PRE-009"]);
+
+function sanitizeVaultSegment(value: string | null | undefined, fallback: string): string {
+  const cleaned = String(value || "")
+    .replace(/[\\/:*?"<>|]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned || fallback;
+}
+
+function buildTutorVaultNotePath(
+  workflow: TutorWorkflowSummary | TutorWorkflowDetailResponse["workflow"] | null | undefined,
+  mode: "exact" | "editable",
+  title: string,
+): string {
+  const courseSegment = sanitizeVaultSegment(workflow?.course_name, "General");
+  const studySegment = sanitizeVaultSegment(
+    workflow?.assignment_title || workflow?.study_unit || workflow?.topic,
+    "Tutor Session",
+  );
+  const noteSegment = sanitizeVaultSegment(
+    title,
+    mode === "exact" ? "Exact Note" : "Editable Note",
+  );
+  return `Courses/${courseSegment}/Tutor Notes/${studySegment}/${mode === "exact" ? "Exact" : "Editable"} - ${noteSegment}.md`;
+}
+
+function buildTutorVaultNoteMarkdown(options: {
+  workflow: TutorWorkflowSummary | TutorWorkflowDetailResponse["workflow"] | null | undefined;
+  tutorSessionId: string | null;
+  mode: "exact" | "editable";
+  title: string;
+  content: string;
+}): string {
+  const heading = options.title || (options.mode === "exact" ? "Exact Note" : "Editable Note");
+  const workflow = options.workflow;
+  return [
+    `# ${heading}`,
+    `- Mode: ${options.mode}`,
+    `- Course: ${workflow?.course_name || "General"}`,
+    `- Study unit: ${workflow?.assignment_title || workflow?.study_unit || workflow?.topic || "Tutor Session"}`,
+    workflow?.workflow_id ? `- Workflow ID: ${workflow.workflow_id}` : "",
+    options.tutorSessionId ? `- Tutor Session ID: ${options.tutorSessionId}` : "",
+    `- Saved at: ${new Date().toISOString()}`,
+    "",
+    options.content.trim(),
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
 
 function normalizePrimingMethodId(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -328,6 +385,12 @@ export function useTutorWorkflow({
         return bTime - aTime;
       });
   }, [workflowFilters.dueBucket, workflowFilters.search, workflows]);
+
+  const activeWorkflowSummary = useMemo(
+    () =>
+      workflows.find((workflow) => workflow.workflow_id === activeWorkflowId) ?? null,
+    [activeWorkflowId, workflows],
+  );
 
   // ─── Workflow detail query ───
   const { data: activeWorkflowDetail } = useQuery<TutorWorkflowDetailResponse>({
@@ -620,7 +683,10 @@ export function useTutorWorkflow({
 
   // ─── Run priming assist ───
   const runWorkflowPrimingAssist = useCallback(
-    async (materialIds: number[], opts?: { packet_context?: string }) => {
+    async (
+      materialIds: number[],
+      opts?: { packet_context?: string; memory_capsule_context?: string },
+    ) => {
       if (!activeWorkflowId) {
         toast.error("Open a study plan before running Priming Assist.");
         return;
@@ -644,6 +710,9 @@ export function useTutorWorkflow({
           priming_method: primingMethods[0] || null,
           source_inventory: mergedPrimingSourceInventory,
           ...(opts?.packet_context ? { packet_context: opts.packet_context } : {}),
+          ...(opts?.memory_capsule_context
+            ? { memory_capsule_context: opts.memory_capsule_context }
+            : {}),
         });
         setPrimingSourceInventory(response.source_inventory);
         setPrimingMethodRuns(normalizePrimingMethodRuns(response.priming_method_runs));
@@ -835,7 +904,10 @@ export function useTutorWorkflow({
   );
 
   // ─── Start tutor from workflow ───
-  const startTutorFromWorkflow = useCallback(async (opts?: { packet_context?: string }) => {
+  const startTutorFromWorkflow = useCallback(async (opts?: {
+    packet_context?: string;
+    memory_capsule_context?: string;
+  }) => {
     const ready = await saveWorkflowPriming("ready");
     if (!ready || !activeWorkflowId) return;
     const newSession = await session.startSession(opts);
@@ -1017,6 +1089,91 @@ export function useTutorWorkflow({
     [
       activeSessionId,
       activeWorkflowId,
+      checkpointWorkflowTimerAfterSave,
+      editableNoteContent,
+      editableNoteTitle,
+      exactNoteContent,
+      exactNoteTitle,
+      queryClient,
+    ],
+  );
+
+  const saveWorkflowNoteToVault = useCallback(
+    async (mode: "exact" | "editable") => {
+      if (!activeWorkflowId || !activeSessionId) {
+        toast.error("Start Tutor from a study plan before saving notes to the vault.");
+        return null;
+      }
+      const title = mode === "exact" ? exactNoteTitle : editableNoteTitle;
+      const content = mode === "exact" ? exactNoteContent : editableNoteContent;
+      if (!content.trim()) {
+        toast.error(`Add ${mode} note content before saving to the vault.`);
+        return null;
+      }
+
+      const workflowRecord = activeWorkflowDetail?.workflow ?? activeWorkflowSummary;
+      const vaultPath = buildTutorVaultNotePath(workflowRecord, mode, title.trim());
+      const markdown = buildTutorVaultNoteMarkdown({
+        workflow: workflowRecord,
+        tutorSessionId: activeSessionId,
+        mode,
+        title: title.trim(),
+        content: content.trim(),
+      });
+
+      setSavingRuntimeEvent(true);
+      try {
+        const result = await api.obsidian.saveFile(vaultPath, markdown);
+        if (!result?.success) {
+          throw new Error(result?.error || "Vault save failed");
+        }
+        await checkpointWorkflowTimerAfterSave("manual_save", [
+          {
+            kind: "note_vault_save",
+            mode,
+            tutor_session_id: activeSessionId,
+            vault_path: result.path || vaultPath,
+          },
+        ]);
+        if (mode === "exact") {
+          setExactNoteTitle("");
+          setExactNoteContent("");
+        } else {
+          setEditableNoteTitle("");
+          setEditableNoteContent("");
+        }
+        await queryClient.invalidateQueries({ queryKey: ["obsidian"] });
+        toast.success(
+          mode === "exact" ? "Exact note saved to vault" : "Editable note saved to vault",
+        );
+        return {
+          state: "saved",
+          mode,
+          path: result.path || vaultPath,
+          error: null,
+          savedAt: new Date().toISOString(),
+        } satisfies TutorDirectNoteSaveStatus;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown";
+        toast.error(
+          `Failed to save note to vault: ${message}`,
+        );
+        return {
+          state: "failed",
+          mode,
+          path: vaultPath,
+          error: message,
+          savedAt: new Date().toISOString(),
+        } satisfies TutorDirectNoteSaveStatus;
+      } finally {
+        setSavingRuntimeEvent(false);
+      }
+    },
+    [
+      activeSessionId,
+      activeWorkflowDetail?.workflow,
+      activeWorkflowId,
+      activeWorkflowSummary,
       checkpointWorkflowTimerAfterSave,
       editableNoteContent,
       editableNoteTitle,
@@ -1210,10 +1367,15 @@ export function useTutorWorkflow({
         created_at: artifact.createdAt,
       }));
 
-      await api.tutor.createMemoryCapsule(activeWorkflowId, {
+      const response = await api.tutor.createMemoryCapsule(activeWorkflowId, {
         tutor_session_id: activeSessionId,
         stage: "tutor",
         summary_text: memorySummaryText.trim() || fallbackSummary || null,
+        rule_snapshot_text:
+          Array.isArray(session.activeContentFilter?.session_rules) &&
+          session.activeContentFilter.session_rules.length > 0
+            ? session.activeContentFilter.session_rules.join("\n")
+            : null,
         current_objective: hub.selectedObjectiveId || hub.selectedObjectiveGroup || hub.topic || null,
         study_unit: hub.selectedObjectiveGroup || null,
         concept_focus: parseLinesToRecords(primingConceptsText, "concept"),
@@ -1235,10 +1397,12 @@ export function useTutorWorkflow({
       setMemoryCardRequestsText("");
       await queryClient.invalidateQueries({ queryKey: ["tutor-workflow-detail", activeWorkflowId] });
       toast.success("Memory capsule created");
+      return response.memory_capsule;
     } catch (err) {
       toast.error(
         `Failed to create memory capsule: ${err instanceof Error ? err.message : "Unknown"}`,
       );
+      return null;
     } finally {
       setSavingRuntimeEvent(false);
     }
@@ -1265,9 +1429,9 @@ export function useTutorWorkflow({
     const summary = session.latestCommittedAssistantMessage?.content?.trim() || memorySummaryText.trim();
     if (!summary) {
       toast.error("No completed assistant reply is available to compact yet.");
-      return;
+      return null;
     }
-    await createWorkflowMemoryCapsule({
+    return createWorkflowMemoryCapsule({
       summaryOverride: summary,
     });
   }, [createWorkflowMemoryCapsule, session.latestCommittedAssistantMessage, memorySummaryText]);
@@ -1351,6 +1515,7 @@ export function useTutorWorkflow({
     saveWorkflowPolish,
     openWorkflowRecord,
     saveWorkflowNoteCapture,
+    saveWorkflowNoteToVault,
     captureWorkflowMessageNote,
     saveWorkflowFeedbackEvent,
     saveWorkflowMessageFeedback,

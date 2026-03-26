@@ -218,6 +218,20 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Removed the duplicate underscore Tutor launch track artifacts under `conductor/tracks/tutor_launch_shell_realignment_20260313/`.
 - Tightened repo-local planning surfaces so the active repo contract no longer recreates obsolete task-board assumptions and no longer requires metadata-first track shape.
 - Validation:
+
+## 2026-03-25 - Studio floating-panel spec tightening
+
+- Updated `docs/design/STUDIO_LAYOUT_SPEC_v2.md` to tighten the floating-panel Studio contract before implementation planning.
+- Added missing product/runtime requirements that belong in the spec:
+  - real `Source Shelf` Library/Vault working surfaces
+  - tabbed `Document Dock`
+  - explicit workspace object model requirements
+  - in-panel Tutor start/resume expectations
+  - independent Priming vs Tutor selector ownership
+  - real compaction/runtime requirements, including capsule resume and rule reinforcement
+  - direct Tutor note -> vault write expectation
+  - shipped-surface constraints for vendor/dev clutter
+- Added a short `Non-layout cleanup dependencies` section so layout planning stays separate from unrelated runtime cleanup bugs.
   - `python scripts/check_docs_sync.py` -> PASS
   - `git diff --check` -> PASS (CRLF/LF warnings only)
   - targeted planning sweep -> only intentional negative `agent_task_board.py` note remains in `treys-swarm-planner-repo`

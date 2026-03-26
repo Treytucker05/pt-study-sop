@@ -16,6 +16,7 @@ const runPrimingAssistMock = vi.fn();
 const captureWorkflowNoteMock = vi.fn();
 const saveWorkflowFeedbackMock = vi.fn();
 const createMemoryCapsuleMock = vi.fn();
+const saveObsidianFileMock = vi.fn();
 const toastSuccessMock = vi.fn();
 const toastErrorMock = vi.fn();
 
@@ -33,6 +34,9 @@ vi.mock("@/lib/api", () => ({
       captureWorkflowNote: (...args: unknown[]) => captureWorkflowNoteMock(...args),
       saveWorkflowFeedback: (...args: unknown[]) => saveWorkflowFeedbackMock(...args),
       createMemoryCapsule: (...args: unknown[]) => createMemoryCapsuleMock(...args),
+    },
+    obsidian: {
+      saveFile: (...args: unknown[]) => saveObsidianFileMock(...args),
     },
   },
 }));
@@ -114,6 +118,7 @@ function createSessionMock() {
     checkpointWorkflowStudyTimer: vi.fn().mockResolvedValue(90),
     artifacts: [],
     latestCommittedAssistantMessage: null,
+    activeContentFilter: null,
   };
 }
 
@@ -158,7 +163,8 @@ describe("useTutorWorkflow", () => {
     });
     captureWorkflowNoteMock.mockResolvedValue({ note: { id: 1 } });
     saveWorkflowFeedbackMock.mockResolvedValue({ feedback_event: { id: 1 } });
-    createMemoryCapsuleMock.mockResolvedValue({ capsule: { id: 1 } });
+    createMemoryCapsuleMock.mockResolvedValue({ memory_capsule: { id: 1 } });
+    saveObsidianFileMock.mockResolvedValue({ success: true, path: "Courses/Exercise Physiology/Tutor Notes/Week 7/Exact - Cardiac output.md" });
   });
 
   it("clears the active workflow when the open workflow is deleted", async () => {
@@ -492,6 +498,98 @@ describe("useTutorWorkflow", () => {
     );
     expect(session.checkpointWorkflowStudyTimer).toHaveBeenCalledWith("manual_save", [
       { kind: "note_save", mode: "exact", tutor_session_id: "sess-1" },
+    ]);
+  });
+
+  it("captures the current session rules inside a workflow memory capsule", async () => {
+    const hub = createHubMock();
+    const session = {
+      ...createSessionMock(),
+      activeContentFilter: {
+        session_rules: [
+          "Always force a function confirmation before L4 precision.",
+          "Stay inside the assigned provenance boundary.",
+        ],
+      },
+    };
+    const wrapper = createWrapper();
+
+    const { result } = renderHook(
+      () =>
+        useTutorWorkflow({
+          hub: hub as never,
+          session: session as never,
+          activeSessionId: "sess-1",
+          shellMode: "tutor",
+          setShellMode: vi.fn(),
+          hasRestored: true,
+        }),
+      { wrapper },
+    );
+
+    act(() => {
+      result.current.setActiveWorkflowId(workflowFixture.workflow_id);
+      result.current.setMemorySummaryText("Learner still confuses preload with inotropy.");
+    });
+
+    await act(async () => {
+      await result.current.createWorkflowMemoryCapsule();
+    });
+
+    expect(createMemoryCapsuleMock).toHaveBeenCalledWith(
+      workflowFixture.workflow_id,
+      expect.objectContaining({
+        tutor_session_id: "sess-1",
+        summary_text: "Learner still confuses preload with inotropy.",
+        rule_snapshot_text:
+          "Always force a function confirmation before L4 precision.\nStay inside the assigned provenance boundary.",
+      }),
+    );
+  });
+
+  it("writes a Tutor note directly to the vault without routing through Polish", async () => {
+    const hub = createHubMock();
+    const session = createSessionMock();
+    const wrapper = createWrapper();
+
+    const { result } = renderHook(
+      () =>
+        useTutorWorkflow({
+          hub: hub as never,
+          session: session as never,
+          activeSessionId: "sess-1",
+          shellMode: "tutor",
+          setShellMode: vi.fn(),
+          hasRestored: true,
+        }),
+      { wrapper },
+    );
+
+    act(() => {
+      result.current.setActiveWorkflowId(workflowFixture.workflow_id);
+      result.current.setExactNoteTitle("Cardiac output");
+      result.current.setExactNoteContent("Stroke volume x heart rate.");
+    });
+
+    await waitFor(() => {
+      expect(getWorkflowMock).toHaveBeenCalledWith(workflowFixture.workflow_id);
+    });
+
+    await act(async () => {
+      await result.current.saveWorkflowNoteToVault("exact");
+    });
+
+    expect(saveObsidianFileMock).toHaveBeenCalledWith(
+      expect.stringContaining("Courses/Exercise Physiology/Tutor Notes/Week 7 Study Plan/"),
+      expect.stringContaining("Stroke volume x heart rate."),
+    );
+    expect(captureWorkflowNoteMock).not.toHaveBeenCalled();
+    expect(session.checkpointWorkflowStudyTimer).toHaveBeenCalledWith("manual_save", [
+      expect.objectContaining({
+        kind: "note_vault_save",
+        mode: "exact",
+        tutor_session_id: "sess-1",
+      }),
     ]);
   });
 

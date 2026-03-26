@@ -68,6 +68,40 @@ from chain_validator import summarize_stage_truth
 
 _LOG = logging.getLogger(__name__)
 _NON_ASSESSMENT_STAGES = {"PRIME", "TEACH"}
+_DEFAULT_COMPACTION_CONTEXT_WINDOW = 24_000
+
+
+def _build_compaction_telemetry(usage: Any) -> dict[str, Any] | None:
+    if not isinstance(usage, dict):
+        return None
+
+    raw_input_tokens = usage.get("input_tokens")
+    raw_output_tokens = usage.get("output_tokens")
+    if not isinstance(raw_input_tokens, (int, float)) or not isinstance(
+        raw_output_tokens, (int, float)
+    ):
+        return None
+
+    input_tokens = max(0, int(raw_input_tokens))
+    output_tokens = max(0, int(raw_output_tokens))
+    token_count = input_tokens + output_tokens
+    context_window = _DEFAULT_COMPACTION_CONTEXT_WINDOW
+    utilization = token_count / context_window if context_window > 0 else 0
+
+    if utilization >= 0.6:
+        pressure_level = "high"
+    elif utilization >= 0.35:
+        pressure_level = "medium"
+    else:
+        pressure_level = "low"
+
+    return {
+        "inputTokens": input_tokens,
+        "outputTokens": output_tokens,
+        "tokenCount": token_count,
+        "contextWindow": context_window,
+        "pressureLevel": pressure_level,
+    }
 
 
 def _coerce_string_list(value: Any, *, limit: int | None = None) -> list[str]:
@@ -1100,6 +1134,7 @@ def send_turn(session_id: str):
         api_model = codex_model or _model
         latest_response_id = None
         latest_thread_id = None
+        compaction_telemetry = None
         used_scope_shortcut = False
 
         from tutor_streaming import (
@@ -1247,6 +1282,13 @@ def send_turn(session_id: str):
             if packet_context:
                 system_prompt += (
                     f"\n\n## Student's Study Packet\n{packet_context}"
+                )
+            memory_capsule_context = (
+                content_filter.get("memory_capsule_context") or ""
+            ).strip()
+            if memory_capsule_context:
+                system_prompt += (
+                    f"\n\n## Active Memory Capsule\n{memory_capsule_context}"
                 )
             strategy_prompt = render_strategy_prompt(scholar_strategy)
             if strategy_prompt:
@@ -1741,6 +1783,9 @@ def send_turn(session_id: str):
                                 )
                             elif chunk.get("type") == "done":
                                 api_model = chunk.get("model") or api_model
+                                compaction_telemetry = _build_compaction_telemetry(
+                                    chunk.get("usage")
+                                )
                                 prev_response_id = (
                                     chunk.get("response_id") or prev_response_id
                                 )
@@ -2073,6 +2118,7 @@ def send_turn(session_id: str):
                     model=api_model,
                     artifacts=artifact_payload,
                     retrieval_debug=retrieval_debug_payload,
+                    compaction_telemetry=compaction_telemetry,
                     timing=_build_timing_payload(tool_rounds=tool_round),
                     behavior_override=behavior_override,
                     verdict=parsed_verdict,

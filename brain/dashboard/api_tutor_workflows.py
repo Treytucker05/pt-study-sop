@@ -952,6 +952,7 @@ def _serialize_memory_capsule(row: sqlite3.Row) -> dict[str, Any]:
         "stage": row["stage"],
         "capsule_version": int(row["capsule_version"] or 0),
         "summary_text": row["summary_text"],
+        "rule_snapshot_text": row["rule_snapshot_text"],
         "current_objective": row["current_objective"],
         "study_unit": row["study_unit"],
         "concept_focus": _json_loads(row["concept_focus_json"], []),
@@ -1612,11 +1613,12 @@ def create_tutor_memory_capsule(workflow_id: str):
             """
             INSERT INTO tutor_memory_capsules (
                 workflow_id, tutor_session_id, stage, capsule_version, summary_text,
+                rule_snapshot_text,
                 current_objective, study_unit, concept_focus_json, weak_points_json,
                 unresolved_questions_json, exact_notes_json, editable_notes_json,
                 feedback_json, card_requests_json, artifact_refs_json,
                 source_turn_ids_json, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 workflow_id,
@@ -1624,6 +1626,7 @@ def create_tutor_memory_capsule(workflow_id: str):
                 _normalize_stage(data.get("stage"), default="tutor"),
                 next_version,
                 _normalize_text(data.get("summary_text")),
+                _normalize_text(data.get("rule_snapshot_text")),
                 _normalize_text(data.get("current_objective")),
                 _normalize_text(data.get("study_unit")),
                 _json_dumps(concept_focus),

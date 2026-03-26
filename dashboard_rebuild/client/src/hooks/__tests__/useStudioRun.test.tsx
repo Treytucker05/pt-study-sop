@@ -203,4 +203,163 @@ describe("useStudioRun", () => {
       badge: "MISCONCEPTION",
     });
   });
+
+  it("stores expanded promoted workspace object kinds inside StudioRun authority", () => {
+    const { result } = renderHook(() => useStudioRun(baseParams));
+
+    act(() => {
+      result.current.setPromotedPrimePacketObjects([
+        {
+          id: "image:source-1",
+          kind: "image",
+          title: "Screenshot: Frank-Starling graph",
+          detail: "Pressure-volume loop screenshot for the current study unit.",
+          badge: "SCREENSHOT",
+          asset: {
+            url: "https://example.com/pv-loop.png",
+            mimeType: "image/png",
+          },
+        },
+        {
+          id: "diagram:source-1",
+          kind: "diagram_sketch",
+          title: "PV loop sketch",
+          detail: "Manual sketch of ventricular phases.",
+          badge: "SKETCH",
+          content: {
+            format: "text/markdown",
+            data: "A -> B -> C -> D",
+          },
+        },
+        {
+          id: "link:source-1",
+          kind: "link_reference",
+          title: "Frank-Starling review",
+          detail: "External review article for follow-up reading.",
+          badge: "REFERENCE",
+          href: "https://example.com/frank-starling",
+        },
+      ]);
+    });
+
+    expect(result.current.promotedPrimePacketObjects).toEqual([
+      expect.objectContaining({ kind: "image", badge: "SCREENSHOT" }),
+      expect.objectContaining({ kind: "diagram_sketch", badge: "SKETCH" }),
+      expect.objectContaining({ kind: "link_reference", badge: "REFERENCE" }),
+    ]);
+  });
+
+  it("stores floating panel layout and document tabs inside StudioRun authority", () => {
+    const { result } = renderHook(() => useStudioRun(baseParams));
+
+    expect(result.current.panelLayout).toEqual([]);
+    expect(result.current.documentTabs).toEqual([]);
+    expect(result.current.activeDocumentTabId).toBeNull();
+
+    act(() => {
+      result.current.setPanelLayout([
+        {
+          id: "panel-source-shelf",
+          panel: "source_shelf",
+          position: { x: 16, y: 24 },
+          size: { width: 320, height: 680 },
+          zIndex: 3,
+          collapsed: false,
+        },
+      ]);
+      result.current.setDocumentTabs([
+        {
+          id: "doc-material-101",
+          kind: "material",
+          title: "Cardiac Output Lecture",
+          sourceId: 101,
+        },
+      ]);
+      result.current.setActiveDocumentTabId("doc-material-101");
+    });
+
+    expect(result.current.panelLayout).toEqual([
+      {
+        id: "panel-source-shelf",
+        panel: "source_shelf",
+        position: { x: 16, y: 24 },
+        size: { width: 320, height: 680 },
+        zIndex: 3,
+        collapsed: false,
+      },
+    ]);
+    expect(result.current.documentTabs).toEqual([
+      {
+        id: "doc-material-101",
+        kind: "material",
+        title: "Cardiac Output Lecture",
+        sourceId: 101,
+      },
+    ]);
+    expect(result.current.activeDocumentTabId).toBe("doc-material-101");
+  });
+
+  it("stores tutor-owned selector state without mutating the priming start-state", () => {
+    const { result } = renderHook(() => useStudioRun(baseParams));
+
+    const persistedStartStateBefore = JSON.parse(
+      localStorage.getItem(TUTOR_START_STATE_KEY) || "{}",
+    );
+
+    act(() => {
+      result.current.setTutorChainId(77);
+      result.current.setTutorCustomBlockIds([91, 92]);
+    });
+
+    const persistedStartStateAfter = JSON.parse(
+      localStorage.getItem(TUTOR_START_STATE_KEY) || "{}",
+    );
+
+    expect(result.current.tutorChainId).toBe(77);
+    expect(result.current.tutorCustomBlockIds).toEqual([91, 92]);
+    expect(persistedStartStateBefore).toMatchObject({
+      chainId: 5,
+      customBlockIds: [9],
+    });
+    expect(persistedStartStateAfter).toMatchObject({
+      chainId: 5,
+      customBlockIds: [9],
+    });
+  });
+
+  it("stores runtime capsule, compaction telemetry, and direct note-save status inside StudioRun authority", () => {
+    const { result } = renderHook(() => useStudioRun(baseParams));
+
+    expect(result.current.runtimeState).toEqual({
+      activeMemoryCapsuleId: null,
+      compactionTelemetry: null,
+      directNoteSaveStatus: null,
+    });
+
+    act(() => {
+      result.current.setActiveMemoryCapsuleId(12);
+      result.current.setCompactionTelemetry({
+        tokenCount: 18750,
+        contextWindow: 24000,
+        pressureLevel: "high",
+      });
+      result.current.setDirectNoteSaveStatus({
+        state: "saved",
+        path: "Tutor Workspace/Cardio Note.md",
+      });
+    });
+
+    expect(result.current.runtimeState).toEqual({
+      activeMemoryCapsuleId: 12,
+      compactionTelemetry: {
+        tokenCount: 18750,
+        contextWindow: 24000,
+        pressureLevel: "high",
+      },
+      directNoteSaveStatus: {
+        state: "saved",
+        path: "Tutor Workspace/Cardio Note.md",
+      },
+    });
+  });
 });

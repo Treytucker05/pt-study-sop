@@ -29,6 +29,53 @@ import {
 } from "@/lib/tutorUtils";
 import type { TutorShellQuery, TutorPageMode } from "@/lib/tutorUtils";
 
+function collectStudyUnitMaterialCandidates(material: Material): string[] {
+  const candidates = new Set<string>();
+  const inferred = normalizeStudyUnitLabel(inferStudyUnitFromMaterial(material));
+  if (inferred) candidates.add(inferred);
+
+  const titleCandidate = normalizeStudyUnitLabel(material.title || "");
+  if (titleCandidate) candidates.add(titleCandidate);
+
+  const fileStem = normalizeStudyUnitLabel(
+    String(material.source_path || "").split(/[\\/]/).pop()?.replace(/\.[A-Za-z0-9]+$/, "") ||
+      "",
+  );
+  if (fileStem) candidates.add(fileStem);
+
+  return Array.from(candidates);
+}
+
+function inferStudyUnitFromSelection(
+  materials: Material[],
+  options: { value: string }[],
+): string {
+  if (materials.length === 0 || options.length === 0) return "";
+
+  const normalizedOptionLookup = new Map(
+    options
+      .map((option) => {
+        const normalized = normalizeStudyUnitLabel(option.value);
+        return normalized ? [normalized.toLowerCase(), option.value] : null;
+      })
+      .filter(
+        (entry): entry is [string, string] => Array.isArray(entry) && entry.length === 2,
+      ),
+  );
+
+  const matched = new Set<string>();
+  for (const material of materials) {
+    for (const candidate of collectStudyUnitMaterialCandidates(material)) {
+      const resolved = normalizedOptionLookup.get(candidate.toLowerCase());
+      if (resolved) {
+        matched.add(resolved);
+      }
+    }
+  }
+
+  return matched.size === 1 ? Array.from(matched)[0] : "";
+}
+
 export interface UseTutorHubParams {
   initialRouteQuery: TutorShellQuery;
   hasRestored: boolean;
@@ -156,16 +203,11 @@ export function useTutorHub({
     [courseId, tutorContentSources],
   );
 
-  const scopedObjectives = useMemo(
-    () =>
-      selectedObjectiveGroup
-        ? availableObjectives.filter(
-            (objective) =>
-              String(objective.groupName || "").trim() === selectedObjectiveGroup,
-          )
-        : availableObjectives,
-    [availableObjectives, selectedObjectiveGroup],
-  );
+  const selectedMaterialRecords = useMemo(() => {
+    if (selectedMaterials.length === 0) return [];
+    const selectedMaterialIdSet = new Set(selectedMaterials);
+    return chatMaterials.filter((material) => selectedMaterialIdSet.has(material.id));
+  }, [chatMaterials, selectedMaterials]);
 
   const studyUnitOptions = useMemo(() => {
     const unitMap = new Map<
@@ -206,6 +248,27 @@ export function useTutorHub({
     );
   }, [availableObjectives, chatMaterials, courseId]);
 
+  const inferredStudyUnit = useMemo(
+    () => inferStudyUnitFromSelection(selectedMaterialRecords, studyUnitOptions),
+    [selectedMaterialRecords, studyUnitOptions],
+  );
+
+  const effectiveStudyUnit = useMemo(
+    () => normalizeStudyUnitLabel(selectedObjectiveGroup) || inferredStudyUnit || "",
+    [inferredStudyUnit, selectedObjectiveGroup],
+  );
+
+  const scopedObjectives = useMemo(
+    () =>
+      effectiveStudyUnit
+        ? availableObjectives.filter(
+            (objective) =>
+              normalizeStudyUnitLabel(String(objective.groupName || "")) === effectiveStudyUnit,
+          )
+        : availableObjectives,
+    [availableObjectives, effectiveStudyUnit],
+  );
+
   const selectedObjectiveRecord = useMemo(
     () =>
       availableObjectives.find(
@@ -217,18 +280,18 @@ export function useTutorHub({
   const derivedVaultFolder = useMemo(
     () =>
       courseLabel
-        ? deriveVaultFolder(courseLabel, selectedObjectiveGroup)
+        ? deriveVaultFolder(courseLabel, effectiveStudyUnit)
         : vaultFolder.trim(),
-    [vaultFolder, courseLabel, selectedObjectiveGroup],
+    [vaultFolder, courseLabel, effectiveStudyUnit],
   );
 
   const effectiveTopic = useMemo(
     () =>
       selectedObjectiveRecord?.title ||
-      selectedObjectiveGroup ||
+      effectiveStudyUnit ||
       topic.trim() ||
       "",
-    [topic, selectedObjectiveRecord, selectedObjectiveGroup],
+    [effectiveStudyUnit, topic, selectedObjectiveRecord],
   );
 
   // ─── Hub + sessions queries ───
@@ -322,12 +385,14 @@ export function useTutorHub({
     setSelectedObjectiveId,
     selectedObjectiveGroup,
     setSelectedObjectiveGroup,
+    effectiveStudyUnit,
 
     // Data
     chatMaterials,
     availableObjectives,
     tutorContentSources,
     courseLabel,
+    selectedMaterialRecords,
     scopedObjectives,
     studyUnitOptions,
     selectedObjectiveRecord,

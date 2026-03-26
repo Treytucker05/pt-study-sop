@@ -32,6 +32,36 @@ describe("studio packet section builders", () => {
       source: "verdict",
       sourceLabel: "Latest verdict",
     });
+    const promotedImage = {
+      id: "image:source-1",
+      kind: "image" as const,
+      title: "Screenshot: Frank-Starling graph",
+      detail: "Pressure-volume loop screenshot for the current study unit.",
+      badge: "SCREENSHOT",
+      asset: {
+        url: "https://example.com/pv-loop.png",
+        mimeType: "image/png",
+      },
+    };
+    const promotedDiagram = {
+      id: "diagram:source-1",
+      kind: "diagram_sketch" as const,
+      title: "PV loop sketch",
+      detail: "Manual sketch of ventricular phases.",
+      badge: "SKETCH",
+      content: {
+        format: "text/markdown",
+        data: "A -> B -> C -> D",
+      },
+    };
+    const promotedLink = {
+      id: "link:source-1",
+      kind: "link_reference" as const,
+      title: "Frank-Starling review",
+      detail: "External review article for follow-up reading.",
+      badge: "REFERENCE",
+      href: "https://example.com/frank-starling",
+    };
 
     const sections = buildPrimePacketSections({
       materials: [
@@ -51,7 +81,12 @@ describe("studio packet section builders", () => {
       primingGapsText: "",
       primingStrategyText: "Begin with retrieval prompts.",
       promotedExcerptObjects: [promotedExcerpt],
-      promotedNoteObjects: [promotedRepairNote],
+      promotedNoteObjects: [
+        promotedRepairNote,
+        promotedImage,
+        promotedDiagram,
+        promotedLink,
+      ],
     });
 
     expect(sections.map((section) => section.title)).toEqual([
@@ -68,12 +103,24 @@ describe("studio packet section builders", () => {
       "Tutor Strategy",
       "Workspace Excerpt",
       "Misconception to repair",
+      "Screenshot: Frank-Starling graph",
+      "PV loop sketch",
+      "Frank-Starling review",
     ]);
     expect(sections[1]?.entries[3]?.detail).toContain(
       "Stroke volume and heart rate set cardiac output.",
     );
     expect(sections[1]?.entries[4]?.detail).toContain(
       "The reply mixed preload effects with heart-rate regulation.",
+    );
+    expect(sections[1]?.entries[5]?.detail).toContain(
+      "Pressure-volume loop screenshot for the current study unit.",
+    );
+    expect(sections[1]?.entries[6]?.detail).toContain(
+      "Manual sketch of ventricular phases.",
+    );
+    expect(sections[1]?.entries[7]?.detail).toContain(
+      "https://example.com/frank-starling",
     );
   });
 

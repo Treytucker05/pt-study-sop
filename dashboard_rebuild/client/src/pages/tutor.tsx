@@ -33,9 +33,8 @@ import {
   writeTutorVaultFolder,
 } from "@/lib/tutorClientState";
 import { HudButton } from "@/components/ui/HudButton";
-import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Palette, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { readTutorShellQuery, writeTutorShellQuery } from "@/lib/tutorUtils";
 import type { TutorPageMode, TutorShellQuery, TutorStudioView } from "@/lib/tutorUtils";
 import { resolveTutorTeachRuntime } from "@/components/TutorChat.types";
@@ -43,6 +42,14 @@ import {
   normalizeStudioWorkspaceObjects,
 } from "@/lib/studioWorkspaceObjects";
 import { normalizeStudioPolishPromotedNotes } from "@/lib/studioPacketSections";
+import {
+  normalizeStudioDocumentTabs,
+  normalizeStudioPanelLayout,
+} from "@/lib/studioPanelLayout";
+import {
+  normalizeStudioRunRuntimeState,
+  serializeStudioRunRuntimeState,
+} from "@/lib/studioRunRuntimeState";
 
 function useTutorPageController() {
   const queryClient = useQueryClient();
@@ -88,6 +95,21 @@ function useTutorPageController() {
     setActiveBoardId,
     viewerState,
     setViewerState,
+    panelLayout,
+    setPanelLayout,
+    documentTabs,
+    setDocumentTabs,
+    activeDocumentTabId,
+    setActiveDocumentTabId,
+    runtimeState,
+    setRuntimeState,
+    setActiveMemoryCapsuleId,
+    setCompactionTelemetry,
+    setDirectNoteSaveStatus,
+    tutorChainId,
+    setTutorChainId,
+    tutorCustomBlockIds,
+    setTutorCustomBlockIds,
     showSetup,
     setShowSetup,
     brainLaunchContext,
@@ -163,6 +185,10 @@ function useTutorPageController() {
   const session = useTutorSession({
     initialRouteQuery,
     hub,
+    tutorChainId,
+    tutorCustomBlockIds,
+    setTutorChainId,
+    setTutorCustomBlockIds,
     activeSessionId,
     setActiveSessionId,
     shellMode,
@@ -232,6 +258,8 @@ function useTutorPageController() {
       }
       hub.setChainId(savedStartState.chainId);
       hub.setCustomBlockIds(savedStartState.customBlockIds);
+      setTutorChainId(savedStartState.chainId);
+      setTutorCustomBlockIds(savedStartState.customBlockIds);
       hub.setAccuracyProfile(savedStartState.accuracyProfile);
       hub.setObjectiveScope(savedStartState.objectiveScope);
       hub.setSelectedObjectiveId(savedStartState.selectedObjectiveId);
@@ -281,6 +309,38 @@ function useTutorPageController() {
         setActiveBoardId(nextProjectShell.workspace_state.active_board_id);
       }
       setViewerState(nextProjectShell.workspace_state.viewer_state || null);
+      setPanelLayout(
+        normalizeStudioPanelLayout(
+          nextProjectShell.workspace_state.panel_layout,
+        ),
+      );
+      setDocumentTabs(
+        normalizeStudioDocumentTabs(
+          nextProjectShell.workspace_state.document_tabs,
+        ),
+      );
+      setActiveDocumentTabId(
+        typeof nextProjectShell.workspace_state.active_document_tab_id === "string"
+          ? nextProjectShell.workspace_state.active_document_tab_id
+          : null,
+      );
+      setRuntimeState(
+        normalizeStudioRunRuntimeState(
+          nextProjectShell.workspace_state.runtime_state,
+        ),
+      );
+      setTutorChainId(
+        typeof nextProjectShell.workspace_state.tutor_chain_id === "number"
+          ? nextProjectShell.workspace_state.tutor_chain_id
+          : undefined,
+      );
+      setTutorCustomBlockIds(
+        Array.isArray(nextProjectShell.workspace_state.tutor_custom_block_ids)
+          ? nextProjectShell.workspace_state.tutor_custom_block_ids.filter(
+              (value): value is number => typeof value === "number",
+            )
+          : [],
+      );
       setPromotedPrimePacketObjects(
         normalizeStudioWorkspaceObjects(
           nextProjectShell.workspace_state.prime_packet_promoted_objects,
@@ -308,6 +368,12 @@ function useTutorPageController() {
       hub,
       initialRouteQuery,
       setPromotedPolishPacketNotes,
+      setActiveDocumentTabId,
+      setDocumentTabs,
+      setPanelLayout,
+      setRuntimeState,
+      setTutorChainId,
+      setTutorCustomBlockIds,
       shellMode,
       workflow,
     ],
@@ -485,6 +551,12 @@ function useTutorPageController() {
       activeBoardScope,
       activeBoardId,
       viewerState,
+      panelLayout,
+      documentTabs,
+      activeDocumentTabId,
+      runtimeState,
+      tutorChainId,
+      tutorCustomBlockIds,
       promotedPrimePacketObjects,
       promotedPolishPacketNotes,
       selectedMaterialIds: hub.selectedMaterials,
@@ -501,6 +573,12 @@ function useTutorPageController() {
           active_board_scope: activeBoardScope,
           active_board_id: activeBoardId,
           viewer_state: viewerState,
+          panel_layout: panelLayout,
+          document_tabs: documentTabs,
+          active_document_tab_id: activeDocumentTabId,
+          runtime_state: serializeStudioRunRuntimeState(runtimeState),
+          tutor_chain_id: tutorChainId ?? null,
+          tutor_custom_block_ids: tutorCustomBlockIds,
           prime_packet_promoted_objects: promotedPrimePacketObjects,
           polish_packet_promoted_notes: promotedPolishPacketNotes,
           selected_material_ids: hub.selectedMaterials,
@@ -529,6 +607,12 @@ function useTutorPageController() {
     shellHydratedCourseId,
     shellRevision,
     viewerState,
+    panelLayout,
+    documentTabs,
+    activeDocumentTabId,
+    runtimeState,
+    tutorChainId,
+    tutorCustomBlockIds,
     promotedPrimePacketObjects,
     promotedPolishPacketNotes,
   ]);
@@ -654,18 +738,6 @@ function useTutorPageController() {
       heroFooter={tutorWorkspaceNav}
       actions={
         <>
-          <a
-            href="/theme-lab/index.html"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn(
-              buttonVariants({ variant: "outline", size: "sm" }),
-              "gap-2 px-4 uppercase tracking-[0.14em] text-[#ffd8e0]",
-            )}
-          >
-            <Palette className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
-            <span>THEME LAB</span>
-          </a>
           <HudButton
             variant="outline"
             className="gap-2 px-4 py-2 text-ui-xs text-[#ffd8e0]"
@@ -712,9 +784,23 @@ function useTutorPageController() {
           activeBoardScope={activeBoardScope}
           activeBoardId={activeBoardId}
           viewerState={viewerState}
+          documentTabs={documentTabs}
+          activeDocumentTabId={activeDocumentTabId}
+          panelLayout={panelLayout}
+          runtimeState={runtimeState}
+          tutorChainId={tutorChainId}
+          tutorCustomBlockIds={tutorCustomBlockIds}
           setActiveBoardScope={setActiveBoardScope}
           setActiveBoardId={setActiveBoardId}
           setViewerState={setViewerState}
+          setDocumentTabs={setDocumentTabs}
+          setActiveDocumentTabId={setActiveDocumentTabId}
+          setPanelLayout={setPanelLayout}
+          setActiveMemoryCapsuleId={setActiveMemoryCapsuleId}
+          setCompactionTelemetry={setCompactionTelemetry}
+          setDirectNoteSaveStatus={setDirectNoteSaveStatus}
+          setTutorChainId={setTutorChainId}
+          setTutorCustomBlockIds={setTutorCustomBlockIds}
           setShowSetup={setShowSetup}
           queryClient={queryClient}
           promotedPrimePacketObjects={promotedPrimePacketObjects}

@@ -73,4 +73,28 @@ describe("buildStudioMemoryStatus", () => {
       },
     });
   });
+
+  it("projects compaction state from backend telemetry when it is available", () => {
+    expect(
+      buildStudioMemoryStatus({
+        memoryCapsules: [],
+        turnCount: 1,
+        latestAssistantContent: "Short answer.",
+        stageTimerDisplaySeconds: 90,
+        compactionTelemetry: {
+          inputTokens: 11_400,
+          outputTokens: 2_400,
+          tokenCount: 13_800,
+          contextWindow: 24_000,
+          pressureLevel: "medium",
+        },
+      }),
+    ).toMatchObject({
+      compactionState: {
+        level: "warning",
+        label: "Getting heavy",
+        detail: "Using 13,800 / 24,000 tokens of live context.",
+      },
+    });
+  });
 });

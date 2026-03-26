@@ -16,9 +16,8 @@ import {
   X,
   Check,
   Menu,
-  Palette,
 } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetClose,
@@ -800,28 +799,6 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* CRT Scanlines */}
       <div className="crt-scanlines" />
-
-      {!isTutorPage ? (
-        <a
-          href="/theme-lab/index.html"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={cn(
-            buttonVariants({ variant: "outline", size: "sm" }),
-            "pointer-events-auto fixed right-3 z-[60] min-h-0 gap-1.5 border-primary/45 bg-black/55 px-2.5 py-1.5 text-ui-xs uppercase tracking-[0.14em] shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop-blur-sm max-lg:top-[4.75rem] lg:top-4 lg:px-3 lg:text-sm",
-          )}
-          aria-label="Open Theme Lab — HUD and token test page"
-          data-testid="theme-lab-link"
-        >
-          <Palette className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
-          <span className="hidden min-[420px]:inline" aria-hidden="true">
-            Theme lab
-          </span>
-          <span className="inline min-[420px]:hidden" aria-hidden="true">
-            Lab
-          </span>
-        </a>
-      ) : null}
 
       {/* Top Nav — static header attached to normal page flow */}
       <header

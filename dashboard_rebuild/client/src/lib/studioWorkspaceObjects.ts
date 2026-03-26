@@ -32,6 +32,36 @@ export type StudioWorkspaceObject =
     }
   | {
       id: string;
+      kind: "image";
+      title: string;
+      detail: string;
+      badge: string;
+      asset: {
+        url: string;
+        mimeType: string | null;
+      };
+    }
+  | {
+      id: string;
+      kind: "diagram_sketch";
+      title: string;
+      detail: string;
+      badge: string;
+      content: {
+        format: string;
+        data: string;
+      };
+    }
+  | {
+      id: string;
+      kind: "link_reference";
+      title: string;
+      detail: string;
+      badge: string;
+      href: string;
+    }
+  | {
+      id: string;
       kind: "text_note";
       title: string;
       detail: string;
@@ -194,6 +224,29 @@ export function isStudioWorkspaceObject(value: unknown): value is StudioWorkspac
 
   if (value.kind === "vault_path" && value.badge === "VAULT") {
     return true;
+  }
+
+  if (value.kind === "image") {
+    return (
+      isPlainRecord(value.asset) &&
+      typeof value.asset.url === "string" &&
+      value.asset.url.trim().length > 0 &&
+      (typeof value.asset.mimeType === "string" || value.asset.mimeType === null)
+    );
+  }
+
+  if (value.kind === "diagram_sketch") {
+    return (
+      isPlainRecord(value.content) &&
+      typeof value.content.format === "string" &&
+      value.content.format.trim().length > 0 &&
+      typeof value.content.data === "string" &&
+      value.content.data.trim().length > 0
+    );
+  }
+
+  if (value.kind === "link_reference") {
+    return typeof value.href === "string" && value.href.trim().length > 0;
   }
 
   if (value.kind !== "excerpt") {

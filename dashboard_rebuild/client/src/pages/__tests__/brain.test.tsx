@@ -29,6 +29,10 @@ const mockBrainProfileClaims = vi.fn();
 const mockBrainProfileQuestions = vi.fn();
 const mockBrainProfileHistory = vi.fn();
 const mockBrainOrganizePreview = vi.fn();
+const mockTutorHubGet = vi.fn();
+const mockTutorListWorkflows = vi.fn();
+const mockTutorGetContentSources = vi.fn();
+const mockTutorDeleteWorkflow = vi.fn();
 
 vi.mock("@/lib/api", () => ({
   api: {
@@ -65,6 +69,13 @@ vi.mock("@/lib/api", () => ({
         mockBrainProfileHistory(...args),
       organizePreview: (...args: unknown[]) =>
         mockBrainOrganizePreview(...args),
+    },
+    tutor: {
+      getHub: (...args: unknown[]) => mockTutorHubGet(...args),
+      listWorkflows: (...args: unknown[]) => mockTutorListWorkflows(...args),
+      getContentSources: (...args: unknown[]) =>
+        mockTutorGetContentSources(...args),
+      deleteWorkflow: (...args: unknown[]) => mockTutorDeleteWorkflow(...args),
     },
   },
 }));
@@ -213,6 +224,66 @@ function seedDefaultMocks() {
       options: [],
     },
   });
+  mockTutorHubGet.mockResolvedValue({
+    recommended_action: {
+      title: "Resume the next Exercise Physiology block",
+      action_label: "Open Tutor from Brain home",
+    },
+    resume_candidate: {
+      can_resume: true,
+      session_id: "sess-brain-home",
+      course_id: 77,
+      course_name: "Exercise Physiology",
+      course_code: "EXPH-101",
+      topic: "Hemodynamics",
+      last_mode: "tutor",
+      board_scope: "project",
+      board_id: null,
+      updated_at: "2026-03-26T08:00:00Z",
+      action_label: "Resume Exercise Physiology tutor session",
+    },
+    upcoming_assignments: [],
+    upcoming_tests: [],
+    class_projects: [
+      {
+        course_id: 77,
+        course_name: "Exercise Physiology",
+        course_code: "EXPH-101",
+        wheel_linked: true,
+        wheel_active: true,
+        wheel_position: 1,
+        next_due_event: null,
+      },
+    ],
+    study_wheel: {
+      total_active_courses: 1,
+      current_course_id: 77,
+      next_course_id: null,
+    },
+  });
+  mockTutorListWorkflows.mockResolvedValue({
+    items: [
+      {
+        workflow_id: "wf-brain-home-1",
+        course_id: 77,
+        course_name: "Exercise Physiology",
+        course_code: "EXPH-101",
+        assignment_title: "Week 7 Study Plan",
+        topic: "Hemodynamics",
+        study_unit: "Week 7",
+        current_stage: "priming",
+        status: "priming_in_progress",
+        updated_at: "2026-03-26T07:30:00Z",
+        due_date: "2026-03-29",
+        active_tutor_session_id: null,
+      },
+    ],
+    count: 1,
+  });
+  mockTutorGetContentSources.mockResolvedValue({
+    courses: [{ id: 77, name: "Exercise Physiology", code: "EXPH-101" }],
+  });
+  mockTutorDeleteWorkflow.mockResolvedValue({ ok: true });
 }
 
 beforeEach(() => {
@@ -275,6 +346,39 @@ describe("Brain page contract", () => {
     expect(
       container.querySelector('[data-ui="hud-panel"][data-hud-variant="b"]'),
     ).not.toBeNull();
+  });
+
+  it("renders the Tutor workflow hub widgets on Brain home", async () => {
+    const { default: BrainPage } = await import("@/pages/brain");
+    renderWithClient(<BrainPage />);
+
+    expect(await screen.findByTestId("tutor-launch-hub")).toBeInTheDocument();
+    expect(screen.getByText("STUDIO HUB")).toBeInTheDocument();
+    expect(screen.getByText("STUDY WHEEL")).toBeInTheDocument();
+    expect(screen.getByText("RECENT WORKFLOWS")).toBeInTheDocument();
+  });
+
+  it("treats /nav-lab as an unshipped route", async () => {
+    await renderAppAtRoute("/nav-lab", "nav-brain");
+
+    expect(
+      await screen.findByRole("heading", { name: /404 page not found/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("unmounts the previous route instead of keeping hidden pages alive", async () => {
+    await renderAppAtRoute("/", "brain-home");
+    expect(await screen.findByTestId("brain-home")).toBeInTheDocument();
+
+    await act(async () => {
+      window.history.pushState({}, "", "/missing-study-route");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+
+    expect(
+      await screen.findByRole("heading", { name: /404 page not found/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("brain-home")).not.toBeInTheDocument();
   });
 
   it("uses the organizer as an annotation-only surface", async () => {

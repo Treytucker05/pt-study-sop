@@ -420,6 +420,11 @@ def create_session():
     packet_context = str(data.get("packet_context") or "").strip() or None
     if packet_context:
         content_filter["packet_context"] = packet_context
+    memory_capsule_context = (
+        str(data.get("memory_capsule_context") or "").strip() or None
+    )
+    if memory_capsule_context:
+        content_filter["memory_capsule_context"] = memory_capsule_context
 
     if map_of_contents_ctx:
         module_prefix = str(Path(str(map_of_contents_ctx["path"])).parent).replace(

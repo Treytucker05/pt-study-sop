@@ -9,10 +9,13 @@ export interface WorkspacePanelProps {
   children: ReactNode;
   defaultPosition?: { x: number; y: number };
   defaultSize?: { width: number; height: number };
+  position?: { x: number; y: number };
+  size?: { width: number; height: number };
   minWidth?: number;
   minHeight?: number;
   collapsed?: boolean;
   isPoppedOut?: boolean;
+  dataTestId?: string;
   onCollapsedChange?: (collapsed: boolean) => void;
   onPositionChange?: (position: { x: number; y: number }) => void;
   onSizeChange?: (size: { width: number; height: number }) => void;
@@ -37,10 +40,13 @@ export function WorkspacePanel({
   children,
   defaultPosition = { x: 0, y: 0 },
   defaultSize = { width: 400, height: 300 },
+  position,
+  size,
   minWidth = 200,
   minHeight = 100,
   collapsed = false,
   isPoppedOut = false,
+  dataTestId,
   onCollapsedChange,
   onPositionChange,
   onSizeChange,
@@ -58,16 +64,18 @@ export function WorkspacePanel({
     return (
       <Rnd
         default={{
-          x: defaultPosition.x,
-          y: defaultPosition.y,
+          x: position?.x ?? defaultPosition.x,
+          y: position?.y ?? defaultPosition.y,
           width: "auto",
           height: "auto",
         }}
+        position={position}
         enableResizing={false}
         onDragStop={(_e, d) => {
           onPositionChange?.({ x: d.x, y: d.y });
         }}
         onResizeStop={() => {}}
+        data-testid={dataTestId}
         className={cn(
           "inline-flex items-center gap-2 px-3 py-1.5 rounded-full",
           "bg-background/80 border border-primary/20 backdrop-blur-sm",
@@ -93,11 +101,13 @@ export function WorkspacePanel({
   return (
     <Rnd
       default={{
-        x: defaultPosition.x,
-        y: defaultPosition.y,
-        width: defaultSize.width,
-        height: defaultSize.height,
+        x: position?.x ?? defaultPosition.x,
+        y: position?.y ?? defaultPosition.y,
+        width: size?.width ?? defaultSize.width,
+        height: size?.height ?? defaultSize.height,
       }}
+      position={position}
+      size={size}
       minWidth={minWidth}
       minHeight={minHeight}
       dragHandleClassName="workspace-panel-drag-handle"
@@ -116,6 +126,7 @@ export function WorkspacePanel({
         "shadow-[0_4px_12px_rgba(0,0,0,0.3)]",
         className,
       )}
+      data-testid={dataTestId}
     >
       {/* Title bar */}
       <div className={cn(TITLE_BAR_CLASSES, "workspace-panel-drag-handle rounded-t-sm")}>

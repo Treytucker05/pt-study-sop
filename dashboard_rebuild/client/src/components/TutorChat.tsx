@@ -613,6 +613,7 @@ export function TutorChat({
   selectedMaterialIds,
   defaultMaterialsOn = false,
   accuracyProfile,
+  memoryCapsuleContext,
   onAccuracyProfileChange,
   onSelectedMaterialIdsChange,
   onMaterialsChanged,
@@ -677,6 +678,7 @@ export function TutorChat({
     selectedMaterialIds,
     selectedVaultPaths: chatState.selectedVaultPaths,
     accuracyProfile,
+    memoryCapsuleContext,
     behaviorOverride: chatState.behaviorOverride,
     onBehaviorOverrideReset: useCallback(
       () => patchChatState({ behaviorOverride: null }),

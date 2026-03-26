@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -60,8 +60,10 @@ vi.mock("@/components/TutorStudioMode", () => ({
 
 vi.mock("@/components/TutorChat", () => ({
   TutorChat: ({
+    onCompact,
     onPromoteToPolishPacket,
   }: {
+    onCompact?: () => void;
     onPromoteToPolishPacket?: (payload: {
       message: {
         messageId?: string;
@@ -73,6 +75,9 @@ vi.mock("@/components/TutorChat", () => ({
     }) => void;
   }) => (
     <div data-testid="mock-tutor-chat">
+      <button type="button" onClick={() => onCompact?.()}>
+        Compact Tutor memory
+      </button>
       <button
         type="button"
         onClick={() =>
@@ -115,6 +120,7 @@ vi.mock("tldraw", () => ({
     return (
       <div data-testid="mock-tldraw-canvas" data-hide-ui={hideUi ? "true" : "false"}>
         tldraw canvas
+        <a href="https://tldraw.dev#pricing">Get a license for production</a>
       </div>
     );
   },
@@ -196,9 +202,12 @@ function makeHub() {
     tutorHubLoading: false,
     courseLabel: null,
     selectedObjectiveGroup: "",
+    effectiveStudyUnit: "",
     topic: "",
+    effectiveTopic: "",
     selectedMaterials: [],
     chatMaterials: [],
+    selectedMaterialRecords: [],
     courseId: undefined,
     chainId: undefined,
     customBlockIds: [],
@@ -220,9 +229,16 @@ function makeHub() {
 }
 
 function makeHubWithOverrides(overrides: HubOverrides = {}) {
+  const base = makeHub();
   return {
-    ...makeHub(),
+    ...base,
     ...overrides,
+    effectiveStudyUnit:
+      overrides.effectiveStudyUnit ??
+      overrides.selectedObjectiveGroup ??
+      base.effectiveStudyUnit,
+    effectiveTopic:
+      overrides.effectiveTopic ?? overrides.topic ?? base.effectiveTopic,
   };
 }
 
@@ -256,6 +272,10 @@ function makeSession() {
     savingStrategyFeedback: false,
     saveScholarStrategyFeedback: vi.fn().mockResolvedValue(undefined),
     saveScholarStrategyNotes: vi.fn().mockResolvedValue(undefined),
+    startSession: vi.fn().mockResolvedValue(null),
+    resumeSession: vi.fn().mockResolvedValue(undefined),
+    hasActiveTutorSession: true,
+    activeSessionStatus: "active",
   };
 }
 
@@ -329,6 +349,7 @@ function makeWorkflow(studioView: WorkflowView) {
     editableNoteContent: "",
     setEditableNoteContent: vi.fn(),
     saveWorkflowNoteCapture: vi.fn(),
+    saveWorkflowNoteToVault: vi.fn(),
     captureWorkflowMessageNote: vi.fn(),
     savingRuntimeEvent: false,
     feedbackSentiment: "liked",
@@ -383,6 +404,16 @@ function renderTutorShell(
       onPromotePrimePacketObject?: (...args: unknown[]) => void;
       promotedPolishPacketNotes?: unknown[];
       onPromotePolishPacketNote?: (...args: unknown[]) => void;
+      panelLayout?: unknown[];
+      setPanelLayout?: (...args: unknown[]) => void;
+      runtimeState?: Record<string, unknown> | null;
+      setCompactionTelemetry?: (...args: unknown[]) => void;
+      setActiveMemoryCapsuleId?: (...args: unknown[]) => void;
+      setDirectNoteSaveStatus?: (...args: unknown[]) => void;
+      tutorChainId?: number;
+      tutorCustomBlockIds?: number[];
+      setTutorChainId?: (...args: unknown[]) => void;
+      setTutorCustomBlockIds?: (...args: unknown[]) => void;
     };
   } = {},
 ) {
@@ -400,11 +431,21 @@ function renderTutorShell(
       activeBoardScope="project"
       activeBoardId={null}
       viewerState={viewerState ?? null}
+      runtimeState={shellOverrides?.runtimeState as never}
+      tutorChainId={shellOverrides?.tutorChainId as never}
+      tutorCustomBlockIds={shellOverrides?.tutorCustomBlockIds as never}
       setActiveBoardScope={vi.fn()}
       setActiveBoardId={vi.fn()}
       setViewerState={vi.fn()}
       setShowSetup={vi.fn()}
       queryClient={new QueryClient()}
+      panelLayout={shellOverrides?.panelLayout as never}
+      setPanelLayout={shellOverrides?.setPanelLayout as never}
+      setCompactionTelemetry={shellOverrides?.setCompactionTelemetry as never}
+      setActiveMemoryCapsuleId={shellOverrides?.setActiveMemoryCapsuleId as never}
+      setDirectNoteSaveStatus={shellOverrides?.setDirectNoteSaveStatus as never}
+      setTutorChainId={shellOverrides?.setTutorChainId as never}
+      setTutorCustomBlockIds={shellOverrides?.setTutorCustomBlockIds as never}
       promotedPrimePacketObjects={
         shellOverrides?.promotedPrimePacketObjects as never
       }
@@ -459,11 +500,15 @@ function renderTutorShellTutorHarness() {
         activeBoardScope="project"
         activeBoardId={null}
         viewerState={null}
+        tutorChainId={undefined}
+        tutorCustomBlockIds={[]}
         setActiveBoardScope={vi.fn()}
         setActiveBoardId={vi.fn()}
         setViewerState={vi.fn()}
         setShowSetup={vi.fn()}
         queryClient={new QueryClient()}
+        setTutorChainId={vi.fn()}
+        setTutorCustomBlockIds={vi.fn()}
         onResumeHubCandidate={vi.fn()}
       />
     );
@@ -495,6 +540,105 @@ describe("TutorShell studio routing", () => {
     expect(sourceShelf).toHaveTextContent("Exercise Physiology/Week 7");
   });
 
+  it("uses the Source Shelf Library tab as a real working surface for browsing and staging materials", async () => {
+    renderTutorShell("workspace", {
+      hubOverrides: {
+        courseLabel: "Exercise Physiology",
+        selectedObjectiveGroup: "Week 7",
+        topic: "Cardiac output",
+        selectedMaterials: [101],
+        chatMaterials: [
+          {
+            id: 101,
+            title: "Cardiac Output Lecture",
+            file_type: "pdf",
+            source_path: "uploads/cardio-output.pdf",
+          },
+          {
+            id: 102,
+            title: "Afterload Drill",
+            file_type: "txt",
+            source_path: "uploads/afterload-drill.txt",
+          },
+        ],
+        derivedVaultFolder: "Exercise Physiology/Week 7",
+      },
+    });
+
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
+
+    const sourceShelf = screen.getByTestId("studio-source-shelf");
+    await userEvent.click(within(sourceShelf).getByRole("button", { name: /^library$/i }));
+
+    expect(sourceShelf).toHaveTextContent("Library Sources");
+    expect(sourceShelf).toHaveTextContent("Afterload Drill");
+
+    await userEvent.click(
+      within(sourceShelf).getByRole("button", {
+        name: /open afterload drill in document dock/i,
+      }),
+    );
+    expect(screen.getByTestId("studio-document-dock")).toHaveTextContent(
+      "Afterload Drill",
+    );
+
+    await userEvent.click(
+      within(sourceShelf).getByRole("button", {
+        name: /add afterload drill to workspace/i,
+      }),
+    );
+    expect(
+      within(sourceShelf).getByRole("button", {
+        name: /afterload drill already in workspace/i,
+      }),
+    ).toHaveTextContent("In Workspace");
+  });
+
+  it("uses the Source Shelf Vault tab as a real working surface for browsing and staging linked paths", async () => {
+    renderTutorShell("workspace", {
+      hubOverrides: {
+        courseLabel: "Exercise Physiology",
+        selectedObjectiveGroup: "Week 7",
+        topic: "Cardiac output",
+        selectedMaterials: [101],
+        selectedPaths: [
+          "Exercise Physiology/Week 7/Cardio.md",
+          "Exercise Physiology/Week 7/Afterload.md",
+        ],
+        chatMaterials: [
+          {
+            id: 101,
+            title: "Cardiac Output Lecture",
+            file_type: "pdf",
+            source_path: "uploads/cardio-output.pdf",
+          },
+        ],
+        derivedVaultFolder: "Exercise Physiology/Week 7",
+      },
+    });
+
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
+
+    const sourceShelf = screen.getByTestId("studio-source-shelf");
+    await userEvent.click(within(sourceShelf).getByRole("button", { name: /^vault$/i }));
+
+    expect(sourceShelf).toHaveTextContent("Linked Vault Paths");
+    expect(sourceShelf).toHaveTextContent("Exercise Physiology/Week 7/Cardio.md");
+    expect(sourceShelf).toHaveTextContent("Exercise Physiology/Week 7/Afterload.md");
+
+    await userEvent.click(
+      within(sourceShelf).getByRole("button", {
+        name: /add exercise physiology\/week 7\/afterload\.md to workspace/i,
+      }),
+    );
+
+    expect(
+      within(sourceShelf).getByRole("button", {
+        name: /exercise physiology\/week 7\/afterload\.md already in workspace/i,
+      }),
+    ).toHaveTextContent("In Workspace");
+  });
+
   it("keeps Workspace Home focused on the main launch surface instead of the full Studio rail stack", async () => {
     renderTutorShell("home");
 
@@ -511,11 +655,12 @@ describe("TutorShell studio routing", () => {
 
   it("shows the active run configuration summary inside Run Config", async () => {
     renderTutorShell("priming", {
-      hubOverrides: {
-        chainId: 12,
-      },
       workflowOverrides: {
         primingMethods: ["summary", "concept-map", "gaps"],
+      },
+      shellOverrides: {
+        tutorChainId: 12,
+        tutorCustomBlockIds: [],
       },
     });
 
@@ -526,6 +671,82 @@ describe("TutorShell studio routing", () => {
     expect(runConfig).toHaveTextContent("Template chain selected");
     expect(runConfig).toHaveTextContent("Chain #12");
     expect(runConfig).toHaveTextContent("Tutor start mode");
+  });
+
+  it("routes Run Config controls through Priming-owned, Tutor-owned, and runtime-rule setters", async () => {
+    const user = userEvent.setup();
+    const setPrimingMethods = vi.fn();
+    const setTutorChainId = vi.fn();
+    const setTutorCustomBlockIds = vi.fn();
+    const setAccuracyProfile = vi.fn();
+    const setObjectiveScope = vi.fn();
+    getTemplateChainsMock.mockResolvedValueOnce([
+      {
+        id: 17,
+        title: "Cardio Deep Dive",
+        description: "",
+        blocks: [],
+      },
+    ]);
+
+    renderTutorShell("workspace", {
+      hubOverrides: {
+        accuracyProfile: "strict",
+        objectiveScope: "module_all",
+        setAccuracyProfile,
+        setObjectiveScope,
+      },
+      workflowOverrides: {
+        primingMethods: ["M-PRE-010", "M-PRE-008"],
+        setPrimingMethods,
+      },
+      shellOverrides: {
+        tutorChainId: 5,
+        tutorCustomBlockIds: [11, 12],
+        setTutorChainId,
+        setTutorCustomBlockIds,
+      },
+    });
+
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
+
+    const runConfig = screen.getByTestId("studio-run-config");
+
+    await user.click(
+      within(runConfig).getByRole("button", {
+        name: /Concept Map/i,
+      }),
+    );
+    expect(setPrimingMethods).toHaveBeenCalledWith([
+      "M-PRE-010",
+      "M-PRE-008",
+      "M-PRE-005",
+    ]);
+
+    await user.selectOptions(
+      within(runConfig).getByLabelText(/Tutor chain/i),
+      "17",
+    );
+    expect(setTutorChainId).toHaveBeenCalledWith(17);
+    expect(setTutorCustomBlockIds).toHaveBeenCalledWith([]);
+
+    fireEvent.change(within(runConfig).getByLabelText(/Tutor custom block ids/i), {
+      target: { value: "21, 34" },
+    });
+    expect(setTutorCustomBlockIds).toHaveBeenLastCalledWith([21, 34]);
+    expect(setTutorChainId).toHaveBeenLastCalledWith(undefined);
+
+    await user.selectOptions(
+      within(runConfig).getByLabelText(/Accuracy profile/i),
+      "balanced",
+    );
+    expect(setAccuracyProfile).toHaveBeenCalledWith("balanced");
+
+    await user.selectOptions(
+      within(runConfig).getByLabelText(/Objective scope/i),
+      "single_focus",
+    );
+    expect(setObjectiveScope).toHaveBeenCalledWith("single_focus");
   });
 
   it("reduces Priming chrome to source context, run config, and Prime Packet", async () => {
@@ -609,6 +830,64 @@ describe("TutorShell studio routing", () => {
     );
   });
 
+  it("projects backend compaction telemetry into Tutor Status and Memory", async () => {
+    renderTutorShell("workspace", {
+      sessionOverrides: {
+        turnCount: 1,
+        latestCommittedAssistantMessage: {
+          role: "assistant",
+          content: "Short answer.",
+        },
+        stageTimerDisplaySeconds: 90,
+        stageTimerRunning: true,
+      },
+      shellOverrides: {
+        runtimeState: {
+          activeMemoryCapsuleId: null,
+          compactionTelemetry: {
+            inputTokens: 12_000,
+            outputTokens: 3_600,
+            tokenCount: 15_600,
+            contextWindow: 24_000,
+            pressureLevel: "high",
+          },
+          directNoteSaveStatus: null,
+        },
+      },
+    });
+
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
+
+    expect(screen.getByTestId("studio-tutor-status")).toHaveTextContent(
+      "Using 15,600 / 24,000 tokens of live context.",
+    );
+    expect(screen.getByTestId("studio-memory")).toHaveTextContent(
+      "Using 15,600 / 24,000 tokens of live context.",
+    );
+  });
+
+  it("shows persisted direct vault note-save status inside Tutor Status", async () => {
+    renderTutorShell("workspace", {
+      shellOverrides: {
+        runtimeState: {
+          activeMemoryCapsuleId: null,
+          compactionTelemetry: null,
+          directNoteSaveStatus: {
+            state: "saved",
+            mode: "exact",
+            path: "Courses/Exercise Physiology/Tutor Notes/Week 7 Study Plan/Exact - Cardiac output.md",
+          },
+        },
+      },
+    });
+
+    expect(await screen.findByTestId("studio-tutor-status")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-tutor-status")).toHaveTextContent("Saved to vault");
+    expect(screen.getByTestId("studio-tutor-status")).toHaveTextContent(
+      "Courses/Exercise Physiology/Tutor Notes/Week 7 Study Plan/Exact - Cardiac output.md",
+    );
+  });
+
   it("shows latest capsule, capsule history, and compaction state inside Memory", async () => {
     renderTutorShell("workspace", {
       sessionOverrides: {
@@ -659,6 +938,102 @@ describe("TutorShell studio routing", () => {
     expect(memory).not.toHaveTextContent(
       "Session capsules and compaction status will surface here.",
     );
+  });
+
+  it("lets the user activate a specific memory capsule from the Memory panel", async () => {
+    const user = userEvent.setup();
+    const setActiveMemoryCapsuleId = vi.fn();
+
+    renderTutorShell("workspace", {
+      workflowOverrides: {
+        activeWorkflowDetail: {
+          memory_capsules: [
+            {
+              id: 7,
+              capsule_version: 1,
+              summary_text: "Established the first hemodynamics summary.",
+              current_objective: "Cardiac output",
+              created_at: "2026-03-25T10:30:00Z",
+            },
+            {
+              id: 8,
+              capsule_version: 2,
+              summary_text: "Captured the misconception about preload versus heart rate.",
+              current_objective: "Preload versus heart rate",
+              created_at: "2026-03-25T11:45:00Z",
+            },
+          ],
+        },
+      },
+      shellOverrides: {
+        runtimeState: {
+          activeMemoryCapsuleId: 7,
+          compactionTelemetry: null,
+          directNoteSaveStatus: null,
+        },
+        setActiveMemoryCapsuleId,
+      },
+    });
+
+    expect(await screen.findByTestId("studio-memory")).toBeInTheDocument();
+
+    await user.click(
+      within(screen.getByTestId("studio-memory")).getByRole("button", {
+        name: /resume from capsule v2/i,
+      }),
+    );
+
+    expect(setActiveMemoryCapsuleId).toHaveBeenCalledWith(8);
+  });
+
+  it("saves the Tutor exact note directly to the vault from the Tutor panel", async () => {
+    const user = userEvent.setup();
+    const saveWorkflowNoteToVault = vi.fn();
+    const setDirectNoteSaveStatus = vi.fn();
+
+    renderTutorShell("workspace", {
+      shellMode: "tutor",
+      activeSessionId: "sess-1",
+      workflowOverrides: {
+        activeWorkflowId: "wf-1",
+        exactNoteTitle: "Cardiac output",
+        exactNoteContent: "Stroke volume x heart rate.",
+        saveWorkflowNoteToVault: saveWorkflowNoteToVault.mockResolvedValue({
+          state: "saved",
+          mode: "exact",
+          path: "Courses/Exercise Physiology/Tutor Notes/Week 7 Study Plan/Exact - Cardiac output.md",
+        }),
+      },
+      shellOverrides: {
+        setDirectNoteSaveStatus,
+      },
+    });
+
+    expect(await screen.findByTestId("mock-tutor-chat")).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: /save exact to vault/i }),
+    );
+
+    expect(saveWorkflowNoteToVault).toHaveBeenCalledWith("exact");
+
+    await waitFor(() => {
+      expect(setDirectNoteSaveStatus).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          state: "saving",
+          mode: "exact",
+        }),
+      );
+      expect(setDirectNoteSaveStatus).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          state: "saved",
+          mode: "exact",
+          path: "Courses/Exercise Physiology/Tutor Notes/Week 7 Study Plan/Exact - Cardiac output.md",
+        }),
+      );
+    });
   });
 
   it("shows explicit repair candidates derived from the latest judged turn", async () => {
@@ -937,6 +1312,18 @@ describe("TutorShell studio routing", () => {
     );
   });
 
+  it("removes the tldraw vendor CTA from the shipped workspace surface", async () => {
+    renderTutorShell("workspace");
+
+    await screen.findByTestId("studio-tldraw-workspace");
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("link", { name: /get a license for production/i }),
+      ).not.toBeInTheDocument();
+    });
+  });
+
   it("adds a current-run source from Source Shelf into the workspace canvas objects", async () => {
     const user = userEvent.setup();
 
@@ -988,6 +1375,208 @@ describe("TutorShell studio routing", () => {
         name: /Cardiac Output Lecture already in workspace/i,
       }),
     ).toBeDisabled();
+  });
+
+  it("runs the prep loop from Source Shelf into Document Dock, Workspace, and Prime Packet", async () => {
+    const user = userEvent.setup();
+    getMaterialContentMock.mockResolvedValueOnce({
+      title: "Cardiac Output Lecture",
+      file_type: "txt",
+      content:
+        "Cardiac output depends on stroke volume and heart rate for each beat.",
+    });
+
+    renderTutorShell("workspace", {
+      hubOverrides: {
+        courseLabel: "Exercise Physiology",
+        selectedMaterials: [101],
+        chatMaterials: [
+          {
+            id: 101,
+            title: "Cardiac Output Lecture",
+            file_type: "txt",
+            source_path: "uploads/cardio-output.txt",
+          },
+        ],
+      },
+    });
+
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
+
+    const sourceShelf = screen.getByTestId("studio-source-shelf");
+    const documentDock = screen.getByTestId("studio-document-dock");
+    const workspace = screen.getByTestId("studio-tldraw-workspace");
+    const primePacket = screen.getByTestId("studio-prime-packet");
+
+    await user.click(
+      within(sourceShelf).getByRole("button", {
+        name: /Open Cardiac Output Lecture in Document Dock/i,
+      }),
+    );
+
+    expect(documentDock).toHaveTextContent("Cardiac Output Lecture");
+
+    const textPreview = await screen.findByTestId("material-viewer-text-preview");
+    const textNode = textPreview.firstChild;
+
+    expect(textNode).not.toBeNull();
+
+    const range = document.createRange();
+    range.setStart(textNode!, 0);
+    range.setEnd(textNode!, "Cardiac output depends on stroke volume".length);
+
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    fireEvent.mouseUp(textPreview);
+
+    await user.click(
+      within(documentDock).getByRole("button", {
+        name: /Clip excerpt to workspace/i,
+      }),
+    );
+
+    expect(workspace).toHaveTextContent("Workspace Excerpts");
+
+    await user.click(
+      within(workspace).getByRole("button", {
+        name: /Promote excerpt: Cardiac Output Lecture to Prime Packet/i,
+      }),
+    );
+
+    expect(primePacket).toHaveTextContent("Workspace Excerpt");
+    expect(primePacket).toHaveTextContent(
+      "Cardiac output depends on stroke volume",
+    );
+  });
+
+  it("supports multiple Document Dock tabs and clips from the active selected tab", async () => {
+    const user = userEvent.setup();
+    getMaterialContentMock.mockImplementation(async (materialId: number) => {
+      if (materialId === 101) {
+        return {
+          title: "Cardiac Output Lecture",
+          file_type: "txt",
+          content:
+            "Cardiac output depends on stroke volume and heart rate for each beat.",
+        };
+      }
+
+      if (materialId === 102) {
+        return {
+          title: "Afterload Drill",
+          file_type: "txt",
+          content:
+            "Afterload rises when aortic pressure increases during systole.",
+        };
+      }
+
+      return { content: "" };
+    });
+
+    renderTutorShell("workspace", {
+      hubOverrides: {
+        courseLabel: "Exercise Physiology",
+        selectedMaterials: [101],
+        chatMaterials: [
+          {
+            id: 101,
+            title: "Cardiac Output Lecture",
+            file_type: "txt",
+            source_path: "uploads/cardio-output.txt",
+          },
+          {
+            id: 102,
+            title: "Afterload Drill",
+            file_type: "txt",
+            source_path: "uploads/afterload-drill.txt",
+          },
+        ],
+      },
+    });
+
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
+
+    const sourceShelf = screen.getByTestId("studio-source-shelf");
+    const documentDock = screen.getByTestId("studio-document-dock");
+    const workspace = screen.getByTestId("studio-tldraw-workspace");
+
+    await user.click(
+      within(sourceShelf).getByRole("button", {
+        name: /Open Cardiac Output Lecture in Document Dock/i,
+      }),
+    );
+
+    expect(
+      await within(documentDock).findByRole("button", {
+        name: /Cardiac Output Lecture/i,
+      }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      await screen.findByText(
+        /Cardiac output depends on stroke volume and heart rate/i,
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(within(sourceShelf).getByRole("button", { name: /^library$/i }));
+    await user.click(
+      within(sourceShelf).getByRole("button", {
+        name: /Open Afterload Drill in Document Dock/i,
+      }),
+    );
+
+    expect(
+      await within(documentDock).findByRole("button", {
+        name: /Afterload Drill/i,
+      }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      await screen.findByText(/Afterload rises when aortic pressure increases/i),
+    ).toBeInTheDocument();
+
+    await user.click(
+      within(documentDock).getByRole("button", {
+        name: /Cardiac Output Lecture/i,
+      }),
+    );
+    expect(
+      await within(documentDock).findByRole("button", {
+        name: /Cardiac Output Lecture/i,
+      }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      await screen.findByText(
+        /Cardiac output depends on stroke volume and heart rate/i,
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(
+      within(documentDock).getByRole("button", {
+        name: /Afterload Drill/i,
+      }),
+    );
+    expect(
+      await screen.findByText(/Afterload rises when aortic pressure increases/i),
+    ).toBeInTheDocument();
+
+    const selectedPassage = within(documentDock).getByLabelText(/Selected passage/i);
+    await user.clear(selectedPassage);
+    await user.type(
+      selectedPassage,
+      "Afterload rises when aortic pressure increases during systole.",
+    );
+
+    await user.click(
+      within(documentDock).getByRole("button", {
+        name: /Clip excerpt to workspace/i,
+      }),
+    );
+
+    expect(workspace).toHaveTextContent("Afterload Drill");
+    expect(workspace).toHaveTextContent(
+      "Afterload rises when aortic pressure increases during systole.",
+    );
   });
 
   it("clips the active document excerpt into the workspace with provenance-backed shape ids", async () => {
@@ -1525,6 +2114,219 @@ describe("TutorShell studio routing", () => {
         badge: "TUTOR",
       }),
     );
+  });
+
+  it("starts a Tutor session from the Tutor panel using Prime Packet context", async () => {
+    const user = userEvent.setup();
+    const startSession = vi.fn().mockResolvedValue({
+      session_id: "sess-started",
+    });
+
+    renderTutorShell("workspace", {
+      shellMode: "tutor",
+      activeSessionId: null,
+      sessionOverrides: {
+        startSession,
+        hasActiveTutorSession: false,
+        activeSessionStatus: null,
+      },
+      hubOverrides: {
+        selectedMaterials: [101],
+        selectedPaths: ["Exercise Physiology/Week 7/Cardio.md"],
+        chatMaterials: [
+          {
+            id: 101,
+            title: "Cardiac Output Lecture",
+            file_type: "pdf",
+            source_path: "uploads/cardio-output.pdf",
+          },
+        ],
+      },
+      workflowOverrides: {
+        primingSummaryText: "Cardiac output sets whole-body perfusion.",
+      },
+    });
+
+    expect(await screen.findByText("READY TO RUN A STUDY SESSION")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /start session/i }));
+
+    expect(startSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        packet_context: expect.stringContaining("Cardiac Output Lecture"),
+      }),
+    );
+    expect(startSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        packet_context: expect.stringContaining(
+          "Cardiac output sets whole-body perfusion.",
+        ),
+      }),
+    );
+  });
+
+  it("passes the active memory capsule into Tutor start-session context", async () => {
+    const user = userEvent.setup();
+    const startSession = vi.fn().mockResolvedValue({
+      session_id: "sess-started",
+    });
+
+    renderTutorShell("workspace", {
+      shellMode: "tutor",
+      activeSessionId: null,
+      sessionOverrides: {
+        startSession,
+        hasActiveTutorSession: false,
+        activeSessionStatus: null,
+      },
+      workflowOverrides: {
+        activeWorkflowDetail: {
+          memory_capsules: [
+            {
+              id: 42,
+              capsule_version: 3,
+              summary_text:
+                "Learner still mixes preload determinants with heart-rate control.",
+              rule_snapshot_text:
+                "Always force a function confirmation before L4 precision.",
+              current_objective:
+                "Differentiate preload determinants from chronotropy.",
+              study_unit: "Hemodynamics",
+              weak_points: [],
+              unresolved_questions: [],
+              exact_notes: [],
+              editable_notes: [],
+              feedback: [],
+              card_requests: [],
+              artifact_refs: [],
+              source_turn_ids: [],
+              created_at: "2026-03-26T09:00:00Z",
+            },
+          ],
+        },
+      },
+      shellOverrides: {
+        runtimeState: {
+          activeMemoryCapsuleId: 42,
+          compactionTelemetry: null,
+          directNoteSaveStatus: null,
+        },
+      },
+    });
+
+    expect(await screen.findByText("READY TO RUN A STUDY SESSION")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /start session/i }));
+
+    expect(startSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        memory_capsule_context: expect.stringContaining(
+          "Learner still mixes preload determinants with heart-rate control.",
+        ),
+      }),
+    );
+    expect(startSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        memory_capsule_context: expect.stringContaining(
+          "Differentiate preload determinants from chronotropy.",
+        ),
+      }),
+    );
+    expect(startSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        memory_capsule_context: expect.stringContaining(
+          "Always force a function confirmation before L4 precision.",
+        ),
+      }),
+    );
+  });
+
+  it("activates the newly created memory capsule after Tutor compaction", async () => {
+    const user = userEvent.setup();
+    const quickCompactWorkflowMemory = vi.fn().mockResolvedValue({
+      id: 99,
+      capsule_version: 4,
+    });
+    const setActiveMemoryCapsuleId = vi.fn();
+
+    renderTutorShell("workspace", {
+      shellMode: "tutor",
+      activeSessionId: "sess-1",
+      workflowOverrides: {
+        quickCompactWorkflowMemory,
+      },
+      shellOverrides: {
+        setActiveMemoryCapsuleId,
+      },
+    });
+
+    expect(await screen.findByTestId("mock-tutor-chat")).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: /compact tutor memory/i }),
+    );
+
+    expect(quickCompactWorkflowMemory).toHaveBeenCalledTimes(1);
+    expect(setActiveMemoryCapsuleId).toHaveBeenCalledWith(99);
+  });
+
+  it("does not treat a stale Tutor session id as a live Tutor pane", async () => {
+    renderTutorShell("workspace", {
+      shellMode: "tutor",
+      activeSessionId: "sess-stale",
+      sessionOverrides: {
+        hasActiveTutorSession: false,
+        activeSessionStatus: "completed",
+      },
+    });
+
+    expect(await screen.findByText("READY TO RUN A STUDY SESSION")).toBeInTheDocument();
+    expect(screen.queryByTestId("mock-tutor-chat")).not.toBeInTheDocument();
+  });
+
+  it("restores Priming, Tutor, and Polish as floating Studio panels from StudioRun layout", async () => {
+    renderTutorShell("workspace", {
+      sessionOverrides: {
+        hasActiveTutorSession: false,
+        activeSessionStatus: null,
+      },
+      shellOverrides: {
+        panelLayout: [
+          {
+            id: "panel-priming",
+            panel: "priming",
+            position: { x: 1600, y: 100 },
+            size: { width: 680, height: 440 },
+            zIndex: 10,
+            collapsed: false,
+          },
+          {
+            id: "panel-tutor",
+            panel: "tutor",
+            position: { x: 1600, y: 560 },
+            size: { width: 680, height: 520 },
+            zIndex: 11,
+            collapsed: false,
+          },
+          {
+            id: "panel-polish",
+            panel: "polish",
+            position: { x: 2300, y: 100 },
+            size: { width: 680, height: 440 },
+            zIndex: 12,
+            collapsed: false,
+          },
+        ],
+      },
+    });
+
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-priming-panel")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-tutor-panel")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-polish-panel")).toBeInTheDocument();
+    expect(screen.getByTestId("mock-priming-panel")).toBeInTheDocument();
+    expect(within(screen.getByTestId("studio-tutor-panel")).getByText("READY TO RUN A STUDY SESSION")).toBeInTheDocument();
+    expect(screen.getByTestId("mock-polish-panel")).toBeInTheDocument();
   });
 
   it.each([

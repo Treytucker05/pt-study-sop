@@ -32,6 +32,10 @@ import type { UseTutorHubReturn } from "./useTutorHub";
 export interface UseTutorSessionParams {
   initialRouteQuery: TutorShellQuery;
   hub: UseTutorHubReturn;
+  tutorChainId: number | undefined;
+  tutorCustomBlockIds: number[];
+  setTutorChainId: (id: number | undefined) => void;
+  setTutorCustomBlockIds: (ids: number[]) => void;
   activeSessionId: string | null;
   setActiveSessionId: (id: string | null) => void;
   shellMode: TutorPageMode;
@@ -99,6 +103,10 @@ function isTutorSessionActive(status: string | null | undefined): boolean {
 export function useTutorSession({
   initialRouteQuery,
   hub,
+  tutorChainId,
+  tutorCustomBlockIds,
+  setTutorChainId,
+  setTutorCustomBlockIds,
   activeSessionId,
   setActiveSessionId,
   shellMode,
@@ -175,6 +183,8 @@ export function useTutorSession({
   const [strategyNotes, setStrategyNotes] = useState("");
   const [savingStrategyFeedback, setSavingStrategyFeedback] = useState(false);
   const [activeSessionStatus, setActiveSessionStatus] = useState<string | null>(null);
+  const [activeContentFilter, setActiveContentFilter] =
+    useState<TutorSessionWithTurns["content_filter"] | null>(null);
   const [committedAssistantMessages, setCommittedAssistantMessages] = useState<
     ChatMessage[]
   >([]);
@@ -206,8 +216,8 @@ export function useTutorSession({
     return {
       course_id: hub.courseId,
       topic: hub.effectiveTopic || undefined,
-      study_unit: hub.selectedObjectiveGroup || undefined,
-      module_name: hub.selectedObjectiveGroup || undefined,
+      study_unit: hub.effectiveStudyUnit || undefined,
+      module_name: hub.effectiveStudyUnit || undefined,
       objective_scope: hub.objectiveScope,
       focus_objective_id: hub.selectedObjectiveId || undefined,
       learning_objectives: learningObjectives,
@@ -296,6 +306,7 @@ export function useTutorSession({
     (options?: { nextShellMode?: TutorPageMode }) => {
       setActiveSessionId(null);
       setActiveSessionStatus(null);
+      setActiveContentFilter(null);
       setCommittedAssistantMessages([]);
       setLatestCommittedAssistantMessage(null);
       setRestoredTurns(undefined);
@@ -320,13 +331,15 @@ export function useTutorSession({
   const applySessionState = useCallback((session: TutorSessionWithTurns) => {
     setActiveSessionId(session.session_id);
     setActiveSessionStatus(session.status ?? null);
+    setActiveContentFilter(session.content_filter ?? null);
     setShellMode("tutor");
     setShowSetup(false);
     setTurnCount(session.turn_count);
     setStartedAt(session.started_at);
     hub.setTopic(session.topic || "");
     hub.setCourseId(session.course_id ?? undefined);
-    hub.setChainId(session.method_chain_id ?? undefined);
+    setTutorChainId(session.method_chain_id ?? undefined);
+    setTutorCustomBlockIds([]);
     setCurrentBlockIndex(session.current_block_index ?? 0);
     setChainBlocks(
       (session.chain_blocks || []).map((block) => ({
@@ -401,7 +414,15 @@ export function useTutorSession({
       setRestoredTurns(undefined);
     }
     writeTutorActiveSessionId(session.session_id);
-  }, [hub, setActiveSessionId, setRestoredTurns, setShellMode, setShowSetup]);
+  }, [
+    hub,
+    setActiveSessionId,
+    setRestoredTurns,
+    setShellMode,
+    setShowSetup,
+    setTutorChainId,
+    setTutorCustomBlockIds,
+  ]);
 
   const commitAssistantMessage = useCallback((assistantMessage: ChatMessage) => {
     setCommittedAssistantMessages((prev) =>
@@ -527,7 +548,10 @@ export function useTutorSession({
   }, [activeSessionId, hub.topic, startedAt, turnCount, artifacts.length, endSession]);
 
   // ─── Start session ───
-  const startSession = useCallback(async (opts?: { packet_context?: string }) => {
+  const startSession = useCallback(async (opts?: {
+    packet_context?: string;
+    memory_capsule_context?: string;
+  }) => {
     setIsStarting(true);
     try {
       if (hub.objectiveScope === "single_focus" && !hub.selectedObjectiveId) {
@@ -538,13 +562,14 @@ export function useTutorSession({
         toast.error("Select a course, objective scope, and materials before starting the Tutor.");
         return null;
       }
-      let resolvedChainId = hub.chainId;
-      if (!resolvedChainId && hub.customBlockIds.length > 0) {
+      let resolvedChainId = tutorChainId;
+      if (!resolvedChainId && tutorCustomBlockIds.length > 0) {
         const customChain = await api.tutor.createCustomChain(
-          hub.customBlockIds,
+          tutorCustomBlockIds,
           `Custom ${hub.effectiveTopic || "Chain"}`,
         );
         resolvedChainId = customChain.id;
+        setTutorChainId(customChain.id);
       }
       const preflightResult = await api.tutor.preflightSession(preflightPayload);
       if (preflightResult.blockers.length > 0) {
@@ -558,6 +583,9 @@ export function useTutorSession({
         mode: "Core",
         method_chain_id: resolvedChainId,
         ...(opts?.packet_context ? { packet_context: opts.packet_context } : {}),
+        ...(opts?.memory_capsule_context
+          ? { memory_capsule_context: opts.memory_capsule_context }
+          : {}),
       });
       const full = await api.tutor.getSession(session.session_id);
       applySessionState(full);
@@ -574,7 +602,19 @@ export function useTutorSession({
     } finally {
       setIsStarting(false);
     }
-  }, [preflightPayload, hub.objectiveScope, hub.selectedObjectiveId, hub.chainId, hub.customBlockIds, hub.effectiveTopic, queryClient, applySessionState, setShellMode, setShowSetup]);
+  }, [
+    preflightPayload,
+    hub.objectiveScope,
+    hub.selectedObjectiveId,
+    hub.effectiveTopic,
+    queryClient,
+    applySessionState,
+    setShellMode,
+    setShowSetup,
+    setTutorChainId,
+    tutorChainId,
+    tutorCustomBlockIds,
+  ]);
 
   // ─── Resume session ───
   const resumeSession = useCallback(
@@ -943,6 +983,7 @@ export function useTutorSession({
     formatTimer,
     promotedStudioItems,
     activeSessionStatus,
+    activeContentFilter,
     hasActiveTutorSession,
     isTutorSessionView,
 

@@ -196,6 +196,101 @@ describe("TutorChat", () => {
     });
   });
 
+  it("passes backend compaction telemetry through onTurnComplete", async () => {
+    const onTurnComplete = vi.fn();
+    mockFetchForTutor([
+      { type: "token", content: "Compaction-aware answer" },
+      {
+        type: "done",
+        model: "codex",
+        compaction_telemetry: {
+          inputTokens: 12_000,
+          outputTokens: 3_600,
+          tokenCount: 15_600,
+          contextWindow: 24_000,
+          pressureLevel: "high",
+        },
+      },
+    ]);
+
+    render(
+      <TutorChat
+        sessionId="sess-telemetry"
+        availableMaterials={[]}
+        selectedMaterialIds={[]}
+        accuracyProfile="balanced"
+        onAccuracyProfileChange={vi.fn()}
+        onSelectedMaterialIdsChange={vi.fn()}
+        onArtifactCreated={vi.fn()}
+        onTurnComplete={onTurnComplete}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("Ask a question..."), {
+      target: { value: "Keep explaining preload" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    await waitFor(() => {
+      expect(onTurnComplete).toHaveBeenCalledWith({
+        compactionTelemetry: {
+          inputTokens: 12_000,
+          outputTokens: 3_600,
+          tokenCount: 15_600,
+          contextWindow: 24_000,
+          pressureLevel: "high",
+        },
+        masteryUpdate: undefined,
+      });
+    });
+  });
+
+  it("sends active memory capsule context in turn content filter", async () => {
+    const fetchSpy = mockFetchForTutor([
+      { type: "token", content: "ok" },
+      { type: "done", model: "codex" },
+    ]);
+
+    render(
+      <TutorChat
+        sessionId="sess-capsule"
+        availableMaterials={[]}
+        selectedMaterialIds={[]}
+        accuracyProfile="balanced"
+        memoryCapsuleContext={
+          "Summary: Learner still mixes preload with heart-rate control.\n" +
+          "Current objective: Differentiate preload determinants from chronotropy."
+        }
+        onAccuracyProfileChange={vi.fn()}
+        onSelectedMaterialIdsChange={vi.fn()}
+        onArtifactCreated={vi.fn()}
+        onTurnComplete={vi.fn()}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("Ask a question..."), {
+      target: { value: "What should I review next?" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    await waitFor(() => {
+      const turnCall = fetchSpy.mock.calls.find(([url]) =>
+        String(url).includes("/turn"),
+      );
+      expect(turnCall).toBeDefined();
+      const [, init] = turnCall!;
+      const body = JSON.parse(String((init as RequestInit).body));
+      expect(body.content_filter.memory_capsule_context).toContain(
+        "Learner still mixes preload with heart-rate control.",
+      );
+      expect(body.content_filter.memory_capsule_context).toContain(
+        "Differentiate preload determinants from chronotropy.",
+      );
+    });
+  });
+
   it("preserves typed @path references and sends them as reference targets", async () => {
     const fetchSpy = mockFetchForTutor([
       { type: "token", content: "ok" },
@@ -513,6 +608,7 @@ describe("TutorChat", () => {
       { wrapper: createWrapper() },
     );
 
+    fireEvent.click(screen.getByRole("button", { name: /dev info/i }));
     const runtimeStrip = await screen.findByTestId("tutor-teach-runtime-strip");
     expect(runtimeStrip).toBeInTheDocument();
     expect(within(runtimeStrip).getByText(/Live TEACH Packet/i)).toBeInTheDocument();
@@ -596,6 +692,7 @@ describe("TutorChat", () => {
       { wrapper: createWrapper() },
     );
 
+    fireEvent.click(screen.getByRole("button", { name: /dev info/i }));
     const runtimeStrip = await screen.findByTestId("tutor-teach-runtime-strip");
     expect(runtimeStrip).toBeInTheDocument();
     expect(within(runtimeStrip).getByText(/^Mechanism$/i)).toBeInTheDocument();

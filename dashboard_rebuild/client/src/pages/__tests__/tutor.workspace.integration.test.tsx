@@ -59,6 +59,24 @@ vi.mock("@/components/TutorChat", () => ({
   TutorChat: () => <div data-testid="tutor-chat">chat</div>,
 }));
 
+vi.mock("@/components/TutorWorkflowPrimingPanel", () => ({
+  TutorWorkflowPrimingPanel: () => (
+    <div data-testid="page-mock-priming-panel">priming panel</div>
+  ),
+}));
+
+vi.mock("@/components/TutorWorkflowPolishStudio", () => ({
+  TutorWorkflowPolishStudio: () => (
+    <div data-testid="page-mock-polish-panel">polish panel</div>
+  ),
+}));
+
+vi.mock("@/components/TutorWorkflowFinalSync", () => ({
+  TutorWorkflowFinalSync: () => (
+    <div data-testid="page-mock-final-sync-panel">final sync panel</div>
+  ),
+}));
+
 vi.mock("@/components/TutorArtifacts", () => ({
   TutorArtifacts: () => <div data-testid="tutor-artifacts">artifacts</div>,
 }));
@@ -151,7 +169,14 @@ vi.mock("@/lib/api", () => ({
 
 import Tutor from "@/pages/tutor";
 
-function makeProjectShell(courseId = 1) {
+function makeProjectShell(
+  courseId = 1,
+  overrides: Partial<{
+    panel_layout: Record<string, unknown>[];
+    document_tabs: Record<string, unknown>[];
+    active_document_tab_id: string | null;
+  }> = {},
+) {
   return {
     course: {
       id: courseId,
@@ -168,6 +193,9 @@ function makeProjectShell(courseId = 1) {
       active_board_scope: "project",
       active_board_id: null,
       viewer_state: null,
+      panel_layout: overrides.panel_layout || [],
+      document_tabs: overrides.document_tabs || [],
+      active_document_tab_id: overrides.active_document_tab_id || null,
       selected_material_ids: [],
       revision: 1,
       updated_at: new Date("2026-03-13T00:00:00Z").toISOString(),
@@ -303,6 +331,9 @@ describe("Tutor studio route integration", () => {
       active_board_scope: "project",
       active_board_id: null,
       viewer_state: null,
+      panel_layout: [],
+      document_tabs: [],
+      active_document_tab_id: null,
       prime_packet_promoted_objects: [],
       selected_material_ids: [],
       revision: 2,
@@ -341,6 +372,162 @@ describe("Tutor studio route integration", () => {
     expect(screen.queryByTestId("brain-tool-profile")).not.toBeInTheDocument();
   });
 
+  it("restores a saved floating workspace layout through /tutor", async () => {
+    window.history.replaceState({}, "", "/tutor?course_id=1&mode=studio");
+    localStorage.setItem("tutor-studio-last-tab", "workspace");
+    getProjectShellMock.mockResolvedValue(
+      makeProjectShell(1, {
+        panel_layout: [
+          {
+            id: "panel-source-shelf",
+            panel: "source_shelf",
+            position: { x: 24, y: 88 },
+            size: { width: 320, height: 720 },
+            zIndex: 1,
+            collapsed: false,
+          },
+          {
+            id: "panel-document-dock",
+            panel: "document_dock",
+            position: { x: 380, y: 88 },
+            size: { width: 760, height: 228 },
+            zIndex: 2,
+            collapsed: false,
+          },
+          {
+            id: "panel-workspace",
+            panel: "workspace",
+            position: { x: 380, y: 332 },
+            size: { width: 760, height: 460 },
+            zIndex: 3,
+            collapsed: false,
+          },
+        ],
+        document_tabs: [
+          {
+            id: "doc-material-101",
+            kind: "material",
+            title: "Cardiac Output Lecture",
+            sourceId: 101,
+          },
+        ],
+        active_document_tab_id: "doc-material-101",
+      }),
+    );
+
+    renderTutor();
+
+    expect(await screen.findByTestId("studio-floating-shell")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-source-shelf")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-document-dock")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-workspace-panel")).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("studio-source-shelf")).getByText(/source shelf/i),
+    ).toBeInTheDocument();
+    expect(
+      screen
+        .getByTestId("studio-workspace-panel")
+        .querySelector("[data-panel-position='380,332']"),
+    ).not.toBeNull();
+    expect(
+      screen
+        .getByTestId("studio-document-dock")
+        .querySelector("[data-panel-size='760,228']"),
+    ).not.toBeNull();
+  });
+
+  it("restores Priming, Tutor, and Polish as floating panels inside the Studio shell", async () => {
+    window.history.replaceState({}, "", "/tutor?course_id=1&mode=studio");
+    localStorage.setItem("tutor-studio-last-tab", "workspace");
+    getProjectShellMock.mockResolvedValue(
+      makeProjectShell(1, {
+        panel_layout: [
+          {
+            id: "panel-priming",
+            panel: "priming",
+            position: { x: 1600, y: 100 },
+            size: { width: 680, height: 440 },
+            zIndex: 10,
+            collapsed: false,
+          },
+          {
+            id: "panel-tutor",
+            panel: "tutor",
+            position: { x: 1600, y: 560 },
+            size: { width: 680, height: 520 },
+            zIndex: 11,
+            collapsed: false,
+          },
+          {
+            id: "panel-polish",
+            panel: "polish",
+            position: { x: 2300, y: 100 },
+            size: { width: 680, height: 440 },
+            zIndex: 12,
+            collapsed: false,
+          },
+        ],
+      }),
+    );
+
+    renderTutor();
+
+    expect(await screen.findByTestId("studio-floating-shell")).toBeInTheDocument();
+    expect(await screen.findByTestId("studio-priming-panel")).toBeInTheDocument();
+    expect(await screen.findByTestId("studio-tutor-panel")).toBeInTheDocument();
+    expect(await screen.findByTestId("studio-polish-panel")).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("studio-tutor-panel")).getByText(
+        "READY TO RUN A STUDY SESSION",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("opens the live Workspace stage when entering from the Library handoff", async () => {
+    window.history.replaceState({}, "", "/tutor?course_id=9&mode=studio");
+    localStorage.setItem("tutor-studio-last-tab", "workspace");
+    localStorage.setItem("tutor.selected_material_ids.v2", JSON.stringify([1]));
+    localStorage.setItem(
+      "tutor.start.state.v2",
+      JSON.stringify({
+        courseId: 9,
+        topic: "",
+        selectedMaterials: [1],
+        customBlockIds: [],
+        accuracyProfile: "strict",
+        objectiveScope: "module_all",
+        selectedObjectiveId: "",
+        selectedObjectiveGroup: "",
+        selectedPaths: [],
+      }),
+    );
+    sessionStorage.setItem("tutor.open_from_library.v1", "1");
+    getMaterialsMock.mockResolvedValue([
+      {
+        id: 1,
+        title: "Cardiac Output Lecture",
+        source_path: "uploads/cardio-output.pdf",
+        folder_path: "Uploaded Files",
+        file_type: "pdf",
+        file_size: 1024,
+        course_id: 9,
+        enabled: true,
+        extraction_error: null,
+        checksum: "abc123",
+        created_at: new Date("2026-03-13T12:00:00Z").toISOString(),
+        updated_at: new Date("2026-03-13T12:00:00Z").toISOString(),
+      },
+    ]);
+    getProjectShellMock.mockResolvedValue(makeProjectShell(9));
+    getCurrentCourseMock.mockResolvedValue({ currentCourse: { id: 9 } });
+
+    renderTutor();
+
+    const sourceShelf = await screen.findByTestId("studio-source-shelf");
+    expect(sourceShelf).toHaveTextContent("1 materials in run");
+    expect(screen.queryByText("WORKSPACE HOME")).not.toBeInTheDocument();
+  });
+
   it("enforces the visible v1 nav contract even when a legacy schedule query is present", async () => {
     window.history.replaceState({}, "", "/tutor?course_id=1&mode=schedule");
 
@@ -361,14 +548,15 @@ describe("Tutor studio route integration", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("falls back to the Studio hub when the active session restore is stale", async () => {
+  it("falls back to Workspace Home when the active session restore is stale", async () => {
     localStorage.setItem("tutor.active_session.v1", "sess-active");
     getSessionMock.mockRejectedValueOnce(new Error("missing"));
 
     renderTutor();
 
-    expect(await screen.findByTestId("tutor-launch-hub")).toBeInTheDocument();
+    expect(await screen.findByText("WORKSPACE HOME")).toBeInTheDocument();
+    expect(screen.queryByTestId("tutor-launch-hub")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /scholar strategy/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /start new/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /open workspace/i })).toBeInTheDocument();
   });
 });

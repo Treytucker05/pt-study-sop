@@ -47,6 +47,28 @@ describe("getStudioTutorContextHealth", () => {
       label: "Compaction soon",
     });
   });
+
+  it("prefers backend compaction telemetry over the heuristic pressure score", () => {
+    expect(
+      getStudioTutorContextHealth({
+        turnCount: 1,
+        memoryCapsuleCount: 0,
+        latestAssistantCharacters: 42,
+        stageTimerDisplaySeconds: 120,
+        compactionTelemetry: {
+          inputTokens: 12_000,
+          outputTokens: 3_600,
+          tokenCount: 15_600,
+          contextWindow: 24_000,
+          pressureLevel: "high",
+        },
+      }),
+    ).toMatchObject({
+      level: "critical",
+      label: "Compaction soon",
+      detail: "Using 15,600 / 24,000 tokens of live context.",
+    });
+  });
 });
 
 describe("buildStudioTutorStatus", () => {
@@ -86,6 +108,11 @@ describe("buildStudioTutorStatus", () => {
         },
         stageTimerDisplaySeconds: 4_200,
         stageTimerRunning: true,
+        directNoteSaveStatus: {
+          state: "saved",
+          mode: "exact",
+          path: "Courses/Exercise Physiology/Tutor Notes/Week 7 Study Plan/Exact - Cardiac output.md",
+        },
       }),
     ).toMatchObject({
       strategyLabel: "Adaptive Retrieval Coach",
@@ -103,6 +130,11 @@ describe("buildStudioTutorStatus", () => {
       repairSignal: {
         label: "Needs repair",
         detail: "The reply mixed preload effects with heart-rate regulation.",
+      },
+      directNoteSave: {
+        label: "Saved to vault",
+        detail:
+          "Courses/Exercise Physiology/Tutor Notes/Week 7 Study Plan/Exact - Cardiac output.md",
       },
     });
   });

@@ -13,8 +13,13 @@ import {
   writeTutorStoredStartState,
   writeTutorVaultFolder,
 } from "@/lib/tutorClientState";
+import type {
+  StudioDocumentTab,
+  StudioPanelLayoutItem,
+} from "@/lib/studioPanelLayout";
 import type { StudioWorkspaceObject } from "@/lib/studioWorkspaceObjects";
 import type { StudioPolishPromotedNote } from "@/lib/studioPacketSections";
+import type { StudioRunRuntimeState } from "@/lib/studioRunRuntimeState";
 import type { TutorPageMode, TutorShellQuery } from "@/lib/tutorUtils";
 import { writeTutorShellQuery } from "@/lib/tutorUtils";
 
@@ -94,6 +99,20 @@ export function useStudioRun({
   );
   const [viewerState, setViewerState] = useState<Record<string, unknown> | null>(
     null,
+  );
+  const [panelLayout, setPanelLayout] = useState<StudioPanelLayoutItem[]>([]);
+  const [documentTabs, setDocumentTabs] = useState<StudioDocumentTab[]>([]);
+  const [activeDocumentTabId, setActiveDocumentTabId] = useState<string | null>(
+    null,
+  );
+  const [runtimeState, setRuntimeState] = useState<StudioRunRuntimeState>({
+    activeMemoryCapsuleId: null,
+    compactionTelemetry: null,
+    directNoteSaveStatus: null,
+  });
+  const [tutorChainId, setTutorChainId] = useState<number | undefined>(chainId);
+  const [tutorCustomBlockIds, setTutorCustomBlockIds] = useState<number[]>(
+    customBlockIds,
   );
   const [showSetup, setShowSetup] = useState<boolean>(() => !Boolean(initialSessionId));
   const [brainLaunchContext, setBrainLaunchContext] =
@@ -184,6 +203,37 @@ export function useStudioRun({
     setActiveBoardId,
     viewerState,
     setViewerState,
+    panelLayout,
+    setPanelLayout,
+    documentTabs,
+    setDocumentTabs,
+    activeDocumentTabId,
+    setActiveDocumentTabId,
+    runtimeState,
+    setRuntimeState,
+    setActiveMemoryCapsuleId: (activeMemoryCapsuleId: number | null) =>
+      setRuntimeState((current) => ({
+        ...current,
+        activeMemoryCapsuleId,
+      })),
+    setCompactionTelemetry: (
+      compactionTelemetry: Record<string, unknown> | null,
+    ) =>
+      setRuntimeState((current) => ({
+        ...current,
+        compactionTelemetry,
+      })),
+    setDirectNoteSaveStatus: (
+      directNoteSaveStatus: Record<string, unknown> | null,
+    ) =>
+      setRuntimeState((current) => ({
+        ...current,
+        directNoteSaveStatus,
+      })),
+    tutorChainId,
+    setTutorChainId,
+    tutorCustomBlockIds,
+    setTutorCustomBlockIds,
     showSetup,
     setShowSetup,
     brainLaunchContext,

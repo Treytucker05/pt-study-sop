@@ -130,7 +130,7 @@ describe("Layout nav and notes dock", () => {
     expect(screen.getByTestId("nav-vault")).toBeInTheDocument();
   });
 
-  it("keeps the floating Theme Lab button off the Tutor route", async () => {
+  it("does not render the floating Theme Lab button on shipped routes", async () => {
     const { rerender } = render(
       <Layout>
         <div>page</div>
@@ -138,7 +138,8 @@ describe("Layout nav and notes dock", () => {
       { wrapper: createWrapper() },
     );
 
-    expect(await screen.findByTestId("theme-lab-link")).toBeInTheDocument();
+    await screen.findByTestId("nav-brain");
+    expect(screen.queryByTestId("theme-lab-link")).not.toBeInTheDocument();
 
     mockLocationState.value = "/tutor";
     rerender(
