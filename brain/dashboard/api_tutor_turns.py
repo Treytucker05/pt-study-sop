@@ -1299,7 +1299,6 @@ def send_turn(session_id: str):
             )
             _needs_lo_save = False
             _lo_save_called = False
-            learning_objectives_page = content_filter.get("learning_objectives_page")
             if map_of_contents:
                 objective_ids = map_of_contents.get("objective_ids") or []
                 objective_lines = "\n".join(
@@ -1317,34 +1316,11 @@ def send_turn(session_id: str):
                     "- Objectives in scope:\n"
                     f"{objective_lines}"
                 )
-                if isinstance(learning_objectives_page, dict):
-                    system_prompt += (
-                        "\n- Learning Objectives Page: "
-                        f"{learning_objectives_page.get('path') or '(missing)'} "
-                        f"({learning_objectives_page.get('status') or 'unknown'})"
-                    )
                 _needs_lo_save = (
                     not _session_has_real_objectives(map_of_contents)
                     and turn_number <= 5
-                ) or (
-                    map_of_contents.get("status") == "needs_path" and turn_number <= 8
                 )
-                _is_needs_path = map_of_contents.get("status") == "needs_path"
-                if _needs_lo_save and _is_needs_path:
-                    system_prompt += (
-                        "\n\n## Map of Contents File Missing\n"
-                        "The Map of Contents note was deleted from Obsidian but learning objectives "
-                        "are still saved in the database. Before continuing, ask the student "
-                        "where to re-save the Map of Contents.\n"
-                        '1. Ask: "Your Map of Contents file was removed. '
-                        "Where should I save your learning objectives? "
-                        'Example: Courses/Neuroscience/Week 9"\n'
-                        "2. Once the student provides a folder, call `save_learning_objectives` "
-                        "with the existing objectives and the new `save_folder`.\n"
-                        "3. If the student says skip or default, call `save_learning_objectives` "
-                        "without `save_folder` to use the auto-generated path."
-                    )
-                elif _needs_lo_save:
+                if _needs_lo_save:
                     system_prompt += (
                         "\n\n## Missing Learning Objectives\n"
                         "No learning objectives are set for this module yet. "

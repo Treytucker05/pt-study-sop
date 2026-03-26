@@ -126,9 +126,6 @@ def preflight_session():
         "material_ids": bundle["material_ids"],
         "resolved_learning_objectives": bundle["resolved_learning_objectives"],
         "map_of_contents": bundle["map_of_contents"],
-        "learning_objectives_page": bundle.get("learning_objectives_page"),
-        "page_sync_result": bundle.get("page_sync_result"),
-        "vault_ready": bool((bundle.get("page_sync_result") or {}).get("ok")),
         "recommended_mode_flags": bundle["recommended_mode_flags"],
         "blockers": bundle["blockers"],
     }
@@ -345,7 +342,7 @@ def create_session():
             )
 
     vault_folder = str((content_filter or {}).get("vault_folder") or "").strip() or None
-    should_sync_map_of_contents = bool(
+    should_resolve_map_of_contents = bool(
         preflight_bundle is not None
         or vault_folder
         or module_name
@@ -354,7 +351,7 @@ def create_session():
     if preflight_bundle is not None:
         map_of_contents_ctx = preflight_bundle.get("map_of_contents")
         map_of_contents_error = None
-    elif not should_sync_map_of_contents:
+    elif not should_resolve_map_of_contents:
         map_of_contents_ctx = None
         map_of_contents_error = None
     else:
@@ -372,19 +369,6 @@ def create_session():
         )
         if map_of_contents_error:
             return jsonify({"error": map_of_contents_error}), 500
-    if map_of_contents_ctx and not bool(
-        (map_of_contents_ctx.get("page_sync_result") or {}).get("ok")
-    ):
-        return (
-            jsonify(
-                {
-                    "error": "Tutor could not patch the required Obsidian week pages.",
-                    "code": "PAGE_SYNC_FAILED",
-                    "page_sync_result": map_of_contents_ctx.get("page_sync_result") or {},
-                }
-            ),
-            400,
-        )
 
     if not isinstance(content_filter, dict):
         content_filter = {}
@@ -445,12 +429,6 @@ def create_session():
         )
         content_filter["follow_up_targets"] = (
             map_of_contents_ctx.get("follow_up_targets") or []
-        )
-        content_filter["learning_objectives_page"] = (
-            map_of_contents_ctx.get("learning_objectives_page") or {}
-        )
-        content_filter["page_sync_result"] = (
-            map_of_contents_ctx.get("page_sync_result") or {}
         )
         requested_enforce = content_filter.get("enforce_reference_bounds")
         if requested_enforce is None:
@@ -684,10 +662,6 @@ def create_session():
         response["reference_targets_count"] = len(
             map_of_contents_ctx.get("reference_targets") or []
         )
-        response["learning_objectives_page"] = (
-            map_of_contents_ctx.get("learning_objectives_page") or {}
-        )
-        response["page_sync_result"] = map_of_contents_ctx.get("page_sync_result") or {}
 
     # --- Method recommendations from Scholar data ---
     try:

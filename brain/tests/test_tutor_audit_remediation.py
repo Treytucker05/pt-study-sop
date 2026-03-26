@@ -777,7 +777,7 @@ def test_reconcile_obsidian_state_unlinks_without_deleting_shared_objective(
         refreshed_filter = json.loads(refreshed)
 
         assert lo_count == 1
-        assert link_count == 1
-        assert refreshed_filter["map_of_contents"]["status"] == "needs_path"
+        assert link_count == 2
+        assert refreshed_filter["map_of_contents"]["status"] == "saved"
     finally:
         conn.close()

@@ -894,8 +894,8 @@ function useLibraryPageController() {
     }
     setLocation(
       handoffCourseId
-        ? `/tutor?course_id=${handoffCourseId}&mode=studio`
-        : "/tutor?mode=studio",
+        ? `/tutor?course_id=${handoffCourseId}`
+        : "/tutor",
     );
   };
 

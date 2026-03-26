@@ -205,7 +205,7 @@ describe("Library tutor handoff", () => {
     expect(localStorage.getItem("tutor.wizard.progress.v1")).toBeNull();
     expect(localStorage.getItem("tutor-studio-last-tab")).toBe("workspace");
     expect(sessionStorage.getItem("tutor.open_from_library.v1")).toBe("1");
-    expect(setLocationMock).toHaveBeenCalledWith("/tutor?course_id=9&mode=studio");
+    expect(setLocationMock).toHaveBeenCalledWith("/tutor?course_id=9");
   });
 
   it("consumes Tutor Page 1 handoff and preselects the course intake target", async () => {

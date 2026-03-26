@@ -568,7 +568,6 @@ describe("Tutor page restore", () => {
       material_ids: [],
       resolved_learning_objectives: [],
       map_of_contents: null,
-      vault_ready: false,
       recommended_mode_flags: {
         materials: false,
         obsidian: true,
@@ -732,6 +731,15 @@ describe("Tutor page restore", () => {
     expect(screen.queryByText("LIVE TEACH RUNTIME")).not.toBeInTheDocument();
     expect(document.querySelector(".page-shell__hero")).toBeNull();
     expect(document.querySelector(".brain-workspace__top-bar")).toBeNull();
+  });
+
+  it("keeps the Brain home workflow widgets off the /tutor route", async () => {
+    renderTutor();
+
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
+    expect(screen.queryByText("STUDIO HUB")).not.toBeInTheDocument();
+    expect(screen.queryByText("STUDY WHEEL")).not.toBeInTheDocument();
+    expect(screen.queryByText("RECENT WORKFLOWS")).not.toBeInTheDocument();
   });
 
   it("starts a Tutor session directly from the Tutor panel", async () => {

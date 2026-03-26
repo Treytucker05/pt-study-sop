@@ -1667,3 +1667,34 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - live `dev-browser` verification on `http://127.0.0.1:5000/tutor` confirmed the Tutor panel still exposes the direct vault-save controls:
     - screenshot: `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint4b-tutor.png`
     - DOM snapshot: `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint4b-tutor-dom.txt`
+
+## 2026-03-26 - Checkpoint 5 shipped-surface cleanup and release gate
+
+- Slice 5.1 green: confirmed Brain home owns the workflow hub widgets and `/tutor` does not.
+  - `dashboard_rebuild/client/src/pages/__tests__/brain.test.tsx` still proves Brain home renders `STUDIO HUB`, `STUDY WHEEL`, and `RECENT WORKFLOWS`.
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx` now explicitly proves those workflow widgets do not render on `/tutor`.
+- Slice 5.2 green: removed the remaining new-write route clutter tied to dead shell modes.
+  - `dashboard_rebuild/client/src/pages/library.tsx` no longer appends `mode=studio` when handing off into `/tutor`.
+  - `dashboard_rebuild/client/src/pages/__tests__/library.test.tsx` now expects the cleaned handoff URL (`/tutor?course_id=9`).
+  - `dashboard_rebuild/client/src/api.types.ts` now narrows `TutorShellMode` to the only shipped values: `studio` and `tutor`.
+  - Backend rejection of `schedule` / `publish` remained green in `brain/tests/test_tutor_project_shell.py`.
+- Slice 5.3 green: route restore no longer depends on hidden mounted pages.
+  - `dashboard_rebuild/client/src/App.tsx` remains on the single-route render path.
+  - `dashboard_rebuild/client/src/pages/__tests__/brain.test.tsx` still proves the previous route unmounts instead of being kept alive behind `display:none`.
+- Slice 5.4 green: vendor/deferred shipped surfaces remain removed.
+  - `dashboard_rebuild/client/src/components/studio/StudioTldrawWorkspace.tsx` still strips the `tldraw` vendor CTA from the shipped workspace surface.
+  - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx` still proves the vendor CTA is absent.
+  - `dashboard_rebuild/client/src/components/__tests__/layout.test.tsx` still proves the floating Theme Lab button does not render on shipped routes.
+  - `dashboard_rebuild/client/src/pages/__tests__/brain.test.tsx` still proves `/nav-lab` is an unshipped route.
+- Checkpoint 5 verification passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/pages/__tests__/library.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/pages/__tests__/brain.test.tsx client/src/components/__tests__/layout.test.tsx`
+  - `pytest brain/tests/test_tutor_project_shell.py -q`
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/brain.test.tsx client/src/components/__tests__/layout.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+- Final release gate passed:
+  - `pytest brain/tests/` -> `1108 passed, 2 skipped`
+  - `cd dashboard_rebuild && npm run build` -> passed
+  - live `dev-browser` smoke on `http://127.0.0.1:5000/tutor` produced:
+    - screenshot: `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint5-tutor.png`
+    - DOM snapshot: `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint5-tutor-dom.txt`
+    - live smoke result: toolbar present, Material Viewer visible, no legacy stage nav, no workflow hub widgets on `/tutor`, no Theme Lab surface

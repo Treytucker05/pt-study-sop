@@ -1,9 +1,9 @@
 """
 Vault / Obsidian helpers extracted from api_tutor.py.
 
-This module holds every function that reads, writes, or syncs Obsidian vault
-files — frontmatter parsing, Map-of-Contents I/O, structured-note rendering,
-graph sync, and artifact lifecycle management.
+This module holds every function that reads or writes Obsidian vault files for
+frontmatter parsing, structured-note rendering, graph sync, and artifact
+lifecycle management.
 
 Functions here may depend on:
   - ``dashboard.api_tutor_utils`` (constants, normalizers, validators)
@@ -24,8 +24,6 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
-
-from flask import current_app, has_app_context
 
 from db_setup import get_connection
 
@@ -51,8 +49,6 @@ from dashboard.api_tutor_utils import (
     _strip_wikilink,
     _study_notes_base_path,
     _canonical_moc_path,
-    _canonical_learning_objectives_page_path,
-    _unlink_all_tutor_session_learning_objectives,
     _validate_tutor_artifact_payload,
     _wikilink,
 )
@@ -280,9 +276,6 @@ def _try_import_objectives_from_vault(
     ``_collect_objectives_from_db`` output, or an empty list if the vault
     file is missing / unparseable.
     """
-    if _map_of_contents_io_disabled():
-        return []
-
     # --- 1. Determine vault path to the Learning Objectives file ---
     if not vault_folder:
         return []
@@ -314,7 +307,7 @@ def _try_import_objectives_from_vault(
                 )
             )
             continue
-        # Format C: 1. [[OBJ-1]] Description text (legacy TUTOR_PAGE_SYNC block)
+        # Format C: 1. [[OBJ-1]] Description text (legacy managed note block)
         m2 = _MAP_OF_CONTENTS_OBJECTIVE_PATTERN_NEW.match(line)
         if m2:
             parsed.append((m2.group(1).strip(), m2.group(2).strip()))
@@ -403,10 +396,6 @@ def _parse_existing_map_of_contents_objectives(content: str) -> dict[str, str]:
         if m2:
             parsed[m2.group(1).strip()] = "active"
     return parsed
-
-
-def _slugify_section_key(value: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "-", str(value or "").lower()).strip("-") or "section"
 
 
 def _parse_frontmatter_keys(content: str) -> set[str]:
@@ -498,44 +487,6 @@ def _merge_frontmatter_preserving_existing(
     return f"{new_frontmatter}\n"
 
 
-def _section_markers(page_key: str, section_title: str) -> tuple[str, str]:
-    slug = _slugify_section_key(section_title)
-    token = f"TUTOR_PAGE_SYNC:{page_key}:{slug}"
-    return f"<!-- {token} START -->", f"<!-- {token} END -->"
-
-
-def _replace_or_insert_managed_section(
-    content: str,
-    *,
-    page_key: str,
-    section_title: str,
-    body: str,
-) -> str:
-    start_marker, end_marker = _section_markers(page_key, section_title)
-    managed_block = f"{start_marker}\n{(body or '- (none)').strip()}\n{end_marker}"
-    marker_pattern = re.compile(
-        rf"{re.escape(start_marker)}.*?{re.escape(end_marker)}",
-        re.DOTALL,
-    )
-    if marker_pattern.search(content):
-        return marker_pattern.sub(managed_block, content, count=1)
-
-    heading_pattern = re.compile(
-        rf"(?mi)^(##\s+{re.escape(section_title)}\s*)$"
-    )
-    heading_match = heading_pattern.search(content)
-    if heading_match:
-        insert_at = heading_match.end()
-        return (
-            content[:insert_at]
-            + f"\n\n{managed_block}"
-            + content[insert_at:]
-        )
-
-    suffix = "" if not content.strip() else "\n\n"
-    return f"{content.rstrip()}{suffix}## {section_title}\n\n{managed_block}\n"
-
-
 def _parse_metadata_json(value: Any) -> dict[str, Any]:
     if isinstance(value, dict):
         return value
@@ -581,24 +532,6 @@ def _vault_error_is_missing_file(error: Any) -> bool:
     if _looks_like_obsidian_cli_error(text):
         return False
     return "file not found" in text or "not found" in text
-
-
-def _map_of_contents_io_disabled() -> bool:
-    """Disable Obsidian Map of Contents I/O for tests/safety guard contexts."""
-    if os.environ.get("PYTEST_CURRENT_TEST"):
-        return True
-
-    raw_guard = str(os.environ.get("PT_DISABLE_OBSIDIAN_WRITES") or "").strip().lower()
-    if raw_guard in {"1", "true", "yes", "on"}:
-        return True
-
-    try:
-        if has_app_context() and bool(getattr(current_app, "testing", False)):
-            return True
-    except Exception:
-        pass
-
-    return False
 
 
 def _obsidian_vault_root_path() -> Optional[Path]:
@@ -750,154 +683,6 @@ def _vault_delete_note(path: str) -> dict[str, Any]:
         return {"success": False, "error": str(exc), "path": rel_path}
 
 
-# ---------------------------------------------------------------------------
-# Sync week page
-# ---------------------------------------------------------------------------
-
-
-def _sync_week_page(
-    *,
-    path: str,
-    page_key: str,
-    section_order: list[str],
-    section_content: dict[str, str],
-    canonical_frontmatter: dict[str, Any],
-) -> tuple[dict[str, Any], Optional[str]]:
-    existing = _mp("_vault_read_note")(path)
-    raw_existing_content = (
-        str(existing.get("content") or "") if existing.get("success") else ""
-    )
-    existing_content = _strip_internal_sync_artifacts(raw_existing_content)
-    content = _merge_frontmatter_preserving_existing(
-        existing_content,
-        canonical_fields=canonical_frontmatter,
-    )
-    for section_title in section_order:
-        content = _replace_or_insert_managed_section(
-            content,
-            page_key=page_key,
-            section_title=section_title,
-            body=section_content.get(section_title, "- (none)"),
-        )
-    content = content.rstrip() + "\n"
-
-    if _map_of_contents_io_disabled():
-        status = "test_mode_no_write"
-    elif existing.get("success"):
-        if content == raw_existing_content:
-            status = "reviewed"
-        else:
-            save_result = _mp("_vault_save_note")(path, content)
-            if not save_result.get("success"):
-                return (
-                    {"path": path, "status": "update_failed"},
-                    str(save_result.get("error") or "failed_to_patch_page"),
-                )
-            status = "patched"
-    else:
-        save_result = _mp("_vault_save_note")(path, content)
-        if not save_result.get("success"):
-            return (
-                {"path": path, "status": "build_failed"},
-                str(save_result.get("error") or "failed_to_create_page"),
-            )
-        status = "created"
-
-    return (
-        {
-            "path": path,
-            "status": status,
-            "sections": list(section_order),
-        },
-        None,
-    )
-
-
-def _build_page_sync_payload(
-    *,
-    module_name: str,
-    course_name: str,
-    topic: str,
-    objectives: list[dict[str, str]],
-    source_ids: list[int],
-    objective_scope: str = "module_all",
-    focus_objective_id: Optional[str] = None,
-    existing_frontmatter: Optional[dict[str, Any]] = None,
-) -> dict[str, Any]:
-    from tutor_templates import (
-        LEARNING_OBJECTIVES_TODO_SECTIONS,
-        MAP_OF_CONTENTS_SECTIONS,
-        render_learning_objectives_todo_sections,
-        render_map_of_contents_sections,
-    )
-
-    # Late import to avoid circular dependency
-    from dashboard.api_tutor import _load_selected_materials
-
-    materials = _load_selected_materials(source_ids)
-    shared_payload = {
-        "module_name": module_name,
-        "course_name": course_name,
-        "topic": topic,
-        "objectives": objectives,
-        "materials": materials,
-        "objective_scope": objective_scope,
-        "focus_objective_id": focus_objective_id or "",
-        "existing_frontmatter": existing_frontmatter or {},
-        "learning_objectives_page_name": "Learning Objectives & To Do",
-        "sessions_folder": "Sessions/",
-        "concepts_folder": "Concepts/",
-    }
-    return {
-        "materials": materials,
-        "learning_objectives_sections": render_learning_objectives_todo_sections(
-            shared_payload
-        ),
-        "learning_objectives_section_order": list(LEARNING_OBJECTIVES_TODO_SECTIONS),
-        "map_of_contents_sections": render_map_of_contents_sections(shared_payload),
-        "map_of_contents_section_order": list(MAP_OF_CONTENTS_SECTIONS),
-    }
-
-
-def _build_map_of_contents_markdown(
-    *,
-    module_name: str,
-    course_name: str = "",
-    topic: str,
-    objectives: list[dict[str, str]],
-    source_ids: list[int],
-) -> str:
-    from tutor_templates import _render_moc_markdown
-
-    # Group objectives by their 'group' field (or single flat group)
-    groups_map: dict[str, list[dict[str, str]]] = {}
-    group_order: list[str] = []
-    for obj in objectives:
-        group_name = str(obj.get("group") or module_name)
-        if group_name not in groups_map:
-            groups_map[group_name] = []
-            group_order.append(group_name)
-        groups_map[group_name].append(
-            {
-                "id": obj.get("objective_id", ""),
-                "description": obj.get("title", ""),
-                "status": obj.get("status", "active"),
-            }
-        )
-
-    objective_groups = [
-        {"name": name, "objectives": groups_map[name]} for name in group_order
-    ]
-
-    payload: dict[str, Any] = {
-        "module_name": module_name,
-        "course_name": course_name,
-        "objective_groups": objective_groups,
-        "follow_up_targets": _derive_follow_up_targets_from_objectives(objectives),
-    }
-    return _render_moc_markdown(payload)
-
-
 def _session_has_real_objectives(map_of_contents: Optional[dict]) -> bool:
     """Return True if the map of contents has at least one real (non-UNMAPPED) objective."""
     if not map_of_contents:
@@ -1002,13 +787,7 @@ def _ensure_moc_context(
     path_override: Optional[str] = None,
 ) -> tuple[Optional[dict[str, Any]], Optional[str]]:
     """
-    Sync the Tutor week pages before session launch.
-
-    This patches managed sections inside:
-    - ``_Map of Contents.md``
-    - ``Learning Objectives & To Do.md``
-
-    Existing learner content outside managed sections is preserved.
+    Resolve Tutor objective/vault context without writing managed vault pages.
     """
     derived_module_name = _sanitize_module_name(
         module_name or topic or f"Module-{course_id or 'General'}"
@@ -1025,12 +804,6 @@ def _ensure_moc_context(
     else:
         try:
             map_of_contents_path = _canonical_moc_path(
-                course_label=derived_course,
-                module_or_week=derived_module_name,
-                subtopic=derived_subtopic,
-                strict=True,
-            )
-            learning_objectives_path = _canonical_learning_objectives_page_path(
                 course_label=derived_course,
                 module_or_week=derived_module_name,
                 subtopic=derived_subtopic,
@@ -1055,59 +828,23 @@ def _ensure_moc_context(
             ),
         )
 
-    existing_lo = _mp("_vault_read_note")(learning_objectives_path)
-    existing_lo_frontmatter = _parse_frontmatter_dict(
-        str(existing_lo.get("content") or "") if existing_lo.get("success") else ""
-    )
-
-    page_payload = _build_page_sync_payload(
-        module_name=derived_module_name,
-        course_name=derived_course,
-        topic=topic,
-        objectives=objectives,
-        source_ids=source_ids,
-        objective_scope=objective_scope,
-        focus_objective_id=focus_objective_id,
-        existing_frontmatter=existing_lo_frontmatter,
-    )
-    canonical_frontmatter_base = {
-        "module_name": derived_module_name,
-        "course_name": derived_course,
-        "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
-    }
-    moc_ctx, moc_error = _sync_week_page(
-        path=map_of_contents_path,
-        page_key="map-of-contents",
-        section_order=page_payload["map_of_contents_section_order"],
-        section_content=page_payload["map_of_contents_sections"],
-        canonical_frontmatter={
-            "note_type": "map_of_contents",
-            **canonical_frontmatter_base,
-        },
-    )
-    lo_ctx, lo_error = _sync_week_page(
-        path=learning_objectives_path,
-        page_key="learning-objectives-and-to-do",
-        section_order=page_payload["learning_objectives_section_order"],
-        section_content=page_payload["learning_objectives_sections"],
-        canonical_frontmatter={
-            "note_type": "learning_objectives_todo",
-            **canonical_frontmatter_base,
-        },
-    )
-    sync_errors = [err for err in (moc_error, lo_error) if err]
-    moc_status = str(moc_ctx.get("status") or "unknown")
-    lo_status = str(lo_ctx.get("status") or "unknown")
-    sync_ok_statuses = {"reviewed", "patched", "created", "test_mode_no_write"}
-    page_sync_ok = moc_status in sync_ok_statuses and lo_status in sync_ok_statuses
-
     objective_links = [_wikilink(o["objective_id"]) for o in objectives]
     title_links = [_wikilink(o["title"]) for o in objectives if o.get("title")]
-    material_links = [
-        _wikilink(str(material.get("title") or Path(str(material.get("source_path") or "")).stem))
-        for material in page_payload.get("materials", [])
-        if str(material.get("title") or material.get("source_path") or "").strip()
-    ]
+    material_links: list[str] = []
+    if source_ids:
+        try:
+            from dashboard.api_tutor import _load_selected_materials
+
+            materials = _load_selected_materials(source_ids)
+        except Exception:
+            materials = []
+        material_links = [
+            _wikilink(
+                str(material.get("title") or Path(str(material.get("source_path") or "")).stem)
+            )
+            for material in materials
+            if str(material.get("title") or material.get("source_path") or "").strip()
+        ]
     reference_targets = _normalize_wikilinks(
         objective_links + title_links + material_links,
         max_items=80,
@@ -1123,33 +860,10 @@ def _ensure_moc_context(
             "module_name": derived_module_name,
             "course_name": derived_course,
             "subtopic_name": derived_subtopic,
-            "status": moc_status,
+            "status": "derived",
             "reference_targets": reference_targets,
             "follow_up_targets": follow_up_targets,
             "objective_ids": [o["objective_id"] for o in objectives],
-            "learning_objectives_page": {
-                "path": learning_objectives_path,
-                "status": lo_status,
-                "module_name": derived_module_name,
-                "course_name": derived_course,
-                "subtopic_name": derived_subtopic,
-                "objective_ids": [o["objective_id"] for o in objectives],
-            },
-            "page_sync_result": {
-                "ok": page_sync_ok,
-                "map_of_contents": {
-                    "path": map_of_contents_path,
-                    "status": moc_status,
-                    "error": moc_error,
-                },
-                "learning_objectives_todo": {
-                    "path": learning_objectives_path,
-                    "status": lo_status,
-                    "error": lo_error,
-                },
-                "errors": sync_errors,
-                "synced_at": datetime.now().isoformat(),
-            },
         },
         None,
     )
@@ -1314,47 +1028,11 @@ def _resolve_tutor_preflight(
         normalized_filter["follow_up_targets"] = (
             map_of_contents_ctx.get("follow_up_targets") or []
         )
-        normalized_filter["learning_objectives_page"] = (
-            map_of_contents_ctx.get("learning_objectives_page") or {}
-        )
-        normalized_filter["page_sync_result"] = (
-            map_of_contents_ctx.get("page_sync_result") or {}
-        )
         normalized_filter["enforce_reference_bounds"] = bool(
             normalized_filter.get("enforce_reference_bounds")
             if normalized_filter.get("enforce_reference_bounds") is not None
             else objective_scope == "single_focus"
         )
-        if not bool((map_of_contents_ctx.get("page_sync_result") or {}).get("ok")):
-            blockers.append(
-                {
-                    "code": "PAGE_SYNC_FAILED",
-                    "message": "Tutor could not patch the required Obsidian week pages. Resolve page sync before starting the session.",
-                }
-            )
-    elif module_name and not resolved_objectives:
-        normalized_filter["page_sync_result"] = {
-            "ok": False,
-            "map_of_contents": {
-                "path": (
-                    f"{vault_folder.strip().rstrip('/').rstrip(chr(92))}/_Map of Contents.md"
-                    if vault_folder
-                    else ""
-                ),
-                "status": "skipped_missing_objectives",
-                "error": "approved_objectives_required",
-            },
-            "learning_objectives_todo": {
-                "path": (
-                    f"{vault_folder.strip().rstrip('/').rstrip(chr(92))}/Learning Objectives & To Do.md"
-                    if vault_folder
-                    else ""
-                ),
-                "status": "skipped_missing_objectives",
-                "error": "approved_objectives_required",
-            },
-            "errors": ["approved_objectives_required"],
-        }
 
     bundle = {
         "course_id": course_id_int,
@@ -1369,20 +1047,6 @@ def _resolve_tutor_preflight(
         "content_filter": normalized_filter,
         "resolved_learning_objectives": resolved_objectives,
         "map_of_contents": map_of_contents_ctx,
-        "learning_objectives_page": (
-            map_of_contents_ctx.get("learning_objectives_page")
-            if isinstance(map_of_contents_ctx, dict)
-            else (
-                normalized_filter.get("learning_objectives_page")
-                if isinstance(normalized_filter.get("learning_objectives_page"), dict)
-                else None
-            )
-        ),
-        "page_sync_result": (
-            map_of_contents_ctx.get("page_sync_result")
-            if isinstance(map_of_contents_ctx, dict)
-            else normalized_filter.get("page_sync_result")
-        ),
         "recommended_mode_flags": _recommended_mode_flags(material_ids),
         "blockers": blockers,
         "ok": len(blockers) == 0,
@@ -1617,16 +1281,16 @@ def save_learning_objectives_from_tool(
     objectives: list[dict[str, str]],
     save_folder: Optional[str] = None,
 ) -> dict[str, Any]:
-    """Persist approved learning objectives and rebuild the Map of Contents note.
+    """Persist approved learning objectives and refresh Tutor objective context.
 
     Called by the ``save_learning_objectives`` tutor tool.  Steps:
       1. Read the tutor session to get ``course_id`` and ``content_filter_json``.
       2. INSERT each objective into ``learning_objectives`` for the mapped unit scope.
-      3. Rebuild the Map of Contents note via ``_ensure_moc_context(force_refresh=True)``.
+      3. Refresh derived objective context via ``_ensure_moc_context(force_refresh=True)``.
       4. Update ``content_filter_json`` so ``_session_has_real_objectives()`` returns True.
 
-    If *save_folder* is provided (vault-relative path), the Map of Contents and future
-    notes are saved there instead of the auto-generated path.
+    If *save_folder* is provided (vault-relative path), the derived note path context
+    uses that location instead of the auto-generated path.
     """
     # Late import to avoid circular dependency
     from dashboard.api_tutor import _get_tutor_session
@@ -1716,7 +1380,7 @@ def save_learning_objectives_from_tool(
             inserted_codes.append(lo_code)
         conn.commit()
 
-        # --- 3. Rebuild Map of Contents from ALL objectives in DB (not just this batch) ---
+        # --- 3. Refresh derived Map of Contents context from ALL objectives in DB ---
         # Pass learning_objectives=None so _ensure_moc_context merges from DB,
         # picking up objectives from previous sessions (e.g., Hip + Knee).
         ns_ctx, ns_err = _mp("_ensure_moc_context")(
@@ -1735,7 +1399,7 @@ def save_learning_objectives_from_tool(
             path_override=save_folder,
         )
         if ns_err:
-            _LOG.warning("Week-page rebuild warning: %s", ns_err)
+            _LOG.warning("Map-of-contents context refresh warning: %s", ns_err)
 
         # --- 4. Update session content_filter_json ---
         if ns_ctx:
@@ -1752,10 +1416,6 @@ def save_learning_objectives_from_tool(
             }
             content_filter["reference_targets"] = ns_ctx.get("reference_targets") or []
             content_filter["follow_up_targets"] = ns_ctx.get("follow_up_targets") or []
-            content_filter["learning_objectives_page"] = (
-                ns_ctx.get("learning_objectives_page") or {}
-            )
-            content_filter["page_sync_result"] = ns_ctx.get("page_sync_result") or {}
 
         cur.execute(
             "UPDATE tutor_sessions SET content_filter_json = ? WHERE session_id = ?",
@@ -1983,8 +1643,6 @@ def _reconcile_obsidian_state(
     Called on GET /session/<id> (reconcile-on-load). Mutates *session* dict
     in place so the response reflects the current vault state.
 
-    - Map of Contents: if the file is missing, sets ``map_of_contents.status`` to
-      ``"needs_path"`` and persists the change to SQLite when ``persist=True``.
     - Artifacts: flags each artifact entry with ``"missing": True`` if its
       ``session_path`` or any of its ``concept_paths`` no longer exist.
     """
@@ -1992,7 +1650,6 @@ def _reconcile_obsidian_state(
     if not session_id:
         return
 
-    # --- Map of Contents reconciliation ---
     cf_raw = session.get("content_filter_json")
     content_filter: Optional[dict] = None
     if cf_raw:
@@ -2000,18 +1657,6 @@ def _reconcile_obsidian_state(
             content_filter = json.loads(cf_raw) if isinstance(cf_raw, str) else cf_raw
         except (json.JSONDecodeError, TypeError):
             content_filter = None
-
-    ns_changed = False
-    if content_filter and isinstance(content_filter.get("map_of_contents"), dict):
-        ns = content_filter["map_of_contents"]
-        ns_path = ns.get("path")
-        ns_status = ns.get("status")
-        # Only check if there's a path and the status isn't already needs_path
-        if ns_path and ns_status not in ("needs_path", "test_mode_no_write"):
-            result = _mp("_vault_read_note")(ns_path)
-            if not result.get("success"):
-                ns["status"] = "needs_path"
-                ns_changed = True
 
     # --- Artifact reconciliation ---
     art_raw = session.get("artifacts_json")
@@ -2050,47 +1695,11 @@ def _reconcile_obsidian_state(
             art.pop("missing", None)
             art.pop("missing_paths", None)
 
-    # --- Learning-objective cleanup when Map of Contents is gone ---
-    # If the user deleted the Map of Contents from Obsidian, unlink the tutor
-    # session from its objectives and only garbage-collect tutor-managed rows
-    # that are now orphaned.
-    lo_deleted = 0
-    if (
-        persist
-        and prune_learning_objectives
-        and ns_changed
-        and content_filter is not None
-    ):
-        try:
-            conn_lo = get_connection()
-            lo_deleted = _unlink_all_tutor_session_learning_objectives(
-                conn_lo, str(session_id)
-            )
-            conn_lo.commit()
-            conn_lo.close()
-        except Exception:
-            logging.getLogger(__name__).warning(
-                "reconcile_obsidian_state: failed to unlink LOs for %s",
-                session_id,
-                exc_info=True,
-            )
-        if lo_deleted:
-            logging.getLogger(__name__).info(
-                "reconcile_obsidian_state: deleted %d orphaned tutor-managed LO(s) for session %s",
-                lo_deleted,
-                session_id,
-            )
-
     # Persist changes to SQLite if anything was updated
-    if persist and (ns_changed or art_changed):
+    if persist and art_changed:
         try:
             conn = get_connection()
             cur = conn.cursor()
-            if ns_changed and content_filter is not None:
-                cur.execute(
-                    "UPDATE tutor_sessions SET content_filter_json = ? WHERE session_id = ?",
-                    (json.dumps(content_filter), session_id),
-                )
             if art_changed:
                 cur.execute(
                     "UPDATE tutor_sessions SET artifacts_json = ? WHERE session_id = ?",
@@ -2106,9 +1715,6 @@ def _reconcile_obsidian_state(
             )
 
     # Update the in-memory session dict so the response reflects reality
-    if ns_changed and content_filter is not None:
-        session["content_filter_json"] = json.dumps(content_filter)
-        session["content_filter"] = content_filter
     if art_changed:
         session["artifacts_json"] = json.dumps(artifacts)
 

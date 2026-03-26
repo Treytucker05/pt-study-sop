@@ -1678,3 +1678,34 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/hooks/__tests__/useTutorWorkflow.test.tsx client/src/hooks/__tests__/useStudioRun.test.tsx client/src/lib/__tests__/studioTutorStatus.test.ts`
   - `cd dashboard_rebuild && npm run build`
   - live `dev-browser` verification on `http://127.0.0.1:5000/tutor` produced `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint4b-tutor.png` and `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint4b-tutor-dom.txt`
+
+## 2026-03-26 - Checkpoint 5 shipped-surface cleanup and release gate
+
+- Revalidated the shipped-route contract and applied one remaining live cleanup:
+  - Brain home still owns the workflow hub widgets.
+  - `/tutor` still excludes those widgets and the old stage/tab chrome.
+  - `library.tsx` no longer writes `mode=studio` into fresh Tutor handoff URLs.
+  - `api.types.ts` now limits `TutorShellMode` to `studio | tutor`, matching the backend contract.
+- The remaining Checkpoint 5 cleanup surfaces stayed green without further implementation:
+  - App router still unmounts prior routes instead of hiding them with `display:none`.
+  - `/nav-lab` remains unshipped.
+  - Theme Lab remains absent from shipped routes.
+  - the `tldraw` vendor CTA remains stripped from the workspace surface.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/pages/__tests__/library.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/pages/__tests__/brain.test.tsx client/src/components/__tests__/layout.test.tsx`
+  - `pytest brain/tests/test_tutor_project_shell.py -q`
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/brain.test.tsx client/src/components/__tests__/layout.test.tsx`
+  - `pytest brain/tests/`
+  - `cd dashboard_rebuild && npm run build`
+  - live `dev-browser` smoke on `http://127.0.0.1:5000/tutor` produced `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint5-tutor.png` and `C:\\Users\\treyt\\.dev-browser\\tmp\\checkpoint5-tutor-dom.txt`
+
+## 2026-03-26 - Removed legacy Tutor managed-note auto-writes
+
+- Traced the legacy managed-section note writer in `brain/dashboard/api_tutor_vault.py`, where helper functions were building and patching the `_Map of Contents.md` and `Learning Objectives & To Do.md` notes.
+- Confirmed the trigger path is internal repo code, not an Obsidian plugin:
+  - frontend Tutor preflight in `dashboard_rebuild/client/src/hooks/useTutorSession.ts` auto-sends `vault_folder` during Tutor preflight/session start
+  - backend preflight/session linking in `brain/dashboard/api_tutor_vault.py` and `brain/dashboard/api_tutor_sessions.py` calls `_ensure_moc_context(...)`, which writes those pages
+- Removed the managed-section writer helpers entirely, made `_ensure_moc_context(...)` pure context derivation, removed sync-only preflight/session fields, and dropped the temporary launcher kill switch because the writer no longer exists.
+- Added regression coverage in `brain/tests/test_tutor_obsidian_io.py` proving Tutor context derivation no longer writes managed Obsidian notes.
+- Validation passed:
+  - `pytest brain/tests/test_tutor_obsidian_io.py brain/tests/test_tutor_session_linking.py brain/tests/test_tutor_audit_remediation.py -q`

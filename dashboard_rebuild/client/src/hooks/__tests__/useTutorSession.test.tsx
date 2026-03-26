@@ -89,7 +89,6 @@ describe("useTutorSession", () => {
       material_ids: [101],
       resolved_learning_objectives: [],
       map_of_contents: null,
-      vault_ready: false,
       recommended_mode_flags: {
         materials: true,
         obsidian: true,

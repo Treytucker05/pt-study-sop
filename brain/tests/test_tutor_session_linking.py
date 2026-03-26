@@ -432,16 +432,6 @@ def test_preflight_reports_focus_objective_blocker(client):
     assert body["ok"] is False
     assert any(blocker["code"] == "FOCUS_OBJECTIVE_REQUIRED" for blocker in body["blockers"])
     assert body["map_of_contents"]["path"] == "Courses/Neuroscience/Week 7/_Map of Contents.md"
-    assert (
-        body["learning_objectives_page"]["path"]
-        == "Courses/Neuroscience/Week 7/Learning Objectives & To Do.md"
-    )
-    assert body["page_sync_result"]["ok"] is True
-    assert body["page_sync_result"]["map_of_contents"]["status"] == "test_mode_no_write"
-    assert (
-        body["page_sync_result"]["learning_objectives_todo"]["status"]
-        == "test_mode_no_write"
-    )
 
 
 def test_create_session_requires_preflight_for_objective_scoped_setup(client):
@@ -547,15 +537,6 @@ def test_preflight_blocks_missing_approved_objectives_without_syncing_placeholde
         blocker["code"] == "APPROVED_OBJECTIVES_REQUIRED"
         for blocker in body["blockers"]
     )
-    assert body["page_sync_result"]["ok"] is False
-    assert (
-        body["page_sync_result"]["map_of_contents"]["status"]
-        == "skipped_missing_objectives"
-    )
-    assert (
-        body["page_sync_result"]["learning_objectives_todo"]["status"]
-        == "skipped_missing_objectives"
-    )
 
 
 def test_template_chains_endpoint_exposes_certification_metadata(client):
@@ -622,11 +603,6 @@ def test_create_session_uses_preflight_bundle(client):
     body = session_resp.get_json()
     assert body["focus_objective_id"] == "OBJ-6"
     assert body["map_of_contents"]["path"] == "Courses/Neuroscience/Week 7/_Map of Contents.md"
-    assert (
-        body["learning_objectives_page"]["path"]
-        == "Courses/Neuroscience/Week 7/Learning Objectives & To Do.md"
-    )
-    assert body["page_sync_result"]["ok"] is True
 
     conn = sqlite3.connect(config.DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -638,11 +614,6 @@ def test_create_session_uses_preflight_bundle(client):
     saved_filter = json.loads(row["content_filter_json"] or "{}")
     assert saved_filter["focus_objective_id"] == "OBJ-6"
     assert saved_filter["vault_folder"] == "Courses/Neuroscience/Week 7"
-    assert (
-        saved_filter["learning_objectives_page"]["path"]
-        == "Courses/Neuroscience/Week 7/Learning Objectives & To Do.md"
-    )
-    assert saved_filter["page_sync_result"]["ok"] is True
     assert saved_filter["follow_up_targets"][0] == "[[OBJ-6]]"
     assert "[[OBJ-UNMAPPED]]" not in saved_filter["follow_up_targets"]
 

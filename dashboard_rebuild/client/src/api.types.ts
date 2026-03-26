@@ -937,24 +937,6 @@ export type TutorObjectiveScope = "module_all" | "single_focus";
 export type BehaviorOverride = "socratic" | "evaluate" | "concept_map" | "teach_back";
 export type TutorSessionStatus = "active" | "completed" | "abandoned";
 
-export interface TutorSyncedPageStatus {
-  path: string;
-  status: string;
-  error?: string | null;
-  module_name?: string;
-  course_name?: string;
-  subtopic_name?: string;
-  objective_ids?: string[];
-}
-
-export interface TutorPageSyncResult {
-  ok: boolean;
-  map_of_contents: TutorSyncedPageStatus;
-  learning_objectives_todo: TutorSyncedPageStatus;
-  errors?: string[];
-  synced_at?: string;
-}
-
 export interface TutorSessionPreflightRequest {
   course_id: number;
   topic?: string;
@@ -1017,8 +999,6 @@ export interface TutorSessionPreflightResponse {
     subtopic_name?: string;
     objective_ids: string[];
   } | null;
-  learning_objectives_page?: TutorSyncedPageStatus | null;
-  page_sync_result?: TutorPageSyncResult | null;
   north_star?: {
     path: string;
     status: string;
@@ -1027,7 +1007,6 @@ export interface TutorSessionPreflightResponse {
     subtopic_name?: string;
     objective_ids: string[];
   } | null;
-  vault_ready: boolean;
   recommended_mode_flags: {
     materials: boolean;
     obsidian: boolean;
@@ -1208,8 +1187,6 @@ export interface TutorSession {
     subtopic_name?: string;
     objective_ids: string[];
   };
-  learning_objectives_page?: TutorSyncedPageStatus;
-  page_sync_result?: TutorPageSyncResult;
   north_star?: {
     path: string;
     status: string;
@@ -1333,7 +1310,7 @@ export interface TutorSessionEndResult {
   ended_at: string;
 }
 
-export type TutorShellMode = "studio" | "tutor" | "schedule" | "publish";
+export type TutorShellMode = "studio" | "tutor";
 export type TutorBoardScope = "session" | "project" | "overall";
 export type TutorStudioItemScope = "session" | "project";
 export type TutorStudioItemStatus = "captured" | "boarded" | "promoted" | "archived";

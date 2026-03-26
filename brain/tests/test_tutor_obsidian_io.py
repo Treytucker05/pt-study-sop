@@ -6,6 +6,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import dashboard.api_tutor as api_tutor
+import dashboard.api_tutor_vault as api_tutor_vault
 
 
 class _FakeVault:
@@ -68,3 +69,59 @@ def test_vault_save_note_uses_filesystem_when_root_available(monkeypatch, tmp_pa
     saved = tmp_path / "Courses" / "Neuroscience" / "Week 8" / "Learning Objectives & To Do.md"
     assert result["success"] is True
     assert saved.read_text(encoding="utf-8") == "# patched"
+
+
+def test_ensure_moc_context_derives_context_without_writing_managed_pages(
+    monkeypatch,
+) -> None:
+    save_calls: list[tuple[str, str]] = []
+
+    monkeypatch.setattr(api_tutor_vault, "_resolve_class_label", lambda _course_id: "Neuroscience")
+    monkeypatch.setattr(
+        api_tutor_vault,
+        "_resolve_learning_objectives_for_scope",
+        lambda **_kwargs: [
+            {
+                "objective_id": "OBJ-1",
+                "title": "Explain neurulation",
+                "status": "active",
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        api_tutor_vault,
+        "_canonical_moc_path",
+        lambda **_kwargs: "Courses/Neuroscience/Week 8/_Map of Contents.md",
+    )
+    monkeypatch.setattr(
+        api_tutor_vault,
+        "_vault_save_note",
+        lambda path, content: save_calls.append((path, content)) or {"success": True, "path": path},
+    )
+
+    context, error = api_tutor_vault._ensure_moc_context(
+        course_id=1,
+        module_id=None,
+        module_name="Week 8",
+        topic="Week 8",
+        learning_objectives=None,
+        source_ids=[],
+        objective_scope="module_all",
+        focus_objective_id=None,
+    )
+
+    assert error is None
+    assert context is not None
+    assert context["path"] == "Courses/Neuroscience/Week 8/_Map of Contents.md"
+    assert context["status"] == "derived"
+    assert set(context) == {
+        "course_name",
+        "follow_up_targets",
+        "module_name",
+        "objective_ids",
+        "path",
+        "reference_targets",
+        "status",
+        "subtopic_name",
+    }
+    assert save_calls == []

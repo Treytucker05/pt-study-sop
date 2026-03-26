@@ -337,7 +337,6 @@ describe("Tutor studio route integration", () => {
       material_ids: [],
       resolved_learning_objectives: [],
       map_of_contents: null,
-      vault_ready: false,
       recommended_mode_flags: {
         materials: false,
         obsidian: true,

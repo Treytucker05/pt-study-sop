@@ -314,7 +314,7 @@ This deserves special attention because it was added recently to fix a real prob
 
 1. Reads the vault file at `{vault_folder}/Learning Objectives & To Do.md`
 2. Parses bullet-point lines matching the pattern `- **OBJ-1 -- Description here.**`
-3. Also parses TUTOR_PAGE_SYNC blocks (a different format used by the sync system)
+3. Also parses legacy managed comment blocks from the old sync system
 4. Upserts each objective into the `learning_objectives` table
 5. Returns the imported objectives so the session can proceed
 

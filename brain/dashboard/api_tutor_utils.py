@@ -418,19 +418,6 @@ def _canonical_moc_path(
     )
 
 
-def _canonical_learning_objectives_page_path(
-    *,
-    course_label: str,
-    module_or_week: str,
-    subtopic: str,
-    strict: bool = False,
-) -> str:
-    return (
-        f"{_study_notes_base_path(course_label=course_label, module_or_week=module_or_week, subtopic=subtopic, strict=strict)}/"
-        "Learning Objectives & To Do.md"
-    )
-
-
 def _wikilink(label: str) -> str:
     clean = str(label or "").strip()
     return f"[[{clean}]]" if clean else ""
