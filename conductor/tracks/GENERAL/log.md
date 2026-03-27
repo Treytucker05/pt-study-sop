@@ -1823,3 +1823,22 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `dev-browser` verification confirmed:
     - loading state was observed during `RUN`
     - screenshot artifacts saved to `C:\\Users\\treyt\\.dev-browser\\tmp\\priming-phase1-panel.png` and `C:\\Users\\treyt\\.dev-browser\\tmp\\priming-phase1-prime-packet.png`
+
+## 2026-03-27 - Added a fresh-session reset path so Tutor can start Priming on a different course
+
+- Added a route-level Tutor session action in `dashboard_rebuild/client/src/components/TutorTopBar.tsx` and `dashboard_rebuild/client/src/pages/tutor.tsx` that exposes `End Session` while a backend session is live and `New Session` otherwise.
+- Taught `/tutor` to explicitly end the current backend session, suppress stale project-shell restore, clear local Studio workspace state, and return the user to the centered entry card instead of reopening the old course workspace.
+- Expanded the entry card in `dashboard_rebuild/client/src/components/TutorShell.tsx` with a course dropdown and a fresh `Start Priming` path that creates a new workflow, opens the Priming preset, and seeds Source Shelf with the selected course's materials.
+- Added course-scoped material loading helpers in `dashboard_rebuild/client/src/hooks/useTutorHub.ts` and workflow bootstrap overrides in `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts` so Priming starts cleanly against the newly selected course.
+- Updated Tutor regressions in:
+  - `dashboard_rebuild/client/src/components/__tests__/TutorTopBar.test.tsx`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorTopBar.test.tsx client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/hooks/__tests__/useTutorWorkflow.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live `dev-browser` verification on `http://127.0.0.1:5000/tutor?course_id=1&mode=studio` confirmed:
+    - `End Session` returned the route to the entry card
+    - selecting course `Neuroscience` and clicking `Start Priming` opened the Priming panel
+    - Source Shelf loaded `17 materials in run` for the new course
+    - screenshot artifact saved to `C:\\Users\\treyt\\.dev-browser\\tmp\\tutor-new-session-priming.png`

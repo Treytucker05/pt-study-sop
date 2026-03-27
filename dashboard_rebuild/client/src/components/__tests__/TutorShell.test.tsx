@@ -231,7 +231,7 @@ function createQueryWrapper() {
 type HubOverrides = Partial<ReturnType<typeof makeHub>>;
 
 function makeHub() {
-  return {
+  const hub = {
     tutorContentSources: { courses: [] },
     tutorHub: null,
     tutorHubLoading: false,
@@ -260,12 +260,30 @@ function makeHub() {
     setObjectiveScope: vi.fn(),
     setSelectedObjectiveId: vi.fn(),
     setSelectedObjectiveGroup: vi.fn(),
+    clearMaterialSelection: vi.fn(),
+  };
+  return {
+    ...hub,
+    getCourseMaterialIds: vi.fn((targetCourseId?: number) =>
+      typeof targetCourseId === "number"
+        ? hub.chatMaterials
+            .filter((material) => material.course_id === targetCourseId)
+            .map((material) => material.id)
+        : [],
+    ),
+    loadCourseMaterials: vi.fn((targetCourseId?: number) =>
+      typeof targetCourseId === "number"
+        ? hub.chatMaterials
+            .filter((material) => material.course_id === targetCourseId)
+            .map((material) => material.id)
+        : [],
+    ),
   };
 }
 
 function makeHubWithOverrides(overrides: HubOverrides = {}) {
   const base = makeHub();
-  return {
+  const merged = {
     ...base,
     ...overrides,
     effectiveStudyUnit:
@@ -274,6 +292,23 @@ function makeHubWithOverrides(overrides: HubOverrides = {}) {
       base.effectiveStudyUnit,
     effectiveTopic:
       overrides.effectiveTopic ?? overrides.topic ?? base.effectiveTopic,
+  };
+  return {
+    ...merged,
+    getCourseMaterialIds: vi.fn((targetCourseId?: number) =>
+      typeof targetCourseId === "number"
+        ? merged.chatMaterials
+            .filter((material) => material.course_id === targetCourseId)
+            .map((material) => material.id)
+        : [],
+    ),
+    loadCourseMaterials: vi.fn((targetCourseId?: number) =>
+      typeof targetCourseId === "number"
+        ? merged.chatMaterials
+            .filter((material) => material.course_id === targetCourseId)
+            .map((material) => material.id)
+        : [],
+    ),
   };
 }
 
@@ -720,7 +755,11 @@ describe("TutorShell studio routing", () => {
         hasActiveTutorSession: false,
       },
       hubOverrides: {
+        courseId: 101,
         courseLabel: "Exercise Physiology",
+        tutorContentSources: {
+          courses: [{ id: 101, name: "Exercise Physiology" }],
+        },
         selectedObjectiveGroup: "Week 7",
         topic: "Cardiac output",
       },
@@ -735,6 +774,9 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-entry-state")).toHaveTextContent(
       "Exercise Physiology",
     );
+    expect(
+      screen.getByLabelText(/course for new priming session/i),
+    ).toHaveValue("101");
 
     await user.click(screen.getByRole("button", { name: /start priming/i }));
 

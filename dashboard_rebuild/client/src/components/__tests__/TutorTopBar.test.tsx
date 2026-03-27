@@ -54,7 +54,6 @@ describe("TutorTopBar", () => {
   it("renders the live TEACH runtime rail", () => {
     render(
       <TutorTopBar
-        shellMode="tutor"
         isTutorSessionView
         brainLaunchContext={null}
         topic="Neuro"
@@ -80,15 +79,11 @@ describe("TutorTopBar", () => {
         onAdvanceBlock={vi.fn()}
         activeWorkflowId="wf-1"
         activeWorkflowDetail={undefined}
-        studioView="priming"
-        studioSubTabs={[
-          { key: "home", label: "HOME", available: true },
-          { key: "priming", label: "PRIMING", available: true },
-          { key: "polish", label: "POLISH", available: false },
-          { key: "final_sync", label: "FINAL SYNC", available: false },
-        ]}
         activeSessionId="sess-1"
         teachRuntime={teachRuntime}
+        sessionActionLabel="End Session"
+        sessionActionPending={false}
+        onSessionAction={vi.fn()}
       />,
     );
 
@@ -115,7 +110,6 @@ describe("TutorTopBar", () => {
   it("does not show the live-session badge when the backend session is not validated active", () => {
     render(
       <TutorTopBar
-        shellMode="tutor"
         isTutorSessionView={false}
         brainLaunchContext={null}
         topic="Neuro"
@@ -133,10 +127,11 @@ describe("TutorTopBar", () => {
         onAdvanceBlock={vi.fn()}
         activeWorkflowId="wf-1"
         activeWorkflowDetail={undefined}
-        studioView="workspace"
-        studioSubTabs={[{ key: "workspace", label: "WORKSPACE", available: true }]}
         activeSessionId="sess-stale"
         teachRuntime={null}
+        sessionActionLabel="New Session"
+        sessionActionPending={false}
+        onSessionAction={vi.fn()}
       />,
     );
 

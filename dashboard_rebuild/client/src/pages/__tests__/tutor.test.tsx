@@ -26,6 +26,9 @@ const {
   saveProjectShellStateMock,
   restoreStudioItemsMock,
   promoteStudioItemMock,
+  createWorkflowMock,
+  getWorkflowMock,
+  endSessionMock,
   workspaceSurfaceMode,
 } = vi.hoisted(() => ({
   getSessionMock: vi.fn(),
@@ -50,6 +53,9 @@ const {
   saveProjectShellStateMock: vi.fn(),
   restoreStudioItemsMock: vi.fn(),
   promoteStudioItemMock: vi.fn(),
+  createWorkflowMock: vi.fn(),
+  getWorkflowMock: vi.fn(),
+  endSessionMock: vi.fn(),
   workspaceSurfaceMode: { useReal: false },
 }));
 
@@ -307,7 +313,9 @@ vi.mock("@/lib/api", () => ({
       listWorkflows: listWorkflowsMock,
       preflightSession: preflightSessionMock,
       getSession: getSessionMock,
+      getWorkflow: getWorkflowMock,
       createSession: createSessionMock,
+      createWorkflow: createWorkflowMock,
       getSettings: vi.fn().mockResolvedValue({ custom_instructions: "" }),
       saveSettings: vi.fn().mockResolvedValue({ custom_instructions: "" }),
       getProjectShell: getProjectShellMock,
@@ -318,7 +326,7 @@ vi.mock("@/lib/api", () => ({
       createArtifact: vi.fn(),
       deleteArtifacts: vi.fn(),
       createCustomChain: vi.fn(),
-      endSession: vi.fn(),
+      endSession: endSessionMock,
       advanceBlock: vi.fn(),
       exportSession: vi.fn(),
       saveStrategyFeedback: vi.fn(),
@@ -516,6 +524,45 @@ function makeTutorHub() {
   };
 }
 
+function makeWorkflowDetail(
+  overrides: Partial<{
+    workflow_id: string;
+    course_id: number;
+    course_name: string;
+    course_code: string;
+    study_unit: string | null;
+    topic: string | null;
+  }> = {},
+) {
+  const workflow = {
+    workflow_id: overrides.workflow_id || "wf-1",
+    course_id: overrides.course_id ?? 1,
+    course_name: overrides.course_name || "Course 1",
+    course_code: overrides.course_code || "COURSE-1",
+    course_event_id: null,
+    assignment_title: null,
+    study_unit: overrides.study_unit ?? null,
+    topic: overrides.topic ?? null,
+    due_date: null,
+    current_stage: "priming",
+    status: "priming_in_progress",
+    active_tutor_session_id: null,
+    created_at: new Date("2026-03-20T10:00:00Z").toISOString(),
+    updated_at: new Date("2026-03-20T10:05:00Z").toISOString(),
+  };
+
+  return {
+    workflow,
+    priming_bundle: null,
+    captured_notes: [],
+    feedback_events: [],
+    stage_time_logs: [],
+    memory_capsules: [],
+    polish_bundle: null,
+    publish_results: [],
+  };
+}
+
 function renderTutor() {
   if (!document.getElementById("page-hero-portal")) {
     const heroPortal = document.createElement("div");
@@ -561,6 +608,11 @@ describe("Tutor page restore", () => {
     getTemplateChainsMock.mockResolvedValue([]);
     listWorkflowsMock.mockResolvedValue({ items: [], count: 0 });
     createSessionMock.mockResolvedValue({ session_id: "sess-started" });
+    createWorkflowMock.mockResolvedValue({
+      workflow: makeWorkflowDetail().workflow,
+    });
+    getWorkflowMock.mockResolvedValue(makeWorkflowDetail());
+    endSessionMock.mockResolvedValue({ ok: true });
     preflightSessionMock.mockResolvedValue({
       ok: true,
       preflight_id: "preflight-test",
@@ -674,6 +726,136 @@ describe("Tutor page restore", () => {
     expect(await screen.findByTestId("tutor-chat")).toBeInTheDocument();
     expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
     expect(screen.getByTestId("studio-toolbar")).toBeInTheDocument();
+  });
+
+  it("ends the current session, returns to the entry card, and starts Priming on a different course with that course materials loaded", async () => {
+    window.history.replaceState({}, "", "/tutor?course_id=1&mode=studio");
+    getContentSourcesMock.mockResolvedValue({
+      courses: [
+        { id: 1, name: "Cardiovascular Physiology" },
+        { id: 2, name: "Renal Physiology" },
+      ],
+    });
+    getMaterialsMock.mockResolvedValue([
+      {
+        id: 101,
+        title: "Cardio Lecture",
+        source_path: "uploads/cardio-lecture.pdf",
+        folder_path: null,
+        file_type: "pdf",
+        file_size: 1024,
+        course_id: 1,
+        enabled: true,
+        extraction_error: null,
+        checksum: null,
+        created_at: new Date("2026-03-10T00:00:00Z").toISOString(),
+        updated_at: null,
+      },
+      {
+        id: 201,
+        title: "Renal Notes",
+        source_path: "uploads/renal-notes.txt",
+        folder_path: null,
+        file_type: "txt",
+        file_size: 512,
+        course_id: 2,
+        enabled: true,
+        extraction_error: null,
+        checksum: null,
+        created_at: new Date("2026-03-10T00:00:00Z").toISOString(),
+        updated_at: null,
+      },
+      {
+        id: 202,
+        title: "Renal Diagram",
+        source_path: "uploads/renal-diagram.pdf",
+        folder_path: null,
+        file_type: "pdf",
+        file_size: 2048,
+        course_id: 2,
+        enabled: true,
+        extraction_error: null,
+        checksum: null,
+        created_at: new Date("2026-03-10T00:00:00Z").toISOString(),
+        updated_at: null,
+      },
+    ]);
+    getProjectShellMock.mockResolvedValue(
+      makeProjectShell(1, {
+        last_mode: "tutor",
+        active_session_id: "sess-cardio",
+      }),
+    );
+    getSessionMock.mockResolvedValueOnce({
+      session_id: "sess-cardio",
+      status: "active",
+      turn_count: 3,
+      started_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+      topic: "Cardiovascular regulation",
+      course_id: 1,
+      method_chain_id: null,
+      current_block_index: 0,
+      chain_blocks: [],
+      content_filter: {
+        material_ids: [101],
+        accuracy_profile: "strict",
+        objective_scope: "module_all",
+      },
+      artifacts_json: "[]",
+      turns: [],
+    });
+    createWorkflowMock.mockResolvedValueOnce({
+      workflow: makeWorkflowDetail({
+        workflow_id: "wf-renal",
+        course_id: 2,
+        course_name: "Renal Physiology",
+        course_code: "RENAL-2",
+      }).workflow,
+    });
+    getWorkflowMock.mockResolvedValue(
+      makeWorkflowDetail({
+        workflow_id: "wf-renal",
+        course_id: 2,
+        course_name: "Renal Physiology",
+        course_code: "RENAL-2",
+      }),
+    );
+
+    renderTutor();
+
+    expect(await screen.findByTestId("tutor-chat")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /end session/i }));
+
+    await waitFor(() => {
+      expect(endSessionMock).toHaveBeenCalledWith("sess-cardio");
+    });
+    expect(await screen.findByTestId("studio-entry-state")).toBeInTheDocument();
+
+    fireEvent.change(
+      screen.getByLabelText(/course for new priming session/i),
+      {
+        target: { value: "2" },
+      },
+    );
+    fireEvent.click(screen.getByRole("button", { name: /start priming/i }));
+
+    await waitFor(() => {
+      expect(createWorkflowMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          course_id: 2,
+          current_stage: "priming",
+          status: "priming_in_progress",
+        }),
+      );
+    });
+    expect(await screen.findByTestId("studio-priming-panel")).toBeInTheDocument();
+
+    const sourceShelf = await screen.findByTestId("studio-source-shelf");
+    expect(sourceShelf).toHaveTextContent("Renal Physiology");
+    expect(sourceShelf).toHaveTextContent("2 materials in run");
+    expect(sourceShelf).toHaveTextContent("Renal Notes");
+    expect(sourceShelf).toHaveTextContent("Renal Diagram");
   });
 
   it("renders Studio as the default shell page", async () => {

@@ -176,6 +176,9 @@ export interface TutorShellProps {
     workspaceObject: PrimePromotedWorkspaceObject,
   ) => void;
   onPromotePolishPacketNote?: (note: StudioPolishPromotedNote) => void;
+  onStartPriming?: () => void | Promise<void>;
+  isStartingPriming?: boolean;
+  workspaceResetVersion?: number;
   onResumeHubCandidate: (
     candidate: TutorHubResumeCandidate,
   ) => void | Promise<void>;
@@ -219,6 +222,9 @@ export function TutorShell({
   promotedPolishPacketNotes: controlledPromotedPolishPacketNotes,
   onPromotePrimePacketObject,
   onPromotePolishPacketNote,
+  onStartPriming,
+  isStartingPriming = false,
+  workspaceResetVersion = 0,
   onResumeHubCandidate,
 }: TutorShellProps) {
   const currentRunWorkspaceObjects = useMemo(
@@ -707,6 +713,17 @@ export function TutorShell({
     },
     [setPanelLayout],
   );
+  const availableCourses = useMemo(
+    () => hub.tutorContentSources?.courses || [],
+    [hub.tutorContentSources?.courses],
+  );
+  const selectedCourseMaterialCount = useMemo(
+    () =>
+      typeof hub.courseId === "number"
+        ? hub.getCourseMaterialIds(hub.courseId).length
+        : 0,
+    [hub],
+  );
 
   const handleSetPrimingMethods = useCallback(
     (ids: string[]) => {
@@ -740,6 +757,16 @@ export function TutorShell({
     if (!liveTutorSessionId || panelLayout.length > 0) return;
     setPanelLayout(buildStudioShellPresetLayout("study"));
   }, [liveTutorSessionId, panelLayout.length, setPanelLayout]);
+
+  useEffect(() => {
+    setCanvasObjectIds([]);
+    setWorkspaceDraftObjects([]);
+    setLocalDocumentTabs([]);
+    setLocalActiveDocumentTabId(null);
+    setLocalPromotedPrimePacketObjects([]);
+    setLocalPromotedPolishNotes([]);
+    setNotesScratchpad("");
+  }, [workspaceResetVersion]);
 
   // ── Save Gist: summarize a reply via LLM and capture as workflow note ──
   const handleSaveGist = useCallback(
@@ -1038,26 +1065,58 @@ export function TutorShell({
           Floating Studio
         </div>
         <h2 className="font-arcade text-lg uppercase tracking-[0.16em] text-white">
-          {hub.courseLabel || "Select A Course"}
+          Start A Fresh Study Session
         </h2>
         <div className="font-mono text-sm leading-7 text-[#ffd9e1]/78">
-          {hub.effectiveStudyUnit || "No study unit selected"}
+          {hub.courseLabel || "No course selected"}
+          {hub.effectiveStudyUnit ? ` · ${hub.effectiveStudyUnit}` : ""}
           {hub.effectiveTopic ? ` · ${hub.effectiveTopic}` : ""}
         </div>
         <p className="font-mono text-sm leading-6 text-[#ffc8d3]/72">
-          Start with a preset layout, then open or close any panel from the toolbar. The canvas keeps every panel available without stage switching.
+          Choose a course, then launch a clean Priming workspace. Start Priming opens a new workflow and loads that course&apos;s source materials into Source Shelf.
         </p>
+      </div>
+      <label className="flex max-w-md flex-col gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+        Course
+        <select
+          aria-label="Course for new priming session"
+          value={typeof hub.courseId === "number" ? String(hub.courseId) : ""}
+          onChange={(event) => {
+            const nextCourseId = Number.parseInt(event.target.value, 10);
+            hub.setCourseId(
+              Number.isFinite(nextCourseId) ? nextCourseId : undefined,
+            );
+          }}
+          className="h-11 rounded-[0.9rem] border border-[rgba(255,118,144,0.18)] bg-black/30 px-3 font-mono text-sm text-white outline-none"
+        >
+          <option value="">Select course</option>
+          {availableCourses.map((course) => (
+            <option key={course.id} value={course.id}>
+              {course.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="font-mono text-xs leading-6 text-[#ffc8d3]/68">
+        {typeof hub.courseId === "number"
+          ? `${selectedCourseMaterialCount} material${selectedCourseMaterialCount === 1 ? "" : "s"} available in Source Shelf for this course.`
+          : "Pick a course before starting Priming."}
       </div>
       <div className="flex flex-wrap gap-3">
         <Button
           type="button"
           onClick={() => {
+            if (onStartPriming) {
+              void onStartPriming();
+              return;
+            }
             applyCanvasPreset("priming");
             void workflow.openStudioPriming();
           }}
+          disabled={typeof hub.courseId !== "number" || isStartingPriming}
           className="rounded-full border border-[rgba(255,118,144,0.22)] bg-[rgba(255,68,104,0.18)] px-4 font-mono text-xs uppercase tracking-[0.18em] text-white hover:bg-[rgba(255,68,104,0.28)]"
         >
-          Start Priming
+          {isStartingPriming ? "Starting..." : "Start Priming"}
         </Button>
         <Button
           type="button"

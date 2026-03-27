@@ -53,6 +53,27 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - added lazy Priming workflow bootstrap from `RUN` and the entry-card `Start Priming` action so live `/tutor` sessions can execute without a pre-existing workflow id
     - validation passed with targeted Tutor/frontend tests, `npm run build`, live `agent-browser` DOM verification, and `dev-browser` screenshots at `C:\\Users\\treyt\\.dev-browser\\tmp\\priming-phase1-panel.png` and `C:\\Users\\treyt\\.dev-browser\\tmp\\priming-phase1-prime-packet.png`
 
+- [x] HUD-241. Add a fresh-session reset path on `/tutor` so stale live sessions do not trap the user on the previous course workspace.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/components/TutorTopBar.tsx`
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+    - `dashboard_rebuild/client/src/hooks/useTutorHub.ts`
+    - `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+  - Done when:
+    - the Tutor toolbar exposes a `New Session` / `End Session` action that returns the route to the centered entry card instead of silently restoring the old backend session
+    - the entry card lets the user choose a course and `Start Priming` creates a fresh workflow, opens the Priming preset, and loads that course's materials into Source Shelf
+    - targeted Tutor/frontend tests, the production frontend build, and a live `dev-browser` verification of `end session -> entry card -> new course -> Start Priming` succeed
+  - Assignee: @codex-cli
+  - Completed: 2026-03-27
+  - Notes:
+    - added a top-bar `New Session` / `End Session` action that explicitly ends the live backend session when present, clears the restored Studio state, and returns `/tutor` to the centered entry card
+    - expanded the entry card with a course dropdown plus a fresh `Start Priming` path that creates a new workflow, opens the Priming preset, and preloads that course's materials into Source Shelf
+    - validation passed with targeted Tutor/frontend tests, `npm run build`, and live `dev-browser` verification on `/tutor` using course `Neuroscience`, including screenshot evidence at `C:\\Users\\treyt\\.dev-browser\\tmp\\tutor-new-session-priming.png`
+
 - [ ] HUD-239. Execute the floating-panel Studio v2 cutover from `docs/design/STUDIO_LAYOUT_SPEC_v2.md` using the slice-by-slice TDD runbook.
   - Scope:
     - `docs/design/STUDIO_LAYOUT_SPEC_v2.md`

@@ -355,6 +355,29 @@ export function useTutorHub({
     }
   }, [persistClientState]);
 
+  const getCourseMaterialIds = useCallback(
+    (targetCourseId?: number) => {
+      if (typeof targetCourseId !== "number") {
+        return [];
+      }
+      return chatMaterials
+        .filter((material) => material.course_id === targetCourseId)
+        .map((material) => material.id);
+    },
+    [chatMaterials],
+  );
+
+  const loadCourseMaterials = useCallback(
+    (targetCourseId?: number) => {
+      const nextIds = getCourseMaterialIds(targetCourseId);
+      setSelectedMaterials(
+        persistClientState ? writeTutorSelectedMaterialIds(nextIds) : nextIds,
+      );
+      return nextIds;
+    },
+    [getCourseMaterialIds, persistClientState],
+  );
+
   const refreshChatMaterials = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ["tutor-chat-materials-all-enabled"] });
   }, [queryClient]);
@@ -406,6 +429,8 @@ export function useTutorHub({
     toggleMaterial,
     selectAllMaterials,
     clearMaterialSelection,
+    getCourseMaterialIds,
+    loadCourseMaterials,
     refreshChatMaterials,
   };
 }

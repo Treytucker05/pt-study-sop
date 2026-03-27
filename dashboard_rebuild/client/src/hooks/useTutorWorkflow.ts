@@ -49,6 +49,16 @@ export interface TutorDirectNoteSaveStatus {
   savedAt?: string | null;
 }
 
+type StudioPrimingBootstrapContext = {
+  courseId?: number;
+  topic: string;
+  selectedMaterials: number[];
+  selectedPaths: string[];
+  selectedObjectiveGroup: string;
+  selectedObjectiveId: string;
+  objectiveScope: TutorObjectiveScope;
+};
+
 type PrimingObjectiveRecord = {
   lo_code?: string;
   title: string;
@@ -292,15 +302,8 @@ export function useTutorWorkflow({
   const [savingRuntimeEvent, setSavingRuntimeEvent] = useState(false);
   const hydratedWorkflowIdRef = useRef<string | null>(null);
   const primingBootstrapInFlightRef = useRef(false);
-  const studioPrimingBootstrapContextRef = useRef<{
-    courseId?: number;
-    topic: string;
-    selectedMaterials: number[];
-    selectedPaths: string[];
-    selectedObjectiveGroup: string;
-    selectedObjectiveId: string;
-    objectiveScope: TutorObjectiveScope;
-  } | null>(null);
+  const studioPrimingBootstrapContextRef =
+    useRef<StudioPrimingBootstrapContext | null>(null);
 
   // ─── Workflow list query ───
   const { data: workflowListResponse } = useQuery({
@@ -545,6 +548,33 @@ export function useTutorWorkflow({
     resetPrimingArtifacts();
   }, [hub, resetPrimingArtifacts]);
 
+  const buildStudioPrimingBootstrapContext = useCallback(
+    (
+      overrides: Partial<StudioPrimingBootstrapContext> = {},
+    ): StudioPrimingBootstrapContext => ({
+      courseId: overrides.courseId ?? hub.courseId,
+      topic: overrides.topic ?? hub.topic,
+      selectedMaterials: [
+        ...(overrides.selectedMaterials ?? hub.selectedMaterials),
+      ],
+      selectedPaths: [...(overrides.selectedPaths ?? hub.selectedPaths)],
+      selectedObjectiveGroup:
+        overrides.selectedObjectiveGroup ?? hub.selectedObjectiveGroup,
+      selectedObjectiveId:
+        overrides.selectedObjectiveId ?? hub.selectedObjectiveId,
+      objectiveScope: overrides.objectiveScope ?? hub.objectiveScope,
+    }),
+    [
+      hub.courseId,
+      hub.objectiveScope,
+      hub.selectedMaterials,
+      hub.selectedObjectiveGroup,
+      hub.selectedObjectiveId,
+      hub.selectedPaths,
+      hub.topic,
+    ],
+  );
+
   // ─── Build priming bundle payload ───
   const buildPrimingBundlePayload = useCallback(() => {
     const learningObjectives = dedupePrimingObjectives(
@@ -664,15 +694,8 @@ export function useTutorWorkflow({
     primingBootstrapInFlightRef.current = true;
     setBootstrappingPriming(true);
     try {
-      studioPrimingBootstrapContextRef.current = {
-        courseId: hub.courseId,
-        topic: hub.topic,
-        selectedMaterials: [...hub.selectedMaterials],
-        selectedPaths: [...hub.selectedPaths],
-        selectedObjectiveGroup: hub.selectedObjectiveGroup,
-        selectedObjectiveId: hub.selectedObjectiveId,
-        objectiveScope: hub.objectiveScope,
-      };
+      studioPrimingBootstrapContextRef.current =
+        buildStudioPrimingBootstrapContext();
       resetPrimingArtifacts();
       const result = await api.tutor.createWorkflow({
         course_id: hub.courseId ?? null,
@@ -704,6 +727,7 @@ export function useTutorWorkflow({
     hub.selectedObjectiveId,
     hub.selectedPaths,
     hub.topic,
+    buildStudioPrimingBootstrapContext,
     queryClient,
     resetPrimingArtifacts,
   ]);
@@ -782,29 +806,38 @@ export function useTutorWorkflow({
   );
 
   // ─── Create workflow ───
-  const createWorkflowAndOpenPriming = useCallback(async () => {
+  const createWorkflowAndOpenPriming = useCallback(
+    async (overrides: Partial<StudioPrimingBootstrapContext> = {}) => {
     setCreatingWorkflow(true);
     try {
-      studioPrimingBootstrapContextRef.current = null;
-      resetPrimingDraft();
+      const bootstrapContext =
+        buildStudioPrimingBootstrapContext(overrides);
+      hydratedWorkflowIdRef.current = null;
+      studioPrimingBootstrapContextRef.current = bootstrapContext;
+      resetPrimingArtifacts();
+      setActiveWorkflowId(null);
       const result = await api.tutor.createWorkflow({
-        course_id: hub.courseId ?? null,
-        study_unit: hub.selectedObjectiveGroup || null,
-        topic: hub.topic || null,
+        course_id: bootstrapContext.courseId ?? null,
+        study_unit: bootstrapContext.selectedObjectiveGroup || null,
+        topic: bootstrapContext.topic || null,
         current_stage: "priming",
         status: "priming_in_progress",
       });
       setActiveWorkflowId(result.workflow.workflow_id);
       await queryClient.invalidateQueries({ queryKey: ["tutor-workflows"] });
       toast.success("New study plan created");
+      return result.workflow.workflow_id;
     } catch (err) {
       toast.error(
         `Failed to create study plan: ${err instanceof Error ? err.message : "Unknown"}`,
       );
+      return null;
     } finally {
       setCreatingWorkflow(false);
     }
-  }, [hub.courseId, hub.selectedObjectiveGroup, hub.topic, queryClient, resetPrimingDraft]);
+    },
+    [buildStudioPrimingBootstrapContext, queryClient, resetPrimingArtifacts],
+  );
 
   const openStudioPriming = useCallback(async () => {
     return ensureStudioPrimingWorkflow();

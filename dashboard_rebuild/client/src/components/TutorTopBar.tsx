@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   Lock,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 import { ICON_SM } from "@/lib/theme";
 import { CONTROL_PLANE_COLORS } from "@/lib/colors";
@@ -49,6 +50,10 @@ export interface TutorTopBarProps {
   activeWorkflowDetail: TutorWorkflowDetailResponse | undefined;
   activeSessionId: string | null;
   teachRuntime: TutorTeachRuntimeViewModel | null;
+  sessionActionLabel: string;
+  sessionActionPending: boolean;
+  sessionActionDisabled?: boolean;
+  onSessionAction: () => void;
 }
 
 const RUNTIME_STATUS_STYLES: Record<TutorTeachRuntimeStatus, string> = {
@@ -131,6 +136,10 @@ export function TutorTopBar({
   activeWorkflowDetail,
   activeSessionId,
   teachRuntime,
+  sessionActionLabel,
+  sessionActionPending,
+  sessionActionDisabled = false,
+  onSessionAction,
 }: TutorTopBarProps) {
   const workflowStageLabel = activeWorkflowDetail?.workflow?.current_stage
     ? activeWorkflowDetail.workflow.current_stage
@@ -203,6 +212,23 @@ export function TutorTopBar({
               READY
             </Badge>
           )}
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onSessionAction}
+              disabled={sessionActionDisabled || sessionActionPending}
+              className={cn(tutorUtilityButton(), "px-3")}
+            >
+              {sessionActionPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : null}
+              {sessionActionPending
+                ? `${sessionActionLabel === "End Session" ? "Ending" : "Opening"}...`
+                : sessionActionLabel}
+            </Button>
+          </div>
         </div>
       </div>
 
