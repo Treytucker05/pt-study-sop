@@ -84,6 +84,141 @@ def _insert_material(
     conn.close()
 
 
+def test_priming_refinement_chat_returns_assistant_reply_and_updated_results(client, mock_llm):
+    course_id = 9001
+    _insert_course(course_id, "Cardio")
+    _insert_material(
+        88,
+        course_id=course_id,
+        title="Cardio Slides",
+        source_path="/tmp/cardio-slides.pdf",
+        file_type="pdf",
+        content=(
+            "Cardiac output depends on stroke volume and heart rate. "
+            "Frank-Starling links increased preload to increased stroke volume within physiologic limits."
+        ),
+    )
+
+    mock_llm.set_response(
+        json.dumps(
+            {
+                "assistant_message": (
+                    "Objective 3 should explicitly mention that higher preload increases end-diastolic volume, "
+                    "which increases stroke volume through the Frank-Starling mechanism."
+                ),
+                "updated_results": {
+                    "key": "method:M-PRE-010:refined",
+                    "label": "Learning Objectives Primer",
+                    "kind": "method",
+                    "methodId": "M-PRE-010",
+                    "blocks": [
+                        {
+                            "id": "objectives::cardio",
+                            "title": "Learning Objectives",
+                            "badge": "OBJECTIVES",
+                            "kind": "objectives",
+                            "sourceLabel": "Cardio Slides",
+                            "materialId": 88,
+                            "content": (
+                                "1. Define cardiac output.\n"
+                                "2. List determinants of stroke volume.\n"
+                                "3. Explain how preload increases stroke volume through the Frank-Starling mechanism."
+                            ),
+                            "objectives": [
+                                {"title": "Define cardiac output.", "lo_code": "LO-1"},
+                                {"title": "List determinants of stroke volume.", "lo_code": "LO-2"},
+                                {
+                                    "title": "Explain how preload increases stroke volume through the Frank-Starling mechanism.",
+                                    "lo_code": "LO-3",
+                                },
+                            ],
+                        }
+                    ],
+                },
+            }
+        )
+    )
+
+    response = client.post(
+        "/api/tutor/priming-assist",
+        json={
+            "message": "Expand on objective 3 with more detail about the physiology",
+            "material_ids": [88],
+            "extraction_results": {
+                "key": "method:M-PRE-010:current",
+                "label": "Learning Objectives Primer",
+                "kind": "method",
+                "methodId": "M-PRE-010",
+                "blocks": [
+                    {
+                        "id": "objectives::cardio",
+                        "title": "Learning Objectives",
+                        "badge": "OBJECTIVES",
+                        "kind": "objectives",
+                        "sourceLabel": "Cardio Slides",
+                        "materialId": 88,
+                        "content": (
+                            "1. Define cardiac output.\n"
+                            "2. List determinants of stroke volume.\n"
+                            "3. Explain how preload affects stroke volume."
+                        ),
+                        "objectives": [
+                            {"title": "Define cardiac output.", "lo_code": "LO-1"},
+                            {"title": "List determinants of stroke volume.", "lo_code": "LO-2"},
+                            {"title": "Explain how preload affects stroke volume.", "lo_code": "LO-3"},
+                        ],
+                    }
+                ],
+            },
+            "conversation_history": [
+                {"role": "user", "message": "Keep the list aligned to the lecture deck."},
+                {"role": "assistant", "message": "Understood."},
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert "Objective 3" in body["assistant_message"]
+    assert "Frank-Starling" in body["assistant_message"]
+    assert body["updated_results"]["methodId"] == "M-PRE-010"
+    assert body["updated_results"]["blocks"][0]["materialId"] == 88
+    assert (
+        body["updated_results"]["blocks"][0]["objectives"][2]["title"]
+        == "Explain how preload increases stroke volume through the Frank-Starling mechanism."
+    )
+    prompt = mock_llm.last_args["user_prompt"]
+    assert "Expand on objective 3 with more detail about the physiology" in prompt
+    assert "Explain how preload affects stroke volume." in prompt
+    assert "Keep the list aligned to the lecture deck." in prompt
+    assert "Cardio Slides" in prompt
+
+
+def test_priming_refinement_chat_requires_message_and_results(client):
+    course_id = 9002
+    _insert_course(course_id, "Cardio")
+    _insert_material(
+        89,
+        course_id=course_id,
+        title="Hemodynamics Notes",
+        source_path="/tmp/hemodynamics.txt",
+        file_type="txt",
+        content="Preload and afterload both shape stroke volume.",
+    )
+
+    response = client.post(
+        "/api/tutor/priming-assist",
+        json={
+            "message": "",
+            "material_ids": [89],
+            "conversation_history": [],
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "message is required"
+
+
 def test_priming_assist_returns_source_linked_outputs(client, mock_llm):
     course_id = 901
     _insert_course(course_id, "Neuro")

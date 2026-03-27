@@ -7,8 +7,10 @@ import type {
 } from "@/lib/api";
 import type {
   TutorObjectiveScope,
+  TutorPrimingDisplayedRun,
   TutorPolishBundleRequest,
   TutorPrimingMethodRun,
+  TutorPrimingResultBlock,
   TutorPrimingSourceInventoryItem,
 } from "@/api.types";
 import type { TutorPrimingReadinessItem } from "@/components/TutorWorkflowPrimingPanel";
@@ -247,6 +249,76 @@ function buildPrimingMethodRunsFromInventory(
           .find((run) => run.method_id === methodId)?.updated_at || null,
     };
   });
+}
+
+function trimBulletPrefix(value: string): string {
+  return value.replace(/^\s*[-*]\s*/, "").trim();
+}
+
+function collectPrimingBlockLines(
+  blocks: TutorPrimingResultBlock[],
+  predicate: (block: TutorPrimingResultBlock) => boolean,
+): string[] {
+  return blocks
+    .filter(predicate)
+    .flatMap((block) =>
+      block.content
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean),
+    );
+}
+
+function buildDisplayedRunMethodOutputs(
+  run: TutorPrimingDisplayedRun,
+  blocks: TutorPrimingResultBlock[],
+): Record<string, unknown> {
+  const outputs: Record<string, unknown> = {};
+  const objectivesBlock = blocks.find(
+    (block) => block.kind === "objectives" && block.objectives?.length,
+  );
+  const summaryBlock = blocks.find((block) => block.kind === "summary");
+  const mapBlock = blocks.find((block) => block.kind === "concept_map");
+  const termsBlock = blocks.find((block) => block.kind === "terms" && block.terms?.length);
+  const conceptLines = collectPrimingBlockLines(
+    blocks,
+    (block) => block.badge === "CONCEPTS" || /key concepts/i.test(block.title),
+  ).map(trimBulletPrefix);
+  const gapLines = collectPrimingBlockLines(
+    blocks,
+    (block) => block.badge === "GAPS" || /open questions/i.test(block.title),
+  ).map(trimBulletPrefix);
+
+  if (objectivesBlock?.objectives?.length) {
+    outputs.learning_objectives = objectivesBlock.objectives
+      .map((objective) => ({
+        ...(typeof objective.lo_code === "string" && objective.lo_code.trim()
+          ? { lo_code: objective.lo_code.trim() }
+          : {}),
+        title: objective.title?.trim() || "",
+      }))
+      .filter((objective) => objective.title);
+  }
+  if (summaryBlock?.content.trim()) {
+    outputs.summary = summaryBlock.content.trim();
+  }
+  if (mapBlock?.content.trim()) {
+    outputs.map = mapBlock.content.trim();
+  }
+  if (termsBlock?.terms?.length) {
+    outputs.terminology = termsBlock.terms.map((term) => term.raw.trim()).filter(Boolean);
+  }
+  if (conceptLines.length > 0) {
+    outputs.concepts = conceptLines;
+  }
+  if (gapLines.length > 0) {
+    if (run.methodId === "M-PRE-014") {
+      outputs.gaps = gapLines;
+    } else {
+      outputs.follow_up_targets = gapLines;
+    }
+  }
+  return outputs;
 }
 
 export function useTutorWorkflow({
@@ -803,6 +875,141 @@ export function useTutorWorkflow({
       hub.selectedObjectiveGroup,
       hub.topic,
     ],
+  );
+
+  const applyPrimingDisplayedRun = useCallback(
+    (run: TutorPrimingDisplayedRun) => {
+      const summaryText = run.blocks
+        .filter((block) => block.kind === "summary")
+        .map((block) => block.content.trim())
+        .filter(Boolean)
+        .join("\n\n");
+      const conceptsText = collectPrimingBlockLines(
+        run.blocks,
+        (block) => block.badge === "CONCEPTS" || /key concepts/i.test(block.title),
+      )
+        .map(trimBulletPrefix)
+        .join("\n");
+      const terminologyText = run.blocks
+        .filter((block) => block.kind === "terms" && block.terms?.length)
+        .flatMap((block) => block.terms?.map((term) => term.raw.trim()).filter(Boolean) || [])
+        .join("\n");
+      const rootExplanationText = run.blocks
+        .filter((block) => block.kind === "concept_map")
+        .map((block) => block.content.trim())
+        .filter(Boolean)
+        .join("\n\n");
+      const gapsText = collectPrimingBlockLines(
+        run.blocks,
+        (block) => block.badge === "GAPS" || /open questions/i.test(block.title),
+      )
+        .map(trimBulletPrefix)
+        .join("\n");
+
+      setPrimingSummaryText(summaryText);
+      setPrimingConceptsText(conceptsText);
+      setPrimingTerminologyText(terminologyText);
+      setPrimingRootExplanationText(rootExplanationText);
+      setPrimingGapsText(gapsText);
+
+      const baseInventory =
+        primingSourceInventory.length > 0
+          ? primingSourceInventory
+          : mergedPrimingSourceInventory;
+      if (baseInventory.length === 0) {
+        return;
+      }
+
+      const fallbackMaterialId = baseInventory.length === 1 ? baseInventory[0].id : null;
+      const blocksByMaterialId = new Map<number, TutorPrimingResultBlock[]>();
+      run.blocks.forEach((block) => {
+        const materialId =
+          typeof block.materialId === "number" ? block.materialId : fallbackMaterialId;
+        if (typeof materialId !== "number") {
+          return;
+        }
+        const existingBlocks = blocksByMaterialId.get(materialId) || [];
+        existingBlocks.push(block);
+        blocksByMaterialId.set(materialId, existingBlocks);
+      });
+
+      if (blocksByMaterialId.size === 0) {
+        return;
+      }
+
+      const nextInventory = baseInventory.map((item) => {
+        const itemBlocks = blocksByMaterialId.get(item.id);
+        if (!itemBlocks || itemBlocks.length === 0) {
+          return item;
+        }
+
+        const outputs = buildDisplayedRunMethodOutputs(run, itemBlocks);
+        const nextPrimingOutput = {
+          ...(item.priming_output || {}),
+          material_id: item.id,
+          title: item.title,
+          source_path: item.source_path ?? null,
+          ...(Array.isArray(outputs.learning_objectives)
+            ? { learning_objectives: outputs.learning_objectives as Array<Record<string, unknown>> }
+            : {}),
+          ...(typeof outputs.summary === "string" ? { summary: outputs.summary } : {}),
+          ...(typeof outputs.map === "string" ? { root_explanation: outputs.map } : {}),
+          ...(Array.isArray(outputs.terminology)
+            ? { terminology: outputs.terminology as string[] }
+            : {}),
+          ...(Array.isArray(outputs.concepts) ? { concepts: outputs.concepts as string[] } : {}),
+          ...(Array.isArray(outputs.gaps)
+            ? { gaps: outputs.gaps as string[] }
+            : Array.isArray(outputs.follow_up_targets)
+              ? { gaps: outputs.follow_up_targets as string[] }
+              : {}),
+        };
+
+        if (!run.methodId) {
+          return {
+            ...item,
+            priming_output: nextPrimingOutput,
+          };
+        }
+
+        const nextRun: TutorPrimingMethodRun = {
+          method_id: run.methodId,
+          method_name: run.label,
+          output_family:
+            run.blocks.find((block) => block.kind === "objectives")
+              ? "learning_objectives"
+              : run.blocks.find((block) => block.kind === "summary")
+                ? "orientation_summary"
+                : run.blocks.find((block) => block.kind === "terms")
+                  ? "terminology"
+                  : "notes",
+          outputs,
+          source_ids: [item.id],
+          status: "complete",
+          updated_at: new Date().toISOString(),
+        };
+        const existingMethodOutputs = [...(item.method_outputs || [])];
+        const methodIndex = existingMethodOutputs.findIndex(
+          (entry) => entry.method_id === run.methodId,
+        );
+        if (methodIndex >= 0) {
+          existingMethodOutputs[methodIndex] = nextRun;
+        } else {
+          existingMethodOutputs.push(nextRun);
+        }
+        return {
+          ...item,
+          priming_output: nextPrimingOutput,
+          method_outputs: existingMethodOutputs,
+        };
+      });
+
+      setPrimingSourceInventory(nextInventory);
+      if (run.methodId) {
+        setPrimingMethodRuns(buildPrimingMethodRunsFromInventory(nextInventory, primingMethods));
+      }
+    },
+    [mergedPrimingSourceInventory, primingMethods, primingSourceInventory],
   );
 
   // ─── Create workflow ───
@@ -1500,6 +1707,7 @@ export function useTutorWorkflow({
     resetPrimingDraft,
     saveWorkflowPriming,
     runWorkflowPrimingAssist,
+    applyPrimingDisplayedRun,
     createWorkflowAndOpenPriming,
     openStudioPriming,
     deleteWorkflowRecord,

@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Play, Sparkles } from "lucide-react";
+import { Loader2, Play, SendHorizontal, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import type {
   ChainRunResult,
   MethodBlock,
+  TutorPrimingConversationTurn,
+  TutorPrimingDisplayedRun,
   TutorPrimingMethodRun,
+  TutorPrimingResultBlock,
+  TutorPrimingResultBlockKind,
   TutorPrimingSourceInventoryItem,
 } from "@/api.types";
 import { ConceptMapStructured } from "@/components/brain/ConceptMapStructured";
@@ -44,29 +48,16 @@ const PRIME_METHOD_DISPLAY_ORDER = [
   "M-PRE-014",
 ] as const;
 
-type ResultBlockKind =
-  | "objectives"
-  | "concept_map"
-  | "summary"
-  | "terms"
-  | "generic";
+type ResultBlockKind = TutorPrimingResultBlockKind;
+type ResultBlock = TutorPrimingResultBlock;
+type PanelRunResult = TutorPrimingDisplayedRun;
 
-type ResultBlock = {
+type PrimingChatTurn = {
   id: string;
-  title: string;
-  badge: string;
-  kind: ResultBlockKind;
-  sourceLabel: string;
-  content: string;
-  objectives?: Array<{ lo_code?: string; title?: string }>;
-  terms?: Array<{ term: string; definition: string | null; raw: string }>;
-};
-
-type PanelRunResult = {
-  key: string;
-  label: string;
-  kind: "method" | "chain";
-  blocks: ResultBlock[];
+  role: "user" | "assistant";
+  message: string;
+  updatedRun?: PanelRunResult | null;
+  applied?: boolean;
 };
 
 type RunOption =
@@ -253,6 +244,7 @@ function buildMethodResultBlocks(
         badge: "OBJECTIVES",
         kind: "objectives",
         sourceLabel,
+        ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
         content: objectives
           .map((item) => (item.lo_code ? `${item.lo_code} — ${item.title}` : item.title || ""))
           .filter(Boolean)
@@ -269,6 +261,7 @@ function buildMethodResultBlocks(
         badge: "MAP",
         kind: "concept_map",
         sourceLabel,
+        ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
         content: map,
       });
     }
@@ -281,6 +274,7 @@ function buildMethodResultBlocks(
         badge: "SUMMARY",
         kind: "summary",
         sourceLabel,
+        ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
         content: summary,
       });
     }
@@ -293,6 +287,7 @@ function buildMethodResultBlocks(
         badge: "TERMS",
         kind: "terms",
         sourceLabel,
+        ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
         content: terminology.map((term) => term.raw).join("\n"),
         terms: terminology,
       });
@@ -306,6 +301,7 @@ function buildMethodResultBlocks(
         badge: "CONCEPTS",
         kind: "generic",
         sourceLabel,
+        ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
         content: concepts.map((concept) => `- ${concept}`).join("\n"),
       });
     }
@@ -318,6 +314,7 @@ function buildMethodResultBlocks(
         badge: "GAPS",
         kind: "generic",
         sourceLabel,
+        ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
         content: gaps.map((gap) => `- ${gap}`).join("\n"),
       });
     }
@@ -354,7 +351,7 @@ function buildChainResultBlocks(result: ChainRunResult): ResultBlock[] {
     });
 }
 
-function renderObjectives(objectives: Array<{ lo_code?: string; title?: string }>) {
+function renderObjectives(objectives: Array<{ lo_code?: string | null; title?: string | null }>) {
   return (
     <ol className="space-y-2">
       {objectives.map((item, index) => (
@@ -491,6 +488,7 @@ interface TutorWorkflowPrimingPanelProps {
   onSendResultToWorkspace?: (
     workspaceObject: Extract<StudioWorkspaceObject, { kind: "text_note" }>,
   ) => void;
+  onApplyRefinedResults?: (run: TutorPrimingDisplayedRun) => void;
   isSaving: boolean;
   isStartingTutor: boolean;
   isRunningAssist: boolean;
@@ -516,6 +514,7 @@ export function TutorWorkflowPrimingPanel({
   onRunAssistForSelected,
   onPromoteResultToPrimePacket,
   onSendResultToWorkspace,
+  onApplyRefinedResults,
   isRunningAssist,
 }: TutorWorkflowPrimingPanelProps) {
   const [pendingMethodResult, setPendingMethodResult] = useState<{
@@ -524,6 +523,9 @@ export function TutorWorkflowPrimingPanel({
   } | null>(null);
   const [displayedRun, setDisplayedRun] = useState<PanelRunResult | null>(null);
   const [runningChain, setRunningChain] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [chatTurns, setChatTurns] = useState<PrimingChatTurn[]>([]);
+  const [sendingChat, setSendingChat] = useState(false);
   const previousAssistRunningRef = useRef(isRunningAssist);
 
   const {
@@ -663,6 +665,7 @@ export function TutorWorkflowPrimingPanel({
       key: `method:${pendingMethodResult.methodId}:${Date.now()}`,
       label: methodLabel,
       kind: "method",
+      methodId: pendingMethodResult.methodId,
       blocks,
     });
     setPendingMethodResult(null);
@@ -706,6 +709,9 @@ export function TutorWorkflowPrimingPanel({
       return;
     }
 
+    setChatTurns([]);
+    setChatInput("");
+
     if (selectedRunOption.kind === "method") {
       setPendingMethodResult({
         methodId: selectedRunOption.methodId,
@@ -731,6 +737,7 @@ export function TutorWorkflowPrimingPanel({
         key: `chain:${selectedRunOption.chainId}:${result.run_id}`,
         label: result.chain_name,
         kind: "chain",
+        chainId: selectedRunOption.chainId,
         blocks: buildChainResultBlocks(result),
       });
       toast.success(`${result.chain_name} completed`);
@@ -764,6 +771,66 @@ export function TutorWorkflowPrimingPanel({
     }) as Extract<StudioWorkspaceObject, { kind: "text_note" }>;
     onSendResultToWorkspace?.(workspaceObject);
   };
+
+  const handleApplyRefinedResults = (turnId: string, run: PanelRunResult) => {
+    setDisplayedRun(run);
+    onApplyRefinedResults?.(run);
+    setChatTurns((current) =>
+      current.map((turn) => (turn.id === turnId ? { ...turn, applied: true } : turn)),
+    );
+    toast.success("Priming results updated");
+  };
+
+  const handleSendChat = async () => {
+    const message = chatInput.trim();
+    if (!displayedRun || displayedRun.blocks.length === 0 || !message || sendingChat) {
+      return;
+    }
+
+    const userTurnId = `priming-user-${Date.now()}`;
+    const userTurn: PrimingChatTurn = {
+      id: userTurnId,
+      role: "user",
+      message,
+    };
+    const conversationHistory: TutorPrimingConversationTurn[] = chatTurns.map((turn) => ({
+      role: turn.role,
+      message: turn.message,
+      ...(turn.updatedRun ? { updatedResults: turn.updatedRun } : {}),
+    }));
+
+    setChatTurns((current) => [...current, userTurn]);
+    setChatInput("");
+    setSendingChat(true);
+    try {
+      const response = await api.tutor.refinePrimingAssist({
+        message,
+        material_ids: selectedMaterials,
+        extraction_results: displayedRun,
+        conversation_history: conversationHistory,
+      });
+      setChatTurns((current) => [
+        ...current,
+        {
+          id: `priming-assistant-${Date.now()}`,
+          role: "assistant",
+          message: response.assistant_message,
+          updatedRun: response.updated_results || null,
+          applied: false,
+        },
+      ]);
+    } catch (error) {
+      setChatTurns((current) => current.filter((turn) => turn.id !== userTurnId));
+      setChatInput(message);
+      toast.error(
+        `Priming chat failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    } finally {
+      setSendingChat(false);
+    }
+  };
+
+  const chatDisabled = !displayedRun || displayedRun.blocks.length === 0;
 
   return (
     <div
@@ -961,19 +1028,108 @@ export function TutorWorkflowPrimingPanel({
         </div>
       </section>
 
-      <section className="rounded-[0.95rem] border border-[rgba(255,118,144,0.16)] bg-black/20 p-4">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]">
-          Priming Chat
+      <section className="flex min-h-[260px] flex-col rounded-[0.95rem] border border-[rgba(255,118,144,0.16)] bg-black/20 p-4">
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+            Priming Chat
+          </div>
+          <p className="mt-1 text-sm leading-6 text-[#ffd9e1]/70">
+            {chatDisabled
+              ? "Run a method or chain first, then use chat to expand, revise, or source-check the current Priming results."
+              : "Use chat to refine the current Priming results. Apply changes only when you want the output area replaced."}
+          </p>
         </div>
-        <p className="mt-1 text-sm leading-6 text-[#ffd9e1]/70">
-          Phase 2 will add chat-based refinement on top of these extraction results.
-        </p>
-        <input
-          type="text"
-          disabled
-          placeholder="Chat with priming results coming soon"
-          className="mt-3 h-11 w-full rounded-[0.85rem] border border-[rgba(255,118,144,0.14)] bg-black/25 px-3 text-sm text-[#ffd9e1]/48 outline-none placeholder:text-[#ffd9e1]/38"
-        />
+
+        <div className="mt-4 flex-1 space-y-3 overflow-y-auto pr-1">
+          {chatTurns.length === 0 ? (
+            <div className="rounded-[0.85rem] border border-dashed border-[rgba(255,118,144,0.18)] bg-black/15 px-4 py-5 text-sm leading-6 text-[#ffd9e1]/62">
+              {chatDisabled
+                ? "Chat with priming results coming soon"
+                : "Ask Priming to expand a specific objective, cite a claim, or rewrite the current output."}
+            </div>
+          ) : (
+            chatTurns.map((turn) => (
+              <article
+                key={turn.id}
+                data-testid={`priming-chat-turn-${turn.role}`}
+                className={`rounded-[0.85rem] border px-4 py-3 ${
+                  turn.role === "assistant"
+                    ? "border-[rgba(255,118,144,0.16)] bg-black/22"
+                    : "border-[rgba(255,118,144,0.12)] bg-[rgba(255,68,104,0.08)]"
+                }`}
+              >
+                <div className="text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]/76">
+                  {turn.role === "assistant" ? "Priming Assist" : "You"}
+                </div>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#ffe6ec]">
+                  {turn.message}
+                </p>
+                {turn.role === "assistant" && turn.updatedRun ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => handleApplyRefinedResults(turn.id, turn.updatedRun!)}
+                      disabled={Boolean(turn.applied)}
+                      className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd9e1]"
+                    >
+                      {turn.applied ? "Applied" : "Apply changes"}
+                    </Button>
+                    <span className="text-[11px] text-[#ffd9e1]/60">
+                      This assistant turn includes a replacement result set.
+                    </span>
+                  </div>
+                ) : null}
+              </article>
+            ))
+          )}
+        </div>
+
+        <div className="mt-4 border-t border-[rgba(255,118,144,0.12)] pt-4">
+          <div className="flex flex-col gap-3">
+            <textarea
+              data-testid="priming-chat-input"
+              value={chatInput}
+              onChange={(event) => setChatInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  void handleSendChat();
+                }
+              }}
+              disabled={chatDisabled || sendingChat}
+              placeholder={
+                chatDisabled
+                  ? "Run a method first to chat with Priming results"
+                  : "Ask Priming to refine the current results"
+              }
+              className="min-h-[86px] w-full rounded-[0.85rem] border border-[rgba(255,118,144,0.14)] bg-black/25 px-3 py-3 text-sm text-[#ffe6ec] outline-none placeholder:text-[#ffd9e1]/38 disabled:text-[#ffd9e1]/48"
+            />
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-[11px] leading-5 text-[#ffd9e1]/56">
+                {chatDisabled
+                  ? "Chat unlocks after the current run produces results."
+                  : "Chat history stays here until the next RUN replaces the current result set."}
+              </div>
+              <Button
+                type="button"
+                data-testid="priming-chat-send"
+                onClick={() => {
+                  void handleSendChat();
+                }}
+                disabled={chatDisabled || sendingChat || !chatInput.trim()}
+                className="rounded-full border border-[rgba(255,118,144,0.22)] bg-[rgba(255,68,104,0.18)] px-5 font-mono text-[10px] uppercase tracking-[0.18em] text-white hover:bg-[rgba(255,68,104,0.28)]"
+              >
+                {sendingChat ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <SendHorizontal className="mr-2 h-4 w-4" />
+                )}
+                Send
+              </Button>
+            </div>
+          </div>
+        </div>
       </section>
     </div>
   );

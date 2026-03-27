@@ -78,6 +78,7 @@ PRIME_METHOD_OUTPUT_KEYS = {
     "M-PRE-013": {"summary", "major_sections"},
     "M-PRE-014": {"gaps", "unsupported_jumps"},
 }
+PRIMING_RESULT_BLOCK_KINDS = {"objectives", "concept_map", "summary", "terms", "generic"}
 
 
 def _now_iso() -> str:
@@ -280,6 +281,143 @@ def _normalize_priming_method_runs(value: Any) -> list[dict[str, Any]]:
         seen.add(key)
         runs.append(normalized)
     return runs
+
+
+def _normalize_priming_result_terms(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    terms: list[dict[str, Any]] = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        term = _normalize_text(item.get("term"))
+        raw = _normalize_text(item.get("raw"))
+        definition = _normalize_text(item.get("definition"))
+        if not term and not raw:
+            continue
+        resolved_term = term or raw or "Term"
+        resolved_raw = raw or (
+            f"{resolved_term} :: {definition}" if definition else resolved_term
+        )
+        terms.append(
+            {
+                "term": resolved_term,
+                "definition": definition,
+                "raw": resolved_raw,
+            }
+        )
+    return terms
+
+
+def _normalize_priming_result_block(value: Any, *, field_name: str) -> dict[str, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    block_id = _normalize_text(value.get("id"))
+    title = _normalize_text(value.get("title"))
+    badge = _normalize_text(value.get("badge"))
+    content = _normalize_text(value.get("content"))
+    source_label = _normalize_text(value.get("sourceLabel") or value.get("source_label"))
+    kind = _normalize_text(value.get("kind")) or "generic"
+
+    if not block_id or not title or not badge or not content or not source_label:
+        return None
+    if kind not in PRIMING_RESULT_BLOCK_KINDS:
+        kind = "generic"
+
+    block: dict[str, Any] = {
+        "id": block_id,
+        "title": title,
+        "badge": badge,
+        "kind": kind,
+        "sourceLabel": source_label,
+        "content": content,
+    }
+    material_id = _normalize_int(
+        value.get("materialId") if "materialId" in value else value.get("material_id"),
+        field_name=f"{field_name}.materialId",
+    )
+    if material_id is not None:
+        block["materialId"] = material_id
+    objectives = _normalize_objective_list(value.get("objectives"))
+    if objectives:
+        block["objectives"] = objectives
+    terms = _normalize_priming_result_terms(value.get("terms"))
+    if terms:
+        block["terms"] = terms
+    return block
+
+
+def _normalize_priming_displayed_run(
+    value: Any,
+    *,
+    field_name: str,
+) -> dict[str, Any] | None:
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError(f"{field_name} must be an object")
+
+    run_kind = _normalize_text(value.get("kind")) or "method"
+    if run_kind not in {"method", "chain"}:
+        raise ValueError(f"{field_name}.kind must be 'method' or 'chain'")
+
+    blocks = [
+        normalized
+        for normalized in (
+            _normalize_priming_result_block(item, field_name=f"{field_name}.blocks[]")
+            for item in _normalize_list(value.get("blocks"), field_name=f"{field_name}.blocks")
+        )
+        if normalized is not None
+    ]
+    if not blocks:
+        raise ValueError(f"{field_name}.blocks must include at least one block")
+
+    normalized_run: dict[str, Any] = {
+        "key": _normalize_text(value.get("key")) or f"priming-run-{uuid.uuid4().hex[:8]}",
+        "label": _normalize_text(value.get("label")) or "Priming Results",
+        "kind": run_kind,
+        "blocks": blocks,
+    }
+    method_id = _normalize_priming_method_id(
+        value.get("methodId") if "methodId" in value else value.get("method_id")
+    )
+    if method_id:
+        normalized_run["methodId"] = method_id
+    chain_id = _normalize_int(
+        value.get("chainId") if "chainId" in value else value.get("chain_id"),
+        field_name=f"{field_name}.chainId",
+    )
+    if chain_id is not None:
+        normalized_run["chainId"] = chain_id
+    return normalized_run
+
+
+def _normalize_priming_conversation_turn(value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    role = _normalize_text(value.get("role")) or "user"
+    if role not in {"user", "assistant"}:
+        return None
+    message = _normalize_text(value.get("message"))
+    if not message:
+        return None
+    turn: dict[str, Any] = {
+        "role": role,
+        "message": message,
+    }
+    updated_results_value = (
+        value.get("updatedResults")
+        if "updatedResults" in value
+        else value.get("updated_results")
+    )
+    if updated_results_value is not None:
+        updated_results = _normalize_priming_displayed_run(
+            updated_results_value,
+            field_name="conversation_history.updatedResults",
+        )
+        if updated_results:
+            turn["updatedResults"] = updated_results
+    return turn
 
 
 def _load_prime_method_cards() -> dict[str, dict[str, Any]]:
@@ -1786,6 +1924,167 @@ def create_tutor_publish_result(workflow_id: str):
     finally:
         conn.close()
     return jsonify({"publish_result": _serialize_publish_result(publish_row)})
+
+
+def _build_priming_refinement_material_context(material_rows: list[sqlite3.Row]) -> str:
+    sections: list[str] = []
+    for row in material_rows:
+        material_id = int(row["id"])
+        content = str(row["content"] or "").replace("\ufffd", "").strip()
+        if not content:
+            continue
+        windows = _split_priming_content_windows(content, chunk_chars=12000, overlap_chars=400)
+        excerpt = "\n\n--- MATERIAL CHUNK BREAK ---\n\n".join(windows[:2])
+        if len(windows) > 2:
+            excerpt = (
+                f"{excerpt}\n\n"
+                f"[Content truncated for prompt size after 2 of {len(windows)} chunks. Prefer citing the source title or path when asked for support.]"
+            )
+        sections.append(
+            "\n".join(
+                [
+                    f"Material ID: {material_id}",
+                    f"Title: {row['title'] or f'Material {material_id}'}",
+                    f"Source path: {row['source_path'] or 'Unknown'}",
+                    "Content:",
+                    excerpt,
+                ]
+            )
+        )
+    return "\n\n==== NEXT MATERIAL ====\n\n".join(sections)
+
+
+@tutor_bp.route("/priming-assist", methods=["POST"])
+def refine_tutor_priming_results():
+    data = request.get_json(silent=True) or {}
+    try:
+        material_ids = [
+            material_id
+            for material_id in (
+                _normalize_int(item, field_name="material_ids[]")
+                for item in _normalize_list(data.get("material_ids"), field_name="material_ids")
+            )
+            if material_id is not None
+        ]
+        extraction_results = _normalize_priming_displayed_run(
+            data.get("extraction_results"),
+            field_name="extraction_results",
+        )
+        conversation_history = [
+            turn
+            for turn in (
+                _normalize_priming_conversation_turn(item)
+                for item in _normalize_list(
+                    data.get("conversation_history"),
+                    field_name="conversation_history",
+                )
+            )
+            if turn is not None
+        ]
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    message = _normalize_text(data.get("message"))
+    if not message:
+        return jsonify({"error": "message is required"}), 400
+    if not material_ids:
+        return jsonify({"error": "material_ids is required"}), 400
+    if extraction_results is None:
+        return jsonify({"error": "extraction_results is required"}), 400
+
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    try:
+        material_rows = _fetch_material_rows(conn, material_ids)
+    finally:
+        conn.close()
+
+    found_ids = {int(row["id"]) for row in material_rows}
+    missing_ids = [material_id for material_id in material_ids if material_id not in found_ids]
+    if missing_ids:
+        return jsonify({"error": f"Materials not found: {', '.join(str(item) for item in missing_ids)}"}), 404
+
+    material_context = _build_priming_refinement_material_context(material_rows)
+    if not material_context:
+        return jsonify({"error": "Loaded materials do not contain usable content"}), 400
+
+    from llm_provider import call_llm
+
+    system_prompt = """You are Priming refinement chat for a study workflow.
+You help the learner refine the current priming extraction results without leaving the Priming panel.
+Stay grounded in the loaded material content and the current extraction results. Do not invent facts beyond the provided sources.
+If the learner asks to expand, clarify, cite, or explain, answer directly in assistant_message.
+If the learner is explicitly asking the extraction results themselves to change, include updated_results as a FULL replacement of the current displayed result set. Otherwise updated_results must be null.
+When the learner mentions an objective number, reference that exact objective number explicitly in your answer.
+When the learner asks for support or citation, cite by material title and source path when possible.
+Return STRICT JSON only:
+{
+  "assistant_message": "string",
+  "updated_results": null | {
+    "key": "string",
+    "label": "string",
+    "kind": "method" | "chain",
+    "methodId": "string or null",
+    "chainId": 123,
+    "blocks": [
+      {
+        "id": "string",
+        "title": "string",
+        "badge": "string",
+        "kind": "objectives" | "concept_map" | "summary" | "terms" | "generic",
+        "sourceLabel": "string",
+        "materialId": 123,
+        "content": "string",
+        "objectives": [{"lo_code": "string or null", "title": "string"}],
+        "terms": [{"term": "string", "definition": "string or null", "raw": "string"}]
+      }
+    ]
+  }
+}
+If you include updated_results, keep every unchanged block too so the payload is a full replacement, not a patch."""
+
+    user_prompt = (
+        "Loaded material content:\n"
+        f"{material_context}\n\n"
+        "Current extraction results JSON:\n"
+        f"{_json_dumps(extraction_results)}\n\n"
+        "Previous priming conversation history JSON:\n"
+        f"{_json_dumps(conversation_history)}\n\n"
+        "Current learner follow-up:\n"
+        f"{message}"
+    )
+
+    result = call_llm(system_prompt=system_prompt, user_prompt=user_prompt, timeout=60)
+    if not result.get("success"):
+        return jsonify({"error": result.get("error") or "Priming refinement failed"}), 502
+
+    parsed = _extract_json_payload(str(result.get("content") or ""))
+    assistant_message = _normalize_text(
+        parsed.get("assistant_message") if isinstance(parsed, dict) else None
+    )
+    if not assistant_message:
+        return jsonify({"error": "Priming refinement returned invalid JSON"}), 502
+
+    updated_results_value = (
+        parsed.get("updated_results")
+        if isinstance(parsed, dict) and "updated_results" in parsed
+        else parsed.get("updatedResults") if isinstance(parsed, dict) else None
+    )
+    try:
+        updated_results = (
+            _normalize_priming_displayed_run(updated_results_value, field_name="updated_results")
+            if updated_results_value is not None
+            else None
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 502
+
+    return jsonify(
+        {
+            "assistant_message": assistant_message,
+            "updated_results": updated_results,
+        }
+    )
 
 
 @tutor_bp.route("/workflows/<workflow_id>/priming-assist", methods=["POST"])

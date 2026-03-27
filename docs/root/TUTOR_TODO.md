@@ -74,6 +74,29 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - expanded the entry card with a course dropdown plus a fresh `Start Priming` path that creates a new workflow, opens the Priming preset, and preloads that course's materials into Source Shelf
     - validation passed with targeted Tutor/frontend tests, `npm run build`, and live `dev-browser` verification on `/tutor` using course `Neuroscience`, including screenshot evidence at `C:\\Users\\treyt\\.dev-browser\\tmp\\tutor-new-session-priming.png`
 
+- [x] HUD-242. Add Phase 2 Priming refinement chat so users can conversationally revise the current extraction results inside the floating Priming panel.
+  - Scope:
+    - `docs/design/PRIMING_PANEL_CORRECTED.md`
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/api.ts`
+    - `dashboard_rebuild/client/src/api.types.ts`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+    - `dashboard_rebuild/client/src/__tests__/api.test.ts`
+    - `brain/dashboard/api_tutor_workflows.py`
+    - `brain/tests/test_tutor_workflow_priming_assist.py`
+  - Done when:
+    - the bottom Priming chat input becomes active after a successful `RUN` and posts follow-up refinement prompts against the current extraction results plus selected materials
+    - Priming renders a persistent in-panel conversation thread, clears chat history on a new `RUN`, and offers `Apply changes` when a chat turn returns revised results
+    - targeted Priming/frontend tests, backend Priming assist tests, the production frontend build, and a live browser verification of `Expand on objective 3...` all succeed
+  - Assignee: @codex-cli
+  - Completed: 2026-03-27
+  - Notes:
+    - replaced the disabled Phase 1 chat placeholder with a real in-panel Priming chat thread that stays scoped to the current extraction results, preserves conversation history until the next `RUN`, and can apply full replacement result sets back into the output area
+    - added the stateless `POST /api/tutor/priming-assist` backend endpoint plus shared request/response types so Priming follow-ups can refine the current result set without creating a Tutor session or workflow-compaction state
+    - validation passed with targeted frontend tests, backend Priming assist tests, `npm run build`, and live `dev-browser` verification on `/tutor` for `New Session -> Start Priming -> Learning Objectives Primer -> Expand on objective 3...`, with screenshot evidence at `C:\\Users\\treyt\\.dev-browser\\tmp\\priming-phase2-chat-verified.png`
+
 - [ ] HUD-239. Execute the floating-panel Studio v2 cutover from `docs/design/STUDIO_LAYOUT_SPEC_v2.md` using the slice-by-slice TDD runbook.
   - Scope:
     - `docs/design/STUDIO_LAYOUT_SPEC_v2.md`

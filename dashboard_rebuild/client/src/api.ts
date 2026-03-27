@@ -37,6 +37,7 @@ import type {
   TutorSession, TutorSessionWithTurns, TutorSessionEndResult, TutorSessionSummary,
   TutorWorkflowCreateRequest, TutorWorkflowDeleteResponse, TutorWorkflowDetailResponse, TutorWorkflowListResponse,
   TutorPrimingAssistRequest, TutorPrimingAssistResponse, TutorPrimingBundle, TutorPrimingBundleRequest, TutorCapturedNote,
+  TutorPrimingRefinementRequest, TutorPrimingRefinementResponse,
   TutorCapturedNoteRequest, TutorFeedbackEvent, TutorFeedbackEventRequest,
   TutorStageTimeLog, TutorStageTimeLogRequest, TutorMemoryCapsule,
   TutorMemoryCapsuleRequest, TutorPolishBundle, TutorPolishBundleRequest,
@@ -776,6 +777,11 @@ export const api = {
       ),
     runPrimingAssist: (workflowId: string, data: TutorPrimingAssistRequest) =>
       request<TutorPrimingAssistResponse>(`/tutor/workflows/${workflowId}/priming-assist`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    refinePrimingAssist: (data: TutorPrimingRefinementRequest) =>
+      request<TutorPrimingRefinementResponse>("/tutor/priming-assist", {
         method: "POST",
         body: JSON.stringify(data),
       }),

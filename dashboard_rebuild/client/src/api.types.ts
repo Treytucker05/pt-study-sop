@@ -1692,6 +1692,63 @@ export interface TutorPrimingAssistResponse {
   aggregate: TutorPrimingAssistAggregate;
 }
 
+export type TutorPrimingResultBlockKind =
+  | "objectives"
+  | "concept_map"
+  | "summary"
+  | "terms"
+  | "generic";
+
+export interface TutorPrimingResultObjective {
+  lo_code?: string | null;
+  title?: string | null;
+}
+
+export interface TutorPrimingResultTerm {
+  term: string;
+  definition: string | null;
+  raw: string;
+}
+
+export interface TutorPrimingResultBlock {
+  id: string;
+  title: string;
+  badge: string;
+  kind: TutorPrimingResultBlockKind;
+  sourceLabel: string;
+  content: string;
+  materialId?: number | null;
+  objectives?: TutorPrimingResultObjective[];
+  terms?: TutorPrimingResultTerm[];
+}
+
+export interface TutorPrimingDisplayedRun {
+  key: string;
+  label: string;
+  kind: "method" | "chain";
+  methodId?: string | null;
+  chainId?: number | null;
+  blocks: TutorPrimingResultBlock[];
+}
+
+export interface TutorPrimingConversationTurn {
+  role: "user" | "assistant";
+  message: string;
+  updatedResults?: TutorPrimingDisplayedRun | null;
+}
+
+export interface TutorPrimingRefinementRequest {
+  message: string;
+  material_ids: number[];
+  extraction_results: TutorPrimingDisplayedRun;
+  conversation_history: TutorPrimingConversationTurn[];
+}
+
+export interface TutorPrimingRefinementResponse {
+  assistant_message: string;
+  updated_results: TutorPrimingDisplayedRun | null;
+}
+
 export interface TutorCapturedNote {
   id: number;
   workflow_id: string;

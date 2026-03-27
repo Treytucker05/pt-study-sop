@@ -814,6 +814,45 @@ describe("api.chainRun", () => {
   });
 });
 
+describe("api.tutor priming refinement", () => {
+  it("refinePrimingAssist sends POST to /tutor/priming-assist", async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({
+        assistant_message: "Objective 3 needs more physiology detail.",
+        updated_results: null,
+      }),
+    );
+    await api.tutor.refinePrimingAssist({
+      message: "Expand on objective 3",
+      material_ids: [101],
+      extraction_results: {
+        key: "method:M-PRE-010:current",
+        label: "Learning Objectives Primer",
+        kind: "method",
+        methodId: "M-PRE-010",
+        blocks: [
+          {
+            id: "objectives::1",
+            title: "Learning Objectives",
+            badge: "OBJECTIVES",
+            kind: "objectives",
+            sourceLabel: "Cardiac Output Lecture",
+            materialId: 101,
+            content: "LO-3 — Explain how preload affects stroke volume.",
+            objectives: [{ lo_code: "LO-3", title: "Explain how preload affects stroke volume." }],
+          },
+        ],
+      },
+      conversation_history: [],
+    });
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/tutor/priming-assist",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+});
+
 describe("api.studyWheel", () => {
   it("getCurrentCourse fetches", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse({ currentCourse: null }));

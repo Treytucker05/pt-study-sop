@@ -903,6 +903,7 @@ export function TutorShell({
           }}
           onPromoteResultToPrimePacket={handlePromoteTextNoteToPrime}
           onSendResultToWorkspace={handleSendPrimingResultToWorkspace}
+          onApplyRefinedResults={workflow.applyPrimingDisplayedRun}
           isSaving={workflow.savingPrimingBundle}
           isStartingTutor={session.isStarting}
           isRunningAssist={workflow.runningPrimingAssist}

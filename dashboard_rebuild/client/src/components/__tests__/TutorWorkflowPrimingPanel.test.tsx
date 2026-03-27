@@ -6,8 +6,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TutorWorkflowPrimingPanel } from "@/components/TutorWorkflowPrimingPanel";
 import type { TutorPrimingMethodRun } from "@/api.types";
 
-const { getPrimeMethodsMock } = vi.hoisted(() => ({
+const { getPrimeMethodsMock, startChainRunMock, refinePrimingAssistMock } = vi.hoisted(() => ({
   getPrimeMethodsMock: vi.fn(),
+  startChainRunMock: vi.fn(),
+  refinePrimingAssistMock: vi.fn(),
 }));
 
 vi.mock("@/lib/api", () => ({
@@ -16,7 +18,10 @@ vi.mock("@/lib/api", () => ({
       getAll: (...args: unknown[]) => getPrimeMethodsMock(...args),
     },
     chainRun: {
-      start: vi.fn(),
+      start: (...args: unknown[]) => startChainRunMock(...args),
+    },
+    tutor: {
+      refinePrimingAssist: (...args: unknown[]) => refinePrimingAssistMock(...args),
     },
   },
 }));
@@ -151,6 +156,8 @@ describe("TutorWorkflowPrimingPanel", () => {
         description: "Extract structure.",
       },
     ]);
+    startChainRunMock.mockReset();
+    refinePrimingAssistMock.mockReset();
   });
 
   it("shows loaded materials, grouped method/chain selection, and disables RUN when nothing is loaded", async () => {
@@ -169,7 +176,7 @@ describe("TutorWorkflowPrimingPanel", () => {
     ).toBeInTheDocument();
     expect(screen.getByTestId("priming-run-button")).toBeDisabled();
     expect(
-      screen.getByPlaceholderText("Chat with priming results coming soon"),
+      screen.getByPlaceholderText("Run a method first to chat with Priming results"),
     ).toBeDisabled();
   });
 
@@ -364,5 +371,228 @@ describe("TutorWorkflowPrimingPanel", () => {
         }),
       }),
     );
+  });
+
+  it("enables Priming chat after RUN, sends a follow-up, and applies revised results", async () => {
+    const wrapper = createWrapper();
+    const onApplyRefinedResults = vi.fn();
+
+    function Harness() {
+      const [primingMethods, setPrimingMethods] = useState<string[]>([]);
+      const [isRunningAssist, setIsRunningAssist] = useState(false);
+      const [sourceInventory, setSourceInventory] = useState([
+        {
+          id: 101,
+          title: "Cardiac Output Lecture",
+          source_path: "/tmp/cardio-output.pdf",
+          method_outputs: [],
+        },
+      ]);
+      const [primingMethodRuns, setPrimingMethodRuns] = useState<TutorPrimingMethodRun[]>(
+        [],
+      );
+
+      return (
+        <TutorWorkflowPrimingPanel
+          workflow={
+            {
+              workflow_id: "wf-123",
+              updated_at: "2026-03-20T12:00:00Z",
+              status: "priming_in_progress",
+              assignment_title: "Week 7",
+              course_name: "Exercise Phys",
+              topic: "Cardiac output",
+            } as never
+          }
+          courses={[{ id: 1, name: "Exercise Phys", code: "EXPH" }] as never}
+          courseId={1}
+          setCourseId={vi.fn()}
+          selectedMaterials={[101]}
+          setSelectedMaterials={vi.fn()}
+          topic="Cardiac output"
+          setTopic={vi.fn()}
+          objectiveScope="module_all"
+          setObjectiveScope={vi.fn()}
+          selectedObjectiveId=""
+          setSelectedObjectiveId={vi.fn()}
+          selectedObjectiveGroup="Week 7"
+          setSelectedObjectiveGroup={vi.fn()}
+          availableObjectives={[]}
+          studyUnitOptions={[{ value: "Week 7", objectiveCount: 2, materialCount: 1 }]}
+          primingMethods={primingMethods}
+          setPrimingMethods={setPrimingMethods}
+          primingMethodRuns={primingMethodRuns as never}
+          chainId={undefined}
+          setChainId={vi.fn()}
+          customBlockIds={[]}
+          setCustomBlockIds={vi.fn()}
+          templateChains={[] as never}
+          templateChainsLoading={false}
+          summaryText=""
+          setSummaryText={vi.fn()}
+          conceptsText=""
+          setConceptsText={vi.fn()}
+          terminologyText=""
+          setTerminologyText={vi.fn()}
+          rootExplanationText=""
+          setRootExplanationText={vi.fn()}
+          gapsText=""
+          setGapsText={vi.fn()}
+          recommendedStrategyText=""
+          setRecommendedStrategyText={vi.fn()}
+          sourceInventory={sourceInventory as never}
+          vaultFolderPreview="Courses/Exercise Phys/Week 7"
+          readinessItems={[]}
+          preflightBlockers={[]}
+          preflightLoading={false}
+          preflightError={null}
+          onBackToStudio={vi.fn()}
+          onSaveDraft={vi.fn()}
+          onMarkReady={vi.fn()}
+          onStartTutor={vi.fn()}
+          onRunAssistForSelected={() => {
+            setIsRunningAssist(true);
+            Promise.resolve().then(() => {
+              setPrimingMethodRuns([
+                {
+                  method_id: "M-PRE-010",
+                  method_name: "Learning Objectives Primer",
+                  output_family: "learning_objectives",
+                  outputs: {
+                    entries: [
+                      {
+                        material_id: 101,
+                        title: "Cardiac Output Lecture",
+                        learning_objectives: [
+                          { lo_code: "LO-1", title: "Define cardiac output." },
+                          { lo_code: "LO-2", title: "Describe determinants of stroke volume." },
+                          { lo_code: "LO-3", title: "Explain how preload affects stroke volume." },
+                        ],
+                      },
+                    ],
+                  },
+                  source_ids: [101],
+                  status: "complete",
+                  updated_at: "2026-03-21T04:00:00Z",
+                },
+              ]);
+              setSourceInventory([
+                {
+                  id: 101,
+                  title: "Cardiac Output Lecture",
+                  source_path: "/tmp/cardio-output.pdf",
+                  method_outputs: [
+                    {
+                      method_id: "M-PRE-010",
+                      method_name: "Learning Objectives Primer",
+                      output_family: "learning_objectives",
+                      outputs: {
+                        learning_objectives: [
+                          { lo_code: "LO-1", title: "Define cardiac output." },
+                          { lo_code: "LO-2", title: "Describe determinants of stroke volume." },
+                          { lo_code: "LO-3", title: "Explain how preload affects stroke volume." },
+                        ],
+                      },
+                      source_ids: [101],
+                      status: "complete",
+                      updated_at: "2026-03-21T04:00:00Z",
+                    },
+                  ],
+                },
+              ]);
+              setIsRunningAssist(false);
+            });
+          }}
+          onRunAssistForMaterial={vi.fn()}
+          onPromoteResultToPrimePacket={vi.fn()}
+          onSendResultToWorkspace={vi.fn()}
+          onApplyRefinedResults={onApplyRefinedResults}
+          isSaving={false}
+          isStartingTutor={false}
+          isRunningAssist={isRunningAssist}
+          assistTargetMaterialId={null}
+        />
+      );
+    }
+
+    refinePrimingAssistMock.mockResolvedValue({
+      assistant_message:
+        "Objective 3 should explicitly mention the Frank-Starling physiology that links higher preload to higher stroke volume.",
+      updated_results: {
+        key: "method:M-PRE-010:refined",
+        label: "Learning Objectives Primer",
+        kind: "method",
+        methodId: "M-PRE-010",
+        blocks: [
+          {
+            id: "objectives::cardio",
+            title: "Learning Objectives",
+            badge: "OBJECTIVES",
+            kind: "objectives",
+            sourceLabel: "Cardiac Output Lecture",
+            materialId: 101,
+            content:
+              "LO-1 — Define cardiac output.\nLO-2 — Describe determinants of stroke volume.\nLO-3 — Explain how increased preload raises stroke volume through the Frank-Starling mechanism.",
+            objectives: [
+              { lo_code: "LO-1", title: "Define cardiac output." },
+              { lo_code: "LO-2", title: "Describe determinants of stroke volume." },
+              {
+                lo_code: "LO-3",
+                title:
+                  "Explain how increased preload raises stroke volume through the Frank-Starling mechanism.",
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    render(<Harness />, { wrapper });
+
+    await waitFor(() => expect(getPrimeMethodsMock).toHaveBeenCalledWith("PRIME"));
+
+    fireEvent.change(screen.getByTestId("priming-run-selector"), {
+      target: { value: "method:M-PRE-010" },
+    });
+    fireEvent.click(screen.getByTestId("priming-run-button"));
+
+    await waitFor(() =>
+      expect(screen.getByText("Explain how preload affects stroke volume.")).toBeInTheDocument(),
+    );
+
+    fireEvent.change(screen.getByTestId("priming-chat-input"), {
+      target: {
+        value: "Expand on objective 3 with more detail about the physiology",
+      },
+    });
+    fireEvent.click(screen.getByTestId("priming-chat-send"));
+
+    await waitFor(() =>
+      expect(refinePrimingAssistMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Expand on objective 3 with more detail about the physiology",
+          material_ids: [101],
+          conversation_history: [],
+        }),
+      ),
+    );
+
+    expect(
+      await screen.findByText(/objective 3 should explicitly mention the frank-starl/iu),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /apply changes/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /apply changes/i }));
+
+    expect(onApplyRefinedResults).toHaveBeenCalledWith(
+      expect.objectContaining({
+        methodId: "M-PRE-010",
+      }),
+    );
+    expect(
+      await screen.findByText(
+        "Explain how increased preload raises stroke volume through the Frank-Starling mechanism.",
+      ),
+    ).toBeInTheDocument();
   });
 });

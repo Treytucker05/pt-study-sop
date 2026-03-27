@@ -1842,3 +1842,25 @@ Changes not tied to a specific conductor track. Append dated entries below.
     - selecting course `Neuroscience` and clicking `Start Priming` opened the Priming panel
     - Source Shelf loaded `17 materials in run` for the new course
     - screenshot artifact saved to `C:\\Users\\treyt\\.dev-browser\\tmp\\tutor-new-session-priming.png`
+
+## 2026-03-27 - Added Phase 2 Priming refinement chat inside the floating Priming panel
+
+- Replaced the disabled Priming chat placeholder in `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` with a real chat composer and persistent conversation thread that unlock after a successful `RUN`, clear on the next `RUN`, and surface `Apply changes` when a Priming assistant turn returns revised results.
+- Added shared Priming refinement types in `dashboard_rebuild/client/src/api.types.ts`, the frontend API client in `dashboard_rebuild/client/src/api.ts`, and the apply-back-to-output wiring in `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts` so refined method results can replace the current output area without leaving the floating panel.
+- Added a new stateless backend endpoint in `brain/dashboard/api_tutor_workflows.py` at `POST /api/tutor/priming-assist` that accepts the user message, loaded material ids, current extraction results, and prior Priming chat turns, then calls the LLM with the source material plus extraction output as context.
+- Added regression coverage in:
+  - `brain/tests/test_tutor_workflow_priming_assist.py`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+  - `dashboard_rebuild/client/src/__tests__/api.test.ts`
+- Validation passed:
+  - `pytest C:/pt-study-sop/brain/tests/test_tutor_workflow_priming_assist.py -q`
+  - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx client/src/__tests__/api.test.ts client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/hooks/__tests__/useTutorWorkflow.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live `dev-browser` verification confirmed:
+    - `New Session` opened the entry card
+    - `Start Priming` reopened the Priming preset with `Cardiovascular` loaded
+    - `Learning Objectives Primer` produced results and unlocked chat
+    - `Expand on objective 3 with more detail about the physiology` returned an assistant response that explicitly referenced objective 3
+    - screenshot artifact saved to `C:\\Users\\treyt\\.dev-browser\\tmp\\priming-phase2-chat-verified.png`
+- Live-server note:
+  - the first browser verification attempts were still hitting an older Python listener on port `5000` (PID `6448`) even after `Start_Dashboard.bat` launched a new process; killing the stale listener allowed the new `POST /api/tutor/priming-assist` route to respond correctly with `400 message is required` on direct probe and then pass the live UI gate
