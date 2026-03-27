@@ -1,5 +1,8 @@
 import { CoreWorkspaceFrame } from "@/components/CoreWorkspaceFrame";
+import { PageScaffold } from "@/components/PageScaffold";
 import { TutorShell } from "@/components/TutorShell";
+import { TutorTopBar } from "@/components/TutorTopBar";
+import { resolveTutorTeachRuntime } from "@/components/TutorChat.types";
 import { useTutorHub } from "@/hooks/useTutorHub";
 import { useStudioRun } from "@/hooks/useStudioRun";
 import { useTutorSession } from "@/hooks/useTutorSession";
@@ -538,14 +541,108 @@ function useTutorPageController() {
   const liveTutorSessionId = session.hasActiveTutorSession
     ? activeSessionId
     : null;
+  const hasValidatedTutorSession =
+    session.isTutorSessionView &&
+    Boolean(liveTutorSessionId) &&
+    Boolean(session.startedAt);
+  const tutorHeroStats = useMemo(
+    () => [
+      { label: "Surface", value: "TUTOR", tone: "info" as const },
+      {
+        label: "Session",
+        value: hasValidatedTutorSession ? "LIVE" : "READY",
+        tone: hasValidatedTutorSession ? "success" as const : "info" as const,
+      },
+      {
+        label: "Course",
+        value: hub.courseLabel || "UNSCOPED",
+        tone: hub.courseLabel ? undefined : ("warn" as const),
+      },
+      {
+        label: "Materials",
+        value: String(hub.selectedMaterials.length),
+        tone:
+          hub.selectedMaterials.length > 0
+            ? ("info" as const)
+            : undefined,
+      },
+    ],
+    [hasValidatedTutorSession, hub.courseLabel, hub.selectedMaterials.length],
+  );
+  const tutorTopBar = useMemo(() => {
+    const teachRuntime =
+      session.currentBlock || workflow.activeWorkflowDetail
+        ? resolveTutorTeachRuntime({
+            workflowDetail: workflow.activeWorkflowDetail ?? undefined,
+            workflowStage:
+              workflow.activeWorkflowDetail?.workflow?.current_stage ?? null,
+            currentBlock: session.currentBlock,
+          })
+        : null;
+
+    return (
+      <TutorTopBar
+        isTutorSessionView={hasValidatedTutorSession}
+        brainLaunchContext={brainLaunchContext}
+        topic={hub.effectiveTopic || hub.topic || ""}
+        turnCount={session.turnCount ?? 0}
+        startedAt={session.startedAt}
+        hasChain={session.hasChain}
+        currentBlock={session.currentBlock}
+        isChainComplete={session.isChainComplete}
+        blockTimerSeconds={session.blockTimerSeconds}
+        timerPaused={session.timerPaused}
+        progressCount={session.progressCount}
+        chainBlocksLength={session.chainBlocks.length}
+        formatTimer={session.formatTimer}
+        onSetTimerPaused={session.setTimerPaused}
+        onAdvanceBlock={() => {
+          void session.advanceBlock();
+        }}
+        activeWorkflowId={workflow.activeWorkflowId}
+        activeWorkflowDetail={workflow.activeWorkflowDetail ?? undefined}
+        activeSessionId={liveTutorSessionId}
+        teachRuntime={teachRuntime}
+      />
+    );
+  }, [
+    brainLaunchContext,
+    hasValidatedTutorSession,
+    hub.effectiveTopic,
+    hub.topic,
+    liveTutorSessionId,
+    session.blockTimerSeconds,
+    session.chainBlocks.length,
+    session.currentBlock,
+    session.formatTimer,
+    session.hasChain,
+    session.isChainComplete,
+    session.progressCount,
+    session.setTimerPaused,
+    session.startedAt,
+    session.timerPaused,
+    session.turnCount,
+    workflow.activeWorkflowDetail,
+    workflow.activeWorkflowId,
+    session.advanceBlock,
+  ]);
 
   // ─── Render ───
   return (
-    <div className="h-full min-h-0">
+    <PageScaffold
+      eyebrow="Live Study Core"
+      title="Tutor"
+      subtitle="Run your study plan from Workspace Home through Priming, then move into Tutor and Final Sync without losing context."
+      className="h-full min-h-0"
+      contentClassName="gap-6"
+      heroClassName="min-h-[243px]"
+      stats={tutorHeroStats}
+    >
       <CoreWorkspaceFrame
         className="tutor-shell-frame"
         mainClassName="tutor-shell-frame__main"
         contentClassName="relative min-h-0"
+        topBar={tutorTopBar}
       >
         <TutorShell
           activeSessionId={liveTutorSessionId}
@@ -600,7 +697,7 @@ function useTutorPageController() {
           onResumeHubCandidate={resumeFromHubCandidate}
         />
       </CoreWorkspaceFrame>
-    </div>
+    </PageScaffold>
   );
 }
 

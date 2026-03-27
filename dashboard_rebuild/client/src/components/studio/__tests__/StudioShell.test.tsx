@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { useEffect, type ReactNode } from "react";
 
@@ -293,6 +293,77 @@ describe("StudioShell", () => {
     expect((memory?.position.x || 0)).toBeGreaterThan(tutor?.position.x || 0);
   });
 
+  it("preserves the same panel DOM node when position changes", () => {
+    const minimalLayout = buildStudioShellPresetLayout("minimal");
+    const movedLayout = minimalLayout.map((item) =>
+      item.panel === "tutor_chat"
+        ? {
+            ...item,
+            position: {
+              x: item.position.x + 120,
+              y: item.position.y + 40,
+            },
+          }
+        : item,
+    );
+
+    const { rerender } = render(
+      <StudioShell
+        panelLayout={minimalLayout}
+        setPanelLayout={vi.fn()}
+        tutorPanel={<div>Tutor</div>}
+      />,
+    );
+
+    const panelBefore = screen.getByTestId("studio-tutor-panel");
+
+    rerender(
+      <StudioShell
+        panelLayout={movedLayout}
+        setPanelLayout={vi.fn()}
+        tutorPanel={<div>Tutor</div>}
+      />,
+    );
+
+    const panelAfter = screen.getByTestId("studio-tutor-panel");
+    expect(panelAfter).toBe(panelBefore);
+  });
+
+  it("does not recenter the canvas when a panel position updates", () => {
+    const minimalLayout = buildStudioShellPresetLayout("minimal");
+    const movedLayout = minimalLayout.map((item) =>
+      item.panel === "tutor_chat"
+        ? {
+            ...item,
+            position: {
+              x: item.position.x + 160,
+              y: item.position.y,
+            },
+          }
+        : item,
+    );
+
+    const { rerender } = render(
+      <StudioShell
+        panelLayout={minimalLayout}
+        setPanelLayout={vi.fn()}
+        tutorPanel={<div>Tutor</div>}
+      />,
+    );
+
+    setTransformSpy.mockClear();
+
+    rerender(
+      <StudioShell
+        panelLayout={movedLayout}
+        setPanelLayout={vi.fn()}
+        tutorPanel={<div>Tutor</div>}
+      />,
+    );
+
+    expect(setTransformSpy).not.toHaveBeenCalled();
+  });
+
   it("shows a Mind Map toolbar button and spawns the Mind Map panel from the registry", () => {
     const setPanelLayout = vi.fn();
 
@@ -321,7 +392,7 @@ describe("StudioShell", () => {
     );
   });
 
-  it("lets the user group and ungroup selected windows from the toolbar", () => {
+  it("lets the user group and ungroup selected windows from the toolbar", async () => {
     const setPanelLayout = vi.fn();
     const studyLayout = buildStudioShellPresetLayout("study");
     const { rerender } = render(
@@ -349,7 +420,9 @@ describe("StudioShell", () => {
     fireEvent.pointerDown(tutorTitleBar!);
     fireEvent.pointerDown(statusTitleBar!, { shiftKey: true });
 
-    expect(screen.getByText("2 Selected")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("2 Selected")).toBeInTheDocument();
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "Group selected windows" }));
 

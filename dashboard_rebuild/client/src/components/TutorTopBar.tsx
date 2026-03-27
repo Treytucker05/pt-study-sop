@@ -162,43 +162,48 @@ export function TutorTopBar({
       ) : null}
 
       <div className="space-y-3">
-        {activeWorkflowId || workflowStageLabel || isTutorSessionView ? (
-          <div
-            className={cn(TUTOR_STRIP, "flex flex-wrap items-center gap-2.5")}
-          >
-            <span className="font-arcade text-ui-xs uppercase tracking-[0.18em] text-white">
-              ACTIVE WORKFLOW
-            </span>
-            <span className="h-4 w-px bg-primary/18" aria-hidden="true" />
-            <span className="font-mono text-sm uppercase tracking-[0.16em] text-foreground/78">
-              {surfaceLabel}
-            </span>
-            {workflowStageLabel ? (
-              <Badge
-                variant="outline"
-                className="rounded-[0.2rem] border-primary/20 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em]"
-              >
-                STAGE {workflowStageLabel}
-              </Badge>
-            ) : null}
-            {workflowStatusLabel ? (
-              <Badge
-                variant="outline"
-                className="rounded-[0.2rem] border-secondary/25 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em]"
-              >
-                {workflowStatusLabel}
-              </Badge>
-            ) : null}
-            {isTutorSessionView ? (
-              <Badge
-                variant="outline"
-                className="rounded-[0.2rem] border-emerald-500/26 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em] text-emerald-300"
-              >
-                LIVE SESSION
-              </Badge>
-            ) : null}
-          </div>
-        ) : null}
+        <div
+          className={cn(TUTOR_STRIP, "flex flex-wrap items-center gap-2.5")}
+        >
+          <span className="font-arcade text-ui-xs uppercase tracking-[0.18em] text-white">
+            ACTIVE WORKFLOW
+          </span>
+          <span className="h-4 w-px bg-primary/18" aria-hidden="true" />
+          <span className="font-mono text-sm uppercase tracking-[0.16em] text-foreground/78">
+            {surfaceLabel}
+          </span>
+          {workflowStageLabel ? (
+            <Badge
+              variant="outline"
+              className="rounded-[0.2rem] border-primary/20 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em]"
+            >
+              STAGE {workflowStageLabel}
+            </Badge>
+          ) : null}
+          {workflowStatusLabel ? (
+            <Badge
+              variant="outline"
+              className="rounded-[0.2rem] border-secondary/25 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em]"
+            >
+              {workflowStatusLabel}
+            </Badge>
+          ) : null}
+          {isTutorSessionView ? (
+            <Badge
+              variant="outline"
+              className="rounded-[0.2rem] border-emerald-500/26 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em] text-emerald-300"
+            >
+              LIVE SESSION
+            </Badge>
+          ) : (
+            <Badge
+              variant="outline"
+              className="rounded-[0.2rem] border-primary/20 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em] text-foreground/76"
+            >
+              READY
+            </Badge>
+          )}
+        </div>
       </div>
 
       {isTutorSessionView ? (

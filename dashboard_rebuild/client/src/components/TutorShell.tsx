@@ -60,13 +60,6 @@ type PrimePromotedWorkspaceObject = Extract<
   { kind: "excerpt" | "text_note" }
 >;
 
-const PRIMING_METHOD_OPTIONS = [
-  { id: "M-PRE-010", label: "Objectives" },
-  { id: "M-PRE-008", label: "Bridge" },
-  { id: "M-PRE-005", label: "Concept Map" },
-  { id: "M-PRE-014", label: "Weak Points" },
-] as const;
-
 function readTemplateChainLabel(chain: TutorTemplateChain): string {
   const legacyTitle = (chain as TutorTemplateChain & { title?: string }).title;
   return chain.name || legacyTitle || `Chain #${chain.id}`;
@@ -494,6 +487,20 @@ export function TutorShell({
     },
     [],
   );
+  const handleSendPrimingResultToWorkspace = useCallback(
+    (workspaceObject: Extract<StudioWorkspaceObject, { kind: "text_note" }>) => {
+      setWorkspaceDraftObjects((prev) =>
+        prev.some((existingObject) => existingObject.id === workspaceObject.id)
+          ? prev
+          : [...prev, workspaceObject],
+      );
+      setCanvasObjectIds((prev) =>
+        prev.includes(workspaceObject.id) ? prev : [...prev, workspaceObject.id],
+      );
+      toast.success("Sent to Workspace");
+    },
+    [],
+  );
   const handleOpenSourceInDocumentDock = useCallback(
     (workspaceObject: Extract<StudioWorkspaceObject, { kind: "material" }>) => {
       const materialId = Number.parseInt(
@@ -685,15 +692,6 @@ export function TutorShell({
     }
     return workflow.primingMethods;
   }, [primingMethodIds, workflow.primingMethods]);
-  const primingChainSelectValue = useMemo(() => {
-    if (typeof primingChainId === "number") {
-      return `template:${primingChainId}`;
-    }
-    if (primingCustomBlockIds.length > 0) {
-      return "custom";
-    }
-    return "auto";
-  }, [primingChainId, primingCustomBlockIds.length]);
   const tutorChainSelectValue = useMemo(() => {
     if (typeof tutorChainId === "number") {
       return `template:${tutorChainId}`;
@@ -793,84 +791,6 @@ export function TutorShell({
 
   const primingStudioContent = (
     <div className="flex h-full min-h-0 flex-col">
-      <div
-        data-testid="priming-selector-bar"
-        className="border-b border-[rgba(255,118,144,0.16)] bg-black/25 px-4 py-3"
-      >
-        <div className="flex flex-col gap-3">
-          <div>
-            <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
-              Priming Scope
-            </div>
-            <p className="mt-1 font-mono text-xs leading-6 text-[#ffd9e1]/70">
-              Priming methods and chains stay local to this panel and do not change Tutor start mode.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {PRIMING_METHOD_OPTIONS.map((option) => {
-              const selected = resolvedPrimingMethodIds.includes(option.id);
-              return (
-                <Button
-                  key={option.id}
-                  type="button"
-                  variant="outline"
-                  aria-pressed={selected}
-                  onClick={() => {
-                    const next = selected
-                      ? resolvedPrimingMethodIds.filter((value) => value !== option.id)
-                      : [...resolvedPrimingMethodIds, option.id];
-                    handleSetPrimingMethods(next);
-                  }}
-                  className={
-                    selected
-                      ? "h-8 rounded-full border-[rgba(255,118,144,0.32)] bg-[rgba(255,68,104,0.16)] px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-white"
-                      : "h-8 rounded-full border-[rgba(255,118,144,0.14)] bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd9e1]/76"
-                  }
-                >
-                  {option.label}
-                </Button>
-              );
-            })}
-          </div>
-          <label className="flex flex-col gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
-            Priming Chain Template
-            <select
-              aria-label="Priming chain template"
-              value={primingChainSelectValue}
-              onChange={(event) => {
-                const value = event.target.value;
-                if (value === "auto") {
-                  handleSetPrimingChainId(undefined);
-                  handleSetPrimingCustomBlockIds([]);
-                  return;
-                }
-                if (value === "custom") {
-                  handleSetPrimingChainId(undefined);
-                  return;
-                }
-                const templateId = Number.parseInt(value.replace("template:", ""), 10);
-                if (Number.isFinite(templateId)) {
-                  handleSetPrimingChainId(templateId);
-                }
-              }}
-              disabled={templateChainsLoading}
-              className="h-10 rounded-[0.85rem] border border-[rgba(255,118,144,0.16)] bg-black/35 px-3 font-mono text-sm text-white outline-none"
-            >
-              <option value="auto">Auto priming flow</option>
-              {templateChains.map((chain) => (
-                <option key={chain.id} value={`template:${chain.id}`}>
-                  {readTemplateChainLabel(chain)}
-                </option>
-              ))}
-              {primingCustomBlockIds.length > 0 ? (
-                <option value="custom">
-                  Custom stack ({primingCustomBlockIds.length} blocks)
-                </option>
-              ) : null}
-            </select>
-          </label>
-        </div>
-      </div>
       <div className="flex-1 min-h-0 overflow-y-auto w-full p-4">
         <TutorWorkflowPrimingPanelLazy
           workflow={workflow.activeWorkflowDetail?.workflow || null}
@@ -925,37 +845,37 @@ export function TutorShell({
           }}
           onStartTutor={() => {
             applyCanvasPreset("study");
-            void workflow.startTutorFromWorkflow(
-              {
-                ...(primePacketContext ? { packet_context: primePacketContext } : {}),
-                ...(activeMemoryCapsuleContext
-                  ? { memory_capsule_context: activeMemoryCapsuleContext }
-                  : {}),
-              },
-            );
+            void workflow.startTutorFromWorkflow({
+              ...(primePacketContext ? { packet_context: primePacketContext } : {}),
+              ...(activeMemoryCapsuleContext
+                ? { memory_capsule_context: activeMemoryCapsuleContext }
+                : {}),
+            });
           }}
-          onRunAssistForSelected={() => {
-            void workflow.runWorkflowPrimingAssist(
-              hub.selectedMaterials,
-              {
-                ...(primePacketContext ? { packet_context: primePacketContext } : {}),
-                ...(activeMemoryCapsuleContext
-                  ? { memory_capsule_context: activeMemoryCapsuleContext }
-                  : {}),
-              },
-            );
+          onRunAssistForSelected={(methodIdOverride) => {
+            void workflow.runWorkflowPrimingAssist(hub.selectedMaterials, {
+              ...(primePacketContext ? { packet_context: primePacketContext } : {}),
+              ...(activeMemoryCapsuleContext
+                ? { memory_capsule_context: activeMemoryCapsuleContext }
+                : {}),
+              ...(methodIdOverride
+                ? { priming_method_ids: [methodIdOverride] }
+                : {}),
+            });
           }}
-          onRunAssistForMaterial={(materialId) => {
-            void workflow.runWorkflowPrimingAssist(
-              [materialId],
-              {
-                ...(primePacketContext ? { packet_context: primePacketContext } : {}),
-                ...(activeMemoryCapsuleContext
-                  ? { memory_capsule_context: activeMemoryCapsuleContext }
-                  : {}),
-              },
-            );
+          onRunAssistForMaterial={(materialId, methodIdOverride) => {
+            void workflow.runWorkflowPrimingAssist([materialId], {
+              ...(primePacketContext ? { packet_context: primePacketContext } : {}),
+              ...(activeMemoryCapsuleContext
+                ? { memory_capsule_context: activeMemoryCapsuleContext }
+                : {}),
+              ...(methodIdOverride
+                ? { priming_method_ids: [methodIdOverride] }
+                : {}),
+            });
           }}
+          onPromoteResultToPrimePacket={handlePromoteTextNoteToPrime}
+          onSendResultToWorkspace={handleSendPrimingResultToWorkspace}
           isSaving={workflow.savingPrimingBundle}
           isStartingTutor={session.isStarting}
           isRunningAssist={workflow.runningPrimingAssist}
@@ -967,66 +887,65 @@ export function TutorShell({
 
   const tutorStudioContent = (
     <div className="flex-1 flex flex-col min-h-0">
-      <div
-        data-testid="tutor-selector-bar"
-        className="border-b border-[rgba(255,118,144,0.16)] bg-black/25 px-4 py-3"
-      >
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
-              Tutor Runtime
-            </div>
-            <p className="mt-1 font-mono text-xs leading-6 text-[#ffd9e1]/70">
-              Tutor chain and template choices stay local to this panel and do not change Priming scope.
-            </p>
-          </div>
-          <label className="flex min-w-[240px] flex-col gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
-            Tutor Chain Template
-            <select
-              aria-label="Tutor chain template"
-              value={tutorChainSelectValue}
-              onChange={(event) => {
-                const value = event.target.value;
-                if (value === "auto") {
-                  setTutorChainId?.(undefined);
-                  setTutorCustomBlockIds?.([]);
-                  return;
-                }
-                if (value === "custom") {
-                  setTutorChainId?.(undefined);
-                  return;
-                }
-                const templateId = Number.parseInt(value.replace("template:", ""), 10);
-                if (Number.isFinite(templateId)) {
-                  setTutorChainId?.(templateId);
-                  setTutorCustomBlockIds?.([]);
-                }
-              }}
-              disabled={templateChainsLoading}
-              className="h-10 rounded-[0.85rem] border border-[rgba(255,118,144,0.16)] bg-black/35 px-3 font-mono text-sm text-white outline-none"
-            >
-              <option value="auto">Auto tutor flow</option>
-              {templateChains.map((chain) => (
-                <option key={chain.id} value={`template:${chain.id}`}>
-                  {readTemplateChainLabel(chain)}
-                </option>
-              ))}
-              {tutorCustomBlockIds.length > 0 ? (
-                <option value="custom">
-                  Custom stack ({tutorCustomBlockIds.length} blocks)
-                </option>
-              ) : null}
-            </select>
-          </label>
-        </div>
-      </div>
       <TutorLiveStudyPane
         activeSessionId={liveTutorSessionId}
         hub={hub}
         session={session}
         workflow={workflow}
         restoredTurns={restoredTurns}
-        queryClient={queryClient}
+        headerContent={
+          <div
+            data-testid="tutor-selector-bar"
+            className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between"
+          >
+            <div>
+              <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+                Tutor Runtime
+              </div>
+              <p className="mt-1 font-mono text-xs leading-6 text-[#ffd9e1]/70">
+                Tutor chain and template choices stay local to this panel and do not change Priming scope.
+              </p>
+            </div>
+            <label className="flex min-w-[240px] flex-col gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+              Tutor Chain Template
+              <select
+                aria-label="Tutor chain template"
+                value={tutorChainSelectValue}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  if (value === "auto") {
+                    setTutorChainId?.(undefined);
+                    setTutorCustomBlockIds?.([]);
+                    return;
+                  }
+                  if (value === "custom") {
+                    setTutorChainId?.(undefined);
+                    return;
+                  }
+                  const templateId = Number.parseInt(value.replace("template:", ""), 10);
+                  if (Number.isFinite(templateId)) {
+                    setTutorChainId?.(templateId);
+                    setTutorCustomBlockIds?.([]);
+                  }
+                }}
+                disabled={templateChainsLoading}
+                className="h-10 rounded-[0.85rem] border border-[rgba(255,118,144,0.16)] bg-black/35 px-3 font-mono text-sm text-white outline-none"
+              >
+                <option value="auto">Auto tutor flow</option>
+                {templateChains.map((chain) => (
+                  <option key={chain.id} value={`template:${chain.id}`}>
+                    {readTemplateChainLabel(chain)}
+                  </option>
+                ))}
+                {tutorCustomBlockIds.length > 0 ? (
+                  <option value="custom">
+                    Custom stack ({tutorCustomBlockIds.length} blocks)
+                  </option>
+                ) : null}
+              </select>
+            </label>
+          </div>
+        }
         onStartSession={() => {
           applyCanvasPreset("study");
           void session.startSession(
@@ -1132,7 +1051,10 @@ export function TutorShell({
       <div className="flex flex-wrap gap-3">
         <Button
           type="button"
-          onClick={() => applyCanvasPreset("priming")}
+          onClick={() => {
+            applyCanvasPreset("priming");
+            void workflow.openStudioPriming();
+          }}
           className="rounded-full border border-[rgba(255,118,144,0.22)] bg-[rgba(255,68,104,0.18)] px-4 font-mono text-xs uppercase tracking-[0.18em] text-white hover:bg-[rgba(255,68,104,0.28)]"
         >
           Start Priming

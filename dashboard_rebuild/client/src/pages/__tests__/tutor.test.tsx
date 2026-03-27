@@ -717,20 +717,31 @@ describe("Tutor page restore", () => {
     expect(screen.queryByTestId("studio-stage-nav")).not.toBeInTheDocument();
   });
 
-  it("removes the legacy page hero and inline teach runtime so the floating toolbar owns the route", async () => {
+  it("restores the Tutor hero shell and keeps the Tutor bar above the Studio workspace", async () => {
     renderTutor();
 
     const toolbar = await screen.findByTestId("studio-toolbar");
+    await waitFor(() => {
+      expect(document.querySelector(".page-shell__hero")).not.toBeNull();
+    });
+    await waitFor(() => {
+      expect(document.querySelector(".brain-workspace__top-bar")).not.toBeNull();
+    });
+    const hero = document.querySelector(".page-shell__hero");
+    const topBar = document.querySelector(".brain-workspace__top-bar");
 
     expect(toolbar).toBeInTheDocument();
-    expect(screen.queryByText("Live Study Core")).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /^refresh$/i }),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText("ACTIVE WORKFLOW")).not.toBeInTheDocument();
+    expect(screen.getByText("Live Study Core")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Tutor" })).toBeInTheDocument();
     expect(screen.queryByText("LIVE TEACH RUNTIME")).not.toBeInTheDocument();
-    expect(document.querySelector(".page-shell__hero")).toBeNull();
-    expect(document.querySelector(".brain-workspace__top-bar")).toBeNull();
+    expect(hero).not.toBeNull();
+    expect(topBar).not.toBeNull();
+    expect(within(topBar as HTMLElement).getByText("ACTIVE WORKFLOW")).toBeInTheDocument();
+    expect(within(topBar as HTMLElement).getByText("READY")).toBeInTheDocument();
+    expect(
+      (topBar as HTMLElement).compareDocumentPosition(toolbar) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("keeps the Brain home workflow widgets off the /tutor route", async () => {
@@ -960,15 +971,17 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
+    await openStudioPanel(/open tutor panel/i);
     fireEvent.click(
       await screen.findByRole("button", {
-        name: /^resume$/i,
+        name: /resume session/i,
       }),
     );
 
     await waitFor(() => {
       expect(getSessionMock).toHaveBeenCalledWith("sess-recent");
     });
+    await openStudioPanel(/open tutor panel/i);
     expect(await screen.findByTestId("tutor-chat")).toBeInTheDocument();
   });
 
@@ -1424,7 +1437,8 @@ describe("Tutor page restore", () => {
       expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
     });
     expect(await screen.findByTestId("studio-priming-panel")).toBeInTheDocument();
-    expect(screen.getByTestId("priming-selector-bar")).toBeInTheDocument();
+    expect(screen.queryByTestId("priming-selector-bar")).not.toBeInTheDocument();
+    expect(await screen.findByTestId("priming-tool-panel")).toBeInTheDocument();
   });
 
   it("hydrates board_scope and board_id from query params and persists to shell state", async () => {
@@ -1473,7 +1487,7 @@ describe("Tutor page restore", () => {
     expect(screen.queryByTestId("brain-home")).not.toBeInTheDocument();
   });
 
-  it("consumes the Brain handoff state without rendering legacy page-level chrome", async () => {
+  it("consumes the Brain handoff state while keeping the Tutor route shell visible", async () => {
     sessionStorage.setItem(
       "tutor.open_from_brain.v1",
       JSON.stringify({
@@ -1487,7 +1501,9 @@ describe("Tutor page restore", () => {
     renderTutor();
 
     await screen.findByTestId("studio-toolbar");
-    expect(screen.queryByTestId("tutor-brain-handoff")).not.toBeInTheDocument();
+    expect(await screen.findByTestId("tutor-brain-handoff")).toBeInTheDocument();
+    expect(screen.getByText("Live Study Core")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Tutor" })).toBeInTheDocument();
     expect(sessionStorage.getItem("tutor.open_from_brain.v1")).toBeNull();
   });
 

@@ -1,4 +1,8 @@
-import { type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import {
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
 import { Rnd } from "react-rnd";
 import { ChevronDown, ChevronRight, ExternalLink, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -212,7 +216,7 @@ export function WorkspacePanel({
 
       {/* Panel body */}
       <div className="relative flex-1 min-h-0 min-w-0 overflow-hidden p-3">
-        <div className="h-full min-h-0 min-w-0 overflow-auto [overflow-wrap:anywhere]">
+        <div className="h-full min-h-0 min-w-0 overflow-y-auto overflow-x-hidden [overflow-wrap:anywhere]">
         {isPoppedOut ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm z-10">
             <div className="flex items-center gap-2">

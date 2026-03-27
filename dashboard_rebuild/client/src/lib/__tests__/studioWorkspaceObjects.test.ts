@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  createStudioPrimingResultWorkspaceObject,
   createStudioExcerptWorkspaceObject,
   getStudioExcerptObjectId,
   normalizeStudioWorkspaceObjects,
@@ -93,6 +94,36 @@ describe("studioWorkspaceObjects", () => {
         kind: "link_reference",
         badge: "REFERENCE",
         href: "https://example.com/frank-starling",
+      }),
+    ]);
+  });
+
+  it("creates and normalizes priming result workspace notes", () => {
+    const primingResult = createStudioPrimingResultWorkspaceObject({
+      resultKey: "learning-objectives",
+      title: "Learning Objectives",
+      detail: "1. Explain cardiac output regulation",
+      badge: "OBJECTIVES",
+      sourceLabel: "Cardiac Output Lecture",
+    });
+
+    expect(primingResult).toMatchObject({
+      kind: "text_note",
+      title: "Learning Objectives",
+      badge: "OBJECTIVES",
+      provenance: {
+        sourceType: "priming_result",
+        resultKey: "learning-objectives",
+        sourceLabel: "Cardiac Output Lecture",
+      },
+    });
+
+    expect(normalizeStudioWorkspaceObjects([primingResult])).toEqual([
+      expect.objectContaining({
+        kind: "text_note",
+        provenance: expect.objectContaining({
+          sourceType: "priming_result",
+        }),
       }),
     ]);
   });

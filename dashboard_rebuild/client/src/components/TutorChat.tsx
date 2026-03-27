@@ -456,10 +456,8 @@ function TutorSpeedTierRow({ controls }: { controls: SpeedTierControl[] }) {
 }
 
 function DevInfoCollapsible({
-  runtimeStrip,
   speedTierRow,
 }: {
-  runtimeStrip: React.ReactNode;
   speedTierRow: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -475,12 +473,7 @@ function DevInfoCollapsible({
         </span>
         Dev Info
       </button>
-      {open && (
-        <div className="animate-fade-slide-in">
-          {runtimeStrip}
-          {speedTierRow}
-        </div>
-      )}
+      {open && <div className="animate-fade-slide-in">{speedTierRow}</div>}
     </div>
   );
 }
@@ -959,6 +952,13 @@ export function TutorChat({
   return (
     <div className="relative flex h-full min-h-0">
       <div className="flex flex-col h-full min-h-0 flex-1">
+        <div className="border-b border-primary/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.12)_100%)] px-4 py-3 lg:px-5">
+          <TutorTeachRuntimeStrip
+            isLoading={sessionContextQuery.isLoading}
+            teachRuntime={teachRuntime}
+          />
+        </div>
+
         <MessageList
           ref={scrollRef}
           messages={messages}
@@ -1000,12 +1000,6 @@ export function TutorChat({
           />
 
           <DevInfoCollapsible
-            runtimeStrip={
-              <TutorTeachRuntimeStrip
-                isLoading={sessionContextQuery.isLoading}
-                teachRuntime={teachRuntime}
-              />
-            }
             speedTierRow={<TutorSpeedTierRow controls={speedTiers} />}
           />
 

@@ -28,6 +28,31 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 - Ops note (2026-03-25): `dev-browser` is now a shared agent skill projected into every supported agent root; this does not change Tutor sprint priority.
 
+- [x] HUD-240. Replace the floating Priming wizard with the Phase 1 tool panel from `docs/design/PRIMING_PANEL_CORRECTED.md` and `docs/design/CORE_STUDY_LOOP.md`.
+  - Scope:
+    - `docs/design/PRIMING_PANEL_CORRECTED.md`
+    - `docs/design/CORE_STUDY_LOOP.md`
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx`
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+    - `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`
+    - `dashboard_rebuild/client/src/components/ui/WorkspacePanel.tsx`
+    - `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts`
+    - `dashboard_rebuild/client/src/lib/studioWorkspaceObjects.ts`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+  - Done when:
+    - the Priming floating panel shows loaded-material chips, one grouped method/chain dropdown, one `RUN` action, a formatted result area, and a disabled chat placeholder instead of the old five-step wizard
+    - method runs reuse the existing Priming Assist extraction seam, chain runs reuse `/api/chain-run`, and result blocks can send outputs to Prime Packet or Workspace
+    - Priming no longer depends on `PrimingLayout`, and panel bodies scroll inside their container without overflowing the floating shell
+    - targeted Tutor frontend tests, the production frontend build, and a live `/tutor` browser verification pass succeed
+  - Assignee: @codex-cli
+  - Completed: 2026-03-26
+  - Notes:
+    - replaced the in-panel five-step wizard with a single Phase 1 Priming tool surface and removed `PrimingLayout`
+    - added lazy Priming workflow bootstrap from `RUN` and the entry-card `Start Priming` action so live `/tutor` sessions can execute without a pre-existing workflow id
+    - validation passed with targeted Tutor/frontend tests, `npm run build`, live `agent-browser` DOM verification, and `dev-browser` screenshots at `C:\\Users\\treyt\\.dev-browser\\tmp\\priming-phase1-panel.png` and `C:\\Users\\treyt\\.dev-browser\\tmp\\priming-phase1-prime-packet.png`
+
 - [ ] HUD-239. Execute the floating-panel Studio v2 cutover from `docs/design/STUDIO_LAYOUT_SPEC_v2.md` using the slice-by-slice TDD runbook.
   - Scope:
     - `docs/design/STUDIO_LAYOUT_SPEC_v2.md`

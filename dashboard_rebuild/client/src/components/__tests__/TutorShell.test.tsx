@@ -21,7 +21,7 @@ vi.mock("@/components/TutorWorkflowPrimingPanel", () => ({
     onRunAssistForSelected,
   }: {
     onStartTutor?: () => void;
-    onRunAssistForSelected?: () => void;
+    onRunAssistForSelected?: (methodIdOverride?: string) => void;
   }) => (
     <div data-testid="mock-priming-panel">
       priming panel
@@ -341,6 +341,7 @@ function makeWorkflow(studioView: WorkflowView) {
     },
     setWorkflowFilters: vi.fn(),
     createWorkflowAndOpenPriming: vi.fn(),
+    openStudioPriming: vi.fn().mockResolvedValue("wf-priming"),
     openWorkflowRecord: vi.fn(),
     deleteWorkflowRecord: vi.fn(),
     activeWorkflowId: null,
@@ -711,6 +712,7 @@ describe("TutorShell studio routing", () => {
 
   it("shows the centered start card and opens the Priming preset from the empty canvas", async () => {
     const user = userEvent.setup();
+    const openStudioPriming = vi.fn().mockResolvedValue("wf-priming");
 
     renderTutorShell("home", {
       activeSessionId: null,
@@ -721,6 +723,9 @@ describe("TutorShell studio routing", () => {
         courseLabel: "Exercise Physiology",
         selectedObjectiveGroup: "Week 7",
         topic: "Cardiac output",
+      },
+      workflowOverrides: {
+        openStudioPriming,
       },
       shellOverrides: {
         panelLayout: [],
@@ -735,6 +740,7 @@ describe("TutorShell studio routing", () => {
 
     expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
     expect(await screen.findByTestId("studio-priming-panel")).toBeInTheDocument();
+    expect(openStudioPriming).toHaveBeenCalledTimes(1);
   });
 
   it("shows the active run configuration summary inside Run Config", async () => {
@@ -833,53 +839,14 @@ describe("TutorShell studio routing", () => {
     expect(setObjectiveScope).toHaveBeenCalledWith("single_focus");
   });
 
-  it("renders a Priming selector bar that updates Priming-owned state without mutating Tutor selectors", async () => {
-    const user = userEvent.setup();
-    const setPrimingMethodIds = vi.fn();
-    const setPrimingChainId = vi.fn();
-    const setTutorChainId = vi.fn();
-
-    getTemplateChainsMock.mockResolvedValueOnce([
-      {
-        id: 17,
-        name: "Cardio Deep Dive",
-        title: "Cardio Deep Dive",
-        description: "",
-        blocks: [],
-      },
-    ]);
-
-    renderTutorShell("workspace", {
-      workflowOverrides: {
-        primingMethods: ["M-PRE-010"],
-      },
-      shellOverrides: {
-        primingMethodIds: ["M-PRE-010"],
-        primingChainId: undefined,
-        setPrimingMethodIds,
-        setPrimingChainId,
-        tutorChainId: 41,
-        setTutorChainId,
-      },
-    });
+  it("keeps the Priming panel free of the old shell-owned selector bar", async () => {
+    renderTutorShell("workspace");
 
     const primingPanel = await screen.findByTestId("studio-priming-panel");
+    expect(within(primingPanel).getByTestId("mock-priming-panel")).toBeInTheDocument();
     expect(
-      within(primingPanel).getByTestId("priming-selector-bar"),
-    ).toBeInTheDocument();
-
-    await user.click(
-      within(primingPanel).getByRole("button", { name: /bridge/i }),
-    );
-    expect(setPrimingMethodIds).toHaveBeenCalledWith(["M-PRE-010", "M-PRE-008"]);
-    expect(setTutorChainId).not.toHaveBeenCalled();
-
-    await user.selectOptions(
-      within(primingPanel).getByLabelText(/priming chain template/i),
-      "template:17",
-    );
-    expect(setPrimingChainId).toHaveBeenCalledWith(17);
-    expect(setTutorChainId).not.toHaveBeenCalled();
+      within(primingPanel).queryByTestId("priming-selector-bar"),
+    ).not.toBeInTheDocument();
   });
 
   it("renders a Tutor selector bar above the behavior controls and keeps Tutor selectors independent from Priming", async () => {
@@ -923,6 +890,30 @@ describe("TutorShell studio routing", () => {
     );
     expect(setTutorChainId).toHaveBeenCalledWith(23);
     expect(setPrimingChainId).not.toHaveBeenCalled();
+  });
+
+  it("keeps the Tutor panel focused on selector and chat chrome without a duplicate hero", async () => {
+    renderTutorShell("workspace", {
+      activeSessionId: "sess-1",
+      sessionOverrides: {
+        hasActiveTutorSession: true,
+        turnCount: 7,
+        stageTimerDisplaySeconds: 420,
+      },
+      hubOverrides: {
+        courseLabel: "Exercise Physiology",
+        effectiveStudyUnit: "Week 7 - Cardiovascular",
+        topic: "Cardiac Output",
+        selectedMaterials: [101, 102],
+      },
+    });
+
+    const tutorPanel = await screen.findByTestId("studio-tutor-panel");
+    const selectorBar = within(tutorPanel).getByTestId("tutor-selector-bar");
+
+    expect(within(tutorPanel).queryByTestId("tutor-panel-hero")).not.toBeInTheDocument();
+    expect(selectorBar).toBeInTheDocument();
+    expect(within(tutorPanel).getByText("ASK / SOCRATIC")).toBeInTheDocument();
   });
 
   it("reduces Priming chrome to source context, run config, and Prime Packet", async () => {

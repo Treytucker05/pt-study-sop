@@ -1,6 +1,6 @@
-import type { QueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { MessageSquare } from "lucide-react";
+import { type ReactNode } from "react";
 
 import { TutorChat } from "@/components/TutorChat";
 import { TutorEmptyState } from "@/components/TutorEmptyState";
@@ -15,10 +15,10 @@ interface TutorLiveStudyPaneProps {
   session: UseTutorSessionReturn;
   workflow: UseTutorWorkflowReturn;
   restoredTurns: { question: string; answer: string | null }[] | undefined;
-  queryClient: QueryClient;
   onStartSession: () => void | Promise<void>;
   activeMemoryCapsuleContext?: string | null;
   sessionRules?: string[];
+  headerContent?: ReactNode;
   onActivateMemoryCapsule?: (capsuleId: number | null) => void;
   onDirectNoteSaveStatus?: (status: Record<string, unknown> | null) => void;
   onSaveGist: (content: string) => void;
@@ -41,10 +41,10 @@ export function TutorLiveStudyPane({
   session,
   workflow,
   restoredTurns,
-  queryClient,
   onStartSession,
   activeMemoryCapsuleContext,
   sessionRules,
+  headerContent,
   onActivateMemoryCapsule,
   onDirectNoteSaveStatus,
   onSaveGist,
@@ -112,6 +112,11 @@ export function TutorLiveStudyPane({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
+      {headerContent ? (
+        <div className="border-b border-primary/14 bg-black/22 px-4 py-3">
+          {headerContent}
+        </div>
+      ) : null}
       <div className="min-h-0 flex-1">
         <TutorChat
           sessionId={activeSessionId}

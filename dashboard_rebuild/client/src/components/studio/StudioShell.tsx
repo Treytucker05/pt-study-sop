@@ -554,6 +554,7 @@ export function StudioShell({
   const [canvasScale, setCanvasScale] = useState(0.85);
   const [isCanvasDragging, setIsCanvasDragging] = useState(false);
   const [selectedPanelIds, setSelectedPanelIds] = useState<string[]>([]);
+  const selectedPanelIdsRef = useRef<string[]>([]);
   const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
   const canvasTransformRef = useRef({
     scale: 1,
@@ -568,9 +569,13 @@ export function StudioShell({
     positionY: number;
   } | null>(null);
   const canvasViewportRef = useRef<HTMLDivElement | null>(null);
-  const hasAutoFocusedLayoutRef = useRef(false);
   const groupSequenceRef = useRef(1);
   const [shouldFocusLayout, setShouldFocusLayout] = useState(false);
+
+  useEffect(() => {
+    selectedPanelIdsRef.current = selectedPanelIds;
+  }, [selectedPanelIds]);
+
   const panelDefinitions = useMemo<StudioPanelDefinition[]>(
     () => [
       {
@@ -1014,17 +1019,6 @@ export function StudioShell({
   }, [resolvedLayout]);
 
   useEffect(() => {
-    if (resolvedLayout.length === 0) {
-      hasAutoFocusedLayoutRef.current = false;
-      return;
-    }
-    if (!hasAutoFocusedLayoutRef.current) {
-      hasAutoFocusedLayoutRef.current = true;
-      setShouldFocusLayout(true);
-    }
-  }, [resolvedLayout.length]);
-
-  useEffect(() => {
     if (!shouldFocusLayout) return;
 
     const frame = requestAnimationFrame(() => {
@@ -1224,6 +1218,7 @@ export function StudioShell({
               if (target?.closest(".workspace-panel-root")) return;
               if (target?.closest('[data-canvas-drag-disabled="true"]')) return;
 
+              selectedPanelIdsRef.current = [];
               setSelectedPanelIds([]);
               canvasDragRef.current = {
                 pointerId: event.pointerId,
@@ -1307,7 +1302,7 @@ export function StudioShell({
 
                 return (
                   <WorkspacePanel
-                    key={`${layoutItem.id}:${layoutItem.position.x}:${layoutItem.position.y}:${layoutItem.size.width}:${layoutItem.size.height}:${layoutItem.collapsed}`}
+                    key={layoutItem.id}
                     id={layoutItem.id}
                     title={definition.title}
                     dataTestId={definition.testId}
@@ -1324,14 +1319,18 @@ export function StudioShell({
                     style={{ zIndex: layoutItem.zIndex }}
                     className="bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02)_12%,rgba(0,0,0,0.18)_100%),linear-gradient(135deg,rgba(124,14,38,0.18),rgba(18,5,10,0.86)_58%,rgba(0,0,0,0.96)_100%)] shadow-[0_14px_32px_rgba(0,0,0,0.28),0_0_0_1px_rgba(255,86,118,0.12)]"
                     onTitlePointerDown={(event) => {
-                      setSelectedPanelIds((current) =>
-                        resolvePanelSelection(
-                          resolvedLayout,
-                          current,
-                          layoutItem.id,
-                          event.shiftKey || event.metaKey || event.ctrlKey,
-                        ),
+                      const additiveSelection =
+                        event.shiftKey || event.metaKey || event.ctrlKey;
+                      const nextSelection = resolvePanelSelection(
+                        resolvedLayout,
+                        selectedPanelIdsRef.current,
+                        layoutItem.id,
+                        additiveSelection,
                       );
+                      selectedPanelIdsRef.current = nextSelection;
+                      queueMicrotask(() => {
+                        setSelectedPanelIds(nextSelection);
+                      });
                     }}
                     onClose={() => {
                       setPanelLayout((current) =>
@@ -1351,7 +1350,7 @@ export function StudioShell({
                           current,
                           layoutItem.id,
                           position,
-                          selectedPanelIds,
+                          selectedPanelIdsRef.current,
                         ),
                       );
                     }}
@@ -1368,7 +1367,7 @@ export function StudioShell({
                       data-panel-kind={layoutItem.panel}
                       data-panel-position={`${layoutItem.position.x},${layoutItem.position.y}`}
                       data-panel-size={`${layoutItem.size.width},${layoutItem.size.height}`}
-                      className="h-full min-h-0"
+                      className="h-full min-h-0 min-w-0 overflow-y-auto overflow-x-hidden"
                     >
                       {definition.content}
                     </div>

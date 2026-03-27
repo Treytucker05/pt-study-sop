@@ -22,6 +22,7 @@ interface PageScaffoldProps {
   children: ReactNode;
   className?: string;
   contentClassName?: string;
+  heroClassName?: string;
 }
 
 const EMPTY_PAGE_STATS: PageScaffoldStat[] = [];
@@ -65,6 +66,7 @@ export function PageScaffold({
   children,
   className,
   contentClassName,
+  heroClassName,
 }: PageScaffoldProps) {
   const [location] = useLocation();
   const dipLayerId = useId().replace(/:/g, "");
@@ -97,7 +99,7 @@ export function PageScaffold({
   const blurId = `page-dipline-blur-${dipLayerId}`;
 
   const heroContent = (
-    <section className="page-shell__hero page-shell__hero--glass">
+    <section className={cn("page-shell__hero page-shell__hero--glass", heroClassName)}>
       <div className="page-shell__grid" aria-hidden="true" />
       <div className="page-shell__header">
         <div className="page-shell__title-block min-w-0">

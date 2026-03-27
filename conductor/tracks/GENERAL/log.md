@@ -1709,3 +1709,117 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Added regression coverage in `brain/tests/test_tutor_obsidian_io.py` proving Tutor context derivation no longer writes managed Obsidian notes.
 - Validation passed:
   - `pytest brain/tests/test_tutor_obsidian_io.py brain/tests/test_tutor_session_linking.py brain/tests/test_tutor_audit_remediation.py -q`
+
+## 2026-03-26 - Restored live floating-panel drag in Tutor workspace
+
+- Ran a real browser-driven regression on `http://127.0.0.1:5000/tutor` after the user reported that panels still could not be moved.
+- Confirmed the failure live before the fix: a `dev-browser` header drag on a visible floating panel produced `deltaLeft: 0` and `deltaTop: 0`, proving the panel was not moving.
+- Root cause was the panel layer swallowing its own mouse/pointer events in `WorkspacePanel.tsx` even though the canvas drag guard in `StudioShell.tsx` already ignores anything inside `.workspace-panel-root`.
+- Kept the deferred title-bar selection update in `StudioShell.tsx` and removed the redundant event swallowing from the panel title/body in `WorkspacePanel.tsx`, allowing `react-rnd` to receive the real drag start again.
+- Replaced the old propagation-blocking unit regression with a direct title-bar selection callback regression in `dashboard_rebuild/client/src/components/__tests__/WorkspacePanel.test.tsx`, and updated the grouped-selection Studio shell test to wait for the deferred selection state.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/components/__tests__/WorkspacePanel.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live `dev-browser` drag verification on `http://127.0.0.1:5000/tutor` now produced a non-zero panel move delta and saved `C:\\Users\\treyt\\.dev-browser\\tmp\\tutor-live-drag-postfix.png`
+
+## 2026-03-26 - Restored Tutor panel top header and fixed locked window remounting
+
+- Followed up on the user's report that the Tutor panel header was missing and the windows still felt locked in place.
+- Found the deeper drag bug in `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`: each `WorkspacePanel` key included `x`, `y`, `width`, `height`, and `collapsed`, which caused the panel to remount on every drag tick and kill live dragging mid-gesture.
+- Switched `WorkspacePanel` to a stable `key={layoutItem.id}`, added a regression proving the Tutor panel DOM node survives a position update, and kept the deferred title-bar selection handling intact.
+- Restored the visible Tutor runtime header by moving `TutorTeachRuntimeStrip` back to the top of `TutorChat.tsx` instead of hiding it inside the collapsed Dev Info block.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/components/__tests__/WorkspacePanel.test.tsx client/src/components/__tests__/TutorChat.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live `dev-browser` verification on `http://127.0.0.1:5000/tutor` confirmed:
+    - Tutor runtime strip visible inside the Tutor panel
+    - Tutor panel drag moved by `deltaLeft: 160`, `deltaTop: 60`
+    - live Tutor textarea accepted typed input
+  - browser artifact: `C:\\Users\\treyt\\.dev-browser\\tmp\\tutor-header-drag-verify.png`
+
+## 2026-03-26 - Stabilized drag-start selection and restored the Tutor hero banner inside the panel
+
+- Followed up on the user's report that grabbing one panel still made the window set drop away from the top and that the Tutor banner matching the old page hero styling was still missing.
+- Updated `dashboard_rebuild/client/src/components/studio/StudioShell.tsx` so drag-start uses a synchronous `selectedPanelIdsRef` instead of waiting for deferred React state, which prevents the first drag frame from reading stale multi-select state.
+- Kept canvas background deselection in sync with the same ref so panel drags and background pans do not fight over old selection membership.
+- Added a real in-panel Tutor hero banner in `dashboard_rebuild/client/src/components/tutor-shell/TutorLiveStudyPane.tsx` using the existing page hero styling language, with course/study context, live session/material/turn stats, and a refresh action.
+- Added a Tutor-shell regression in `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx` that proves the Tutor hero renders inside the floating Tutor panel.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/components/__tests__/WorkspacePanel.test.tsx client/src/components/__tests__/TutorChat.test.tsx client/src/components/__tests__/TutorShell.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live `dev-browser` verification on `http://127.0.0.1:5000/tutor` confirmed:
+    - `tutor-panel-hero` is visible inside the Tutor panel
+    - browser artifacts saved to `C:\\Users\\treyt\\.dev-browser\\tmp\\tutor-panel-hero-drag.png`, `C:\\Users\\treyt\\.dev-browser\\tmp\\tutor-panel-hero-drag-dom.html`, and `C:\\Users\\treyt\\.dev-browser\\tmp\\tutor-panel-hero-dispatch.png`
+
+## 2026-03-26 - Removed automatic viewport recentering on panel moves and moved Tutor hero above the panel body
+
+- Followed up on the user's report that the viewport recenters itself whenever a panel is moved and that the Tutor hero had been inserted too far down into the panel body.
+- Removed the old one-time auto-focus layout effect from `dashboard_rebuild/client/src/components/studio/StudioShell.tsx` so the canvas no longer recenters itself on ordinary layout updates; only explicit actions like presets, reset, and `Center Windows` can move the viewport now.
+- Moved the Tutor hero/header above the selector bar by passing the selector bar into `TutorLiveStudyPane` as `headerContent`, so the hero now sits at the top of the Tutor window instead of inside the chat body.
+- Added a Studio shell regression proving panel position updates do not call the canvas transform recenter path, and tightened the Tutor shell regression to assert the hero appears before the selector bar.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/components/__tests__/TutorShell.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live `dev-browser` verification on `http://127.0.0.1:5000/tutor` confirmed:
+    - the Tutor hero appears before the selector bar in DOM order
+    - browser artifacts saved to `C:\\Users\\treyt\\.dev-browser\\tmp\\tutor-hero-top-order.png` and `C:\\Users\\treyt\\.dev-browser\\tmp\\tutor-hero-top-order-dom.html`
+
+## 2026-03-26 - Restored the Tutor bar to the route shell below the hero and above the workspace
+
+- Moved the canonical Tutor header back to the route shell by mounting `TutorTopBar` through `CoreWorkspaceFrame.topBar` in `dashboard_rebuild/client/src/pages/tutor.tsx`.
+- Removed the guard that only mounted the route-level bar for live session or workflow state so `/tutor` always shows the Tutor bar in the shell.
+- Updated `dashboard_rebuild/client/src/components/TutorTopBar.tsx` to render a default `READY` route-level strip when there is no active session yet, while still promoting `LIVE SESSION` when Tutor is running.
+- Kept the floating Tutor panel panel-local by removing the duplicate in-panel hero/header from `dashboard_rebuild/client/src/components/tutor-shell/TutorLiveStudyPane.tsx` and leaving only the selector bar plus chat controls inside the panel.
+- Tightened `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx` and `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx` so the route-level Tutor bar stays above `studio-toolbar` and the floating Tutor panel never regrows a duplicate header.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorShell.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live `dev-browser` verification on `http://127.0.0.1:5000/tutor` confirmed:
+    - `.brain-workspace__top-bar` is present
+    - the Tutor bar sits above `studio-toolbar`
+    - no `tutor-panel-hero` exists inside the floating Tutor panel
+    - browser artifacts saved to `C:\\Users\\treyt\\.dev-browser\\tmp\\tutor-topbar-route.png` and `C:\\Users\\treyt\\.dev-browser\\tmp\\tutor-topbar-route-dom.json`
+
+## 2026-03-26 - Updated global Codex CLI to 0.117.0
+
+- Checked the active install path and confirmed the machine was resolving `@openai/codex@0.116.0` from `C:\\Users\\treyt\\AppData\\Roaming\\npm\\codex.ps1`.
+- Verified the latest published stable package was `0.117.0` and upgraded with `npm install -g @openai/codex@0.117.0`.
+- Post-update validation passed:
+  - `codex --version` returned `codex-cli 0.117.0`
+  - `npm -g list @openai/codex --depth=0` returned `@openai/codex@0.117.0`
+- Windows npm left the staged cleanup directory `C:\\Users\\treyt\\AppData\\Roaming\\npm\\node_modules\\@openai\\.codex-9LiMfdh1` because the old `codex.exe` was locked during cleanup, but the active install upgraded successfully.
+
+## 2026-03-26 - Restored Tutor route hero and matched its header height to Brain and Scholar
+
+- Restored the `/tutor` route-level `PageScaffold` hero with Tutor-specific copy and stats so the route once again shows the same top shell family as Brain and Scholar without reintroducing Brain-specific widgets.
+- Added an optional `heroClassName` override to `dashboard_rebuild/client/src/components/PageScaffold.tsx` and used it in `dashboard_rebuild/client/src/pages/tutor.tsx` to pin the Tutor hero to the same minimum height as the Brain and Scholar headers.
+- Updated `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx` so the Tutor route now asserts the restored hero shell is present instead of expecting it to be absent.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/PageScaffold.test.tsx client/src/pages/__tests__/tutor.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - `agent-browser` verification after rebuild confirmed:
+    - `/tutor` hero height: `243px`
+    - `/scholar` hero height: `243.03125px`
+
+## 2026-03-26 - Replaced the floating Priming wizard with the Phase 1 tool panel
+
+- Replaced the old five-step Priming wizard in `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` with a single tool panel that shows loaded-material chips, a grouped method/chain dropdown, one `RUN` action, a formatted output area, and the Phase 2 chat placeholder.
+- Removed `dashboard_rebuild/client/src/components/priming/PrimingLayout.tsx`, rewired `dashboard_rebuild/client/src/components/TutorShell.tsx` so Priming owns its own selector UI, and kept result promotion flowing into both Prime Packet and Workspace.
+- Extended `dashboard_rebuild/client/src/lib/studioWorkspaceObjects.ts` so promoted Priming result blocks persist as workspace text notes with `priming_result` provenance.
+- Fixed floating-panel overflow by making panel bodies scroll internally in `dashboard_rebuild/client/src/components/studio/StudioShell.tsx` and `dashboard_rebuild/client/src/components/ui/WorkspacePanel.tsx`.
+- Fixed live execution by teaching `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts` to lazily bootstrap a Priming workflow when `RUN` executes without an active workflow id, and by having the entry-card `Start Priming` action in `dashboard_rebuild/client/src/components/TutorShell.tsx` open that workflow instead of only changing layout.
+- Updated Tutor tests to cover the new panel shape and bootstrap behavior in:
+  - `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+  - `dashboard_rebuild/client/src/hooks/__tests__/useTutorWorkflow.test.tsx`
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- client/src/hooks/__tests__/useTutorWorkflow.test.tsx client/src/components/__tests__/TutorShell.test.tsx client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx client/src/pages/__tests__/tutor.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live `agent-browser` verification on `http://127.0.0.1:5000/tutor?course_id=1&mode=studio` confirmed:
+    - the Priming panel mounted with `Cardiovascular` loaded
+    - `Learning Objectives Primer` returned one formatted objectives result block
+    - `Send to Prime Packet` promoted the result into the Prime Packet panel
+  - `dev-browser` verification confirmed:
+    - loading state was observed during `RUN`
+    - screenshot artifacts saved to `C:\\Users\\treyt\\.dev-browser\\tmp\\priming-phase1-panel.png` and `C:\\Users\\treyt\\.dev-browser\\tmp\\priming-phase1-prime-packet.png`

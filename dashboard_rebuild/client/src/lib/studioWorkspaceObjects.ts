@@ -66,11 +66,17 @@ export type StudioWorkspaceObject =
       title: string;
       detail: string;
       badge: string;
-      provenance: {
-        sourceType: "repair_candidate";
-        candidateId: string;
-        sourceLabel: string;
-      };
+      provenance:
+        | {
+            sourceType: "repair_candidate";
+            candidateId: string;
+            sourceLabel: string;
+          }
+        | {
+            sourceType: "priming_result";
+            resultKey: string;
+            sourceLabel: string;
+          };
     };
 
 function formatFileType(value: string | null | undefined): string {
@@ -91,6 +97,14 @@ export interface CreateStudioExcerptWorkspaceObjectParams {
   sourceTitle: string | null;
   excerptText: string;
   selectionLabel?: string | null;
+}
+
+export interface CreateStudioPrimingResultWorkspaceObjectParams {
+  resultKey: string;
+  title: string;
+  detail: string;
+  badge: string;
+  sourceLabel?: string | null;
 }
 
 function normalizeExcerptFragment(value: string): string {
@@ -149,6 +163,40 @@ export function createStudioExcerptWorkspaceObject({
       fileType,
       sourceTitle: normalizedTitle,
       selectionLabel,
+    },
+  };
+}
+
+export function getStudioPrimingResultObjectId({
+  resultKey,
+  title,
+}: Pick<CreateStudioPrimingResultWorkspaceObjectParams, "resultKey" | "title">) {
+  return `priming-result:${hashExcerptSeed(`${resultKey}::${title.trim()}`)}`;
+}
+
+export function createStudioPrimingResultWorkspaceObject({
+  resultKey,
+  title,
+  detail,
+  badge,
+  sourceLabel = null,
+}: CreateStudioPrimingResultWorkspaceObjectParams): StudioWorkspaceObject {
+  const normalizedTitle = title.trim() || "Priming Result";
+  const normalizedDetail = detail.trim();
+
+  return {
+    id: getStudioPrimingResultObjectId({
+      resultKey,
+      title: normalizedTitle,
+    }),
+    kind: "text_note",
+    title: normalizedTitle,
+    detail: normalizedDetail,
+    badge: badge.trim() || "PRIMING",
+    provenance: {
+      sourceType: "priming_result",
+      resultKey: resultKey.trim(),
+      sourceLabel: sourceLabel?.trim() || normalizedTitle,
     },
   };
 }
@@ -258,9 +306,17 @@ export function isStudioWorkspaceObject(value: unknown): value is StudioWorkspac
       return false;
     }
 
-    return (
+    if (
       value.provenance.sourceType === "repair_candidate" &&
       typeof value.provenance.candidateId === "string" &&
+      typeof value.provenance.sourceLabel === "string"
+    ) {
+      return true;
+    }
+
+    return (
+      value.provenance.sourceType === "priming_result" &&
+      typeof value.provenance.resultKey === "string" &&
       typeof value.provenance.sourceLabel === "string"
     );
   }

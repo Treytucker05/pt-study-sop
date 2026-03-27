@@ -449,6 +449,53 @@ describe("useTutorWorkflow", () => {
     expect(hub.setSelectedObjectiveGroup).toHaveBeenCalledWith("Week 7");
   });
 
+  it("bootstraps a Priming workflow automatically when RUN executes without an active workflow", async () => {
+    const hub = {
+      ...createHubMock(),
+      courseId: 101,
+      topic: "Cardiac output",
+      selectedMaterials: [501],
+      selectedObjectiveGroup: "Week 7",
+    };
+    const session = createSessionMock();
+    const wrapper = createWrapper();
+
+    const { result } = renderHook(
+      () =>
+        useTutorWorkflow({
+          hub: hub as never,
+          session: session as never,
+          activeSessionId: null,
+          hasRestored: true,
+        }),
+      { wrapper },
+    );
+
+    act(() => {
+      result.current.setPrimingMethods(["M-PRE-010"]);
+    });
+
+    await act(async () => {
+      await result.current.runWorkflowPrimingAssist([501]);
+    });
+
+    expect(createWorkflowMock).toHaveBeenCalledWith({
+      course_id: 101,
+      study_unit: "Week 7",
+      topic: "Cardiac output",
+      current_stage: "priming",
+      status: "priming_in_progress",
+    });
+    expect(runPrimingAssistMock).toHaveBeenCalledWith(
+      "wf-new",
+      expect.objectContaining({
+        material_ids: [501],
+        priming_methods: ["M-PRE-010"],
+        priming_method: "M-PRE-010",
+      }),
+    );
+  });
+
   it("checkpoints workflow study time after saving an exact tutor note", async () => {
     const hub = createHubMock();
     const session = createSessionMock();

@@ -227,4 +227,21 @@ describe("WorkspacePanel", () => {
     // The className is passed through to the Rnd wrapper
     expect(rnd.className).toContain("custom-extra");
   });
+
+  it("forwards title-bar pointer-down to the selection handler", () => {
+    const handleTitlePointerDown = vi.fn();
+
+    render(
+      <WorkspacePanel
+        id="p1"
+        title="Panel"
+        onTitlePointerDown={handleTitlePointerDown}
+      >
+          <p>content</p>
+      </WorkspacePanel>,
+    );
+
+    fireEvent.pointerDown(screen.getByText("Panel"));
+    expect(handleTitlePointerDown).toHaveBeenCalledTimes(1);
+  });
 });

@@ -653,97 +653,7 @@ export function useTutorWorkflow({
     [activeWorkflowId, buildPrimingBundlePayload, queryClient],
   );
 
-  // ─── Run priming assist ───
-  const runWorkflowPrimingAssist = useCallback(
-    async (
-      materialIds: number[],
-      opts?: { packet_context?: string; memory_capsule_context?: string },
-    ) => {
-      if (!activeWorkflowId) {
-        toast.error("Open a study plan before running Priming Assist.");
-        return;
-      }
-      if (materialIds.length === 0) {
-        toast.error("Select at least one source material first.");
-        return;
-      }
-      if (primingMethods.length === 0) {
-        toast.error("Select at least one PRIME method before extraction.");
-        return;
-      }
-      setRunningPrimingAssist(true);
-      setPrimingAssistTargetMaterialId(materialIds.length === 1 ? materialIds[0] : null);
-      try {
-        const response = await api.tutor.runPrimingAssist(activeWorkflowId, {
-          material_ids: materialIds,
-          study_unit: hub.selectedObjectiveGroup || null,
-          topic: hub.topic || null,
-          priming_methods: primingMethods,
-          priming_method: primingMethods[0] || null,
-          source_inventory: mergedPrimingSourceInventory,
-          ...(opts?.packet_context ? { packet_context: opts.packet_context } : {}),
-          ...(opts?.memory_capsule_context
-            ? { memory_capsule_context: opts.memory_capsule_context }
-            : {}),
-        });
-        setPrimingSourceInventory(response.source_inventory);
-        setPrimingMethodRuns(normalizePrimingMethodRuns(response.priming_method_runs));
-        setPrimingSummaryText(formatSourceBlockText(response.aggregate.summaries, "summary"));
-        setPrimingConceptsText(formatSourceLineText(response.aggregate.concepts, "concept"));
-        setPrimingTerminologyText(formatSourceLineText(response.aggregate.terminology, "term"));
-        setPrimingRootExplanationText(
-          formatSourceBlockText(response.aggregate.root_explanations, "text"),
-        );
-        setPrimingGapsText(formatSourceLineText(response.aggregate.identified_gaps, "gap"));
-        toast.success(
-          materialIds.length === 1
-            ? "Source-linked priming output refreshed"
-            : "Priming Assist extracted source-linked outputs",
-        );
-      } catch (err) {
-        toast.error(
-          `Priming Assist failed: ${err instanceof Error ? err.message : "Unknown"}`,
-        );
-      } finally {
-        setRunningPrimingAssist(false);
-        setPrimingAssistTargetMaterialId(null);
-      }
-    },
-    [
-      activeWorkflowId,
-      mergedPrimingSourceInventory,
-      primingMethods,
-      hub.selectedObjectiveGroup,
-      hub.topic,
-    ],
-  );
-
-  // ─── Create workflow ───
-  const createWorkflowAndOpenPriming = useCallback(async () => {
-    setCreatingWorkflow(true);
-    try {
-      studioPrimingBootstrapContextRef.current = null;
-      resetPrimingDraft();
-      const result = await api.tutor.createWorkflow({
-        course_id: hub.courseId ?? null,
-        study_unit: hub.selectedObjectiveGroup || null,
-        topic: hub.topic || null,
-        current_stage: "priming",
-        status: "priming_in_progress",
-      });
-      setActiveWorkflowId(result.workflow.workflow_id);
-      await queryClient.invalidateQueries({ queryKey: ["tutor-workflows"] });
-      toast.success("New study plan created");
-    } catch (err) {
-      toast.error(
-        `Failed to create study plan: ${err instanceof Error ? err.message : "Unknown"}`,
-      );
-    } finally {
-      setCreatingWorkflow(false);
-    }
-  }, [hub.courseId, hub.selectedObjectiveGroup, hub.topic, queryClient, resetPrimingDraft]);
-
-  const openStudioPriming = useCallback(async () => {
+  const ensureStudioPrimingWorkflow = useCallback(async () => {
     if (activeWorkflowId) {
       return activeWorkflowId;
     }
@@ -797,6 +707,108 @@ export function useTutorWorkflow({
     queryClient,
     resetPrimingArtifacts,
   ]);
+
+  // ─── Run priming assist ───
+  const runWorkflowPrimingAssist = useCallback(
+    async (
+      materialIds: number[],
+      opts?: {
+        packet_context?: string;
+        memory_capsule_context?: string;
+        priming_method_ids?: string[];
+      },
+    ) => {
+      const effectivePrimingMethods =
+        opts?.priming_method_ids?.filter((value) => value.trim().length > 0) ??
+        primingMethods;
+      const workflowId = activeWorkflowId ?? (await ensureStudioPrimingWorkflow());
+      if (!workflowId) {
+        return;
+      }
+      if (materialIds.length === 0) {
+        toast.error("Select at least one source material first.");
+        return;
+      }
+      if (effectivePrimingMethods.length === 0) {
+        toast.error("Select at least one PRIME method before extraction.");
+        return;
+      }
+      setRunningPrimingAssist(true);
+      setPrimingAssistTargetMaterialId(materialIds.length === 1 ? materialIds[0] : null);
+      try {
+        const response = await api.tutor.runPrimingAssist(workflowId, {
+          material_ids: materialIds,
+          study_unit: hub.selectedObjectiveGroup || null,
+          topic: hub.topic || null,
+          priming_methods: effectivePrimingMethods,
+          priming_method: effectivePrimingMethods[0] || null,
+          source_inventory: mergedPrimingSourceInventory,
+          ...(opts?.packet_context ? { packet_context: opts.packet_context } : {}),
+          ...(opts?.memory_capsule_context
+            ? { memory_capsule_context: opts.memory_capsule_context }
+            : {}),
+        });
+        setPrimingSourceInventory(response.source_inventory);
+        setPrimingMethodRuns(normalizePrimingMethodRuns(response.priming_method_runs));
+        setPrimingSummaryText(formatSourceBlockText(response.aggregate.summaries, "summary"));
+        setPrimingConceptsText(formatSourceLineText(response.aggregate.concepts, "concept"));
+        setPrimingTerminologyText(formatSourceLineText(response.aggregate.terminology, "term"));
+        setPrimingRootExplanationText(
+          formatSourceBlockText(response.aggregate.root_explanations, "text"),
+        );
+        setPrimingGapsText(formatSourceLineText(response.aggregate.identified_gaps, "gap"));
+        toast.success(
+          materialIds.length === 1
+            ? "Source-linked priming output refreshed"
+            : "Priming Assist extracted source-linked outputs",
+        );
+      } catch (err) {
+        toast.error(
+          `Priming Assist failed: ${err instanceof Error ? err.message : "Unknown"}`,
+        );
+      } finally {
+        setRunningPrimingAssist(false);
+        setPrimingAssistTargetMaterialId(null);
+      }
+    },
+    [
+      activeWorkflowId,
+      ensureStudioPrimingWorkflow,
+      mergedPrimingSourceInventory,
+      primingMethods,
+      hub.selectedObjectiveGroup,
+      hub.topic,
+    ],
+  );
+
+  // ─── Create workflow ───
+  const createWorkflowAndOpenPriming = useCallback(async () => {
+    setCreatingWorkflow(true);
+    try {
+      studioPrimingBootstrapContextRef.current = null;
+      resetPrimingDraft();
+      const result = await api.tutor.createWorkflow({
+        course_id: hub.courseId ?? null,
+        study_unit: hub.selectedObjectiveGroup || null,
+        topic: hub.topic || null,
+        current_stage: "priming",
+        status: "priming_in_progress",
+      });
+      setActiveWorkflowId(result.workflow.workflow_id);
+      await queryClient.invalidateQueries({ queryKey: ["tutor-workflows"] });
+      toast.success("New study plan created");
+    } catch (err) {
+      toast.error(
+        `Failed to create study plan: ${err instanceof Error ? err.message : "Unknown"}`,
+      );
+    } finally {
+      setCreatingWorkflow(false);
+    }
+  }, [hub.courseId, hub.selectedObjectiveGroup, hub.topic, queryClient, resetPrimingDraft]);
+
+  const openStudioPriming = useCallback(async () => {
+    return ensureStudioPrimingWorkflow();
+  }, [ensureStudioPrimingWorkflow]);
 
   // ─── Delete workflow ───
   const deleteWorkflowRecord = useCallback(

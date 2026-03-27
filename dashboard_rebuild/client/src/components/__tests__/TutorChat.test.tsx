@@ -848,7 +848,6 @@ describe("TutorChat", () => {
       { wrapper: createWrapper() },
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /dev info/i }));
     const runtimeStrip = await screen.findByTestId("tutor-teach-runtime-strip");
     expect(runtimeStrip).toBeInTheDocument();
     expect(within(runtimeStrip).getByText(/Live TEACH Packet/i)).toBeInTheDocument();
@@ -932,7 +931,6 @@ describe("TutorChat", () => {
       { wrapper: createWrapper() },
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /dev info/i }));
     const runtimeStrip = await screen.findByTestId("tutor-teach-runtime-strip");
     expect(runtimeStrip).toBeInTheDocument();
     expect(within(runtimeStrip).getByText(/^Mechanism$/i)).toBeInTheDocument();
