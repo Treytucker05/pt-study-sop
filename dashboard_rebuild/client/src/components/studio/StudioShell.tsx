@@ -351,6 +351,32 @@ export function buildStudioShellViewportFocus(
   };
 }
 
+function buildStudioShellViewportCenter(
+  layout: StudioPanelLayoutItem[],
+  viewportWidth: number,
+  viewportHeight: number,
+  scale: number,
+): StudioShellViewportFocus {
+  if (layout.length === 0 || viewportWidth <= 0 || viewportHeight <= 0) {
+    return {
+      scale: Number.isFinite(scale) && scale > 0 ? scale : 1,
+      positionX: 0,
+      positionY: 0,
+    };
+  }
+
+  const bounds = getLayoutBounds(layout);
+  const resolvedScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+
+  return {
+    scale: resolvedScale,
+    positionX:
+      (viewportWidth - bounds.width * resolvedScale) / 2 -
+      bounds.minX * resolvedScale,
+    positionY: VIEWPORT_PADDING_TOP - bounds.minY * resolvedScale,
+  };
+}
+
 function spawnPanelLayout(
   current: StudioPanelLayoutItem[],
   definition: StudioPanelDefinition,
@@ -509,6 +535,7 @@ export function applyStudioShellPanelPositionUpdate(
 export interface StudioShellProps {
   entryCard?: ReactNode;
   defaultPreset?: StudioShellPreset;
+  autoSeedDefaultPreset?: boolean;
   workspace?: ReactNode;
   sourceShelf?: ReactNode;
   documentDock?: ReactNode;
@@ -529,11 +556,14 @@ export interface StudioShellProps {
       | StudioPanelLayoutItem[]
       | ((current: StudioPanelLayoutItem[]) => StudioPanelLayoutItem[]),
   ) => void;
+  onClearCanvas?: () => void;
+  clearCanvasDisabled?: boolean;
 }
 
 export function StudioShell({
   entryCard,
   defaultPreset = "minimal",
+  autoSeedDefaultPreset = true,
   workspace,
   sourceShelf,
   documentDock,
@@ -550,6 +580,8 @@ export function StudioShell({
   notesPanel,
   panelLayout,
   setPanelLayout,
+  onClearCanvas,
+  clearCanvasDisabled = false,
 }: StudioShellProps) {
   const [canvasScale, setCanvasScale] = useState(0.85);
   const [isCanvasDragging, setIsCanvasDragging] = useState(false);
@@ -941,11 +973,18 @@ export function StudioShell({
   );
 
   useEffect(() => {
-    if (resolvedLayout.length > 0 || entryCard) return;
+    if (resolvedLayout.length > 0 || entryCard || !autoSeedDefaultPreset) return;
     setPanelLayout((current) =>
       current.length > 0 ? current : createPresetLayout(defaultPreset, panelDefinitions),
     );
-  }, [defaultPreset, entryCard, panelDefinitions, resolvedLayout.length, setPanelLayout]);
+  }, [
+    autoSeedDefaultPreset,
+    defaultPreset,
+    entryCard,
+    panelDefinitions,
+    resolvedLayout.length,
+    setPanelLayout,
+  ]);
 
   useEffect(() => {
     const validIds = new Set(resolvedLayout.map((item) => item.id));
@@ -978,6 +1017,30 @@ export function StudioShell({
     return nextId;
   }, []);
 
+  const applyViewportFocus = useCallback((focus: StudioShellViewportFocus) => {
+    if (!transformRef.current) return;
+
+    transformRef.current.setTransform(
+      focus.positionX,
+      focus.positionY,
+      focus.scale,
+      180,
+    );
+    canvasTransformRef.current = {
+      scale: focus.scale,
+      positionX: focus.positionX,
+      positionY: focus.positionY,
+    };
+    setCanvasScale(focus.scale);
+    if (typeof canvasViewportRef.current?.scrollIntoView === "function") {
+      canvasViewportRef.current.scrollIntoView({
+        block: "start",
+        inline: "nearest",
+        behavior: "smooth",
+      });
+    }
+  }, []);
+
   const focusOpenPanels = useCallback(() => {
     if (!transformRef.current || !canvasViewportRef.current || resolvedLayout.length === 0) {
       return;
@@ -997,26 +1060,31 @@ export function StudioShell({
       rect.width,
       rect.height,
     );
-    transformRef.current.setTransform(
-      focus.positionX,
-      focus.positionY,
-      focus.scale,
-      180,
-    );
-    canvasTransformRef.current = {
-      scale: focus.scale,
-      positionX: focus.positionX,
-      positionY: focus.positionY,
-    };
-    setCanvasScale(focus.scale);
-    if (typeof canvasViewportRef.current.scrollIntoView === "function") {
-      canvasViewportRef.current.scrollIntoView({
-        block: "start",
-        inline: "nearest",
-        behavior: "smooth",
-      });
+    applyViewportFocus(focus);
+  }, [applyViewportFocus, resolvedLayout]);
+
+  const centerOpenPanels = useCallback(() => {
+    if (!transformRef.current || !canvasViewportRef.current || resolvedLayout.length === 0) {
+      return;
     }
-  }, [resolvedLayout]);
+
+    const activeElement = document.activeElement;
+    if (
+      activeElement instanceof HTMLElement &&
+      canvasViewportRef.current.contains(activeElement)
+    ) {
+      activeElement.blur();
+    }
+
+    const rect = canvasViewportRef.current.getBoundingClientRect();
+    const focus = buildStudioShellViewportCenter(
+      resolvedLayout,
+      rect.width,
+      rect.height,
+      canvasTransformRef.current.scale,
+    );
+    applyViewportFocus(focus);
+  }, [applyViewportFocus, resolvedLayout]);
 
   useEffect(() => {
     if (!shouldFocusLayout) return;
@@ -1153,10 +1221,27 @@ export function StudioShell({
                 type="button"
                 variant="ghost"
                 size="sm"
+                aria-label="Clear canvas"
+                disabled={clearCanvasDisabled}
+                onClick={() => {
+                  if (onClearCanvas) {
+                    onClearCanvas();
+                    return;
+                  }
+                  setPanelLayout([]);
+                }}
+                className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white disabled:opacity-40"
+              >
+                Clear Canvas
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 aria-label="Center Windows"
                 onClick={() => {
                   if (resolvedLayout.length > 0) {
-                    focusOpenPanels();
+                    centerOpenPanels();
                   }
                 }}
                 className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white"
@@ -1319,6 +1404,7 @@ export function StudioShell({
                     style={{ zIndex: layoutItem.zIndex }}
                     className="bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02)_12%,rgba(0,0,0,0.18)_100%),linear-gradient(135deg,rgba(124,14,38,0.18),rgba(18,5,10,0.86)_58%,rgba(0,0,0,0.96)_100%)] shadow-[0_14px_32px_rgba(0,0,0,0.28),0_0_0_1px_rgba(255,86,118,0.12)]"
                     onTitlePointerDown={(event) => {
+                      event.stopPropagation();
                       const additiveSelection =
                         event.shiftKey || event.metaKey || event.ctrlKey;
                       const nextSelection = resolvePanelSelection(

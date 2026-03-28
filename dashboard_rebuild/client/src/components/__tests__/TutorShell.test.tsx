@@ -469,6 +469,7 @@ function renderTutorShell(
     viewerState?: Record<string, unknown> | null;
     activeSessionId?: string | null;
     shellOverrides?: {
+      showSetup?: boolean;
       promotedPrimePacketObjects?: unknown[];
       onPromotePrimePacketObject?: (...args: unknown[]) => void;
       promotedPolishPacketNotes?: unknown[];
@@ -498,6 +499,9 @@ function renderTutorShell(
     const [panelLayout, setPanelLayout] = useState<unknown[]>(
       shellOverrides?.panelLayout ?? buildStudioShellPresetLayout("full_studio"),
     );
+    const [showSetup, setShowSetup] = useState(
+      shellOverrides?.showSetup ?? (studioView === "home" && !activeSessionId),
+    );
 
     return (
       <TutorShell
@@ -505,6 +509,7 @@ function renderTutorShell(
         hub={makeHubWithOverrides(hubOverrides) as never}
         session={makeSessionWithOverrides(sessionOverrides) as never}
         workflow={makeWorkflowWithOverrides(studioView, workflowOverrides) as never}
+        showSetup={showSetup}
         restoredTurns={undefined}
         activeBoardScope="project"
         activeBoardId={null}
@@ -515,7 +520,7 @@ function renderTutorShell(
         setActiveBoardScope={vi.fn()}
         setActiveBoardId={vi.fn()}
         setViewerState={vi.fn()}
-        setShowSetup={vi.fn()}
+        setShowSetup={setShowSetup}
         queryClient={new QueryClient()}
         panelLayout={panelLayout as never}
         setPanelLayout={
@@ -584,6 +589,7 @@ function renderTutorShellTutorHarness() {
         }
         session={makeSession() as never}
         workflow={workflow as never}
+        showSetup={false}
         restoredTurns={undefined}
         activeBoardScope="project"
         activeBoardId={null}
@@ -633,6 +639,7 @@ describe("TutorShell studio routing", () => {
   it("uses the Source Shelf Library tab as a real working surface for browsing and staging materials", async () => {
     renderTutorShell("workspace", {
       hubOverrides: {
+        courseId: 1,
         courseLabel: "Exercise Physiology",
         selectedObjectiveGroup: "Week 7",
         topic: "Cardiac output",
@@ -641,14 +648,23 @@ describe("TutorShell studio routing", () => {
           {
             id: 101,
             title: "Cardiac Output Lecture",
+            course_id: 1,
             file_type: "pdf",
             source_path: "uploads/cardio-output.pdf",
           },
           {
             id: 102,
             title: "Afterload Drill",
+            course_id: 1,
             file_type: "txt",
             source_path: "uploads/afterload-drill.txt",
+          },
+          {
+            id: 201,
+            title: "Neuro Outlier",
+            course_id: 2,
+            file_type: "pdf",
+            source_path: "uploads/neuro-outlier.pdf",
           },
         ],
         derivedVaultFolder: "Exercise Physiology/Week 7",
@@ -662,6 +678,7 @@ describe("TutorShell studio routing", () => {
 
     expect(sourceShelf).toHaveTextContent("Library Sources");
     expect(sourceShelf).toHaveTextContent("Afterload Drill");
+    expect(sourceShelf).not.toHaveTextContent("Neuro Outlier");
 
     await userEvent.click(
       within(sourceShelf).getByRole("button", {
@@ -745,7 +762,7 @@ describe("TutorShell studio routing", () => {
     expect(screen.queryByTestId("studio-prime-packet")).not.toBeInTheDocument();
   });
 
-  it("shows the centered start card and opens the Priming preset from the empty canvas", async () => {
+  it("shows the centered start card and starts Priming on an empty canvas", async () => {
     const user = userEvent.setup();
     const openStudioPriming = vi.fn().mockResolvedValue("wf-priming");
 
@@ -781,8 +798,55 @@ describe("TutorShell studio routing", () => {
     await user.click(screen.getByRole("button", { name: /start priming/i }));
 
     expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
-    expect(await screen.findByTestId("studio-priming-panel")).toBeInTheDocument();
+    expect(screen.queryByTestId("studio-priming-panel")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-source-shelf")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /open source shelf panel/i })).toBeInTheDocument();
     expect(openStudioPriming).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears the open canvas layout and workspace objects from the toolbar", async () => {
+    const user = userEvent.setup();
+
+    renderTutorShell("workspace", {
+      hubOverrides: {
+        courseLabel: "Exercise Physiology",
+        selectedMaterials: [101],
+        chatMaterials: [
+          {
+            id: 101,
+            title: "Cardiac Output Lecture",
+            file_type: "pdf",
+            source_path: "uploads/cardio-output.pdf",
+          },
+        ],
+      },
+    });
+
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
+
+    const sourceShelf = screen.getByTestId("studio-source-shelf");
+    const workspace = await screen.findByTestId("studio-tldraw-workspace");
+
+    await user.click(
+      within(sourceShelf).getByRole("button", {
+        name: /add cardiac output lecture to workspace/i,
+      }),
+    );
+
+    expect(workspace).toHaveTextContent("1 active canvas object");
+
+    await user.click(screen.getByRole("button", { name: /clear canvas/i }));
+
+    expect(screen.queryByTestId("studio-source-shelf")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-workspace-panel")).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: /open workspace panel/i }),
+    );
+
+    expect(await screen.findByTestId("studio-tldraw-workspace")).toHaveTextContent(
+      "0 active canvas objects",
+    );
   });
 
   it("shows the active run configuration summary inside Run Config", async () => {

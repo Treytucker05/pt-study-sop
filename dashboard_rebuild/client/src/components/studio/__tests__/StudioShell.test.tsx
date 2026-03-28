@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useEffect, type ReactNode } from "react";
 
 import {
@@ -12,6 +12,24 @@ import {
 const transformWrapperSpy = vi.fn();
 const setTransformSpy = vi.fn();
 const scrollIntoViewSpy = vi.fn();
+const mockTransformState = {
+  scale: 1,
+  positionX: 0,
+  positionY: 0,
+};
+
+const createViewportRect = (width: number, height: number) =>
+  ({
+    x: 0,
+    y: 0,
+    top: 0,
+    left: 0,
+    right: width,
+    bottom: height,
+    width,
+    height,
+    toJSON: () => ({}),
+  }) as DOMRect;
 
 vi.mock("react-zoom-pan-pinch", () => ({
   TransformWrapper: ({
@@ -19,6 +37,7 @@ vi.mock("react-zoom-pan-pinch", () => ({
     wheel,
     panning,
     onInit,
+    onTransformed,
   }: {
     children: (controls: {
       zoomIn: () => void;
@@ -34,13 +53,67 @@ vi.mock("react-zoom-pan-pinch", () => ({
       zoomOut: () => void;
       resetTransform: () => void;
     }) => void;
+    onTransformed?: (
+      ref: {
+        setTransform: (...args: unknown[]) => void;
+        zoomIn: () => void;
+        zoomOut: () => void;
+        resetTransform: () => void;
+      },
+      state: {
+        scale: number;
+        positionX: number;
+        positionY: number;
+      },
+    ) => void;
   }) => {
-    const controls = {
-      zoomIn: vi.fn(),
-      zoomOut: vi.fn(),
-      resetTransform: vi.fn(),
-      setTransform: setTransformSpy,
+    let controls: {
+      zoomIn: () => void;
+      zoomOut: () => void;
+      resetTransform: () => void;
+      setTransform: (...args: unknown[]) => void;
     };
+
+    const applyTransform = (
+      positionX: number,
+      positionY: number,
+      scale: number,
+      duration = 0,
+    ) => {
+      mockTransformState.positionX = positionX;
+      mockTransformState.positionY = positionY;
+      mockTransformState.scale = scale;
+      setTransformSpy(positionX, positionY, scale, duration);
+      onTransformed?.(controls, { ...mockTransformState });
+    };
+
+    controls = {
+      zoomIn: vi.fn(() =>
+        applyTransform(
+          mockTransformState.positionX,
+          mockTransformState.positionY,
+          Math.min(mockTransformState.scale + 0.1, 1.8),
+        ),
+      ),
+      zoomOut: vi.fn(() =>
+        applyTransform(
+          mockTransformState.positionX,
+          mockTransformState.positionY,
+          Math.max(mockTransformState.scale - 0.1, 0.45),
+        ),
+      ),
+      resetTransform: vi.fn(() => applyTransform(0, 0, 1)),
+      setTransform: (...args: unknown[]) => {
+        const [positionX = 0, positionY = 0, scale = 1, duration = 0] = args as [
+          number?,
+          number?,
+          number?,
+          number?,
+        ];
+        applyTransform(positionX, positionY, scale, duration);
+      },
+    };
+
     useEffect(() => {
       onInit?.(controls);
     }, [onInit]);
@@ -61,6 +134,15 @@ vi.mock("react-zoom-pan-pinch", () => ({
 }));
 
 describe("StudioShell", () => {
+  beforeEach(() => {
+    transformWrapperSpy.mockClear();
+    setTransformSpy.mockClear();
+    scrollIntoViewSpy.mockClear();
+    mockTransformState.scale = 1;
+    mockTransformState.positionX = 0;
+    mockTransformState.positionY = 0;
+  });
+
   it("scrolls the canvas into view when the user recenters panels", () => {
     const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
     HTMLElement.prototype.scrollIntoView = scrollIntoViewSpy;
@@ -171,6 +253,39 @@ describe("StudioShell", () => {
     expect(setTransformSpy).not.toHaveBeenCalled();
   });
 
+  it("stops title-bar pointerdown from bubbling into the canvas background handler", async () => {
+    const minimalLayout = buildStudioShellPresetLayout("minimal");
+    const outerPointerDown = vi.fn();
+
+    render(
+      <div onPointerDown={outerPointerDown}>
+        <StudioShell
+          panelLayout={minimalLayout}
+          setPanelLayout={vi.fn()}
+          tutorPanel={<div>Tutor</div>}
+        />
+      </div>,
+    );
+
+    const titleBar = screen
+      .getByTestId("studio-tutor-panel")
+      .querySelector(".workspace-panel-drag-handle");
+
+    expect(titleBar).toBeTruthy();
+
+    fireEvent.pointerDown(titleBar!, {
+      pointerId: 7,
+      clientX: 200,
+      clientY: 120,
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("1 Selected")).toBeInTheDocument();
+    });
+
+    expect(outerPointerDown).not.toHaveBeenCalled();
+  });
+
   it("does not start canvas panning from the entry-state card", () => {
     setTransformSpy.mockClear();
 
@@ -265,6 +380,71 @@ describe("StudioShell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Center Windows" }));
 
     expect(setTransformSpy).toHaveBeenCalled();
+  });
+
+  it("preserves the current zoom when the user recenters open panels", () => {
+    render(
+      <StudioShell
+        panelLayout={buildStudioShellPresetLayout("minimal")}
+        setPanelLayout={vi.fn()}
+        tutorPanel={<div>Tutor</div>}
+      />,
+    );
+
+    const canvas = screen.getByTestId("studio-canvas");
+    const rectSpy = vi
+      .spyOn(canvas, "getBoundingClientRect")
+      .mockReturnValue(createViewportRect(1600, 900));
+
+    try {
+      fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+      fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+
+      setTransformSpy.mockClear();
+
+      fireEvent.click(screen.getByRole("button", { name: "Center Windows" }));
+
+      const centerCall = setTransformSpy.mock.calls.at(-1);
+      expect(centerCall).toBeTruthy();
+      expect(centerCall?.[2]).toBeCloseTo(1.2);
+      expect(centerCall?.[3]).toBe(180);
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
+  it("still refits the layout when the user resets the canvas view", () => {
+    const layout = buildStudioShellPresetLayout("minimal");
+    const focus = buildStudioShellViewportFocus(layout, 1600, 900);
+
+    render(
+      <StudioShell
+        panelLayout={layout}
+        setPanelLayout={vi.fn()}
+        tutorPanel={<div>Tutor</div>}
+      />,
+    );
+
+    const canvas = screen.getByTestId("studio-canvas");
+    const rectSpy = vi
+      .spyOn(canvas, "getBoundingClientRect")
+      .mockReturnValue(createViewportRect(1600, 900));
+
+    try {
+      fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+      fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+
+      setTransformSpy.mockClear();
+
+      fireEvent.click(screen.getByRole("button", { name: "Reset canvas view" }));
+
+      const resetCall = setTransformSpy.mock.calls.at(-1);
+      expect(resetCall).toBeTruthy();
+      expect(resetCall?.[2]).toBeCloseTo(focus.scale);
+      expect(resetCall?.[3]).toBe(180);
+    } finally {
+      rectSpy.mockRestore();
+    }
   });
 
   it("opens newly spawned panels to the right before wrapping to a new row", () => {
@@ -474,9 +654,11 @@ describe("StudioShell", () => {
     const studyLayout = buildStudioShellPresetLayout("study");
     const tutor = studyLayout.find((item) => item.panel === "tutor_chat");
     const status = studyLayout.find((item) => item.panel === "tutor_status");
+    const memory = studyLayout.find((item) => item.panel === "memory");
 
     expect(tutor).toBeTruthy();
     expect(status).toBeTruthy();
+    expect(memory).toBeTruthy();
 
     const movedSelection = applyStudioShellPanelPositionUpdate(
       studyLayout,
@@ -490,6 +672,7 @@ describe("StudioShell", () => {
 
     const movedTutor = movedSelection.find((item) => item.id === tutor!.id);
     const movedStatus = movedSelection.find((item) => item.id === status!.id);
+    const movedMemory = movedSelection.find((item) => item.id === memory!.id);
 
     expect(movedTutor?.position).toEqual({
       x: tutor!.position.x + 120,
@@ -499,6 +682,7 @@ describe("StudioShell", () => {
       x: status!.position.x + 120,
       y: status!.position.y + 40,
     });
+    expect(movedMemory?.position).toEqual(memory!.position);
 
     const groupedLayout = studyLayout.map((item) =>
       item.id === tutor!.id || item.id === status!.id
@@ -518,6 +702,7 @@ describe("StudioShell", () => {
 
     const groupedTutor = movedGroup.find((item) => item.id === tutor!.id);
     const groupedStatus = movedGroup.find((item) => item.id === status!.id);
+    const groupedMemory = movedGroup.find((item) => item.id === memory!.id);
 
     expect(groupedTutor?.position).toEqual({
       x: tutor!.position.x + 80,
@@ -527,5 +712,6 @@ describe("StudioShell", () => {
       x: status!.position.x + 80,
       y: status!.position.y + 24,
     });
+    expect(groupedMemory?.position).toEqual(memory!.position);
   });
 });

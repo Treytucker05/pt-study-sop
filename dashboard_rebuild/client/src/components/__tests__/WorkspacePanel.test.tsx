@@ -10,11 +10,14 @@ vi.mock("react-rnd", () => {
     Rnd: React.forwardRef(function MockRnd(
       {
         children,
+        onDrag,
         onDragStop,
         onResizeStop,
         default: _default,
         minWidth: _mw,
         minHeight: _mh,
+        dragHandleClassName: _dragHandleClassName,
+        enableResizing: _enableResizing,
         ["data-testid"]: dataTestId,
         scale,
         ...rest
@@ -25,12 +28,18 @@ vi.mock("react-rnd", () => {
         <div
           ref={ref}
           data-testid={dataTestId || "rnd-wrapper"}
+          data-ondrag={onDrag ? "true" : undefined}
           data-ondragstop={onDragStop ? "true" : undefined}
           data-onresizestop={onResizeStop ? "true" : undefined}
           data-scale={scale}
+          onMouseMove={(e: any) => {
+            if (onDrag && e.currentTarget.dataset.simulatedragmove) {
+              onDrag(e, { x: 40, y: 60 });
+            }
+          }}
           onMouseUp={(e: any) => {
             // Simulate drag stop when data attribute is present
-            if (onDragStop && e.currentTarget.dataset.simulatedrag) {
+            if (onDragStop && e.currentTarget.dataset.simulatedragstop) {
               onDragStop(e, { x: 100, y: 200 });
             }
           }}
@@ -162,7 +171,32 @@ describe("WorkspacePanel", () => {
     );
     const rnd = screen.getByTestId("rnd-wrapper");
     expect(rnd).toBeInTheDocument();
+    expect(rnd.dataset.ondrag).toBeUndefined();
     expect(rnd.dataset.ondragstop).toBe("true");
+  });
+
+  it("commits position changes only on drag stop", () => {
+    const onPositionChange = vi.fn();
+
+    render(
+      <WorkspacePanel
+        id="p1"
+        title="Panel"
+        onPositionChange={onPositionChange}
+      >
+        <p>content</p>
+      </WorkspacePanel>,
+    );
+
+    const rnd = screen.getByTestId("rnd-wrapper");
+    rnd.setAttribute("data-simulatedragmove", "true");
+    fireEvent.mouseMove(rnd);
+    expect(onPositionChange).not.toHaveBeenCalled();
+
+    rnd.setAttribute("data-simulatedragstop", "true");
+    fireEvent.mouseUp(rnd);
+    expect(onPositionChange).toHaveBeenCalledTimes(1);
+    expect(onPositionChange).toHaveBeenCalledWith({ x: 100, y: 200 });
   });
 
   // ── 6. Resize ───────────────────────────────────────────────────────

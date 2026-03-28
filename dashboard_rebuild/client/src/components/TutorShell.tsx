@@ -127,6 +127,7 @@ export interface TutorShellProps {
   hub: UseTutorHubReturn;
   session: UseTutorSessionReturn;
   workflow: UseTutorWorkflowReturn;
+  showSetup: boolean;
   restoredTurns: { question: string; answer: string | null }[] | undefined;
   activeBoardScope: TutorBoardScope;
   activeBoardId: number | null;
@@ -189,6 +190,7 @@ export function TutorShell({
   hub,
   session,
   workflow,
+  showSetup,
   restoredTurns,
   activeBoardScope,
   activeBoardId,
@@ -754,11 +756,6 @@ export function TutorShell({
   );
 
   useEffect(() => {
-    if (!liveTutorSessionId || panelLayout.length > 0) return;
-    setPanelLayout(buildStudioShellPresetLayout("study"));
-  }, [liveTutorSessionId, panelLayout.length, setPanelLayout]);
-
-  useEffect(() => {
     setCanvasObjectIds([]);
     setWorkspaceDraftObjects([]);
     setLocalDocumentTabs([]);
@@ -767,6 +764,43 @@ export function TutorShell({
     setLocalPromotedPolishNotes([]);
     setNotesScratchpad("");
   }, [workspaceResetVersion]);
+
+  const handleClearCanvas = useCallback(() => {
+    setPanelLayout([]);
+    setCanvasObjectIds([]);
+    setWorkspaceDraftObjects([]);
+    setDocumentTabs([]);
+    setActiveDocumentTabId(null);
+    setViewerState(null);
+    setLocalPromotedPrimePacketObjects([]);
+    setLocalPromotedPolishNotes([]);
+    setNotesScratchpad("");
+  }, [
+    setActiveDocumentTabId,
+    setDocumentTabs,
+    setPanelLayout,
+    setViewerState,
+  ]);
+
+  const clearCanvasDisabled = useMemo(
+    () =>
+      panelLayout.length === 0 &&
+      canvasObjectIds.length === 0 &&
+      workspaceDraftObjects.length === 0 &&
+      documentTabs.length === 0 &&
+      !activeDocumentTabId &&
+      !viewerState &&
+      notesScratchpad.trim().length === 0,
+    [
+      activeDocumentTabId,
+      canvasObjectIds.length,
+      documentTabs.length,
+      notesScratchpad,
+      panelLayout.length,
+      viewerState,
+      workspaceDraftObjects.length,
+    ],
+  );
 
   // ── Save Gist: summarize a reply via LLM and capture as workflow note ──
   const handleSaveGist = useCallback(
@@ -1111,7 +1145,8 @@ export function TutorShell({
               void onStartPriming();
               return;
             }
-            applyCanvasPreset("priming");
+            setShowSetup(false);
+            setPanelLayout([]);
             void workflow.openStudioPriming();
           }}
           disabled={typeof hub.courseId !== "number" || isStartingPriming}
@@ -1148,10 +1183,12 @@ export function TutorShell({
     <TutorErrorBoundary fallbackLabel="Studio Canvas">
       <div className="flex min-h-0 flex-1 flex-col">
         <StudioShell
-          entryCard={liveTutorSessionId ? null : entryCard}
+          entryCard={showSetup && !liveTutorSessionId ? entryCard : null}
           defaultPreset={liveTutorSessionId ? "study" : "priming"}
+          autoSeedDefaultPreset={false}
           sourceShelf={
             <SourceShelf
+              courseId={hub.courseId ?? null}
               courseName={
                 hub.courseLabel ||
                 workflow.activeWorkflowDetail?.workflow?.course_name ||
@@ -1215,6 +1252,8 @@ export function TutorShell({
           notesPanel={notesPanel}
           panelLayout={panelLayout}
           setPanelLayout={setPanelLayout}
+          onClearCanvas={handleClearCanvas}
+          clearCanvasDisabled={clearCanvasDisabled}
         />
       </div>
     </TutorErrorBoundary>

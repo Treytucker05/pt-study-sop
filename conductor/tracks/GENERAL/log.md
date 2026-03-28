@@ -1864,3 +1864,64 @@ Changes not tied to a specific conductor track. Append dated entries below.
     - screenshot artifact saved to `C:\\Users\\treyt\\.dev-browser\\tmp\\priming-phase2-chat-verified.png`
 - Live-server note:
   - the first browser verification attempts were still hitting an older Python listener on port `5000` (PID `6448`) even after `Start_Dashboard.bat` launched a new process; killing the stale listener allowed the new `POST /api/tutor/priming-assist` route to respond correctly with `400 message is required` on direct probe and then pass the live UI gate
+
+## 2026-03-27 - Started Tutor Studio on an empty canvas and added a clear-canvas toolbar action
+
+- Updated `dashboard_rebuild/client/src/components/TutorShell.tsx` and `dashboard_rebuild/client/src/pages/tutor.tsx` so `Start Priming` and routed session restore can land on an intentionally empty Studio canvas instead of auto-opening the old Priming or Study preset.
+- Updated `dashboard_rebuild/client/src/components/studio/StudioShell.tsx` with a `Clear Canvas` toolbar action plus an explicit `autoSeedDefaultPreset` gate so the Tutor route can preserve an empty canvas until the user opens the panels they want.
+- Scoped the clear action to canvas-local state by resetting open panel layout, workspace draft objects, document dock tabs, viewer state, and scratch notes without ending the active study workflow.
+- Updated regression coverage in:
+  - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorShell.test.tsx`
+  - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live local browser verification on `http://127.0.0.1:5000/tutor?course_id=1&mode=studio` confirmed:
+    - `New Session` returned to the entry card
+    - `Start Priming` opened an empty canvas with only the toolbar visible
+    - manually opened panels closed cleanly through `Clear Canvas` without returning to setup state
+
+## 2026-03-27 - Made Center Windows preserve the current canvas zoom
+
+- Updated `dashboard_rebuild/client/src/components/studio/StudioShell.tsx` to split viewport actions into two paths:
+  - `Center Windows` now recenters the open panel layout using the current canvas transform scale instead of refitting the layout to the default zoom
+  - `Reset canvas view` still uses the fit-to-layout reset behavior when the user wants the standard framing back
+- Updated `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx` with stateful zoom-pan mock coverage so Studio shell regressions now verify:
+  - zooming in before `Center Windows` preserves the active scale
+  - `Reset canvas view` still restores the fitted scale
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- client/src/components/studio/__tests__/StudioShell.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live browser verification on `http://127.0.0.1:5000/tutor?course_id=1&mode=studio` confirmed:
+    - zooming the canvas changed the transform to `scale(1.8)`
+    - clicking `Center Windows` kept the transform at `scale(1.8)` while updating only the translate offsets
+    - clicking `Reset canvas view` returned the canvas to the standard fitted `scale(0.6)`
+
+## 2026-03-27 - Stopped ordinary /tutor startup from reopening the saved floating panel layout
+
+- Updated `dashboard_rebuild/client/src/pages/tutor.tsx` so project-shell hydration no longer reapplies `workspace_state.panel_layout` into an empty Tutor canvas on ordinary `/tutor` load.
+- Kept the rest of the project-shell hydration behavior intact, including document tabs, active document tab id, viewer state, runtime state, packet promotions, and selector persistence.
+- Updated `/tutor` regressions in `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx` so saved project-shell document tabs still hydrate while the route returns to the centered entry state instead of auto-opening the previous floating windows.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorShell.test.tsx client/src/components/studio/__tests__/StudioShell.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live browser verification on `http://127.0.0.1:5000/tutor?course_id=1&mode=studio` confirmed:
+    - manually opening `Source Shelf` and `Workspace` from the entry state persisted the layout
+    - reloading `/tutor` returned to `0` open panels with the entry card visible instead of reopening those windows
+
+## 2026-03-27 - Fixed transformed Studio panel drag drift
+
+- Removed the expanded-panel `onDrag` position commits in `dashboard_rebuild/client/src/components/ui/WorkspacePanel.tsx` so floating windows only commit their controlled position on `onDragStop`, matching the already-stable collapsed-chip path.
+- Added `event.stopPropagation()` to the title-bar selection handler in `dashboard_rebuild/client/src/components/studio/StudioShell.tsx` so panel-originated pointer events never bubble into the canvas drag path.
+- Kept grouped drag behavior on the existing `applyStudioShellPanelPositionUpdate(...)` delta path, which now applies one batch update from the drag-stop final anchor position instead of a stream of transformed drag-frame updates.
+- Updated regression coverage in:
+  - `dashboard_rebuild/client/src/components/__tests__/WorkspacePanel.test.tsx`
+  - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/WorkspacePanel.test.tsx client/src/components/studio/__tests__/StudioShell.test.tsx client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/pages/__tests__/tutor.workspace.integration.test.tsx client/src/components/__tests__/WorkspaceCanvas.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - live `dev-browser` verification on `http://127.0.0.1:5000/tutor` confirmed:
+    - after `Apply Study preset`, zooming in, and panning the canvas background, 20 rapid title-bar drags on `Memory` changed only the `memory` panel position while `document_dock`, `workspace`, `tutor_chat`, and `tutor_status` stayed fixed
+    - a follow-up grouped drag on `Tutor` + `Memory` moved both selected panels by the same delta while the unselected panels stayed fixed
+    - screenshot artifact saved to `C:\\Users\\treyt\\.dev-browser\\tmp\\studio-drag-drift-check.png`

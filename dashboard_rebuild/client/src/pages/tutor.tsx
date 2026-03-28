@@ -2,7 +2,6 @@ import { CoreWorkspaceFrame } from "@/components/CoreWorkspaceFrame";
 import { PageScaffold } from "@/components/PageScaffold";
 import { TutorShell } from "@/components/TutorShell";
 import { TutorTopBar } from "@/components/TutorTopBar";
-import { buildStudioShellPresetLayout } from "@/components/studio/StudioShell";
 import { resolveTutorTeachRuntime } from "@/components/TutorChat.types";
 import { useTutorHub } from "@/hooks/useTutorHub";
 import { useStudioRun } from "@/hooks/useStudioRun";
@@ -39,7 +38,6 @@ import {
 import { normalizeStudioPolishPromotedNotes } from "@/lib/studioPacketSections";
 import {
   normalizeStudioDocumentTabs,
-  normalizeStudioPanelLayout,
 } from "@/lib/studioPanelLayout";
 import {
   normalizeStudioRunRuntimeState,
@@ -274,14 +272,6 @@ function useTutorPageController() {
         setActiveBoardId(nextProjectShell.workspace_state.active_board_id);
       }
       setViewerState(nextProjectShell.workspace_state.viewer_state || null);
-      setPanelLayout((current) => {
-        if (current.length > 0) {
-          return current;
-        }
-        return normalizeStudioPanelLayout(
-          nextProjectShell.workspace_state.panel_layout,
-        );
-      });
       setDocumentTabs(
         normalizeStudioDocumentTabs(
           nextProjectShell.workspace_state.document_tabs,
@@ -337,7 +327,6 @@ function useTutorPageController() {
       setPromotedPolishPacketNotes,
       setActiveDocumentTabId,
       setDocumentTabs,
-      setPanelLayout,
       setRuntimeState,
       setTutorChainId,
       setTutorCustomBlockIds,
@@ -460,7 +449,7 @@ function useTutorPageController() {
       setShellRevision(0);
       setShellHydratedCourseId(nextCourseId);
       setShowSetup(false);
-      setPanelLayout(buildStudioShellPresetLayout("priming"));
+      setPanelLayout([]);
       setWorkspaceResetVersion((current) => current + 1);
       await workflow.createWorkflowAndOpenPriming({
         courseId: nextCourseId,
@@ -814,11 +803,12 @@ function useTutorPageController() {
         topBar={tutorTopBar}
       >
         <TutorShell
-          activeSessionId={liveTutorSessionId}
-          hub={hub}
-          session={session}
-          workflow={workflow}
-          restoredTurns={restoredTurns}
+        activeSessionId={liveTutorSessionId}
+        hub={hub}
+        session={session}
+        workflow={workflow}
+        showSetup={showSetup}
+        restoredTurns={restoredTurns}
           activeBoardScope={activeBoardScope}
           activeBoardId={activeBoardId}
           viewerState={viewerState}

@@ -8,6 +8,7 @@ import {
 } from "@/lib/studioWorkspaceObjects";
 
 export interface SourceShelfProps {
+  courseId?: number | null;
   courseName: string | null;
   studyUnit: string | null;
   topic: string | null;
@@ -26,6 +27,7 @@ export interface SourceShelfProps {
 type SourceShelfTab = "current_run" | "library" | "vault";
 
 export function SourceShelf({
+  courseId,
   courseName,
   studyUnit,
   topic,
@@ -40,10 +42,18 @@ export function SourceShelf({
 }: SourceShelfProps) {
   const [activeTab, setActiveTab] = useState<SourceShelfTab>("current_run");
 
+  const scopedMaterials = useMemo(
+    () =>
+      typeof courseId === "number"
+        ? materials.filter((material) => material.course_id === courseId)
+        : materials,
+    [courseId, materials],
+  );
+
   const currentRunMaterialObjects = useMemo(
     () =>
       buildStudioWorkspaceObjects({
-        materials,
+        materials: scopedMaterials,
         selectedMaterialIds,
         selectedPaths: [],
       }).filter(
@@ -52,14 +62,14 @@ export function SourceShelf({
         ): workspaceObject is Extract<StudioWorkspaceObject, { kind: "material" }> =>
           workspaceObject.kind === "material",
       ),
-    [materials, selectedMaterialIds],
+    [scopedMaterials, selectedMaterialIds],
   );
 
   const libraryMaterialObjects = useMemo(
     () =>
       buildStudioWorkspaceObjects({
-        materials,
-        selectedMaterialIds: materials.map((material) => material.id),
+        materials: scopedMaterials,
+        selectedMaterialIds: scopedMaterials.map((material) => material.id),
         selectedPaths: [],
       }).filter(
         (
@@ -67,7 +77,7 @@ export function SourceShelf({
         ): workspaceObject is Extract<StudioWorkspaceObject, { kind: "material" }> =>
           workspaceObject.kind === "material",
       ),
-    [materials],
+    [scopedMaterials],
   );
 
   const vaultPathObjects = useMemo(

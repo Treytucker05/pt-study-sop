@@ -28,6 +28,38 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 - Ops note (2026-03-25): `dev-browser` is now a shared agent skill projected into every supported agent root; this does not change Tutor sprint priority.
 
+- [x] HUD-244. Make `Center Windows` preserve the current canvas zoom while re-centering the open panel layout.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`
+    - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+  - Done when:
+    - clicking `Center Windows` repositions the open panel layout without changing the current canvas zoom level
+    - `Reset canvas view` still performs the fit-to-layout reset behavior when the user wants the standard framing back
+    - targeted Studio shell tests and the production frontend build pass
+  - Assignee: @codex-cli
+  - Completed: 2026-03-27
+  - Notes:
+    - split Studio shell viewport actions so `Center Windows` preserves the current transform scale while recalculating only the centered translate offset, and `Reset canvas view` keeps the old fit-to-layout reframing path
+    - added Studio shell regressions that zoom the canvas first, then verify `Center Windows` keeps the zoom level while `Reset canvas view` restores the fitted framing
+    - validation passed with `cd dashboard_rebuild && npm run test -- client/src/components/studio/__tests__/StudioShell.test.tsx`, `cd dashboard_rebuild && npm run build`, and live browser verification on `http://127.0.0.1:5000/tutor?course_id=1&mode=studio` showing `scale(1.8)` persisted after `Center Windows` and reset to `scale(0.6)` after `Reset canvas view`
+
+- [x] HUD-245. Stop `/tutor` startup from reopening the saved floating panel layout on ordinary load.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+  - Done when:
+    - ordinary `/tutor` loads keep the canvas empty instead of restoring `projectShell.workspace_state.panel_layout`
+    - project-shell document tabs and other shell state still hydrate without reopening the old floating windows
+    - targeted Tutor route tests, Studio shell tests, the production frontend build, and a live browser reload regression pass
+  - Assignee: @codex-cli
+  - Completed: 2026-03-27
+  - Notes:
+    - removed the route-level hydration path that reapplied `projectShell.workspace_state.panel_layout` into an empty Tutor canvas while keeping project-shell document tabs, viewer state, and runtime persistence intact
+    - updated `/tutor` route regressions so saved project-shell document tabs still hydrate while the floating panel layout remains closed until the user explicitly opens panels again
+    - validation passed with `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorShell.test.tsx client/src/components/studio/__tests__/StudioShell.test.tsx`, `cd dashboard_rebuild && npm run build`, and live browser verification on `http://127.0.0.1:5000/tutor?course_id=1&mode=studio` confirming a reload returned to `0` open panels even after manually opening and persisting Source Shelf plus Workspace
+
 - [x] HUD-240. Replace the floating Priming wizard with the Phase 1 tool panel from `docs/design/PRIMING_PANEL_CORRECTED.md` and `docs/design/CORE_STUDY_LOOP.md`.
   - Scope:
     - `docs/design/PRIMING_PANEL_CORRECTED.md`
@@ -96,6 +128,27 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - replaced the disabled Phase 1 chat placeholder with a real in-panel Priming chat thread that stays scoped to the current extraction results, preserves conversation history until the next `RUN`, and can apply full replacement result sets back into the output area
     - added the stateless `POST /api/tutor/priming-assist` backend endpoint plus shared request/response types so Priming follow-ups can refine the current result set without creating a Tutor session or workflow-compaction state
     - validation passed with targeted frontend tests, backend Priming assist tests, `npm run build`, and live `dev-browser` verification on `/tutor` for `New Session -> Start Priming -> Learning Objectives Primer -> Expand on objective 3...`, with screenshot evidence at `C:\\Users\\treyt\\.dev-browser\\tmp\\priming-phase2-chat-verified.png`
+
+- [x] HUD-243. Start Tutor Studio on an empty canvas and add a toolbar action that clears the open canvas state on demand.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+    - `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+  - Done when:
+    - `Start Priming` can create a fresh workflow without auto-opening the old Priming preset or any other floating windows
+    - the Tutor entry card only appears during setup mode, not after a run has already started and the user is on an intentionally empty canvas
+    - the Studio toolbar exposes a `Clear Canvas` action that closes open windows and resets canvas-local workspace/dock state without ending the study session
+    - targeted Tutor/frontend tests, the production frontend build, and a live `dev-browser` verification pass succeed
+  - Assignee: @codex-cli
+  - Completed: 2026-03-27
+  - Notes:
+    - stopped `/tutor` from auto-seeding the old Priming/Study presets after `Start Priming` or session restore by gating the entry card off explicit setup state and disabling StudioShell auto-seeding for the Tutor route
+    - added a `Clear Canvas` toolbar action that empties floating panel layout plus canvas-local workspace, document-dock, viewer, and scratch-note state without ending the active workflow or Tutor session
+    - updated Tutor shell and routed `/tutor` regressions so active sessions now restore into an intentionally empty canvas until the user opens the needed panel explicitly
+    - validation passed with `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorShell.test.tsx`, `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.test.tsx`, `cd dashboard_rebuild && npm run build`, and live local browser verification on `http://127.0.0.1:5000/tutor?course_id=1&mode=studio` confirming `New Session -> Start Priming` lands on an empty canvas and `Clear Canvas` closes manually opened panels
 
 - [ ] HUD-239. Execute the floating-panel Studio v2 cutover from `docs/design/STUDIO_LAYOUT_SPEC_v2.md` using the slice-by-slice TDD runbook.
   - Scope:

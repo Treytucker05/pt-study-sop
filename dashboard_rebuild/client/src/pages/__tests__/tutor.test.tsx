@@ -723,9 +723,10 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    expect(await screen.findByTestId("tutor-chat")).toBeInTheDocument();
+    expect(await screen.findByTestId("studio-toolbar")).toBeInTheDocument();
     expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
-    expect(screen.getByTestId("studio-toolbar")).toBeInTheDocument();
+    await openStudioPanel(/open tutor panel/i);
+    expect(await screen.findByTestId("tutor-chat")).toBeInTheDocument();
   });
 
   it("ends the current session, returns to the entry card, and starts Priming on a different course with that course materials loaded", async () => {
@@ -823,9 +824,12 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    expect(await screen.findByTestId("tutor-chat")).toBeInTheDocument();
+    expect(await screen.findByTestId("studio-toolbar")).toBeInTheDocument();
+    const sessionActionButton = await screen.findByRole("button", {
+      name: /end session/i,
+    });
 
-    fireEvent.click(screen.getByRole("button", { name: /end session/i }));
+    fireEvent.click(sessionActionButton);
 
     await waitFor(() => {
       expect(endSessionMock).toHaveBeenCalledWith("sess-cardio");
@@ -849,8 +853,10 @@ describe("Tutor page restore", () => {
         }),
       );
     });
-    expect(await screen.findByTestId("studio-priming-panel")).toBeInTheDocument();
+    expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-priming-panel")).not.toBeInTheDocument();
 
+    await openStudioPanel(/open source shelf panel/i);
     const sourceShelf = await screen.findByTestId("studio-source-shelf");
     expect(sourceShelf).toHaveTextContent("Renal Physiology");
     expect(sourceShelf).toHaveTextContent("2 materials in run");
@@ -1201,6 +1207,8 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
+    expect(await screen.findByTestId("studio-toolbar")).toBeInTheDocument();
+    await openStudioPanel(/open tutor panel/i);
     expect(await screen.findByTestId("tutor-chat")).toBeInTheDocument();
     expect(screen.queryByTestId("tutor-launch-hub")).not.toBeInTheDocument();
     expect(getSessionMock).toHaveBeenCalledWith("sess-route");
@@ -1234,6 +1242,8 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
+    expect(await screen.findByTestId("studio-toolbar")).toBeInTheDocument();
+    await openStudioPanel(/open tutor panel/i);
     expect(await screen.findByTestId("tutor-chat")).toBeInTheDocument();
     expect(getSessionMock).toHaveBeenCalledWith("sess-project");
   });
@@ -1383,7 +1393,7 @@ describe("Tutor page restore", () => {
     expect(screen.queryByTestId("tutor-publish-mode")).not.toBeInTheDocument();
   });
 
-  it("hydrates floating panel layout and document tabs from StudioRun authority", async () => {
+  it("keeps the canvas empty on /tutor load while hydrating project-shell document tabs", async () => {
     getProjectShellMock.mockResolvedValue(
       makeProjectShell(77, {
         panel_layout: [
@@ -1419,9 +1429,9 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
-    expect(await screen.findByTestId("studio-source-shelf")).toBeInTheDocument();
-    expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
+    await expectStudioEntryState();
+    expect(screen.queryByTestId("studio-source-shelf")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-document-dock")).not.toBeInTheDocument();
 
     await waitFor(() => {
       expect(saveProjectShellStateMock).toHaveBeenCalled();
@@ -1429,18 +1439,7 @@ describe("Tutor page restore", () => {
         saveProjectShellStateMock.mock.calls[
           saveProjectShellStateMock.mock.calls.length - 1
         ]?.[0];
-      expect(lastCall?.panel_layout).toEqual([
-        expect.objectContaining({
-          id: "panel-source-shelf",
-          panel: "source_shelf",
-          zIndex: 2,
-        }),
-        expect.objectContaining({
-          id: "panel-document-dock",
-          panel: "document_dock",
-          zIndex: 3,
-        }),
-      ]);
+      expect(lastCall?.panel_layout).toEqual([]);
       expect(lastCall?.document_tabs).toEqual([
         expect.objectContaining({
           id: "doc-material-101",
@@ -1453,7 +1452,7 @@ describe("Tutor page restore", () => {
     });
   });
 
-  it("hydrates multiple document tabs and the active restored tab from StudioRun authority", async () => {
+  it("preserves multiple document tabs from project shell without reopening the old panel layout", async () => {
     getProjectShellMock.mockResolvedValue(
       makeProjectShell(77, {
         panel_layout: [
@@ -1488,9 +1487,8 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
-    expect(await screen.findByTestId("studio-document-dock")).toBeInTheDocument();
-    expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
+    await expectStudioEntryState();
+    expect(screen.queryByTestId("studio-document-dock")).not.toBeInTheDocument();
 
     await waitFor(() => {
       expect(saveProjectShellStateMock).toHaveBeenCalled();
@@ -1498,6 +1496,7 @@ describe("Tutor page restore", () => {
         saveProjectShellStateMock.mock.calls[
           saveProjectShellStateMock.mock.calls.length - 1
         ]?.[0];
+      expect(lastCall?.panel_layout).toEqual([]);
       expect(lastCall?.document_tabs).toEqual([
         expect.objectContaining({
           id: "doc-material-101",
@@ -1606,7 +1605,7 @@ describe("Tutor page restore", () => {
     });
   });
 
-  it("shows the entry card on an empty StudioRun and opens the Priming preset from /tutor", async () => {
+  it("shows the entry card on an empty StudioRun and starts Priming on an empty canvas from /tutor", async () => {
     getProjectShellMock.mockResolvedValue(makeProjectShell(77));
     getCurrentCourseMock.mockResolvedValue({ currentCourse: { id: 77 } });
 
@@ -1618,8 +1617,10 @@ describe("Tutor page restore", () => {
     await waitFor(() => {
       expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
     });
-    expect(await screen.findByTestId("studio-priming-panel")).toBeInTheDocument();
+    expect(screen.queryByTestId("studio-priming-panel")).not.toBeInTheDocument();
     expect(screen.queryByTestId("priming-selector-bar")).not.toBeInTheDocument();
+    await openStudioPanel(/open priming panel/i);
+    expect(await screen.findByTestId("studio-priming-panel")).toBeInTheDocument();
     expect(await screen.findByTestId("priming-tool-panel")).toBeInTheDocument();
   });
 
@@ -1665,6 +1666,10 @@ describe("Tutor page restore", () => {
 
     await expectStudioEntryState();
     fireEvent.click(screen.getByRole("button", { name: /start priming/i }));
+    await waitFor(() => {
+      expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
+    });
+    await openStudioPanel(/open priming panel/i);
     expect(await screen.findByTestId("studio-priming-panel")).toBeInTheDocument();
     expect(screen.queryByTestId("brain-home")).not.toBeInTheDocument();
   });

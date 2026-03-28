@@ -136,9 +136,6 @@ export function WorkspacePanel({
       minWidth={minWidth}
       minHeight={minHeight}
       dragHandleClassName="workspace-panel-drag-handle"
-      onDrag={(_e, d) => {
-        onPositionChange?.({ x: d.x, y: d.y });
-      }}
       onDragStop={(_e, d) => {
         onPositionChange?.({ x: d.x, y: d.y });
       }}
