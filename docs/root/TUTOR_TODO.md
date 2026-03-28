@@ -79,6 +79,26 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - fixed the remaining live jump by excluding `.workspace-panel-root` from `react-zoom-pan-pinch` pan start, which prevents the library from starting a hidden wrapper pan on panel mousedown and snapping the canvas back to centered bounds on mouseup
     - validation passed with `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/WorkspacePanel.test.tsx client/src/components/studio/__tests__/StudioShell.test.tsx`, `cd dashboard_rebuild && npm run build`, and live `dev-browser` verification on `http://127.0.0.1:5000/tutor?course_id=1&mode=studio` after `Apply Priming preset -> Center Windows -> drag Source Shelf`, with screenshot evidence at `C:\\Users\\treyt\\.dev-browser\\tmp\\source-shelf-before-drag-fixed-v2.png` and `C:\\Users\\treyt\\.dev-browser\\tmp\\source-shelf-after-drag-fixed-v2.png`
 
+- [x] OPS-100. Narrow the managed local `pre-push` hook to a fast deterministic backend lane and leave full harness/backend coverage to CI.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `scripts/install_agent_guard_hooks.ps1`
+    - `scripts/README.md`
+    - `docs/root/GUIDE_DEV.md`
+    - `brain/tests/test_install_agent_guard_hooks.py`
+  - Done when:
+    - the managed `pre-push` hook no longer runs the entire `pytest brain/tests` suite on every local push
+    - the generated hook runs a small deterministic backend lane that still validates the managed harness/bootstrap contract locally
+    - repo docs clearly separate the local pre-push gate from the full CI harness/backend lanes
+    - automated coverage proves the generated hook content matches the reduced lane, and the managed hook is reinstalled locally
+  - Assignee: @codex-cli
+  - Completed: 2026-03-28
+  - Notes:
+    - changed the managed hook generator so local `pre-push` now runs `pytest brain/tests/test_harness_bootstrap.py brain/tests/test_harness_startup.py -q` with the existing retry-on-capture-crash behavior instead of the entire `pytest brain/tests` suite
+    - added integration coverage that installs the managed hook into a temp git repo and asserts the generated `pre-push` body contains the reduced lane and no longer contains `pytest brain/tests -q`
+    - updated `scripts/README.md` and `docs/root/GUIDE_DEV.md` to state that the local hook stays narrow while CI keeps the full `harness_contract` plus full backend test responsibility
+    - validation passed with `pytest brain/tests/test_install_agent_guard_hooks.py -q`, `pytest brain/tests/test_harness_bootstrap.py brain/tests/test_harness_startup.py -q`, and `pwsh -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\install_agent_guard_hooks.ps1 -Action install`
+
 - [x] HUD-240. Replace the floating Priming wizard with the Phase 1 tool panel from `docs/design/PRIMING_PANEL_CORRECTED.md` and `docs/design/CORE_STUDY_LOOP.md`.
   - Scope:
     - `docs/design/PRIMING_PANEL_CORRECTED.md`

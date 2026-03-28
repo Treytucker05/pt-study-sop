@@ -102,6 +102,8 @@ $prePushPath = Join-Path $hooksDir "pre-push"
 $preCommitSidecar = Join-Path $hooksDir "pre-commit.local-agent-guard"
 $prePushSidecar = Join-Path $hooksDir "pre-push.local-agent-guard"
 $marker = "# managed-by: install_agent_guard_hooks.ps1"
+$prePushLaneArgs = "brain/tests/test_harness_bootstrap.py brain/tests/test_harness_startup.py -q"
+$prePushLaneArgsRetry = "brain/tests/test_harness_bootstrap.py brain/tests/test_harness_startup.py -q -s"
 
 $preCommitBody = @'
 #!/bin/sh
@@ -189,10 +191,10 @@ env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE "$PYTHON_BIN" scripts/check_do
 echo "[pre-push] Project hub check"
 env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE "$PYTHON_BIN" scripts/validate_project_hub.py
 
-echo "[pre-push] Brain tests"
+echo "[pre-push] Fast backend gate"
 PYTEST_LOG="$(mktemp)"
 set +e
-"$PYTHON_BIN" -m pytest brain/tests -q >"$PYTEST_LOG" 2>&1
+"$PYTHON_BIN" -m pytest __PRE_PUSH_LANE__ >"$PYTEST_LOG" 2>&1
 PYTEST_STATUS=$?
 set -e
 cat "$PYTEST_LOG"
@@ -200,7 +202,7 @@ cat "$PYTEST_LOG"
 if [ "$PYTEST_STATUS" -ne 0 ] && grep -q "ValueError: I/O operation on closed file" "$PYTEST_LOG"; then
   echo "[pre-push] Detected pytest capture teardown crash. Retrying without capture (-s)."
   set +e
-  "$PYTHON_BIN" -m pytest brain/tests -q -s >"$PYTEST_LOG" 2>&1
+  "$PYTHON_BIN" -m pytest __PRE_PUSH_LANE_RETRY__ >"$PYTEST_LOG" 2>&1
   PYTEST_STATUS=$?
   set -e
   cat "$PYTEST_LOG"
@@ -212,6 +214,8 @@ if [ "$PYTEST_STATUS" -ne 0 ]; then
 fi
 '@
 $prePushBody = $prePushBody.Replace("__MARKER__", $marker)
+$prePushBody = $prePushBody.Replace("__PRE_PUSH_LANE__", $prePushLaneArgs)
+$prePushBody = $prePushBody.Replace("__PRE_PUSH_LANE_RETRY__", $prePushLaneArgsRetry)
 
 switch ($Action) {
   "status" {
@@ -243,7 +247,7 @@ switch ($Action) {
     Write-Host "- scripts/sync_agent_config.ps1 -Mode Check"
     Write-Host "- scripts/check_docs_sync.py"
     Write-Host "- scripts/validate_project_hub.py"
-    Write-Host "- python -m pytest brain/tests -q (pre-push only; auto-retry with -s on known capture crash)"
+    Write-Host "- python -m pytest $prePushLaneArgs (pre-push only; auto-retry with -s on known capture crash)"
     Write-Host ""
     Write-Host "Existing unmanaged hooks are chained via:"
     Write-Host "- $preCommitSidecar"

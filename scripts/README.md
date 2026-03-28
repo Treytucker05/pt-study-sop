@@ -14,7 +14,7 @@ System context: scripts support CP-MSS v2.0 operations and governance.
 - `launch_codex_session.ps1` - Start one-off named agent sessions (`-Tool codex` default; `-Tool opencode` and `-Tool kimi` supported).
 - `agent_worktrees.ps1` - Create/manage named persistent worktrees (integrate/ui/brain[/docs]) for parallel agents. Supports multi-agent launch (`open-many` / `dispatch-many`), role routing, and quick status.
 - `bootstrap_parallel_agents.ps1` - One-command bootstrap: ensure worktrees + launch selected agent profile across multiple roles.
-- `install_agent_guard_hooks.ps1` - Install optional local git hooks (`pre-commit`, `pre-push`) to enforce drift checks and baseline tests during parallel agent workflows.
+- `install_agent_guard_hooks.ps1` - Install optional local git hooks (`pre-commit`, `pre-push`) to enforce drift checks plus a fast deterministic backend lane during parallel agent workflows. Full harness and full backend coverage stay in CI.
 - `parallel_launch_wizard.ps1` - Interactive launcher that prompts for role selection and agent counts (Codex/Claude) and starts all requested sessions.
 - `run_scholar.bat` - Run Scholar workflows.
 - `parallel launch shortcut` - Use `C:/Users/treyt/OneDrive/Desktop/Travel Laptop/Parallel Work/01_Launch_Parallel_Wizard.bat` for the one-file prompting flow.
@@ -111,4 +111,9 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_agent_guard_hook
 # Verify installed
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_agent_guard_hooks.ps1 -Action status
 ```
+
+Managed hook scope:
+- `pre-commit` runs agent-config drift, docs sync, and project-hub validation.
+- `pre-push` keeps the same checks and adds a fast deterministic backend lane: `pytest brain/tests/test_harness_bootstrap.py brain/tests/test_harness_startup.py -q`.
+- Full backend coverage (`pytest brain/tests`) and the Windows `harness_contract` flow remain CI responsibilities.
 

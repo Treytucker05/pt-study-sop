@@ -101,6 +101,7 @@ Hermetic Tutor scenario notes:
   - `Run`
   - `Eval tutor-hermetic-smoke`
   - `Report`
+- The optional managed local `pre-push` hook is intentionally narrower: it runs the drift/docs/project-hub checks plus `pytest brain/tests/test_harness_bootstrap.py brain/tests/test_harness_startup.py -q` so everyday pushes stay fast while CI keeps the full harness/backend gate.
 
 ## Contracts (Do Not Drift)
 - WRAP schema: `docs/contracts/wrap_schema.md`
