@@ -12,6 +12,12 @@ Source Shelf → Priming (run method + chat refinement) → Prime Packet → Tut
 - Entry card with course picker, end/new session flow
 - Source Shelf rebuild (folder tree with checkboxes, search, course grouping)
 - Canvas drag drift fix (merged from worktree)
+- HUD-247: Hero header HudButtons (New Session, Resume, Refresh) in PageScaffold actions
+- HUD-248: Canvas zoom slider + per-panel size presets (Max, Fit, Center, Size dropdown)
+- HUD-249: Previous Sessions accordion in Active Workflow header (with filters, delete, course names)
+- HUD-250: Panel center top-bias, fit-to-content measurement, scroll overflow, Source Shelf contrast/folders, vault derivation fallback
+- HUD-251: Per-panel Center/Maximize now pan camera (viewport focus) instead of moving panel
+- HUD-252: Accessibility ARIA fixes (MainContent tablist, form labels), metadata cleanup, mobile header
 
 ## Active Bugs
 - **Panel jump after Center Windows**: After clicking "Center Windows" or any canvas transform, first drag on a panel causes it to jump. Root cause: WorkspacePanel passes `position` as controlled prop to Rnd, mismatch with canvas translate. Fix written but not yet sent to Codex.
