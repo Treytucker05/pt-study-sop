@@ -1,11 +1,22 @@
-import { render, screen, within } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SourceShelf } from "@/components/studio/SourceShelf";
 import type { Material } from "@/lib/api";
 import type { StudioWorkspaceObject } from "@/lib/studioWorkspaceObjects";
+
+const getObsidianFilesMock = vi.fn();
+
+vi.mock("@/lib/api", () => ({
+  api: {
+    obsidian: {
+      getFiles: (...args: unknown[]) => getObsidianFilesMock(...args),
+    },
+  },
+}));
 
 function makeMaterial(
   overrides: Partial<Material> & Pick<Material, "id">,
@@ -53,54 +64,67 @@ const BASE_MATERIALS: Material[] = [
 ];
 
 function renderSourceShelfHarness(options?: {
+  initialSelectedPaths?: string[];
+  vaultFolder?: string | null;
   onOpenInDocumentDock?: (
     object: Extract<StudioWorkspaceObject, { kind: "material" | "vault_path" }>,
   ) => void;
 }) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0 },
+      mutations: { retry: false },
+    },
+  });
+
   function Harness() {
     const [materials, setMaterials] = useState(BASE_MATERIALS);
     const [selectedMaterialIds, setSelectedMaterialIds] = useState<number[]>([101]);
-    const [selectedPaths, setSelectedPaths] = useState<string[]>([
-      "Exercise Physiology/Week 7/Cardio.md",
-      "Exercise Physiology/Week 7/Afterload.md",
-    ]);
+    const [selectedPaths, setSelectedPaths] = useState<string[]>(
+      options?.initialSelectedPaths ?? [
+        "Exercise Physiology/Week 7/Cardio.md",
+        "Exercise Physiology/Week 7/Afterload.md",
+      ],
+    );
 
     return (
-      <SourceShelf
-        courseId={1}
-        courseName="Exercise Physiology"
-        studyUnit="Week 7"
-        topic="Cardiac output"
-        materials={materials}
-        selectedMaterialIds={selectedMaterialIds}
-        selectedMaterialCount={selectedMaterialIds.length}
-        selectedPaths={selectedPaths}
-        vaultFolder="Exercise Physiology/Week 7"
-        courseOptions={[
-          { id: 1, name: "Exercise Physiology" },
-          { id: 2, name: "Neuroscience" },
-        ]}
-        onSelectedMaterialIdsChange={setSelectedMaterialIds}
-        onSelectedPathsChange={setSelectedPaths}
-        onUploadFiles={async (files) => {
-          const uploaded = Array.from(files).map((file, index) =>
-            makeMaterial({
-              id: 300 + index,
-              title: file.name,
-              course_id: 1,
-              file_type: file.name.split(".").pop()?.toLowerCase() || "txt",
-              source_path: `uploads/${file.name}`,
-            }),
-          );
+      <QueryClientProvider client={queryClient}>
+        <SourceShelf
+          courseId={1}
+          courseName="Exercise Physiology"
+          studyUnit="Week 7"
+          topic="Cardiac output"
+          materials={materials}
+          selectedMaterialIds={selectedMaterialIds}
+          selectedMaterialCount={selectedMaterialIds.length}
+          selectedPaths={selectedPaths}
+          vaultFolder={options?.vaultFolder ?? "Exercise Physiology/Week 7"}
+          courseOptions={[
+            { id: 1, name: "Exercise Physiology" },
+            { id: 2, name: "Neuroscience" },
+          ]}
+          onSelectedMaterialIdsChange={setSelectedMaterialIds}
+          onSelectedPathsChange={setSelectedPaths}
+          onUploadFiles={async (files) => {
+            const uploaded = Array.from(files).map((file, index) =>
+              makeMaterial({
+                id: 300 + index,
+                title: file.name,
+                course_id: 1,
+                file_type: file.name.split(".").pop()?.toLowerCase() || "txt",
+                source_path: `uploads/${file.name}`,
+              }),
+            );
 
-          setMaterials((current) => [...current, ...uploaded]);
-          setSelectedMaterialIds((current) => [
-            ...current,
-            ...uploaded.map((material) => material.id),
-          ]);
-        }}
-        onOpenInDocumentDock={options?.onOpenInDocumentDock}
-      />
+            setMaterials((current) => [...current, ...uploaded]);
+            setSelectedMaterialIds((current) => [
+              ...current,
+              ...uploaded.map((material) => material.id),
+            ]);
+          }}
+          onOpenInDocumentDock={options?.onOpenInDocumentDock}
+        />
+      </QueryClientProvider>
     );
   }
 
@@ -108,6 +132,11 @@ function renderSourceShelfHarness(options?: {
 }
 
 describe("SourceShelf", () => {
+  beforeEach(() => {
+    getObsidianFilesMock.mockReset();
+    getObsidianFilesMock.mockResolvedValue({ success: true, files: [] });
+  });
+
   it("renders one searchable tree, filters it in real time, and cascades course checkbox selection", async () => {
     const user = userEvent.setup();
     renderSourceShelfHarness();
@@ -147,6 +176,46 @@ describe("SourceShelf", () => {
     expect(within(shelf).getByText("Cardiac Output Lecture")).toBeInTheDocument();
     expect(within(shelf).getByText("Afterload Drill")).toBeInTheDocument();
     expect(within(shelf).queryByText("Neuro Outlier")).not.toBeInTheDocument();
+  });
+
+  it("lists vault notes from the derived folder even before any vault paths are selected", async () => {
+    const user = userEvent.setup();
+    getObsidianFilesMock.mockImplementation(async (folder?: string) => {
+      if (folder === "Exercise Physiology/Week 7") {
+        return {
+          success: true,
+          files: ["Cardio.md", "Afterload.md", "Subtopic/"],
+        };
+      }
+      if (folder === "Exercise Physiology/Week 7/Subtopic") {
+        return {
+          success: true,
+          files: ["Stroke Volume.md"],
+        };
+      }
+      return { success: true, files: [] };
+    });
+
+    renderSourceShelfHarness({ initialSelectedPaths: [] });
+
+    const shelf = screen.getByTestId("source-shelf-content");
+    await user.click(within(shelf).getByRole("button", { name: /^vault$/i }));
+    await waitFor(() =>
+      expect(getObsidianFilesMock).toHaveBeenCalledWith(
+        "Exercise Physiology/Week 7",
+      ),
+    );
+
+    expect(
+      await within(shelf).findByText("Cardio.md", undefined, { timeout: 3000 }),
+    ).toBeInTheDocument();
+    expect(within(shelf).getByText("Afterload.md")).toBeInTheDocument();
+    expect(within(shelf).getByText("Subtopic")).toBeInTheDocument();
+    expect(
+      within(shelf).getByRole("checkbox", {
+        name: /include cardio\.md in current run/i,
+      }),
+    ).not.toBeChecked();
   });
 
   it("uploads a new library material and auto-checks it into the current run", async () => {
@@ -199,5 +268,18 @@ describe("SourceShelf", () => {
       }),
     );
     expect(checkbox).toBeChecked();
+  });
+
+  it("renders folder rows as tree controls instead of native buttons", async () => {
+    renderSourceShelfHarness();
+
+    const shelf = screen.getByTestId("source-shelf-content");
+    const courseFolderRow = await within(shelf).findByRole("button", {
+      name: /exercise physiology 3\/4 loaded/i,
+    });
+
+    await waitFor(() => {
+      expect(courseFolderRow.tagName).toBe("DIV");
+    });
   });
 });

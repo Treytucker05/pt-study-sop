@@ -193,6 +193,21 @@ export function useTutorHub({
     staleTime: 60 * 1000,
   });
 
+  // ─── Course map ───
+  const { data: courseMapData } = useQuery({
+    queryKey: ["course-map"],
+    queryFn: fetchCourseMap,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const apiCourses = courseMapData?.courses.map((c) => ({
+    id: c.code.toLowerCase().replace("phyt_", ""),
+    name: c.label,
+    path: c.label,
+  })) ?? [];
+
+  const courseFolders = apiCourses.length > 0 ? apiCourses : COURSE_FOLDERS;
+
   const courseLabel = useMemo(
     () =>
       typeof courseId === "number"
@@ -275,12 +290,30 @@ export function useTutorHub({
     [availableObjectives, selectedObjectiveId],
   );
 
+  const configuredCourseFolder = useMemo(() => {
+    const normalizedCourseLabel = normalizeStudyUnitLabel(courseLabel);
+    if (!normalizedCourseLabel) {
+      return "";
+    }
+
+    return (
+      courseFolders.find(
+        (course) =>
+          normalizeStudyUnitLabel(course.name).toLowerCase() ===
+          normalizedCourseLabel.toLowerCase(),
+      )?.path || courseLabel
+    );
+  }, [courseFolders, courseLabel]);
+
   const derivedVaultFolder = useMemo(
     () =>
-      courseLabel
-        ? deriveVaultFolder(courseLabel, effectiveStudyUnit)
+      configuredCourseFolder
+        ? deriveVaultFolder(configuredCourseFolder, effectiveStudyUnit).replace(
+            /^Courses\//i,
+            "",
+          )
         : vaultFolder.trim(),
-    [vaultFolder, courseLabel, effectiveStudyUnit],
+    [vaultFolder, configuredCourseFolder, effectiveStudyUnit],
   );
 
   const effectiveTopic = useMemo(
@@ -304,21 +337,6 @@ export function useTutorHub({
     enabled: hasRestored,
     staleTime: 15 * 1000,
   });
-
-  // ─── Course map ───
-  const { data: courseMapData } = useQuery({
-    queryKey: ["course-map"],
-    queryFn: fetchCourseMap,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const apiCourses = courseMapData?.courses.map((c) => ({
-    id: c.code.toLowerCase().replace("phyt_", ""),
-    name: c.label,
-    path: c.label,
-  })) ?? [];
-
-  const courseFolders = apiCourses.length > 0 ? apiCourses : COURSE_FOLDERS;
 
   // ─── Filter stale material IDs ───
   useEffect(() => {

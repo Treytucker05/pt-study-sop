@@ -38,6 +38,7 @@ import {
   type StudioPolishPromotedNote,
 } from "@/lib/studioPacketSections";
 import { serializeStudioPacketSectionsForTutor } from "@/lib/studioPacketSerializer";
+import { deriveVaultFolder } from "@/lib/tutorUtils";
 import { buildStudioMemoryStatus } from "@/lib/studioMemoryStatus";
 import {
   buildStudioRepairCandidates,
@@ -780,6 +781,56 @@ export function TutorShell({
     () => hub.tutorContentSources?.courses || [],
     [hub.tutorContentSources?.courses],
   );
+  const sourceShelfCourseName = useMemo(
+    () =>
+      hub.courseLabel ||
+      workflow.activeWorkflowDetail?.workflow?.course_name ||
+      null,
+    [hub.courseLabel, workflow.activeWorkflowDetail?.workflow?.course_name],
+  );
+  const sourceShelfStudyUnit = useMemo(
+    () =>
+      hub.effectiveStudyUnit ||
+      workflow.activeWorkflowDetail?.workflow?.study_unit ||
+      null,
+    [hub.effectiveStudyUnit, workflow.activeWorkflowDetail?.workflow?.study_unit],
+  );
+  const sourceShelfTopic = useMemo(
+    () =>
+      hub.effectiveTopic ||
+      workflow.activeWorkflowDetail?.workflow?.topic ||
+      null,
+    [hub.effectiveTopic, workflow.activeWorkflowDetail?.workflow?.topic],
+  );
+  const sourceShelfVaultFolder = useMemo(() => {
+    const explicitVaultFolder =
+      typeof hub.derivedVaultFolder === "string"
+        ? hub.derivedVaultFolder.trim()
+        : "";
+    if (explicitVaultFolder) {
+      return explicitVaultFolder;
+    }
+
+    if (!sourceShelfCourseName) {
+      return null;
+    }
+
+    const configuredCourseFolder =
+      (hub.courseFolders || []).find(
+        (course) =>
+          String(course.name || "").trim().toLowerCase() ===
+          sourceShelfCourseName.trim().toLowerCase(),
+      )?.path || sourceShelfCourseName;
+
+    return deriveVaultFolder(configuredCourseFolder, sourceShelfStudyUnit || "")
+      .replace(/^Courses\//i, "")
+      .trim();
+  }, [
+    hub.courseFolders,
+    hub.derivedVaultFolder,
+    sourceShelfCourseName,
+    sourceShelfStudyUnit,
+  ]);
   const selectedCourseMaterialCount = useMemo(
     () =>
       typeof hub.courseId === "number"
@@ -1303,26 +1354,14 @@ export function TutorShell({
           sourceShelf={
             <SourceShelf
               courseId={hub.courseId ?? null}
-              courseName={
-                hub.courseLabel ||
-                workflow.activeWorkflowDetail?.workflow?.course_name ||
-                null
-              }
-              studyUnit={
-                hub.effectiveStudyUnit ||
-                workflow.activeWorkflowDetail?.workflow?.study_unit ||
-                null
-              }
-              topic={
-                hub.effectiveTopic ||
-                workflow.activeWorkflowDetail?.workflow?.topic ||
-                null
-              }
+              courseName={sourceShelfCourseName}
+              studyUnit={sourceShelfStudyUnit}
+              topic={sourceShelfTopic}
               materials={hub.chatMaterials}
               selectedMaterialIds={hub.selectedMaterials}
               selectedMaterialCount={hub.selectedMaterials.length}
               selectedPaths={hub.selectedPaths}
-              vaultFolder={hub.derivedVaultFolder || null}
+              vaultFolder={sourceShelfVaultFolder}
               courseOptions={availableCourses}
               workspaceObjectIds={canvasObjectIds}
               onSelectedMaterialIdsChange={hub.setSelectedMaterials}

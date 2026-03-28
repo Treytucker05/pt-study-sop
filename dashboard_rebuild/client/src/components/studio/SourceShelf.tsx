@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+} from "react";
 import {
   BookOpen,
   ChevronDown,
@@ -13,6 +20,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { api } from "@/lib/api";
 import type { Material } from "@/lib/api";
 import type { StudioWorkspaceObject } from "@/lib/studioWorkspaceObjects";
 
@@ -82,6 +90,7 @@ const SOURCE_FOLDER_ORDER: Record<string, number> = {
   Library: 0,
   Vault: 1,
 };
+const VAULT_ROOT_SEGMENTS = new Set(["courses", "course", "school"]);
 
 function normalizeText(value: string | null | undefined): string {
   return String(value || "").trim();
@@ -140,6 +149,100 @@ function splitPath(path: string): string[] {
     .split(/[\\/]/)
     .map((segment) => segment.trim())
     .filter(Boolean);
+}
+
+function trimVaultRootSegments(segments: string[]): string[] {
+  if (segments.length <= 1) {
+    return segments;
+  }
+
+  let next = [...segments];
+  while (
+    next.length > 1 &&
+    VAULT_ROOT_SEGMENTS.has(normalizeKey(next[0]))
+  ) {
+    next = next.slice(1);
+  }
+  return next;
+}
+
+function normalizeVaultPath(path: string): string {
+  return splitPath(path).join("/");
+}
+
+function normalizeVaultSelectionKey(path: string): string {
+  return trimVaultRootSegments(splitPath(path)).join("/").toLowerCase();
+}
+
+function uniqueVaultPaths(values: string[]): string[] {
+  const next = new Map<string, string>();
+
+  values.forEach((value) => {
+    const normalizedPath = normalizeVaultPath(value);
+    const normalizedKey = normalizeVaultSelectionKey(normalizedPath);
+    if (!normalizedKey || next.has(normalizedKey)) {
+      return;
+    }
+    next.set(normalizedKey, normalizedPath);
+  });
+
+  return Array.from(next.values());
+}
+
+function joinVaultPath(basePath: string, entry: string): string {
+  const normalizedBasePath = normalizeVaultPath(basePath);
+  const normalizedEntryPath = normalizeVaultPath(entry.replace(/\/$/, ""));
+  if (!normalizedBasePath) {
+    return normalizedEntryPath;
+  }
+  if (
+    normalizedEntryPath.toLowerCase() === normalizedBasePath.toLowerCase() ||
+    normalizedEntryPath
+      .toLowerCase()
+      .startsWith(`${normalizedBasePath.toLowerCase()}/`)
+  ) {
+    return normalizedEntryPath;
+  }
+  return `${normalizedBasePath}/${normalizedEntryPath}`;
+}
+
+async function listVaultFiles(folder: string): Promise<string[]> {
+  const normalizedFolder = normalizeVaultPath(folder);
+  if (!normalizedFolder) {
+    return [];
+  }
+
+  const seenFolders = new Set<string>();
+
+  const walk = async (folderPath: string): Promise<string[]> => {
+    const normalized = normalizeVaultPath(folderPath);
+    if (!normalized || seenFolders.has(normalized)) {
+      return [];
+    }
+    seenFolders.add(normalized);
+
+    const result = await api.obsidian.getFiles(normalized);
+    const entries = Array.isArray(result?.files) ? result.files : [];
+    const files: string[] = [];
+
+    for (const rawEntry of entries) {
+      const trimmedEntry = normalizeText(rawEntry);
+      if (!trimmedEntry) {
+        continue;
+      }
+
+      if (trimmedEntry.endsWith("/")) {
+        files.push(...(await walk(joinVaultPath(normalized, trimmedEntry))));
+        continue;
+      }
+
+      files.push(joinVaultPath(normalized, trimmedEntry));
+    }
+
+    return files;
+  };
+
+  return uniqueStrings(await walk(normalizedFolder));
 }
 
 function collectLeafNodes(node: SourceTreeNode): SourceLeafNode[] {
@@ -248,7 +351,7 @@ function collectDefaultExpandedNodeIds(
       return [];
     }
 
-    const shouldExpand = depth < 2 || nodeHasCheckedDescendant(node);
+    const shouldExpand = depth < 3 || nodeHasCheckedDescendant(node);
     const next = collectDefaultExpandedNodeIds(node.children, depth + 1);
     return shouldExpand ? [node.id, ...next] : next;
   });
@@ -302,7 +405,7 @@ function resolveVaultCourseLabel(
   lookup: ReturnType<typeof buildCourseLookup>,
   fallbackCourseName: string | null,
 ): string {
-  const segments = splitPath(path);
+  const segments = trimVaultRootSegments(splitPath(path));
   const firstSegment = segments[0];
   if (firstSegment && lookup.byName.has(normalizeKey(firstSegment))) {
     return lookup.byName.get(normalizeKey(firstSegment))!;
@@ -336,7 +439,9 @@ function buildSourceTree(args: {
   } = args;
   const courseLookup = buildCourseLookup(courseOptions, courseId, courseName);
   const selectedMaterialIdSet = new Set(selectedMaterialIds);
-  const selectedPathSet = new Set(selectedPaths);
+  const selectedPathSet = new Set(
+    selectedPaths.map((path) => normalizeVaultSelectionKey(path)),
+  );
   const rootMap = new Map<string, SourceFolderNode>();
 
   const ensureFolder = (
@@ -424,7 +529,7 @@ function buildSourceTree(args: {
     );
 
     const workspaceObject = createVaultWorkspaceObject(path);
-    const rawSegments = splitPath(path);
+    const rawSegments = trimVaultRootSegments(splitPath(path));
     const startsWithCourse =
       rawSegments.length > 1 &&
       normalizeKey(rawSegments[0]) === normalizeKey(courseLabel);
@@ -437,7 +542,7 @@ function buildSourceTree(args: {
         label: workspaceObject.title,
         detail: workspaceObject.detail,
         badge: workspaceObject.badge,
-        checked: selectedPathSet.has(path),
+        checked: selectedPathSet.has(normalizeVaultSelectionKey(path)),
         workspaceObject,
       });
       return;
@@ -454,11 +559,11 @@ function buildSourceTree(args: {
           sourceType: "vault",
           label: segment,
           detail: workspaceObject.title,
-          badge: workspaceObject.badge,
-          checked: selectedPathSet.has(path),
-          workspaceObject,
-        });
-        return;
+            badge: workspaceObject.badge,
+            checked: selectedPathSet.has(normalizeVaultSelectionKey(path)),
+            workspaceObject,
+          });
+          return;
       }
 
       parentFolder = ensureFolder(
@@ -530,6 +635,14 @@ function SourceShelfTreeNode({
   ) => void;
   searchActive: boolean;
 }) {
+  const handleFolderKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+    event.preventDefault();
+    onToggleExpanded(node.id);
+  };
+
   if (node.kind === "leaf") {
     const isInWorkspace = workspaceObjectIds.includes(node.workspaceObject.id);
 
@@ -546,12 +659,12 @@ function SourceShelfTreeNode({
           />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <div className="min-w-0 break-words text-sm text-foreground">
+              <div className="min-w-0 break-words text-sm text-white">
                 {node.label}
               </div>
               <Badge
                 variant="outline"
-                className="rounded-full border-primary/20 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-primary/84"
+                className="rounded-full border-primary/20 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-primary"
               >
                 {node.badge}
               </Badge>
@@ -564,7 +677,7 @@ function SourceShelfTreeNode({
                 </Badge>
               ) : null}
             </div>
-            <div className="mt-1 break-all text-xs text-foreground/62">
+            <div className="mt-1 break-all text-xs text-foreground/72">
               {node.detail}
             </div>
           </div>
@@ -574,7 +687,7 @@ function SourceShelfTreeNode({
               variant="outline"
               onClick={() => onOpenInDocumentDock?.(node.workspaceObject)}
               aria-label={`Open ${node.label} in Document Dock`}
-              className="h-8 w-8 rounded-full border-primary/18 bg-black/20 p-0 text-primary/84 hover:bg-black/30"
+              className="h-8 w-8 rounded-full border-primary/18 bg-black/20 p-0 text-white/80 hover:bg-black/30 hover:text-white"
             >
               <ExternalLink className="h-3.5 w-3.5" />
             </Button>
@@ -589,7 +702,7 @@ function SourceShelfTreeNode({
                     ? `${node.label} already in workspace`
                     : `Add ${node.label} to workspace`
                 }
-                className="h-8 w-8 rounded-full border-primary/18 bg-black/20 p-0 text-primary/84 hover:bg-black/30 disabled:cursor-default disabled:opacity-100 disabled:text-foreground/60"
+                className="h-8 w-8 rounded-full border-primary/18 bg-black/20 p-0 text-white/80 hover:bg-black/30 hover:text-white disabled:cursor-default disabled:opacity-100 disabled:text-foreground/60"
               >
                 <Plus className="h-3.5 w-3.5" />
               </Button>
@@ -608,17 +721,19 @@ function SourceShelfTreeNode({
 
   return (
     <div className="space-y-2" style={{ marginLeft: `${depth * 14}px` }}>
-      <div className="flex items-start gap-3 rounded-[0.95rem] border border-primary/15 bg-black/20 px-3 py-2.5">
+      <div className="flex items-start gap-3 border-l-2 border-primary/25 pl-3 py-2 transition-colors hover:bg-white/5">
         <TreeCheckbox
           checked={allChecked}
           indeterminate={partiallyChecked}
           ariaLabel={`Include all ${node.label} in current run`}
           onChange={() => onToggleFolder(node)}
         />
-        <button
-          type="button"
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => onToggleExpanded(node.id)}
-          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+          onKeyDown={handleFolderKeyDown}
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left outline-none"
         >
           {isExpanded ? (
             <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-primary/78" />
@@ -631,12 +746,12 @@ function SourceShelfTreeNode({
             <Folder className="mt-0.5 h-4 w-4 shrink-0 text-primary/78" />
           )}
           <div className="min-w-0">
-            <div className="truncate text-sm text-foreground">{node.label}</div>
-            <div className="text-xs text-foreground/56">
+            <div className="truncate text-sm text-white">{node.label}</div>
+            <div className="text-xs text-foreground/88">
               {checkedLeafCount}/{leafNodes.length} loaded
             </div>
           </div>
-        </button>
+        </div>
       </div>
 
       {isExpanded ? (
@@ -682,26 +797,55 @@ export function SourceShelf({
   onOpenInDocumentDock,
 }: SourceShelfProps) {
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
-  const previousCourseIdRef = useRef<number | null | undefined>(courseId);
   const [activeFilter, setActiveFilter] = useState<SourceShelfFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [knownVaultPaths, setKnownVaultPaths] = useState<string[]>(() =>
-    uniqueStrings(selectedPaths),
-  );
+  const [listedVaultPaths, setListedVaultPaths] = useState<string[]>([]);
+  const [vaultListingLoading, setVaultListingLoading] = useState(false);
+  const normalizedVaultFolder = normalizeText(vaultFolder);
 
   useEffect(() => {
-    if (previousCourseIdRef.current !== courseId) {
-      previousCourseIdRef.current = courseId;
-      setKnownVaultPaths(uniqueStrings(selectedPaths));
-      return;
+    let cancelled = false;
+
+    if (!normalizedVaultFolder) {
+      setListedVaultPaths([]);
+      setVaultListingLoading(false);
+      return () => {
+        cancelled = true;
+      };
     }
 
-    if (selectedPaths.length > 0) {
-      setKnownVaultPaths((current) =>
-        uniqueStrings([...current, ...selectedPaths]),
-      );
-    }
-  }, [courseId, selectedPaths]);
+    setVaultListingLoading(true);
+    setListedVaultPaths([]);
+
+    void listVaultFiles(normalizedVaultFolder)
+      .then((paths) => {
+        if (cancelled) {
+          return;
+        }
+        setListedVaultPaths(paths);
+      })
+      .catch(() => {
+        if (cancelled) {
+          return;
+        }
+        setListedVaultPaths([]);
+      })
+      .finally(() => {
+        if (cancelled) {
+          return;
+        }
+        setVaultListingLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [normalizedVaultFolder]);
+
+  const knownVaultPaths = useMemo(
+    () => uniqueVaultPaths([...selectedPaths, ...listedVaultPaths]),
+    [listedVaultPaths, selectedPaths],
+  );
 
   const fullTree = useMemo(
     () =>
@@ -750,7 +894,7 @@ export function SourceShelf({
   );
 
   const runMaterialCount = selectedMaterialIds.length || selectedMaterialCount;
-  const runVaultCount = selectedPaths.length;
+  const runVaultCount = uniqueVaultPaths(selectedPaths).length;
 
   const toggleExpandedNode = (nodeId: string) => {
     if (normalizedSearch) {
@@ -783,9 +927,12 @@ export function SourceShelf({
     }
 
     const path = leaf.workspaceObject.title;
+    const normalizedPathKey = normalizeVaultSelectionKey(path);
     const nextPaths = leaf.checked
-      ? selectedPaths.filter((entry) => entry !== path)
-      : uniqueStrings([...selectedPaths, path]);
+      ? selectedPaths.filter(
+          (entry) => normalizeVaultSelectionKey(entry) !== normalizedPathKey,
+        )
+      : uniqueVaultPaths([...selectedPaths, path]);
     onSelectedPathsChange?.(nextPaths);
   };
 
@@ -811,10 +958,16 @@ export function SourceShelf({
     }
 
     if (vaultPaths.length > 0) {
+      const normalizedVaultPathSet = new Set(
+        vaultPaths.map((path) => normalizeVaultSelectionKey(path)),
+      );
       onSelectedPathsChange?.(
         allChecked
-          ? selectedPaths.filter((entry) => !vaultPaths.includes(entry))
-          : uniqueStrings([...selectedPaths, ...vaultPaths]),
+          ? selectedPaths.filter(
+              (entry) =>
+                !normalizedVaultPathSet.has(normalizeVaultSelectionKey(entry)),
+            )
+          : uniqueVaultPaths([...selectedPaths, ...vaultPaths]),
       );
     }
   };
@@ -849,8 +1002,8 @@ export function SourceShelf({
                 aria-pressed={isActive}
                 className={
                   isActive
-                    ? "h-8 rounded-full border-primary/30 bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-primary/88"
-                    : "h-8 rounded-full border-primary/20 bg-transparent px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-foreground/60"
+                    ? "h-8 rounded-full border-primary/30 bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-white"
+                    : "h-8 rounded-full border-primary/20 bg-transparent px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-foreground/80"
                 }
               >
                 {label}
@@ -875,7 +1028,7 @@ export function SourceShelf({
             variant="outline"
             onClick={() => uploadInputRef.current?.click()}
             disabled={isUploading}
-            className="h-10 rounded-full border-primary/20 bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-primary/84 hover:bg-black/30"
+            className="h-10 rounded-full border-primary/20 bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-white/80 hover:bg-black/30 hover:text-white"
           >
             <Upload className="mr-2 h-3.5 w-3.5" />
             {isUploading ? "Uploading..." : "Upload"}
@@ -894,49 +1047,49 @@ export function SourceShelf({
 
       <div className="grid gap-3 md:grid-cols-2">
         <div className="rounded-[0.95rem] border border-primary/15 bg-black/15 p-3">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-primary">
             Course
           </div>
-          <div className="mt-1 text-sm text-foreground">
+          <div className="mt-1 text-sm text-white">
             {courseName || "No course selected"}
           </div>
-          <div className="mt-3 text-[10px] uppercase tracking-[0.18em] text-primary/72">
+          <div className="mt-3 text-[10px] uppercase tracking-[0.18em] text-primary">
             Study Unit
           </div>
-          <div className="mt-1 text-sm text-foreground">
+          <div className="mt-1 text-sm text-white">
             {studyUnit || "No study unit selected"}
           </div>
-          <div className="mt-3 text-[10px] uppercase tracking-[0.18em] text-primary/72">
+          <div className="mt-3 text-[10px] uppercase tracking-[0.18em] text-primary">
             Topic
           </div>
-          <div className="mt-1 text-sm text-foreground">
+          <div className="mt-1 text-sm text-white">
             {topic || "Broad module scope"}
           </div>
         </div>
 
         <div className="rounded-[0.95rem] border border-primary/15 bg-black/15 p-3">
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary/72">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
             <BookOpen className="h-3.5 w-3.5" />
             Current Run
           </div>
-          <div className="mt-2 text-sm text-foreground">
+          <div className="mt-2 text-sm text-foreground/88">
             {runMaterialCount} material{runMaterialCount === 1 ? "" : "s"} loaded
           </div>
-          <div className="mt-1 text-sm text-foreground/72">
+          <div className="mt-1 text-sm text-foreground/88">
             {runVaultCount} vault link{runVaultCount === 1 ? "" : "s"} loaded
           </div>
-          <div className="mt-3 break-all text-xs text-foreground/56">
-            {vaultFolder || "Vault path not derived yet"}
+          <div className="mt-3 break-all text-xs text-foreground/72">
+            {normalizedVaultFolder || "Vault path not derived yet"}
           </div>
         </div>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col rounded-[1rem] border border-primary/14 bg-black/10 p-3">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-primary">
             Unified Source Tree
           </div>
-          <div className="text-xs text-foreground/56">
+          <div className="text-xs text-foreground/72">
             {activeFilter === "current_run"
               ? "Showing loaded sources"
               : activeFilter === "library"
@@ -968,7 +1121,9 @@ export function SourceShelf({
             </div>
           ) : (
             <div className="rounded-[0.95rem] border border-dashed border-primary/16 bg-black/15 px-4 py-6 text-sm text-foreground/56">
-              No sources match the current filter.
+              {vaultListingLoading && activeFilter === "vault"
+                ? "Loading vault notes..."
+                : "No sources match the current filter."}
             </div>
           )}
         </div>

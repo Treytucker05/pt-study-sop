@@ -196,12 +196,14 @@ vi.mock("sonner", () => ({
 const getTemplateChainsMock = vi.fn().mockResolvedValue([]);
 const getMethodBlocksMock = vi.fn().mockResolvedValue([]);
 const getMaterialContentMock = vi.fn().mockResolvedValue({ content: "" });
+const getObsidianFilesMock = vi.fn().mockResolvedValue({ success: true, files: [] });
 
 beforeEach(() => {
   mockTldrawEditor.createShapes.mockReset().mockReturnThis();
   mockTldrawEditor.updateShapes.mockReset().mockReturnThis();
   mockTldrawEditor.deleteShapes.mockReset().mockReturnThis();
   getMaterialContentMock.mockReset().mockResolvedValue({ content: "" });
+  getObsidianFilesMock.mockReset().mockResolvedValue({ success: true, files: [] });
 });
 
 vi.mock("@/lib/api", () => ({
@@ -216,6 +218,9 @@ vi.mock("@/lib/api", () => ({
       captureWorkflowNote: vi.fn(),
       createWorkflow: vi.fn(),
       updateWorkflowStage: vi.fn(),
+    },
+    obsidian: {
+      getFiles: (...args: unknown[]) => getObsidianFilesMock(...args),
     },
   },
 }));
@@ -257,6 +262,7 @@ function makeHub() {
     studyUnitOptions: [],
     derivedVaultFolder: "",
     selectedPaths: [],
+    courseFolders: [],
     setChainId: vi.fn(),
     setCustomBlockIds: vi.fn(),
     setCourseId: vi.fn(),
@@ -805,16 +811,23 @@ describe("TutorShell studio routing", () => {
   });
 
   it("uses the Source Shelf Vault tab as a real working surface for browsing and staging linked paths", async () => {
+    getObsidianFilesMock.mockImplementation(async (folder?: string) => {
+      if (folder === "Exercise Physiology/Week 7") {
+        return {
+          success: true,
+          files: ["Cardio.md", "Afterload.md"],
+        };
+      }
+      return { success: true, files: [] };
+    });
+
     renderTutorShell("workspace", {
       hubOverrides: {
         courseLabel: "Exercise Physiology",
         selectedObjectiveGroup: "Week 7",
         topic: "Cardiac output",
         selectedMaterials: [101],
-        selectedPaths: [
-          "Exercise Physiology/Week 7/Cardio.md",
-          "Exercise Physiology/Week 7/Afterload.md",
-        ],
+        selectedPaths: [],
         chatMaterials: [
           {
             id: 101,
@@ -831,8 +844,19 @@ describe("TutorShell studio routing", () => {
 
     const sourceShelf = screen.getByTestId("studio-source-shelf");
     await userEvent.click(within(sourceShelf).getByRole("button", { name: /^vault$/i }));
+    await waitFor(() =>
+      expect(getObsidianFilesMock).toHaveBeenCalledWith(
+        "Exercise Physiology/Week 7",
+      ),
+    );
 
     expect(sourceShelf).toHaveTextContent("Showing vault links");
+    expect(
+      await within(sourceShelf).findByText("Cardio.md", undefined, {
+        timeout: 3000,
+      }),
+    ).toBeInTheDocument();
+    expect(within(sourceShelf).getByText("Afterload.md")).toBeInTheDocument();
     expect(sourceShelf).toHaveTextContent("Exercise Physiology/Week 7/Cardio.md");
     expect(sourceShelf).toHaveTextContent("Exercise Physiology/Week 7/Afterload.md");
 
