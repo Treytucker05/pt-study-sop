@@ -254,6 +254,7 @@ export function TutorShell({
     StudioPolishPromotedNote[]
   >([]);
   const [notesScratchpad, setNotesScratchpad] = useState("");
+  const [sourceShelfUploading, setSourceShelfUploading] = useState(false);
   const promotedPrimePacketObjects = useMemo(() => {
     const merged = new Map<string, PrimePromotedWorkspaceObject>();
 
@@ -510,7 +511,38 @@ export function TutorShell({
     [],
   );
   const handleOpenSourceInDocumentDock = useCallback(
-    (workspaceObject: Extract<StudioWorkspaceObject, { kind: "material" }>) => {
+    (
+      workspaceObject: Extract<
+        StudioWorkspaceObject,
+        { kind: "material" | "vault_path" }
+      >,
+    ) => {
+      if (workspaceObject.kind === "vault_path") {
+        const tabId = `doc-${workspaceObject.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+
+        setDocumentTabs((current) =>
+          current.some((tab) => tab.id === tabId)
+            ? current
+            : [
+                ...current,
+                {
+                  id: tabId,
+                  kind: "vault",
+                  title: workspaceObject.title,
+                  sourcePath: workspaceObject.title,
+                },
+              ],
+        );
+        setActiveDocumentTabId(tabId);
+        setViewerState({
+          source_path: workspaceObject.title,
+          file_type: workspaceObject.badge,
+          source_title: workspaceObject.title,
+          source_kind: "vault",
+        });
+        return;
+      }
+
       const materialId = Number.parseInt(
         workspaceObject.id.replace(/^material:/, ""),
         10,
@@ -557,6 +589,16 @@ export function TutorShell({
           file_type: material?.file_type ?? null,
           source_title: nextTab.title,
         });
+        return;
+      }
+
+      if (nextTab.kind === "vault") {
+        setViewerState({
+          source_path: nextTab.sourcePath ?? null,
+          file_type: nextTab.kind,
+          source_title: nextTab.title,
+          source_kind: "vault",
+        });
       }
     },
     [
@@ -577,6 +619,25 @@ export function TutorShell({
     if (!activeDocumentTabId) return;
     const activeTab = documentTabs.find((tab) => tab.id === activeDocumentTabId);
     if (!activeTab) return;
+    if (activeTab.kind === "vault") {
+      if (
+        viewerState?.source_path === (activeTab.sourcePath ?? null) &&
+        viewerState?.file_type === activeTab.kind &&
+        viewerState?.source_title === activeTab.title &&
+        viewerState?.source_kind === "vault"
+      ) {
+        return;
+      }
+
+      setViewerState({
+        source_path: activeTab.sourcePath ?? null,
+        file_type: activeTab.kind,
+        source_title: activeTab.title,
+        source_kind: "vault",
+      });
+      return;
+    }
+
     if (activeTab.kind !== "material" || typeof activeTab.sourceId !== "number") {
       return;
     }
@@ -753,6 +814,59 @@ export function TutorShell({
       }
     },
     [setPrimingChainId, setPrimingCustomBlockIds],
+  );
+
+  const handleUploadSourceShelfFiles = useCallback(
+    async (files: File[]) => {
+      if (files.length === 0) {
+        return;
+      }
+
+      setSourceShelfUploading(true);
+      const uploadedIds: number[] = [];
+      let successes = 0;
+      let failures = 0;
+
+      try {
+        for (const file of files) {
+          try {
+            const result = await api.tutor.uploadMaterial(file, {
+              ...(typeof hub.courseId === "number"
+                ? { course_id: hub.courseId }
+                : {}),
+            });
+            uploadedIds.push(result.id);
+            successes += 1;
+          } catch (error) {
+            failures += 1;
+            toast.error(
+              `Upload failed for ${file.name}: ${
+                error instanceof Error ? error.message : "Unknown error"
+              }`,
+            );
+          }
+        }
+
+        await hub.refreshChatMaterials?.();
+        if (uploadedIds.length > 0) {
+          hub.setSelectedMaterials((current) =>
+            Array.from(new Set([...current, ...uploadedIds])),
+          );
+        }
+
+        if (successes > 0) {
+          toast.success(
+            `${successes} file${successes === 1 ? "" : "s"} added to Library and Current Run`,
+          );
+        }
+        if (failures > 0 && successes === 0) {
+          toast.error("Upload failed.");
+        }
+      } finally {
+        setSourceShelfUploading(false);
+      }
+    },
+    [hub],
   );
 
   useEffect(() => {
@@ -1209,7 +1323,12 @@ export function TutorShell({
               selectedMaterialCount={hub.selectedMaterials.length}
               selectedPaths={hub.selectedPaths}
               vaultFolder={hub.derivedVaultFolder || null}
+              courseOptions={availableCourses}
               workspaceObjectIds={canvasObjectIds}
+              onSelectedMaterialIdsChange={hub.setSelectedMaterials}
+              onSelectedPathsChange={hub.setSelectedPaths}
+              onUploadFiles={handleUploadSourceShelfFiles}
+              isUploading={sourceShelfUploading}
               onAddToWorkspace={handleAddWorkspaceObject}
               onOpenInDocumentDock={handleOpenSourceInDocumentDock}
             />

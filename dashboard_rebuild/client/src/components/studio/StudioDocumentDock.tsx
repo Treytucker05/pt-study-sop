@@ -58,19 +58,38 @@ export function StudioDocumentDock({
   const viewerMaterialId =
     typeof viewerState?.material_id === "number" ? viewerState.material_id : null;
   const activeTabMaterialId =
-    typeof activeTab?.sourceId === "number" ? activeTab.sourceId : null;
+    activeTab?.kind === "material" && typeof activeTab.sourceId === "number"
+      ? activeTab.sourceId
+      : null;
   const activeMaterial =
     (activeTabMaterialId !== null ? materialById.get(activeTabMaterialId) : null) ||
     (viewerMaterialId !== null ? materialById.get(viewerMaterialId) : null) ||
     selectedMaterials[0] ||
     null;
+  const activeVaultPath =
+    activeTab?.kind === "vault" && typeof activeTab.sourcePath === "string"
+      ? activeTab.sourcePath
+      : typeof viewerState?.source_kind === "string" &&
+          viewerState.source_kind === "vault" &&
+          typeof viewerState?.source_path === "string"
+        ? viewerState.source_path
+        : null;
+  const activeVaultPreviewable =
+    typeof activeVaultPath === "string" &&
+    activeVaultPath.trim().toLowerCase().endsWith(".md");
   const activeDocumentTitle =
     activeTab?.title ||
+    (activeVaultPath
+      ? (typeof viewerState?.source_title === "string"
+          ? viewerState.source_title
+          : activeVaultPath.split(/[\\/]/).pop()) || activeVaultPath
+      : null) ||
     activeMaterial?.title ||
     (typeof viewerState?.source_title === "string" ? viewerState.source_title : null) ||
     "No document selected";
   const activeDocumentPath =
     activeTab?.sourcePath ||
+    activeVaultPath ||
     activeMaterial?.source_path ||
     (typeof viewerState?.source_path === "string"
       ? viewerState.source_path
@@ -78,7 +97,7 @@ export function StudioDocumentDock({
   const activeFileType =
     typeof viewerState?.file_type === "string"
       ? viewerState.file_type
-      : activeMaterial?.file_type || activeTab?.kind;
+      : activeMaterial?.file_type || (activeVaultPath ? "VAULT" : activeTab?.kind);
   const { data: activeMaterialContent, isLoading: activeMaterialLoading } =
     useQuery<MaterialContent>({
       queryKey: ["studio-document-dock", "material-content", activeMaterial?.id],
@@ -86,6 +105,16 @@ export function StudioDocumentDock({
       enabled: activeMaterial !== null,
       staleTime: 60 * 1000,
     });
+  const { data: activeVaultFile, isLoading: activeVaultLoading } = useQuery({
+    queryKey: ["studio-document-dock", "vault-file", activeVaultPath],
+    queryFn: () => api.obsidian.getFile(activeVaultPath!),
+    enabled: activeVaultPreviewable,
+    staleTime: 60 * 1000,
+  });
+  const activeVaultText =
+    activeVaultFile && "success" in activeVaultFile && activeVaultFile.success
+      ? String(activeVaultFile.content || "")
+      : "";
   const initialExcerptText = useMemo(
     () =>
       typeof viewerState?.selection_text === "string"
@@ -103,19 +132,22 @@ export function StudioDocumentDock({
   useEffect(() => {
     setExcerptText(initialExcerptText);
     setExcerptLabel(selectionLabel);
-  }, [activeMaterial?.id, initialExcerptText, selectionLabel]);
+  }, [activeDocumentTabId, initialExcerptText, selectionLabel]);
 
-  const canClipExcerpt = Boolean(activeMaterial) && excerptText.trim().length > 0;
+  const canClipExcerpt =
+    excerptText.trim().length > 0 && Boolean(activeMaterial || activeVaultPath);
 
   const handleClipExcerpt = () => {
-    if (!activeMaterial || !excerptText.trim()) return;
+    if (!excerptText.trim() || (!activeMaterial && !activeVaultPath)) return;
 
     onClipExcerpt?.(
       createStudioExcerptWorkspaceObject({
-        materialId: activeMaterial.id,
-        sourcePath: activeMaterial.source_path || null,
-        fileType: activeMaterial.file_type || null,
-        sourceTitle: activeMaterial.title || null,
+        materialId: activeMaterial?.id ?? null,
+        sourcePath: activeMaterial?.source_path || activeVaultPath || null,
+        fileType:
+          activeMaterial?.file_type ||
+          (activeVaultPath?.split(".").pop()?.toLowerCase() ?? "vault"),
+        sourceTitle: activeMaterial?.title || activeDocumentTitle,
         excerptText,
         selectionLabel: excerptLabel,
       }),
@@ -186,8 +218,7 @@ export function StudioDocumentDock({
           Source viewer
         </div>
         <div className="mt-1 text-sm text-foreground/72">
-          Select text in the extracted preview to send the real viewer selection into
-          the clip flow.
+          Open a source here, then clip the passage you want to move into the workspace.
         </div>
         <div className="mt-3 min-h-[220px] overflow-hidden rounded-[0.85rem] border border-primary/12 bg-black/20">
           {activeMaterial ? (
@@ -212,6 +243,23 @@ export function StudioDocumentDock({
                   setExcerptLabel(label);
                 }}
               />
+            )
+          ) : activeVaultPath ? (
+            activeVaultPreviewable ? (
+              activeVaultLoading ? (
+                <div className="flex min-h-[220px] items-center justify-center font-mono text-sm text-foreground/60">
+                  Loading vault note...
+                </div>
+              ) : (
+                <div className="h-full min-h-[220px] overflow-y-auto whitespace-pre-wrap p-4 font-mono text-sm leading-6 text-foreground/78">
+                  {activeVaultText || "This vault note is empty."}
+                </div>
+              )
+            ) : (
+              <div className="flex min-h-[220px] items-center justify-center px-4 text-center font-mono text-sm text-foreground/60">
+                Vault folders and non-markdown links can stay in the run as source references even
+                when there is no inline preview.
+              </div>
             )
           ) : (
             <div className="flex min-h-[220px] items-center justify-center font-mono text-sm text-foreground/60">

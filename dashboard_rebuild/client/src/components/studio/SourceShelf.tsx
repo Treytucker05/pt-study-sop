@@ -1,11 +1,27 @@
-import { useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import type { Material } from "@/lib/api";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
-  buildStudioWorkspaceObjects,
-  type StudioWorkspaceObject,
-} from "@/lib/studioWorkspaceObjects";
+  BookOpen,
+  ChevronDown,
+  ChevronRight,
+  ExternalLink,
+  Folder,
+  FolderTree,
+  Plus,
+  Search,
+  Upload,
+} from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import type { Material } from "@/lib/api";
+import type { StudioWorkspaceObject } from "@/lib/studioWorkspaceObjects";
+
+type SourceShelfFilter = "all" | "current_run" | "library" | "vault";
+
+export interface SourceShelfCourseOption {
+  id: number;
+  name: string;
+}
 
 export interface SourceShelfProps {
   courseId?: number | null;
@@ -17,14 +33,634 @@ export interface SourceShelfProps {
   selectedMaterialCount: number;
   selectedPaths: string[];
   vaultFolder: string | null;
+  courseOptions?: SourceShelfCourseOption[];
   workspaceObjectIds?: string[];
-  onAddToWorkspace?: (object: StudioWorkspaceObject) => void;
+  onSelectedMaterialIdsChange?: (ids: number[]) => void;
+  onSelectedPathsChange?: (paths: string[]) => void;
+  onUploadFiles?: (files: File[]) => Promise<void> | void;
+  isUploading?: boolean;
+  onAddToWorkspace?: (
+    object: Extract<StudioWorkspaceObject, { kind: "material" | "vault_path" }>,
+  ) => void;
   onOpenInDocumentDock?: (
-    object: Extract<StudioWorkspaceObject, { kind: "material" }>,
+    object: Extract<StudioWorkspaceObject, { kind: "material" | "vault_path" }>,
   ) => void;
 }
 
-type SourceShelfTab = "current_run" | "library" | "vault";
+type SourceLeafNode = {
+  id: string;
+  kind: "leaf";
+  sourceType: "material" | "vault";
+  label: string;
+  detail: string;
+  badge: string;
+  checked: boolean;
+  workspaceObject: Extract<
+    StudioWorkspaceObject,
+    { kind: "material" | "vault_path" }
+  >;
+};
+
+type SourceFolderNode = {
+  id: string;
+  kind: "folder";
+  label: string;
+  folderType: "course" | "source" | "path";
+  children: SourceTreeNode[];
+};
+
+type SourceTreeNode = SourceFolderNode | SourceLeafNode;
+
+const SOURCE_FILTERS: Array<[SourceShelfFilter, string]> = [
+  ["all", "All"],
+  ["current_run", "Current Run"],
+  ["library", "Library"],
+  ["vault", "Vault"],
+];
+
+const SOURCE_FOLDER_ORDER: Record<string, number> = {
+  Library: 0,
+  Vault: 1,
+};
+
+function normalizeText(value: string | null | undefined): string {
+  return String(value || "").trim();
+}
+
+function normalizeKey(value: string | null | undefined): string {
+  return normalizeText(value).toLowerCase();
+}
+
+function uniqueNumbers(values: number[]): number[] {
+  return Array.from(new Set(values.filter((value) => Number.isFinite(value))));
+}
+
+function uniqueStrings(values: string[]): string[] {
+  const next = new Set<string>();
+  values.forEach((value) => {
+    const trimmed = normalizeText(value);
+    if (trimmed) {
+      next.add(trimmed);
+    }
+  });
+  return Array.from(next);
+}
+
+function formatFileType(value: string | null | undefined): string {
+  const normalized = normalizeText(value);
+  return normalized ? normalized.toUpperCase() : "FILE";
+}
+
+function createMaterialWorkspaceObject(
+  material: Material,
+): Extract<StudioWorkspaceObject, { kind: "material" }> {
+  return {
+    id: `material:${material.id}`,
+    kind: "material",
+    title: normalizeText(material.title) || `Material #${material.id}`,
+    detail: normalizeText(material.source_path) || "Source path unavailable",
+    badge: formatFileType(material.file_type),
+  };
+}
+
+function createVaultWorkspaceObject(
+  path: string,
+): Extract<StudioWorkspaceObject, { kind: "vault_path" }> {
+  return {
+    id: `vault:${path}`,
+    kind: "vault_path",
+    title: path,
+    detail: "Linked vault reference",
+    badge: "VAULT",
+  };
+}
+
+function splitPath(path: string): string[] {
+  return path
+    .split(/[\\/]/)
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+}
+
+function collectLeafNodes(node: SourceTreeNode): SourceLeafNode[] {
+  if (node.kind === "leaf") {
+    return [node];
+  }
+
+  return node.children.flatMap((child) => collectLeafNodes(child));
+}
+
+function nodeHasCheckedDescendant(node: SourceTreeNode): boolean {
+  return collectLeafNodes(node).some((leaf) => leaf.checked);
+}
+
+function leafMatchesFilter(
+  leaf: SourceLeafNode,
+  filter: SourceShelfFilter,
+): boolean {
+  switch (filter) {
+    case "all":
+      return true;
+    case "current_run":
+      return leaf.checked;
+    case "library":
+      return leaf.sourceType === "material";
+    case "vault":
+      return leaf.sourceType === "vault";
+    default:
+      return true;
+  }
+}
+
+function leafMatchesSearch(leaf: SourceLeafNode, query: string): boolean {
+  if (!query) return true;
+  const haystack = [leaf.label, leaf.detail, leaf.badge].join(" ").toLowerCase();
+  return haystack.includes(query);
+}
+
+function filterTreeNode(
+  node: SourceTreeNode,
+  filter: SourceShelfFilter,
+  query: string,
+  forceInclude = false,
+): SourceTreeNode | null {
+  if (node.kind === "leaf") {
+    if (!leafMatchesFilter(node, filter)) {
+      return null;
+    }
+    if (!forceInclude && !leafMatchesSearch(node, query)) {
+      return null;
+    }
+    return node;
+  }
+
+  const folderMatchesQuery = query
+    ? node.label.toLowerCase().includes(query)
+    : false;
+  const children = node.children
+    .map((child) =>
+      filterTreeNode(child, filter, query, forceInclude || folderMatchesQuery),
+    )
+    .filter((child): child is SourceTreeNode => child !== null);
+
+  if (children.length === 0) {
+    return null;
+  }
+
+  return {
+    ...node,
+    children,
+  };
+}
+
+function sortTreeNodes(nodes: SourceTreeNode[]): SourceTreeNode[] {
+  return [...nodes]
+    .map((node) =>
+      node.kind === "folder"
+        ? { ...node, children: sortTreeNodes(node.children) }
+        : node,
+    )
+    .sort((left, right) => {
+      if (left.kind === "folder" && right.kind === "leaf") return -1;
+      if (left.kind === "leaf" && right.kind === "folder") return 1;
+
+      if (left.kind === "folder" && right.kind === "folder") {
+        const leftOrder = SOURCE_FOLDER_ORDER[left.label] ?? 100;
+        const rightOrder = SOURCE_FOLDER_ORDER[right.label] ?? 100;
+        if (leftOrder !== rightOrder) {
+          return leftOrder - rightOrder;
+        }
+      }
+
+      return left.label.localeCompare(right.label, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      });
+    });
+}
+
+function collectDefaultExpandedNodeIds(
+  nodes: SourceTreeNode[],
+  depth = 0,
+): string[] {
+  return nodes.flatMap((node) => {
+    if (node.kind === "leaf") {
+      return [];
+    }
+
+    const shouldExpand = depth < 2 || nodeHasCheckedDescendant(node);
+    const next = collectDefaultExpandedNodeIds(node.children, depth + 1);
+    return shouldExpand ? [node.id, ...next] : next;
+  });
+}
+
+function buildCourseLookup(
+  courseOptions: SourceShelfCourseOption[],
+  courseId: number | null | undefined,
+  courseName: string | null,
+) {
+  const byId = new Map<number, string>();
+  const byName = new Map<string, string>();
+
+  courseOptions.forEach((course) => {
+    const normalizedName = normalizeText(course.name);
+    if (!normalizedName) return;
+    byId.set(course.id, normalizedName);
+    byName.set(normalizeKey(normalizedName), normalizedName);
+  });
+
+  if (typeof courseId === "number" && normalizeText(courseName)) {
+    byId.set(courseId, normalizeText(courseName));
+  }
+  if (normalizeText(courseName)) {
+    byName.set(normalizeKey(courseName), normalizeText(courseName));
+  }
+
+  return { byId, byName };
+}
+
+function resolveMaterialCourseLabel(
+  material: Material,
+  lookup: ReturnType<typeof buildCourseLookup>,
+): string {
+  if (
+    typeof material.course_id === "number" &&
+    lookup.byId.has(material.course_id)
+  ) {
+    return lookup.byId.get(material.course_id)!;
+  }
+
+  if (typeof material.course_id === "number") {
+    return `Course ${material.course_id}`;
+  }
+
+  return "Unassigned Library";
+}
+
+function resolveVaultCourseLabel(
+  path: string,
+  lookup: ReturnType<typeof buildCourseLookup>,
+  fallbackCourseName: string | null,
+): string {
+  const segments = splitPath(path);
+  const firstSegment = segments[0];
+  if (firstSegment && lookup.byName.has(normalizeKey(firstSegment))) {
+    return lookup.byName.get(normalizeKey(firstSegment))!;
+  }
+  if (firstSegment) {
+    return firstSegment;
+  }
+  if (normalizeText(fallbackCourseName)) {
+    return normalizeText(fallbackCourseName);
+  }
+  return "Vault";
+}
+
+function buildSourceTree(args: {
+  materials: Material[];
+  selectedMaterialIds: number[];
+  knownVaultPaths: string[];
+  selectedPaths: string[];
+  courseOptions: SourceShelfCourseOption[];
+  courseId: number | null | undefined;
+  courseName: string | null;
+}): SourceTreeNode[] {
+  const {
+    materials,
+    selectedMaterialIds,
+    knownVaultPaths,
+    selectedPaths,
+    courseOptions,
+    courseId,
+    courseName,
+  } = args;
+  const courseLookup = buildCourseLookup(courseOptions, courseId, courseName);
+  const selectedMaterialIdSet = new Set(selectedMaterialIds);
+  const selectedPathSet = new Set(selectedPaths);
+  const rootMap = new Map<string, SourceFolderNode>();
+
+  const ensureFolder = (
+    collection: SourceTreeNode[],
+    id: string,
+    label: string,
+    folderType: SourceFolderNode["folderType"],
+  ): SourceFolderNode => {
+    const existing = collection.find(
+      (node): node is SourceFolderNode =>
+        node.kind === "folder" && node.id === id,
+    );
+    if (existing) return existing;
+
+    const next: SourceFolderNode = {
+      id,
+      kind: "folder",
+      label,
+      folderType,
+      children: [],
+    };
+    collection.push(next);
+    return next;
+  };
+
+  materials.forEach((material) => {
+    const courseLabel = resolveMaterialCourseLabel(material, courseLookup);
+    const courseKey = normalizeKey(courseLabel) || "library";
+    const courseFolder =
+      rootMap.get(courseKey) ||
+      (() => {
+        const next: SourceFolderNode = {
+          id: `course:${courseKey}`,
+          kind: "folder",
+          label: courseLabel,
+          folderType: "course",
+          children: [],
+        };
+        rootMap.set(courseKey, next);
+        return next;
+      })();
+
+    const libraryFolder = ensureFolder(
+      courseFolder.children,
+      `${courseFolder.id}:library`,
+      "Library",
+      "source",
+    );
+
+    const workspaceObject = createMaterialWorkspaceObject(material);
+    libraryFolder.children.push({
+      id: workspaceObject.id,
+      kind: "leaf",
+      sourceType: "material",
+      label: workspaceObject.title,
+      detail: workspaceObject.detail,
+      badge: workspaceObject.badge,
+      checked: selectedMaterialIdSet.has(material.id),
+      workspaceObject,
+    });
+  });
+
+  knownVaultPaths.forEach((path) => {
+    const courseLabel = resolveVaultCourseLabel(path, courseLookup, courseName);
+    const courseKey = normalizeKey(courseLabel) || "vault";
+    const courseFolder =
+      rootMap.get(courseKey) ||
+      (() => {
+        const next: SourceFolderNode = {
+          id: `course:${courseKey}`,
+          kind: "folder",
+          label: courseLabel,
+          folderType: "course",
+          children: [],
+        };
+        rootMap.set(courseKey, next);
+        return next;
+      })();
+
+    const vaultFolder = ensureFolder(
+      courseFolder.children,
+      `${courseFolder.id}:vault`,
+      "Vault",
+      "source",
+    );
+
+    const workspaceObject = createVaultWorkspaceObject(path);
+    const rawSegments = splitPath(path);
+    const startsWithCourse =
+      rawSegments.length > 1 &&
+      normalizeKey(rawSegments[0]) === normalizeKey(courseLabel);
+    const segments = startsWithCourse ? rawSegments.slice(1) : rawSegments;
+    if (segments.length === 0) {
+      vaultFolder.children.push({
+        id: workspaceObject.id,
+        kind: "leaf",
+        sourceType: "vault",
+        label: workspaceObject.title,
+        detail: workspaceObject.detail,
+        badge: workspaceObject.badge,
+        checked: selectedPathSet.has(path),
+        workspaceObject,
+      });
+      return;
+    }
+
+    let parentFolder = vaultFolder;
+    segments.forEach((segment, index) => {
+      const segmentKey = normalizeKey(segment) || `segment-${index}`;
+      const isLeaf = index === segments.length - 1;
+      if (isLeaf) {
+        parentFolder.children.push({
+          id: workspaceObject.id,
+          kind: "leaf",
+          sourceType: "vault",
+          label: segment,
+          detail: workspaceObject.title,
+          badge: workspaceObject.badge,
+          checked: selectedPathSet.has(path),
+          workspaceObject,
+        });
+        return;
+      }
+
+      parentFolder = ensureFolder(
+        parentFolder.children,
+        `${parentFolder.id}:${segmentKey}`,
+        segment,
+        "path",
+      );
+    });
+  });
+
+  return sortTreeNodes(Array.from(rootMap.values()));
+}
+
+function TreeCheckbox({
+  checked,
+  indeterminate = false,
+  ariaLabel,
+  onChange,
+}: {
+  checked: boolean;
+  indeterminate?: boolean;
+  ariaLabel: string;
+  onChange: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!inputRef.current) return;
+    inputRef.current.indeterminate = indeterminate;
+  }, [indeterminate]);
+
+  return (
+    <input
+      ref={inputRef}
+      type="checkbox"
+      checked={checked}
+      aria-label={ariaLabel}
+      onChange={onChange}
+      className="mt-1 h-4 w-4 shrink-0 accent-red-500"
+    />
+  );
+}
+
+function SourceShelfTreeNode({
+  node,
+  depth,
+  expandedNodeIds,
+  onToggleExpanded,
+  onToggleLeaf,
+  onToggleFolder,
+  workspaceObjectIds,
+  onAddToWorkspace,
+  onOpenInDocumentDock,
+  searchActive,
+}: {
+  node: SourceTreeNode;
+  depth: number;
+  expandedNodeIds: Set<string>;
+  onToggleExpanded: (nodeId: string) => void;
+  onToggleLeaf: (leaf: SourceLeafNode) => void;
+  onToggleFolder: (folder: SourceFolderNode) => void;
+  workspaceObjectIds: string[];
+  onAddToWorkspace?: (
+    object: Extract<StudioWorkspaceObject, { kind: "material" | "vault_path" }>,
+  ) => void;
+  onOpenInDocumentDock?: (
+    object: Extract<StudioWorkspaceObject, { kind: "material" | "vault_path" }>,
+  ) => void;
+  searchActive: boolean;
+}) {
+  if (node.kind === "leaf") {
+    const isInWorkspace = workspaceObjectIds.includes(node.workspaceObject.id);
+
+    return (
+      <div
+        className="space-y-2 rounded-[0.9rem] border border-primary/12 bg-black/15 px-3 py-3"
+        style={{ marginLeft: `${depth * 14}px` }}
+      >
+        <div className="flex items-start gap-3">
+          <TreeCheckbox
+            checked={node.checked}
+            ariaLabel={`Include ${node.label} in current run`}
+            onChange={() => onToggleLeaf(node)}
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="min-w-0 break-words text-sm text-foreground">
+                {node.label}
+              </div>
+              <Badge
+                variant="outline"
+                className="rounded-full border-primary/20 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-primary/84"
+              >
+                {node.badge}
+              </Badge>
+              {node.sourceType === "vault" ? (
+                <Badge
+                  variant="outline"
+                  className="rounded-full border-primary/12 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-foreground/68"
+                >
+                  Vault Link
+                </Badge>
+              ) : null}
+            </div>
+            <div className="mt-1 break-all text-xs text-foreground/62">
+              {node.detail}
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenInDocumentDock?.(node.workspaceObject)}
+              aria-label={`Open ${node.label} in Document Dock`}
+              className="h-8 w-8 rounded-full border-primary/18 bg-black/20 p-0 text-primary/84 hover:bg-black/30"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Button>
+            {onAddToWorkspace ? (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isInWorkspace}
+                onClick={() => onAddToWorkspace(node.workspaceObject)}
+                aria-label={
+                  isInWorkspace
+                    ? `${node.label} already in workspace`
+                    : `Add ${node.label} to workspace`
+                }
+                className="h-8 w-8 rounded-full border-primary/18 bg-black/20 p-0 text-primary/84 hover:bg-black/30 disabled:cursor-default disabled:opacity-100 disabled:text-foreground/60"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const leafNodes = collectLeafNodes(node);
+  const checkedLeafCount = leafNodes.filter((leaf) => leaf.checked).length;
+  const allChecked = leafNodes.length > 0 && checkedLeafCount === leafNodes.length;
+  const partiallyChecked = checkedLeafCount > 0 && checkedLeafCount < leafNodes.length;
+  const isExpanded = searchActive || expandedNodeIds.has(node.id);
+
+  return (
+    <div className="space-y-2" style={{ marginLeft: `${depth * 14}px` }}>
+      <div className="flex items-start gap-3 rounded-[0.95rem] border border-primary/15 bg-black/20 px-3 py-2.5">
+        <TreeCheckbox
+          checked={allChecked}
+          indeterminate={partiallyChecked}
+          ariaLabel={`Include all ${node.label} in current run`}
+          onChange={() => onToggleFolder(node)}
+        />
+        <button
+          type="button"
+          onClick={() => onToggleExpanded(node.id)}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+        >
+          {isExpanded ? (
+            <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-primary/78" />
+          ) : (
+            <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-primary/78" />
+          )}
+          {node.folderType === "course" ? (
+            <FolderTree className="mt-0.5 h-4 w-4 shrink-0 text-primary/78" />
+          ) : (
+            <Folder className="mt-0.5 h-4 w-4 shrink-0 text-primary/78" />
+          )}
+          <div className="min-w-0">
+            <div className="truncate text-sm text-foreground">{node.label}</div>
+            <div className="text-xs text-foreground/56">
+              {checkedLeafCount}/{leafNodes.length} loaded
+            </div>
+          </div>
+        </button>
+      </div>
+
+      {isExpanded ? (
+        <div className="space-y-2">
+          {node.children.map((child) => (
+            <SourceShelfTreeNode
+              key={child.id}
+              node={child}
+              depth={depth + 1}
+              expandedNodeIds={expandedNodeIds}
+              onToggleExpanded={onToggleExpanded}
+              onToggleLeaf={onToggleLeaf}
+              onToggleFolder={onToggleFolder}
+              workspaceObjectIds={workspaceObjectIds}
+              onAddToWorkspace={onAddToWorkspace}
+              onOpenInDocumentDock={onOpenInDocumentDock}
+              searchActive={searchActive}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export function SourceShelf({
   courseId,
@@ -36,275 +672,306 @@ export function SourceShelf({
   selectedMaterialCount,
   selectedPaths,
   vaultFolder,
+  courseOptions = [],
   workspaceObjectIds = [],
+  onSelectedMaterialIdsChange,
+  onSelectedPathsChange,
+  onUploadFiles,
+  isUploading = false,
   onAddToWorkspace,
   onOpenInDocumentDock,
 }: SourceShelfProps) {
-  const [activeTab, setActiveTab] = useState<SourceShelfTab>("current_run");
-
-  const scopedMaterials = useMemo(
-    () =>
-      typeof courseId === "number"
-        ? materials.filter((material) => material.course_id === courseId)
-        : materials,
-    [courseId, materials],
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
+  const previousCourseIdRef = useRef<number | null | undefined>(courseId);
+  const [activeFilter, setActiveFilter] = useState<SourceShelfFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [knownVaultPaths, setKnownVaultPaths] = useState<string[]>(() =>
+    uniqueStrings(selectedPaths),
   );
 
-  const currentRunMaterialObjects = useMemo(
+  useEffect(() => {
+    if (previousCourseIdRef.current !== courseId) {
+      previousCourseIdRef.current = courseId;
+      setKnownVaultPaths(uniqueStrings(selectedPaths));
+      return;
+    }
+
+    if (selectedPaths.length > 0) {
+      setKnownVaultPaths((current) =>
+        uniqueStrings([...current, ...selectedPaths]),
+      );
+    }
+  }, [courseId, selectedPaths]);
+
+  const fullTree = useMemo(
     () =>
-      buildStudioWorkspaceObjects({
-        materials: scopedMaterials,
+      buildSourceTree({
+        materials,
         selectedMaterialIds,
-        selectedPaths: [],
-      }).filter(
-        (
-          workspaceObject,
-        ): workspaceObject is Extract<StudioWorkspaceObject, { kind: "material" }> =>
-          workspaceObject.kind === "material",
-      ),
-    [scopedMaterials, selectedMaterialIds],
-  );
-
-  const libraryMaterialObjects = useMemo(
-    () =>
-      buildStudioWorkspaceObjects({
-        materials: scopedMaterials,
-        selectedMaterialIds: scopedMaterials.map((material) => material.id),
-        selectedPaths: [],
-      }).filter(
-        (
-          workspaceObject,
-        ): workspaceObject is Extract<StudioWorkspaceObject, { kind: "material" }> =>
-          workspaceObject.kind === "material",
-      ),
-    [scopedMaterials],
-  );
-
-  const vaultPathObjects = useMemo(
-    () =>
-      buildStudioWorkspaceObjects({
-        materials: [],
-        selectedMaterialIds: [],
+        knownVaultPaths,
         selectedPaths,
-      }).filter(
-        (
-          workspaceObject,
-        ): workspaceObject is Extract<StudioWorkspaceObject, { kind: "vault_path" }> =>
-          workspaceObject.kind === "vault_path",
-      ),
-    [selectedPaths],
+        courseOptions,
+        courseId,
+        courseName,
+      }),
+    [
+      courseId,
+      courseName,
+      courseOptions,
+      knownVaultPaths,
+      materials,
+      selectedMaterialIds,
+      selectedPaths,
+    ],
+  );
+  const defaultExpandedIds = useMemo(
+    () => collectDefaultExpandedNodeIds(fullTree),
+    [fullTree],
+  );
+  const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(
+    () => new Set(defaultExpandedIds),
   );
 
-  const renderMaterialCard = (
-    workspaceObject: Extract<StudioWorkspaceObject, { kind: "material" }>,
-  ) => {
-    const isInWorkspace = workspaceObjectIds.includes(workspaceObject.id);
+  useEffect(() => {
+    setExpandedNodeIds((current) => {
+      const next = new Set(current);
+      defaultExpandedIds.forEach((nodeId) => next.add(nodeId));
+      return next;
+    });
+  }, [defaultExpandedIds]);
 
-    return (
-      <div
-        key={workspaceObject.id}
-        className="rounded-[0.85rem] border border-primary/12 bg-black/15 p-3"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="break-words text-sm text-foreground">
-              {workspaceObject.title}
-            </div>
-            <div className="mt-1 break-all text-xs text-foreground/62">
-              {workspaceObject.detail}
-            </div>
-          </div>
-          <Badge
-            variant="outline"
-            className="rounded-full border-primary/20 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-primary/84"
-          >
-            {workspaceObject.badge}
-          </Badge>
-        </div>
-        <div className="mt-3">
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenInDocumentDock?.(workspaceObject)}
-              aria-label={`Open ${workspaceObject.title} in Document Dock`}
-              className="h-8 rounded-full border-primary/20 bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-primary/84 hover:bg-black/30"
-            >
-              Open in Document Dock
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isInWorkspace}
-              onClick={() => onAddToWorkspace?.(workspaceObject)}
-              aria-label={
-                isInWorkspace
-                  ? `${workspaceObject.title} already in workspace`
-                  : `Add ${workspaceObject.title} to workspace`
-              }
-              className="h-8 rounded-full border-primary/20 bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-primary/84 hover:bg-black/30 disabled:cursor-default disabled:opacity-100 disabled:text-foreground/60"
-            >
-              {isInWorkspace ? "In Workspace" : "Add to Workspace"}
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const visibleTree = useMemo(
+    () =>
+      fullTree
+        .map((node) => filterTreeNode(node, activeFilter, normalizedSearch))
+        .filter((node): node is SourceTreeNode => node !== null),
+    [activeFilter, fullTree, normalizedSearch],
+  );
+
+  const runMaterialCount = selectedMaterialIds.length || selectedMaterialCount;
+  const runVaultCount = selectedPaths.length;
+
+  const toggleExpandedNode = (nodeId: string) => {
+    if (normalizedSearch) {
+      return;
+    }
+    setExpandedNodeIds((current) => {
+      const next = new Set(current);
+      if (next.has(nodeId)) {
+        next.delete(nodeId);
+      } else {
+        next.add(nodeId);
+      }
+      return next;
+    });
   };
 
-  const renderVaultPathCard = (
-    workspaceObject: Extract<StudioWorkspaceObject, { kind: "vault_path" }>,
-  ) => {
-    const isInWorkspace = workspaceObjectIds.includes(workspaceObject.id);
+  const toggleLeafNode = (leaf: SourceLeafNode) => {
+    if (leaf.sourceType === "material") {
+      const materialId =
+        typeof leaf.workspaceObject.id === "string"
+          ? Number.parseInt(leaf.workspaceObject.id.replace(/^material:/, ""), 10)
+          : NaN;
+      if (!Number.isFinite(materialId)) return;
 
-    return (
-      <div
-        key={workspaceObject.id}
-        className="rounded-[0.85rem] border border-primary/12 bg-black/15 p-3"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="break-all text-sm text-foreground">
-              {workspaceObject.title}
-            </div>
-            <div className="mt-1 text-xs text-foreground/62">
-              {workspaceObject.detail}
-            </div>
-          </div>
-          <Badge
-            variant="outline"
-            className="rounded-full border-primary/20 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-primary/84"
-          >
-            {workspaceObject.badge}
-          </Badge>
-        </div>
-        <div className="mt-3">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={isInWorkspace}
-            onClick={() => onAddToWorkspace?.(workspaceObject)}
-            aria-label={
-              isInWorkspace
-                ? `${workspaceObject.title} already in workspace`
-                : `Add ${workspaceObject.title} to workspace`
-            }
-            className="h-8 rounded-full border-primary/20 bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-primary/84 hover:bg-black/30 disabled:cursor-default disabled:opacity-100 disabled:text-foreground/60"
-          >
-            {isInWorkspace ? "In Workspace" : "Add to Workspace"}
-          </Button>
-        </div>
-      </div>
-    );
+      const nextIds = leaf.checked
+        ? selectedMaterialIds.filter((id) => id !== materialId)
+        : uniqueNumbers([...selectedMaterialIds, materialId]);
+      onSelectedMaterialIdsChange?.(nextIds);
+      return;
+    }
+
+    const path = leaf.workspaceObject.title;
+    const nextPaths = leaf.checked
+      ? selectedPaths.filter((entry) => entry !== path)
+      : uniqueStrings([...selectedPaths, path]);
+    onSelectedPathsChange?.(nextPaths);
+  };
+
+  const toggleFolderNode = (folder: SourceFolderNode) => {
+    const leafNodes = collectLeafNodes(folder);
+    const materialIds = leafNodes
+      .filter((leaf) => leaf.sourceType === "material")
+      .map((leaf) =>
+        Number.parseInt(leaf.workspaceObject.id.replace(/^material:/, ""), 10),
+      )
+      .filter((value) => Number.isFinite(value));
+    const vaultPaths = leafNodes
+      .filter((leaf) => leaf.sourceType === "vault")
+      .map((leaf) => leaf.workspaceObject.title);
+    const allChecked = leafNodes.length > 0 && leafNodes.every((leaf) => leaf.checked);
+
+    if (materialIds.length > 0) {
+      onSelectedMaterialIdsChange?.(
+        allChecked
+          ? selectedMaterialIds.filter((id) => !materialIds.includes(id))
+          : uniqueNumbers([...selectedMaterialIds, ...materialIds]),
+      );
+    }
+
+    if (vaultPaths.length > 0) {
+      onSelectedPathsChange?.(
+        allChecked
+          ? selectedPaths.filter((entry) => !vaultPaths.includes(entry))
+          : uniqueStrings([...selectedPaths, ...vaultPaths]),
+      );
+    }
+  };
+
+  const handleUploadChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0) {
+      return;
+    }
+
+    try {
+      await onUploadFiles?.(Array.from(event.target.files));
+    } finally {
+      event.target.value = "";
+    }
   };
 
   return (
-    <div className="space-y-4 font-mono text-sm text-foreground/78">
-      <div className="flex flex-wrap gap-2">
-        {([
-          ["current_run", "Current Run"],
-          ["library", "Library"],
-          ["vault", "Vault"],
-        ] as const).map(([tabId, label]) => {
-          const isActive = activeTab === tabId;
-          return (
-            <Button
-              key={tabId}
-              type="button"
-              variant="outline"
-              onClick={() => setActiveTab(tabId)}
-              aria-pressed={isActive}
-              className={
-                isActive
-                  ? "h-8 rounded-full border-primary/30 bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-primary/88"
-                  : "h-8 rounded-full border-primary/20 bg-transparent px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-foreground/60"
-              }
-            >
-              {label}
-            </Button>
-          );
-        })}
+    <div
+      data-testid="source-shelf-content"
+      className="flex h-full min-h-0 flex-col gap-4 font-mono text-sm text-foreground/78"
+    >
+      <div className="space-y-3 rounded-[0.95rem] border border-primary/15 bg-black/15 p-3">
+        <div className="flex flex-wrap gap-2">
+          {SOURCE_FILTERS.map(([filterId, label]) => {
+            const isActive = activeFilter === filterId;
+            return (
+              <Button
+                key={filterId}
+                type="button"
+                variant="outline"
+                onClick={() => setActiveFilter(filterId)}
+                aria-pressed={isActive}
+                className={
+                  isActive
+                    ? "h-8 rounded-full border-primary/30 bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-primary/88"
+                    : "h-8 rounded-full border-primary/20 bg-transparent px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-foreground/60"
+                }
+              >
+                {label}
+              </Button>
+            );
+          })}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <label className="relative min-w-[220px] flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/48" />
+            <input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search sources..."
+              className="h-10 w-full rounded-full border border-primary/18 bg-black/20 pl-10 pr-4 font-mono text-sm text-foreground outline-none placeholder:text-foreground/40 focus:border-primary/32"
+            />
+          </label>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => uploadInputRef.current?.click()}
+            disabled={isUploading}
+            className="h-10 rounded-full border-primary/20 bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-primary/84 hover:bg-black/30"
+          >
+            <Upload className="mr-2 h-3.5 w-3.5" />
+            {isUploading ? "Uploading..." : "Upload"}
+          </Button>
+          <input
+            ref={uploadInputRef}
+            data-testid="source-shelf-upload-input"
+            type="file"
+            accept=".pdf,.md,.docx,.pptx,.txt,.mp4"
+            multiple
+            className="hidden"
+            onChange={handleUploadChange}
+          />
+        </div>
       </div>
 
-      <div className="space-y-3 rounded-[0.85rem] border border-primary/15 bg-black/15 p-3">
-        <div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="rounded-[0.95rem] border border-primary/15 bg-black/15 p-3">
           <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
             Course
           </div>
           <div className="mt-1 text-sm text-foreground">
             {courseName || "No course selected"}
           </div>
-        </div>
-
-        <div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
+          <div className="mt-3 text-[10px] uppercase tracking-[0.18em] text-primary/72">
             Study Unit
           </div>
           <div className="mt-1 text-sm text-foreground">
             {studyUnit || "No study unit selected"}
           </div>
-        </div>
-
-        <div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
+          <div className="mt-3 text-[10px] uppercase tracking-[0.18em] text-primary/72">
             Topic
           </div>
           <div className="mt-1 text-sm text-foreground">
             {topic || "Broad module scope"}
           </div>
         </div>
+
+        <div className="rounded-[0.95rem] border border-primary/15 bg-black/15 p-3">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary/72">
+            <BookOpen className="h-3.5 w-3.5" />
+            Current Run
+          </div>
+          <div className="mt-2 text-sm text-foreground">
+            {runMaterialCount} material{runMaterialCount === 1 ? "" : "s"} loaded
+          </div>
+          <div className="mt-1 text-sm text-foreground/72">
+            {runVaultCount} vault link{runVaultCount === 1 ? "" : "s"} loaded
+          </div>
+          <div className="mt-3 break-all text-xs text-foreground/56">
+            {vaultFolder || "Vault path not derived yet"}
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-3 rounded-[0.85rem] border border-primary/10 bg-black/10 p-3 text-foreground/72">
-        <div>{selectedMaterialCount} materials in run</div>
-        <div>{vaultFolder || "Vault path not derived yet"}</div>
-      </div>
+      <div className="flex min-h-0 flex-1 flex-col rounded-[1rem] border border-primary/14 bg-black/10 p-3">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
+            Unified Source Tree
+          </div>
+          <div className="text-xs text-foreground/56">
+            {activeFilter === "current_run"
+              ? "Showing loaded sources"
+              : activeFilter === "library"
+                ? "Showing library materials"
+                : activeFilter === "vault"
+                  ? "Showing vault links"
+                  : "Showing all source surfaces"}
+          </div>
+        </div>
 
-      <div className="space-y-3 rounded-[0.85rem] border border-primary/10 bg-black/10 p-3 text-foreground/72">
-        {activeTab === "current_run" ? (
-          <>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
-              Current Run Sources
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          {visibleTree.length > 0 ? (
+            <div className="space-y-3">
+              {visibleTree.map((node) => (
+                <SourceShelfTreeNode
+                  key={node.id}
+                  node={node}
+                  depth={0}
+                  expandedNodeIds={expandedNodeIds}
+                  onToggleExpanded={toggleExpandedNode}
+                  onToggleLeaf={toggleLeafNode}
+                  onToggleFolder={toggleFolderNode}
+                  workspaceObjectIds={workspaceObjectIds}
+                  onAddToWorkspace={onAddToWorkspace}
+                  onOpenInDocumentDock={onOpenInDocumentDock}
+                  searchActive={Boolean(normalizedSearch)}
+                />
+              ))}
             </div>
-
-            {currentRunMaterialObjects.length > 0 ? (
-              currentRunMaterialObjects.map(renderMaterialCard)
-            ) : (
-              <div>No current-run source objects available yet.</div>
-            )}
-          </>
-        ) : null}
-
-        {activeTab === "library" ? (
-          <>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
-              Library Sources
+          ) : (
+            <div className="rounded-[0.95rem] border border-dashed border-primary/16 bg-black/15 px-4 py-6 text-sm text-foreground/56">
+              No sources match the current filter.
             </div>
-
-            {libraryMaterialObjects.length > 0 ? (
-              libraryMaterialObjects.map(renderMaterialCard)
-            ) : (
-              <div>No library materials available for this course yet.</div>
-            )}
-          </>
-        ) : null}
-
-        {activeTab === "vault" ? (
-          <>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
-              Linked Vault Paths
-            </div>
-            <div className="rounded-[0.75rem] border border-primary/12 bg-black/15 p-3 text-xs text-foreground/62">
-              {vaultFolder || "Vault path not derived yet"}
-            </div>
-
-            {vaultPathObjects.length > 0 ? (
-              vaultPathObjects.map(renderVaultPathCard)
-            ) : (
-              <div>No linked vault paths available for this run yet.</div>
-            )}
-          </>
-        ) : null}
+          )}
+        </div>
       </div>
     </div>
   );

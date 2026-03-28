@@ -19,12 +19,17 @@ vi.mock("@/components/TutorWorkflowPrimingPanel", () => ({
   TutorWorkflowPrimingPanel: ({
     onStartTutor,
     onRunAssistForSelected,
+    selectedMaterials = [],
   }: {
     onStartTutor?: () => void;
     onRunAssistForSelected?: (methodIdOverride?: string) => void;
+    selectedMaterials?: number[];
   }) => (
     <div data-testid="mock-priming-panel">
       priming panel
+      <div data-testid="mock-priming-loaded-materials">
+        {selectedMaterials.length} loaded materials
+      </div>
       <button type="button" onClick={() => onStartTutor?.()}>
         Start Tutor from priming panel
       </button>
@@ -558,6 +563,104 @@ function renderTutorShell(
   return render(<Harness />, { wrapper });
 }
 
+function renderTutorShellWithStatefulSourceShelf() {
+  const wrapper = createQueryWrapper();
+
+  function Harness() {
+    const [selectedMaterials, setSelectedMaterials] = useState<number[]>([101]);
+    const [selectedPaths, setSelectedPaths] = useState<string[]>([
+      "Exercise Physiology/Week 7/Cardio.md",
+    ]);
+    const [panelLayout, setPanelLayout] = useState(
+      buildStudioShellPresetLayout("full_studio"),
+    );
+
+    const chatMaterials = [
+      {
+        id: 101,
+        title: "Cardiac Output Lecture",
+        course_id: 1,
+        file_type: "pdf",
+        source_path: "uploads/cardio-output.pdf",
+      },
+      {
+        id: 102,
+        title: "Afterload Drill",
+        course_id: 1,
+        file_type: "txt",
+        source_path: "uploads/afterload-drill.txt",
+      },
+      {
+        id: 201,
+        title: "Neuro Outlier",
+        course_id: 2,
+        file_type: "pdf",
+        source_path: "uploads/neuro-outlier.pdf",
+      },
+    ];
+
+    const hub = {
+      ...makeHubWithOverrides({
+        courseId: 1,
+        courseLabel: "Exercise Physiology",
+        selectedObjectiveGroup: "Week 7",
+        effectiveStudyUnit: "Week 7",
+        topic: "Cardiac output",
+        effectiveTopic: "Cardiac output",
+        tutorContentSources: {
+          courses: [
+            { id: 1, name: "Exercise Physiology" },
+            { id: 2, name: "Neuroscience" },
+          ],
+        },
+        chatMaterials,
+      }),
+      selectedMaterials,
+      setSelectedMaterials,
+      selectedPaths,
+      setSelectedPaths,
+      getCourseMaterialIds: vi.fn((targetCourseId?: number) =>
+        typeof targetCourseId === "number"
+          ? chatMaterials
+              .filter((material) => material.course_id === targetCourseId)
+              .map((material) => material.id)
+          : [],
+      ),
+      loadCourseMaterials: vi.fn((targetCourseId?: number) =>
+        typeof targetCourseId === "number"
+          ? chatMaterials
+              .filter((material) => material.course_id === targetCourseId)
+              .map((material) => material.id)
+          : [],
+      ),
+    };
+
+    return (
+      <TutorShell
+        activeSessionId={null}
+        hub={hub as never}
+        session={makeSession() as never}
+        workflow={makeWorkflowWithOverrides("workspace") as never}
+        showSetup={false}
+        restoredTurns={undefined}
+        activeBoardScope="project"
+        activeBoardId={null}
+        viewerState={null}
+        setActiveBoardScope={vi.fn()}
+        setActiveBoardId={vi.fn()}
+        setViewerState={vi.fn()}
+        setShowSetup={vi.fn()}
+        queryClient={new QueryClient()}
+        panelLayout={panelLayout as never}
+        setPanelLayout={setPanelLayout as never}
+        onResumeHubCandidate={vi.fn()}
+      />
+    );
+  }
+
+  return render(<Harness />, { wrapper });
+}
+
 function renderTutorShellTutorHarness() {
   const wrapper = createQueryWrapper();
 
@@ -632,7 +735,7 @@ describe("TutorShell studio routing", () => {
     expect(sourceShelf).toHaveTextContent("Exercise Physiology");
     expect(sourceShelf).toHaveTextContent("Week 7");
     expect(sourceShelf).toHaveTextContent("Cardiac output");
-    expect(sourceShelf).toHaveTextContent("2 materials in run");
+    expect(sourceShelf).toHaveTextContent("2 materials loaded");
     expect(sourceShelf).toHaveTextContent("Exercise Physiology/Week 7");
   });
 
@@ -676,9 +779,9 @@ describe("TutorShell studio routing", () => {
     const sourceShelf = screen.getByTestId("studio-source-shelf");
     await userEvent.click(within(sourceShelf).getByRole("button", { name: /^library$/i }));
 
-    expect(sourceShelf).toHaveTextContent("Library Sources");
+    expect(sourceShelf).toHaveTextContent("Showing library materials");
     expect(sourceShelf).toHaveTextContent("Afterload Drill");
-    expect(sourceShelf).not.toHaveTextContent("Neuro Outlier");
+    expect(sourceShelf).toHaveTextContent("Neuro Outlier");
 
     await userEvent.click(
       within(sourceShelf).getByRole("button", {
@@ -698,7 +801,7 @@ describe("TutorShell studio routing", () => {
       within(sourceShelf).getByRole("button", {
         name: /afterload drill already in workspace/i,
       }),
-    ).toHaveTextContent("In Workspace");
+    ).toBeDisabled();
   });
 
   it("uses the Source Shelf Vault tab as a real working surface for browsing and staging linked paths", async () => {
@@ -729,21 +832,68 @@ describe("TutorShell studio routing", () => {
     const sourceShelf = screen.getByTestId("studio-source-shelf");
     await userEvent.click(within(sourceShelf).getByRole("button", { name: /^vault$/i }));
 
-    expect(sourceShelf).toHaveTextContent("Linked Vault Paths");
+    expect(sourceShelf).toHaveTextContent("Showing vault links");
     expect(sourceShelf).toHaveTextContent("Exercise Physiology/Week 7/Cardio.md");
     expect(sourceShelf).toHaveTextContent("Exercise Physiology/Week 7/Afterload.md");
 
     await userEvent.click(
       within(sourceShelf).getByRole("button", {
-        name: /add exercise physiology\/week 7\/afterload\.md to workspace/i,
+        name: /add afterload\.md to workspace/i,
       }),
     );
 
     expect(
       within(sourceShelf).getByRole("button", {
-        name: /exercise physiology\/week 7\/afterload\.md already in workspace/i,
+        name: /afterload\.md already in workspace/i,
       }),
-    ).toHaveTextContent("In Workspace");
+    ).toBeDisabled();
+  });
+
+  it("syncs Source Shelf checkbox membership into Current Run, Priming, and Prime Packet source context", async () => {
+    const user = userEvent.setup();
+
+    renderTutorShellWithStatefulSourceShelf();
+
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
+
+    const sourceShelf = screen.getByTestId("studio-source-shelf");
+    const primePacket = screen.getByTestId("studio-prime-packet");
+
+    expect(screen.getByTestId("mock-priming-loaded-materials")).toHaveTextContent(
+      "1 loaded materials",
+    );
+    expect(primePacket).toHaveTextContent("Cardiac Output Lecture");
+    expect(primePacket).not.toHaveTextContent("Afterload Drill");
+
+    await user.click(
+      within(sourceShelf).getByRole("button", { name: /^library$/i }),
+    );
+    await user.click(
+      within(sourceShelf).getByRole("checkbox", {
+        name: /include afterload drill in current run/i,
+      }),
+    );
+
+    expect(screen.getByTestId("mock-priming-loaded-materials")).toHaveTextContent(
+      "2 loaded materials",
+    );
+    expect(primePacket).toHaveTextContent("Afterload Drill");
+
+    await user.click(
+      within(sourceShelf).getByRole("button", { name: /^current run$/i }),
+    );
+    expect(sourceShelf).toHaveTextContent("Afterload Drill");
+
+    const afterloadCheckbox = within(sourceShelf).getByRole("checkbox", {
+      name: /include afterload drill in current run/i,
+    });
+    await user.click(afterloadCheckbox);
+
+    expect(screen.getByTestId("mock-priming-loaded-materials")).toHaveTextContent(
+      "1 loaded materials",
+    );
+    expect(sourceShelf).not.toHaveTextContent("Afterload Drill");
+    expect(primePacket).not.toHaveTextContent("Afterload Drill");
   });
 
   it("shows a minimal entry state when the canvas has no open panels", async () => {
