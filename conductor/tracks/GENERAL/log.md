@@ -1963,3 +1963,27 @@ Changes not tied to a specific conductor track. Append dated entries below.
     - after `Apply Study preset`, zooming in, and panning the canvas background, 20 rapid title-bar drags on `Memory` changed only the `memory` panel position while `document_dock`, `workspace`, `tutor_chat`, and `tutor_status` stayed fixed
     - a follow-up grouped drag on `Tutor` + `Memory` moved both selected panels by the same delta while the unselected panels stayed fixed
     - screenshot artifact saved to `C:\\Users\\treyt\\.dev-browser\\tmp\\studio-drag-drift-check.png`
+
+## 2026-03-28 - Cleared the remaining Tutor Studio panel and Source Shelf regressions
+
+- Kept the higher upper-viewport anchor in `dashboard_rebuild/client/src/components/studio/StudioShell.tsx` so per-panel `Center` and `Maximize` stay aligned with the top-biased Studio recenter framing instead of falling back to dead-center placement.
+- Preserved the real fit-to-content path in `dashboard_rebuild/client/src/components/ui/WorkspacePanel.tsx` by temporarily removing clipping constraints during measurement, while keeping the panel body padded inside the scroll container so long content scrolls vertically.
+- Finished the Source Shelf polish pass in `dashboard_rebuild/client/src/components/studio/SourceShelf.tsx`:
+  - folder rows now read like tree branches with native button semantics
+  - dark-surface filter/action/detail text contrast is brighter
+  - vault listings still recurse from a derived folder into the unified tree
+- Extended course-to-vault derivation through:
+  - `dashboard_rebuild/client/src/hooks/useTutorHub.ts`
+  - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+  - `dashboard_rebuild/client/src/api.types.ts`
+  so the shelf can derive course vault folders from `TutorContentSources` metadata or Tutor hub fallback context even when `courseLabel` is blank.
+- Added regression coverage in:
+  - `dashboard_rebuild/client/src/components/studio/__tests__/SourceShelf.test.tsx`
+  - `dashboard_rebuild/client/src/hooks/__tests__/useTutorHub.test.ts`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+  - the existing `WorkspacePanel` / `StudioShell` panel suites
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/WorkspacePanel.test.tsx client/src/components/studio/__tests__/StudioShell.test.tsx`
+  - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/SourceShelf.test.tsx`
+  - `cd dashboard_rebuild && npx vitest run client/src/hooks/__tests__/useTutorHub.test.ts client/src/components/__tests__/TutorShell.test.tsx`
+  - `cd dashboard_rebuild && npm run build`

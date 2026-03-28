@@ -29,6 +29,56 @@ import {
 } from "@/lib/tutorUtils";
 import type { TutorShellQuery } from "@/lib/tutorUtils";
 
+function normalizeText(value: string | null | undefined): string {
+  return String(value || "").trim();
+}
+
+function resolveTutorHubCourseLabel(
+  courseId: number | undefined,
+  tutorContentSources:
+    | {
+        courses?: Array<{
+          id: number | null;
+          name?: string | null;
+        }>;
+      }
+    | undefined,
+  tutorHub: TutorHubResponse | undefined,
+): string {
+  if (typeof courseId !== "number") {
+    return "";
+  }
+
+  const sourceCourseName =
+    tutorContentSources?.courses?.find((course) => course.id === courseId)?.name ??
+    "";
+  if (normalizeText(sourceCourseName)) {
+    return normalizeText(sourceCourseName);
+  }
+
+  if (tutorHub?.resume_candidate?.course_id === courseId) {
+    const resumeCourseName = normalizeText(tutorHub.resume_candidate.course_name);
+    if (resumeCourseName) {
+      return resumeCourseName;
+    }
+  }
+
+  if (tutorHub?.study_wheel?.current_course_id === courseId) {
+    const currentWheelCourseName = normalizeText(
+      tutorHub.study_wheel.current_course_name,
+    );
+    if (currentWheelCourseName) {
+      return currentWheelCourseName;
+    }
+  }
+
+  if (tutorHub?.study_wheel?.next_course_id === courseId) {
+    return normalizeText(tutorHub.study_wheel.next_course_name);
+  }
+
+  return "";
+}
+
 function collectStudyUnitMaterialCandidates(material: Material): string[] {
   const candidates = new Set<string>();
   const inferred = normalizeStudyUnitLabel(inferStudyUnitFromMaterial(material));
@@ -193,6 +243,19 @@ export function useTutorHub({
     staleTime: 60 * 1000,
   });
 
+  // ─── Hub + sessions queries ───
+  const { data: recentSessions = [] } = useQuery<TutorSessionSummary[]>({
+    queryKey: ["tutor-sessions"],
+    queryFn: () => api.tutor.listSessions({ limit: 20 }),
+  });
+
+  const { data: tutorHub, isFetching: tutorHubLoading } = useQuery<TutorHubResponse>({
+    queryKey: ["tutor-hub", activeSessionId],
+    queryFn: () => api.tutor.getHub(),
+    enabled: hasRestored,
+    staleTime: 15 * 1000,
+  });
+
   // ─── Course map ───
   const { data: courseMapData } = useQuery({
     queryKey: ["course-map"],
@@ -209,11 +272,8 @@ export function useTutorHub({
   const courseFolders = apiCourses.length > 0 ? apiCourses : COURSE_FOLDERS;
 
   const courseLabel = useMemo(
-    () =>
-      typeof courseId === "number"
-        ? tutorContentSources?.courses.find((course) => course.id === courseId)?.name || ""
-        : "",
-    [courseId, tutorContentSources],
+    () => resolveTutorHubCourseLabel(courseId, tutorContentSources, tutorHub),
+    [courseId, tutorContentSources, tutorHub],
   );
 
   const selectedMaterialRecords = useMemo(() => {
@@ -291,6 +351,19 @@ export function useTutorHub({
   );
 
   const configuredCourseFolder = useMemo(() => {
+    const apiConfiguredCourseFolder =
+      typeof courseId === "number"
+        ? normalizeText(
+            tutorContentSources?.courses.find((course) => course.id === courseId)
+              ?.vault_folder ??
+              tutorContentSources?.courses.find((course) => course.id === courseId)
+                ?.vault_path,
+          ).replace(/^Courses\//i, "")
+        : "";
+    if (apiConfiguredCourseFolder) {
+      return apiConfiguredCourseFolder;
+    }
+
     const normalizedCourseLabel = normalizeStudyUnitLabel(courseLabel);
     if (!normalizedCourseLabel) {
       return "";
@@ -303,17 +376,27 @@ export function useTutorHub({
           normalizedCourseLabel.toLowerCase(),
       )?.path || courseLabel
     );
-  }, [courseFolders, courseLabel]);
+  }, [courseFolders, courseId, courseLabel, tutorContentSources]);
 
   const derivedVaultFolder = useMemo(
-    () =>
-      configuredCourseFolder
-        ? deriveVaultFolder(configuredCourseFolder, effectiveStudyUnit).replace(
-            /^Courses\//i,
-            "",
-          )
-        : vaultFolder.trim(),
-    [vaultFolder, configuredCourseFolder, effectiveStudyUnit],
+    () => {
+      const explicitHubVaultFolder = normalizeText(
+        tutorHub?.vault_folder || tutorHub?.vault_path,
+      ).replace(/^Courses\//i, "");
+      if (explicitHubVaultFolder) {
+        return explicitHubVaultFolder;
+      }
+
+      if (configuredCourseFolder) {
+        return deriveVaultFolder(configuredCourseFolder, effectiveStudyUnit).replace(
+          /^Courses\//i,
+          "",
+        );
+      }
+
+      return vaultFolder.trim();
+    },
+    [vaultFolder, configuredCourseFolder, effectiveStudyUnit, tutorHub],
   );
 
   const effectiveTopic = useMemo(
@@ -324,19 +407,6 @@ export function useTutorHub({
       "",
     [effectiveStudyUnit, topic, selectedObjectiveRecord],
   );
-
-  // ─── Hub + sessions queries ───
-  const { data: recentSessions = [] } = useQuery<TutorSessionSummary[]>({
-    queryKey: ["tutor-sessions"],
-    queryFn: () => api.tutor.listSessions({ limit: 20 }),
-  });
-
-  const { data: tutorHub, isFetching: tutorHubLoading } = useQuery<TutorHubResponse>({
-    queryKey: ["tutor-hub", activeSessionId],
-    queryFn: () => api.tutor.getHub(),
-    enabled: hasRestored,
-    staleTime: 15 * 1000,
-  });
 
   // ─── Filter stale material IDs ───
   useEffect(() => {

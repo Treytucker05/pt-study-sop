@@ -79,8 +79,8 @@ const SIZE_MENU_ITEM_CLASSES =
 
 const PANEL_FIT_CONTENT_MAX_WIDTH = 1400;
 const PANEL_FIT_CONTENT_MAX_HEIGHT = 1000;
-const PANEL_FIT_CONTENT_HORIZONTAL_CHROME = 28;
-const PANEL_FIT_CONTENT_VERTICAL_CHROME = 68;
+const PANEL_FIT_CONTENT_HORIZONTAL_CHROME = 24;
+const PANEL_FIT_CONTENT_VERTICAL_CHROME = 64;
 
 export function WorkspacePanel({
   id,
@@ -205,35 +205,80 @@ export function WorkspacePanel({
   const measureFitContentSize = () => {
     const contentScrollNode = contentScrollRef.current;
     const contentMeasureNode = contentMeasureRef.current;
+    const panelBodyNode = contentScrollNode?.parentElement as HTMLDivElement | null;
     if (!contentScrollNode) return null;
 
-    const measuredContentWidth = Math.max(
-      contentScrollNode.scrollWidth,
-      contentMeasureNode?.scrollWidth ?? 0,
-      Math.ceil(contentMeasureNode?.getBoundingClientRect().width ?? 0),
-    );
-    const measuredContentHeight = Math.max(
-      contentScrollNode.scrollHeight,
-      contentMeasureNode?.scrollHeight ?? 0,
-      Math.ceil(contentMeasureNode?.getBoundingClientRect().height ?? 0),
-    );
-
-    return {
-      width: Math.min(
-        PANEL_FIT_CONTENT_MAX_WIDTH,
-        Math.max(
-          minWidth,
-          Math.ceil(measuredContentWidth + PANEL_FIT_CONTENT_HORIZONTAL_CHROME),
-        ),
-      ),
-      height: Math.min(
-        PANEL_FIT_CONTENT_MAX_HEIGHT,
-        Math.max(
-          minHeight,
-          Math.ceil(measuredContentHeight + PANEL_FIT_CONTENT_VERTICAL_CHROME),
-        ),
-      ),
+    const restoreScrollStyles = {
+      position: contentScrollNode.style.position,
+      inset: contentScrollNode.style.inset,
+      overflow: contentScrollNode.style.overflow,
+      overflowX: contentScrollNode.style.overflowX,
+      overflowY: contentScrollNode.style.overflowY,
+      height: contentScrollNode.style.height,
+      maxHeight: contentScrollNode.style.maxHeight,
     };
+    const restorePanelBodyStyles = panelBodyNode
+      ? {
+          overflow: panelBodyNode.style.overflow,
+          height: panelBodyNode.style.height,
+        }
+      : null;
+
+    try {
+      if (panelBodyNode) {
+        panelBodyNode.style.overflow = "visible";
+        panelBodyNode.style.height = "auto";
+      }
+
+      contentScrollNode.style.position = "relative";
+      contentScrollNode.style.inset = "auto";
+      contentScrollNode.style.overflow = "visible";
+      contentScrollNode.style.overflowX = "visible";
+      contentScrollNode.style.overflowY = "visible";
+      contentScrollNode.style.height = "auto";
+      contentScrollNode.style.maxHeight = "none";
+
+      const measuredContentWidth = Math.max(
+        contentScrollNode.scrollWidth,
+        contentMeasureNode?.scrollWidth ?? 0,
+        Math.ceil(contentMeasureNode?.getBoundingClientRect().width ?? 0),
+      );
+      const measuredContentHeight = Math.max(
+        contentScrollNode.scrollHeight,
+        contentMeasureNode?.scrollHeight ?? 0,
+        Math.ceil(contentMeasureNode?.getBoundingClientRect().height ?? 0),
+      );
+
+      return {
+        width: Math.min(
+          PANEL_FIT_CONTENT_MAX_WIDTH,
+          Math.max(
+            minWidth,
+            Math.ceil(measuredContentWidth + PANEL_FIT_CONTENT_HORIZONTAL_CHROME),
+          ),
+        ),
+        height: Math.min(
+          PANEL_FIT_CONTENT_MAX_HEIGHT,
+          Math.max(
+            minHeight,
+            Math.ceil(measuredContentHeight + PANEL_FIT_CONTENT_VERTICAL_CHROME),
+          ),
+        ),
+      };
+    } finally {
+      contentScrollNode.style.position = restoreScrollStyles.position;
+      contentScrollNode.style.inset = restoreScrollStyles.inset;
+      contentScrollNode.style.overflow = restoreScrollStyles.overflow;
+      contentScrollNode.style.overflowX = restoreScrollStyles.overflowX;
+      contentScrollNode.style.overflowY = restoreScrollStyles.overflowY;
+      contentScrollNode.style.height = restoreScrollStyles.height;
+      contentScrollNode.style.maxHeight = restoreScrollStyles.maxHeight;
+
+      if (panelBodyNode && restorePanelBodyStyles) {
+        panelBodyNode.style.overflow = restorePanelBodyStyles.overflow;
+        panelBodyNode.style.height = restorePanelBodyStyles.height;
+      }
+    }
   };
 
   // ── Collapsed chip view ───────────────────────────────────────────
@@ -465,12 +510,12 @@ export function WorkspacePanel({
       </div>
 
       {/* Panel body */}
-      <div className="relative flex-1 min-h-0 min-w-0 overflow-hidden p-3">
+      <div className="relative flex-1 min-h-0 min-w-0 overflow-hidden">
         <div
           ref={contentScrollRef}
           data-workspace-panel-content="true"
           data-default-collapsed={defaultCollapsed ? "true" : "false"}
-          className="h-full min-h-0 min-w-0 overflow-y-auto overflow-x-auto [overflow-wrap:anywhere]"
+          className="absolute inset-0 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden p-3 [overflow-wrap:anywhere]"
         >
           <div ref={contentMeasureRef} className="min-h-full min-w-0">
             {isPoppedOut ? (

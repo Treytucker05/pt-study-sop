@@ -494,7 +494,7 @@ describe("StudioShell", () => {
         (item: { panel: string }) => item.panel === "tutor_chat",
       );
       expect(maximizedTutor?.size).toEqual({ width: 1200, height: 900 });
-      expect(maximizedTutor?.position).toEqual({ x: 200, y: 0 });
+      expect(maximizedTutor?.position).toEqual({ x: 200, y: -207 });
 
       setPanelLayout.mockClear();
 
@@ -505,7 +505,7 @@ describe("StudioShell", () => {
       const centeredTutor = centeredLayout.find(
         (item: { panel: string }) => item.panel === "tutor_chat",
       );
-      expect(centeredTutor?.position).toEqual({ x: 540, y: 140 });
+      expect(centeredTutor?.position).toEqual({ x: 540, y: -67 });
 
       setPanelLayout.mockClear();
 
@@ -529,7 +529,7 @@ describe("StudioShell", () => {
       expect(
         fitLayout.find((item: { panel: string }) => item.panel === "tutor_chat")
           ?.size,
-      ).toEqual({ width: 948, height: 848 });
+      ).toEqual({ width: 944, height: 844 });
 
       setPanelLayout.mockClear();
 

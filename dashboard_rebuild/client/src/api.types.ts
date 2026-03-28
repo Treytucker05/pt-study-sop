@@ -1507,6 +1507,8 @@ export interface TutorHubResponse {
   upcoming_tests: TutorHubEventSummary[];
   class_projects: TutorHubClassProject[];
   study_wheel: TutorHubStudyWheelSnapshot;
+  vault_folder?: string | null;
+  vault_path?: string | null;
 }
 
 export type TutorWorkflowStage = "launch" | "priming" | "tutor" | "polish" | "final_sync";
@@ -2132,6 +2134,8 @@ export interface TutorContentSources {
     name: string;
     code: string | null;
     doc_count: number;
+    vault_folder?: string | null;
+    vault_path?: string | null;
     wheel_linked?: boolean;
     wheel_active?: boolean;
     wheel_position?: number | null;

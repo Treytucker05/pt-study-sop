@@ -1190,7 +1190,9 @@ export function StudioShell({
             panelSize.width / 2,
         ),
         y: Math.round(
-          (rect.height / 2 - canvasTransformRef.current.positionY) /
+          ((VIEWPORT_PADDING_TOP +
+            (rect.height - VIEWPORT_PADDING_TOP - VIEWPORT_PADDING_BOTTOM) / 4) -
+            canvasTransformRef.current.positionY) /
             resolvedScale -
             panelSize.height / 2,
         ),

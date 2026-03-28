@@ -270,16 +270,25 @@ describe("SourceShelf", () => {
     expect(checkbox).toBeChecked();
   });
 
-  it("renders folder rows as tree controls instead of native buttons", async () => {
+  it("renders folder rows as styled tree buttons with readable filter contrast", async () => {
     renderSourceShelfHarness();
 
     const shelf = screen.getByTestId("source-shelf-content");
+    const allFilterButton = within(shelf).getByRole("button", { name: /^all$/i });
+    const vaultFilterButton = within(shelf).getByRole("button", { name: /^vault$/i });
     const courseFolderRow = await within(shelf).findByRole("button", {
       name: /exercise physiology 3\/4 loaded/i,
     });
 
     await waitFor(() => {
-      expect(courseFolderRow.tagName).toBe("DIV");
+      expect(allFilterButton).toHaveClass("text-white");
+      expect(vaultFilterButton).toHaveClass("text-foreground/82");
+      expect(courseFolderRow.tagName).toBe("BUTTON");
+      expect(courseFolderRow).toHaveClass(
+        "bg-transparent",
+        "hover:bg-white/5",
+        "rounded-sm",
+      );
     });
   });
 });

@@ -4,7 +4,6 @@ import {
   useRef,
   useState,
   type ChangeEvent,
-  type KeyboardEvent,
 } from "react";
 import {
   BookOpen,
@@ -635,14 +634,6 @@ function SourceShelfTreeNode({
   ) => void;
   searchActive: boolean;
 }) {
-  const handleFolderKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "Enter" && event.key !== " ") {
-      return;
-    }
-    event.preventDefault();
-    onToggleExpanded(node.id);
-  };
-
   if (node.kind === "leaf") {
     const isInWorkspace = workspaceObjectIds.includes(node.workspaceObject.id);
 
@@ -671,13 +662,13 @@ function SourceShelfTreeNode({
               {node.sourceType === "vault" ? (
                 <Badge
                   variant="outline"
-                  className="rounded-full border-primary/12 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-foreground/68"
+                  className="rounded-full border-primary/12 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-foreground/75"
                 >
                   Vault Link
                 </Badge>
               ) : null}
             </div>
-            <div className="mt-1 break-all text-xs text-foreground/72">
+            <div className="mt-1 break-all text-xs text-foreground/75">
               {node.detail}
             </div>
           </div>
@@ -687,7 +678,7 @@ function SourceShelfTreeNode({
               variant="outline"
               onClick={() => onOpenInDocumentDock?.(node.workspaceObject)}
               aria-label={`Open ${node.label} in Document Dock`}
-              className="h-8 w-8 rounded-full border-primary/18 bg-black/20 p-0 text-white/80 hover:bg-black/30 hover:text-white"
+              className="h-8 w-8 rounded-full border-primary/18 bg-black/20 p-0 text-white/82 hover:bg-black/30 hover:text-white"
             >
               <ExternalLink className="h-3.5 w-3.5" />
             </Button>
@@ -702,7 +693,7 @@ function SourceShelfTreeNode({
                     ? `${node.label} already in workspace`
                     : `Add ${node.label} to workspace`
                 }
-                className="h-8 w-8 rounded-full border-primary/18 bg-black/20 p-0 text-white/80 hover:bg-black/30 hover:text-white disabled:cursor-default disabled:opacity-100 disabled:text-foreground/60"
+                className="h-8 w-8 rounded-full border-primary/18 bg-black/20 p-0 text-white/82 hover:bg-black/30 hover:text-white disabled:cursor-default disabled:opacity-100 disabled:text-foreground/82"
               >
                 <Plus className="h-3.5 w-3.5" />
               </Button>
@@ -721,19 +712,17 @@ function SourceShelfTreeNode({
 
   return (
     <div className="space-y-2" style={{ marginLeft: `${depth * 14}px` }}>
-      <div className="flex items-start gap-3 border-l-2 border-primary/25 pl-3 py-2 transition-colors hover:bg-white/5">
+      <div className="flex items-start gap-3 border-l-2 border-primary/25 py-1.5 pl-3">
         <TreeCheckbox
           checked={allChecked}
           indeterminate={partiallyChecked}
           ariaLabel={`Include all ${node.label} in current run`}
           onChange={() => onToggleFolder(node)}
         />
-        <div
-          role="button"
-          tabIndex={0}
+        <button
+          type="button"
           onClick={() => onToggleExpanded(node.id)}
-          onKeyDown={handleFolderKeyDown}
-          className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left outline-none"
+          className="flex min-w-0 flex-1 items-center gap-2 rounded-sm bg-transparent px-1 py-1 text-left transition-colors hover:bg-white/5"
         >
           {isExpanded ? (
             <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-primary/78" />
@@ -747,11 +736,11 @@ function SourceShelfTreeNode({
           )}
           <div className="min-w-0">
             <div className="truncate text-sm text-white">{node.label}</div>
-            <div className="text-xs text-foreground/88">
+            <div className="text-xs text-foreground/90">
               {checkedLeafCount}/{leafNodes.length} loaded
             </div>
           </div>
-        </div>
+        </button>
       </div>
 
       {isExpanded ? (
@@ -987,7 +976,7 @@ export function SourceShelf({
   return (
     <div
       data-testid="source-shelf-content"
-      className="flex h-full min-h-0 flex-col gap-4 font-mono text-sm text-foreground/78"
+      className="flex h-full min-h-0 flex-col gap-4 font-mono text-sm text-foreground/82"
     >
       <div className="space-y-3 rounded-[0.95rem] border border-primary/15 bg-black/15 p-3">
         <div className="flex flex-wrap gap-2">
@@ -1003,7 +992,7 @@ export function SourceShelf({
                 className={
                   isActive
                     ? "h-8 rounded-full border-primary/30 bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-white"
-                    : "h-8 rounded-full border-primary/20 bg-transparent px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-foreground/80"
+                    : "h-8 rounded-full border-primary/20 bg-transparent px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-foreground/82"
                 }
               >
                 {label}
@@ -1028,7 +1017,7 @@ export function SourceShelf({
             variant="outline"
             onClick={() => uploadInputRef.current?.click()}
             disabled={isUploading}
-            className="h-10 rounded-full border-primary/20 bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-white/80 hover:bg-black/30 hover:text-white"
+            className="h-10 rounded-full border-primary/20 bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-white/82 hover:bg-black/30 hover:text-white"
           >
             <Upload className="mr-2 h-3.5 w-3.5" />
             {isUploading ? "Uploading..." : "Upload"}
@@ -1072,13 +1061,13 @@ export function SourceShelf({
             <BookOpen className="h-3.5 w-3.5" />
             Current Run
           </div>
-          <div className="mt-2 text-sm text-foreground/88">
+          <div className="mt-2 text-sm text-foreground/90">
             {runMaterialCount} material{runMaterialCount === 1 ? "" : "s"} loaded
           </div>
-          <div className="mt-1 text-sm text-foreground/88">
+          <div className="mt-1 text-sm text-foreground/90">
             {runVaultCount} vault link{runVaultCount === 1 ? "" : "s"} loaded
           </div>
-          <div className="mt-3 break-all text-xs text-foreground/72">
+          <div className="mt-3 break-all text-xs text-foreground/75">
             {normalizedVaultFolder || "Vault path not derived yet"}
           </div>
         </div>
@@ -1089,7 +1078,7 @@ export function SourceShelf({
           <div className="text-[10px] uppercase tracking-[0.18em] text-primary">
             Unified Source Tree
           </div>
-          <div className="text-xs text-foreground/72">
+          <div className="text-xs text-foreground/75">
             {activeFilter === "current_run"
               ? "Showing loaded sources"
               : activeFilter === "library"

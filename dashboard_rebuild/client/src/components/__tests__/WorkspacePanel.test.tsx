@@ -421,6 +421,13 @@ describe("WorkspacePanel", () => {
       '[data-workspace-panel-content="true"]',
     ) as HTMLDivElement | null;
     expect(contentRoot).not.toBeNull();
+    expect(contentRoot).toHaveClass(
+      "absolute",
+      "inset-0",
+      "overflow-y-auto",
+      "overflow-x-hidden",
+      "p-3",
+    );
 
     Object.defineProperty(contentRoot!, "scrollWidth", {
       configurable: true,
@@ -434,8 +441,8 @@ describe("WorkspacePanel", () => {
     fireEvent.click(screen.getByRole("button", { name: /fit panel content/i }));
 
     expect(onSizeChange).toHaveBeenCalledWith({
-      width: 648,
-      height: 548,
+      width: 644,
+      height: 544,
     });
   });
 

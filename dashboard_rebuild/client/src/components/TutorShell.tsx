@@ -781,12 +781,35 @@ export function TutorShell({
     () => hub.tutorContentSources?.courses || [],
     [hub.tutorContentSources?.courses],
   );
+  const selectedSourceShelfCourse = useMemo(
+    () =>
+      typeof hub.courseId === "number"
+        ? availableCourses.find((course) => course.id === hub.courseId) || null
+        : null,
+    [availableCourses, hub.courseId],
+  );
   const sourceShelfCourseName = useMemo(
     () =>
       hub.courseLabel ||
+      selectedSourceShelfCourse?.name ||
+      (hub.tutorHub?.resume_candidate?.course_id === hub.courseId
+        ? hub.tutorHub?.resume_candidate?.course_name
+        : null) ||
+      (hub.tutorHub?.study_wheel?.current_course_id === hub.courseId
+        ? hub.tutorHub?.study_wheel?.current_course_name
+        : null) ||
       workflow.activeWorkflowDetail?.workflow?.course_name ||
       null,
-    [hub.courseLabel, workflow.activeWorkflowDetail?.workflow?.course_name],
+    [
+      hub.courseId,
+      hub.courseLabel,
+      hub.tutorHub?.resume_candidate?.course_id,
+      hub.tutorHub?.resume_candidate?.course_name,
+      hub.tutorHub?.study_wheel?.current_course_id,
+      hub.tutorHub?.study_wheel?.current_course_name,
+      selectedSourceShelfCourse?.name,
+      workflow.activeWorkflowDetail?.workflow?.course_name,
+    ],
   );
   const sourceShelfStudyUnit = useMemo(
     () =>
@@ -815,7 +838,15 @@ export function TutorShell({
       return null;
     }
 
+    const apiConfiguredCourseFolder = (
+      selectedSourceShelfCourse?.vault_folder ||
+      selectedSourceShelfCourse?.vault_path ||
+      ""
+    )
+      .replace(/^Courses\//i, "")
+      .trim();
     const configuredCourseFolder =
+      apiConfiguredCourseFolder ||
       (hub.courseFolders || []).find(
         (course) =>
           String(course.name || "").trim().toLowerCase() ===
@@ -828,6 +859,8 @@ export function TutorShell({
   }, [
     hub.courseFolders,
     hub.derivedVaultFolder,
+    selectedSourceShelfCourse?.vault_folder,
+    selectedSourceShelfCourse?.vault_path,
     sourceShelfCourseName,
     sourceShelfStudyUnit,
   ]);

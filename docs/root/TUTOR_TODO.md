@@ -163,6 +163,32 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - wired `/tutor` to pass course options from Tutor content sources, build a course-id-to-name map for the accordion, and delete sessions through `api.tutor.deleteSession(sessionId)` followed by `["tutor-sessions"]` invalidation
     - validation passed with `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorTopBar.test.tsx client/src/pages/__tests__/tutor.test.tsx` and `cd dashboard_rebuild && npm run build`
 
+- [x] HUD-250. Clear the remaining `/tutor` Studio workspace UI regressions across panel framing, fit/scroll behavior, and Source Shelf vault wiring.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/ui/WorkspacePanel.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/WorkspacePanel.test.tsx`
+    - `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`
+    - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+    - `dashboard_rebuild/client/src/components/studio/SourceShelf.tsx`
+    - `dashboard_rebuild/client/src/components/studio/__tests__/SourceShelf.test.tsx`
+    - `dashboard_rebuild/client/src/hooks/useTutorHub.ts`
+    - `dashboard_rebuild/client/src/hooks/__tests__/useTutorHub.test.ts`
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+  - Done when:
+    - per-panel `Center` and `Maximize` use the same upper-viewport framing model as the Studio canvas recenter flow, with the updated higher anchor
+    - `Fit Content` measures the natural panel body size instead of clipped flex-box dimensions, and panel bodies scroll vertically when content exceeds the current frame
+    - Source Shelf filter/tree labels regain readable contrast, folder rows read like tree branches instead of cards, and Vault populates when a course-derived Obsidian folder is available
+    - targeted Group A, Group B, and Group C frontend suites plus the production frontend build all pass
+  - Assignee: @codex-cli
+  - Completed: 2026-03-28
+  - Notes:
+    - kept the higher /4 upper-viewport anchor in `StudioShell` so per-panel `Center` and `Maximize` land in the same top-biased band as the canvas recenter flow, while `WorkspacePanel` preserves fit-to-content measurement by temporarily removing clipping constraints during measurement and keeping the scroll container padded and vertically scrollable
+    - finished the Source Shelf polish pass by keeping folder rows styled as tree buttons, brightening the dark-surface contrast classes, and preserving the recursive vault listing path from a known folder into the unified tree
+    - extended course-to-vault derivation through `useTutorHub`, `TutorShell`, and `TutorContentSources` metadata so the shelf can derive `Exercise Physiology/Week 7`-style folders from selected-course metadata even when `courseLabel` is blank, with new `useTutorHub` coverage plus TutorShell vault derivation regression coverage
+    - validation passed with `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/WorkspacePanel.test.tsx client/src/components/studio/__tests__/StudioShell.test.tsx`, `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/SourceShelf.test.tsx`, `cd dashboard_rebuild && npx vitest run client/src/hooks/__tests__/useTutorHub.test.ts client/src/components/__tests__/TutorShell.test.tsx`, and `cd dashboard_rebuild && npm run build`
+
 - [x] OPS-100. Narrow the managed local `pre-push` hook to a fast deterministic backend lane and leave full harness/backend coverage to CI.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

@@ -873,6 +873,69 @@ describe("TutorShell studio routing", () => {
     ).toBeDisabled();
   });
 
+  it("derives the Source Shelf vault folder from the selected course when the hub folder is blank", async () => {
+    getObsidianFilesMock.mockImplementation(async (folder?: string) => {
+      if (folder === "Exercise Physiology/Week 7") {
+        return {
+          success: true,
+          files: ["Cardio.md"],
+        };
+      }
+      return { success: true, files: [] };
+    });
+
+    renderTutorShell("workspace", {
+      hubOverrides: {
+        courseId: 1,
+        courseLabel: null,
+        selectedObjectiveGroup: "Week 7",
+        effectiveStudyUnit: "Week 7",
+        selectedMaterials: [101],
+        selectedPaths: [],
+        chatMaterials: [
+          {
+            id: 101,
+            title: "Cardiac Output Lecture",
+            course_id: 1,
+            file_type: "pdf",
+            source_path: "uploads/cardio-output.pdf",
+          },
+        ],
+        tutorContentSources: {
+          courses: [
+            {
+              id: 1,
+              name: "Exercise Physiology",
+              code: "EXPH",
+              doc_count: 1,
+              vault_folder: "Courses/Exercise Physiology",
+            },
+            { id: 2, name: "Neuroscience", code: "NEUR", doc_count: 0 },
+          ],
+        },
+        derivedVaultFolder: "",
+      },
+    });
+
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
+
+    const sourceShelf = screen.getByTestId("studio-source-shelf");
+    expect(sourceShelf).toHaveTextContent("Exercise Physiology/Week 7");
+
+    await userEvent.click(within(sourceShelf).getByRole("button", { name: /^vault$/i }));
+    await waitFor(() =>
+      expect(getObsidianFilesMock).toHaveBeenCalledWith(
+        "Exercise Physiology/Week 7",
+      ),
+    );
+
+    expect(
+      await within(sourceShelf).findByText("Cardio.md", undefined, {
+        timeout: 3000,
+      }),
+    ).toBeInTheDocument();
+  });
+
   it("syncs Source Shelf checkbox membership into Current Run, Priming, and Prime Packet source context", async () => {
     const user = userEvent.setup();
 
