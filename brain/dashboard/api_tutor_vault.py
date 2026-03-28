@@ -952,7 +952,12 @@ def _resolve_tutor_preflight(
             path_override=vault_folder,
         )
         if map_of_contents_error:
-            return None, ({"error": map_of_contents_error}, 500)
+            if "No mapped learning objectives were found" in map_of_contents_error:
+                resolved_objectives = []
+                map_of_contents_ctx = None
+                map_of_contents_error = None
+            else:
+                return None, ({"error": map_of_contents_error}, 500)
     blockers: list[dict[str, str]] = []
     if not module_name:
         blockers.append(

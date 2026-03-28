@@ -2017,3 +2017,30 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Added explicit accessible names in `dashboard_rebuild/client/src/components/brain/ContractBrainHome.tsx` for the course hint input, annotation notes textarea, and attachment file picker in the Brain annotation panel.
 - Validation passed:
   - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-28 - Removed dead Tutor Studio panels and folded merged tools into surviving surfaces
+
+- Removed the dead floating-panel registry entries from `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`:
+  - `Tutor Status`
+  - `Repair Candidates`
+  - `Objectives`
+  - standalone `Mind Map`
+  - standalone `Method Runner`
+- Updated Studio presets and seed defaults so those five panels no longer appear in the toolbar, preset layouts, or restoration flow, and added inline HUD-254 merge comments where `Mind Map` and `Method Runner` used to live.
+- Stripped the dead Tutor shell wiring in `dashboard_rebuild/client/src/components/TutorShell.tsx` and the stale adapter props in `dashboard_rebuild/client/src/components/tutor-shell/TutorStudioShellPane.tsx`.
+- Deleted obsolete frontend-only panel/model files:
+  - `dashboard_rebuild/client/src/components/studio/TutorStatusPanel.tsx`
+  - `dashboard_rebuild/client/src/components/studio/RepairCandidatesPanel.tsx`
+  - `dashboard_rebuild/client/src/lib/studioTutorStatus.ts`
+  - `dashboard_rebuild/client/src/lib/studioRepairCandidates.ts`
+- Moved the shared context-health helper into `dashboard_rebuild/client/src/lib/studioMemoryStatus.ts` and narrowed `dashboard_rebuild/client/src/lib/studioWorkspaceObjects.ts` to a local repair-note shape so the deleted models no longer gate runtime or tests.
+- Updated the focused panel and shell coverage in:
+  - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+  - `dashboard_rebuild/client/src/lib/__tests__/studioMemoryStatus.test.ts`
+  - `dashboard_rebuild/client/src/lib/__tests__/studioPacketSections.test.ts`
+- Added the live verification script at `scripts/verify-panel-cleanup.js`.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/components/__tests__/TutorShell.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - `dev-browser --timeout 90 run C:\\pt-study-sop\\scripts\\verify-panel-cleanup.js`

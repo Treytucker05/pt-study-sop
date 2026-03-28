@@ -1,6 +1,47 @@
 import { describe, expect, it } from "vitest";
 
-import { buildStudioMemoryStatus } from "@/lib/studioMemoryStatus";
+import {
+  buildStudioMemoryStatus,
+  getStudioTutorContextHealth,
+} from "@/lib/studioMemoryStatus";
+
+describe("getStudioTutorContextHealth", () => {
+  it("waits for backend telemetry instead of projecting heuristic pressure", () => {
+    expect(
+      getStudioTutorContextHealth({
+        turnCount: 11,
+        memoryCapsuleCount: 2,
+        latestAssistantCharacters: 1_300,
+        stageTimerDisplaySeconds: 4_200,
+      }),
+    ).toMatchObject({
+      level: "healthy",
+      label: "Awaiting telemetry",
+    });
+  });
+
+  it("prefers backend compaction telemetry over the heuristic pressure score", () => {
+    expect(
+      getStudioTutorContextHealth({
+        turnCount: 1,
+        memoryCapsuleCount: 0,
+        latestAssistantCharacters: 42,
+        stageTimerDisplaySeconds: 120,
+        compactionTelemetry: {
+          inputTokens: 12_000,
+          outputTokens: 3_600,
+          tokenCount: 15_600,
+          contextWindow: 24_000,
+          pressureLevel: "high",
+        },
+      }),
+    ).toMatchObject({
+      level: "critical",
+      label: "Compaction soon",
+      detail: "Using 15,600 / 24,000 tokens of live context.",
+    });
+  });
+});
 
 describe("buildStudioMemoryStatus", () => {
   it("projects the latest capsule, history, and compaction state from workflow memory", () => {

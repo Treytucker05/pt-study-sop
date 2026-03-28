@@ -24,6 +24,7 @@ from dashboard.app import create_app
 import dashboard.api_data as _api_data_mod
 import dashboard.api_adapter as _api_adapter_mod
 import dashboard.api_tutor as _api_tutor_mod
+import dashboard.api_tutor_vault as _api_tutor_vault_mod
 import dashboard.api_tutor_turns as _api_tutor_turns_mod
 import llm_provider
 import tutor_context
@@ -526,6 +527,68 @@ def test_preflight_blocks_missing_approved_objectives_without_syncing_placeholde
             "content_filter": {
                 "material_ids": [1],
                 "vault_folder": "Courses/Neuroscience/Week 9",
+            },
+        },
+    )
+
+    assert resp.status_code == 200
+    body = resp.get_json()
+    assert body["ok"] is False
+    assert any(
+        blocker["code"] == "APPROVED_OBJECTIVES_REQUIRED"
+        for blocker in body["blockers"]
+    )
+
+
+def test_preflight_missing_mapped_objectives_returns_blocker_instead_of_500(
+    client,
+    monkeypatch,
+):
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        """
+        INSERT INTO courses (id, name, code, color, created_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+        """,
+        (11, "Exercise Physiology", "PHYT 6314", "#ff6600"),
+    )
+    conn.commit()
+    conn.close()
+
+    monkeypatch.setattr(
+        _api_tutor_vault_mod,
+        "_resolve_learning_objectives_for_scope",
+        lambda **_kwargs: [
+            {
+                "objective_id": "OBJ-1",
+                "title": "Explain stroke volume.",
+                "status": "active",
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        _api_tutor_mod,
+        "_ensure_moc_context",
+        lambda **_kwargs: (
+            None,
+            "No mapped learning objectives were found for course 'Exercise Physiology' and unit 'Cardiovascular'.",
+        ),
+    )
+    monkeypatch.setattr(
+        _api_tutor_vault_mod,
+        "_try_import_objectives_from_vault",
+        lambda **_kwargs: [],
+    )
+
+    resp = client.post(
+        "/api/tutor/session/preflight",
+        json={
+            "course_id": 11,
+            "study_unit": "Cardiovascular",
+            "objective_scope": "module_all",
+            "content_filter": {
+                "material_ids": [561],
+                "vault_folder": "Exercise Physiology/Cardiovascular",
             },
         },
     )

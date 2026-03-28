@@ -282,6 +282,8 @@ def obsidian_list_files(folder: str = "") -> dict:
         )
         if error or resp is None:
             return {"success": False, "error": error or "No response from Obsidian"}
+        if resp.status_code == 404:
+            return {"success": True, "files": []}
         if resp.status_code == 200:
             try:
                 data = resp.json()

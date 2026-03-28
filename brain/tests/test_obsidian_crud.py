@@ -5,6 +5,18 @@ import pytest
 from dashboard import api_adapter
 
 
+class _FakeResponse:
+    def __init__(self, status_code: int, payload=None, text: str = "") -> None:
+        self.status_code = status_code
+        self._payload = payload
+        self.text = text
+
+    def json(self):
+        if self._payload is None:
+            raise ValueError("no JSON payload")
+        return self._payload
+
+
 @pytest.fixture()
 def vault_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     root = tmp_path / "vault"
@@ -67,3 +79,23 @@ def test_move_path(vault_root: Path) -> None:
 def test_path_traversal_blocked() -> None:
     with pytest.raises(ValueError):
         api_adapter._normalize_obsidian_rel_path("../outside.md")
+
+
+def test_list_files_treats_missing_folder_as_empty(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(api_adapter, "_obsidian_api_key", lambda: "test-key")
+    monkeypatch.setattr(
+        api_adapter,
+        "_request_obsidian",
+        lambda *args, **kwargs: (
+            _FakeResponse(
+                404,
+                {"message": "Not Found", "errorCode": 40400},
+                text='{"message":"Not Found","errorCode":40400}',
+            ),
+            None,
+        ),
+    )
+
+    result = api_adapter.obsidian_list_files("Exercise Physiology/Cardiovascular")
+
+    assert result == {"success": True, "files": []}

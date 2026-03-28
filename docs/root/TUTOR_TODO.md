@@ -229,6 +229,38 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - added explicit `aria-label` values for the Brain annotation course hint input, notes textarea, and file picker in `ContractBrainHome.tsx`
     - validation passed with `cd dashboard_rebuild && npm run build`
 
+- [x] HUD-254. Remove dead Tutor Studio panels and fold merged tools into the surviving workspace surfaces.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `docs/design/SESSION_STATUS.md`
+    - `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+    - `dashboard_rebuild/client/src/components/tutor-shell/TutorStudioShellPane.tsx`
+    - `dashboard_rebuild/client/src/components/studio/TutorStatusPanel.tsx`
+    - `dashboard_rebuild/client/src/components/studio/RepairCandidatesPanel.tsx`
+    - `dashboard_rebuild/client/src/lib/studioMemoryStatus.ts`
+    - `dashboard_rebuild/client/src/lib/studioWorkspaceObjects.ts`
+    - `dashboard_rebuild/client/src/lib/studioTutorStatus.ts`
+    - `dashboard_rebuild/client/src/lib/studioRepairCandidates.ts`
+    - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+    - `dashboard_rebuild/client/src/lib/__tests__/studioMemoryStatus.test.ts`
+    - `dashboard_rebuild/client/src/lib/__tests__/studioPacketSections.test.ts`
+    - `scripts/verify-panel-cleanup.js`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - `Tutor Status`, `Repair Candidates`, and `Objectives` are removed from the Studio toolbar registry, preset layouts, and Tutor shell wiring
+    - standalone `Mind Map` and `Method Runner` panels are removed from the Studio toolbar registry and presets, with comments pointing back to the HUD-254 merge decisions
+    - obsolete Tutor Status / Repair Candidates panel files and status-model helpers are deleted without leaving dangling imports or broken frontend build paths
+    - focused StudioShell and TutorShell tests, the production frontend build, and the requested `dev-browser` toolbar verification pass succeed
+  - Assignee: @codex-cli
+  - Completed: 2026-03-28
+  - Notes:
+    - removed `tutor_status`, `repair_candidates`, `objectives`, `mind_map`, and `method_runner` from the Studio toolbar registry, preset definitions, and floating-panel seeds in `StudioShell.tsx`, while leaving merge comments that point future readers back to the HUD-254 panel review decision
+    - stripped the dead `TutorShell` wiring for Tutor Status, Repair Candidates, and Mind Map, deleted the obsolete panel/model files, and cleaned the stale `TutorStudioShellPane.tsx` compatibility wrapper so no dead props remain
+    - moved the shared context-health helper into `studioMemoryStatus.ts`, narrowed the repair-workspace helper to a local shape in `studioWorkspaceObjects.ts`, and updated the focused Studio/Tutor tests plus the packet/memory unit coverage to match the surviving panel set
+    - validation passed with `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/components/__tests__/TutorShell.test.tsx`, `cd dashboard_rebuild && npm run build`, and `dev-browser --timeout 90 run C:\\pt-study-sop\\scripts\\verify-panel-cleanup.js`, which saved `C:\\Users\\treyt\\.dev-browser\\tmp\\panel-cleanup-verified.png`
+
 - [x] OPS-100. Narrow the managed local `pre-push` hook to a fast deterministic backend lane and leave full harness/backend coverage to CI.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

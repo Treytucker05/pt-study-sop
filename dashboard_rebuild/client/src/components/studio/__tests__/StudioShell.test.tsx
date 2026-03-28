@@ -189,13 +189,43 @@ describe("StudioShell", () => {
       expect.objectContaining({
         panning: expect.objectContaining({
           disabled: true,
-          excluded: [
-            ".workspace-panel-root",
-            '[data-canvas-drag-disabled="true"]',
-          ],
+          excluded: ["workspace-panel-root", "studio-canvas-drag-disabled"],
         }),
       }),
     );
+  });
+
+  it("keeps only the surviving workspace panels in the toolbar registry", () => {
+    render(
+      <StudioShell
+        panelLayout={[]}
+        setPanelLayout={vi.fn()}
+        entryCard={<div>entry</div>}
+        tutorPanel={<div>Tutor</div>}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /open source shelf panel/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /open workspace panel/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /open tutor status panel/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /open repair candidates panel/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /open objectives panel/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /open mind map panel/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /open method runner panel/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("pans only when dragging the empty canvas background", () => {
@@ -343,7 +373,6 @@ describe("StudioShell", () => {
     const documentDock = byPanel.get("document_dock");
     const workspace = byPanel.get("workspace");
     const tutor = byPanel.get("tutor_chat");
-    const status = byPanel.get("tutor_status");
     const memory = byPanel.get("memory");
 
     expect(documentDock?.position).toEqual({ x: 56, y: 56 });
@@ -351,10 +380,8 @@ describe("StudioShell", () => {
     expect(tutor?.position.y).toBe(56);
     expect((workspace?.position.x || 0)).toBeGreaterThan(documentDock?.position.x || 0);
     expect((tutor?.position.x || 0)).toBeGreaterThan(workspace?.position.x || 0);
-    expect(status?.position.x).toBe(56);
-    expect((status?.position.y || 0)).toBeGreaterThan(tutor?.position.y || 0);
-    expect(memory?.position.y).toBe(status?.position.y);
-    expect((memory?.position.x || 0)).toBeGreaterThan(status?.position.x || 0);
+    expect(memory?.position.x).toBe(56);
+    expect((memory?.position.y || 0)).toBeGreaterThan(tutor?.position.y || 0);
   });
 
   it("computes a top-anchored focus transform for open panels", () => {
@@ -691,34 +718,6 @@ describe("StudioShell", () => {
     expect(setTransformSpy).not.toHaveBeenCalled();
   });
 
-  it("shows a Mind Map toolbar button and spawns the Mind Map panel from the registry", () => {
-    const setPanelLayout = vi.fn();
-
-    render(
-      <StudioShell
-        panelLayout={[]}
-        setPanelLayout={setPanelLayout}
-        entryCard={<div>entry</div>}
-        tutorPanel={<div>Tutor</div>}
-        mindMapPanel={<div data-testid="mind-map-view">Mind Map View</div>}
-      />,
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: /open mind map panel/i }));
-
-    const updater = setPanelLayout.mock.calls.at(-1)?.[0];
-    expect(typeof updater).toBe("function");
-
-    const nextLayout = updater([]);
-    expect(nextLayout).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          panel: "mind_map",
-        }),
-      ]),
-    );
-  });
-
   it("lets the user group and ungroup selected windows from the toolbar", async () => {
     const setPanelLayout = vi.fn();
     const studyLayout = buildStudioShellPresetLayout("study");
@@ -729,7 +728,6 @@ describe("StudioShell", () => {
         documentDock={<div>Document Dock</div>}
         workspace={<div>Workspace</div>}
         tutorPanel={<div>Tutor</div>}
-        tutorStatus={<div>Tutor Status</div>}
         memory={<div>Memory</div>}
       />,
     );
@@ -737,15 +735,15 @@ describe("StudioShell", () => {
     const tutorTitleBar = screen
       .getByTestId("studio-tutor-panel")
       .querySelector(".workspace-panel-drag-handle");
-    const statusTitleBar = screen
-      .getByTestId("studio-tutor-status")
+    const memoryTitleBar = screen
+      .getByTestId("studio-memory")
       .querySelector(".workspace-panel-drag-handle");
 
     expect(tutorTitleBar).toBeTruthy();
-    expect(statusTitleBar).toBeTruthy();
+    expect(memoryTitleBar).toBeTruthy();
 
     fireEvent.pointerDown(tutorTitleBar!);
-    fireEvent.pointerDown(statusTitleBar!, { shiftKey: true });
+    fireEvent.pointerDown(memoryTitleBar!, { shiftKey: true });
 
     await waitFor(() => {
       expect(screen.getByText("2 Selected")).toBeInTheDocument();
@@ -760,12 +758,12 @@ describe("StudioShell", () => {
     const tutor = groupedLayout.find(
       (item: { panel: string }) => item.panel === "tutor_chat",
     );
-    const status = groupedLayout.find(
-      (item: { panel: string }) => item.panel === "tutor_status",
+    const memory = groupedLayout.find(
+      (item: { panel: string }) => item.panel === "memory",
     );
 
     expect(tutor?.groupId).toBeTruthy();
-    expect(status?.groupId).toBe(tutor?.groupId);
+    expect(memory?.groupId).toBe(tutor?.groupId);
 
     const setGroupedLayout = vi.fn();
     rerender(
@@ -775,7 +773,6 @@ describe("StudioShell", () => {
         documentDock={<div>Document Dock</div>}
         workspace={<div>Workspace</div>}
         tutorPanel={<div>Tutor</div>}
-        tutorStatus={<div>Tutor Status</div>}
         memory={<div>Memory</div>}
       />,
     );
@@ -789,22 +786,20 @@ describe("StudioShell", () => {
     const ungroupedTutor = ungroupedLayout.find(
       (item: { panel: string }) => item.panel === "tutor_chat",
     );
-    const ungroupedStatus = ungroupedLayout.find(
-      (item: { panel: string }) => item.panel === "tutor_status",
+    const ungroupedMemory = ungroupedLayout.find(
+      (item: { panel: string }) => item.panel === "memory",
     );
 
     expect(ungroupedTutor?.groupId ?? null).toBeNull();
-    expect(ungroupedStatus?.groupId ?? null).toBeNull();
+    expect(ungroupedMemory?.groupId ?? null).toBeNull();
   });
 
   it("moves selected windows together and keeps grouped windows linked", () => {
     const studyLayout = buildStudioShellPresetLayout("study");
     const tutor = studyLayout.find((item) => item.panel === "tutor_chat");
-    const status = studyLayout.find((item) => item.panel === "tutor_status");
     const memory = studyLayout.find((item) => item.panel === "memory");
 
     expect(tutor).toBeTruthy();
-    expect(status).toBeTruthy();
     expect(memory).toBeTruthy();
 
     const movedSelection = applyStudioShellPanelPositionUpdate(
@@ -814,25 +809,23 @@ describe("StudioShell", () => {
         x: tutor!.position.x + 120,
         y: tutor!.position.y + 40,
       },
-      [tutor!.id, status!.id],
+      [tutor!.id, memory!.id],
     );
 
     const movedTutor = movedSelection.find((item) => item.id === tutor!.id);
-    const movedStatus = movedSelection.find((item) => item.id === status!.id);
     const movedMemory = movedSelection.find((item) => item.id === memory!.id);
 
     expect(movedTutor?.position).toEqual({
       x: tutor!.position.x + 120,
       y: tutor!.position.y + 40,
     });
-    expect(movedStatus?.position).toEqual({
-      x: status!.position.x + 120,
-      y: status!.position.y + 40,
+    expect(movedMemory?.position).toEqual({
+      x: memory!.position.x + 120,
+      y: memory!.position.y + 40,
     });
-    expect(movedMemory?.position).toEqual(memory!.position);
 
     const groupedLayout = studyLayout.map((item) =>
-      item.id === tutor!.id || item.id === status!.id
+      item.id === tutor!.id || item.id === memory!.id
         ? { ...item, groupId: "group-7" }
         : item,
     );
@@ -848,17 +841,15 @@ describe("StudioShell", () => {
     );
 
     const groupedTutor = movedGroup.find((item) => item.id === tutor!.id);
-    const groupedStatus = movedGroup.find((item) => item.id === status!.id);
     const groupedMemory = movedGroup.find((item) => item.id === memory!.id);
 
     expect(groupedTutor?.position).toEqual({
       x: tutor!.position.x + 80,
       y: tutor!.position.y + 24,
     });
-    expect(groupedStatus?.position).toEqual({
-      x: status!.position.x + 80,
-      y: status!.position.y + 24,
+    expect(groupedMemory?.position).toEqual({
+      x: memory!.position.x + 80,
+      y: memory!.position.y + 24,
     });
-    expect(groupedMemory?.position).toEqual(memory!.position);
   });
 });

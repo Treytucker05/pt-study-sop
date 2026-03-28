@@ -18,14 +18,15 @@ Source Shelf → Priming (run method + chat refinement) → Prime Packet → Tut
 - HUD-250: Panel center top-bias, fit-to-content measurement, scroll overflow, Source Shelf contrast/folders, vault derivation fallback
 - HUD-251: Per-panel Center/Maximize now pan camera (viewport focus) instead of moving panel
 - HUD-252: Accessibility ARIA fixes (MainContent tablist, form labels), metadata cleanup, mobile header
+- HUD-254: Panel cleanup review applied in Studio (dead panels removed, merged tools folded into surviving surfaces)
 
 ## Active Bugs
 - **Panel jump after Center Windows**: After clicking "Center Windows" or any canvas transform, first drag on a panel causes it to jump. Root cause: WorkspacePanel passes `position` as controlled prop to Rnd, mismatch with canvas translate. Fix written but not yet sent to Codex.
 - **"LIVE STUDY CORE" header**: This is NOT a bug — Trey wants it to stay. Do NOT delete it.
 - **Entry card**: needs a session name field so sessions can be distinguished
 
-## Panel Review (IN PROGRESS — stopped at Panel 2)
-Going through all 21 panels one by one to decide keep/kill/change.
+## Panel Review (HUD-254)
+The Studio panel review is now carrying explicit keep/kill/merge decisions instead of leaving the older shell-era registry intact.
 
 ### Trey's study workflow (confirmed):
 1. Load materials
@@ -42,19 +43,23 @@ Going through all 21 panels one by one to decide keep/kill/change.
 5. Prime Packet — shows what Tutor receives (working)
 6. Notes — scratch pad (working)
 
+### Panels KILLED:
+- Tutor Status — dead duplicate status surface; Memory keeps the useful runtime compaction history
+- Repair Candidates — dead duplicate repair surface; repair work now happens through Workspace/Prime Packet/Tutor flows instead
+- Objectives — no standalone floating-panel value in the Studio loop
+
+### Panels MERGED:
+- Mind Map → Workspace (tldraw)
+- Method Runner → Priming + Tutor chat
+
 ### Panels NOT YET REVIEWED:
 - Polish (Trey says it IS needed — "final drawing board where notes come together before shipping to Anki and Obsidian")
 - Polish Packet
 - Run Config
-- Tutor Status
-- Repair Candidates
 - Memory
 - Workspace (tldraw)
-- Objectives
-- Method Runner
 - Sketch
 - Concept Map
-- Mind Map
 - Vault Graph
 - Obsidian
 - Anki (Trey says Anki works when booted — NOT broken)

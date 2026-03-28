@@ -12,10 +12,7 @@ import { StudioDocumentDock } from "@/components/studio/StudioDocumentDock";
 import { StudioTldrawWorkspaceLazy } from "@/components/studio/StudioTldrawWorkspaceLazy";
 import { PrimePacketPanel } from "@/components/studio/PrimePacketPanel";
 import { PolishPacketPanel } from "@/components/studio/PolishPacketPanel";
-import { TutorStatusPanel } from "@/components/studio/TutorStatusPanel";
 import { MemoryPanel } from "@/components/studio/MemoryPanel";
-import { RepairCandidatesPanel } from "@/components/studio/RepairCandidatesPanel";
-import { MindMapView } from "@/components/MindMapView";
 import { TutorLiveStudyPane } from "@/components/tutor-shell/TutorLiveStudyPane";
 import { TutorScholarStrategyPanel } from "@/components/tutor-shell/TutorScholarStrategyPanel";
 import {
@@ -29,7 +26,6 @@ import type {
 import type { StudioRunRuntimeState } from "@/lib/studioRunRuntimeState";
 import {
   buildStudioWorkspaceObjects,
-  createStudioRepairWorkspaceObject,
   type StudioWorkspaceObject,
 } from "@/lib/studioWorkspaceObjects";
 import {
@@ -40,11 +36,6 @@ import {
 import { serializeStudioPacketSectionsForTutor } from "@/lib/studioPacketSerializer";
 import { deriveVaultFolder } from "@/lib/tutorUtils";
 import { buildStudioMemoryStatus } from "@/lib/studioMemoryStatus";
-import {
-  buildStudioRepairCandidates,
-  type StudioRepairCandidate,
-} from "@/lib/studioRepairCandidates";
-import { buildStudioTutorStatus } from "@/lib/studioTutorStatus";
 import type { ChatMessage } from "@/components/TutorChat.types";
 import { api } from "@/lib/api";
 import type { TutorMemoryCapsule, TutorTemplateChain } from "@/lib/api";
@@ -327,16 +318,6 @@ export function TutorShell({
       ),
     [promotedPrimePacketObjects],
   );
-  const workspaceRepairCandidateIds = useMemo(
-    () =>
-      workspaceDraftObjects.flatMap((workspaceObject) =>
-        workspaceObject.kind === "text_note" &&
-        workspaceObject.provenance.sourceType === "repair_candidate"
-          ? [workspaceObject.provenance.candidateId]
-          : [],
-      ),
-    [workspaceDraftObjects],
-  );
   const primePacketSections = useMemo(
     () =>
       buildPrimePacketSections({
@@ -385,54 +366,6 @@ export function TutorShell({
       workflow.activeWorkflowDetail?.captured_notes,
       workflow.activeWorkflowDetail?.polish_bundle,
       workflow.activeWorkflowDetail?.publish_results,
-    ],
-  );
-  const tutorStatus = useMemo(
-    () =>
-      buildStudioTutorStatus({
-        scholarStrategy: session.scholarStrategy,
-        turnCount: session.turnCount ?? 0,
-        memoryCapsuleCount:
-          workflow.activeWorkflowDetail?.memory_capsules?.length ?? 0,
-        latestAssistantContent:
-          session.latestCommittedAssistantMessage?.content ?? null,
-        compactionTelemetry: runtimeState?.compactionTelemetry ?? null,
-        directNoteSaveStatus: runtimeState?.directNoteSaveStatus ?? null,
-        latestVerdict: session.latestCommittedAssistantMessage?.verdict ?? null,
-        latestTeachBackRubric:
-          session.latestCommittedAssistantMessage?.teachBackRubric ?? null,
-        stageTimerDisplaySeconds: session.stageTimerDisplaySeconds ?? 0,
-        stageTimerRunning: session.stageTimerRunning ?? false,
-      }),
-    [
-      session.scholarStrategy,
-      session.turnCount,
-      workflow.activeWorkflowDetail?.memory_capsules?.length,
-      session.latestCommittedAssistantMessage?.content,
-      runtimeState?.compactionTelemetry,
-      runtimeState?.directNoteSaveStatus,
-      session.latestCommittedAssistantMessage?.verdict,
-      session.latestCommittedAssistantMessage?.teachBackRubric,
-      session.stageTimerDisplaySeconds,
-      session.stageTimerRunning,
-    ],
-  );
-  const repairCandidates = useMemo(
-    () =>
-      buildStudioRepairCandidates({
-        messageHistory: session.committedAssistantMessages.map((message) => ({
-          sessionTurnNumber: message.sessionTurnNumber,
-          verdict: message.verdict ?? null,
-          teachBackRubric: message.teachBackRubric ?? null,
-        })),
-        latestVerdict: session.latestCommittedAssistantMessage?.verdict ?? null,
-        latestTeachBackRubric:
-          session.latestCommittedAssistantMessage?.teachBackRubric ?? null,
-      }),
-    [
-      session.committedAssistantMessages,
-      session.latestCommittedAssistantMessage?.verdict,
-      session.latestCommittedAssistantMessage?.teachBackRubric,
     ],
   );
   const memoryStatus = useMemo(
@@ -731,19 +664,6 @@ export function TutorShell({
     },
     [onPromotePolishPacketNote],
   );
-  const handleSendRepairCandidateToWorkspace = useCallback(
-    (candidate: StudioRepairCandidate) => {
-      const workspaceObject = createStudioRepairWorkspaceObject(candidate);
-      setWorkspaceDraftObjects((prev) =>
-        prev.some((existingObject) => existingObject.id === workspaceObject.id)
-          ? prev
-          : [...prev, workspaceObject],
-      );
-      toast.success("Repair candidate sent to Workspace");
-    },
-    [],
-  );
-
   const { data: templateChains = [], isLoading: templateChainsLoading } =
     useQuery<TutorTemplateChain[]>({
       queryKey: ["tutor-chains-templates"],
@@ -1417,20 +1337,11 @@ export function TutorShell({
               onClipExcerpt={handleClipExcerpt}
             />
           }
-          mindMapPanel={<MindMapView hideToolbar />}
           workspace={workspaceStudioContent}
           primingPanel={primingStudioContent}
           tutorPanel={tutorStudioContent}
           polishPanel={polishStudioContent}
           runConfig={runConfigContent}
-          tutorStatus={<TutorStatusPanel status={tutorStatus} />}
-          repairCandidates={
-            <RepairCandidatesPanel
-              candidates={repairCandidates}
-              sentCandidateIds={workspaceRepairCandidateIds}
-              onSendToWorkspace={handleSendRepairCandidateToWorkspace}
-            />
-          }
           memory={
             <MemoryPanel
               status={memoryStatus}

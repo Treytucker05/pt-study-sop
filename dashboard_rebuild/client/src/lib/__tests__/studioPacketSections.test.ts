@@ -8,7 +8,6 @@ import {
   buildPolishPacketSections,
   buildPrimePacketSections,
 } from "@/lib/studioPacketSections";
-import { getStudioRepairCandidateId } from "@/lib/studioRepairCandidates";
 
 describe("studio packet section builders", () => {
   it("builds Prime Packet sections from source context and priming artifacts", () => {
@@ -21,15 +20,10 @@ describe("studio packet section builders", () => {
       selectionLabel: "Paragraph 1",
     });
     const promotedRepairNote = createStudioRepairWorkspaceObject({
-      id: getStudioRepairCandidateId({
-        source: "verdict",
-        title: "Misconception to repair",
-        detail: "The reply mixed preload effects with heart-rate regulation.",
-      }),
+      id: "repair-candidate:verdict:misconception-to-repair",
       title: "Misconception to repair",
       detail: "The reply mixed preload effects with heart-rate regulation.",
       badge: "MISCONCEPTION",
-      source: "verdict",
       sourceLabel: "Latest verdict",
     });
     const promotedImage = {

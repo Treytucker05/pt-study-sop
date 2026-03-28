@@ -20,7 +20,6 @@ import {
   Settings2,
   Sparkles,
   StickyNote,
-  Wrench,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
@@ -69,8 +68,6 @@ const PANEL_ALIASES: Record<string, string> = {
   document_dock: "document_dock",
   workspace: "workspace",
   run_config: "run_config",
-  tutor_status: "tutor_status",
-  repair_candidates: "repair_candidates",
   memory: "memory",
   prime_packet: "prime_packet",
   polish_packet: "polish_packet",
@@ -88,7 +85,6 @@ const PRESET_PANEL_KEYS: Record<StudioShellPreset, string[]> = {
     "document_dock",
     "workspace",
     "tutor_chat",
-    "tutor_status",
     "memory",
   ],
   polish: ["polish_chat", "polish_packet", "workspace"],
@@ -102,8 +98,6 @@ const PRESET_PANEL_KEYS: Record<StudioShellPreset, string[]> = {
     "prime_packet",
     "polish_packet",
     "run_config",
-    "tutor_status",
-    "repair_candidates",
     "memory",
     "notes",
   ],
@@ -168,14 +162,6 @@ const PRESET_LAYOUT_DEFAULTS: Record<
   run_config: {
     defaultPosition: { x: 992, y: 920 },
     defaultSize: { width: 420, height: 520 },
-  },
-  tutor_status: {
-    defaultPosition: { x: 1452, y: 920 },
-    defaultSize: { width: 420, height: 420 },
-  },
-  repair_candidates: {
-    defaultPosition: { x: 1912, y: 920 },
-    defaultSize: { width: 420, height: 420 },
   },
   memory: {
     defaultPosition: { x: 1452, y: 1380 },
@@ -549,13 +535,10 @@ export interface StudioShellProps {
   workspace?: ReactNode;
   sourceShelf?: ReactNode;
   documentDock?: ReactNode;
-  mindMapPanel?: ReactNode;
   primingPanel?: ReactNode;
   tutorPanel?: ReactNode;
   polishPanel?: ReactNode;
   runConfig?: ReactNode;
-  tutorStatus?: ReactNode;
-  repairCandidates?: ReactNode;
   memory?: ReactNode;
   primePacket?: ReactNode;
   polishPacket?: ReactNode;
@@ -577,13 +560,10 @@ export function StudioShell({
   workspace,
   sourceShelf,
   documentDock,
-  mindMapPanel,
   primingPanel,
   tutorPanel,
   polishPanel,
   runConfig,
-  tutorStatus,
-  repairCandidates,
   memory,
   primePacket,
   polishPacket,
@@ -678,22 +658,6 @@ export function StudioShell({
           makePlaceholder(
             "Workspace",
             "Arrange study objects, excerpts, and repair notes inside the shared board.",
-          ),
-      },
-      {
-        panel: "mind_map",
-        title: "Mind Map",
-        testId: "studio-mind-map-panel",
-        icon: Brain,
-        defaultPosition: { x: 72, y: 1180 },
-        defaultSize: { width: 600, height: 500 },
-        minWidth: 420,
-        minHeight: 320,
-        content:
-          mindMapPanel ??
-          makePlaceholder(
-            "Mind Map",
-            "Open the live mind map board to spatialize concepts and study relationships.",
           ),
       },
       {
@@ -793,38 +757,6 @@ export function StudioShell({
           ),
       },
       {
-        panel: "tutor_status",
-        title: "Tutor Status",
-        testId: "studio-tutor-status",
-        icon: Brain,
-        defaultPosition: { x: 1232, y: 720 },
-        defaultSize: { width: 420, height: 420 },
-        minWidth: 340,
-        minHeight: 260,
-        content:
-          tutorStatus ??
-          makePlaceholder(
-            "Tutor Status",
-            "Adaptive strategy, context health, and validation surface here in real time.",
-          ),
-      },
-      {
-        panel: "repair_candidates",
-        title: "Repair Candidates",
-        testId: "studio-repair-candidates",
-        icon: Wrench,
-        defaultPosition: { x: 1592, y: 720 },
-        defaultSize: { width: 420, height: 420 },
-        minWidth: 340,
-        minHeight: 260,
-        content:
-          repairCandidates ??
-          makePlaceholder(
-            "Repair Candidates",
-            "Misconceptions and missing-context detections become explicit workspace-ready objects here.",
-          ),
-      },
-      {
         panel: "memory",
         title: "Memory",
         testId: "studio-memory",
@@ -857,35 +789,8 @@ export function StudioShell({
             "Use freeform notes for side writing, scratch work, or quick captures.",
           ),
       },
-      {
-        panel: "objectives",
-        title: "Objectives",
-        testId: "studio-objectives-panel",
-        icon: BookOpen,
-        defaultPosition: { x: 2712, y: 120 },
-        defaultSize: { width: 320, height: 360 },
-        minWidth: 280,
-        minHeight: 220,
-        content: makePlaceholder(
-          "Objectives",
-          "Track learning objectives from the live course scope here.",
-        ),
-      },
-      {
-        panel: "method_runner",
-        title: "Method Runner",
-        testId: "studio-method-runner-panel",
-        icon: Wrench,
-        allowMultiple: true,
-        defaultPosition: { x: 2712, y: 520 },
-        defaultSize: { width: 360, height: 380 },
-        minWidth: 300,
-        minHeight: 220,
-        content: makePlaceholder(
-          "Method Runner",
-          "Run study methods as floating tools alongside the assistant panels.",
-        ),
-      },
+      // Mind Map merged into Workspace (tldraw) — see panel review HUD-254
+      // Method Runner merged into Priming + Tutor chat — see panel review HUD-254
       {
         panel: "tldraw_sketch",
         title: "Sketch",
@@ -960,17 +865,14 @@ export function StudioShell({
     [
       documentDock,
       memory,
-      mindMapPanel,
       notesPanel,
       polishPacket,
       polishPanel,
       primePacket,
       primingPanel,
-      repairCandidates,
       runConfig,
       sourceShelf,
       tutorPanel,
-      tutorStatus,
       workspace,
     ],
   );
@@ -1314,7 +1216,7 @@ export function StudioShell({
       doubleClick={{ disabled: true }}
       panning={{
         disabled: true,
-        excluded: [".workspace-panel-root", '[data-canvas-drag-disabled="true"]'],
+        excluded: ["workspace-panel-root", "studio-canvas-drag-disabled"],
       }}
       onTransformed={(_ref, state) => {
         setCanvasScale(clampCanvasScale(state.scale));
@@ -1629,7 +1531,7 @@ export function StudioShell({
                 <div
                   data-testid="studio-entry-state"
                   data-canvas-drag-disabled="true"
-                  className="absolute left-1/2 top-1/2 z-10 w-[min(34rem,calc(100vw-4rem))] -translate-x-1/2 -translate-y-1/2 rounded-[1.2rem] border border-[rgba(255,116,142,0.22)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(0,0,0,0.2)_100%)] p-6 shadow-[0_20px_46px_rgba(0,0,0,0.28)]"
+                  className="studio-canvas-drag-disabled absolute left-1/2 top-1/2 z-10 w-[min(34rem,calc(100vw-4rem))] -translate-x-1/2 -translate-y-1/2 rounded-[1.2rem] border border-[rgba(255,116,142,0.22)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(0,0,0,0.2)_100%)] p-6 shadow-[0_20px_46px_rgba(0,0,0,0.28)]"
                 >
                   {entryCard}
                 </div>

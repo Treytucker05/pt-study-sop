@@ -1,5 +1,12 @@
 import type { Material } from "@/lib/api";
-import type { StudioRepairCandidate } from "@/lib/studioRepairCandidates";
+
+interface RepairWorkspaceCandidate {
+  id: string;
+  title: string;
+  detail: string;
+  badge: string;
+  sourceLabel: string;
+}
 
 export type StudioWorkspaceObject =
   | {
@@ -206,7 +213,7 @@ export function getStudioRepairWorkspaceObjectId(candidateId: string) {
 }
 
 export function createStudioRepairWorkspaceObject(
-  candidate: StudioRepairCandidate,
+  candidate: RepairWorkspaceCandidate,
 ): StudioWorkspaceObject {
   return {
     id: getStudioRepairWorkspaceObjectId(candidate.id),
