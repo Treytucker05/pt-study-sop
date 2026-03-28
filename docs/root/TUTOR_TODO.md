@@ -189,6 +189,46 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - extended course-to-vault derivation through `useTutorHub`, `TutorShell`, and `TutorContentSources` metadata so the shelf can derive `Exercise Physiology/Week 7`-style folders from selected-course metadata even when `courseLabel` is blank, with new `useTutorHub` coverage plus TutorShell vault derivation regression coverage
     - validation passed with `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/WorkspacePanel.test.tsx client/src/components/studio/__tests__/StudioShell.test.tsx`, `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/SourceShelf.test.tsx`, `cd dashboard_rebuild && npx vitest run client/src/hooks/__tests__/useTutorHub.test.ts client/src/components/__tests__/TutorShell.test.tsx`, and `cd dashboard_rebuild && npm run build`
 
+- [x] HUD-251. Make per-panel `Center` and `Maximize` pan the Studio camera instead of moving the panel itself.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`
+    - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+    - `scripts/verify-center-fix.js`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - clicking a panel `Center` action uses the same viewport-focus helper family as `Center Windows`, scoped to that single panel
+    - clicking a panel `Maximize` resizes to `1200x900` and then pans the camera to frame that maximized panel instead of mutating panel coordinates to a centered position
+    - the focused Studio shell test, the production frontend build, and the requested live `dev-browser` screenshot comparison pass
+  - Assignee: @codex-cli
+  - Completed: 2026-03-28
+  - Notes:
+    - removed the old panel-coordinate centering path from `StudioShell` and replaced it with `centerViewportOnPanel(...)`, which builds a single-panel layout, reuses `buildStudioShellViewportCenter(...)`, and pans the camera with the current canvas scale instead of moving the panel itself
+    - changed `Maximize` to keep the panel position stable in layout state while applying the `1200x900` size update and panning the camera against that new frame
+    - updated the focused `StudioShell` regression to prove `Center` no longer calls the layout updater, `Maximize` no longer rewrites panel coordinates, and both actions drive the viewport transform instead
+    - added `scripts/verify-center-fix.js` and validated it with `dev-browser --timeout 120 run C:\\pt-study-sop\\scripts\\verify-center-fix.js`, which saved screenshots to `C:\\Users\\treyt\\.dev-browser\\tmp\\before-center.png`, `C:\\Users\\treyt\\.dev-browser\\tmp\\after-center.png`, `C:\\Users\\treyt\\.dev-browser\\tmp\\after-maximize.png`, and `C:\\Users\\treyt\\.dev-browser\\tmp\\after-center-windows.png`
+    - validation passed with `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx` and `cd dashboard_rebuild && npm run build`
+
+- [x] HUD-252. Fix the live Lighthouse accessibility violations across Brain and Tutor filter controls.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/brain/MainContent.tsx`
+    - `dashboard_rebuild/client/src/components/TutorWorkflowLaunchHub.tsx`
+    - `dashboard_rebuild/client/src/components/brain/ContractBrainHome.tsx`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - `MainContent` no longer places the Obsidian/Anki status chip group directly inside the `tablist`
+    - the workflow launch-hub search input and course/stage/status selects have explicit accessible names
+    - the Brain annotation course hint, notes textarea, and file picker have explicit accessible names
+    - `cd dashboard_rebuild && npm run build` passes
+  - Assignee: @codex-cli
+  - Completed: 2026-03-28
+  - Notes:
+    - moved the Obsidian/Anki `role=\"status\"` chip group in `MainContent.tsx` out of the `tablist` so only `role=\"tab\"` buttons remain direct children of the tab container while preserving the same flex layout
+    - added explicit `aria-label` values for the workflow launch-hub search input plus the course, stage, and status selects in `TutorWorkflowLaunchHub.tsx`
+    - added explicit `aria-label` values for the Brain annotation course hint input, notes textarea, and file picker in `ContractBrainHome.tsx`
+    - validation passed with `cd dashboard_rebuild && npm run build`
+
 - [x] OPS-100. Narrow the managed local `pre-push` hook to a fast deterministic backend lane and leave full harness/backend coverage to CI.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

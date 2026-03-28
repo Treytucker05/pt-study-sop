@@ -1987,3 +1987,33 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/SourceShelf.test.tsx`
   - `cd dashboard_rebuild && npx vitest run client/src/hooks/__tests__/useTutorHub.test.ts client/src/components/__tests__/TutorShell.test.tsx`
   - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-28 - Switched per-panel Center and Maximize to camera panning
+
+- Replaced the old `buildCenteredPanelPosition(...)` layout-mutation path in `dashboard_rebuild/client/src/components/studio/StudioShell.tsx` with `centerViewportOnPanel(...)`, which builds a single-panel layout and reuses `buildStudioShellViewportCenter(...)` to pan the Studio camera with the current canvas scale.
+- Changed the per-panel `Maximize` action to keep the panel's stored position intact while resizing to `1200x900`, then pan the viewport to that new frame instead of rewriting the panel coordinates.
+- Updated `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx` so the focused regression now proves:
+  - `Center` does not enqueue a layout update
+  - `Maximize` updates only the panel size in layout state
+  - both actions drive the viewport transform through `setTransform(...)`
+- Added live browser proof at `scripts/verify-center-fix.js` and ran `dev-browser --timeout 120 run C:\\pt-study-sop\\scripts\\verify-center-fix.js`, which saved:
+  - `C:\\Users\\treyt\\.dev-browser\\tmp\\before-center.png`
+  - `C:\\Users\\treyt\\.dev-browser\\tmp\\after-center.png`
+  - `C:\\Users\\treyt\\.dev-browser\\tmp\\after-maximize.png`
+  - `C:\\Users\\treyt\\.dev-browser\\tmp\\after-center-windows.png`
+  with the panel holding a `57px` top offset inside the Studio canvas after `Center`, `Maximize`, and `Center Windows`.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-28 - Fixed Lighthouse accessibility violations in Brain and Tutor controls
+
+- Moved the Obsidian/Anki connection status chip group in `dashboard_rebuild/client/src/components/brain/MainContent.tsx` out of the `tablist` so the tab container now contains only tab elements while keeping the same visual flex layout.
+- Added explicit accessible names in `dashboard_rebuild/client/src/components/TutorWorkflowLaunchHub.tsx` for:
+  - the workflow search input
+  - the course filter select
+  - the stage filter select
+  - the status filter select
+- Added explicit accessible names in `dashboard_rebuild/client/src/components/brain/ContractBrainHome.tsx` for the course hint input, annotation notes textarea, and attachment file picker in the Brain annotation panel.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run build`

@@ -460,7 +460,7 @@ describe("StudioShell", () => {
     expect(screen.getByText("145%")).toBeInTheDocument();
   });
 
-  it("applies maximize, center, fit-content, and preset size actions through the shared panel layout updater", () => {
+  it("pans the viewport for panel center/maximize while keeping fit-content and presets on the shared layout updater", () => {
     const setPanelLayout = vi.fn();
     const defaultLayout = buildStudioShellPresetLayout("minimal");
     const resizedLayout = defaultLayout.map((item) =>
@@ -486,6 +486,8 @@ describe("StudioShell", () => {
       .mockReturnValue(createViewportRect(1600, 900));
 
     try {
+      setTransformSpy.mockClear();
+
       fireEvent.click(screen.getByRole("button", { name: /maximize panel/i }));
       const maximizeUpdater = setPanelLayout.mock.calls.at(-1)?.[0];
       expect(typeof maximizeUpdater).toBe("function");
@@ -494,18 +496,17 @@ describe("StudioShell", () => {
         (item: { panel: string }) => item.panel === "tutor_chat",
       );
       expect(maximizedTutor?.size).toEqual({ width: 1200, height: 900 });
-      expect(maximizedTutor?.position).toEqual({ x: 200, y: -207 });
+      expect(maximizedTutor?.position).toEqual(
+        resizedLayout.find((item) => item.panel === "tutor_chat")?.position,
+      );
+      expect(setTransformSpy).toHaveBeenLastCalledWith(144, 0, 1, 180);
 
       setPanelLayout.mockClear();
+      setTransformSpy.mockClear();
 
       fireEvent.click(screen.getByRole("button", { name: /center panel/i }));
-      const centerUpdater = setPanelLayout.mock.calls.at(-1)?.[0];
-      expect(typeof centerUpdater).toBe("function");
-      const centeredLayout = centerUpdater(resizedLayout);
-      const centeredTutor = centeredLayout.find(
-        (item: { panel: string }) => item.panel === "tutor_chat",
-      );
-      expect(centeredTutor?.position).toEqual({ x: 540, y: -67 });
+      expect(setPanelLayout).not.toHaveBeenCalled();
+      expect(setTransformSpy).toHaveBeenLastCalledWith(484, 0, 1, 180);
 
       setPanelLayout.mockClear();
 

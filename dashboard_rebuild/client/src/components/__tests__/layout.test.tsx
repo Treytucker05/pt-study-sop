@@ -130,6 +130,27 @@ describe("Layout nav and notes dock", () => {
     expect(screen.getByTestId("nav-vault")).toBeInTheDocument();
   });
 
+  it("renders a short mobile brand while keeping the full desktop title", async () => {
+    render(
+      <Layout>
+        <div>page</div>
+      </Layout>,
+      { wrapper: createWrapper() },
+    );
+
+    await screen.findByTestId("mobile-nav-trigger");
+
+    const shortBrand = screen.getByText("PT STUDY");
+    expect(shortBrand).toHaveClass("sm:hidden");
+
+    const fullBrand = screen
+      .getAllByText("TREY'S STUDY SYSTEM")
+      .find((element) => element.className.includes("sm:inline"));
+
+    expect(fullBrand).toBeDefined();
+    expect(fullBrand).toHaveClass("hidden");
+  });
+
   it("does not render the floating Theme Lab button on shipped routes", async () => {
     const { rerender } = render(
       <Layout>

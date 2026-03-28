@@ -837,8 +837,13 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
                       imageClassName="h-7 w-7"
                     />
                     <div className="min-w-0">
-                      <div className="truncate font-arcade text-ui-sm uppercase tracking-[0.12em] text-[#fff4ed] [text-shadow:0_0_12px_rgba(255,108,108,0.42)]">
-                        TREY&apos;S STUDY SYSTEM
+                      <div className="font-arcade uppercase leading-none text-[#fff4ed] [text-shadow:0_0_12px_rgba(255,108,108,0.42)]">
+                        <span className="inline text-[0.65rem] tracking-[0.18em] sm:hidden">
+                          PT STUDY
+                        </span>
+                        <span className="hidden truncate text-ui-sm tracking-[0.12em] sm:inline">
+                          TREY&apos;S STUDY SYSTEM
+                        </span>
                       </div>
                     </div>
                   </a>

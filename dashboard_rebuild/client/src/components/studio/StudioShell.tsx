@@ -59,7 +59,7 @@ type StudioPanelDefinition = {
   content: ReactNode;
 };
 
-type PanelLayoutChangeSource = "local" | "restore" | "reframe";
+type PanelLayoutChangeSource = "local" | "restore";
 
 const PANEL_ALIASES: Record<string, string> = {
   priming: "priming_chat",
@@ -1169,68 +1169,6 @@ export function StudioShell({
     [applyPanelSize],
   );
 
-  const buildCenteredPanelPosition = useCallback(
-    (panelSize: { width: number; height: number }) => {
-      const viewport = canvasViewportRef.current;
-      if (!viewport) return null;
-
-      const rect = viewport.getBoundingClientRect();
-      if (rect.width <= 0 || rect.height <= 0) return null;
-
-      const resolvedScale =
-        Number.isFinite(canvasTransformRef.current.scale) &&
-        canvasTransformRef.current.scale > 0
-          ? canvasTransformRef.current.scale
-          : 1;
-
-      return {
-        x: Math.round(
-          (rect.width / 2 - canvasTransformRef.current.positionX) /
-            resolvedScale -
-            panelSize.width / 2,
-        ),
-        y: Math.round(
-          ((VIEWPORT_PADDING_TOP +
-            (rect.height - VIEWPORT_PADDING_TOP - VIEWPORT_PADDING_BOTTOM) / 4) -
-            canvasTransformRef.current.positionY) /
-            resolvedScale -
-            panelSize.height / 2,
-        ),
-      };
-    },
-    [],
-  );
-
-  const centerPanel = useCallback(
-    (panelId: string, panelSize: { width: number; height: number }) => {
-      const centeredPosition = buildCenteredPanelPosition(panelSize);
-      if (!centeredPosition) return;
-      applyPanelFrame(
-        panelId,
-        {
-          position: centeredPosition,
-        },
-        "reframe",
-      );
-    },
-    [applyPanelFrame, buildCenteredPanelPosition],
-  );
-
-  const maximizePanel = useCallback(
-    (panelId: string) => {
-      const centeredPosition = buildCenteredPanelPosition(PANEL_MAXIMIZED_SIZE);
-      applyPanelFrame(
-        panelId,
-        {
-          size: PANEL_MAXIMIZED_SIZE,
-          ...(centeredPosition ? { position: centeredPosition } : {}),
-        },
-        centeredPosition ? "reframe" : "local",
-      );
-    },
-    [applyPanelFrame, buildCenteredPanelPosition],
-  );
-
   const applyViewportFocus = useCallback((focus: StudioShellViewportFocus) => {
     if (!transformRef.current) return;
 
@@ -1255,6 +1193,58 @@ export function StudioShell({
       });
     }
   }, []);
+
+  const centerViewportOnPanel = useCallback(
+    (
+      panelId: string,
+      sizeOverride?: { width: number; height: number },
+    ) => {
+      if (!transformRef.current || !canvasViewportRef.current) {
+        return;
+      }
+
+      const layoutItem = resolvedLayout.find((item) => item.id === panelId);
+      if (!layoutItem) {
+        return;
+      }
+
+      const activeElement = document.activeElement;
+      if (
+        activeElement instanceof HTMLElement &&
+        canvasViewportRef.current.contains(activeElement)
+      ) {
+        activeElement.blur();
+      }
+
+      const rect = canvasViewportRef.current.getBoundingClientRect();
+      const focus = buildStudioShellViewportCenter(
+        [
+          {
+            ...layoutItem,
+            size: sizeOverride ?? layoutItem.size,
+          },
+        ],
+        rect.width,
+        rect.height,
+        canvasTransformRef.current.scale,
+      );
+      applyViewportFocus(focus);
+    },
+    [applyViewportFocus, resolvedLayout],
+  );
+
+  const maximizePanel = useCallback(
+    (panelId: string) => {
+      applyPanelFrame(
+        panelId,
+        {
+          size: PANEL_MAXIMIZED_SIZE,
+        },
+      );
+      centerViewportOnPanel(panelId, PANEL_MAXIMIZED_SIZE);
+    },
+    [applyPanelFrame, centerViewportOnPanel],
+  );
 
   const focusOpenPanels = useCallback(() => {
     if (!transformRef.current || !canvasViewportRef.current || resolvedLayout.length === 0) {
@@ -1702,7 +1692,7 @@ export function StudioShell({
                       maximizePanel(layoutItem.id);
                     }}
                     onCenter={() => {
-                      centerPanel(layoutItem.id, layoutItem.size);
+                      centerViewportOnPanel(layoutItem.id);
                     }}
                     onSizePresetSelect={(preset) => {
                       handlePanelPresetSize(layoutItem.id, preset);

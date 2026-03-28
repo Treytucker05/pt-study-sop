@@ -897,18 +897,21 @@ export function ContractBrainHome({
           <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
             <div className="space-y-4">
               <Input
+                aria-label="Course hint"
                 value={courseHint}
                 onChange={(event) => setCourseHint(event.target.value)}
                 placeholder="Optional: course hint for organization"
                 className="rounded-none border-secondary bg-black font-terminal"
               />
               <Textarea
+                aria-label="Annotation notes"
                 value={rawNotes}
                 onChange={(event) => setRawNotes(event.target.value)}
                 placeholder="Paste raw session evidence, WRAP notes, or free-text study notes here..."
                 className="min-h-[220px] rounded-none border-secondary bg-black font-terminal"
               />
               <Input
+                aria-label="Attach file"
                 type="file"
                 accept=".txt,.md,.json"
                 className="rounded-none border-secondary bg-black font-terminal file:mr-3 file:rounded-none file:border-0 file:bg-primary file:px-3 file:py-2 file:font-arcade file:text-ui-2xs file:text-primary-foreground"

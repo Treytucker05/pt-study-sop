@@ -325,12 +325,14 @@ export function TutorWorkflowLaunchHub({
         <CardContent className="space-y-4 pt-4">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             <input
+              aria-label="Search workflows"
               value={filters.search}
               onChange={(event) => onFiltersChange({ ...filters, search: event.target.value })}
               placeholder="Search class, assignment, topic"
               className={`${INPUT_BASE} tutor-launch-hud__field xl:col-span-2`}
             />
             <select
+              aria-label="Filter by course"
               value={filters.courseId}
               onChange={(event) =>
                 onFiltersChange({
@@ -355,6 +357,7 @@ export function TutorWorkflowLaunchHub({
                 ))}
             </select>
             <select
+              aria-label="Filter by stage"
               value={filters.stage}
               onChange={(event) =>
                 onFiltersChange({
@@ -372,6 +375,7 @@ export function TutorWorkflowLaunchHub({
               <option value="final_sync">Final sync</option>
             </select>
             <select
+              aria-label="Filter by status"
               value={filters.status}
               onChange={(event) =>
                 onFiltersChange({

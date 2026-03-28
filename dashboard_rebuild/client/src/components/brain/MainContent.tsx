@@ -69,16 +69,16 @@ export function MainContent({ workspace }: MainContentProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div
-        role="tablist"
-        aria-label="Main content view"
-        className={cn(CONTROL_DECK, "mx-3 mt-3 p-2.5")}
-      >
+      <div className={cn(CONTROL_DECK, "mx-3 mt-3 p-2.5")}>
         <div className={CONTROL_DECK_INSET} />
         <div className={CONTROL_DECK_TOPLINE} />
         <div className={CONTROL_DECK_BOTTOMLINE} />
         <div className={cn(CONTROL_DECK_BODY, "gap-3 xl:flex-row xl:items-center xl:justify-between")}>
-          <div className="flex flex-wrap items-center gap-2">
+          <div
+            role="tablist"
+            aria-label="Main content view"
+            className="flex flex-wrap items-center gap-2"
+          >
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = currentTab === tab.id;
