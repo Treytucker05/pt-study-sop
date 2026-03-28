@@ -572,11 +572,14 @@ function renderTutor() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
-  return render(
+  return {
+    queryClient,
+    ...render(
     <QueryClientProvider client={queryClient}>
       <Tutor />
     </QueryClientProvider>,
-  );
+    ),
+  };
 }
 
 async function expectStudioEntryState() {
@@ -859,7 +862,7 @@ describe("Tutor page restore", () => {
     await openStudioPanel(/open source shelf panel/i);
     const sourceShelf = await screen.findByTestId("studio-source-shelf");
     expect(sourceShelf).toHaveTextContent("Renal Physiology");
-    expect(sourceShelf).toHaveTextContent("2 materials in run");
+    expect(sourceShelf).toHaveTextContent("2 materials loaded");
     expect(sourceShelf).toHaveTextContent("Renal Notes");
     expect(sourceShelf).toHaveTextContent("Renal Diagram");
   });
@@ -879,7 +882,7 @@ describe("Tutor page restore", () => {
     expect(screen.queryByText("OPEN WORKBENCH")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /start priming/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /open full studio/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^refresh$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^refresh$/i })).toBeInTheDocument();
   });
 
   it("opens Tutor inside the shared floating canvas instead of switching shells", async () => {
@@ -930,6 +933,105 @@ describe("Tutor page restore", () => {
       (topBar as HTMLElement).compareDocumentPosition(toolbar) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+
+  it("always renders a hero NEW SESSION button", async () => {
+    renderTutor();
+
+    await waitFor(() => {
+      expect(document.querySelector(".page-shell__actions")).not.toBeNull();
+    });
+
+    const heroActions = document.querySelector(".page-shell__actions");
+    expect(heroActions).not.toBeNull();
+    const newSessionButton = within(heroActions as HTMLElement).getByRole("button", {
+        name: /^new session$/i,
+      });
+    expect(newSessionButton).toBeInTheDocument();
+    expect(newSessionButton).toHaveClass("tutor-hero-action");
+    expect(newSessionButton).toHaveClass("tutor-hero-action--primary");
+  });
+
+  it("only renders the hero RESUME button when a resume candidate exists", async () => {
+    getHubMock.mockResolvedValueOnce({
+      ...makeTutorHub(),
+      resume_candidate: null,
+    });
+
+    const firstRender = renderTutor();
+
+    await waitFor(() => {
+      expect(document.querySelector(".page-shell__actions")).not.toBeNull();
+    });
+
+    let heroActions = document.querySelector(".page-shell__actions");
+    expect(heroActions).not.toBeNull();
+    expect(
+      within(heroActions as HTMLElement).queryByRole("button", {
+        name: /^resume$/i,
+      }),
+    ).not.toBeInTheDocument();
+
+    firstRender.unmount();
+
+    renderTutor();
+
+    await waitFor(() => {
+      expect(document.querySelector(".page-shell__actions")).not.toBeNull();
+    });
+
+    heroActions = document.querySelector(".page-shell__actions");
+    expect(heroActions).not.toBeNull();
+    const resumeButton = within(heroActions as HTMLElement).getByRole("button", {
+        name: /^resume$/i,
+      });
+    expect(resumeButton).toBeInTheDocument();
+    expect(resumeButton).toHaveClass("tutor-hero-action");
+    expect(resumeButton).toHaveClass("tutor-hero-action--outline");
+  });
+
+  it("renders a hero REFRESH button and invalidates tutor caches", async () => {
+    const { queryClient } = renderTutor();
+
+    await waitFor(() => {
+      expect(document.querySelector(".page-shell__actions")).not.toBeNull();
+    });
+
+    const invalidateQueriesSpy = vi.spyOn(queryClient, "invalidateQueries");
+    invalidateQueriesSpy.mockClear();
+
+    const heroActions = document.querySelector(".page-shell__actions");
+    expect(heroActions).not.toBeNull();
+
+    const refreshButton = within(heroActions as HTMLElement).getByRole("button", {
+      name: /^refresh$/i,
+    });
+    expect(refreshButton).toHaveClass("tutor-hero-action");
+    expect(refreshButton).toHaveClass("tutor-hero-action--outline");
+
+    fireEvent.click(refreshButton);
+
+    await waitFor(() => {
+      expect(invalidateQueriesSpy).toHaveBeenCalledTimes(6);
+    });
+    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+      queryKey: ["tutor-hub"],
+    });
+    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+      queryKey: ["tutor-sessions"],
+    });
+    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+      queryKey: ["tutor-project-shell"],
+    });
+    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+      queryKey: ["tutor-studio-restore"],
+    });
+    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+      queryKey: ["tutor-chat-materials-all-enabled"],
+    });
+    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+      queryKey: ["obsidian"],
+    });
   });
 
   it("keeps the Brain home workflow widgets off the /tutor route", async () => {

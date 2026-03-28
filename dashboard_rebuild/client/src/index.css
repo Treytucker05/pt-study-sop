@@ -694,6 +694,126 @@
     filter: brightness(1.1) saturate(1.08);
   }
 
+  .page-shell__actions > .tutor-hero-action {
+    min-height: 56px;
+    border-radius: 0;
+    border-color: rgba(255, 122, 146, 0.18);
+    background:
+      radial-gradient(circle, rgba(255, 84, 116, 0.14) 0%, rgba(0, 0, 0, 0) 95%),
+      linear-gradient(rgba(255, 84, 116, 0.06) 1px, transparent 1px),
+      linear-gradient(to right, rgba(255, 84, 116, 0.06) 1px, transparent 1px),
+      var(--tutor-hero-action-surface,
+        linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.12) 24%, rgba(0, 0, 0, 0.28) 100%));
+    background-size: cover, 14px 14px, 14px 14px, cover;
+    background-position: center center, center center, center center, center center;
+    box-shadow:
+      0 8px 18px rgba(0, 0, 0, 0.14),
+      0 0 0 1px rgba(255, 84, 116, 0.04),
+      inset 0 1px 0 rgba(255, 110, 136, 0.34),
+      inset 0 -1px 0 rgba(255, 110, 136, 0.22);
+    backdrop-filter: none;
+    color: #ffe6ec;
+    font-family: var(--font-arcade);
+    letter-spacing: 0.16em;
+    text-shadow: 0 0 10px rgba(255, 84, 116, 0.16);
+    transition:
+      background-size 0.16s ease,
+      border-color 0.16s ease,
+      box-shadow 0.16s ease,
+      filter 0.16s ease,
+      transform 0.16s ease;
+  }
+
+  .page-shell__actions > .tutor-hero-action::before,
+  .page-shell__actions > .tutor-hero-action::after {
+    content: "";
+    position: absolute;
+    left: -1px;
+    right: -1px;
+    height: 2px;
+    pointer-events: none;
+    opacity: 0.72;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 66, 100, 0.64),
+      rgba(255, 190, 204, 0.68) 50%,
+      rgba(255, 66, 100, 0.64)
+    );
+    transition:
+      height 0.16s ease,
+      opacity 0.16s ease;
+  }
+
+  .page-shell__actions > .tutor-hero-action::before {
+    top: -1px;
+  }
+
+  .page-shell__actions > .tutor-hero-action::after {
+    bottom: -1px;
+  }
+
+  .page-shell__actions > .tutor-hero-action:hover {
+    border-color: rgba(255, 176, 194, 0.3);
+    background-size: cover, 10px 10px, 10px 10px, cover;
+    box-shadow:
+      0 10px 22px rgba(0, 0, 0, 0.18),
+      0 0 0 1px rgba(255, 84, 116, 0.07),
+      inset 0 2px 0 rgba(255, 122, 146, 0.4),
+      inset 0 -2px 0 rgba(255, 122, 146, 0.28);
+  }
+
+  .page-shell__actions > .tutor-hero-action:hover::before,
+  .page-shell__actions > .tutor-hero-action:hover::after {
+    height: 4px;
+    opacity: 0.9;
+  }
+
+  .page-shell__actions > .tutor-hero-action:active {
+    transform: translateY(0);
+    filter: brightness(1.08) saturate(1.05);
+    box-shadow:
+      0 6px 14px rgba(0, 0, 0, 0.16),
+      0 0 0 1px rgba(255, 84, 116, 0.06),
+      inset 0 2px 0 rgba(255, 122, 146, 0.4),
+      inset 0 -2px 0 rgba(255, 122, 146, 0.28);
+  }
+
+  .page-shell__actions > .tutor-hero-action--primary {
+    --tutor-hero-action-surface:
+      linear-gradient(180deg, rgba(255, 98, 126, 0.24), rgba(36, 6, 12, 0.92) 34%, rgba(10, 1, 4, 0.98) 100%);
+    color: #fff5f7;
+  }
+
+  .page-shell__actions > .tutor-hero-action--outline {
+    --tutor-hero-action-surface:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.12) 24%, rgba(0, 0, 0, 0.32) 100%);
+    color: #ffd8e0;
+  }
+
+  .page-shell__actions > .tutor-hero-action svg {
+    color: currentColor;
+    flex-shrink: 0;
+  }
+
+  .page-shell__actions > .tutor-hero-action .tutor-hero-action__label {
+    display: inline-block;
+    font-size: 1em;
+    line-height: 1;
+    transform: scale(1);
+    transform-origin: center;
+    transition:
+      transform 0.16s ease,
+      text-shadow 0.16s ease;
+  }
+
+  .page-shell__actions > .tutor-hero-action:hover .tutor-hero-action__label,
+  .page-shell__actions > .tutor-hero-action:focus-visible .tutor-hero-action__label {
+    transform: scale(1.14);
+    text-shadow:
+      0 0 12px rgba(255, 150, 168, 0.35),
+      0 0 20px rgba(255, 84, 116, 0.18);
+  }
+
   .page-shell__stat {
     min-height: 44px;
     width: 100%;

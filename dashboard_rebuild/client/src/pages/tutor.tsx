@@ -2,6 +2,8 @@ import { CoreWorkspaceFrame } from "@/components/CoreWorkspaceFrame";
 import { PageScaffold } from "@/components/PageScaffold";
 import { TutorShell } from "@/components/TutorShell";
 import { TutorTopBar } from "@/components/TutorTopBar";
+import { HudButton } from "@/components/ui/HudButton";
+import { buildStudioShellPresetLayout } from "@/components/studio/StudioShell";
 import { resolveTutorTeachRuntime } from "@/components/TutorChat.types";
 import { useTutorHub } from "@/hooks/useTutorHub";
 import { useStudioRun } from "@/hooks/useStudioRun";
@@ -12,6 +14,7 @@ import {
 } from "@/hooks/useTutorWorkflow";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { RefreshCw } from "lucide-react";
 import { api } from "@/lib/api";
 import type {
   TutorBoardScope,
@@ -696,6 +699,7 @@ function useTutorPageController() {
     session.isTutorSessionView &&
     Boolean(liveTutorSessionId) &&
     Boolean(session.startedAt);
+  const resumeCandidate = hub.tutorHub?.resume_candidate ?? null;
   const tutorHeroStats = useMemo(
     () => [
       { label: "Surface", value: "TUTOR", tone: "info" as const },
@@ -784,6 +788,8 @@ function useTutorPageController() {
     workflow.activeWorkflowId,
     session.advanceBlock,
   ]);
+  const tutorHeroActionClassName =
+    "tutor-hero-action inline-flex min-h-[56px] min-w-[12rem] w-auto shrink-0 items-center justify-center gap-2.5 rounded-none px-6 py-3.5 font-arcade text-[0.92rem] leading-none tracking-[0.16em]";
 
   // ─── Render ───
   return (
@@ -795,6 +801,57 @@ function useTutorPageController() {
       contentClassName="gap-6"
       heroClassName="min-h-[243px]"
       stats={tutorHeroStats}
+      actions={
+        <>
+          <HudButton
+            variant="primary"
+            className={`${tutorHeroActionClassName} tutor-hero-action--primary`}
+            disabled={sessionActionPending}
+            onClick={() => {
+              void handleTutorSessionAction();
+            }}
+          >
+            <span className="tutor-hero-action__label">NEW SESSION</span>
+          </HudButton>
+          {resumeCandidate ? (
+            <HudButton
+              variant="outline"
+              className={`${tutorHeroActionClassName} tutor-hero-action--outline`}
+              onClick={() => {
+                void (async () => {
+                  await resumeFromHubCandidate(resumeCandidate);
+                  setPanelLayout(buildStudioShellPresetLayout("study"));
+                })();
+              }}
+            >
+              <span className="tutor-hero-action__label">RESUME</span>
+            </HudButton>
+          ) : null}
+          <HudButton
+            variant="outline"
+            className={`${tutorHeroActionClassName} tutor-hero-action--outline`}
+            onClick={() => {
+              void Promise.all([
+                queryClient.invalidateQueries({ queryKey: ["tutor-hub"] }),
+                queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] }),
+                queryClient.invalidateQueries({
+                  queryKey: ["tutor-project-shell"],
+                }),
+                queryClient.invalidateQueries({
+                  queryKey: ["tutor-studio-restore"],
+                }),
+                queryClient.invalidateQueries({
+                  queryKey: ["tutor-chat-materials-all-enabled"],
+                }),
+                queryClient.invalidateQueries({ queryKey: ["obsidian"] }),
+              ]);
+            }}
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span className="tutor-hero-action__label">REFRESH</span>
+          </HudButton>
+        </>
+      }
     >
       <CoreWorkspaceFrame
         className="tutor-shell-frame"
