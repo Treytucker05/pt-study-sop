@@ -24,6 +24,7 @@ const {
   getObsidianFilesMock,
   getProjectShellMock,
   saveProjectShellStateMock,
+  deleteSessionMock,
   restoreStudioItemsMock,
   promoteStudioItemMock,
   createWorkflowMock,
@@ -51,6 +52,7 @@ const {
   getObsidianFilesMock: vi.fn(),
   getProjectShellMock: vi.fn(),
   saveProjectShellStateMock: vi.fn(),
+  deleteSessionMock: vi.fn(),
   restoreStudioItemsMock: vi.fn(),
   promoteStudioItemMock: vi.fn(),
   createWorkflowMock: vi.fn(),
@@ -320,6 +322,7 @@ vi.mock("@/lib/api", () => ({
       saveSettings: vi.fn().mockResolvedValue({ custom_instructions: "" }),
       getProjectShell: getProjectShellMock,
       saveProjectShellState: saveProjectShellStateMock,
+      deleteSession: deleteSessionMock,
       restoreStudioItems: restoreStudioItemsMock,
       promoteStudioItem: promoteStudioItemMock,
       getMaterialFileUrl: (id: number) => `/api/tutor/materials/${id}/file`,
@@ -563,6 +566,34 @@ function makeWorkflowDetail(
   };
 }
 
+function makeTutorSessionSummary(
+  overrides: Partial<{
+    id: number;
+    session_id: string;
+    course_id: number | null;
+    phase: "first_pass";
+    topic: string;
+    status: "active" | "completed";
+    turn_count: number;
+    started_at: string;
+    ended_at: string | null;
+  }> = {},
+) {
+  return {
+    id: overrides.id ?? 1,
+    session_id: overrides.session_id || "sess-history",
+    course_id: overrides.course_id ?? 7,
+    phase: overrides.phase || "first_pass",
+    topic: overrides.topic || "Renal Review",
+    status: overrides.status || "completed",
+    turn_count: overrides.turn_count ?? 4,
+    started_at:
+      overrides.started_at ||
+      new Date("2026-03-20T15:15:00Z").toISOString(),
+    ended_at: overrides.ended_at ?? null,
+  };
+}
+
 function renderTutor() {
   if (!document.getElementById("page-hero-portal")) {
     const heroPortal = document.createElement("div");
@@ -687,6 +718,7 @@ describe("Tutor page restore", () => {
         },
       }),
     );
+    deleteSessionMock.mockResolvedValue({ ok: true });
     restoreStudioItemsMock.mockResolvedValue({ items: [] });
     promoteStudioItemMock.mockResolvedValue({ item: null, action: null });
     workspaceSurfaceMode.useReal = false;
@@ -829,7 +861,7 @@ describe("Tutor page restore", () => {
 
     expect(await screen.findByTestId("studio-toolbar")).toBeInTheDocument();
     const sessionActionButton = await screen.findByRole("button", {
-      name: /end session/i,
+      name: /^new session$/i,
     });
 
     fireEvent.click(sessionActionButton);
@@ -1034,6 +1066,98 @@ describe("Tutor page restore", () => {
     });
   });
 
+  it("loads previous sessions into the top-bar accordion and resumes the selected session", async () => {
+    listSessionsMock.mockResolvedValueOnce([
+      makeTutorSessionSummary({
+        id: 1,
+        session_id: "sess-older",
+        topic: "Cardio Review",
+        started_at: new Date("2026-03-18T13:00:00Z").toISOString(),
+      }),
+      makeTutorSessionSummary({
+        id: 2,
+        session_id: "sess-recent",
+        topic: "Renal Review",
+        status: "active",
+      }),
+    ]);
+    getSessionMock.mockResolvedValueOnce({
+      session_id: "sess-recent",
+      status: "active",
+      turn_count: 2,
+      started_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+      topic: "Renal Review",
+      course_id: 7,
+      method_chain_id: null,
+      current_block_index: 0,
+      chain_blocks: [],
+      content_filter: {
+        material_ids: [],
+        accuracy_profile: "strict",
+        objective_scope: "module_all",
+      },
+      artifacts_json: "[]",
+      turns: [],
+    });
+
+    renderTutor();
+
+    await screen.findByTestId("studio-toolbar");
+    expect(listSessionsMock).toHaveBeenCalledWith({ limit: 20 });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /previous sessions/i }),
+    );
+
+    expect(
+      await screen.findByTestId("tutor-previous-sessions"),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /resume previous session renal review/i,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(getSessionMock).toHaveBeenCalledWith("sess-recent");
+    });
+  });
+
+  it("deletes a previous session from the top-bar accordion and refreshes the session query", async () => {
+    listSessionsMock
+      .mockResolvedValueOnce([
+        makeTutorSessionSummary({
+          id: 2,
+          session_id: "sess-recent",
+          topic: "Renal Review",
+          status: "active",
+        }),
+      ])
+      .mockResolvedValueOnce([]);
+
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    renderTutor();
+
+    await screen.findByTestId("studio-toolbar");
+    fireEvent.click(
+      screen.getByRole("button", { name: /previous sessions/i }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /delete previous session renal review/i,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(deleteSessionMock).toHaveBeenCalledWith("sess-recent");
+    });
+    await waitFor(() => {
+      expect(listSessionsMock).toHaveBeenCalledTimes(2);
+    });
+
+    confirmSpy.mockRestore();
+  });
+
   it("keeps the Brain home workflow widgets off the /tutor route", async () => {
     renderTutor();
 
@@ -1195,9 +1319,10 @@ describe("Tutor page restore", () => {
     await waitFor(() => {
       expect(getSessionMock).toHaveBeenCalledWith("sess-complete");
     });
-    await openStudioPanel(/open tutor panel/i);
+    fireEvent.click(await screen.findByRole("button", { name: /open tutor panel/i }));
+    expect(await screen.findByTestId("studio-tutor-panel")).toBeInTheDocument();
     expect(
-      await screen.findByText("READY TO RUN A STUDY SESSION"),
+      screen.getByRole("button", { name: /^start session$/i }),
     ).toBeInTheDocument();
     expect(screen.queryByText("LIVE SESSION")).not.toBeInTheDocument();
     expect(screen.queryByTestId("tutor-chat")).not.toBeInTheDocument();
@@ -1271,7 +1396,6 @@ describe("Tutor page restore", () => {
     await waitFor(() => {
       expect(getSessionMock).toHaveBeenCalledWith("sess-recent");
     });
-    await openStudioPanel(/open tutor panel/i);
     expect(await screen.findByTestId("tutor-chat")).toBeInTheDocument();
   });
 

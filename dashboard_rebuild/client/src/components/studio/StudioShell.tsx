@@ -30,7 +30,11 @@ import {
   type ReactZoomPanPinchRef,
 } from "react-zoom-pan-pinch";
 
-import { WorkspacePanel } from "@/components/ui/WorkspacePanel";
+import {
+  WorkspacePanel,
+  WORKSPACE_PANEL_SIZE_PRESETS,
+  type WorkspacePanelSizePresetKey,
+} from "@/components/ui/WorkspacePanel";
 import { Button } from "@/components/ui/button";
 import type { StudioPanelLayoutItem } from "@/lib/studioPanelLayout";
 import { cn } from "@/lib/utils";
@@ -55,7 +59,7 @@ type StudioPanelDefinition = {
   content: ReactNode;
 };
 
-type PanelLayoutChangeSource = "local" | "restore";
+type PanelLayoutChangeSource = "local" | "restore" | "reframe";
 
 const PANEL_ALIASES: Record<string, string> = {
   priming: "priming_chat",
@@ -108,6 +112,10 @@ const PRESET_PANEL_KEYS: Record<StudioShellPreset, string[]> = {
 
 const CANVAS_WIDTH = 4400;
 const CANVAS_HEIGHT = 3200;
+const CANVAS_MIN_SCALE = 0.45;
+const CANVAS_MAX_SCALE = 1.8;
+const CANVAS_SCALE_STEP = 0.01;
+const PANEL_MAXIMIZED_SIZE = { width: 1200, height: 900 };
 const TILE_START_X = 56;
 const TILE_START_Y = 56;
 const TILE_GAP_X = 32;
@@ -585,7 +593,7 @@ export function StudioShell({
   onClearCanvas,
   clearCanvasDisabled = false,
 }: StudioShellProps) {
-  const [canvasScale, setCanvasScale] = useState(0.85);
+  const [canvasScale, setCanvasScale] = useState(1);
   const [isCanvasDragging, setIsCanvasDragging] = useState(false);
   const [selectedPanelIds, setSelectedPanelIds] = useState<string[]>([]);
   const [panelTransformResetToken, setPanelTransformResetToken] = useState(0);
@@ -612,6 +620,11 @@ export function StudioShell({
   const canvasViewportRef = useRef<HTMLDivElement | null>(null);
   const groupSequenceRef = useRef(1);
   const [shouldFocusLayout, setShouldFocusLayout] = useState(false);
+
+  const clampCanvasScale = useCallback((scale: number) => {
+    if (!Number.isFinite(scale)) return canvasTransformRef.current.scale;
+    return Math.min(CANVAS_MAX_SCALE, Math.max(CANVAS_MIN_SCALE, scale));
+  }, []);
 
   useEffect(() => {
     selectedPanelIdsRef.current = selectedPanelIds;
@@ -1084,6 +1097,138 @@ export function StudioShell({
     return nextId;
   }, []);
 
+  const applyCanvasScale = useCallback(
+    (nextScale: number) => {
+      const resolvedScale = clampCanvasScale(nextScale);
+      const nextTransform = {
+        scale: resolvedScale,
+        positionX: canvasTransformRef.current.positionX,
+        positionY: canvasTransformRef.current.positionY,
+      };
+
+      transformRef.current?.setTransform(
+        nextTransform.positionX,
+        nextTransform.positionY,
+        nextTransform.scale,
+        120,
+      );
+      canvasTransformRef.current = nextTransform;
+      setCanvasScale(nextTransform.scale);
+    },
+    [clampCanvasScale],
+  );
+
+  const applyPanelSize = useCallback(
+    (panelId: string, size: { width: number; height: number }) => {
+      queuePanelLayoutChange((current) =>
+        current.map((item) =>
+          item.id === panelId
+            ? {
+                ...item,
+                size,
+              }
+            : item,
+        ),
+      );
+    },
+    [queuePanelLayoutChange],
+  );
+
+  const applyPanelFrame = useCallback(
+    (
+      panelId: string,
+      nextFrame: Partial<
+        Pick<StudioPanelLayoutItem, "position" | "size">
+      >,
+      source: PanelLayoutChangeSource = "local",
+    ) => {
+      queuePanelLayoutChange(
+        (current) =>
+          current.map((item) =>
+            item.id === panelId
+              ? {
+                  ...item,
+                  ...nextFrame,
+                }
+              : item,
+          ),
+        source,
+      );
+    },
+    [queuePanelLayoutChange],
+  );
+
+  const handlePanelPresetSize = useCallback(
+    (panelId: string, preset: WorkspacePanelSizePresetKey) => {
+      const presetSize = WORKSPACE_PANEL_SIZE_PRESETS[preset];
+      applyPanelSize(panelId, {
+        width: presetSize.width,
+        height: presetSize.height,
+      });
+    },
+    [applyPanelSize],
+  );
+
+  const buildCenteredPanelPosition = useCallback(
+    (panelSize: { width: number; height: number }) => {
+      const viewport = canvasViewportRef.current;
+      if (!viewport) return null;
+
+      const rect = viewport.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return null;
+
+      const resolvedScale =
+        Number.isFinite(canvasTransformRef.current.scale) &&
+        canvasTransformRef.current.scale > 0
+          ? canvasTransformRef.current.scale
+          : 1;
+
+      return {
+        x: Math.round(
+          (rect.width / 2 - canvasTransformRef.current.positionX) /
+            resolvedScale -
+            panelSize.width / 2,
+        ),
+        y: Math.round(
+          (rect.height / 2 - canvasTransformRef.current.positionY) /
+            resolvedScale -
+            panelSize.height / 2,
+        ),
+      };
+    },
+    [],
+  );
+
+  const centerPanel = useCallback(
+    (panelId: string, panelSize: { width: number; height: number }) => {
+      const centeredPosition = buildCenteredPanelPosition(panelSize);
+      if (!centeredPosition) return;
+      applyPanelFrame(
+        panelId,
+        {
+          position: centeredPosition,
+        },
+        "reframe",
+      );
+    },
+    [applyPanelFrame, buildCenteredPanelPosition],
+  );
+
+  const maximizePanel = useCallback(
+    (panelId: string) => {
+      const centeredPosition = buildCenteredPanelPosition(PANEL_MAXIMIZED_SIZE);
+      applyPanelFrame(
+        panelId,
+        {
+          size: PANEL_MAXIMIZED_SIZE,
+          ...(centeredPosition ? { position: centeredPosition } : {}),
+        },
+        centeredPosition ? "reframe" : "local",
+      );
+    },
+    [applyPanelFrame, buildCenteredPanelPosition],
+  );
+
   const applyViewportFocus = useCallback((focus: StudioShellViewportFocus) => {
     if (!transformRef.current) return;
 
@@ -1168,8 +1313,8 @@ export function StudioShell({
   return (
     <TransformWrapper
       initialScale={1}
-      minScale={0.45}
-      maxScale={1.8}
+      minScale={CANVAS_MIN_SCALE}
+      maxScale={CANVAS_MAX_SCALE}
       onInit={(ref) => {
         transformRef.current = ref;
       }}
@@ -1180,15 +1325,15 @@ export function StudioShell({
         excluded: [".workspace-panel-root", '[data-canvas-drag-disabled="true"]'],
       }}
       onTransformed={(_ref, state) => {
-        setCanvasScale(state.scale);
+        setCanvasScale(clampCanvasScale(state.scale));
         canvasTransformRef.current = {
-          scale: state.scale,
+          scale: clampCanvasScale(state.scale),
           positionX: state.positionX,
           positionY: state.positionY,
         };
       }}
     >
-      {({ zoomIn, zoomOut, resetTransform }) => (
+      {() => (
         <div
           data-testid="studio-shell"
           className="flex h-full min-h-0 flex-col gap-3"
@@ -1340,26 +1485,58 @@ export function StudioShell({
               >
                 <RefreshCcw className="h-4 w-4" />
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="Zoom in"
-                onClick={() => zoomIn()}
-                className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 text-[#ffd6de] hover:text-white"
-              >
-                <ZoomIn className="h-4 w-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="Zoom out"
-                onClick={() => zoomOut()}
-                className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 text-[#ffd6de] hover:text-white"
-              >
-                <ZoomOut className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-2 rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Zoom out"
+                  onClick={() =>
+                    applyCanvasScale(
+                      canvasTransformRef.current.scale - CANVAS_SCALE_STEP * 10,
+                    )
+                  }
+                  className="h-8 w-8 rounded-full border border-[rgba(255,118,144,0.14)] bg-[rgba(255,84,116,0.08)] text-[#ffd6de] hover:text-white"
+                >
+                  <ZoomOut className="h-3.5 w-3.5" />
+                </Button>
+                <label className="sr-only" htmlFor="studio-canvas-zoom">
+                  Canvas zoom
+                </label>
+                <input
+                  id="studio-canvas-zoom"
+                  aria-label="Canvas zoom"
+                  type="range"
+                  min={CANVAS_MIN_SCALE}
+                  max={CANVAS_MAX_SCALE}
+                  step={CANVAS_SCALE_STEP}
+                  value={canvasScale}
+                  onChange={(event) => {
+                    applyCanvasScale(Number(event.currentTarget.value));
+                  }}
+                  className="h-1.5 w-32 cursor-pointer appearance-none rounded-full bg-[rgba(255,84,116,0.18)] accent-[rgb(255,108,138)] md:w-40"
+                />
+                <span
+                  aria-live="polite"
+                  className="min-w-[3.9rem] text-right font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]"
+                >
+                  {Math.round(canvasScale * 100)}%
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Zoom in"
+                  onClick={() =>
+                    applyCanvasScale(
+                      canvasTransformRef.current.scale + CANVAS_SCALE_STEP * 10,
+                    )
+                  }
+                  className="h-8 w-8 rounded-full border border-[rgba(255,118,144,0.14)] bg-[rgba(255,84,116,0.08)] text-[#ffd6de] hover:text-white"
+                >
+                  <ZoomIn className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -1489,6 +1666,7 @@ export function StudioShell({
                     scale={canvasScale}
                     selected={selectedPanelIds.includes(layoutItem.id)}
                     grouped={Boolean(layoutItem.groupId)}
+                    defaultCollapsed
                     style={{ zIndex: layoutItem.zIndex }}
                     className="bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02)_12%,rgba(0,0,0,0.18)_100%),linear-gradient(135deg,rgba(124,14,38,0.18),rgba(18,5,10,0.86)_58%,rgba(0,0,0,0.96)_100%)] shadow-[0_14px_32px_rgba(0,0,0,0.28),0_0_0_1px_rgba(255,86,118,0.12)]"
                     onTitlePointerDown={(event) => {
@@ -1518,6 +1696,15 @@ export function StudioShell({
                         ),
                       );
                     }}
+                    onMaximize={() => {
+                      maximizePanel(layoutItem.id);
+                    }}
+                    onCenter={() => {
+                      centerPanel(layoutItem.id, layoutItem.size);
+                    }}
+                    onSizePresetSelect={(preset) => {
+                      handlePanelPresetSize(layoutItem.id, preset);
+                    }}
                     onPositionChange={(position) => {
                       queuePanelLayoutChange((current) =>
                         applyStudioShellPanelPositionUpdate(
@@ -1541,7 +1728,7 @@ export function StudioShell({
                       data-panel-kind={layoutItem.panel}
                       data-panel-position={`${layoutItem.position.x},${layoutItem.position.y}`}
                       data-panel-size={`${layoutItem.size.width},${layoutItem.size.height}`}
-                      className="h-full min-h-0 min-w-0 overflow-y-auto overflow-x-hidden"
+                      className="h-full min-h-0 min-w-0"
                     >
                       {definition.content}
                     </div>

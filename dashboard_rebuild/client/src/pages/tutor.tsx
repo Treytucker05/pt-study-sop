@@ -13,7 +13,7 @@ import {
   type TutorWorkflowSessionBridge,
 } from "@/hooks/useTutorWorkflow";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
 import { api } from "@/lib/api";
 import type {
@@ -129,6 +129,13 @@ function useTutorPageController() {
     activeSessionId,
     persistClientState: false,
   });
+  const {
+    data: previousSessions = [],
+    isLoading: previousSessionsLoading,
+  } = useQuery({
+    queryKey: ["tutor-sessions"],
+    queryFn: () => api.tutor.listSessions({ limit: 20 }),
+  });
 
   useEffect(() => {
     writeTutorSelectedMaterialIds(hub.selectedMaterials);
@@ -200,6 +207,42 @@ function useTutorPageController() {
   const liveTutorSessionId = session.hasActiveTutorSession
     ? activeSessionId
     : null;
+  const handleResumePreviousSession = useCallback((sessionId: string) => {
+    void session.resumeSession(sessionId);
+  }, [session]);
+  const previousSessionCourses = useMemo(
+    () =>
+      (hub.tutorContentSources?.courses || []).map((course) => ({
+        id: course.id,
+        name: course.name,
+      })),
+    [hub.tutorContentSources?.courses],
+  );
+  const previousSessionCourseMap = useMemo(
+    () =>
+      Object.fromEntries(
+        previousSessionCourses.map((course) => [course.id, course.name]),
+      ) as Record<number, string>,
+    [previousSessionCourses],
+  );
+  const handleDeletePreviousSession = useCallback(
+    async (sessionId: string) => {
+      try {
+        await api.tutor.deleteSession(sessionId);
+        await queryClient.invalidateQueries({
+          queryKey: ["tutor-sessions"],
+        });
+        toast.success("Previous session deleted");
+      } catch (error) {
+        toast.error(
+          `Failed to delete session: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+        );
+      }
+    },
+    [queryClient],
+  );
 
   // ─── Navigation helpers ───
   const resumeFromHubCandidate = useCallback(
@@ -754,25 +797,27 @@ function useTutorPageController() {
         onAdvanceBlock={() => {
           void session.advanceBlock();
         }}
-        activeWorkflowId={workflow.activeWorkflowId}
         activeWorkflowDetail={workflow.activeWorkflowDetail ?? undefined}
-        activeSessionId={liveTutorSessionId}
         teachRuntime={teachRuntime}
-        sessionActionLabel={liveTutorSessionId ? "End Session" : "New Session"}
-        sessionActionPending={sessionActionPending}
-        onSessionAction={() => {
-          void handleTutorSessionAction();
-        }}
+        previousSessions={previousSessions}
+        previousSessionsLoading={previousSessionsLoading}
+        courses={previousSessionCourses}
+        courseMap={previousSessionCourseMap}
+        onResumeSession={handleResumePreviousSession}
+        onDeleteSession={handleDeletePreviousSession}
       />
     );
   }, [
     brainLaunchContext,
-    handleTutorSessionAction,
+    handleDeletePreviousSession,
+    handleResumePreviousSession,
     hasValidatedTutorSession,
     hub.effectiveTopic,
     hub.topic,
-    liveTutorSessionId,
-    sessionActionPending,
+    previousSessionCourseMap,
+    previousSessionCourses,
+    previousSessions,
+    previousSessionsLoading,
     session.blockTimerSeconds,
     session.chainBlocks.length,
     session.currentBlock,
@@ -785,7 +830,6 @@ function useTutorPageController() {
     session.timerPaused,
     session.turnCount,
     workflow.activeWorkflowDetail,
-    workflow.activeWorkflowId,
     session.advanceBlock,
   ]);
   const tutorHeroActionClassName =

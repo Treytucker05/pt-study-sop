@@ -1882,6 +1882,44 @@ Changes not tied to a specific conductor track. Append dated entries below.
     - `Start Priming` opened an empty canvas with only the toolbar visible
     - manually opened panels closed cleanly through `Clear Canvas` without returning to setup state
 
+## 2026-03-28 - Added Tutor hero session actions and Studio zoom/size controls
+
+- Updated `dashboard_rebuild/client/src/pages/tutor.tsx`, `dashboard_rebuild/client/src/components/ui/HudButton.tsx`, and `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx` so `/tutor` restores the `LIVE STUDY CORE / TUTOR` hero actions with `NEW SESSION`, conditional `RESUME`, and `REFRESH`, using the checkerboard HUD button treatment and the existing query-invalidation fan-out.
+- Updated `dashboard_rebuild/client/src/components/studio/StudioShell.tsx` with a shared zoom control cluster that keeps `Zoom out`, `Zoom in`, the `0.45-1.8` range slider, and the live percentage label synchronized through `onTransformed`.
+- Updated `dashboard_rebuild/client/src/components/ui/WorkspacePanel.tsx` with title-bar `Max`, `Fit`, and `Size` controls plus preset choices for `Small 360x400`, `Medium 560x640`, `Large 840x760`, and `Wide 1100x500`, all wired back into the shared Studio panel-layout state.
+- Updated regression coverage in:
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+  - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+  - `dashboard_rebuild/client/src/components/__tests__/WorkspacePanel.test.tsx`
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/pages/__tests__/tutor.test.tsx`
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/WorkspacePanel.test.tsx client/src/components/studio/__tests__/StudioShell.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-28 - Enriched the Tutor previous-sessions accordion
+
+- Expanded `dashboard_rebuild/client/src/components/TutorTopBar.tsx` so the `PREVIOUS SESSIONS` accordion now includes compact search, course, and status filters that stay local to the component and preserve the existing Tutor strip/meta-chip styling.
+- Enriched each previous-session row with course label, phase badge, completed-session ended-at metadata, and a confirmed delete control that stops propagation so removing a session does not also resume it.
+- Updated `dashboard_rebuild/client/src/pages/tutor.tsx` to derive course options from Tutor content sources, pass a course-id-to-name map into `TutorTopBar`, and delete sessions through `api.tutor.deleteSession(sessionId)` followed by `["tutor-sessions"]` cache invalidation.
+- Updated regression coverage in:
+  - `dashboard_rebuild/client/src/components/__tests__/TutorTopBar.test.tsx`
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorTopBar.test.tsx client/src/pages/__tests__/tutor.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+
+## 2026-03-28 - Added the Tutor previous-sessions accordion
+
+- Updated `dashboard_rebuild/client/src/components/TutorTopBar.tsx` so the `ACTIVE WORKFLOW` strip keeps its existing badges while replacing the obsolete inline session button with a right-aligned `PREVIOUS SESSIONS` accordion toggle.
+- The accordion renders up to 20 most-recent sessions using the existing Tutor strip/meta-chip styling, including topic fallback (`Freeform`), status badge, turn count, and started-at metadata, and routes row clicks through the shared resume callback.
+- Updated `dashboard_rebuild/client/src/pages/tutor.tsx` and `dashboard_rebuild/client/src/hooks/useTutorHub.ts` so the shared `["tutor-sessions"]` query consistently fetches `api.tutor.listSessions({ limit: 20 })`, avoiding the old `limit: 10` collision and feeding the accordion from the page-level `/tutor` wiring.
+- Updated regression coverage in:
+  - `dashboard_rebuild/client/src/components/__tests__/TutorTopBar.test.tsx`
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorTopBar.test.tsx client/src/pages/__tests__/tutor.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+
 ## 2026-03-27 - Made Center Windows preserve the current canvas zoom
 
 - Updated `dashboard_rebuild/client/src/components/studio/StudioShell.tsx` to split viewport actions into two paths:

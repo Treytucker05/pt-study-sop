@@ -1,7 +1,10 @@
+import { useMemo, useState } from "react";
 import { CONTROL_KICKER } from "@/components/shell/controlStyles";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  ChevronDown,
+  ChevronUp,
   MessageSquare,
   Clock,
   Timer,
@@ -13,17 +16,21 @@ import {
   Lock,
   Sparkles,
   Loader2,
+  Trash2,
 } from "lucide-react";
-import { ICON_SM } from "@/lib/theme";
+import { ICON_SM, INPUT_BASE, SELECT_BASE } from "@/lib/theme";
 import { CONTROL_PLANE_COLORS } from "@/lib/colors";
 import { cn } from "@/lib/utils";
 import {
   getMethodStageBadgeLabel,
   getMethodStageColorKey,
 } from "@/lib/controlStages";
-import type { TutorWorkflowDetailResponse } from "@/lib/api";
+import type {
+  TutorSessionSummary,
+  TutorTemplateChain,
+  TutorWorkflowDetailResponse,
+} from "@/lib/api";
 import type { TutorBrainLaunchContext } from "@/lib/tutorClientState";
-import type { TutorTemplateChain } from "@/lib/api";
 import type {
   TutorTeachRuntimeField,
   TutorTeachRuntimeStatus,
@@ -46,14 +53,14 @@ export interface TutorTopBarProps {
   formatTimer: (seconds: number) => string;
   onSetTimerPaused: (fn: (prev: boolean) => boolean) => void;
   onAdvanceBlock: () => void;
-  activeWorkflowId: string | null;
   activeWorkflowDetail: TutorWorkflowDetailResponse | undefined;
-  activeSessionId: string | null;
   teachRuntime: TutorTeachRuntimeViewModel | null;
-  sessionActionLabel: string;
-  sessionActionPending: boolean;
-  sessionActionDisabled?: boolean;
-  onSessionAction: () => void;
+  previousSessions: TutorSessionSummary[];
+  previousSessionsLoading: boolean;
+  courses: { id: number; name: string }[];
+  courseMap: Record<number, string>;
+  onResumeSession: (sessionId: string) => void;
+  onDeleteSession: (sessionId: string) => void;
 }
 
 const RUNTIME_STATUS_STYLES: Record<TutorTeachRuntimeStatus, string> = {
@@ -75,6 +82,14 @@ const TUTOR_STRIP =
 const TUTOR_META_CHIP =
   "inline-flex min-h-[40px] items-center gap-2 border border-[rgba(255,78,108,0.18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.12)_28%,rgba(0,0,0,0.24)_100%)] px-3 py-2 font-mono text-sm text-foreground/82 backdrop-blur-sm";
 
+const TUTOR_SELECT_OPTION_CLASS =
+  "bg-[#12070b] text-[#ffe3ea]";
+
+const TUTOR_SELECT_OPTION_STYLE = {
+  backgroundColor: "#12070b",
+  color: "#ffe3ea",
+};
+
 function runtimeBadgeClasses(status: TutorTeachRuntimeStatus): string {
   return cn(
     "rounded-[0.2rem] px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em]",
@@ -87,6 +102,62 @@ function tutorUtilityButton(compact = false): string {
     "inline-flex min-h-[40px] items-center justify-center gap-2 rounded-[0.28rem] border border-[rgba(255,78,108,0.18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.12)_26%,rgba(0,0,0,0.24)_100%)] px-3 py-2 font-mono text-ui-2xs uppercase tracking-[0.16em] text-foreground/78 transition-colors duration-150 ease-out hover:border-[rgba(255,108,136,0.32)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55 focus-visible:ring-offset-2 focus-visible:ring-offset-black backdrop-blur-sm",
     compact ? "h-10 w-10 px-0" : null,
   );
+}
+
+function previousSessionStatusClasses(
+  status: TutorSessionSummary["status"],
+): string {
+  const normalizedStatus = status.trim().toLowerCase();
+  if (normalizedStatus === "active") {
+    return "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
+  }
+  if (normalizedStatus === "completed") {
+    return "border-secondary/25 bg-secondary/10 text-foreground/72";
+  }
+  if (normalizedStatus === "abandoned") {
+    return "border-red-500/30 bg-red-500/10 text-red-200";
+  }
+  return "border-primary/20 bg-primary/10 text-foreground/72";
+}
+
+function formatPreviousSessionStatusLabel(
+  status: TutorSessionSummary["status"],
+): string {
+  const normalizedStatus = status.trim().toLowerCase();
+  if (normalizedStatus === "active") {
+    return "LIVE";
+  }
+  if (normalizedStatus === "completed") {
+    return "DONE";
+  }
+  if (normalizedStatus === "abandoned") {
+    return "ABANDONED";
+  }
+  return normalizedStatus.toUpperCase();
+}
+
+function formatPreviousSessionDate(value: string | null | undefined): string {
+  if (!value) {
+    return "Unknown date";
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "Unknown date";
+  }
+  return parsed.toLocaleDateString([], {
+    month: "short",
+    day: "numeric",
+    year:
+      parsed.getFullYear() !== new Date().getFullYear() ? "numeric" : undefined,
+  });
+}
+
+function formatPreviousSessionPhaseLabel(phase: TutorSessionSummary["phase"]): string {
+  return phase.replace(/_/g, " ").toUpperCase();
+}
+
+function previousSessionTopicLabel(previousSession: TutorSessionSummary): string {
+  return previousSession.topic.trim() || "Freeform";
 }
 
 function RuntimeValue({
@@ -132,15 +203,21 @@ export function TutorTopBar({
   formatTimer,
   onSetTimerPaused,
   onAdvanceBlock,
-  activeWorkflowId,
   activeWorkflowDetail,
-  activeSessionId,
   teachRuntime,
-  sessionActionLabel,
-  sessionActionPending,
-  sessionActionDisabled = false,
-  onSessionAction,
+  previousSessions,
+  previousSessionsLoading,
+  courses,
+  courseMap,
+  onResumeSession,
+  onDeleteSession,
 }: TutorTopBarProps) {
+  const [previousSessionsExpanded, setPreviousSessionsExpanded] = useState(false);
+  const [previousSessionSearch, setPreviousSessionSearch] = useState("");
+  const [previousSessionCourseFilter, setPreviousSessionCourseFilter] =
+    useState<"all" | `${number}`>("all");
+  const [previousSessionStatusFilter, setPreviousSessionStatusFilter] =
+    useState<"all" | TutorSessionSummary["status"]>("all");
   const workflowStageLabel = activeWorkflowDetail?.workflow?.current_stage
     ? activeWorkflowDetail.workflow.current_stage
         .replace(/_/g, " ")
@@ -150,6 +227,38 @@ export function TutorTopBar({
     ? activeWorkflowDetail.workflow.status.replace(/_/g, " ").toUpperCase()
     : null;
   const surfaceLabel = "STUDIO CANVAS";
+  const visiblePreviousSessions = useMemo(
+    () =>
+      [...previousSessions]
+        .sort(
+          (left, right) =>
+            new Date(right.started_at).getTime() -
+            new Date(left.started_at).getTime(),
+        )
+        .slice(0, 20),
+    [previousSessions],
+  );
+  const filteredPreviousSessions = useMemo(() => {
+    const normalizedSearch = previousSessionSearch.trim().toLowerCase();
+    return visiblePreviousSessions.filter((previousSession) => {
+      const topicLabel = previousSessionTopicLabel(previousSession);
+      const matchesSearch =
+        normalizedSearch.length === 0 ||
+        topicLabel.toLowerCase().includes(normalizedSearch);
+      const matchesCourse =
+        previousSessionCourseFilter === "all" ||
+        String(previousSession.course_id ?? "") === previousSessionCourseFilter;
+      const matchesStatus =
+        previousSessionStatusFilter === "all" ||
+        previousSession.status === previousSessionStatusFilter;
+      return matchesSearch && matchesCourse && matchesStatus;
+    });
+  }, [
+    previousSessionCourseFilter,
+    previousSessionSearch,
+    previousSessionStatusFilter,
+    visiblePreviousSessions,
+  ]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -217,19 +326,247 @@ export function TutorTopBar({
               type="button"
               variant="ghost"
               size="sm"
-              onClick={onSessionAction}
-              disabled={sessionActionDisabled || sessionActionPending}
+              onClick={() =>
+                setPreviousSessionsExpanded((previousValue) => !previousValue)
+              }
+              aria-expanded={previousSessionsExpanded}
+              aria-controls="tutor-previous-sessions"
               className={cn(tutorUtilityButton(), "px-3")}
             >
-              {sessionActionPending ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : null}
-              {sessionActionPending
-                ? `${sessionActionLabel === "End Session" ? "Ending" : "Opening"}...`
-                : sessionActionLabel}
+              {previousSessionsExpanded ? (
+                <ChevronUp className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5" />
+              )}
+              PREVIOUS SESSIONS
             </Button>
           </div>
         </div>
+
+        {previousSessionsExpanded ? (
+          <div
+            id="tutor-previous-sessions"
+            data-testid="tutor-previous-sessions"
+            className={cn(TUTOR_STRIP, "space-y-2")}
+          >
+            <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap">
+              <label
+                className={cn(
+                  TUTOR_META_CHIP,
+                  "min-h-0 flex-1 gap-0 overflow-hidden p-0",
+                )}
+              >
+                <input
+                  aria-label="Search previous sessions"
+                  type="text"
+                  value={previousSessionSearch}
+                  onChange={(event) => {
+                    setPreviousSessionSearch(event.target.value);
+                  }}
+                  placeholder="Search topics"
+                  className={cn(
+                    INPUT_BASE,
+                    "h-10 border-0 bg-transparent font-mono text-sm tracking-[0.08em] text-foreground placeholder:text-foreground/34 focus:border-0 focus:outline-none focus:ring-0",
+                  )}
+                />
+              </label>
+              <label
+                className={cn(
+                  TUTOR_META_CHIP,
+                  "min-h-0 w-full gap-0 overflow-hidden p-0 sm:w-auto sm:min-w-[11rem]",
+                )}
+              >
+                <select
+                  aria-label="Filter previous sessions by course"
+                  value={previousSessionCourseFilter}
+                  onChange={(event) => {
+                    setPreviousSessionCourseFilter(
+                      event.target.value as "all" | `${number}`,
+                    );
+                  }}
+                  className={cn(
+                    SELECT_BASE,
+                    "h-10 border-0 bg-transparent pr-8 font-mono text-sm tracking-[0.08em] text-foreground focus:border-0 focus:outline-none focus:ring-0",
+                  )}
+                >
+                  <option
+                    value="all"
+                    className={TUTOR_SELECT_OPTION_CLASS}
+                    style={TUTOR_SELECT_OPTION_STYLE}
+                  >
+                    All courses
+                  </option>
+                  {courses.map((course) => (
+                    <option
+                      key={course.id}
+                      value={String(course.id)}
+                      className={TUTOR_SELECT_OPTION_CLASS}
+                      style={TUTOR_SELECT_OPTION_STYLE}
+                    >
+                      {course.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label
+                className={cn(
+                  TUTOR_META_CHIP,
+                  "min-h-0 w-full gap-0 overflow-hidden p-0 sm:w-auto sm:min-w-[11rem]",
+                )}
+              >
+                <select
+                  aria-label="Filter previous sessions by status"
+                  value={previousSessionStatusFilter}
+                  onChange={(event) => {
+                    setPreviousSessionStatusFilter(
+                      event.target.value as "all" | TutorSessionSummary["status"],
+                    );
+                  }}
+                  className={cn(
+                    SELECT_BASE,
+                    "h-10 border-0 bg-transparent pr-8 font-mono text-sm tracking-[0.08em] text-foreground focus:border-0 focus:outline-none focus:ring-0",
+                  )}
+                >
+                  <option
+                    value="all"
+                    className={TUTOR_SELECT_OPTION_CLASS}
+                    style={TUTOR_SELECT_OPTION_STYLE}
+                  >
+                    All statuses
+                  </option>
+                  <option
+                    value="active"
+                    className={TUTOR_SELECT_OPTION_CLASS}
+                    style={TUTOR_SELECT_OPTION_STYLE}
+                  >
+                    Active
+                  </option>
+                  <option
+                    value="completed"
+                    className={TUTOR_SELECT_OPTION_CLASS}
+                    style={TUTOR_SELECT_OPTION_STYLE}
+                  >
+                    Completed
+                  </option>
+                  <option
+                    value="abandoned"
+                    className={TUTOR_SELECT_OPTION_CLASS}
+                    style={TUTOR_SELECT_OPTION_STYLE}
+                  >
+                    Abandoned
+                  </option>
+                </select>
+              </label>
+            </div>
+            {previousSessionsLoading ? (
+              <div className={cn(TUTOR_META_CHIP, "justify-start gap-2 text-foreground/72")}>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Loading previous sessions...
+              </div>
+            ) : filteredPreviousSessions.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {filteredPreviousSessions.map((previousSession) => {
+                  const topicLabel = previousSessionTopicLabel(previousSession);
+                  const courseLabel =
+                    (typeof previousSession.course_id === "number"
+                      ? courseMap[previousSession.course_id]
+                      : null) ||
+                    (typeof previousSession.course_id === "number"
+                      ? `Course #${previousSession.course_id}`
+                      : "Course not saved");
+                  const showEndedAt =
+                    previousSession.status === "completed" &&
+                    Boolean(previousSession.ended_at);
+                  return (
+                  <div
+                    key={previousSession.session_id}
+                    className={cn(
+                      TUTOR_META_CHIP,
+                      "w-full items-start justify-between gap-3 border-[3px] border-double px-3 py-2.5",
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => onResumeSession(previousSession.session_id)}
+                      aria-label={`Resume previous session ${topicLabel} ${courseLabel}`}
+                      className="flex min-w-0 flex-1 flex-col text-left transition-colors duration-150 ease-out hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                    >
+                      <span className="flex min-w-0 flex-wrap items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "h-5 shrink-0 rounded-[0.2rem] px-1.5 font-mono text-ui-2xs uppercase tracking-[0.18em]",
+                            previousSessionStatusClasses(previousSession.status),
+                          )}
+                        >
+                          {formatPreviousSessionStatusLabel(previousSession.status)}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className="h-5 shrink-0 rounded-[0.2rem] border-primary/18 px-1.5 font-mono text-ui-2xs uppercase tracking-[0.18em] text-foreground/66"
+                        >
+                          {formatPreviousSessionPhaseLabel(previousSession.phase)}
+                        </Badge>
+                        <span className="truncate text-sm text-foreground">
+                          {topicLabel}
+                        </span>
+                      </span>
+                      <span className="mt-1 font-mono text-ui-2xs uppercase tracking-[0.16em] text-foreground/48">
+                        {courseLabel}
+                      </span>
+                      <span className="mt-1.5 flex flex-wrap items-center gap-3 font-mono text-ui-2xs uppercase tracking-[0.16em] text-foreground/62">
+                        <span className="flex items-center gap-1">
+                          <MessageSquare className={ICON_SM} />
+                          {previousSession.turn_count}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className={ICON_SM} />
+                          {formatPreviousSessionDate(previousSession.started_at)}
+                        </span>
+                        {showEndedAt ? (
+                          <span className="flex items-center gap-1">
+                            <CheckCircle2 className={ICON_SM} />
+                            Ended {formatPreviousSessionDate(previousSession.ended_at)}
+                          </span>
+                        ) : null}
+                      </span>
+                    </button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Delete previous session ${topicLabel}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (
+                          !window.confirm(
+                            `Delete previous session "${topicLabel}"?`,
+                          )
+                        ) {
+                          return;
+                        }
+                        onDeleteSession(previousSession.session_id);
+                      }}
+                      className={cn(
+                        tutorUtilityButton(true),
+                        "mt-0.5 shrink-0 self-start text-foreground/58 hover:text-red-200",
+                      )}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className={cn(TUTOR_META_CHIP, "justify-center text-foreground/62")}>
+                {visiblePreviousSessions.length > 0
+                  ? "No sessions match the current filters."
+                  : "No previous sessions yet."}
+              </div>
+            )}
+          </div>
+        ) : null}
       </div>
 
       {isTutorSessionView ? (

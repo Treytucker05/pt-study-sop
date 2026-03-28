@@ -1,11 +1,33 @@
 import {
   type CSSProperties,
+  useEffect,
+  useRef,
+  useState,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
 import { Rnd } from "react-rnd";
-import { ChevronDown, ChevronRight, ExternalLink, X } from "lucide-react";
+import {
+  Crosshair,
+  ChevronDown,
+  ChevronRight,
+  ExternalLink,
+  Maximize2,
+  Rows3,
+  ScanSearch,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+
+export const WORKSPACE_PANEL_SIZE_PRESETS = {
+  small: { label: "Small", width: 360, height: 400 },
+  medium: { label: "Medium", width: 560, height: 640 },
+  large: { label: "Large", width: 840, height: 760 },
+  wide: { label: "Wide", width: 1100, height: 500 },
+} as const;
+
+export type WorkspacePanelSizePresetKey =
+  keyof typeof WORKSPACE_PANEL_SIZE_PRESETS;
 
 export interface WorkspacePanelProps {
   id: string;
@@ -28,11 +50,16 @@ export interface WorkspacePanelProps {
   onPopOut?: () => void;
   onSendBack?: () => void;
   onTitlePointerDown?: (event: ReactPointerEvent<HTMLDivElement>) => void;
+  onMaximize?: () => void;
+  onFitContent?: () => void;
+  onCenter?: () => void;
+  onSizePresetSelect?: (preset: WorkspacePanelSizePresetKey) => void;
   className?: string;
   style?: CSSProperties;
   scale?: number;
   selected?: boolean;
   grouped?: boolean;
+  defaultCollapsed?: boolean;
 }
 
 const TITLE_BAR_CLASSES =
@@ -43,6 +70,17 @@ const TITLE_TEXT_CLASSES =
 
 const BTN_CLASSES =
   "inline-flex items-center justify-center w-6 h-6 rounded-sm text-primary/50 hover:text-primary/80 transition-colors";
+
+const SIZE_CONTROL_CLASSES =
+  "inline-flex h-7 items-center justify-center rounded-[0.7rem] border border-[rgba(255,108,138,0.18)] bg-[radial-gradient(circle,rgba(255,84,116,0.10)_0%,rgba(0,0,0,0)_95%),linear-gradient(rgba(255,84,116,0.05)_1px,transparent_1px),linear-gradient(to_right,rgba(255,84,116,0.05)_1px,transparent_1px)] bg-[size:cover,10px_10px,10px_10px] px-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd4dd] shadow-[0_0_0_1px_rgba(255,84,116,0.08),0_8px_18px_rgba(0,0,0,0.16)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(255,160,176,0.32)] hover:text-white";
+
+const SIZE_MENU_ITEM_CLASSES =
+  "flex w-full items-center justify-between gap-3 rounded-[0.75rem] border border-transparent px-3 py-2 text-left font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd4dd] transition-colors hover:border-[rgba(255,118,144,0.22)] hover:bg-[rgba(255,84,116,0.12)] hover:text-white";
+
+const PANEL_FIT_CONTENT_MAX_WIDTH = 1400;
+const PANEL_FIT_CONTENT_MAX_HEIGHT = 1000;
+const PANEL_FIT_CONTENT_HORIZONTAL_CHROME = 28;
+const PANEL_FIT_CONTENT_VERTICAL_CHROME = 68;
 
 export function WorkspacePanel({
   id,
@@ -65,12 +103,41 @@ export function WorkspacePanel({
   onPopOut,
   onSendBack,
   onTitlePointerDown,
+  onMaximize,
+  onFitContent,
+  onCenter,
+  onSizePresetSelect,
   className,
   style,
   scale = 1,
   selected = false,
   grouped = false,
+  defaultCollapsed = false,
 }: WorkspacePanelProps) {
+  const [sizeMenuOpen, setSizeMenuOpen] = useState(false);
+  const sizeMenuRef = useRef<HTMLDivElement | null>(null);
+  const contentScrollRef = useRef<HTMLDivElement | null>(null);
+  const contentMeasureRef = useRef<HTMLDivElement | null>(null);
+  const defaultCollapsedAppliedRef = useRef(false);
+
+  useEffect(() => {
+    if (!sizeMenuOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        sizeMenuRef.current &&
+        !sizeMenuRef.current.contains(event.target as Node)
+      ) {
+        setSizeMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [sizeMenuOpen]);
+
   const handleToggleCollapse = () => {
     onCollapsedChange?.(!collapsed);
   };
@@ -81,6 +148,92 @@ export function WorkspacePanel({
       return;
     }
     onTitlePointerDown?.(event);
+  };
+  const canFitContent = Boolean(onFitContent) || Boolean(onSizeChange);
+  const showSizeControls =
+    Boolean(onMaximize) ||
+    canFitContent ||
+    Boolean(onCenter) ||
+    Boolean(onSizePresetSelect);
+
+  const handleSelectPreset = (preset: WorkspacePanelSizePresetKey) => {
+    onSizePresetSelect?.(preset);
+    setSizeMenuOpen(false);
+  };
+
+  useEffect(() => {
+    if (!defaultCollapsed || defaultCollapsedAppliedRef.current) {
+      return;
+    }
+
+    const scheduleFrame =
+      typeof window !== "undefined" &&
+      typeof window.requestAnimationFrame === "function"
+        ? window.requestAnimationFrame.bind(window)
+        : (callback: FrameRequestCallback) =>
+            window.setTimeout(() => callback(performance.now()), 0);
+    const cancelFrame =
+      typeof window !== "undefined" &&
+      typeof window.cancelAnimationFrame === "function"
+        ? window.cancelAnimationFrame.bind(window)
+        : window.clearTimeout.bind(window);
+
+    const frame = scheduleFrame(() => {
+      const contentRoot = contentScrollRef.current;
+      if (!contentRoot) return;
+
+      contentRoot
+        .querySelectorAll<HTMLButtonElement>('button[aria-expanded="true"]')
+        .forEach((trigger) => {
+          trigger.click();
+        });
+
+      contentRoot
+        .querySelectorAll<HTMLDetailsElement>("details[open]")
+        .forEach((detailsElement) => {
+          detailsElement.open = false;
+        });
+    });
+
+    defaultCollapsedAppliedRef.current = true;
+
+    return () => {
+      cancelFrame(frame);
+    };
+  }, [defaultCollapsed]);
+
+  const measureFitContentSize = () => {
+    const contentScrollNode = contentScrollRef.current;
+    const contentMeasureNode = contentMeasureRef.current;
+    if (!contentScrollNode) return null;
+
+    const measuredContentWidth = Math.max(
+      contentScrollNode.scrollWidth,
+      contentMeasureNode?.scrollWidth ?? 0,
+      Math.ceil(contentMeasureNode?.getBoundingClientRect().width ?? 0),
+    );
+    const measuredContentHeight = Math.max(
+      contentScrollNode.scrollHeight,
+      contentMeasureNode?.scrollHeight ?? 0,
+      Math.ceil(contentMeasureNode?.getBoundingClientRect().height ?? 0),
+    );
+
+    return {
+      width: Math.min(
+        PANEL_FIT_CONTENT_MAX_WIDTH,
+        Math.max(
+          minWidth,
+          Math.ceil(measuredContentWidth + PANEL_FIT_CONTENT_HORIZONTAL_CHROME),
+        ),
+      ),
+      height: Math.min(
+        PANEL_FIT_CONTENT_MAX_HEIGHT,
+        Math.max(
+          minHeight,
+          Math.ceil(measuredContentHeight + PANEL_FIT_CONTENT_VERTICAL_CHROME),
+        ),
+      ),
+    };
   };
 
   // ── Collapsed chip view ───────────────────────────────────────────
@@ -162,7 +315,7 @@ export function WorkspacePanel({
       <div
         className={cn(
           TITLE_BAR_CLASSES,
-          "workspace-panel-drag-handle rounded-t-[0.95rem]",
+          "workspace-panel-drag-handle relative rounded-t-[0.95rem]",
           selected && "bg-[linear-gradient(180deg,rgba(255,122,146,0.28),rgba(18,6,12,0.94))]",
         )}
         onPointerDown={handleTitlePointerDown}
@@ -180,6 +333,104 @@ export function WorkspacePanel({
         </span>
 
         <div className="flex items-center gap-0.5 ml-2">
+          {showSizeControls ? (
+            <>
+              {onMaximize ? (
+                <button
+                  type="button"
+                  aria-label="Maximize panel"
+                  className={cn(SIZE_CONTROL_CLASSES, "px-2.5")}
+                  onClick={() => {
+                    onMaximize();
+                    setSizeMenuOpen(false);
+                  }}
+                >
+                  <Maximize2 className="mr-1.5 h-3 w-3" />
+                  <span>Max</span>
+                </button>
+              ) : null}
+
+              {canFitContent ? (
+                <button
+                  type="button"
+                  aria-label="Fit panel content"
+                  className={cn(SIZE_CONTROL_CLASSES, "px-2.5")}
+                  onClick={() => {
+                    const measuredSize = measureFitContentSize();
+                    if (measuredSize) {
+                      onSizeChange?.(measuredSize);
+                    }
+                    onFitContent?.();
+                    setSizeMenuOpen(false);
+                  }}
+                >
+                  <ScanSearch className="mr-1.5 h-3 w-3" />
+                  <span>Fit</span>
+                </button>
+              ) : null}
+
+              {onCenter ? (
+                <button
+                  type="button"
+                  aria-label="Center panel"
+                  className={cn(SIZE_CONTROL_CLASSES, "px-2.5")}
+                  onClick={() => {
+                    onCenter();
+                    setSizeMenuOpen(false);
+                  }}
+                >
+                  <Crosshair className="mr-1.5 h-3 w-3" />
+                  <span>Center</span>
+                </button>
+              ) : null}
+
+              {onSizePresetSelect ? (
+                <div ref={sizeMenuRef} className="relative">
+                  <button
+                    type="button"
+                    aria-label="Panel size presets"
+                    aria-expanded={sizeMenuOpen}
+                    className={cn(SIZE_CONTROL_CLASSES, "px-2.5")}
+                    onClick={() => {
+                      setSizeMenuOpen((current) => !current);
+                    }}
+                  >
+                    <Rows3 className="mr-1.5 h-3 w-3" />
+                    <span>Size</span>
+                  </button>
+
+                  {sizeMenuOpen ? (
+                    <div
+                      className="absolute right-0 top-[calc(100%+0.4rem)] z-30 flex min-w-[13rem] flex-col gap-1 rounded-[0.95rem] border border-[rgba(255,118,144,0.22)] bg-[linear-gradient(180deg,rgba(30,8,16,0.96),rgba(6,2,4,0.98))] p-2 shadow-[0_18px_34px_rgba(0,0,0,0.34),0_0_0_1px_rgba(255,84,116,0.10)]"
+                      data-testid={`${dataTestId || id}-size-menu`}
+                    >
+                      {(
+                        Object.entries(WORKSPACE_PANEL_SIZE_PRESETS) as [
+                          WorkspacePanelSizePresetKey,
+                          (typeof WORKSPACE_PANEL_SIZE_PRESETS)[WorkspacePanelSizePresetKey],
+                        ][]
+                      ).map(([presetKey, preset]) => (
+                        <button
+                          key={presetKey}
+                          type="button"
+                          className={SIZE_MENU_ITEM_CLASSES}
+                          onClick={() => {
+                            handleSelectPreset(presetKey);
+                          }}
+                        >
+                          <span>{preset.label}</span>
+                          <span className="text-[#ffbccc]/70">
+                            {preset.width}x{preset.height}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </>
+          ) : null}
+
           <button
             type="button"
             aria-label="Collapse panel"
@@ -215,31 +466,38 @@ export function WorkspacePanel({
 
       {/* Panel body */}
       <div className="relative flex-1 min-h-0 min-w-0 overflow-hidden p-3">
-        <div className="h-full min-h-0 min-w-0 overflow-y-auto overflow-x-hidden [overflow-wrap:anywhere]">
-        {isPoppedOut ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm z-10">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="font-terminal text-xs text-primary/60 uppercase tracking-wider">
-                Open in window
-              </span>
-            </div>
-            {onSendBack && (
-              <button
-                type="button"
-                onClick={onSendBack}
-                className={cn(
-                  "px-3 py-1.5 rounded-sm text-xs font-terminal uppercase tracking-wider",
-                  "bg-primary/10 border border-primary/30 text-primary/70",
-                  "hover:bg-primary/20 hover:text-primary transition-colors",
+        <div
+          ref={contentScrollRef}
+          data-workspace-panel-content="true"
+          data-default-collapsed={defaultCollapsed ? "true" : "false"}
+          className="h-full min-h-0 min-w-0 overflow-y-auto overflow-x-auto [overflow-wrap:anywhere]"
+        >
+          <div ref={contentMeasureRef} className="min-h-full min-w-0">
+            {isPoppedOut ? (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="font-terminal text-xs text-primary/60 uppercase tracking-wider">
+                    Open in window
+                  </span>
+                </div>
+                {onSendBack && (
+                  <button
+                    type="button"
+                    onClick={onSendBack}
+                    className={cn(
+                      "px-3 py-1.5 rounded-sm text-xs font-terminal uppercase tracking-wider",
+                      "bg-primary/10 border border-primary/30 text-primary/70",
+                      "hover:bg-primary/20 hover:text-primary transition-colors",
+                    )}
+                  >
+                    Send Back
+                  </button>
                 )}
-              >
-                Send Back
-              </button>
-            )}
+              </div>
+            ) : null}
+            {children}
           </div>
-        ) : null}
-        {children}
         </div>
       </div>
     </Rnd>

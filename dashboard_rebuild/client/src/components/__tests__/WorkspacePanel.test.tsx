@@ -1,4 +1,5 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { useState } from "react";
 import { describe, it, expect, vi } from "vitest";
 import { WorkspacePanel } from "@/components/ui/WorkspacePanel";
 
@@ -374,5 +375,142 @@ describe("WorkspacePanel", () => {
 
     fireEvent.pointerDown(screen.getByText("Panel"));
     expect(handleTitlePointerDown).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders size controls and calls the maximize, fit, and center handlers", () => {
+    const onMaximize = vi.fn();
+    const onFitContent = vi.fn();
+    const onCenter = vi.fn();
+
+    render(
+      <WorkspacePanel
+        id="p1"
+        title="Panel"
+        onMaximize={onMaximize}
+        onFitContent={onFitContent}
+        onCenter={onCenter}
+      >
+        <p>content</p>
+      </WorkspacePanel>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /maximize panel/i }));
+    fireEvent.click(screen.getByRole("button", { name: /fit panel content/i }));
+    fireEvent.click(screen.getByRole("button", { name: /center panel/i }));
+
+    expect(onMaximize).toHaveBeenCalledTimes(1);
+    expect(onFitContent).toHaveBeenCalledTimes(1);
+    expect(onCenter).toHaveBeenCalledTimes(1);
+  });
+
+  it("measures the scrollable content area when fitting panel content", () => {
+    const onSizeChange = vi.fn();
+    const { container } = render(
+      <WorkspacePanel
+        id="p1"
+        title="Panel"
+        minWidth={320}
+        minHeight={240}
+        onSizeChange={onSizeChange}
+      >
+        <div>content</div>
+      </WorkspacePanel>,
+    );
+
+    const contentRoot = container.querySelector(
+      '[data-workspace-panel-content="true"]',
+    ) as HTMLDivElement | null;
+    expect(contentRoot).not.toBeNull();
+
+    Object.defineProperty(contentRoot!, "scrollWidth", {
+      configurable: true,
+      value: 620,
+    });
+    Object.defineProperty(contentRoot!, "scrollHeight", {
+      configurable: true,
+      value: 480,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /fit panel content/i }));
+
+    expect(onSizeChange).toHaveBeenCalledWith({
+      width: 648,
+      height: 548,
+    });
+  });
+
+  it("opens the size preset menu and forwards the selected preset", () => {
+    const onSizePresetSelect = vi.fn();
+
+    render(
+      <WorkspacePanel
+        id="p1"
+        title="Panel"
+        dataTestId="workspace-panel"
+        onSizePresetSelect={onSizePresetSelect}
+      >
+        <p>content</p>
+      </WorkspacePanel>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /panel size presets/i }));
+
+    expect(screen.getByTestId("workspace-panel-size-menu")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /wide/i }));
+
+    expect(onSizePresetSelect).toHaveBeenCalledWith("wide");
+    expect(
+      screen.queryByTestId("workspace-panel-size-menu"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not forward title-bar selection when a size control button is clicked", () => {
+    const handleTitlePointerDown = vi.fn();
+
+    render(
+      <WorkspacePanel
+        id="p1"
+        title="Panel"
+        onTitlePointerDown={handleTitlePointerDown}
+        onMaximize={() => {}}
+      >
+        <p>content</p>
+      </WorkspacePanel>,
+    );
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: /maximize panel/i }));
+    expect(handleTitlePointerDown).not.toHaveBeenCalled();
+  });
+
+  it("collapses expanded in-panel sections on mount when defaultCollapsed is enabled", async () => {
+    function ExpandedSection() {
+      const [open, setOpen] = useState(true);
+      return (
+        <div>
+          <button
+            type="button"
+            aria-expanded={open}
+            onClick={() => setOpen(false)}
+          >
+            Toggle section
+          </button>
+          {open ? <div>Expanded content</div> : null}
+        </div>
+      );
+    }
+
+    render(
+      <WorkspacePanel id="p1" title="Panel" defaultCollapsed>
+        <ExpandedSection />
+      </WorkspacePanel>,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /toggle section/i }),
+      ).toHaveAttribute("aria-expanded", "false");
+    });
+    expect(screen.queryByText("Expanded content")).not.toBeInTheDocument();
   });
 });

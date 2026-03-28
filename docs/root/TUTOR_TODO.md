@@ -79,6 +79,90 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - fixed the remaining live jump by excluding `.workspace-panel-root` from `react-zoom-pan-pinch` pan start, which prevents the library from starting a hidden wrapper pan on panel mousedown and snapping the canvas back to centered bounds on mouseup
     - validation passed with `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/WorkspacePanel.test.tsx client/src/components/studio/__tests__/StudioShell.test.tsx`, `cd dashboard_rebuild && npm run build`, and live `dev-browser` verification on `http://127.0.0.1:5000/tutor?course_id=1&mode=studio` after `Apply Priming preset -> Center Windows -> drag Source Shelf`, with screenshot evidence at `C:\\Users\\treyt\\.dev-browser\\tmp\\source-shelf-before-drag-fixed-v2.png` and `C:\\Users\\treyt\\.dev-browser\\tmp\\source-shelf-after-drag-fixed-v2.png`
 
+- [x] HUD-247. Add New Session, Resume, and Refresh HudButtons to the PageScaffold hero header ("LIVE STUDY CORE / TUTOR").
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `docs/design/SESSION_STATUS.md`
+    - `dashboard_rebuild/client/src/components/ui/HudButton.tsx`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+  - Done when:
+    - `HudButton.tsx` is restored as a thin wrapper around `BTN_PRIMARY` / `BTN_OUTLINE` from `@/lib/theme` (checkerboard grid, hover lift, border glow)
+    - the PageScaffold `actions` slot renders three HudButtons: NEW SESSION (primary, always visible), RESUME (outline, conditional on `resumeCandidate`), REFRESH (outline, cache invalidation with `RefreshCw` icon)
+    - NEW SESSION ends any active session, clears panel layout, and returns to the entry card
+    - RESUME only renders when a resumable session candidate exists and correctly resumes the session with the study preset
+    - REFRESH invalidates tutor query caches (`tutor-hub`, `tutor-sessions`, `tutor-project-shell`, `tutor-studio-restore`, `tutor-chat-materials-all-enabled`, `obsidian`)
+    - targeted Tutor tests, the production frontend build, and a live browser verification pass succeed
+  - Assignee: @codex-cli
+  - Completed: 2026-03-28
+  - Notes:
+    - restored `HudButton.tsx` to the thin `BTN_PRIMARY` / `BTN_OUTLINE` wrapper shape from commit `26f5d1fe`, keeping the checkerboard theme classes plus the focus-visible ring and `active:translate-y-0`
+    - added PageScaffold hero actions on `/tutor` for NEW SESSION (existing reset/end flow), conditional RESUME (existing resume flow plus study preset), and REFRESH (the query invalidation fan-out from commit `ec1d197b`)
+    - expanded `tutor.test.tsx` with hero-action coverage for NEW SESSION, conditional RESUME visibility, and REFRESH cache invalidation, and updated two stale page expectations so the current Source Shelf wording and new REFRESH surface match the shipped UI
+    - validation passed with `cd dashboard_rebuild && npx vitest run client/src/pages/__tests__/tutor.test.tsx` and `cd dashboard_rebuild && npm run build`
+
+- [x] HUD-248. Add a canvas zoom slider plus per-panel size presets to the floating Studio shell on `/tutor`.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`
+    - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+    - `dashboard_rebuild/client/src/components/ui/WorkspacePanel.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/WorkspacePanel.test.tsx`
+  - Done when:
+    - the Studio toolbar exposes `Zoom out`, `Zoom in`, a range slider bound to `0.45-1.8`, and a live percentage label that stays in sync with scroll/pinch transforms via `onTransformed`
+    - each floating panel title bar exposes `Maximize`, `Fit Content`, and a size-preset menu with `Small 360x400`, `Medium 560x640`, `Large 840x760`, and `Wide 1100x500`
+    - `Maximize` resizes the active panel to `1200x900`, `Fit Content` restores that panel's `defaultSize`, and preset selections round-trip through the shared `StudioShell` layout state
+    - the new controls keep the existing cyberpunk checkerboard/button styling and do not regress drag, collapse, pop-out, or close behavior
+    - targeted `WorkspacePanel` / `StudioShell` tests plus the production frontend build pass
+  - Assignee: @codex-cli
+  - Completed: 2026-03-28
+  - Notes:
+    - added a shared Studio zoom cluster with `Zoom out`, `Zoom in`, a `0.45-1.8` slider, and a live percent label that all stay synchronized through `react-zoom-pan-pinch` `onTransformed` updates
+    - extended `WorkspacePanel.tsx` with `Max`, `Fit`, and `Size` chrome in the title bar, plus a preset menu for `Small 360x400`, `Medium 560x640`, `Large 840x760`, and `Wide 1100x500`
+    - wired the new panel-size actions back through `StudioShell` layout state so `Maximize` applies `1200x900`, `Fit Content` restores each panel definition's `defaultSize`, and preset picks update the stored panel layout without regressing drag or restore behavior
+    - validation passed with `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/WorkspacePanel.test.tsx client/src/components/studio/__tests__/StudioShell.test.tsx` and `cd dashboard_rebuild && npm run build`
+
+- [x] HUD-249. Turn the `ACTIVE WORKFLOW` strip into an accordion that exposes previous study sessions.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/TutorTopBar.tsx`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorTopBar.test.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+  - Done when:
+    - `TutorTopBar` removes the obsolete inline session action button and keeps the existing `ACTIVE WORKFLOW`, `STUDIO CANVAS`, and `READY` / `LIVE SESSION` badges intact
+    - a right-aligned `PREVIOUS SESSIONS` accordion toggle expands a session list below the strip without regressing the live TEACH runtime panel that renders underneath on session view
+    - the accordion renders up to 20 most-recent sessions with topic, status, turn count, and started-at metadata using the existing Tutor strip/meta-chip styling, and clicking any row calls the shared resume callback with that `session_id`
+    - `/tutor` loads the previous-session list through `api.tutor.listSessions({ limit: 20 })`, passes it into the top bar, and reuses the existing session resume flow for row clicks
+    - targeted Tutor top-bar/page tests plus the production frontend build pass
+  - Assignee: @codex-cli
+  - Completed: 2026-03-28
+  - Notes:
+    - replaced the obsolete top-bar session action with a `PREVIOUS SESSIONS` accordion toggle that preserves the existing `ACTIVE WORKFLOW`, `STUDIO CANVAS`, and `READY` / `LIVE SESSION` strip badges while rendering the session list below the strip
+    - wired `/tutor` to a shared `["tutor-sessions"]` query at `limit: 20`, passed the result into `TutorTopBar`, and reused the existing `session.resumeSession(sessionId)` flow for row clicks so active and completed sessions both route through the same callback for now
+    - expanded `TutorTopBar.test.tsx` for toggle render, expand/collapse, and row-click coverage, and updated `tutor.test.tsx` to cover the page-level accordion wiring plus the current hero-session and Tutor-panel expectations
+    - validation passed with `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorTopBar.test.tsx client/src/pages/__tests__/tutor.test.tsx` and `cd dashboard_rebuild && npm run build`
+
+- [x] HUD-249A. Bring the `PREVIOUS SESSIONS` accordion up to the old Tutor launch-hub richness.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/TutorTopBar.tsx`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorTopBar.test.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+  - Done when:
+    - the expanded accordion shows compact client-side filters for search, course, and status while keeping the existing Tutor strip/meta-chip theme
+    - previous-session rows include course name, phase badge, ended-at metadata for completed sessions, and a delete action that confirms before removing a row without also resuming it
+    - `/tutor` passes course options plus a course-id-to-name map into `TutorTopBar`, and deleting a session invalidates the shared `["tutor-sessions"]` cache so the accordion refreshes
+    - targeted Tutor top-bar/page tests plus the production frontend build pass
+  - Assignee: @codex-cli
+  - Completed: 2026-03-28
+  - Notes:
+    - expanded the `PREVIOUS SESSIONS` accordion with compact client-side search, course, and status filters styled from the existing Tutor strip/meta-chip chrome plus `INPUT_BASE` / `SELECT_BASE`
+    - enriched each session row with course label, phase badge, completed-session ended-at metadata, and a confirmed delete action that stops propagation so row deletes do not also resume the session
+    - wired `/tutor` to pass course options from Tutor content sources, build a course-id-to-name map for the accordion, and delete sessions through `api.tutor.deleteSession(sessionId)` followed by `["tutor-sessions"]` invalidation
+    - validation passed with `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorTopBar.test.tsx client/src/pages/__tests__/tutor.test.tsx` and `cd dashboard_rebuild && npm run build`
+
 - [x] OPS-100. Narrow the managed local `pre-push` hook to a fast deterministic backend lane and leave full harness/backend coverage to CI.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

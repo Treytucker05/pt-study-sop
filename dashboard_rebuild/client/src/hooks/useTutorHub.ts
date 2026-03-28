@@ -295,7 +295,7 @@ export function useTutorHub({
   // ─── Hub + sessions queries ───
   const { data: recentSessions = [] } = useQuery<TutorSessionSummary[]>({
     queryKey: ["tutor-sessions"],
-    queryFn: () => api.tutor.listSessions({ limit: 10 }),
+    queryFn: () => api.tutor.listSessions({ limit: 20 }),
   });
 
   const { data: tutorHub, isFetching: tutorHubLoading } = useQuery<TutorHubResponse>({

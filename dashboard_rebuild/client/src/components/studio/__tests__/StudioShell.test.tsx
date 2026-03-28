@@ -435,6 +435,126 @@ describe("StudioShell", () => {
     }
   });
 
+  it("keeps the zoom slider and percentage label in sync with toolbar zoom changes", () => {
+    render(
+      <StudioShell
+        panelLayout={buildStudioShellPresetLayout("minimal")}
+        setPanelLayout={vi.fn()}
+        tutorPanel={<div>Tutor</div>}
+      />,
+    );
+
+    const zoomSlider = screen.getByRole("slider", { name: /canvas zoom/i });
+    expect(zoomSlider).toHaveValue("1");
+    expect(screen.getByText("100%")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /^zoom in$/i }));
+
+    expect(zoomSlider).toHaveValue("1.1");
+    expect(screen.getByText("110%")).toBeInTheDocument();
+
+    fireEvent.change(zoomSlider, { target: { value: "1.45" } });
+
+    expect(setTransformSpy).toHaveBeenLastCalledWith(0, 0, 1.45, 120);
+    expect(zoomSlider).toHaveValue("1.45");
+    expect(screen.getByText("145%")).toBeInTheDocument();
+  });
+
+  it("applies maximize, center, fit-content, and preset size actions through the shared panel layout updater", () => {
+    const setPanelLayout = vi.fn();
+    const defaultLayout = buildStudioShellPresetLayout("minimal");
+    const resizedLayout = defaultLayout.map((item) =>
+      item.panel === "tutor_chat"
+        ? {
+            ...item,
+            size: { width: 520, height: 620 },
+          }
+        : item,
+    );
+
+    const { rerender } = render(
+      <StudioShell
+        panelLayout={resizedLayout}
+        setPanelLayout={setPanelLayout}
+        tutorPanel={<div>Tutor</div>}
+      />,
+    );
+
+    const canvas = screen.getByTestId("studio-canvas");
+    const rectSpy = vi
+      .spyOn(canvas, "getBoundingClientRect")
+      .mockReturnValue(createViewportRect(1600, 900));
+
+    try {
+      fireEvent.click(screen.getByRole("button", { name: /maximize panel/i }));
+      const maximizeUpdater = setPanelLayout.mock.calls.at(-1)?.[0];
+      expect(typeof maximizeUpdater).toBe("function");
+      const maximizedLayout = maximizeUpdater(resizedLayout);
+      const maximizedTutor = maximizedLayout.find(
+        (item: { panel: string }) => item.panel === "tutor_chat",
+      );
+      expect(maximizedTutor?.size).toEqual({ width: 1200, height: 900 });
+      expect(maximizedTutor?.position).toEqual({ x: 200, y: 0 });
+
+      setPanelLayout.mockClear();
+
+      fireEvent.click(screen.getByRole("button", { name: /center panel/i }));
+      const centerUpdater = setPanelLayout.mock.calls.at(-1)?.[0];
+      expect(typeof centerUpdater).toBe("function");
+      const centeredLayout = centerUpdater(resizedLayout);
+      const centeredTutor = centeredLayout.find(
+        (item: { panel: string }) => item.panel === "tutor_chat",
+      );
+      expect(centeredTutor?.position).toEqual({ x: 540, y: 140 });
+
+      setPanelLayout.mockClear();
+
+      const contentRoot = screen
+        .getByTestId("studio-tutor-panel")
+        .querySelector('[data-workspace-panel-content="true"]') as HTMLDivElement | null;
+      expect(contentRoot).not.toBeNull();
+      Object.defineProperty(contentRoot!, "scrollWidth", {
+        configurable: true,
+        value: 920,
+      });
+      Object.defineProperty(contentRoot!, "scrollHeight", {
+        configurable: true,
+        value: 780,
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: /fit panel content/i }));
+      const fitUpdater = setPanelLayout.mock.calls.at(-1)?.[0];
+      expect(typeof fitUpdater).toBe("function");
+      const fitLayout = fitUpdater(resizedLayout);
+      expect(
+        fitLayout.find((item: { panel: string }) => item.panel === "tutor_chat")
+          ?.size,
+      ).toEqual({ width: 948, height: 848 });
+
+      setPanelLayout.mockClear();
+
+      fireEvent.click(screen.getByRole("button", { name: /panel size presets/i }));
+      fireEvent.click(screen.getByRole("button", { name: /wide/i }));
+      const presetUpdater = setPanelLayout.mock.calls.at(-1)?.[0];
+      expect(typeof presetUpdater).toBe("function");
+      const presetLayout = presetUpdater(defaultLayout);
+      expect(
+        presetLayout.find((item: { panel: string }) => item.panel === "tutor_chat")
+          ?.size,
+      ).toEqual({ width: 1100, height: 500 });
+
+      rerender(
+        <StudioShell
+          panelLayout={presetLayout}
+          setPanelLayout={setPanelLayout}
+          tutorPanel={<div>Tutor</div>}
+        />,
+      );
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
   it("still refits the layout when the user resets the canvas view", () => {
     const layout = buildStudioShellPresetLayout("minimal");
     const focus = buildStudioShellViewportFocus(layout, 1600, 900);
