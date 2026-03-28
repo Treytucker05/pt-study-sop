@@ -13,12 +13,13 @@ vi.mock("react-rnd", () => {
         onDrag,
         onDragStop,
         onResizeStop,
-        default: _default,
+        default: defaultProps,
         minWidth: _mw,
         minHeight: _mh,
         dragHandleClassName: _dragHandleClassName,
         enableResizing: _enableResizing,
         ["data-testid"]: dataTestId,
+        position,
         scale,
         ...rest
       }: any,
@@ -31,6 +32,9 @@ vi.mock("react-rnd", () => {
           data-ondrag={onDrag ? "true" : undefined}
           data-ondragstop={onDragStop ? "true" : undefined}
           data-onresizestop={onResizeStop ? "true" : undefined}
+          data-has-position={position ? "true" : "false"}
+          data-default-x={defaultProps?.x}
+          data-default-y={defaultProps?.y}
           data-scale={scale}
           onMouseMove={(e: any) => {
             if (onDrag && e.currentTarget.dataset.simulatedragmove) {
@@ -218,6 +222,99 @@ describe("WorkspacePanel", () => {
     );
     const rnd = screen.getByTestId("rnd-wrapper");
     expect(rnd.dataset.scale).toBe("0.85");
+  });
+
+  it("uses default positioning without forwarding a controlled position prop in expanded mode", () => {
+    render(
+      <WorkspacePanel
+        id="p1"
+        title="Panel"
+        position={{ x: 120, y: 240 }}
+      >
+        <p>content</p>
+      </WorkspacePanel>,
+    );
+
+    const rnd = screen.getByTestId("rnd-wrapper");
+    expect(rnd.dataset.hasPosition).toBe("false");
+    expect(rnd.dataset.defaultX).toBe("120");
+    expect(rnd.dataset.defaultY).toBe("240");
+  });
+
+  it("uses default positioning without forwarding a controlled position prop in collapsed mode", () => {
+    render(
+      <WorkspacePanel
+        id="p1"
+        title="Panel"
+        collapsed
+        position={{ x: 32, y: 64 }}
+      >
+        <p>content</p>
+      </WorkspacePanel>,
+    );
+
+    const rnd = screen.getByTestId("rnd-wrapper");
+    expect(rnd.dataset.hasPosition).toBe("false");
+    expect(rnd.dataset.defaultX).toBe("32");
+    expect(rnd.dataset.defaultY).toBe("64");
+  });
+
+  it("keeps the same Rnd node when the position changes without a reset token change", () => {
+    const { rerender } = render(
+      <WorkspacePanel
+        id="p1"
+        title="Panel"
+        position={{ x: 16, y: 24 }}
+        positionResetToken={0}
+      >
+        <p>content</p>
+      </WorkspacePanel>,
+    );
+
+    const rndBefore = screen.getByTestId("rnd-wrapper");
+
+    rerender(
+      <WorkspacePanel
+        id="p1"
+        title="Panel"
+        position={{ x: 160, y: 240 }}
+        positionResetToken={0}
+      >
+        <p>content</p>
+      </WorkspacePanel>,
+    );
+
+    const rndAfter = screen.getByTestId("rnd-wrapper");
+    expect(rndAfter).toBe(rndBefore);
+  });
+
+  it("remounts the Rnd node when the position reset token changes", () => {
+    const { rerender } = render(
+      <WorkspacePanel
+        id="p1"
+        title="Panel"
+        position={{ x: 16, y: 24 }}
+        positionResetToken={0}
+      >
+        <p>content</p>
+      </WorkspacePanel>,
+    );
+
+    const rndBefore = screen.getByTestId("rnd-wrapper");
+
+    rerender(
+      <WorkspacePanel
+        id="p1"
+        title="Panel"
+        position={{ x: 160, y: 240 }}
+        positionResetToken={1}
+      >
+        <p>content</p>
+      </WorkspacePanel>,
+    );
+
+    const rndAfter = screen.getByTestId("rnd-wrapper");
+    expect(rndAfter).not.toBe(rndBefore);
   });
 
   // ── 7. Title bar buttons are present ────────────────────────────────

@@ -189,6 +189,10 @@ describe("StudioShell", () => {
       expect.objectContaining({
         panning: expect.objectContaining({
           disabled: true,
+          excluded: [
+            ".workspace-panel-root",
+            '[data-canvas-drag-disabled="true"]',
+          ],
         }),
       }),
     );
@@ -382,6 +386,24 @@ describe("StudioShell", () => {
     expect(setTransformSpy).toHaveBeenCalled();
   });
 
+  it("remounts panels after Center Windows applies a viewport transform", async () => {
+    render(
+      <StudioShell
+        panelLayout={buildStudioShellPresetLayout("minimal")}
+        setPanelLayout={vi.fn()}
+        tutorPanel={<div>Tutor</div>}
+      />,
+    );
+
+    const panelBefore = screen.getByTestId("studio-tutor-panel");
+
+    fireEvent.click(screen.getByRole("button", { name: "Center Windows" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("studio-tutor-panel")).not.toBe(panelBefore);
+    });
+  });
+
   it("preserves the current zoom when the user recenters open panels", () => {
     render(
       <StudioShell
@@ -473,7 +495,7 @@ describe("StudioShell", () => {
     expect((memory?.position.x || 0)).toBeGreaterThan(tutor?.position.x || 0);
   });
 
-  it("preserves the same panel DOM node when position changes", () => {
+  it("remounts the panel DOM node when an external layout restore changes its position", async () => {
     const minimalLayout = buildStudioShellPresetLayout("minimal");
     const movedLayout = minimalLayout.map((item) =>
       item.panel === "tutor_chat"
@@ -505,8 +527,12 @@ describe("StudioShell", () => {
       />,
     );
 
+    await waitFor(() => {
+      expect(screen.getByTestId("studio-tutor-panel")).not.toBe(panelBefore);
+    });
+
     const panelAfter = screen.getByTestId("studio-tutor-panel");
-    expect(panelAfter).toBe(panelBefore);
+    expect(panelAfter).not.toBe(panelBefore);
   });
 
   it("does not recenter the canvas when a panel position updates", () => {

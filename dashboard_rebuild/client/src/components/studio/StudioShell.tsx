@@ -55,6 +55,8 @@ type StudioPanelDefinition = {
   content: ReactNode;
 };
 
+type PanelLayoutChangeSource = "local" | "restore";
+
 const PANEL_ALIASES: Record<string, string> = {
   priming: "priming_chat",
   tutor: "tutor_chat",
@@ -586,7 +588,14 @@ export function StudioShell({
   const [canvasScale, setCanvasScale] = useState(0.85);
   const [isCanvasDragging, setIsCanvasDragging] = useState(false);
   const [selectedPanelIds, setSelectedPanelIds] = useState<string[]>([]);
+  const [panelTransformResetToken, setPanelTransformResetToken] = useState(0);
+  const [panelPositionResetTokens, setPanelPositionResetTokens] = useState<
+    Record<string, number>
+  >({});
   const selectedPanelIdsRef = useRef<string[]>([]);
+  const pendingPanelLayoutChangeSourceRef =
+    useRef<PanelLayoutChangeSource | null>(null);
+  const previousPanelLayoutFingerprintRef = useRef<Record<string, string>>({});
   const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
   const canvasTransformRef = useRef({
     scale: 1,
@@ -972,6 +981,64 @@ export function StudioShell({
     [panelLayout, panelsByKey],
   );
 
+  const queuePanelLayoutChange = useCallback(
+    (
+      next:
+        | StudioPanelLayoutItem[]
+        | ((current: StudioPanelLayoutItem[]) => StudioPanelLayoutItem[]),
+      source: PanelLayoutChangeSource = "local",
+    ) => {
+      pendingPanelLayoutChangeSourceRef.current = source;
+      setPanelLayout(next);
+    },
+    [setPanelLayout],
+  );
+
+  useEffect(() => {
+    const nextFingerprints = Object.fromEntries(
+      resolvedLayout.map((item) => [
+        item.id,
+        [
+          item.position.x,
+          item.position.y,
+          item.size.width,
+          item.size.height,
+          item.collapsed ? 1 : 0,
+        ].join(":"),
+      ]),
+    );
+    const previousFingerprints = previousPanelLayoutFingerprintRef.current;
+    const changeSource = pendingPanelLayoutChangeSourceRef.current;
+    pendingPanelLayoutChangeSourceRef.current = null;
+
+    const externallyResetIds =
+      changeSource === "local"
+        ? []
+        : resolvedLayout
+            .filter((item) => previousFingerprints[item.id] !== undefined)
+            .filter((item) => previousFingerprints[item.id] !== nextFingerprints[item.id])
+            .map((item) => item.id);
+
+    setPanelPositionResetTokens((current) => {
+      const nextTokens: Record<string, number> = {};
+
+      for (const item of resolvedLayout) {
+        nextTokens[item.id] = current[item.id] ?? 0;
+      }
+      for (const id of externallyResetIds) {
+        nextTokens[id] = (nextTokens[id] ?? 0) + 1;
+      }
+
+      const sameKeys =
+        Object.keys(current).length === Object.keys(nextTokens).length &&
+        Object.keys(nextTokens).every((key) => current[key] === nextTokens[key]);
+
+      return sameKeys ? current : nextTokens;
+    });
+
+    previousPanelLayoutFingerprintRef.current = nextFingerprints;
+  }, [resolvedLayout]);
+
   useEffect(() => {
     if (resolvedLayout.length > 0 || entryCard || !autoSeedDefaultPreset) return;
     setPanelLayout((current) =>
@@ -1032,6 +1099,7 @@ export function StudioShell({
       positionY: focus.positionY,
     };
     setCanvasScale(focus.scale);
+    setPanelTransformResetToken((current) => current + 1);
     if (typeof canvasViewportRef.current?.scrollIntoView === "function") {
       canvasViewportRef.current.scrollIntoView({
         block: "start",
@@ -1109,6 +1177,7 @@ export function StudioShell({
       doubleClick={{ disabled: true }}
       panning={{
         disabled: true,
+        excluded: [".workspace-panel-root", '[data-canvas-drag-disabled="true"]'],
       }}
       onTransformed={(_ref, state) => {
         setCanvasScale(state.scale);
@@ -1140,7 +1209,7 @@ export function StudioShell({
                   size="sm"
                   aria-label={`Open ${definition.title} panel`}
                   onClick={() => {
-                    setPanelLayout((current) =>
+                    queuePanelLayoutChange((current) =>
                       spawnPanelLayout(current, definition),
                     );
                     if (resolvedLayout.length === 0) {
@@ -1172,7 +1241,7 @@ export function StudioShell({
                 disabled={!canGroupSelection}
                 onClick={() => {
                   const groupId = nextGroupId();
-                  setPanelLayout((current) =>
+                  queuePanelLayoutChange((current) =>
                     applyGroupIdToPanels(current, selectedPanelIds, groupId),
                   );
                 }}
@@ -1187,7 +1256,7 @@ export function StudioShell({
                 aria-label="Ungroup selected windows"
                 disabled={!canUngroupSelection}
                 onClick={() => {
-                  setPanelLayout((current) =>
+                  queuePanelLayoutChange((current) =>
                     applyGroupIdToPanels(current, selectedPanelIds, null),
                   );
                 }}
@@ -1209,7 +1278,10 @@ export function StudioShell({
                   size="sm"
                   aria-label={`Apply ${label} preset`}
                   onClick={() => {
-                    setPanelLayout(createPresetLayout(preset, panelDefinitions));
+                    queuePanelLayoutChange(
+                      createPresetLayout(preset, panelDefinitions),
+                      "restore",
+                    );
                     setShouldFocusLayout(true);
                   }}
                   className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white"
@@ -1228,7 +1300,7 @@ export function StudioShell({
                     onClearCanvas();
                     return;
                   }
-                  setPanelLayout([]);
+                  queuePanelLayoutChange([]);
                 }}
                 className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white disabled:opacity-40"
               >
@@ -1255,8 +1327,9 @@ export function StudioShell({
                 aria-label="Reset canvas view"
                 onClick={() => {
                   if (resolvedLayout.length === 0) {
-                    setPanelLayout(
+                    queuePanelLayoutChange(
                       createPresetLayout(defaultPreset, panelDefinitions),
+                      "restore",
                     );
                     setShouldFocusLayout(true);
                     return;
@@ -1300,6 +1373,18 @@ export function StudioShell({
             )}
             onPointerDown={(event) => {
               const target = event.target as HTMLElement | null;
+              const composedPath =
+                typeof event.nativeEvent.composedPath === "function"
+                  ? event.nativeEvent.composedPath()
+                  : [];
+              const pointerStartedInsidePanel =
+                Boolean(target?.closest(".workspace-panel-root")) ||
+                composedPath.some(
+                  (node) =>
+                    node instanceof HTMLElement &&
+                    node.classList.contains("workspace-panel-root"),
+                );
+              if (pointerStartedInsidePanel) return;
               if (target?.closest(".workspace-panel-root")) return;
               if (target?.closest('[data-canvas-drag-disabled="true"]')) return;
 
@@ -1392,6 +1477,9 @@ export function StudioShell({
                     title={definition.title}
                     dataTestId={definition.testId}
                     position={layoutItem.position}
+                    positionResetToken={
+                      `${panelPositionResetTokens[layoutItem.id] ?? 0}:${panelTransformResetToken}`
+                    }
                     size={layoutItem.size}
                     defaultPosition={definition.defaultPosition}
                     defaultSize={definition.defaultSize}
@@ -1419,19 +1507,19 @@ export function StudioShell({
                       });
                     }}
                     onClose={() => {
-                      setPanelLayout((current) =>
+                      queuePanelLayoutChange((current) =>
                         current.filter((item) => item.id !== layoutItem.id),
                       );
                     }}
                     onCollapsedChange={(collapsed) => {
-                      setPanelLayout((current) =>
+                      queuePanelLayoutChange((current) =>
                         current.map((item) =>
                           item.id === layoutItem.id ? { ...item, collapsed } : item,
                         ),
                       );
                     }}
                     onPositionChange={(position) => {
-                      setPanelLayout((current) =>
+                      queuePanelLayoutChange((current) =>
                         applyStudioShellPanelPositionUpdate(
                           current,
                           layoutItem.id,
@@ -1441,7 +1529,7 @@ export function StudioShell({
                       );
                     }}
                     onSizeChange={(size) => {
-                      setPanelLayout((current) =>
+                      queuePanelLayoutChange((current) =>
                         current.map((item) =>
                           item.id === layoutItem.id ? { ...item, size } : item,
                         ),

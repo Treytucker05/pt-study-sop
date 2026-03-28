@@ -60,6 +60,25 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - updated `/tutor` route regressions so saved project-shell document tabs still hydrate while the floating panel layout remains closed until the user explicitly opens panels again
     - validation passed with `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorShell.test.tsx client/src/components/studio/__tests__/StudioShell.test.tsx`, `cd dashboard_rebuild && npm run build`, and live browser verification on `http://127.0.0.1:5000/tutor?course_id=1&mode=studio` confirming a reload returned to `0` open panels even after manually opening and persisting Source Shelf plus Workspace
 
+- [x] HUD-246. Stop the first post-transform panel drag from jumping after `Center Windows` or preset recentering.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/ui/WorkspacePanel.tsx`
+    - `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/WorkspacePanel.test.tsx`
+    - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+  - Done when:
+    - `WorkspacePanel` no longer passes a controlled `position` prop into `react-rnd` for expanded or collapsed Studio panels
+    - explicit layout restores such as Studio preset loads still remount the affected `Rnd` instances so restored positions apply correctly without remounting on ordinary drag-stop updates
+    - clicking `Center Windows` and then immediately dragging a panel no longer causes a jump before normal dragging begins
+    - targeted Studio/workspace tests, `npm run build`, and a live `dev-browser` Studio repro pass succeed
+  - Assignee: @codex-cli
+  - Completed: 2026-03-28
+  - Notes:
+    - removed controlled `position` props from the Studio `react-rnd` panels, added restore-only remount tokens for external layout resets, and kept ordinary drag-stop updates uncontrolled so the first post-transform drag starts from the panel’s visual location
+    - fixed the remaining live jump by excluding `.workspace-panel-root` from `react-zoom-pan-pinch` pan start, which prevents the library from starting a hidden wrapper pan on panel mousedown and snapping the canvas back to centered bounds on mouseup
+    - validation passed with `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/WorkspacePanel.test.tsx client/src/components/studio/__tests__/StudioShell.test.tsx`, `cd dashboard_rebuild && npm run build`, and live `dev-browser` verification on `http://127.0.0.1:5000/tutor?course_id=1&mode=studio` after `Apply Priming preset -> Center Windows -> drag Source Shelf`, with screenshot evidence at `C:\\Users\\treyt\\.dev-browser\\tmp\\source-shelf-before-drag-fixed-v2.png` and `C:\\Users\\treyt\\.dev-browser\\tmp\\source-shelf-after-drag-fixed-v2.png`
+
 - [x] HUD-240. Replace the floating Priming wizard with the Phase 1 tool panel from `docs/design/PRIMING_PANEL_CORRECTED.md` and `docs/design/CORE_STUDY_LOOP.md`.
   - Scope:
     - `docs/design/PRIMING_PANEL_CORRECTED.md`

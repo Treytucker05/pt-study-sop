@@ -14,6 +14,7 @@ export interface WorkspacePanelProps {
   defaultPosition?: { x: number; y: number };
   defaultSize?: { width: number; height: number };
   position?: { x: number; y: number };
+  positionResetToken?: string | number;
   size?: { width: number; height: number };
   minWidth?: number;
   minHeight?: number;
@@ -50,6 +51,7 @@ export function WorkspacePanel({
   defaultPosition = { x: 0, y: 0 },
   defaultSize = { width: 400, height: 300 },
   position,
+  positionResetToken,
   size,
   minWidth = 200,
   minHeight = 100,
@@ -85,15 +87,15 @@ export function WorkspacePanel({
   if (collapsed) {
     return (
       <Rnd
+        key={`collapsed:${String(positionResetToken ?? "stable")}`}
         default={{
           x: position?.x ?? defaultPosition.x,
           y: position?.y ?? defaultPosition.y,
           width: "auto",
           height: "auto",
         }}
-      position={position}
-      scale={scale}
-      enableResizing={false}
+        scale={scale}
+        enableResizing={false}
         onDragStop={(_e, d) => {
           onPositionChange?.({ x: d.x, y: d.y });
         }}
@@ -124,13 +126,13 @@ export function WorkspacePanel({
   // ── Expanded panel view ───────────────────────────────────────────
   return (
     <Rnd
+      key={`expanded:${String(positionResetToken ?? "stable")}`}
       default={{
         x: position?.x ?? defaultPosition.x,
         y: position?.y ?? defaultPosition.y,
         width: size?.width ?? defaultSize.width,
         height: size?.height ?? defaultSize.height,
       }}
-      position={position}
       size={size}
       scale={scale}
       minWidth={minWidth}
