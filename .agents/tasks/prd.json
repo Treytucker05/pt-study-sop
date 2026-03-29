@@ -1,37 +1,24 @@
 {
-  "title": "PT Study Tutor Entry Card & Canvas Fixes",
-  "description": "Fix the three blocking UI bugs in the /tutor Studio workspace.",
+  "title": "Entry Card Overlay Polish",
+  "description": "Polish the entry card overlay so it looks and behaves like a proper modal.",
   "stories": [
     {
-      "id": "ENTRY-001",
-      "title": "Entry card renders as viewport overlay, not canvas object",
-      "status": "done"
-    },
-    {
-      "id": "ENTRY-002",
-      "title": "Material picker shows filenames not full paths",
-      "status": "done"
-    },
-    {
-      "id": "ENTRY-003",
-      "title": "Auto-center panels after Start Priming opens them",
-      "description": "When the user clicks Start Priming and panels open via the priming preset, the viewport does NOT auto-frame the newly opened panels. The user sees empty canvas or partially visible panels. After handleStartPrimingFromEntry opens the priming preset, trigger focusOpenPanels() or centerOpenPanels() with a short delay (requestAnimationFrame or setTimeout 300ms) to auto-frame the newly opened panels in the viewport.",
+      "id": "OVERLAY-001",
+      "title": "Entry card gets dark backdrop and blocks canvas interaction",
+      "description": "The entry card overlay needs three fixes: (1) Add a semi-opaque dark backdrop (bg-black/70 or similar) behind the entry card so the canvas beneath is dimmed and the form text is readable. (2) The backdrop must intercept mouse wheel events so scrolling does not pan/zoom the canvas while the entry card is showing. Add onWheel={e => e.stopPropagation()} to the overlay wrapper. (3) The backdrop must intercept click events so clicking outside the entry card does not interact with the canvas. The entry card itself should have a subtle border and slightly elevated look (e.g. border border-primary/20 bg-black/90 rounded-2xl shadow-2xl p-8). The overlay container should be pointer-events-auto and cover the full viewport area of the studio shell.",
       "acceptanceCriteria": [
-        "After clicking Start Priming, the viewport auto-pans to show the opened panels",
-        "At least one panel has a boundingBox that intersects the visible viewport",
-        "Panels are not cut off at edges -- they are framed with padding",
-        "dev-browser verification: click Start Priming, wait 2s, check panel visibility in viewport"
+        "Entry card has a dark semi-opaque backdrop behind it",
+        "Canvas is visually dimmed when entry card is showing",
+        "Mouse wheel does NOT zoom/pan the canvas while entry card is visible",
+        "Clicking outside the entry card does NOT interact with canvas elements",
+        "Entry card text is easily readable against the dark backdrop",
+        "dev-browser verification: check backdrop exists, scroll does not move canvas, entry card text contrast is sufficient"
       ],
       "files": [
-        "dashboard_rebuild/client/src/pages/tutor.tsx",
-        "dashboard_rebuild/client/src/components/TutorShell.tsx",
         "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
       ],
-      "verification": "dev-browser --timeout 60 run scripts/verify-entry-bugs.js",
-      "status": "in_progress",
-      "startedAt": "2026-03-29T06:13:56.876060+00:00",
-      "completedAt": null,
-      "updatedAt": "2026-03-29T06:13:56.876068+00:00"
+      "verification": "dev-browser --timeout 60 run scripts/verify-overlay-polish.js",
+      "status": "open"
     }
   ]
 }
