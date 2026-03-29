@@ -1,6 +1,6 @@
 {
-  "title": "Entry Card Overlay Polish",
-  "description": "Polish the entry card overlay so it looks and behaves like a proper modal.",
+  "title": "Entry Card Overlay Polish + Upload",
+  "description": "Polish the entry card overlay and add material upload capability.",
   "stories": [
     {
       "id": "OVERLAY-001",
@@ -16,6 +16,41 @@
       ],
       "files": [
         "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
+      ],
+      "verification": "dev-browser --timeout 60 run scripts/verify-overlay-polish.js",
+      "status": "open"
+    },
+    {
+      "id": "OVERLAY-002",
+      "title": "Add material upload button to entry card",
+      "description": "Add an Upload Materials button or drop zone to the entry card so users can add new materials for the selected course without leaving the setup flow. The Source Shelf already has upload wired via handleUploadSourceShelfFiles in TutorShell.tsx -- reuse that same handler. Add a file input (hidden) + styled Upload button below the material checklist. When files are selected, call the same upload handler. Show upload progress indicator (isUploading state already exists as sourceShelfUploading). After upload completes, the material list should refresh to include the newly uploaded files. Style the upload button as a dashed-border outlined area: border-dashed border-[rgba(255,118,144,0.25)] rounded-lg p-3 text-center cursor-pointer hover:bg-primary/5. Show a cloud-upload icon or text like 'Upload New Materials' with 'PDF, DOCX, MP4, PPTX' as accepted types.",
+      "acceptanceCriteria": [
+        "Upload button or drop zone is visible on the entry card below the material list",
+        "Clicking upload opens a file picker dialog",
+        "Accepted file types include PDF, DOCX, MP4, PPTX",
+        "Upload progress indicator shows while uploading",
+        "After upload completes, new materials appear in the checklist",
+        "Upload is scoped to the selected course",
+        "dev-browser verification: check upload button exists, is clickable"
+      ],
+      "files": [
+        "dashboard_rebuild/client/src/components/TutorShell.tsx"
+      ],
+      "verification": "dev-browser --timeout 60 run scripts/verify-overlay-polish.js",
+      "status": "open"
+    },
+    {
+      "id": "OVERLAY-003",
+      "title": "Rename Open Full Studio button and clean up Resume logic",
+      "description": "The 'Open Full Studio' button is confusing for users. Rename it to 'Skip Setup' since it just opens all panels without the priming workflow. Also, the Resume button should only show when there is a real resumable session (resumeCandidate must have a valid session with actual progress, not just any test data). If there is no meaningful session to resume, hide the button entirely.",
+      "acceptanceCriteria": [
+        "Button text reads 'Skip Setup' instead of 'Open Full Studio'",
+        "Skip Setup still calls applyCanvasPreset('full_studio')",
+        "Resume button only shows when resumeCandidate is truthy",
+        "dev-browser verification: check button text is 'Skip Setup'"
+      ],
+      "files": [
+        "dashboard_rebuild/client/src/components/TutorShell.tsx"
       ],
       "verification": "dev-browser --timeout 60 run scripts/verify-overlay-polish.js",
       "status": "open"

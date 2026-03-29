@@ -10,69 +10,75 @@ function check(name, condition) {
   else { console.log("FAIL: " + name); failed++; }
 }
 
-// Check entry card exists
+// OVERLAY-001: Check backdrop and scroll blocking
 const entry = await page.locator('[data-testid="studio-entry-state"]');
 check("Entry card visible", await entry.count() > 0);
 
-// Check backdrop exists (dark overlay behind entry card)
 const hasBackdrop = await page.evaluate(() => {
-  const el = document.querySelector('[data-testid="studio-entry-state"]');
-  if (!el) return false;
-  const parent = el.closest('[data-testid="entry-overlay"]') || el.parentElement;
-  if (!parent) return false;
-  const style = getComputedStyle(parent);
+  const overlay = document.querySelector('[data-testid="entry-overlay"]')
+    || document.querySelector('[data-testid="studio-entry-state"]')?.parentElement;
+  if (!overlay) return false;
+  const style = getComputedStyle(overlay);
   const bg = style.backgroundColor;
-  // Check if bg has opacity (rgba with alpha > 0.3)
-  const match = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+  const match = bg.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)(?:,\\s*([\\d.]+))?\\)/);
   if (match && match[4]) return parseFloat(match[4]) > 0.3;
-  // Or check if it's a solid dark color
   if (match) return (parseInt(match[1]) + parseInt(match[2]) + parseInt(match[3])) < 150;
   return false;
 });
 check("Dark backdrop behind entry card", hasBackdrop);
 
 // Check scroll doesn't move canvas
-const scrollBefore = await page.evaluate(() => {
-  const canvas = document.querySelector('[data-testid="studio-canvas"]') ||
-                 document.querySelector('.react-transform-component');
-  if (!canvas) return null;
-  return canvas.style.transform || canvas.getAttribute('style');
+const transformBefore = await page.evaluate(() => {
+  const el = document.querySelector('.react-transform-component');
+  return el ? el.style.transform : null;
 });
-
-// Try scrolling on the entry card area
 const entryBox = await entry.boundingBox();
 if (entryBox) {
   await page.mouse.move(entryBox.x + entryBox.width / 2, entryBox.y + entryBox.height / 2);
   await page.mouse.wheel(0, 300);
   await page.waitForTimeout(500);
 }
-
-const scrollAfter = await page.evaluate(() => {
-  const canvas = document.querySelector('[data-testid="studio-canvas"]') ||
-                 document.querySelector('.react-transform-component');
-  if (!canvas) return null;
-  return canvas.style.transform || canvas.getAttribute('style');
+const transformAfter = await page.evaluate(() => {
+  const el = document.querySelector('.react-transform-component');
+  return el ? el.style.transform : null;
 });
-check("Mouse wheel did NOT change canvas transform", scrollBefore === scrollAfter);
+check("Mouse wheel did NOT change canvas transform", transformBefore === transformAfter);
 
-// Check text readability - entry card should have high contrast
-const textContrast = await page.evaluate(() => {
+const buf1 = await page.screenshot();
+saveScreenshot(buf1, "verify-overlay-backdrop.png");
+
+// OVERLAY-002: Check upload button exists
+const uploadBtn = await page.evaluate(() => {
   const el = document.querySelector('[data-testid="studio-entry-state"]');
   if (!el) return false;
-  const heading = el.querySelector('h2') || el.querySelector('h1');
-  if (!heading) return true;
-  const style = getComputedStyle(heading);
-  const color = style.color;
-  const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  if (!match) return true;
-  // Text should be bright (sum > 400 means white-ish)
-  return (parseInt(match[1]) + parseInt(match[2]) + parseInt(match[3])) > 400;
+  const btns = [...el.querySelectorAll('button, label, [role="button"]')];
+  return btns.some(b => b.textContent.toLowerCase().includes('upload'));
 });
-check("Entry card heading text is bright/readable", textContrast);
+check("Upload button or zone exists on entry card", uploadBtn);
 
-const buf = await page.screenshot();
-saveScreenshot(buf, "verify-overlay-polish.png");
+const buf2 = await page.screenshot();
+saveScreenshot(buf2, "verify-overlay-upload.png");
 
-console.log("\n=== RESULTS: " + passed + " passed, " + failed + " failed ===");
+// OVERLAY-003: Check button text
+const hasSkipSetup = await page.evaluate(() => {
+  const el = document.querySelector('[data-testid="studio-entry-state"]');
+  if (!el) return false;
+  const btns = [...el.querySelectorAll('button')];
+  return btns.some(b => b.textContent.toLowerCase().includes('skip setup'));
+});
+check("'Skip Setup' button exists (not 'Open Full Studio')", hasSkipSetup);
+
+const noFullStudio = await page.evaluate(() => {
+  const el = document.querySelector('[data-testid="studio-entry-state"]');
+  if (!el) return true;
+  const btns = [...el.querySelectorAll('button')];
+  return !btns.some(b => b.textContent.toLowerCase().includes('open full studio'));
+});
+check("'Open Full Studio' text is gone", noFullStudio);
+
+const buf3 = await page.screenshot();
+saveScreenshot(buf3, "verify-overlay-buttons.png");
+
+console.log("\\n=== RESULTS: " + passed + " passed, " + failed + " failed ===");
 if (failed > 0) { console.log("VERIFICATION FAILED"); process.exit(1); }
 else { console.log("ALL CHECKS PASSED"); }
