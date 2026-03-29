@@ -273,3 +273,39 @@ Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-033115-30160-iter-1.md
   - Useful context
     - `scripts/verify-overlay-polish.js` already covered the full dismiss/reopen acceptance criteria for this story, so the missing piece was stabilizing `/api/tutor/project-shell/state` persistence rather than adding more overlay UI.
 ---
+
+## [2026-03-29 04:08 CDT] - STUDY-001: Priming method cards use colorful box UI with name and description
+Thread: 
+Run: 20260329-033115-30160 (iteration 2)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260329-033115-30160-iter-2.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-033115-30160-iter-2.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: `b687504c feat: add colorful priming method cards`
+- Post-commit status: `.ralph/progress.md`
+- Verification:
+  - Command: `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx` -> PASS
+  - Command: `cd dashboard_rebuild && npm run build` -> PASS
+  - Command: `dev-browser --timeout 90 run C:/pt-study-sop/scripts/verify-study-flow.js` -> PASS
+- Files changed:
+  - `.agents/tasks/prd.json`
+  - `.ralph/runs/run-20260329-033115-30160-iter-1.md`
+  - `conductor/tracks/GENERAL/log.md`
+  - `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+  - `docs/root/TUTOR_TODO.md`
+  - `scripts/verify-study-flow.js`
+  - `.ralph/progress.md`
+- What was implemented
+  - Replaced the Priming method dropdown with colorful theme-tinted method cards that show the method id, bold name, one-line description, and a checkbox-style selected indicator.
+  - Let method-card mode select and run one or more PRIME methods while preserving chain runs through a separate `Optional Chain Mode` selector.
+  - Updated the focused Priming tests plus the shared `verify-study-flow.js` browser script so the story now proves card descriptions, distinct colors, selected state, chain reachability, and zero console errors.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - The existing Priming runtime already supports multiple `priming_methods`, so the multi-select story can stay frontend-scoped if the panel builds its displayed run from the returned per-method inventory.
+  - Gotchas encountered
+    - Moving chain selection out of the combined dropdown leaves stale references behind easily, so the run path needs an explicit chain regression test after the UI split.
+    - `dev-browser --connect` was unavailable because Chrome remote debugging was not exposed on `9222`, but isolated `dev-browser` mode still provided a valid live verification path for this story.
+  - Useful context
+    - Browser-computed card colors on this route came back as `oklab(...)`, so the verifier should compare computed style strings generically instead of assuming `rgb(...)`.
+---
