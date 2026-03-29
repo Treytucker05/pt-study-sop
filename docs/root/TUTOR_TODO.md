@@ -28,6 +28,30 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 - Ops note (2026-03-25): `dev-browser` is now a shared agent skill projected into every supported agent root; this does not change Tutor sprint priority.
 
+- [x] HUD-256. Upgrade the Tutor Studio entry card into a full new-session setup form with session name and material selection.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+    - `scripts/verify-entry-card.js`
+  - Done when:
+    - the entry card collects a session name, selected course, and selected materials before launch
+    - Start Priming passes the session name into workflow creation as the `topic` and preserves manual material selection instead of force-selecting every course material
+    - the NEW SESSION hero button flashes and toasts when the user is already on the empty entry card, while keeping the existing reset behavior everywhere else
+    - focused TutorShell/page tests, the production frontend build, and the requested `dev-browser` verification pass
+  - Completed: 2026-03-28
+  - Notes:
+    - Added the entry-card session-name field plus a course-scoped checkbox picker with `Select All` / `Deselect All` and live `X of Y materials selected` feedback.
+    - `handleStartPrimingFromEntry` now uses the entry session name as workflow `topic` and keeps manual material picks instead of force-selecting all course materials.
+    - The hero `NEW SESSION` action now flashes the setup card and shows a ready toast when the user is already on the entry form.
+    - Validation passed:
+      - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/tutor.test.tsx`
+      - `cd dashboard_rebuild && npm run build`
+      - `dev-browser --timeout 90 run C:\pt-study-sop\scripts\verify-entry-card.js`
+  - Assignee: @codex-cli
+
 - [x] HUD-255. Merge Sketch, Mind Map, Concept Map, and Vault Graph into one unified Workspace panel with internal tabs.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

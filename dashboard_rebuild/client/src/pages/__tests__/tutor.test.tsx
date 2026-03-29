@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ComponentProps, ReactNode } from "react";
 
@@ -30,6 +31,8 @@ const {
   createWorkflowMock,
   getWorkflowMock,
   endSessionMock,
+  toastSuccessMock,
+  toastErrorMock,
   workspaceSurfaceMode,
 } = vi.hoisted(() => ({
   getSessionMock: vi.fn(),
@@ -58,6 +61,8 @@ const {
   createWorkflowMock: vi.fn(),
   getWorkflowMock: vi.fn(),
   endSessionMock: vi.fn(),
+  toastSuccessMock: vi.fn(),
+  toastErrorMock: vi.fn(),
   workspaceSurfaceMode: { useReal: false },
 }));
 
@@ -293,6 +298,13 @@ vi.mock("@/components/studio/StudioWorkspaceUnified", () => ({
   StudioWorkspaceUnified: () => (
     <div data-testid="page-studio-workspace">workspace canvas</div>
   ),
+}));
+
+vi.mock("sonner", () => ({
+  toast: {
+    success: (...args: unknown[]) => toastSuccessMock(...args),
+    error: (...args: unknown[]) => toastErrorMock(...args),
+  },
 }));
 
 vi.mock("@/lib/api", () => ({
@@ -617,8 +629,11 @@ async function openStudioPanel(label: RegExp) {
 describe("Tutor page restore", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useRealTimers();
     localStorage.clear();
     sessionStorage.clear();
+    toastSuccessMock.mockReset();
+    toastErrorMock.mockReset();
     window.history.replaceState({}, "", "/tutor");
     window.scrollTo = vi.fn();
     Element.prototype.scrollTo = vi.fn();
@@ -891,6 +906,116 @@ describe("Tutor page restore", () => {
     expect(sourceShelf).toHaveTextContent("Renal Diagram");
   });
 
+  it("starts Priming from the entry card with the session name as topic and preserves manual material selection", async () => {
+    const user = userEvent.setup();
+
+    window.history.replaceState({}, "", "/tutor?course_id=1&mode=studio");
+    getContentSourcesMock.mockResolvedValue({
+      courses: [{ id: 1, name: "Neuro" }],
+    });
+    getMaterialsMock.mockResolvedValue([
+      {
+        id: 101,
+        title: "Neuro Lecture",
+        source_path: "uploads/neuro-lecture.pdf",
+        folder_path: null,
+        file_type: "pdf",
+        file_size: 1024,
+        course_id: 1,
+        enabled: true,
+        extraction_error: null,
+        checksum: null,
+        created_at: new Date("2026-03-10T00:00:00Z").toISOString(),
+        updated_at: null,
+      },
+      {
+        id: 102,
+        title: "Brainstem Walkthrough",
+        source_path: "uploads/brainstem-walkthrough.mp4",
+        folder_path: null,
+        file_type: "mp4",
+        file_size: 2048,
+        course_id: 1,
+        enabled: true,
+        extraction_error: null,
+        checksum: null,
+        created_at: new Date("2026-03-10T00:00:00Z").toISOString(),
+        updated_at: null,
+      },
+      {
+        id: 103,
+        title: "Lab Handout",
+        source_path: "uploads/lab-handout.docx",
+        folder_path: null,
+        file_type: "docx",
+        file_size: 512,
+        course_id: 1,
+        enabled: true,
+        extraction_error: null,
+        checksum: null,
+        created_at: new Date("2026-03-10T00:00:00Z").toISOString(),
+        updated_at: null,
+      },
+    ]);
+    createWorkflowMock.mockResolvedValueOnce({
+      workflow: makeWorkflowDetail({
+        workflow_id: "wf-neuro",
+        course_id: 1,
+        course_name: "Neuro",
+        course_code: "NEU-1",
+        topic: "Neuro Week 9 Review",
+      }).workflow,
+    });
+    getWorkflowMock.mockResolvedValue(
+      makeWorkflowDetail({
+        workflow_id: "wf-neuro",
+        course_id: 1,
+        course_name: "Neuro",
+        course_code: "NEU-1",
+        topic: "Neuro Week 9 Review",
+      }),
+    );
+
+    renderTutor();
+
+    expect(await screen.findByTestId("studio-entry-state")).toBeInTheDocument();
+    expect(await screen.findByText("3 of 3 materials selected")).toBeInTheDocument();
+
+    await user.type(
+      screen.getByLabelText(/session name/i),
+      "Neuro Week 9 Review",
+    );
+    await user.click(screen.getByRole("button", { name: /^deselect all$/i }));
+    await user.click(
+      screen.getByRole("checkbox", { name: /neuro lecture/i }),
+    );
+    await user.click(
+      screen.getByRole("checkbox", { name: /brainstem walkthrough/i }),
+    );
+
+    expect(screen.getByText("2 of 3 materials selected")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /start priming/i }));
+
+    await waitFor(() => {
+      expect(createWorkflowMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          course_id: 1,
+          topic: "Neuro Week 9 Review",
+          current_stage: "priming",
+          status: "priming_in_progress",
+        }),
+      );
+    });
+
+    await openStudioPanel(/open source shelf panel/i);
+    const sourceShelf = await screen.findByTestId("studio-source-shelf");
+    expect(sourceShelf).toHaveTextContent("Neuro");
+    expect(sourceShelf).toHaveTextContent("2 materials loaded");
+    expect(sourceShelf).toHaveTextContent("Neuro Lecture");
+    expect(sourceShelf).toHaveTextContent("Brainstem Walkthrough");
+  });
+
   it("renders Studio as the default shell page", async () => {
     renderTutor();
 
@@ -974,6 +1099,43 @@ describe("Tutor page restore", () => {
     expect(newSessionButton).toBeInTheDocument();
     expect(newSessionButton).toHaveClass("tutor-hero-action");
     expect(newSessionButton).toHaveClass("tutor-hero-action--primary");
+  });
+
+  it("flashes the entry card and shows a ready toast when NEW SESSION is pressed on the setup card", async () => {
+    renderTutor();
+
+    await expectStudioEntryState();
+    await waitFor(() => {
+      expect(document.querySelector(".page-shell__actions")).not.toBeNull();
+    });
+
+    vi.useFakeTimers();
+    try {
+      const heroActions = document.querySelector(".page-shell__actions");
+      expect(heroActions).not.toBeNull();
+
+      fireEvent.click(
+        within(heroActions as HTMLElement).getByRole("button", {
+          name: /^new session$/i,
+        }),
+      );
+
+      const entryCard = screen.getByTestId("tutor-entry-card");
+      expect(entryCard).toHaveClass("ring-2");
+      expect(entryCard).toHaveClass("ring-primary/50");
+      expect(endSessionMock).not.toHaveBeenCalled();
+      expect(toastSuccessMock).toHaveBeenCalledWith(
+        "Ready — fill in session details and click Start Priming",
+      );
+
+      await act(async () => {
+        vi.advanceTimersByTime(1000);
+      });
+
+      expect(entryCard).not.toHaveClass("ring-2");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("only renders the hero RESUME button when a resume candidate exists", async () => {
@@ -1269,7 +1431,7 @@ describe("Tutor page restore", () => {
           module_name: "Cardiovascular",
           content_filter: expect.objectContaining({
             material_ids: [561],
-            vault_folder: "Courses/Exercise Physiology/Cardiovascular",
+            vault_folder: "Exercise Physiology/Cardiovascular",
           }),
         }),
       );

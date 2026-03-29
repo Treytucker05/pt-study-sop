@@ -2069,3 +2069,22 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/components/__tests__/TutorShell.test.tsx`
   - `cd dashboard_rebuild && npm run build`
   - `dev-browser --timeout 90 run C:\\pt-study-sop\\scripts\\verify-unified-workspace.js`
+
+## 2026-03-28 - HUD-256 Tutor entry-card session setup
+
+- Upgraded the Tutor Studio entry card in `dashboard_rebuild/client/src/components/TutorShell.tsx` into a full session-setup form with:
+  - a `Session Name` field
+  - the existing course picker
+  - a course-scoped material checklist with `Select All` / `Deselect All`
+  - a live `X of Y materials selected` summary
+- Wired `dashboard_rebuild/client/src/pages/tutor.tsx` so the entry-card session name now feeds `handleStartPrimingFromEntry` and reaches `workflow.createWorkflowAndOpenPriming(...)` as the workflow `topic`.
+- Changed the priming bootstrap logic to preserve manual material selection from the entry card and only auto-select all course materials when the user has not manually touched the picker.
+- Added the ready-state UX for the hero `NEW SESSION` action: when the user is already on the empty setup card, the card flashes with a temporary ring and shows `Ready — fill in session details and click Start Priming` instead of doing a destructive reset.
+- Extended the focused coverage in:
+  - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+- Added the live verification script at `scripts/verify-entry-card.js`.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/tutor.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - `dev-browser --timeout 90 run C:\\pt-study-sop\\scripts\\verify-entry-card.js`

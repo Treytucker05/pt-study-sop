@@ -46,6 +46,7 @@ import type { UseTutorWorkflowReturn } from "@/hooks/useTutorWorkflow";
 import { useBrainFeedback } from "@/hooks/useBrainFeedback";
 import type { TutorBoardScope } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
+import type { ChangeEvent } from "react";
 
 type PrimePromotedWorkspaceObject = Extract<
   StudioWorkspaceObject,
@@ -114,6 +115,11 @@ function parseRuleSnapshotLines(value: string | null | undefined): string[] {
     .filter((line) => Boolean(line));
 }
 
+function formatMaterialFileType(value: string | null | undefined): string {
+  const normalized = typeof value === "string" ? value.trim() : "";
+  return normalized ? normalized.toUpperCase() : "FILE";
+}
+
 export interface TutorShellProps {
   activeSessionId: string | null;
   hub: UseTutorHubReturn;
@@ -169,6 +175,11 @@ export interface TutorShellProps {
     workspaceObject: PrimePromotedWorkspaceObject,
   ) => void;
   onPromotePolishPacketNote?: (note: StudioPolishPromotedNote) => void;
+  entrySessionName?: string;
+  onEntrySessionNameChange?: (value: string) => void;
+  entryMaterialSelectionTouched?: boolean;
+  onEntryMaterialSelectionTouchedChange?: (touched: boolean) => void;
+  entryCardFlashActive?: boolean;
   onStartPriming?: () => void | Promise<void>;
   isStartingPriming?: boolean;
   workspaceResetVersion?: number;
@@ -216,6 +227,10 @@ export function TutorShell({
   promotedPolishPacketNotes: controlledPromotedPolishPacketNotes,
   onPromotePrimePacketObject,
   onPromotePolishPacketNote,
+  entrySessionName = "",
+  onEntrySessionNameChange,
+  onEntryMaterialSelectionTouchedChange,
+  entryCardFlashActive = false,
   onStartPriming,
   isStartingPriming = false,
   workspaceResetVersion = 0,
@@ -791,6 +806,31 @@ export function TutorShell({
         : 0,
     [hub],
   );
+  const selectedCourseMaterials = useMemo(
+    () =>
+      typeof hub.courseId === "number"
+        ? hub.chatMaterials.filter((material) => material.course_id === hub.courseId)
+        : [],
+    [hub.chatMaterials, hub.courseId],
+  );
+  const selectedCourseMaterialIds = useMemo(
+    () => selectedCourseMaterials.map((material) => material.id),
+    [selectedCourseMaterials],
+  );
+  const selectedCourseMaterialIdSet = useMemo(
+    () => new Set(selectedCourseMaterialIds),
+    [selectedCourseMaterialIds],
+  );
+  const selectedEntryMaterialCount = useMemo(
+    () =>
+      hub.selectedMaterials.filter((materialId) =>
+        selectedCourseMaterialIdSet.has(materialId),
+      ).length,
+    [hub.selectedMaterials, selectedCourseMaterialIdSet],
+  );
+  const allEntryMaterialsSelected =
+    selectedCourseMaterialIds.length > 0 &&
+    selectedEntryMaterialCount === selectedCourseMaterialIds.length;
 
   const handleSetPrimingMethods = useCallback(
     (ids: string[]) => {
@@ -871,6 +911,56 @@ export function TutorShell({
       }
     },
     [hub],
+  );
+
+  const handleEntryCourseChange = useCallback(
+    (event: ChangeEvent<HTMLSelectElement>) => {
+      const nextCourseId = Number.parseInt(event.target.value, 10);
+      const resolvedCourseId = Number.isFinite(nextCourseId)
+        ? nextCourseId
+        : undefined;
+      hub.setCourseId(resolvedCourseId);
+      onEntryMaterialSelectionTouchedChange?.(false);
+      if (typeof resolvedCourseId === "number") {
+        hub.setSelectedMaterials(hub.getCourseMaterialIds(resolvedCourseId));
+        return;
+      }
+      hub.setSelectedMaterials([]);
+    },
+    [hub, onEntryMaterialSelectionTouchedChange],
+  );
+
+  const handleToggleAllEntryMaterials = useCallback(() => {
+    if (selectedCourseMaterialIds.length === 0) {
+      return;
+    }
+    onEntryMaterialSelectionTouchedChange?.(true);
+    hub.setSelectedMaterials(
+      allEntryMaterialsSelected ? [] : selectedCourseMaterialIds,
+    );
+  }, [
+    allEntryMaterialsSelected,
+    hub,
+    onEntryMaterialSelectionTouchedChange,
+    selectedCourseMaterialIds,
+  ]);
+
+  const handleToggleEntryMaterial = useCallback(
+    (materialId: number) => {
+      onEntryMaterialSelectionTouchedChange?.(true);
+      hub.setSelectedMaterials((current) => {
+        const currentCourseSelection = current.filter((candidateId) =>
+          selectedCourseMaterialIdSet.has(candidateId),
+        );
+        if (currentCourseSelection.includes(materialId)) {
+          return currentCourseSelection.filter(
+            (candidateId) => candidateId !== materialId,
+          );
+        }
+        return [...currentCourseSelection, materialId];
+      });
+    },
+    [hub, onEntryMaterialSelectionTouchedChange, selectedCourseMaterialIdSet],
   );
 
   useEffect(() => {
@@ -1214,7 +1304,12 @@ export function TutorShell({
     </div>
   );
   const entryCard = (
-    <div className="space-y-5">
+    <div
+      data-testid="tutor-entry-card"
+      className={`space-y-5 rounded-[1rem] transition-shadow duration-300 ${
+        entryCardFlashActive ? "ring-2 ring-primary/50" : ""
+      }`}
+    >
       <div className="space-y-2">
         <div className="font-mono text-xs uppercase tracking-[0.18em] text-[#ffb9c7]">
           Floating Studio
@@ -1232,16 +1327,22 @@ export function TutorShell({
         </p>
       </div>
       <label className="flex max-w-md flex-col gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+        Session Name
+        <input
+          aria-label="Session Name"
+          type="text"
+          value={entrySessionName}
+          onChange={(event) => onEntrySessionNameChange?.(event.target.value)}
+          placeholder="e.g. Week 9 Basal Ganglia Review"
+          className="h-11 rounded-[0.9rem] border border-[rgba(255,118,144,0.18)] bg-black/30 px-3 font-mono text-sm text-white outline-none placeholder:text-[#ffc8d3]/38"
+        />
+      </label>
+      <label className="flex max-w-md flex-col gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
         Course
         <select
           aria-label="Course for new priming session"
           value={typeof hub.courseId === "number" ? String(hub.courseId) : ""}
-          onChange={(event) => {
-            const nextCourseId = Number.parseInt(event.target.value, 10);
-            hub.setCourseId(
-              Number.isFinite(nextCourseId) ? nextCourseId : undefined,
-            );
-          }}
+          onChange={handleEntryCourseChange}
           className="h-11 rounded-[0.9rem] border border-[rgba(255,118,144,0.18)] bg-black/30 px-3 font-mono text-sm text-white outline-none"
         >
           <option value="">Select course</option>
@@ -1252,10 +1353,63 @@ export function TutorShell({
           ))}
         </select>
       </label>
-      <div className="font-mono text-xs leading-6 text-[#ffc8d3]/68">
+      {typeof hub.courseId === "number" ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+              Session Materials
+            </div>
+            <button
+              type="button"
+              onClick={handleToggleAllEntryMaterials}
+              className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] transition hover:text-white"
+            >
+              {allEntryMaterialsSelected ? "Deselect All" : "Select All"}
+            </button>
+          </div>
+          <div className="max-h-[200px] overflow-y-auto rounded-[0.9rem] border border-[rgba(255,118,144,0.18)] bg-black/30 p-2">
+            {selectedCourseMaterials.length > 0 ? (
+              <div className="space-y-2">
+                {selectedCourseMaterials.map((material) => {
+                  const checked = hub.selectedMaterials.includes(material.id);
+                  return (
+                    <label
+                      key={material.id}
+                      className="flex cursor-pointer items-center gap-3 rounded-[0.8rem] border border-transparent px-2 py-2 transition hover:border-[rgba(255,118,144,0.18)] hover:bg-black/20"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => handleToggleEntryMaterial(material.id)}
+                        className="h-4 w-4 rounded border-[rgba(255,118,144,0.28)] bg-black/40 text-primary"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-mono text-sm text-white">
+                          {material.title}
+                        </div>
+                      </div>
+                      <span className="rounded-full border border-[rgba(255,118,144,0.22)] bg-black/30 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]">
+                        {formatMaterialFileType(material.file_type)}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="font-mono text-xs leading-6 text-[#ffc8d3]/68">
+                No materials available for this course yet.
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+      <div
+        data-testid="studio-entry-material-count"
+        className="font-mono text-xs leading-6 text-[#ffc8d3]/68"
+      >
         {typeof hub.courseId === "number"
-          ? `${selectedCourseMaterialCount} material${selectedCourseMaterialCount === 1 ? "" : "s"} available in Source Shelf for this course.`
-          : "Pick a course before starting Priming."}
+          ? `${selectedEntryMaterialCount} of ${selectedCourseMaterialCount} materials selected`
+          : "Pick a course before selecting materials."}
       </div>
       <div className="flex flex-wrap gap-3">
         <Button

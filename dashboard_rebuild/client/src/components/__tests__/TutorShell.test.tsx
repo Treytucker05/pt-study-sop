@@ -509,6 +509,9 @@ function renderTutorShell(
     const [showSetup, setShowSetup] = useState(
       shellOverrides?.showSetup ?? (studioView === "home" && !activeSessionId),
     );
+    const [entrySessionName, setEntrySessionName] = useState("");
+    const [entryMaterialSelectionTouched, setEntryMaterialSelectionTouched] =
+      useState(false);
 
     return (
       <TutorShell
@@ -556,6 +559,12 @@ function renderTutorShell(
         }
         onPromotePolishPacketNote={
           shellOverrides?.onPromotePolishPacketNote as never
+        }
+        entrySessionName={entrySessionName}
+        onEntrySessionNameChange={setEntrySessionName}
+        entryMaterialSelectionTouched={entryMaterialSelectionTouched}
+        onEntryMaterialSelectionTouchedChange={
+          setEntryMaterialSelectionTouched
         }
         onResumeHubCandidate={vi.fn()}
       />
@@ -1035,6 +1044,137 @@ describe("TutorShell studio routing", () => {
     expect(screen.queryByTestId("studio-source-shelf")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /open source shelf panel/i })).toBeInTheDocument();
     expect(openStudioPriming).toHaveBeenCalledTimes(1);
+  });
+
+  it("collects a session name and lets the entry card narrow materials before launch", async () => {
+    const user = userEvent.setup();
+
+    function Harness() {
+      const [panelLayout, setPanelLayout] = useState<unknown[]>([]);
+      const [showSetup, setShowSetup] = useState(true);
+      const [courseId, setCourseId] = useState<number | undefined>(101);
+      const [selectedMaterials, setSelectedMaterials] = useState<number[]>([
+        101, 102, 103,
+      ]);
+      const [entrySessionName, setEntrySessionName] = useState("");
+      const [entryMaterialSelectionTouched, setEntryMaterialSelectionTouched] =
+        useState(false);
+      const courses = [{ id: 101, name: "Neuro" }];
+      const chatMaterials = [
+        {
+          id: 101,
+          title: "Week 9 Lecture",
+          file_type: "pdf",
+          source_path: "uploads/week-9-lecture.pdf",
+          course_id: 101,
+        },
+        {
+          id: 102,
+          title: "Case Walkthrough",
+          file_type: "mp4",
+          source_path: "uploads/case-walkthrough.mp4",
+          course_id: 101,
+        },
+        {
+          id: 103,
+          title: "Lab Handout",
+          file_type: "docx",
+          source_path: "uploads/lab-handout.docx",
+          course_id: 101,
+        },
+      ];
+
+      return (
+        <TutorShell
+          activeSessionId={null}
+          hub={
+            {
+              ...makeHubWithOverrides({
+                courseId,
+                courseLabel: "Neuro",
+                selectedMaterials,
+                chatMaterials,
+                tutorContentSources: { courses },
+              }),
+              courseId,
+              selectedMaterials,
+              chatMaterials,
+              tutorContentSources: { courses },
+              setCourseId: (nextCourseId?: number) => setCourseId(nextCourseId),
+              setSelectedMaterials: (
+                next:
+                  | number[]
+                  | ((current: number[]) => number[]),
+              ) =>
+                setSelectedMaterials((current) =>
+                  typeof next === "function" ? next(current) : next,
+                ),
+              getCourseMaterialIds: (targetCourseId?: number) =>
+                typeof targetCourseId === "number"
+                  ? chatMaterials
+                      .filter((material) => material.course_id === targetCourseId)
+                      .map((material) => material.id)
+                  : [],
+              loadCourseMaterials: (targetCourseId?: number) =>
+                typeof targetCourseId === "number"
+                  ? chatMaterials
+                      .filter((material) => material.course_id === targetCourseId)
+                      .map((material) => material.id)
+                  : [],
+            } as never
+          }
+          session={makeSessionWithOverrides() as never}
+          workflow={makeWorkflowWithOverrides("home") as never}
+          showSetup={showSetup}
+          restoredTurns={undefined}
+          activeBoardScope="project"
+          activeBoardId={null}
+          viewerState={null}
+          setActiveBoardScope={vi.fn()}
+          setActiveBoardId={vi.fn()}
+          setViewerState={vi.fn()}
+          setShowSetup={setShowSetup}
+          queryClient={new QueryClient()}
+          panelLayout={panelLayout as never}
+          setPanelLayout={setPanelLayout as never}
+          entrySessionName={entrySessionName}
+          onEntrySessionNameChange={setEntrySessionName}
+          entryMaterialSelectionTouched={entryMaterialSelectionTouched}
+          onEntryMaterialSelectionTouchedChange={
+            setEntryMaterialSelectionTouched
+          }
+          onResumeHubCandidate={vi.fn()}
+        />
+      );
+    }
+
+    render(<Harness />, { wrapper: createQueryWrapper() });
+
+    expect(await screen.findByTestId("studio-entry-state")).toBeInTheDocument();
+    const sessionNameInput = screen.getByLabelText(/session name/i);
+    expect(sessionNameInput).toHaveValue("");
+
+    await user.type(sessionNameInput, "Week 9 Basal Ganglia Review");
+    expect(sessionNameInput).toHaveValue("Week 9 Basal Ganglia Review");
+
+    expect(screen.getByText("3 of 3 materials selected")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^deselect all$/i })).toBeInTheDocument();
+    expect(screen.getByText("PDF")).toBeInTheDocument();
+    expect(screen.getByText("MP4")).toBeInTheDocument();
+    expect(screen.getByText("DOCX")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^deselect all$/i }));
+    expect(screen.getByText("0 of 3 materials selected")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^select all$/i })).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("checkbox", { name: /week 9 lecture/i }),
+    );
+    await user.click(
+      screen.getByRole("checkbox", { name: /case walkthrough/i }),
+    );
+
+    expect(screen.getByText("2 of 3 materials selected")).toBeInTheDocument();
   });
 
   it("clears the open canvas layout and workspace objects from the toolbar", async () => {

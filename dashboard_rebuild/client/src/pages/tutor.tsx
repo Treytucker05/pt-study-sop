@@ -54,9 +54,16 @@ function useTutorPageController() {
   const lastPersistedShellKeyRef = useRef("");
   const resumedFromProjectShellRef = useRef(false);
   const suppressProjectShellRestoreRef = useRef(false);
+  const entryCardFlashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const [workspaceResetVersion, setWorkspaceResetVersion] = useState(0);
   const [sessionActionPending, setSessionActionPending] = useState(false);
   const [startPrimingPending, setStartPrimingPending] = useState(false);
+  const [entrySessionName, setEntrySessionName] = useState("");
+  const [entryMaterialSelectionTouched, setEntryMaterialSelectionTouched] =
+    useState(false);
+  const [entryCardFlashActive, setEntryCardFlashActive] = useState(false);
 
   // ─── Shell state ───
   const pendingLaunchHandoff = useMemo(() => peekTutorLaunchHandoff(), []);
@@ -207,6 +214,15 @@ function useTutorPageController() {
   const liveTutorSessionId = session.hasActiveTutorSession
     ? activeSessionId
     : null;
+  const entryCourseMaterialIds = useMemo(
+    () =>
+      typeof hub.courseId === "number"
+        ? hub.chatMaterials
+            .filter((material) => material.course_id === hub.courseId)
+            .map((material) => material.id)
+        : [],
+    [hub.chatMaterials, hub.courseId],
+  );
   const handleResumePreviousSession = useCallback((sessionId: string) => {
     void session.resumeSession(sessionId);
   }, [session]);
@@ -381,6 +397,13 @@ function useTutorPageController() {
 
   const resetTutorWorkspaceHome = useCallback(
     (nextCourseId?: number) => {
+      if (entryCardFlashTimeoutRef.current) {
+        clearTimeout(entryCardFlashTimeoutRef.current);
+        entryCardFlashTimeoutRef.current = null;
+      }
+      setEntryCardFlashActive(false);
+      setEntrySessionName("");
+      setEntryMaterialSelectionTouched(false);
       suppressProjectShellRestoreRef.current = true;
       resumedFromProjectShellRef.current = true;
       session.clearActiveSessionState();
@@ -415,6 +438,7 @@ function useTutorPageController() {
       setWorkspaceResetVersion((current) => current + 1);
     },
     [
+      entryCardFlashTimeoutRef,
       hub,
       session,
       setActiveBoardId,
@@ -436,8 +460,71 @@ function useTutorPageController() {
     ],
   );
 
+  useEffect(
+    () => () => {
+      if (entryCardFlashTimeoutRef.current) {
+        clearTimeout(entryCardFlashTimeoutRef.current);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!showSetup || typeof hub.courseId !== "number") {
+      return;
+    }
+    if (entryMaterialSelectionTouched) {
+      return;
+    }
+    if (entryCourseMaterialIds.length === 0) {
+      return;
+    }
+
+    const hasFullCourseSelection =
+      entryCourseMaterialIds.length === hub.selectedMaterials.length &&
+      entryCourseMaterialIds.every((materialId) =>
+        hub.selectedMaterials.includes(materialId),
+      );
+
+    if (!hasFullCourseSelection) {
+      hub.setSelectedMaterials(entryCourseMaterialIds);
+    }
+  }, [
+    entryCourseMaterialIds,
+    entryMaterialSelectionTouched,
+    hub,
+    showSetup,
+  ]);
+
+  useEffect(() => {
+    const nextSessionName = typeof hub.topic === "string" ? hub.topic : "";
+    setEntrySessionName((current) =>
+      current === nextSessionName ? current : nextSessionName,
+    );
+  }, [hub.topic]);
+
+  const handleEntrySessionNameChange = useCallback(
+    (value: string) => {
+      setEntrySessionName(value);
+      hub.setTopic(value);
+    },
+    [hub],
+  );
+
   const handleTutorSessionAction = useCallback(async () => {
     if (sessionActionPending) return;
+    if (showSetup && panelLayout.length === 0 && !liveTutorSessionId) {
+      if (entryCardFlashTimeoutRef.current) {
+        clearTimeout(entryCardFlashTimeoutRef.current);
+      }
+      setEntryCardFlashActive(true);
+      toast.success("Ready — fill in session details and click Start Priming");
+      entryCardFlashTimeoutRef.current = setTimeout(() => {
+        setEntryCardFlashActive(false);
+        entryCardFlashTimeoutRef.current = null;
+      }, 1000);
+      return;
+    }
     setSessionActionPending(true);
     suppressProjectShellRestoreRef.current = true;
     resumedFromProjectShellRef.current = true;
@@ -457,10 +544,13 @@ function useTutorPageController() {
       setSessionActionPending(false);
     }
   }, [
+    entryCardFlashTimeoutRef,
     liveTutorSessionId,
+    panelLayout.length,
     resetTutorWorkspaceHome,
     session,
     sessionActionPending,
+    showSetup,
   ]);
 
   const handleStartPrimingFromEntry = useCallback(async () => {
@@ -470,11 +560,16 @@ function useTutorPageController() {
     }
 
     const nextCourseId = hub.courseId;
+    const sessionTopic = entrySessionName.trim();
     setStartPrimingPending(true);
     suppressProjectShellRestoreRef.current = true;
     resumedFromProjectShellRef.current = true;
     try {
-      const courseMaterialIds = hub.loadCourseMaterials(nextCourseId);
+      const courseMaterialIds = entryMaterialSelectionTouched
+        ? hub.selectedMaterials.filter((materialId) =>
+            entryCourseMaterialIds.includes(materialId),
+          )
+        : hub.loadCourseMaterials(nextCourseId);
       workflow.setActiveWorkflowId(null);
       hub.setSelectedPaths([]);
       hub.setTopic("");
@@ -499,7 +594,7 @@ function useTutorPageController() {
       setWorkspaceResetVersion((current) => current + 1);
       await workflow.createWorkflowAndOpenPriming({
         courseId: nextCourseId,
-        topic: "",
+        topic: sessionTopic,
         selectedMaterials: courseMaterialIds,
         selectedPaths: [],
         selectedObjectiveGroup: "",
@@ -510,6 +605,9 @@ function useTutorPageController() {
       setStartPrimingPending(false);
     }
   }, [
+    entryCourseMaterialIds,
+    entryMaterialSelectionTouched,
+    entrySessionName,
     hub,
     setActiveBoardId,
     setActiveBoardScope,
@@ -954,6 +1052,13 @@ function useTutorPageController() {
                 : [...prev, note],
             );
           }}
+          entrySessionName={entrySessionName}
+          onEntrySessionNameChange={handleEntrySessionNameChange}
+          entryMaterialSelectionTouched={entryMaterialSelectionTouched}
+          onEntryMaterialSelectionTouchedChange={
+            setEntryMaterialSelectionTouched
+          }
+          entryCardFlashActive={entryCardFlashActive}
           onStartPriming={handleStartPrimingFromEntry}
           isStartingPriming={startPrimingPending}
           workspaceResetVersion={workspaceResetVersion}

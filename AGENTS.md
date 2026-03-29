@@ -157,6 +157,13 @@ For the full incident log, troubleshooting snippets, and detailed guardrails, us
 - Multi-agent handoff board: `docs/root/AGENT_BOARD.md`
 - Guardrails and troubleshooting: `docs/root/AGENT_GUARDRAILS.md`
 
+## Skill Creation & Management (Shared Skills)
+
+To ensure skills are shared across all agents (Claude, Codex, Gemini, Cursor) while avoiding startup conflicts:
+1. **Canonical Location:** Always create new global skills in `~/.agents/skills/<skill-name>/` and project-local skills in `.agents/skills/<skill-name>/`.
+2. **Tool-Specific Symlinks:** For agents that require skills in their own directories (like Claude or Codex), create a symbolic link from their tool-specific directory (e.g., `~/.claude/skills/<skill-name>` or `.codex/skills/<skill-name>`) pointing to the shared `.agents/skills/` location.
+3. **GEMINI EXCEPTION:** **DO NOT** create skills or symlinks in `~/.gemini/skills/` or `.gemini/skills/`. The Gemini CLI automatically discovers and loads skills from `~/.agents/skills/` natively. Adding them to the Gemini skills folder will cause duplicate skill conflicts and errors on startup.
+
 ## ?? SWARM ORCHESTRATION RULES (Active)
 1. **CANONICAL BOARD:** The source of truth for all tasks is docs/root/TUTOR_TODO.md. Do NOT use any other board.
 2. **CLAIMING TASKS:** Add your name (@AgentName) to the 'Assignee' line of the task in TUTOR_TODO.md.
