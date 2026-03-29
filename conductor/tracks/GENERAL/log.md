@@ -2088,3 +2088,10 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/tutor.test.tsx`
   - `cd dashboard_rebuild && npm run build`
   - `dev-browser --timeout 90 run C:\\pt-study-sop\\scripts\\verify-entry-card.js`
+
+## 2026-03-29 - ENTRY-001 viewport overlay verification hardening
+
+- Revalidated the Tutor Studio entry card against the live `/tutor` route and confirmed the runtime already renders it as a fixed viewport overlay outside the transformed canvas layer.
+- Strengthened `scripts/verify-entry-bugs.js` so ENTRY-001 now measures viewport-relative geometry with `getBoundingClientRect()`, scrolls to the canvas controls before interaction, and explicitly proves the entry card stays pinned while the canvas zooms and pans.
+- Live validation result:
+  - `dev-browser --timeout 60 run C:\\pt-study-sop\\scripts\\verify-entry-bugs.js` now passes every ENTRY-001 assertion and still fails only on the unrelated open ENTRY-003 panel-centering check.

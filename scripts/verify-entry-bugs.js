@@ -1,6 +1,7 @@
 const page = await browser.getPage("verify-entry");
 await page.goto("http://127.0.0.1:5000/tutor?course_id=1&mode=studio", { waitUntil: "networkidle" });
 await page.waitForTimeout(3000);
+await page.evaluate(() => window.scrollTo(0, 0));
 
 let passed = 0;
 let failed = 0;
@@ -15,8 +16,70 @@ function check(name, condition) {
   }
 }
 
-// Get viewport size
-const viewport = page.viewportSize();
+const readEntryOverlayMetrics = async () =>
+  page.evaluate(() => {
+    const entry = document.querySelector('[data-testid="studio-entry-state"]');
+    const overlay = document.querySelector('[data-testid="studio-entry-overlay"]');
+    const canvas = document.querySelector('[data-testid="studio-canvas"]');
+    const transformTarget =
+      document.querySelector(".react-transform-component") ||
+      document.querySelector(".react-transform-element");
+
+    if (
+      !(entry instanceof HTMLElement) ||
+      !(overlay instanceof HTMLElement) ||
+      !(canvas instanceof HTMLElement)
+    ) {
+      return null;
+    }
+
+    const entryRect = entry.getBoundingClientRect();
+    const overlayRect = overlay.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
+
+    return {
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        scrollY: window.scrollY,
+      },
+      entry: {
+        top: entryRect.top,
+        left: entryRect.left,
+        width: entryRect.width,
+        height: entryRect.height,
+        bottom: entryRect.bottom,
+      },
+      overlay: {
+        top: overlayRect.top,
+        left: overlayRect.left,
+      },
+      canvas: {
+        top: canvasRect.top,
+        left: canvasRect.left,
+        width: canvasRect.width,
+        height: canvasRect.height,
+      },
+      insideTransformedCanvas:
+        Boolean(entry.closest(".react-transform-component")) ||
+        Boolean(entry.closest(".react-transform-element")),
+      transform: transformTarget instanceof HTMLElement
+        ? transformTarget.style.transform || getComputedStyle(transformTarget).transform
+        : null,
+      zoomValue: (() => {
+        const zoomInput = document.querySelector('[aria-label="Canvas zoom"]');
+        return zoomInput instanceof HTMLInputElement
+          ? Number(zoomInput.value)
+          : null;
+      })(),
+    };
+  });
+
+const viewport = await page.evaluate(() => ({
+  width: window.innerWidth,
+  height: window.innerHeight,
+  scrollY: window.scrollY,
+}));
 console.log("Viewport:", JSON.stringify(viewport));
 
 // ENTRY-001: Entry card is viewport-centered overlay
@@ -25,12 +88,94 @@ const entryCount = await entryCard.count();
 check("Entry card exists", entryCount > 0);
 
 if (entryCount > 0) {
-  const box = await entryCard.boundingBox();
-  console.log("Entry card box:", JSON.stringify(box));
-  check("Entry card has dimensions", box !== null && box.width > 0);
-  check("Entry card Y is in upper half of viewport", box && box.y < viewport.height * 0.6);
-  check("Entry card Y is NOT at canvas center (2000+)", box && box.y < 500);
-  check("Entry card X is centered-ish", box && box.x > viewport.width * 0.15 && box.x < viewport.width * 0.85);
+  const initialMetrics = await readEntryOverlayMetrics();
+  console.log("Entry card metrics:", JSON.stringify(initialMetrics));
+  check(
+    "Entry card has dimensions",
+    initialMetrics !== null && initialMetrics.entry.width > 0 && initialMetrics.entry.height > 0,
+  );
+  check(
+    "Entry card is outside the transformed canvas layer",
+    initialMetrics !== null && !initialMetrics.insideTransformedCanvas,
+  );
+  check(
+    "Entry card Y is in the upper third of viewport",
+    initialMetrics !== null &&
+      initialMetrics.entry.top >= 0 &&
+      initialMetrics.entry.top < initialMetrics.viewport.height / 3,
+  );
+  check(
+    "Entry card Y is NOT at canvas center (2000+)",
+    initialMetrics !== null && initialMetrics.entry.top < 500,
+  );
+  check(
+    "Entry card X is centered-ish",
+    initialMetrics !== null &&
+      Math.abs(
+        initialMetrics.entry.left +
+          initialMetrics.entry.width / 2 -
+          initialMetrics.viewport.width / 2,
+      ) <
+        initialMetrics.viewport.width * 0.2,
+  );
+
+  const canvas = page.locator('[data-testid="studio-canvas"]');
+  if (initialMetrics) {
+    await page.evaluate((canvasTop) => {
+      window.scrollTo({
+        top: Math.max(canvasTop - 120, 0),
+        behavior: "instant",
+      });
+    }, initialMetrics.canvas.top + initialMetrics.viewport.scrollY);
+    await page.waitForTimeout(250);
+
+    const zoomInButton = page.getByLabel("Zoom in");
+    const beforeZoomMetrics = await readEntryOverlayMetrics();
+    await zoomInButton.click();
+    await page.waitForTimeout(250);
+    const afterZoomMetrics = await readEntryOverlayMetrics();
+    console.log("Entry card metrics after zoom:", JSON.stringify(afterZoomMetrics));
+    check(
+      "Canvas zoom control changes",
+      beforeZoomMetrics !== null &&
+        afterZoomMetrics !== null &&
+        typeof beforeZoomMetrics.zoomValue === "number" &&
+        typeof afterZoomMetrics.zoomValue === "number" &&
+        afterZoomMetrics.zoomValue > beforeZoomMetrics.zoomValue,
+    );
+    check(
+      "Entry card does NOT move when the canvas is zoomed",
+      afterZoomMetrics !== null &&
+        Math.abs(afterZoomMetrics.entry.top - initialMetrics.entry.top) < 2 &&
+        Math.abs(afterZoomMetrics.entry.left - initialMetrics.entry.left) < 2,
+    );
+
+    const canvasBox = await canvas.boundingBox();
+    if (!canvasBox) {
+      check("Canvas is available for panning", false);
+    } else {
+      const panStartX = canvasBox.x + 100;
+      const panStartY = Math.min(canvasBox.y + canvasBox.height - 120, viewport.height - 100);
+      await page.mouse.move(panStartX, panStartY);
+      await page.mouse.down();
+      await page.mouse.move(panStartX + 140, panStartY - 80, { steps: 12 });
+      await page.mouse.up();
+      await page.waitForTimeout(250);
+
+      const afterPanMetrics = await readEntryOverlayMetrics();
+      console.log("Entry card metrics after pan:", JSON.stringify(afterPanMetrics));
+      check(
+        "Canvas transform changes after panning",
+        afterPanMetrics !== null && afterPanMetrics.transform !== afterZoomMetrics?.transform,
+      );
+      check(
+        "Entry card does NOT move when the canvas is panned",
+        afterPanMetrics !== null &&
+          Math.abs(afterPanMetrics.entry.top - initialMetrics.entry.top) < 2 &&
+          Math.abs(afterPanMetrics.entry.left - initialMetrics.entry.left) < 2,
+      );
+    }
+  }
 }
 
 const buf1 = await page.screenshot();
