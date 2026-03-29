@@ -2166,3 +2166,12 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
   - `cd dashboard_rebuild && npm run build`
   - `dev-browser --timeout 90 run C:\\pt-study-sop\\scripts\\verify-study-flow.js`
+
+## 2026-03-29 - STUDY-001 verification rerun
+
+- Re-audited the existing `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` and `dashboard_rebuild/client/src/components/TutorShell.tsx` seams for run `20260329-041641-30365` and confirmed the shipped implementation already matches the story scope without additional code edits.
+- Re-verified the current repo state with the focused Priming regression, a fresh production build, and a connected `dev-browser` live pass on `http://127.0.0.1:5000/tutor?course_id=1&mode=studio`.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - `dev-browser --connect --timeout 90 run C:\\pt-study-sop\\scripts\\verify-study-flow.js`
