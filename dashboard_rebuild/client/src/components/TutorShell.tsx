@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { Upload } from "lucide-react";
 import { TutorErrorBoundary } from "@/components/TutorErrorBoundary";
 import { Button } from "@/components/ui/button";
 import { SourceShelf } from "@/components/studio/SourceShelf";
@@ -135,6 +136,8 @@ function formatEntryMaterialLabel(
   const basename = resolvedLabel.split(/[\\/]/).pop()?.trim() || resolvedLabel;
   return basename || "Unknown material";
 }
+
+const ENTRY_CARD_UPLOAD_ACCEPT = ".pdf,.docx,.mp4,.pptx";
 
 export interface TutorShellProps {
   activeSessionId: string | null;
@@ -280,6 +283,7 @@ export function TutorShell({
   >([]);
   const [notesScratchpad, setNotesScratchpad] = useState("");
   const [sourceShelfUploading, setSourceShelfUploading] = useState(false);
+  const entryUploadInputRef = useRef<HTMLInputElement | null>(null);
   const promotedPrimePacketObjects = useMemo(() => {
     const merged = new Map<string, PrimePromotedWorkspaceObject>();
 
@@ -931,6 +935,21 @@ export function TutorShell({
     [hub],
   );
 
+  const handleEntryMaterialUploadChange = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      if (!event.target.files || event.target.files.length === 0) {
+        return;
+      }
+
+      try {
+        await handleUploadSourceShelfFiles(Array.from(event.target.files));
+      } finally {
+        event.target.value = "";
+      }
+    },
+    [handleUploadSourceShelfFiles],
+  );
+
   const handleEntryCourseChange = useCallback(
     (event: ChangeEvent<HTMLSelectElement>) => {
       const nextCourseId = Number.parseInt(event.target.value, 10);
@@ -1422,6 +1441,41 @@ export function TutorShell({
                 No materials available for this course yet.
               </div>
             )}
+          </div>
+          <div className="space-y-2">
+            <button
+              type="button"
+              data-testid="studio-entry-upload-button"
+              onClick={() => entryUploadInputRef.current?.click()}
+              disabled={sourceShelfUploading}
+              className="w-full cursor-pointer rounded-lg border border-[rgba(255,118,144,0.25)] border-dashed p-3 text-center font-mono transition hover:bg-primary/5 disabled:cursor-wait disabled:opacity-70"
+            >
+              <Upload className="mx-auto h-4 w-4 text-[#ffb9c7]" aria-hidden="true" />
+              <div className="mt-2 text-[11px] uppercase tracking-[0.18em] text-white">
+                {sourceShelfUploading ? "Uploading Materials..." : "Upload New Materials"}
+              </div>
+              <div className="mt-1 text-[11px] text-[#ffc8d3]/68">
+                PDF, DOCX, MP4, PPTX
+              </div>
+            </button>
+            <input
+              ref={entryUploadInputRef}
+              data-testid="studio-entry-upload-input"
+              aria-label="Upload new materials"
+              type="file"
+              accept={ENTRY_CARD_UPLOAD_ACCEPT}
+              multiple
+              className="hidden"
+              onChange={handleEntryMaterialUploadChange}
+            />
+            {sourceShelfUploading ? (
+              <div
+                data-testid="studio-entry-upload-status"
+                className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]"
+              >
+                Uploading selected files to this course...
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

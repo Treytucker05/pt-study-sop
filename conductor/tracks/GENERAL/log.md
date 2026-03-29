@@ -2116,3 +2116,16 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/pages/__tests__/tutor.test.tsx`
   - `cd dashboard_rebuild && npm run build`
   - `dev-browser --connect --timeout 60 run C:\\pt-study-sop\\scripts\\verify-entry-bugs.js`
+
+## 2026-03-29 - OVERLAY-002 entry-card course uploads
+
+- Added a new entry-card upload affordance in `dashboard_rebuild/client/src/components/TutorShell.tsx` directly below the session material checklist, reusing `handleUploadSourceShelfFiles` so uploads stay scoped to the selected course and still auto-select the uploaded material IDs for the current run.
+- Used the existing `sourceShelfUploading` state to drive the entry-card uploading copy and status line, and limited the entry-card picker to the requested `.pdf,.docx,.mp4,.pptx` accept list.
+- Extended the focused regression coverage in:
+  - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/tutor.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - `dev-browser --connect --timeout 90 run C:\\Users\\treyt\\.dev-browser\\tmp\\verify-overlay-002.js`
+  - `dev-browser --connect --timeout 60 run C:\\pt-study-sop\\scripts\\verify-overlay-polish.js`

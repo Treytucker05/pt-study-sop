@@ -193,6 +193,7 @@ const getTemplateChainsMock = vi.fn().mockResolvedValue([]);
 const getMethodBlocksMock = vi.fn().mockResolvedValue([]);
 const getMaterialContentMock = vi.fn().mockResolvedValue({ content: "" });
 const getObsidianFilesMock = vi.fn().mockResolvedValue({ success: true, files: [] });
+const uploadMaterialMock = vi.fn();
 
 beforeEach(() => {
   mockTldrawEditor.createShapes.mockReset().mockReturnThis();
@@ -200,6 +201,7 @@ beforeEach(() => {
   mockTldrawEditor.deleteShapes.mockReset().mockReturnThis();
   getMaterialContentMock.mockReset().mockResolvedValue({ content: "" });
   getObsidianFilesMock.mockReset().mockResolvedValue({ success: true, files: [] });
+  uploadMaterialMock.mockReset();
 });
 
 vi.mock("@/lib/api", () => ({
@@ -210,6 +212,7 @@ vi.mock("@/lib/api", () => ({
       getMaterialContent: (...args: unknown[]) => getMaterialContentMock(...args),
       getMaterialFileUrl: (materialId: number) =>
         `/api/tutor/materials/${materialId}/file`,
+      uploadMaterial: (...args: unknown[]) => uploadMaterialMock(...args),
       summarizeReply: vi.fn(),
       captureWorkflowNote: vi.fn(),
       createWorkflow: vi.fn(),
@@ -268,6 +271,7 @@ function makeHub() {
     setSelectedObjectiveId: vi.fn(),
     setSelectedObjectiveGroup: vi.fn(),
     clearMaterialSelection: vi.fn(),
+    refreshChatMaterials: vi.fn().mockResolvedValue(undefined),
   };
   return {
     ...hub,
@@ -1175,6 +1179,151 @@ describe("TutorShell studio routing", () => {
     );
 
     expect(screen.getByText("2 of 3 materials selected")).toBeInTheDocument();
+  });
+
+  it("uploads new entry-card materials for the selected course and refreshes the checklist", async () => {
+    const user = userEvent.setup();
+    let resolveUpload: ((value: { id: number }) => void) | null = null;
+    const refreshChatMaterialsMock = vi.fn();
+
+    uploadMaterialMock.mockImplementation(
+      () =>
+        new Promise<{ id: number }>((resolve) => {
+          resolveUpload = resolve;
+        }),
+    );
+
+    function Harness() {
+      const [panelLayout, setPanelLayout] = useState<unknown[]>([]);
+      const [showSetup, setShowSetup] = useState(true);
+      const [courseId, setCourseId] = useState<number | undefined>(101);
+      const [selectedMaterials, setSelectedMaterials] = useState<number[]>([101]);
+      const [entrySessionName, setEntrySessionName] = useState("");
+      const [entryMaterialSelectionTouched, setEntryMaterialSelectionTouched] =
+        useState(false);
+      const [chatMaterials, setChatMaterials] = useState([
+        {
+          id: 101,
+          title: "Week 9 Lecture.pdf",
+          file_type: "pdf",
+          source_path: "uploads/week-9-lecture.pdf",
+          course_id: 101,
+        },
+      ]);
+      const courses = [{ id: 101, name: "Neuro" }];
+
+      return (
+        <TutorShell
+          activeSessionId={null}
+          hub={
+            {
+              ...makeHubWithOverrides({
+                courseId,
+                courseLabel: "Neuro",
+                selectedMaterials,
+                chatMaterials,
+                tutorContentSources: { courses },
+              }),
+              courseId,
+              selectedMaterials,
+              chatMaterials,
+              tutorContentSources: { courses },
+              setCourseId: (nextCourseId?: number) => setCourseId(nextCourseId),
+              setSelectedMaterials: (
+                next:
+                  | number[]
+                  | ((current: number[]) => number[]),
+              ) =>
+                setSelectedMaterials((current) =>
+                  typeof next === "function" ? next(current) : next,
+                ),
+              refreshChatMaterials: async () => {
+                refreshChatMaterialsMock();
+                setChatMaterials((current) =>
+                  current.some((material) => material.id === 104)
+                    ? current
+                    : [
+                        ...current,
+                        {
+                          id: 104,
+                          title: "Renal Review Deck.pptx",
+                          file_type: "pptx",
+                          source_path: "uploads/renal-review-deck.pptx",
+                          course_id: 101,
+                        },
+                      ],
+                );
+              },
+              getCourseMaterialIds: (targetCourseId?: number) =>
+                typeof targetCourseId === "number"
+                  ? chatMaterials
+                      .filter((material) => material.course_id === targetCourseId)
+                      .map((material) => material.id)
+                  : [],
+              loadCourseMaterials: (targetCourseId?: number) =>
+                typeof targetCourseId === "number"
+                  ? chatMaterials
+                      .filter((material) => material.course_id === targetCourseId)
+                      .map((material) => material.id)
+                  : [],
+            } as never
+          }
+          session={makeSessionWithOverrides() as never}
+          workflow={makeWorkflowWithOverrides("home") as never}
+          showSetup={showSetup}
+          restoredTurns={undefined}
+          activeBoardScope="project"
+          activeBoardId={null}
+          viewerState={null}
+          setActiveBoardScope={vi.fn()}
+          setActiveBoardId={vi.fn()}
+          setViewerState={vi.fn()}
+          setShowSetup={setShowSetup}
+          queryClient={new QueryClient()}
+          panelLayout={panelLayout as never}
+          setPanelLayout={setPanelLayout as never}
+          entrySessionName={entrySessionName}
+          onEntrySessionNameChange={setEntrySessionName}
+          entryMaterialSelectionTouched={entryMaterialSelectionTouched}
+          onEntryMaterialSelectionTouchedChange={
+            setEntryMaterialSelectionTouched
+          }
+          onResumeHubCandidate={vi.fn()}
+        />
+      );
+    }
+
+    render(<Harness />, { wrapper: createQueryWrapper() });
+
+    expect(await screen.findByTestId("studio-entry-state")).toBeInTheDocument();
+    const uploadInput = screen.getByTestId("studio-entry-upload-input");
+    expect(uploadInput).toHaveAttribute("accept", ".pdf,.docx,.mp4,.pptx");
+
+    const uploadPromise = user.upload(
+      uploadInput,
+      new File(["slides"], "renal-review-deck.pptx", {
+        type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      }),
+    );
+
+    expect(await screen.findByTestId("studio-entry-upload-status")).toHaveTextContent(
+      "Uploading selected files to this course...",
+    );
+    resolveUpload?.({ id: 104 });
+    await uploadPromise;
+
+    await waitFor(() => {
+      expect(uploadMaterialMock).toHaveBeenCalledWith(expect.any(File), {
+        course_id: 101,
+      });
+      expect(refreshChatMaterialsMock).toHaveBeenCalledTimes(1);
+    });
+
+    expect(await screen.findByText("Renal Review Deck.pptx")).toBeInTheDocument();
+    expect(
+      screen.getByRole("checkbox", { name: /renal review deck\.pptx/i }),
+    ).toBeChecked();
+    expect(screen.getByText("2 of 2 materials selected")).toBeInTheDocument();
   });
 
   it("renders entry-card material labels as filenames without path characters and keeps badges", async () => {

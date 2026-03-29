@@ -49,6 +49,30 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - `cd dashboard_rebuild && npm run build`
     - `dev-browser --connect --timeout 60 run C:\pt-study-sop\scripts\verify-overlay-polish.js`
 
+- [x] OVERLAY-002. Add material upload button to entry card.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+  - Done when:
+    - the entry card shows a course-scoped upload control below the material checklist
+    - clicking the upload control opens a file picker that accepts PDF, DOCX, MP4, and PPTX files
+    - the entry card shows upload progress while the existing Source Shelf upload handler is running
+    - newly uploaded materials refresh into the entry-card checklist and are auto-selected for the current run
+    - focused TutorShell/page regressions, the production frontend build, and live `dev-browser` verification of the upload control pass
+  - Assignee: @codex-cli
+  - Completed: 2026-03-29
+  - Notes:
+    - Reused `handleUploadSourceShelfFiles` inside `TutorShell` for a new entry-card upload affordance so uploads stay scoped to the selected course and still auto-select newly added materials for the current run.
+    - Added the dashed upload area plus hidden file input directly below the entry-card material checklist, with the requested accept list (`PDF`, `DOCX`, `MP4`, `PPTX`) and a live uploading status driven by `sourceShelfUploading`.
+    - Extended the focused TutorShell and Tutor page regressions so the entry card now proves the upload accept contract, upload progress state, and post-upload material refresh path through the existing `useTutorHub` invalidation flow.
+  - Validation:
+    - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/tutor.test.tsx`
+    - `cd dashboard_rebuild && npm run build`
+    - `dev-browser --connect --timeout 90 run C:\Users\treyt\.dev-browser\tmp\verify-overlay-002.js`
+    - `dev-browser --connect --timeout 60 run C:\pt-study-sop\scripts\verify-overlay-polish.js`
+
 - [x] ENTRY-003. Auto-center panels after Start Priming opens them.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

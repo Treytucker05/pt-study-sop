@@ -31,6 +31,7 @@ const {
   createWorkflowMock,
   getWorkflowMock,
   endSessionMock,
+  uploadMaterialMock,
   toastSuccessMock,
   toastErrorMock,
   workspaceSurfaceMode,
@@ -61,6 +62,7 @@ const {
   createWorkflowMock: vi.fn(),
   getWorkflowMock: vi.fn(),
   endSessionMock: vi.fn(),
+  uploadMaterialMock: vi.fn(),
   toastSuccessMock: vi.fn(),
   toastErrorMock: vi.fn(),
   workspaceSurfaceMode: { useReal: false },
@@ -334,6 +336,7 @@ vi.mock("@/lib/api", () => ({
       deleteArtifacts: vi.fn(),
       createCustomChain: vi.fn(),
       endSession: endSessionMock,
+      uploadMaterial: uploadMaterialMock,
       advanceBlock: vi.fn(),
       exportSession: vi.fn(),
       saveStrategyFeedback: vi.fn(),
@@ -654,6 +657,7 @@ describe("Tutor page restore", () => {
     });
     getWorkflowMock.mockResolvedValue(makeWorkflowDetail());
     endSessionMock.mockResolvedValue({ ok: true });
+    uploadMaterialMock.mockReset().mockResolvedValue({ id: 999 });
     preflightSessionMock.mockResolvedValue({
       ok: true,
       preflight_id: "preflight-test",
@@ -1012,6 +1016,92 @@ describe("Tutor page restore", () => {
     expect(sourceShelf).toHaveTextContent("2 materials loaded");
     expect(sourceShelf).toHaveTextContent("Neuro Lecture");
     expect(sourceShelf).toHaveTextContent("Brainstem Walkthrough");
+  });
+
+  it("uploads entry-card materials into the selected course and refreshes the checklist", async () => {
+    const user = userEvent.setup();
+    let materialRequestCount = 0;
+    const initialMaterials = [
+      {
+        id: 101,
+        title: "Neuro Lecture",
+        source_path: "uploads/neuro-lecture.pdf",
+        folder_path: null,
+        file_type: "pdf",
+        file_size: 1024,
+        course_id: 1,
+        enabled: true,
+        extraction_error: null,
+        checksum: null,
+        created_at: new Date("2026-03-10T00:00:00Z").toISOString(),
+        updated_at: null,
+      },
+      {
+        id: 102,
+        title: "Brainstem Walkthrough",
+        source_path: "uploads/brainstem-walkthrough.mp4",
+        folder_path: null,
+        file_type: "mp4",
+        file_size: 2048,
+        course_id: 1,
+        enabled: true,
+        extraction_error: null,
+        checksum: null,
+        created_at: new Date("2026-03-10T00:00:00Z").toISOString(),
+        updated_at: null,
+      },
+    ];
+    const uploadedMaterial = {
+      id: 103,
+      title: "Neuro Slides Deck.pptx",
+      source_path: "uploads/neuro-slides-deck.pptx",
+      folder_path: null,
+      file_type: "pptx",
+      file_size: 4096,
+      course_id: 1,
+      enabled: true,
+      extraction_error: null,
+      checksum: null,
+      created_at: new Date("2026-03-10T00:00:00Z").toISOString(),
+      updated_at: null,
+    };
+
+    window.history.replaceState({}, "", "/tutor?course_id=1&mode=studio");
+    getContentSourcesMock.mockResolvedValue({
+      courses: [{ id: 1, name: "Neuro" }],
+    });
+    getMaterialsMock.mockImplementation(async () => {
+      materialRequestCount += 1;
+      return materialRequestCount >= 2
+        ? [...initialMaterials, uploadedMaterial]
+        : initialMaterials;
+    });
+    uploadMaterialMock.mockResolvedValue({ id: 103 });
+
+    renderTutor();
+
+    expect(await screen.findByTestId("studio-entry-state")).toBeInTheDocument();
+    const uploadInput = screen.getByTestId("studio-entry-upload-input");
+    expect(uploadInput).toHaveAttribute("accept", ".pdf,.docx,.mp4,.pptx");
+
+    await user.upload(
+      uploadInput,
+      new File(["deck"], "neuro-slides-deck.pptx", {
+        type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(uploadMaterialMock).toHaveBeenCalledWith(expect.any(File), {
+        course_id: 1,
+      });
+    });
+
+    expect(await screen.findByText("Neuro Slides Deck.pptx")).toBeInTheDocument();
+    expect(screen.getByText("3 of 3 materials selected")).toBeInTheDocument();
+    expect(
+      screen.getByRole("checkbox", { name: /neuro slides deck\.pptx/i }),
+    ).toBeChecked();
   });
 
   it("renders Studio as the default shell page", async () => {
