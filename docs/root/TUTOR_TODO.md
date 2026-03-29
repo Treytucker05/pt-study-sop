@@ -28,6 +28,38 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 - Ops note (2026-03-25): `dev-browser` is now a shared agent skill projected into every supported agent root; this does not change Tutor sprint priority.
 
+- [x] HUD-255. Merge Sketch, Mind Map, Concept Map, and Vault Graph into one unified Workspace panel with internal tabs.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `docs/design/SESSION_STATUS.md`
+    - `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`
+    - `dashboard_rebuild/client/src/components/studio/StudioWorkspaceUnified.tsx`
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+    - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.workspace.integration.test.tsx`
+    - `dashboard_rebuild/client/src/index.css`
+    - `dashboard_rebuild/package.json`
+    - `scripts/verify-unified-workspace.js`
+  - Done when:
+    - `Sketch`, `Concept Map`, and `Vault Graph` no longer appear as standalone Studio toolbar panels or preset layout entries
+    - the surviving `Workspace` panel renders one internal tab strip with `Canvas`, `Mind Map`, and `Concept Map`, lazy-mounts each tool on first visit, and preserves tab state after switching
+    - `TutorShell` routes the existing tldraw workspace props through the new unified wrapper without rewriting `StudioTldrawWorkspace`, `MindMapView`, or `ConceptMapStructured`
+    - `@excalidraw/excalidraw` plus its dead CSS/test mocks are removed cleanly
+    - the focused Studio/Tutor tests, the production frontend build, and the requested `dev-browser` verification script all pass
+  - Assignee: @codex-cli
+  - Completed: 2026-03-28
+  - Notes:
+    - removed the standalone `Sketch`, `Concept Map`, and `Vault Graph` Studio registry entries so `Workspace` is the only surviving canvas/spatial panel and carries the inline HUD-255 merge comment in `StudioShell`
+    - added `dashboard_rebuild/client/src/components/studio/StudioWorkspaceUnified.tsx` to mount `StudioTldrawWorkspace`, `MindMapView`, and `ConceptMapStructured` behind one lazy tab strip, then wired `TutorShell` to pass the existing workspace props plus course/vault context through that wrapper
+    - removed the unused `@excalidraw/excalidraw` package, dead Excalidraw CSS, and the package-specific/mock-specific test seams while keeping the legacy Tutor workspace canvas compatibility component dependency-free
+    - added `scripts/verify-unified-workspace.js` and live screenshots at `C:\\Users\\treyt\\.dev-browser\\tmp\\workspace-canvas-tab.png`, `C:\\Users\\treyt\\.dev-browser\\tmp\\workspace-mindmap-tab.png`, and `C:\\Users\\treyt\\.dev-browser\\tmp\\workspace-conceptmap-tab.png`
+  - Validation:
+    - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/components/__tests__/TutorShell.test.tsx`
+    - `cd dashboard_rebuild && npm run build`
+    - `dev-browser --timeout 90 run C:\\pt-study-sop\\scripts\\verify-unified-workspace.js`
+
 - [x] HUD-244. Make `Center Windows` preserve the current canvas zoom while re-centering the open panel layout.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

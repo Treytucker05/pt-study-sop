@@ -38,10 +38,6 @@ vi.mock("@/components/brain/VaultEditor", () => ({
   ),
 }));
 
-vi.mock("@/components/brain/ExcalidrawCanvas", () => ({
-  ExcalidrawCanvas: () => <div data-testid="tutor-workspace-canvas-tool">canvas tool</div>,
-}));
-
 vi.mock("@/components/brain/GraphPanel", () => ({
   GraphPanel: () => <div data-testid="tutor-workspace-graph-tool">graph tool</div>,
 }));
@@ -88,7 +84,7 @@ describe("TutorWorkspaceSurface", () => {
     );
 
     fireEvent.click(screen.getByTestId("tutor-workspace-tab-canvas"));
-    expect(await screen.findByTestId("tutor-workspace-canvas-tool")).toBeInTheDocument();
+    expect(await screen.findByTestId("legacy-canvas-stage")).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("tutor-workspace-tab-graph"));
     expect(await screen.findByTestId("tutor-workspace-graph-tool")).toBeInTheDocument();

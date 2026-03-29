@@ -353,7 +353,11 @@ export function WorkspacePanel({
           "border-primary/65 shadow-[0_0_0_1px_rgba(255,116,142,0.44),0_20px_40px_rgba(0,0,0,0.34),0_0_24px_rgba(255,92,128,0.08)]",
         className,
       )}
-      style={style}
+      style={{
+        ...style,
+        display: "flex",
+        flexDirection: "column",
+      }}
       data-testid={dataTestId}
     >
       {/* Title bar */}

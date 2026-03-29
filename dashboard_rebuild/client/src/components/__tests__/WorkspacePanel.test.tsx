@@ -360,6 +360,20 @@ describe("WorkspacePanel", () => {
     expect(rnd.className).toContain("custom-extra");
   });
 
+  it("forces the expanded react-rnd wrapper to use a flex column layout", () => {
+    render(
+      <WorkspacePanel id="p1" title="Panel">
+        <p>content</p>
+      </WorkspacePanel>,
+    );
+
+    const rnd = screen.getByTestId("rnd-wrapper");
+    expect(rnd).toHaveStyle({
+      display: "flex",
+      flexDirection: "column",
+    });
+  });
+
   it("forwards title-bar pointer-down to the selection handler", () => {
     const handleTitlePointerDown = vi.fn();
 

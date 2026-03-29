@@ -19,6 +19,7 @@ Source Shelf → Priming (run method + chat refinement) → Prime Packet → Tut
 - HUD-251: Per-panel Center/Maximize now pan camera (viewport focus) instead of moving panel
 - HUD-252: Accessibility ARIA fixes (MainContent tablist, form labels), metadata cleanup, mobile header
 - HUD-254: Panel cleanup review applied in Studio (dead panels removed, merged tools folded into surviving surfaces)
+- HUD-255: Workspace now owns the tabbed Canvas / Mind Map / Concept Map surface; standalone Sketch, Concept Map, and Vault Graph panels are gone, and `@excalidraw/excalidraw` is removed
 
 ## Active Bugs
 - **Panel jump after Center Windows**: After clicking "Center Windows" or any canvas transform, first drag on a panel causes it to jump. Root cause: WorkspacePanel passes `position` as controlled prop to Rnd, mismatch with canvas translate. Fix written but not yet sent to Codex.
@@ -50,6 +51,7 @@ The Studio panel review is now carrying explicit keep/kill/merge decisions inste
 
 ### Panels MERGED:
 - Mind Map → Workspace (tldraw)
+- Sketch / Concept Map / Vault Graph → Workspace (tabbed Canvas / Mind Map / Concept Map)
 - Method Runner → Priming + Tutor chat
 
 ### Panels NOT YET REVIEWED:
@@ -57,10 +59,6 @@ The Studio panel review is now carrying explicit keep/kill/merge decisions inste
 - Polish Packet
 - Run Config
 - Memory
-- Workspace (tldraw)
-- Sketch
-- Concept Map
-- Vault Graph
 - Obsidian
 - Anki (Trey says Anki works when booted — NOT broken)
 

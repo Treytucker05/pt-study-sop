@@ -56,10 +56,6 @@ vi.mock("@/lib/api", () => ({
   },
 }));
 
-vi.mock("@/components/brain/ExcalidrawCanvas", () => ({
-  ExcalidrawCanvas: () => <div data-testid="excalidraw-canvas">Excalidraw</div>,
-}));
-
 vi.mock("@/components/brain/ConceptMapStructured", () => ({
   ConceptMapStructured: () => <div data-testid="concept-map">Concept Map</div>,
 }));

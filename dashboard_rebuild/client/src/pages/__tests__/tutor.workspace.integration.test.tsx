@@ -108,8 +108,8 @@ vi.mock("@/components/TutorArtifacts", () => ({
   TutorArtifacts: () => <div data-testid="tutor-artifacts">artifacts</div>,
 }));
 
-vi.mock("@/components/studio/StudioTldrawWorkspaceLazy", () => ({
-  StudioTldrawWorkspaceLazy: () => (
+vi.mock("@/components/studio/StudioWorkspaceUnified", () => ({
+  StudioWorkspaceUnified: () => (
     <div data-testid="page-studio-workspace">workspace canvas</div>
   ),
 }));
@@ -120,34 +120,6 @@ vi.mock("@/hooks/use-toast", () => ({
 
 vi.mock("@/components/ObsidianRenderer", () => ({
   ObsidianRenderer: ({ content }: { content: string }) => <div>{content}</div>,
-}));
-
-vi.mock("@excalidraw/excalidraw", () => ({
-  Excalidraw: ({
-    excalidrawAPI,
-  }: {
-    excalidrawAPI?: (api: {
-      getSceneElements: () => unknown[];
-      getAppState: () => { viewBackgroundColor: string };
-      getFiles: () => Record<string, never>;
-      updateScene: (scene: { elements?: unknown[] }) => void;
-      scrollToContent: () => void;
-    }) => void;
-  }) => {
-    const api = {
-      getSceneElements: () => [{ id: "shape-1", isDeleted: false }],
-      getAppState: () => ({ viewBackgroundColor: "transparent" }),
-      getFiles: () => ({}),
-      updateScene: vi.fn(),
-      scrollToContent: vi.fn(),
-    };
-    useEffect(() => {
-      excalidrawAPI?.(api);
-    }, [excalidrawAPI]);
-    return <div data-testid="page-excalidraw">mock excalidraw</div>;
-  },
-  exportToBlob: vi.fn(async () => new Blob(["png"])),
-  convertToExcalidrawElements: vi.fn((elements: unknown[]) => elements),
 }));
 
 vi.mock("@/components/brain/UnifiedBrainCanvas", () => ({

@@ -226,6 +226,15 @@ describe("StudioShell", () => {
     expect(
       screen.queryByRole("button", { name: /open method runner panel/i }),
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /open sketch panel/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /open concept map panel/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /open vault graph panel/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("pans only when dragging the empty canvas background", () => {

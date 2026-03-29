@@ -2044,3 +2044,28 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/components/__tests__/TutorShell.test.tsx`
   - `cd dashboard_rebuild && npm run build`
   - `dev-browser --timeout 90 run C:\\pt-study-sop\\scripts\\verify-panel-cleanup.js`
+
+## 2026-03-28 - Source Shelf blank panel fix
+
+- Root-caused the blank `Source Shelf` surface to the `react-rnd` wrapper in `dashboard_rebuild/client/src/components/ui/WorkspacePanel.tsx`: the outer panel was rendering as a block container, so the `flex-1` panel body collapsed to `0px` and hid the shelf content off-screen.
+- Forced expanded workspace panels to render as a flex column via inline `display: flex` and `flexDirection: column` on the `Rnd` wrapper so the body fills the panel height again.
+- Added a regression in `dashboard_rebuild/client/src/components/__tests__/WorkspacePanel.test.tsx` to assert the expanded panel wrapper keeps the flex-column layout.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/WorkspacePanel.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - Live browser verification on `http://127.0.0.1:5000/tutor?board_scope=project&course_id=1` confirmed `Source Shelf` now renders visible cards and the unified source tree instead of a blank body.
+
+## 2026-03-28 - HUD-255 unified Study Canvas workspace
+
+- Removed the standalone `Sketch`, `Concept Map`, and `Vault Graph` Studio panel definitions from `dashboard_rebuild/client/src/components/studio/StudioShell.tsx` and left the HUD-255 merge note on the surviving `Workspace` panel.
+- Added `dashboard_rebuild/client/src/components/studio/StudioWorkspaceUnified.tsx` so the `Workspace` panel owns one internal tab strip for:
+  - `Canvas` → `StudioTldrawWorkspace`
+  - `Mind Map` → `MindMapView`
+  - `Concept Map` → `ConceptMapStructured`
+- Updated `dashboard_rebuild/client/src/components/TutorShell.tsx` to mount the unified workspace wrapper, pass through the existing tldraw props, and pin the workspace surface to the panel body so the live browser panel keeps full height.
+- Removed the unused `@excalidraw/excalidraw` dependency, deleted the dead Excalidraw-only test/template files, stripped dead CSS, and removed the Excalidraw mock seams from the Tutor/workspace tests while keeping the legacy Tutor workspace canvas compatibility component dependency-free.
+- Added the live verification script at `scripts/verify-unified-workspace.js`.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/components/__tests__/TutorShell.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - `dev-browser --timeout 90 run C:\\pt-study-sop\\scripts\\verify-unified-workspace.js`

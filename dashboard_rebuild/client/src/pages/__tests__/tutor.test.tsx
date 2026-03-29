@@ -269,14 +269,6 @@ vi.mock("@/components/TutorPublishMode", () => ({
   ),
 }));
 
-vi.mock("@excalidraw/excalidraw", () => ({
-  Excalidraw: () => (
-    <div data-testid="mock-excalidraw-canvas">mock excalidraw canvas</div>
-  ),
-  exportToBlob: vi.fn().mockResolvedValue(new Blob(["png"])),
-  convertToExcalidrawElements: (elements: unknown) => elements,
-}));
-
 vi.mock("@/components/TutorWorkspaceSurface", async (importOriginal) => {
   const actual =
     (await importOriginal()) as typeof import("@/components/TutorWorkspaceSurface");
@@ -297,8 +289,8 @@ vi.mock("@/components/TutorWorkspaceSurface", async (importOriginal) => {
   };
 });
 
-vi.mock("@/components/studio/StudioTldrawWorkspaceLazy", () => ({
-  StudioTldrawWorkspaceLazy: () => (
+vi.mock("@/components/studio/StudioWorkspaceUnified", () => ({
+  StudioWorkspaceUnified: () => (
     <div data-testid="page-studio-workspace">workspace canvas</div>
   ),
 }));

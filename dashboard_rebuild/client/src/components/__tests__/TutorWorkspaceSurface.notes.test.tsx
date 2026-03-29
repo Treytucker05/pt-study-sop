@@ -105,10 +105,6 @@ vi.mock("@/lib/api", () => ({
   },
 }));
 
-vi.mock("@/components/brain/ExcalidrawCanvas", () => ({
-  ExcalidrawCanvas: () => <div data-testid="workspace-canvas-mock" />,
-}));
-
 vi.mock("@/components/brain/GraphPanel", () => ({
   GraphPanel: () => <div data-testid="workspace-graph-mock" />,
 }));

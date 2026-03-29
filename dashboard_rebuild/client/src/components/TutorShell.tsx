@@ -9,7 +9,7 @@ import {
   buildStudioShellPresetLayout,
 } from "@/components/studio/StudioShell";
 import { StudioDocumentDock } from "@/components/studio/StudioDocumentDock";
-import { StudioTldrawWorkspaceLazy } from "@/components/studio/StudioTldrawWorkspaceLazy";
+import { StudioWorkspaceUnified } from "@/components/studio/StudioWorkspaceUnified";
 import { PrimePacketPanel } from "@/components/studio/PrimePacketPanel";
 import { PolishPacketPanel } from "@/components/studio/PolishPacketPanel";
 import { MemoryPanel } from "@/components/studio/MemoryPanel";
@@ -955,13 +955,15 @@ export function TutorShell({
     [liveTutorSessionId, workflow.activeWorkflowId, queryClient],
   );
   const workspaceStudioContent = (
-    <div className="flex-1 min-h-0 flex flex-col">
-      <StudioTldrawWorkspaceLazy
+    <div className="absolute inset-0 flex min-h-0 min-w-0 flex-col">
+      <StudioWorkspaceUnified
         canvasObjects={canvasObjects}
-        courseName={hub.courseLabel || null}
+        courseId={hub.courseId ?? null}
+        courseName={sourceShelfCourseName || null}
         currentRunObjects={currentRunWorkspaceObjects}
         promotedPrimeObjectIds={promotedPrimeObjectIds}
         selectedMaterialCount={hub.selectedMaterials.length}
+        vaultFolder={sourceShelfVaultFolder}
         onPromoteExcerptToPrime={handlePromoteExcerptToPrime}
         onPromoteTextNoteToPrime={handlePromoteTextNoteToPrime}
       />

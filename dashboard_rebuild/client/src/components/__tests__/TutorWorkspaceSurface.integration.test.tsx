@@ -1,6 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { useEffect, useRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createBroadcastChannelTransport,
@@ -121,24 +120,6 @@ vi.mock("@/components/brain/UnifiedBrainCanvas", () => ({
   UnifiedBrainCanvas: () => <div data-testid="unified-brain-canvas">graph ready</div>,
 }));
 
-vi.mock("@excalidraw/excalidraw", () => ({
-  Excalidraw: ({ excalidrawAPI }: { excalidrawAPI?: (api: unknown) => void }) => {
-    const apiRef = useRef({
-      getSceneElements: () => [],
-      getAppState: () => ({ viewBackgroundColor: "#000", gridSize: 16 }),
-      getFiles: () => ({}),
-      updateScene: vi.fn(),
-      scrollToContent: vi.fn(),
-    });
-    useEffect(() => {
-      excalidrawAPI?.(apiRef.current);
-    }, [excalidrawAPI]);
-    return <div data-testid="excalidraw-stage">canvas stage</div>;
-  },
-  exportToBlob: vi.fn(),
-  convertToExcalidrawElements: vi.fn((elements) => elements),
-}));
-
 import { TutorWorkspaceSurface } from "@/components/TutorWorkspaceSurface";
 
 const queryClients: QueryClient[] = [];
@@ -241,7 +222,7 @@ describe("TutorWorkspaceSurface integration", () => {
 
     fireEvent.click(await screen.findByTestId("tutor-workspace-tab-canvas"));
 
-    expect(await screen.findByTestId("excalidraw-stage")).toBeInTheDocument();
+    expect(await screen.findByTestId("legacy-canvas-stage")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^save$/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /load/i })).toBeInTheDocument();
   });

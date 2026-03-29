@@ -137,14 +137,12 @@ vi.mock("tldraw", () => ({
   },
 }));
 
-vi.mock("@excalidraw/excalidraw", () => ({
-  Excalidraw: () => <div data-testid="mock-excalidraw">excalidraw</div>,
-  exportToBlob: vi.fn(async () => new Blob(["png"])),
-  convertToExcalidrawElements: vi.fn((elements: unknown[]) => elements),
-}));
-
 vi.mock("@/components/brain/UnifiedBrainCanvas", () => ({
   UnifiedBrainCanvas: () => <div data-testid="mock-brain-canvas">brain canvas</div>,
+}));
+
+vi.mock("@/components/MindMapView", () => ({
+  MindMapView: () => <div data-testid="mock-mind-map">mind map</div>,
 }));
 
 vi.mock("@/components/brain/ConceptMapStructured", () => ({
@@ -1631,6 +1629,39 @@ describe("TutorShell studio routing", () => {
         screen.queryByRole("link", { name: /get a license for production/i }),
       ).not.toBeInTheDocument();
     });
+  });
+
+  it("switches the unified workspace panel across Canvas, Mind Map, and Concept Map tabs", async () => {
+    const user = userEvent.setup();
+
+    renderTutorShell("workspace", {
+      hubOverrides: {
+        courseId: 7,
+        courseLabel: "Exercise Physiology",
+        derivedVaultFolder: "Courses/Exercise Physiology/Week 7",
+      },
+    });
+
+    expect(await screen.findByTestId("studio-workspace-unified")).toHaveAttribute(
+      "data-course-id",
+      "7",
+    );
+    expect(screen.getByTestId("studio-workspace-unified")).toHaveAttribute(
+      "data-vault-folder",
+      "Courses/Exercise Physiology/Week 7",
+    );
+    expect(screen.getByTestId("studio-tldraw-workspace")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("studio-workspace-tab-mind-map"));
+    expect(await screen.findByTestId("mock-mind-map")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("studio-workspace-tab-concept-map"));
+    expect(await screen.findByTestId("mock-concept-map")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("studio-workspace-tab-canvas"));
+    expect(screen.getByTestId("studio-tldraw-workspace")).toBeInTheDocument();
+    expect(screen.getByTestId("mock-mind-map")).toBeInTheDocument();
+    expect(screen.getByTestId("mock-concept-map")).toBeInTheDocument();
   });
 
   it("adds a current-run source from Source Shelf into the workspace canvas objects", async () => {

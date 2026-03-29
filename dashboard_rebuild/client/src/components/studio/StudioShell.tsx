@@ -10,12 +10,9 @@ import {
   BookOpen,
   Brain,
   FileText,
-  GitBranch,
   MessageSquare,
-  Network,
   NotebookPen,
   Package,
-  PencilRuler,
   RefreshCcw,
   Settings2,
   Sparkles,
@@ -645,6 +642,7 @@ export function StudioShell({
           ),
       },
       {
+        // Sketch, Concept Map, Vault Graph merged into unified Workspace — HUD-255
         panel: "workspace",
         title: "Workspace",
         testId: "studio-workspace-panel",
@@ -789,50 +787,7 @@ export function StudioShell({
             "Use freeform notes for side writing, scratch work, or quick captures.",
           ),
       },
-      // Mind Map merged into Workspace (tldraw) — see panel review HUD-254
       // Method Runner merged into Priming + Tutor chat — see panel review HUD-254
-      {
-        panel: "tldraw_sketch",
-        title: "Sketch",
-        testId: "studio-sketch-panel",
-        icon: PencilRuler,
-        defaultPosition: { x: 72, y: 1180 },
-        defaultSize: { width: 560, height: 420 },
-        minWidth: 360,
-        minHeight: 260,
-        content: makePlaceholder(
-          "Sketch",
-          "The sketch panel is reserved for visual diagramming and freehand study work.",
-        ),
-      },
-      {
-        panel: "concept_map",
-        title: "Concept Map",
-        testId: "studio-concept-map-panel",
-        icon: Network,
-        defaultPosition: { x: 672, y: 1180 },
-        defaultSize: { width: 560, height: 420 },
-        minWidth: 360,
-        minHeight: 260,
-        content: makePlaceholder(
-          "Concept Map",
-          "Use concept maps to spatialize relationships across the current run.",
-        ),
-      },
-      {
-        panel: "vault_graph",
-        title: "Vault Graph",
-        testId: "studio-vault-graph-panel",
-        icon: GitBranch,
-        defaultPosition: { x: 1272, y: 1180 },
-        defaultSize: { width: 560, height: 420 },
-        minWidth: 360,
-        minHeight: 260,
-        content: makePlaceholder(
-          "Vault Graph",
-          "Browse related note connections from the vault graph inside the Studio canvas.",
-        ),
-      },
       {
         panel: "obsidian",
         title: "Obsidian",
