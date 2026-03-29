@@ -1,105 +1,142 @@
 {
-  "title": "Study Flow - Get It Working",
-  "description": "Fix the critical path so Trey can actually study. Cancel button + Priming methods + Tutor chat.",
+  "title": "PT Study SOP - Remaining Fixes",
+  "description": "Fix all remaining issues to make the full study loop work end to end.",
   "stories": [
     {
-      "id": "OVERLAY-004",
-      "title": "Add cancel/close button to entry card overlay",
-      "description": "The entry card overlay has no way to dismiss it without starting a session. Add a Cancel or X close button. Add an X button in the top-right corner of the entry card (absolute positioned). Style: text-[#ffc8d3]/60 hover:text-white font-mono text-lg. When clicked, call setShowSetup(false). Also add a text Cancel button next to Start Priming / Skip Setup as an alternative dismiss. After dismissing, canvas should be usable. NEW SESSION hero button should re-open the entry card.",
+      "id": "REMAIN-001",
+      "title": "Polish panel end-to-end verification and fixes",
+      "description": "The Polish panel is wired in TutorShell but has not been tested end to end. Verify it works: (1) Open Polish panel from toolbar. (2) It should show tutor replies, notes, summaries, and cards staged for export. (3) User should be able to review and edit captured content. (4) If any of this is broken or placeholder, fix it so Polish actually displays session artifacts. Trace from TutorShell polishStudioContent through to whatever component renders the Polish panel.",
       "acceptanceCriteria": [
-        "X close button visible in top-right corner of entry card",
-        "Clicking X dismisses the entry card and shows empty canvas",
-        "Cancel text button visible next to action buttons",
-        "NEW SESSION hero button re-opens the entry card after dismissal",
-        "dev-browser: click X, verify entry card gone, verify canvas interactive"
+        "Polish panel opens from toolbar",
+        "Polish panel shows captured session content (tutor replies, notes)",
+        "Content is editable or reviewable",
+        "dev-browser: open Polish panel, verify it has real content after a priming run"
+      ],
+      "files": [
+        "dashboard_rebuild/client/src/components/TutorShell.tsx"
+      ],
+      "verification": "dev-browser --timeout 90 run scripts/verify-remaining.js",
+      "status": "open"
+    },
+    {
+      "id": "REMAIN-002",
+      "title": "Polish Packet shows tutor outputs staged for export",
+      "description": "The Polish Packet panel should display tutor replies, promoted notes, summaries, and Anki card drafts. Verify it works after running a tutor chat session. If it shows placeholder text or is empty, trace the data flow from tutor chat responses through promotedPolishPacketNotes and fix it.",
+      "acceptanceCriteria": [
+        "Polish Packet panel opens from toolbar",
+        "After a tutor chat session, Polish Packet shows tutor responses",
+        "Content can be reviewed before export",
+        "dev-browser: open Polish Packet, verify content after tutor chat"
+      ],
+      "files": [
+        "dashboard_rebuild/client/src/components/TutorShell.tsx"
+      ],
+      "verification": "dev-browser --timeout 90 run scripts/verify-remaining.js",
+      "status": "open"
+    },
+    {
+      "id": "REMAIN-003",
+      "title": "Notes panel accepts and persists freeform text",
+      "description": "The Notes panel should let the user type freeform notes during a study session. Open Notes panel from toolbar. Verify it has a text area. Type text. Verify text persists on panel resize and does not disappear. Notes should be associated with the current session.",
+      "acceptanceCriteria": [
+        "Notes panel opens from toolbar",
+        "Notes panel has a text input area (textarea or rich editor)",
+        "User can type text that persists",
+        "Text survives panel resize",
+        "dev-browser: open Notes, type text, verify it stays"
+      ],
+      "files": [
+        "dashboard_rebuild/client/src/components/TutorShell.tsx"
+      ],
+      "verification": "dev-browser --timeout 90 run scripts/verify-remaining.js",
+      "status": "open"
+    },
+    {
+      "id": "REMAIN-004",
+      "title": "Document Dock clip tool supports image paste and screenshot snip",
+      "description": "The Document Dock has a selective passage clip feature but it only accepts text input. Add: (1) Paste support -- user should be able to Ctrl+V an image from clipboard into the clip area. Use the Clipboard API (navigator.clipboard.read()) to detect image data and render it as an inline image in the workspace. (2) If full snipping tool is too complex, at minimum add a note that says 'Paste an image with Ctrl+V' and handle the paste event on the clip input area. (3) The clipped content (text or image) should be promotable to the workspace canvas. Check the existing handleClipExcerpt function in TutorShell for the current clip flow.",
+      "acceptanceCriteria": [
+        "Clip area accepts pasted images via Ctrl+V",
+        "Pasted images render as inline previews",
+        "Both text and image clips can be sent to workspace",
+        "dev-browser: verify clip area has paste handler for images"
+      ],
+      "files": [
+        "dashboard_rebuild/client/src/components/TutorShell.tsx",
+        "dashboard_rebuild/client/src/components/studio/StudioDocumentDock.tsx"
+      ],
+      "verification": "dev-browser --timeout 90 run scripts/verify-remaining.js",
+      "status": "open"
+    },
+    {
+      "id": "REMAIN-005",
+      "title": "End session flow saves to vault and cleans up",
+      "description": "When a study session ends (user clicks End Session or NEW SESSION), the app should: (1) Save session notes and artifacts to the Obsidian vault folder for that course. (2) Show a brief summary of what was saved. (3) Clean up session state. (4) Return to the entry card for the next session. Trace the end session flow from handleTutorSessionAction in tutor.tsx. Check if vault save logic exists in the session or workflow hooks. If not, add a basic save-to-vault step that writes a markdown summary to the vault folder.",
+      "acceptanceCriteria": [
+        "Clicking NEW SESSION or End Session triggers save flow",
+        "Session artifacts are written to the vault folder as markdown",
+        "User sees confirmation of what was saved",
+        "State is cleaned up and entry card shows",
+        "dev-browser: end a session, verify save confirmation"
+      ],
+      "files": [
+        "dashboard_rebuild/client/src/pages/tutor.tsx",
+        "dashboard_rebuild/client/src/components/TutorShell.tsx"
+      ],
+      "verification": "dev-browser --timeout 90 run scripts/verify-remaining.js",
+      "status": "open"
+    },
+    {
+      "id": "REMAIN-006",
+      "title": "Obsidian panel shows vault browser with note read and write",
+      "description": "The Obsidian panel is currently a placeholder. Replace with a real vault browser that: (1) Shows the folder tree for the current course vault folder (derived from hub.vaultFolder or COURSE_FOLDERS config). (2) Lets user click a note to read it in a preview pane. (3) Has a Create Note button that creates a new markdown note in the vault. (4) Has a Save to Vault button that saves current session notes to the vault. The vault path comes from the Obsidian vault at C:\\Users\\treyt\\Desktop\\Treys School. Use the existing filesystem API or a backend endpoint to read/write vault files. If no backend endpoint exists for vault operations, create one in brain/dashboard/ that reads and writes markdown files from the vault path.",
+      "acceptanceCriteria": [
+        "Obsidian panel shows folder tree for current course",
+        "Clicking a note shows its content in preview",
+        "Create Note button creates a new markdown file",
+        "Save to Vault button saves session notes",
+        "dev-browser: open Obsidian panel, verify folder tree renders"
+      ],
+      "files": [
+        "dashboard_rebuild/client/src/components/TutorShell.tsx",
+        "dashboard_rebuild/client/src/components/studio/StudioShell.tsx",
+        "brain/dashboard/api_tutor.py"
+      ],
+      "verification": "dev-browser --timeout 90 run scripts/verify-remaining.js",
+      "status": "open"
+    },
+    {
+      "id": "REMAIN-007",
+      "title": "Anki panel shows card preview and export",
+      "description": "The Anki panel is currently a placeholder. Replace with a real panel that: (1) Shows Anki cards generated from the current session (from Polish Packet or tutor responses). (2) Each card shows front/back preview. (3) User can edit cards before export. (4) Export button writes cards as a CSV or APKG file that can be imported into Anki. (5) If Anki export is too complex for now, at minimum show the card previews and provide a Copy to Clipboard button for each card. Check if there is an existing Anki export utility in the codebase -- search for anki, flashcard, or card export.",
+      "acceptanceCriteria": [
+        "Anki panel opens from toolbar",
+        "Panel shows generated flashcards with front/back preview",
+        "Cards are editable",
+        "Export or copy button exists for getting cards out",
+        "dev-browser: open Anki panel, verify card previews render"
       ],
       "files": [
         "dashboard_rebuild/client/src/components/TutorShell.tsx",
         "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
       ],
-      "verification": "dev-browser --timeout 60 run scripts/verify-overlay-polish.js",
-      "status": "done",
-      "startedAt": "2026-03-29T08:31:16.211973+00:00",
-      "completedAt": "2026-03-29T08:56:50.785058+00:00",
-      "updatedAt": "2026-03-29T08:56:50.785045+00:00"
+      "verification": "dev-browser --timeout 90 run scripts/verify-remaining.js",
+      "status": "open"
     },
     {
-      "id": "STUDY-001",
-      "title": "Priming method cards use colorful box UI and only show PRIME stage methods",
-      "description": "The Priming panel method selector currently shows ALL methods as plain buttons. Two fixes needed: (1) Filter: Only show methods whose control_stage is PRIME. Each method YAML in sop/library/methods/ has a control_stage field. The API that returns methods should filter by stage, or the frontend should filter the list. PRIME methods are M-PRE-002, M-PRE-004, M-PRE-005, M-PRE-006, M-PRE-008, M-PRE-009, M-PRE-010, M-PRE-012, M-PRE-013, M-PRE-014. Do NOT show CALIBRATE, ENCODE, TEACH, REFERENCE, RETRIEVE, or OVERLEARN methods in the Priming panel. (2) UI: Replace plain buttons with colorful card-style boxes. Each card shows: colored left-accent bar or background, method name in bold, one-line description. Checkbox or selected state for multi-select. Search for existing MethodCard or MethodTile components from the Methods page for reference.",
+      "id": "REMAIN-008",
+      "title": "Entry card scrolls on small viewports",
+      "description": "On smaller screens or when the browser window is not maximized, the entry card form may overflow the viewport and get cut off at the bottom. The entry card overlay should have overflow-y-auto with max-height so the form scrolls if it exceeds the viewport height. Add max-h-[90vh] overflow-y-auto to the entry card container inside the overlay.",
       "acceptanceCriteria": [
-        "Only PRIME stage methods are shown (no CALIBRATE, ENCODE, TEACH, RETRIEVE, OVERLEARN, REFERENCE)",
-        "Each method shows as a colored card with name and description",
-        "Methods have distinct colors",
-        "User can select one or more methods",
-        "Selected methods have visual indicator",
-        "dev-browser: verify method cards have background colors and description text"
+        "Entry card is scrollable when it exceeds viewport height",
+        "All form fields and buttons are reachable by scrolling",
+        "Works on viewport heights as small as 600px",
+        "dev-browser: resize to 800x600, verify entry card scrolls"
       ],
       "files": [
-        "dashboard_rebuild/client/src/components/TutorShell.tsx"
+        "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
       ],
-      "verification": "dev-browser --timeout 90 run scripts/verify-study-flow.js",
-      "status": "done",
-      "startedAt": "2026-03-29T09:16:41.940978+00:00",
-      "completedAt": "2026-03-29T09:27:37.073676+00:00",
-      "updatedAt": "2026-03-29T09:27:37.073651+00:00"
-    },
-    {
-      "id": "STUDY-002",
-      "title": "Priming method run returns actual results instead of empty",
-      "description": "When user selects a method and clicks Run, the Output Area shows 'This run completed, but no study artifacts were returned for the selected output format.' The backend returned a response but the frontend is not parsing it correctly OR the method runner output format does not match. Debug by: (1) Check network request when Run is clicked -- what does the API return? (2) Check what format frontend expects. (3) Fix the mismatch. Backend at 127.0.0.1:5000, endpoint likely POST /api/tutor/run or /api/tutor/method. Check brain/dashboard/api_tutor.py.",
-      "acceptanceCriteria": [
-        "Running a method produces visible output in the Output Area",
-        "Method Result shows actual content not empty message",
-        "Output is formatted and readable",
-        "dev-browser: click Run, wait for response, verify output has content"
-      ],
-      "files": [
-        "dashboard_rebuild/client/src/components/TutorShell.tsx",
-        "brain/dashboard/api_tutor.py"
-      ],
-      "verification": "dev-browser --timeout 90 run scripts/verify-study-flow.js",
-      "status": "in_progress",
-      "startedAt": "2026-03-29T09:42:58.909903+00:00",
-      "completedAt": null,
-      "updatedAt": "2026-03-29T09:42:58.909905+00:00"
-    },
-    {
-      "id": "STUDY-003",
-      "title": "Priming Chat is functional not placeholder",
-      "description": "The Priming Chat shows 'Chat with priming results coming soon'. Replace with a real chat. Needs: (1) Text input and send button. (2) Send to backend priming chat endpoint. (3) Show conversation history. (4) Use priming context (method results, materials) for responses. If backend endpoint does not exist, create one in api_tutor.py that takes priming context + user message and returns LLM response.",
-      "acceptanceCriteria": [
-        "Priming Chat has text input and send button",
-        "User can type and send a message",
-        "Response from backend appears in chat",
-        "Chat uses priming context for responses",
-        "dev-browser: type in priming chat, send, verify response"
-      ],
-      "files": [
-        "dashboard_rebuild/client/src/components/TutorShell.tsx",
-        "brain/dashboard/api_tutor.py"
-      ],
-      "verification": "dev-browser --timeout 90 run scripts/verify-study-flow.js",
-      "status": "done",
-      "startedAt": "2026-03-29T09:28:15.954628+00:00",
-      "completedAt": "2026-03-29T09:42:56.490316+00:00",
-      "updatedAt": "2026-03-29T09:42:56.490302+00:00"
-    },
-    {
-      "id": "STUDY-004",
-      "title": "Tutor chat sends messages and receives LLM responses",
-      "description": "The Tutor panel must send messages and receive LLM responses. Open Tutor panel, type message, send, verify response comes back. Backend tutor chat endpoint in brain/dashboard/api_tutor.py. Tutor should have access to primed context (materials, method results).",
-      "acceptanceCriteria": [
-        "Tutor panel has chat input and send button",
-        "User can type and send a message",
-        "Sent message appears in chat history",
-        "LLM response appears in chat history",
-        "dev-browser: open Tutor, type message, send, verify response"
-      ],
-      "files": [
-        "dashboard_rebuild/client/src/components/TutorShell.tsx"
-      ],
-      "verification": "dev-browser --timeout 90 run scripts/verify-study-flow.js",
+      "verification": "dev-browser --timeout 60 run scripts/verify-remaining.js",
       "status": "open"
     }
   ]
