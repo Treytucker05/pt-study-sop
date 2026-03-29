@@ -1,39 +1,16 @@
 {
   "title": "PT Study Tutor Entry Card & Canvas Fixes",
-  "description": "Fix the three blocking UI bugs in the /tutor Studio workspace entry card and panel centering flow.",
-  "branchName": "fix/entry-card-canvas-bugs",
-  "userStories": [
+  "description": "Fix the three blocking UI bugs in the /tutor Studio workspace.",
+  "stories": [
     {
       "id": "ENTRY-001",
       "title": "Entry card renders as viewport overlay, not canvas object",
-      "description": "The 'Start A Fresh Study Session' entry card currently renders inside the TransformComponent canvas div, so it gets panned/zoomed with the canvas and appears at canvas center (2000,2000) instead of screen center. Move the entry card OUTSIDE the TransformComponent and position it as a viewport overlay (absolute to the viewport wrapper, not the canvas). It should always appear centered on the user's screen regardless of canvas pan/zoom state.",
-      "acceptanceCriteria": [
-        "Entry card is centered in the visible viewport, not the canvas",
-        "Entry card does NOT move when the canvas is panned or zoomed",
-        "Entry card boundingBox.y is in the upper third of the viewport (not at 2000px)",
-        "dev-browser verification: navigate to /tutor, check entry card boundingBox is within viewport"
-      ],
-      "files": [
-        "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
-      ],
-      "verification": "dev-browser --timeout 60 run scripts/verify-entry-bugs.js",
-      "passes": false
+      "status": "done"
     },
     {
       "id": "ENTRY-002",
       "title": "Material picker shows filenames not full paths",
-      "description": "In the entry card material picker, each material checkbox label shows the full source_path like 'C:\\Users\\treyt\\Documents\\PT\\Week9\\Chapter10.pdf' instead of just 'Chapter10.pdf'. Extract just the filename from material.source_path or material.title. Use: label = material.title || material.source_path.split(/[\\\\/]/).pop() || 'Unknown material'",
-      "acceptanceCriteria": [
-        "Material labels show only the filename, not the full path",
-        "Material labels do NOT contain backslashes or colons",
-        "Labels still show file type badge (PDF, MP4, etc.)",
-        "dev-browser verification: check that no material label text contains '\\' or ':'"
-      ],
-      "files": [
-        "dashboard_rebuild/client/src/components/TutorShell.tsx"
-      ],
-      "verification": "dev-browser --timeout 60 run scripts/verify-entry-bugs.js",
-      "passes": false
+      "status": "done"
     },
     {
       "id": "ENTRY-003",
@@ -42,7 +19,7 @@
       "acceptanceCriteria": [
         "After clicking Start Priming, the viewport auto-pans to show the opened panels",
         "At least one panel has a boundingBox that intersects the visible viewport",
-        "Panels are not cut off at edges — they are framed with padding",
+        "Panels are not cut off at edges -- they are framed with padding",
         "dev-browser verification: click Start Priming, wait 2s, check panel visibility in viewport"
       ],
       "files": [
@@ -51,7 +28,7 @@
         "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
       ],
       "verification": "dev-browser --timeout 60 run scripts/verify-entry-bugs.js",
-      "passes": false
+      "status": "open"
     }
   ]
 }

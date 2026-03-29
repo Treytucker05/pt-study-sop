@@ -2,13 +2,16 @@
 title Ralph Loop - PT Study SOP
 color 0A
 
+set GIT_BASH="C:\Program Files\Git\bin\bash.exe"
+set REPO=/c/pt-study-sop
+
 echo ============================================
 echo   RALPH LOOP - PT Study SOP
 echo   Autonomous AI Coding Agent
 echo ============================================
 echo.
 echo  Repo: C:\pt-study-sop
-echo  Agent: Codex
+echo  Agent: Codex (default)
 echo  PRD: .agents\tasks\prd.json
 echo.
 echo  How it works:
@@ -21,10 +24,9 @@ echo    Progress saved in .ralph\progress.md and git history.
 echo.
 echo  Commands:
 echo    1) Build   - Run the loop (fix bugs autonomously)
-echo    2) PRD     - Generate or edit the task list
-echo    3) Status  - Check progress and PRD status
-echo    4) Context - View what Ralph knows about this project
-echo    5) Exit
+echo    2) Status  - Check progress and PRD status
+echo    3) Context - View what Ralph knows about this project
+echo    4) Exit
 echo.
 echo ============================================
 echo.
@@ -32,32 +34,23 @@ echo.
 cd /d C:\pt-study-sop
 
 :menu
-set /p choice="Pick [1-5]: "
+set /p choice="Pick [1-4]: "
 
 if "%choice%"=="1" goto build
-if "%choice%"=="2" goto prd
-if "%choice%"=="3" goto status
-if "%choice%"=="4" goto context
-if "%choice%"=="5" goto end
+if "%choice%"=="2" goto status
+if "%choice%"=="3" goto context
+if "%choice%"=="4" goto end
 goto menu
 
 :build
 echo.
-echo Starting Ralph build loop with Codex...
+echo Starting Ralph build loop with Codex via Git Bash...
 echo Each iteration = fresh Codex + build + dev-browser verify
 echo Press Ctrl+C to stop at any time.
 echo.
-ralph build --agent=codex
+%GIT_BASH% -c "cd %REPO% && .agents/ralph/loop.sh build 40"
 echo.
 echo Ralph finished. Check .ralph\progress.md for results.
-echo.
-goto menu
-
-:prd
-echo.
-echo Opening PRD generator...
-echo.
-ralph prd --agent=codex
 echo.
 goto menu
 
@@ -72,9 +65,9 @@ if exist .ralph\progress.md (
 echo.
 echo === PRD Stories ===
 if exist .agents\tasks\prd.json (
-    findstr /i "title passes" .agents\tasks\prd.json
+    findstr /i "title status" .agents\tasks\prd.json
 ) else (
-    echo No PRD found. Run option 2 to create one.
+    echo No PRD found.
 )
 echo.
 echo === Recent Commits ===
@@ -90,14 +83,6 @@ if exist .agents\ralph\references\PROJECT_CONTEXT.md (
     type .agents\ralph\references\PROJECT_CONTEXT.md
 ) else (
     echo No project context found.
-)
-echo.
-echo === Guardrails (mistakes to avoid) ===
-echo.
-if exist .ralph\guardrails.md (
-    type .ralph\guardrails.md
-) else (
-    echo No guardrails found.
 )
 echo.
 goto menu
