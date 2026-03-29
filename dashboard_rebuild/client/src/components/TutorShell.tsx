@@ -760,12 +760,23 @@ export function TutorShell({
     content: "",
   };
   useEffect(() => {
-    const nextNotesValue =
-      resolvedNotesDraft.sessionKey === notesSessionKey
-        ? resolvedNotesDraft.content
-        : "";
     setNotesScratchpad((current) =>
-      current === nextNotesValue ? current : nextNotesValue,
+      (() => {
+        if (resolvedNotesDraft.sessionKey !== notesSessionKey) {
+          return "";
+        }
+        if (current === resolvedNotesDraft.content) {
+          return current;
+        }
+        // Keep the in-memory draft if a stale empty payload briefly rehydrates for the same context.
+        if (
+          current.trim().length > 0 &&
+          resolvedNotesDraft.content.trim().length === 0
+        ) {
+          return current;
+        }
+        return resolvedNotesDraft.content;
+      })(),
     );
   }, [notesSessionKey, resolvedNotesDraft]);
   useEffect(() => {
@@ -1408,6 +1419,13 @@ export function TutorShell({
         data-testid="studio-notes-textarea"
         value={notesScratchpad}
         onChange={(event) => {
+          setNotesScratchpad(event.target.value);
+          setNotesDraft?.({
+            sessionKey: notesSessionKey,
+            content: event.target.value,
+          });
+        }}
+        onInput={(event) => {
           setNotesScratchpad(event.target.value);
           setNotesDraft?.({
             sessionKey: notesSessionKey,
