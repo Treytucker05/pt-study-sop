@@ -95,6 +95,41 @@ Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-003111-28082-iter-2.md
   - Gotchas encountered
     - The shared `verify-entry-bugs.js` script is a multi-story gate; it can legitimately exit non-zero after ENTRY-001 passes if ENTRY-003 is still open.
     - Canvas zoom/pan interactions need an explicit scroll into the Studio controls first because the live canvas sits below the initial fold on this route.
-  - Useful context
+- Useful context
     - `StudioShell.tsx` already contained the real viewport-overlay implementation from the earlier fix; this iteration’s durable value was strengthening the live verification so the story’s acceptance criteria are proved directly.
+---
+
+## [2026-03-29 01:22 CDT] - ENTRY-003: Auto-center panels after Start Priming opens them
+Thread: 
+Run: 20260329-011356-29630 (iteration 1)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260329-011356-29630-iter-1.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-011356-29630-iter-1.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: 87c44d8a fix: auto-center priming preset panels after launch
+- Post-commit status: `clean`
+- Verification:
+  - Command: `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/pages/__tests__/tutor.test.tsx` -> PASS
+  - Command: `cd dashboard_rebuild && npm run build` -> PASS
+  - Command: `dev-browser --connect --timeout 60 run C:/pt-study-sop/scripts/verify-entry-bugs.js` -> PASS
+- Files changed:
+  - `dashboard_rebuild/client/src/pages/tutor.tsx`
+  - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+  - `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`
+  - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+  - `docs/root/TUTOR_TODO.md`
+  - `conductor/tracks/GENERAL/log.md`
+  - `.ralph/progress.md`
+- What was implemented
+  - Restored the entry-card `Start Priming` route so a successful workflow bootstrap opens the `priming` preset instead of leaving the Studio canvas empty.
+  - Added a one-shot external focus request path into `StudioShell` that reuses `focusOpenPanels()` after a 300ms delay, which frames the freshly opened panels with viewport padding.
+  - Updated the focused Studio shell and Tutor route regressions so the Start Priming path now expects the preset panels to appear immediately and the shell to auto-fit externally opened layouts.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - External preset opens need an explicit shell-level focus request; changing `panelLayout` from a parent route is not enough to auto-frame the new layout.
+  - Gotchas encountered
+    - Older `/tutor` regressions still encoded the HUD-243 empty-canvas behavior, so this story required updating route expectations as well as the shell implementation.
+  - Useful context
+    - `focusOpenPanels()` is the right helper for Start Priming because it fits the full priming preset with padding, while `centerOpenPanels()` preserves zoom and can still clip a multi-panel preset on smaller viewports.
 ---
