@@ -2143,3 +2143,14 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run build`
   - `dev-browser --connect --timeout 60 run C:\\pt-study-sop\\scripts\\verify-overlay-polish.js`
   - `dev-browser --connect --timeout 60 run C:\\Users\\treyt\\.dev-browser\\tmp\\verify-overlay-003-console.js`
+
+## 2026-03-29 - OVERLAY-004 entry-card dismiss/reopen persistence hardening
+
+- Kept the entry-card `X` and `Cancel` dismiss path on the existing `dashboard_rebuild/client/src/components/TutorShell.tsx` surface and fixed the controller path in `dashboard_rebuild/client/src/pages/tutor.tsx` so dismissing and reopening the setup overlay no longer races project-shell saves with a stale revision.
+- Preserved the current project-shell revision across same-course overlay resets and serialized in-flight `/api/tutor/project-shell/state` saves so rapid dismiss/reopen bursts only persist the latest queued shell snapshot after the active request completes.
+- Extended the focused regression coverage in:
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/tutor.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - `dev-browser --timeout 60 run C:\\pt-study-sop\\scripts\\verify-overlay-polish.js`

@@ -18,7 +18,10 @@
         "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
       ],
       "verification": "dev-browser --timeout 60 run scripts/verify-overlay-polish.js",
-      "status": "open"
+      "status": "in_progress",
+      "startedAt": "2026-03-29T08:31:16.211973+00:00",
+      "completedAt": null,
+      "updatedAt": "2026-03-29T08:31:16.211981+00:00"
     },
     {
       "id": "STUDY-001",

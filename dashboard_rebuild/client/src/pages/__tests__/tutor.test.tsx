@@ -1256,6 +1256,112 @@ describe("Tutor page restore", () => {
     await expectStudioEntryState();
   });
 
+  it("avoids overlapping project-shell saves across rapid overlay dismiss and reopen actions", async () => {
+    const user = userEvent.setup();
+    window.history.replaceState({}, "", "/tutor?course_id=1&mode=studio");
+    getCurrentCourseMock.mockResolvedValue({ currentCourse: { id: 1 } });
+    getContentSourcesMock.mockResolvedValue({
+      courses: [{ id: 1, name: "Course 1" }],
+    });
+    getMaterialsMock.mockResolvedValue([
+      {
+        id: 101,
+        course_id: 1,
+        title: "Cardiac Output Lecture",
+        source_path: "uploads/cardio-output.pdf",
+        file_type: "pdf",
+      },
+    ]);
+
+    let resolveFirstPersist:
+      | ((value: { workspace_state: { revision: number } }) => void)
+      | null = null;
+
+    saveProjectShellStateMock.mockReset();
+    saveProjectShellStateMock.mockImplementation(
+      async (data: { revision?: number }) => ({
+        workspace_state: {
+          revision: (data.revision ?? 0) + 1,
+        },
+      }),
+    );
+    saveProjectShellStateMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveFirstPersist = resolve as (
+            value: { workspace_state: { revision: number } },
+          ) => void;
+        }),
+    );
+
+    renderTutor();
+
+    await expectStudioEntryState();
+    await waitFor(() => {
+      expect(document.querySelector(".page-shell__actions")).not.toBeNull();
+    });
+    await waitFor(() => {
+      expect(saveProjectShellStateMock).toHaveBeenCalledTimes(1);
+    });
+    expect(
+      screen.getByTestId("studio-entry-material-count"),
+    ).toHaveTextContent("1 of 1 materials selected");
+
+    const firstPersistPayload = saveProjectShellStateMock.mock.calls[0]?.[0] as
+      | { revision?: number }
+      | undefined;
+    expect(typeof firstPersistPayload?.revision).toBe("number");
+
+    await user.click(
+      within(screen.getByTestId("studio-entry-state")).getByRole("button", {
+        name: /^cancel$/i,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
+    });
+
+    const heroActions = document.querySelector(".page-shell__actions");
+    expect(heroActions).not.toBeNull();
+
+    await user.click(
+      within(heroActions as HTMLElement).getByRole("button", {
+        name: /^new session$/i,
+      }),
+    );
+
+    await expectStudioEntryState();
+    await user.click(
+      within(screen.getByTestId("studio-entry-state")).getByRole("button", {
+        name: /^cancel$/i,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    });
+
+    expect(saveProjectShellStateMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveFirstPersist?.({
+        workspace_state: {
+          revision: (firstPersistPayload?.revision ?? 0) + 1,
+        },
+      });
+    });
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    });
+
+    expect(saveProjectShellStateMock).toHaveBeenCalledTimes(1);
+  });
+
   it("only renders the hero RESUME button for a real resumable session candidate", async () => {
     const firstRender = renderTutor();
 

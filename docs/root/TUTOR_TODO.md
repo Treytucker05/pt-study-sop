@@ -97,11 +97,12 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - `cd dashboard_rebuild && npm run build`
     - `dev-browser --connect --timeout 60 run C:\pt-study-sop\scripts\verify-overlay-polish.js`
 
-- [ ] OVERLAY-004. Add cancel/close button to entry card overlay.
+- [x] OVERLAY-004. Add cancel/close button to entry card overlay.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
     - `dashboard_rebuild/client/src/components/TutorShell.tsx`
     - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
     - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
     - `scripts/verify-overlay-polish.js`
   - Done when:
@@ -110,6 +111,15 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - the empty canvas remains usable after dismissal and the hero `NEW SESSION` action can reopen the entry card
     - focused TutorShell/page regressions, the production frontend build, and live `dev-browser` verification of the dismiss/reopen flow pass
   - Assignee: @codex-cli
+  - Completed: 2026-03-29
+  - Notes:
+    - Kept the entry-card dismiss controls on the existing `TutorShell` surface and hardened `/tutor` project-shell persistence so rapid `Cancel`/`X` dismiss plus `NEW SESSION` reopen cycles no longer send stale `revision: 0` saves that 409 against the active shell revision.
+    - Preserved the current project-shell revision across same-course overlay resets in `dashboard_rebuild/client/src/pages/tutor.tsx` and serialized in-flight shell saves so only the newest queued shell state can persist after a dismiss/reopen burst.
+    - Added a focused Tutor page regression that proves rapid overlay dismiss and reopen actions do not trigger overlapping project-shell saves while the entry card still dismisses back to an interactive empty canvas.
+  - Validation:
+    - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/tutor.test.tsx`
+    - `cd dashboard_rebuild && npm run build`
+    - `dev-browser --timeout 60 run C:\pt-study-sop\scripts\verify-overlay-polish.js`
 
 - [x] ENTRY-003. Auto-center panels after Start Priming opens them.
   - Scope:

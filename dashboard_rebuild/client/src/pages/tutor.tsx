@@ -20,6 +20,7 @@ import type {
   TutorBoardScope,
   TutorHubResumeCandidate,
   TutorProjectShellResponse,
+  TutorProjectShellStateRequest,
 } from "@/lib/api";
 import {
   writeTutorAccuracyProfile,
@@ -53,6 +54,11 @@ function useTutorPageController() {
   const queryClient = useQueryClient();
   const initialRouteQuery = useMemo(() => readTutorShellQuery(), []);
   const lastPersistedShellKeyRef = useRef("");
+  const pendingPersistShellKeyRef = useRef<string | null>(null);
+  const pendingPersistShellPayloadRef =
+    useRef<TutorProjectShellStateRequest | null>(null);
+  const shellPersistInFlightRef = useRef(false);
+  const shellRevisionRef = useRef(0);
   const resumedFromProjectShellRef = useRef(false);
   const suppressProjectShellRestoreRef = useRef(false);
   const entryCardFlashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -320,7 +326,9 @@ function useTutorPageController() {
   const hydrateProjectShellState = useCallback(
     (nextProjectShell: TutorProjectShellResponse, nextCourseId: number) => {
       setShellHydratedCourseId(nextCourseId);
-      setShellRevision(nextProjectShell.workspace_state.revision || 0);
+      const nextRevision = nextProjectShell.workspace_state.revision || 0;
+      shellRevisionRef.current = nextRevision;
+      setShellRevision(nextRevision);
       if (
         !initialRouteQuery.boardScope &&
         activeBoardScope === "project" &&
@@ -400,6 +408,16 @@ function useTutorPageController() {
 
   const resetTutorWorkspaceHome = useCallback(
     (nextCourseId?: number) => {
+      const nextShellCourseId =
+        typeof nextCourseId === "number"
+          ? nextCourseId
+          : typeof hub.courseId === "number"
+            ? hub.courseId
+            : null;
+      const nextShellRevision =
+        nextShellCourseId !== null && nextShellCourseId === shellHydratedCourseId
+          ? shellRevisionRef.current
+          : 0;
       if (entryCardFlashTimeoutRef.current) {
         clearTimeout(entryCardFlashTimeoutRef.current);
         entryCardFlashTimeoutRef.current = null;
@@ -429,14 +447,9 @@ function useTutorPageController() {
       setPromotedPrimePacketObjects([]);
       setPromotedPolishPacketNotes([]);
       setBrainLaunchContext(null);
-      setShellRevision(0);
-      setShellHydratedCourseId(
-        typeof nextCourseId === "number"
-          ? nextCourseId
-          : typeof hub.courseId === "number"
-            ? hub.courseId
-            : null,
-      );
+      shellRevisionRef.current = nextShellRevision;
+      setShellRevision(nextShellRevision);
+      setShellHydratedCourseId(nextShellCourseId);
       setShowSetup(true);
       setWorkspaceResetVersion((current) => current + 1);
     },
@@ -459,6 +472,7 @@ function useTutorPageController() {
       setTutorChainId,
       setTutorCustomBlockIds,
       setViewerState,
+      shellHydratedCourseId,
       workflow,
     ],
   );
@@ -590,7 +604,10 @@ function useTutorPageController() {
       setPromotedPrimePacketObjects([]);
       setPromotedPolishPacketNotes([]);
       setBrainLaunchContext(null);
-      setShellRevision(0);
+      const nextShellRevision =
+        nextCourseId === shellHydratedCourseId ? shellRevisionRef.current : 0;
+      shellRevisionRef.current = nextShellRevision;
+      setShellRevision(nextShellRevision);
       setShellHydratedCourseId(nextCourseId);
       setShowSetup(false);
       setPanelLayout([]);
@@ -633,8 +650,65 @@ function useTutorPageController() {
     setTutorChainId,
     setTutorCustomBlockIds,
     setViewerState,
+    shellHydratedCourseId,
     workflow,
   ]);
+
+  useEffect(() => {
+    shellRevisionRef.current = shellRevision;
+  }, [shellRevision]);
+
+  const persistProjectShellState = useCallback(
+    async (persistKey: string, payload: TutorProjectShellStateRequest) => {
+      if (shellPersistInFlightRef.current) {
+        pendingPersistShellKeyRef.current = persistKey;
+        pendingPersistShellPayloadRef.current = payload;
+        return;
+      }
+
+      shellPersistInFlightRef.current = true;
+      pendingPersistShellKeyRef.current = null;
+      pendingPersistShellPayloadRef.current = null;
+      lastPersistedShellKeyRef.current = persistKey;
+
+      let saveSucceeded = false;
+      try {
+        const result = await api.tutor.saveProjectShellState({
+          ...payload,
+          revision: shellRevisionRef.current,
+        });
+        const nextRevision = result.workspace_state.revision;
+        shellRevisionRef.current = nextRevision;
+        setShellRevision(nextRevision);
+        saveSucceeded = true;
+        await queryClient.invalidateQueries({
+          queryKey: ["tutor-project-shell", payload.course_id],
+        });
+      } catch {
+        lastPersistedShellKeyRef.current = "";
+        await queryClient.invalidateQueries({
+          queryKey: ["tutor-project-shell", payload.course_id],
+        });
+      } finally {
+        shellPersistInFlightRef.current = false;
+
+        const queuedPersistKey = pendingPersistShellKeyRef.current;
+        const queuedPersistPayload = pendingPersistShellPayloadRef.current;
+        pendingPersistShellKeyRef.current = null;
+        pendingPersistShellPayloadRef.current = null;
+
+        if (
+          saveSucceeded &&
+          queuedPersistKey &&
+          queuedPersistPayload &&
+          queuedPersistKey !== lastPersistedShellKeyRef.current
+        ) {
+          void persistProjectShellState(queuedPersistKey, queuedPersistPayload);
+        }
+      }
+    },
+    [queryClient, setShellRevision],
+  );
 
   // ─── Restore shell state on mount ───
   const restoreTutorShellState = useCallback(async () => {
@@ -792,35 +866,25 @@ function useTutorPageController() {
     });
     if (persistKey === lastPersistedShellKeyRef.current) return;
 
-    const timeoutId = window.setTimeout(async () => {
-      lastPersistedShellKeyRef.current = persistKey;
-      try {
-        const result = await api.tutor.saveProjectShellState({
-          course_id: hub.courseId!,
-          active_tutor_session_id: activeSessionId,
-          active_board_scope: activeBoardScope,
-          active_board_id: activeBoardId,
-          viewer_state: viewerState,
-          panel_layout: panelLayout,
-          document_tabs: documentTabs,
-          active_document_tab_id: activeDocumentTabId,
-          runtime_state: serializeStudioRunRuntimeState(runtimeState),
-          tutor_chain_id: tutorChainId ?? null,
-          tutor_custom_block_ids: tutorCustomBlockIds,
-          prime_packet_promoted_objects: promotedPrimePacketObjects,
-          polish_packet_promoted_notes: promotedPolishPacketNotes,
-          selected_material_ids: hub.selectedMaterials,
-          revision: shellRevision,
-        });
-        setShellRevision(result.workspace_state.revision);
-        await queryClient.invalidateQueries({
-          queryKey: ["tutor-project-shell", hub.courseId],
-        });
-      } catch {
-        await queryClient.invalidateQueries({
-          queryKey: ["tutor-project-shell", hub.courseId],
-        });
-      }
+    const persistPayload: TutorProjectShellStateRequest = {
+      course_id: hub.courseId!,
+      active_tutor_session_id: activeSessionId,
+      active_board_scope: activeBoardScope,
+      active_board_id: activeBoardId,
+      viewer_state: viewerState,
+      panel_layout: panelLayout,
+      document_tabs: documentTabs,
+      active_document_tab_id: activeDocumentTabId,
+      runtime_state: serializeStudioRunRuntimeState(runtimeState),
+      tutor_chain_id: tutorChainId ?? null,
+      tutor_custom_block_ids: tutorCustomBlockIds,
+      prime_packet_promoted_objects: promotedPrimePacketObjects,
+      polish_packet_promoted_notes: promotedPolishPacketNotes,
+      selected_material_ids: hub.selectedMaterials,
+    };
+
+    const timeoutId = window.setTimeout(() => {
+      void persistProjectShellState(persistKey, persistPayload);
     }, 250);
     return () => window.clearTimeout(timeoutId);
   }, [
@@ -830,6 +894,7 @@ function useTutorPageController() {
     hub.courseId,
     hub.selectedMaterials,
     hasRestored,
+    persistProjectShellState,
     queryClient,
     shellHydratedCourseId,
     shellRevision,
