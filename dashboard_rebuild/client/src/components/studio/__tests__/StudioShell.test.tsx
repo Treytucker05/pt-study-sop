@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useEffect, type ReactNode } from "react";
 
@@ -489,6 +489,45 @@ describe("StudioShell", () => {
       expect(centerCall?.[3]).toBe(180);
     } finally {
       rectSpy.mockRestore();
+    }
+  });
+
+  it("auto-focuses externally requested layouts after the Start Priming delay", async () => {
+    vi.useFakeTimers();
+
+    render(
+      <StudioShell
+        panelLayout={buildStudioShellPresetLayout("priming")}
+        setPanelLayout={vi.fn()}
+        tutorPanel={<div>Tutor</div>}
+        externalLayoutFocusRequestKey={1}
+      />,
+    );
+
+    const canvas = screen.getByTestId("studio-canvas");
+    const rectSpy = vi
+      .spyOn(canvas, "getBoundingClientRect")
+      .mockReturnValue(createViewportRect(1600, 900));
+
+    try {
+      setTransformSpy.mockClear();
+
+      await act(async () => {
+        vi.advanceTimersByTime(299);
+      });
+      expect(setTransformSpy).not.toHaveBeenCalled();
+
+      await act(async () => {
+        vi.advanceTimersByTime(1);
+      });
+
+      const focusCall = setTransformSpy.mock.calls.at(-1);
+      expect(focusCall).toBeTruthy();
+      expect(focusCall?.[2]).toBeLessThan(1);
+      expect(focusCall?.[3]).toBe(180);
+    } finally {
+      rectSpy.mockRestore();
+      vi.useRealTimers();
     }
   });
 

@@ -198,6 +198,7 @@ export interface TutorShellProps {
   entryCardFlashActive?: boolean;
   onStartPriming?: () => void | Promise<void>;
   isStartingPriming?: boolean;
+  startPrimingViewportFocusRequestKey?: number | null;
   workspaceResetVersion?: number;
   onResumeHubCandidate: (
     candidate: TutorHubResumeCandidate,
@@ -249,6 +250,7 @@ export function TutorShell({
   entryCardFlashActive = false,
   onStartPriming,
   isStartingPriming = false,
+  startPrimingViewportFocusRequestKey = null,
   workspaceResetVersion = 0,
   onResumeHubCandidate,
 }: TutorShellProps) {
@@ -1480,6 +1482,7 @@ export function TutorShell({
           entryCard={showSetup && !liveTutorSessionId ? entryCard : null}
           defaultPreset={liveTutorSessionId ? "study" : "priming"}
           autoSeedDefaultPreset={false}
+          externalLayoutFocusRequestKey={startPrimingViewportFocusRequestKey}
           sourceShelf={
             <SourceShelf
               courseId={hub.courseId ?? null}

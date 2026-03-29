@@ -60,6 +60,8 @@ function useTutorPageController() {
   const [workspaceResetVersion, setWorkspaceResetVersion] = useState(0);
   const [sessionActionPending, setSessionActionPending] = useState(false);
   const [startPrimingPending, setStartPrimingPending] = useState(false);
+  const [startPrimingViewportFocusRequestKey, setStartPrimingViewportFocusRequestKey] =
+    useState<number | null>(null);
   const [entrySessionName, setEntrySessionName] = useState("");
   const [entryMaterialSelectionTouched, setEntryMaterialSelectionTouched] =
     useState(false);
@@ -592,7 +594,7 @@ function useTutorPageController() {
       setShowSetup(false);
       setPanelLayout([]);
       setWorkspaceResetVersion((current) => current + 1);
-      await workflow.createWorkflowAndOpenPriming({
+      const workflowId = await workflow.createWorkflowAndOpenPriming({
         courseId: nextCourseId,
         topic: sessionTopic,
         selectedMaterials: courseMaterialIds,
@@ -601,6 +603,12 @@ function useTutorPageController() {
         selectedObjectiveId: "",
         objectiveScope: "module_all",
       });
+      if (workflowId) {
+        setPanelLayout(buildStudioShellPresetLayout("priming"));
+        setStartPrimingViewportFocusRequestKey((current) =>
+          typeof current === "number" ? current + 1 : 1,
+        );
+      }
     } finally {
       setStartPrimingPending(false);
     }
@@ -1061,6 +1069,9 @@ function useTutorPageController() {
           entryCardFlashActive={entryCardFlashActive}
           onStartPriming={handleStartPrimingFromEntry}
           isStartingPriming={startPrimingPending}
+          startPrimingViewportFocusRequestKey={
+            startPrimingViewportFocusRequestKey
+          }
           workspaceResetVersion={workspaceResetVersion}
           onResumeHubCandidate={resumeFromHubCandidate}
         />

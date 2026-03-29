@@ -530,6 +530,7 @@ export interface StudioShellProps {
   entryCard?: ReactNode;
   defaultPreset?: StudioShellPreset;
   autoSeedDefaultPreset?: boolean;
+  externalLayoutFocusRequestKey?: number | null;
   workspace?: ReactNode;
   sourceShelf?: ReactNode;
   documentDock?: ReactNode;
@@ -555,6 +556,7 @@ export function StudioShell({
   entryCard,
   defaultPreset = "minimal",
   autoSeedDefaultPreset = true,
+  externalLayoutFocusRequestKey = null,
   workspace,
   sourceShelf,
   documentDock,
@@ -598,6 +600,7 @@ export function StudioShell({
   const canvasViewportRef = useRef<HTMLDivElement | null>(null);
   const groupSequenceRef = useRef(1);
   const [shouldFocusLayout, setShouldFocusLayout] = useState(false);
+  const lastExternalLayoutFocusRequestKeyRef = useRef<number | null>(null);
 
   const clampCanvasScale = useCallback((scale: number) => {
     if (!Number.isFinite(scale)) return canvasTransformRef.current.scale;
@@ -1159,6 +1162,30 @@ export function StudioShell({
 
     return () => cancelAnimationFrame(frame);
   }, [focusOpenPanels, shouldFocusLayout]);
+
+  useEffect(() => {
+    if (
+      typeof externalLayoutFocusRequestKey !== "number" ||
+      externalLayoutFocusRequestKey ===
+        lastExternalLayoutFocusRequestKeyRef.current ||
+      resolvedLayout.length === 0
+    ) {
+      return;
+    }
+
+    lastExternalLayoutFocusRequestKeyRef.current =
+      externalLayoutFocusRequestKey;
+
+    const timeoutId = window.setTimeout(() => {
+      focusOpenPanels();
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    externalLayoutFocusRequestKey,
+    focusOpenPanels,
+    resolvedLayout.length,
+  ]);
 
   const entryStateOverlay =
     resolvedLayout.length === 0 &&

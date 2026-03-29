@@ -28,6 +28,29 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 - Ops note (2026-03-25): `dev-browser` is now a shared agent skill projected into every supported agent root; this does not change Tutor sprint priority.
 
+- [x] ENTRY-003. Auto-center panels after Start Priming opens them.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+    - `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`
+    - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+  - Done when:
+    - clicking `Start Priming` opens the Priming preset and auto-pans the viewport so the opened panels are visible
+    - at least one opened panel intersects the visible viewport and the layout is framed with viewport padding instead of clipping against the edges
+    - focused Tutor/Studio regressions, the production frontend build, and live `dev-browser` verification of `Start Priming -> wait 2s -> panels visible in viewport` pass
+  - Assignee: @codex-cli
+  - Completed: 2026-03-29
+  - Notes:
+    - `handleStartPrimingFromEntry` now opens the `priming` preset after a successful workflow bootstrap instead of leaving the user on an empty canvas.
+    - `StudioShell` accepts a one-shot external focus request and fits the opened layout after a 300ms delay so the priming preset lands inside the viewport with padding.
+    - Focused Tutor route and Studio shell regressions now lock the preset-open path and the delayed viewport-fit behavior.
+  - Validation:
+    - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/pages/__tests__/tutor.test.tsx`
+    - `cd dashboard_rebuild && npm run build`
+    - `dev-browser --connect --timeout 60 run C:\pt-study-sop\scripts\verify-entry-bugs.js`
+
 - [x] HUD-256. Upgrade the Tutor Studio entry card into a full new-session setup form with session name and material selection.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

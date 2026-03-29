@@ -896,9 +896,7 @@ describe("Tutor page restore", () => {
       );
     });
     expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("studio-priming-panel")).not.toBeInTheDocument();
-
-    await openStudioPanel(/open source shelf panel/i);
+    expect(await screen.findByTestId("studio-priming-panel")).toBeInTheDocument();
     const sourceShelf = await screen.findByTestId("studio-source-shelf");
     expect(sourceShelf).toHaveTextContent("Renal Physiology");
     expect(sourceShelf).toHaveTextContent("2 materials loaded");
@@ -1008,7 +1006,7 @@ describe("Tutor page restore", () => {
       );
     });
 
-    await openStudioPanel(/open source shelf panel/i);
+    expect(await screen.findByTestId("studio-priming-panel")).toBeInTheDocument();
     const sourceShelf = await screen.findByTestId("studio-source-shelf");
     expect(sourceShelf).toHaveTextContent("Neuro");
     expect(sourceShelf).toHaveTextContent("2 materials loaded");
@@ -1985,7 +1983,7 @@ describe("Tutor page restore", () => {
     });
   });
 
-  it("shows the entry card on an empty StudioRun and starts Priming on an empty canvas from /tutor", async () => {
+  it("shows the entry card on an empty StudioRun and starts Priming on the priming preset from /tutor", async () => {
     getProjectShellMock.mockResolvedValue(makeProjectShell(77));
     getCurrentCourseMock.mockResolvedValue({ currentCourse: { id: 77 } });
 
@@ -1997,11 +1995,9 @@ describe("Tutor page restore", () => {
     await waitFor(() => {
       expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
     });
-    expect(screen.queryByTestId("studio-priming-panel")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("priming-selector-bar")).not.toBeInTheDocument();
-    await openStudioPanel(/open priming panel/i);
     expect(await screen.findByTestId("studio-priming-panel")).toBeInTheDocument();
     expect(await screen.findByTestId("priming-tool-panel")).toBeInTheDocument();
+    expect(await screen.findByTestId("studio-source-shelf")).toBeInTheDocument();
   });
 
   it("hydrates board_scope and board_id from query params and persists to shell state", async () => {
@@ -2049,7 +2045,6 @@ describe("Tutor page restore", () => {
     await waitFor(() => {
       expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
     });
-    await openStudioPanel(/open priming panel/i);
     expect(await screen.findByTestId("studio-priming-panel")).toBeInTheDocument();
     expect(screen.queryByTestId("brain-home")).not.toBeInTheDocument();
   });

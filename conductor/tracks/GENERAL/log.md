@@ -2095,3 +2095,15 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Strengthened `scripts/verify-entry-bugs.js` so ENTRY-001 now measures viewport-relative geometry with `getBoundingClientRect()`, scrolls to the canvas controls before interaction, and explicitly proves the entry card stays pinned while the canvas zooms and pans.
 - Live validation result:
   - `dev-browser --timeout 60 run C:\\pt-study-sop\\scripts\\verify-entry-bugs.js` now passes every ENTRY-001 assertion and still fails only on the unrelated open ENTRY-003 panel-centering check.
+
+## 2026-03-29 - ENTRY-003 priming preset auto-focus
+
+- Updated `dashboard_rebuild/client/src/pages/tutor.tsx` so the entry-card `Start Priming` path opens the `priming` preset immediately after workflow creation succeeds instead of leaving the Studio canvas empty.
+- Added a one-shot external focus request in `dashboard_rebuild/client/src/components/TutorShell.tsx` and `dashboard_rebuild/client/src/components/studio/StudioShell.tsx` so the newly opened preset auto-fits after a 300ms delay using the existing padded viewport-focus helper.
+- Extended the focused regression coverage in:
+  - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/pages/__tests__/tutor.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - `dev-browser --connect --timeout 60 run C:\\pt-study-sop\\scripts\\verify-entry-bugs.js`
