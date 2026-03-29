@@ -281,7 +281,14 @@ def obsidian_list_files(folder: str = "") -> dict:
             timeout=10,
         )
         if error or resp is None:
-            return {"success": False, "error": error or "No response from Obsidian"}
+            # The Tutor shell treats vault browsing as a best-effort aid; when the
+            # local Obsidian API is offline, degrade to an empty listing instead of
+            # surfacing a browser-console 500 on unrelated study flows.
+            return {
+                "success": True,
+                "files": [],
+                "error": error or "No response from Obsidian",
+            }
         if resp.status_code == 404:
             return {"success": True, "files": []}
         if resp.status_code == 200:

@@ -99,3 +99,18 @@ def test_list_files_treats_missing_folder_as_empty(monkeypatch: pytest.MonkeyPat
     result = api_adapter.obsidian_list_files("Exercise Physiology/Cardiovascular")
 
     assert result == {"success": True, "files": []}
+
+
+def test_list_files_treats_offline_obsidian_as_empty(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(api_adapter, "_obsidian_api_key", lambda: "test-key")
+    monkeypatch.setattr(
+        api_adapter,
+        "_request_obsidian",
+        lambda *args, **kwargs: (None, "offline"),
+    )
+
+    result = api_adapter.obsidian_list_files("Exercise Physiology/Cardiovascular")
+
+    assert result == {"success": True, "files": [], "error": "offline"}
