@@ -240,3 +240,36 @@ Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-022021-29765-iter-3.md
   - Useful context
     - `scripts/verify-overlay-polish.js` is now broad enough to cover both the overlay backdrop contract and the entry-card copy change, while a short `dev-browser` temp script can cheaply confirm the live route stays free of console and page errors after the build.
 ---
+
+## [2026-03-29 03:54 CDT] - OVERLAY-004: Add cancel/close button to entry card overlay
+Thread: 
+Run: 20260329-033115-30160 (iteration 1)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260329-033115-30160-iter-1.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-033115-30160-iter-1.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: `5c4ca5c2 fix: harden tutor overlay dismiss persistence`
+- Post-commit status: `clean`
+- Verification:
+  - Command: `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/tutor.test.tsx` -> PASS
+  - Command: `cd dashboard_rebuild && npm run build` -> PASS
+  - Command: `dev-browser --timeout 60 run C:/pt-study-sop/scripts/verify-overlay-polish.js` -> PASS
+- Files changed:
+  - `.agents/tasks/prd.json`
+  - `conductor/tracks/GENERAL/log.md`
+  - `dashboard_rebuild/client/src/pages/tutor.tsx`
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+  - `docs/root/TUTOR_TODO.md`
+  - `.ralph/progress.md`
+- What was implemented
+  - Hardened `/tutor` project-shell persistence so the entry-card `X` and `Cancel` dismiss controls can close the overlay, leave the canvas interactive, and survive a rapid `NEW SESSION` reopen without triggering stale `revision: 0` save conflicts.
+  - Preserved the active project-shell revision across same-course overlay resets and serialized in-flight shell saves so only the newest queued shell snapshot persists after a dismiss/reopen burst.
+  - Added a focused Tutor page regression for rapid dismiss/reopen behavior and confirmed the live browser dismiss flow passes with no overlay-related console errors.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - When multiple UI actions can mutate the same persisted workspace snapshot within a debounce window, keep the network write path serialized behind a single in-flight gate and queue only the newest pending payload.
+  - Gotchas encountered
+    - The visible `X` and `Cancel` controls were already present on the entry card, but the live story still failed because same-course overlay resets were wiping the project-shell revision back to `0`, which only surfaced under real browser timing.
+  - Useful context
+    - `scripts/verify-overlay-polish.js` already covered the full dismiss/reopen acceptance criteria for this story, so the missing piece was stabilizing `/api/tutor/project-shell/state` persistence rather than adding more overlay UI.
+---
