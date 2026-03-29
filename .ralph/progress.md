@@ -485,3 +485,35 @@ Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-042815-30477-iter-2.md
   - Useful context
     - The live `/api/tutor/workflows/*/priming-assist` response for the default path was already returning valid `source_inventory` and `priming_method_runs`; the frontend mismatch was that the panel only knew how to turn a subset of PRIME output keys into visible blocks.
 ---
+
+## [2026-03-29 15:12 CDT] - REMAIN-001: Polish panel end-to-end verification and fixes
+Thread: 
+Run: 20260329-150416-32869 (iteration 1)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260329-150416-32869-iter-1.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-150416-32869-iter-1.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: `b329fb27 fix: verify and sync polish packet artifacts` (re-verified; no new product-code changes required in this rerun)
+- Post-commit status: `clean`
+- Verification:
+  - Command: `cmd /c Start_Dashboard.bat` -> PASS
+  - Command: `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/components/__tests__/TutorWorkflowPolishStudio.test.tsx client/src/pages/__tests__/tutor.test.tsx` -> PASS
+  - Command: `cd dashboard_rebuild && npm run build` -> PASS
+  - Command: `dev-browser --timeout 90 run scripts/verify-remaining.js` -> PASS
+- Files changed:
+  - `.agents/tasks/prd.json`
+  - `.ralph/progress.md`
+  - `.ralph/runs/run-20260329-150416-32869-iter-1.md`
+  - `conductor/tracks/GENERAL/log.md`
+- What was implemented
+  - Re-audited the shipped Polish panel flow from `TutorShell` through `TutorWorkflowPolishStudio` and `PolishPacketPanel`, then confirmed the existing `b329fb27` implementation still shows real tutor replies, captured notes, live summary/card draft state, and editable review controls without placeholder content.
+  - Re-ran the end-to-end local `/tutor` flow and confirmed the toolbar Polish panel plus Polish Packet both render real session artifacts after a priming run and live Tutor turn.
+  - No additional product-code changes were required for REMAIN-001 in this iteration; this rerun was a verification closeout against the current repo state.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - When a story already has a recent implementation commit, rerun the live verifier before reopening the code; the current Polish flow was already green in source and in browser.
+  - Gotchas encountered
+    - `dev-browser --connect` could not attach because Chrome remote debugging was unavailable on this machine, so isolated `dev-browser` was the reliable fallback for local frontend proof.
+  - Useful context
+    - The live verifier produced 18/18 passing checks and saved fresh artifacts at `C:\Users\treyt\.dev-browser\tmp\verify-remaining-001-polish.png` and `C:\Users\treyt\.dev-browser\tmp\verify-remaining-results.json`.
+---

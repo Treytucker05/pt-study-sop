@@ -2219,3 +2219,13 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run build`
   - `dev-browser --headless --timeout 180 run C:\\pt-study-sop\\scripts\\verify-remaining.js`
   - `pytest brain/tests/`
+
+## 2026-03-29 - REMAIN-001 verification rerun closeout
+
+- Re-audited the shipped REMAIN-001 data flow across `dashboard_rebuild/client/src/components/TutorShell.tsx`, `dashboard_rebuild/client/src/components/TutorWorkflowPolishStudio.tsx`, and `dashboard_rebuild/client/src/lib/studioPacketSections.ts` and confirmed the existing `b329fb27 fix: verify and sync polish packet artifacts` implementation already satisfies the story without further product-code edits.
+- Re-validated the live `/tutor` flow after launching with `Start_Dashboard.bat`: the toolbar-opened Polish panel and Polish Packet both rendered real tutor replies, captured notes, summary draft text, and staged card requests after a priming run plus live Tutor turn, and the summary field remained editable.
+- Validation passed:
+  - `cmd /c Start_Dashboard.bat`
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/components/__tests__/TutorWorkflowPolishStudio.test.tsx client/src/pages/__tests__/tutor.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - `dev-browser --timeout 90 run C:\\pt-study-sop\\scripts\\verify-remaining.js`
