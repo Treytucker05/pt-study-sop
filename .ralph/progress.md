@@ -63,6 +63,38 @@ Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-003111-28082-iter-1.md
   - Gotchas encountered
     - `scripts/verify-entry-bugs.js` is a shared multi-story check, so ENTRY-002 live proof needed a targeted browser script once the shared script hit the unrelated ENTRY-003 failure.
     - `dev-browser --connect` currently cannot be relied on here unless Chrome is launched with remote debugging enabled.
-  - Useful context
+- Useful context
     - The repo already had unrelated dirty files before this run, so the ENTRY-002 commit had to stay scoped to the two TutorShell files.
+---
+
+## [2026-03-29 01:00 CDT] - ENTRY-001: Entry card renders as viewport overlay, not canvas object
+Thread: 
+Run: 20260329-003111-28082 (iteration 2)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260329-003111-28082-iter-2.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-003111-28082-iter-2.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: `be3e8a9e fix: harden ENTRY-001 overlay verification`
+- Post-commit status: `.agents/ralph/agents.sh`, `.agents/ralph/config.sh`, `.agents/tasks/prd.json`, `ralph.bat` deleted, `.ralph/runs/`, `ralph-loop.bat`
+- Verification:
+  - Command: `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx` -> PASS
+  - Command: `cd dashboard_rebuild && npm run build` -> PASS
+  - Command: `dev-browser --timeout 60 run C:\pt-study-sop\scripts\verify-entry-bugs.js` -> FAIL (`ENTRY-001` checks all passed; unrelated `ENTRY-003` panel-open assertion still fails)
+  - Command: `powershell -Command "$output = dev-browser --timeout 60 run C:\pt-study-sop\scripts\verify-entry-bugs.js 2>&1 | Out-String; $required = @('PASS: Entry card exists','PASS: Entry card has dimensions','PASS: Entry card is outside the transformed canvas layer','PASS: Entry card Y is in the upper third of viewport','PASS: Entry card Y is NOT at canvas center (2000+)','PASS: Entry card X is centered-ish','PASS: Canvas zoom control changes','PASS: Entry card does NOT move when the canvas is zoomed','PASS: Canvas transform changes after panning','PASS: Entry card does NOT move when the canvas is panned'); $missing = $required | Where-Object { $output -notmatch [regex]::Escape($_) }; if ($missing.Count -gt 0) { Write-Error ('Missing ENTRY-001 checks: ' + ($missing -join '; ')); exit 1 }"` -> PASS
+- Files changed:
+  - `scripts/verify-entry-bugs.js`
+  - `conductor/tracks/GENERAL/log.md`
+  - `.ralph/progress.md`
+- What was implemented
+  - Revalidated that the live `/tutor` runtime already renders the entry card as a fixed viewport overlay outside the transformed canvas layer, with the card pinned in the visible upper third of the viewport instead of the old canvas-center position.
+  - Hardened `scripts/verify-entry-bugs.js` so ENTRY-001 now measures viewport-relative geometry, scrolls to the canvas controls before interaction, and proves the entry card stays stationary while the canvas zooms and pans.
+  - Recorded the ENTRY-001 verification outcome in the general conductor log so the repo history captures why the omnibus script is still red overall while this story is green.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - For `/tutor`, viewport placement must be verified with `getBoundingClientRect()` rather than Playwright `boundingBox()` because page-space Y values become misleading once the route scroll position changes.
+  - Gotchas encountered
+    - The shared `verify-entry-bugs.js` script is a multi-story gate; it can legitimately exit non-zero after ENTRY-001 passes if ENTRY-003 is still open.
+    - Canvas zoom/pan interactions need an explicit scroll into the Studio controls first because the live canvas sits below the initial fold on this route.
+  - Useful context
+    - `StudioShell.tsx` already contained the real viewport-overlay implementation from the earlier fix; this iteration’s durable value was strengthening the live verification so the story’s acceptance criteria are proved directly.
 ---
