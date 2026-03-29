@@ -124,3 +124,12 @@ If the selected story changes UI, you MUST verify it in the browser:
 4. Take a screenshot if helpful for the progress log.
 
 A frontend story is NOT complete until browser verification passes.
+
+## Already-Completed Story Detection (CRITICAL)
+Before doing ANY implementation work, check if this story was already completed in a previous iteration:
+1. Run `git log --oneline -10` and check if there is a commit message referencing this story ID ({{STORY_ID}}).
+2. Check {{PROGRESS_PATH}} for a progress entry mentioning {{STORY_ID}} with a commit hash.
+3. If BOTH a commit exists AND a progress entry exists with verification PASS results, the story is already done.
+4. In that case, do NOT re-implement anything. Just output the completion signal immediately:
+   <promise>COMPLETE</promise>
+5. Only proceed with implementation if there is NO commit for this story in recent git history.
