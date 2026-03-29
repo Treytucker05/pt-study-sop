@@ -1177,6 +1177,57 @@ describe("TutorShell studio routing", () => {
     expect(screen.getByText("2 of 3 materials selected")).toBeInTheDocument();
   });
 
+  it("renders entry-card material labels as filenames without path characters and keeps badges", async () => {
+    renderTutorShell("home", {
+      hubOverrides: {
+        courseId: 101,
+        courseLabel: "Neuro",
+        selectedMaterials: [101, 102, 103],
+        tutorContentSources: {
+          courses: [{ id: 101, name: "Neuro" }],
+        },
+        chatMaterials: [
+          {
+            id: 101,
+            title: "C:\\Users\\treyt\\Documents\\PT\\Week9\\Chapter10.pdf",
+            file_type: "pdf",
+            source_path: "C:\\Users\\treyt\\Documents\\PT\\Week9\\Chapter10.pdf",
+            course_id: 101,
+          },
+          {
+            id: 102,
+            title: "",
+            file_type: "mp4",
+            source_path: "C:\\Users\\treyt\\Documents\\PT\\Week9\\demo-walkthrough.mp4",
+            course_id: 101,
+          },
+          {
+            id: 103,
+            title: "Lab Handout",
+            file_type: "docx",
+            source_path: "C:\\Users\\treyt\\Documents\\PT\\Week9\\lab-handout.docx",
+            course_id: 101,
+          },
+        ],
+      },
+      shellOverrides: {
+        panelLayout: [],
+      },
+    });
+
+    const entryState = await screen.findByTestId("studio-entry-state");
+
+    expect(within(entryState).getByText("Chapter10.pdf")).toBeInTheDocument();
+    expect(within(entryState).getByText("demo-walkthrough.mp4")).toBeInTheDocument();
+    expect(within(entryState).getByText("Lab Handout")).toBeInTheDocument();
+    expect(
+      within(entryState).queryByText(/C:\\Users\\treyt\\Documents/i),
+    ).not.toBeInTheDocument();
+    expect(within(entryState).getByText("PDF")).toBeInTheDocument();
+    expect(within(entryState).getByText("MP4")).toBeInTheDocument();
+    expect(within(entryState).getByText("DOCX")).toBeInTheDocument();
+  });
+
   it("clears the open canvas layout and workspace objects from the toolbar", async () => {
     const user = userEvent.setup();
 

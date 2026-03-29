@@ -120,6 +120,22 @@ function formatMaterialFileType(value: string | null | undefined): string {
   return normalized ? normalized.toUpperCase() : "FILE";
 }
 
+function formatEntryMaterialLabel(
+  title: string | null | undefined,
+  sourcePath: string | null | undefined,
+): string {
+  const preferredLabel = typeof title === "string" ? title.trim() : "";
+  const fallbackLabel = typeof sourcePath === "string" ? sourcePath.trim() : "";
+  const resolvedLabel = preferredLabel || fallbackLabel;
+
+  if (!resolvedLabel) {
+    return "Unknown material";
+  }
+
+  const basename = resolvedLabel.split(/[\\/]/).pop()?.trim() || resolvedLabel;
+  return basename || "Unknown material";
+}
+
 export interface TutorShellProps {
   activeSessionId: string | null;
   hub: UseTutorHubReturn;
@@ -1372,6 +1388,10 @@ export function TutorShell({
               <div className="space-y-2">
                 {selectedCourseMaterials.map((material) => {
                   const checked = hub.selectedMaterials.includes(material.id);
+                  const entryMaterialLabel = formatEntryMaterialLabel(
+                    material.title,
+                    material.source_path,
+                  );
                   return (
                     <label
                       key={material.id}
@@ -1385,7 +1405,7 @@ export function TutorShell({
                       />
                       <div className="min-w-0 flex-1">
                         <div className="truncate font-mono text-sm text-white">
-                          {material.title}
+                          {entryMaterialLabel}
                         </div>
                       </div>
                       <span className="rounded-full border border-[rgba(255,118,144,0.22)] bg-black/30 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]">
