@@ -1226,6 +1226,36 @@ describe("Tutor page restore", () => {
     }
   });
 
+  it("reopens the entry card from hero NEW SESSION after the overlay is dismissed", async () => {
+    const user = userEvent.setup();
+
+    renderTutor();
+
+    await expectStudioEntryState();
+    await waitFor(() => {
+      expect(document.querySelector(".page-shell__actions")).not.toBeNull();
+    });
+
+    const entryCard = screen.getByTestId("studio-entry-state");
+    await user.click(within(entryCard).getByRole("button", { name: /^cancel$/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole("button", { name: /open source shelf panel/i })).toBeInTheDocument();
+
+    const heroActions = document.querySelector(".page-shell__actions");
+    expect(heroActions).not.toBeNull();
+
+    await user.click(
+      within(heroActions as HTMLElement).getByRole("button", {
+        name: /^new session$/i,
+      }),
+    );
+
+    await expectStudioEntryState();
+  });
+
   it("only renders the hero RESUME button for a real resumable session candidate", async () => {
     const firstRender = renderTutor();
 

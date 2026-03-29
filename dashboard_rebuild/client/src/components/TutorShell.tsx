@@ -1003,6 +1003,10 @@ export function TutorShell({
     [hub, onEntryMaterialSelectionTouchedChange, selectedCourseMaterialIdSet],
   );
 
+  const handleDismissEntryCard = useCallback(() => {
+    setShowSetup(false);
+  }, [setShowSetup]);
+
   useEffect(() => {
     setCanvasObjectIds([]);
     setWorkspaceDraftObjects([]);
@@ -1346,10 +1350,19 @@ export function TutorShell({
   const entryCard = (
     <div
       data-testid="tutor-entry-card"
-      className={`space-y-5 rounded-[1rem] transition-shadow duration-300 ${
+      className={`relative space-y-5 rounded-[1rem] pr-10 transition-shadow duration-300 ${
         entryCardFlashActive ? "ring-2 ring-primary/50" : ""
       }`}
     >
+      <button
+        type="button"
+        aria-label="Close setup overlay"
+        data-testid="tutor-entry-close-button"
+        onClick={handleDismissEntryCard}
+        className="absolute right-0 top-0 rounded-full p-1 font-mono text-lg text-[#ffc8d3]/60 transition hover:text-white"
+      >
+        X
+      </button>
       <div className="space-y-2">
         <div className="font-mono text-xs uppercase tracking-[0.18em] text-[#ffb9c7]">
           Floating Studio
@@ -1514,6 +1527,14 @@ export function TutorShell({
           className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-xs uppercase tracking-[0.18em] text-[#ffd6de]"
         >
           Skip Setup
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleDismissEntryCard}
+          className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-xs uppercase tracking-[0.18em] text-[#ffc8d3]/72"
+        >
+          Cancel
         </Button>
         {resumeCandidate ? (
           <Button

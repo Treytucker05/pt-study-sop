@@ -59,10 +59,10 @@
         "dashboard_rebuild/client/src/components/TutorShell.tsx"
       ],
       "verification": "dev-browser --timeout 60 run scripts/verify-overlay-polish.js",
-      "status": "in_progress",
+      "status": "done",
       "startedAt": "2026-03-29T07:44:34.739695+00:00",
-      "completedAt": null,
-      "updatedAt": "2026-03-29T07:44:34.739703+00:00"
+      "completedAt": "2026-03-29T07:55:10.907426+00:00",
+      "updatedAt": "2026-03-29T07:55:10.907412+00:00"
     },
     {
       "id": "OVERLAY-004",
@@ -82,7 +82,10 @@
         "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
       ],
       "verification": "dev-browser --timeout 60 run scripts/verify-overlay-polish.js",
-      "status": "open"
+      "status": "in_progress",
+      "startedAt": "2026-03-29T07:55:13.330702+00:00",
+      "completedAt": null,
+      "updatedAt": "2026-03-29T07:55:13.330710+00:00"
     }
   ]
 }

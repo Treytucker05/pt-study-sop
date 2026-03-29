@@ -1,0 +1,79 @@
+{
+  "title": "Study Flow E2E - Get It Working",
+  "description": "Fix the critical path so Trey can actually use the tutor to study. Focus: entry card -> priming -> tutor chat -> notes. Verify the full flow works end to end.",
+  "stories": [
+    {
+      "id": "STUDY-001",
+      "title": "Verify and fix Start Priming flow end to end",
+      "description": "When user fills the entry card and clicks Start Priming, the following must happen in order: (1) Entry card dismisses. (2) Priming panel opens and is visible in viewport. (3) Source Shelf loads the selected course materials. (4) Priming panel shows method selection and chat interface. (5) User can select a method and run it. (6) User can type in the priming chat and get responses. Test this by navigating to /tutor, filling in session name and course, clicking Start Priming, and verifying each step. If any step fails, fix it. Read handleStartPrimingFromEntry in tutor.tsx and workflow.createWorkflowAndOpenPriming to trace the full flow. The Flask backend must be running at 127.0.0.1:5000 for API calls to work.",
+      "acceptanceCriteria": [
+        "Entry card dismisses after clicking Start Priming",
+        "Priming panel opens and is visible in the viewport",
+        "Source Shelf shows materials for the selected course",
+        "Priming panel has method selection UI",
+        "Priming panel has chat input that accepts text",
+        "dev-browser: fill entry card, click Start Priming, verify panels open, verify chat input exists"
+      ],
+      "files": [
+        "dashboard_rebuild/client/src/pages/tutor.tsx",
+        "dashboard_rebuild/client/src/components/TutorShell.tsx",
+        "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
+      ],
+      "verification": "dev-browser --timeout 90 run scripts/verify-study-flow.js",
+      "status": "open"
+    },
+    {
+      "id": "STUDY-002",
+      "title": "Verify and fix Tutor chat panel sends and receives messages",
+      "description": "The Tutor panel must be able to send a message and receive a response from the LLM backend. Open the Tutor panel (either via preset or toolbar). Type a message in the chat input. Click send or press Enter. Verify the message appears in the chat history. Verify a response comes back from the backend (may take a few seconds). If the chat does not work, trace the API call in api_tutor.py and the frontend TutorChat component to find what is broken. The backend API endpoint is typically POST /api/tutor/chat or similar. Check network requests in dev-browser to see if the API call is being made and what response comes back.",
+      "acceptanceCriteria": [
+        "Tutor panel has a chat input and send button",
+        "User can type a message and send it",
+        "Sent message appears in chat history",
+        "Response from LLM appears in chat history (or a clear error message if backend is down)",
+        "dev-browser: open Tutor panel, type message, send, verify response appears"
+      ],
+      "files": [
+        "dashboard_rebuild/client/src/components/TutorShell.tsx",
+        "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
+      ],
+      "verification": "dev-browser --timeout 90 run scripts/verify-study-flow.js",
+      "status": "open"
+    },
+    {
+      "id": "STUDY-003",
+      "title": "Verify and fix Notes panel accepts and saves text",
+      "description": "The Notes panel must let the user type freeform notes during a study session. Open the Notes panel from the toolbar. Verify it has a text input area (textarea or rich text editor). Type some text. Verify the text persists (does not disappear on re-render or panel resize). Notes should be associated with the current session. If notes are not saving, check if there is a save-on-blur or auto-save mechanism.",
+      "acceptanceCriteria": [
+        "Notes panel opens from toolbar",
+        "Notes panel has a text input area",
+        "User can type text in the notes area",
+        "Text persists after typing (does not disappear)",
+        "dev-browser: open Notes panel, type text, verify text stays"
+      ],
+      "files": [
+        "dashboard_rebuild/client/src/components/TutorShell.tsx",
+        "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
+      ],
+      "verification": "dev-browser --timeout 90 run scripts/verify-study-flow.js",
+      "status": "open"
+    },
+    {
+      "id": "STUDY-004",
+      "title": "Panel toolbar shows clear icons and opens correct panels",
+      "description": "The studio toolbar at the top of the canvas should show clear, labeled buttons for the most important panels. At minimum: Source Shelf, Priming, Tutor, Notes. Each button should open its corresponding panel when clicked. If a panel is already open, clicking its toolbar button should focus/center it. The toolbar buttons should be easy to find and clearly labeled with text (not just icons). Check StudioShell toolbar rendering to verify all panels have toolbar entries.",
+      "acceptanceCriteria": [
+        "Toolbar shows buttons for key panels: Source Shelf, Priming, Tutor, Notes",
+        "Clicking a toolbar button opens the corresponding panel",
+        "Clicking a toolbar button for an already-open panel focuses it",
+        "Toolbar buttons have readable text labels",
+        "dev-browser: click each toolbar button, verify panels open"
+      ],
+      "files": [
+        "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
+      ],
+      "verification": "dev-browser --timeout 90 run scripts/verify-study-flow.js",
+      "status": "open"
+    }
+  ]
+}

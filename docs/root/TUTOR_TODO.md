@@ -97,6 +97,20 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - `cd dashboard_rebuild && npm run build`
     - `dev-browser --connect --timeout 60 run C:\pt-study-sop\scripts\verify-overlay-polish.js`
 
+- [ ] OVERLAY-004. Add cancel/close button to entry card overlay.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+    - `scripts/verify-overlay-polish.js`
+  - Done when:
+    - the entry card shows an `X` close button in the top-right corner that dismisses the setup overlay without opening a session or preset
+    - the entry card shows a `Cancel` action alongside `Start Priming` and `Skip Setup`, and both dismiss controls reveal the empty interactive canvas
+    - the empty canvas remains usable after dismissal and the hero `NEW SESSION` action can reopen the entry card
+    - focused TutorShell/page regressions, the production frontend build, and live `dev-browser` verification of the dismiss/reopen flow pass
+  - Assignee: @codex-cli
+
 - [x] ENTRY-003. Auto-center panels after Start Priming opens them.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

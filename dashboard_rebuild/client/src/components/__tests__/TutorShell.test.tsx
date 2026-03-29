@@ -1143,6 +1143,70 @@ describe("TutorShell studio routing", () => {
     ).toBeInTheDocument();
   });
 
+  it("dismisses the entry card with the close button and leaves the empty-canvas toolbar usable", async () => {
+    const user = userEvent.setup();
+
+    renderTutorShell("home", {
+      activeSessionId: null,
+      sessionOverrides: {
+        hasActiveTutorSession: false,
+      },
+      hubOverrides: {
+        courseId: 101,
+        courseLabel: "Exercise Physiology",
+        tutorContentSources: {
+          courses: [{ id: 101, name: "Exercise Physiology" }],
+        },
+      },
+      shellOverrides: {
+        panelLayout: [],
+      },
+    });
+
+    expect(
+      await screen.findByRole("button", { name: /close setup overlay/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^cancel$/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /close setup overlay/i }));
+
+    expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /open source shelf panel/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /open source shelf panel/i }));
+
+    expect(await screen.findByTestId("studio-source-shelf")).toBeInTheDocument();
+  });
+
+  it("dismisses the entry card with Cancel without opening a preset layout", async () => {
+    const user = userEvent.setup();
+    const setPanelLayout = vi.fn();
+
+    renderTutorShell("home", {
+      activeSessionId: null,
+      sessionOverrides: {
+        hasActiveTutorSession: false,
+      },
+      hubOverrides: {
+        courseId: 101,
+        courseLabel: "Exercise Physiology",
+        tutorContentSources: {
+          courses: [{ id: 101, name: "Exercise Physiology" }],
+        },
+      },
+      shellOverrides: {
+        panelLayout: [],
+        setPanelLayout,
+      },
+    });
+
+    await user.click(await screen.findByRole("button", { name: /^cancel$/i }));
+
+    expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
+    expect(setPanelLayout).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: /open source shelf panel/i })).toBeInTheDocument();
+  });
+
   it("collects a session name and lets the entry card narrow materials before launch", async () => {
     const user = userEvent.setup();
 
