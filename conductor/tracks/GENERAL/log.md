@@ -2186,3 +2186,14 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `pytest brain/tests/test_tutor_workflow_priming_assist.py -q`
   - `cd dashboard_rebuild && npm run build`
   - `dev-browser --connect --timeout 180 run C:\\pt-study-sop\\scripts\\verify-study-flow.js`
+
+## 2026-03-29 - STUDY-002 priming method output rendering
+
+- Reproduced the live empty-output fallback on `/tutor` by clearing the default method pair, selecting `M-PRE-002`, and confirming the backend completed the run while the Output Area still showed `"This run completed, but no study artifacts were returned for the selected output format."`
+- Expanded `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` so the Priming renderer now turns previously dropped PRIME payload families into readable blocks, including question sets, major sections, follow-up targets, unsupported jumps, hand-draw briefs, and branch points.
+- Extended `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts` so applying refined Priming results preserves those additional PRIME output families when a displayed run is written back into workflow state.
+- Added a focused `M-PRE-002` regression in `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx` and updated `scripts/verify-study-flow.js` to clear the defaults, run `M-PRE-002`, and prove the live Output Area shows content plus an enabled Priming chat path instead of the empty fallback.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx client/src/hooks/__tests__/useTutorWorkflow.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - `dev-browser --timeout 180 run C:\\pt-study-sop\\scripts\\verify-study-flow.js`

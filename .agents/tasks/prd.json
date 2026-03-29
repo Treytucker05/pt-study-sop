@@ -60,9 +60,9 @@
       ],
       "verification": "dev-browser --timeout 90 run scripts/verify-study-flow.js",
       "status": "in_progress",
-      "startedAt": "2026-03-29T09:27:39.865439+00:00",
+      "startedAt": "2026-03-29T09:42:58.909903+00:00",
       "completedAt": null,
-      "updatedAt": "2026-03-29T09:27:39.865448+00:00"
+      "updatedAt": "2026-03-29T09:42:58.909905+00:00"
     },
     {
       "id": "STUDY-003",
@@ -80,10 +80,10 @@
         "brain/dashboard/api_tutor.py"
       ],
       "verification": "dev-browser --timeout 90 run scripts/verify-study-flow.js",
-      "status": "in_progress",
+      "status": "done",
       "startedAt": "2026-03-29T09:28:15.954628+00:00",
-      "completedAt": null,
-      "updatedAt": "2026-03-29T09:28:15.954634+00:00"
+      "completedAt": "2026-03-29T09:42:56.490316+00:00",
+      "updatedAt": "2026-03-29T09:42:56.490302+00:00"
     },
     {
       "id": "STUDY-004",

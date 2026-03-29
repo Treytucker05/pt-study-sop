@@ -376,3 +376,39 @@ Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-042815-30477-iter-1.md
   - Useful context
     - The connected `dev-browser` pass for this story proved the real chat path on `/tutor` with 24 green checks and no console errors.
 ---
+
+## [2026-03-29 04:59 CDT] - STUDY-002: Priming method run returns actual results instead of empty
+Thread: 
+Run: 20260329-042815-30477 (iteration 2)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260329-042815-30477-iter-2.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-042815-30477-iter-2.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: `9fd4569c fix: render priming method outputs`
+- Post-commit status: `clean`
+- Verification:
+  - Command: `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx client/src/hooks/__tests__/useTutorWorkflow.test.tsx` -> PASS
+  - Command: `cd dashboard_rebuild && npm run build` -> PASS
+  - Command: `dev-browser --timeout 180 run C:/pt-study-sop/scripts/verify-study-flow.js` -> PASS
+- Files changed:
+  - `.agents/tasks/prd.json`
+  - `conductor/tracks/GENERAL/log.md`
+  - `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+  - `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts`
+  - `docs/root/TUTOR_TODO.md`
+  - `scripts/verify-study-flow.js`
+  - `.ralph/runs/run-20260329-042815-30477-iter-1.md`
+  - `.ralph/progress.md`
+- What was implemented
+  - Reproduced the actual broken path by clearing the default method pair, selecting `M-PRE-002`, and confirming the backend returned a completed run while the Priming Output Area still fell back to the empty-message state.
+  - Expanded the Priming renderer so question sets, follow-up targets, unsupported jumps, major sections, hand-draw briefs, and branch points now render as readable result blocks instead of being silently dropped.
+  - Extended the displayed-run round-trip helper and the shared live verifier so the workflow preserves those additional PRIME output families and the browser proof now covers the previously broken single-method path.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - When a live story looks intermittent, rerun it against a non-default method instead of the happy-path defaults; the default `M-PRE-010` + `M-PRE-008` pair was already healthy, but `M-PRE-002` immediately exposed the real renderer gap.
+  - Gotchas encountered
+    - The entry-card course picker auto-selects course materials, so a verifier that clicks `Select All` unconditionally can accidentally deselect the only source and create a false-negative disabled-`RUN` state.
+  - Useful context
+    - The live `/api/tutor/workflows/*/priming-assist` response for the default path was already returning valid `source_inventory` and `priming_method_runs`; the frontend mismatch was that the panel only knew how to turn a subset of PRIME output keys into visible blocks.
+---
