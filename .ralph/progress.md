@@ -336,6 +336,43 @@ Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-041641-30365-iter-1.md
     - When a rerun lands on a story that may already be shipped, re-audit the actual component and verifier seams before editing so you avoid redundant churn.
   - Gotchas encountered
     - The live verifier depends on the dashboard already listening on `127.0.0.1:5000`, so the safest flow is build first, then launch with `Start_Dashboard.bat`, then run `dev-browser --connect`.
-  - Useful context
+- Useful context
     - The connected `dev-browser` pass for this run saved fresh screenshots at `C:\Users\treyt\.dev-browser\tmp\study-flow-01-entry-filled.png`, `study-flow-02-after-start.png`, `study-flow-03-panels-open.png`, and `study-flow-04-toolbar.png`.
+---
+
+## [2026-03-29 04:40 CDT] - STUDY-003: Priming Chat is functional not placeholder
+Thread: 
+Run: 20260329-042815-30477 (iteration 1)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260329-042815-30477-iter-1.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-042815-30477-iter-1.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: 8dfc2400 fix: finish priming chat flow
+- Post-commit status: `clean`
+- Verification:
+  - Command: `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx` -> PASS
+  - Command: `pytest brain/tests/test_tutor_workflow_priming_assist.py -q` -> PASS
+  - Command: `cd dashboard_rebuild && npm run build` -> PASS
+  - Command: `dev-browser --connect --timeout 180 run C:/pt-study-sop/scripts/verify-study-flow.js` -> PASS
+- Files changed:
+  - `.agents/tasks/prd.json`
+  - `conductor/tracks/GENERAL/log.md`
+  - `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+  - `docs/root/TUTOR_TODO.md`
+  - `scripts/verify-study-flow.js`
+  - `.ralph/runs/run-20260329-041641-30365-iter-1.md`
+  - `.ralph/runs/run-20260329-042815-30477-iter-1.md`
+  - `.ralph/progress.md`
+- What was implemented
+  - Removed the final Priming chat placeholder copy so the empty state now describes the real unlock condition instead of advertising a future feature.
+  - Expanded the focused Priming chat regression to prove sent turns stay visible, follow-up requests include prior conversation history, and assistant-provided replacement results can still be applied into the Output Area.
+  - Hardened the live `verify-study-flow.js` path so it preserves a course with materials, runs a real Priming extract, sends a real chat follow-up, and verifies the assistant response is grounded in the current run context.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - A second follow-up in the focused panel test is the easiest way to lock `conversation_history` payload shape without adding backend-only scaffolding.
+  - Gotchas encountered
+    - The live study-flow verifier cannot blindly pick the first non-placeholder course because some courses may load with no materials; the script has to preserve the current course or switch only after checking the entry-card material count.
+  - Useful context
+    - The connected `dev-browser` pass for this story proved the real chat path on `/tutor` with 24 green checks and no console errors.
 ---

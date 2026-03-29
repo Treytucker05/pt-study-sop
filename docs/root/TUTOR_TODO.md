@@ -166,6 +166,28 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - `cd dashboard_rebuild && npm run build`
     - `dev-browser --timeout 90 run C:\pt-study-sop\scripts\verify-study-flow.js`
 
+- [x] STUDY-003. Priming Chat is functional not placeholder.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+    - `scripts/verify-study-flow.js`
+  - Done when:
+    - the Priming chat empty state no longer advertises "coming soon" and instead explains how to use the current run
+    - the Priming panel keeps real conversation history visible, sends follow-ups to the refinement endpoint, and can apply returned replacement results without regressing method or chain runs
+    - focused Priming frontend tests, backend Priming assist tests, the production frontend build, and live `dev-browser` verification of a sent follow-up plus assistant response all pass
+  - Assignee: @codex-cli
+  - Completed: 2026-03-29
+  - Notes:
+    - Removed the last placeholder empty-state copy in `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` so the Priming chat now explains the real unlock condition instead of advertising a future feature.
+    - Extended the focused Priming panel regression so the shipped UI now proves real conversation history, a backend refinement follow-up, preserved prior turns in `conversation_history`, and applying returned replacement results.
+    - Hardened `scripts/verify-study-flow.js` so the live browser flow keeps a course with materials selected, runs a real Priming method, sends a follow-up through Priming chat, verifies the assistant reply is grounded in the current result, and checks for console errors.
+  - Validation:
+    - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+    - `pytest brain/tests/test_tutor_workflow_priming_assist.py -q`
+    - `cd dashboard_rebuild && npm run build`
+    - `dev-browser --connect --timeout 180 run C:\pt-study-sop\scripts\verify-study-flow.js`
+
 - [x] HUD-256. Upgrade the Tutor Studio entry card into a full new-session setup form with session name and material selection.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

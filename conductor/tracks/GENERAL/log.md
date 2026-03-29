@@ -2175,3 +2175,14 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
   - `cd dashboard_rebuild && npm run build`
   - `dev-browser --connect --timeout 90 run C:\\pt-study-sop\\scripts\\verify-study-flow.js`
+
+## 2026-03-29 - STUDY-003 priming chat live verification closeout
+
+- Removed the last `"coming soon"` Priming chat empty-state copy in `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` so the live panel now advertises the real unlock condition instead of a placeholder.
+- Extended `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx` so the focused regression proves sent user turns stay visible, backend refinement follow-ups receive prior `conversation_history`, and returned replacement results can still be applied into the output area.
+- Hardened `scripts/verify-study-flow.js` so the live browser path preserves a course with materials, force-selects materials if needed, runs a real Priming extract, sends a follow-up through Priming chat, checks that the assistant reply is grounded in the current result context, and still fails on console errors.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+  - `pytest brain/tests/test_tutor_workflow_priming_assist.py -q`
+  - `cd dashboard_rebuild && npm run build`
+  - `dev-browser --connect --timeout 180 run C:\\pt-study-sop\\scripts\\verify-study-flow.js`
