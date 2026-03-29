@@ -117,6 +117,7 @@ function useTutorPageController() {
     setActiveMemoryCapsuleId,
     setCompactionTelemetry,
     setDirectNoteSaveStatus,
+    setNotesDraft,
     setPrimingMethodIds,
     setPrimingChainId,
     setPrimingCustomBlockIds,
@@ -1105,6 +1106,7 @@ function useTutorPageController() {
           setActiveMemoryCapsuleId={setActiveMemoryCapsuleId}
           setCompactionTelemetry={setCompactionTelemetry}
           setDirectNoteSaveStatus={setDirectNoteSaveStatus}
+          setNotesDraft={setNotesDraft}
           setPrimingMethodIds={setPrimingMethodIds}
           setPrimingChainId={setPrimingChainId}
           setPrimingCustomBlockIds={setPrimingCustomBlockIds}

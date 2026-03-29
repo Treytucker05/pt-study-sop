@@ -528,6 +528,7 @@ function renderTutorShell(
       setCompactionTelemetry?: (...args: unknown[]) => void;
       setActiveMemoryCapsuleId?: (...args: unknown[]) => void;
       setDirectNoteSaveStatus?: (...args: unknown[]) => void;
+      setNotesDraft?: (...args: unknown[]) => void;
       tutorChainId?: number;
       tutorCustomBlockIds?: number[];
       setTutorChainId?: (...args: unknown[]) => void;
@@ -581,6 +582,7 @@ function renderTutorShell(
         setCompactionTelemetry={shellOverrides?.setCompactionTelemetry as never}
         setActiveMemoryCapsuleId={shellOverrides?.setActiveMemoryCapsuleId as never}
         setDirectNoteSaveStatus={shellOverrides?.setDirectNoteSaveStatus as never}
+        setNotesDraft={shellOverrides?.setNotesDraft as never}
         setTutorChainId={shellOverrides?.setTutorChainId as never}
         setTutorCustomBlockIds={shellOverrides?.setTutorCustomBlockIds as never}
         primingMethodIds={shellOverrides?.primingMethodIds as never}
@@ -2863,6 +2865,75 @@ describe("TutorShell studio routing", () => {
         badge: "TUTOR",
       }),
     );
+  });
+
+  it("persists notes through runtime state for the active session", async () => {
+    const user = userEvent.setup();
+    const setNotesDraft = vi.fn();
+
+    renderTutorShell("workspace", {
+      activeSessionId: "sess-1",
+      shellOverrides: {
+        runtimeState: {
+          activeMemoryCapsuleId: null,
+          compactionTelemetry: null,
+          directNoteSaveStatus: null,
+          notesDraft: {
+            sessionKey: "session:sess-1",
+            content: "Existing session note",
+          },
+          primingMethodIds: [],
+          primingChainId: null,
+          primingCustomBlockIds: [],
+        },
+        setNotesDraft,
+      },
+    });
+
+    const textarea = await screen.findByTestId("studio-notes-textarea");
+    await waitFor(() => {
+      expect(textarea).toHaveValue("Existing session note");
+    });
+
+    fireEvent.change(textarea, {
+      target: { value: "Existing session note updated" },
+    });
+
+    expect(setNotesDraft).toHaveBeenCalledWith({
+      sessionKey: "session:sess-1",
+      content: "Existing session note updated",
+    });
+  });
+
+  it("clears notes when the saved draft belongs to a different session", async () => {
+    const setNotesDraft = vi.fn();
+
+    renderTutorShell("workspace", {
+      activeSessionId: "sess-2",
+      shellOverrides: {
+        runtimeState: {
+          activeMemoryCapsuleId: null,
+          compactionTelemetry: null,
+          directNoteSaveStatus: null,
+          notesDraft: {
+            sessionKey: "session:sess-1",
+            content: "Old note",
+          },
+          primingMethodIds: [],
+          primingChainId: null,
+          primingCustomBlockIds: [],
+        },
+        setNotesDraft,
+      },
+    });
+
+    expect(await screen.findByTestId("studio-notes-textarea")).toHaveValue("");
+    await waitFor(() => {
+      expect(setNotesDraft).toHaveBeenCalledWith({
+        sessionKey: "session:sess-2",
+        content: "",
+      });
+    });
   });
 
   it("starts a Tutor session from the Tutor panel using Prime Packet context", async () => {

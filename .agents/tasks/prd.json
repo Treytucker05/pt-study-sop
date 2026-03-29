@@ -33,9 +33,9 @@
       ],
       "verification": "dev-browser --timeout 90 run scripts/verify-remaining.js",
       "status": "in_progress",
-      "startedAt": "2026-03-29T20:56:34.103834+00:00",
+      "startedAt": "2026-03-29T22:55:35.908057+00:00",
       "completedAt": null,
-      "updatedAt": "2026-03-29T20:56:34.103841+00:00"
+      "updatedAt": "2026-03-29T22:55:35.908059+00:00"
     },
     {
       "id": "REMAIN-003",
@@ -52,7 +52,10 @@
         "dashboard_rebuild/client/src/components/TutorShell.tsx"
       ],
       "verification": "dev-browser --timeout 90 run scripts/verify-remaining.js",
-      "status": "open"
+      "status": "in_progress",
+      "startedAt": "2026-03-29T22:56:44.588106+00:00",
+      "completedAt": null,
+      "updatedAt": "2026-03-29T22:56:44.588112+00:00"
     },
     {
       "id": "REMAIN-004",

@@ -11,22 +11,14 @@ echo   Autonomous AI Coding Agent
 echo ============================================
 echo.
 echo  Repo: C:\pt-study-sop
-echo  Agent: Codex (default)
 echo  PRD: .agents\tasks\prd.json
 echo.
-echo  How it works:
-echo    Ralph reads prd.json for unfinished stories.
-echo    Each iteration spawns a FRESH Codex with clean context.
-echo    Codex makes changes, builds, runs dev-browser to verify.
-echo    If verification passes, it commits and moves to next story.
-echo    If it fails, next iteration retries with fresh context.
-echo    Progress saved in .ralph\progress.md and git history.
-echo.
 echo  Commands:
-echo    1) Build   - Run the loop (fix bugs autonomously)
-echo    2) Status  - Check progress and PRD status
-echo    3) Context - View what Ralph knows about this project
-echo    4) Exit
+echo    1) Codex Medium  - Standard loop (balanced)
+echo    2) Codex Spark   - Fast/cheap (simple fixes)
+echo    3) Claude Code   - Deep reasoning (hard features)
+echo    4) Status        - Check progress
+echo    5) Exit
 echo.
 echo ============================================
 echo.
@@ -34,21 +26,40 @@ echo.
 cd /d C:\pt-study-sop
 
 :menu
-set /p choice="Pick [1-4]: "
+set /p choice="Pick [1-5]: "
 
-if "%choice%"=="1" goto build
-if "%choice%"=="2" goto status
-if "%choice%"=="3" goto context
-if "%choice%"=="4" goto end
+if "%choice%"=="1" goto codex
+if "%choice%"=="2" goto spark
+if "%choice%"=="3" goto claude
+if "%choice%"=="4" goto status
+if "%choice%"=="5" goto end
 goto menu
 
-:build
+:codex
 echo.
-echo Starting Ralph build loop with Codex via Git Bash...
-echo Each iteration = fresh Codex + build + dev-browser verify
-echo Press Ctrl+C to stop at any time.
+echo Starting Ralph with Codex gpt-5.4 (medium reasoning)...
 echo.
 %GIT_BASH% -c "cd %REPO% && .agents/ralph/loop.sh build 40"
+echo.
+echo Ralph finished. Check .ralph\progress.md for results.
+echo.
+goto menu
+
+:spark
+echo.
+echo Starting Ralph with Codex Spark (fast/cheap)...
+echo.
+%GIT_BASH% -c "cd %REPO% && AGENT_CMD='codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check -c model=gpt-5.3-codex-spark -c model_reasoning_effort=low -' .agents/ralph/loop.sh build 40"
+echo.
+echo Ralph finished. Check .ralph\progress.md for results.
+echo.
+goto menu
+
+:claude
+echo.
+echo Starting Ralph with Claude Code (deep reasoning)...
+echo.
+%GIT_BASH% -c "cd %REPO% && AGENT_CMD='claude -p --dangerously-skip-permissions' .agents/ralph/loop.sh build 40"
 echo.
 echo Ralph finished. Check .ralph\progress.md for results.
 echo.
@@ -58,9 +69,9 @@ goto menu
 echo.
 echo === Progress Log ===
 if exist .ralph\progress.md (
-    type .ralph\progress.md
+    type .ralph\progress.md | more
 ) else (
-    echo No progress yet. Run a build first.
+    echo No progress yet.
 )
 echo.
 echo === PRD Stories ===
@@ -71,19 +82,7 @@ if exist .agents\tasks\prd.json (
 )
 echo.
 echo === Recent Commits ===
-git log --oneline -5
-echo.
-goto menu
-
-:context
-echo.
-echo === Project Context (what Ralph knows) ===
-echo.
-if exist .agents\ralph\references\PROJECT_CONTEXT.md (
-    type .agents\ralph\references\PROJECT_CONTEXT.md
-) else (
-    echo No project context found.
-)
+git log --oneline -8
 echo.
 goto menu
 

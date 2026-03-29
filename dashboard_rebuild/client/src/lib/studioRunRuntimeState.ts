@@ -2,6 +2,10 @@ export interface StudioRunRuntimeState {
   activeMemoryCapsuleId: number | null;
   compactionTelemetry: Record<string, unknown> | null;
   directNoteSaveStatus: Record<string, unknown> | null;
+  notesDraft: {
+    sessionKey: string | null;
+    content: string;
+  };
   primingMethodIds: string[];
   primingChainId: number | null;
   primingCustomBlockIds: number[];
@@ -12,6 +16,10 @@ function getDefaultStudioRunRuntimeState(): StudioRunRuntimeState {
     activeMemoryCapsuleId: null,
     compactionTelemetry: null,
     directNoteSaveStatus: null,
+    notesDraft: {
+      sessionKey: null,
+      content: "",
+    },
     primingMethodIds: [],
     primingChainId: null,
     primingCustomBlockIds: [],
@@ -46,6 +54,21 @@ export function normalizeStudioRunRuntimeState(
     !Array.isArray(record.direct_note_save_status)
       ? (record.direct_note_save_status as Record<string, unknown>)
       : null;
+  const rawNotesDraft =
+    record.notes_draft &&
+    typeof record.notes_draft === "object" &&
+    !Array.isArray(record.notes_draft)
+      ? (record.notes_draft as Record<string, unknown>)
+      : null;
+  const notesDraft = {
+    sessionKey:
+      typeof rawNotesDraft?.session_key === "string" &&
+      rawNotesDraft.session_key.trim().length > 0
+        ? rawNotesDraft.session_key
+        : null,
+    content:
+      typeof rawNotesDraft?.content === "string" ? rawNotesDraft.content : "",
+  };
 
   const primingMethodIds = Array.isArray(record.priming_method_ids)
     ? record.priming_method_ids.filter(
@@ -71,6 +94,7 @@ export function normalizeStudioRunRuntimeState(
     activeMemoryCapsuleId,
     compactionTelemetry,
     directNoteSaveStatus,
+    notesDraft,
     primingMethodIds,
     primingChainId,
     primingCustomBlockIds,
@@ -83,6 +107,10 @@ export function serializeStudioRunRuntimeState(
   active_memory_capsule_id: number | null;
   compaction_telemetry: Record<string, unknown> | null;
   direct_note_save_status: Record<string, unknown> | null;
+  notes_draft: {
+    session_key: string | null;
+    content: string;
+  };
   priming_method_ids: string[];
   priming_chain_id: number | null;
   priming_custom_block_ids: number[];
@@ -91,6 +119,10 @@ export function serializeStudioRunRuntimeState(
     active_memory_capsule_id: value.activeMemoryCapsuleId,
     compaction_telemetry: value.compactionTelemetry,
     direct_note_save_status: value.directNoteSaveStatus,
+    notes_draft: {
+      session_key: value.notesDraft.sessionKey,
+      content: value.notesDraft.content,
+    },
     priming_method_ids: value.primingMethodIds,
     priming_chain_id: value.primingChainId,
     priming_custom_block_ids: value.primingCustomBlockIds,

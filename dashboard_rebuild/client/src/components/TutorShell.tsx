@@ -180,6 +180,10 @@ export interface TutorShellProps {
   setDirectNoteSaveStatus?: (
     directNoteSaveStatus: Record<string, unknown> | null,
   ) => void;
+  setNotesDraft?: (notesDraft: {
+    sessionKey: string | null;
+    content: string;
+  }) => void;
   setPrimingMethodIds?: (ids: string[]) => void;
   setPrimingChainId?: (id: number | null | undefined) => void;
   setPrimingCustomBlockIds?: (ids: number[]) => void;
@@ -237,6 +241,7 @@ export function TutorShell({
   setActiveMemoryCapsuleId,
   setCompactionTelemetry,
   setDirectNoteSaveStatus,
+  setNotesDraft,
   setPrimingMethodIds,
   setPrimingChainId,
   setPrimingCustomBlockIds,
@@ -293,6 +298,7 @@ export function TutorShell({
   const [sourceShelfUploading, setSourceShelfUploading] = useState(false);
   const entryUploadInputRef = useRef<HTMLInputElement | null>(null);
   const lastPolishDraftWorkflowIdRef = useRef<string | null>(null);
+  const hasAppliedInitialWorkspaceResetRef = useRef(false);
   const promotedPrimePacketObjects = useMemo(() => {
     const merged = new Map<string, PrimePromotedWorkspaceObject>();
 
@@ -740,6 +746,41 @@ export function TutorShell({
   const liveTutorSessionId = session.hasActiveTutorSession
     ? activeSessionId
     : null;
+  const notesSessionKey = useMemo(() => {
+    if (liveTutorSessionId) {
+      return `session:${liveTutorSessionId}`;
+    }
+    if (workflow.activeWorkflowId) {
+      return `workflow:${workflow.activeWorkflowId}`;
+    }
+    return null;
+  }, [liveTutorSessionId, workflow.activeWorkflowId]);
+  const resolvedNotesDraft = runtimeState?.notesDraft ?? {
+    sessionKey: null,
+    content: "",
+  };
+  useEffect(() => {
+    const nextNotesValue =
+      resolvedNotesDraft.sessionKey === notesSessionKey
+        ? resolvedNotesDraft.content
+        : "";
+    setNotesScratchpad((current) =>
+      current === nextNotesValue ? current : nextNotesValue,
+    );
+  }, [notesSessionKey, resolvedNotesDraft]);
+  useEffect(() => {
+    if (
+      resolvedNotesDraft.sessionKey === notesSessionKey ||
+      (resolvedNotesDraft.sessionKey === null &&
+        resolvedNotesDraft.content.trim().length === 0)
+    ) {
+      return;
+    }
+    setNotesDraft?.({
+      sessionKey: notesSessionKey,
+      content: "",
+    });
+  }, [notesSessionKey, resolvedNotesDraft, setNotesDraft]);
   const resumeCandidate = resolveResumableTutorHubCandidate(
     hub.tutorHub?.resume_candidate ?? null,
   );
@@ -1035,6 +1076,10 @@ export function TutorShell({
   }, [setShowSetup]);
 
   useEffect(() => {
+    if (!hasAppliedInitialWorkspaceResetRef.current) {
+      hasAppliedInitialWorkspaceResetRef.current = true;
+      return;
+    }
     setCanvasObjectIds([]);
     setWorkspaceDraftObjects([]);
     setLocalDocumentTabs([]);
@@ -1042,7 +1087,11 @@ export function TutorShell({
     setLocalPromotedPrimePacketObjects([]);
     setLocalPromotedPolishNotes([]);
     setNotesScratchpad("");
-  }, [workspaceResetVersion]);
+    setNotesDraft?.({
+      sessionKey: null,
+      content: "",
+    });
+  }, [setNotesDraft, workspaceResetVersion]);
 
   const handleClearCanvas = useCallback(() => {
     setPanelLayout([]);
@@ -1054,7 +1103,12 @@ export function TutorShell({
     setLocalPromotedPrimePacketObjects([]);
     setLocalPromotedPolishNotes([]);
     setNotesScratchpad("");
+    setNotesDraft?.({
+      sessionKey: null,
+      content: "",
+    });
   }, [
+    setNotesDraft,
     setActiveDocumentTabId,
     setDocumentTabs,
     setPanelLayout,
@@ -1346,9 +1400,20 @@ export function TutorShell({
       <div className="font-mono text-xs uppercase tracking-[0.18em] text-[#ffd6de]">
         Scratch Notes
       </div>
+      <p className="font-mono text-[11px] leading-5 text-[#ffc8d3]/68">
+        Notes stay attached to the current {liveTutorSessionId ? "Tutor session" : "workflow"} and persist while you resize or reopen this panel.
+      </p>
       <textarea
+        aria-label="Session notes"
+        data-testid="studio-notes-textarea"
         value={notesScratchpad}
-        onChange={(event) => setNotesScratchpad(event.target.value)}
+        onChange={(event) => {
+          setNotesScratchpad(event.target.value);
+          setNotesDraft?.({
+            sessionKey: notesSessionKey,
+            content: event.target.value,
+          });
+        }}
         placeholder="Capture quick notes, questions, and prompts here."
         className="min-h-0 flex-1 resize-none rounded-[0.8rem] border border-[rgba(255,118,144,0.18)] bg-black/30 p-3 font-mono text-sm leading-6 text-white outline-none placeholder:text-[#ffc8d3]/38"
       />

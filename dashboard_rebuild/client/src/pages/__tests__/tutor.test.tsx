@@ -2179,6 +2179,10 @@ describe("Tutor page restore", () => {
             state: "saved",
             path: "Tutor Workspace/Cardio Note.md",
           },
+          notes_draft: {
+            session_key: "session:sess-77",
+            content: "Persisted note text",
+          },
           priming_method_ids: ["M-PRE-010", "M-PRE-008"],
           priming_chain_id: 17,
           priming_custom_block_ids: [31, 32],
@@ -2207,6 +2211,10 @@ describe("Tutor page restore", () => {
         direct_note_save_status: {
           state: "saved",
           path: "Tutor Workspace/Cardio Note.md",
+        },
+        notes_draft: {
+          session_key: "session:sess-77",
+          content: "Persisted note text",
         },
         priming_method_ids: ["M-PRE-010", "M-PRE-008"],
         priming_chain_id: 17,

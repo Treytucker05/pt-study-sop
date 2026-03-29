@@ -117,6 +117,10 @@ def _normalize_runtime_state(value: Any) -> dict[str, Any]:
             "active_memory_capsule_id": None,
             "compaction_telemetry": None,
             "direct_note_save_status": None,
+            "notes_draft": {
+                "session_key": None,
+                "content": "",
+            },
             "priming_method_ids": [],
             "priming_chain_id": None,
             "priming_custom_block_ids": [],
@@ -160,6 +164,21 @@ def _normalize_runtime_state(value: Any) -> dict[str, Any]:
             value.get("direct_note_save_status"),
             field_name="runtime_state.direct_note_save_status",
         ),
+        "notes_draft": {
+            "session_key": (
+                notes_draft.get("session_key").strip()
+                if isinstance((notes_draft := value.get("notes_draft")), dict)
+                and isinstance(notes_draft.get("session_key"), str)
+                and notes_draft.get("session_key").strip()
+                else None
+            ),
+            "content": (
+                notes_draft.get("content")
+                if isinstance(notes_draft, dict)
+                and isinstance(notes_draft.get("content"), str)
+                else ""
+            ),
+        },
         "priming_method_ids": [
             item
             for item in value.get("priming_method_ids", [])
@@ -230,6 +249,10 @@ def _serialize_workspace_state(row: sqlite3.Row | None) -> dict[str, Any]:
         "active_memory_capsule_id": None,
         "compaction_telemetry": None,
         "direct_note_save_status": None,
+        "notes_draft": {
+            "session_key": None,
+            "content": "",
+        },
         "priming_method_ids": [],
         "priming_chain_id": None,
         "priming_custom_block_ids": [],
@@ -242,6 +265,10 @@ def _serialize_workspace_state(row: sqlite3.Row | None) -> dict[str, Any]:
                 "active_memory_capsule_id": None,
                 "compaction_telemetry": None,
                 "direct_note_save_status": None,
+                "notes_draft": {
+                    "session_key": None,
+                    "content": "",
+                },
                 "priming_method_ids": [],
                 "priming_chain_id": None,
                 "priming_custom_block_ids": [],

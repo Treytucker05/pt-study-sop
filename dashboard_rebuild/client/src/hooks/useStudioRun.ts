@@ -106,6 +106,10 @@ export function useStudioRun({
     activeMemoryCapsuleId: null,
     compactionTelemetry: null,
     directNoteSaveStatus: null,
+    notesDraft: {
+      sessionKey: null,
+      content: "",
+    },
     primingMethodIds: [],
     primingChainId: null,
     primingCustomBlockIds: [],
@@ -225,6 +229,16 @@ export function useStudioRun({
       setRuntimeState((current) => ({
         ...current,
         directNoteSaveStatus,
+      })),
+    setNotesDraft: (
+      notesDraft: {
+        sessionKey: string | null;
+        content: string;
+      },
+    ) =>
+      setRuntimeState((current) => ({
+        ...current,
+        notesDraft,
       })),
     setPrimingMethodIds: (primingMethodIds: string[]) =>
       setRuntimeState((current) => ({

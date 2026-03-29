@@ -382,6 +382,10 @@ def test_project_shell_state_persists_and_increments_revision(client):
                     "state": "saved",
                     "path": "Tutor Workspace/Cardio Note.md",
                 },
+                "notes_draft": {
+                    "session_key": "session:tutor-shell-102",
+                    "content": "Remember venous return.",
+                },
             },
             "tutor_chain_id": 77,
             "tutor_custom_block_ids": [91, 92],
@@ -425,6 +429,8 @@ def test_project_shell_state_persists_and_increments_revision(client):
     assert saved["runtime_state"]["active_memory_capsule_id"] == 12
     assert saved["runtime_state"]["compaction_telemetry"]["pressureLevel"] == "high"
     assert saved["runtime_state"]["direct_note_save_status"]["state"] == "saved"
+    assert saved["runtime_state"]["notes_draft"]["session_key"] == "session:tutor-shell-102"
+    assert saved["runtime_state"]["notes_draft"]["content"] == "Remember venous return."
     assert saved["tutor_chain_id"] == 77
     assert saved["tutor_custom_block_ids"] == [91, 92]
     assert len(saved["prime_packet_promoted_objects"]) == 1
@@ -444,6 +450,7 @@ def test_project_shell_state_persists_and_increments_revision(client):
     assert shell["workspace_state"]["document_tabs"][0]["id"] == "doc-material-101"
     assert shell["workspace_state"]["active_document_tab_id"] == "doc-material-101"
     assert shell["workspace_state"]["runtime_state"]["active_memory_capsule_id"] == 12
+    assert shell["workspace_state"]["runtime_state"]["notes_draft"]["content"] == "Remember venous return."
     assert shell["workspace_state"]["tutor_chain_id"] == 77
     assert shell["workspace_state"]["tutor_custom_block_ids"] == [91, 92]
     assert len(shell["workspace_state"]["prime_packet_promoted_objects"]) == 1
@@ -467,6 +474,10 @@ def test_project_shell_state_persists_and_increments_revision(client):
                 "active_memory_capsule_id": None,
                 "compaction_telemetry": None,
                 "direct_note_save_status": None,
+                "notes_draft": {
+                    "session_key": None,
+                    "content": "",
+                },
             },
             "tutor_chain_id": None,
             "tutor_custom_block_ids": [],
@@ -913,6 +924,10 @@ def test_studio_run_put_persists_workspace_state_and_blocks_publish(client):
                         "state": "saved",
                         "path": "Tutor Workspace/Renal Note.md",
                     },
+                    "notes_draft": {
+                        "session_key": "session:studio-run-121",
+                        "content": "Filtration note",
+                    },
                 },
                 "tutor_chain_id": 55,
                 "tutor_custom_block_ids": [7, 8],
@@ -936,6 +951,7 @@ def test_studio_run_put_persists_workspace_state_and_blocks_publish(client):
     assert body["workspace_state"]["revision"] == 1
     assert body["workspace_state"]["viewer_state"]["page"] == 2
     assert body["workspace_state"]["runtime_state"]["active_memory_capsule_id"] == 22
+    assert body["workspace_state"]["runtime_state"]["notes_draft"]["content"] == "Filtration note"
     assert body["workspace_state"]["tutor_chain_id"] == 55
     assert body["workspace_state"]["tutor_custom_block_ids"] == [7, 8]
     assert len(body["workspace_state"]["polish_packet_promoted_notes"]) == 1
@@ -946,6 +962,7 @@ def test_studio_run_put_persists_workspace_state_and_blocks_publish(client):
     restored = restore_response.get_json()
     assert restored["workspace_state"]["selected_material_ids"] == [21]
     assert restored["workspace_state"]["runtime_state"]["direct_note_save_status"]["state"] == "saved"
+    assert restored["workspace_state"]["runtime_state"]["notes_draft"]["session_key"] == "session:studio-run-121"
     assert restored["workspace_state"]["tutor_chain_id"] == 55
     assert restored["workspace_state"]["tutor_custom_block_ids"] == [7, 8]
     assert restored["workspace_state"]["polish_packet_promoted_notes"][0]["title"] == "Tutor Reply 2"
