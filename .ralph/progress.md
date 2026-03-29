@@ -6,6 +6,45 @@ Started: Sun Mar 29 00:04:50 CDT 2026
 
 ---
 
+## [2026-03-29 06:33 CDT] - REMAIN-001: Polish panel end-to-end verification and fixes
+Thread: 
+Run: 20260329-054407-32031 (iteration 1)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260329-054407-32031-iter-1.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-054407-32031-iter-1.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: `b329fb27 fix: verify and sync polish packet artifacts`
+- Post-commit status: `clean`
+- Verification:
+  - Command: `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/components/__tests__/TutorWorkflowPolishStudio.test.tsx client/src/lib/__tests__/studioPacketSections.test.ts` -> PASS
+  - Command: `cd dashboard_rebuild && npm run build` -> PASS
+  - Command: `dev-browser --headless --timeout 180 run C:/pt-study-sop/scripts/verify-remaining.js` -> PASS
+  - Command: `pytest brain/tests/` -> PASS
+- Files changed:
+  - `.agents/tasks/prd.json`
+  - `conductor/tracks/GENERAL/log.md`
+  - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+  - `dashboard_rebuild/client/src/components/TutorWorkflowPolishStudio.tsx`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPolishStudio.test.tsx`
+  - `dashboard_rebuild/client/src/lib/__tests__/studioPacketSections.test.ts`
+  - `dashboard_rebuild/client/src/lib/studioPacketSections.ts`
+  - `docs/root/TUTOR_TODO.md`
+  - `scripts/verify-remaining.js`
+  - `.ralph/progress.md`
+- What was implemented
+  - Traced the Polish data path from `TutorShell` into `TutorWorkflowPolishStudio` and `PolishPacketPanel`, then fixed the gap where the packet only reflected persisted bundle state instead of the live summary/card drafts the user was editing in Polish.
+  - Preserved promoted tutor replies across saved-bundle reloads and wired the packet builder to show real tutor replies, captured notes, summaries, and staged card requests during the same study run.
+  - Hardened the dedicated headless `dev-browser` verifier so it runs a real priming flow, starts Tutor, stages Polish artifacts, opens the toolbar Polish surfaces, and asserts the packet content is real instead of placeholder text.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - The Polish Packet needs live editor-state inputs for summary/card previews; relying only on the persisted bundle leaves the packet stale during the exact review moment the user is supposed to use it.
+  - Gotchas encountered
+    - `dev-browser` runs on this machine became unreliable until the daemon was reset with `dev-browser stop`; after the reset, headless verification returned stable stdout and clean pass/fail behavior.
+  - Useful context
+    - The failing live symptom was specifically the summaries section rendering `Summary staged in Polish Packet` while the Polish textarea already contained the real draft text, which made the issue easy to confirm once the browser verifier printed the packet-section payloads.
+---
+
 ## [2026-03-29 05:21 CDT] - STUDY-004: Tutor chat sends messages and receives LLM responses
 Thread: 
 Run: 20260329-042815-30477 (iteration 3)
