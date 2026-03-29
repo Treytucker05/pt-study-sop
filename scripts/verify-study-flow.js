@@ -1,4 +1,13 @@
 const page = await browser.getPage("study-flow");
+const consoleErrors = [];
+page.on("console", (msg) => {
+  if (msg.type() === "error") {
+    consoleErrors.push(msg.text());
+  }
+});
+page.on("pageerror", (error) => {
+  consoleErrors.push(String(error));
+});
 await page.goto("http://127.0.0.1:5000/tutor?course_id=1&mode=studio", { waitUntil: "networkidle" });
 await page.waitForTimeout(3000);
 
@@ -59,7 +68,37 @@ const panelCount = await panels.count();
 console.log("Panels found:", panelCount);
 check("At least one panel opened", panelCount > 0);
 
-// STUDY-001: Check priming panel has chat input
+// STUDY-001: Verify colorful method cards with description text
+const methodCards = await page.locator('[data-testid="priming-method-card"]').evaluateAll((cards) =>
+  cards.map((card) => {
+    const style = window.getComputedStyle(card);
+    const description =
+      card.querySelector('[data-testid="priming-method-card-description"]')?.textContent?.trim() || "";
+    return {
+      label: card.getAttribute("aria-label") || "",
+      selected: card.getAttribute("data-selected") || "false",
+      backgroundColor: style.backgroundColor,
+      borderColor: style.borderColor,
+      description,
+    };
+  }),
+);
+console.log("Method cards found:", JSON.stringify(methodCards.slice(0, 6)));
+check("Priming method cards visible", methodCards.length >= 2);
+check(
+  "Method cards include description text",
+  methodCards.every((card) => card.description.length > 0),
+);
+check(
+  "Method cards have distinct colors",
+  new Set(methodCards.map((card) => `${card.backgroundColor}|${card.borderColor}`)).size > 1,
+);
+check(
+  "At least one method card is selected",
+  methodCards.some((card) => card.selected === "true"),
+);
+
+// Priming panel still exposes the chat surface
 const chatInputs = await page.locator('textarea, input[type="text"]').all();
 let hasChatInput = false;
 for (const input of chatInputs) {
@@ -89,6 +128,10 @@ check("Toolbar has Source Shelf button", hasSourceBtn);
 check("Toolbar has Priming button", hasPrimingBtn);
 check("Toolbar has Tutor button", hasTutorBtn);
 check("Toolbar has Notes button", hasNotesBtn);
+if (consoleErrors.length > 0) {
+  console.log("Console errors:", JSON.stringify(consoleErrors));
+}
+check("No console errors", consoleErrors.length === 0);
 
 saveScreenshot(await page.screenshot(), "study-flow-04-toolbar.png");
 

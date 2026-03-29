@@ -160,7 +160,7 @@ describe("TutorWorkflowPrimingPanel", () => {
     refinePrimingAssistMock.mockReset();
   });
 
-  it("shows loaded materials, grouped method/chain selection, and disables RUN when nothing is loaded", async () => {
+  it("renders colorful method cards with descriptions and disables RUN when nothing is loaded", async () => {
     renderPanel({
       selectedMaterials: [],
       sourceInventory: [],
@@ -168,16 +168,75 @@ describe("TutorWorkflowPrimingPanel", () => {
 
     await waitFor(() => expect(getPrimeMethodsMock).toHaveBeenCalledWith("PRIME"));
 
+    expect(screen.getAllByTestId("priming-method-card")).toHaveLength(2);
+    expect(screen.getByText("Prime objectives first.")).toBeInTheDocument();
+    expect(screen.getByText("Extract structure.")).toBeInTheDocument();
     expect(
       screen.getByText("No materials loaded — open Source Shelf to add."),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("combobox", { name: /priming method or chain/i }),
+      screen.getByRole("combobox", { name: /priming chain/i }),
     ).toBeInTheDocument();
     expect(screen.getByTestId("priming-run-button")).toBeDisabled();
     expect(
       screen.getByPlaceholderText("Run a method first to chat with Priming results"),
     ).toBeDisabled();
+  });
+
+  it("shows selected state for more than one method card", async () => {
+    renderPanel({
+      primingMethods: ["M-PRE-010", "M-PRE-013"],
+    });
+
+    await waitFor(() => expect(getPrimeMethodsMock).toHaveBeenCalledWith("PRIME"));
+
+    expect(screen.getByText("2 methods selected")).toBeInTheDocument();
+    expect(
+      screen.getByRole("checkbox", { name: /learning objectives primer/i }),
+    ).toHaveAttribute("aria-checked", "true");
+    expect(
+      screen.getByRole("checkbox", { name: /structural extraction/i }),
+    ).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("keeps chain runs reachable through the chain selector", async () => {
+    startChainRunMock.mockResolvedValue({
+      run_id: 77,
+      chain_name: "First Exposure: Standard",
+      status: "completed",
+      steps: [
+        {
+          step: 1,
+          method_name: "Learning Objectives Primer",
+          category: "prepare",
+          output: "- Map the major determinants of cardiac output.",
+          duration_ms: 1200,
+        },
+      ],
+      artifacts: null,
+    });
+
+    renderPanel({
+      primingMethods: [],
+      chainId: 1,
+    });
+
+    await waitFor(() => expect(getPrimeMethodsMock).toHaveBeenCalledWith("PRIME"));
+
+    expect(screen.getByRole("combobox", { name: /priming chain/i })).toHaveValue("1");
+    fireEvent.click(screen.getByTestId("priming-run-button"));
+
+    await waitFor(() =>
+      expect(startChainRunMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          chain_id: 1,
+          course_id: 1,
+          source_doc_ids: [101],
+        }),
+      ),
+    );
+    expect(await screen.findByText("1. Learning Objectives Primer")).toBeInTheDocument();
+    expect(screen.getAllByText("First Exposure: Standard").length).toBeGreaterThan(0);
   });
 
   it("runs a selected method, renders formatted objectives, and sends the result to Prime Packet and Workspace", async () => {
@@ -334,12 +393,12 @@ describe("TutorWorkflowPrimingPanel", () => {
 
     await waitFor(() => expect(getPrimeMethodsMock).toHaveBeenCalledWith("PRIME"));
 
-    fireEvent.change(screen.getByTestId("priming-run-selector"), {
-      target: { value: "method:M-PRE-010" },
-    });
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /learning objectives primer/i }),
+    );
 
     fireEvent.click(screen.getByTestId("priming-run-button"));
-    expect(onRunAssistForSelected).toHaveBeenCalledWith("M-PRE-010");
+    expect(onRunAssistForSelected).toHaveBeenCalledTimes(1);
 
     await waitFor(() =>
       expect(
@@ -352,7 +411,7 @@ describe("TutorWorkflowPrimingPanel", () => {
     expect(onPromoteResultToPrimePacket).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: "text_note",
-        title: "Learning Objectives",
+        title: expect.stringContaining("Learning Objectives"),
         badge: "OBJECTIVES",
         provenance: expect.objectContaining({
           sourceType: "priming_result",
@@ -364,7 +423,7 @@ describe("TutorWorkflowPrimingPanel", () => {
     expect(onSendResultToWorkspace).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: "text_note",
-        title: "Learning Objectives",
+        title: expect.stringContaining("Learning Objectives"),
         badge: "OBJECTIVES",
         provenance: expect.objectContaining({
           sourceType: "priming_result",
@@ -551,9 +610,9 @@ describe("TutorWorkflowPrimingPanel", () => {
 
     await waitFor(() => expect(getPrimeMethodsMock).toHaveBeenCalledWith("PRIME"));
 
-    fireEvent.change(screen.getByTestId("priming-run-selector"), {
-      target: { value: "method:M-PRE-010" },
-    });
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /learning objectives primer/i }),
+    );
     fireEvent.click(screen.getByTestId("priming-run-button"));
 
     await waitFor(() =>

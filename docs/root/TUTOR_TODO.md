@@ -144,6 +144,28 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - `cd dashboard_rebuild && npm run build`
     - `dev-browser --connect --timeout 60 run C:\pt-study-sop\scripts\verify-entry-bugs.js`
 
+- [x] STUDY-001. Priming method cards use colorful box UI with name and description.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+    - `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+    - `scripts/verify-study-flow.js`
+  - Done when:
+    - the Priming method selector renders colorful method cards with a distinct theme-tinted treatment per method plus bold names and one-line descriptions
+    - the user can select one or more Priming methods, selected cards show a clear visual indicator, and chain runs remain reachable without regressing the existing Priming run path
+    - focused Priming frontend tests, the production frontend build, and live `dev-browser` verification of the new method-card UI pass
+  - Assignee: @codex-cli
+  - Completed: 2026-03-29
+  - Notes:
+    - Replaced the Priming method dropdown in `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` with colorful theme-tinted method cards that show the method id, bold name, one-line description, and a checkbox-style selected indicator.
+    - Kept chain mode reachable through a separate selector while letting method-card mode select and run one or more PRIME methods in the existing Priming Assist flow.
+    - Expanded the focused Priming regression coverage plus the shared study-flow browser verifier so the shipped surface now proves card descriptions, distinct colors, selected state, chain reachability, and zero console errors.
+  - Validation:
+    - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+    - `cd dashboard_rebuild && npm run build`
+    - `dev-browser --timeout 90 run C:\pt-study-sop\scripts\verify-study-flow.js`
+
 - [x] HUD-256. Upgrade the Tutor Studio entry card into a full new-session setup form with session name and material selection.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

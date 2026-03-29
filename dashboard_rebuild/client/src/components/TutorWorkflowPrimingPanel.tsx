@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Play, SendHorizontal, Sparkles } from "lucide-react";
+import { CheckSquare2, Loader2, Play, SendHorizontal, Sparkles, Square } from "lucide-react";
 import { toast } from "sonner";
 
 import type {
@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { StudioWorkspaceObject } from "@/lib/studioWorkspaceObjects";
 import { createStudioPrimingResultWorkspaceObject } from "@/lib/studioWorkspaceObjects";
+import { cn } from "@/lib/utils";
 import type {
   AppLearningObjective,
   TutorContentSources,
@@ -82,6 +83,75 @@ type MethodWindowState = {
   run: TutorPrimingMethodRun | null;
   entries: Record<string, unknown>[];
 };
+
+const PRIME_METHOD_CARD_TONES = [
+  {
+    surface: "border-sky-400/28 bg-sky-500/10 hover:bg-sky-500/16",
+    bar: "bg-sky-400",
+    selected: "ring-1 ring-sky-300/60 shadow-[0_0_24px_rgba(56,189,248,0.18)]",
+    checkbox: "border-sky-300/40 bg-sky-400/18 text-sky-50",
+  },
+  {
+    surface: "border-cyan-400/28 bg-cyan-500/10 hover:bg-cyan-500/16",
+    bar: "bg-cyan-400",
+    selected: "ring-1 ring-cyan-300/60 shadow-[0_0_24px_rgba(34,211,238,0.18)]",
+    checkbox: "border-cyan-300/40 bg-cyan-400/18 text-cyan-50",
+  },
+  {
+    surface: "border-emerald-400/28 bg-emerald-500/10 hover:bg-emerald-500/16",
+    bar: "bg-emerald-400",
+    selected: "ring-1 ring-emerald-300/60 shadow-[0_0_24px_rgba(52,211,153,0.18)]",
+    checkbox: "border-emerald-300/40 bg-emerald-400/18 text-emerald-50",
+  },
+  {
+    surface: "border-lime-400/28 bg-lime-500/10 hover:bg-lime-500/16",
+    bar: "bg-lime-400",
+    selected: "ring-1 ring-lime-300/60 shadow-[0_0_24px_rgba(163,230,53,0.18)]",
+    checkbox: "border-lime-300/40 bg-lime-400/18 text-lime-50",
+  },
+  {
+    surface: "border-amber-400/28 bg-amber-500/10 hover:bg-amber-500/16",
+    bar: "bg-amber-400",
+    selected: "ring-1 ring-amber-300/60 shadow-[0_0_24px_rgba(251,191,36,0.18)]",
+    checkbox: "border-amber-300/40 bg-amber-400/18 text-amber-50",
+  },
+  {
+    surface: "border-orange-400/28 bg-orange-500/10 hover:bg-orange-500/16",
+    bar: "bg-orange-400",
+    selected: "ring-1 ring-orange-300/60 shadow-[0_0_24px_rgba(251,146,60,0.18)]",
+    checkbox: "border-orange-300/40 bg-orange-400/18 text-orange-50",
+  },
+  {
+    surface: "border-rose-400/28 bg-rose-500/10 hover:bg-rose-500/16",
+    bar: "bg-rose-400",
+    selected: "ring-1 ring-rose-300/60 shadow-[0_0_24px_rgba(251,113,133,0.18)]",
+    checkbox: "border-rose-300/40 bg-rose-400/18 text-rose-50",
+  },
+  {
+    surface: "border-pink-400/28 bg-pink-500/10 hover:bg-pink-500/16",
+    bar: "bg-pink-400",
+    selected: "ring-1 ring-pink-300/60 shadow-[0_0_24px_rgba(244,114,182,0.18)]",
+    checkbox: "border-pink-300/40 bg-pink-400/18 text-pink-50",
+  },
+  {
+    surface: "border-violet-400/28 bg-violet-500/10 hover:bg-violet-500/16",
+    bar: "bg-violet-400",
+    selected: "ring-1 ring-violet-300/60 shadow-[0_0_24px_rgba(167,139,250,0.18)]",
+    checkbox: "border-violet-300/40 bg-violet-400/18 text-violet-50",
+  },
+  {
+    surface: "border-fuchsia-400/28 bg-fuchsia-500/10 hover:bg-fuchsia-500/16",
+    bar: "bg-fuchsia-400",
+    selected: "ring-1 ring-fuchsia-300/60 shadow-[0_0_24px_rgba(217,70,239,0.18)]",
+    checkbox: "border-fuchsia-300/40 bg-fuchsia-400/18 text-fuchsia-50",
+  },
+] as const;
+
+function buildMethodRunLabel(labels: string[]): string {
+  if (labels.length === 0) return "Selected PRIME Methods";
+  if (labels.length === 1) return labels[0];
+  return `${labels[0]} + ${labels.length - 1} more`;
+}
 
 function buildMethodWindowStates(
   sourceInventory: TutorPrimingSourceInventoryItem[],
@@ -230,8 +300,8 @@ function buildMethodResultBlocks(
   const blocks: ResultBlock[] = [];
 
   entries.forEach((entry, index) => {
-    const sourceLabel = normalizeSourceLabel(entry);
-    const blockSuffix = entries.length > 1 ? ` · ${sourceLabel}` : "";
+    const sourceTitle = normalizeSourceLabel(entry);
+    const blockSuffix = sourceTitle ? ` · ${sourceTitle}` : "";
     const objectives = Array.isArray(entry.learning_objectives)
       ? (entry.learning_objectives as Array<{ lo_code?: string; title?: string }>).filter(
           (item) => typeof item?.title === "string" && item.title.trim().length > 0,
@@ -239,11 +309,11 @@ function buildMethodResultBlocks(
       : [];
     if (objectives.length > 0) {
       blocks.push({
-        id: makeBlockId([methodLabel, sourceLabel, "objectives", index]),
+        id: makeBlockId([methodLabel, sourceTitle, "objectives", index]),
         title: `Learning Objectives${blockSuffix}`,
         badge: "OBJECTIVES",
         kind: "objectives",
-        sourceLabel,
+        sourceLabel: methodLabel,
         ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
         content: objectives
           .map((item) => (item.lo_code ? `${item.lo_code} — ${item.title}` : item.title || ""))
@@ -256,11 +326,11 @@ function buildMethodResultBlocks(
     const map = typeof entry.map === "string" ? entry.map.trim() : "";
     if (map) {
       blocks.push({
-        id: makeBlockId([methodLabel, sourceLabel, "map", index]),
+        id: makeBlockId([methodLabel, sourceTitle, "map", index]),
         title: `Concept Map${blockSuffix}`,
         badge: "MAP",
         kind: "concept_map",
-        sourceLabel,
+        sourceLabel: methodLabel,
         ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
         content: map,
       });
@@ -269,11 +339,11 @@ function buildMethodResultBlocks(
     const summary = typeof entry.summary === "string" ? entry.summary.trim() : "";
     if (summary) {
       blocks.push({
-        id: makeBlockId([methodLabel, sourceLabel, "summary", index]),
+        id: makeBlockId([methodLabel, sourceTitle, "summary", index]),
         title: `Summary${blockSuffix}`,
         badge: "SUMMARY",
         kind: "summary",
-        sourceLabel,
+        sourceLabel: methodLabel,
         ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
         content: summary,
       });
@@ -282,11 +352,11 @@ function buildMethodResultBlocks(
     const terminology = isStringArray(entry.terminology) ? parseTermEntries(entry.terminology) : [];
     if (terminology.length > 0) {
       blocks.push({
-        id: makeBlockId([methodLabel, sourceLabel, "terms", index]),
+        id: makeBlockId([methodLabel, sourceTitle, "terms", index]),
         title: `Terms${blockSuffix}`,
         badge: "TERMS",
         kind: "terms",
-        sourceLabel,
+        sourceLabel: methodLabel,
         ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
         content: terminology.map((term) => term.raw).join("\n"),
         terms: terminology,
@@ -296,11 +366,11 @@ function buildMethodResultBlocks(
     const concepts = isStringArray(entry.concepts) ? entry.concepts : [];
     if (concepts.length > 0) {
       blocks.push({
-        id: makeBlockId([methodLabel, sourceLabel, "concepts", index]),
+        id: makeBlockId([methodLabel, sourceTitle, "concepts", index]),
         title: `Key Concepts${blockSuffix}`,
         badge: "CONCEPTS",
         kind: "generic",
-        sourceLabel,
+        sourceLabel: methodLabel,
         ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
         content: concepts.map((concept) => `- ${concept}`).join("\n"),
       });
@@ -309,11 +379,11 @@ function buildMethodResultBlocks(
     const gaps = isStringArray(entry.gaps) ? entry.gaps : [];
     if (gaps.length > 0) {
       blocks.push({
-        id: makeBlockId([methodLabel, sourceLabel, "gaps", index]),
+        id: makeBlockId([methodLabel, sourceTitle, "gaps", index]),
         title: `Open Questions${blockSuffix}`,
         badge: "GAPS",
         kind: "generic",
-        sourceLabel,
+        sourceLabel: methodLabel,
         ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
         content: gaps.map((gap) => `- ${gap}`).join("\n"),
       });
@@ -518,7 +588,7 @@ export function TutorWorkflowPrimingPanel({
   isRunningAssist,
 }: TutorWorkflowPrimingPanelProps) {
   const [pendingMethodResult, setPendingMethodResult] = useState<{
-    methodId: string;
+    methodIds: string[];
     label: string;
   } | null>(null);
   const [displayedRun, setDisplayedRun] = useState<PanelRunResult | null>(null);
@@ -578,45 +648,51 @@ export function TutorWorkflowPrimingPanel({
     }));
   }, [selectedMaterials, selectedSourceInventory]);
 
-  const runOptions = useMemo<RunOption[]>(() => {
-    const methodOptions = primeMethods
-      .filter((method): method is MethodBlock & { method_id: string } => Boolean(method.method_id))
-      .map((method) => ({
-        value: `method:${method.method_id}` as const,
-        label: method.name,
-        kind: "method" as const,
-        methodId: method.method_id,
-        helperText:
-          method.description?.trim() ||
-          "Run this PRIME method against the loaded materials.",
-      }));
-    const chainOptions = templateChains.map((chain) => ({
-      value: `chain:${chain.id}` as const,
-      label: chain.name || `Chain #${chain.id}`,
-      kind: "chain" as const,
-      chainId: chain.id,
-      helperText:
-        chain.description?.trim() ||
-        "Run this template chain against the loaded materials.",
-    }));
-
-    return [...methodOptions, ...chainOptions];
-  }, [primeMethods, templateChains]);
-
-  const selectionValue =
-    typeof chainId === "number"
-      ? (`chain:${chainId}` as const)
-      : primingMethods[0]
-        ? (`method:${primingMethods[0]}` as const)
-        : "";
-  const selectedRunOption =
-    runOptions.find((option) => option.value === selectionValue) || null;
+  const selectedMethodCards = useMemo(
+    () =>
+      primeMethods.filter(
+        (method): method is MethodBlock & { method_id: string } =>
+          Boolean(method.method_id) && primingMethods.includes(method.method_id),
+      ),
+    [primeMethods, primingMethods],
+  );
+  const selectedMethodLabels = useMemo(
+    () => selectedMethodCards.map((method) => method.name),
+    [selectedMethodCards],
+  );
+  const selectedChain = useMemo(
+    () => templateChains.find((chain) => chain.id === chainId) || null,
+    [chainId, templateChains],
+  );
   const runDisabled =
     materialChips.length === 0 ||
-    !selectedRunOption ||
+    (!selectedChain && selectedMethodCards.length === 0) ||
     primeMethodsLoading ||
     runningChain ||
     isRunningAssist;
+  const selectionMode: RunOption["kind"] | null = selectedChain
+    ? "chain"
+    : selectedMethodCards.length > 0
+      ? "method"
+      : null;
+  const selectionHelperText = useMemo(() => {
+    if (selectedChain) {
+      return (
+        selectedChain.description?.trim() ||
+        "Run this template chain against the loaded materials."
+      );
+    }
+    if (selectedMethodCards.length === 1) {
+      return (
+        selectedMethodCards[0]?.description?.trim() ||
+        "Run this PRIME method against the loaded materials."
+      );
+    }
+    if (selectedMethodCards.length > 1) {
+      return `RUN executes all ${selectedMethodCards.length} selected PRIME methods against the loaded materials.`;
+    }
+    return null;
+  }, [selectedChain, selectedMethodCards]);
 
   const runTopic = useMemo(() => {
     const normalizedTopic = topic.trim();
@@ -636,6 +712,13 @@ export function TutorWorkflowPrimingPanel({
   }, [chainId, customBlockIds.length, setCustomBlockIds]);
 
   useEffect(() => {
+    if (typeof chainId !== "number" || primingMethods.length === 0) {
+      return;
+    }
+    setPrimingMethods([]);
+  }, [chainId, primingMethods, setPrimingMethods]);
+
+  useEffect(() => {
     const wasRunning = previousAssistRunningRef.current;
     if (!wasRunning || isRunningAssist) {
       previousAssistRunningRef.current = isRunningAssist;
@@ -647,25 +730,31 @@ export function TutorWorkflowPrimingPanel({
       return;
     }
 
-    const methodState = buildMethodWindowStates(
+    const methodStates = buildMethodWindowStates(
       selectedSourceInventory,
-      [pendingMethodResult.methodId],
+      pendingMethodResult.methodIds,
       primeMethods,
       primingMethodRuns,
-    )[0];
-    const methodLabel =
-      methodState?.block?.name ||
-      methodState?.run?.method_name ||
-      pendingMethodResult.label;
-    const blocks = methodState
-      ? buildMethodResultBlocks(methodLabel, methodState.entries)
-      : [];
+    );
+    const methodLabels = methodStates.map(
+      (state) => state.block?.name || state.run?.method_name || state.methodId,
+    );
+    const blocks = methodStates.flatMap((state) =>
+      buildMethodResultBlocks(
+        state.block?.name || state.run?.method_name || state.methodId,
+        state.entries,
+      ),
+    );
+    const resolvedMethodIds = pendingMethodResult.methodIds.filter(
+      (value, index, items) => value.trim().length > 0 && items.indexOf(value) === index,
+    );
 
     setDisplayedRun({
-      key: `method:${pendingMethodResult.methodId}:${Date.now()}`,
-      label: methodLabel,
+      key: `method:${resolvedMethodIds.join(",")}:${Date.now()}`,
+      label:
+        methodLabels.length > 0 ? buildMethodRunLabel(methodLabels) : pendingMethodResult.label,
       kind: "method",
-      methodId: pendingMethodResult.methodId,
+      methodId: resolvedMethodIds.length === 1 ? resolvedMethodIds[0] : null,
       blocks,
     });
     setPendingMethodResult(null);
@@ -678,53 +767,65 @@ export function TutorWorkflowPrimingPanel({
     selectedSourceInventory,
   ]);
 
-  const handleSelectionChange = (value: string) => {
+  const handleToggleMethod = (methodId: string) => {
+    const nextSelected = primingMethods.includes(methodId)
+      ? primingMethods.filter((value) => value !== methodId)
+      : [...primingMethods, methodId];
+    const orderedSelection = primeMethods
+      .filter((method): method is MethodBlock & { method_id: string } => Boolean(method.method_id))
+      .map((method) => method.method_id)
+      .filter((candidate) => nextSelected.includes(candidate));
+    setChainId(undefined);
+    setCustomBlockIds([]);
+    setPrimingMethods(orderedSelection);
+  };
+
+  const handleChainSelectionChange = (value: string) => {
     if (!value) {
-      setPrimingMethods([]);
       setChainId(undefined);
       setCustomBlockIds([]);
       return;
     }
-
-    if (value.startsWith("method:")) {
-      const methodId = value.replace("method:", "");
-      setPrimingMethods(methodId ? [methodId] : []);
-      setChainId(undefined);
-      setCustomBlockIds([]);
+    const parsedChainId = Number.parseInt(value, 10);
+    if (!Number.isFinite(parsedChainId)) {
       return;
     }
-
-    if (value.startsWith("chain:")) {
-      const parsedChainId = Number.parseInt(value.replace("chain:", ""), 10);
-      if (Number.isFinite(parsedChainId)) {
-        setPrimingMethods([]);
-        setChainId(parsedChainId);
-        setCustomBlockIds([]);
-      }
-    }
+    setPrimingMethods([]);
+    setChainId(parsedChainId);
+    setCustomBlockIds([]);
   };
 
   const handleRun = async () => {
-    if (!selectedRunOption || materialChips.length === 0) {
+    if (!selectionMode || materialChips.length === 0) {
       return;
     }
 
     setChatTurns([]);
     setChatInput("");
 
-    if (selectedRunOption.kind === "method") {
+    if (selectionMode === "method") {
+      const selectedMethodIds = selectedMethodCards
+        .map((method) => method.method_id)
+        .filter((value): value is string => Boolean(value));
+      if (selectedMethodIds.length === 0) {
+        return;
+      }
       setPendingMethodResult({
-        methodId: selectedRunOption.methodId,
-        label: selectedRunOption.label,
+        methodIds: selectedMethodIds,
+        label: buildMethodRunLabel(selectedMethodLabels),
       });
-      onRunAssistForSelected(selectedRunOption.methodId);
+      onRunAssistForSelected();
+      return;
+    }
+
+    if (!selectedChain) {
       return;
     }
 
     setRunningChain(true);
     try {
       const result = await api.chainRun.start({
-        chain_id: selectedRunOption.chainId,
+        chain_id: selectedChain.id,
         topic: runTopic,
         course_id: courseId,
         source_doc_ids: selectedMaterials,
@@ -734,10 +835,10 @@ export function TutorWorkflowPrimingPanel({
         },
       });
       setDisplayedRun({
-        key: `chain:${selectedRunOption.chainId}:${result.run_id}`,
+        key: `chain:${selectedChain.id}:${result.run_id}`,
         label: result.chain_name,
         kind: "chain",
-        chainId: selectedRunOption.chainId,
+        chainId: selectedChain.id,
         blocks: buildChainResultBlocks(result),
       });
       toast.success(`${result.chain_name} completed`);
@@ -844,15 +945,15 @@ export function TutorWorkflowPrimingPanel({
               Material + Method
             </div>
             <p className="mt-1 text-sm leading-6 text-[#ffd9e1]/70">
-              Loaded materials come from Source Shelf and Workspace. Pick one method or one chain, then run extraction here.
+              Loaded materials come from Source Shelf and Workspace. Pick one or more methods, or switch into chain mode, then run extraction here.
             </p>
           </div>
-          {selectedRunOption ? (
+          {selectionMode ? (
             <Badge
               variant="outline"
               className="rounded-full border-[rgba(255,118,144,0.18)] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]"
             >
-              {selectedRunOption.kind === "method" ? "Method" : "Chain"}
+              {selectionMode === "method" ? "Methods" : "Chain"}
             </Badge>
           ) : null}
         </div>
@@ -880,38 +981,153 @@ export function TutorWorkflowPrimingPanel({
             )}
           </div>
 
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]/76">
+                  PRIME Methods
+                </div>
+                <p className="mt-1 text-sm leading-6 text-[#ffd9e1]/66">
+                  Pick one or more methods. Each selected card stays active until you clear it or switch into chain mode.
+                </p>
+              </div>
+              <Badge
+                variant="outline"
+                className="rounded-full border-[rgba(255,118,144,0.18)] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]"
+              >
+                {selectedMethodCards.length > 0
+                  ? `${selectedMethodCards.length} selected`
+                  : "Select methods"}
+              </Badge>
+            </div>
+
+            {primeMethodsLoading ? (
+              <div className="rounded-[0.85rem] border border-dashed border-[rgba(255,118,144,0.18)] bg-black/15 px-4 py-5 text-sm leading-6 text-[#ffd9e1]/62">
+                Loading PRIME methods...
+              </div>
+            ) : primeMethods.length > 0 ? (
+              <div
+                data-testid="priming-method-card-grid"
+                className="grid gap-3 xl:grid-cols-2"
+              >
+                {primeMethods.map((method, index) => {
+                  if (!method.method_id) {
+                    return null;
+                  }
+                  const tone =
+                    PRIME_METHOD_CARD_TONES[index % PRIME_METHOD_CARD_TONES.length];
+                  const isSelected = primingMethods.includes(method.method_id);
+                  const description =
+                    method.description?.trim() ||
+                    "Run this PRIME method against the loaded materials.";
+                  return (
+                    <button
+                      key={method.method_id}
+                      type="button"
+                      role="checkbox"
+                      aria-checked={isSelected}
+                      aria-label={method.name}
+                      data-testid="priming-method-card"
+                      data-method-id={method.method_id}
+                      data-selected={isSelected ? "true" : "false"}
+                      onClick={() => handleToggleMethod(method.method_id!)}
+                      className={cn(
+                        "group relative overflow-hidden rounded-[0.95rem] border text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd6de]",
+                        tone.surface,
+                        isSelected ? tone.selected : "opacity-92",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "absolute inset-y-0 left-0 w-1.5",
+                          tone.bar,
+                        )}
+                        aria-hidden="true"
+                      />
+                      <div className="space-y-2.5 px-4 py-3 pl-5">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-[10px] uppercase tracking-[0.18em] text-[#ffe1e8]/60">
+                              {method.method_id}
+                            </div>
+                            <div className="mt-1 font-semibold text-white">
+                              {method.name}
+                            </div>
+                          </div>
+                          <span
+                            className={cn(
+                              "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition",
+                              isSelected
+                                ? tone.checkbox
+                                : "border-white/12 bg-black/25 text-[#ffd9e1]/50",
+                            )}
+                            aria-hidden="true"
+                          >
+                            {isSelected ? (
+                              <CheckSquare2 className="h-4 w-4" />
+                            ) : (
+                              <Square className="h-4 w-4" />
+                            )}
+                          </span>
+                        </div>
+                        <p
+                          data-testid="priming-method-card-description"
+                          title={description}
+                          className="line-clamp-1 text-sm leading-6 text-[#ffe6ec]/74"
+                        >
+                          {description}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-[0.85rem] border border-dashed border-[rgba(255,118,144,0.18)] bg-black/15 px-4 py-5 text-sm leading-6 text-[#ffd9e1]/62">
+                No PRIME methods are available right now.
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="text-[11px] leading-5 text-[#ffd9e1]/60">
+                {selectedMethodCards.length > 0
+                  ? `${selectedMethodCards.length} method${selectedMethodCards.length === 1 ? "" : "s"} selected`
+                  : "Select one or more PRIME methods to run."}
+              </div>
+              {selectedMethodCards.length > 0 ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPrimingMethods([])}
+                  className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd9e1]"
+                >
+                  Clear Methods
+                </Button>
+              ) : null}
+            </div>
+          </div>
+
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <label className="block">
               <div className="text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]/76">
-                Method / Chain
+                Optional Chain Mode
               </div>
               <select
-                aria-label="Priming method or chain"
-                data-testid="priming-run-selector"
-                value={selectionValue}
-                onChange={(event) => handleSelectionChange(event.target.value)}
-                disabled={primeMethodsLoading || templateChainsLoading}
+                aria-label="Priming chain"
+                data-testid="priming-chain-selector"
+                value={typeof chainId === "number" ? String(chainId) : ""}
+                onChange={(event) => handleChainSelectionChange(event.target.value)}
+                disabled={templateChainsLoading}
                 className="mt-2 h-11 w-full rounded-[0.85rem] border border-[rgba(255,118,144,0.18)] bg-black/30 px-3 text-sm text-white outline-none"
               >
                 <option value="">
-                  {primeMethodsLoading ? "Loading methods..." : "Select a method or chain"}
+                  {templateChainsLoading ? "Loading chains..." : "Select a chain instead of method cards"}
                 </option>
-                <optgroup label="— Methods —">
-                  {primeMethods.map((method) =>
-                    method.method_id ? (
-                      <option key={method.id} value={`method:${method.method_id}`}>
-                        {method.name}
-                      </option>
-                    ) : null,
-                  )}
-                </optgroup>
-                <optgroup label="— Chains —">
-                  {templateChains.map((chain) => (
-                    <option key={chain.id} value={`chain:${chain.id}`}>
-                      {chain.name || `Chain #${chain.id}`}
-                    </option>
-                  ))}
-                </optgroup>
+                {templateChains.map((chain) => (
+                  <option key={chain.id} value={chain.id}>
+                    {chain.name || `Chain #${chain.id}`}
+                  </option>
+                ))}
               </select>
             </label>
 
@@ -933,9 +1149,9 @@ export function TutorWorkflowPrimingPanel({
             </Button>
           </div>
 
-          {selectedRunOption ? (
+          {selectionMode ? (
             <div className="rounded-[0.75rem] border border-[rgba(255,118,144,0.14)] bg-black/15 px-3 py-2 text-sm leading-6 text-[#ffd9e1]/66">
-              {selectedRunOption.helperText}
+              {selectionHelperText}
             </div>
           ) : null}
           {primeMethodsError ? (
@@ -952,9 +1168,9 @@ export function TutorWorkflowPrimingPanel({
             <div className="text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]">
               Output Area
             </div>
-            <p className="mt-1 text-sm leading-6 text-[#ffd9e1]/70">
-              {displayedRun
-                ? `${displayedRun.label} results stay here until the next run replaces them.`
+          <p className="mt-1 text-sm leading-6 text-[#ffd9e1]/70">
+            {displayedRun
+              ? `${displayedRun.label} results stay here until the next run replaces them.`
                 : "Select a method and click RUN to extract study artifacts."}
             </p>
           </div>
@@ -963,7 +1179,11 @@ export function TutorWorkflowPrimingPanel({
               variant="outline"
               className="rounded-full border-[rgba(255,118,144,0.18)] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]"
             >
-              {displayedRun.kind === "method" ? "Method Result" : "Chain Result"}
+              {displayedRun.kind === "method" && !displayedRun.methodId
+                ? "Method Results"
+                : displayedRun.kind === "method"
+                  ? "Method Result"
+                  : "Chain Result"}
             </Badge>
           ) : null}
         </div>

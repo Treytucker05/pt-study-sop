@@ -2154,3 +2154,15 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/tutor.test.tsx`
   - `cd dashboard_rebuild && npm run build`
   - `dev-browser --timeout 60 run C:\\pt-study-sop\\scripts\\verify-overlay-polish.js`
+
+## 2026-03-29 - STUDY-001 priming method cards
+
+- Replaced the Priming method dropdown in `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` with colorful, theme-tinted method cards that show the method id, bold name, one-line description, and a checkbox-style selected indicator.
+- Preserved chain runs by moving them into a dedicated `Optional Chain Mode` selector while method-card mode now supports selecting and running one or more PRIME methods through the existing Priming Assist workflow.
+- Extended the focused regression coverage in:
+  - `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+  - `scripts/verify-study-flow.js`
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - `dev-browser --timeout 90 run C:\\pt-study-sop\\scripts\\verify-study-flow.js`
