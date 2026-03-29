@@ -6,6 +6,41 @@ Started: Sun Mar 29 00:04:50 CDT 2026
 
 ---
 
+## [2026-03-29 02:42 CDT] - OVERLAY-002: Add material upload button to entry card
+Thread: 
+Run: 20260329-022021-29765 (iteration 2)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260329-022021-29765-iter-2.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-022021-29765-iter-2.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: e9376693 feat: add tutor entry-card upload control
+- Post-commit status: `clean`
+- Verification:
+  - Command: `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/tutor.test.tsx` -> PASS
+  - Command: `cd dashboard_rebuild && npm run build` -> PASS
+  - Command: `dev-browser --connect --timeout 90 run C:/Users/treyt/.dev-browser/tmp/verify-overlay-002.js` -> PASS
+  - Command: `dev-browser --connect --timeout 60 run C:/pt-study-sop/scripts/verify-overlay-polish.js` -> PASS
+- Files changed:
+  - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+  - `docs/root/TUTOR_TODO.md`
+  - `conductor/tracks/GENERAL/log.md`
+  - `.agents/tasks/prd.json`
+  - `.ralph/progress.md`
+- What was implemented
+  - Added a dashed entry-card upload area below the course material checklist, backed by a hidden file input with the requested `PDF`, `DOCX`, `MP4`, and `PPTX` accept list.
+  - Reused `handleUploadSourceShelfFiles` so entry-card uploads stay scoped to the selected course, reuse the existing `sourceShelfUploading` progress state, and auto-select newly uploaded materials after refresh.
+  - Added focused TutorShell and Tutor page regressions plus live browser verification to prove the upload button exists, opens a multi-file chooser, and refreshes the checklist after upload.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - Reusing the existing upload handler is safe for alternate entry surfaces as long as the test suite proves the invalidation path that refreshes `chatMaterials` after upload.
+  - Gotchas encountered
+    - The shared `verify-overlay-polish.js` script still only covers `OVERLAY-001`, so `OVERLAY-002` needed a targeted temp `dev-browser` script for live proof.
+  - Useful context
+    - `sourceShelfUploading` already provided a shared in-flight state for both the Source Shelf and the entry card, so the upload progress indicator did not require any new async state plumbing.
+---
+
 ## [2026-03-29 00:40 CDT] - ENTRY-001: Entry card renders as viewport overlay, not canvas object
 Thread: 
 Run: 20260329-002728-27772 (iteration 1)
