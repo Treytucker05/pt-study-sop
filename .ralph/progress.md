@@ -309,3 +309,33 @@ Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-033115-30160-iter-2.md
   - Useful context
     - Browser-computed card colors on this route came back as `oklab(...)`, so the verifier should compare computed style strings generically instead of assuming `rgb(...)`.
 ---
+
+## [2026-03-29 04:22 CDT] - STUDY-001: Priming method cards use colorful box UI and only show PRIME stage methods
+Thread: 
+Run: 20260329-041641-30365 (iteration 1)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260329-041641-30365-iter-1.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-041641-30365-iter-1.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: `996ede88 chore: record STUDY-001 verification state`
+- Post-commit status: `clean`
+- Verification:
+  - Command: `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx` -> PASS
+  - Command: `cd dashboard_rebuild && npm run build` -> PASS
+  - Command: `dev-browser --connect --timeout 90 run C:/pt-study-sop/scripts/verify-study-flow.js` -> PASS
+- Files changed:
+  - `.agents/tasks/prd.json`
+  - `conductor/tracks/GENERAL/log.md`
+  - `.ralph/progress.md`
+- What was implemented
+  - No additional Priming code edits were required in this run because the checked-in `TutorWorkflowPrimingPanel` and `TutorShell` implementation already satisfied the story scope: PRIME-only filtering, colorful cards, descriptions, multi-select, and selected-state visuals were all present in the repo.
+  - Re-audited the active implementation against the story acceptance criteria, then re-ran the focused Priming regression, a fresh production build, and a connected `dev-browser` live verification on `/tutor`.
+  - Confirmed the live browser surface still shows distinct method-card colors and description text, retains selectable PRIME-only cards, and stays free of console errors during the Priming flow.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - When a rerun lands on a story that may already be shipped, re-audit the actual component and verifier seams before editing so you avoid redundant churn.
+  - Gotchas encountered
+    - The live verifier depends on the dashboard already listening on `127.0.0.1:5000`, so the safest flow is build first, then launch with `Start_Dashboard.bat`, then run `dev-browser --connect`.
+  - Useful context
+    - The connected `dev-browser` pass for this run saved fresh screenshots at `C:\Users\treyt\.dev-browser\tmp\study-flow-01-entry-filled.png`, `study-flow-02-after-start.png`, `study-flow-03-panels-open.png`, and `study-flow-04-toolbar.png`.
+---
