@@ -203,3 +203,40 @@ Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-022021-29765-iter-1.md
   - Useful context
     - `dev-browser --connect` worked against the live local dashboard for this run, so the overlay verification can stay on the shared script path for follow-on entry-card stories.
 ---
+
+## [2026-03-29 02:53 CDT] - OVERLAY-003: Rename Open Full Studio button and clean up Resume logic
+Thread: 
+Run: 20260329-022021-29765 (iteration 3)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260329-022021-29765-iter-3.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-022021-29765-iter-3.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: `ba5bc107 fix: clean up tutor overlay resume actions`
+- Post-commit status: `clean`
+- Verification:
+  - Command: `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/tutor.test.tsx` -> PASS
+  - Command: `cd dashboard_rebuild && npm run build` -> PASS
+  - Command: `dev-browser --connect --timeout 60 run C:/pt-study-sop/scripts/verify-overlay-polish.js` -> PASS
+  - Command: `dev-browser --connect --timeout 60 run C:/Users/treyt/.dev-browser/tmp/verify-overlay-003-console.js` -> PASS
+- Files changed:
+  - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+  - `dashboard_rebuild/client/src/lib/tutorResumeCandidate.ts`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+  - `dashboard_rebuild/client/src/pages/tutor.tsx`
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+  - `scripts/verify-overlay-polish.js`
+  - `docs/root/TUTOR_TODO.md`
+  - `conductor/tracks/GENERAL/log.md`
+  - `.ralph/progress.md`
+- What was implemented
+  - Renamed the entry-card secondary action from `Open Full Studio` to `Skip Setup` while preserving the existing `applyCanvasPreset("full_studio")` behavior.
+  - Added a shared `resolveResumableTutorHubCandidate` helper so both the entry card and the Tutor hero only render Resume when the hub candidate is truly resumable (`can_resume` plus a non-empty `session_id`).
+  - Extended the focused TutorShell and Tutor page regressions plus the live overlay verification script to lock the new label and the cleaned-up resume visibility rules.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - The Tutor hub can return placeholder resume metadata even when no session is resumable, so UI surfaces should normalize that payload into a real candidate or `null` before using simple truthy checks.
+  - Gotchas encountered
+    - Existing `/tutor` page assertions still encoded the old `Open Full Studio` label and the old placeholder-resume behavior, so the story needed route-level regression updates as well as the entry-card change.
+  - Useful context
+    - `scripts/verify-overlay-polish.js` is now broad enough to cover both the overlay backdrop contract and the entry-card copy change, while a short `dev-browser` temp script can cheaply confirm the live route stays free of console and page errors after the build.
+---
