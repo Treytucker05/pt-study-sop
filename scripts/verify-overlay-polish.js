@@ -1,4 +1,16 @@
-const page = await browser.getPage("verify-overlay");
+const page = await browser.newPage();
+const consoleErrors = [];
+const pageErrors = [];
+
+page.on("console", (message) => {
+  if (message.type() === "error") {
+    consoleErrors.push(message.text());
+  }
+});
+page.on("pageerror", (error) => {
+  pageErrors.push(error.message);
+});
+
 await page.goto("http://127.0.0.1:5000/tutor?course_id=1&mode=studio", { waitUntil: "networkidle" });
 await page.waitForTimeout(3000);
 
@@ -156,30 +168,82 @@ try {
   console.log(`WARN: Screenshot skipped: ${error instanceof Error ? error.message : String(error)}`);
 }
 
-// OVERLAY-004: Check cancel/close buttons
-const hasCloseX = await page.evaluate(() => {
-  const overlay = document.querySelector('[data-testid="entry-overlay"]');
-  const entry = document.querySelector('[data-testid="studio-entry-state"]');
-  const container = overlay || entry?.parentElement;
-  if (!container && !entry) return false;
-  const searchIn = container || entry;
-  const btns = [...searchIn.querySelectorAll('button')];
-  return btns.some(b => {
-    const label = (b.getAttribute('aria-label') || '').toLowerCase();
-    const text = b.textContent.trim();
-    return label.includes('close') || label.includes('dismiss') || text === 'X' || text === 'x';
-  });
-});
-check("Close/X button exists on entry card", hasCloseX);
+// OVERLAY-004: Check cancel/close buttons and the dismiss/reopen flow
+const closeButton = page.getByRole("button", { name: /close setup overlay/i });
+const cancelButton = page.getByRole("button", { name: /^cancel$/i });
+check("Close/X button exists on entry card", (await closeButton.count()) === 1);
+check("Cancel text button exists", (await cancelButton.count()) === 1);
 
-const hasCancelBtn = await page.evaluate(() => {
-  const entry = document.querySelector('[data-testid="studio-entry-state"]');
-  if (!entry) return false;
-  const btns = [...entry.querySelectorAll('button')];
-  return btns.some(b => b.textContent.toLowerCase().includes('cancel'));
+if ((await closeButton.count()) === 1) {
+  await closeButton.click();
+  await page.waitForTimeout(500);
+}
+
+check(
+  "Clicking X dismisses the entry card",
+  (await page.locator('[data-testid="studio-entry-state"]').count()) === 0,
+);
+
+const canvas = page.locator('[data-testid="studio-canvas"]');
+await canvas.scrollIntoViewIfNeeded();
+
+const transformBeforePan = await page.evaluate(() => {
+  const el = document.querySelector(".react-transform-component");
+  return el instanceof HTMLElement ? el.style.transform : null;
 });
-check("Cancel text button exists", hasCancelBtn);
+
+const canvasBoxAfterDismiss = await canvas.boundingBox();
+if (canvasBoxAfterDismiss) {
+  const startX = canvasBoxAfterDismiss.x + 220;
+  const startY = canvasBoxAfterDismiss.y + 220;
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.mouse.move(startX + 180, startY + 120, { steps: 10 });
+  await page.mouse.up();
+  await page.waitForTimeout(250);
+}
+
+const transformAfterPan = await page.evaluate(() => {
+  const el = document.querySelector(".react-transform-component");
+  return el instanceof HTMLElement ? el.style.transform : null;
+});
+check("Canvas can pan after dismissal", transformBeforePan !== transformAfterPan);
+
+const zoomSlider = page.locator("#studio-canvas-zoom");
+const zoomBefore = Number(await zoomSlider.inputValue());
+await page.getByRole("button", { name: /zoom in/i }).click();
+await page.waitForTimeout(250);
+const zoomAfter = Number(await zoomSlider.inputValue());
+check("Canvas can zoom after dismissal", zoomAfter > zoomBefore);
+
+await page.getByRole("button", { name: /open source shelf panel/i }).click();
+await page.waitForTimeout(400);
+check(
+  "Toolbar can open panels after dismissal",
+  (await page.locator('[data-testid="studio-source-shelf"]').count()) === 1,
+);
+
+await page.getByRole("button", { name: /^new session$/i }).click();
+await page.waitForTimeout(500);
+check(
+  "NEW SESSION hero action reopens the entry card",
+  (await page.locator('[data-testid="studio-entry-state"]').count()) === 1,
+);
+
+const cancelButtonAfterReopen = page.getByRole("button", { name: /^cancel$/i });
+if ((await cancelButtonAfterReopen.count()) === 1) {
+  await cancelButtonAfterReopen.click();
+  await page.waitForTimeout(500);
+}
+check(
+  "Clicking Cancel dismisses the entry card",
+  (await page.locator('[data-testid="studio-entry-state"]').count()) === 0,
+);
+
+check("No page errors were raised during verification", pageErrors.length === 0);
+check("No console errors were raised during verification", consoleErrors.length === 0);
 
 console.log("\\n=== RESULTS: " + passed + " passed, " + failed + " failed ===");
+await page.close();
 if (failed > 0) { console.log("VERIFICATION FAILED"); process.exit(1); }
 else { console.log("ALL CHECKS PASSED"); }
