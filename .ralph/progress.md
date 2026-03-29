@@ -517,3 +517,27 @@ Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-150416-32869-iter-1.md
   - Useful context
     - The live verifier produced 18/18 passing checks and saved fresh artifacts at `C:\Users\treyt\.dev-browser\tmp\verify-remaining-001-polish.png` and `C:\Users\treyt\.dev-browser\tmp\verify-remaining-results.json`.
 ---
+## [2026-03-29 18:56:23 -05:00] - REMAIN-003: Notes panel accepts and persists freeform text
+Thread: 88491
+Run: 20260329-175644-1999 (iteration 1)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260329-175644-1999-iter-1.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-175644-1999-iter-1.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: 00c35567 REMAIN-003 stabilize notes draft input sync
+- Post-commit status: `clean`
+- Verification:
+  - Command: `pytest brain/tests/test_tutor_project_shell.py` -> PASS
+  - Command: `npx vitest run client/src/components/__tests__/TutorShell.test.tsx -t "persists notes through runtime state for the active session|clears notes when the saved draft belongs to a different session"` -> PASS
+  - Command: `npm run build` -> PASS
+  - Command: `dev-browser --timeout 90 run C:/pt-study-sop/.tmp/remain003-workflow-verify.js` -> FAIL
+- Files changed:
+  - dashboard_rebuild/client/src/components/TutorShell.tsx
+- What was implemented
+  - Hardened Notes draft syncing so a stale empty runtime-state rehydrate for the same workflow/session does not wipe an in-progress note.
+  - Added `onInput` handling alongside `onChange` so the Notes textarea updates draft state on both input paths.
+- **Learnings for future iterations:**
+  - Patterns discovered: the Notes textarea can be clobbered by same-context runtime-state refreshes, so sync logic should not blindly overwrite non-empty local state with empty server state.
+  - Gotchas encountered: isolated `dev-browser` typing produced native DOM input events but still did not persist into the controlled React textarea, so browser verification remains unresolved.
+  - Useful context: clearing `dashboard_rebuild/node_modules/.vite` was necessary after temporary instrumentation because the served tutor bundle stayed stale across rebuilds.
+---
