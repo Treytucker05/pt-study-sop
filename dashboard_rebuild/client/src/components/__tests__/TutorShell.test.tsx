@@ -39,9 +39,46 @@ vi.mock("@/components/TutorWorkflowPrimingPanel", () => ({
 }));
 
 vi.mock("@/components/TutorWorkflowPolishStudio", () => ({
-  TutorWorkflowPolishStudio: () => (
-    <div data-testid="mock-polish-panel">polish panel</div>
-  ),
+  TutorWorkflowPolishStudio: ({
+    promotedNotes = [],
+    existingBundle,
+    onDraftPreviewChange,
+  }: {
+    promotedNotes?: Array<{ id: string; title: string; content: string }>;
+    existingBundle?: {
+      studio_payload?: {
+        test_live_preview?: {
+          summaryDraft?: string;
+          cardRequestText?: string;
+        };
+      };
+    } | null;
+    onDraftPreviewChange?: (preview: {
+      summaryDraft: string;
+      cardRequestText: string;
+    }) => void;
+  }) => {
+    useEffect(() => {
+      const preview = existingBundle?.studio_payload?.test_live_preview;
+      if (!preview) return;
+      onDraftPreviewChange?.({
+        summaryDraft: preview.summaryDraft || "",
+        cardRequestText: preview.cardRequestText || "",
+      });
+    }, [existingBundle, onDraftPreviewChange]);
+
+    return (
+      <div data-testid="mock-polish-panel">
+        polish panel
+        {promotedNotes.map((note) => (
+          <div key={note.id} data-testid="mock-polish-panel-promoted-note">
+            {note.title}
+            {note.content}
+          </div>
+        ))}
+      </div>
+    );
+  },
 }));
 
 vi.mock("@/components/TutorWorkflowFinalSync", () => ({
@@ -2079,6 +2116,64 @@ describe("TutorShell studio routing", () => {
     expect(screen.queryByTestId("studio-repair-candidates")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-memory")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-prime-packet")).not.toBeInTheDocument();
+  });
+
+  it("passes promoted tutor replies into the Polish panel surface", async () => {
+    renderTutorShell("polish", {
+      shellOverrides: {
+        panelLayout: buildStudioShellPresetLayout("polish"),
+        promotedPolishPacketNotes: [
+          {
+            id: "assistant-2",
+            title: "Tutor Reply 2",
+            content: "Venous return is the preload driver.",
+            badge: "TUTOR",
+          },
+        ],
+      },
+    });
+
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
+    const polishPanel = screen.getByTestId("mock-polish-panel");
+    expect(polishPanel).toHaveTextContent("Tutor Reply 2");
+    expect(polishPanel).toHaveTextContent(
+      "Venous return is the preload driver.",
+    );
+  });
+
+  it("mirrors live Polish draft summaries and cards into the Polish Packet", async () => {
+    renderTutorShell("polish", {
+      workflowOverrides: {
+        activeWorkflowDetail: {
+          workflow: {
+            workflow_id: "wf-live-preview",
+          },
+          polish_bundle: {
+            summaries: [{ title: "Polish final summary draft" }],
+            card_requests: [],
+            studio_payload: {
+              test_live_preview: {
+                summaryDraft: "Venous return is the preload driver.",
+                cardRequestText:
+                  "What is the preload driver? :: Venous return",
+              },
+            },
+            status: "draft",
+          },
+        },
+      },
+    });
+
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
+    const polishPacket = screen.getByTestId("studio-polish-packet");
+    await waitFor(() => {
+      expect(polishPacket).toHaveTextContent(
+        "Venous return is the preload driver.",
+      );
+      expect(polishPacket).toHaveTextContent(
+        "What is the preload driver? :: Venous return",
+      );
+    });
   });
 
   it("seeds the workspace view with current-run source objects", async () => {

@@ -282,9 +282,17 @@ export function TutorShell({
   const [localPromotedPolishNotes, setLocalPromotedPolishNotes] = useState<
     StudioPolishPromotedNote[]
   >([]);
+  const [polishDraftPreview, setPolishDraftPreview] = useState<{
+    summaryDraft: string;
+    cardRequestText: string;
+  }>({
+    summaryDraft: "",
+    cardRequestText: "",
+  });
   const [notesScratchpad, setNotesScratchpad] = useState("");
   const [sourceShelfUploading, setSourceShelfUploading] = useState(false);
   const entryUploadInputRef = useRef<HTMLInputElement | null>(null);
+  const lastPolishDraftWorkflowIdRef = useRef<string | null>(null);
   const promotedPrimePacketObjects = useMemo(() => {
     const merged = new Map<string, PrimePromotedWorkspaceObject>();
 
@@ -322,6 +330,21 @@ export function TutorShell({
 
     return Array.from(merged.values());
   }, [controlledPromotedPolishPacketNotes, localPromotedPolishNotes]);
+  useEffect(() => {
+    const nextWorkflowId = workflow.activeWorkflowDetail?.workflow?.workflow_id ?? null;
+    if (lastPolishDraftWorkflowIdRef.current === null) {
+      lastPolishDraftWorkflowIdRef.current = nextWorkflowId;
+      return;
+    }
+    if (lastPolishDraftWorkflowIdRef.current === nextWorkflowId) {
+      return;
+    }
+    lastPolishDraftWorkflowIdRef.current = nextWorkflowId;
+    setPolishDraftPreview({
+      summaryDraft: "",
+      cardRequestText: "",
+    });
+  }, [workflow.activeWorkflowDetail?.workflow?.workflow_id]);
   const canvasObjects = useMemo(
     () => [
       ...currentRunWorkspaceObjects.filter((workspaceObject) =>
@@ -398,12 +421,16 @@ export function TutorShell({
         capturedNotes: workflow.activeWorkflowDetail?.captured_notes ?? [],
         polishBundle: workflow.activeWorkflowDetail?.polish_bundle ?? null,
         publishResults: workflow.activeWorkflowDetail?.publish_results ?? [],
+        draftSummaryText: polishDraftPreview.summaryDraft,
+        draftCardRequestText: polishDraftPreview.cardRequestText,
       }),
     [
       promotedPolishPacketNotes,
       workflow.activeWorkflowDetail?.captured_notes,
       workflow.activeWorkflowDetail?.polish_bundle,
       workflow.activeWorkflowDetail?.publish_results,
+      polishDraftPreview.cardRequestText,
+      polishDraftPreview.summaryDraft,
     ],
   );
   const memoryStatus = useMemo(
@@ -1295,6 +1322,7 @@ export function TutorShell({
       <TutorWorkflowPolishStudioLazy
         workflow={workflow.activeWorkflowDetail?.workflow || null}
         primingBundleId={workflow.activeWorkflowDetail?.priming_bundle?.id || null}
+        promotedNotes={promotedPolishPacketNotes}
         capturedNotes={workflow.activeWorkflowDetail?.captured_notes || []}
         feedbackEvents={workflow.activeWorkflowDetail?.feedback_events || []}
         memoryCapsules={workflow.activeWorkflowDetail?.memory_capsules || []}
@@ -1309,6 +1337,7 @@ export function TutorShell({
           void workflow.saveWorkflowPolish(payload, true);
         }}
         isSaving={workflow.savingPolishBundle}
+        onDraftPreviewChange={setPolishDraftPreview}
       />
     </div>
   );

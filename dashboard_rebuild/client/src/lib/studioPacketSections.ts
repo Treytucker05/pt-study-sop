@@ -87,6 +87,8 @@ interface BuildPolishPacketSectionsArgs {
   capturedNotes: TutorCapturedNote[];
   polishBundle?: TutorPolishBundle | null;
   publishResults?: TutorPublishResult[];
+  draftSummaryText?: string;
+  draftCardRequestText?: string;
 }
 
 function trimText(value: string | null | undefined): string {
@@ -348,17 +350,19 @@ function buildPolishBundleRecordEntries(
   sectionPrefix: string,
   titleFallback: string,
   badge: string,
+  options?: {
+    titleKeys?: string[];
+    detailKeys?: string[];
+  },
 ): StudioPacketEntry[] {
   if (!Array.isArray(records)) return [];
+  const titleKeys = options?.titleKeys ?? ["title", "front", "name", "path"];
+  const detailKeys = options?.detailKeys ?? ["summary", "text", "back", "status"];
 
   return records.map((record, index) => ({
     id: `${sectionPrefix}:${index}`,
-    title:
-      readRecordString(record, ["title", "front", "name", "path"]) ||
-      `${titleFallback} ${index + 1}`,
-    detail:
-      readRecordString(record, ["summary", "text", "back", "status"]) ||
-      `${titleFallback} staged in Polish Packet`,
+    title: readRecordString(record, titleKeys) || `${titleFallback} ${index + 1}`,
+    detail: readRecordString(record, detailKeys) || `${titleFallback} staged in Polish Packet`,
     badge,
   }));
 }
@@ -368,8 +372,15 @@ export function buildPolishPacketSections({
   capturedNotes,
   polishBundle,
   publishResults = [],
+  draftSummaryText = "",
+  draftCardRequestText = "",
 }: BuildPolishPacketSectionsArgs): StudioPacketSection[] {
-  const promotedNoteEntries: StudioPacketEntry[] = promotedNotes.map((note) => ({
+  const persistedPromotedNotes = normalizeStudioPolishPromotedNotes(
+    polishBundle?.studio_payload?.promoted_notes,
+  );
+  const effectivePromotedNotes =
+    promotedNotes.length > 0 ? promotedNotes : persistedPromotedNotes;
+  const promotedNoteEntries: StudioPacketEntry[] = effectivePromotedNotes.map((note) => ({
     id: `promoted-note:${note.id}`,
     title: note.title,
     detail: summarizeText(note.content, "Tutor note promoted to Polish Packet"),
@@ -403,18 +414,52 @@ export function buildPolishPacketSections({
         ]),
   ];
 
-  const summaryEntries = buildPolishBundleRecordEntries(
-    polishBundle?.summaries,
-    "summary",
-    "Summary",
-    "SUMMARY",
-  );
-  const cardEntries = buildPolishBundleRecordEntries(
-    polishBundle?.card_requests,
-    "card",
-    "Card request",
-    "CARD",
-  );
+  const liveSummaryText = trimText(draftSummaryText);
+  const summaryEntries =
+    liveSummaryText.length > 0
+      ? [
+          {
+            id: "summary:draft",
+            title:
+              (Array.isArray(polishBundle?.summaries) &&
+              polishBundle?.summaries?.[0] &&
+              typeof polishBundle.summaries[0] === "object"
+                ? readRecordString(
+                    polishBundle.summaries[0] as Record<string, unknown>,
+                    ["title", "front", "name", "path"],
+                  )
+                : null) || "Polish final summary draft",
+            detail: summarizeText(liveSummaryText, "Summary staged in Polish Packet"),
+            badge: "SUMMARY",
+          },
+        ]
+      : buildPolishBundleRecordEntries(
+          polishBundle?.summaries,
+          "summary",
+          "Summary",
+          "SUMMARY",
+          {
+            detailKeys: ["content", "summary", "text", "back", "status"],
+          },
+        );
+  const liveCardLines = trimText(draftCardRequestText)
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const cardEntries =
+    liveCardLines.length > 0
+      ? liveCardLines.map((line, index) => ({
+          id: `card:draft:${index}`,
+          title: `Card request ${index + 1}`,
+          detail: line,
+          badge: "CARD",
+        }))
+      : buildPolishBundleRecordEntries(
+          polishBundle?.card_requests,
+          "card",
+          "Card request",
+          "CARD",
+        );
   const assetEntries: StudioPacketEntry[] = publishResults.flatMap((result) => {
     const obsidianEntries = Array.isArray(result.obsidian_results)
       ? result.obsidian_results.map((entry, index) => ({

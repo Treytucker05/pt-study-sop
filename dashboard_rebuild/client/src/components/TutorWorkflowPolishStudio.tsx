@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Layers3,
   ListTodo,
+  MessageSquare,
   RefreshCw,
   Sparkles,
   StickyNote,
@@ -36,9 +37,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  normalizeStudioPolishPromotedNotes,
+  type StudioPolishPromotedNote,
+} from "@/lib/studioPacketSections";
 import { cn } from "@/lib/utils";
 
 type ReviewQueueKey =
+  | "tutor_replies"
   | "exact_notes"
   | "editable_notes"
   | "memory_capsules"
@@ -50,6 +56,7 @@ type ReviewQueueKey =
 type TutorWorkflowPolishStudioProps = {
   workflow: TutorWorkflowSummary | null;
   primingBundleId?: number | null;
+  promotedNotes: StudioPolishPromotedNote[];
   capturedNotes: TutorCapturedNote[];
   feedbackEvents: TutorFeedbackEvent[];
   memoryCapsules: TutorMemoryCapsule[];
@@ -58,6 +65,10 @@ type TutorWorkflowPolishStudioProps = {
   onBackToTutor: () => void;
   onSaveDraft: (payload: TutorPolishBundleRequest) => void;
   onFinalize: (payload: TutorPolishBundleRequest) => void;
+  onDraftPreviewChange?: (preview: {
+    summaryDraft: string;
+    cardRequestText: string;
+  }) => void;
 };
 
 function toLineItems(lines: string) {
@@ -120,12 +131,19 @@ function feedbackLabel(event: TutorFeedbackEvent) {
 
 function buildAssistContext(
   summaryDraft: string,
+  promotedNotes: StudioPolishPromotedNote[],
   exactNotes: TutorCapturedNote[],
   editableNotes: TutorCapturedNote[],
   memoryCapsules: TutorMemoryCapsule[],
 ) {
   const sections = [
     summaryDraft.trim() ? `CURRENT SUMMARY\n${summaryDraft.trim()}` : "",
+    promotedNotes
+      .slice(0, 8)
+      .map(
+        (note) => `TUTOR REPLY: ${note.title || "untitled"}\n${note.content}`,
+      )
+      .join("\n\n"),
     exactNotes
       .slice(0, 8)
       .map((note) => `EXACT NOTE: ${note.title || "untitled"}\n${note.content}`)
@@ -150,6 +168,7 @@ function buildAssistContext(
 export function TutorWorkflowPolishStudio({
   workflow,
   primingBundleId,
+  promotedNotes,
   capturedNotes,
   feedbackEvents,
   memoryCapsules,
@@ -158,6 +177,7 @@ export function TutorWorkflowPolishStudio({
   onBackToTutor,
   onSaveDraft,
   onFinalize,
+  onDraftPreviewChange,
 }: TutorWorkflowPolishStudioProps) {
   const exactNotes = useMemo(
     () => capturedNotes.filter((note) => note.note_mode === "exact"),
@@ -166,6 +186,18 @@ export function TutorWorkflowPolishStudio({
   const editableNotes = useMemo(
     () => capturedNotes.filter((note) => note.note_mode === "editable"),
     [capturedNotes],
+  );
+  const persistedPromotedNotes = useMemo(
+    () =>
+      normalizeStudioPolishPromotedNotes(
+        existingBundle?.studio_payload?.promoted_notes,
+      ),
+    [existingBundle?.studio_payload?.promoted_notes],
+  );
+  const reviewablePromotedNotes = useMemo(
+    () =>
+      promotedNotes.length > 0 ? promotedNotes : persistedPromotedNotes,
+    [persistedPromotedNotes, promotedNotes],
   );
   const feedbackQueue = useMemo(
     () => feedbackEvents.filter((event) => event.handoff_to_polish),
@@ -182,8 +214,13 @@ export function TutorWorkflowPolishStudio({
         )
         ?.summary_text?.trim() || "";
     if (latestCapsuleSummary) return latestCapsuleSummary;
-    return editableNotes[0]?.content || exactNotes[0]?.content || "";
-  }, [editableNotes, exactNotes, memoryCapsules]);
+    return (
+      editableNotes[0]?.content ||
+      exactNotes[0]?.content ||
+      reviewablePromotedNotes[0]?.content ||
+      ""
+    );
+  }, [editableNotes, exactNotes, memoryCapsules, reviewablePromotedNotes]);
   const defaultQuestion = useMemo(() => {
     const unresolved = [...memoryCapsules]
       .reverse()
@@ -243,6 +280,22 @@ export function TutorWorkflowPolishStudio({
   const [assistBusy, setAssistBusy] = useState(false);
 
   useEffect(() => {
+    if (
+      selectedQueue === "exact_notes" &&
+      exactNotes.length === 0 &&
+      editableNotes.length === 0 &&
+      reviewablePromotedNotes.length > 0
+    ) {
+      setSelectedQueue("tutor_replies");
+    }
+  }, [
+    editableNotes.length,
+    exactNotes.length,
+    reviewablePromotedNotes.length,
+    selectedQueue,
+  ]);
+
+  useEffect(() => {
     setSummaryDraft(
       String(
         existingBundle?.summaries?.[0] &&
@@ -284,7 +337,15 @@ export function TutorWorkflowPolishStudio({
     workflow?.workflow_id,
   ]);
 
+  useEffect(() => {
+    onDraftPreviewChange?.({
+      summaryDraft,
+      cardRequestText,
+    });
+  }, [cardRequestText, onDraftPreviewChange, summaryDraft]);
+
   const queueCounts = {
+    tutor_replies: reviewablePromotedNotes.length,
     exact_notes: exactNotes.length,
     editable_notes: editableNotes.length,
     memory_capsules: memoryCapsules.length,
@@ -341,16 +402,17 @@ export function TutorWorkflowPolishStudio({
       id: item.id,
       text: item.text,
     })),
-    studio_payload: {
-      embedded_surface: "TutorWorkspaceSurface",
-      selected_queue: selectedQueue,
-      polish_question: assistantQuestion.trim(),
-      classification_note: classificationNote.trim(),
-      artifacts: toArtifactItems(studioArtifactText),
-    },
-    publish_targets: {
-      obsidian: publishToObsidian,
-      anki: publishToAnki,
+      studio_payload: {
+        embedded_surface: "TutorWorkspaceSurface",
+        selected_queue: selectedQueue,
+        polish_question: assistantQuestion.trim(),
+        classification_note: classificationNote.trim(),
+        artifacts: toArtifactItems(studioArtifactText),
+        promoted_notes: reviewablePromotedNotes,
+      },
+      publish_targets: {
+        obsidian: publishToObsidian,
+        anki: publishToAnki,
       brain: indexInBrain,
       studio_artifacts: toArtifactItems(studioArtifactText).length > 0,
     },
@@ -370,6 +432,7 @@ export function TutorWorkflowPolishStudio({
         action,
         input_text: buildAssistContext(
           summaryDraft,
+          reviewablePromotedNotes,
           exactNotes,
           editableNotes,
           memoryCapsules,
@@ -401,6 +464,7 @@ export function TutorWorkflowPolishStudio({
     label: string;
     icon: typeof StickyNote;
   }> = [
+    { key: "tutor_replies", label: "Tutor replies", icon: MessageSquare },
     { key: "exact_notes", label: "Exact notes", icon: StickyNote },
     { key: "editable_notes", label: "Editable notes", icon: ListTodo },
     { key: "memory_capsules", label: "Memory capsules", icon: Layers3 },
@@ -697,6 +761,25 @@ export function TutorWorkflowPolishStudio({
         <CardContent className="relative z-10">
           <ScrollArea className="h-[220px]">
             <div className="space-y-3 pr-3">
+              {selectedQueue === "tutor_replies" &&
+                reviewablePromotedNotes.map((note) => (
+                  <div key={note.id} className={CONTROL_DECK_SECTION}>
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <div className="font-mono text-sm leading-6 text-foreground">
+                        {note.title || `Tutor reply ${note.id}`}
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className="rounded-full px-2.5 py-1 font-terminal text-ui-2xs"
+                      >
+                        {note.badge}
+                      </Badge>
+                    </div>
+                    <div className="font-mono text-sm leading-6 text-foreground/72">
+                      {note.content}
+                    </div>
+                  </div>
+                ))}
               {selectedQueue === "exact_notes" &&
                 exactNotes.map((note) => (
                   <div key={note.id} className={CONTROL_DECK_SECTION}>

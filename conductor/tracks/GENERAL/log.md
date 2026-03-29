@@ -2208,3 +2208,14 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx client/src/hooks/__tests__/useTutorWorkflow.test.tsx`
   - `cd dashboard_rebuild && npm run build`
   - `dev-browser --timeout 180 run C:\\pt-study-sop\\scripts\\verify-study-flow.js`
+
+## 2026-03-29 - REMAIN-001 Polish panel end-to-end verification and fixes
+
+- Patched `dashboard_rebuild/client/src/components/TutorShell.tsx`, `dashboard_rebuild/client/src/components/TutorWorkflowPolishStudio.tsx`, and `dashboard_rebuild/client/src/lib/studioPacketSections.ts` so the toolbar-opened Polish Packet mirrors the live summary/card draft state from the Polish editor instead of waiting for a persisted bundle refresh, while still rebuilding promoted tutor replies from saved polish bundle metadata.
+- Added focused regressions in `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`, `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPolishStudio.test.tsx`, and `dashboard_rebuild/client/src/lib/__tests__/studioPacketSections.test.ts` to lock the promoted-reply restore path plus the live packet summary/card preview path.
+- Hardened `scripts/verify-remaining.js` into a headless Polish verifier that runs a real priming session, starts Tutor, sends a grounded tutor prompt, opens the Polish and Polish Packet panels, and proves tutor replies, notes, summary text, card requests, editability, and packet content render without console errors.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/components/__tests__/TutorWorkflowPolishStudio.test.tsx client/src/lib/__tests__/studioPacketSections.test.ts`
+  - `cd dashboard_rebuild && npm run build`
+  - `dev-browser --headless --timeout 180 run C:\\pt-study-sop\\scripts\\verify-remaining.js`
+  - `pytest brain/tests/`

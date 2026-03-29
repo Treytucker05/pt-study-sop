@@ -233,6 +233,22 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - `pytest brain/tests/`
     - `dev-browser --connect --timeout 120 run C:\pt-study-sop\scripts\verify-study-flow.js`
 
+- [x] REMAIN-001. Polish panel end-to-end verification and fixes.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+    - `dashboard_rebuild/client/src/components/TutorWorkflowPolishStudio.tsx`
+    - `dashboard_rebuild/client/src/lib/studioPacketSections.ts`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPolishStudio.test.tsx`
+    - `scripts/verify-remaining.js`
+  - Done when:
+    - the toolbar-opened Polish panel renders real tutor replies, captured notes, summaries, and staged card data instead of hiding promoted tutor replies behind the separate Polish Packet state
+    - promoted tutor replies persist through the saved Polish bundle so the Polish panel and Polish Packet can rebuild from workflow detail
+    - focused Polish/Tutor shell tests, the production frontend build, and live `dev-browser` verification of the Polish flow pass
+  - Assignee: @codex-cli
+  - Completed: 2026-03-29 06:33 - Polish now feeds live summary/card drafts into Polish Packet, retains promoted tutor replies across bundle reloads, and passes focused tests plus headless `dev-browser` verification.
+
 - [x] HUD-256. Upgrade the Tutor Studio entry card into a full new-session setup form with session name and material selection.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

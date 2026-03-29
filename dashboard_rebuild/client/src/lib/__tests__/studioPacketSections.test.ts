@@ -138,7 +138,12 @@ describe("studio packet section builders", () => {
         },
       ],
       polishBundle: {
-        summaries: [{ title: "Hemodynamics summary" }],
+        summaries: [
+          {
+            title: "Hemodynamics summary",
+            content: "Venous return is the preload driver.",
+          },
+        ],
         card_requests: [{ front: "What determines cardiac output?" }],
         status: "draft",
       },
@@ -161,9 +166,79 @@ describe("studio packet section builders", () => {
     expect(sections[0]?.entries[0]?.title).toBe("Tutor Reply 3");
     expect(sections[0]?.entries[1]?.title).toBe("SV vs HR misconception");
     expect(sections[1]?.entries[0]?.title).toBe("Hemodynamics summary");
+    expect(sections[1]?.entries[0]?.detail).toBe(
+      "Venous return is the preload driver.",
+    );
     expect(sections[2]?.entries[0]?.title).toBe("What determines cardiac output?");
     expect(sections[3]?.entries.map((entry) => entry.title)).toContain(
       "Vault/Cardio.md",
     );
+  });
+
+  it("falls back to promoted tutor replies persisted inside the saved polish bundle", () => {
+    const sections = buildPolishPacketSections({
+      promotedNotes: [],
+      capturedNotes: [],
+      polishBundle: {
+        studio_payload: {
+          promoted_notes: [
+            {
+              id: "assistant-9",
+              title: "Tutor Reply 9",
+              content: "Venous return remains the preload driver.",
+              badge: "TUTOR",
+            },
+          ],
+        },
+        summaries: [],
+        card_requests: [],
+        status: "draft",
+      },
+      publishResults: [],
+    });
+
+    expect(sections[0]?.entries[0]).toEqual(
+      expect.objectContaining({
+        title: "Tutor Reply 9",
+        detail: "Venous return remains the preload driver.",
+        badge: "TUTOR",
+      }),
+    );
+  });
+
+  it("prefers live Polish draft summary and card text when persisted packet data is incomplete", () => {
+    const sections = buildPolishPacketSections({
+      promotedNotes: [],
+      capturedNotes: [],
+      polishBundle: {
+        summaries: [{ title: "Polish final summary draft" }],
+        card_requests: [],
+        status: "draft",
+      },
+      publishResults: [],
+      draftSummaryText: "Venous return is the preload driver.",
+      draftCardRequestText:
+        "What is the preload driver? :: Venous return\nWhat sets preload? :: Venous return",
+    });
+
+    expect(sections[1]?.entries[0]).toEqual(
+      expect.objectContaining({
+        title: "Polish final summary draft",
+        detail: "Venous return is the preload driver.",
+        badge: "SUMMARY",
+      }),
+    );
+    expect(sections[2]?.entries).toEqual([
+      expect.objectContaining({
+        title: "Card request 1",
+        detail: "What is the preload driver? :: Venous return",
+        badge: "CARD",
+      }),
+      expect.objectContaining({
+        title: "Card request 2",
+        detail: "What sets preload? :: Venous return",
+        badge: "CARD",
+      }),
+    ]);
   });
 });
