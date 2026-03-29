@@ -25,9 +25,10 @@
     },
     {
       "id": "STUDY-001",
-      "title": "Priming method cards use colorful box UI with name and description",
-      "description": "The Priming panel method selector currently shows plain buttons. Replace with colorful card-style boxes. Each method card should show: (1) Colored background or left-accent bar (distinct color per method from the theme palette). (2) Method name in bold. (3) One-line description of what the method does. (4) Checkbox or selected state so user can pick one or more. Search for MethodCard, MethodTile, or similar components that may already exist from the Methods page. The method list is in the studio priming content -- trace from TutorShell primingStudioContent.",
+      "title": "Priming method cards use colorful box UI and only show PRIME/CALIBRATE methods",
+      "description": "The Priming panel method selector currently shows ALL methods as plain buttons. Two fixes needed: (1) Filter: Only show methods whose control_stage is PRIME or CALIBRATE. Each method YAML in sop/library/methods/ has a control_stage field. The API that returns methods should filter by stage, or the frontend should filter the list. The M-PRE-* methods have control_stage PRIME or CALIBRATE. Methods with ENCODE, TEACH, REFERENCE, RETRIEVE, OVERLEARN stages should NOT appear in the Priming panel. (2) UI: Replace plain buttons with colorful card-style boxes. Each card shows: colored left-accent bar or background (distinct color per stage -- e.g. PRIME=cyan, CALIBRATE=amber), method name in bold, one-line description. Checkbox or selected state for multi-select. Search for existing MethodCard or MethodTile components from the Methods page for reference.",
       "acceptanceCriteria": [
+        "Only PRIME and CALIBRATE stage methods are shown (no ENCODE, TEACH, RETRIEVE, OVERLEARN, REFERENCE)",
         "Each method shows as a colored card with name and description",
         "Methods have distinct colors",
         "User can select one or more methods",
