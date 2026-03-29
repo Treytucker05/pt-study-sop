@@ -363,6 +363,76 @@ describe("StudioShell", () => {
     expect(setTransformSpy).not.toHaveBeenCalled();
   });
 
+  it("does not start canvas panning from the entry overlay backdrop outside the card", () => {
+    setTransformSpy.mockClear();
+
+    render(
+      <StudioShell
+        panelLayout={[]}
+        setPanelLayout={vi.fn()}
+        entryCard={<button type="button">Start Priming</button>}
+        tutorPanel={<div>Tutor</div>}
+      />,
+    );
+
+    const canvas = screen.getByTestId("studio-canvas");
+    const entryOverlay = screen.getByTestId("studio-entry-overlay");
+
+    fireEvent.pointerDown(entryOverlay, {
+      pointerId: 11,
+      clientX: 24,
+      clientY: 24,
+    });
+    fireEvent.pointerMove(canvas, {
+      pointerId: 11,
+      clientX: 180,
+      clientY: 140,
+    });
+    fireEvent.pointerUp(canvas, {
+      pointerId: 11,
+      clientX: 180,
+      clientY: 140,
+    });
+
+    expect(setTransformSpy).not.toHaveBeenCalled();
+  });
+
+  it("renders the entry overlay as a dark interactive backdrop that blocks wheel and pointer propagation", () => {
+    const outerWheel = vi.fn();
+    const outerPointerDown = vi.fn();
+
+    render(
+      <div onWheel={outerWheel} onPointerDown={outerPointerDown}>
+        <StudioShell
+          panelLayout={[]}
+          setPanelLayout={vi.fn()}
+          entryCard={<button type="button">Start Priming</button>}
+          tutorPanel={<div>Tutor</div>}
+        />
+      </div>,
+    );
+
+    const entryState = screen.getByTestId("studio-entry-state");
+    const entryOverlay = screen.getByTestId("studio-entry-overlay");
+
+    fireEvent.wheel(entryOverlay, { deltaY: 120 });
+    fireEvent.pointerDown(entryOverlay, {
+      pointerId: 12,
+      clientX: 32,
+      clientY: 32,
+    });
+
+    expect(outerWheel).not.toHaveBeenCalled();
+    expect(outerPointerDown).not.toHaveBeenCalled();
+    expect(entryOverlay).toHaveClass("pointer-events-auto", "bg-black/70");
+    expect(entryState).toHaveClass(
+      "border",
+      "border-primary/20",
+      "bg-black/90",
+      "shadow-2xl",
+    );
+  });
+
   it("renders the entry-state card as a top-biased fixed viewport overlay outside the transformed canvas layer", () => {
     render(
       <StudioShell

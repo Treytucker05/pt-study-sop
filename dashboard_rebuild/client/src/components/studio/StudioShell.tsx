@@ -1194,13 +1194,31 @@ export function StudioShell({
       ? createPortal(
           <div
             data-testid="studio-entry-overlay"
-            className="pointer-events-none fixed inset-0 z-10 flex items-start justify-center overflow-y-auto px-4 pb-4"
+            className="pointer-events-auto fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 px-4 pb-4"
             style={{ paddingTop: "max(3rem, 12vh)" }}
+            onWheel={(event) => {
+              event.stopPropagation();
+            }}
+            onPointerDown={(event) => {
+              event.stopPropagation();
+            }}
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
           >
             <div
               data-testid="studio-entry-state"
               data-canvas-drag-disabled="true"
-              className="studio-canvas-drag-disabled pointer-events-auto w-[min(34rem,calc(100vw-4rem))] rounded-[1.2rem] border border-[rgba(255,116,142,0.22)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(0,0,0,0.2)_100%)] p-6 shadow-[0_20px_46px_rgba(0,0,0,0.28)]"
+              className="studio-canvas-drag-disabled w-[min(34rem,calc(100vw-4rem))] rounded-2xl border border-primary/20 bg-black/90 p-8 shadow-2xl"
+              onWheel={(event) => {
+                event.stopPropagation();
+              }}
+              onPointerDown={(event) => {
+                event.stopPropagation();
+              }}
+              onClick={(event) => {
+                event.stopPropagation();
+              }}
             >
               {entryCard}
             </div>

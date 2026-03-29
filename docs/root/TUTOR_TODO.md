@@ -28,6 +28,27 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 - Ops note (2026-03-25): `dev-browser` is now a shared agent skill projected into every supported agent root; this does not change Tutor sprint priority.
 
+- [x] OVERLAY-001. Entry card gets dark backdrop and blocks canvas interaction.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`
+    - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+    - `scripts/verify-overlay-polish.js`
+  - Done when:
+    - the entry card renders above a dark semi-opaque viewport backdrop that dims the Studio shell and keeps the card readable
+    - the overlay intercepts outside clicks and mouse-wheel input so the canvas does not pan or zoom while the entry card is visible
+    - focused Studio shell tests, the frontend build, and live `dev-browser` verification pass
+  - Assignee: @codex-cli
+  - Completed: 2026-03-29
+  - Notes:
+    - `studio-entry-overlay` now renders as a fixed `bg-black/70` viewport backdrop with wheel and pointer interception so the empty entry state blocks canvas interaction instead of letting events fall through.
+    - `studio-entry-state` now uses the darker bordered card treatment (`border-primary/20`, `bg-black/90`, `shadow-2xl`) and the Studio shell regression suite now covers both backdrop clicks and overlay wheel propagation.
+    - `scripts/verify-overlay-polish.js` now verifies only `OVERLAY-001` and checks the live backdrop, wheel blocking, outside-click blocking, and entry-card text contrast on `/tutor`.
+  - Validation:
+    - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/pages/__tests__/tutor.test.tsx`
+    - `cd dashboard_rebuild && npm run build`
+    - `dev-browser --connect --timeout 60 run C:\pt-study-sop\scripts\verify-overlay-polish.js`
+
 - [x] ENTRY-003. Auto-center panels after Start Priming opens them.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

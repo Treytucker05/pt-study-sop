@@ -2,6 +2,15 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-29 - OVERLAY-001 entry overlay hardening
+
+- Added a real fullscreen entry overlay backdrop in `dashboard_rebuild/client/src/components/studio/StudioShell.tsx` so the empty Tutor Studio entry card now dims the canvas and intercepts wheel/click input instead of letting the canvas react underneath.
+- Hardened the live verification path in `scripts/verify-overlay-polish.js` so it checks the shipped overlay backdrop, wheel blocking, outside-click blocking, and text contrast directly against `/tutor`.
+- Validation:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/pages/__tests__/tutor.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - `dev-browser --connect --timeout 60 run C:\pt-study-sop\scripts\verify-overlay-polish.js`
+
 ## 2026-03-22 - Studio layout playground added
 
 - Added `docs/design/studio-playground.html` by retargeting the existing page-builder engine to the current Studio module set.
