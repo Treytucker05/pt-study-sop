@@ -210,6 +210,29 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - `cd dashboard_rebuild && npm run build`
     - `dev-browser --connect --timeout 180 run C:\pt-study-sop\scripts\verify-study-flow.js`
 
+- [x] STUDY-004. Tutor chat sends messages and receives LLM responses.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/tutor-shell/TutorLiveStudyPane.tsx`
+    - `dashboard_rebuild/client/src/components/tutor-shell/__tests__/TutorLiveStudyPane.test.tsx`
+    - `scripts/verify-study-flow.js`
+  - Done when:
+    - the Tutor panel keeps the live chat input and send button reachable from the floating Studio shell
+    - seeded or workflow-backed Tutor sessions can send a user turn, render the sent message in chat history, and surface the assistant reply without runtime errors
+    - primed packet context remains available to the Tutor turn path so a live browser verifier can prove the reply is grounded in the seeded priming summary
+    - focused Tutor frontend tests, the production frontend build, the backend regression suite, and live `dev-browser` verification all pass
+  - Assignee: @codex-cli
+  - Completed: 2026-03-29
+  - Notes:
+    - Fixed `dashboard_rebuild/client/src/components/tutor-shell/TutorLiveStudyPane.tsx` so Tutor turn completion can safely invalidate the `mastery-dashboard` query when a response includes a mastery update instead of reaching for an undefined `queryClient` binding.
+    - Added `dashboard_rebuild/client/src/components/tutor-shell/__tests__/TutorLiveStudyPane.test.tsx` to lock the mastery-update completion path and prove the Tutor pane increments turn count, forwards compaction telemetry, and invalidates mastery data without crashing.
+    - Reworked `scripts/verify-study-flow.js` into a STUDY-004-specific verifier that seeds a primed Tutor session through the backend, opens the Tutor panel on `/tutor`, sends a live message, and proves the reply uses the seeded priming context while staying free of console errors.
+  - Validation:
+    - `cd dashboard_rebuild && npx vitest run client/src/components/tutor-shell/__tests__/TutorLiveStudyPane.test.tsx client/src/components/__tests__/TutorChat.test.tsx`
+    - `cd dashboard_rebuild && npm run build`
+    - `pytest brain/tests/`
+    - `dev-browser --connect --timeout 120 run C:\pt-study-sop\scripts\verify-study-flow.js`
+
 - [x] HUD-256. Upgrade the Tutor Studio entry card into a full new-session setup form with session name and material selection.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

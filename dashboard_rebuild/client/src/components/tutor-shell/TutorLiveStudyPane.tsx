@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { MessageSquare } from "lucide-react";
 import { type ReactNode } from "react";
@@ -52,6 +53,8 @@ export function TutorLiveStudyPane({
   onCompactionTelemetry,
   submitBrainFeedback,
 }: TutorLiveStudyPaneProps) {
+  const queryClient = useQueryClient();
+
   const handleActivateCapsule = async (
     action: () => Promise<{ id?: number } | null | undefined> | { id?: number } | null | undefined,
   ) => {

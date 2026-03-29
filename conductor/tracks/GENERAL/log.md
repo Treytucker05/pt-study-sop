@@ -2187,6 +2187,17 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run build`
   - `dev-browser --connect --timeout 180 run C:\\pt-study-sop\\scripts\\verify-study-flow.js`
 
+## 2026-03-29 - STUDY-004 Tutor chat live-turn hardening
+
+- Fixed the Tutor live pane in `dashboard_rebuild/client/src/components/tutor-shell/TutorLiveStudyPane.tsx` so mastery-bearing assistant turns can invalidate `mastery-dashboard` through a real TanStack query client instead of crashing on an undefined local binding.
+- Added `dashboard_rebuild/client/src/components/tutor-shell/__tests__/TutorLiveStudyPane.test.tsx` to lock the Tutor turn-complete path and prove the pane increments turn count, forwards compaction telemetry, and refreshes mastery data when the backend returns a mastery update.
+- Replaced `scripts/verify-study-flow.js` with a STUDY-004-specific browser verifier that seeds a primed Tutor session through `/api/tutor/session`, opens the Tutor panel on `/tutor`, sends a live message, and proves the assistant reply is grounded in the seeded priming summary without console errors.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/tutor-shell/__tests__/TutorLiveStudyPane.test.tsx client/src/components/__tests__/TutorChat.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - `pytest brain/tests/`
+  - `dev-browser --connect --timeout 120 run C:\\pt-study-sop\\scripts\\verify-study-flow.js`
+
 ## 2026-03-29 - STUDY-002 priming method output rendering
 
 - Reproduced the live empty-output fallback on `/tutor` by clearing the default method pair, selecting `M-PRE-002`, and confirming the backend completed the run while the Output Area still showed `"This run completed, but no study artifacts were returned for the selected output format."`
