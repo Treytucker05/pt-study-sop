@@ -133,3 +133,38 @@ Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-011356-29630-iter-1.md
   - Useful context
     - `focusOpenPanels()` is the right helper for Start Priming because it fits the full priming preset with padding, while `centerOpenPanels()` preserves zoom and can still clip a multi-panel preset on smaller viewports.
 ---
+
+## [2026-03-29 02:30 CDT] - OVERLAY-001: Entry card gets dark backdrop and blocks canvas interaction
+Thread: 
+Run: 20260329-022021-29765 (iteration 1)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260329-022021-29765-iter-1.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-022021-29765-iter-1.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: `12a1bca1 fix: harden tutor entry overlay backdrop`
+- Post-commit status: `clean`
+- Verification:
+  - Command: `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx client/src/pages/__tests__/tutor.test.tsx` -> PASS
+  - Command: `cd dashboard_rebuild && npm run build` -> PASS
+  - Command: `dev-browser --connect --timeout 60 run C:/pt-study-sop/scripts/verify-overlay-polish.js` -> PASS
+- Files changed:
+  - `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`
+  - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+  - `scripts/verify-overlay-polish.js`
+  - `docs/root/TUTOR_TODO.md`
+  - `conductor/tracks/GENERAL/log.md`
+  - `.agents/tasks/prd.json`
+  - `.ralph/progress.md`
+- What was implemented
+  - Turned `studio-entry-overlay` into a real fullscreen `bg-black/70` backdrop with wheel, pointer-down, and click interception so the canvas cannot pan or zoom under the entry card.
+  - Restyled `studio-entry-state` with the darker bordered `bg-black/90` / `border-primary/20` / `shadow-2xl` treatment and added focused StudioShell regressions for backdrop clicks plus wheel blocking.
+  - Scoped `scripts/verify-overlay-polish.js` to `OVERLAY-001` and made it verify the live backdrop, canvas-event blocking, and entry-card text contrast on `/tutor`.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - Because the entry card is portaled outside the transformed canvas, making the wrapper `pointer-events-auto` is what actually blocks the underlying canvas; the extra stopPropagation hooks are mainly there to keep React-tree ancestors and tests honest.
+  - Gotchas encountered
+    - Browser-computed colors on this route come back as a mix of `oklab(...)`, `rgb(...)`, and `rgba(...)`, so live verification needs format-agnostic alpha parsing.
+    - `dev-browser` screenshots can hang while fonts settle even after all checks pass, so screenshot capture should stay best-effort instead of failing the story after green assertions.
+  - Useful context
+    - `dev-browser --connect` worked against the live local dashboard for this run, so the overlay verification can stay on the shared script path for follow-on entry-card stories.
+---
