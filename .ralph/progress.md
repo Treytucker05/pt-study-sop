@@ -6,6 +6,40 @@ Started: Sun Mar 29 00:04:50 CDT 2026
 
 ---
 
+## [2026-03-29 05:21 CDT] - STUDY-004: Tutor chat sends messages and receives LLM responses
+Thread: 
+Run: 20260329-042815-30477 (iteration 3)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260329-042815-30477-iter-3.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-042815-30477-iter-3.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: `ab36d930 fix: complete tutor chat live turn flow`
+- Post-commit status: `.agents/tasks/prd.json`, `.ralph/runs/run-20260329-042815-30477-iter-2.md` (pre-existing unrelated changes)
+- Verification:
+  - Command: `cd dashboard_rebuild && npx vitest run client/src/components/tutor-shell/__tests__/TutorLiveStudyPane.test.tsx client/src/components/__tests__/TutorChat.test.tsx` -> PASS
+  - Command: `cd dashboard_rebuild && npm run build` -> PASS
+  - Command: `pytest brain/tests/` -> PASS
+  - Command: `dev-browser --connect --timeout 120 run C:\pt-study-sop\scripts\verify-study-flow.js` -> PASS
+- Files changed:
+  - `conductor/tracks/GENERAL/log.md`
+  - `dashboard_rebuild/client/src/components/tutor-shell/TutorLiveStudyPane.tsx`
+  - `dashboard_rebuild/client/src/components/tutor-shell/__tests__/TutorLiveStudyPane.test.tsx`
+  - `docs/root/TUTOR_TODO.md`
+  - `scripts/verify-study-flow.js`
+  - `.ralph/progress.md`
+- What was implemented
+  - Fixed the Tutor live pane so completed assistant turns can safely invalidate `mastery-dashboard` through a real TanStack query client instead of crashing on an undefined binding.
+  - Added a focused Tutor live-pane regression that proves turn completion increments session turn count, forwards compaction telemetry, and refreshes mastery data when the backend returns a mastery update.
+  - Reworked the live browser verifier into a STUDY-004-specific flow that seeds a primed Tutor session through `/api/tutor/session`, opens the Tutor panel on `/tutor`, sends a real user turn, and verifies the assistant reply is grounded in the seeded priming summary.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - Seeding a Tutor session through `/api/tutor/session` is a faster and more reliable browser proof for live-turn stories than replaying the entire Priming UI when the acceptance criteria are specifically about Tutor chat.
+  - Gotchas encountered
+    - The Tutor live pane already had the send/receive path wired; the real break was a latent `queryClient` reference that only surfaced when an assistant turn returned `masteryUpdate`.
+  - Useful context
+    - A grounded Tutor reply can be asserted without brittle full-text matching by seeding a short `packet_context` summary and checking for the expected concept phrase in the rendered response.
+---
+
 ## [2026-03-29 02:42 CDT] - OVERLAY-002: Add material upload button to entry card
 Thread: 
 Run: 20260329-022021-29765 (iteration 2)
