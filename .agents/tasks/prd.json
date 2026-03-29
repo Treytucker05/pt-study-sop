@@ -1,91 +1,93 @@
 {
-  "title": "Entry Card Overlay Polish + Upload",
-  "description": "Polish the entry card overlay and add material upload capability.",
+  "title": "Study Flow - Get It Working",
+  "description": "Fix the critical path so Trey can actually study. Cancel button + Priming methods + Tutor chat.",
   "stories": [
-    {
-      "id": "OVERLAY-001",
-      "title": "Entry card gets dark backdrop and blocks canvas interaction",
-      "description": "The entry card overlay needs three fixes: (1) Add a semi-opaque dark backdrop (bg-black/70 or similar) behind the entry card so the canvas beneath is dimmed and the form text is readable. (2) The backdrop must intercept mouse wheel events so scrolling does not pan/zoom the canvas while the entry card is showing. Add onWheel={e => e.stopPropagation()} to the overlay wrapper. (3) The backdrop must intercept click events so clicking outside the entry card does not interact with the canvas. The entry card itself should have a subtle border and slightly elevated look (e.g. border border-primary/20 bg-black/90 rounded-2xl shadow-2xl p-8). The overlay container should be pointer-events-auto and cover the full viewport area of the studio shell.",
-      "acceptanceCriteria": [
-        "Entry card has a dark semi-opaque backdrop behind it",
-        "Canvas is visually dimmed when entry card is showing",
-        "Mouse wheel does NOT zoom/pan the canvas while entry card is visible",
-        "Clicking outside the entry card does NOT interact with canvas elements",
-        "Entry card text is easily readable against the dark backdrop",
-        "dev-browser verification: check backdrop exists, scroll does not move canvas, entry card text contrast is sufficient"
-      ],
-      "files": [
-        "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
-      ],
-      "verification": "dev-browser --timeout 60 run scripts/verify-overlay-polish.js",
-      "status": "done",
-      "startedAt": "2026-03-29T07:20:21.378156+00:00",
-      "completedAt": "2026-03-29T07:31:57.641419+00:00",
-      "updatedAt": "2026-03-29T07:31:57.641406+00:00"
-    },
-    {
-      "id": "OVERLAY-002",
-      "title": "Add material upload button to entry card",
-      "description": "Add an Upload Materials button or drop zone to the entry card so users can add new materials for the selected course without leaving the setup flow. The Source Shelf already has upload wired via handleUploadSourceShelfFiles in TutorShell.tsx -- reuse that same handler. Add a file input (hidden) + styled Upload button below the material checklist. When files are selected, call the same upload handler. Show upload progress indicator (isUploading state already exists as sourceShelfUploading). After upload completes, the material list should refresh to include the newly uploaded files. Style the upload button as a dashed-border outlined area: border-dashed border-[rgba(255,118,144,0.25)] rounded-lg p-3 text-center cursor-pointer hover:bg-primary/5. Show a cloud-upload icon or text like 'Upload New Materials' with 'PDF, DOCX, MP4, PPTX' as accepted types.",
-      "acceptanceCriteria": [
-        "Upload button or drop zone is visible on the entry card below the material list",
-        "Clicking upload opens a file picker dialog",
-        "Accepted file types include PDF, DOCX, MP4, PPTX",
-        "Upload progress indicator shows while uploading",
-        "After upload completes, new materials appear in the checklist",
-        "Upload is scoped to the selected course",
-        "dev-browser verification: check upload button exists, is clickable"
-      ],
-      "files": [
-        "dashboard_rebuild/client/src/components/TutorShell.tsx"
-      ],
-      "verification": "dev-browser --timeout 60 run scripts/verify-overlay-polish.js",
-      "status": "done",
-      "startedAt": "2026-03-29T07:32:00.092986+00:00",
-      "completedAt": "2026-03-29T07:44:32.343078+00:00",
-      "updatedAt": "2026-03-29T07:44:32.343063+00:00"
-    },
-    {
-      "id": "OVERLAY-003",
-      "title": "Rename Open Full Studio button and clean up Resume logic",
-      "description": "The 'Open Full Studio' button is confusing for users. Rename it to 'Skip Setup' since it just opens all panels without the priming workflow. Also, the Resume button should only show when there is a real resumable session (resumeCandidate must have a valid session with actual progress, not just any test data). If there is no meaningful session to resume, hide the button entirely.",
-      "acceptanceCriteria": [
-        "Button text reads 'Skip Setup' instead of 'Open Full Studio'",
-        "Skip Setup still calls applyCanvasPreset('full_studio')",
-        "Resume button only shows when resumeCandidate is truthy",
-        "dev-browser verification: check button text is 'Skip Setup'"
-      ],
-      "files": [
-        "dashboard_rebuild/client/src/components/TutorShell.tsx"
-      ],
-      "verification": "dev-browser --timeout 60 run scripts/verify-overlay-polish.js",
-      "status": "done",
-      "startedAt": "2026-03-29T07:44:34.739695+00:00",
-      "completedAt": "2026-03-29T07:55:10.907426+00:00",
-      "updatedAt": "2026-03-29T07:55:10.907412+00:00"
-    },
     {
       "id": "OVERLAY-004",
       "title": "Add cancel/close button to entry card overlay",
-      "description": "The entry card overlay has no way to dismiss it without starting a session. Add a Cancel or X close button that dismisses the overlay and shows the empty canvas. This lets users close the setup form if they just want to browse the workspace without starting a new session. Add an X button in the top-right corner of the entry card (absolute positioned). Style it as a subtle close icon: text-[#ffc8d3]/60 hover:text-white, font-mono text-lg. When clicked, call setShowSetup(false) to hide the entry card. Also add a text Cancel button next to the action buttons at the bottom as an alternative way to dismiss. The Cancel button should use the same outline style as Skip Setup but with lighter text.",
+      "description": "The entry card overlay has no way to dismiss it without starting a session. Add a Cancel or X close button. Add an X button in the top-right corner of the entry card (absolute positioned). Style: text-[#ffc8d3]/60 hover:text-white font-mono text-lg. When clicked, call setShowSetup(false). Also add a text Cancel button next to Start Priming / Skip Setup as an alternative dismiss. After dismissing, canvas should be usable. NEW SESSION hero button should re-open the entry card.",
       "acceptanceCriteria": [
         "X close button visible in top-right corner of entry card",
         "Clicking X dismisses the entry card and shows empty canvas",
-        "Cancel text button visible next to Start Priming / Skip Setup",
-        "Clicking Cancel also dismisses the entry card",
-        "After dismissing, the canvas is usable (can pan, zoom, open panels from toolbar)",
-        "NEW SESSION hero button can re-open the entry card after dismissal",
-        "dev-browser verification: click X, verify entry card gone, verify canvas is interactive"
+        "Cancel text button visible next to action buttons",
+        "NEW SESSION hero button re-opens the entry card after dismissal",
+        "dev-browser: click X, verify entry card gone, verify canvas interactive"
       ],
       "files": [
         "dashboard_rebuild/client/src/components/TutorShell.tsx",
         "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
       ],
       "verification": "dev-browser --timeout 60 run scripts/verify-overlay-polish.js",
-      "status": "in_progress",
-      "startedAt": "2026-03-29T07:55:13.330702+00:00",
-      "completedAt": null,
-      "updatedAt": "2026-03-29T07:55:13.330710+00:00"
+      "status": "open"
+    },
+    {
+      "id": "STUDY-001",
+      "title": "Priming method cards use colorful box UI with name and description",
+      "description": "The Priming panel method selector currently shows plain buttons. Replace with colorful card-style boxes. Each method card should show: (1) Colored background or left-accent bar (distinct color per method from the theme palette). (2) Method name in bold. (3) One-line description of what the method does. (4) Checkbox or selected state so user can pick one or more. Search for MethodCard, MethodTile, or similar components that may already exist from the Methods page. The method list is in the studio priming content -- trace from TutorShell primingStudioContent.",
+      "acceptanceCriteria": [
+        "Each method shows as a colored card with name and description",
+        "Methods have distinct colors",
+        "User can select one or more methods",
+        "Selected methods have visual indicator",
+        "dev-browser: verify method cards have background colors and description text"
+      ],
+      "files": [
+        "dashboard_rebuild/client/src/components/TutorShell.tsx"
+      ],
+      "verification": "dev-browser --timeout 90 run scripts/verify-study-flow.js",
+      "status": "open"
+    },
+    {
+      "id": "STUDY-002",
+      "title": "Priming method run returns actual results instead of empty",
+      "description": "When user selects a method and clicks Run, the Output Area shows 'This run completed, but no study artifacts were returned for the selected output format.' The backend returned a response but the frontend is not parsing it correctly OR the method runner output format does not match. Debug by: (1) Check network request when Run is clicked -- what does the API return? (2) Check what format frontend expects. (3) Fix the mismatch. Backend at 127.0.0.1:5000, endpoint likely POST /api/tutor/run or /api/tutor/method. Check brain/dashboard/api_tutor.py.",
+      "acceptanceCriteria": [
+        "Running a method produces visible output in the Output Area",
+        "Method Result shows actual content not empty message",
+        "Output is formatted and readable",
+        "dev-browser: click Run, wait for response, verify output has content"
+      ],
+      "files": [
+        "dashboard_rebuild/client/src/components/TutorShell.tsx",
+        "brain/dashboard/api_tutor.py"
+      ],
+      "verification": "dev-browser --timeout 90 run scripts/verify-study-flow.js",
+      "status": "open"
+    },
+    {
+      "id": "STUDY-003",
+      "title": "Priming Chat is functional not placeholder",
+      "description": "The Priming Chat shows 'Chat with priming results coming soon'. Replace with a real chat. Needs: (1) Text input and send button. (2) Send to backend priming chat endpoint. (3) Show conversation history. (4) Use priming context (method results, materials) for responses. If backend endpoint does not exist, create one in api_tutor.py that takes priming context + user message and returns LLM response.",
+      "acceptanceCriteria": [
+        "Priming Chat has text input and send button",
+        "User can type and send a message",
+        "Response from backend appears in chat",
+        "Chat uses priming context for responses",
+        "dev-browser: type in priming chat, send, verify response"
+      ],
+      "files": [
+        "dashboard_rebuild/client/src/components/TutorShell.tsx",
+        "brain/dashboard/api_tutor.py"
+      ],
+      "verification": "dev-browser --timeout 90 run scripts/verify-study-flow.js",
+      "status": "open"
+    },
+    {
+      "id": "STUDY-004",
+      "title": "Tutor chat sends messages and receives LLM responses",
+      "description": "The Tutor panel must send messages and receive LLM responses. Open Tutor panel, type message, send, verify response comes back. Backend tutor chat endpoint in brain/dashboard/api_tutor.py. Tutor should have access to primed context (materials, method results).",
+      "acceptanceCriteria": [
+        "Tutor panel has chat input and send button",
+        "User can type and send a message",
+        "Sent message appears in chat history",
+        "LLM response appears in chat history",
+        "dev-browser: open Tutor, type message, send, verify response"
+      ],
+      "files": [
+        "dashboard_rebuild/client/src/components/TutorShell.tsx"
+      ],
+      "verification": "dev-browser --timeout 90 run scripts/verify-study-flow.js",
+      "status": "open"
     }
   ]
 }
