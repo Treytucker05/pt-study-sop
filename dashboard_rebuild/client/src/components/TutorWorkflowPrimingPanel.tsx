@@ -293,6 +293,10 @@ function buildBlockMarkdown(block: ResultBlock): string {
   return block.content.trim();
 }
 
+function buildBulletListContent(lines: string[]) {
+  return lines.map((line) => `- ${line}`).join("\n");
+}
+
 function buildMethodResultBlocks(
   methodLabel: string,
   entries: Record<string, unknown>[],
@@ -336,6 +340,19 @@ function buildMethodResultBlocks(
       });
     }
 
+    const questions = isStringArray(entry.questions) ? entry.questions : [];
+    if (questions.length > 0) {
+      blocks.push({
+        id: makeBlockId([methodLabel, sourceTitle, "questions", index]),
+        title: `Pre-Question Set${blockSuffix}`,
+        badge: "QUESTIONS",
+        kind: "generic",
+        sourceLabel: methodLabel,
+        ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
+        content: buildBulletListContent(questions),
+      });
+    }
+
     const summary = typeof entry.summary === "string" ? entry.summary.trim() : "";
     if (summary) {
       blocks.push({
@@ -346,6 +363,19 @@ function buildMethodResultBlocks(
         sourceLabel: methodLabel,
         ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
         content: summary,
+      });
+    }
+
+    const majorSections = isStringArray(entry.major_sections) ? entry.major_sections : [];
+    if (majorSections.length > 0) {
+      blocks.push({
+        id: makeBlockId([methodLabel, sourceTitle, "major-sections", index]),
+        title: `Major Sections${blockSuffix}`,
+        badge: "SECTIONS",
+        kind: "generic",
+        sourceLabel: methodLabel,
+        ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
+        content: buildBulletListContent(majorSections),
       });
     }
 
@@ -363,6 +393,19 @@ function buildMethodResultBlocks(
       });
     }
 
+    const drawingBrief = typeof entry.drawing_brief === "string" ? entry.drawing_brief.trim() : "";
+    if (drawingBrief) {
+      blocks.push({
+        id: makeBlockId([methodLabel, sourceTitle, "drawing-brief", index]),
+        title: `Hand-Draw Brief${blockSuffix}`,
+        badge: "DRAW",
+        kind: "generic",
+        sourceLabel: methodLabel,
+        ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
+        content: drawingBrief,
+      });
+    }
+
     const concepts = isStringArray(entry.concepts) ? entry.concepts : [];
     if (concepts.length > 0) {
       blocks.push({
@@ -376,6 +419,32 @@ function buildMethodResultBlocks(
       });
     }
 
+    const branchPoints = isStringArray(entry.branch_points) ? entry.branch_points : [];
+    if (branchPoints.length > 0) {
+      blocks.push({
+        id: makeBlockId([methodLabel, sourceTitle, "branch-points", index]),
+        title: `Branch Points${blockSuffix}`,
+        badge: "BRANCHES",
+        kind: "generic",
+        sourceLabel: methodLabel,
+        ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
+        content: buildBulletListContent(branchPoints),
+      });
+    }
+
+    const followUpTargets = isStringArray(entry.follow_up_targets) ? entry.follow_up_targets : [];
+    if (followUpTargets.length > 0) {
+      blocks.push({
+        id: makeBlockId([methodLabel, sourceTitle, "follow-up-targets", index]),
+        title: `Follow-Up Targets${blockSuffix}`,
+        badge: "FOLLOW-UP",
+        kind: "generic",
+        sourceLabel: methodLabel,
+        ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
+        content: buildBulletListContent(followUpTargets),
+      });
+    }
+
     const gaps = isStringArray(entry.gaps) ? entry.gaps : [];
     if (gaps.length > 0) {
       blocks.push({
@@ -386,6 +455,21 @@ function buildMethodResultBlocks(
         sourceLabel: methodLabel,
         ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
         content: gaps.map((gap) => `- ${gap}`).join("\n"),
+      });
+    }
+
+    const unsupportedJumps = isStringArray(entry.unsupported_jumps)
+      ? entry.unsupported_jumps
+      : [];
+    if (unsupportedJumps.length > 0) {
+      blocks.push({
+        id: makeBlockId([methodLabel, sourceTitle, "unsupported-jumps", index]),
+        title: `Unsupported Jumps${blockSuffix}`,
+        badge: "JUMPS",
+        kind: "generic",
+        sourceLabel: methodLabel,
+        ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
+        content: buildBulletListContent(unsupportedJumps),
       });
     }
   });

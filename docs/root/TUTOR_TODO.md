@@ -166,6 +166,28 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - `cd dashboard_rebuild && npm run build`
     - `dev-browser --timeout 90 run C:\pt-study-sop\scripts\verify-study-flow.js`
 
+- [x] STUDY-002. Priming method run returns actual results instead of empty.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+    - `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts`
+    - `scripts/verify-study-flow.js`
+  - Done when:
+    - Priming method runs render readable result blocks for the returned PRIME payload instead of falling back to the empty-output message
+    - the known broken single-method run path (`M-PRE-002`) produces visible output in the Priming Output Area
+    - focused Priming frontend tests, the production frontend build, and live `dev-browser` verification of the single-method run path pass
+  - Assignee: @codex-cli
+  - Completed: 2026-03-29
+  - Notes:
+    - Expanded `buildMethodResultBlocks` in `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` so PRIME responses that return question sets, follow-up targets, unsupported jumps, major sections, branch points, or drawing briefs now render as readable result blocks instead of being dropped.
+    - Extended `dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts` so applying refined Priming results preserves those additional PRIME output families when the panel round-trips a displayed run back into workflow state.
+    - Added a focused regression for the previously broken `M-PRE-002` single-method path and updated `scripts/verify-study-flow.js` to clear the default methods, run `M-PRE-002`, and prove the live Output Area shows content rather than the empty fallback message.
+  - Validation:
+    - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx client/src/hooks/__tests__/useTutorWorkflow.test.tsx`
+    - `cd dashboard_rebuild && npm run build`
+    - `dev-browser --timeout 180 run C:\pt-study-sop\scripts\verify-study-flow.js`
+
 - [x] STUDY-003. Priming Chat is functional not placeholder.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

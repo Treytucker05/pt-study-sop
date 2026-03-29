@@ -288,6 +288,29 @@ function buildDisplayedRunMethodOutputs(
     blocks,
     (block) => block.badge === "GAPS" || /open questions/i.test(block.title),
   ).map(trimBulletPrefix);
+  const questionLines = collectPrimingBlockLines(
+    blocks,
+    (block) => block.badge === "QUESTIONS" || /pre-?question set/i.test(block.title),
+  ).map(trimBulletPrefix);
+  const majorSectionLines = collectPrimingBlockLines(
+    blocks,
+    (block) => block.badge === "SECTIONS" || /major sections/i.test(block.title),
+  ).map(trimBulletPrefix);
+  const followUpTargetLines = collectPrimingBlockLines(
+    blocks,
+    (block) => block.badge === "FOLLOW-UP" || /follow-up targets/i.test(block.title),
+  ).map(trimBulletPrefix);
+  const unsupportedJumpLines = collectPrimingBlockLines(
+    blocks,
+    (block) => block.badge === "JUMPS" || /unsupported jumps/i.test(block.title),
+  ).map(trimBulletPrefix);
+  const branchPointLines = collectPrimingBlockLines(
+    blocks,
+    (block) => block.badge === "BRANCHES" || /branch points/i.test(block.title),
+  ).map(trimBulletPrefix);
+  const drawingBriefBlock = blocks.find(
+    (block) => block.badge === "DRAW" || /hand-draw brief/i.test(block.title),
+  );
 
   if (objectivesBlock?.objectives?.length) {
     outputs.learning_objectives = objectivesBlock.objectives
@@ -302,14 +325,29 @@ function buildDisplayedRunMethodOutputs(
   if (summaryBlock?.content.trim()) {
     outputs.summary = summaryBlock.content.trim();
   }
+  if (questionLines.length > 0) {
+    outputs.questions = questionLines;
+  }
+  if (majorSectionLines.length > 0) {
+    outputs.major_sections = majorSectionLines;
+  }
   if (mapBlock?.content.trim()) {
     outputs.map = mapBlock.content.trim();
   }
   if (termsBlock?.terms?.length) {
     outputs.terminology = termsBlock.terms.map((term) => term.raw.trim()).filter(Boolean);
   }
+  if (drawingBriefBlock?.content.trim()) {
+    outputs.drawing_brief = drawingBriefBlock.content.trim();
+  }
   if (conceptLines.length > 0) {
     outputs.concepts = conceptLines;
+  }
+  if (branchPointLines.length > 0) {
+    outputs.branch_points = branchPointLines;
+  }
+  if (followUpTargetLines.length > 0) {
+    outputs.follow_up_targets = followUpTargetLines;
   }
   if (gapLines.length > 0) {
     if (run.methodId === "M-PRE-014") {
@@ -317,6 +355,9 @@ function buildDisplayedRunMethodOutputs(
     } else {
       outputs.follow_up_targets = gapLines;
     }
+  }
+  if (unsupportedJumpLines.length > 0) {
+    outputs.unsupported_jumps = unsupportedJumpLines;
   }
   return outputs;
 }

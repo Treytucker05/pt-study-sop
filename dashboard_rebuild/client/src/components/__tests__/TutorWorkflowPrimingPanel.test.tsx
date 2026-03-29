@@ -202,6 +202,187 @@ describe("TutorWorkflowPrimingPanel", () => {
     ).toHaveAttribute("aria-checked", "true");
   });
 
+  it("renders question-set method outputs instead of the empty fallback message", async () => {
+    const wrapper = createWrapper();
+
+    getPrimeMethodsMock.mockResolvedValue([
+      {
+        id: 201,
+        method_id: "M-PRE-002",
+        name: "Overarching Pre-Question Set",
+        control_stage: "PRIME",
+        category: "prepare",
+        description: "Generate broad conceptual prompts.",
+      },
+      {
+        id: 202,
+        method_id: "M-PRE-010",
+        name: "Learning Objectives Primer",
+        control_stage: "PRIME",
+        category: "prepare",
+        description: "Prime objectives first.",
+      },
+    ]);
+
+    function Harness() {
+      const [primingMethods, setPrimingMethods] = useState<string[]>([]);
+      const [isRunningAssist, setIsRunningAssist] = useState(false);
+      const [sourceInventory, setSourceInventory] = useState([
+        {
+          id: 101,
+          title: "Cardiac Output Lecture",
+          source_path: "/tmp/cardio-output.pdf",
+          method_outputs: [],
+        },
+      ]);
+      const [primingMethodRuns, setPrimingMethodRuns] = useState<TutorPrimingMethodRun[]>([]);
+
+      return (
+        <TutorWorkflowPrimingPanel
+          workflow={
+            {
+              workflow_id: "wf-123",
+              updated_at: "2026-03-20T12:00:00Z",
+              status: "priming_in_progress",
+              assignment_title: "Week 7",
+              course_name: "Exercise Phys",
+              topic: "Cardiac output",
+            } as never
+          }
+          courses={[{ id: 1, name: "Exercise Phys", code: "EXPH" }] as never}
+          courseId={1}
+          setCourseId={vi.fn()}
+          selectedMaterials={[101]}
+          setSelectedMaterials={vi.fn()}
+          topic="Cardiac output"
+          setTopic={vi.fn()}
+          objectiveScope="module_all"
+          setObjectiveScope={vi.fn()}
+          selectedObjectiveId=""
+          setSelectedObjectiveId={vi.fn()}
+          selectedObjectiveGroup="Week 7"
+          setSelectedObjectiveGroup={vi.fn()}
+          availableObjectives={[]}
+          studyUnitOptions={[{ value: "Week 7", objectiveCount: 2, materialCount: 1 }]}
+          primingMethods={primingMethods}
+          setPrimingMethods={setPrimingMethods}
+          primingMethodRuns={primingMethodRuns as never}
+          chainId={undefined}
+          setChainId={vi.fn()}
+          customBlockIds={[]}
+          setCustomBlockIds={vi.fn()}
+          templateChains={[] as never}
+          templateChainsLoading={false}
+          summaryText=""
+          setSummaryText={vi.fn()}
+          conceptsText=""
+          setConceptsText={vi.fn()}
+          terminologyText=""
+          setTerminologyText={vi.fn()}
+          rootExplanationText=""
+          setRootExplanationText={vi.fn()}
+          gapsText=""
+          setGapsText={vi.fn()}
+          recommendedStrategyText=""
+          setRecommendedStrategyText={vi.fn()}
+          sourceInventory={sourceInventory as never}
+          vaultFolderPreview="Courses/Exercise Phys/Week 7"
+          readinessItems={[]}
+          preflightBlockers={[]}
+          preflightLoading={false}
+          preflightError={null}
+          onBackToStudio={vi.fn()}
+          onSaveDraft={vi.fn()}
+          onMarkReady={vi.fn()}
+          onStartTutor={vi.fn()}
+          onRunAssistForSelected={() => {
+            setIsRunningAssist(true);
+            Promise.resolve().then(() => {
+              const questions = [
+                "Why does cardiac output need both heart rate and stroke volume?",
+                "How does the cardiovascular system balance perfusion with exercise demand?",
+                "Where does preload fit inside the larger regulation of cardiac output?",
+              ];
+              setPrimingMethodRuns([
+                {
+                  method_id: "M-PRE-002",
+                  method_name: "Overarching Pre-Question Set",
+                  output_family: "prequestions",
+                  outputs: {
+                    entries: [
+                      {
+                        material_id: 101,
+                        title: "Cardiac Output Lecture",
+                        questions,
+                      },
+                    ],
+                  },
+                  source_ids: [101],
+                  status: "complete",
+                  updated_at: "2026-03-21T04:00:00Z",
+                },
+              ]);
+              setSourceInventory([
+                {
+                  id: 101,
+                  title: "Cardiac Output Lecture",
+                  source_path: "/tmp/cardio-output.pdf",
+                  method_outputs: [
+                    {
+                      method_id: "M-PRE-002",
+                      method_name: "Overarching Pre-Question Set",
+                      output_family: "prequestions",
+                      outputs: {
+                        questions,
+                      },
+                      source_ids: [101],
+                      status: "complete",
+                      updated_at: "2026-03-21T04:00:00Z",
+                    },
+                  ],
+                },
+              ]);
+              setIsRunningAssist(false);
+            });
+          }}
+          onRunAssistForMaterial={vi.fn()}
+          onPromoteResultToPrimePacket={vi.fn()}
+          onSendResultToWorkspace={vi.fn()}
+          isSaving={false}
+          isStartingTutor={false}
+          isRunningAssist={isRunningAssist}
+          assistTargetMaterialId={null}
+        />
+      );
+    }
+
+    render(<Harness />, { wrapper });
+
+    await waitFor(() => expect(getPrimeMethodsMock).toHaveBeenCalledWith("PRIME"));
+
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /overarching pre-question set/i }),
+    );
+    fireEvent.click(screen.getByTestId("priming-run-button"));
+
+    expect(
+      await screen.findByText(
+        /why does cardiac output need both heart rate and stroke volume/i,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /how does the cardiovascular system balance perfusion with exercise demand/i,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "This run completed, but no study artifacts were returned for the selected output format.",
+      ),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("priming-chat-input")).not.toBeDisabled();
+  });
+
   it("keeps chain runs reachable through the chain selector", async () => {
     startChainRunMock.mockResolvedValue({
       run_id: 77,

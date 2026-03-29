@@ -134,12 +134,24 @@ check(
   new Set(methodCards.map((card) => `${card.backgroundColor}|${card.borderColor}`)).size > 1,
 );
 let hasSelectedMethod = methodCards.some((card) => card.selected === "true");
-if (!hasSelectedMethod && methodCards.length > 0) {
+const clearMethodsButton = await page.locator('button:has-text("Clear Methods")');
+if (await clearMethodsButton.count() > 0) {
+  await clearMethodsButton.click();
+  await page.waitForTimeout(400);
+}
+const questionSetCard = await page.locator(
+  '[data-testid="priming-method-card"][data-method-id="M-PRE-002"]',
+);
+if (await questionSetCard.count() > 0) {
+  await questionSetCard.click();
+  await page.waitForTimeout(400);
+  hasSelectedMethod = (await questionSetCard.getAttribute("data-selected")) === "true";
+} else if (!hasSelectedMethod && methodCards.length > 0) {
   await page.locator('[data-testid="priming-method-card"]').first().click();
   await page.waitForTimeout(400);
   hasSelectedMethod = true;
 }
-check("At least one method card is selected", hasSelectedMethod);
+check("Target priming method is selected", hasSelectedMethod);
 
 const runButton = await page.locator('[data-testid="priming-run-button"]');
 if (await runButton.count() > 0 && !(await runButton.isDisabled())) {
@@ -158,6 +170,10 @@ try {
   console.log("Priming run wait failed:", String(error));
 }
 check("Priming run produced visible results", resultCount > 0);
+check(
+  "Priming run did not fall back to the empty-output message",
+  !(await page.locator('text=This run completed, but no study artifacts were returned for the selected output format.').count()),
+);
 
 const firstBlockText = resultCount > 0
   ? await resultBlocks.first().evaluate((node) =>
