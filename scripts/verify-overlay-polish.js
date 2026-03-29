@@ -13,6 +13,14 @@ function check(name, condition) {
 // OVERLAY-001: Check backdrop, wheel blocking, click blocking, and readability
 const entry = await page.locator('[data-testid="studio-entry-state"]');
 check("Entry card visible", await entry.count() > 0);
+check(
+  "Entry card secondary action reads Skip Setup",
+  await page.getByRole("button", { name: /^skip setup$/i }).count() === 1,
+);
+check(
+  "Legacy Open Full Studio label is gone",
+  await page.getByRole("button", { name: /open full studio/i }).count() === 0,
+);
 
 const overlayStyles = await page.evaluate(() => {
   const overlay = document.querySelector('[data-testid="studio-entry-overlay"]');
@@ -147,6 +155,30 @@ try {
 } catch (error) {
   console.log(`WARN: Screenshot skipped: ${error instanceof Error ? error.message : String(error)}`);
 }
+
+// OVERLAY-004: Check cancel/close buttons
+const hasCloseX = await page.evaluate(() => {
+  const overlay = document.querySelector('[data-testid="entry-overlay"]');
+  const entry = document.querySelector('[data-testid="studio-entry-state"]');
+  const container = overlay || entry?.parentElement;
+  if (!container && !entry) return false;
+  const searchIn = container || entry;
+  const btns = [...searchIn.querySelectorAll('button')];
+  return btns.some(b => {
+    const label = (b.getAttribute('aria-label') || '').toLowerCase();
+    const text = b.textContent.trim();
+    return label.includes('close') || label.includes('dismiss') || text === 'X' || text === 'x';
+  });
+});
+check("Close/X button exists on entry card", hasCloseX);
+
+const hasCancelBtn = await page.evaluate(() => {
+  const entry = document.querySelector('[data-testid="studio-entry-state"]');
+  if (!entry) return false;
+  const btns = [...entry.querySelectorAll('button')];
+  return btns.some(b => b.textContent.toLowerCase().includes('cancel'));
+});
+check("Cancel text button exists", hasCancelBtn);
 
 console.log("\\n=== RESULTS: " + passed + " passed, " + failed + " failed ===");
 if (failed > 0) { console.log("VERIFICATION FAILED"); process.exit(1); }

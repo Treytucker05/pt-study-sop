@@ -1050,6 +1050,99 @@ describe("TutorShell studio routing", () => {
     expect(openStudioPriming).toHaveBeenCalledTimes(1);
   });
 
+  it("renames Open Full Studio to Skip Setup, keeps the preset action, and hides Resume for placeholder hub data", async () => {
+    const user = userEvent.setup();
+    const setPanelLayout = vi.fn();
+
+    renderTutorShell("home", {
+      activeSessionId: null,
+      sessionOverrides: {
+        hasActiveTutorSession: false,
+      },
+      hubOverrides: {
+        courseId: 101,
+        courseLabel: "Exercise Physiology",
+        tutorContentSources: {
+          courses: [{ id: 101, name: "Exercise Physiology" }],
+        },
+        tutorHub: {
+          resume_candidate: {
+            can_resume: false,
+            session_id: null,
+            course_id: 101,
+            course_name: "Exercise Physiology",
+            course_code: "EX-101",
+            topic: "Placeholder session",
+            last_mode: "studio",
+            board_scope: "project",
+            board_id: null,
+            updated_at: "2026-03-29T07:50:00Z",
+            action_label: "Reopen workspace",
+          },
+        } as never,
+      },
+      shellOverrides: {
+        panelLayout: [],
+        setPanelLayout,
+      },
+    });
+
+    const skipSetupButton = await screen.findByRole("button", {
+      name: /^skip setup$/i,
+    });
+    expect(skipSetupButton).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /open full studio/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^resume$/i }),
+    ).not.toBeInTheDocument();
+
+    await user.click(skipSetupButton);
+
+    expect(setPanelLayout).toHaveBeenCalledWith(
+      buildStudioShellPresetLayout("full_studio"),
+    );
+  });
+
+  it("renders the entry-card Resume action only for a real resumable session", async () => {
+    renderTutorShell("home", {
+      activeSessionId: null,
+      sessionOverrides: {
+        hasActiveTutorSession: false,
+      },
+      hubOverrides: {
+        courseId: 101,
+        courseLabel: "Exercise Physiology",
+        tutorContentSources: {
+          courses: [{ id: 101, name: "Exercise Physiology" }],
+        },
+        tutorHub: {
+          resume_candidate: {
+            can_resume: true,
+            session_id: "sess-recent",
+            course_id: 101,
+            course_name: "Exercise Physiology",
+            course_code: "EX-101",
+            topic: "Cardio review",
+            last_mode: "tutor",
+            board_scope: "project",
+            board_id: null,
+            updated_at: "2026-03-29T07:55:00Z",
+            action_label: "Resume Exercise Physiology tutor session",
+          },
+        } as never,
+      },
+      shellOverrides: {
+        panelLayout: [],
+      },
+    });
+
+    expect(
+      await screen.findByRole("button", { name: /^resume$/i }),
+    ).toBeInTheDocument();
+  });
+
   it("collects a session name and lets the entry card narrow materials before launch", async () => {
     const user = userEvent.setup();
 

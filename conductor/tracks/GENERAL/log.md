@@ -2129,3 +2129,17 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run build`
   - `dev-browser --connect --timeout 90 run C:\\Users\\treyt\\.dev-browser\\tmp\\verify-overlay-002.js`
   - `dev-browser --connect --timeout 60 run C:\\pt-study-sop\\scripts\\verify-overlay-polish.js`
+
+## 2026-03-29 - OVERLAY-003 skip-setup label and resumable-session gating
+
+- Added `dashboard_rebuild/client/src/lib/tutorResumeCandidate.ts` and used it in both `dashboard_rebuild/client/src/components/TutorShell.tsx` and `dashboard_rebuild/client/src/pages/tutor.tsx` so Resume only renders when the hub candidate is actually resumable (`can_resume` plus a non-empty `session_id`).
+- Renamed the entry-card secondary action from `Open Full Studio` to `Skip Setup` while preserving the existing `applyCanvasPreset("full_studio")` behavior.
+- Extended the focused regression coverage in:
+  - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+- Updated `scripts/verify-overlay-polish.js` so the live overlay verification also proves the new `Skip Setup` label and the removal of the legacy copy.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/tutor.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - `dev-browser --connect --timeout 60 run C:\\pt-study-sop\\scripts\\verify-overlay-polish.js`
+  - `dev-browser --connect --timeout 60 run C:\\Users\\treyt\\.dev-browser\\tmp\\verify-overlay-003-console.js`

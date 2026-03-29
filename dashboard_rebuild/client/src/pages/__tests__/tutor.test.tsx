@@ -1118,7 +1118,7 @@ describe("Tutor page restore", () => {
     expect(screen.queryByRole("tab", { name: /^launch$/i })).not.toBeInTheDocument();
     expect(screen.queryByText("OPEN WORKBENCH")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /start priming/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /open full studio/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /skip setup/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^refresh$/i })).toBeInTheDocument();
   });
 
@@ -1226,12 +1226,7 @@ describe("Tutor page restore", () => {
     }
   });
 
-  it("only renders the hero RESUME button when a resume candidate exists", async () => {
-    getHubMock.mockResolvedValueOnce({
-      ...makeTutorHub(),
-      resume_candidate: null,
-    });
-
+  it("only renders the hero RESUME button for a real resumable session candidate", async () => {
     const firstRender = renderTutor();
 
     await waitFor(() => {
@@ -1247,6 +1242,17 @@ describe("Tutor page restore", () => {
     ).not.toBeInTheDocument();
 
     firstRender.unmount();
+
+    getHubMock.mockResolvedValueOnce({
+      ...makeTutorHub(),
+      resume_candidate: {
+        ...makeTutorHub().resume_candidate,
+        can_resume: true,
+        session_id: "sess-recent",
+        last_mode: "tutor",
+        action_label: "Resume Neuro tutor session",
+      },
+    });
 
     renderTutor();
 

@@ -40,10 +40,10 @@
         "dashboard_rebuild/client/src/components/TutorShell.tsx"
       ],
       "verification": "dev-browser --timeout 60 run scripts/verify-overlay-polish.js",
-      "status": "in_progress",
+      "status": "done",
       "startedAt": "2026-03-29T07:32:00.092986+00:00",
-      "completedAt": null,
-      "updatedAt": "2026-03-29T07:32:00.092994+00:00"
+      "completedAt": "2026-03-29T07:44:32.343078+00:00",
+      "updatedAt": "2026-03-29T07:44:32.343063+00:00"
     },
     {
       "id": "OVERLAY-003",
@@ -57,6 +57,29 @@
       ],
       "files": [
         "dashboard_rebuild/client/src/components/TutorShell.tsx"
+      ],
+      "verification": "dev-browser --timeout 60 run scripts/verify-overlay-polish.js",
+      "status": "in_progress",
+      "startedAt": "2026-03-29T07:44:34.739695+00:00",
+      "completedAt": null,
+      "updatedAt": "2026-03-29T07:44:34.739703+00:00"
+    },
+    {
+      "id": "OVERLAY-004",
+      "title": "Add cancel/close button to entry card overlay",
+      "description": "The entry card overlay has no way to dismiss it without starting a session. Add a Cancel or X close button that dismisses the overlay and shows the empty canvas. This lets users close the setup form if they just want to browse the workspace without starting a new session. Add an X button in the top-right corner of the entry card (absolute positioned). Style it as a subtle close icon: text-[#ffc8d3]/60 hover:text-white, font-mono text-lg. When clicked, call setShowSetup(false) to hide the entry card. Also add a text Cancel button next to the action buttons at the bottom as an alternative way to dismiss. The Cancel button should use the same outline style as Skip Setup but with lighter text.",
+      "acceptanceCriteria": [
+        "X close button visible in top-right corner of entry card",
+        "Clicking X dismisses the entry card and shows empty canvas",
+        "Cancel text button visible next to Start Priming / Skip Setup",
+        "Clicking Cancel also dismisses the entry card",
+        "After dismissing, the canvas is usable (can pan, zoom, open panels from toolbar)",
+        "NEW SESSION hero button can re-open the entry card after dismissal",
+        "dev-browser verification: click X, verify entry card gone, verify canvas is interactive"
+      ],
+      "files": [
+        "dashboard_rebuild/client/src/components/TutorShell.tsx",
+        "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
       ],
       "verification": "dev-browser --timeout 60 run scripts/verify-overlay-polish.js",
       "status": "open"

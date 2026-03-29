@@ -34,6 +34,7 @@ import {
   writeTutorStoredStartState,
   writeTutorVaultFolder,
 } from "@/lib/tutorClientState";
+import { resolveResumableTutorHubCandidate } from "@/lib/tutorResumeCandidate";
 import { readTutorShellQuery, writeTutorShellQuery } from "@/lib/tutorUtils";
 import {
   normalizeStudioWorkspaceObjects,
@@ -848,7 +849,9 @@ function useTutorPageController() {
     session.isTutorSessionView &&
     Boolean(liveTutorSessionId) &&
     Boolean(session.startedAt);
-  const resumeCandidate = hub.tutorHub?.resume_candidate ?? null;
+  const resumeCandidate = resolveResumableTutorHubCandidate(
+    hub.tutorHub?.resume_candidate ?? null,
+  );
   const tutorHeroStats = useMemo(
     () => [
       { label: "Surface", value: "TUTOR", tone: "info" as const },

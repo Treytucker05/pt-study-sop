@@ -73,6 +73,30 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - `dev-browser --connect --timeout 90 run C:\Users\treyt\.dev-browser\tmp\verify-overlay-002.js`
     - `dev-browser --connect --timeout 60 run C:\pt-study-sop\scripts\verify-overlay-polish.js`
 
+- [x] OVERLAY-003. Rename Open Full Studio button and clean up Resume logic.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+    - `dashboard_rebuild/client/src/lib/tutorResumeCandidate.ts`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+    - `scripts/verify-overlay-polish.js`
+  - Done when:
+    - the entry-card secondary action reads `Skip Setup` while still opening the `full_studio` preset
+    - Resume actions render only when the hub resume candidate represents a real resumable session (`can_resume` + `session_id`)
+    - focused TutorShell/page regressions, the production frontend build, and live `dev-browser` verification of the new label pass
+  - Assignee: @codex-cli
+  - Completed: 2026-03-29
+  - Notes:
+    - Added `resolveResumableTutorHubCandidate` so both `TutorShell` and `/tutor` only treat hub resume data as actionable when `can_resume` is true and `session_id` is present.
+    - Renamed the entry-card secondary action to `Skip Setup` while keeping its `applyCanvasPreset("full_studio")` behavior unchanged.
+    - Extended the focused TutorShell and Tutor page regressions so placeholder hub data no longer renders Resume actions, while a real resumable session still does.
+  - Validation:
+    - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/pages/__tests__/tutor.test.tsx`
+    - `cd dashboard_rebuild && npm run build`
+    - `dev-browser --connect --timeout 60 run C:\pt-study-sop\scripts\verify-overlay-polish.js`
+
 - [x] ENTRY-003. Auto-center panels after Start Priming opens them.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

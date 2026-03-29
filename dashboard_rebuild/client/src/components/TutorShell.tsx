@@ -36,6 +36,7 @@ import {
 } from "@/lib/studioPacketSections";
 import { serializeStudioPacketSectionsForTutor } from "@/lib/studioPacketSerializer";
 import { deriveVaultFolder } from "@/lib/tutorUtils";
+import { resolveResumableTutorHubCandidate } from "@/lib/tutorResumeCandidate";
 import { buildStudioMemoryStatus } from "@/lib/studioMemoryStatus";
 import type { ChatMessage } from "@/components/TutorChat.types";
 import { api } from "@/lib/api";
@@ -712,7 +713,9 @@ export function TutorShell({
   const liveTutorSessionId = session.hasActiveTutorSession
     ? activeSessionId
     : null;
-  const resumeCandidate = hub.tutorHub?.resume_candidate ?? null;
+  const resumeCandidate = resolveResumableTutorHubCandidate(
+    hub.tutorHub?.resume_candidate ?? null,
+  );
   const resolvedPrimingMethodIds = useMemo(() => {
     if (primingMethodIds.length > 0 || workflow.primingMethods.length === 0) {
       return primingMethodIds;
@@ -1510,7 +1513,7 @@ export function TutorShell({
           onClick={() => applyCanvasPreset("full_studio")}
           className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-xs uppercase tracking-[0.18em] text-[#ffd6de]"
         >
-          Open Full Studio
+          Skip Setup
         </Button>
         {resumeCandidate ? (
           <Button
