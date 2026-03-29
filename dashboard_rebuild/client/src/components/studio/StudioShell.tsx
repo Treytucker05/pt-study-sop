@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   BookOpen,
   Brain,
@@ -1159,6 +1160,28 @@ export function StudioShell({
     return () => cancelAnimationFrame(frame);
   }, [focusOpenPanels, shouldFocusLayout]);
 
+  const entryStateOverlay =
+    resolvedLayout.length === 0 &&
+    entryCard &&
+    typeof document !== "undefined"
+      ? createPortal(
+          <div
+            data-testid="studio-entry-overlay"
+            className="pointer-events-none fixed inset-0 z-10 flex items-start justify-center overflow-y-auto px-4 pb-4"
+            style={{ paddingTop: "max(3rem, 12vh)" }}
+          >
+            <div
+              data-testid="studio-entry-state"
+              data-canvas-drag-disabled="true"
+              className="studio-canvas-drag-disabled pointer-events-auto w-[min(34rem,calc(100vw-4rem))] rounded-[1.2rem] border border-[rgba(255,116,142,0.22)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(0,0,0,0.2)_100%)] p-6 shadow-[0_20px_46px_rgba(0,0,0,0.28)]"
+            >
+              {entryCard}
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
+
   return (
     <TransformWrapper
       initialScale={1}
@@ -1183,14 +1206,15 @@ export function StudioShell({
       }}
     >
       {() => (
-        <div
-          data-testid="studio-shell"
-          className="flex h-full min-h-0 flex-col gap-3"
-        >
+        <>
           <div
-            data-testid="studio-toolbar"
-            className="flex flex-wrap items-center gap-2 rounded-[1rem] border border-[rgba(255,118,144,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.14)_100%)] px-3 py-3 shadow-[0_14px_28px_rgba(0,0,0,0.2)]"
+            data-testid="studio-shell"
+            className="flex h-full min-h-0 flex-col gap-3"
           >
+            <div
+              data-testid="studio-toolbar"
+              className="flex flex-wrap items-center gap-2 rounded-[1rem] border border-[rgba(255,118,144,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.14)_100%)] px-3 py-3 shadow-[0_14px_28px_rgba(0,0,0,0.2)]"
+            >
             {panelDefinitions.map((definition) => {
               const panelAlreadyOpen = resolvedLayout.some(
                 (item) => item.panel === definition.panel,
@@ -1482,16 +1506,6 @@ export function StudioShell({
                 position: "relative",
               }}
             >
-              {resolvedLayout.length === 0 && entryCard ? (
-                <div
-                  data-testid="studio-entry-state"
-                  data-canvas-drag-disabled="true"
-                  className="studio-canvas-drag-disabled absolute left-1/2 top-1/2 z-10 w-[min(34rem,calc(100vw-4rem))] -translate-x-1/2 -translate-y-1/2 rounded-[1.2rem] border border-[rgba(255,116,142,0.22)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(0,0,0,0.2)_100%)] p-6 shadow-[0_20px_46px_rgba(0,0,0,0.28)]"
-                >
-                  {entryCard}
-                </div>
-              ) : null}
-
               {resolvedLayout.map((layoutItem) => {
                 const definition = panelsByKey.get(layoutItem.panel);
                 if (!definition) return null;
@@ -1586,7 +1600,9 @@ export function StudioShell({
               })}
             </TransformComponent>
           </div>
-        </div>
+          </div>
+          {entryStateOverlay}
+        </>
       )}
     </TransformWrapper>
   );

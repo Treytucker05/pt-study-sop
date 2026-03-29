@@ -363,6 +363,27 @@ describe("StudioShell", () => {
     expect(setTransformSpy).not.toHaveBeenCalled();
   });
 
+  it("renders the entry-state card as a top-biased fixed viewport overlay outside the transformed canvas layer", () => {
+    render(
+      <StudioShell
+        panelLayout={[]}
+        setPanelLayout={vi.fn()}
+        entryCard={<button type="button">Start Priming</button>}
+        tutorPanel={<div>Tutor</div>}
+      />,
+    );
+
+    const entryState = screen.getByTestId("studio-entry-state");
+    const entryOverlay = screen.getByTestId("studio-entry-overlay");
+    const studioCanvas = screen.getByTestId("studio-canvas");
+    const transformedCanvas = screen.getByTestId("mock-transform-component");
+
+    expect(transformedCanvas).not.toContainElement(entryState);
+    expect(studioCanvas).not.toContainElement(entryState);
+    expect(document.body).toContainElement(entryOverlay);
+    expect(entryOverlay).toHaveStyle({ paddingTop: "max(3rem, 12vh)" });
+  });
+
   it("opens the study preset at readable panel sizes", () => {
     const studyLayout = buildStudioShellPresetLayout("study");
 
