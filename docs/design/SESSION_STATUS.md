@@ -1,8 +1,42 @@
 # Session Status — March 28, 2026
 
 ## Where We Are
-The floating-panel Studio workspace is live on `/tutor`. The core study loop works:
-Source Shelf → Priming (run method + chat refinement) → Prime Packet → Tutor (chat with context) → Notes
+The floating-panel Studio workspace is live on `/tutor`. Ralph loop is set up for autonomous bug fixing.
+Core study loop: Source Shelf → Priming → Prime Packet → Tutor → Notes → Polish → Export
+
+## What's Been Committed (HUD-244 through HUD-256 + Ralph setup)
+- Checkpoints 1-5 of the floating-panel cutover
+- Corrective passes (page-level chrome removal, toolbar positioning)
+- shellMode/studioView internal state purge
+- Priming Phase 1 (material/method/run/promote) + Phase 2 (chat refinement)
+- Entry card with course picker, end/new session flow
+- Source Shelf rebuild (folder tree with checkboxes, search, course grouping)
+- Canvas drag drift fix (merged from worktree)
+- HUD-247: Hero header HudButtons (New Session, Resume, Refresh) in PageScaffold actions
+- HUD-248: Canvas zoom slider + per-panel size presets (Max, Fit, Center, Size dropdown)
+- HUD-249: Previous Sessions accordion with filters, delete, course names
+- HUD-250: Panel center top-bias, fit-to-content measurement, scroll overflow, Source Shelf contrast/folders, vault derivation
+- HUD-251: Per-panel Center/Maximize now pan camera (viewport focus) instead of moving panel
+- HUD-252: Accessibility ARIA fixes (MainContent tablist, form labels), metadata cleanup, mobile header
+- HUD-253: App shell metadata (real title, OG tags, mobile zoom), mobile header responsive brand
+- HUD-254: Killed panels (Tutor Status, Repair Candidates, Objectives, Sketch, Concept Map, Vault Graph)
+- HUD-255: Unified Workspace panel with tabs (Canvas/Mind Map/Concept Map), Excalidraw removed
+- HUD-256: Entry card session name input + material picker + New Session flash feedback
+- Ralph loop setup: config, PRD, context, guardrails, bat launcher
+
+## Active Bugs (in prd.json for Ralph)
+- ENTRY-001: Entry card renders on canvas instead of viewport overlay
+- ENTRY-002: Material labels show full file paths instead of filenames
+- ENTRY-003: Panels don't auto-center after Start Priming
+
+## Ralph Loop
+- Config: `.agents/ralph/config.sh` (Codex agent, 10 iterations)
+- PRD: `.agents/tasks/prd.json` (3 stories loaded)
+- Context: `.agents/ralph/references/PROJECT_CONTEXT.md`
+- Guardrails: `.ralph/guardrails.md` (7 known failure patterns)
+- Verification: `scripts/verify-entry-bugs.js` (dev-browser interactive test)
+- Launcher: `ralph.bat` (double-click to start)
+- Run: `ralph build --agent=codex`
 
 ## What's Been Committed
 - Checkpoints 1-5 of the floating-panel cutover
