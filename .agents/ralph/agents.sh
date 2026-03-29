@@ -14,6 +14,10 @@ AGENT_CODEX_INTERACTIVE_CMD="codex --dangerously-bypass-approvals-and-sandbox --
 AGENT_CLAUDE_CMD="claude -p --dangerously-skip-permissions \"\$(cat {prompt})\""
 AGENT_CLAUDE_INTERACTIVE_CMD="claude --dangerously-skip-permissions {prompt}"
 
+# Gemini CLI - fresh perspective, good for getting unstuck
+AGENT_GEMINI_CMD="gemini --yolo -"
+AGENT_GEMINI_INTERACTIVE_CMD="gemini --yolo {prompt}"
+
 # Others
 AGENT_DROID_CMD="droid exec --skip-permissions-unsafe -f {prompt}"
 AGENT_DROID_INTERACTIVE_CMD="droid --skip-permissions-unsafe {prompt}"
