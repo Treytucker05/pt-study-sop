@@ -19,6 +19,16 @@ function check(name, condition) {
   else { console.log("FAIL: " + name); failed++; }
 }
 
+async function readEntryMaterialCount() {
+  const countText = ((await page.locator('[data-testid="studio-entry-material-count"]').textContent()) || "").trim();
+  const match = countText.match(/(\d+)\s+of\s+(\d+)\s+materials selected/i);
+  return {
+    text: countText,
+    selected: match ? Number(match[1]) : 0,
+    total: match ? Number(match[2]) : 0,
+  };
+}
+
 // STUDY-001: Fill entry card and click Start Priming
 const entry = await page.locator('[data-testid="studio-entry-state"]');
 check("Entry card visible", await entry.count() > 0);
@@ -35,13 +45,43 @@ if (await nameInput.count() > 0) {
 // Select a course if dropdown exists
 const courseSelect = await page.locator('select[aria-label*="Course"], select[aria-label*="course"]');
 if (await courseSelect.count() > 0) {
-  const options = await courseSelect.locator('option').allTextContents();
-  console.log("Available courses:", JSON.stringify(options.slice(0, 5)));
-  if (options.length > 1) {
-    await courseSelect.selectOption({ index: 1 });
-    await page.waitForTimeout(1000);
-    check("Course selected", true);
+  const options = await courseSelect.locator('option').evaluateAll((items) =>
+    items
+      .map((item) => ({
+        value: item.getAttribute("value") || "",
+        label: item.textContent?.trim() || "",
+      }))
+      .filter((item) => item.value),
+  );
+  console.log("Available courses:", JSON.stringify(options.slice(0, 5).map((option) => option.label)));
+
+  let materialCount = await readEntryMaterialCount();
+  console.log("Initial material count:", materialCount.text);
+
+  let courseReady = materialCount.total > 0;
+  if (!courseReady) {
+    for (const option of options) {
+      await courseSelect.selectOption(option.value);
+      await page.waitForTimeout(1000);
+      materialCount = await readEntryMaterialCount();
+      console.log(`Material count for ${option.label}: ${materialCount.text}`);
+      if (materialCount.total > 0) {
+        courseReady = true;
+        break;
+      }
+    }
   }
+  check("Course with materials selected", courseReady);
+
+  if (materialCount.total > 0 && materialCount.selected === 0) {
+    const selectAllButton = await page.locator('button:has-text("Select All")');
+    if (await selectAllButton.count() > 0) {
+      await selectAllButton.click();
+      await page.waitForTimeout(500);
+      materialCount = await readEntryMaterialCount();
+    }
+  }
+  check("At least one entry material selected", materialCount.selected > 0);
 }
 
 saveScreenshot(await page.screenshot(), "study-flow-01-entry-filled.png");
@@ -93,23 +133,84 @@ check(
   "Method cards have distinct colors",
   new Set(methodCards.map((card) => `${card.backgroundColor}|${card.borderColor}`)).size > 1,
 );
-check(
-  "At least one method card is selected",
-  methodCards.some((card) => card.selected === "true"),
-);
-
-// Priming panel still exposes the chat surface
-const chatInputs = await page.locator('textarea, input[type="text"]').all();
-let hasChatInput = false;
-for (const input of chatInputs) {
-  const placeholder = await input.getAttribute('placeholder');
-  const ariaLabel = await input.getAttribute('aria-label');
-  if (placeholder || ariaLabel) {
-    console.log("Input found:", placeholder || ariaLabel);
-    hasChatInput = true;
-  }
+let hasSelectedMethod = methodCards.some((card) => card.selected === "true");
+if (!hasSelectedMethod && methodCards.length > 0) {
+  await page.locator('[data-testid="priming-method-card"]').first().click();
+  await page.waitForTimeout(400);
+  hasSelectedMethod = true;
 }
-check("Chat input exists in opened panels", hasChatInput);
+check("At least one method card is selected", hasSelectedMethod);
+
+const runButton = await page.locator('[data-testid="priming-run-button"]');
+if (await runButton.count() > 0 && !(await runButton.isDisabled())) {
+  await runButton.click();
+  check("Priming RUN clicked", true);
+} else {
+  check("Priming RUN button clickable", false);
+}
+
+const resultBlocks = await page.locator('[data-testid="priming-result-block"]');
+let resultCount = 0;
+try {
+  await resultBlocks.first().waitFor({ state: "visible", timeout: 90000 });
+  resultCount = await resultBlocks.count();
+} catch (error) {
+  console.log("Priming run wait failed:", String(error));
+}
+check("Priming run produced visible results", resultCount > 0);
+
+const firstBlockText = resultCount > 0
+  ? await resultBlocks.first().evaluate((node) =>
+      node instanceof HTMLElement ? node.innerText || node.textContent || "" : node.textContent || "",
+    )
+  : "";
+const contextNeedles = firstBlockText
+  .split(/\r?\n/)
+  .map((line) => line.trim())
+  .filter(Boolean)
+  .slice(0, 4)
+  .flatMap((line) =>
+    line
+      .split(/[·|]/)
+      .map((part) => part.trim())
+      .filter((part) => part.length >= 4),
+  );
+console.log("Priming result context needles:", JSON.stringify(contextNeedles));
+
+const chatInput = await page.locator('[data-testid="priming-chat-input"]');
+const sendButton = await page.locator('[data-testid="priming-chat-send"]');
+check("Priming chat input exists", await chatInput.count() > 0);
+check("Priming chat send button exists", await sendButton.count() > 0);
+
+if (resultCount > 0 && await chatInput.count() > 0 && await sendButton.count() > 0) {
+  await chatInput.fill("Reply with the current result source label and one supporting detail from this priming run.");
+  await sendButton.click();
+  check("Priming chat message sent", true);
+} else {
+  check("Priming chat message sent", false);
+}
+
+const userTurns = await page.locator('[data-testid="priming-chat-turn-user"]');
+const assistantTurns = await page.locator('[data-testid="priming-chat-turn-assistant"]');
+let assistantTurnCount = 0;
+let latestAssistantText = "";
+try {
+  await assistantTurns.first().waitFor({ state: "visible", timeout: 90000 });
+  assistantTurnCount = await assistantTurns.count();
+  const assistantTexts = await assistantTurns.allTextContents();
+  latestAssistantText = assistantTexts[assistantTexts.length - 1]?.trim() || "";
+  console.log("Latest assistant turn:", latestAssistantText);
+} catch (error) {
+  console.log("Priming chat wait failed:", String(error));
+}
+check("Sent message appears in chat history", await userTurns.count() > 0);
+check("Priming chat response appears", assistantTurnCount > 0 && latestAssistantText.length > 0);
+check(
+  "Priming chat response uses current run context",
+  contextNeedles.length > 0
+    ? contextNeedles.some((needle) => latestAssistantText.toLowerCase().includes(needle.toLowerCase()))
+    : latestAssistantText.length > 0,
+);
 
 saveScreenshot(await page.screenshot(), "study-flow-03-panels-open.png");
 

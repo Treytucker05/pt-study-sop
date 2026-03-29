@@ -1264,7 +1264,7 @@ export function TutorWorkflowPrimingPanel({
           {chatTurns.length === 0 ? (
             <div className="rounded-[0.85rem] border border-dashed border-[rgba(255,118,144,0.18)] bg-black/15 px-4 py-5 text-sm leading-6 text-[#ffd9e1]/62">
               {chatDisabled
-                ? "Chat with priming results coming soon"
+                ? "Run a method or chain first to unlock chat with the current Priming results."
                 : "Ask Priming to expand a specific objective, cite a claim, or rewrite the current output."}
             </div>
           ) : (

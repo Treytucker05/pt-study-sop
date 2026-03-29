@@ -181,6 +181,9 @@ describe("TutorWorkflowPrimingPanel", () => {
     expect(
       screen.getByPlaceholderText("Run a method first to chat with Priming results"),
     ).toBeDisabled();
+    expect(
+      screen.getByText("Run a method or chain first to unlock chat with the current Priming results."),
+    ).toBeInTheDocument();
   });
 
   it("shows selected state for more than one method card", async () => {
@@ -574,37 +577,43 @@ describe("TutorWorkflowPrimingPanel", () => {
       );
     }
 
-    refinePrimingAssistMock.mockResolvedValue({
-      assistant_message:
-        "Objective 3 should explicitly mention the Frank-Starling physiology that links higher preload to higher stroke volume.",
-      updated_results: {
-        key: "method:M-PRE-010:refined",
-        label: "Learning Objectives Primer",
-        kind: "method",
-        methodId: "M-PRE-010",
-        blocks: [
-          {
-            id: "objectives::cardio",
-            title: "Learning Objectives",
-            badge: "OBJECTIVES",
-            kind: "objectives",
-            sourceLabel: "Cardiac Output Lecture",
-            materialId: 101,
-            content:
-              "LO-1 — Define cardiac output.\nLO-2 — Describe determinants of stroke volume.\nLO-3 — Explain how increased preload raises stroke volume through the Frank-Starling mechanism.",
-            objectives: [
-              { lo_code: "LO-1", title: "Define cardiac output." },
-              { lo_code: "LO-2", title: "Describe determinants of stroke volume." },
-              {
-                lo_code: "LO-3",
-                title:
-                  "Explain how increased preload raises stroke volume through the Frank-Starling mechanism.",
-              },
-            ],
-          },
-        ],
-      },
-    });
+    refinePrimingAssistMock
+      .mockResolvedValueOnce({
+        assistant_message:
+          "Objective 3 should explicitly mention the Frank-Starling physiology that links higher preload to higher stroke volume.",
+        updated_results: {
+          key: "method:M-PRE-010:refined",
+          label: "Learning Objectives Primer",
+          kind: "method",
+          methodId: "M-PRE-010",
+          blocks: [
+            {
+              id: "objectives::cardio",
+              title: "Learning Objectives",
+              badge: "OBJECTIVES",
+              kind: "objectives",
+              sourceLabel: "Cardiac Output Lecture",
+              materialId: 101,
+              content:
+                "LO-1 — Define cardiac output.\nLO-2 — Describe determinants of stroke volume.\nLO-3 — Explain how increased preload raises stroke volume through the Frank-Starling mechanism.",
+              objectives: [
+                { lo_code: "LO-1", title: "Define cardiac output." },
+                { lo_code: "LO-2", title: "Describe determinants of stroke volume." },
+                {
+                  lo_code: "LO-3",
+                  title:
+                    "Explain how increased preload raises stroke volume through the Frank-Starling mechanism.",
+                },
+              ],
+            },
+          ],
+        },
+      })
+      .mockResolvedValueOnce({
+        assistant_message:
+          "Keep objective 3 tied to the Cardiac Output Lecture and keep the explanation to one sentence.",
+        updated_results: null,
+      });
 
     render(<Harness />, { wrapper });
 
@@ -639,7 +648,53 @@ describe("TutorWorkflowPrimingPanel", () => {
     expect(
       await screen.findByText(/objective 3 should explicitly mention the frank-starl/iu),
     ).toBeInTheDocument();
+    expect(screen.getByTestId("priming-chat-turn-user")).toHaveTextContent(
+      "Expand on objective 3 with more detail about the physiology",
+    );
+    expect(screen.getByTestId("priming-chat-turn-assistant")).toHaveTextContent(
+      "Objective 3 should explicitly mention the Frank-Starling physiology",
+    );
     expect(screen.getByRole("button", { name: /apply changes/i })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId("priming-chat-input"), {
+      target: {
+        value: "Keep it to one sentence and mention the source title.",
+      },
+    });
+    fireEvent.click(screen.getByTestId("priming-chat-send"));
+
+    await waitFor(() =>
+      expect(refinePrimingAssistMock).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          message: "Keep it to one sentence and mention the source title.",
+          material_ids: [101],
+          conversation_history: [
+            {
+              role: "user",
+              message: "Expand on objective 3 with more detail about the physiology",
+            },
+            expect.objectContaining({
+              role: "assistant",
+              message: expect.stringContaining(
+                "Objective 3 should explicitly mention the Frank-Starling physiology",
+              ),
+              updatedResults: expect.objectContaining({
+                methodId: "M-PRE-010",
+              }),
+            }),
+          ],
+        }),
+      ),
+    );
+
+    expect(
+      await screen.findByText(
+        "Keep objective 3 tied to the Cardiac Output Lecture and keep the explanation to one sentence.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getAllByTestId("priming-chat-turn-user")).toHaveLength(2);
+    expect(screen.getAllByTestId("priming-chat-turn-assistant")).toHaveLength(2);
 
     fireEvent.click(screen.getByRole("button", { name: /apply changes/i }));
 
