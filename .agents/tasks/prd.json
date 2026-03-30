@@ -80,10 +80,10 @@
         "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
       ],
       "verification": "dev-browser --timeout 90 run scripts/verify-remaining.js",
-      "status": "in_progress",
-      "startedAt": "2026-03-30T03:37:38.211519+00:00",
-      "completedAt": null,
-      "updatedAt": "2026-03-30T03:37:38.211526+00:00"
+      "status": "done",
+      "startedAt": "2026-03-30T04:43:34.702756+00:00",
+      "completedAt": "2026-03-30T04:44:19.449098+00:00",
+      "updatedAt": "2026-03-30T04:44:19.449084+00:00"
     },
     {
       "id": "REMAIN-008",
@@ -99,7 +99,10 @@
         "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
       ],
       "verification": "dev-browser --timeout 60 run scripts/verify-remaining.js",
-      "status": "open"
+      "status": "done",
+      "startedAt": "2026-03-30T05:05:17.929524+00:00",
+      "completedAt": "2026-03-30T05:05:57.038227+00:00",
+      "updatedAt": "2026-03-30T05:05:57.038209+00:00"
     }
   ]
 }

@@ -842,6 +842,20 @@ echo "Max iterations: $MAX_ITERATIONS"
 echo "PRD: $PRD_PATH"
 HAS_ERROR="false"
 
+# --- Cleanup trap: kill orphaned child processes on exit ---
+cleanup_orphans() {
+  echo ""
+  echo "Ralph loop exiting — cleaning up orphaned processes..."
+  # Kill any chrome-headless-shell left by dev-browser verification
+  pkill -f 'chrome-headless-shell' 2>/dev/null || true
+  # Stop dev-browser daemon if running
+  command -v dev-browser >/dev/null 2>&1 && dev-browser stop 2>/dev/null || true
+  # Kill any leftover child processes from this shell
+  jobs -p 2>/dev/null | xargs -r kill 2>/dev/null || true
+  echo "Cleanup complete."
+}
+trap cleanup_orphans EXIT INT TERM
+
 for i in $(seq 1 "$MAX_ITERATIONS"); do
   echo ""
   echo "═══════════════════════════════════════════════════════"
@@ -916,6 +930,9 @@ HBEOF
   fi
   ITER_END=$(date +%s)
   ITER_END_FMT=$(date '+%Y-%m-%d %H:%M:%S')
+
+  # Per-iteration cleanup: kill headless chrome orphans from dev-browser verification
+  pkill -f 'chrome-headless-shell' 2>/dev/null || true
   ITER_DURATION=$((ITER_END - ITER_START))
   HEAD_AFTER="$(git_head)"
   log_activity "ITERATION $i end (duration=${ITER_DURATION}s)"

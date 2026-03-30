@@ -46,3 +46,5 @@ Fix: Folders use border-l-2 accent bar style, leaves keep card style.
 - Retry page.fill() or page.type() on React inputs more than twice -- switch to page.evaluate() with native event dispatching
 - Retry the same failing browser verification more than 3 times -- report what is broken and let the next iteration handle it
 - Read entire large files (500+ lines) into context -- use head/tail/grep to find relevant sections
+- Use `browser.newPage()` in verify scripts -- always use `browser.getPage("named-context")` to reuse the daemon's browser instead of spawning new headless instances that leak memory
+- Leave dev-browser pages open after verification -- always call `await page.close()` at the end of every verify script (before the final results log)
