@@ -574,5 +574,47 @@ Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-175644-1999-iter-1.md
 - **Learnings for future iterations:**
   - Patterns discovered: the Notes textarea can be clobbered by same-context runtime-state refreshes, so sync logic should not blindly overwrite non-empty local state with empty server state.
   - Gotchas encountered: isolated `dev-browser` typing produced native DOM input events but still did not persist into the controlled React textarea, so browser verification remains unresolved.
-  - Useful context: clearing `dashboard_rebuild/node_modules/.vite` was necessary after temporary instrumentation because the served tutor bundle stayed stale across rebuilds.
+- Useful context: clearing `dashboard_rebuild/node_modules/.vite` was necessary after temporary instrumentation because the served tutor bundle stayed stale across rebuilds.
+---
+## [2026-03-29 21:13:49 -05:00] - REMAIN-005: End session flow saves to vault and cleans up
+Thread:
+Run: 20260329-204647-1528 (iteration 2)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260329-204647-1528-iter-2.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-204647-1528-iter-2.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: 0639af55 REMAIN-005 save ended tutor sessions to vault
+- Post-commit status: `clean`
+- Verification:
+  - Command: `pytest brain/tests/test_tutor_artifact_certification.py -q` -> PASS
+  - Command: `cd dashboard_rebuild && npm run build` -> PASS
+  - Command: `dev-browser --timeout 120 run C:/pt-study-sop/scripts/verify-remaining.js` -> PASS
+  - Command: `cd dashboard_rebuild && npm run check` -> FAIL (pre-existing repo-wide TypeScript errors outside REMAIN-005)
+- Files changed:
+  - `.agents/tasks/prd.json`
+  - `.ralph/runs/run-20260329-204647-1528-iter-1.md`
+  - `brain/dashboard/api_tutor_sessions.py`
+  - `brain/tests/test_tutor_artifact_certification.py`
+  - `dashboard_rebuild/client/src/api.types.ts`
+  - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+  - `dashboard_rebuild/client/src/components/tutor-shell/TutorArtifactsDrawer.tsx`
+  - `dashboard_rebuild/client/src/components/tutor-shell/TutorEndSessionDialog.tsx`
+  - `dashboard_rebuild/client/src/hooks/useTutorSession.ts`
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+  - `dashboard_rebuild/client/src/pages/tutor.tsx`
+  - `scripts/verify-remaining.js`
+  - `conductor/tracks/GENERAL/log.md`
+  - `.ralph/progress.md`
+- What was implemented
+  - End-session completion on `/tutor` now writes a markdown session summary into the resolved course vault folder and returns structured `vault_save` metadata from the backend.
+  - The shared Tutor session-end path now invalidates vault/session caches, routes both hero `NEW SESSION` and direct end-session flows through the same cleanup callback, and returns the user to the entry card.
+  - The entry card now shows a stable confirmation banner summarizing what was saved, and the live `dev-browser` verifier proves the full flow from session start through end-session save confirmation and cleanup.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - A transient toast is not a strong enough acceptance surface for end-of-session confirmation; the returned entry card is a better stable place for save summaries and browser verification.
+  - Gotchas encountered
+    - `dev-browser --connect` was unavailable because Chrome remote debugging was not exposed on `9222`, so isolated `dev-browser` was required for the live proof.
+    - `npm run check` currently reports many unrelated repo-wide TypeScript failures; it is not a reliable story-scoped gate until that baseline is repaired.
+  - Useful context
+    - `scripts/verify-remaining.js` is now a REMAIN-005-specific verifier that starts a real Tutor session, ends it through `NEW SESSION`, asserts the `vault_save` payload, checks the returned confirmation banner, and stores the screenshot/result bundle under `C:\Users\treyt\.dev-browser\tmp\`.
 ---
