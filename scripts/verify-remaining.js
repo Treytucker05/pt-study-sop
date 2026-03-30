@@ -1,4 +1,4 @@
-const page = await browser.getPage("verify-remaining");
+const page = await browser.newPage();
 const consoleErrors = [];
 
 page.on("console", (msg) => {
@@ -92,7 +92,7 @@ async function chooseCourseWithMaterials() {
 }
 
 await page.goto("http://127.0.0.1:5000/tutor?board_scope=project", {
-  waitUntil: "networkidle",
+  waitUntil: "domcontentloaded",
 });
 await page.waitForTimeout(2500);
 
@@ -103,7 +103,7 @@ const courseChoice = await chooseCourseWithMaterials();
 check("A course with enabled materials is available", Boolean(courseChoice?.courseId));
 
 if (!courseChoice?.courseId) {
-  throw new Error("No course with materials available for REMAIN-005 verification");
+  throw new Error("No course with materials available for REMAIN-006 verification");
 }
 
 await page
@@ -111,10 +111,18 @@ await page
   .selectOption(courseChoice.courseId);
 await page.waitForTimeout(1500);
 
-const sessionNameInput = page.getByLabel("Session Name");
-if ((await sessionNameInput.count()) > 0) {
-  await sessionNameInput.fill("REMAIN-005 End Session Verification");
-}
+const sessionName = "REMAIN-006 Obsidian Panel";
+await page.evaluate((value) => {
+  const input = document.querySelector('input[aria-label="Session Name"]');
+  if (!(input instanceof HTMLInputElement)) return;
+  const setter = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    "value",
+  )?.set;
+  setter?.call(input, value);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+}, sessionName);
 
 const createWorkflowResponse = page.waitForResponse((response) => {
   return (
@@ -123,78 +131,24 @@ const createWorkflowResponse = page.waitForResponse((response) => {
   );
 });
 await page.getByRole("button", { name: /start priming/i }).click();
-const workflowResponse = await createWorkflowResponse;
-const workflowPayload = await workflowResponse.json();
-const workflowId =
-  typeof workflowPayload?.workflow?.workflow_id === "string"
-    ? workflowPayload.workflow.workflow_id
-    : "";
-check("Start Priming creates a workflow", Boolean(workflowId));
-
+await createWorkflowResponse;
 await page.waitForSelector('[data-testid="studio-priming-panel"]', { timeout: 20000 });
+
+await page
+  .getByTestId("studio-toolbar")
+  .getByRole("button", { name: /open obsidian panel/i })
+  .click();
+await page.waitForSelector('[data-testid="studio-obsidian-browser"]', { timeout: 15000 });
 check(
-  "Priming panel opens after workflow creation",
-  (await page.locator('[data-testid="studio-priming-panel"]').count()) > 0,
+  "Obsidian panel opens from the Studio toolbar",
+  (await page.locator('[data-testid="studio-obsidian-browser"]').count()) > 0,
 );
 
-await page.getByRole("button", { name: /open tutor panel/i }).click();
-await page.waitForSelector('[data-testid="studio-tutor-panel"]', { timeout: 15000 });
+const rootNode = page.locator('[data-testid="studio-obsidian-root-node"]');
+await page.waitForTimeout(1000);
 check(
-  "Tutor panel opens from the workflow shell",
-  (await page.locator('[data-testid="studio-tutor-panel"]').count()) > 0,
-);
-
-const createSessionResponse = page.waitForResponse((response) => {
-  return (
-    response.request().method() === "POST" &&
-    /\/api\/tutor\/session$/.test(response.url())
-  );
-});
-await page.getByRole("button", { name: /^start session$/i }).click();
-const sessionResponse = await createSessionResponse;
-const sessionPayload = await sessionResponse.json();
-const liveSessionId =
-  typeof sessionPayload?.session_id === "string" ? sessionPayload.session_id : "";
-check("Tutor session starts from the Tutor panel", Boolean(liveSessionId));
-await page.waitForTimeout(1500);
-check(
-  "Live session is active before ending",
-  Boolean(liveSessionId),
-);
-
-const endSessionResponse = page.waitForResponse((response) => {
-  return (
-    response.request().method() === "POST" &&
-    response.url().includes(`/api/tutor/session/${liveSessionId}/end`)
-  );
-});
-await page.getByRole("button", { name: /^new session$/i }).click();
-const endPayload = await (await endSessionResponse).json();
-
-check(
-  "NEW SESSION triggers the end-session flow",
-  endPayload?.session_id === liveSessionId && endPayload?.status === "completed",
-);
-check(
-  "End-session flow writes a markdown summary to the vault",
-  Boolean(endPayload?.vault_save?.success && endPayload?.vault_save?.path),
-);
-
-await page.waitForSelector('[data-testid="studio-entry-status-message"]', {
-  timeout: 15000,
-});
-const confirmationText =
-  (await page.locator('[data-testid="studio-entry-status-message"]').innerText()).trim();
-
-check(
-  "User sees a save confirmation summary",
-  /session saved to vault:/i.test(confirmationText),
-);
-
-await page.waitForSelector('[data-testid="studio-entry-state"]', { timeout: 15000 });
-check(
-  "State is cleaned up and the entry card returns",
-  (await page.locator('[data-testid="studio-entry-state"]').count()) > 0,
+  "Obsidian folder tree renders for the current course",
+  Boolean((await rootNode.innerText()).trim()),
 );
 
 if (consoleErrors.length > 0) {
@@ -204,7 +158,7 @@ check("No console errors", consoleErrors.length === 0);
 
 const screenshotPath = await saveScreenshot(
   await page.screenshot(),
-  "verify-remaining-005-end-session.png",
+  "verify-remaining-006-obsidian-panel.png",
 );
 const resultFilePath = await writeFile(
   "verify-remaining-results.json",
@@ -215,8 +169,7 @@ const resultFilePath = await writeFile(
       results,
       consoleErrors,
       screenshotPath,
-      endPayload,
-      confirmationText,
+      courseChoice,
     },
     null,
     2,

@@ -542,6 +542,7 @@ export interface StudioShellProps {
   primePacket?: ReactNode;
   polishPacket?: ReactNode;
   notesPanel?: ReactNode;
+  obsidianPanel?: ReactNode;
   panelLayout: StudioPanelLayoutItem[];
   setPanelLayout: (
     next:
@@ -568,6 +569,7 @@ export function StudioShell({
   primePacket,
   polishPacket,
   notesPanel,
+  obsidianPanel,
   panelLayout,
   setPanelLayout,
   onClearCanvas,
@@ -801,10 +803,12 @@ export function StudioShell({
         defaultSize: { width: 420, height: 420 },
         minWidth: 320,
         minHeight: 260,
-        content: makePlaceholder(
-          "Obsidian",
-          "Open note read/write flows here without leaving the Studio canvas.",
-        ),
+        content:
+          obsidianPanel ??
+          makePlaceholder(
+            "Obsidian",
+            "Open note read/write flows here without leaving the Studio canvas.",
+          ),
       },
       {
         panel: "anki",
@@ -825,6 +829,7 @@ export function StudioShell({
       documentDock,
       memory,
       notesPanel,
+      obsidianPanel,
       polishPacket,
       polishPanel,
       primePacket,

@@ -2241,3 +2241,13 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `dev-browser --timeout 120 run C:\\pt-study-sop\\scripts\\verify-remaining.js`
 - Validation note:
   - `cd dashboard_rebuild && npm run check` still fails on existing repo-wide TypeScript issues outside REMAIN-005; no new build-blocking type regression from this story was introduced.
+
+## 2026-03-29 - REMAIN-006 Obsidian panel vault browser
+
+- Wired `dashboard_rebuild/client/src/components/studio/StudioObsidianPanel.tsx` into the Studio shell so the Obsidian toolbar panel now scopes itself to the active course vault folder, renders the folder tree, previews selected notes, creates markdown notes, and saves current notes into a `Session Notes` folder.
+- Updated `dashboard_rebuild/client/src/components/TutorShell.tsx` and `dashboard_rebuild/client/src/components/studio/StudioShell.tsx` so the panel receives the live course/vault context and opens from the Studio toolbar instead of the old placeholder.
+- Added focused regressions in `dashboard_rebuild/client/src/components/studio/__tests__/StudioObsidianPanel.test.tsx`, `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`, and `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`, and refreshed `scripts/verify-remaining.js` into a REMAIN-006 browser verifier for the Obsidian panel shell flow.
+- Validation passed:
+  - `cd dashboard_rebuild && npm run test -- src/components/studio/__tests__/StudioObsidianPanel.test.tsx src/components/studio/__tests__/StudioShell.test.tsx src/components/__tests__/TutorShell.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - `dev-browser --timeout 90 run C:\\pt-study-sop\\scripts\\verify-remaining.js`

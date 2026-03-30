@@ -28,6 +28,24 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 - Ops note (2026-03-25): `dev-browser` is now a shared agent skill projected into every supported agent root; this does not change Tutor sprint priority.
 
+- [ ] REMAIN-006. Obsidian panel shows vault browser with note read and write.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+    - `dashboard_rebuild/client/src/components/studio/StudioObsidianPanel.tsx`
+    - `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`
+    - `dashboard_rebuild/client/src/components/studio/__tests__/StudioObsidianPanel.test.tsx`
+    - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+    - `scripts/verify-remaining.js`
+  - Done when:
+    - the Obsidian Studio panel opens a course-scoped vault browser rooted to the current course folder
+    - clicking a markdown note loads its contents into a preview pane
+    - `Create Note` creates a new markdown file in the current course vault folder
+    - `Save to Vault` writes the current session scratch notes into the course vault
+    - focused frontend tests, the production frontend build, and live `dev-browser` verification pass
+  - Assignee: @codex-cli
+
 - [x] OVERLAY-001. Entry card gets dark backdrop and blocks canvas interaction.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

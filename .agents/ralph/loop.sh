@@ -884,6 +884,22 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
   else
     log_activity "ITERATION $i start (mode=$MODE)"
   fi
+
+  # Write heartbeat for ralph-monitor.ps1
+  HEARTBEAT_FILE="$ROOT_DIR/.ralph/heartbeat.json"
+  cat > "$HEARTBEAT_FILE" <<HBEOF
+{
+  "timestamp": "$(date -Iseconds)",
+  "story": "${STORY_ID:-unknown}",
+  "story_title": "${STORY_TITLE:-unknown}",
+  "iteration": $i,
+  "max_iterations": $MAX_ITERATIONS,
+  "run_id": "$RUN_TAG",
+  "mode": "$MODE",
+  "pid": $$
+}
+HBEOF
+
   set +e
   if [ "${RALPH_DRY_RUN:-}" = "1" ]; then
     echo "[RALPH_DRY_RUN] Skipping agent execution." | tee "$LOG_FILE"

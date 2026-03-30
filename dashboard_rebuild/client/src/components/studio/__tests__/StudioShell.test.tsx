@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import {
   StudioShell,
@@ -235,6 +235,27 @@ describe("StudioShell", () => {
     expect(
       screen.queryByRole("button", { name: /open vault graph panel/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("opens the wired Obsidian panel content from the toolbar", () => {
+    function Harness() {
+      const [panelLayout, setPanelLayout] = useState<ReturnType<typeof buildStudioShellPresetLayout>>([]);
+
+      return (
+        <StudioShell
+          panelLayout={panelLayout}
+          setPanelLayout={setPanelLayout}
+          tutorPanel={<div>Tutor</div>}
+          obsidianPanel={<div data-testid="obsidian-panel-content">obsidian browser</div>}
+        />
+      );
+    }
+
+    render(<Harness />);
+
+    fireEvent.click(screen.getByRole("button", { name: /open obsidian panel/i }));
+
+    expect(screen.getByTestId("obsidian-panel-content")).toBeInTheDocument();
   });
 
   it("pans only when dragging the empty canvas background", () => {

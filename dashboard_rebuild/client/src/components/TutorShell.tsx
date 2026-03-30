@@ -10,6 +10,7 @@ import {
   buildStudioShellPresetLayout,
 } from "@/components/studio/StudioShell";
 import { StudioDocumentDock } from "@/components/studio/StudioDocumentDock";
+import { StudioObsidianPanel } from "@/components/studio/StudioObsidianPanel";
 import { StudioWorkspaceUnified } from "@/components/studio/StudioWorkspaceUnified";
 import { PrimePacketPanel } from "@/components/studio/PrimePacketPanel";
 import { PolishPacketPanel } from "@/components/studio/PolishPacketPanel";
@@ -765,6 +766,13 @@ export function TutorShell({
     setNotesScratchpad((current) =>
       (() => {
         if (resolvedNotesDraft.sessionKey !== notesSessionKey) {
+          if (
+            current.trim().length > 0 &&
+            resolvedNotesDraft.sessionKey === null &&
+            resolvedNotesDraft.content.trim().length === 0
+          ) {
+            return current;
+          }
           return "";
         }
         if (current === resolvedNotesDraft.content) {
@@ -1439,6 +1447,17 @@ export function TutorShell({
       />
     </div>
   );
+  const obsidianPanel = (
+    <StudioObsidianPanel
+      courseName={sourceShelfCourseName}
+      vaultFolder={sourceShelfVaultFolder}
+      studyUnit={sourceShelfStudyUnit}
+      sessionName={entrySessionName}
+      sessionNotes={notesScratchpad}
+      activeSessionId={liveTutorSessionId}
+      workflowId={workflow.activeWorkflowId}
+    />
+  );
   const runConfigContent = (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-1">
       <RunConfigPanel
@@ -1731,6 +1750,7 @@ export function TutorShell({
           primePacket={<PrimePacketPanel sections={primePacketSections} />}
           polishPacket={<PolishPacketPanel sections={polishPacketSections} />}
           notesPanel={notesPanel}
+          obsidianPanel={obsidianPanel}
           panelLayout={panelLayout}
           setPanelLayout={setPanelLayout}
           onClearCanvas={handleClearCanvas}

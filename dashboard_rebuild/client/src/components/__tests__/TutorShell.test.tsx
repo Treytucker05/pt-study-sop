@@ -233,6 +233,9 @@ const getTemplateChainsMock = vi.fn().mockResolvedValue([]);
 const getMethodBlocksMock = vi.fn().mockResolvedValue([]);
 const getMaterialContentMock = vi.fn().mockResolvedValue({ content: "" });
 const getObsidianFilesMock = vi.fn().mockResolvedValue({ success: true, files: [] });
+const getObsidianFileMock = vi.fn().mockResolvedValue({ success: true, content: "" });
+const saveObsidianFileMock = vi.fn().mockResolvedValue({ success: true });
+const createObsidianFolderMock = vi.fn().mockResolvedValue({ success: true, created: true });
 const uploadMaterialMock = vi.fn();
 
 beforeEach(() => {
@@ -241,6 +244,9 @@ beforeEach(() => {
   mockTldrawEditor.deleteShapes.mockReset().mockReturnThis();
   getMaterialContentMock.mockReset().mockResolvedValue({ content: "" });
   getObsidianFilesMock.mockReset().mockResolvedValue({ success: true, files: [] });
+  getObsidianFileMock.mockReset().mockResolvedValue({ success: true, content: "" });
+  saveObsidianFileMock.mockReset().mockResolvedValue({ success: true });
+  createObsidianFolderMock.mockReset().mockResolvedValue({ success: true, created: true });
   uploadMaterialMock.mockReset();
   Object.defineProperty(navigator, "clipboard", {
     configurable: true,
@@ -266,6 +272,9 @@ vi.mock("@/lib/api", () => ({
     },
     obsidian: {
       getFiles: (...args: unknown[]) => getObsidianFilesMock(...args),
+      getFile: (...args: unknown[]) => getObsidianFileMock(...args),
+      saveFile: (...args: unknown[]) => saveObsidianFileMock(...args),
+      createFolder: (...args: unknown[]) => createObsidianFolderMock(...args),
     },
   },
 }));
@@ -3039,6 +3048,80 @@ describe("TutorShell studio routing", () => {
         content: "",
       });
     });
+  });
+
+  it("opens the Obsidian panel with a course-scoped vault browser and note preview", async () => {
+    const user = userEvent.setup();
+    getObsidianFilesMock.mockImplementation(async (folder?: string) => {
+      if (folder === "Exercise Physiology/Week 7 - Cardio") {
+        return {
+          success: true,
+          files: ["Overview.md", "Lecture Notes/"],
+        };
+      }
+      if (folder === "Exercise Physiology/Week 7 - Cardio/Lecture Notes") {
+        return {
+          success: true,
+          files: ["Perfusion.md"],
+        };
+      }
+      return { success: true, files: [] };
+    });
+    getObsidianFileMock.mockResolvedValue({
+      success: true,
+      content: "# Overview\n\nCurrent course vault note",
+    });
+
+    renderTutorShell("workspace", {
+      hubOverrides: {
+        courseId: 77,
+        courseLabel: "Exercise Physiology",
+        effectiveStudyUnit: "Week 7 - Cardio",
+        selectedMaterials: [101],
+        chatMaterials: [
+          {
+            id: 101,
+            course_id: 77,
+            title: "Cardiac Output Lecture",
+            file_type: "pdf",
+            source_path: "uploads/cardio-output.pdf",
+          },
+        ],
+      },
+      shellOverrides: {
+        panelLayout: [],
+        runtimeState: {
+          activeMemoryCapsuleId: null,
+          compactionTelemetry: null,
+          directNoteSaveStatus: null,
+          notesDraft: {
+            sessionKey: "workflow:wf-test",
+            content: "Session scratch notes",
+          },
+          primingMethodIds: [],
+          primingChainId: null,
+          primingCustomBlockIds: [],
+        },
+      },
+      workflowOverrides: {
+        activeWorkflowId: "wf-test",
+      },
+    });
+
+    await user.click(screen.getByRole("button", { name: /open obsidian panel/i }));
+
+    expect(await screen.findByTestId("studio-obsidian-browser")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-obsidian-root-node")).toHaveTextContent("Week 7 - Cardio");
+    expect(await screen.findByRole("button", { name: /overview\.md/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /overview\.md/i }));
+
+    await waitFor(() => {
+      expect(getObsidianFileMock).toHaveBeenCalledWith(
+        "Exercise Physiology/Week 7 - Cardio/Overview.md",
+      );
+    });
+    expect(await screen.findByText(/current course vault note/i)).toBeInTheDocument();
   });
 
   it("starts a Tutor session from the Tutor panel using Prime Packet context", async () => {
