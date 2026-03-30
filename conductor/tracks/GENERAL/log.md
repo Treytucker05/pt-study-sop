@@ -2229,3 +2229,15 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/components/__tests__/TutorWorkflowPolishStudio.test.tsx client/src/pages/__tests__/tutor.test.tsx`
   - `cd dashboard_rebuild && npm run build`
   - `dev-browser --timeout 90 run C:\\pt-study-sop\\scripts\\verify-remaining.js`
+
+## 2026-03-29 - REMAIN-005 end-session vault save and cleanup
+
+- Extended `brain/dashboard/api_tutor_sessions.py` so ending a Tutor session now renders and writes a markdown session-end summary into the course vault folder, returns structured `vault_save` metadata, and preserves the existing completion summary payload.
+- Updated `dashboard_rebuild/client/src/pages/tutor.tsx`, `dashboard_rebuild/client/src/hooks/useTutorSession.ts`, and `dashboard_rebuild/client/src/components/TutorShell.tsx` so both the hero `NEW SESSION` end flow and direct shared session-end paths reuse the same cleanup callback, show a stable save confirmation, and return the user to the entry card with the saved summary message visible.
+- Replaced `scripts/verify-remaining.js` with a REMAIN-005-specific live verifier that starts a real Tutor session on `/tutor`, ends it through `NEW SESSION`, asserts the vault-save response, checks the returned entry-card confirmation banner, and fails on console errors.
+- Validation passed:
+  - `pytest brain/tests/test_tutor_artifact_certification.py -q`
+  - `cd dashboard_rebuild && npm run build`
+  - `dev-browser --timeout 120 run C:\\pt-study-sop\\scripts\\verify-remaining.js`
+- Validation note:
+  - `cd dashboard_rebuild && npm run check` still fails on existing repo-wide TypeScript issues outside REMAIN-005; no new build-blocking type regression from this story was introduced.

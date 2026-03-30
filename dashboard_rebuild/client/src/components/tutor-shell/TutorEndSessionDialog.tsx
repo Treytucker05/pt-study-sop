@@ -51,13 +51,13 @@ export function TutorEndSessionDialog({
           <Button
             variant="ghost"
             onClick={() => {
-              session.endSession();
+              void session.endSession();
               session.setShowEndConfirm(false);
             }}
             disabled={session.isShipping}
             className={BTN_TOOLBAR}
           >
-            END WITHOUT SAVING
+            END SESSION
           </Button>
           <Button
             variant="ghost"

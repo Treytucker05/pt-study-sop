@@ -52,7 +52,9 @@ export function TutorArtifactsDrawer({
             recentSessions={hub.recentSessions}
             onResumeSession={session.resumeSession}
             onDeleteArtifacts={session.handleDeleteArtifacts}
-            onEndSession={session.endSessionById}
+            onEndSession={(sessionId) => {
+              void session.endSessionById(sessionId);
+            }}
             onClearActiveSession={session.clearActiveSessionState}
           />
         </div>

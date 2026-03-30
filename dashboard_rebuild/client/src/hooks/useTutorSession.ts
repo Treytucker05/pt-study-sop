@@ -8,6 +8,7 @@ import type {
   TutorObjectiveScope,
   TutorProjectShellResponse,
   TutorScholarStrategy,
+  TutorSessionEndResult,
   TutorSessionPreflightResponse,
   TutorSessionWithTurns,
   TutorStrategyFeedback,
@@ -43,6 +44,7 @@ export interface UseTutorSessionParams {
   hasRestored: boolean;
   activeWorkflowId: string | null;
   activeWorkflowDetail: TutorWorkflowDetailResponse | null;
+  onSessionEnded?: (result: TutorSessionEndResult) => void | Promise<void>;
 }
 
 function getCommittedAssistantMessageKey(message: ChatMessage): string {
@@ -111,6 +113,7 @@ export function useTutorSession({
   hasRestored,
   activeWorkflowId,
   activeWorkflowDetail,
+  onSessionEnded,
 }: UseTutorSessionParams) {
   const queryClient = useQueryClient();
 
@@ -463,15 +466,21 @@ export function useTutorSession({
         toast.error("Failed to persist final tutor study-time slice");
       }
     }
-    await api.tutor.endSession(sessionId);
+    const result = await api.tutor.endSession(sessionId);
     if (sessionId === activeSessionId) {
       clearTutorActiveSessionId();
       clearActiveSessionState();
     }
-    queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
+    await queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
+    await queryClient.invalidateQueries({ queryKey: ["obsidian"] });
+    if (onSessionEnded) {
+      await onSessionEnded(result);
+    }
+    return result;
   }, [
     activeSessionId,
     clearActiveSessionState,
+    onSessionEnded,
     currentBlockIndex,
     persistStageTimeSlice,
     queryClient,
@@ -482,10 +491,10 @@ export function useTutorSession({
   const endSession = useCallback(async () => {
     if (!activeSessionId) return;
     try {
-      await endSessionById(activeSessionId);
-      toast.success("Session ended");
+      return await endSessionById(activeSessionId);
     } catch (err) {
       toast.error(`Failed to end session: ${err instanceof Error ? err.message : "Unknown"}`);
+      return null;
     }
   }, [activeSessionId, endSessionById]);
 

@@ -656,7 +656,27 @@ describe("Tutor page restore", () => {
       workflow: makeWorkflowDetail().workflow,
     });
     getWorkflowMock.mockResolvedValue(makeWorkflowDetail());
-    endSessionMock.mockResolvedValue({ ok: true });
+    endSessionMock.mockResolvedValue({
+      session_id: "sess-ended",
+      status: "completed",
+      brain_session_id: 11,
+      ended_at: new Date("2026-03-29T20:00:00Z").toISOString(),
+      summary: {
+        turn_count: 0,
+        duration_minutes: 0,
+        artifacts: {},
+        objective_ids: [],
+        chain_name: null,
+        ratings_captured: 0,
+      },
+      vault_save: {
+        success: true,
+        path: "Courses/Neuro/Week 1/Sessions/2026-03-29_200000_Tutor_Session_Test.md",
+        folder: "Courses/Neuro/Week 1",
+        note_sections: 0,
+        artifact_count: 0,
+      },
+    });
     uploadMaterialMock.mockReset().mockResolvedValue({ id: 999 });
     preflightSessionMock.mockResolvedValue({
       ok: true,
@@ -879,6 +899,11 @@ describe("Tutor page restore", () => {
 
     await waitFor(() => {
       expect(endSessionMock).toHaveBeenCalledWith("sess-cardio");
+    });
+    await waitFor(() => {
+      expect(toastSuccessMock).toHaveBeenCalledWith(
+        "Session saved to vault: 0 note sections, 0 artifacts",
+      );
     });
     expect(await screen.findByTestId("studio-entry-state")).toBeInTheDocument();
 

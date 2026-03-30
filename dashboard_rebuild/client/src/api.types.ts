@@ -1308,6 +1308,24 @@ export interface TutorSessionEndResult {
   status: "completed";
   brain_session_id: number | null;
   ended_at: string;
+  summary?: {
+    turn_count: number;
+    duration_minutes: number;
+    artifacts: Record<string, number>;
+    objective_ids: string[];
+    chain_name: string | null;
+    ratings_captured: number;
+  };
+  vault_save?: {
+    success: boolean;
+    path?: string | null;
+    folder?: string | null;
+    error?: string | null;
+    turn_count?: number;
+    artifact_count?: number;
+    note_sections?: number;
+    artifact_sections?: number;
+  } | null;
 }
 
 export type TutorShellMode = "studio" | "tutor";

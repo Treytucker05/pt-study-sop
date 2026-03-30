@@ -21,6 +21,7 @@ import type {
   TutorHubResumeCandidate,
   TutorProjectShellResponse,
   TutorProjectShellStateRequest,
+  TutorSessionEndResult,
 } from "@/lib/api";
 import {
   writeTutorAccuracyProfile,
@@ -64,6 +65,9 @@ function useTutorPageController() {
   const entryCardFlashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const onSessionEndedRef = useRef<((result: TutorSessionEndResult) => void | Promise<void>) | null>(
+    null,
+  );
   const [workspaceResetVersion, setWorkspaceResetVersion] = useState(0);
   const [sessionActionPending, setSessionActionPending] = useState(false);
   const [startPrimingPending, setStartPrimingPending] = useState(false);
@@ -73,6 +77,7 @@ function useTutorPageController() {
   const [entryMaterialSelectionTouched, setEntryMaterialSelectionTouched] =
     useState(false);
   const [entryCardFlashActive, setEntryCardFlashActive] = useState(false);
+  const [entryCardStatusMessage, setEntryCardStatusMessage] = useState<string | null>(null);
 
   // ─── Shell state ───
   const pendingLaunchHandoff = useMemo(() => peekTutorLaunchHandoff(), []);
@@ -186,8 +191,8 @@ function useTutorPageController() {
   ]);
 
   const sessionBridgeRef = useRef<TutorWorkflowSessionBridge>({
-    startSession: async () => null,
-    resumeSession: async () => null,
+    startSession: async () => undefined,
+    resumeSession: async () => undefined,
     clearActiveSessionState: () => undefined,
     checkpointWorkflowStudyTimer: async () => 0,
     latestCommittedAssistantMessage: null,
@@ -215,6 +220,9 @@ function useTutorPageController() {
     hasRestored,
     activeWorkflowId: workflow.activeWorkflowId,
     activeWorkflowDetail: workflow.activeWorkflowDetail ?? null,
+    onSessionEnded: async (result) => {
+      await onSessionEndedRef.current?.(result);
+    },
   });
 
   useEffect(() => {
@@ -478,6 +486,43 @@ function useTutorPageController() {
     ],
   );
 
+  const summarizeVaultSave = useCallback((result: TutorSessionEndResult) => {
+    const vaultSave = result.vault_save;
+    if (!vaultSave) {
+      return "Session ended";
+    }
+    if (!vaultSave.success) {
+      return `Session ended, but vault save failed: ${vaultSave.error || "Unknown error"}`;
+    }
+    const noteSections = vaultSave.note_sections ?? 0;
+    const artifactCount = vaultSave.artifact_count ?? 0;
+    const sectionsLabel =
+      noteSections === 1 ? "1 note section" : `${noteSections} note sections`;
+    const artifactLabel =
+      artifactCount === 1 ? "1 artifact" : `${artifactCount} artifacts`;
+    return `Session saved to vault: ${sectionsLabel}, ${artifactLabel}`;
+  }, []);
+
+  useEffect(() => {
+    onSessionEndedRef.current = (result) => {
+      const statusMessage = summarizeVaultSave(result);
+      if (result.vault_save?.success) {
+        toast.success(statusMessage);
+        setEntryCardStatusMessage(statusMessage);
+      } else if (result.vault_save?.error) {
+        toast.error(statusMessage);
+        setEntryCardStatusMessage(statusMessage);
+      } else {
+        toast.success("Session ended");
+        setEntryCardStatusMessage("Session ended");
+      }
+      resetTutorWorkspaceHome();
+    };
+    return () => {
+      onSessionEndedRef.current = null;
+    };
+  }, [resetTutorWorkspaceHome, summarizeVaultSave]);
+
   useEffect(
     () => () => {
       if (entryCardFlashTimeoutRef.current) {
@@ -549,9 +594,9 @@ function useTutorPageController() {
     try {
       if (liveTutorSessionId) {
         await session.endSessionById(liveTutorSessionId);
-        toast.success("Session ended");
+      } else {
+        resetTutorWorkspaceHome();
       }
-      resetTutorWorkspaceHome();
     } catch (error) {
       toast.error(
         `Failed to end session: ${
@@ -580,6 +625,7 @@ function useTutorPageController() {
     const nextCourseId = hub.courseId;
     const sessionTopic = entrySessionName.trim();
     setStartPrimingPending(true);
+    setEntryCardStatusMessage(null);
     suppressProjectShellRestoreRef.current = true;
     resumedFromProjectShellRef.current = true;
     try {
@@ -1137,6 +1183,7 @@ function useTutorPageController() {
             setEntryMaterialSelectionTouched
           }
           entryCardFlashActive={entryCardFlashActive}
+          entryCardStatusMessage={entryCardStatusMessage}
           onStartPriming={handleStartPrimingFromEntry}
           isStartingPriming={startPrimingPending}
           startPrimingViewportFocusRequestKey={

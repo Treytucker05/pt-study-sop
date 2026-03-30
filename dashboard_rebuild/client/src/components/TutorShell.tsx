@@ -204,6 +204,7 @@ export interface TutorShellProps {
   entryMaterialSelectionTouched?: boolean;
   onEntryMaterialSelectionTouchedChange?: (touched: boolean) => void;
   entryCardFlashActive?: boolean;
+  entryCardStatusMessage?: string | null;
   onStartPriming?: () => void | Promise<void>;
   isStartingPriming?: boolean;
   startPrimingViewportFocusRequestKey?: number | null;
@@ -257,6 +258,7 @@ export function TutorShell({
   onEntrySessionNameChange,
   onEntryMaterialSelectionTouchedChange,
   entryCardFlashActive = false,
+  entryCardStatusMessage = null,
   onStartPriming,
   isStartingPriming = false,
   startPrimingViewportFocusRequestKey = null,
@@ -1490,6 +1492,14 @@ export function TutorShell({
         <p className="font-mono text-sm leading-6 text-[#ffc8d3]/72">
           Choose a course, then launch a clean Priming workspace. Start Priming opens a new workflow and loads that course&apos;s source materials into Source Shelf.
         </p>
+        {entryCardStatusMessage ? (
+          <div
+            data-testid="studio-entry-status-message"
+            className="rounded-[0.9rem] border border-[rgba(255,118,144,0.22)] bg-[rgba(255,68,104,0.12)] px-4 py-3 font-mono text-xs leading-6 text-[#ffe3e9]"
+          >
+            {entryCardStatusMessage}
+          </div>
+        ) : null}
       </div>
       <label className="flex max-w-md flex-col gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
         Session Name

@@ -32,10 +32,10 @@
         "dashboard_rebuild/client/src/components/studio/StudioDocumentDock.tsx"
       ],
       "verification": "dev-browser --timeout 90 run scripts/verify-remaining.js",
-      "status": "in_progress",
-      "startedAt": "2026-03-30T00:16:39.589333+00:00",
-      "completedAt": null,
-      "updatedAt": "2026-03-30T00:16:39.589340+00:00"
+      "status": "done",
+      "startedAt": "2026-03-30T01:46:48.112430+00:00",
+      "completedAt": "2026-03-30T01:47:12.022849+00:00",
+      "updatedAt": "2026-03-30T01:47:12.022836+00:00"
     },
     {
       "id": "REMAIN-005",
@@ -53,7 +53,10 @@
         "dashboard_rebuild/client/src/components/TutorShell.tsx"
       ],
       "verification": "dev-browser --timeout 90 run scripts/verify-remaining.js",
-      "status": "open"
+      "status": "in_progress",
+      "startedAt": "2026-03-30T01:47:14.456702+00:00",
+      "completedAt": null,
+      "updatedAt": "2026-03-30T01:47:14.456710+00:00"
     },
     {
       "id": "REMAIN-006",

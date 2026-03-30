@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import sqlite3
 import sys
 import uuid
@@ -72,6 +73,176 @@ from dashboard.api_tutor_vault import (
 )
 
 _LOG = logging.getLogger(__name__)
+
+_END_SESSION_FILENAME_RE = re.compile(r'[\\/:*?"<>|]+')
+
+
+def _sanitize_end_session_segment(value: Any, *, fallback: str) -> str:
+    text = str(value or "").strip()
+    text = _END_SESSION_FILENAME_RE.sub(" ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text or fallback
+
+
+def _resolve_end_session_vault_folder(
+    conn: sqlite3.Connection,
+    session: sqlite3.Row | dict[str, Any],
+    content_filter: dict[str, Any],
+) -> str | None:
+    explicit_folder = str(content_filter.get("vault_folder") or "").strip().replace("\\", "/")
+    if explicit_folder:
+        return explicit_folder.lstrip("/")
+
+    module_name = _sanitize_end_session_segment(
+        content_filter.get("module_name")
+        or (content_filter.get("map_of_contents") or {}).get("module_name")
+        or "",
+        fallback="",
+    )
+    course_name = str((content_filter.get("map_of_contents") or {}).get("course_name") or "").strip()
+    if not course_name:
+        course_id = session.get("course_id")
+        if course_id is not None:
+            try:
+                row = conn.execute(
+                    "SELECT name FROM courses WHERE id = ?",
+                    (int(course_id),),
+                ).fetchone()
+            except Exception:
+                row = None
+            if row:
+                course_name = str(row["name"] or "").strip()
+
+    if not course_name:
+        return None
+
+    try:
+        from dashboard.api_adapter import get_course_obsidian_folder
+
+        course_folder = get_course_obsidian_folder(course_name)
+    except Exception:
+        course_folder = None
+
+    if not course_folder:
+        course_folder = f"Courses/{_sanitize_end_session_segment(course_name, fallback='General')}"
+
+    normalized_course_folder = str(course_folder).strip().replace("\\", "/").lstrip("/")
+    if module_name:
+        normalized_suffix = normalized_course_folder.rstrip("/").split("/")[-1].strip().lower()
+        if normalized_suffix != module_name.lower():
+            return f"{normalized_course_folder}/{module_name}"
+    return normalized_course_folder
+
+
+def _build_end_session_vault_path(
+    vault_folder: str,
+    *,
+    topic: str,
+    ended_at: datetime,
+) -> str:
+    timestamp = ended_at.strftime("%Y-%m-%d_%H%M%S")
+    topic_fragment = _sanitize_end_session_segment(topic, fallback="Tutor Session").replace(" ", "_")
+    folder = str(vault_folder or "Study Sessions").strip().replace("\\", "/").rstrip("/")
+    return f"{folder}/Sessions/{timestamp}_Tutor_Session_{topic_fragment}.md"
+
+
+def _render_end_session_summary_markdown(
+    *,
+    session_id: str,
+    topic: str,
+    ended_at: datetime,
+    duration_minutes: float,
+    turn_rows: list[sqlite3.Row],
+    objective_ids: list[str],
+    chain_name: str | None,
+    artifact_summary: dict[str, int],
+    artifacts_list: list[dict[str, Any]],
+    vault_path: str,
+) -> tuple[str, dict[str, int]]:
+    note_sections = 0
+    artifact_sections = 0
+    lines: list[str] = [
+        "---",
+        "note_type: tutor_session_end_summary",
+        f"session_id: {session_id}",
+        f"topic: {_sanitize_end_session_segment(topic, fallback='Tutor Session')}",
+        f"ended_at: {ended_at.isoformat()}",
+        f"vault_path: {vault_path}",
+        "---",
+        "",
+        f"# Session End Summary - {topic or 'Tutor Session'}",
+        "",
+        "## Overview",
+        f"- Session ID: `{session_id}`",
+        f"- Ended: {ended_at.strftime('%Y-%m-%d %H:%M')}",
+        f"- Duration: {duration_minutes} minutes",
+        f"- Turns: {len(turn_rows)}",
+        f"- Artifact count: {sum(artifact_summary.values())}",
+    ]
+    if chain_name:
+        lines.append(f"- Chain: {chain_name}")
+    if objective_ids:
+        lines.extend(["", "## Objectives", *[f"- {objective_id}" for objective_id in objective_ids]])
+    if artifact_summary:
+        lines.extend(
+            [
+                "",
+                "## Artifact Summary",
+                *[f"- {artifact_type}: {count}" for artifact_type, count in sorted(artifact_summary.items())],
+            ]
+        )
+
+    note_artifacts: list[dict[str, Any]] = []
+    for artifact in artifacts_list:
+        if not isinstance(artifact, dict):
+            continue
+        artifact_type = str(artifact.get("type") or artifact.get("artifact_type") or "unknown").strip()
+        title = str(artifact.get("title") or artifact.get("name") or artifact_type.title()).strip()
+        if artifact_type == "note":
+            note_artifacts.append(artifact)
+            note_sections += 1
+            lines.extend(
+                [
+                    "",
+                    f"## Note Artifact - {title or 'Untitled'}",
+                    "",
+                    str(artifact.get("content") or "").strip() or "_No note content captured._",
+                ]
+            )
+            continue
+        artifact_sections += 1
+        lines.extend(["", f"## Artifact - {title or artifact_type.title()}", f"- Type: {artifact_type}"])
+        for key in ("path", "session_path", "quick_note_id", "card_id"):
+            value = artifact.get(key)
+            if value not in (None, ""):
+                lines.append(f"- {key.replace('_', ' ').title()}: {value}")
+        if artifact_type == "card":
+            front = str(artifact.get("front") or "").strip()
+            back = str(artifact.get("back") or "").strip()
+            if front:
+                lines.extend(["", "**Front**", "", front])
+            if back:
+                lines.extend(["", "**Back**", "", back])
+        elif artifact_type == "structured_notes":
+            concept_paths = artifact.get("concept_paths")
+            if isinstance(concept_paths, list) and concept_paths:
+                lines.extend(["- Concept paths:"] + [f"  - {path}" for path in concept_paths if path])
+
+    if turn_rows:
+        lines.append("")
+        lines.append("## Conversation")
+        for turn in turn_rows:
+            turn_number = turn["turn_number"]
+            question = str(turn["question"] or "").strip()
+            answer = str(turn["answer"] or "").strip()
+            lines.extend(["", f"### Turn {turn_number}", "", "**Question**", "", question or "_No question captured._"])
+            lines.extend(["", "**Answer**", "", answer or "_No answer captured._"])
+
+    markdown = "\n".join(lines).rstrip() + "\n"
+    return markdown, {
+        "note_sections": note_sections,
+        "artifact_sections": artifact_sections,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -1018,6 +1189,14 @@ def end_session(session_id: str):
         (session_id,),
     )
     turn_count = cur2.fetchone()["cnt"]
+    cur2.execute(
+        """SELECT turn_number, question, answer
+           FROM tutor_turns
+           WHERE tutor_session_id = ?
+           ORDER BY turn_number ASC""",
+        (session_id,),
+    )
+    turn_rows = cur2.fetchall()
 
     # Duration in minutes (from created_at to now)
     created_at_str = session.get("created_at") or now.isoformat()
@@ -1059,6 +1238,7 @@ def end_session(session_id: str):
     objective_ids = map_of_contents.get("objective_ids") or []
     chain_name = content_filter.get("chain_name") or None
     vault_folder = content_filter.get("vault_folder") or None
+    resolved_vault_folder = _resolve_end_session_vault_folder(conn, session, content_filter)
 
     # --- Auto-sync vault graph ---
     graph_sync_result: Optional[dict[str, Any]] = None
@@ -1187,18 +1367,62 @@ def end_session(session_id: str):
 
     # --- Lightweight janitor pass on touched folder ---
     janitor_result: Optional[dict[str, Any]] = None
-    if vault_folder:
+    if resolved_vault_folder:
         try:
             from vault_janitor import scan_vault
 
-            scan = scan_vault(folder=vault_folder, checks=["missing_frontmatter"])
+            scan = scan_vault(folder=resolved_vault_folder, checks=["missing_frontmatter"])
             janitor_result = {
-                "folder": vault_folder,
+                "folder": resolved_vault_folder,
                 "issues_found": len(scan.issues),
                 "fixable": sum(1 for i in scan.issues if i.fixable),
             }
         except Exception as exc:
             _LOG.warning("end_session janitor pass failed: %s", exc)
+
+    vault_save_result: Optional[dict[str, Any]] = None
+    if resolved_vault_folder:
+        try:
+            vault_path = _build_end_session_vault_path(
+                resolved_vault_folder,
+                topic=str(session.get("topic") or content_filter.get("module_name") or "Tutor Session"),
+                ended_at=now,
+            )
+            markdown, save_counts = _render_end_session_summary_markdown(
+                session_id=session_id,
+                topic=str(session.get("topic") or content_filter.get("module_name") or "Tutor Session"),
+                ended_at=now,
+                duration_minutes=duration_minutes,
+                turn_rows=turn_rows,
+                objective_ids=objective_ids,
+                chain_name=chain_name,
+                artifact_summary=artifact_summary,
+                artifacts_list=artifacts_list,
+                vault_path=vault_path,
+            )
+            save_result = _mp("_vault_save_note")(vault_path, markdown)
+            vault_save_result = {
+                "success": bool(save_result.get("success")),
+                "path": save_result.get("path") or vault_path,
+                "folder": resolved_vault_folder,
+                "error": save_result.get("error"),
+                "turn_count": turn_count,
+                "artifact_count": sum(artifact_summary.values()),
+                "note_sections": save_counts["note_sections"],
+                "artifact_sections": save_counts["artifact_sections"],
+            }
+        except Exception as exc:
+            _LOG.warning("end_session vault summary save failed: %s", exc)
+            vault_save_result = {
+                "success": False,
+                "path": None,
+                "folder": resolved_vault_folder,
+                "error": str(exc),
+                "turn_count": turn_count,
+                "artifact_count": sum(artifact_summary.values()),
+                "note_sections": 0,
+                "artifact_sections": 0,
+            }
 
     conn.close()
 
@@ -1219,6 +1443,7 @@ def end_session(session_id: str):
             "graph_sync": graph_sync_result,
             "map_of_contents_refresh": map_of_contents_refresh,
             "janitor": janitor_result,
+            "vault_save": vault_save_result,
         }
     )
 

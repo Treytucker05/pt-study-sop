@@ -233,6 +233,100 @@ def test_note_card_and_structured_notes_persist_across_end_session(client, app, 
     assert finalize_data["concept_paths"][0] in store
 
 
+def test_end_session_writes_vault_summary_markdown_for_course_folder(client, app):
+    tutor_sid = _create_tutor_session(client, topic="Cardiac Output")
+
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute(
+        "INSERT OR REPLACE INTO courses (id, name, code, created_at) VALUES (?, ?, ?, ?)",
+        (
+            77,
+            "Exercise Physiology",
+            "EXPHYS-77",
+            "2026-03-29T18:00:00",
+        ),
+    )
+    conn.execute(
+        """UPDATE tutor_sessions
+           SET course_id = ?, content_filter_json = ?
+           WHERE session_id = ?""",
+        (
+            77,
+            json.dumps(
+                {
+                    "vault_folder": "Courses/Exercise Physiology/Cardiovascular",
+                    "module_name": "Cardiovascular",
+                    "chain_name": "Renal Recall",
+                    "map_of_contents": {
+                        "objective_ids": ["OBJ-101"],
+                        "module_name": "Cardiovascular",
+                    },
+                }
+            ),
+            tutor_sid,
+        ),
+    )
+    conn.execute(
+        """INSERT INTO tutor_turns
+           (session_id, tutor_session_id, course_id, turn_number, question, answer, phase, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+            tutor_sid,
+            tutor_sid,
+            77,
+            1,
+            "What drives cardiac output?",
+            "Heart rate and stroke volume drive cardiac output.",
+            "first_pass",
+            "2026-03-29T18:05:00",
+        ),
+    )
+    conn.execute(
+        """UPDATE tutor_sessions
+           SET turn_count = ?, artifacts_json = ?
+           WHERE session_id = ?""",
+        (
+            1,
+            json.dumps(
+                [
+                    {
+                        "type": "note",
+                        "title": "Key takeaway",
+                        "content": "Stroke volume changes with preload and contractility.",
+                    },
+                    {
+                        "type": "card",
+                        "title": "Cardiac Output",
+                        "front": "What is cardiac output?",
+                        "back": "Heart rate multiplied by stroke volume.",
+                    },
+                ]
+            ),
+            tutor_sid,
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+    end_resp = client.post(f"/api/tutor/session/{tutor_sid}/end")
+    assert end_resp.status_code == 200
+    body = end_resp.get_json()
+    assert body["vault_save"]["success"] is True
+    assert body["vault_save"]["folder"] == "Courses/Exercise Physiology/Cardiovascular"
+    assert body["vault_save"]["note_sections"] == 1
+    assert body["vault_save"]["artifact_count"] == 2
+
+    store = app.config["TEST_OBSIDIAN_STORE"]
+    saved_path = body["vault_save"]["path"]
+    assert saved_path in store
+    saved_markdown = store[saved_path]
+    assert "# Session End Summary - Cardiac Output" in saved_markdown
+    assert "## Note Artifact - Key takeaway" in saved_markdown
+    assert "## Artifact - Cardiac Output" in saved_markdown
+    assert "## Conversation" in saved_markdown
+
+
 def test_delete_artifacts_removes_session_owned_note_card_and_map_side_effects(client):
     tutor_sid = _create_tutor_session(client, topic="Artifact Cleanup")
 

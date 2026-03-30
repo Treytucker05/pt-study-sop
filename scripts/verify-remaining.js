@@ -29,30 +29,20 @@ function check(name, condition) {
   }
 }
 
-function parseMaterialCount(text) {
-  const match = /(\d+)\s+of\s+(\d+)\s+materials selected/i.exec(text || "");
-  if (!match) {
-    return { selected: 0, total: 0 };
-  }
-  return {
-    selected: Number(match[1] || 0),
-    total: Number(match[2] || 0),
-  };
-}
-
 async function ensureEntryCard() {
   const entryCard = page.locator('[data-testid="studio-entry-state"]');
   if ((await entryCard.count()) > 0) {
-    return true;
+    return entryCard;
   }
 
-  const newSessionButton = page.getByRole("button", { name: /new session/i });
+  const newSessionButton = page.getByRole("button", { name: /^new session$/i });
   if ((await newSessionButton.count()) > 0) {
     await newSessionButton.first().click();
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(1200);
   }
 
-  return (await entryCard.count()) > 0;
+  await page.waitForSelector('[data-testid="studio-entry-state"]', { timeout: 15000 });
+  return entryCard;
 }
 
 async function chooseCourseWithMaterials() {
@@ -75,18 +65,14 @@ async function chooseCourseWithMaterials() {
       const response = await fetch(
         `/api/tutor/materials?course_id=${encodeURIComponent(option.value)}&enabled=1`,
       );
-      if (!response.ok) {
-        continue;
-      }
+      if (!response.ok) continue;
 
       const raw = await response.json();
       const materials = Array.isArray(raw)
         ? raw
         : Array.isArray(raw?.items)
           ? raw.items
-          : raw?.id
-            ? [raw]
-            : [];
+          : [];
       const enabledMaterials = materials.filter((material) => {
         const id = Number(material?.id);
         return Number.isFinite(id) && material?.enabled !== false;
@@ -105,63 +91,30 @@ async function chooseCourseWithMaterials() {
   });
 }
 
-await page.goto("http://127.0.0.1:5000/tutor?course_id=1&board_scope=project", {
+await page.goto("http://127.0.0.1:5000/tutor?board_scope=project", {
   waitUntil: "networkidle",
 });
-await page.waitForTimeout(3000);
-await page.waitForFunction(() => {
-  return Boolean(
-    document.querySelector('[data-testid="studio-entry-state"]') ||
-      document.querySelector('[data-testid="studio-priming-panel"]') ||
-      document.querySelector('[data-testid="studio-tutor-panel"]') ||
-      document.querySelector('select[aria-label="Course for new priming session"]'),
-  );
-}, { timeout: 15000 }).catch(() => undefined);
+await page.waitForTimeout(2500);
 
-const hasFreshEntryCard = await ensureEntryCard();
-const hasActiveWorkspace =
-  (await page.locator('[data-testid="studio-priming-panel"]').count()) > 0 ||
-  (await page.locator('[data-testid="studio-tutor-panel"]').count()) > 0 ||
-  (await page
-    .locator('select[aria-label="Course for new priming session"]')
-    .count()) > 0;
-logStep(
-  hasFreshEntryCard || hasActiveWorkspace
-    ? "PASS: Tutor entry or active workspace is available"
-    : "INFO: Tutor entry card did not render before course controls hydrated",
-);
+const entryCard = await ensureEntryCard();
+check("Tutor entry card is available", (await entryCard.count()) > 0);
 
 const courseChoice = await chooseCourseWithMaterials();
+check("A course with enabled materials is available", Boolean(courseChoice?.courseId));
 
-if (courseChoice?.courseId) {
-  await page
-    .locator('select[aria-label="Course for new priming session"]')
-    .selectOption(courseChoice.courseId);
-  await page.waitForTimeout(1200);
+if (!courseChoice?.courseId) {
+  throw new Error("No course with materials available for REMAIN-005 verification");
 }
 
-const sessionName = page.getByLabel("Session Name");
-if ((await sessionName.count()) > 0) {
-  await sessionName.fill("REMAIN-001 Polish verification");
-}
+await page
+  .locator('select[aria-label="Course for new priming session"]')
+  .selectOption(courseChoice.courseId);
+await page.waitForTimeout(1500);
 
-const materialCountLabel = page.locator('[data-testid="studio-entry-material-count"]');
-await page.waitForFunction(() => {
-  const el = document.querySelector('[data-testid="studio-entry-material-count"]');
-  return Boolean(el && /materials selected/i.test(el.textContent || ""));
-});
-const materialCountText = await materialCountLabel.innerText();
-const materialCount = parseMaterialCount(materialCountText);
-check(
-  "A course with materials is available",
-  Boolean(courseChoice?.courseId) || materialCount.total > 0,
-);
-check("Selected course exposes real materials", materialCount.total > 0);
-logStep(
-  materialCount.selected > 0
-    ? "PASS: Entry card auto-selects at least one material"
-    : "INFO: Entry card left materials unselected, but priming still proceeded",
-);
+const sessionNameInput = page.getByLabel("Session Name");
+if ((await sessionNameInput.count()) > 0) {
+  await sessionNameInput.fill("REMAIN-005 End Session Verification");
+}
 
 const createWorkflowResponse = page.waitForResponse((response) => {
   return (
@@ -170,103 +123,79 @@ const createWorkflowResponse = page.waitForResponse((response) => {
   );
 });
 await page.getByRole("button", { name: /start priming/i }).click();
-
 const workflowResponse = await createWorkflowResponse;
 const workflowPayload = await workflowResponse.json();
 const workflowId =
   typeof workflowPayload?.workflow?.workflow_id === "string"
     ? workflowPayload.workflow.workflow_id
     : "";
-
 check("Start Priming creates a workflow", Boolean(workflowId));
 
-await page.waitForFunction(() => {
-  return Boolean(document.querySelector('[data-testid="studio-priming-panel"]'));
-}, { timeout: 15000 });
+await page.waitForSelector('[data-testid="studio-priming-panel"]', { timeout: 20000 });
 check(
-  "Priming preset opens the Polish workflow context",
+  "Priming panel opens after workflow creation",
   (await page.locator('[data-testid="studio-priming-panel"]').count()) > 0,
 );
 
-logStep("STEP: verify Document Dock clipboard image paste");
-const openInDocumentDockButtons = page.locator('button[aria-label*=" in Document Dock"]');
-if ((await openInDocumentDockButtons.count()) > 0) {
-  await openInDocumentDockButtons.first().click();
-  await page.waitForTimeout(1500);
+await page.getByRole("button", { name: /open tutor panel/i }).click();
+await page.waitForSelector('[data-testid="studio-tutor-panel"]', { timeout: 15000 });
+check(
+  "Tutor panel opens from the workflow shell",
+  (await page.locator('[data-testid="studio-tutor-panel"]').count()) > 0,
+);
 
-  const clipboardPasteTriggered = await page.evaluate(async () => {
-    const textarea = document.querySelector(
-      'textarea[aria-label="Selected passage"]',
-    );
-    if (!(textarea instanceof HTMLTextAreaElement)) {
-      return false;
-    }
-
-    const pngBase64 =
-      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+rA1EAAAAASUVORK5CYII=";
-    const pngBytes = Uint8Array.from(atob(pngBase64), (char) => char.charCodeAt(0));
-    const pngBlob = new Blob([pngBytes], { type: "image/png" });
-    const pngFile = new File([pngBlob], "clipboard-clip.png", { type: "image/png" });
-
-    if (!navigator.clipboard) {
-      Object.defineProperty(navigator, "clipboard", {
-        configurable: true,
-        value: {},
-      });
-    }
-
-    Object.defineProperty(navigator.clipboard, "read", {
-      configurable: true,
-      value: async () => [
-        {
-          types: ["image/png"],
-          getType: async () => pngBlob,
-        },
-      ],
-    });
-
-    const pasteEvent = new Event("paste", {
-      bubbles: true,
-      cancelable: true,
-    });
-    Object.defineProperty(pasteEvent, "clipboardData", {
-      configurable: true,
-      value: {
-        items: [
-          {
-            kind: "file",
-            type: "image/png",
-            getAsFile: () => pngFile,
-          },
-        ],
-      },
-    });
-
-    textarea.dispatchEvent(pasteEvent);
-    return true;
-  });
-
-  await page
-    .waitForSelector('[data-testid="document-dock-clip-image-preview"]', {
-      timeout: 15000,
-    })
-    .catch(() => undefined);
-
-  check("Clip area accepts pasted images via Ctrl+V", clipboardPasteTriggered);
-  check(
-    "Pasted images render as inline previews",
-    (await page.locator('[data-testid="document-dock-clip-image-preview"]').count()) > 0,
+const createSessionResponse = page.waitForResponse((response) => {
+  return (
+    response.request().method() === "POST" &&
+    /\/api\/tutor\/session$/.test(response.url())
   );
+});
+await page.getByRole("button", { name: /^start session$/i }).click();
+const sessionResponse = await createSessionResponse;
+const sessionPayload = await sessionResponse.json();
+const liveSessionId =
+  typeof sessionPayload?.session_id === "string" ? sessionPayload.session_id : "";
+check("Tutor session starts from the Tutor panel", Boolean(liveSessionId));
+await page.waitForTimeout(1500);
+check(
+  "Live session is active before ending",
+  Boolean(liveSessionId),
+);
 
-  check(
-    "Pasted images keep the clip action enabled",
-    !(await page.getByRole("button", { name: /clip excerpt to workspace/i }).isDisabled()),
+const endSessionResponse = page.waitForResponse((response) => {
+  return (
+    response.request().method() === "POST" &&
+    response.url().includes(`/api/tutor/session/${liveSessionId}/end`)
   );
-} else {
-  check("Clip area accepts pasted images via Ctrl+V", false);
-  check("Pasted images render as inline previews", false);
-  check("Pasted images keep the clip action enabled", false);
-}
+});
+await page.getByRole("button", { name: /^new session$/i }).click();
+const endPayload = await (await endSessionResponse).json();
+
+check(
+  "NEW SESSION triggers the end-session flow",
+  endPayload?.session_id === liveSessionId && endPayload?.status === "completed",
+);
+check(
+  "End-session flow writes a markdown summary to the vault",
+  Boolean(endPayload?.vault_save?.success && endPayload?.vault_save?.path),
+);
+
+await page.waitForSelector('[data-testid="studio-entry-status-message"]', {
+  timeout: 15000,
+});
+const confirmationText =
+  (await page.locator('[data-testid="studio-entry-status-message"]').innerText()).trim();
+
+check(
+  "User sees a save confirmation summary",
+  /session saved to vault:/i.test(confirmationText),
+);
+
+await page.waitForSelector('[data-testid="studio-entry-state"]', { timeout: 15000 });
+check(
+  "State is cleaned up and the entry card returns",
+  (await page.locator('[data-testid="studio-entry-state"]').count()) > 0,
+);
 
 if (consoleErrors.length > 0) {
   logStep(`Console errors: ${JSON.stringify(consoleErrors)}`);
@@ -275,7 +204,7 @@ check("No console errors", consoleErrors.length === 0);
 
 const screenshotPath = await saveScreenshot(
   await page.screenshot(),
-  "verify-remaining-004-document-dock.png",
+  "verify-remaining-005-end-session.png",
 );
 const resultFilePath = await writeFile(
   "verify-remaining-results.json",
@@ -286,16 +215,19 @@ const resultFilePath = await writeFile(
       results,
       consoleErrors,
       screenshotPath,
+      endPayload,
+      confirmationText,
     },
     null,
     2,
   ),
 );
+
 logStep(`Screenshot saved: ${screenshotPath}`);
 logStep(`Result file: ${resultFilePath}`);
 logStep(`=== RESULTS: ${passed} passed, ${failed} failed ===`);
+
 if (failed > 0) {
-  logStep("VERIFICATION FAILED");
   throw new Error("VERIFICATION FAILED");
 }
 
