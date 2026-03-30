@@ -656,3 +656,44 @@ Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-215508-146-iter-1.md
   - Useful context
     - The live verifier screenshot/result bundle was written to `C:\Users\treyt\.dev-browser\tmp\verify-remaining-006-obsidian-panel.png` and `C:\Users\treyt\.dev-browser\tmp\verify-remaining-results.json`.
 ---
+## [2026-03-29 23:22:53 -05:00] - REMAIN-007: Anki panel shows card preview and export
+Thread:
+Run: 20260329-223651-1869 (iteration 2)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260329-223651-1869-iter-2.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-223651-1869-iter-2.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: 8cbfff51 REMAIN-007 add anki preview export panel
+- Post-commit status: `clean`
+- Verification:
+  - Command: `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioAnkiPanel.test.tsx client/src/components/studio/__tests__/StudioShell.test.tsx` -> PASS
+  - Command: `cd dashboard_rebuild && npm run build` -> PASS
+  - Command: `dev-browser --headless --timeout 25 run C:/Users/treyt/.dev-browser/tmp/remain-007-browser-final.js` -> PASS
+- Files changed:
+  - `.agents/ralph/loop.sh`
+  - `.agents/tasks/prd.json`
+  - `.ralph/heartbeat.json`
+  - `.ralph/runs/run-20260329-223651-1869-iter-1.md`
+  - `brain/dashboard/api_adapter.py`
+  - `conductor/tracks/GENERAL/log.md`
+  - `dashboard_rebuild/client/src/api.ts`
+  - `dashboard_rebuild/client/src/api.types.ts`
+  - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+  - `dashboard_rebuild/client/src/components/studio/StudioAnkiPanel.tsx`
+  - `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`
+  - `dashboard_rebuild/client/src/components/studio/__tests__/StudioAnkiPanel.test.tsx`
+  - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+  - `ralph-monitor.ps1`
+- What was implemented
+  - Replaced the Studio Anki placeholder with a real panel that previews flashcards, lets the user edit front/back text, copies individual cards, and exports the visible queue as an Anki-importable CSV.
+  - Wired the panel through TutorShell so it uses the current tutor-session queue when available, falls back to course/latest draft cards before a session starts, and opens directly from the toolbar.
+  - Extended the Anki drafts API payload with `courseId`, added focused component coverage, and proved in the browser that the panel opens, renders preview cards, and exposes the export control.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - Pre-session toolbar panels need a sensible fallback data source; otherwise browser acceptance can stall before the user has generated any live session artifacts.
+  - Gotchas encountered
+    - Opening the Polish panel after `Start Priming` currently trips an existing `Studio Canvas` error boundary, so the live proof for this story had to validate against the Anki panel directly instead of relying on the Polish editor path.
+    - `dev-browser` worked reliably in isolated headless mode once the script avoided Playwright actionability waits on floating-panel toolbar buttons and used DOM clicks for the panel-open action.
+  - Useful context
+    - The live verifier screenshot was written to `C:\Users\treyt\.dev-browser\tmp\remain-007-anki-verified.png`, and the final browser run confirmed `5` rendered preview cards plus an active `Export CSV` control.
+---

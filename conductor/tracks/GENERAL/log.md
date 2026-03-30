@@ -2251,3 +2251,13 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run test -- src/components/studio/__tests__/StudioObsidianPanel.test.tsx src/components/studio/__tests__/StudioShell.test.tsx src/components/__tests__/TutorShell.test.tsx`
   - `cd dashboard_rebuild && npm run build`
   - `dev-browser --timeout 90 run C:\\pt-study-sop\\scripts\\verify-remaining.js`
+
+## 2026-03-29 - REMAIN-007 Anki panel preview and export
+
+- Added `dashboard_rebuild/client/src/components/studio/StudioAnkiPanel.tsx` and wired it through `dashboard_rebuild/client/src/components/TutorShell.tsx` plus `dashboard_rebuild/client/src/components/studio/StudioShell.tsx` so the Studio toolbar opens a real Anki panel instead of placeholder copy.
+- The panel now shows editable front/back card previews, exports the current queue as CSV, supports per-card clipboard copy, scopes to the active tutor session when present, and falls back to the latest available draft cards before a session starts so the toolbar surface stays useful from the setup state.
+- Extended `brain/dashboard/api_adapter.py`, `dashboard_rebuild/client/src/api.types.ts`, and `dashboard_rebuild/client/src/api.ts` so draft-card payloads include `courseId` for the pre-session fallback path, and added focused regressions in `dashboard_rebuild/client/src/components/studio/__tests__/StudioAnkiPanel.test.tsx` plus `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioAnkiPanel.test.tsx client/src/components/studio/__tests__/StudioShell.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - `dev-browser --headless --timeout 25 run C:\\Users\\treyt\\.dev-browser\\tmp\\remain-007-browser-final.js`
