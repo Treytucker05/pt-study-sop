@@ -468,6 +468,8 @@ describe("StudioShell", () => {
     expect(outerPointerDown).not.toHaveBeenCalled();
     expect(entryOverlay).toHaveClass("pointer-events-auto", "bg-black/70");
     expect(entryState).toHaveClass(
+      "max-h-[90vh]",
+      "overflow-y-auto",
       "border",
       "border-primary/20",
       "bg-black/90",

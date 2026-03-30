@@ -1219,7 +1219,7 @@ export function StudioShell({
             <div
               data-testid="studio-entry-state"
               data-canvas-drag-disabled="true"
-              className="studio-canvas-drag-disabled w-[min(34rem,calc(100vw-4rem))] rounded-2xl border border-primary/20 bg-black/90 p-8 shadow-2xl"
+              className="studio-canvas-drag-disabled max-h-[90vh] w-[min(34rem,calc(100vw-4rem))] overflow-y-auto rounded-2xl border border-primary/20 bg-black/90 p-8 shadow-2xl"
               onWheel={(event) => {
                 event.stopPropagation();
               }}
