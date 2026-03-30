@@ -5,6 +5,41 @@ Started: Sun Mar 29 00:04:50 CDT 2026
 - (add reusable patterns here)
 
 ---
+## [2026-03-29 19:32:33 -05:00] - REMAIN-004: Document Dock clip tool supports image paste
+Thread: 
+Run: 20260329-191639-1941 (iteration 1)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260329-191639-1941-iter-1.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-191639-1941-iter-1.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: b8249bd1 REMAIN-004 add document dock image paste clips
+- Post-commit status: `clean`
+- Verification:
+  - Command: `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx client/src/lib/__tests__/studioWorkspaceObjects.test.ts --reporter=dot` -> PASS
+  - Command: `cd dashboard_rebuild && npm run build` -> PASS
+  - Command: `cmd /c Start_Dashboard.bat` -> PASS
+  - Command: `dev-browser --timeout 90 run C:/pt-study-sop/scripts/verify-remaining.js` -> PASS
+- Files changed:
+  - `.agents/tasks/prd.json`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+  - `dashboard_rebuild/client/src/components/studio/StudioDocumentDock.tsx`
+  - `dashboard_rebuild/client/src/components/studio/StudioTldrawWorkspace.tsx`
+  - `dashboard_rebuild/client/src/lib/__tests__/studioWorkspaceObjects.test.ts`
+  - `dashboard_rebuild/client/src/lib/studioWorkspaceObjects.ts`
+  - `scripts/verify-remaining.js`
+  - `.ralph/progress.md`
+- What was implemented
+  - Added Clipboard API-backed image paste handling to the Document Dock clip area, including inline image preview, Ctrl+V guidance, and clipboard-read fallback behavior tied to the selected passage input.
+  - Added workspace-image object creation and rendering so pasted image clips have a stable workspace object shape and visible image cards inside the workspace surface.
+  - Expanded focused TutorShell and workspace-object tests to cover pasted image clips alongside the existing text excerpt flow, and updated the live `dev-browser` verifier to check the image-paste handler and preview path on `/tutor`.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - The cleanest way to verify clipboard-image paste in browser automation is to stub `navigator.clipboard.read()` and dispatch a native `paste` event with image clipboard items.
+  - Gotchas encountered
+    - The shared remaining-story verifier had legacy follow-on checks that were unrelated to REMAIN-004 and could fail after this story's proof point, so it needed to be scoped to this story's browser assertions.
+  - Useful context
+    - Live `/tutor` verification now saves the REMAIN-004 screenshot to `C:\Users\treyt\.dev-browser\tmp\verify-remaining-004-document-dock.png`.
+---
 
 ## [2026-03-29 06:33 CDT] - REMAIN-001: Polish panel end-to-end verification and fixes
 Thread: 
