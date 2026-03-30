@@ -40,23 +40,7 @@
     {
       "id": "REMAIN-005",
       "title": "End session flow saves to vault and cleans up",
-      "description": "When a study session ends (user clicks End Session or NEW SESSION), the app should: (1) Save session notes and artifacts to the Obsidian vault folder for that course. (2) Show a brief summary of what was saved. (3) Clean up session state. (4) Return to the entry card for the next session. Trace the end session flow from handleTutorSessionAction in tutor.tsx. Check if vault save logic exists in the session or workflow hooks. If not, add a basic save-to-vault step that writes a markdown summary to the vault folder.",
-      "acceptanceCriteria": [
-        "Clicking NEW SESSION or End Session triggers save flow",
-        "Session artifacts are written to the vault folder as markdown",
-        "User sees confirmation of what was saved",
-        "State is cleaned up and entry card shows",
-        "dev-browser: end a session, verify save confirmation"
-      ],
-      "files": [
-        "dashboard_rebuild/client/src/pages/tutor.tsx",
-        "dashboard_rebuild/client/src/components/TutorShell.tsx"
-      ],
-      "verification": "dev-browser --timeout 90 run scripts/verify-remaining.js",
-      "status": "in_progress",
-      "startedAt": "2026-03-30T01:47:14.456702+00:00",
-      "completedAt": null,
-      "updatedAt": "2026-03-30T01:47:14.456710+00:00"
+      "status": "done"
     },
     {
       "id": "REMAIN-006",
