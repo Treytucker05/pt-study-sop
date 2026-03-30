@@ -2261,3 +2261,13 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioAnkiPanel.test.tsx client/src/components/studio/__tests__/StudioShell.test.tsx`
   - `cd dashboard_rebuild && npm run build`
   - `dev-browser --headless --timeout 25 run C:\\Users\\treyt\\.dev-browser\\tmp\\remain-007-browser-final.js`
+
+## 2026-03-29 - REMAIN-008 Entry card small-viewport scrolling
+
+- Updated `dashboard_rebuild/client/src/components/studio/StudioShell.tsx` so the viewport-fixed entry overlay card now uses `max-h-[90vh] overflow-y-auto`, letting the setup form scroll internally on short displays instead of clipping below the fold.
+- Added a focused regression in `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx` that asserts the entry-state container keeps the new height cap and vertical overflow classes.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - `cmd /c Start_Dashboard.bat`
+  - `dev-browser --headless --timeout 90 run C:\\Users\\treyt\\.dev-browser\\tmp\\verify-remain-008-headless.js`

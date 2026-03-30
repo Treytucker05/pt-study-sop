@@ -697,3 +697,34 @@ Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-223651-1869-iter-2.md
   - Useful context
     - The live verifier screenshot was written to `C:\Users\treyt\.dev-browser\tmp\remain-007-anki-verified.png`, and the final browser run confirmed `5` rendered preview cards plus an active `Export CSV` control.
 ---
+## [2026-03-29 23:48:48 -05:00] - REMAIN-008: Entry card scrolls on small viewports
+Thread:
+Run: 20260329-234334-1409 (iteration 2)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260329-234334-1409-iter-2.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-234334-1409-iter-2.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: b67fa0b1 REMAIN-008 make entry card scroll on small viewports
+- Post-commit status: `.agents/tasks/prd.json, .ralph/heartbeat.json, .ralph/runs/run-20260329-234334-1409-iter-1.md, install-watchdog-task.ps1, memory-watchdog.bat, memory-watchdog.ps1`
+- Verification:
+  - Command: `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioShell.test.tsx` -> PASS
+  - Command: `cd dashboard_rebuild && npm run build` -> PASS
+  - Command: `cmd /c Start_Dashboard.bat` -> PASS
+  - Command: `dev-browser --headless --timeout 90 run C:\Users\treyt\.dev-browser\tmp\verify-remain-008-headless.js` -> PASS
+- Files changed:
+  - `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`
+  - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+  - `conductor/tracks/GENERAL/log.md`
+  - `.ralph/progress.md`
+- What was implemented
+  - Added `max-h-[90vh] overflow-y-auto` to the Studio entry card overlay container so the setup card scrolls internally instead of clipping on short viewports.
+  - Locked the behavior with a focused `StudioShell` regression that asserts the entry-state card exposes the new scroll classes.
+  - Verified the live `/tutor` flow at `800x600`, confirming the card overflowed, scrolled, and kept the bottom `Cancel` action reachable after scrolling.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - For viewport-fit fixes on floating overlays, validating `scrollHeight > clientHeight` plus bottom-control visibility after scroll is a stable browser proof.
+  - Gotchas encountered
+    - `dev-browser --connect` did not return promptly in this environment, so isolated headless `dev-browser` remained the reliable verification path.
+  - Useful context
+    - The live verification screenshot was written to `C:\Users\treyt\.dev-browser\tmp\remain-008-800x600.png`, and the browser run reported `scrollHeight=824`, `clientHeight=538`, and `scrollTopAfter=265` for the entry card.
+---
