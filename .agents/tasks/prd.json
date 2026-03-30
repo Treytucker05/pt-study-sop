@@ -52,10 +52,7 @@
         "dashboard_rebuild/client/src/components/TutorShell.tsx"
       ],
       "verification": "dev-browser --timeout 90 run scripts/verify-remaining.js",
-      "status": "in_progress",
-      "startedAt": "2026-03-29T22:56:44.588106+00:00",
-      "completedAt": null,
-      "updatedAt": "2026-03-29T22:56:44.588112+00:00"
+      "status": "done"
     },
     {
       "id": "REMAIN-004",
