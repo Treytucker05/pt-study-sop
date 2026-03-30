@@ -133,3 +133,10 @@ Before doing ANY implementation work, check if this story was already completed 
 4. In that case, do NOT re-implement anything. Just output the completion signal immediately:
    <promise>COMPLETE</promise>
 5. Only proceed with implementation if there is NO commit for this story in recent git history.
+
+## Token Conservation Rules (CRITICAL)
+- If browser verification fails the SAME way 3 times in a row, STOP retrying. Output what is broken and end normally without the completion signal. The next iteration gets fresh context.
+- If page.fill() or page.type() fails on a React input, immediately switch to page.evaluate() with native event dispatching (see dev-browser skill for the pattern). Do NOT retry fill/type more than twice.
+- Do NOT read files larger than 500 lines in full. Use head/tail or grep to find the relevant section.
+- Do NOT run the full test suite unless the story touches shared code. Run only the focused test files listed in the story.
+- If the build takes more than 2 minutes, check if you are building the wrong directory.

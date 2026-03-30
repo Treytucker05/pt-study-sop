@@ -43,3 +43,6 @@ Fix: Folders use border-l-2 accent bar style, leaves keep card style.
 - Show full file paths as labels
 - Skip browser verification for UI changes
 - Commit with failing tests or build errors
+- Retry page.fill() or page.type() on React inputs more than twice -- switch to page.evaluate() with native event dispatching
+- Retry the same failing browser verification more than 3 times -- report what is broken and let the next iteration handle it
+- Read entire large files (500+ lines) into context -- use head/tail/grep to find relevant sections
