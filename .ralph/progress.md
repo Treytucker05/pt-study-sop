@@ -618,3 +618,41 @@ Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-204647-1528-iter-2.md
   - Useful context
     - `scripts/verify-remaining.js` is now a REMAIN-005-specific verifier that starts a real Tutor session, ends it through `NEW SESSION`, asserts the `vault_save` payload, checks the returned confirmation banner, and stores the screenshot/result bundle under `C:\Users\treyt\.dev-browser\tmp\`.
 ---
+## [2026-03-29 22:19:28 -05:00] - REMAIN-006: Obsidian panel shows vault browser with note read and write
+Thread: 12202
+Run: 20260329-215508-146 (iteration 1)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260329-215508-146-iter-1.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260329-215508-146-iter-1.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: 3291b588 REMAIN-006 add obsidian vault browser panel
+- Post-commit status: `clean`
+- Verification:
+  - Command: `cd dashboard_rebuild && npm run test -- src/components/studio/__tests__/StudioObsidianPanel.test.tsx src/components/studio/__tests__/StudioShell.test.tsx src/components/__tests__/TutorShell.test.tsx` -> PASS
+  - Command: `cd dashboard_rebuild && npm run build` -> PASS
+  - Command: `dev-browser --timeout 90 run C:/pt-study-sop/scripts/verify-remaining.js` -> PASS
+- Files changed:
+  - `.agents/tasks/prd.json`
+  - `.ralph/heartbeat.json`
+  - `conductor/tracks/GENERAL/log.md`
+  - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+  - `dashboard_rebuild/client/src/components/studio/StudioShell.tsx`
+  - `dashboard_rebuild/client/src/components/studio/StudioObsidianPanel.tsx`
+  - `dashboard_rebuild/client/src/components/studio/__tests__/StudioObsidianPanel.test.tsx`
+  - `dashboard_rebuild/client/src/components/studio/__tests__/StudioShell.test.tsx`
+  - `docs/root/TUTOR_TODO.md`
+  - `scripts/verify-remaining.js`
+- What was implemented
+  - Replaced the placeholder Obsidian Studio panel with a live course-scoped vault browser that loads the current course folder, renders the nested file tree, previews selected notes, creates new markdown notes, and saves current session notes into the vault with the existing Obsidian filesystem API.
+  - Wired the panel through `TutorShell` and `StudioShell` so it opens from the toolbar with the active course/vault context instead of placeholder copy.
+  - Added focused component coverage for the panel itself plus shell integration, and refreshed the REMAIN-006 browser verifier to prove the real `/tutor` shell opens the Obsidian panel and renders the vault tree without console errors.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - For this repo, the browser acceptance for floating Studio panels is more reliable after entering the real Studio shell through `Start Priming` instead of trying to validate panel behavior from the entry overlay.
+  - Gotchas encountered
+    - `dev-browser --connect` was unavailable because Chrome remote debugging was not exposed on `9222`, so isolated `dev-browser` remained the reliable path.
+    - Reusing a named `dev-browser` page caused stale navigation timeouts; `browser.newPage()` made the verifier deterministic across retries.
+  - Useful context
+    - The live verifier screenshot/result bundle was written to `C:\Users\treyt\.dev-browser\tmp\verify-remaining-006-obsidian-panel.png` and `C:\Users\treyt\.dev-browser\tmp\verify-remaining-results.json`.
+---
