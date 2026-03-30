@@ -106,6 +106,13 @@ export interface CreateStudioExcerptWorkspaceObjectParams {
   selectionLabel?: string | null;
 }
 
+export interface CreateStudioImageWorkspaceObjectParams {
+  sourceTitle: string | null;
+  detail?: string | null;
+  assetUrl: string;
+  mimeType?: string | null;
+}
+
 export interface CreateStudioPrimingResultWorkspaceObjectParams {
   resultKey: string;
   title: string;
@@ -170,6 +177,39 @@ export function createStudioExcerptWorkspaceObject({
       fileType,
       sourceTitle: normalizedTitle,
       selectionLabel,
+    },
+  };
+}
+
+export function getStudioImageObjectId({
+  sourceTitle,
+  assetUrl,
+}: Pick<CreateStudioImageWorkspaceObjectParams, "sourceTitle" | "assetUrl">) {
+  const imageSeed = `${sourceTitle?.trim() || "Untitled source"}::${assetUrl.trim()}`;
+  return `image:${hashExcerptSeed(imageSeed)}`;
+}
+
+export function createStudioImageWorkspaceObject({
+  sourceTitle,
+  detail = null,
+  assetUrl,
+  mimeType = null,
+}: CreateStudioImageWorkspaceObjectParams): StudioWorkspaceObject {
+  const normalizedTitle = sourceTitle?.trim() || "Untitled source";
+  const normalizedDetail = detail?.trim() || "Pasted from clipboard";
+
+  return {
+    id: getStudioImageObjectId({
+      sourceTitle: normalizedTitle,
+      assetUrl,
+    }),
+    kind: "image",
+    title: `Image clip: ${normalizedTitle}`,
+    detail: normalizedDetail,
+    badge: "IMAGE",
+    asset: {
+      url: assetUrl.trim(),
+      mimeType,
     },
   };
 }

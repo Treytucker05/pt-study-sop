@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   createStudioPrimingResultWorkspaceObject,
   createStudioExcerptWorkspaceObject,
+  createStudioImageWorkspaceObject,
   getStudioExcerptObjectId,
+  getStudioImageObjectId,
   normalizeStudioWorkspaceObjects,
 } from "@/lib/studioWorkspaceObjects";
 
@@ -94,6 +96,39 @@ describe("studioWorkspaceObjects", () => {
         kind: "link_reference",
         badge: "REFERENCE",
         href: "https://example.com/frank-starling",
+      }),
+    ]);
+  });
+
+  it("creates image workspace objects for pasted clipboard clips", () => {
+    const imageClip = createStudioImageWorkspaceObject({
+      sourceTitle: "Cardiac Output Lecture",
+      detail: "Clipboard image • Pasted from clipboard",
+      assetUrl: "data:image/png;base64,ZmFrZQ==",
+      mimeType: "image/png",
+    });
+
+    expect(imageClip).toMatchObject({
+      id: getStudioImageObjectId({
+        sourceTitle: "Cardiac Output Lecture",
+        assetUrl: "data:image/png;base64,ZmFrZQ==",
+      }),
+      kind: "image",
+      title: "Image clip: Cardiac Output Lecture",
+      detail: "Clipboard image • Pasted from clipboard",
+      badge: "IMAGE",
+      asset: {
+        url: "data:image/png;base64,ZmFrZQ==",
+        mimeType: "image/png",
+      },
+    });
+
+    expect(normalizeStudioWorkspaceObjects([imageClip])).toEqual([
+      expect.objectContaining({
+        kind: "image",
+        asset: expect.objectContaining({
+          mimeType: "image/png",
+        }),
       }),
     ]);
   });

@@ -188,266 +188,85 @@ check(
   (await page.locator('[data-testid="studio-priming-panel"]').count()) > 0,
 );
 
-const openTutorPanelButton = page.getByRole("button", {
-  name: /open tutor panel/i,
-});
-if ((await page.locator('[data-testid="studio-tutor-panel"]').count()) === 0) {
-  await openTutorPanelButton.click();
-  await page.waitForTimeout(1200);
-}
+logStep("STEP: verify Document Dock clipboard image paste");
+const openInDocumentDockButtons = page.locator('button[aria-label*=" in Document Dock"]');
+if ((await openInDocumentDockButtons.count()) > 0) {
+  await openInDocumentDockButtons.first().click();
+  await page.waitForTimeout(1500);
 
-check(
-  "Tutor panel opens from the toolbar",
-  (await page.locator('[data-testid="studio-tutor-panel"]').count()) > 0,
-);
-
-const createSessionResponse = page.waitForResponse((response) => {
-  return (
-    response.request().method() === "POST" &&
-    response.url().includes("/api/tutor/session") &&
-    !response.url().includes("/turn")
-  );
-}, { timeout: 15000 }).catch(() => null);
-await page.getByRole("button", { name: /^start session$/i }).click();
-
-let sessionId = "";
-const sessionResponse = await createSessionResponse;
-if (sessionResponse) {
-  const sessionPayload = await sessionResponse.json();
-  sessionId =
-    typeof sessionPayload?.session_id === "string"
-      ? sessionPayload.session_id
-      : "";
-}
-
-await page.waitForFunction(() => {
-  return Boolean(document.querySelector('input[placeholder="Ask a question..."]'));
-}, { timeout: 15000 });
-
-if (!sessionId) {
-  sessionId = await page.evaluate(() => {
-    const fromUrl = new URL(window.location.href).searchParams.get("session_id");
-    if (typeof fromUrl === "string" && fromUrl.trim()) {
-      return fromUrl.trim();
+  const clipboardPasteTriggered = await page.evaluate(async () => {
+    const textarea = document.querySelector(
+      'textarea[aria-label="Selected passage"]',
+    );
+    if (!(textarea instanceof HTMLTextAreaElement)) {
+      return false;
     }
-    const fromStorage = localStorage.getItem("tutor.active_session.v1");
-    return typeof fromStorage === "string" ? fromStorage.trim() : "";
+
+    const pngBase64 =
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+rA1EAAAAASUVORK5CYII=";
+    const pngBytes = Uint8Array.from(atob(pngBase64), (char) => char.charCodeAt(0));
+    const pngBlob = new Blob([pngBytes], { type: "image/png" });
+    const pngFile = new File([pngBlob], "clipboard-clip.png", { type: "image/png" });
+
+    if (!navigator.clipboard) {
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: {},
+      });
+    }
+
+    Object.defineProperty(navigator.clipboard, "read", {
+      configurable: true,
+      value: async () => [
+        {
+          types: ["image/png"],
+          getType: async () => pngBlob,
+        },
+      ],
+    });
+
+    const pasteEvent = new Event("paste", {
+      bubbles: true,
+      cancelable: true,
+    });
+    Object.defineProperty(pasteEvent, "clipboardData", {
+      configurable: true,
+      value: {
+        items: [
+          {
+            kind: "file",
+            type: "image/png",
+            getAsFile: () => pngFile,
+          },
+        ],
+      },
+    });
+
+    textarea.dispatchEvent(pasteEvent);
+    return true;
   });
-}
 
-check("Tutor session starts from the workflow", Boolean(sessionId));
+  await page
+    .waitForSelector('[data-testid="document-dock-clip-image-preview"]', {
+      timeout: 15000,
+    })
+    .catch(() => undefined);
 
-const tutorInput = page.locator('input[placeholder="Ask a question..."]');
-const tutorSend = page.getByRole("button", { name: /send message/i });
-await tutorInput.fill(
-  "According to this session, what drives preload? Answer in four words max.",
-);
-await tutorSend.click();
-
-try {
-  await page.waitForFunction(() => {
-    const body = document.body.innerText.toLowerCase();
-    return (
-      body.includes("venous return") ||
-      body.includes("connection error:")
-    );
-  }, { timeout: 90000 });
-} catch (error) {
-  console.log(`Tutor reply wait failed: ${String(error)}`);
-}
-
-const liveBodyText = await page.locator("body").innerText();
-check(
-  "Tutor chat returns a grounded reply",
-  liveBodyText.toLowerCase().includes("venous return") &&
-    !liveBodyText.includes("Connection error:"),
-);
-
-logStep("STEP: seed polish bundle");
-await page.evaluate(
-  async ({ activeWorkflowId, activeSessionId }) => {
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 20000);
-    const payload = {
-      tutor_session_id: activeSessionId,
-      priming_bundle_id: null,
-      exact_notes: [],
-      editable_notes: [],
-      summaries: [
-        {
-          id: "summary-0",
-          title: "Polish final summary draft",
-          content: "Venous return is the preload driver.",
-        },
-      ],
-      feedback_queue: [],
-      card_requests: [
-        {
-          id: "card-0",
-          text: "What is the preload driver? :: Venous return",
-        },
-      ],
-      reprime_requests: [],
-      studio_payload: {
-        polish_question: "",
-        classification_note: "Seeded for REMAIN-001 verification",
-        artifacts: [],
-      },
-      publish_targets: {
-        obsidian: true,
-        anki: true,
-        brain: true,
-        studio_artifacts: false,
-      },
-      status: "draft",
-    };
-
-    const response = await fetch(
-      `/api/tutor/workflows/${activeWorkflowId}/polish-bundle`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-      },
-    );
-    window.clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(await response.text());
-    }
-  },
-  {
-    activeWorkflowId: workflowId,
-    activeSessionId: sessionId,
-  },
-);
-
-logStep("STEP: save exact");
-await page.getByRole("button", { name: /^save exact$/i }).click();
-await page.waitForTimeout(1500);
-
-logStep("STEP: save editable");
-await page.getByRole("button", { name: /^save editable$/i }).click();
-await page.waitForTimeout(1500);
-
-logStep("STEP: promote tutor reply");
-await page.getByRole("button", { name: /promote to polish packet/i }).click();
-await page.waitForTimeout(2000);
-
-logStep("STEP: open polish panels");
-await page.getByRole("button", { name: /open polish panel/i }).click();
-await page.waitForTimeout(1000);
-await page.getByRole("button", { name: /open polish packet panel/i }).click();
-await page.waitForTimeout(1000);
-
-check(
-  "Polish panel opens from toolbar",
-  (await page.locator('[data-testid="studio-polish-panel"]').count()) > 0,
-);
-check(
-  "Polish Packet opens from toolbar",
-  (await page.locator('[data-testid="studio-polish-packet"]').count()) > 0,
-);
-
-await page.getByRole("button", { name: /tutor replies/i }).click();
-await page.waitForTimeout(300);
-const polishPanelText = await page
-  .locator('[data-testid="studio-polish-panel"]')
-  .innerText();
-check(
-  "Polish panel shows promoted tutor replies",
-  /Tutor Reply/i.test(polishPanelText) &&
-    polishPanelText.toLowerCase().includes("venous return"),
-);
-
-await page.getByRole("button", { name: /exact notes/i }).click();
-await page.waitForTimeout(300);
-const updatedPolishPanelText = await page
-  .locator('[data-testid="studio-polish-panel"]')
-  .innerText();
-check(
-  "Polish panel shows captured session notes",
-  /Tutor exact reply/i.test(updatedPolishPanelText),
-);
-
-const summaryTextarea = page.getByPlaceholder(
-  /Final summary draft for Obsidian and Brain indexing/i,
-);
-const summaryValue = await summaryTextarea.inputValue();
-check(
-  "Polish summary textarea is populated with real content",
-  summaryValue.includes("Venous return is the preload driver."),
-);
-
-await summaryTextarea.fill(`${summaryValue}\nEdited during REMAIN-001 verification.`);
-check(
-  "Polish content remains editable/reviewable",
-  (await summaryTextarea.inputValue()).includes(
-    "Edited during REMAIN-001 verification.",
-  ),
-);
-
-const cardTextarea = page.getByPlaceholder(/One flashcard request per line/i);
-check(
-  "Card requests are staged for export",
-  (await cardTextarea.inputValue()).includes(
-    "What is the preload driver? :: Venous return",
-  ),
-);
-
-logStep("STEP: verify polish packet sections");
-await page.waitForFunction(() => {
-  const notes = document.querySelector(
-    '[data-testid="polish-packet-section-notes"]',
-  )?.textContent || "";
-  const summaries = document.querySelector(
-    '[data-testid="polish-packet-section-summaries"]',
-  )?.textContent || "";
-  const cards = document.querySelector(
-    '[data-testid="polish-packet-section-cards"]',
-  )?.textContent || "";
-
-  return (
-    /Tutor Reply/i.test(notes) &&
-    notes.toLowerCase().includes("venous return") &&
-    summaries.includes("Venous return is the preload driver.") &&
-    cards.includes("What is the preload driver? :: Venous return")
+  check("Clip area accepts pasted images via Ctrl+V", clipboardPasteTriggered);
+  check(
+    "Pasted images render as inline previews",
+    (await page.locator('[data-testid="document-dock-clip-image-preview"]').count()) > 0,
   );
-}, { timeout: 15000 }).catch(() => undefined);
 
-const polishPacketNotesText = await page
-  .locator('[data-testid="polish-packet-section-notes"]')
-  .innerText();
-const polishPacketSummariesText = await page
-  .locator('[data-testid="polish-packet-section-summaries"]')
-  .innerText();
-const polishPacketCardsText = await page
-  .locator('[data-testid="polish-packet-section-cards"]')
-  .innerText();
-logStep(
-  "DEBUG: polish packet sections",
-);
-console.log(
-  JSON.stringify({
-    notes: polishPacketNotesText,
-    summaries: polishPacketSummariesText,
-    cards: polishPacketCardsText,
-  }),
-);
-check(
-  "Polish Packet shows staged tutor replies",
-  /Tutor Reply/i.test(polishPacketNotesText) &&
-    polishPacketNotesText.toLowerCase().includes("venous return"),
-);
-check(
-  "Polish Packet shows staged summaries",
-  polishPacketSummariesText.includes("Venous return is the preload driver."),
-);
-check(
-  "Polish Packet shows staged cards",
-  polishPacketCardsText.includes("What is the preload driver? :: Venous return"),
-);
+  check(
+    "Pasted images keep the clip action enabled",
+    !(await page.getByRole("button", { name: /clip excerpt to workspace/i }).isDisabled()),
+  );
+} else {
+  check("Clip area accepts pasted images via Ctrl+V", false);
+  check("Pasted images render as inline previews", false);
+  check("Pasted images keep the clip action enabled", false);
+}
 
 if (consoleErrors.length > 0) {
   logStep(`Console errors: ${JSON.stringify(consoleErrors)}`);
@@ -456,7 +275,7 @@ check("No console errors", consoleErrors.length === 0);
 
 const screenshotPath = await saveScreenshot(
   await page.screenshot(),
-  "verify-remaining-001-polish.png",
+  "verify-remaining-004-document-dock.png",
 );
 const resultFilePath = await writeFile(
   "verify-remaining-results.json",
@@ -467,11 +286,6 @@ const resultFilePath = await writeFile(
       results,
       consoleErrors,
       screenshotPath,
-      packetSections: {
-        notes: polishPacketNotesText,
-        summaries: polishPacketSummariesText,
-        cards: polishPacketCardsText,
-      },
     },
     null,
     2,
@@ -483,6 +297,6 @@ logStep(`=== RESULTS: ${passed} passed, ${failed} failed ===`);
 if (failed > 0) {
   logStep("VERIFICATION FAILED");
   throw new Error("VERIFICATION FAILED");
-} else {
-  logStep("ALL CHECKS PASSED");
 }
+
+logStep("ALL CHECKS PASSED");

@@ -65,6 +65,12 @@ export function StudioTldrawWorkspace({
     ): workspaceObject is Extract<StudioWorkspaceObject, { kind: "text_note" }> =>
       workspaceObject.kind === "text_note",
   );
+  const imageObjects = canvasObjects.filter(
+    (
+      workspaceObject,
+    ): workspaceObject is Extract<StudioWorkspaceObject, { kind: "image" }> =>
+      workspaceObject.kind === "image",
+  );
 
   useEffect(() => {
     if (!editor) return;
@@ -245,6 +251,32 @@ export function StudioTldrawWorkspace({
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          ) : null}
+
+          {imageObjects.length > 0 ? (
+            <div className="pointer-events-auto rounded-[0.85rem] border border-primary/18 bg-black/65 px-3 py-3 font-mono text-sm text-foreground/78 shadow-[0_16px_36px_rgba(0,0,0,0.32)] backdrop-blur">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
+                Workspace Images
+              </div>
+              <div className="mt-2 space-y-2">
+                {imageObjects.map((workspaceObject) => (
+                  <div
+                    key={workspaceObject.id}
+                    className="rounded-[0.75rem] border border-primary/12 bg-black/30 p-2.5"
+                  >
+                    <div className="text-sm text-foreground">{workspaceObject.title}</div>
+                    <div className="mt-1 text-xs leading-5 text-foreground/62">
+                      {workspaceObject.detail}
+                    </div>
+                    <img
+                      src={workspaceObject.asset.url}
+                      alt={workspaceObject.title}
+                      className="mt-3 max-h-32 w-full rounded-[0.75rem] border border-primary/12 object-contain"
+                    />
+                  </div>
+                ))}
               </div>
             </div>
           ) : null}

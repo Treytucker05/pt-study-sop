@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ClipboardEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import type { Material, MaterialContent } from "@/lib/api";
 import type { StudioDocumentTab } from "@/lib/studioPanelLayout";
 import {
   createStudioExcerptWorkspaceObject,
+  createStudioImageWorkspaceObject,
   type StudioWorkspaceObject,
 } from "@/lib/studioWorkspaceObjects";
 
@@ -24,9 +25,63 @@ export interface StudioDocumentDockProps {
   onClipExcerpt?: (workspaceObject: StudioWorkspaceObject) => void;
 }
 
+interface ClipboardImageClip {
+  url: string;
+  mimeType: string | null;
+}
+
 function formatFileType(value: string | null | undefined): string {
   const normalized = String(value || "").trim();
   return normalized ? normalized.toUpperCase() : "FILE";
+}
+
+async function readBlobAsDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+        return;
+      }
+      reject(new Error("Clipboard image reader returned a non-string result."));
+    };
+    reader.onerror = () => reject(reader.error ?? new Error("Clipboard image read failed."));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function readClipboardImage(
+  clipboardData: DataTransfer | null,
+): Promise<ClipboardImageClip | null> {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.read) {
+    try {
+      const clipboardItems = await navigator.clipboard.read();
+      for (const clipboardItem of clipboardItems) {
+        const imageType = clipboardItem.types.find((type) => type.startsWith("image/"));
+        if (!imageType) continue;
+        const blob = await clipboardItem.getType(imageType);
+        return {
+          url: await readBlobAsDataUrl(blob),
+          mimeType: imageType,
+        };
+      }
+    } catch {
+      // Fall back to the paste event payload below when browser clipboard permissions block reads.
+    }
+  }
+
+  const clipboardItems = Array.from(clipboardData?.items ?? []);
+  for (const item of clipboardItems) {
+    if (!item.type.startsWith("image/")) continue;
+    const blob = item.getAsFile();
+    if (!blob) continue;
+    return {
+      url: await readBlobAsDataUrl(blob),
+      mimeType: blob.type || item.type || null,
+    };
+  }
+
+  return null;
 }
 
 export function StudioDocumentDock({
@@ -128,17 +183,37 @@ export function StudioDocumentDock({
       : null;
   const [excerptLabel, setExcerptLabel] = useState<string | null>(selectionLabel);
   const [excerptText, setExcerptText] = useState(initialExcerptText);
+  const [clipImage, setClipImage] = useState<ClipboardImageClip | null>(null);
+  const [clipStatus, setClipStatus] = useState<string | null>(null);
 
   useEffect(() => {
     setExcerptText(initialExcerptText);
     setExcerptLabel(selectionLabel);
+    setClipImage(null);
+    setClipStatus(null);
   }, [activeDocumentTabId, initialExcerptText, selectionLabel]);
 
   const canClipExcerpt =
-    excerptText.trim().length > 0 && Boolean(activeMaterial || activeVaultPath);
+    (excerptText.trim().length > 0 || clipImage !== null) &&
+    Boolean(activeMaterial || activeVaultPath);
 
   const handleClipExcerpt = () => {
-    if (!excerptText.trim() || (!activeMaterial && !activeVaultPath)) return;
+    if ((!excerptText.trim() && !clipImage) || (!activeMaterial && !activeVaultPath)) return;
+
+    if (clipImage) {
+      onClipExcerpt?.(
+        createStudioImageWorkspaceObject({
+          sourceTitle: activeMaterial?.title || activeDocumentTitle,
+          detail: excerptLabel?.trim()
+            ? `${excerptLabel} • Pasted from clipboard`
+            : "Pasted from clipboard",
+          assetUrl: clipImage.url,
+          mimeType: clipImage.mimeType,
+        }),
+      );
+      setClipStatus("Image clip added to workspace.");
+      return;
+    }
 
     onClipExcerpt?.(
       createStudioExcerptWorkspaceObject({
@@ -152,6 +227,28 @@ export function StudioDocumentDock({
         selectionLabel: excerptLabel,
       }),
     );
+    setClipStatus(null);
+  };
+
+  const handlePaste = async (event: ClipboardEvent<HTMLTextAreaElement>) => {
+    const hasClipboardImage = Array.from(event.clipboardData?.items ?? []).some((item) =>
+      item.type.startsWith("image/"),
+    );
+    if (!hasClipboardImage) {
+      return;
+    }
+
+    event.preventDefault();
+    const pastedImage = await readClipboardImage(event.clipboardData ?? null);
+    if (!pastedImage) {
+      setClipStatus("Clipboard image could not be read.");
+      return;
+    }
+
+    setExcerptText("");
+    setExcerptLabel("Clipboard image");
+    setClipImage(pastedImage);
+    setClipStatus("Clipboard image ready to clip.");
   };
 
   return (
@@ -276,17 +373,56 @@ export function StudioDocumentDock({
         <div className="mt-1 text-sm text-foreground/72">
           Clip the active document into the workspace as a provenance-linked excerpt.
         </div>
+        <div className="mt-1 text-xs text-foreground/60">
+          Paste an image with Ctrl+V.
+        </div>
+        {clipImage ? (
+          <div className="mt-3 rounded-[0.85rem] border border-primary/16 bg-black/25 p-3">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
+              Pasted image preview
+            </div>
+            <img
+              src={clipImage.url}
+              alt={`Pasted clipboard clip for ${activeDocumentTitle}`}
+              data-testid="document-dock-clip-image-preview"
+              className="mt-3 max-h-48 w-full rounded-[0.75rem] border border-primary/12 object-contain"
+            />
+            <div className="mt-3 flex items-center justify-between gap-3 text-xs text-foreground/62">
+              <span>{clipStatus || "Clipboard image ready to clip."}</span>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setClipImage(null);
+                  setClipStatus(null);
+                }}
+                className="h-8 rounded-full border-primary/20 bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-foreground/72"
+              >
+                Remove image
+              </Button>
+            </div>
+          </div>
+        ) : null}
         <Textarea
           aria-label="Selected passage"
           value={excerptText}
-          onChange={(event) => setExcerptText(event.target.value)}
+          onChange={(event) => {
+            setExcerptText(event.target.value);
+            if (clipImage) {
+              setClipImage(null);
+              setClipStatus(null);
+            }
+          }}
+          onPaste={handlePaste}
           rows={5}
           className="mt-3 min-h-[120px] rounded-[0.85rem] border-primary/18 bg-black/20 font-mono text-sm text-foreground"
           placeholder="Paste or refine the excerpt you want to clip into the workspace."
         />
         <div className="mt-3 flex items-center justify-between gap-3">
           <div className="text-xs text-foreground/60">
-            {excerptLabel || activeMaterial?.title || "No active document selected"}
+            {clipImage
+              ? excerptLabel || "Clipboard image"
+              : excerptLabel || activeMaterial?.title || "No active document selected"}
           </div>
           <Button
             type="button"

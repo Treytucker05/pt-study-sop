@@ -7,7 +7,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TutorShell } from "@/components/TutorShell";
 import { buildStudioShellPresetLayout } from "@/components/studio/StudioShell";
 import { getStudioCanvasShapeId } from "@/lib/studioCanvasShapes";
-import { getStudioExcerptObjectId } from "@/lib/studioWorkspaceObjects";
+import {
+  getStudioExcerptObjectId,
+  getStudioImageObjectId,
+} from "@/lib/studioWorkspaceObjects";
 
 vi.mock("@/components/TutorErrorBoundary", () => ({
   TutorErrorBoundary: ({ children }: { children: ReactNode }) => <>{children}</>,
@@ -239,6 +242,12 @@ beforeEach(() => {
   getMaterialContentMock.mockReset().mockResolvedValue({ content: "" });
   getObsidianFilesMock.mockReset().mockResolvedValue({ success: true, files: [] });
   uploadMaterialMock.mockReset();
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    value: {
+      read: vi.fn().mockResolvedValue([]),
+    },
+  });
 });
 
 vi.mock("@/lib/api", () => ({
@@ -2630,6 +2639,102 @@ describe("TutorShell studio routing", () => {
             materialId: 101,
             excerptText: "Cardiac output depends on stroke volume",
             selectionLabel: "Viewer selection",
+          }),
+        ),
+        type: "note",
+      }),
+    ]);
+  });
+
+  it("accepts pasted clipboard images in the Document Dock and sends them to the workspace", async () => {
+    const user = userEvent.setup();
+    getMaterialContentMock.mockResolvedValueOnce({
+      title: "Cardiac Output Lecture",
+      file_type: "txt",
+      content:
+        "Cardiac output depends on stroke volume and heart rate for each beat.",
+    });
+
+    const imageFile = new File(["clipboard-image"], "clip.png", {
+      type: "image/png",
+    });
+    const clipboardRead = vi.fn().mockResolvedValue([
+      {
+        types: ["image/png"],
+        getType: vi.fn().mockResolvedValue(imageFile),
+      },
+    ]);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        read: clipboardRead,
+      },
+    });
+
+    renderTutorShell("workspace", {
+      hubOverrides: {
+        courseLabel: "Exercise Physiology",
+        selectedMaterials: [101],
+        chatMaterials: [
+          {
+            id: 101,
+            title: "Cardiac Output Lecture",
+            file_type: "txt",
+            source_path: "uploads/cardio-output.txt",
+          },
+        ],
+      },
+      viewerState: {
+        material_id: 101,
+        source_path: "uploads/cardio-output.txt",
+        file_type: "txt",
+      },
+    });
+
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
+
+    const documentDock = screen.getByTestId("studio-document-dock");
+    const selectedPassage = within(documentDock).getByLabelText(/Selected passage/i);
+    const workspace = await screen.findByTestId("studio-tldraw-workspace");
+
+    fireEvent.paste(selectedPassage, {
+      clipboardData: {
+        items: [
+          {
+            kind: "file",
+            type: "image/png",
+            getAsFile: () => imageFile,
+          },
+        ],
+      },
+    });
+
+    const imagePreview = await within(documentDock).findByTestId(
+      "document-dock-clip-image-preview",
+    );
+    const previewSrc = imagePreview.getAttribute("src");
+    expect(imagePreview).toHaveAttribute(
+      "alt",
+      "Pasted clipboard clip for Cardiac Output Lecture",
+    );
+    expect(previewSrc).toMatch(/^data:image\/png;base64,/);
+    expect(clipboardRead).toHaveBeenCalledTimes(1);
+
+    await user.click(
+      within(documentDock).getByRole("button", {
+        name: /Clip excerpt to workspace/i,
+      }),
+    );
+
+    expect(workspace).toHaveTextContent("Workspace Images");
+    expect(workspace).toHaveTextContent("Image clip: Cardiac Output Lecture");
+    expect(workspace).toHaveTextContent("Clipboard image");
+    expect(mockTldrawEditor.createShapes).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: getStudioCanvasShapeId(
+          getStudioImageObjectId({
+            sourceTitle: "Cardiac Output Lecture",
+            assetUrl: previewSrc ?? "",
           }),
         ),
         type: "note",
