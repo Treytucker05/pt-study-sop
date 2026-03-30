@@ -258,6 +258,27 @@ describe("StudioShell", () => {
     expect(screen.getByTestId("obsidian-panel-content")).toBeInTheDocument();
   });
 
+  it("opens the wired Anki panel content from the toolbar", () => {
+    function Harness() {
+      const [panelLayout, setPanelLayout] = useState<ReturnType<typeof buildStudioShellPresetLayout>>([]);
+
+      return (
+        <StudioShell
+          panelLayout={panelLayout}
+          setPanelLayout={setPanelLayout}
+          tutorPanel={<div>Tutor</div>}
+          ankiPanel={<div data-testid="anki-panel-content">anki export queue</div>}
+        />
+      );
+    }
+
+    render(<Harness />);
+
+    fireEvent.click(screen.getByRole("button", { name: /open anki panel/i }));
+
+    expect(screen.getByTestId("anki-panel-content")).toBeInTheDocument();
+  });
+
   it("pans only when dragging the empty canvas background", () => {
     setTransformSpy.mockClear();
 

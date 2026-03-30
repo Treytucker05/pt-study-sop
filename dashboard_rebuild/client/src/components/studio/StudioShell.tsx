@@ -543,6 +543,7 @@ export interface StudioShellProps {
   polishPacket?: ReactNode;
   notesPanel?: ReactNode;
   obsidianPanel?: ReactNode;
+  ankiPanel?: ReactNode;
   panelLayout: StudioPanelLayoutItem[];
   setPanelLayout: (
     next:
@@ -570,6 +571,7 @@ export function StudioShell({
   polishPacket,
   notesPanel,
   obsidianPanel,
+  ankiPanel,
   panelLayout,
   setPanelLayout,
   onClearCanvas,
@@ -819,10 +821,12 @@ export function StudioShell({
         defaultSize: { width: 360, height: 360 },
         minWidth: 300,
         minHeight: 220,
-        content: makePlaceholder(
-          "Anki",
-          "Review due cards and draft card outputs alongside the study workspace.",
-        ),
+        content:
+          ankiPanel ??
+          makePlaceholder(
+            "Anki",
+            "Review due cards and draft card outputs alongside the study workspace.",
+          ),
       },
     ],
     [
@@ -830,6 +834,7 @@ export function StudioShell({
       memory,
       notesPanel,
       obsidianPanel,
+      ankiPanel,
       polishPacket,
       polishPanel,
       primePacket,

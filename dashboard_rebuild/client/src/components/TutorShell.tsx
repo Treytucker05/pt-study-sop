@@ -10,6 +10,7 @@ import {
   buildStudioShellPresetLayout,
 } from "@/components/studio/StudioShell";
 import { StudioDocumentDock } from "@/components/studio/StudioDocumentDock";
+import { StudioAnkiPanel } from "@/components/studio/StudioAnkiPanel";
 import { StudioObsidianPanel } from "@/components/studio/StudioObsidianPanel";
 import { StudioWorkspaceUnified } from "@/components/studio/StudioWorkspaceUnified";
 import { PrimePacketPanel } from "@/components/studio/PrimePacketPanel";
@@ -1458,6 +1459,15 @@ export function TutorShell({
       workflowId={workflow.activeWorkflowId}
     />
   );
+  const ankiPanel = (
+    <StudioAnkiPanel
+      activeSessionId={liveTutorSessionId}
+      courseId={hub.courseId ?? null}
+      workflowId={workflow.activeWorkflowId}
+      sessionName={entrySessionName}
+      draftCardRequestText={polishDraftPreview.cardRequestText}
+    />
+  );
   const runConfigContent = (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-1">
       <RunConfigPanel
@@ -1751,6 +1761,7 @@ export function TutorShell({
           polishPacket={<PolishPacketPanel sections={polishPacketSections} />}
           notesPanel={notesPanel}
           obsidianPanel={obsidianPanel}
+          ankiPanel={ankiPanel}
           panelLayout={panelLayout}
           setPanelLayout={setPanelLayout}
           onClearCanvas={handleClearCanvas}

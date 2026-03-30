@@ -896,7 +896,8 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
   "max_iterations": $MAX_ITERATIONS,
   "run_id": "$RUN_TAG",
   "mode": "$MODE",
-  "pid": $$
+  "pid": $$,
+  "phase": "running"
 }
 HBEOF
 
@@ -918,6 +919,23 @@ HBEOF
   ITER_DURATION=$((ITER_END - ITER_START))
   HEAD_AFTER="$(git_head)"
   log_activity "ITERATION $i end (duration=${ITER_DURATION}s)"
+
+  # Update heartbeat with completion status
+  cat > "$HEARTBEAT_FILE" <<HBEOF
+{
+  "timestamp": "$(date -Iseconds)",
+  "story": "${STORY_ID:-unknown}",
+  "story_title": "${STORY_TITLE:-unknown}",
+  "iteration": $i,
+  "max_iterations": $MAX_ITERATIONS,
+  "run_id": "$RUN_TAG",
+  "mode": "$MODE",
+  "pid": $$,
+  "phase": "between_iterations",
+  "last_duration_s": $ITER_DURATION,
+  "exit_code": $CMD_STATUS
+}
+HBEOF
   if [ "$CMD_STATUS" -ne 0 ]; then
     log_error "ITERATION $i command failed (status=$CMD_STATUS)"
     HAS_ERROR="true"

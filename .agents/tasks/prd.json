@@ -59,10 +59,10 @@
         "brain/dashboard/api_tutor.py"
       ],
       "verification": "dev-browser --timeout 90 run scripts/verify-remaining.js",
-      "status": "in_progress",
-      "startedAt": "2026-03-30T02:55:08.633912+00:00",
-      "completedAt": null,
-      "updatedAt": "2026-03-30T02:55:08.633914+00:00"
+      "status": "done",
+      "startedAt": "2026-03-30T03:36:52.124822+00:00",
+      "completedAt": "2026-03-30T03:37:35.774920+00:00",
+      "updatedAt": "2026-03-30T03:37:35.774906+00:00"
     },
     {
       "id": "REMAIN-007",
@@ -80,7 +80,10 @@
         "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
       ],
       "verification": "dev-browser --timeout 90 run scripts/verify-remaining.js",
-      "status": "open"
+      "status": "in_progress",
+      "startedAt": "2026-03-30T03:37:38.211519+00:00",
+      "completedAt": null,
+      "updatedAt": "2026-03-30T03:37:38.211526+00:00"
     },
     {
       "id": "REMAIN-008",

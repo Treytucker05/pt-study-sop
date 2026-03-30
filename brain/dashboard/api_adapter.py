@@ -9846,7 +9846,7 @@ def get_card_drafts():
         cur = conn.cursor()
 
         cur.execute("""
-            SELECT id, session_id, deck_name, card_type, front, back, tags, status, created_at
+            SELECT id, session_id, course_id, deck_name, card_type, front, back, tags, status, created_at
             FROM card_drafts
             ORDER BY created_at DESC
             LIMIT 50
@@ -9858,13 +9858,14 @@ def get_card_drafts():
                 {
                     "id": row[0],
                     "sessionId": row[1],
-                    "deckName": row[2],
-                    "cardType": row[3],
-                    "front": row[4],
-                    "back": row[5],
-                    "tags": row[6],
-                    "status": row[7],
-                    "createdAt": row[8],
+                    "courseId": row[2],
+                    "deckName": row[3],
+                    "cardType": row[4],
+                    "front": row[5],
+                    "back": row[6],
+                    "tags": row[7],
+                    "status": row[8],
+                    "createdAt": row[9],
                 }
             )
 

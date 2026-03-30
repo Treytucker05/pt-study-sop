@@ -378,6 +378,7 @@ export interface AnkiDueInfo {
 export interface CardDraft {
   id: number;
   sessionId: string;
+  courseId?: number | null;
   deckName: string;
   cardType: string;
   front: string;
