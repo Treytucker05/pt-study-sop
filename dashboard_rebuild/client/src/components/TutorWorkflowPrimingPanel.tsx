@@ -391,19 +391,6 @@ function buildMethodResultBlocks(
       });
     }
 
-    const drawingBrief = typeof entry.drawing_brief === "string" ? entry.drawing_brief.trim() : "";
-    if (drawingBrief) {
-      blocks.push({
-        id: makeBlockId([methodLabel, sourceTitle, "drawing-brief", index]),
-        title: `Hand-Draw Brief${blockSuffix}`,
-        badge: "DRAW",
-        kind: "generic",
-        sourceLabel: methodLabel,
-        ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
-        content: drawingBrief,
-      });
-    }
-
     const concepts = isStringArray(entry.concepts) ? entry.concepts : [];
     if (concepts.length > 0) {
       blocks.push({
@@ -414,19 +401,6 @@ function buildMethodResultBlocks(
         sourceLabel: methodLabel,
         ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
         content: concepts.map((concept) => `- ${concept}`).join("\n"),
-      });
-    }
-
-    const branchPoints = isStringArray(entry.branch_points) ? entry.branch_points : [];
-    if (branchPoints.length > 0) {
-      blocks.push({
-        id: makeBlockId([methodLabel, sourceTitle, "branch-points", index]),
-        title: `Branch Points${blockSuffix}`,
-        badge: "BRANCHES",
-        kind: "generic",
-        sourceLabel: methodLabel,
-        ...(typeof entry.material_id === "number" ? { materialId: entry.material_id } : {}),
-        content: buildBulletListContent(branchPoints),
       });
     }
 

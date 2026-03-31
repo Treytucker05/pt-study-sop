@@ -312,6 +312,16 @@ describe("TutorWorkflowPrimingPanel", () => {
         default_duration_min: 5,
         energy_cost: "low",
       },
+      {
+        id: 211,
+        method_id: "M-ENC-015",
+        name: "Hand-Drawn Map",
+        control_stage: "PRIME",
+        category: "prepare",
+        description: "Prompt a learner-created map.",
+        default_duration_min: 10,
+        energy_cost: "medium",
+      },
     ]);
 
     renderPanel();
@@ -338,6 +348,7 @@ describe("TutorWorkflowPrimingPanel", () => {
     expect(
       screen.queryByRole("checkbox", { name: /skeleton concept hierarchy/i }),
     ).not.toBeInTheDocument();
+    expect(screen.queryByRole("checkbox", { name: /hand-drawn map/i })).not.toBeInTheDocument();
   });
 
   it("keeps chain runs reachable through the chain selector", async () => {

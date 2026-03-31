@@ -17,10 +17,10 @@
         "dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx"
       ],
       "verification": "dev-browser --connect --timeout 90 run scripts/verify-prime-001.js",
-      "status": "in_progress",
+      "status": "done",
       "startedAt": "2026-03-31T18:18:37.768051+00:00",
-      "completedAt": null,
-      "updatedAt": "2026-03-31T18:18:37.768059+00:00"
+      "completedAt": "2026-03-31T18:25:00.000000+00:00",
+      "updatedAt": "2026-03-31T18:25:00.000000+00:00"
     },
     {
       "id": "PRIME-002",
@@ -38,7 +38,10 @@
         "dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx"
       ],
       "verification": "dev-browser --connect --timeout 90 run scripts/verify-prime-002.js",
-      "status": "open"
+      "status": "in_progress",
+      "startedAt": "2026-03-31T18:41:06.177008+00:00",
+      "completedAt": null,
+      "updatedAt": "2026-03-31T18:41:06.177017+00:00"
     },
     {
       "id": "PRIME-003",

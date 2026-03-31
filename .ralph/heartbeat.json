@@ -1,11 +1,11 @@
 {
-  "timestamp": "2026-03-31T13:18:38-05:00",
-  "story": "PRIME-001",
-  "story_title": "Filter priming methods to pure-priming only",
+  "timestamp": "2026-03-31T13:41:06-05:00",
+  "story": "PRIME-002",
+  "story_title": "Remove Hand-Drawn Map from priming",
   "iteration": 1,
   "max_iterations": 40,
-  "run_id": "20260331-131837-938",
+  "run_id": "20260331-134105-377",
   "mode": "build",
-  "pid": 938,
+  "pid": 377,
   "phase": "running"
 }
