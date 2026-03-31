@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TutorWorkflowPrimingPanel } from "@/components/TutorWorkflowPrimingPanel";
+import { resetPrimingPanelSessionState } from "@/components/priming/primingPanelState";
 import type { TutorPrimingMethodRun } from "@/api.types";
 
 const { getPrimeMethodsMock, startChainRunMock, refinePrimingAssistMock } = vi.hoisted(() => ({
@@ -138,6 +139,7 @@ function renderPanel(overrides: Record<string, unknown> = {}) {
 describe("TutorWorkflowPrimingPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetPrimingPanelSessionState();
     getPrimeMethodsMock.mockResolvedValue([
       {
         id: 201,
@@ -857,5 +859,153 @@ describe("TutorWorkflowPrimingPanel", () => {
         "Explain how increased preload raises stroke volume through the Frank-Starling mechanism.",
       ),
     ).toBeInTheDocument();
+  });
+
+  it("persists run results, chat history, and draft input through a remount", async () => {
+    const wrapper = createWrapper();
+
+    function Harness() {
+      return (
+        <TutorWorkflowPrimingPanel
+          workflow={
+            {
+              workflow_id: "wf-persist-001",
+              updated_at: "2026-03-20T12:00:00Z",
+              status: "priming_in_progress",
+              assignment_title: "Week 7",
+              course_name: "Exercise Phys",
+              topic: "Cardiac output",
+            } as never
+          }
+          courses={[{ id: 1, name: "Exercise Phys", code: "EXPH" }] as never}
+          courseId={1}
+          setCourseId={vi.fn()}
+          selectedMaterials={[101]}
+          setSelectedMaterials={vi.fn()}
+          topic="Cardiac output"
+          setTopic={vi.fn()}
+          objectiveScope="module_all"
+          setObjectiveScope={vi.fn()}
+          selectedObjectiveId=""
+          setSelectedObjectiveId={vi.fn()}
+          selectedObjectiveGroup="Week 7"
+          setSelectedObjectiveGroup={vi.fn()}
+          availableObjectives={[]}
+          studyUnitOptions={[{ value: "Week 7", objectiveCount: 2, materialCount: 1 }]}
+          primingMethods={[]}
+          setPrimingMethods={vi.fn()}
+          primingMethodRuns={[]}
+          chainId={1}
+          setChainId={vi.fn()}
+          customBlockIds={[]}
+          setCustomBlockIds={vi.fn()}
+          templateChains={[
+            {
+              id: 1,
+              name: "First Exposure: Standard",
+              description: "Teach-first chain",
+              context_tags: "first-exposure",
+              blocks: [],
+            },
+          ] as never}
+          templateChainsLoading={false}
+          summaryText=""
+          setSummaryText={vi.fn()}
+          conceptsText=""
+          setConceptsText={vi.fn()}
+          terminologyText=""
+          setTerminologyText={vi.fn()}
+          rootExplanationText=""
+          setRootExplanationText={vi.fn()}
+          gapsText=""
+          setGapsText={vi.fn()}
+          recommendedStrategyText=""
+          setRecommendedStrategyText={vi.fn()}
+          sourceInventory={[
+            {
+              id: 101,
+              title: "Cardiac Output Lecture",
+              source_path: "/tmp/cardio-output.pdf",
+              method_outputs: [],
+            },
+          ] as never}
+          vaultFolderPreview="Courses/Exercise Phys/Week 7"
+          readinessItems={[]}
+          preflightBlockers={[]}
+          preflightLoading={false}
+          preflightError={null}
+          onBackToStudio={vi.fn()}
+          onSaveDraft={vi.fn()}
+          onMarkReady={vi.fn()}
+          onStartTutor={vi.fn()}
+          onRunAssistForSelected={vi.fn()}
+          onRunAssistForMaterial={vi.fn()}
+          onPromoteResultToPrimePacket={vi.fn()}
+          onSendResultToWorkspace={vi.fn()}
+          isSaving={false}
+          isStartingTutor={false}
+          isRunningAssist={false}
+          assistTargetMaterialId={null}
+        />
+      );
+    }
+
+    startChainRunMock.mockResolvedValue({
+      run_id: 88,
+      chain_name: "First Exposure: Standard",
+      steps: [
+        {
+          step: 1,
+          method_name: "Big Picture",
+          category: "prime",
+          output: "Cardiac output is the amount of blood the heart pumps each minute.",
+        },
+      ],
+    });
+    refinePrimingAssistMock.mockResolvedValue({
+      assistant_message: "Keep the explanation tied to preload and heart rate.",
+      updated_results: null,
+    });
+
+    const firstRender = render(<Harness />, { wrapper });
+
+    await waitFor(() => expect(getPrimeMethodsMock).toHaveBeenCalledWith("PRIME"));
+
+    fireEvent.click(screen.getByTestId("priming-run-button"));
+
+    expect(
+      await screen.findByText(
+        "Cardiac output is the amount of blood the heart pumps each minute.",
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId("priming-chat-input"), {
+      target: { value: "Tie this more clearly to determinants of cardiac output." },
+    });
+    fireEvent.click(screen.getByTestId("priming-chat-send"));
+
+    expect(
+      await screen.findByText("Keep the explanation tied to preload and heart rate."),
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId("priming-chat-input"), {
+      target: { value: "draft that should survive remount" },
+    });
+
+    firstRender.unmount();
+    render(<Harness />, { wrapper });
+
+    expect(
+      await screen.findByText(
+        "Cardiac output is the amount of blood the heart pumps each minute.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Tie this more clearly to determinants of cardiac output.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Keep the explanation tied to preload and heart rate."),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("priming-chat-input")).toHaveValue(
+      "draft that should survive remount",
+    );
   });
 });

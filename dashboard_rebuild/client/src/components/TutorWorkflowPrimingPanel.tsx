@@ -15,6 +15,12 @@ import type {
 } from "@/api.types";
 import { ConceptMapStructured } from "@/components/brain/ConceptMapStructured";
 import { ObsidianRenderer } from "@/components/ObsidianRenderer";
+import {
+  setPrimingPanelSessionState,
+  usePrimingPanelSessionState,
+  type PrimingChatTurn,
+  type PrimingPanelSessionState,
+} from "@/components/priming/primingPanelState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { StudioWorkspaceObject } from "@/lib/studioWorkspaceObjects";
@@ -50,14 +56,6 @@ const PRIME_METHOD_DISPLAY_ORDER = [
 type ResultBlockKind = TutorPrimingResultBlockKind;
 type ResultBlock = TutorPrimingResultBlock;
 type PanelRunResult = TutorPrimingDisplayedRun;
-
-type PrimingChatTurn = {
-  id: string;
-  role: "user" | "assistant";
-  message: string;
-  updatedRun?: PanelRunResult | null;
-  applied?: boolean;
-};
 
 type RunOption =
   | {
@@ -643,15 +641,6 @@ export function TutorWorkflowPrimingPanel({
   onApplyRefinedResults,
   isRunningAssist,
 }: TutorWorkflowPrimingPanelProps) {
-  const [pendingMethodResult, setPendingMethodResult] = useState<{
-    methodIds: string[];
-    label: string;
-  } | null>(null);
-  const [displayedRun, setDisplayedRun] = useState<PanelRunResult | null>(null);
-  const [runningChain, setRunningChain] = useState(false);
-  const [chatInput, setChatInput] = useState("");
-  const [chatTurns, setChatTurns] = useState<PrimingChatTurn[]>([]);
-  const [sendingChat, setSendingChat] = useState(false);
   const previousAssistRunningRef = useRef(isRunningAssist);
 
   const {
@@ -719,6 +708,47 @@ export function TutorWorkflowPrimingPanel({
     () => selectedMethodCards.map((method) => method.name),
     [selectedMethodCards],
   );
+  const runTopic = useMemo(() => {
+    const normalizedTopic = topic.trim();
+    if (normalizedTopic) return normalizedTopic;
+    const studyUnit = selectedObjectiveGroup.trim();
+    if (studyUnit) return studyUnit;
+    const workflowTopic = workflow?.topic?.trim();
+    if (workflowTopic) return workflowTopic;
+    return materialChips.map((chip) => chip.label).join(", ") || "Priming Study Run";
+  }, [materialChips, selectedObjectiveGroup, topic, workflow?.topic]);
+  const primingPanelStateKey = useMemo(() => {
+    const workflowId = workflow?.workflow_id?.trim();
+    if (workflowId) return `workflow:${workflowId}`;
+
+    const tutorSessionId = workflow?.active_tutor_session_id?.trim();
+    if (tutorSessionId) return `tutor-session:${tutorSessionId}`;
+
+    const materialScope = [...selectedMaterials].sort((left, right) => left - right).join(",");
+    return `course:${courseId}:materials:${materialScope}:topic:${runTopic}`;
+  }, [
+    courseId,
+    runTopic,
+    selectedMaterials,
+    workflow?.active_tutor_session_id,
+    workflow?.workflow_id,
+  ]);
+  const primingPanelState = usePrimingPanelSessionState(primingPanelStateKey);
+  const {
+    pendingMethodResult,
+    displayedRun,
+    runningChain,
+    chatInput,
+    chatTurns,
+    sendingChat,
+  } = primingPanelState;
+  const updatePrimingPanelState = (
+    updater:
+      | PrimingPanelSessionState
+      | ((current: PrimingPanelSessionState) => PrimingPanelSessionState),
+  ) => {
+    setPrimingPanelSessionState(primingPanelStateKey, updater);
+  };
   const selectedChain = useMemo(
     () => templateChains.find((chain) => chain.id === chainId) || null,
     [chainId, templateChains],
@@ -752,16 +782,6 @@ export function TutorWorkflowPrimingPanel({
     }
     return null;
   }, [selectedChain, selectedMethodCards]);
-
-  const runTopic = useMemo(() => {
-    const normalizedTopic = topic.trim();
-    if (normalizedTopic) return normalizedTopic;
-    const studyUnit = selectedObjectiveGroup.trim();
-    if (studyUnit) return studyUnit;
-    const workflowTopic = workflow?.topic?.trim();
-    if (workflowTopic) return workflowTopic;
-    return materialChips.map((chip) => chip.label).join(", ") || "Priming Study Run";
-  }, [materialChips, selectedObjectiveGroup, topic, workflow?.topic]);
 
   useEffect(() => {
     if (customBlockIds.length === 0 || typeof chainId === "number") {
@@ -808,15 +828,18 @@ export function TutorWorkflowPrimingPanel({
       (value, index, items) => value.trim().length > 0 && items.indexOf(value) === index,
     );
 
-    setDisplayedRun({
-      key: `method:${resolvedMethodIds.join(",")}:${Date.now()}`,
-      label:
-        methodLabels.length > 0 ? buildMethodRunLabel(methodLabels) : pendingMethodResult.label,
-      kind: "method",
-      methodId: resolvedMethodIds.length === 1 ? resolvedMethodIds[0] : null,
-      blocks,
-    });
-    setPendingMethodResult(null);
+    updatePrimingPanelState((current) => ({
+      ...current,
+      displayedRun: {
+        key: `method:${resolvedMethodIds.join(",")}:${Date.now()}`,
+        label:
+          methodLabels.length > 0 ? buildMethodRunLabel(methodLabels) : pendingMethodResult.label,
+        kind: "method",
+        methodId: resolvedMethodIds.length === 1 ? resolvedMethodIds[0] : null,
+        blocks,
+      },
+      pendingMethodResult: null,
+    }));
     previousAssistRunningRef.current = isRunningAssist;
   }, [
     isRunningAssist,
@@ -824,6 +847,7 @@ export function TutorWorkflowPrimingPanel({
     primeMethods,
     primingMethodRuns,
     selectedSourceInventory,
+    updatePrimingPanelState,
   ]);
 
   const handleToggleMethod = (methodId: string) => {
@@ -859,8 +883,11 @@ export function TutorWorkflowPrimingPanel({
       return;
     }
 
-    setChatTurns([]);
-    setChatInput("");
+    updatePrimingPanelState((current) => ({
+      ...current,
+      chatTurns: [],
+      chatInput: "",
+    }));
 
     if (selectionMode === "method") {
       const selectedMethodIds = selectedMethodCards
@@ -869,10 +896,13 @@ export function TutorWorkflowPrimingPanel({
       if (selectedMethodIds.length === 0) {
         return;
       }
-      setPendingMethodResult({
-        methodIds: selectedMethodIds,
-        label: buildMethodRunLabel(selectedMethodLabels),
-      });
+      updatePrimingPanelState((current) => ({
+        ...current,
+        pendingMethodResult: {
+          methodIds: selectedMethodIds,
+          label: buildMethodRunLabel(selectedMethodLabels),
+        },
+      }));
       onRunAssistForSelected();
       return;
     }
@@ -881,7 +911,10 @@ export function TutorWorkflowPrimingPanel({
       return;
     }
 
-    setRunningChain(true);
+    updatePrimingPanelState((current) => ({
+      ...current,
+      runningChain: true,
+    }));
     try {
       const result = await api.chainRun.start({
         chain_id: selectedChain.id,
@@ -893,20 +926,26 @@ export function TutorWorkflowPrimingPanel({
           draft_cards: false,
         },
       });
-      setDisplayedRun({
-        key: `chain:${selectedChain.id}:${result.run_id}`,
-        label: result.chain_name,
-        kind: "chain",
-        chainId: selectedChain.id,
-        blocks: buildChainResultBlocks(result),
-      });
+      updatePrimingPanelState((current) => ({
+        ...current,
+        displayedRun: {
+          key: `chain:${selectedChain.id}:${result.run_id}`,
+          label: result.chain_name,
+          kind: "chain",
+          chainId: selectedChain.id,
+          blocks: buildChainResultBlocks(result),
+        },
+      }));
       toast.success(`${result.chain_name} completed`);
     } catch (error) {
       toast.error(
         `Failed to run chain: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     } finally {
-      setRunningChain(false);
+      updatePrimingPanelState((current) => ({
+        ...current,
+        runningChain: false,
+      }));
     }
   };
 
@@ -933,11 +972,14 @@ export function TutorWorkflowPrimingPanel({
   };
 
   const handleApplyRefinedResults = (turnId: string, run: PanelRunResult) => {
-    setDisplayedRun(run);
+    updatePrimingPanelState((current) => ({
+      ...current,
+      displayedRun: run,
+      chatTurns: current.chatTurns.map((turn) =>
+        turn.id === turnId ? { ...turn, applied: true } : turn,
+      ),
+    }));
     onApplyRefinedResults?.(run);
-    setChatTurns((current) =>
-      current.map((turn) => (turn.id === turnId ? { ...turn, applied: true } : turn)),
-    );
     toast.success("Priming results updated");
   };
 
@@ -959,9 +1001,12 @@ export function TutorWorkflowPrimingPanel({
       ...(turn.updatedRun ? { updatedResults: turn.updatedRun } : {}),
     }));
 
-    setChatTurns((current) => [...current, userTurn]);
-    setChatInput("");
-    setSendingChat(true);
+    updatePrimingPanelState((current) => ({
+      ...current,
+      chatTurns: [...current.chatTurns, userTurn],
+      chatInput: "",
+      sendingChat: true,
+    }));
     try {
       const response = await api.tutor.refinePrimingAssist({
         message,
@@ -969,24 +1014,30 @@ export function TutorWorkflowPrimingPanel({
         extraction_results: displayedRun,
         conversation_history: conversationHistory,
       });
-      setChatTurns((current) => [
+      updatePrimingPanelState((current) => ({
         ...current,
-        {
-          id: `priming-assistant-${Date.now()}`,
-          role: "assistant",
-          message: response.assistant_message,
-          updatedRun: response.updated_results || null,
-          applied: false,
-        },
-      ]);
+        chatTurns: [
+          ...current.chatTurns,
+          {
+            id: `priming-assistant-${Date.now()}`,
+            role: "assistant",
+            message: response.assistant_message,
+            updatedRun: response.updated_results || null,
+            applied: false,
+          },
+        ],
+        sendingChat: false,
+      }));
     } catch (error) {
-      setChatTurns((current) => current.filter((turn) => turn.id !== userTurnId));
-      setChatInput(message);
+      updatePrimingPanelState((current) => ({
+        ...current,
+        chatTurns: current.chatTurns.filter((turn) => turn.id !== userTurnId),
+        chatInput: message,
+        sendingChat: false,
+      }));
       toast.error(
         `Priming chat failed: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
-    } finally {
-      setSendingChat(false);
     }
   };
 
@@ -1389,7 +1440,12 @@ export function TutorWorkflowPrimingPanel({
             <textarea
               data-testid="priming-chat-input"
               value={chatInput}
-              onChange={(event) => setChatInput(event.target.value)}
+              onChange={(event) =>
+                updatePrimingPanelState((current) => ({
+                  ...current,
+                  chatInput: event.target.value,
+                }))
+              }
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {
                   event.preventDefault();
