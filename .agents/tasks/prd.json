@@ -1,108 +1,122 @@
 {
-  "title": "PT Study SOP - Remaining Fixes",
-  "description": "Fix all remaining issues to make the full study loop work end to end.",
+  "title": "Priming System Fixes",
+  "description": "Fix priming chat method filtering, state persistence, fit button, method output, and graph tool integration. Each story runs independently with dev-browser verification.",
   "stories": [
     {
-      "id": "REMAIN-001",
-      "title": "Polish panel end-to-end verification and fixes",
-      "status": "done"
-    },
-    {
-      "id": "REMAIN-002",
-      "title": "Polish Packet shows tutor outputs staged for export",
-      "status": "done"
-    },
-    {
-      "id": "REMAIN-003",
-      "title": "Notes panel accepts and persists freeform text",
-      "status": "done"
-    },
-    {
-      "id": "REMAIN-004",
-      "title": "Document Dock clip tool supports image paste",
-      "description": "The Document Dock has a selective passage clip feature but it only accepts text input. Add paste support -- user should be able to Ctrl+V an image from clipboard into the clip area. Use the Clipboard API (navigator.clipboard.read()) to detect image data and render it as an inline image. Add a note that says 'Paste an image with Ctrl+V' and handle the paste event on the clip input area. The clipped content (text or image) should be promotable to the workspace canvas. Check the existing handleClipExcerpt function in TutorShell for the current clip flow.",
+      "id": "PRIME-001",
+      "title": "Filter priming methods to pure-priming only",
+      "description": "Remove methods that require learner input (answering questions or hand-drawing) from the priming method picker. Update PRIME_METHOD_DISPLAY_ORDER in TutorWorkflowPrimingPanel.tsx to contain exactly these 8 methods: M-PRE-004, M-PRE-006, M-PRE-008, M-PRE-009, M-PRE-010, M-PRE-012, M-PRE-013, M-PRE-014. Remove M-PRE-002 (Pre-Question Set, requires answering questions) and M-PRE-005 (Skeleton Concept Hierarchy, requires building concept map). The constant is at approximately line 39-50 of TutorWorkflowPrimingPanel.tsx.",
       "acceptanceCriteria": [
-        "Clip area accepts pasted images via Ctrl+V",
-        "Pasted images render as inline previews",
-        "Both text and image clips can be sent to workspace",
-        "dev-browser: verify clip area has paste handler for images"
+        "M-PRE-002 does not appear in the priming method picker",
+        "M-PRE-005 does not appear in the priming method picker",
+        "Exactly 8 methods appear: M-PRE-004, M-PRE-006, M-PRE-008, M-PRE-009, M-PRE-010, M-PRE-012, M-PRE-013, M-PRE-014",
+        "Method cards still show energy cost, duration, and description",
+        "dev-browser: open priming panel, verify only 8 methods listed, confirm M-PRE-002 and M-PRE-005 are absent"
       ],
       "files": [
-        "dashboard_rebuild/client/src/components/TutorShell.tsx",
-        "dashboard_rebuild/client/src/components/studio/StudioDocumentDock.tsx"
+        "dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx"
       ],
-      "verification": "dev-browser --timeout 90 run scripts/verify-remaining.js",
-      "status": "done",
-      "startedAt": "2026-03-30T01:46:48.112430+00:00",
-      "completedAt": "2026-03-30T01:47:12.022849+00:00",
-      "updatedAt": "2026-03-30T01:47:12.022836+00:00"
+      "verification": "dev-browser --connect --timeout 90 run scripts/verify-prime-001.js",
+      "status": "in_progress",
+      "startedAt": "2026-03-31T18:18:37.768051+00:00",
+      "completedAt": null,
+      "updatedAt": "2026-03-31T18:18:37.768059+00:00"
     },
     {
-      "id": "REMAIN-005",
-      "title": "End session flow saves to vault and cleans up",
-      "status": "done"
-    },
-    {
-      "id": "REMAIN-006",
-      "title": "Obsidian panel shows vault browser with note read and write",
-      "description": "The Obsidian panel is currently a placeholder. Replace with a real vault browser that: (1) Shows the folder tree for the current course vault folder. (2) Lets user click a note to read it in a preview pane. (3) Has a Create Note button that creates a new markdown note in the vault. (4) Has a Save to Vault button that saves current session notes to the vault. The vault path comes from the Obsidian vault at C:\\Users\\treyt\\Desktop\\Treys School. Use the existing filesystem API or a backend endpoint to read/write vault files.",
+      "id": "PRIME-002",
+      "title": "Remove Hand-Drawn Map from priming",
+      "description": "M-ENC-015 (Hand-Drawn Map) is an ENCODE-phase method but appears in priming UI via PRIME_HAND_DRAW_METHOD_IDS in brain/dashboard/api_tutor_workflows.py (approximately line 54). Remove M-ENC-015 from the priming panel entirely. Check TutorWorkflowPrimingPanel.tsx for any frontend references to M-ENC-015 or hand_draw_map and remove those too. Ensure no console errors after removal.",
       "acceptanceCriteria": [
-        "Obsidian panel shows folder tree for current course",
-        "Clicking a note shows its content in preview",
-        "Create Note button creates a new markdown file",
-        "Save to Vault button saves session notes",
-        "dev-browser: open Obsidian panel, verify folder tree renders"
+        "M-ENC-015 does not appear in the priming method picker",
+        "M-ENC-015 does not appear in any priming chat output",
+        "PRIME_HAND_DRAW_METHOD_IDS no longer contains M-ENC-015",
+        "No console errors related to missing hand-draw references",
+        "dev-browser: open priming panel, search page text for 'Hand-Draw' or 'Hand Draw', confirm absent"
       ],
       "files": [
-        "dashboard_rebuild/client/src/components/TutorShell.tsx",
-        "dashboard_rebuild/client/src/components/studio/StudioShell.tsx",
-        "brain/dashboard/api_tutor.py"
+        "brain/dashboard/api_tutor_workflows.py",
+        "dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx"
       ],
-      "verification": "dev-browser --timeout 90 run scripts/verify-remaining.js",
-      "status": "done",
-      "startedAt": "2026-03-30T03:36:52.124822+00:00",
-      "completedAt": "2026-03-30T03:37:35.774920+00:00",
-      "updatedAt": "2026-03-30T03:37:35.774906+00:00"
+      "verification": "dev-browser --connect --timeout 90 run scripts/verify-prime-002.js",
+      "status": "open"
     },
     {
-      "id": "REMAIN-007",
-      "title": "Anki panel shows card preview and export",
-      "description": "The Anki panel is currently a placeholder. Replace with a real panel that: (1) Shows Anki cards generated from the current session. (2) Each card shows front/back preview. (3) User can edit cards before export. (4) Export button writes cards as CSV that can be imported into Anki. If full Anki export is too complex, show card previews and provide a Copy to Clipboard button for each card.",
+      "id": "PRIME-003",
+      "title": "Persist chat state through panel drag and resize",
+      "description": "Chat messages, input text, and run results disappear when the user drags or resizes the priming panel. Root cause: WorkspacePanel.tsx uses positionResetToken in the Rnd component key (line ~327): key={`expanded:${String(positionResetToken ?? 'stable')}`}. When panelTransformResetToken changes (triggered by Maximize, Center, viewport focus in StudioShell.tsx line ~1058), the Rnd key changes, React unmounts/remounts everything inside, destroying useState. But the user reports it happens on ANY drag or resize, not just Maximize/Center. Investigate whether onDragStop or onResizeStop also triggers a token change or state reset. Fix: Lift priming chat state (chatTurns, chatInput, sendingChat, and current run result) out of local useState into a persistent store (zustand recommended, keyed by workflow/session ID). The store must survive Rnd remounts. Chat state in TutorWorkflowPrimingPanel.tsx is at approximately lines 1073-1076: chatTurns, sendingChat, chatInput as useState hooks.",
       "acceptanceCriteria": [
-        "Anki panel opens from toolbar",
-        "Panel shows generated flashcards with front/back preview",
-        "Cards are editable",
-        "Export or copy button exists for getting cards out",
-        "dev-browser: open Anki panel, verify card previews render"
+        "Run a priming method, get chat results with multiple messages",
+        "Drag the priming panel to a new position -- all chat messages remain visible",
+        "Resize the priming panel -- all chat messages remain visible",
+        "Click Maximize -- all chat messages remain visible",
+        "Click Center -- all chat messages remain visible",
+        "Type partial text in chat input, drag panel, text remains in input",
+        "dev-browser: run a method, count messages, drag panel title bar 200px right, count messages again, assert same count; resize panel, count messages again, assert same count"
       ],
       "files": [
-        "dashboard_rebuild/client/src/components/TutorShell.tsx",
+        "dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx",
+        "dashboard_rebuild/client/src/components/ui/WorkspacePanel.tsx",
         "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
       ],
-      "verification": "dev-browser --timeout 90 run scripts/verify-remaining.js",
-      "status": "done",
-      "startedAt": "2026-03-30T04:43:34.702756+00:00",
-      "completedAt": "2026-03-30T04:44:19.449098+00:00",
-      "updatedAt": "2026-03-30T04:44:19.449084+00:00"
+      "verification": "dev-browser --connect --timeout 120 run scripts/verify-prime-003.js",
+      "status": "open"
     },
     {
-      "id": "REMAIN-008",
-      "title": "Entry card scrolls on small viewports",
-      "description": "On smaller screens the entry card form may overflow the viewport and get cut off. Add max-h-[90vh] overflow-y-auto to the entry card container inside the overlay.",
+      "id": "PRIME-004",
+      "title": "Fix Fit button for all panels",
+      "description": "The Fit button on panel title bars does not resize panels to fit their content. measureFitContentSize() in WorkspacePanel.tsx (lines ~205-282) temporarily removes overflow constraints and measures scrollWidth/scrollHeight, but returns incorrect dimensions for panels with flex or absolute-positioned content. The function relies on contentScrollRef and contentMeasureRef. Max constraints are 1400x1000 with 24px horizontal and 64px vertical chrome padding (lines ~80-83). Fix the measurement to produce correct content dimensions for all layout types. Consider measuring actual rendered child element bounding rects as a fallback when scroll dimensions match the container size (indicating the content is not naturally flowing). The Fit button shows because canFitContent (line ~152) is true when onSizeChange is passed, which it is from StudioShell (line ~1636).",
       "acceptanceCriteria": [
-        "Entry card is scrollable when it exceeds viewport height",
-        "All form fields and buttons are reachable by scrolling",
-        "Works on viewport heights as small as 600px",
-        "dev-browser: resize to 800x600, verify entry card scrolls"
+        "Click Fit on priming panel with chat content -- panel resizes to show all content without scrolling",
+        "Click Fit on document dock with a document loaded -- panel resizes appropriately",
+        "Click Fit on notes panel -- panel resizes to fit note content",
+        "Panel does not exceed 1400px wide or 1000px tall",
+        "Panel does not shrink below its minWidth/minHeight",
+        "dev-browser: open priming panel, get its size, click Fit button, get new size, assert size changed; repeat for at least one other panel type"
       ],
       "files": [
+        "dashboard_rebuild/client/src/components/ui/WorkspacePanel.tsx"
+      ],
+      "verification": "dev-browser --connect --timeout 90 run scripts/verify-prime-004.js",
+      "status": "open"
+    },
+    {
+      "id": "PRIME-005",
+      "title": "Fix empty output for Big Picture and Terminology methods",
+      "description": "M-PRE-013 (Big-Picture Orientation Summary) and M-PRE-012 (Terminology Pretraining) produce empty or blank output when run in the priming chat. Investigate root cause by: (1) Reading the facilitation_prompt in sop/library/methods/M-PRE-012.yaml and M-PRE-013.yaml -- check if prompts are well-formed with clear instructions. (2) Checking brain/chain_runner.py to see how the facilitation_prompt is sent to the LLM. (3) Checking brain/dashboard/api_tutor_workflows.py for the method run endpoint -- verify source material context is being passed. (4) Check if output parsing in the frontend (TutorWorkflowPrimingPanel.tsx) drops or ignores these methods' output blocks. Fix at the source -- whether that is the YAML prompt, backend context passing, or frontend parsing.",
+      "acceptanceCriteria": [
+        "Run M-PRE-012 Terminology Pretraining -- produces a list of key terms with definitions extracted from source material",
+        "Run M-PRE-013 Big-Picture Orientation Summary -- produces a meaningful summary orienting the learner to the big picture of the material",
+        "Output appears in priming chat as formatted content blocks, not empty or generic filler text",
+        "dev-browser: select M-PRE-012, click run, wait for response, verify chat contains non-empty text with at least 3 terms; select M-PRE-013, click run, wait for response, verify chat contains non-empty summary text"
+      ],
+      "files": [
+        "sop/library/methods/M-PRE-012.yaml",
+        "sop/library/methods/M-PRE-013.yaml",
+        "brain/chain_runner.py",
+        "brain/dashboard/api_tutor_workflows.py",
+        "dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx"
+      ],
+      "verification": "dev-browser --connect --timeout 120 run scripts/verify-prime-005.js",
+      "status": "open"
+    },
+    {
+      "id": "PRIME-006",
+      "title": "Add graph tool choice for map-producing priming methods",
+      "description": "When a priming method produces a concept map or graph (detected as a mermaid code block), show a choice instead of only rendering inline. Add two buttons: 'View as Text' (shows ASCII/text version inline in chat) and 'Open in Graph Tool' (opens the mermaid content in the ConceptMapStructured panel). Currently, mermaid detection happens in TutorWorkflowPrimingPanel.tsx around line ~560-568 where block.kind === 'concept_map' triggers an inline ConceptMapStructured embed. Replace this with a choice UI. The ConceptMapStructured panel can be opened via the existing studio panel system. If the panel is not already open, auto-open it. Use the existing extractMermaidBlock utility and the ConceptMapStructured component's initialMermaid prop. Style buttons consistently with the priming panel design (rounded-full, font-mono, uppercase tracking).",
+      "acceptanceCriteria": [
+        "When a priming result contains a mermaid block, two buttons appear: 'View as Text' and 'Open in Graph Tool'",
+        "Clicking 'View as Text' shows the text representation inline in chat",
+        "Clicking 'Open in Graph Tool' opens the ConceptMapStructured panel with the mermaid content loaded",
+        "If ConceptMapStructured panel is closed, it auto-opens when 'Open in Graph Tool' is clicked",
+        "Buttons are styled consistently with priming panel design",
+        "dev-browser: run a method that produces a concept map (like M-PRE-008), verify two buttons appear with correct labels, click 'Open in Graph Tool', verify a graph panel opens with rendered nodes"
+      ],
+      "files": [
+        "dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx",
         "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
       ],
-      "verification": "dev-browser --timeout 60 run scripts/verify-remaining.js",
-      "status": "done",
-      "startedAt": "2026-03-30T05:05:17.929524+00:00",
-      "completedAt": "2026-03-30T05:05:57.038227+00:00",
-      "updatedAt": "2026-03-30T05:05:57.038209+00:00"
+      "verification": "dev-browser --connect --timeout 120 run scripts/verify-prime-006.js",
+      "status": "open"
     }
   ]
 }

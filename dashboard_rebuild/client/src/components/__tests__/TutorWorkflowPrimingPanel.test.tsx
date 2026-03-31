@@ -146,6 +146,8 @@ describe("TutorWorkflowPrimingPanel", () => {
         control_stage: "PRIME",
         category: "prepare",
         description: "Prime objectives first.",
+        default_duration_min: 8,
+        energy_cost: "low",
       },
       {
         id: 202,
@@ -154,13 +156,15 @@ describe("TutorWorkflowPrimingPanel", () => {
         control_stage: "PRIME",
         category: "prepare",
         description: "Extract structure.",
+        default_duration_min: 12,
+        energy_cost: "medium",
       },
     ]);
     startChainRunMock.mockReset();
     refinePrimingAssistMock.mockReset();
   });
 
-  it("renders colorful method cards with descriptions and disables RUN when nothing is loaded", async () => {
+  it("renders colorful method cards with metadata and disables RUN when nothing is loaded", async () => {
     renderPanel({
       selectedMaterials: [],
       sourceInventory: [],
@@ -171,6 +175,10 @@ describe("TutorWorkflowPrimingPanel", () => {
     expect(screen.getAllByTestId("priming-method-card")).toHaveLength(2);
     expect(screen.getByText("Prime objectives first.")).toBeInTheDocument();
     expect(screen.getByText("Extract structure.")).toBeInTheDocument();
+    expect(screen.getByText("low energy")).toBeInTheDocument();
+    expect(screen.getByText("8 mins")).toBeInTheDocument();
+    expect(screen.getByText("medium energy")).toBeInTheDocument();
+    expect(screen.getByText("12 mins")).toBeInTheDocument();
     expect(
       screen.getByText("No materials loaded — open Source Shelf to add."),
     ).toBeInTheDocument();
@@ -202,9 +210,7 @@ describe("TutorWorkflowPrimingPanel", () => {
     ).toHaveAttribute("aria-checked", "true");
   });
 
-  it("renders question-set method outputs instead of the empty fallback message", async () => {
-    const wrapper = createWrapper();
-
+  it("filters the picker to pure-priming methods only", async () => {
     getPrimeMethodsMock.mockResolvedValue([
       {
         id: 201,
@@ -213,174 +219,125 @@ describe("TutorWorkflowPrimingPanel", () => {
         control_stage: "PRIME",
         category: "prepare",
         description: "Generate broad conceptual prompts.",
+        default_duration_min: 10,
+        energy_cost: "medium",
       },
       {
         id: 202,
+        method_id: "M-PRE-004",
+        name: "Simple Preview",
+        control_stage: "PRIME",
+        category: "prepare",
+        description: "Preview the topic.",
+        default_duration_min: 4,
+        energy_cost: "low",
+      },
+      {
+        id: 203,
+        method_id: "M-PRE-005",
+        name: "Skeleton Concept Hierarchy",
+        control_stage: "PRIME",
+        category: "prepare",
+        description: "Build a concept map.",
+        default_duration_min: 15,
+        energy_cost: "high",
+      },
+      {
+        id: 204,
+        method_id: "M-PRE-006",
+        name: "Anticipation Guide",
+        control_stage: "PRIME",
+        category: "prepare",
+        description: "Anchor expectations.",
+        default_duration_min: 6,
+        energy_cost: "low",
+      },
+      {
+        id: 205,
+        method_id: "M-PRE-008",
+        name: "Expert Skeleton",
+        control_stage: "PRIME",
+        category: "prepare",
+        description: "Outline the expert structure.",
+        default_duration_min: 9,
+        energy_cost: "medium",
+      },
+      {
+        id: 206,
+        method_id: "M-PRE-009",
+        name: "Prior Knowledge Bridge",
+        control_stage: "PRIME",
+        category: "prepare",
+        description: "Bridge to existing knowledge.",
+        default_duration_min: 7,
+        energy_cost: "low",
+      },
+      {
+        id: 207,
         method_id: "M-PRE-010",
         name: "Learning Objectives Primer",
         control_stage: "PRIME",
         category: "prepare",
         description: "Prime objectives first.",
+        default_duration_min: 8,
+        energy_cost: "low",
+      },
+      {
+        id: 208,
+        method_id: "M-PRE-012",
+        name: "Terminology Pretraining",
+        control_stage: "PRIME",
+        category: "prepare",
+        description: "Load the core terms.",
+        default_duration_min: 11,
+        energy_cost: "medium",
+      },
+      {
+        id: 209,
+        method_id: "M-PRE-013",
+        name: "Big-Picture Orientation Summary",
+        control_stage: "PRIME",
+        category: "prepare",
+        description: "Orient the learner.",
+        default_duration_min: 12,
+        energy_cost: "medium",
+      },
+      {
+        id: 210,
+        method_id: "M-PRE-014",
+        name: "Why-This-Matters Primer",
+        control_stage: "PRIME",
+        category: "prepare",
+        description: "Frame the value.",
+        default_duration_min: 5,
+        energy_cost: "low",
       },
     ]);
 
-    function Harness() {
-      const [primingMethods, setPrimingMethods] = useState<string[]>([]);
-      const [isRunningAssist, setIsRunningAssist] = useState(false);
-      const [sourceInventory, setSourceInventory] = useState([
-        {
-          id: 101,
-          title: "Cardiac Output Lecture",
-          source_path: "/tmp/cardio-output.pdf",
-          method_outputs: [],
-        },
-      ]);
-      const [primingMethodRuns, setPrimingMethodRuns] = useState<TutorPrimingMethodRun[]>([]);
-
-      return (
-        <TutorWorkflowPrimingPanel
-          workflow={
-            {
-              workflow_id: "wf-123",
-              updated_at: "2026-03-20T12:00:00Z",
-              status: "priming_in_progress",
-              assignment_title: "Week 7",
-              course_name: "Exercise Phys",
-              topic: "Cardiac output",
-            } as never
-          }
-          courses={[{ id: 1, name: "Exercise Phys", code: "EXPH" }] as never}
-          courseId={1}
-          setCourseId={vi.fn()}
-          selectedMaterials={[101]}
-          setSelectedMaterials={vi.fn()}
-          topic="Cardiac output"
-          setTopic={vi.fn()}
-          objectiveScope="module_all"
-          setObjectiveScope={vi.fn()}
-          selectedObjectiveId=""
-          setSelectedObjectiveId={vi.fn()}
-          selectedObjectiveGroup="Week 7"
-          setSelectedObjectiveGroup={vi.fn()}
-          availableObjectives={[]}
-          studyUnitOptions={[{ value: "Week 7", objectiveCount: 2, materialCount: 1 }]}
-          primingMethods={primingMethods}
-          setPrimingMethods={setPrimingMethods}
-          primingMethodRuns={primingMethodRuns as never}
-          chainId={undefined}
-          setChainId={vi.fn()}
-          customBlockIds={[]}
-          setCustomBlockIds={vi.fn()}
-          templateChains={[] as never}
-          templateChainsLoading={false}
-          summaryText=""
-          setSummaryText={vi.fn()}
-          conceptsText=""
-          setConceptsText={vi.fn()}
-          terminologyText=""
-          setTerminologyText={vi.fn()}
-          rootExplanationText=""
-          setRootExplanationText={vi.fn()}
-          gapsText=""
-          setGapsText={vi.fn()}
-          recommendedStrategyText=""
-          setRecommendedStrategyText={vi.fn()}
-          sourceInventory={sourceInventory as never}
-          vaultFolderPreview="Courses/Exercise Phys/Week 7"
-          readinessItems={[]}
-          preflightBlockers={[]}
-          preflightLoading={false}
-          preflightError={null}
-          onBackToStudio={vi.fn()}
-          onSaveDraft={vi.fn()}
-          onMarkReady={vi.fn()}
-          onStartTutor={vi.fn()}
-          onRunAssistForSelected={() => {
-            setIsRunningAssist(true);
-            Promise.resolve().then(() => {
-              const questions = [
-                "Why does cardiac output need both heart rate and stroke volume?",
-                "How does the cardiovascular system balance perfusion with exercise demand?",
-                "Where does preload fit inside the larger regulation of cardiac output?",
-              ];
-              setPrimingMethodRuns([
-                {
-                  method_id: "M-PRE-002",
-                  method_name: "Overarching Pre-Question Set",
-                  output_family: "prequestions",
-                  outputs: {
-                    entries: [
-                      {
-                        material_id: 101,
-                        title: "Cardiac Output Lecture",
-                        questions,
-                      },
-                    ],
-                  },
-                  source_ids: [101],
-                  status: "complete",
-                  updated_at: "2026-03-21T04:00:00Z",
-                },
-              ]);
-              setSourceInventory([
-                {
-                  id: 101,
-                  title: "Cardiac Output Lecture",
-                  source_path: "/tmp/cardio-output.pdf",
-                  method_outputs: [
-                    {
-                      method_id: "M-PRE-002",
-                      method_name: "Overarching Pre-Question Set",
-                      output_family: "prequestions",
-                      outputs: {
-                        questions,
-                      },
-                      source_ids: [101],
-                      status: "complete",
-                      updated_at: "2026-03-21T04:00:00Z",
-                    },
-                  ],
-                },
-              ]);
-              setIsRunningAssist(false);
-            });
-          }}
-          onRunAssistForMaterial={vi.fn()}
-          onPromoteResultToPrimePacket={vi.fn()}
-          onSendResultToWorkspace={vi.fn()}
-          isSaving={false}
-          isStartingTutor={false}
-          isRunningAssist={isRunningAssist}
-          assistTargetMaterialId={null}
-        />
-      );
-    }
-
-    render(<Harness />, { wrapper });
+    renderPanel();
 
     await waitFor(() => expect(getPrimeMethodsMock).toHaveBeenCalledWith("PRIME"));
 
-    fireEvent.click(
-      screen.getByRole("checkbox", { name: /overarching pre-question set/i }),
-    );
-    fireEvent.click(screen.getByTestId("priming-run-button"));
-
+    const cards = screen.getAllByTestId("priming-method-card");
+    expect(cards).toHaveLength(8);
     expect(
-      await screen.findByText(
-        /why does cardiac output need both heart rate and stroke volume/i,
-      ),
-    ).toBeInTheDocument();
+      cards.map((card) => card.getAttribute("data-method-id")),
+    ).toEqual([
+      "M-PRE-004",
+      "M-PRE-006",
+      "M-PRE-008",
+      "M-PRE-009",
+      "M-PRE-010",
+      "M-PRE-012",
+      "M-PRE-013",
+      "M-PRE-014",
+    ]);
     expect(
-      screen.getByText(
-        /how does the cardiovascular system balance perfusion with exercise demand/i,
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByText(
-        "This run completed, but no study artifacts were returned for the selected output format.",
-      ),
+      screen.queryByRole("checkbox", { name: /overarching pre-question set/i }),
     ).not.toBeInTheDocument();
-    expect(screen.getByTestId("priming-chat-input")).not.toBeDisabled();
+    expect(
+      screen.queryByRole("checkbox", { name: /skeleton concept hierarchy/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps chain runs reachable through the chain selector", async () => {

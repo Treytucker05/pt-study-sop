@@ -37,9 +37,7 @@ type StudyUnitOption = {
 };
 
 const PRIME_METHOD_DISPLAY_ORDER = [
-  "M-PRE-002",
   "M-PRE-004",
-  "M-PRE-005",
   "M-PRE-006",
   "M-PRE-008",
   "M-PRE-009",
@@ -697,7 +695,10 @@ export function TutorWorkflowPrimingPanel({
       .filter(
         (block) =>
           String(block.control_stage || "").toUpperCase() === "PRIME" &&
-          Boolean(block.method_id),
+          Boolean(block.method_id) &&
+          PRIME_METHOD_DISPLAY_ORDER.includes(
+            (block.method_id || "") as (typeof PRIME_METHOD_DISPLAY_ORDER)[number],
+          ),
       )
       .sort((a, b) => {
         const aIndex = PRIME_METHOD_DISPLAY_ORDER.indexOf(
@@ -1104,6 +1105,9 @@ export function TutorWorkflowPrimingPanel({
                   const description =
                     method.description?.trim() ||
                     "Run this PRIME method against the loaded materials.";
+                  const durationLabel = `${method.default_duration_min} min${
+                    method.default_duration_min === 1 ? "" : "s"
+                  }`;
                   return (
                     <button
                       key={method.method_id}
@@ -1161,6 +1165,23 @@ export function TutorWorkflowPrimingPanel({
                         >
                           {description}
                         </p>
+                        <div
+                          data-testid="priming-method-card-meta"
+                          className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.16em] text-[#ffd9e1]/62"
+                        >
+                          <span
+                            data-testid="priming-method-card-energy"
+                            className="rounded-full border border-white/10 bg-black/20 px-2 py-1"
+                          >
+                            {method.energy_cost} energy
+                          </span>
+                          <span
+                            data-testid="priming-method-card-duration"
+                            className="rounded-full border border-white/10 bg-black/20 px-2 py-1"
+                          >
+                            {durationLabel}
+                          </span>
+                        </div>
                       </div>
                     </button>
                   );
