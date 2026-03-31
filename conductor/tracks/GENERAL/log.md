@@ -2291,3 +2291,13 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/WorkspacePanel.test.tsx`
   - `cd dashboard_rebuild && npm run build`
   - `dev-browser --timeout 120 run scripts/verify-prime-004.js`
+
+## 2026-03-31 - PRIME-005 fix empty terminology and big-picture priming outputs
+
+- Updated `brain/dashboard/api_tutor_workflows.py` so `M-PRE-012` and `M-PRE-013` now normalize both the backend's canonical output keys and the YAML-prompt vocabulary (`TerminologySet`, `AbbreviationMap`, `ComponentDefinitionList`, `NorthStarSentence`, `OrientationSummary`, `MajorSectionList`) into the existing priming UI fields instead of dropping them as empty results.
+- Tightened `sop/library/methods/M-PRE-012.yaml` and `sop/library/methods/M-PRE-013.yaml` so their facilitation prompts now ask for the strict JSON shape the priming backend and panel already render (`terminology`, `summary`, `major_sections`).
+- Added a focused backend regression in `brain/tests/test_tutor_workflow_priming_assist.py` plus a live verifier in `scripts/verify-prime-005.js` that proves `M-PRE-012` returns at least three term-definition cards and `M-PRE-013` returns a non-empty orientation summary and major-sections block in the priming panel.
+- Validation passed:
+  - `pytest brain/tests/test_tutor_workflow_priming_assist.py -q`
+  - `python -u dashboard_web.py`
+  - `dev-browser --timeout 180 run C:\\pt-study-sop\\scripts\\verify-prime-005.js`

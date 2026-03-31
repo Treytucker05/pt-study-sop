@@ -5,6 +5,43 @@ Started: Sun Mar 29 00:04:50 CDT 2026
 - (add reusable patterns here)
 
 ---
+
+## [2026-03-31 17:17:41 -05:00] - PRIME-005: Fix empty output for Big Picture and Terminology methods
+Thread: 
+Run: 20260331-163650-4886 (iteration 2)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260331-163650-4886-iter-2.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260331-163650-4886-iter-2.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: 77fc6e97 PRIME-005 fix priming terminology and orientation outputs
+- Post-commit status: `.agents/ralph/config.sh, .agents/ralph/loop.sh, .agents/tasks/prd.json, .ralph/heartbeat.json, .agents/ralph/PROMPT_verify.md, .ralph/runs/run-20260331-141902-999-iter-1.md, .ralph/runs/run-20260331-163650-4886-iter-1.md`
+- Verification:
+  - Command: `pytest brain/tests/test_tutor_workflow_priming_assist.py -q` -> PASS
+  - Command: `cmd /c Start_Dashboard.bat` -> FAIL
+  - Command: `python -u dashboard_web.py` -> PASS
+  - Command: `dev-browser --connect --timeout 120 run C:/pt-study-sop/scripts/verify-prime-005.js` -> FAIL
+  - Command: `dev-browser --timeout 180 run C:/pt-study-sop/scripts/verify-prime-005.js` -> PASS
+- Files changed:
+  - brain/dashboard/api_tutor_workflows.py
+  - brain/tests/test_tutor_workflow_priming_assist.py
+  - sop/library/methods/M-PRE-012.yaml
+  - sop/library/methods/M-PRE-013.yaml
+  - scripts/verify-prime-005.js
+  - conductor/tracks/GENERAL/log.md
+  - .ralph/progress.md
+- What was implemented
+  - Fixed the actual drop point in the priming backend: `M-PRE-012` and `M-PRE-013` now normalize the YAML-style output keys that the LLM was being instructed to emit, instead of treating those responses as empty output.
+  - Aligned the two method YAML facilitation prompts with the strict JSON shape the priming backend and UI already expect, reducing drift between prompt wording and output parsing.
+  - Added a backend regression that proves alternate terminology/orientation keys survive into `priming_method_runs` and aggregate output, plus a live browser verifier that confirms both methods render non-empty blocks in the priming chat panel.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - For PRIME methods, prompt-schema drift can silently look like a frontend renderer bug because valid LLM output gets normalized to `{}` before the panel ever sees it.
+  - Gotchas encountered
+    - `Start_Dashboard.bat` timed out on readiness after a long UI build even though the Flask server became healthy shortly after; manual `python -u dashboard_web.py` was needed to finish live verification in this run.
+    - `dev-browser --connect` still depends on a Chrome instance with CDP enabled on this machine, so isolated mode remains the reliable fallback when connected mode cannot attach.
+  - Useful context
+    - The live browser proof saved `C:\Users\treyt\.dev-browser\tmp\verify-prime-005.png` after 15/15 passing checks covering both `M-PRE-012` and `M-PRE-013`.
+---
 ## [2026-03-31 16:43:42 -05:00] - PRIME-004: Fix Fit button for all panels
 Thread:
 Run: 20260331-163650-4886 (iteration 1)
