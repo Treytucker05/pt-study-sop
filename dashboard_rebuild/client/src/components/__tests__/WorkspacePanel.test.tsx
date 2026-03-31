@@ -460,6 +460,141 @@ describe("WorkspacePanel", () => {
     });
   });
 
+  it("falls back to descendant bounds when scroll size matches the container", () => {
+    const onSizeChange = vi.fn();
+    const { container } = render(
+      <WorkspacePanel
+        id="p1"
+        title="Panel"
+        minWidth={320}
+        minHeight={240}
+        onSizeChange={onSizeChange}
+      >
+        <div data-testid="fit-child">content</div>
+      </WorkspacePanel>,
+    );
+
+    const contentRoot = container.querySelector(
+      '[data-workspace-panel-content="true"]',
+    ) as HTMLDivElement | null;
+    const measureRoot = contentRoot?.firstElementChild as HTMLDivElement | null;
+    const fitChild = screen.getByTestId("fit-child");
+    expect(contentRoot).not.toBeNull();
+    expect(measureRoot).not.toBeNull();
+
+    Object.defineProperty(contentRoot!, "scrollWidth", {
+      configurable: true,
+      value: 300,
+    });
+    Object.defineProperty(contentRoot!, "scrollHeight", {
+      configurable: true,
+      value: 220,
+    });
+    Object.defineProperty(contentRoot!, "clientWidth", {
+      configurable: true,
+      value: 300,
+    });
+    Object.defineProperty(contentRoot!, "clientHeight", {
+      configurable: true,
+      value: 220,
+    });
+    contentRoot!.getBoundingClientRect = () =>
+      ({
+        x: 0,
+        y: 0,
+        left: 0,
+        top: 0,
+        right: 300,
+        bottom: 220,
+        width: 300,
+        height: 220,
+        toJSON: () => ({}),
+      }) as DOMRect;
+    measureRoot!.getBoundingClientRect = () =>
+      ({
+        x: 0,
+        y: 0,
+        left: 0,
+        top: 0,
+        right: 300,
+        bottom: 220,
+        width: 300,
+        height: 220,
+        toJSON: () => ({}),
+      }) as DOMRect;
+    fitChild.getBoundingClientRect = () =>
+      ({
+        x: 0,
+        y: 0,
+        left: 0,
+        top: 0,
+        right: 720,
+        bottom: 540,
+        width: 720,
+        height: 540,
+        toJSON: () => ({}),
+      }) as DOMRect;
+
+    fireEvent.click(screen.getByRole("button", { name: /fit panel content/i }));
+
+    expect(onSizeChange).toHaveBeenCalledWith({
+      width: 744,
+      height: 604,
+    });
+  });
+
+  it("clamps fit measurements to the panel min and max bounds", () => {
+    const onSizeChange = vi.fn();
+    const { container } = render(
+      <WorkspacePanel
+        id="p1"
+        title="Panel"
+        minWidth={320}
+        minHeight={240}
+        onSizeChange={onSizeChange}
+      >
+        <div>content</div>
+      </WorkspacePanel>,
+    );
+
+    const contentRoot = container.querySelector(
+      '[data-workspace-panel-content="true"]',
+    ) as HTMLDivElement | null;
+    expect(contentRoot).not.toBeNull();
+
+    Object.defineProperty(contentRoot!, "scrollWidth", {
+      configurable: true,
+      value: 80,
+    });
+    Object.defineProperty(contentRoot!, "scrollHeight", {
+      configurable: true,
+      value: 90,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /fit panel content/i }));
+
+    expect(onSizeChange).toHaveBeenLastCalledWith({
+      width: 320,
+      height: 240,
+    });
+
+    Object.defineProperty(contentRoot!, "scrollWidth", {
+      configurable: true,
+      value: 1800,
+    });
+    Object.defineProperty(contentRoot!, "scrollHeight", {
+      configurable: true,
+      value: 1400,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /fit panel content/i }));
+
+    expect(onSizeChange).toHaveBeenLastCalledWith({
+      width: 1400,
+      height: 1000,
+    });
+  });
+
   it("opens the size preset menu and forwards the selected preset", () => {
     const onSizePresetSelect = vi.fn();
 

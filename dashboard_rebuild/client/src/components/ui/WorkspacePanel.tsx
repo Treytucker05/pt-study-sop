@@ -81,6 +81,58 @@ const PANEL_FIT_CONTENT_MAX_WIDTH = 1400;
 const PANEL_FIT_CONTENT_MAX_HEIGHT = 1000;
 const PANEL_FIT_CONTENT_HORIZONTAL_CHROME = 24;
 const PANEL_FIT_CONTENT_VERTICAL_CHROME = 64;
+const FIT_CONTENT_SCROLL_EPSILON = 2;
+
+function measureDescendantBounds(
+  rootNode: HTMLElement,
+): { width: number; height: number } | null {
+  const rootRect = rootNode.getBoundingClientRect();
+  if (!Number.isFinite(rootRect.width) || !Number.isFinite(rootRect.height)) {
+    return null;
+  }
+
+  const descendants = Array.from(rootNode.querySelectorAll<HTMLElement>("*"));
+  if (descendants.length === 0) {
+    return null;
+  }
+
+  let minLeft = 0;
+  let minTop = 0;
+  let maxRight = rootRect.width;
+  let maxBottom = rootRect.height;
+  let foundRenderableDescendant = false;
+
+  for (const descendant of descendants) {
+    const descendantRect = descendant.getBoundingClientRect();
+    if (
+      !Number.isFinite(descendantRect.width) ||
+      !Number.isFinite(descendantRect.height) ||
+      (descendantRect.width <= 0 && descendantRect.height <= 0)
+    ) {
+      continue;
+    }
+
+    foundRenderableDescendant = true;
+    const left = descendantRect.left - rootRect.left;
+    const top = descendantRect.top - rootRect.top;
+    const right = descendantRect.right - rootRect.left;
+    const bottom = descendantRect.bottom - rootRect.top;
+
+    minLeft = Math.min(minLeft, left);
+    minTop = Math.min(minTop, top);
+    maxRight = Math.max(maxRight, right);
+    maxBottom = Math.max(maxBottom, bottom);
+  }
+
+  if (!foundRenderableDescendant) {
+    return null;
+  }
+
+  return {
+    width: Math.ceil(maxRight - minLeft),
+    height: Math.ceil(maxBottom - minTop),
+  };
+}
 
 export function WorkspacePanel({
   id,
@@ -238,15 +290,39 @@ export function WorkspacePanel({
       contentScrollNode.style.height = "auto";
       contentScrollNode.style.maxHeight = "none";
 
-      const measuredContentWidth = Math.max(
+      const scrollMeasuredWidth = Math.max(
         contentScrollNode.scrollWidth,
         contentMeasureNode?.scrollWidth ?? 0,
         Math.ceil(contentMeasureNode?.getBoundingClientRect().width ?? 0),
       );
-      const measuredContentHeight = Math.max(
+      const scrollMeasuredHeight = Math.max(
         contentScrollNode.scrollHeight,
         contentMeasureNode?.scrollHeight ?? 0,
         Math.ceil(contentMeasureNode?.getBoundingClientRect().height ?? 0),
+      );
+      const containerWidth = Math.max(
+        contentScrollNode.clientWidth,
+        Math.ceil(contentScrollNode.getBoundingClientRect().width),
+      );
+      const containerHeight = Math.max(
+        contentScrollNode.clientHeight,
+        Math.ceil(contentScrollNode.getBoundingClientRect().height),
+      );
+      const shouldMeasureDescendants =
+        Boolean(contentMeasureNode) &&
+        scrollMeasuredWidth <= containerWidth + FIT_CONTENT_SCROLL_EPSILON &&
+        scrollMeasuredHeight <= containerHeight + FIT_CONTENT_SCROLL_EPSILON;
+      const descendantBounds =
+        shouldMeasureDescendants && contentMeasureNode
+          ? measureDescendantBounds(contentMeasureNode)
+          : null;
+      const measuredContentWidth = Math.max(
+        scrollMeasuredWidth,
+        descendantBounds?.width ?? 0,
+      );
+      const measuredContentHeight = Math.max(
+        scrollMeasuredHeight,
+        descendantBounds?.height ?? 0,
       );
 
       return {
