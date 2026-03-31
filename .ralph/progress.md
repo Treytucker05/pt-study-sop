@@ -5,6 +5,41 @@ Started: Sun Mar 29 00:04:50 CDT 2026
 - (add reusable patterns here)
 
 ---
+## [2026-03-31 13:47:08 -05:00] - PRIME-002: Remove Hand-Drawn Map from priming
+Thread:
+Run: 20260331-134105-377 (iteration 1)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260331-134105-377-iter-1.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260331-134105-377-iter-1.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: 1c51402d PRIME-002 remove hand-drawn map from priming
+- Post-commit status: `clean`
+- Verification:
+  - Command: `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx` -> PASS
+  - Command: `cd dashboard_rebuild && npm run build` -> PASS
+  - Command: `cmd /c Start_Dashboard.bat` -> PASS
+  - Command: `dev-browser --headless --timeout 90 run scripts/verify-prime-002.js` -> PASS
+- Files changed:
+  - `.agents/tasks/prd.json`
+  - `.ralph/heartbeat.json`
+  - `brain/dashboard/api_tutor_workflows.py`
+  - `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+  - `scripts/verify-prime-002.js`
+  - `conductor/tracks/GENERAL/log.md`
+  - `.ralph/progress.md`
+- What was implemented
+  - Removed `M-ENC-015` from the backend priming workflow contract so the priming panel no longer treats the ENCODE hand-drawn map method as a valid priming output family or prompt shape.
+  - Removed the frontend hand-draw result block rendering path from the priming panel and extended the focused panel test so the picker continues to exclude `M-ENC-015`.
+  - Added a story-specific `dev-browser` verifier that launches the priming panel, inspects the visible method cards and page text, and fails if `M-ENC-015`, `Hand-Draw`, or related console errors appear.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - For priming workflow cleanup, removing both the backend output contract and the frontend result-block renderer is the reliable way to prevent stale chat/result artifacts from surviving a picker-only filter.
+  - Gotchas encountered
+    - The live priming page includes a large amount of source-tree text, so browser assertions should search for precise forbidden labels and method IDs instead of relying on broad page diffs.
+  - Useful context
+    - The live verifier screenshot was written to `C:\\Users\\treyt\\.dev-browser\\tmp\\verify-prime-002.png` and confirmed 8 allowed priming methods with no `M-ENC-015` entry.
+---
 ## [2026-03-31 13:25:19 -05:00] - PRIME-001: Filter priming methods to pure-priming only
 Thread:
 Run: 20260331-131837-938 (iteration 1)

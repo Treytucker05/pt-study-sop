@@ -2271,3 +2271,14 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run build`
   - `cmd /c Start_Dashboard.bat`
   - `dev-browser --headless --timeout 90 run C:\\Users\\treyt\\.dev-browser\\tmp\\verify-remain-008-headless.js`
+
+## 2026-03-31 - PRIME-002 remove hand-drawn map from priming
+
+- Removed the `M-ENC-015` hand-drawn map contract from `brain/dashboard/api_tutor_workflows.py`, including the priming output-family/key maps, normalization path, and method prompt contract, so priming no longer advertises or parses that ENCODE-only method.
+- Removed the frontend hand-draw result rendering path from `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx` and extended the existing picker regression in `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx` so `M-ENC-015` stays excluded from the priming picker.
+- Added `scripts/verify-prime-002.js` and validated the live priming panel without hand-draw labels or console errors.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - `cmd /c Start_Dashboard.bat`
+  - `dev-browser --headless --timeout 90 run scripts/verify-prime-002.js`
