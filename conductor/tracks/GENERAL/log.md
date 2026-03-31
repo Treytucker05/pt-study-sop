@@ -2282,3 +2282,12 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `cd dashboard_rebuild && npm run build`
   - `cmd /c Start_Dashboard.bat`
   - `dev-browser --headless --timeout 90 run scripts/verify-prime-002.js`
+
+## 2026-03-31 - PRIME-004 fix Fit button sizing
+
+- Updated `dashboard_rebuild/client/src/components/ui/WorkspacePanel.tsx` so Fit first uses the existing scroll-based measurement and then falls back to measuring rendered descendant bounds when the content behaves like a fixed-size flex/absolute layout instead of natural document flow.
+- Added focused regressions in `dashboard_rebuild/client/src/components/__tests__/WorkspacePanel.test.tsx` covering the descendant-bounds fallback plus the min/max clamp behavior, and added `scripts/verify-prime-004.js` for live Studio verification.
+- Validation passed:
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/WorkspacePanel.test.tsx`
+  - `cd dashboard_rebuild && npm run build`
+  - `dev-browser --timeout 120 run scripts/verify-prime-004.js`

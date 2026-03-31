@@ -5,6 +5,37 @@ Started: Sun Mar 29 00:04:50 CDT 2026
 - (add reusable patterns here)
 
 ---
+## [2026-03-31 16:43:42 -05:00] - PRIME-004: Fix Fit button for all panels
+Thread:
+Run: 20260331-163650-4886 (iteration 1)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260331-163650-4886-iter-1.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260331-163650-4886-iter-1.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: 48d0394b PRIME-004 fix panel fit sizing
+- Post-commit status: `.agents/ralph/config.sh, .agents/ralph/loop.sh, .agents/tasks/prd.json, .ralph/heartbeat.json, .agents/ralph/PROMPT_verify.md, .ralph/runs/run-20260331-141902-999-iter-1.md`
+- Verification:
+  - Command: `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/WorkspacePanel.test.tsx` -> PASS
+  - Command: `cd dashboard_rebuild && npm run build` -> PASS
+  - Command: `dev-browser --timeout 120 run scripts/verify-prime-004.js` -> PASS
+- Files changed:
+  - `dashboard_rebuild/client/src/components/ui/WorkspacePanel.tsx`
+  - `dashboard_rebuild/client/src/components/__tests__/WorkspacePanel.test.tsx`
+  - `scripts/verify-prime-004.js`
+  - `conductor/tracks/GENERAL/log.md`
+  - `.ralph/progress.md`
+- What was implemented
+  - Reworked Fit sizing in `WorkspacePanel` so it falls back to measured descendant bounds when scroll dimensions only mirror the current viewport, which fixes panels whose content is laid out with flex or absolute positioning.
+  - Added targeted tests for the fallback path and clamp limits, then verified live that Fit changes the priming, document dock, and notes panel sizes while staying inside the panel min/max bounds and without console errors.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - For floating panels that wrap arbitrary child layouts, scroll dimensions alone are not a reliable fit signal once content is absolutely positioned or stretched by flex parents; a rendered-bounds fallback is a safer second measurement path.
+  - Gotchas encountered
+    - The notes panel is not guaranteed to be open in the starting Studio preset, so the live verifier must open it through the toolbar before checking Fit behavior.
+    - `dev-browser --connect` was unavailable because Chrome remote debugging was not exposed on `9222`, so isolated `dev-browser` remained the reliable browser path.
+  - Useful context
+    - The live verifier screenshot was written to `C:\Users\treyt\.dev-browser\tmp\verify-prime-004.png`, and the successful browser run reported `18` passing checks across priming, document dock, and notes.
+---
 ## [2026-03-31 14:44:11 -05:00] - PRIME-003: Persist chat state through panel drag and resize
 Thread:
 Run: 20260331-143440-1507 (iteration 1)
