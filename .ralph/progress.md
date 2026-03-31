@@ -5,6 +5,38 @@ Started: Sun Mar 29 00:04:50 CDT 2026
 - (add reusable patterns here)
 
 ---
+## [2026-03-31 14:44:11 -05:00] - PRIME-003: Persist chat state through panel drag and resize
+Thread:
+Run: 20260331-143440-1507 (iteration 1)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260331-143440-1507-iter-1.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260331-143440-1507-iter-1.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: 45b1d80a PRIME-003 persist priming panel chat state
+- Post-commit status: `.agents/ralph/config.sh, .agents/ralph/loop.sh, .agents/tasks/prd.json, .ralph/heartbeat.json, .agents/ralph/PROMPT_verify.md, .ralph/runs/run-20260331-141902-999-iter-1.md`
+- Verification:
+  - Command: `cd dashboard_rebuild; npx vitest run client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx` -> PASS
+  - Command: `cd dashboard_rebuild; npm run build` -> PASS
+  - Command: `dev-browser --timeout 120 run C:\pt-study-sop\scripts\verify-prime-003.js` -> PASS
+- Files changed:
+  - `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx`
+  - `dashboard_rebuild/client/src/components/priming/primingPanelState.ts`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+  - `scripts/verify-prime-003.js`
+  - `.ralph/progress.md`
+- What was implemented
+  - Moved priming run/chat state out of local component `useState` into a workflow-keyed persistent panel session store so drag, resize, maximize, and center remounts no longer clear the current results, chat history, or draft input.
+  - Updated the priming panel to read and write through that store for method runs, chain runs, chat sends, and refined-result application.
+  - Added a focused remount regression test and a live `dev-browser` verifier that proves message counts survive drag, resize, maximize, and center while draft input survives drag.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - Floating-panel UI state that must survive `Rnd` remounts is safer in a keyed module store than component-local state, especially when maximize/center paths intentionally invalidate layout subtrees.
+  - Gotchas encountered
+    - `dev-browser --connect` could not attach to a Chrome CDP session on port `9222`, so isolated `dev-browser` was the reliable live verification path for this run.
+    - The runtime resize affordance did not expose a visible `.react-resizable-handle-se`, so the verifier needed to resize from the panel's bottom-right edge instead of relying on that specific handle selector.
+  - Useful context
+    - The live verification screenshot was written to `C:\Users\treyt\.dev-browser\tmp\verify-prime-003.png`.
+---
 ## [2026-03-31 13:47:08 -05:00] - PRIME-002: Remove Hand-Drawn Map from priming
 Thread:
 Run: 20260331-134105-377 (iteration 1)
