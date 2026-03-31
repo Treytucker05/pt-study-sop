@@ -220,6 +220,12 @@ def _normalize_objective_list(value: Any) -> list[dict[str, Any]]:
 def _normalize_priming_method_outputs(method_id: str, value: Any) -> dict[str, Any]:
     if not isinstance(value, dict):
         return {}
+    if method_id == "M-PRE-012":
+        terminology = _normalize_terminology_output(value)
+        return {"terminology": terminology} if terminology else {}
+    if method_id == "M-PRE-013":
+        normalized_summary = _normalize_orientation_summary_output(value)
+        return normalized_summary if normalized_summary else {}
     allowed = PRIME_METHOD_OUTPUT_KEYS.get(method_id) or set()
     normalized: dict[str, Any] = {}
     for key in allowed:
@@ -236,6 +242,106 @@ def _normalize_priming_method_outputs(method_id: str, value: Any) -> dict[str, A
             if text:
                 normalized[key] = text
     return normalized
+
+
+def _normalize_terminology_output(value: dict[str, Any]) -> list[str]:
+    entries: list[str] = []
+    entries.extend(_normalize_terminology_entries(value.get("terminology")))
+    entries.extend(_normalize_terminology_entries(value.get("TerminologySet")))
+    entries.extend(_normalize_terminology_entries(value.get("terminology_set")))
+    entries.extend(_normalize_terminology_entries(value.get("AbbreviationMap")))
+    entries.extend(_normalize_terminology_entries(value.get("abbreviation_map")))
+    entries.extend(_normalize_terminology_entries(value.get("ComponentDefinitionList")))
+    entries.extend(_normalize_terminology_entries(value.get("component_definition_list")))
+    return _dedupe_string_list(entries)
+
+
+def _normalize_terminology_entries(value: Any) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, dict):
+        normalized: list[str] = []
+        for raw_term, raw_definition in value.items():
+            term = _normalize_text(raw_term)
+            definition = _normalize_text(raw_definition)
+            if term and definition:
+                normalized.append(f"{term} :: {definition}")
+            elif term:
+                normalized.append(term)
+        return normalized
+    if isinstance(value, str):
+        text = value.strip()
+        return [text] if text else []
+    if not isinstance(value, list):
+        return []
+
+    normalized: list[str] = []
+    for item in value:
+        if isinstance(item, dict):
+            term = _normalize_text(
+                item.get("term")
+                or item.get("name")
+                or item.get("abbreviation")
+                or item.get("component")
+                or item.get("label")
+            )
+            definition = _normalize_text(
+                item.get("definition")
+                or item.get("meaning")
+                or item.get("description")
+                or item.get("expansion")
+            )
+            raw = _normalize_text(item.get("raw"))
+            if term and definition:
+                normalized.append(f"{term} :: {definition}")
+            elif raw:
+                normalized.append(raw)
+            elif term:
+                normalized.append(term)
+            continue
+        text = _normalize_text(item)
+        if text:
+            normalized.append(text)
+    return normalized
+
+
+def _normalize_orientation_summary_output(value: dict[str, Any]) -> dict[str, Any]:
+    north_star = _normalize_text(
+        value.get("north_star_sentence")
+        or value.get("NorthStarSentence")
+        or value.get("northStarSentence")
+    )
+    summary = _normalize_text(
+        value.get("summary")
+        or value.get("OrientationSummary")
+        or value.get("orientation_summary")
+    )
+    combined_summary = _combine_summary_parts(north_star, summary)
+    major_sections = _dedupe_string_list(
+        _normalize_string_list(value.get("major_sections"))
+        + _normalize_string_list(value.get("MajorSectionList"))
+        + _normalize_string_list(value.get("majorSectionList"))
+    )
+    normalized: dict[str, Any] = {}
+    if combined_summary:
+        normalized["summary"] = combined_summary
+    if major_sections:
+        normalized["major_sections"] = major_sections
+    return normalized
+
+
+def _combine_summary_parts(north_star: str | None, summary: str | None) -> str | None:
+    parts: list[str] = []
+    for candidate in (north_star, summary):
+        text = _normalize_text(candidate)
+        if not text:
+            continue
+        if text in parts:
+            continue
+        parts.append(text)
+    if not parts:
+        return None
+    return "\n\n".join(parts)
 
 
 def _normalize_priming_method_run(value: Any) -> dict[str, Any] | None:

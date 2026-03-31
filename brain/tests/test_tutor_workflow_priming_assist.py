@@ -736,8 +736,131 @@ def test_priming_assist_prompt_treats_capped_prime_outputs_as_group_caps(client,
     assert 'M-PRE-004 => {"concepts":["major umbrella pillars that collectively cover the selected scope"]' in prompt
 
 
-def test_priming_bundle_first_save_persists_bundle_and_workflow_context(client):
+def test_priming_assist_normalizes_alternate_terminology_and_orientation_keys(client, mock_llm):
     course_id = 907
+    _insert_course(course_id, "Neuroscience")
+    _insert_material(
+        78,
+        course_id=course_id,
+        title="Neuro Primer",
+        source_path="/tmp/neuro-primer.txt",
+        file_type="txt",
+        content=(
+            "The autonomic nervous system includes sympathetic and parasympathetic branches. "
+            "Heart rate, blood pressure, and perfusion terms appear throughout the notes."
+        ),
+    )
+
+    workflow_response = client.post(
+        "/api/tutor/workflows",
+        json={
+            "course_id": course_id,
+            "study_unit": "Week 3",
+            "topic": "Autonomic nervous system",
+            "current_stage": "priming",
+            "status": "priming_in_progress",
+        },
+    )
+    assert workflow_response.status_code == 200
+    workflow_id = workflow_response.get_json()["workflow"]["workflow_id"]
+
+    mock_llm.set_response(
+        json.dumps(
+            {
+                "method_outputs": {
+                    "M-PRE-012": {
+                        "TerminologySet": [
+                            "Sympathetic nervous system :: mobilizes the body for activity",
+                        ],
+                        "AbbreviationMap": {
+                            "HR": "heart rate",
+                            "BP": "blood pressure",
+                        },
+                        "ComponentDefinitionList": [
+                            {
+                                "term": "Perfusion",
+                                "definition": "delivery of blood to tissue",
+                            }
+                        ],
+                    },
+                    "M-PRE-013": {
+                        "NorthStarSentence": "This packet frames how autonomic branches organize cardiovascular control.",
+                        "OrientationSummary": "It orients the learner to the major control systems before deeper physiology.",
+                        "MajorSectionList": [
+                            "autonomic branches",
+                            "cardiovascular control targets",
+                            "regulatory terminology",
+                        ],
+                    },
+                }
+            }
+        )
+    )
+
+    response = client.post(
+        f"/api/tutor/workflows/{workflow_id}/priming-assist",
+        json={
+            "material_ids": [78],
+            "study_unit": "Week 3",
+            "topic": "Autonomic nervous system",
+            "priming_methods": ["M-PRE-012", "M-PRE-013"],
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    method_runs = {
+        run["method_id"]: run
+        for run in body["priming_method_runs"]
+        if isinstance(run, dict) and run.get("method_id")
+    }
+
+    terminology_entries = method_runs["M-PRE-012"]["outputs"]["entries"][0]["terminology"]
+    assert terminology_entries == [
+        "Sympathetic nervous system :: mobilizes the body for activity",
+        "HR :: heart rate",
+        "BP :: blood pressure",
+        "Perfusion :: delivery of blood to tissue",
+    ]
+    assert body["aggregate"]["terminology"] == [
+        {
+            "material_id": 78,
+            "title": "Neuro Primer",
+            "term": "Sympathetic nervous system :: mobilizes the body for activity",
+        },
+        {"material_id": 78, "title": "Neuro Primer", "term": "HR :: heart rate"},
+        {"material_id": 78, "title": "Neuro Primer", "term": "BP :: blood pressure"},
+        {
+            "material_id": 78,
+            "title": "Neuro Primer",
+            "term": "Perfusion :: delivery of blood to tissue",
+        },
+    ]
+
+    orientation_entry = method_runs["M-PRE-013"]["outputs"]["entries"][0]
+    assert orientation_entry["summary"] == (
+        "This packet frames how autonomic branches organize cardiovascular control.\n\n"
+        "It orients the learner to the major control systems before deeper physiology."
+    )
+    assert orientation_entry["major_sections"] == [
+        "autonomic branches",
+        "cardiovascular control targets",
+        "regulatory terminology",
+    ]
+    assert body["aggregate"]["summaries"] == [
+        {
+            "material_id": 78,
+            "title": "Neuro Primer",
+            "summary": (
+                "This packet frames how autonomic branches organize cardiovascular control.\n\n"
+                "It orients the learner to the major control systems before deeper physiology."
+            ),
+        }
+    ]
+
+
+def test_priming_bundle_first_save_persists_bundle_and_workflow_context(client):
+    course_id = 908
     _insert_course(course_id, "Exercise Physiology")
 
     workflow_response = client.post(

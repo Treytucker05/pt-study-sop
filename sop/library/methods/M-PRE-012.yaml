@@ -57,10 +57,16 @@ facilitation_prompt: |
   - Do not drift into mechanism teaching.
   - Definitions should orient the learner, not replace TEACH.
 
-  Return exactly:
-  1) TerminologySet
-  2) AbbreviationMap
-  3) ComponentDefinitionList
+  Return STRICT JSON only with:
+  {
+    "terminology": [
+      "Term :: concise source-grounded definition"
+    ]
+  }
+
+  Use the single terminology list for terms, abbreviations, and short component
+  definitions. For abbreviations, write entries like:
+  "MAP :: mean arterial pressure"
 
   This is non-assessment. Do not quiz, grade, or judge mastery.
 inputs:

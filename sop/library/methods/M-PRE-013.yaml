@@ -57,10 +57,15 @@ facilitation_prompt: |
   - Keep the summary concise and orientation-level.
   - Do not cross into mechanism teaching or full explanation.
 
-  Return exactly:
-  1) NorthStarSentence
-  2) OrientationSummary
-  3) MajorSectionList
+  Return STRICT JSON only with:
+  {
+    "summary": "short orientation summary that starts with the north-star idea",
+    "major_sections": [
+      "major section or pillar"
+    ]
+  }
+
+  The first sentence of summary should act as the north-star sentence.
 
   This is non-assessment. Do not quiz, grade, or test the learner.
 inputs:
