@@ -5,6 +5,43 @@ Started: Sun Mar 29 00:04:50 CDT 2026
 - (add reusable patterns here)
 
 ---
+## [2026-03-31 13:25:19 -05:00] - PRIME-001: Filter priming methods to pure-priming only
+Thread:
+Run: 20260331-131837-938 (iteration 1)
+Run log: C:/pt-study-sop/.ralph/runs/run-20260331-131837-938-iter-1.log
+Run summary: C:/pt-study-sop/.ralph/runs/run-20260331-131837-938-iter-1.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: 206a1506 PRIME-001 filter priming methods to pure priming only
+- Post-commit status: `clean`
+- Verification:
+  - Command: `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx` -> PASS
+  - Command: `cd dashboard_rebuild && npm run build` -> PASS
+  - Command: `cmd /c Start_Dashboard.bat` -> PASS
+  - Command: `dev-browser --connect --timeout 90 run C:/pt-study-sop/scripts/verify-prime-001.js` -> FAIL (`Chrome` remote debugging was not enabled on this machine)
+  - Command: `dev-browser --timeout 90 run C:/pt-study-sop/scripts/verify-prime-001.js` -> PASS
+- Files changed:
+  - `.agents/tasks/prd.json`
+  - `.ralph/heartbeat.json`
+  - `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+  - `scripts/verify-prime-001.js`
+  - `format_table.py`
+  - `format_table_v4.py`
+  - `.ralph/progress.md`
+- What was implemented
+  - Restricted the priming picker to the exact eight pure-priming methods by filtering the fetched PRIME method list against `PRIME_METHOD_DISPLAY_ORDER` instead of only sorting it.
+  - Removed the learner-input methods from the visible picker set and added compact energy-cost and duration badges so each card still exposes the required metadata alongside its description.
+  - Added a focused `TutorWorkflowPrimingPanel` regression test and a dedicated `dev-browser` verification script that launches Priming, confirms the exact method IDs, and proves `M-PRE-002` and `M-PRE-005` stay absent in the live UI.
+- **Learnings for future iterations:**
+  - Patterns discovered
+    - When a UI constant is intended to define an allowlist, the render path needs an explicit filter instead of relying on sort order alone.
+  - Gotchas encountered
+    - `dev-browser --connect` still fails on this machine when Chrome remote debugging is unavailable, so isolated `dev-browser` remains the reliable live-proof fallback.
+    - The workspace started with unrelated untracked `format_table*.py` files, and the run instruction to stage everything brought them into the commit needed to leave the tree clean.
+  - Useful context
+    - The live verification screenshot was written to `C:\Users\treyt\.dev-browser\tmp\verify-prime-001.png`, and the browser summary confirmed the exact visible order: `M-PRE-004`, `M-PRE-006`, `M-PRE-008`, `M-PRE-009`, `M-PRE-010`, `M-PRE-012`, `M-PRE-013`, `M-PRE-014`.
+---
 ## [2026-03-29 19:32:33 -05:00] - REMAIN-004: Document Dock clip tool supports image paste
 Thread: 
 Run: 20260329-191639-1941 (iteration 1)
