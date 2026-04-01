@@ -1,4 +1,5 @@
-import { Suspense, lazy, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import type { GraphCanvasCommand } from "@/components/brain/graph-canvas-types";
 
 import {
   type StudioTldrawWorkspaceProps,
@@ -11,6 +12,10 @@ type WorkspaceTabId = "canvas" | "mind-map" | "concept-map";
 type StudioWorkspaceUnifiedProps = StudioTldrawWorkspaceProps & {
   courseId?: number | null;
   vaultFolder?: string | null;
+  conceptMapImportRequest?: {
+    mermaid: string;
+    requestKey: number;
+  } | null;
 };
 
 const MindMapViewDeferred = lazy(async () => {
@@ -40,6 +45,7 @@ function WorkspaceTabFallback({ label }: { label: string }) {
 export function StudioWorkspaceUnified({
   courseId,
   vaultFolder,
+  conceptMapImportRequest,
   ...canvasProps
 }: StudioWorkspaceUnifiedProps) {
   const [activeTab, setActiveTab] = useState<WorkspaceTabId>("canvas");
@@ -48,6 +54,8 @@ export function StudioWorkspaceUnified({
     "mind-map": false,
     "concept-map": false,
   });
+  const [conceptMapCommand, setConceptMapCommand] = useState<GraphCanvasCommand | null>(null);
+  const lastConceptMapRequestKeyRef = useRef<number | null>(null);
 
   const handleSelectTab = (nextTab: WorkspaceTabId) => {
     setActiveTab(nextTab);
@@ -55,6 +63,25 @@ export function StudioWorkspaceUnified({
       current[nextTab] ? current : { ...current, [nextTab]: true },
     );
   };
+
+  useEffect(() => {
+    const requestKey = conceptMapImportRequest?.requestKey;
+    if (typeof requestKey !== "number" || lastConceptMapRequestKeyRef.current === requestKey) {
+      return;
+    }
+
+    lastConceptMapRequestKeyRef.current = requestKey;
+    setActiveTab("concept-map");
+    setVisitedTabs((current) =>
+      current["concept-map"] ? current : { ...current, "concept-map": true },
+    );
+    setConceptMapCommand({
+      id: requestKey,
+      target: "structured",
+      type: "import_mermaid",
+      payload: conceptMapImportRequest?.mermaid || "",
+    });
+  }, [conceptMapImportRequest]);
 
   return (
     <div
@@ -145,7 +172,10 @@ export function StudioWorkspaceUnified({
           >
             {/* ConceptMapStructured already owns import/export state; the shell only mounts it. */}
             <Suspense fallback={<WorkspaceTabFallback label="concept map" />}>
-              <ConceptMapStructuredDeferred className="h-full" />
+              <ConceptMapStructuredDeferred
+                externalCommand={conceptMapCommand}
+                className="h-full"
+              />
             </Suspense>
           </div>
         ) : null}

@@ -22,6 +22,7 @@ export type PrimingPanelSessionState = {
   chatInput: string;
   chatTurns: PrimingChatTurn[];
   sendingChat: boolean;
+  revealedConceptMapBlockIds: string[];
 };
 
 type PrimingPanelSessionUpdater =
@@ -39,6 +40,7 @@ function createDefaultPrimingPanelSessionState(): PrimingPanelSessionState {
     chatInput: "",
     chatTurns: [],
     sendingChat: false,
+    revealedConceptMapBlockIds: [],
   };
 }
 

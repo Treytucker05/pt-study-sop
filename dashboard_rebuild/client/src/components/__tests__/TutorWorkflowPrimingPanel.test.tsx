@@ -4,7 +4,10 @@ import { useState, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TutorWorkflowPrimingPanel } from "@/components/TutorWorkflowPrimingPanel";
-import { resetPrimingPanelSessionState } from "@/components/priming/primingPanelState";
+import {
+  resetPrimingPanelSessionState,
+  setPrimingPanelSessionState,
+} from "@/components/priming/primingPanelState";
 import type { TutorPrimingMethodRun } from "@/api.types";
 
 const { getPrimeMethodsMock, startChainRunMock, refinePrimingAssistMock } = vi.hoisted(() => ({
@@ -1006,6 +1009,86 @@ describe("TutorWorkflowPrimingPanel", () => {
     ).toBeInTheDocument();
     expect(screen.getByTestId("priming-chat-input")).toHaveValue(
       "draft that should survive remount",
+    );
+  });
+
+  it("shows concept map choice buttons and reveals text inline on demand", async () => {
+    setPrimingPanelSessionState("workflow:wf-123", {
+      pendingMethodResult: null,
+      displayedRun: {
+        key: "method:M-PRE-008:1",
+        label: "Expert Skeleton",
+        kind: "method",
+        methodId: "M-PRE-008",
+        blocks: [
+          {
+            id: "block-concept-map",
+            title: "Concept Map",
+            badge: "MAP",
+            kind: "concept_map",
+            sourceLabel: "Expert Skeleton",
+            content: "```mermaid\ngraph TD\n  A[Cardiac Output] --> B[Stroke Volume]\n```",
+          },
+        ],
+      } as never,
+      runningChain: false,
+      chatInput: "",
+      chatTurns: [],
+      sendingChat: false,
+      revealedConceptMapBlockIds: [],
+    });
+
+    renderPanel();
+
+    expect(
+      await screen.findByRole("button", { name: /view as text/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /open in graph tool/i }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /view as text/i }));
+
+    expect(screen.getByText(/graph TD/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /open in graph tool/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("opens the graph tool with extracted mermaid content", async () => {
+    const onOpenConceptMapInWorkspace = vi.fn();
+
+    setPrimingPanelSessionState("workflow:wf-123", {
+      pendingMethodResult: null,
+      displayedRun: {
+        key: "method:M-PRE-008:1",
+        label: "Expert Skeleton",
+        kind: "method",
+        methodId: "M-PRE-008",
+        blocks: [
+          {
+            id: "block-concept-map",
+            title: "Concept Map",
+            badge: "MAP",
+            kind: "concept_map",
+            sourceLabel: "Expert Skeleton",
+            content: "```mermaid\ngraph LR\n  A[Cardiac Output] --> B[Perfusion]\n```",
+          },
+        ],
+      } as never,
+      runningChain: false,
+      chatInput: "",
+      chatTurns: [],
+      sendingChat: false,
+      revealedConceptMapBlockIds: [],
+    });
+
+    renderPanel({ onOpenConceptMapInWorkspace });
+
+    fireEvent.click(await screen.findByRole("button", { name: /open in graph tool/i }));
+
+    expect(onOpenConceptMapInWorkspace).toHaveBeenCalledWith(
+      "graph LR\n  A[Cardiac Output] --> B[Perfusion]",
     );
   });
 });

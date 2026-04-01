@@ -13,6 +13,9 @@ CONTEXT_REF=".agents/ralph/references/PROJECT_CONTEXT.md"
 ACTIVITY_CMD=".agents/ralph/log-activity.sh"
 AGENT_CMD="codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check -c model_reasoning_effort=medium -"
 PRD_AGENT_CMD="codex --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check {prompt}"
+VERIFY_AGENT_CMD="codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check -c model=gpt-5.4 -c model_reasoning_effort=high -"
+PROMPT_VERIFY=".agents/ralph/PROMPT_verify.md"
+VERIFY_TIMEOUT=300
 AGENTS_PATH="AGENTS.md"
 PROMPT_BUILD=".agents/ralph/PROMPT_build.md"
 NO_COMMIT=false

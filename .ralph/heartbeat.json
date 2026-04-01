@@ -1,11 +1,11 @@
 {
-  "timestamp": "2026-03-31T13:41:06-05:00",
-  "story": "PRIME-002",
-  "story_title": "Remove Hand-Drawn Map from priming",
-  "iteration": 1,
+  "timestamp": "2026-03-31T21:14:48-05:00",
+  "story": "PRIME-006",
+  "story_title": "Add graph tool choice for map-producing priming methods",
+  "iteration": 4,
   "max_iterations": 40,
-  "run_id": "20260331-134105-377",
+  "run_id": "20260331-204313-11978",
   "mode": "build",
-  "pid": 377,
+  "pid": 11978,
   "phase": "running"
 }

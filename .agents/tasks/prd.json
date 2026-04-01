@@ -38,10 +38,10 @@
         "dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx"
       ],
       "verification": "dev-browser --connect --timeout 90 run scripts/verify-prime-002.js",
-      "status": "in_progress",
-      "startedAt": "2026-03-31T18:41:06.177008+00:00",
-      "completedAt": null,
-      "updatedAt": "2026-03-31T18:41:06.177017+00:00"
+      "status": "done",
+      "startedAt": "2026-03-31T19:19:02.704106+00:00",
+      "completedAt": "2026-03-31T19:25:00.000000+00:00",
+      "updatedAt": "2026-03-31T19:25:00.000000+00:00"
     },
     {
       "id": "PRIME-003",
@@ -62,7 +62,10 @@
         "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
       ],
       "verification": "dev-browser --connect --timeout 120 run scripts/verify-prime-003.js",
-      "status": "open"
+      "status": "done",
+      "startedAt": "2026-04-01T02:12:32.108808+00:00",
+      "completedAt": "2026-04-01T02:14:44.872269+00:00",
+      "updatedAt": "2026-04-01T02:14:44.872241+00:00"
     },
     {
       "id": "PRIME-004",
@@ -80,7 +83,10 @@
         "dashboard_rebuild/client/src/components/ui/WorkspacePanel.tsx"
       ],
       "verification": "dev-browser --connect --timeout 90 run scripts/verify-prime-004.js",
-      "status": "open"
+      "status": "done",
+      "startedAt": "2026-03-31T21:36:50.630249+00:00",
+      "completedAt": "2026-03-31T21:45:24.305947+00:00",
+      "updatedAt": "2026-03-31T21:45:24.305933+00:00"
     },
     {
       "id": "PRIME-005",
@@ -100,7 +106,10 @@
         "dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx"
       ],
       "verification": "dev-browser --connect --timeout 120 run scripts/verify-prime-005.js",
-      "status": "open"
+      "status": "done",
+      "startedAt": "2026-03-31T21:45:26.750261+00:00",
+      "completedAt": "2026-03-31T22:00:00.000000+00:00",
+      "updatedAt": "2026-03-31T22:00:00.000000+00:00"
     },
     {
       "id": "PRIME-006",
@@ -119,7 +128,10 @@
         "dashboard_rebuild/client/src/components/studio/StudioShell.tsx"
       ],
       "verification": "dev-browser --connect --timeout 120 run scripts/verify-prime-006.js",
-      "status": "open"
+      "status": "in_progress",
+      "startedAt": "2026-04-01T02:14:47.457831+00:00",
+      "completedAt": null,
+      "updatedAt": "2026-04-01T02:14:47.457839+00:00"
     }
   ]
 }

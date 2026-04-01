@@ -13,7 +13,6 @@ import type {
   TutorPrimingResultBlockKind,
   TutorPrimingSourceInventoryItem,
 } from "@/api.types";
-import { ConceptMapStructured } from "@/components/brain/ConceptMapStructured";
 import { ObsidianRenderer } from "@/components/ObsidianRenderer";
 import {
   setPrimingPanelSessionState,
@@ -522,17 +521,47 @@ function renderTerms(terms: Array<{ term: string; definition: string | null; raw
   );
 }
 
-function renderResultBody(block: ResultBlock) {
+function renderResultBody(
+  block: ResultBlock,
+  options: {
+    revealedConceptMapBlockIds: string[];
+    onRevealConceptMapText: (blockId: string) => void;
+    onOpenConceptMapInWorkspace?: (mermaid: string) => void;
+  },
+) {
   if (block.kind === "objectives" && block.objectives) {
     return renderObjectives(block.objectives);
   }
 
   if (block.kind === "concept_map") {
     const mermaid = extractMermaidBlock(block.content);
-    if (mermaid) {
+    if (mermaid && !options.revealedConceptMapBlockIds.includes(block.id)) {
       return (
-        <div className="h-[260px] overflow-hidden rounded-[0.8rem] border border-[rgba(255,118,144,0.16)] bg-black/35">
-          <ConceptMapStructured initialMermaid={mermaid} hideToolbar className="h-full" />
+        <div className="rounded-[0.8rem] border border-[rgba(255,118,144,0.16)] bg-black/25 p-3">
+          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+            Concept Map Output
+          </div>
+          <p className="mt-2 text-sm leading-6 text-[#ffd9e1]/72">
+            Choose whether to read the raw map text inline or open it in the graph tool.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => options.onRevealConceptMapText(block.id)}
+              className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd9e1]"
+            >
+              View as Text
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => options.onOpenConceptMapInWorkspace?.(mermaid)}
+              className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd9e1]"
+            >
+              Open in Graph Tool
+            </Button>
+          </div>
         </div>
       );
     }
@@ -612,6 +641,7 @@ interface TutorWorkflowPrimingPanelProps {
   onSendResultToWorkspace?: (
     workspaceObject: Extract<StudioWorkspaceObject, { kind: "text_note" }>,
   ) => void;
+  onOpenConceptMapInWorkspace?: (mermaid: string) => void;
   onApplyRefinedResults?: (run: TutorPrimingDisplayedRun) => void;
   isSaving: boolean;
   isStartingTutor: boolean;
@@ -638,6 +668,7 @@ export function TutorWorkflowPrimingPanel({
   onRunAssistForSelected,
   onPromoteResultToPrimePacket,
   onSendResultToWorkspace,
+  onOpenConceptMapInWorkspace,
   onApplyRefinedResults,
   isRunningAssist,
 }: TutorWorkflowPrimingPanelProps) {
@@ -741,6 +772,7 @@ export function TutorWorkflowPrimingPanel({
     chatInput,
     chatTurns,
     sendingChat,
+    revealedConceptMapBlockIds,
   } = primingPanelState;
   const updatePrimingPanelState = (
     updater:
@@ -839,6 +871,7 @@ export function TutorWorkflowPrimingPanel({
         blocks,
       },
       pendingMethodResult: null,
+      revealedConceptMapBlockIds: [],
     }));
     previousAssistRunningRef.current = isRunningAssist;
   }, [
@@ -887,6 +920,7 @@ export function TutorWorkflowPrimingPanel({
       ...current,
       chatTurns: [],
       chatInput: "",
+      revealedConceptMapBlockIds: [],
     }));
 
     if (selectionMode === "method") {
@@ -935,6 +969,7 @@ export function TutorWorkflowPrimingPanel({
           chainId: selectedChain.id,
           blocks: buildChainResultBlocks(result),
         },
+        revealedConceptMapBlockIds: [],
       }));
       toast.success(`${result.chain_name} completed`);
     } catch (error) {
@@ -971,10 +1006,23 @@ export function TutorWorkflowPrimingPanel({
     onSendResultToWorkspace?.(workspaceObject);
   };
 
+  const handleRevealConceptMapText = (blockId: string) => {
+    updatePrimingPanelState((current) => {
+      if (current.revealedConceptMapBlockIds.includes(blockId)) {
+        return current;
+      }
+      return {
+        ...current,
+        revealedConceptMapBlockIds: [...current.revealedConceptMapBlockIds, blockId],
+      };
+    });
+  };
+
   const handleApplyRefinedResults = (turnId: string, run: PanelRunResult) => {
     updatePrimingPanelState((current) => ({
       ...current,
       displayedRun: run,
+      revealedConceptMapBlockIds: [],
       chatTurns: current.chatTurns.map((turn) =>
         turn.id === turnId ? { ...turn, applied: true } : turn,
       ),
@@ -1350,7 +1398,13 @@ export function TutorWorkflowPrimingPanel({
                     </Badge>
                   </div>
 
-                  <div className="mt-4">{renderResultBody(block)}</div>
+                  <div className="mt-4">
+                    {renderResultBody(block, {
+                      revealedConceptMapBlockIds,
+                      onRevealConceptMapText: handleRevealConceptMapText,
+                      onOpenConceptMapInWorkspace,
+                    })}
+                  </div>
 
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Button

@@ -20,10 +20,12 @@ vi.mock("@/components/TutorWorkflowPrimingPanel", () => ({
   TutorWorkflowPrimingPanel: ({
     onStartTutor,
     onRunAssistForSelected,
+    onOpenConceptMapInWorkspace,
     selectedMaterials = [],
   }: {
     onStartTutor?: () => void;
     onRunAssistForSelected?: (methodIdOverride?: string) => void;
+    onOpenConceptMapInWorkspace?: (mermaid: string) => void;
     selectedMaterials?: number[];
   }) => (
     <div data-testid="mock-priming-panel">
@@ -36,6 +38,16 @@ vi.mock("@/components/TutorWorkflowPrimingPanel", () => ({
       </button>
       <button type="button" onClick={() => onRunAssistForSelected?.()}>
         Run Priming Assist from priming panel
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          onOpenConceptMapInWorkspace?.(
+            "graph TD\n  A[Priming Map] --> B[Graph Tool]",
+          )
+        }
+      >
+        Open Graph Tool from priming panel
       </button>
     </div>
   ),
@@ -186,8 +198,22 @@ vi.mock("@/components/MindMapView", () => ({
 }));
 
 vi.mock("@/components/brain/ConceptMapStructured", () => ({
-  ConceptMapStructured: () => (
-    <div data-testid="mock-concept-map">concept map</div>
+  ConceptMapStructured: ({
+    initialMermaid,
+    externalCommand,
+  }: {
+    initialMermaid?: string;
+    externalCommand?: { payload?: unknown } | null;
+  }) => (
+    <div
+      data-testid="mock-concept-map"
+      data-initial-mermaid={
+        initialMermaid ||
+        (typeof externalCommand?.payload === "string" ? externalCommand.payload : "")
+      }
+    >
+      concept map
+    </div>
   ),
 }));
 
@@ -2274,6 +2300,34 @@ describe("TutorShell studio routing", () => {
     expect(screen.getByTestId("studio-tldraw-workspace")).toBeInTheDocument();
     expect(screen.getByTestId("mock-mind-map")).toBeInTheDocument();
     expect(screen.getByTestId("mock-concept-map")).toBeInTheDocument();
+  });
+
+  it("opens the workspace graph tool from the priming panel and loads the mermaid map", async () => {
+    const user = userEvent.setup();
+
+    renderTutorShell("priming", {
+      shellOverrides: {
+        panelLayout: buildStudioShellPresetLayout("priming"),
+      },
+    });
+
+    expect(screen.queryByTestId("studio-workspace-panel")).not.toBeInTheDocument();
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: /open graph tool from priming panel/i,
+      }),
+    );
+
+    expect(await screen.findByTestId("studio-workspace-panel")).toBeInTheDocument();
+    expect(await screen.findByTestId("mock-concept-map")).toHaveAttribute(
+      "data-initial-mermaid",
+      "graph TD\n  A[Priming Map] --> B[Graph Tool]",
+    );
+    expect(screen.getByTestId("studio-workspace-tab-concept-map")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
   });
 
   it("adds a current-run source from Source Shelf into the workspace canvas objects", async () => {

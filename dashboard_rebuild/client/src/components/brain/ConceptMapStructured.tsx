@@ -503,6 +503,7 @@ export function ConceptMapStructured({
 
   const reactFlowRef = useRef<HTMLDivElement>(null);
   const initialMermaidConsumedRef = useRef(false);
+  const lastInitialMermaidRef = useRef<string | null>(null);
   const lastCommandIdRef = useRef(0);
   // ─── Import & init ──────────────────────────────────────────────────────
   const importMermaid = useCallback(
@@ -525,10 +526,15 @@ export function ConceptMapStructured({
   );
 
   useEffect(() => {
-    if (initialMermaid?.trim() && !initialMermaidConsumedRef.current) {
+    const normalizedInitialMermaid = initialMermaid?.trim() || "";
+    if (
+      normalizedInitialMermaid &&
+      lastInitialMermaidRef.current !== normalizedInitialMermaid
+    ) {
       initialMermaidConsumedRef.current = true;
-      importMermaid(initialMermaid);
-      patchUiState({ mermaidInput: initialMermaid });
+      lastInitialMermaidRef.current = normalizedInitialMermaid;
+      importMermaid(normalizedInitialMermaid);
+      patchUiState({ mermaidInput: normalizedInitialMermaid });
       onInitialMermaidConsumed?.();
     }
   }, [initialMermaid, importMermaid, onInitialMermaidConsumed]);

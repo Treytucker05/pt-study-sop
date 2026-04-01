@@ -298,6 +298,15 @@ export function TutorShell({
     summaryDraft: "",
     cardRequestText: "",
   });
+  const [conceptMapImportRequest, setConceptMapImportRequest] = useState<{
+    mermaid: string;
+    requestKey: number;
+  } | null>(null);
+  const workspacePanelSeed = useMemo(
+    () =>
+      buildStudioShellPresetLayout("study").find((item) => item.panel === "workspace") ?? null,
+    [],
+  );
   const [notesScratchpad, setNotesScratchpad] = useState("");
   const [sourceShelfUploading, setSourceShelfUploading] = useState(false);
   const entryUploadInputRef = useRef<HTMLInputElement | null>(null);
@@ -1197,6 +1206,7 @@ export function TutorShell({
         canvasObjects={canvasObjects}
         courseId={hub.courseId ?? null}
         courseName={sourceShelfCourseName || null}
+        conceptMapImportRequest={conceptMapImportRequest}
         currentRunObjects={currentRunWorkspaceObjects}
         promotedPrimeObjectIds={promotedPrimeObjectIds}
         selectedMaterialCount={hub.selectedMaterials.length}
@@ -1294,6 +1304,45 @@ export function TutorShell({
           }}
           onPromoteResultToPrimePacket={handlePromoteTextNoteToPrime}
           onSendResultToWorkspace={handleSendPrimingResultToWorkspace}
+          onOpenConceptMapInWorkspace={(mermaid) => {
+            const trimmedMermaid = mermaid.trim();
+            if (!trimmedMermaid || !workspacePanelSeed) {
+              return;
+            }
+
+            const nextRequestKey = (conceptMapImportRequest?.requestKey || 0) + 1;
+            const nextImportRequest = {
+              mermaid: trimmedMermaid,
+              requestKey: nextRequestKey,
+            };
+            const workspaceAlreadyOpen = panelLayout.some((item) => item.panel === "workspace");
+
+            if (workspaceAlreadyOpen) {
+              setConceptMapImportRequest(nextImportRequest);
+              return;
+            }
+
+            setPanelLayout((current) => {
+              if (current.some((item) => item.panel === "workspace")) {
+                return current;
+              }
+
+              const highestZIndex = current.reduce(
+                (maxZIndex, item) => Math.max(maxZIndex, item.zIndex || 0),
+                0,
+              );
+
+              return [
+                ...current,
+                {
+                  ...workspacePanelSeed,
+                  zIndex: highestZIndex + 1,
+                  collapsed: false,
+                },
+              ];
+            });
+            setConceptMapImportRequest(nextImportRequest);
+          }}
           onApplyRefinedResults={workflow.applyPrimingDisplayedRun}
           isSaving={workflow.savingPrimingBundle}
           isStartingTutor={session.isStarting}

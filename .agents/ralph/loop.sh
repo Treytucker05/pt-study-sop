@@ -83,6 +83,8 @@ AGENT_CMD="${AGENT_CMD:-$DEFAULT_AGENT_CMD}"
 MAX_ITERATIONS="${MAX_ITERATIONS:-$DEFAULT_MAX_ITERATIONS}"
 NO_COMMIT="${NO_COMMIT:-$DEFAULT_NO_COMMIT}"
 STALE_SECONDS="${STALE_SECONDS:-$DEFAULT_STALE_SECONDS}"
+VERIFY_AGENT_CMD="${VERIFY_AGENT_CMD:-}"
+PROMPT_VERIFY="${PROMPT_VERIFY:-}"
 
 abs_path() {
   local p="$1"
@@ -145,6 +147,50 @@ run_agent() {
   else
     cat "$prompt_file" | eval "$AGENT_CMD"
   fi
+}
+
+run_verify_agent() {
+  local prompt_file="$1"
+  local vcmd="${VERIFY_AGENT_CMD}"
+  if [[ "$vcmd" == *"{prompt}"* ]]; then
+    local escaped
+    escaped=$(printf '%q' "$prompt_file")
+    local cmd="${vcmd//\{prompt\}/$escaped}"
+    eval "$cmd"
+  else
+    cat "$prompt_file" | eval "$vcmd"
+  fi
+}
+
+render_verify_prompt() {
+  local template_file="$1"
+  local output_file="$2"
+  local story_meta="$3"
+  local story_block="$4"
+  local story_id story_title
+  story_id="$(story_field "$story_meta" "id")"
+  story_title="$(story_field "$story_meta" "title")"
+  # Use Python for the whole thing — avoids Git Bash vs Windows path issues with sed + python mix
+  python3 - "$template_file" "$output_file" "$story_block" "$story_id" "$story_title" <<'PYEOF'
+import sys
+from pathlib import Path
+
+template_path = Path(sys.argv[1])
+output_path = Path(sys.argv[2])
+block_path = Path(sys.argv[3])
+story_id = sys.argv[4]
+story_title = sys.argv[5]
+
+content = template_path.read_text(encoding="utf-8")
+block = block_path.read_text(encoding="utf-8") if block_path.exists() else ""
+
+content = content.replace("{{STORY_ID}}", story_id)
+content = content.replace("{{STORY_TITLE}}", story_title)
+content = content.replace("{{STORY_BLOCK}}", block)
+
+output_path.parent.mkdir(parents=True, exist_ok=True)
+output_path.write_text(content, encoding="utf-8")
+PYEOF
 }
 
 run_agent_inline() {
@@ -852,7 +898,26 @@ cleanup_orphans() {
   command -v dev-browser >/dev/null 2>&1 && dev-browser stop 2>/dev/null || true
   # Kill any leftover child processes from this shell
   jobs -p 2>/dev/null | xargs -r kill 2>/dev/null || true
+  # Kill orphaned MCP server node processes spawned by codex iterations
+  powershell.exe -NoProfile -Command "
+    Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" -ErrorAction SilentlyContinue |
+      Where-Object { \$_.CommandLine -match 'desktop-commander|context7-mcp|server-memory|codex-mcp|server-github|server-filesystem|playwright.*mcp|chrome-devtools-mcp|open-pencil|windows-screenshot' } |
+      ForEach-Object { Stop-Process -Id \$_.ProcessId -Force -ErrorAction SilentlyContinue }
+  " 2>/dev/null || true
+  # Kill Cursor if Ralph opened it
+  powershell.exe -NoProfile -Command "Stop-Process -Name Cursor -Force -ErrorAction SilentlyContinue" 2>/dev/null || true
   echo "Cleanup complete."
+}
+
+# Per-iteration cleanup helper (called after each iteration)
+cleanup_iteration() {
+  pkill -f 'chrome-headless-shell' 2>/dev/null || true
+  powershell.exe -NoProfile -Command "
+    Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" -ErrorAction SilentlyContinue |
+      Where-Object { \$_.CommandLine -match 'desktop-commander|context7-mcp|server-memory|codex-mcp|server-github|server-filesystem|playwright.*mcp|chrome-devtools-mcp|open-pencil|windows-screenshot' } |
+      ForEach-Object { Stop-Process -Id \$_.ProcessId -Force -ErrorAction SilentlyContinue }
+  " 2>/dev/null || true
+  powershell.exe -NoProfile -Command "Stop-Process -Name Cursor -Force -ErrorAction SilentlyContinue" 2>/dev/null || true
 }
 trap cleanup_orphans EXIT INT TERM
 
@@ -931,8 +996,8 @@ HBEOF
   ITER_END=$(date +%s)
   ITER_END_FMT=$(date '+%Y-%m-%d %H:%M:%S')
 
-  # Per-iteration cleanup: kill headless chrome orphans from dev-browser verification
-  pkill -f 'chrome-headless-shell' 2>/dev/null || true
+  # Per-iteration cleanup: kill orphaned MCP servers, headless chrome, and Cursor
+  cleanup_iteration
   ITER_DURATION=$((ITER_END - ITER_START))
   HEAD_AFTER="$(git_head)"
   log_activity "ITERATION $i end (duration=${ITER_DURATION}s)"
@@ -980,8 +1045,44 @@ HBEOF
       update_story_status "$STORY_ID" "open"
       echo "Iteration failed; story reset to open."
     elif grep -q "<promise>COMPLETE</promise>" "$LOG_FILE"; then
-      update_story_status "$STORY_ID" "done"
-      echo "Completion signal received; story marked done."
+      # ── Optional verification pass with a stronger model ──
+      if [ -n "$VERIFY_AGENT_CMD" ] && [ -n "$PROMPT_VERIFY" ] && [ -f "$PROMPT_VERIFY" ]; then
+        echo ""
+        echo "── Verification pass ($(echo "$VERIFY_AGENT_CMD" | grep -o 'model=[^ ]*' || echo 'verify agent')) ──"
+        VERIFY_PROMPT_RENDERED="$TMP_DIR/verify-$RUN_TAG-$i.md"
+        VERIFY_LOG="$RUNS_DIR/run-$RUN_TAG-iter-$i-verify.log"
+        render_verify_prompt "$PROMPT_VERIFY" "$VERIFY_PROMPT_RENDERED" "$STORY_META" "$STORY_BLOCK"
+        VERIFY_TIMEOUT="${VERIFY_TIMEOUT:-300}"
+        set +e
+        # Run verify agent with timeout to prevent hangs
+        cat "$VERIFY_PROMPT_RENDERED" | timeout "$VERIFY_TIMEOUT" $VERIFY_AGENT_CMD 2>&1 | tee "$VERIFY_LOG"
+        VERIFY_STATUS=${PIPESTATUS[1]}
+        set -e
+        if [ "$VERIFY_STATUS" -eq 124 ]; then
+          echo "Verification timed out after ${VERIFY_TIMEOUT}s; story reset to open."
+          update_story_status "$STORY_ID" "open"
+          log_activity "ITERATION $i verify TIMEOUT (${VERIFY_TIMEOUT}s)"
+          pkill -f 'chrome-headless-shell' 2>/dev/null || true
+          continue
+        fi
+        pkill -f 'chrome-headless-shell' 2>/dev/null || true
+        if [ "$VERIFY_STATUS" -ne 0 ]; then
+          echo "Verification agent exited non-zero; story reset to open."
+          update_story_status "$STORY_ID" "open"
+          log_activity "ITERATION $i verify FAIL (exit code $VERIFY_STATUS)"
+        elif grep -q "<promise>VERIFY_PASS</promise>" "$VERIFY_LOG"; then
+          echo "Verification PASSED; story marked done."
+          update_story_status "$STORY_ID" "done"
+          log_activity "ITERATION $i verify PASS"
+        else
+          echo "Verification did not pass; story reset to open."
+          update_story_status "$STORY_ID" "open"
+          log_activity "ITERATION $i verify FAIL (no pass signal)"
+        fi
+      else
+        update_story_status "$STORY_ID" "done"
+        echo "Completion signal received; story marked done."
+      fi
     else
       update_story_status "$STORY_ID" "open"
       echo "No completion signal; story reset to open."
