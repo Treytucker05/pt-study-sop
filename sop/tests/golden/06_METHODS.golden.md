@@ -77,7 +77,7 @@ Each method block represents a single study activity.
 | Clinical Anchor Mini-Case | 5 min | medium | Schmidt and Rikers (2007); Clinically anchored explanation supports later script formation and transfer |
 | Modality Switch | 3 min | low | Mayer (2009); Matching representation and segmenting explanation helps novice comprehension |
 | Jingle / Rhyme Hook | 3 min | low | Paivio (1991); Verbal plus image-linked hooks can improve retention when grounded in meaning |
-| Depth Ladder (4-10-HS-PT) | 4 min | low | Mayer (2009); Segmented and pretraining-style explanation improves novice understanding of unfamiliar systems. |
+| Depth Ladder (4-10-HS-PT) | 6 min | medium | Mayer (2009); Segmented and progressively elaborated explanation improves novice understanding of unfamiliar systems. |
 | KWIK Lite | 2 min | low | Paivio (1991); Lightweight verbal-plus-image hooks can improve retention when they are grounded in already-understood meaning. |
 
 ### CALIBRATE (7 blocks)
@@ -146,10 +146,10 @@ Each method block represents a single study activity.
 
 ### Control Plane Chains (CP-MSS v2.0)
 
-#### C-FE-STD. First Exposure: Standard
+#### C-FE-STD. Trey's Favorite: Start Here
 **Blocks:** Learning Objectives Primer → Structural Extraction → Micro Precheck → Mechanism Trace → One-Page Anchor → Full Calibrate Probes → Full Calibrate Priority Set → Comparison Table → KWIK Hook → Question Bank Seed → Timed Sprint Sets
 **Context:** medium energy, 35 min
-**Use for:** Standard first-exposure chain for medium-energy sessions targeting classification and mechanism modes. Opening is explicit MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE, then ENCODE, reference generation, and timed retrieval sprint.
+**Use for:** Default start-here chain for Trey. Standard first-exposure flow for medium-energy sessions targeting classification and mechanism modes. Opening is explicit MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE, then ENCODE, reference generation, and timed retrieval sprint.
 
 #### C-FE-MIN. First Exposure: Minimal
 **Blocks:** Learning Objectives Primer → Structural Extraction → Micro Precheck → Modality Switch → One-Page Anchor → Full Calibrate Probes → Full Calibrate Priority Set → Timed Brain Dump → Exit Ticket
@@ -163,75 +163,95 @@ Each method block represents a single study activity.
 
 ### Core Chains
 
-#### 1. First Exposure (Core)
+#### C-FE-001. First Exposure (Core)
 **Blocks:** Learning Objectives Primer → Structural Extraction → Syntopical Big-Picture Synthesis → Micro Precheck → Analogy Bridge → One-Page Anchor → Full Calibrate Probes → Full Calibrate Priority Set → KWIK Hook → Question Bank Seed → Timed Brain Dump → Adversarial Drill → Timed Sprint Sets → Anki Card Draft → Drill Sheet Builder
 **Context:** first exposure, high energy, 55 min
 **Use for:** Control-plane first exposure flow with explicit MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE opening, followed by ENCODE, REFERENCE, RETRIEVE, and OVERLEARN.
 **Note:** Retrieval (Free Recall) comes before generative encoding (KWIK Hook) per Roelle et al. (2022) — lower cognitive load, higher gains.
 
-#### 2. Review Sprint
+#### C-RS-001. Review Sprint
 **Blocks:** Overarching Pre-Question Set → One-Page Anchor → Question Bank Seed → Sprint Quiz → Clinical Application → Exit Ticket
 **Context:** review, medium energy, 25 min
 **Use for:** Fast review loop. Prepare → Retrieve → Interrogate (application) → Overlearn. Skips encode for known material.
 
-#### 3. Quick Drill
+#### C-QD-001. Quick Drill
 **Blocks:** Learning Objectives Primer → Brain Dump → One-Page Anchor → Question Bank Seed → Sprint Quiz → Exit Ticket
 **Context:** review, medium energy, 15 min
 **Use for:** Minimal time investment. Short PRIME orientation, quick calibrate pulse, then reference, retrieve, and overlearn. Good for spacing reviews.
 
-#### 4. Anatomy Deep Dive
+#### C-AD-001. Anatomy Deep Dive
 **Blocks:** Learning Objectives Primer → Prior Knowledge Scan → Structural Skimming + Pillar Mapping → Draw-Label → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Anki Card Draft
 **Context:** Anatomy, first exposure, high energy, 40 min
 **Use for:** Anatomy-focused chain with a short PRIME orientation, a calibrate check, and drawing-led encoding before retrieval and overlearn.
 
-#### 5. Low Energy
+#### C-LE-001. Low Energy
 **Blocks:** Learning Objectives Primer → Brain Dump → Hierarchical Advance Organizer → One-Page Anchor → Question Bank Seed → Fill-in-Blank → Exit Ticket
 **Context:** low energy, 15 min
 **Use for:** Low-effort chain for tired days. Short PRIME orientation, quick calibrate pulse, then reference, retrieve, and overlearn. Maintain streak without burning out.
 
-#### 6. Exam Prep
+#### C-EP-001. Exam Prep
 **Blocks:** Overarching Pre-Question Set → One-Page Anchor → Question Bank Seed → Mixed Practice → Side-by-Side Comparison → Error Autopsy → Anki Card Draft
 **Context:** exam prep, high energy, 35 min
 **Use for:** Exam-focused chain with interleaving and error analysis. Prepare → Retrieve → Interrogate → Refine → Overlearn.
 
-#### 7. Clinical Reasoning
+#### C-CR-001. Clinical Reasoning
 **Blocks:** Learning Objectives Primer → Prior Knowledge Scan → Structural Skimming + Pillar Mapping → Case Walkthrough → Side-by-Side Comparison → Error Autopsy → Anki Card Draft
 **Context:** Clinical, exam prep, high energy, 45 min
 **Use for:** Build clinical reasoning chains with a short PRIME orientation, a calibrate scan, and contrast-heavy encoding before wrap.
 
-#### 8. Mastery Review
+#### C-MR-001. Mastery Review
 **Blocks:** One-Page Anchor → Question Bank Seed → Timed Brain Dump → Error Autopsy → Mastery Loop → Anki Card Draft
 **Context:** consolidation, medium energy, 30 min
 **Use for:** Deep consolidation with successive relearning. Retrieve → Refine → Overlearn.
 
 ### Intake-Focused Chains
 
-#### 9. Dense Anatomy Intake
+#### C-DA-001. Dense Anatomy Intake
 **Blocks:** Learning Objectives Primer → Pre-Test → Draw-Label → One-Page Anchor → Question Bank Seed → Timed Brain Dump → KWIK Hook → Anki Card Draft
 **Context:** Anatomy, first exposure, high energy, 40 min
 **Use for:** High-detail anatomy first exposure with a short PRIME orientation before pre-test, Draw-Label for spatial memory, retrieval, and later generative steps.
 
-#### 10. Pathophysiology Intake
+#### C-PI-001. Pathophysiology Intake
 **Blocks:** Learning Objectives Primer → Pre-Test → Self-Explanation Protocol → Skeleton Concept Hierarchy → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Error Autopsy
 **Context:** Pathology, first exposure, high energy, 45 min
 **Use for:** Pathology first exposure with a short PRIME orientation before pre-test, self-explanation, concept clustering, retrieval, and refinement.
 
-#### 11. Clinical Reasoning Intake
+#### C-CI-001. Clinical Reasoning Intake
 **Blocks:** Learning Objectives Primer → Pre-Test → Illness Script Builder → Side-by-Side Comparison → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Anki Card Draft
 **Context:** Clinical, first exposure, high energy, 45 min
 **Use for:** Clinical first exposure with a short PRIME orientation before pre-test, illness scripts, comparison, retrieval, and overlearn.
 
-#### 12. Quick First Exposure
+#### C-QF-001. Quick First Exposure
 **Blocks:** Learning Objectives Primer → Pre-Test → Hierarchical Advance Organizer → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Exit Ticket
 **Context:** first exposure, medium energy, 20 min
 **Use for:** Minimal intake chain when time is limited. Short PRIME orientation before pre-test, hierarchy setup, retrieval, and overlearn.
 
 ### Visualization Chains
 
-#### 13. Visual Encoding
+#### C-VE-001. Visual Encoding
 **Blocks:** Learning Objectives Primer → Brain Dump → Concept Map → Comparison Table → One-Page Anchor → Question Bank Seed → Timed Brain Dump → Exit Ticket
 **Context:** first exposure, high energy, 40 min
 **Use for:** Visualization-first encoding for topics with confusable concepts. Short PRIME orientation, quick calibrate pulse, then build visual representations before retrieval.
+
+#### C-SW-001. SWEEP
+**Blocks:** Skeleton Concept Hierarchy → Concept Map → Comparison Table → One-Page Anchor → Question Bank Seed → Sprint Quiz → Anki Card Draft
+**Context:** first exposure, medium energy, 30 min
+**Use for:** Pass 1: Fast structural understanding. Touch everything once. Produce visual maps, objectives, confusables, seed cards.
+
+#### C-DP-001. DEPTH
+**Blocks:** Learning Objectives Primer → Pre-Test → Why-Chain → Self-Explanation Protocol → Clinical Application → One-Page Anchor → Question Bank Seed → Variable Retrieval → Error Autopsy → Anki Card Draft
+**Context:** first exposure, high energy, 45 min
+**Use for:** Pass 2: Selective mastery on high-priority objectives with a quick PRIME orientation, pre-test calibration, then depth encode/application work. Retrieval-driven. Cards only from errors.
+
+#### C-TRY-001. Top-Down Narrative Mastery
+**Blocks:** Hierarchical Advance Organizer → Micro Precheck → Story Spine → Analogy Bridge → One-Page Anchor → Full Calibrate Probes → Full Calibrate Priority Set → Hand-Draw Map → KWIK Hook → Concept Map → Timed Brain Dump → Post-Learn Brain Dump
+**Context:** first exposure, medium energy, 45 min
+**Use for:** Top-down first-exposure chain with explicit opening order: MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE. TEACH builds a story + analogy bridge, closes with a compact anchor artifact, then full calibrate determines ENCODE depth. Teach-back is not a default live gate.
+
+#### C-TRY-002. Top-Down Forward Progress
+**Blocks:** Hierarchical Advance Organizer → Micro Precheck → Mechanism Trace → Analogy Bridge → One-Page Anchor → Full Calibrate Probes → Full Calibrate Priority Set → Hand-Draw Map → KWIK Hook → Concept Map → Timed Brain Dump → Post-Learn Brain Dump
+**Context:** first exposure, medium energy, 50 min
+**Use for:** Top-down first-exposure chain with tiered exits and explicit opening order: MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE. TEACH closes with a learner-usable anchor artifact before any mnemonic slot. Teach-back is removed from the default live path.
 
 ---
 

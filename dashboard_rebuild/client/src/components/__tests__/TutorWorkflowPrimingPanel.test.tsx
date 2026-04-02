@@ -89,7 +89,7 @@ function renderPanel(overrides: Record<string, unknown> = {}) {
       templateChains={[
         {
           id: 1,
-          name: "First Exposure: Standard",
+          name: "Trey's Favorite: Start Here",
           description: "Teach-first chain",
           context_tags: "first-exposure",
           blocks: [],
@@ -359,7 +359,7 @@ describe("TutorWorkflowPrimingPanel", () => {
   it("keeps chain runs reachable through the chain selector", async () => {
     startChainRunMock.mockResolvedValue({
       run_id: 77,
-      chain_name: "First Exposure: Standard",
+      chain_name: "Trey's Favorite: Start Here",
       status: "completed",
       steps: [
         {
@@ -393,7 +393,7 @@ describe("TutorWorkflowPrimingPanel", () => {
       ),
     );
     expect(await screen.findByText("1. Learning Objectives Primer")).toBeInTheDocument();
-    expect(screen.getAllByText("First Exposure: Standard").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Trey's Favorite: Start Here").length).toBeGreaterThan(0);
   });
 
   it("runs a selected method, renders formatted objectives, and sends the result to Prime Packet and Workspace", async () => {
@@ -454,7 +454,7 @@ describe("TutorWorkflowPrimingPanel", () => {
           templateChains={[
             {
               id: 1,
-              name: "First Exposure: Standard",
+              name: "Trey's Favorite: Start Here",
               description: "Teach-first chain",
               context_tags: "first-exposure",
               blocks: [],
@@ -905,7 +905,7 @@ describe("TutorWorkflowPrimingPanel", () => {
           templateChains={[
             {
               id: 1,
-              name: "First Exposure: Standard",
+              name: "Trey's Favorite: Start Here",
               description: "Teach-first chain",
               context_tags: "first-exposure",
               blocks: [],
@@ -955,7 +955,7 @@ describe("TutorWorkflowPrimingPanel", () => {
 
     startChainRunMock.mockResolvedValue({
       run_id: 88,
-      chain_name: "First Exposure: Standard",
+      chain_name: "Trey's Favorite: Start Here",
       steps: [
         {
           step: 1,

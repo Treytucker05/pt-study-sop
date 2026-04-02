@@ -13,6 +13,7 @@ Purpose: Turn explained material into learner-built structures, explanations, ma
 - Use active processing: generate, map, compare, draw, teach back, or transform.
 - Convert explained material into coherent learner-owned mental models.
 - Full `KWIK Hook` belongs here as deeper encoding work; `KWIK Lite` is the lighter TEACH-side live slot.
+- Full `KWIK Hook` should run as `word sound -> real meaning -> meaning picture -> linked scene -> personalize -> lock`, not as a free-form mnemonic dump.
 - Not for: passive rereading as the primary activity.
 - Not for: tutor-led first-contact explanation; that belongs in TEACH.
 
@@ -22,7 +23,7 @@ Purpose: Turn explained material into learner-built structures, explanations, ma
 
 | ID | Name | Energy | Duration | Key Mechanism |
 |----|------|--------|----------|--------------|
-| M-ENC-001 | KWIK Hook | low | 3 min | mnemonic_encoding |
+| M-ENC-001 | KWIK Hook | medium | 3 min | sound_meaning_linking |
 | M-ENC-002 | Seed-Lock Generation | medium | 8 min | generation_effect |
 | M-ENC-003 | Draw-Label | medium | 8 min | dual_coding |
 | M-ENC-004 | Teach-Back | medium | 8 min | generation, self_explanation |

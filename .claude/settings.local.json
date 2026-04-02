@@ -3,12 +3,10 @@
     "allow": [],
     "defaultMode": "bypassPermissions"
   },
-  "enableAllProjectMcpServers": true,
+  "enableAllProjectMcpServers": false,
   "enabledMcpjsonServers": [
-    "filesystem",
     "github",
     "memory",
-    "codex-cli",
-    "stitch"
+    "codex-cli"
   ]
 }

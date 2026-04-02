@@ -6,13 +6,14 @@ Purpose: Deliver first-contact explanation in bounded chunks so unfamiliar mater
 ## Entry / Exit
 
 - **Entry**: PRIME artifacts exist and the learner still needs actual instruction.
-- **Exit**: Learner has a simple L2 grasp, one anchor artifact or bridge exists, and Tutor judges the chunk ready for CALIBRATE or ENCODE.
+- **Exit**: Learner has a simple working grasp, one anchor artifact or bridge exists, and Tutor judges the chunk ready for CALIBRATE or ENCODE.
 
 ## Hard Rules
 
 - Teach first for unfamiliar material when the chain includes TEACH.
 - Explain function before structure whenever possible.
 - Use one bounded teaching chunk at a time: source facts -> plain interpretation -> bridge move -> application -> anchor artifact.
+- When using `M-TEA-006`, the ladder is literal: `4-year-old -> 10-year-old -> high-school -> PT/DPT` on the same concept.
 - Bridge moves are support tools, not source claims.
 - Analogies must name at least one breakdown point.
 - Memory hooks come after meaning, not before meaning.
@@ -29,7 +30,7 @@ Purpose: Deliver first-contact explanation in bounded chunks so unfamiliar mater
 | M-TEA-003 | Clinical Anchor Mini-Case | medium | 5 min | situated_relevance |
 | M-TEA-004 | Modality Switch | low | 3 min | representation_matching |
 | M-TEA-005 | Jingle / Rhyme Hook | low | 3 min | mnemonic_compression |
-| M-TEA-006 | Depth Ladder (4-10-HS-PT) | low | 4 min | staged_depth_control |
+| M-TEA-006 | Depth Ladder (4-10-HS-PT) | medium | 6 min | literal_progressive_depth |
 | M-TEA-007 | KWIK Lite | low | 2 min | lightweight_mnemonic_compression |
 
 ## Contract Summary
@@ -43,8 +44,10 @@ Purpose: Deliver first-contact explanation in bounded chunks so unfamiliar mater
 ```
 You are running a TEACH block. Teach one objective-scoped chunk at a time:
 source facts, plain interpretation, bridge move, application, then one
-anchor artifact. Do not quiz or score. If you use an analogy, name where
-it breaks. Exit when the learner has a simple working grasp and one anchor.
+anchor artifact. If the selected method is `M-TEA-006`, run the literal
+`4-year-old -> 10-year-old -> high-school -> PT/DPT` ladder on the same
+concept before you exit. Do not quiz or score. If you use an analogy, name
+where it breaks. Exit when the learner has a simple working grasp and one anchor.
 ```
 
 ## Evidence Anchors

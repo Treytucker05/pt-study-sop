@@ -8,7 +8,6 @@ description: >-
 blocks:
   # --- TIER 1: opening architecture complete ---
   - M-PRE-004      # Hierarchical Advance Organizer
-  - M-ENC-015      # Hand-Draw Map
   - M-CAL-001      # MICRO-CALIBRATE baseline
   - M-ENC-008      # TEACH Mechanism Trace
   - M-INT-001      # TEACH Analogy Bridge
@@ -16,6 +15,7 @@ blocks:
   - M-CAL-002      # FULL CALIBRATE probes
   - M-CAL-003      # FULL CALIBRATE priority set
   # --- TIER 2: deep encode ---
+  - M-ENC-015      # Hand-Draw Map
   - M-ENC-001      # Full KWIK Hook (deeper ENCODE)
   - M-ENC-009      # Concept Map (learner-facing production)
   # --- TIER 3: retrieval + closure ---

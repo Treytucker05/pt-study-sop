@@ -27,7 +27,7 @@ _REFERENCE_TARGET_METHODS = {"M-REF-003", "M-REF-004"}
 _FALLBACK_CHAIN_CATALOG: dict[str, dict[str, Any]] = {
     "C-FE-STD": {
         "chain_id": "C-FE-STD",
-        "chain_name": "First Exposure: Standard",
+        "chain_name": "Trey's Favorite: Start Here",
         "block_method_ids": [
             "M-PRE-010",
             "M-PRE-008",

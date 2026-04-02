@@ -551,11 +551,25 @@ The `brain/selector.py` router automatically selects the optimal chain based on 
 
 ### First Exposure Chains
 
-| Chain | Duration | Use Case | Stages |
-|-------|----------|----------|--------|
-| `C-FE-STD` | 35 min | Standard first exposure | PRIME→TEACH→CALIBRATE→ENCODE→REFERENCE→RETRIEVE |
-| `C-FE-MIN` | 20 min | Low energy / short time | PRIME→REFERENCE→RETRIEVE→OVERLEARN |
-| `C-FE-PRO` | 45 min | Lab/procedure learning | PRIME→TEACH→ENCODE→REFERENCE→RETRIEVE (with fault injection) |
+| Chain | Duration | Use Case | Flow |
+|-------|----------|----------|------|
+| `C-FE-001` | 55 min | Full first-exposure core chain | PRIME→MICRO-CALIBRATE→TEACH→FULL CALIBRATE→ENCODE→REFERENCE→RETRIEVE→OVERLEARN |
+| `C-FE-STD` | 35 min | Trey's default start-here chain | PRIME→MICRO-CALIBRATE→TEACH→FULL CALIBRATE→ENCODE→REFERENCE→RETRIEVE |
+| `C-FE-MIN` | 20 min | Low energy / short time | PRIME→MICRO-CALIBRATE→TEACH→FULL CALIBRATE→RETRIEVE→OVERLEARN |
+| `C-FE-PRO` | 45 min | Lab/procedure learning | PRIME→MICRO-CALIBRATE→TEACH→FULL CALIBRATE→ENCODE→REFERENCE→RETRIEVE |
+
+If you want one chain and do not want to think about selection, start with `C-FE-STD`, whose current display name is `Trey's Favorite: Start Here`.
+
+### How To Read SOP IDs
+
+- Chain IDs use `C-<family>-<variant>`.
+- Example: `C-FE-STD` = `Chain / First Exposure / Standard`.
+- Example: `C-QD-001` = `Chain / Quick Drill` (`001` is the first numbered variant in that family).
+- Method IDs use `M-<family>-<sequence>`.
+- Example: `M-PRE-010` = `Method / PRE family / item 010`.
+- Example: `M-CAL-001` = `Method / CAL family / item 001`.
+- Runtime rule: when an older method prefix and the current runtime stage differ, trust the live `control_stage`.
+  Example: `M-ENC-008 Mechanism Trace` currently runs as a `TEACH` block, even though its historical ID prefix is `ENC`.
 
 ### Operating Modes
 
@@ -595,7 +609,7 @@ For runtime wiring details and endpoint/state maps, use `docs/root/PROJECT_ARCHI
 | 12 | `12-evidence.md` | Evidence base, research citations, NotebookLM bridge |
 | 13 | `13-custom-gpt-system-instructions.md` | Legacy Custom GPT system instructions |
 | 14 | `14-lo-engine.md` | Learning Objective Engine protocol pack |
-| 15 | `15-method-library.md` | Composable Method Library (54 blocks + chains) |
+| 15 | `15-method-library.md` | Composable Method Library (59 methods + 20 chains) |
 | 17 | `17-control-plane.md` | Control Plane Constitution (CP-MSS v2.0) |
 
 ---

@@ -2,6 +2,87 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-04-01 - KWIK Hook aligned to literal word-sound -> meaning -> link flow
+
+- Rewrote `sop/library/methods/M-ENC-001.yaml` so full `KWIK Hook` now literally walks through `Word Sound -> Real Meaning -> Meaning Picture -> Link -> Personalize -> Lock`, which matches the mnemonic flow Trey wants to use during study.
+- Updated `sop/library/categories/ENCODE.md` and `sop/library/13-custom-gpt-system-instructions.md` so the ENCODE reference and runtime instruction source now describe the same full-KWIK sequence.
+- Regenerated the generated method/runtime surfaces and goldens in:
+  - `sop/library/15-method-library.md`
+  - `sop/runtime/knowledge_upload/06_METHODS.md`
+  - `sop/runtime/custom_instructions.md`
+  - `sop/tests/golden/15-method-library.golden.md`
+  - `sop/tests/golden/06_METHODS.golden.md`
+- Added a focused YAML regression in `brain/tests/test_seed_methods.py`, then updated `sop/library/templates/session_log_template.yaml` so the new KWIK logging fields (`sound_cue`, `meaning_link_confirmed`) validate cleanly.
+- Ran `python brain/data/seed_methods.py --strict-sync` so the live `method_blocks` table and facilitation prompts now reflect the rewritten KWIK flow instead of the older DB-cached metadata.
+- Validation:
+  - `python sop/tools/build_runtime_bundle.py --update-golden`
+  - `pytest brain/tests/test_seed_methods.py -q`
+  - `python sop/tools/validate_library.py`
+  - `python brain/data/seed_methods.py --strict-sync`
+
+## 2026-04-01 - SOP depth ladder aligned to literal 4-10-HS-PT teaching
+
+- Rewrote `sop/library/methods/M-TEA-006.yaml` so `Depth Ladder (4-10-HS-PT)` now literally explains the same concept in four passes: `4-year-old -> 10-year-old -> high-school -> PT/DPT`, followed by a low-friction rung check instead of the older hook/mechanism/fallback contract.
+- Updated `sop/library/categories/TEACH.md` so the TEACH category rules and sample prompt explicitly call out the literal ladder behavior when `M-TEA-006` is selected.
+- Regenerated the generated method-library surfaces and goldens in:
+  - `sop/library/15-method-library.md`
+  - `sop/runtime/knowledge_upload/06_METHODS.md`
+  - `sop/tests/golden/15-method-library.golden.md`
+  - `sop/tests/golden/06_METHODS.golden.md`
+- Ran `python brain/data/seed_methods.py --strict-sync` so the live `method_blocks` table and regenerated facilitation prompts now reflect the rewritten ladder contract instead of the older DB-cached metadata.
+- Added a focused YAML regression in `brain/tests/test_seed_methods.py` to lock the rung order and prompt contract.
+- Validation:
+  - `python sop/tools/build_runtime_bundle.py --update-golden`
+  - `pytest brain/tests/test_seed_methods.py -q`
+  - `python sop/tools/validate_library.py`
+  - `python brain/data/seed_methods.py --strict-sync`
+
+## 2026-04-01 - SOP naming and inventory surface refresh
+
+- Refreshed the readable SOP surfaces so chain and method IDs decode in plain English instead of assuming repo shorthand familiarity.
+- Updated `README.md` to fix stale method-library counts and stale first-exposure stage summaries, and added a compact ID legend.
+- Updated `sop/library/15-method-library.md` with a current “how to read IDs” section plus the runtime rule that `control_stage` beats older historical prefixes when they differ, normalized the chain headings to live IDs, and added the 4 previously missing chain entries so the readable doc now covers all `20` chains.
+- Updated `sop/tools/export_method_chain_inventory.py` so regenerated inventory artifacts carry decoded ID fields and a naming legend automatically.
+- Validation:
+  - `python sop/tools/export_method_chain_inventory.py`
+  - `git diff --check`
+
+## 2026-04-01 - Starter chain renamed to stand out
+
+- Kept the starter chain ID `C-FE-STD` stable and renamed its display name to `Trey's Favorite: Start Here` so Trey has one obvious default chain to begin with.
+- Updated the active naming surfaces in:
+  - `sop/library/chains/C-FE-STD.yaml`
+  - `brain/selector.py`
+  - `README.md`
+  - `sop/library/15-method-library.md`
+  - `sop/tools/build_runtime_bundle.py`
+  - `sop/runtime/knowledge_upload/06_METHODS.md`
+  - `sop/tests/golden/15-method-library.golden.md`
+  - `sop/tests/golden/06_METHODS.golden.md`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+- Rebuilt the runtime bundle/goldens and refreshed the inventory export so future regenerations preserve the standout starter-chain name.
+- Validation:
+  - `python sop/tools/build_runtime_bundle.py --update-golden`
+  - `python sop/tools/export_method_chain_inventory.py`
+  - `pytest brain/tests/test_selector_bridge.py -q`
+  - `pytest sop/tests/test_build_golden.py -q`
+  - `npx vitest run client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+
+## 2026-04-01 - SOP chain repair and revalidation
+
+- Repaired control-plane validator/spec drift in `brain/chain_validator.py` so the locked first-exposure opening `MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE` is valid only for the explicit `Micro Precheck` opening step plus a later full calibrate stage.
+- Added focused regression coverage in `brain/tests/test_chain_validator.py` for the allowed opening handshake and for the two edge cases that must still fail.
+- Repaired genuine ordering drift in:
+  - `sop/library/chains/C-DP-001.yaml`
+  - `sop/library/chains/C-TRY-001.yaml`
+  - `sop/library/chains/C-TRY-002.yaml`
+- Regenerated `exports/sop_inventory/` and confirmed the refreshed inventory now reports all `20` chains as control-plane valid.
+- Validation:
+  - `pytest brain/tests/test_chain_validator.py -q`
+  - `pytest brain/tests/test_selector_bridge.py -q`
+  - `python sop/tools/validate_library.py`
+  - `python sop/tools/export_method_chain_inventory.py`
+
 ## 2026-03-29 - OVERLAY-001 entry overlay hardening
 
 - Added a real fullscreen entry overlay backdrop in `dashboard_rebuild/client/src/components/studio/StudioShell.tsx` so the empty Tutor Studio entry card now dims the canvas and intercepts wheel/click input instead of letting the canvas react underneath.
@@ -2301,3 +2382,19 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `pytest brain/tests/test_tutor_workflow_priming_assist.py -q`
   - `python -u dashboard_web.py`
   - `dev-browser --timeout 180 run C:\\pt-study-sop\\scripts\\verify-prime-005.js`
+
+## 2026-04-01 - SOP inventory export for live study testing
+
+- Added `sop/tools/export_method_chain_inventory.py` to export the canonical YAML method and chain library directly from `sop/library/methods/` and `sop/library/chains/`.
+- Generated reusable artifacts under `exports/sop_inventory/`:
+  - `method_chain_inventory.md`
+  - `method_chain_inventory.json`
+  - `methods.csv`
+  - `chains.csv`
+- Included chain-level control-plane validation in the exported inventory so live testing can start from the structurally valid chains and explicitly avoid the current invalid draft chains until they are repaired.
+- Current snapshot:
+  - methods: `59` total (`47` validated, `3` core, `9` draft)
+  - chains: `20` total (`13` control-plane valid, `7` control-plane invalid)
+- Validation passed:
+  - `python sop/tools/export_method_chain_inventory.py`
+  - `python sop/tools/validate_library.py`

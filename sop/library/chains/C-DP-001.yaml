@@ -2,13 +2,13 @@ id: C-DP-001
 name: DEPTH
 description: >-
   Pass 2: Selective mastery on high-priority objectives with a quick PRIME
-  orientation before calibration and depth work. Retrieval-driven. Cards only
-  from errors.
+  orientation, pre-test calibration, then depth encode/application work.
+  Retrieval-driven. Cards only from errors.
 blocks:
 - M-PRE-010
 - M-PRE-007
 - M-ENC-005
-- M-ENC-008
+- M-ENC-007
 - M-INT-002
 - M-REF-003
 - M-REF-004

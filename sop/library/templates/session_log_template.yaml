@@ -427,6 +427,10 @@ session_fields:
     type: string
     required: false
 
+  - name: meaning_link_confirmed
+    type: boolean
+    required: false
+
   - name: muddy_points_identified
     type: integer
     required: false
@@ -565,6 +569,10 @@ session_fields:
 
   - name: seed_attempted
     type: boolean
+    required: false
+
+  - name: sound_cue
+    type: string
     required: false
 
   - name: shared_principles

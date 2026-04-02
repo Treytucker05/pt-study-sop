@@ -457,32 +457,35 @@ CONTROL_STAGE_DESCRIPTIONS = {
     "overlearn": "Close the loop with wrap artifacts, fluency work, and carry-forward reinforcement",
 }
 
-# Chain name→number mapping (preserves original numbering)
+# Chain name→displayed identifier mapping
 CHAIN_NUMBERS = {
     # Control Plane Chains (v2.0)
-    "First Exposure: Standard": "C-FE-STD",
+    "Trey's Favorite: Start Here": "C-FE-STD",
     "First Exposure: Minimal": "C-FE-MIN",
     "First Exposure: Procedure": "C-FE-PRO",
-    # Legacy Chains
-    "First Exposure (Core)": 1,
-    "Review Sprint": 2,
-    "Quick Drill": 3,
-    "Anatomy Deep Dive": 4,
-    "Low Energy": 5,
-    "Exam Prep": 6,
-    "Clinical Reasoning": 7,
-    "Mastery Review": 8,
-    "Dense Anatomy Intake": 9,
-    "Pathophysiology Intake": 10,
-    "Clinical Reasoning Intake": 11,
-    "Quick First Exposure": 12,
-    "Visual Encoding": 13,
+    "First Exposure (Core)": "C-FE-001",
+    "Review Sprint": "C-RS-001",
+    "Quick Drill": "C-QD-001",
+    "Anatomy Deep Dive": "C-AD-001",
+    "Low Energy": "C-LE-001",
+    "Exam Prep": "C-EP-001",
+    "Clinical Reasoning": "C-CR-001",
+    "Mastery Review": "C-MR-001",
+    "Dense Anatomy Intake": "C-DA-001",
+    "Pathophysiology Intake": "C-PI-001",
+    "Clinical Reasoning Intake": "C-CI-001",
+    "Quick First Exposure": "C-QF-001",
+    "Visual Encoding": "C-VE-001",
+    "SWEEP": "C-SW-001",
+    "DEPTH": "C-DP-001",
+    "Top-Down Narrative Mastery": "C-TRY-001",
+    "Top-Down Forward Progress": "C-TRY-002",
 }
 
 # Chain groupings for section headers
 CHAIN_GROUPS = {
     "Control Plane Chains (CP-MSS v2.0)": [
-        "First Exposure: Standard", "First Exposure: Minimal", "First Exposure: Procedure",
+        "Trey's Favorite: Start Here", "First Exposure: Minimal", "First Exposure: Procedure",
     ],
     "Core Chains": [
         "First Exposure (Core)", "Review Sprint", "Quick Drill",
@@ -493,7 +496,13 @@ CHAIN_GROUPS = {
         "Dense Anatomy Intake", "Pathophysiology Intake",
         "Clinical Reasoning Intake", "Quick First Exposure",
     ],
-    "Visualization Chains": ["Visual Encoding"],
+    "Visualization Chains": [
+        "Visual Encoding",
+        "SWEEP",
+        "DEPTH",
+        "Top-Down Narrative Mastery",
+        "Top-Down Forward Progress",
+    ],
 }
 
 
@@ -720,6 +729,63 @@ A chain is an ordered sequence of method blocks with context tags.
 | `blocks` | array | Ordered list of block names |
 | `context_tags` | object | Recommended context (see §6) |
 | `description` | string | When to use this chain |
+
+---""")
+
+    sections.append("""## §3.1 How To Read IDs
+
+Use the IDs as compact labels, not as something you are expected to memorize without a key.
+
+**Chain pattern:** `C-<family>-<variant>`
+
+- `C-FE-STD` = `Chain / First Exposure / Standard`
+- `C-QD-001` = `Chain / Quick Drill` (`001` is the first numbered variant in that family)
+- `C-TRY-002` = `Chain / Top-Down / Forward Progress`
+
+**Method pattern:** `M-<family>-<sequence>`
+
+- `M-PRE-010` = `Method / PRE family / item 010`
+- `M-CAL-001` = `Method / CAL family / item 001`
+- `M-ENC-010` = `Method / ENC family / item 010`
+
+**Important runtime rule:** the live `control_stage` is the truth for execution when an older prefix and the current runtime stage differ.
+
+- Example: `M-ENC-008` still carries an older `ENC` prefix in its ID, but it currently runs as a `TEACH` block in the live library.
+- Example: `M-INT-*` methods are integration/interrogation families; use the current `control_stage`, not the raw prefix alone, to know where they run in a chain.
+
+**Current chain family codes in this library:**
+
+| Code | Meaning |
+|------|---------|
+| `AD` | Anatomy Deep Dive |
+| `CI` | Clinical Reasoning Intake |
+| `CR` | Clinical Reasoning |
+| `DA` | Dense Anatomy Intake |
+| `DP` | DEPTH |
+| `EP` | Exam Prep |
+| `FE` | First Exposure |
+| `LE` | Low Energy |
+| `MR` | Mastery Review |
+| `PI` | Pathophysiology Intake |
+| `QD` | Quick Drill |
+| `QF` | Quick First Exposure |
+| `RS` | Review Sprint |
+| `SW` | SWEEP |
+| `TRY` | Top-Down family |
+| `VE` | Visual Encoding |
+
+**Current method family codes in this library:**
+
+| Code | Meaning |
+|------|---------|
+| `PRE` | PRIME-family method ID |
+| `CAL` | CALIBRATE-family method ID |
+| `TEA` | TEACH-family method ID |
+| `ENC` | ENCODE-family method ID |
+| `INT` | Integration/interrogation method ID family |
+| `REF` | REFERENCE-family method ID |
+| `RET` | RETRIEVE-family method ID |
+| `OVR` | OVERLEARN-family method ID |
 
 ---""")
 

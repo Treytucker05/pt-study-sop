@@ -1,9 +1,12 @@
 id: M-ENC-001
 name: KWIK Hook
 category: encode
-description: 'Structured 6-step encoding protocol for new terms. Sound (phonetic cue) → Function (true meaning) → Image (vivid
-  visual tied to function) → Entwine (PIE method: personal meaning) → Resonance (learner confirms it clicks) → Lock (record
-  as card/log). Each step is gated — don''t skip ahead.'
+description: >-
+  Structured 6-step encoding protocol for new terms and concepts. Start by
+  turning the word into something it sounds like, state the real
+  meaning/function, create a picture for the meaning, link the sound-picture
+  to the meaning-picture, personalize it so it sticks, then lock it as a
+  reusable note/card. Each step is gated — do not skip ahead.
 default_duration_min: 3
 energy_cost: medium
 best_stage: first_exposure
@@ -43,25 +46,25 @@ inputs:
 - Blank note area for hook creation
 steps:
 - step: 1
-  action: 'Sound: Find a phonetic cue or rhyme that sounds like the term'
-  notes: 'Example: ''Sartorius'' sounds like ''Sartorial'' (relating to tailoring)'
+  action: 'Word Sound: Turn the word into something it sounds like'
+  notes: 'Find a phonetic cue, rhyme, or sound-alike proxy. Example: ''Sartorius'' sounds like ''sartorial''.'
 - step: 2
-  action: 'Function: State the true meaning/function in one sentence'
+  action: 'Real Meaning: State the true meaning or function in one sentence'
   notes: Must come from source material (Source-Lock)
 - step: 3
-  action: 'Image: Create a vivid mental image that connects sound to function'
-  notes: The weirder/more emotional, the better for retention
+  action: 'Meaning Picture: Create a vivid picture that shows what the term means or does'
+  notes: Build a concrete picture for the real meaning before linking it to the sound cue
 - step: 4
-  action: 'Entwine: Connect the image with personal meaning (PIE method)'
-  notes: Add emotion, absurdity, or personal experience. Why does this matter to YOU?
+  action: 'Link: Connect the sound-picture to the meaning-picture in one vivid scene'
+  notes: Make the scene active so the word-sound naturally points back to the real meaning
 - step: 5
-  action: 'Resonance: Confirm aloud that the hook makes sense to you'
-  notes: 'Say: ''This clicks because...'''
+  action: 'Personalize: Add emotion, absurdity, or personal relevance and say why it clicks'
+  notes: 'Say: ''This clicks because...'' and make the linked scene memorable to YOU'
 - step: 6
   action: 'Lock: Record the hook as an Anki card or session log entry'
   notes: Capture for spaced repetition
 outputs:
-- KWIK hook (sound-function-image triplet)
+- KWIK hook (sound cue + meaning link scene)
 - Anki card draft (optional)
 - Session log entry
 stop_criteria:
@@ -75,11 +78,14 @@ failure_modes:
   mitigation: Make it concrete, visual, and bizarre
 - mode: Sound cue forced
   mitigation: If phonetics don't work, try acronym or first-letter cue
+- mode: Sound cue never connects back to the actual meaning
+  mitigation: Build a separate meaning picture first, then force one linked scene joining sound and meaning
 - mode: Weak personal connection
   mitigation: Add emotion, stakes, or personal relevance - why does this matter to YOU?
 logging_fields:
 - term_encoded
-- hook_type
+- sound_cue
+- meaning_link_confirmed
 - resonance_confirmed
 - card_created
 evidence:
@@ -105,7 +111,7 @@ facilitation_prompt: 'You are running M-ENC-001 (KWIK Hook) in ENCODE stage.
 
   Required outputs:
 
-  - KWIK hook (sound-function-image triplet)
+  - KWIK hook (sound cue + meaning link scene)
 
   - Anki card draft (optional)
 
@@ -125,6 +131,8 @@ facilitation_prompt: 'You are running M-ENC-001 (KWIK Hook) in ENCODE stage.
 
   If you use analogy or broader teaching knowledge to make a hook vivid, label it as a teaching support rather than as sourced fact.
 
+  Keep the flow literal: word sound -> real meaning -> meaning picture -> linked scene -> personalize -> lock.
+
   '
 gating_rules:
 - Force active processing (explain, transform, or map), not passive reading.
@@ -134,15 +142,15 @@ artifact_type: notes
 allowed_moves:
 - Explain concept function in one clear sentence before hook building begins
 - Guide learner through each of the 6 gated steps in order
-- Suggest phonetic cues or rhymes if learner is stuck on Sound step
-- Prompt learner to create their own vivid image (do not create it for them)
-- Use Socratic questioning to deepen personal connection at Entwine step
+- Suggest phonetic cues or rhymes if learner is stuck on the Word Sound step
+- Prompt learner to create both a meaning picture and the final linked scene (do not create them for the learner)
+- Use Socratic questioning to deepen personal connection at the Personalize step
 - Provide scaffold hints at any step if learner is stuck for >30 seconds
 - Confirm resonance by asking learner to articulate why the hook clicks
 - Connect hook to prior knowledge or related concepts
 forbidden_moves:
 - Skip any of the 6 gated steps or allow out-of-order execution
-- Create the hook image or mnemonic FOR the learner
+- Create the final linked scene or mnemonic FOR the learner
 - Accept "I understand" without the learner demonstrating resonance
 - Move to Lock step without explicit resonance confirmation
 - Present hook-derived associations as source-material facts
@@ -151,5 +159,5 @@ forbidden_moves:
 - Proceed to retrieval practice before encoding is complete
 - Use this card as the full KWIK path only; do not collapse it into the lightweight live mnemonic slot
 required_outputs:
-- KWIK hook (sound-function-image triplet)
+- KWIK hook (sound cue + meaning link scene)
 - Session log entry

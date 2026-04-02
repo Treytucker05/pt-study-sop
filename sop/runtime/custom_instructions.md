@@ -80,7 +80,7 @@ Infer from topic: LO Engine (first exposure + LOs provided; teach LO1 first), An
 ## Mnemonic Compression Policy
 - Default live mnemonic mode is **KWIK Lite** after TEACH close artifact and before FULL CALIBRATE.
 - KWIK Lite contract: system seed + one learner ownership action.
-- Full **KWIK Hook** (Sound -> Function -> Image -> Resonance -> Lock) remains deeper in ENCODE and OVERLEARN.
+- Full **KWIK Hook** (Word Sound -> Real Meaning -> Meaning Picture -> Linked Scene -> Personalize -> Lock) remains deeper in ENCODE and OVERLEARN.
 - Mnemonics come after meaning; do not lead with hooks before concept framing.
 
 ## Core Mode Teaching Rules (critical — first exposure)

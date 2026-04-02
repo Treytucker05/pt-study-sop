@@ -28,6 +28,176 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 - Ops note (2026-03-25): `dev-browser` is now a shared agent skill projected into every supported agent root; this does not change Tutor sprint priority.
 
+- [ ] SOP-ENCODE-001. Align `M-ENC-001 KWIK Hook` to the actual word-sound -> meaning -> linked-image mnemonic flow Trey wants to use.
+- [x] SOP-ENCODE-001. Align `M-ENC-001 KWIK Hook` to the actual word-sound -> meaning -> linked-image mnemonic flow Trey wants to use.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `sop/library/methods/M-ENC-001.yaml`
+    - `sop/library/categories/ENCODE.md`
+    - `sop/library/13-custom-gpt-system-instructions.md`
+    - `sop/library/templates/session_log_template.yaml`
+    - `sop/library/15-method-library.md`
+    - `sop/runtime/knowledge_upload/06_METHODS.md`
+    - `sop/runtime/custom_instructions.md`
+    - `sop/tests/golden/15-method-library.golden.md`
+    - `sop/tests/golden/06_METHODS.golden.md`
+    - `brain/tests/test_seed_methods.py`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - the live KWIK method card explicitly walks through word sound, real meaning, meaning picture/link, personalization, and lock
+    - the runtime instruction source and generated method surfaces describe the same flow
+    - focused SOP/seed-method verification plus live method strict-sync pass
+  - Assignee: @codex-cli
+  - Completed: 2026-04-01
+  - Notes:
+    - Rewrote `sop/library/methods/M-ENC-001.yaml` so full `KWIK Hook` now literally runs as `Word Sound -> Real Meaning -> Meaning Picture -> Link -> Personalize -> Lock` instead of the older internal shorthand that hid the sound-to-meaning link Trey actually wanted.
+    - Updated `sop/library/categories/ENCODE.md` and `sop/library/13-custom-gpt-system-instructions.md` so the category reference and runtime instruction source describe the same full-KWIK flow.
+    - Added a focused YAML regression in `brain/tests/test_seed_methods.py`, regenerated the generated method/runtime surfaces plus goldens, strict-synced the live `method_blocks` table and facilitation prompts, and updated `sop/library/templates/session_log_template.yaml` so the new KWIK logging fields validate cleanly.
+  - Validation:
+    - `python sop/tools/build_runtime_bundle.py --update-golden`
+    - `pytest brain/tests/test_seed_methods.py -q`
+    - `python sop/tools/validate_library.py`
+    - `python brain/data/seed_methods.py --strict-sync`
+
+- [x] SOP-TEACH-001. Align `M-TEA-006` so `Depth Ladder (4-10-HS-PT)` literally teaches at the `4 -> 10 -> HS -> PT` progression the user expects.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `sop/library/methods/M-TEA-006.yaml`
+    - `sop/library/categories/TEACH.md`
+    - `sop/library/15-method-library.md`
+    - `sop/runtime/knowledge_upload/06_METHODS.md`
+    - `sop/tests/golden/15-method-library.golden.md`
+    - `sop/tests/golden/06_METHODS.golden.md`
+    - `brain/tests/test_seed_methods.py`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - the live method card explicitly teaches the concept at `4-year-old`, `10-year-old`, `high-school`, and `PT/DPT` depth in that order
+    - the TEACH category reference and generated method-library surfaces describe the same progression
+    - focused SOP/seed-method verification passes
+  - Assignee: @codex-cli
+  - Completed: 2026-04-01
+  - Notes:
+    - Rewrote `sop/library/methods/M-TEA-006.yaml` so the live TEACH contract now literally climbs the `4-year-old -> 10-year-old -> high-school -> PT/DPT` ladder instead of the older hook/mechanism/fallback shorthand that the name no longer matched.
+    - Updated `sop/library/categories/TEACH.md` so the category-level TEACH rules and sample prompt now call out the literal ladder behavior when `M-TEA-006` is selected.
+    - Added a focused YAML regression in `brain/tests/test_seed_methods.py`, regenerated the generated method-library/runtime-method surfaces plus goldens, and ran `python brain/data/seed_methods.py --strict-sync` so the live `method_blocks` table and facilitation prompts now carry the corrected ladder contract too.
+  - Validation:
+    - `python sop/tools/build_runtime_bundle.py --update-golden`
+    - `pytest brain/tests/test_seed_methods.py -q`
+    - `python sop/tools/validate_library.py`
+    - `python brain/data/seed_methods.py --strict-sync`
+
+- [x] SOP-STARTER-001. Make one obvious starter chain and label it so it stands out as the default place for Trey to begin.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `README.md`
+    - `sop/library/chains/C-FE-STD.yaml`
+    - `sop/library/15-method-library.md`
+    - `sop/tools/build_runtime_bundle.py`
+    - `sop/tools/export_method_chain_inventory.py`
+    - `sop/runtime/knowledge_upload/06_METHODS.md`
+    - `sop/tests/golden/15-method-library.golden.md`
+    - `sop/tests/golden/06_METHODS.golden.md`
+    - `brain/selector.py`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - `C-FE-STD` stays the stable chain ID but has a standout display name that clearly marks it as the start-here chain
+    - the README, SOP library docs, export artifacts, and runtime bundle outputs use the new display name consistently
+    - focused selector/frontend/golden checks pass
+  - Assignee: @codex-cli
+  - Completed: 2026-04-01
+  - Notes:
+    - Kept `C-FE-STD` as the stable starter-chain ID and changed only the display name to `Trey's Favorite: Start Here`.
+    - Updated the selector fallback, README, SOP library docs, runtime knowledge-upload bundle, SOP goldens, and the priming-panel frontend tests so the standout starter name is consistent everywhere that matters.
+    - Updated `sop/tools/build_runtime_bundle.py` so future bundle regeneration preserves the renamed starter chain instead of restoring the old label.
+  - Validation:
+    - `python sop/tools/build_runtime_bundle.py --update-golden`
+    - `python sop/tools/export_method_chain_inventory.py`
+    - `pytest brain/tests/test_selector_bridge.py -q`
+    - `pytest sop/tests/test_build_golden.py -q`
+    - `npx vitest run client/src/components/__tests__/TutorWorkflowPrimingPanel.test.tsx`
+
+- [x] SOP-NAMING-001. Refresh the SOP naming and inventory surfaces so chain and method IDs decode in plain English and the readable docs match the live canon.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `README.md`
+    - `sop/library/15-method-library.md`
+    - `sop/tools/export_method_chain_inventory.py`
+    - `exports/sop_inventory/`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - the README no longer shows stale SOP method counts or stale first-exposure stage summaries
+    - the method-library doc includes a compact naming legend for current chain and method IDs
+    - regenerated inventory artifacts include plain-English ID decoding support
+    - the refreshed export artifacts match the live YAML canon
+  - Assignee: @codex-cli
+  - Completed: 2026-04-01
+  - Notes:
+    - Updated `README.md` so the current first-exposure chain table matches the live canon, added a compact SOP ID legend, and fixed the stale method-library count from `54` to `59 methods + 20 chains`.
+    - Updated `sop/library/15-method-library.md` with a “how to read IDs” section, normalized chain headings to their real IDs, and added the 4 previously missing chain entries so the readable doc now actually covers all `20` chains.
+    - Updated `sop/tools/export_method_chain_inventory.py` so regenerated markdown/JSON/CSV outputs include decoded ID fields and a plain-English legend automatically.
+  - Validation:
+    - `python sop/tools/export_method_chain_inventory.py`
+    - `git diff --check`
+
+- [x] SOP-CHAIN-REPAIR-001. Repair the currently invalid SOP chains and revalidate the live inventory.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `brain/chain_validator.py`
+    - `brain/tests/test_chain_validator.py`
+    - `sop/library/chains/C-DP-001.yaml`
+    - `sop/library/chains/C-FE-001.yaml`
+    - `sop/library/chains/C-FE-MIN.yaml`
+    - `sop/library/chains/C-FE-PRO.yaml`
+    - `sop/library/chains/C-FE-STD.yaml`
+    - `sop/library/chains/C-TRY-001.yaml`
+    - `sop/library/chains/C-TRY-002.yaml`
+    - `sop/tools/export_method_chain_inventory.py`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - validator semantics match the canon for the locked MICRO-CALIBRATE opening behavior
+    - the 7 currently invalid chains no longer fail control-plane validation
+    - the inventory export reflects the repaired chain validity state
+    - focused validator/library checks pass
+  - Assignee: @codex-cli
+  - Completed: 2026-04-01
+  - Notes:
+    - Repaired the validator/spec drift in `brain/chain_validator.py` so the locked `MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE` opening contract is treated as valid when the chain uses `Micro Precheck` before `TEACH` and a later full calibrate step after `TEACH`.
+    - Added focused validator regression coverage for the allowed first-exposure opening and for the two still-invalid edge cases: missing post-TEACH full calibrate and non-micro calibrate before `TEACH`.
+    - Repaired the real chain-order drift in `C-DP-001`, `C-TRY-001`, and `C-TRY-002`, then regenerated the SOP inventory so all `20` chains now pass control-plane validation.
+  - Validation:
+    - `pytest brain/tests/test_chain_validator.py -q`
+    - `pytest brain/tests/test_selector_bridge.py -q`
+    - `python sop/tools/validate_library.py`
+    - `python sop/tools/export_method_chain_inventory.py`
+
+- [x] SOP-EXTRACT-001. Export the canonical SOP method and chain inventory into testing-ready artifacts.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `sop/library/methods/`
+    - `sop/library/chains/`
+    - `sop/library/15-method-library.md`
+    - `brain/data/seed_methods.py`
+    - `brain/chain_runner.py`
+    - `brain/chain_validator.py`
+    - `sop/tools/`
+    - `exports/`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - the repo has a reproducible export path for the canonical SOP method and chain inventory
+    - the export artifact lists every current method and chain with enough metadata to support live study testing
+    - the exported counts are verified against the YAML library and any doc drift is called out explicitly
+    - relevant SOP/library validation passes for the touched path
+  - Assignee: @codex-cli
+  - Completed: 2026-04-01
+  - Notes:
+    - Added `sop/tools/export_method_chain_inventory.py` to read the canonical YAML library directly and generate reusable study-testing artifacts under `exports/sop_inventory/`.
+    - Generated `method_chain_inventory.md`, `method_chain_inventory.json`, `methods.csv`, and `chains.csv` so the method/chain inventory is available as both readable notes and sortable data.
+    - Included control-plane validation in the export so chain testing can start from the `13` structurally valid chains while flagging the `7` draft chains that still violate the current TEACH/CALIBRATE ordering contract.
+  - Validation:
+    - `python sop/tools/export_method_chain_inventory.py`
+    - `python sop/tools/validate_library.py`
+
 - [ ] REMAIN-006. Obsidian panel shows vault browser with note read and write.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

@@ -158,8 +158,23 @@ def test_prime_teach_calibrate_encode_valid():
     assert len(report.violations) == 0
 
 
+def test_micro_calibrate_teach_full_calibrate_opening_valid():
+    """The locked first-exposure opening allows MICRO-CALIBRATE before TEACH."""
+    blocks = [
+        make_block("Learning Objectives Primer", "PRIME"),
+        make_block("Micro Precheck", "CALIBRATE"),
+        make_block("Mechanism Trace", "TEACH"),
+        make_block("Full Calibrate Probes", "CALIBRATE"),
+        make_block("Concept Map", "ENCODE"),
+    ]
+    report = validate_chain("Locked Opening", blocks)
+
+    assert report.valid is True
+    assert len(report.violations) == 0
+
+
 def test_calibrate_before_teach_invalid_when_both_present():
-    """CALIBRATE cannot appear before TEACH when both stages exist."""
+    """Opening CALIBRATE is invalid when it is not paired with post-TEACH full CALIBRATE."""
     blocks = [
         make_block("Learning Objectives Primer", "PRIME"),
         make_block("Micro Precheck", "CALIBRATE"),
@@ -167,6 +182,20 @@ def test_calibrate_before_teach_invalid_when_both_present():
         make_block("Concept Map", "ENCODE"),
     ]
     report = validate_chain("Bad Teach Order", blocks)
+
+    assert report.valid is False
+    assert any("CALIBRATE before TEACH" in v for v in report.violations)
+
+
+def test_non_micro_calibrate_before_teach_invalid():
+    """Only explicit MICRO-CALIBRATE steps may precede TEACH in the opening handshake."""
+    blocks = [
+        make_block("Learning Objectives Primer", "PRIME"),
+        make_block("Full Calibrate Probes", "CALIBRATE"),
+        make_block("Analogy Bridge", "TEACH"),
+        make_block("Concept Map", "ENCODE"),
+    ]
+    report = validate_chain("Bad Opening Calibrate", blocks)
 
     assert report.valid is False
     assert any("CALIBRATE before TEACH" in v for v in report.violations)

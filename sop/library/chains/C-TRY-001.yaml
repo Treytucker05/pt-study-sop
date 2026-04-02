@@ -3,13 +3,13 @@ name: Top-Down Narrative Mastery
 description: "Top-down first-exposure chain with explicit opening order: MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE. TEACH builds a story + analogy bridge, closes with a compact anchor artifact, then full calibrate determines ENCODE depth. Teach-back is not a default live gate."
 blocks:
   - M-PRE-004      # Hierarchical Advance Organizer (H1 map)
-  - M-ENC-015      # Hand-Draw Map (spatial encoding)
   - M-CAL-001      # MICRO-CALIBRATE baseline
   - M-TEA-001      # TEACH Story Spine
   - M-INT-001      # TEACH Analogy Bridge
   - M-REF-003      # TEACH-close artifact (One-Page Anchor)
   - M-CAL-002      # FULL CALIBRATE probes
   - M-CAL-003      # FULL CALIBRATE priority set
+  - M-ENC-015      # Hand-Draw Map (post-handoff spatial encoding)
   - M-ENC-001      # Full KWIK Hook (deeper ENCODE, not live-lite mnemonic)
   - M-ENC-009      # Concept Map (learner production)
   - M-RET-001      # Timed Brain Dump

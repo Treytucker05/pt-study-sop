@@ -1,9 +1,13 @@
 id: M-TEA-006
 name: Depth Ladder (4-10-HS-PT)
 category: encode
-description: Route first-contact explanation through a brief hook, direct mechanism teaching, and DPT precision, using analogy or simple-language scaffolds only when comprehension actually needs recovery.
-default_duration_min: 4
-energy_cost: low
+description: >-
+  Explain the same concept in four deliberate passes: like the learner is
+  4 years old, 10 years old, in high school, and finally at PT/DPT level.
+  Each rung must preserve the same underlying idea while increasing
+  mechanism, terminology, and clinical precision.
+default_duration_min: 6
+energy_cost: medium
 best_stage: first_exposure
 control_stage: TEACH
 status: draft
@@ -15,13 +19,15 @@ tags:
 - sop-core
 mechanisms:
 - scaffolding
-- worked_examples
+- segmenting
+- progressive_precision
 - transfer
 stipulations:
-- The default route is brief L0 hook -> L3 mechanism -> L4 DPT precision.
-- L1 analogy and L2 plain-language explanation are fallback scaffolds, not the default route.
-- Unlock L4 only after low-friction function confirmation.
-- Do not turn the depth ladder into a blank-page teach-back requirement.
+- 'Run the ladder literally in this order: 4-year-old -> 10-year-old -> high-school -> PT/DPT.'
+- Each rung must explain the same core concept, not wander into a different topic.
+- Lower rungs should emphasize purpose, concrete imagery, and simple cause-effect before formal terminology appears.
+- Do not skip straight to PT/DPT depth unless the learner explicitly requests a condensed replay after the full ladder has already been delivered once.
+- Do not turn the ladder into a blank-page teach-back or scored performance task.
 knobs:
   guidance_level: medium
   output_format: bullets
@@ -35,88 +41,95 @@ inputs:
 - Learner familiarity signal
 steps:
 - step: 1
-  action: Deliver one brief L0 hook
-  notes: Use a quick image, motion, or felt-sense opener only to orient.
+  action: Deliver the 4-year-old rung
+  notes: Explain the concept in 1-3 concrete sentences using everyday language, purpose, and a simple felt-sense or image.
 - step: 2
-  action: Move directly to L3 mechanism
-  notes: Teach the real causal structure with proper terms.
+  action: Deliver the 10-year-old rung
+  notes: Add simple system logic and basic cause-effect while keeping the explanation non-technical and easy to picture.
 - step: 3
-  action: Insert L1 analogy or L2 simple explanation only if comprehension breaks
-  notes: Use fallback scaffolds to recover understanding, then return to the real mechanism.
+  action: Deliver the high-school rung
+  notes: Introduce the real mechanism with introductory terminology and a cleaner causal chain.
 - step: 4
-  action: Run low-friction function confirmation
-  notes: Use a short functional check, not a blank-page teach-back.
+  action: Deliver the PT/DPT rung
+  notes: Add the full domain-appropriate precision, discriminators, edge cases, or clinical implications expected at Trey's training level.
 - step: 5
-  action: Unlock L4 DPT precision
-  notes: Add edge cases, clinical implications, or discriminators only after function is confirmed.
+  action: Run a low-friction rung check
+  notes: Ask which rung made it click or where the concept started to get fuzzy, without turning the block into a quiz.
 outputs:
-- DepthRoutePlan
-- L0Hook
-- L3Mechanism
-- FallbackScaffoldUsed
-- FunctionConfirmation
-- L4PrecisionRestatement
+- Age4Explanation
+- Age10Explanation
+- HighSchoolExplanation
+- PTLevelExplanation
+- LadderCarryForwardNotes
+- RungCheckSignal
 stop_criteria:
-- One brief L0 hook is delivered
-- L3 mechanism is stated in real source terms
-- Any fallback scaffold is explicitly labeled and closed
-- Function confirmation is captured before L4 precision
-- L4 precision is delivered or deferred with a stated reason
+- All four rungs are delivered in order.
+- The same concept is recognizably preserved across all four rungs.
+- The PT/DPT rung reaches the learner's real training level instead of stopping at general biology.
+- The learner identifies which rung clicked or where fuzziness began.
 failure_modes:
-- mode: Tutor spends too long in analogy or simple-language mode
-  mitigation: Return to the real L3 mechanism after one bounded scaffold.
-- mode: L4 detail arrives before function is actually clear
-  mitigation: Pause and run a low-friction function confirmation first.
-- mode: Depth ladder becomes a mandatory blank-page performance task
-  mitigation: Keep the gate lightweight and concept-scoped.
+- mode: The ladder skips a rung or jumps straight to PT-level explanation
+  mitigation: Re-run the explanation from the missing rung forward in literal order.
+- mode: Each rung sounds like the same paraphrase with no increase in precision
+  mitigation: Make each rung add one clear layer of mechanism, terminology, or clinical nuance.
+- mode: The 4-year-old rung becomes inaccurate baby talk
+  mitigation: Keep it simple but still faithful to the source-grounded function of the concept.
+- mode: The rung check becomes a hidden quiz
+  mitigation: Ask only where understanding clicked or blurred; do not score the learner.
 evidence:
   citation: Mayer (2009)
-  finding: Segmented and pretraining-style explanation improves novice understanding of unfamiliar systems.
+  finding: Segmented and progressively elaborated explanation improves novice understanding of unfamiliar systems.
   source: control-plane migration
-evidence_raw: Mayer (2009); segmented explanation supports novice learning, especially when depth is controlled.
+evidence_raw: Mayer (2009); segmented explanation supports novice learning, especially when complexity is layered instead of dumped all at once.
 facilitation_prompt: 'You are running M-TEA-006 (Depth Ladder (4-10-HS-PT)) in TEACH stage.
 
-  This method is non-assessment. Follow the depth route deliberately.
+  This method is non-assessment. Run the ladder literally.
 
   Return exactly:
 
-  1) DepthRoutePlan
+  1) Age4Explanation
 
-  2) L0Hook
+  2) Age10Explanation
 
-  3) L3Mechanism
+  3) HighSchoolExplanation
 
-  4) FallbackScaffoldUsed
+  4) PTLevelExplanation
 
-  5) FunctionConfirmation
+  5) LadderCarryForwardNotes
 
-  6) L4PrecisionRestatement
+  6) RungCheckSignal
 
-  Default to brief L0 -> L3 -> L4. Use L1/L2 only as fallback scaffolds, and do not unlock L4 until function confirmation is captured.
+  Requirements:
+
+  - Explain the SAME concept in this exact order: 4-year-old -> 10-year-old -> high-school -> PT/DPT.
+  - Each rung must become more precise than the last.
+  - Do not skip a rung.
+  - Keep lower rungs simple without becoming inaccurate.
+  - The rung check is only to identify where it clicked or blurred, not to score the learner.
 
   '
 gating_rules:
-- Default to brief L0 hook -> L3 mechanism -> L4 DPT precision.
-- Use L1/L2 only when comprehension needs recovery.
-- Require low-friction function confirmation before L4 precision.
+- Deliver the literal 4 -> 10 -> HS -> PT ladder in order.
+- Keep the same concept thread across all four rungs.
+- Keep the rung check low-friction and non-assessment.
 - Keep every move inside the active objective scope.
 artifact_type: notes
 allowed_moves:
-- Give one quick hook before the real mechanism
-- Teach the mechanism directly in proper source terms
-- Insert one bounded analogy or plain-language scaffold when needed
-- Ask a low-friction function check before unlocking L4
-- Add clinical precision only after function is confirmed
+- Explain the same idea in progressively deeper language across the four rungs
+- Use concrete imagery or felt-sense language in the lower rungs
+- Introduce formal terms gradually instead of all at once
+- Add PT-level discriminators or clinical implications only in the final rung
+- Ask which rung made the concept click or where the learner lost the thread
 forbidden_moves:
-- Default to the full ladder every time regardless of learner state
-- Stay in analogy mode without returning to the real concept
-- Require a blank-page teach-back as the default L4 unlock
-- Deliver L4 precision before function is clear
+- Skip one of the named rungs
+- Deliver PT/DPT depth before the simpler rungs are complete
+- Teach a different concept at each rung
+- Replace the PT/DPT rung with analogy-only language
 - Turn the depth ladder into a scored diagnostic
 required_outputs:
-- Depth route plan
-- L0 hook
-- L3 mechanism
-- Fallback scaffold use or skip statement
-- Function confirmation
-- L4 precision restatement
+- Age4Explanation
+- Age10Explanation
+- HighSchoolExplanation
+- PTLevelExplanation
+- LadderCarryForwardNotes
+- RungCheckSignal

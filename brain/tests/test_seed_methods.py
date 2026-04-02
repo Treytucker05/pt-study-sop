@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 # Add brain/ to import path for shared imports
 brain_dir = Path(__file__).parent.parent
@@ -358,6 +359,42 @@ def test_load_from_yaml_includes_visible_teach_doctrine_cards() -> None:
 
     assert "M-TEA-006" in method_ids
     assert "M-TEA-007" in method_ids
+
+
+def test_depth_ladder_yaml_uses_literal_4_10_hs_pt_progression() -> None:
+    method_path = Path(__file__).resolve().parents[2] / "sop" / "library" / "methods" / "M-TEA-006.yaml"
+    data = yaml.safe_load(method_path.read_text(encoding="utf-8"))
+
+    assert data["id"] == "M-TEA-006"
+
+    step_actions = [str(step.get("action", "")) for step in data.get("steps", [])]
+    assert any("4-year-old" in action for action in step_actions)
+    assert any("10-year-old" in action for action in step_actions)
+    assert any("high-school" in action for action in step_actions)
+    assert any("PT/DPT" in action for action in step_actions)
+
+    prompt = str(data.get("facilitation_prompt", ""))
+    assert "4-year-old -> 10-year-old -> high-school -> PT/DPT" in prompt
+    assert "Do not skip a rung." in prompt
+
+
+def test_kwik_hook_yaml_uses_word_sound_meaning_link_flow() -> None:
+    method_path = Path(__file__).resolve().parents[2] / "sop" / "library" / "methods" / "M-ENC-001.yaml"
+    data = yaml.safe_load(method_path.read_text(encoding="utf-8"))
+
+    assert data["id"] == "M-ENC-001"
+
+    step_actions = [str(step.get("action", "")) for step in data.get("steps", [])]
+    assert any("Word Sound" in action for action in step_actions)
+    assert any("Real Meaning" in action for action in step_actions)
+    assert any("Meaning Picture" in action for action in step_actions)
+    assert any("Link:" in action for action in step_actions)
+    assert any("Personalize" in action for action in step_actions)
+    assert any("Lock:" in action for action in step_actions)
+
+    prompt = str(data.get("facilitation_prompt", ""))
+    assert "word sound -> real meaning -> meaning picture -> linked scene -> personalize -> lock" in prompt
+    assert "sound cue + meaning link scene" in prompt
 
 
 def test_load_from_yaml_merges_chain_certification_registry(

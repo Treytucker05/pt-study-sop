@@ -4,8 +4,9 @@ Validates that chains follow sound control-plane sequencing:
   PRIME -> TEACH -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN
 
 Violations flagged:
-  - TEACH before PRIME or after CALIBRATE/ENCODE
-  - CALIBRATE before TEACH when both are present
+  - TEACH before PRIME or after downstream stages
+  - CALIBRATE before TEACH when both are present, unless the chain uses the
+    locked first-exposure opening MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE
   - Retrieval before any prior ENCODE/REFERENCE (unless diagnostic Pre-Test)
   - Overlearning without prior Encoding/Reference/Retrieval
 """
@@ -115,6 +116,50 @@ class ChainReport:
 # ---------------------------------------------------------------------------
 
 _DIAGNOSTIC_METHODS = {"Pre-Test"}
+_OPENING_MICRO_CALIBRATE_METHODS = {"Micro Precheck"}
+
+
+def _is_allowed_opening_micro_calibrate(
+    sequence: list[dict[str, str]],
+    index: int,
+) -> bool:
+    """Return True when a CALIBRATE step is the allowed opening micro-check.
+
+    Canon rule:
+      MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE
+
+    We allow CALIBRATE before TEACH only when the pre-TEACH CALIBRATE block is
+    an explicit opening micro-calibrate step, no downstream stages have already
+    started, and the chain also contains a later CALIBRATE block after TEACH.
+    """
+    step = sequence[index]
+    if step["stage"] != "CALIBRATE":
+        return False
+
+    if step["name"] not in _OPENING_MICRO_CALIBRATE_METHODS:
+        return False
+
+    prior_steps = sequence[:index]
+    if any(prev["stage"] not in {"PRIME", "CALIBRATE"} for prev in prior_steps):
+        return False
+
+    if any(
+        prev["stage"] == "CALIBRATE"
+        and prev["name"] not in _OPENING_MICRO_CALIBRATE_METHODS
+        for prev in prior_steps
+    ):
+        return False
+
+    later_teach_idx = next(
+        (j for j in range(index + 1, len(sequence)) if sequence[j]["stage"] == "TEACH"),
+        None,
+    )
+    if later_teach_idx is None:
+        return False
+
+    return any(
+        later["stage"] == "CALIBRATE" for later in sequence[later_teach_idx + 1 :]
+    )
 
 
 def validate_chain(
@@ -169,18 +214,24 @@ def validate_chain(
                 report.violations.append(
                     f"Step {i + 1} '{name}' is TEACH before PRIME"
                 )
-            if any(
-                prev["stage"] in {"CALIBRATE", "ENCODE", "REFERENCE", "RETRIEVE", "OVERLEARN"}
-                for prev in sequence[:i]
-            ):
+            has_invalid_prior_downstream = any(
+                prev["stage"] in {"ENCODE", "REFERENCE", "RETRIEVE", "OVERLEARN"}
+                or (
+                    prev["stage"] == "CALIBRATE"
+                    and not _is_allowed_opening_micro_calibrate(sequence, prev_idx)
+                )
+                for prev_idx, prev in enumerate(sequence[:i])
+            )
+            if has_invalid_prior_downstream:
                 report.violations.append(
                     f"Step {i + 1} '{name}' is TEACH after downstream stages"
                 )
 
         if stage == "CALIBRATE" and any(prev["stage"] == "TEACH" for prev in sequence[i + 1:]):
-            report.violations.append(
-                f"Step {i + 1} '{name}' is CALIBRATE before TEACH"
-            )
+            if not _is_allowed_opening_micro_calibrate(sequence, i):
+                report.violations.append(
+                    f"Step {i + 1} '{name}' is CALIBRATE before TEACH"
+                )
 
         if stage in {"ENCODE", "REFERENCE"}:
             has_encode_or_reference = True

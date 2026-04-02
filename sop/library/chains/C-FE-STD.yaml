@@ -1,8 +1,8 @@
 id: C-FE-STD
-name: "First Exposure: Standard"
+name: "Trey's Favorite: Start Here"
 description: >-
-  Standard first-exposure chain for medium-energy sessions targeting
-  classification and mechanism modes. Opening is explicit
+  Default start-here chain for Trey. Standard first-exposure flow for
+  medium-energy sessions targeting classification and mechanism modes. Opening is explicit
   MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE, then ENCODE,
   reference generation, and timed retrieval sprint.
 # THE LAW: M-REF-004 (Target Gen) MUST precede M-RET-* (Retrieval)
