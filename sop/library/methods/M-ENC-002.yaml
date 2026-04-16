@@ -1,116 +1,129 @@
 id: M-ENC-002
 name: Seed-Lock Generation
 category: encode
-description: Learner generates their own encoding hook BEFORE the AI offers help. Start with your own association, metaphor,
-  or mnemonic. AI only assists if you're stuck. Enforces active generation over passive reception.
-default_duration_min: 3
-energy_cost: medium
-best_stage: first_exposure
+subcategory: gen
+description: Learner generates their own encoding hook BEFORE the AI offers help. Start with your own
+  association, metaphor, or mnemonic. AI only assists if you're stuck. Enforces active generation over
+  passive reception.
 control_stage: ENCODE
 status: validated
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
 tags:
 - seed-lock
 - generation-first
 - active
 - sop-core
-mechanisms:
-- generation
-- elaboration
-- desirable_difficulty
-knobs:
-  guidance_level: medium
-  output_format: bullets
-constraints:
-  active_processing_required: true
-  objective_scope_required: true
-  no_final_answer_only: true
+purpose: Force the learner to actively generate, explain, sequence, or transform the material so encoding
+  is deeper than passive review.
+not_for: This is not for passive reading, copying answers, or letting the tutor do the cognitive work
+  for the learner.
+best_fit_topics:
+- Concepts the learner can explain, transform, or generate in their own words
+- Mechanisms and causal chains that benefit from active elaboration
+poor_fit_topics:
+- Pure passive rereading or copy-paste note taking
+- Items that are still completely unknown and cannot yet be transformed
+learner_state_required: Source material is loaded. The learner has a bounded concept and is ready to generate,
+  explain, or transform it before seeing help.
 inputs:
-- New term or concept to encode
-- Definition from source material
-- 90-second timer
-steps:
-- step: 1
-  action: Read the term and its definition
-  notes: Understand what you're encoding before generating
-- step: 2
-  action: Set timer for 90 seconds
-  notes: Time pressure forces retrieval attempt
-- step: 3
-  action: Generate your OWN hook — association, metaphor, mnemonic, or image
-  notes: This is the "Seed" — your first attempt
-- step: 4
-  action: Write down your Seed even if imperfect
-  notes: Any attempt is better than waiting for AI
-- step: 5
-  action: If stuck after 90s, ask Tutor for a suggestion
-  notes: AI provides only if you've tried first
-- step: 6
-  action: Lock the final hook (yours or AI-assisted)
-  notes: Record for spaced repetition
+- description: New term or concept to encode
+  required: true
+- description: Definition from source material
+  required: true
+- description: 90-second timer
+  required: true
 outputs:
+- name: Learner-generated Seed (primary hook attempt)
+  description: Learner-generated Seed (primary hook attempt)
+  format: short cue plus explanation
+- name: Final locked hook
+  description: Final locked hook
+  format: short cue plus explanation
+- name: Generation success flag (self vs AI-assisted)
+  description: Generation success flag (self vs AI-assisted)
+  format: short, checkable artifact
+required_outputs: &id001
 - Learner-generated Seed (primary hook attempt)
 - Final locked hook
 - Generation success flag (self vs AI-assisted)
-stop_criteria:
-- Hook generated (self or AI-assisted)
-- 90-second attempt completed
-- Hook locked for retention
-failure_modes:
-- mode: Asking AI immediately
-  mitigation: Enforce 90-second wait before AI help
-- mode: Giving up too fast
-  mitigation: Require written attempt even if "bad"
-- mode: Over-relying on AI hooks
-  mitigation: Track self-generation rate; flag if <50%
-logging_fields:
-- generation_type
-- seed_attempted
-- ai_assist_used
-- time_to_seed
-evidence:
-  citation: Slamecka & Graf (1978)
-  finding: Generation effect — self-generated items are remembered significantly better than items simply read
-  source: seed_methods.py
-evidence_raw: Slamecka & Graf (1978); generation effect — self-generated items remembered better than read items
-facilitation_prompt: 'You are running M-ENC-002 (Seed-Lock Generation) in ENCODE stage.
-
-  Execute this method card exactly and keep outputs deterministic.
-
-
-  Stage hard rules:
-
-  - Force active learner processing.
-
-  - Prefer transformation over passive lecture.
-
-  - Keep focus on target concept scope.
-
-
-  Required outputs:
-
-  - Learner-generated Seed (primary hook attempt)
-
-  - Final locked hook
-
-  - Generation success flag (self vs AI-assisted)
-
-
-  Stop conditions:
-
-  - Hook generated (self or AI-assisted)
-
-  - 90-second attempt completed
-
-  - Hook locked for retention
-
-
-  If required inputs are missing, request only the minimum needed input and continue.
-
-  '
-gating_rules:
-- Force active processing (explain, transform, or map), not passive reading.
-- Keep output scoped to mapped objectives only.
-artifact_type: notes
+success_criteria:
+- 'All required outputs are present and checkable: Learner-generated Seed (primary hook attempt), Final
+  locked hook, Generation success flag (self vs AI-assisted).'
+- 'The method reaches its stop condition: Hook generated (self or AI-assisted); 90-second attempt completed.'
+- The learner stays active and the tutor does not give away the answer before the required attempt or
+  transformation.
+partial_criteria:
+- 'Some required outputs are present but at least one is missing or incomplete: Learner-generated Seed
+  (primary hook attempt), Final locked hook.'
+steps:
+- step: 1
+  name: Read The Term And Its
+  action: Read the term and its definition
+  tutor_does: 'Guide the learner to Read the term and its definition. Keep in mind: Understand what you''re
+    encoding before generating'
+  learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Understand what you''re encoding before generating'
+- step: 2
+  name: Timer For 90 Seconds
+  action: Set timer for 90 seconds
+  tutor_does: 'Guide the learner to Set timer for 90 seconds. Keep in mind: Time pressure forces retrieval
+    attempt'
+  learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Time pressure forces retrieval attempt'
+- step: 3
+  name: Generate Your Own Hook Association
+  action: Generate your OWN hook — association, metaphor, mnemonic, or image
+  tutor_does: 'Guide the learner to Generate your OWN hook — association, metaphor, mnemonic, or image.
+    Keep in mind: This is the "Seed" — your first attempt'
+  learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: This is the "Seed" — your first attempt'
+- step: 4
+  name: Down Your Seed Even If
+  action: Write down your Seed even if imperfect
+  tutor_does: 'Guide the learner to Write down your Seed even if imperfect. Keep in mind: Any attempt
+    is better than waiting for AI'
+  learner_does: Performs the requested cognitive move and shares the result before moving on.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Any attempt is better than waiting for AI'
+- step: 5
+  name: If Stuck After 90S Ask
+  action: If stuck after 90s, ask Tutor for a suggestion
+  tutor_does: 'Guide the learner to If stuck after 90s, ask Tutor for a suggestion. Keep in mind: AI provides
+    only if you''ve tried first'
+  learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: AI provides only if you''ve tried first'
+- step: 6
+  name: Lock The Final Hook Yours
+  action: Lock the final hook (yours or AI-assisted)
+  tutor_does: 'Guide the learner to Lock the final hook (yours or AI-assisted). Keep in mind: Record for
+    spaced repetition'
+  learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
+  max_lines: 8
+  check: Is the final artifact captured and ready to keep or review?
+  example: 'Example: Record for spaced repetition'
+constraints:
+- rule: Require active learner processing
+  why: The method depends on the learner generating, mapping, explaining, or transforming the material
+    rather than passively reading.
+- rule: Stay within objective scope
+  why: Prevents drift into unrelated material and keeps the method auditable.
+- rule: Do not turn this into a passive answer dump or scoring event
+  why: This method is designed for guided learning, not one-shot lecture or formal grading.
+- rule: Force active processing (explain, transform, or map), not passive reading.
+  why: This gating rule is part of the method’s execution contract.
+- rule: Keep output scoped to mapped objectives only.
+  why: This gating rule is part of the method’s execution contract.
 allowed_moves:
 - Present the term and definition clearly before generation timer starts
 - Enforce the 90-second generation window before offering help
@@ -129,7 +142,128 @@ forbidden_moves:
 - Move to Lock without a finalized hook (self or AI-assisted)
 - Present information outside the objective scope
 - Skip gating steps defined in the method card
-required_outputs:
-- Learner-generated Seed (primary hook attempt)
-- Final locked hook
-- Generation success flag (self vs AI-assisted)
+stuck_protocol: Offer one smaller hint, one simpler example, or one step back in the chain; then require
+  the learner to continue actively.
+failure_modes:
+- mode: Asking AI immediately
+  detection: The learner or tutor starts doing asking ai immediately or the artifact stops satisfying
+    the method’s required checks.
+  recovery: Enforce 90-second wait before AI help
+  fallback_method: M-HOOK-002
+- mode: Giving up too fast
+  detection: The learner or tutor starts doing giving up too fast or the artifact stops satisfying the
+    method’s required checks.
+  recovery: Require written attempt even if "bad
+  fallback_method: M-ENC-004
+- mode: Over-relying on AI hooks
+  detection: The learner or tutor starts doing over-relying on ai hooks or the artifact stops satisfying
+    the method’s required checks.
+  recovery: Track self-generation rate; flag if <50%
+  fallback_method: M-ENC-001
+default_duration_min: 3
+energy_cost: medium
+best_stage: first_exposure
+mechanisms:
+- generation
+- elaboration
+- desirable_difficulty
+evidence:
+  citation: Slamecka & Graf (1978)
+  finding: Generation effect — self-generated items are remembered significantly better than items simply
+    read
+  source: seed_methods.py
+knobs:
+  guidance_level: medium
+  output_format: bullets
+  evidence_raw: Slamecka & Graf (1978); generation effect — self-generated items remembered better than
+    read items
+  gating_rules:
+  - Force active processing (explain, transform, or map), not passive reading.
+  - Keep output scoped to mapped objectives only.
+  logging_fields:
+  - generation_type
+  - seed_attempted
+  - ai_assist_used
+  - time_to_seed
+  artifact_type: notes
+related_methods:
+- id: M-HOOK-002
+  relationship: Mnemonic support after a failed self-attempt
+- id: M-ENC-004
+  relationship: Use teach-back if the learner needs more conceptual elaboration
+- id: M-ENC-001
+  relationship: Fallback if a fuller hook workflow is needed
+facilitation_prompt: "You are running M-ENC-002 (Seed-Lock Generation) in ENCODE stage.\nRole: you are\
+  \ the tutor running the method exactly as written, with no hidden assumptions.\nObjective: Force the\
+  \ learner to actively generate, explain, sequence, or transform the material so encoding is deeper than\
+  \ passive review.\nScope: Learner generates their own encoding hook BEFORE the AI offers help. Start\
+  \ with your own association, metaphor, or mnemonic. AI only assists if you're stuck. Enforces active\
+  \ generation over passive reception.\nRules:\n- Require active learner processing — The method depends\
+  \ on the learner generating, mapping, explaining, or transforming the material rather than passively\
+  \ reading.\n- Stay within objective scope — Prevents drift into unrelated material and keeps the method\
+  \ auditable.\n- Do not turn this into a passive answer dump or scoring event — This method is designed\
+  \ for guided learning, not one-shot lecture or formal grading.\n- Force active processing (explain,\
+  \ transform, or map), not passive reading. — This gating rule is part of the method’s execution contract.\n\
+  - Keep output scoped to mapped objectives only. — This gating rule is part of the method’s execution\
+  \ contract.\n- Not for: This is not for passive reading, copying answers, or letting the tutor do the\
+  \ cognitive work for the learner.\nInputs:\n- New term or concept to encode (required)\n- Definition\
+  \ from source material (required)\n- 90-second timer (required)\nRequired outputs:\n- Learner-generated\
+  \ Seed (primary hook attempt): Learner-generated Seed (primary hook attempt) [short cue plus explanation]\n\
+  - Final locked hook: Final locked hook [short cue plus explanation]\n- Generation success flag (self\
+  \ vs AI-assisted): Generation success flag (self vs AI-assisted) [short, checkable artifact]\nSteps:\
+  \ run one step at a time and wait after each step before advancing.\n1. Read The Term And Its\n   Tutor\
+  \ does: Guide the learner to Read the term and its definition. Keep in mind: Understand what you're\
+  \ encoding before generating\n   Learner does: Reads the prompt, does the thinking step, and returns\
+  \ the artifact or answer.\n   Example: Example: Understand what you're encoding before generating\n\
+  \   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n\
+  2. Timer For 90 Seconds\n   Tutor does: Guide the learner to Set timer for 90 seconds. Keep in mind:\
+  \ Time pressure forces retrieval attempt\n   Learner does: Reads the prompt, does the thinking step,\
+  \ and returns the artifact or answer.\n   Example: Example: Time pressure forces retrieval attempt\n\
+  \   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n\
+  3. Generate Your Own Hook Association\n   Tutor does: Guide the learner to Generate your OWN hook —\
+  \ association, metaphor, mnemonic, or image. Keep in mind: This is the \"Seed\" — your first attempt\n\
+  \   Learner does: Reads the prompt, does the thinking step, and returns the artifact or answer.\n  \
+  \ Example: Example: This is the \"Seed\" — your first attempt\n   Check: Is this step complete and ready\
+  \ for the next move?\n   Then STOP and wait for the learner.\n4. Down Your Seed Even If\n   Tutor does:\
+  \ Guide the learner to Write down your Seed even if imperfect. Keep in mind: Any attempt is better than\
+  \ waiting for AI\n   Learner does: Performs the requested cognitive move and shares the result before\
+  \ moving on.\n   Example: Example: Any attempt is better than waiting for AI\n   Check: Is this step\
+  \ complete and ready for the next move?\n   Then STOP and wait for the learner.\n5. If Stuck After 90S\
+  \ Ask\n   Tutor does: Guide the learner to If stuck after 90s, ask Tutor for a suggestion. Keep in mind:\
+  \ AI provides only if you've tried first\n   Learner does: Reads the prompt, does the thinking step,\
+  \ and returns the artifact or answer.\n   Example: Example: AI provides only if you've tried first\n\
+  \   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n\
+  6. Lock The Final Hook Yours\n   Tutor does: Guide the learner to Lock the final hook (yours or AI-assisted).\
+  \ Keep in mind: Record for spaced repetition\n   Learner does: Reads the prompt, does the thinking step,\
+  \ and returns the artifact or answer.\n   Example: Example: Record for spaced repetition\n   Check:\
+  \ Is the final artifact captured and ready to keep or review?\n   Then STOP and wait for the learner.\n\
+  Stop conditions:\n- All required outputs are present and checkable: Learner-generated Seed (primary\
+  \ hook attempt), Final locked hook, Generation success flag (self vs AI-assisted).\n- The method reaches\
+  \ its stop condition: Hook generated (self or AI-assisted); 90-second attempt completed.\n- The learner\
+  \ stays active and the tutor does not give away the answer before the required attempt or transformation.\n\
+  If stuck: Offer one smaller hint, one simpler example, or one step back in the chain; then require the\
+  \ learner to continue actively.\nDo not skip steps, do not solve the whole task at once, and do not\
+  \ present source claims as mnemonic or analogy artifacts."
+validation:
+  test_cases:
+  - topic: Concepts the learner can explain, transform, or generate in their own words
+    expected_outputs: *id001
+    pass_criteria:
+    - All required outputs are present.
+    - The learner performs the required active step before the final artifact is given.
+    - The result stays within scope and matches the method format.
+  - topic: Pure passive rereading or copy-paste note taking
+    expected_outputs:
+    - Stuck protocol response
+    - Either a simpler scaffold or a method redirect
+    pass_criteria:
+    - The tutor does not force a bad fit.
+    - The tutor either shrinks scope or suggests a better-fitting method.
+    - The response remains honest about the mismatch.
+  acceptance_criteria:
+  - All required_outputs are present in the successful test case.
+  - No forbidden_moves are violated.
+  - The facilitation_prompt can be run without extra hidden context.
+  known_issues:
+  - LLMs may over-explain before the learner attempts the required move.
+  - LLMs may drift outside scope when the topic is broad or ambiguous.

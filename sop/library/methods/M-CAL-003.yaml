@@ -1,93 +1,118 @@
 id: M-CAL-003
 name: Full Calibrate Priority Set
 category: calibrate
+subcategory: priority
 description: Build a deterministic top-3 weakness set from FULL CALIBRATE telemetry to drive ENCODE method selection.
-default_duration_min: 3
-energy_cost: low
-best_stage: first_exposure
 control_stage: CALIBRATE
 status: validated
-calibrate_phase: full
-calibrate_scope: post_teach
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
 tags:
 - calibrate
 - prioritization
 - sequencing
 - deterministic-routing
 - full-calibrate
-mechanisms:
-- adaptive_sequencing
-- error_localization
-stipulations:
-- This is the second FULL CALIBRATE block and follows M-CAL-002.
-- Output must be deterministic and ranked.
-- Exactly top 3 weaknesses are emitted.
-- Ranking favors high-confidence misses and repeated errors.
-when_to_use:
-- After M-CAL-002 completes.
-- Before selecting ENCODE methods.
-when_not_to_use:
-- If fewer than 3 valid items exist; run micro-recalibration first.
-knobs:
-  top_k: 3
-  weighting_profile: balanced
-constraints:
-  deterministic_output_required: true
-  top_k_fixed: true
-gating_rules:
-- Emit exactly top_k weaknesses (fixed at 3).
-- Apply deterministic tie-breaks (high-confidence misses, then frequency).
-- Output ranking and routing seeds only; no teaching/explanations.
-- Keep ranking scoped to current objective telemetry only.
-- Treat this as FULL CALIBRATE closure before ENCODE.
+purpose: Full Calibrate Priority Set exists to run a deterministic top-3 weakness ranking that turns full-calibrate telemetry
+  into downstream encoding priorities. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for teaching new material, extended explanation, or open-ended discussion. Use TEACH when the goal is
+  instruction and use REFERENCE when the goal is artifact building.
+best_fit_topics:
+- ranked weak spots
+- top-three priorities for encoding
+- telemetry-driven triage
+poor_fit_topics:
+- full teaching blocks
+- broad curriculum planning
+- non-routed reflection
+learner_state_required: Full calibrate telemetry exists and the learner is ready for a ranked weakness pass that determines
+  what gets encoded next.
 inputs:
-- FullCalibrateItemResults
-- FullCalibrateSnapshot
-- Confidence-tagged results
-- Error-type labels
+- description: FullCalibrateItemResults
+  required: true
+- description: FullCalibrateSnapshot
+  required: true
+- description: Confidence-tagged results
+  required: true
+- description: Error-type labels
+  required: true
+outputs:
+- name: FullCalibratePrioritySet (exactly 3 ranked weaknesses)
+  description: A calibrated diagnostic output that supports routing for a deterministic top-3 weakness ranking that turns
+    full-calibrate telemetry into downstream encoding priorities.
+  format: structured response
+- name: WeaknessScoreTable (scoring breakdown per weakness)
+  description: A calibrated diagnostic output that supports routing for a deterministic top-3 weakness ranking that turns
+    full-calibrate telemetry into downstream encoding priorities.
+  format: structured table
+- name: EncodeRoutingSeed (one ENCODE method-family recommendation per weakness)
+  description: A tagged retrieval-question bank that can be reused later for practice or deck construction.
+  format: bulleted or tabular list
+- name: FullCalibrateHandoff (diagnostic-to-encode handoff contract)
+  description: A calibrated diagnostic output that supports routing for a deterministic top-3 weakness ranking that turns
+    full-calibrate telemetry into downstream encoding priorities.
+  format: structured response
+required_outputs:
+- FullCalibratePrioritySet (exactly 3 ranked weaknesses)
+- WeaknessScoreTable (scoring breakdown per weakness)
+- EncodeRoutingSeed (one ENCODE method-family recommendation per weakness)
+- FullCalibrateHandoff (diagnostic-to-encode handoff contract)
+success_criteria:
+- All required outputs are present for M-CAL-003.
+- The block remains diagnostic only and no teaching is introduced before the attempt.
+- The learner or tutor can point to the output artifact and reuse it later without ambiguity.
+partial_criteria:
+- 'One or more required outputs are present but one core artifact is incomplete: FullCalibratePrioritySet (exactly 3 ranked
+  weaknesses).'
+- The method stayed in the correct stage but the final artifact needs one more pass to be reusable.
 steps:
 - step: 1
-  action: Aggregate misses by error type
-  notes: Use Recall, Confusion, Rule, Representation, Procedure, Computation, Speed.
+  name: Aggregate misses by error
+  action: Aggregate misses by error type. Use Recall, Confusion, Rule, Representation, Procedure, Computation, Speed.
+  tutor_does: Present aggregate misses by error type. use recall, confusion, rule, representation, procedure, computation,
+    speed as a short diagnostic move and do not teach the answer before the attempt.
+  learner_does: Attempts the item, reports confidence, and accepts routing feedback without turning the block into tutoring.
+  max_lines: 6
+  check: Is the scope set and is the learner ready for a diagnostic attempt?
+  example: 'Tutor: "Aggregate misses by error type. Use Recall, Confusion, Rule, Representation, Procedure, Computation, Speed."
+    Learner: "Ready."'
 - step: 2
-  action: Score weakness impact using weighting_profile
-  notes: Include frequency, confidence mismatch, and latency.
+  name: Score weakness impact using
+  action: Score weakness impact using weighting_profile. Include frequency, confidence mismatch, and latency.
+  tutor_does: Present score weakness impact using weighting_profile. include frequency, confidence mismatch, and latency as
+    a short diagnostic move and do not teach the answer before the attempt.
+  learner_does: Attempts the item, reports confidence, and accepts routing feedback without turning the block into tutoring.
+  max_lines: 6
+  check: Is this step complete and ready to advance?
+  example: Tutor shows one brief probe and records answer, confidence, and latency.
 - step: 3
-  action: Rank weaknesses and emit top_k
-  notes: Must produce exactly 3 ranked items.
+  name: Rank weaknesses and emit
+  action: Rank weaknesses and emit top_k. Must produce exactly 3 ranked items.
+  tutor_does: Present rank weaknesses and emit top_k. must produce exactly 3 ranked items as a short diagnostic move and do
+    not teach the answer before the attempt.
+  learner_does: Attempts the item, reports confidence, and accepts routing feedback without turning the block into tutoring.
+  max_lines: 8
+  check: Is this step complete and ready to advance?
+  example: Tutor summarizes the weakest pattern and states whether the learner is ready to route onward.
 - step: 4
-  action: Map each weakness to next ENCODE action seed
-  notes: Provide method-family recommendation only, not full lesson.
-outputs:
-- FullCalibratePrioritySet
-- WeaknessScoreTable
-- EncodeRoutingSeed
-- FullCalibrateHandoff
-artifact_type: notes
-stop_criteria:
-- Exactly 3 prioritized weaknesses output
-- EncodeRoutingSeed and FullCalibrateHandoff created
-failure_modes:
-- mode: Too little data for stable ranking
-  mitigation: Trigger micro-recalibration with 2-3 extra items.
-- mode: Ranking ties remain unresolved
-  mitigation: Break ties by high-confidence miss count, then frequency.
-- mode: Output drifts into teaching
-  mitigation: Restrict to ranked diagnostics and routing only.
-logging_fields:
-- top_k
-- weighting_profile
-- priority_set
-- tie_break_applied
-evidence:
-  citation: Rawson and Dunlosky (2011)
-  finding: Targeted corrective practice outperforms broad untargeted restudy.
-  source: control-plane migration
-evidence_strength: high
-primary_citations:
-- Rawson and Dunlosky (2011)
-- Bjork and Bjork (2011)
-evidence_raw: Focused relearning based on diagnosed weaknesses improves long-term retention.
+  name: Map each weakness to
+  action: Map each weakness to next ENCODE action seed. Provide method-family recommendation only, not full lesson.
+  tutor_does: Present map each weakness to next encode action seed. provide method-family recommendation only, not full lesson
+    as a short diagnostic move and do not teach the answer before the attempt.
+  learner_does: Attempts the item, reports confidence, and accepts routing feedback without turning the block into tutoring.
+  max_lines: 8
+  check: Is this step complete and ready to advance?
+  example: Tutor gives a short diagnostic prompt; learner responds with a best attempt.
+constraints:
+- rule: Diagnostic only; no teaching before or during the probe
+  why: Calibration must measure readiness, not change the learner state by explanation.
+- rule: Require one genuine attempt before hints or answer reveal
+  why: The diagnostic signal is only trustworthy when the learner has to produce a response first.
+- rule: Keep scope tied to the active objective set
+  why: Calibration is only useful when the items match what the learner is supposed to know.
+- rule: Respect item-count and time caps from the source file
+  why: Short calibration blocks preserve low-friction routing and reduce fatigue.
 allowed_moves:
 - Aggregate misses by error type (Recall, Confusion, Rule, Representation, Procedure, Computation, Speed)
 - Score weakness impact using weighting profile (frequency, confidence mismatch, latency)
@@ -96,6 +121,10 @@ allowed_moves:
 - Map each weakness to an ENCODE method-family seed
 - Keep ranking scoped to current objective telemetry only
 - Trigger micro-recalibration if too little data for stable ranking
+- Run short scored probes inside the declared scope
+- Capture answer, confidence, and latency for each item
+- Provide only minimal clarification after the learner attempts an item
+- Summarize readiness and route the learner to the next stage
 forbidden_moves:
 - Teach or explain content (routing and ranking only)
 - Emit more or fewer than exactly 3 weaknesses
@@ -104,38 +133,107 @@ forbidden_moves:
 - Include items outside current objective scope
 - Skip tie-break resolution (all ties must be resolved)
 - Allow ranking to drift into teaching mode
-required_outputs:
-- FullCalibratePrioritySet (exactly 3 ranked weaknesses)
-- WeaknessScoreTable (scoring breakdown per weakness)
-- EncodeRoutingSeed (one ENCODE method-family recommendation per weakness)
-- FullCalibrateHandoff (diagnostic-to-encode handoff contract)
-facilitation_prompt: 'You are running M-CAL-003 (Full Calibrate Priority Set) in CALIBRATE stage.
+- Teach the concept before the learner attempts the probe
+- Reveal the full answer before the attempt
+- Expand beyond the active objective scope
+stuck_protocol: Use one simpler probe, narrow the objective scope, and keep the block diagnostic only.
+failure_modes:
+- mode: Learner asks for teaching before attempting
+  detection: The response contains requests for explanation instead of a first attempt.
+  recovery: Restate the diagnostic rule, reduce the item to one short probe, and require an attempt.
+  fallback_method: M-CAL-004
+- mode: Probe is too broad to score cleanly
+  detection: The learner stalls, guesses, or gives a very long response with no clear target.
+  recovery: Narrow the scope to one objective or one subskill and rerun the probe.
+  fallback_method: M-CAL-001
+- mode: The block drifts into TEACH
+  detection: The tutor starts explaining content or giving step-by-step instruction.
+  recovery: Stop the explanation, reset to a diagnostic prompt, and summarize only the readiness signal.
+  fallback_method: M-CAL-003
+default_duration_min: 3
+energy_cost: low
+best_stage: first_exposure
+mechanisms:
+- adaptive_sequencing
+- error_localization
+evidence:
+  citation: Rawson and Dunlosky (2011)
+  finding: Targeted corrective practice outperforms broad untargeted restudy.
+  source: control-plane migration
+knobs:
+  default_duration_min: 3
+  energy_cost: low
+  best_stage: first_exposure
+related_methods:
+- id: M-CAL-002
+  relationship: Consumes the full-probe telemetry that feeds ranking
+- id: M-REF-003
+  relationship: Can hand off into a compact reference anchor for priority weak spots
+facilitation_prompt: |-
+  You are a tutor running M-CAL-003 (Full Calibrate Priority Set) in CALIBRATE mode.
+  ROLE: diagnose readiness and route the learner without teaching content.
+  OBJECTIVE: Full Calibrate Priority Set exists to run a deterministic top-3 weakness ranking that turns full-calibrate telemetry into downstream encoding priorities. It turns the current stage into a clean, reusable signal instead of a vague study session.
+  SCOPE: Use only the loaded source material and the learner's current responses.
+  RULES:
+  - Diagnostic only; no teaching before or during the probe
+  - Require one genuine attempt before hints or answer reveal
+  - Keep scope tied to the active objective set
+  - Respect item-count and time caps from the source file
 
-  Build a deterministic ranked weakness set to close FULL CALIBRATE and hand off to ENCODE.
+  RUN ONE STEP AT A TIME. Do not skip ahead. Wait for my reply before moving on.
+  1. Aggregate misses by error — Aggregate misses by error type. Use Recall, Confusion, Rule, Representation, Procedure, Computation, Speed.
+     Example: Tutor: "Aggregate misses by error type. Use Recall, Confusion, Rule, Representation, Procedure, Computation, Speed." Learner: "Ready."
+     Check: Is the scope set and is the learner ready for a diagnostic attempt?
+     Then stop and wait.
+  2. Score weakness impact using — Score weakness impact using weighting_profile. Include frequency, confidence mismatch, and latency.
+     Example: Tutor shows one brief probe and records answer, confidence, and latency.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  3. Rank weaknesses and emit — Rank weaknesses and emit top_k. Must produce exactly 3 ranked items.
+     Example: Tutor summarizes the weakest pattern and states whether the learner is ready to route onward.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  4. Map each weakness to — Map each weakness to next ENCODE action seed. Provide method-family recommendation only, not full lesson.
+     Example: Tutor gives a short diagnostic prompt; learner responds with a best attempt.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
 
+  REQUIRED OUTPUTS:
+  - FullCalibratePrioritySet (exactly 3 ranked weaknesses) (structured response)
+  - WeaknessScoreTable (scoring breakdown per weakness) (structured table)
+  - EncodeRoutingSeed (one ENCODE method-family recommendation per weakness) (bulleted or tabular list)
+  - FullCalibrateHandoff (diagnostic-to-encode handoff contract) (structured response)
 
-  Requirements:
+  STOP CONDITIONS:
+  - Stop when every required output exists and the final check passes.
+  - Stop early if the time cap or item cap is reached.
+  - Stop if the learner has crossed into a different stage or the format is no longer useful.
 
-  - Use correctness, latency, confidence, and error types.
-
-  - Apply {weighting_profile}.
-
-  - Emit exactly {top_k} weaknesses (fixed at 3).
-
-  - Add one ENCODE method-family seed per weakness.
-
-
-  Return exactly:
-
-  1) FullCalibratePrioritySet
-
-  2) WeaknessScoreTable
-
-  3) EncodeRoutingSeed
-
-  4) FullCalibrateHandoff
-
-
-  Do not provide full teaching or answer explanations in this method.
-
-  '
+  IF STUCK:
+  Use one simpler probe, narrow the objective scope, and keep the block diagnostic only.
+  If that still fails, reduce scope to one smaller item, one row, or one rep and continue.
+validation:
+  test_cases:
+  - topic: ranked weak spots
+    expected_outputs:
+    - FullCalibratePrioritySet (exactly 3 ranked weaknesses)
+    - WeaknessScoreTable (scoring breakdown per weakness)
+    - EncodeRoutingSeed (one ENCODE method-family recommendation per weakness)
+    pass_criteria:
+    - All required outputs for M-CAL-003 are present.
+    - The response stays inside the correct stage rules.
+  - topic: top-three priorities for encoding
+    expected_outputs:
+    - WeaknessScoreTable (scoring breakdown per weakness)
+    - EncodeRoutingSeed (one ENCODE method-family recommendation per weakness)
+    - FullCalibrateHandoff (diagnostic-to-encode handoff contract)
+    pass_criteria:
+    - The artifact is reusable without extra interpretation.
+    - No forbidden move is triggered during the run.
+  acceptance_criteria:
+  - Every required output is present and checkable.
+  - No forbidden moves from the source file are violated.
+  - The facilitation prompt can be pasted into ChatGPT and run without extra context.
+  known_issues:
+  - If the learner wants teaching during a diagnostic block, the tutor may need to restate the no-teach rule and narrow the
+    probe scope.

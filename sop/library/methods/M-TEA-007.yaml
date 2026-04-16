@@ -1,110 +1,286 @@
 id: M-TEA-007
 name: KWIK Lite
-category: encode
+category: teach
+subcategory: mnemonic-lite
 description: Run the lightweight live mnemonic slot after the TEACH close artifact and before FULL CALIBRATE using one system-seeded cue plus one learner ownership action.
-default_duration_min: 2
-energy_cost: low
-best_stage: first_exposure
 control_stage: TEACH
 status: draft
-mnemonic_tier: lite
-slot_policy: post_teach_pre_full_calibrate
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
 tags:
 - teach
 - mnemonic
 - kwik
 - lite
 - hook
-mechanisms:
-- dual_coding
-- elaboration
-- generation
-stipulations:
-- Use this only after the TEACH close artifact exists and meaning is already clear.
-- KWIK Lite is the live slot; full KWIK Hook remains deeper ENCODE work.
-- Default to skipping this slot for clinical reasoning or systems-integration topics unless a hook is clearly helpful.
-- Require one learner ownership action so the hook is not purely AI-authored.
-knobs:
-  output_format: bullets
-constraints:
-  non_assessment: true
-  no_scored_checks: true
-  objective_scope_required: true
+- mnemonic-lite
+- teaching
+- explanation
+purpose: Run the lightweight live mnemonic slot after the TEACH close artifact and before FULL CALIBRATE using one system-seeded cue plus one learner ownership action. Use it to teach one bounded concept by turning the source into a learner-facing bridge that preserves the real mechanism.
+not_for: Not for open-ended brainstorming, scoring, or broad coverage of unrelated material. Use a PRIME method when the learner first needs orientation or objective framing.
+best_fit_topics:
+- 'A single bounded concept or pathway that can be taught in one pass: KWIK Lite'
+- Topics that benefit from a bridge, contrast, case, example, or mnemonic
+poor_fit_topics:
+- Unbounded chapters that need broad coverage first
+- Material that should be assessed rather than taught
+learner_state_required: Source material is loaded and the learner is ready for a bounded teaching pass, not a full assessment.
 inputs:
-- TEACH close artifact
-- Target term, concept, or ordered item to compress
-- Short meaning/function statement
-steps:
-- step: 1
-  action: Confirm the TEACH close artifact and concept meaning are in place
-  notes: Do not run this slot if meaning is still unstable.
-- step: 2
-  action: Seed one lightweight cue
-  notes: Use a concise sound, image, phrase, or compression line tied to function.
-- step: 3
-  action: Capture one learner ownership action
-  notes: Learner must personalize, tweak, choose, or restate the cue.
-- step: 4
-  action: Record the final hook and one distortion guard
-  notes: State what the cue helps remember and what it should not distort.
+- description: Source material loaded in chat
+  required: true
+- description: Target concept, process, or comparison to teach
+  required: true
+- description: Learner familiarity signal or prerequisite anchor
+  required: false
 outputs:
+- name: KWIKLiteSeed
+  description: Learner-facing teaching artifact for kwik lite.
+  format: bulleted artifact
+- name: LearnerOwnershipAction
+  description: Learner-facing teaching artifact for kwik lite.
+  format: bulleted artifact
+- name: FinalHook
+  description: Learner-facing teaching artifact for kwik lite.
+  format: one-line hook plus recall cue
+- name: DistortionGuard
+  description: Learner-facing teaching artifact for kwik lite.
+  format: bulleted artifact
+required_outputs:
 - KWIKLiteSeed
 - LearnerOwnershipAction
 - FinalHook
-- DistortionGuard
-stop_criteria:
-- TEACH close artifact is confirmed
-- One system seed is generated
-- One learner ownership action is captured
-- One distortion guard is stated
-failure_modes:
-- mode: Slot is used before meaning is clear
-  mitigation: Skip the slot and return to TEACH or anchor repair.
-- mode: Hook becomes too elaborate and turns into full KWIK
-  mitigation: Keep it to one seed plus one ownership action.
-- mode: Hook distorts clinical reasoning or integrated systems content
-  mitigation: Skip by default for those concept types unless value is obvious.
-evidence:
-  citation: Paivio (1991)
-  finding: Lightweight verbal-plus-image hooks can improve retention when they are grounded in already-understood meaning.
-  source: control-plane migration
-evidence_raw: Paivio (1991); lightweight mnemonic compression is useful only after meaning is already established.
-facilitation_prompt: 'You are running M-TEA-007 (KWIK Lite) in TEACH stage.
-
-  This method is non-assessment. It is the lightweight post-TEACH mnemonic slot, not full KWIK.
-
-  Return exactly:
-
-  1) KWIKLiteSeed
-
-  2) LearnerOwnershipAction
-
-  3) FinalHook
-
-  4) DistortionGuard
-
-  Only run this after the TEACH close artifact exists and the concept meaning is clear. Keep it to one system seed plus one learner ownership action.
-
-  '
-gating_rules:
-- Run only after the TEACH close artifact exists.
-- Do not use this slot before concept meaning is clear.
-- Keep the slot lighter than full KWIK Hook.
-- Skip by default for clinical reasoning or systems-integration topics unless a hook is clearly helpful.
-artifact_type: notes
+success_criteria:
+- The learner-facing explanation artifact is faithful to KWIK Lite and stays bounded.
+- The method includes a concrete bridge, example, or discriminating cue that makes the idea easier to hold.
+- The output ends with a clear carry-forward signal instead of drifting into a full lecture.
+partial_criteria:
+- KWIKLiteSeed is present but the bridge or example is underdeveloped.
+- The explanation is usable but still too broad, too abstract, or too long for fast learner uptake.
+steps:
+- step: 1
+  name: Opening Step
+  action: Confirm the TEACH close artifact and concept meaning are in place
+  tutor_does: Confirm the TEACH close artifact and concept meaning are in place. Do not run this slot if meaning is still unstable
+  learner_does: Listens, tracks the explanation, and responds with the requested cue or check-in.
+  max_lines: 4
+  check: What part feels clearest, and what part still needs one more example?
+  example: 'Example: "Opening Step: Confirm the TEACH close artifact and concept meaning are in place"'
+- step: 2
+  name: Step 2
+  action: Seed one lightweight cue
+  tutor_does: Seed one lightweight cue. Use a concise sound, image, phrase, or compression line tied to function
+  learner_does: Listens, tracks the explanation, and responds with the requested cue or check-in.
+  max_lines: 4
+  check: What part feels clearest, and what part still needs one more example?
+  example: 'Example: "Step 2: Seed one lightweight cue"'
+- step: 3
+  name: Step 3
+  action: Capture one learner ownership action
+  tutor_does: Capture one learner ownership action. Learner must personalize, tweak, choose, or restate the cue
+  learner_does: Listens, tracks the explanation, and responds with the requested cue or check-in.
+  max_lines: 4
+  check: What part feels clearest, and what part still needs one more example?
+  example: 'Example: "Step 3: Capture one learner ownership action"'
+- step: 4
+  name: Mnemonic Hook
+  action: Record the final hook and one distortion guard
+  tutor_does: Record the final hook and one distortion guard. State what the cue helps remember and what it should not distort
+  learner_does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
+  max_lines: 4
+  check: What part feels clearest, and what part still needs one more example?
+  example: 'Example: "Mnemonic Hook: Record the final hook and one distortion guard"'
+constraints:
+- rule: Do not turn the method into a test or quiz
+  why: TEACH methods should build understanding, not create avoidable performance pressure.
+- rule: Stay faithful to the source and keep the chunk bounded
+  why: The learner needs a clear bridge, not an unbounded lecture.
+- rule: Do not assess or score the learner
+  why: This method is for orientation and teaching, not grading.
+- rule: Require the relevant objective or context before running
+  why: The method needs a bounded target to stay useful.
 allowed_moves:
 - Seed one lightweight cue tied to function or meaning
 - Ask the learner to personalize, choose, or slightly modify the cue
 - State one guardrail to prevent mnemonic distortion
 - Skip the slot when the topic would be harmed by compression
+- Bridge the source into a learner-facing explanation, story, contrast, example, or mnemonic
+- Use a concise check-in to see whether the explanation landed
+- Translate back to the canonical terms or mechanism at the end
 forbidden_moves:
 - Use this slot before TEACH meaning is established
 - Expand the slot into full multi-step KWIK Hook
 - Replace the TEACH close artifact with the mnemonic
 - Force a mnemonic for clinical reasoning or systems integration by default
 - Turn the slot into a scored check
-required_outputs:
-- KWIK Lite seed
-- Learner ownership action
-- Final hook
-- Distortion guard
+- Turn the method into a quiz or scored assessment
+- Lose fidelity to the source or wander beyond the bounded topic
+stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For TEACH, fall back to M-TEA-004 or M-TEA-006.
+failure_modes:
+- mode: Slot is used before meaning is clear
+  detection: The output no longer matches the method’s core purpose.
+  recovery: Skip the slot and return to TEACH or anchor repair.
+  fallback_method: M-TEA-006
+- mode: Hook becomes too elaborate and turns into full KWIK
+  detection: The output no longer matches the method’s core purpose.
+  recovery: Keep it to one seed plus one ownership action.
+  fallback_method: M-TEA-006
+default_duration_min: 2
+energy_cost: low
+best_stage: first_exposure
+mechanisms:
+- dual_coding
+- elaboration
+- generation
+- scaffolding
+- transfer
+- cueing
+evidence:
+  citation: Paivio (1991)
+  finding: Lightweight verbal-plus-image hooks can improve retention when they are grounded in already-understood meaning.
+  source: control-plane migration
+knobs:
+  output_format: bullets
+  guidance_level: medium
+  artifact_type: notes
+  mnemonic_tier: lite
+  slot_policy: post_teach_pre_full_calibrate
+related_methods:
+- id: M-TEA-005
+  relationship: Use when a jingle or rhyme hook is needed
+- id: M-TEA-006
+  relationship: Use to expand the mnemonic into full depth
+facilitation_prompt: 'You are a study tutor running M-TEA-007 (KWIK Lite) in the TEACH stage.
+
+  ROLE: You are a careful, supportive tutor. Your job is to run KWIK Lite exactly as specified and keep the output faithful, bounded, and useful.
+
+  OBJECTIVE: Run the lightweight live mnemonic slot after the TEACH close artifact and before FULL CALIBRATE using one system-seeded cue plus one learner ownership action. Use it to teach one bounded concept by turning the source into a learner-facing bridge that preserves the real mechanism.
+
+  SCOPE: Run the lightweight live mnemonic slot after the TEACH close artifact and before FULL CALIBRATE using one system-seeded cue plus one learner ownership action.
+
+  RULES:
+
+  - Do not turn the method into a test or quiz — because TEACH methods should build understanding, not create avoidable performance pressure.
+
+  - Stay faithful to the source and keep the chunk bounded — because The learner needs a clear bridge, not an unbounded lecture.
+
+  - Do not assess or score the learner — because This method is for orientation and teaching, not grading.
+
+  - Require the relevant objective or context before running — because The method needs a bounded target to stay useful.
+
+
+  OUTPUTS TO PRODUCE:
+
+  1. KWIKLiteSeed — Learner-facing teaching artifact for kwik lite. (bulleted artifact)
+
+  2. LearnerOwnershipAction — Learner-facing teaching artifact for kwik lite. (bulleted artifact)
+
+  3. FinalHook — Learner-facing teaching artifact for kwik lite. (one-line hook plus recall cue)
+
+  4. DistortionGuard — Learner-facing teaching artifact for kwik lite. (bulleted artifact)
+
+
+  RUN THE METHOD ONE STEP AT A TIME. Wait for my response before moving to the next step.
+
+  STEP 1 — Opening Step
+
+  - Tutor does: Confirm the TEACH close artifact and concept meaning are in place. Do not run this slot if meaning is still unstable
+
+  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
+
+  - Example: Example: "Opening Step: Confirm the TEACH close artifact and concept meaning are in place"
+
+  - Check: What part feels clearest, and what part still needs one more example?
+
+  Then stop and wait.
+
+  STEP 2 — Step 2
+
+  - Tutor does: Seed one lightweight cue. Use a concise sound, image, phrase, or compression line tied to function
+
+  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
+
+  - Example: Example: "Step 2: Seed one lightweight cue"
+
+  - Check: What part feels clearest, and what part still needs one more example?
+
+  Then stop and wait.
+
+  STEP 3 — Step 3
+
+  - Tutor does: Capture one learner ownership action. Learner must personalize, tweak, choose, or restate the cue
+
+  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
+
+  - Example: Example: "Step 3: Capture one learner ownership action"
+
+  - Check: What part feels clearest, and what part still needs one more example?
+
+  Then stop and wait.
+
+  STEP 4 — Mnemonic Hook
+
+  - Tutor does: Record the final hook and one distortion guard. State what the cue helps remember and what it should not distort
+
+  - Learner does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
+
+  - Example: Example: "Mnemonic Hook: Record the final hook and one distortion guard"
+
+  - Check: What part feels clearest, and what part still needs one more example?
+
+  Then stop and wait.
+
+
+  STOP CONDITIONS:
+
+  - The learner-facing explanation artifact is faithful to KWIK Lite and stays bounded.
+
+  - The method includes a concrete bridge, example, or discriminating cue that makes the idea easier to hold.
+
+  - The output ends with a clear carry-forward signal instead of drifting into a full lecture.
+
+
+  IF YOU GET STUCK:
+
+  If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For TEACH, fall back to M-TEA-004 or M-TEA-006.
+
+  If the learner is still stuck after one rescue move, shrink the chunk, switch modality, or fall back to the listed fallback method.
+
+
+  GOOD OUTPUT EXAMPLE:
+
+  - KWIKLiteSeed: a concise, source-faithful artifact that matches the method purpose and stays within scope.
+
+  - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
+
+
+  DONE WHEN:
+
+  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.'
+validation:
+  test_cases:
+  - topic: Single concept explanation for KWIK Lite
+    expected_outputs:
+    - KWIKLiteSeed
+    - LearnerOwnershipAction
+    - FinalHook
+    - DistortionGuard
+    pass_criteria:
+    - Required outputs appear and the main learner-facing artifact is faithful to KWIK Lite.
+    - The method ends with a bounded check-in or carry-forward cue rather than an open-ended lecture.
+  - topic: A slightly harder variant with one confusable or confusable wrinkle
+    expected_outputs:
+    - KWIKLiteSeed
+    - LearnerOwnershipAction
+    - FinalHook
+    - DistortionGuard
+    pass_criteria:
+    - Required outputs appear and the main learner-facing artifact is faithful to KWIK Lite.
+    - The explanation includes a concrete bridge, example, or cue that would help a real learner remember it.
+  acceptance_criteria:
+  - Required outputs appear and the main learner-facing artifact is faithful to KWIK Lite.
+  - The explanation includes a concrete bridge, example, or cue that would help a real learner remember it.
+  - The method ends with a bounded check-in or carry-forward cue rather than an open-ended lecture.
+  known_issues:
+  - Some prompts may over-run the time budget if the source material is very dense.
+  - Without a clear topic boundary, the method can broaden instead of teaching one useful chunk.

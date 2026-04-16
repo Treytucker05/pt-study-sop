@@ -1,122 +1,139 @@
 id: M-REF-002
 name: Mastery Loop
 category: reference
+subcategory: relearn
 description: Re-study items missed during retrieval, then immediately re-test. Repeat until all items are recalled correctly.
   Based on successive relearning (Rawson & Dunlosky).
-default_duration_min: 10
-energy_cost: medium
-best_stage: consolidation
 control_stage: REFERENCE
 status: validated
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
 tags:
 - successive-relearning
 - mastery
 - retest
 - evidence-based
-mechanisms:
-- retrieval
-- spacing
-- successive_relearning
-- mastery_learning
-knobs:
-  artifact_depth: standard
-  link_density: medium
-constraints:
-  target_artifact_required: true
-  retrieval_blocked_without_targets: true
-  objective_scope_required: true
+purpose: Mastery Loop exists to run a mastery loop that restudies missed items, re-tests them, and closes persistent gaps
+  with successive relearning. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for quizzing the learner or introducing new material. Use RETRIEVE when the goal is memory testing and
+  TEACH when the goal is explanation.
+best_fit_topics:
+- missed-item relearning
+- successive relearning
+- retest-after-restudy loops
+poor_fit_topics:
+- new content introduction
+- unspecified review sessions
+- one-and-done re-read loops
+learner_state_required: Missed items from retrieval practice are available and the learner is ready to restudy and immediately
+  re-test them.
 inputs:
-- List of missed items from retrieval practice
-- Source materials for re-study
-- Testing mechanism (flashcards, quiz, or Tutor)
-- Loop tracker (to count iterations)
-steps:
-- step: 1
-  action: Identify all items missed in recent retrieval practice
-  notes: These are your mastery targets — items that need successive relearning
-- step: 2
-  action: Re-study the first missed item using source materials
-  notes: Brief focused study — 30-60 seconds per item, not lengthy review
-- step: 3
-  action: Immediately re-test the item without looking at source
-  notes: The test must come immediately after study — no delay
-- step: 4
-  action: If correct, move to next missed item; if incorrect, mark for another loop
-  notes: Track which items needed multiple loops
-- step: 5
-  action: After all items attempted, loop back to any that were still incorrect
-  notes: Continue until all items recalled correctly at least once
-- step: 6
-  action: Record total loops needed per item for future spacing decisions
-  notes: Items needing 3+ loops are weak anchors — schedule for earlier review
+- description: List of missed items from retrieval practice
+  required: true
+- description: Source materials for re-study
+  required: true
+- description: Testing mechanism (flashcards, quiz, or Tutor)
+  required: true
+- description: Loop tracker (to count iterations)
+  required: true
 outputs:
-- Mastery achieved on all targeted items
+- name: Mastery achieved on all targeted items (or partial progress with time noted)
+  description: A restudy-and-retest log that shows which missed items were repaired and which still need another pass.
+  format: structured response
+- name: Loop count per item (difficulty metric)
+  description: A reusable reference artifact that supports later retrieval for a mastery loop that restudies missed items,
+    re-tests them, and closes persistent gaps with successive relearning.
+  format: structured response
+- name: Weak anchor list (items needing 3+ loops)
+  description: A compact reference artifact with the minimum definitions, rules, examples, near-misses, and traps needed for
+    later retrieval.
+  format: bulleted or tabular list
+- name: Updated spacing recommendations based on loop performance
+  description: A reusable reference artifact that supports later retrieval for a mastery loop that restudies missed items,
+    re-tests them, and closes persistent gaps with successive relearning.
+  format: structured response
+required_outputs:
+- Mastery achieved on all targeted items (or partial progress with time noted)
 - Loop count per item (difficulty metric)
 - Weak anchor list (items needing 3+ loops)
-- Updated spacing recommendations
-stop_criteria:
-- All items recalled correctly at least once
-- Maximum loop limit reached (e.g., 5 loops per item)
-- Time budget exhausted (with partial progress logged)
-failure_modes:
-- mode: Re-studying too long before re-testing
-  mitigation: Keep re-study brief (30-60 sec) — the test is where learning happens
-- mode: Stopping after first correct recall (no overlearning)
-  mitigation: For weak items, aim for 2 correct recalls before moving on
-- mode: Not tracking loop counts
-  mitigation: Loop counts are diagnostic — always record them
-logging_fields:
-- items_targeted
-- items_mastered
-- average_loops_to_mastery
-- weak_anchors_flagged
-- total_time_spent
-evidence:
-  citation: Rawson & Dunlosky (2011)
-  finding: successive relearning combines testing + spacing for durable retention
-  source: seed_methods.py
-evidence_raw: Rawson & Dunlosky (2011); successive relearning combines testing + spacing for durable retention
-facilitation_prompt: 'You are running M-REF-002 (Mastery Loop) in REFERENCE stage.
-
-  Execute this method card exactly and keep outputs deterministic.
-
-
-  Stage hard rules:
-
-  - Build concrete anchors and artifacts.
-
-  - Map concept to applied context.
-
-  - Do not skip artifact creation.
-
-
-  Required outputs:
-
-  - Mastery achieved on all targeted items
-
-  - Loop count per item (difficulty metric)
-
-  - Weak anchor list (items needing 3+ loops)
-
-  - Updated spacing recommendations
-
-
-  Stop conditions:
-
-  - All items recalled correctly at least once
-
-  - Maximum loop limit reached (e.g., 5 loops per item)
-
-  - Time budget exhausted (with partial progress logged)
-
-
-  If required inputs are missing, request only the minimum needed input and continue.
-
-  '
-gating_rules:
-- Produce structured targets that RETRIEVE can directly test.
-- No retrieval drills until reference targets are explicit.
-artifact_type: notes
+- Updated spacing recommendations based on loop performance
+success_criteria:
+- All required outputs are present for M-REF-002.
+- A reusable artifact is produced and preserved instead of a loose discussion transcript.
+- The learner or tutor can point to the output artifact and reuse it later without ambiguity.
+partial_criteria:
+- 'One or more required outputs are present but one core artifact is incomplete: Mastery achieved on all targeted items (or
+  partial progress with time noted).'
+- The method stayed in the correct stage but the final artifact needs one more pass to be reusable.
+steps:
+- step: 1
+  name: Identify all items missed
+  action: Identify all items missed in recent retrieval practice. These are your mastery targets — items that need successive
+    relearning
+  tutor_does: Capture identify all items missed in recent retrieval practice. these are your mastery targets — items that
+    need successive relearning into a reusable artifact and keep the structure deterministic.
+  learner_does: Supplies or confirms the source content and helps save the artifact for later retrieval.
+  max_lines: 8
+  check: Has the source material been collected and organized for artifact building?
+  example: 'Tutor: "Collect the source errors and keep them in the original wording where possible." Learner: "Ready."'
+- step: 2
+  name: Re-study the first missed
+  action: Re-study the first missed item using source materials. Brief focused study — 30-60 seconds per item, not lengthy
+    review
+  tutor_does: Capture re-study the first missed item using source materials. brief focused study — 30-60 seconds per item,
+    not lengthy review into a reusable artifact and keep the structure deterministic.
+  learner_does: Supplies or confirms the source content and helps save the artifact for later retrieval.
+  max_lines: 8
+  check: Is this step complete and ready to advance?
+  example: Tutor adds a single row to the artifact and keeps the column structure consistent.
+- step: 3
+  name: Immediately re-test the item
+  action: Immediately re-test the item without looking at source. The test must come immediately after study — no delay
+  tutor_does: Capture immediately re-test the item without looking at source. the test must come immediately after study —
+    no delay into a reusable artifact and keep the structure deterministic.
+  learner_does: Supplies or confirms the source content and helps save the artifact for later retrieval.
+  max_lines: 10
+  check: Is this step complete and ready to advance?
+  example: Tutor writes the anchor or seed artifact in a format that can be reused later.
+- step: 4
+  name: If correct, move to
+  action: If correct, move to next missed item; if incorrect, mark for another loop. Track which items needed multiple loops
+  tutor_does: Capture if correct, move to next missed item; if incorrect, mark for another loop. track which items needed
+    multiple loops into a reusable artifact and keep the structure deterministic.
+  learner_does: Supplies or confirms the source content and helps save the artifact for later retrieval.
+  max_lines: 10
+  check: Is this step complete and ready to advance?
+  example: Tutor saves the artifact and asks for one final verification.
+- step: 5
+  name: After all items attempted,
+  action: After all items attempted, loop back to any that were still incorrect. Continue until all items recalled correctly
+    at least once
+  tutor_does: Capture after all items attempted, loop back to any that were still incorrect. continue until all items recalled
+    correctly at least once into a reusable artifact and keep the structure deterministic.
+  learner_does: Supplies or confirms the source content and helps save the artifact for later retrieval.
+  max_lines: 10
+  check: Is this step complete and ready to advance?
+  example: Tutor saves the artifact and asks for one final verification.
+- step: 6
+  name: Record total loops needed
+  action: Record total loops needed per item for future spacing decisions. Items needing 3+ loops are weak anchors — schedule
+    for earlier review
+  tutor_does: Capture record total loops needed per item for future spacing decisions. items needing 3+ loops are weak anchors
+    — schedule for earlier review into a reusable artifact and keep the structure deterministic.
+  learner_does: Supplies or confirms the source content and helps save the artifact for later retrieval.
+  max_lines: 10
+  check: Is this step complete and ready to advance?
+  example: Tutor saves the artifact and asks for one final verification.
+constraints:
+- rule: Artifact-first; do not turn the block into teaching or testing
+  why: Reference methods exist to build later-use assets, not to run a lesson or a quiz.
+- rule: Keep the structure deterministic and reusable
+  why: Later retrieval depends on stable headers, rows, and cue language.
+- rule: Preserve source language when it helps later recognition
+  why: Exact wording can become the cue that makes retrieval possible.
+- rule: Do not start retrieval drills until the reference target exists
+  why: The artifact is the prerequisite for later recall work.
 allowed_moves:
 - Identify missed items from retrieval practice and create mastery targets
 - Enforce brief re-study windows (30-60 seconds per item) before re-testing
@@ -126,6 +143,10 @@ allowed_moves:
 - Enforce mastery criterion (correct recall at least once, ideally twice for weak items)
 - Generate updated spacing recommendations based on loop data
 - Route persistently missed items back to ENCODE
+- Organize misses into a reusable artifact
+- Preserve exact cues or definitions when they help later retrieval
+- Create compact lists, tables, or anchors that can be reused later
+- Tag content so RETRIEVE can target it later
 forbidden_moves:
 - Allow extended re-study sessions (must be 30-60 seconds, not lengthy review)
 - Skip re-testing after re-study — the test is where learning happens
@@ -135,8 +156,116 @@ forbidden_moves:
 - Skip artifact creation — loop counts and weak anchor list ARE the output
 - Introduce entirely new content not yet encoded
 - Stop the loop before all items are recalled correctly (unless time budget exhausted)
-required_outputs:
-- Mastery achieved on all targeted items (or partial progress with time noted)
-- Loop count per item (difficulty metric)
-- Weak anchor list (items needing 3+ loops)
-- Updated spacing recommendations based on loop performance
+- Turn the block into a lecture or quiz
+- Hide the source relationship between notes and evidence
+- Produce an artifact that cannot be reused later
+stuck_protocol: Collapse to a smaller artifact, keep the same headers, and capture one row at a time.
+failure_modes:
+- mode: Artifact becomes a loose discussion transcript
+  detection: There is no stable table, header, or reusable structure.
+  recovery: Reformat into a fixed artifact template with explicit fields.
+  fallback_method: M-REF-003
+- mode: The learner tries to use the block as a quiz
+  detection: The prompt turns into right-or-wrong testing instead of artifact building.
+  recovery: Reframe as capture-and-organize, not assess-and-grade.
+  fallback_method: M-REF-004
+- mode: Source language gets lost
+  detection: Key terms are paraphrased too aggressively and cues become fuzzy.
+  recovery: Restore the original wording where it matters most and add a short note beside it.
+  fallback_method: M-REF-001
+default_duration_min: 10
+energy_cost: medium
+best_stage: consolidation
+mechanisms:
+- retrieval
+- spacing
+- successive_relearning
+- mastery_learning
+evidence:
+  citation: Rawson & Dunlosky (2011)
+  finding: successive relearning combines testing + spacing for durable retention
+  source: seed_methods.py
+knobs:
+  default_duration_min: 10
+  energy_cost: medium
+  best_stage: consolidation
+related_methods:
+- id: M-RET-003
+  relationship: Works on missed fill-in-the-blank items
+- id: M-REF-003
+  relationship: Can support relearning with a compact anchor
+facilitation_prompt: |-
+  You are a tutor running M-REF-002 (Mastery Loop) in REFERENCE mode.
+  ROLE: build durable artifacts for later retrieval and does not test the learner.
+  OBJECTIVE: Mastery Loop exists to run a mastery loop that restudies missed items, re-tests them, and closes persistent gaps with successive relearning. It turns the current stage into a clean, reusable signal instead of a vague study session.
+  SCOPE: Use only the loaded source material and the learner's current responses.
+  RULES:
+  - Artifact-first; do not turn the block into teaching or testing
+  - Keep the structure deterministic and reusable
+  - Preserve source language when it helps later recognition
+  - Do not start retrieval drills until the reference target exists
+
+  RUN ONE STEP AT A TIME. Do not skip ahead. Wait for my reply before moving on.
+  1. Identify all items missed — Identify all items missed in recent retrieval practice. These are your mastery targets — items that need successive relearning
+     Example: Tutor: "Collect the source errors and keep them in the original wording where possible." Learner: "Ready."
+     Check: Has the source material been collected and organized for artifact building?
+     Then stop and wait.
+  2. Re-study the first missed — Re-study the first missed item using source materials. Brief focused study — 30-60 seconds per item, not lengthy review
+     Example: Tutor adds a single row to the artifact and keeps the column structure consistent.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  3. Immediately re-test the item — Immediately re-test the item without looking at source. The test must come immediately after study — no delay
+     Example: Tutor writes the anchor or seed artifact in a format that can be reused later.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  4. If correct, move to — If correct, move to next missed item; if incorrect, mark for another loop. Track which items needed multiple loops
+     Example: Tutor saves the artifact and asks for one final verification.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  5. After all items attempted, — After all items attempted, loop back to any that were still incorrect. Continue until all items recalled correctly at least once
+     Example: Tutor saves the artifact and asks for one final verification.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  6. Record total loops needed — Record total loops needed per item for future spacing decisions. Items needing 3+ loops are weak anchors — schedule for earlier review
+     Example: Tutor saves the artifact and asks for one final verification.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+
+  REQUIRED OUTPUTS:
+  - Mastery achieved on all targeted items (or partial progress with time noted) (structured response)
+  - Loop count per item (difficulty metric) (structured response)
+  - Weak anchor list (items needing 3+ loops) (bulleted or tabular list)
+  - Updated spacing recommendations based on loop performance (structured response)
+
+  STOP CONDITIONS:
+  - Stop when every required output exists and the final check passes.
+  - Stop early if the time cap or item cap is reached.
+  - Stop if the learner has crossed into a different stage or the format is no longer useful.
+
+  IF STUCK:
+  Collapse to a smaller artifact, keep the same headers, and capture one row at a time.
+  If that still fails, reduce scope to one smaller item, one row, or one rep and continue.
+validation:
+  test_cases:
+  - topic: missed-item relearning
+    expected_outputs:
+    - Mastery achieved on all targeted items (or partial progress with time noted)
+    - Loop count per item (difficulty metric)
+    - Weak anchor list (items needing 3+ loops)
+    pass_criteria:
+    - All required outputs for M-REF-002 are present.
+    - The response stays inside the correct stage rules.
+  - topic: successive relearning
+    expected_outputs:
+    - Loop count per item (difficulty metric)
+    - Weak anchor list (items needing 3+ loops)
+    - Updated spacing recommendations based on loop performance
+    pass_criteria:
+    - The artifact is reusable without extra interpretation.
+    - No forbidden move is triggered during the run.
+  acceptance_criteria:
+  - Every required output is present and checkable.
+  - No forbidden moves from the source file are violated.
+  - The facilitation prompt can be pasted into ChatGPT and run without extra context.
+  known_issues:
+  - Artifact building can drift into teaching unless the tutor keeps the structure explicit and source-linked.

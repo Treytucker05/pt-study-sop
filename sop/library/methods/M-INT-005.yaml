@@ -1,65 +1,106 @@
 id: M-INT-005
 name: Case Walkthrough
 category: interrogate
+subcategory: int
+description: Walk through a realistic case to retrieve reasoning steps, identify gaps, and reinforce application
+  accuracy.
 control_stage: ENCODE
-description: Walk through a realistic case to retrieve reasoning steps, identify gaps, and reinforce application accuracy.
-default_duration_min: 10
-energy_cost: high
-has_steps: Y
-has_outputs_or_artifacts: Y
-outputs_summary: Case walkthrough narrative; Assessment plan; Reasoning verification
-knobs:
-  guidance_level: partial_scaffold
-facilitation_prompt: 'You are running M-INT-005 (Case Walkthrough) in ENCODE stage.
-
-  The learner must actively transform clinical knowledge into case-based reasoning.
-
-  Require an attempt-first case response before feedback.
-
-  Use {guidance_level}: - case_prompt_only: present the case and require full learner reasoning. - partial_scaffold: allow
-  limited structure prompts without revealing final answer. - targeted_hint: provide one focused hint after an attempt, then
-  require revised answer.
-
-  Return: 1) LearnerCaseResponse 2) ErrorTags 3) ConfidenceTag 4) CorrectiveFeedback 5) NextTargetedProbe
-
-  '
-constraints:
-  attempt_required_before_feedback: true
-  closed_note_first: true
-  route_back_on_repeated_miss: true
+status: validated
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
+tags: []
+purpose: Interrogate already-encoded material through comparison, application, retrieval, or transfer
+  so the learner can discriminate it under pressure.
+not_for: This is not for first exposure, direct lecturing, or introducing brand-new material that has
+  not already been encoded.
+best_fit_topics:
+- Previously encoded concepts that need comparison, application, or discrimination
+- Material the learner can retrieve without notes and test under pressure
+poor_fit_topics:
+- Brand-new material that has not been encoded yet
+- Tasks that need direct teaching rather than retrieval or interrogation
+learner_state_required: The target concept has already been taught or encoded. The learner can attempt
+  retrieval, comparison, or application before seeing the answer.
+inputs:
+- description: Reference targets or question bank
+  required: true
+- description: Scoring rubric and confidence capture
+  required: true
+outputs:
+- name: LearnerCaseResponse
+  description: LearnerCaseResponse
+  format: concise prose bullets or short paragraph
+- name: ErrorTags
+  description: ErrorTags
+  format: concise prose bullets or short paragraph
+- name: ConfidenceTag
+  description: ConfidenceTag
+  format: concise prose bullets or short paragraph
+- name: CorrectiveFeedback
+  description: CorrectiveFeedback
+  format: concise prose bullets or short paragraph
+- name: NextTargetedProbe
+  description: NextTargetedProbe
+  format: concise prose bullets or short paragraph
+required_outputs: &id001
+- LearnerCaseResponse (attempt-first reasoning)
+- ErrorTags (typed classification of errors)
+- ConfidenceTag (learner self-assessment)
+- CorrectiveFeedback (post-attempt only)
+- NextTargetedProbe (follow-up question targeting identified gaps)
+success_criteria:
+- 'All required outputs are present and checkable: LearnerCaseResponse (attempt-first reasoning), ErrorTags
+  (typed classification of errors), ConfidenceTag (learner self-assessment), CorrectiveFeedback (post-attempt
+  only), NextTargetedProbe (follow-up question targeting identified gaps).'
+- 'The method reaches its stop condition: Attempt-first response completed; Corrective feedback delivered.'
+- The learner stays active and the tutor does not give away the answer before the required attempt or
+  transformation.
+partial_criteria:
+- 'Some required outputs are present but at least one is missing or incomplete: LearnerCaseResponse (attempt-first
+  reasoning), ErrorTags (typed classification of errors).'
 steps:
 - step: 1
+  name: Start Retrieve Protocol Within Scope
   action: Start RETRIEVE protocol within scope
-  notes: Respect stage boundaries.
+  tutor_does: 'Guide the learner to Start RETRIEVE protocol within scope. Keep in mind: Respect stage
+    boundaries.'
+  learner_does: Attempts retrieval, application, or comparison from memory before asking for support.
+  max_lines: 8
+  check: Has the learner attempted retrieval or application before any corrective help?
+  example: 'Example: Respect stage boundaries.'
 - step: 2
+  name: Execute Method Actions In Order
   action: Execute method actions in order
-  notes: Capture required telemetry/artifacts.
+  tutor_does: 'Guide the learner to Execute method actions in order. Keep in mind: Capture required telemetry/artifacts.'
+  learner_does: Attempts retrieval, application, or comparison from memory before asking for support.
+  max_lines: 8
+  check: Has the learner attempted retrieval or application before any corrective help?
+  example: 'Example: Capture required telemetry/artifacts.'
 - step: 3
+  name: Emit Required Outputs And Handoff
   action: Emit required outputs and handoff
-  notes: Do not drift into another stage.
-inputs:
-- Reference targets or question bank
-- Scoring rubric and confidence capture
-gating_rules:
-- Require closed-note recall first, then feedback.
-- If repeated misses occur, route back to ENCODE or REFERENCE.
-outputs:
-- LearnerCaseResponse
-- ErrorTags
-- ConfidenceTag
-- CorrectiveFeedback
-- NextTargetedProbe
-stop_criteria:
-- Attempt-first response completed
-- Corrective feedback delivered
-- Next targeted probe produced
-failure_modes:
-- mode: Answer leakage
-  mitigation: Re-enforce attempt-first then feedback.
-- mode: Repeated misses
-  mitigation: Route back to ENCODE with targeted scaffold.
-artifact_type: notes
-evidence_raw: Schmidt & Rikers (2007); case-based walkthrough strengthens illness script formation and transfer
+  tutor_does: 'Guide the learner to Emit required outputs and handoff. Keep in mind: Do not drift into
+    another stage.'
+  learner_does: Attempts retrieval, application, or comparison from memory before asking for support.
+  max_lines: 8
+  check: Has the learner attempted retrieval or application before any corrective help?
+  example: 'Example: Do not drift into another stage.'
+constraints:
+- rule: Require active learner processing
+  why: The method only works when the learner is doing the cognitive work.
+- rule: Stay within the target scope
+  why: Prevents drift and keeps the artifact useful.
+- rule: Require an attempt before feedback
+  why: Retrieval or reasoning effort must happen before correction to preserve learning value.
+- rule: Start closed-note or memory-first
+  why: Forces retrieval before verification so the learner cannot copy the answer.
+- rule: Route back to a simpler method on repeated misses
+  why: Repeated failure means the learner needs a lower-friction scaffold or a different lane.
+- rule: Require closed-note recall first, then feedback.
+  why: This gating rule is part of the method’s execution contract.
+- rule: If repeated misses occur, route back to ENCODE or REFERENCE.
+  why: This gating rule is part of the method’s execution contract.
 allowed_moves:
 - Present realistic clinical cases with full structure (presenting complaint, history, exam findings)
 - Require attempt-first case reasoning before any feedback
@@ -80,9 +121,104 @@ forbidden_moves:
 - Move on without producing a targeted next probe
 - Accept one-word answers without follow-up reasoning
 - Present content outside the mapped objective scope
-required_outputs:
-- LearnerCaseResponse (attempt-first reasoning)
-- ErrorTags (typed classification of errors)
-- ConfidenceTag (learner self-assessment)
-- CorrectiveFeedback (post-attempt only)
-- NextTargetedProbe (follow-up question targeting identified gaps)
+stuck_protocol: Reduce the scope, ask for a smaller retrieval target, compare with a near-neighbor, or
+  route back to ENCODE/REFERENCE if recall keeps failing. Do not keep guessing indefinitely.
+failure_modes:
+- mode: Answer leakage
+  detection: The learner or tutor starts doing answer leakage or the artifact stops satisfying the method’s
+    required checks.
+  recovery: Re-enforce attempt-first then feedback.
+  fallback_method: M-INT-002
+- mode: Repeated misses
+  detection: The learner or tutor starts doing repeated misses or the artifact stops satisfying the method’s
+    required checks.
+  recovery: Route back to ENCODE with targeted scaffold.
+  fallback_method: M-INT-006
+default_duration_min: 10
+energy_cost: high
+best_stage: any
+mechanisms: []
+evidence:
+  citation: Schmidt & Rikers (2007)
+  finding: case-based walkthrough strengthens illness script formation and transfer
+  source: legacy evidence_raw
+knobs:
+  guidance_level: partial_scaffold
+  has_steps: Y
+  has_outputs_or_artifacts: Y
+  outputs_summary: Case walkthrough narrative; Assessment plan; Reasoning verification
+  evidence_raw: Schmidt & Rikers (2007); case-based walkthrough strengthens illness script formation and
+    transfer
+  gating_rules:
+  - Require closed-note recall first, then feedback.
+  - If repeated misses occur, route back to ENCODE or REFERENCE.
+  artifact_type: notes
+related_methods:
+- id: M-INT-002
+  relationship: Clinical application cousin method
+- id: M-INT-006
+  relationship: Illness-script fallback for explicit reasoning structure
+- id: M-ENC-012
+  relationship: Decision-tree fallback if the case branches
+facilitation_prompt: "You are running M-INT-005 (Case Walkthrough) in ENCODE stage.\nRole: you are the\
+  \ tutor running the method exactly as written, with no hidden assumptions.\nObjective: Interrogate already-encoded\
+  \ material through comparison, application, retrieval, or transfer so the learner can discriminate it\
+  \ under pressure.\nScope: Walk through a realistic case to retrieve reasoning steps, identify gaps,\
+  \ and reinforce application accuracy.\nRules:\n- Require active learner processing — The method only\
+  \ works when the learner is doing the cognitive work.\n- Stay within the target scope — Prevents drift\
+  \ and keeps the artifact useful.\n- Require an attempt before feedback — Retrieval or reasoning effort\
+  \ must happen before correction to preserve learning value.\n- Start closed-note or memory-first — Forces\
+  \ retrieval before verification so the learner cannot copy the answer.\n- Route back to a simpler method\
+  \ on repeated misses — Repeated failure means the learner needs a lower-friction scaffold or a different\
+  \ lane.\n- Not for: This is not for first exposure, direct lecturing, or introducing brand-new material\
+  \ that has not already been encoded.\nInputs:\n- Reference targets or question bank (required)\n- Scoring\
+  \ rubric and confidence capture (required)\nRequired outputs:\n- LearnerCaseResponse: LearnerCaseResponse\
+  \ [concise prose bullets or short paragraph]\n- ErrorTags: ErrorTags [concise prose bullets or short\
+  \ paragraph]\n- ConfidenceTag: ConfidenceTag [concise prose bullets or short paragraph]\n- CorrectiveFeedback:\
+  \ CorrectiveFeedback [concise prose bullets or short paragraph]\n- NextTargetedProbe: NextTargetedProbe\
+  \ [concise prose bullets or short paragraph]\nSteps: run one step at a time and wait after each step\
+  \ before advancing.\n1. Start Retrieve Protocol Within Scope\n   Tutor does: Guide the learner to Start\
+  \ RETRIEVE protocol within scope. Keep in mind: Respect stage boundaries.\n   Learner does: Attempts\
+  \ retrieval, application, or comparison from memory before asking for support.\n   Example: Example:\
+  \ Respect stage boundaries.\n   Check: Has the learner attempted retrieval or application before any\
+  \ corrective help?\n   Then STOP and wait for the learner.\n2. Execute Method Actions In Order\n   Tutor\
+  \ does: Guide the learner to Execute method actions in order. Keep in mind: Capture required telemetry/artifacts.\n\
+  \   Learner does: Attempts retrieval, application, or comparison from memory before asking for support.\n\
+  \   Example: Example: Capture required telemetry/artifacts.\n   Check: Has the learner attempted retrieval\
+  \ or application before any corrective help?\n   Then STOP and wait for the learner.\n3. Emit Required\
+  \ Outputs And Handoff\n   Tutor does: Guide the learner to Emit required outputs and handoff. Keep in\
+  \ mind: Do not drift into another stage.\n   Learner does: Attempts retrieval, application, or comparison\
+  \ from memory before asking for support.\n   Example: Example: Do not drift into another stage.\n  \
+  \ Check: Has the learner attempted retrieval or application before any corrective help?\n   Then STOP\
+  \ and wait for the learner.\nStop conditions:\n- All required outputs are present and checkable: LearnerCaseResponse\
+  \ (attempt-first reasoning), ErrorTags (typed classification of errors), ConfidenceTag (learner self-assessment),\
+  \ CorrectiveFeedback (post-attempt only), NextTargetedProbe (follow-up question targeting identified\
+  \ gaps).\n- The method reaches its stop condition: Attempt-first response completed; Corrective feedback\
+  \ delivered.\n- The learner stays active and the tutor does not give away the answer before the required\
+  \ attempt or transformation.\nIf stuck: Reduce the scope, ask for a smaller retrieval target, compare\
+  \ with a near-neighbor, or route back to ENCODE/REFERENCE if recall keeps failing. Do not keep guessing\
+  \ indefinitely.\nDo not skip steps, do not solve the whole task at once, and do not present source claims\
+  \ as mnemonic or analogy artifacts."
+validation:
+  test_cases:
+  - topic: Previously encoded concepts that need comparison, application, or discrimination
+    expected_outputs: *id001
+    pass_criteria:
+    - All required outputs are present.
+    - The learner performs the required active step before the final artifact is given.
+    - The result stays within scope and matches the method format.
+  - topic: Brand-new material that has not been encoded yet
+    expected_outputs:
+    - Stuck protocol response
+    - Either a simpler scaffold or a method redirect
+    pass_criteria:
+    - The tutor does not force a bad fit.
+    - The tutor either shrinks scope or suggests a better-fitting method.
+    - The response remains honest about the mismatch.
+  acceptance_criteria:
+  - All required_outputs are present in the successful test case.
+  - No forbidden_moves are violated.
+  - The facilitation_prompt can be run without extra hidden context.
+  known_issues:
+  - LLMs may over-explain before the learner attempts the required move.
+  - LLMs may drift outside scope when the topic is broad or ambiguous.

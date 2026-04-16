@@ -1,122 +1,138 @@
 id: M-OVR-001
 name: Exit Ticket
 category: overlearn
+subcategory: ticket
 description: 'Answer three questions: (1) What did I learn? (2) What''s still muddy? (3) What''s my next action?'
-default_duration_min: 3
-energy_cost: low
-best_stage: consolidation
 control_stage: OVERLEARN
 status: validated
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
 tags:
 - reflection
 - meta
 - wrap
 - sop-core
-mechanisms:
-- metacognition
-- reflection
-- calibration
-- planning
-knobs:
-  intensity: medium
-  speed_pressure: soft
-constraints:
-  mastery_required_before_speed: true
-  burnout_cap_rounds: 3
-  preserve_accuracy_threshold: 0.8
+purpose: Exit Ticket exists to run a bounded exit ticket that closes the session with takeaways, muddy points, and a concrete
+  next action. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for initial teaching, discovery, or broad remediation. Use TEACH or REFERENCE first if understanding
+  is not already present.
+best_fit_topics:
+- session closure reflection
+- next-action planning
+- muddy-point capture
+poor_fit_topics:
+- full remediation lectures
+- raw assessment scoring
+- new concept introduction
+learner_state_required: Core understanding already exists, retrieval is reasonably stable, and the learner is ready for short
+  fluency reps rather than new instruction.
 inputs:
-- Completed study session
-- Exit ticket template (3 questions)
-- Session notes or artifacts for reference
+- description: Completed study session
+  required: true
+- description: Exit ticket template (3 questions)
+  required: true
+- description: Session notes or artifacts for reference
+  required: true
+outputs:
+- name: Exit ticket (all 3 questions answered)
+  description: A short session-closure artifact that captures takeaways, muddy points, and next actions.
+  format: free-response text
+- name: Key takeaways list (3-5 specific items)
+  description: A structured output for a bounded exit ticket that closes the session with takeaways, muddy points, and a concrete
+    next action.
+  format: bulleted or tabular list
+- name: Muddy points or weak anchors identified
+  description: A compact reference artifact with the minimum definitions, rules, examples, near-misses, and traps needed for
+    later retrieval.
+  format: formatted study artifact
+- name: Next action commitment (specific and actionable)
+  description: A structured output for a bounded exit ticket that closes the session with takeaways, muddy points, and a concrete
+    next action.
+  format: structured response
+- name: Questions for next session
+  description: A structured output for a bounded exit ticket that closes the session with takeaways, muddy points, and a concrete
+    next action.
+  format: structured response
+required_outputs:
+- Exit ticket (all 3 questions answered)
+- Key takeaways list (3-5 specific items)
+- Muddy points or weak anchors identified
+- Next action commitment (specific and actionable)
+- Questions for next session
+success_criteria:
+- All required outputs are present for M-OVR-001.
+- The rep set stays brief, fluent, and below the fatigue threshold.
+- The learner or tutor can point to the output artifact and reuse it later without ambiguity.
+partial_criteria:
+- 'One or more required outputs are present but one core artifact is incomplete: Exit ticket (all 3 questions answered).'
+- The method stayed in the correct stage but the final artifact needs one more pass to be reusable.
 steps:
 - step: 1
-  action: 'Answer Question 1: ''What did I learn today?'''
-  notes: Free recall format — blurt 3-5 key takeaways without looking at notes
+  name: 'Answer Question 1: ''What'
+  action: 'Answer Question 1: ''What did I learn today?''. Free recall format — blurt 3-5 key takeaways without looking at
+    notes'
+  tutor_does: 'Run answer question 1: ''what did i learn today?''. free recall format — blurt 3-5 key takeaways without looking
+    at notes as a bounded fluency rep and stop before fatigue lowers accuracy.'
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Is the learner already stable enough for fluency reps?
+  example: 'Tutor: "Keep this to a short, fluent rep set." Learner: "Understood."'
 - step: 2
-  action: 'Answer Question 2: ''What''s still muddy?'''
-  notes: Identify 1-2 specific confusions, gaps, or uncertain areas
+  name: 'Answer Question 2: ''What''s'
+  action: 'Answer Question 2: ''What''s still muddy?''. Identify 1-2 specific confusions, gaps, or uncertain areas'
+  tutor_does: 'Run answer question 2: ''what''s still muddy?''. identify 1-2 specific confusions, gaps, or uncertain areas
+    as a bounded fluency rep and stop before fatigue lowers accuracy.'
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Is this step complete and ready to advance?
+  example: Tutor asks for the next short answer and keeps the pace brisk.
 - step: 3
-  action: 'Answer Question 3: ''What''s my next action?'''
-  notes: Concrete, specific next step — not vague ("review more")
+  name: 'Answer Question 3: ''What''s'
+  action: 'Answer Question 3: ''What''s my next action?''. Concrete, specific next step — not vague ("review more")'
+  tutor_does: 'Run answer question 3: ''what''s my next action?''. concrete, specific next step — not vague ("review more")
+    as a bounded fluency rep and stop before fatigue lowers accuracy.'
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Is this step complete and ready to advance?
+  example: Tutor identifies one weak spot and asks for one more clean repetition.
 - step: 4
-  action: Review your blurt against session materials
-  notes: Did you miss any major points? Add them if critical.
+  name: Review your blurt against
+  action: Review your blurt against session materials. Did you miss any major points? Add them if critical.
+  tutor_does: Run review your blurt against session materials. did you miss any major points? add them if critical as a bounded
+    fluency rep and stop before fatigue lowers accuracy.
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Is this step complete and ready to advance?
+  example: Tutor closes the rep set and records the final level of fluency.
 - step: 5
-  action: Convert muddy points into specific questions for next session
-  notes: Transform 'I'm confused about X' into 'How does X work when Y?'
+  name: Convert muddy points into
+  action: Convert muddy points into specific questions for next session. Transform 'I'm confused about X' into 'How does X
+    work when Y?'
+  tutor_does: Run convert muddy points into specific questions for next session. transform 'i'm confused about x' into 'how
+    does x work when y?' as a bounded fluency rep and stop before fatigue lowers accuracy.
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Is the artifact ready to save or reuse later?
+  example: Tutor closes the rep set and records the final level of fluency.
 - step: 6
-  action: Log exit ticket to session record
-  notes: This feeds into scheduling and gap tracking systems
-outputs:
-- Exit ticket (3-part response)
-- Key takeaways list
-- Muddy points / weak anchors
-- Next action commitment
-- Questions for next session
-stop_criteria:
-- All three questions answered
-- Next action is specific and actionable
-- Exit ticket logged to session record
-failure_modes:
-- mode: Generic answers ("I learned a lot")
-  mitigation: Force specificity — name actual concepts, facts, or skills
-- mode: Skipping the muddy point question
-  mitigation: Something is always muddy — dig for it
-- mode: Vague next action ("study more")
-  mitigation: Next action must pass the "could I do this in 15 min?" test
-logging_fields:
-- takeaways_count
-- muddy_points_identified
-- next_action_specificity
-- exit_ticket_completed
-evidence:
-  citation: Tanner (2012)
-  finding: metacognitive reflection improves self-regulated learning
-  source: seed_methods.py
-evidence_raw: Tanner (2012); metacognitive reflection improves self-regulated learning
-facilitation_prompt: 'You are running M-OVR-001 (Exit Ticket) in OVERLEARN stage.
-
-  Execute this method card exactly and keep outputs deterministic.
-
-
-  Stage hard rules:
-
-  - Run bounded fluency reps.
-
-  - Respect fatigue and stop caps.
-
-  - Prioritize durable retention over speed only.
-
-
-  Required outputs:
-
-  - Exit ticket (3-part response)
-
-  - Key takeaways list
-
-  - Muddy points / weak anchors
-
-  - Next action commitment
-
-  - Questions for next session
-
-
-  Stop conditions:
-
-  - All three questions answered
-
-  - Next action is specific and actionable
-
-  - Exit ticket logged to session record
-
-
-  If required inputs are missing, request only the minimum needed input and continue.
-
-  '
-gating_rules:
-- Run only after stable retrieval performance.
-- Stop after cap is met to avoid burnout loops.
-artifact_type: notes
+  name: Log exit ticket to
+  action: Log exit ticket to session record. This feeds into scheduling and gap tracking systems
+  tutor_does: Run log exit ticket to session record. this feeds into scheduling and gap tracking systems as a bounded fluency
+    rep and stop before fatigue lowers accuracy.
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Is this step complete and ready to advance?
+  example: Tutor closes the rep set and records the final level of fluency.
+constraints:
+- rule: Understanding must already exist before fluency reps begin
+  why: Overlearning hardens what is already known; it does not teach from scratch.
+- rule: Keep reps short and bounded to avoid fatigue loops
+  why: Excess repetition lowers accuracy and wastes the fluency window.
+- rule: Stop when the cap is reached or accuracy starts to sag
+  why: The point is durable fluency, not endless repetition.
+- rule: Do not introduce new material during the rep set
+  why: New content belongs in TEACH or REFERENCE, not OVERLEARN.
 allowed_moves:
 - Prompt all three exit ticket questions in sequence
 - Require specific, concrete answers (not generic responses)
@@ -125,6 +141,10 @@ allowed_moves:
 - Review blurt against session materials for completeness
 - Convert muddy points into specific questions for next session
 - Log exit ticket to session record
+- Run short fluent reps on already-understood material
+- Tighten wording and reduce hesitation across repetitions
+- Stop when accuracy falls or the cap is reached
+- Convert the stable material into an artifact for later review
 forbidden_moves:
 - Accept generic answers ("I learned a lot", "study more")
 - Skip any of the three mandatory questions
@@ -133,9 +153,117 @@ forbidden_moves:
 - Introduce new material not covered in the session
 - Generate the exit ticket FOR the learner without their input
 - Accept "nothing is muddy" without brief verification
-required_outputs:
-- Exit ticket (all 3 questions answered)
-- Key takeaways list (3-5 specific items)
-- Muddy points or weak anchors identified
-- Next action commitment (specific and actionable)
-- Questions for next session
+- Introduce brand-new content
+- Push through fatigue after the cap
+- Let the session drift into broad teaching
+stuck_protocol: Shorten the rep, narrow the item, and stop before fatigue changes the quality of the response.
+failure_modes:
+- mode: The session turns into new teaching
+  detection: The tutor starts adding unfamiliar content or long explanations.
+  recovery: Cut back to the known material and keep the rep set bounded.
+  fallback_method: M-REF-003
+- mode: Fluency collapses from fatigue
+  detection: Latency rises and errors accumulate across repeated reps.
+  recovery: Stop the set early, capture the weak item, and defer another rep to later.
+  fallback_method: M-RET-003
+- mode: The output becomes bloated
+  detection: Responses become long, unfocused, or repetitive.
+  recovery: Require shorter answers and a tighter format, then continue.
+  fallback_method: M-OVR-002
+default_duration_min: 3
+energy_cost: low
+best_stage: consolidation
+mechanisms:
+- metacognition
+- reflection
+- calibration
+- planning
+evidence:
+  citation: Tanner (2012)
+  finding: metacognitive reflection improves self-regulated learning
+  source: seed_methods.py
+knobs:
+  default_duration_min: 3
+  energy_cost: low
+  best_stage: consolidation
+related_methods:
+- id: M-RET-001
+  relationship: Brain dumps inform what is still retrievable
+- id: M-REF-003
+  relationship: A compact anchor helps turn muddy points into future checks
+facilitation_prompt: |-
+  You are a tutor running M-OVR-001 (Exit Ticket) in OVERLEARN mode.
+  ROLE: run bounded fluency reps that harden already-understood material.
+  OBJECTIVE: Exit Ticket exists to run a bounded exit ticket that closes the session with takeaways, muddy points, and a concrete next action. It turns the current stage into a clean, reusable signal instead of a vague study session.
+  SCOPE: Use only the loaded source material and the learner's current responses.
+  RULES:
+  - Understanding must already exist before fluency reps begin
+  - Keep reps short and bounded to avoid fatigue loops
+  - Stop when the cap is reached or accuracy starts to sag
+  - Do not introduce new material during the rep set
+
+  RUN ONE STEP AT A TIME. Do not skip ahead. Wait for my reply before moving on.
+  1. Answer Question 1: 'What — Answer Question 1: 'What did I learn today?'. Free recall format — blurt 3-5 key takeaways without looking at notes
+     Example: Tutor: "Keep this to a short, fluent rep set." Learner: "Understood."
+     Check: Is the learner already stable enough for fluency reps?
+     Then stop and wait.
+  2. Answer Question 2: 'What's — Answer Question 2: 'What's still muddy?'. Identify 1-2 specific confusions, gaps, or uncertain areas
+     Example: Tutor asks for the next short answer and keeps the pace brisk.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  3. Answer Question 3: 'What's — Answer Question 3: 'What's my next action?'. Concrete, specific next step — not vague ("review more")
+     Example: Tutor identifies one weak spot and asks for one more clean repetition.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  4. Review your blurt against — Review your blurt against session materials. Did you miss any major points? Add them if critical.
+     Example: Tutor closes the rep set and records the final level of fluency.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  5. Convert muddy points into — Convert muddy points into specific questions for next session. Transform 'I'm confused about X' into 'How does X work when Y?'
+     Example: Tutor closes the rep set and records the final level of fluency.
+     Check: Is the artifact ready to save or reuse later?
+     Then stop and wait.
+  6. Log exit ticket to — Log exit ticket to session record. This feeds into scheduling and gap tracking systems
+     Example: Tutor closes the rep set and records the final level of fluency.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+
+  REQUIRED OUTPUTS:
+  - Exit ticket (all 3 questions answered) (free-response text)
+  - Key takeaways list (3-5 specific items) (bulleted or tabular list)
+  - Muddy points or weak anchors identified (formatted study artifact)
+  - Next action commitment (specific and actionable) (structured response)
+  - Questions for next session (structured response)
+
+  STOP CONDITIONS:
+  - Stop when every required output exists and the final check passes.
+  - Stop early if the time cap or item cap is reached.
+  - Stop if the learner has crossed into a different stage or the format is no longer useful.
+
+  IF STUCK:
+  Shorten the rep, narrow the item, and stop before fatigue changes the quality of the response.
+  If that still fails, reduce scope to one smaller item, one row, or one rep and continue.
+validation:
+  test_cases:
+  - topic: session closure reflection
+    expected_outputs:
+    - Exit ticket (all 3 questions answered)
+    - Key takeaways list (3-5 specific items)
+    - Muddy points or weak anchors identified
+    pass_criteria:
+    - All required outputs for M-OVR-001 are present.
+    - The response stays inside the correct stage rules.
+  - topic: next-action planning
+    expected_outputs:
+    - Muddy points or weak anchors identified
+    - Next action commitment (specific and actionable)
+    - Questions for next session
+    pass_criteria:
+    - The artifact is reusable without extra interpretation.
+    - No forbidden move is triggered during the run.
+  acceptance_criteria:
+  - Every required output is present and checkable.
+  - No forbidden moves from the source file are violated.
+  - The facilitation prompt can be pasted into ChatGPT and run without extra context.
+  known_issues:
+  - Fluency reps can become fatiguing or repetitive unless the tutor stops at the cap and keeps items bounded.

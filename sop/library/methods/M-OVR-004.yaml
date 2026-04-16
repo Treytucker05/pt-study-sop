@@ -1,12 +1,15 @@
 id: M-OVR-004
 name: Post-Learn Brain Dump
 category: overlearn
-description: 'Close all materials. Write everything you remember from the session — stories, connections, details, anything. Then open materials, compare, identify gaps, and fill them in. Different from Free Recall Blurt: this is comprehensive session-level closure, not topic-level retrieval practice.'
-default_duration_min: 7
-energy_cost: medium
-best_stage: consolidation
+subcategory: closure
+description: 'Close all materials. Write everything you remember from the session — stories, connections, details, anything.
+  Then open materials, compare, identify gaps, and fill them in. Different from Free Recall Blurt: this is comprehensive session-level
+  closure, not topic-level retrieval practice.'
 control_stage: OVERLEARN
 status: core
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
 tags:
 - recall
 - brain-dump
@@ -14,115 +17,126 @@ tags:
 - gap-detection
 - closure
 - session-wrap
-mechanisms:
-- retrieval
-- generation
-- metacognition
-- consolidation
-- error_detection
-stipulations:
-- All materials must be closed during the dump phase
-- Dump is comprehensive (whole session), not focused on one topic
-- Gap-fill phase is targeted — only fill identified gaps, don't re-study everything
-- Time-capped at 7 minutes total (5 dump + 2 gap-fill)
-when_to_use:
-- End of any learning session as closure activity
-- After encoding + retrieval blocks to consolidate
-- When learner wants metacognitive summary of what stuck vs. what didn't
-when_not_to_use:
-- Very short sessions (<15 min) where Exit Ticket suffices
-- Pure drill/speed sessions where Exit Ticket is better fit
-knobs:
-  output_format: bullets
-  feedback_style: strict_gap_analysis
-  priming_scope: module_all
-constraints:
-  closed_note_first: true
-  time_cap_minutes: 7
-  dump_before_review: true
+purpose: Post-Learn Brain Dump exists to run a comprehensive post-learn brain dump that captures the session story, compares
+  against source material, and fills gaps. It turns the current stage into a clean, reusable signal instead of a vague study
+  session.
+not_for: This is not for initial teaching, discovery, or broad remediation. Use TEACH or REFERENCE first if understanding
+  is not already present.
+best_fit_topics:
+- session-level closure recall
+- compare-and-repair
+- gap filling
+poor_fit_topics:
+- narrow topic recall only
+- item-by-item tutoring
+- deep new teaching
+learner_state_required: Core understanding already exists, retrieval is reasonably stable, and the learner is ready for short
+  fluency reps rather than new instruction.
 inputs:
-- Completed study session (all blocks done)
-- Blank paper or text area
-- Timer (5 min dump + 2 min gap-fill)
-- Session materials (closed during dump, opened for gap-fill)
+- description: Completed study session (all blocks done)
+  required: true
+- description: Blank paper or text area
+  required: true
+- description: Timer (5 min dump + 2 min gap-fill)
+  required: true
+- description: Session materials (closed during dump, opened for gap-fill)
+  required: true
+outputs:
+- name: Brain dump text (raw recall output)
+  description: A raw recall transcript with gaps marked, followed by comparison notes and gap repair.
+  format: free-response text
+- name: Gap list (what was missing or wrong)
+  description: A structured output for a comprehensive post-learn brain dump that captures the session story, compares against
+    source material, and fills gaps.
+  format: bulleted or tabular list
+- name: Gap-fill annotations (one-line corrections)
+  description: A structured output for a comprehensive post-learn brain dump that captures the session story, compares against
+    source material, and fills gaps.
+  format: structured response
+- name: Session retention estimate (percentage of material recalled)
+  description: A structured output for a comprehensive post-learn brain dump that captures the session story, compares against
+    source material, and fills gaps.
+  format: structured response
+required_outputs:
+- Brain dump text (raw recall output)
+- Gap list (what was missing or wrong)
+- Gap-fill annotations (one-line corrections)
+- Session retention estimate (percentage of material recalled)
+success_criteria:
+- All required outputs are present for M-OVR-004.
+- The rep set stays brief, fluent, and below the fatigue threshold.
+- The learner or tutor can point to the output artifact and reuse it later without ambiguity.
+partial_criteria:
+- 'One or more required outputs are present but one core artifact is incomplete: Brain dump text (raw recall output).'
+- The method stayed in the correct stage but the final artifact needs one more pass to be reusable.
 steps:
 - step: 1
-  action: 'Close ALL materials — notes, slides, textbook, everything'
-  notes: 'Materials must be completely out of sight'
+  name: Close ALL materials —
+  action: Close ALL materials — notes, slides, textbook, everything. Materials must be completely out of sight
+  tutor_does: Run close all materials — notes, slides, textbook, everything. materials must be completely out of sight as
+    a bounded fluency rep and stop before fatigue lowers accuracy.
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Is the learner already stable enough for fluency reps?
+  example: 'Tutor: "Keep this to a short, fluent rep set." Learner: "Understood."'
 - step: 2
-  action: 'Set timer for 5 minutes. Write everything you remember from this session'
-  notes: 'Stream of consciousness. Stories, facts, connections, pictures, analogies — anything that comes to mind'
+  name: Set timer for 5
+  action: Set timer for 5 minutes. Write everything you remember from this session. Stream of consciousness. Stories, facts,
+    connections, pictures, analogies — anything that comes to mind
+  tutor_does: Run set timer for 5 minutes. write everything you remember from this session. stream of consciousness. stories,
+    facts, connections, pictures, analogies — anything that comes to mind as a bounded fluency rep and stop before fatigue
+    lowers accuracy.
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Is this step complete and ready to advance?
+  example: Tutor asks for the next short answer and keeps the pace brisk.
 - step: 3
-  action: 'When stuck, write "?" and keep going'
-  notes: 'Gaps are data, not failures. Mark them and move on'
+  name: When stuck, write "?"
+  action: When stuck, write "?" and keep going. Gaps are data, not failures. Mark them and move on
+  tutor_does: Run when stuck, write "?" and keep going. gaps are data, not failures. mark them and move on as a bounded fluency
+    rep and stop before fatigue lowers accuracy.
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Is this step complete and ready to advance?
+  example: Tutor identifies one weak spot and asks for one more clean repetition.
 - step: 4
-  action: 'Timer ends. Open materials and compare your dump to the session content'
-  notes: 'Spend max 2 minutes on this comparison'
+  name: Timer ends. Open materials
+  action: Timer ends. Open materials and compare your dump to the session content. Spend max 2 minutes on this comparison
+  tutor_does: Run timer ends. open materials and compare your dump to the session content. spend max 2 minutes on this comparison
+    as a bounded fluency rep and stop before fatigue lowers accuracy.
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Has the learner compared the output against the source or answer key?
+  example: Tutor closes the rep set and records the final level of fluency.
 - step: 5
-  action: 'Identify gaps — what did you miss? What was wrong?'
-  notes: 'Circle or highlight missing items. These are priority review targets'
+  name: Identify gaps — what
+  action: Identify gaps — what did you miss? What was wrong?. Circle or highlight missing items. These are priority review
+    targets
+  tutor_does: Run identify gaps — what did you miss? what was wrong?. circle or highlight missing items. these are priority
+    review targets as a bounded fluency rep and stop before fatigue lowers accuracy.
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Is this step complete and ready to advance?
+  example: Tutor closes the rep set and records the final level of fluency.
 - step: 6
-  action: 'Fill gaps with brief annotations (not full re-study)'
-  notes: 'One-line corrections or additions only. This is gap-fill, not re-learning'
-outputs:
-- Brain dump text (raw recall)
-- Gap list (what was missing or wrong)
-- Gap-fill annotations
-- Session retention estimate (percentage of material recalled)
-stop_criteria:
-- 7-minute total timer ends (hard stop)
-- Dump phase complete + gap comparison done
-- At least one gap identified and annotated
-failure_modes:
-- mode: Peeking during dump phase
-  mitigation: 'Physically remove materials from workspace before starting'
-- mode: Spending too long on gap-fill (turning into re-study)
-  mitigation: '2-minute hard cap on gap-fill. One-line annotations only'
-- mode: Writing nothing because "I forgot everything"
-  mitigation: 'Start with any single fact or story fragment. Memory cascades from there'
-- mode: Skipping the gap comparison
-  mitigation: Gap comparison is mandatory. It reveals what did not encode.
-logging_fields:
-- brain_dump_word_count
-- gaps_identified
-- rsr_estimate
-- total_time
-- total_time_spent
-evidence:
-  citation: RetrievalPractice.org (2017)
-  finding: '5-minute free recall sessions strengthen past and future learning, improve organization, and identify gaps without stakes'
-  source: grok-session
-evidence_raw: 'RetrievalPractice.org (2017); free recall strengthens retention. Roediger & Karpicke (2006); testing effect. Karpicke & Blunt (2011); retrieval > concept mapping for retention'
-evidence_strength: high
-primary_citations:
-- Roediger & Karpicke (2006)
-- Karpicke & Blunt (2011)
-- RetrievalPractice.org (2017)
-gating_rules:
-- Run only after encoding and retrieval blocks are complete.
-- Materials must be closed during dump phase.
-- Gap-fill is targeted, not comprehensive re-study.
-artifact_type: notes
-facilitation_prompt: |
-  You are running M-OVR-004 (Post-Learn Brain Dump) in OVERLEARN stage.
-  Guide the learner through comprehensive session-level free recall and gap-fill.
-
-  Requirements:
-  - Ensure ALL materials are closed before dump phase begins.
-  - Set timer for 5 minutes. Learner writes everything remembered ({dump_format}).
-  - When stuck, write "?" and keep going — gaps are data, not failures.
-  - After 5 min, open materials and compare (max 2 min).
-  - Identify gaps — what was missed or wrong?
-  - Fill gaps with one-line annotations only ({gap_fill_mode}).
-
-  Return exactly:
-  1) DumpWordCount
-  2) GapCount (items missed or wrong)
-  3) GapFillAnnotations
-  4) RetentionEstimate (percentage of session material recalled)
-
-  This builds recall fluency at the session level — comprehensive, not item-by-item.
-  Hard stop at {time_cap_minutes} minutes total. This is closure, not re-learning.
+  name: Fill gaps with brief
+  action: Fill gaps with brief annotations (not full re-study). One-line corrections or additions only. This is gap-fill,
+    not re-learning
+  tutor_does: Run fill gaps with brief annotations (not full re-study). one-line corrections or additions only. this is gap-fill,
+    not re-learning as a bounded fluency rep and stop before fatigue lowers accuracy.
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Is this step complete and ready to advance?
+  example: Tutor closes the rep set and records the final level of fluency.
+constraints:
+- rule: Understanding must already exist before fluency reps begin
+  why: Overlearning hardens what is already known; it does not teach from scratch.
+- rule: Keep reps short and bounded to avoid fatigue loops
+  why: Excess repetition lowers accuracy and wastes the fluency window.
+- rule: Stop when the cap is reached or accuracy starts to sag
+  why: The point is durable fluency, not endless repetition.
+- rule: Do not introduce new material during the rep set
+  why: New content belongs in TEACH or REFERENCE, not OVERLEARN.
 allowed_moves:
 - Ensure all materials are closed before dump phase begins
 - Set timer for 5 minutes for free recall dump
@@ -133,6 +147,10 @@ allowed_moves:
 - Fill gaps with one-line annotations only (not full re-study)
 - Compute session retention estimate
 - Encourage starting with any single fragment if learner feels blank
+- Run short fluent reps on already-understood material
+- Tighten wording and reduce hesitation across repetitions
+- Stop when accuracy falls or the cap is reached
+- Convert the stable material into an artifact for later review
 forbidden_moves:
 - Allow peeking at materials during the dump phase
 - Exceed 7-minute total time cap (5 dump + 2 gap-fill)
@@ -142,8 +160,118 @@ forbidden_moves:
 - Provide new teaching content during this block
 - Allow gap-fill annotations longer than one line per gap
 - Run this for very short sessions (<15 min) where Exit Ticket suffices
-required_outputs:
-- Brain dump text (raw recall output)
-- Gap list (what was missing or wrong)
-- Gap-fill annotations (one-line corrections)
-- Session retention estimate (percentage of material recalled)
+- Introduce brand-new content
+- Push through fatigue after the cap
+- Let the session drift into broad teaching
+stuck_protocol: Shorten the rep, narrow the item, and stop before fatigue changes the quality of the response.
+failure_modes:
+- mode: The session turns into new teaching
+  detection: The tutor starts adding unfamiliar content or long explanations.
+  recovery: Cut back to the known material and keep the rep set bounded.
+  fallback_method: M-REF-003
+- mode: Fluency collapses from fatigue
+  detection: Latency rises and errors accumulate across repeated reps.
+  recovery: Stop the set early, capture the weak item, and defer another rep to later.
+  fallback_method: M-RET-003
+- mode: The output becomes bloated
+  detection: Responses become long, unfocused, or repetitive.
+  recovery: Require shorter answers and a tighter format, then continue.
+  fallback_method: M-OVR-002
+default_duration_min: 7
+energy_cost: medium
+best_stage: consolidation
+mechanisms:
+- retrieval
+- generation
+- metacognition
+- consolidation
+- error_detection
+evidence:
+  citation: RetrievalPractice.org (2017)
+  finding: 5-minute free recall sessions strengthen past and future learning, improve organization, and identify gaps without
+    stakes
+  source: grok-session
+knobs:
+  default_duration_min: 7
+  energy_cost: medium
+  best_stage: consolidation
+related_methods:
+- id: M-RET-001
+  relationship: Post-learn dumps compare recall against prior retrieval output
+- id: M-REF-003
+  relationship: A one-page anchor is the best comparison artifact
+facilitation_prompt: |-
+  You are a tutor running M-OVR-004 (Post-Learn Brain Dump) in OVERLEARN mode.
+  ROLE: run bounded fluency reps that harden already-understood material.
+  OBJECTIVE: Post-Learn Brain Dump exists to run a comprehensive post-learn brain dump that captures the session story, compares against source material, and fills gaps. It turns the current stage into a clean, reusable signal instead of a vague study session.
+  SCOPE: Use only the loaded source material and the learner's current responses.
+  RULES:
+  - Understanding must already exist before fluency reps begin
+  - Keep reps short and bounded to avoid fatigue loops
+  - Stop when the cap is reached or accuracy starts to sag
+  - Do not introduce new material during the rep set
+
+  RUN ONE STEP AT A TIME. Do not skip ahead. Wait for my reply before moving on.
+  1. Close ALL materials — — Close ALL materials — notes, slides, textbook, everything. Materials must be completely out of sight
+     Example: Tutor: "Keep this to a short, fluent rep set." Learner: "Understood."
+     Check: Is the learner already stable enough for fluency reps?
+     Then stop and wait.
+  2. Set timer for 5 — Set timer for 5 minutes. Write everything you remember from this session. Stream of consciousness. Stories, facts, connections, pictures, analogies — anything that comes to mind
+     Example: Tutor asks for the next short answer and keeps the pace brisk.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  3. When stuck, write "?" — When stuck, write "?" and keep going. Gaps are data, not failures. Mark them and move on
+     Example: Tutor identifies one weak spot and asks for one more clean repetition.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  4. Timer ends. Open materials — Timer ends. Open materials and compare your dump to the session content. Spend max 2 minutes on this comparison
+     Example: Tutor closes the rep set and records the final level of fluency.
+     Check: Has the learner compared the output against the source or answer key?
+     Then stop and wait.
+  5. Identify gaps — what — Identify gaps — what did you miss? What was wrong?. Circle or highlight missing items. These are priority review targets
+     Example: Tutor closes the rep set and records the final level of fluency.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  6. Fill gaps with brief — Fill gaps with brief annotations (not full re-study). One-line corrections or additions only. This is gap-fill, not re-learning
+     Example: Tutor closes the rep set and records the final level of fluency.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+
+  REQUIRED OUTPUTS:
+  - Brain dump text (raw recall output) (free-response text)
+  - Gap list (what was missing or wrong) (bulleted or tabular list)
+  - Gap-fill annotations (one-line corrections) (structured response)
+  - Session retention estimate (percentage of material recalled) (structured response)
+
+  STOP CONDITIONS:
+  - Stop when every required output exists and the final check passes.
+  - Stop early if the time cap or item cap is reached.
+  - Stop if the learner has crossed into a different stage or the format is no longer useful.
+
+  IF STUCK:
+  Shorten the rep, narrow the item, and stop before fatigue changes the quality of the response.
+  If that still fails, reduce scope to one smaller item, one row, or one rep and continue.
+validation:
+  test_cases:
+  - topic: session-level closure recall
+    expected_outputs:
+    - Brain dump text (raw recall output)
+    - Gap list (what was missing or wrong)
+    - Gap-fill annotations (one-line corrections)
+    pass_criteria:
+    - All required outputs for M-OVR-004 are present.
+    - The response stays inside the correct stage rules.
+  - topic: compare-and-repair
+    expected_outputs:
+    - Gap list (what was missing or wrong)
+    - Gap-fill annotations (one-line corrections)
+    - Session retention estimate (percentage of material recalled)
+    pass_criteria:
+    - The artifact is reusable without extra interpretation.
+    - No forbidden move is triggered during the run.
+  acceptance_criteria:
+  - Every required output is present and checkable.
+  - No forbidden moves from the source file are violated.
+  - The facilitation prompt can be pasted into ChatGPT and run without extra context.
+  known_issues:
+  - Fluency reps can become fatiguing or repetitive unless the tutor stops at the cap and keeps items bounded.

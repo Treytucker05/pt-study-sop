@@ -1,91 +1,107 @@
 id: M-CAL-004
 name: Story Confidence Tag
 category: calibrate
-description: 'After receiving the big-picture narrative overview, rate your confidence in the story as a whole. Can you retell the narrative thread? Where does the story break down? Light-touch calibration that respects top-down learners — no item-level quizzing.'
-default_duration_min: 2
-energy_cost: low
-best_stage: first_exposure
+subcategory: story
+description: After receiving the big-picture narrative overview, rate your confidence in the story as a whole. Can you retell
+  the narrative thread? Where does the story break down? Light-touch calibration that respects top-down learners — no item-level
+  quizzing.
 control_stage: CALIBRATE
 status: core
-calibrate_phase: micro_optional
-calibrate_scope: opening_optional
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
 tags:
 - calibrate
 - confidence
 - narrative
 - top-down
 - metacognition
-mechanisms:
-- metacognitive_monitoring
-- calibration
-- schema_assessment
-stipulations:
-- Must happen AFTER the learner has received a narrative overview, not before
-- No item-level questions — this is story-level confidence only
-- Confidence captured before any corrective feedback
-- Respects the top-down flow — does not break narrative immersion
-- Optional MICRO-CALIBRATE supplement only; does not replace FULL CALIBRATE (M-CAL-002 + M-CAL-003)
-when_to_use:
-- After a narrative PRIME or TEACH story chunk
-- When learner prefers top-down big-picture processing
-- As an optional supplement before FULL CALIBRATE probes
-when_not_to_use:
-- As the only calibrate method in a first-exposure chain
-- After FULL CALIBRATE has already been completed for the same scope
-- When material has no narrative structure
-knobs:
-  confidence_scale: HML
-constraints:
-  non_assessment: true
-  narrative_level_only: true
-  no_item_quizzing: true
+purpose: Story Confidence Tag exists to run a light-touch story-confidence check that audits whether the learner can retell
+  the big-picture narrative thread. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for teaching new material, extended explanation, or open-ended discussion. Use TEACH when the goal is
+  instruction and use REFERENCE when the goal is artifact building.
+best_fit_topics:
+- big-picture narrative threads
+- top-down retell confidence
+- global story integrity
+poor_fit_topics:
+- item-level quizzing
+- dense factual drilling
+- diagnostic scoring of many facts
+learner_state_required: A big-picture story or overview has already been presented and the learner can judge narrative confidence
+  without item-level quizzing.
 inputs:
-- Completed narrative overview from PRIME or early ENCODE
-- The story thread the learner just received
+- description: Completed narrative overview from PRIME or early ENCODE
+  required: true
+- description: The story thread the learner just received
+  required: true
+outputs:
+- name: Story confidence rating (1-3 scale)
+  description: A calibrated diagnostic output that supports routing for a light-touch story-confidence check that audits whether
+    the learner can retell the big-picture narrative thread.
+  format: structured response
+- name: Fuzzy zones list (narrative breakdown points)
+  description: A calibrated diagnostic output that supports routing for a light-touch story-confidence check that audits whether
+    the learner can retell the big-picture narrative thread.
+  format: bulleted or tabular list
+- name: Priority encoding targets (focus areas for ENCODE phase)
+  description: A calibrated diagnostic output that supports routing for a light-touch story-confidence check that audits whether
+    the learner can retell the big-picture narrative thread.
+  format: structured response
+- name: Optional probe seed suggestions for M-CAL-002
+  description: A tagged retrieval-question bank that can be reused later for practice or deck construction.
+  format: bulleted or tabular list
+required_outputs:
+- Story confidence rating (1-3 scale)
+- Fuzzy zones list (narrative breakdown points)
+- Priority encoding targets (focus areas for ENCODE phase)
+- Optional probe seed suggestions for M-CAL-002
+success_criteria:
+- All required outputs are present for M-CAL-004.
+- The block remains diagnostic only and no teaching is introduced before the attempt.
+- The learner or tutor can point to the output artifact and reuse it later without ambiguity.
+partial_criteria:
+- 'One or more required outputs are present but one core artifact is incomplete: Story confidence rating (1-3 scale).'
+- The method stayed in the correct stage but the final artifact needs one more pass to be reusable.
 steps:
 - step: 1
-  action: 'Ask: "Can you see the whole story in your head? Rate 1-3: (1) fuzzy, (2) partial, (3) clear"'
-  notes: 'Quick gut check — no overthinking'
+  name: 'Ask: "Can you see'
+  action: 'Ask: "Can you see the whole story in your head? Rate 1-3: (1) fuzzy, (2) partial, (3) clear". Quick gut check —
+    no overthinking'
+  tutor_does: 'Present ask: "can you see the whole story in your head? rate 1-3: (1) fuzzy, (2) partial, (3) clear". quick
+    gut check — no overthinking as a short diagnostic move and do not teach the answer before the attempt.'
+  learner_does: Attempts the item, reports confidence, and accepts routing feedback without turning the block into tutoring.
+  max_lines: 6
+  check: Is the scope set and is the learner ready for a diagnostic attempt?
+  example: 'Tutor: "Ask: "Can you see the whole story in your head? Rate 1-3: (1) fuzzy, (2) partial, (3) clear". Quick gut
+    check — no overthinking." Learner: "Ready."'
 - step: 2
-  action: 'Ask: "Where does the story break down or get fuzzy?"'
-  notes: 'Identify the weakest part of the narrative thread'
+  name: 'Ask: "Where does the'
+  action: 'Ask: "Where does the story break down or get fuzzy?". Identify the weakest part of the narrative thread'
+  tutor_does: 'Present ask: "where does the story break down or get fuzzy?". identify the weakest part of the narrative thread
+    as a short diagnostic move and do not teach the answer before the attempt.'
+  learner_does: Attempts the item, reports confidence, and accepts routing feedback without turning the block into tutoring.
+  max_lines: 6
+  check: Is this step complete and ready to advance?
+  example: Tutor shows one brief probe and records answer, confidence, and latency.
 - step: 3
-  action: 'Tag fuzzy areas as priority targets for deeper encoding'
-  notes: 'These become the focus areas for ENCODE phase'
-outputs:
-- Story confidence rating (1-3)
-- Fuzzy zones list (narrative breakdown points)
-- Priority encoding targets
-stop_criteria:
-- Confidence rating captured
-- At least one fuzzy zone identified (or explicit "none — it all clicks")
-- Takes less than 2 minutes
-failure_modes:
-- mode: Learner says they got it all when they did not
-  mitigation: Ask them to retell the story arc in 2 sentences. If they cannot, recalibrate.
-- mode: Turns into a quiz
-  mitigation: 'Stop. This is story-level confidence only, not item testing'
-- mode: Takes too long
-  mitigation: 'Hard cap at 2 minutes. Quick gut check, not deep analysis'
-logging_fields:
-- average_confidence
-- gaps_identified
-- priority_set
-evidence:
-  citation: Metcalfe (2017)
-  finding: 'Metacognitive monitoring at the schema level identifies high-value encoding targets'
-  source: grok-session
-evidence_raw: 'Metcalfe (2017); calibration monitoring. Structural Learning (2023); top-down processing reduces overload for big-picture learners'
-evidence_strength: moderate
-primary_citations:
-- Metcalfe (2017)
-- Dunlosky et al. (2013)
-gating_rules:
-- Capture confidence before correctness feedback.
-- Diagnostic only — do not teach or explain content.
-- Stay at narrative/story level, not item level.
-- Do not treat this output as a substitute for FULL CALIBRATE telemetry.
-artifact_type: notes
+  name: Tag fuzzy areas as
+  action: Tag fuzzy areas as priority targets for deeper encoding. These become the focus areas for ENCODE phase
+  tutor_does: Present tag fuzzy areas as priority targets for deeper encoding. these become the focus areas for encode phase
+    as a short diagnostic move and do not teach the answer before the attempt.
+  learner_does: Attempts the item, reports confidence, and accepts routing feedback without turning the block into tutoring.
+  max_lines: 8
+  check: Is this step complete and ready to advance?
+  example: Tutor summarizes the weakest pattern and states whether the learner is ready to route onward.
+constraints:
+- rule: Diagnostic only; no teaching before or during the probe
+  why: Calibration must measure readiness, not change the learner state by explanation.
+- rule: Require one genuine attempt before hints or answer reveal
+  why: The diagnostic signal is only trustworthy when the learner has to produce a response first.
+- rule: Keep scope tied to the active objective set
+  why: Calibration is only useful when the items match what the learner is supposed to know.
+- rule: Respect item-count and time caps from the source file
+  why: Short calibration blocks preserve low-friction routing and reduce fatigue.
 allowed_moves:
 - Ask learner to rate story-level confidence on configured scale (1-3 or HML)
 - Ask where the narrative breaks down or gets fuzzy
@@ -94,6 +110,10 @@ allowed_moves:
 - Recalibrate if learner claims full understanding but cannot retell story arc
 - Keep interaction under 2-minute hard cap
 - Hand off flagged fuzzy zones into M-CAL-002 probe design
+- Run short scored probes inside the declared scope
+- Capture answer, confidence, and latency for each item
+- Provide only minimal clarification after the learner attempts an item
+- Summarize readiness and route the learner to the next stage
 forbidden_moves:
 - Present item-level quiz questions (story-level confidence only)
 - Teach or explain content during calibration (diagnostic only)
@@ -103,27 +123,104 @@ forbidden_moves:
 - Turn this into a quiz or pretest
 - Provide corrective feedback on story content (capture only)
 - Use this card as a replacement for M-CAL-002 / M-CAL-003
-required_outputs:
-- Story confidence rating (1-3 scale)
-- Fuzzy zones list (narrative breakdown points)
-- Priority encoding targets (focus areas for ENCODE phase)
-- Optional probe seed suggestions for M-CAL-002
-facilitation_prompt: |
-  You are running M-CAL-004 (Story Confidence Tag) in CALIBRATE stage.
-  Capture optional narrative-level MICRO-CALIBRATE confidence after the big-picture overview.
+- Teach the concept before the learner attempts the probe
+- Reveal the full answer before the attempt
+- Expand beyond the active objective scope
+stuck_protocol: Use one simpler probe, narrow the objective scope, and keep the block diagnostic only.
+failure_modes:
+- mode: Learner asks for teaching before attempting
+  detection: The response contains requests for explanation instead of a first attempt.
+  recovery: Restate the diagnostic rule, reduce the item to one short probe, and require an attempt.
+  fallback_method: M-CAL-004
+- mode: Probe is too broad to score cleanly
+  detection: The learner stalls, guesses, or gives a very long response with no clear target.
+  recovery: Narrow the scope to one objective or one subskill and rerun the probe.
+  fallback_method: M-CAL-001
+- mode: The block drifts into TEACH
+  detection: The tutor starts explaining content or giving step-by-step instruction.
+  recovery: Stop the explanation, reset to a diagnostic prompt, and summarize only the readiness signal.
+  fallback_method: M-CAL-003
+default_duration_min: 2
+energy_cost: low
+best_stage: first_exposure
+mechanisms:
+- metacognitive_monitoring
+- calibration
+- schema_assessment
+evidence:
+  citation: Metcalfe (2017)
+  finding: Metacognitive monitoring at the schema level identifies high-value encoding targets
+  source: grok-session
+knobs:
+  default_duration_min: 2
+  energy_cost: low
+  best_stage: first_exposure
+related_methods:
+- id: M-CAL-001
+  relationship: Use when a quick readiness signal is enough
+- id: M-CAL-003
+  relationship: Follow with weakness ranking if the story check reveals gaps
+facilitation_prompt: |-
+  You are a tutor running M-CAL-004 (Story Confidence Tag) in CALIBRATE mode.
+  ROLE: diagnose readiness and route the learner without teaching content.
+  OBJECTIVE: Story Confidence Tag exists to run a light-touch story-confidence check that audits whether the learner can retell the big-picture narrative thread. It turns the current stage into a clean, reusable signal instead of a vague study session.
+  SCOPE: Use only the loaded source material and the learner's current responses.
+  RULES:
+  - Diagnostic only; no teaching before or during the probe
+  - Require one genuine attempt before hints or answer reveal
+  - Keep scope tied to the active objective set
+  - Respect item-count and time caps from the source file
 
-  Requirements:
-  - Ask learner to rate story confidence on {confidence_scale} scale.
-  - Ask where the narrative breaks down or gets fuzzy.
-  - Tag fuzzy areas as priority targets for deeper encoding.
-  - No item-level questions — story-level confidence only.
-  - Hard cap at 2 minutes.
-  - This does NOT replace FULL CALIBRATE (M-CAL-002 / M-CAL-003).
+  RUN ONE STEP AT A TIME. Do not skip ahead. Wait for my reply before moving on.
+  1. Ask: "Can you see — Ask: "Can you see the whole story in your head? Rate 1-3: (1) fuzzy, (2) partial, (3) clear". Quick gut check — no overthinking
+     Example: Tutor: "Ask: "Can you see the whole story in your head? Rate 1-3: (1) fuzzy, (2) partial, (3) clear". Quick gut check — no overthinking." Learner: "Ready."
+     Check: Is the scope set and is the learner ready for a diagnostic attempt?
+     Then stop and wait.
+  2. Ask: "Where does the — Ask: "Where does the story break down or get fuzzy?". Identify the weakest part of the narrative thread
+     Example: Tutor shows one brief probe and records answer, confidence, and latency.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  3. Tag fuzzy areas as — Tag fuzzy areas as priority targets for deeper encoding. These become the focus areas for ENCODE phase
+     Example: Tutor summarizes the weakest pattern and states whether the learner is ready to route onward.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
 
-  Return exactly:
-  1) StoryConfidenceRating
-  2) FuzzyZonesList (narrative breakdown points)
-  3) PriorityEncodingTargets
-  4) OptionalProbeSeedSuggestions
+  REQUIRED OUTPUTS:
+  - Story confidence rating (1-3 scale) (structured response)
+  - Fuzzy zones list (narrative breakdown points) (bulleted or tabular list)
+  - Priority encoding targets (focus areas for ENCODE phase) (structured response)
+  - Optional probe seed suggestions for M-CAL-002 (bulleted or tabular list)
 
-  Do not teach or explain content. This method is diagnostic only.
+  STOP CONDITIONS:
+  - Stop when every required output exists and the final check passes.
+  - Stop early if the time cap or item cap is reached.
+  - Stop if the learner has crossed into a different stage or the format is no longer useful.
+
+  IF STUCK:
+  Use one simpler probe, narrow the objective scope, and keep the block diagnostic only.
+  If that still fails, reduce scope to one smaller item, one row, or one rep and continue.
+validation:
+  test_cases:
+  - topic: big-picture narrative threads
+    expected_outputs:
+    - Story confidence rating (1-3 scale)
+    - Fuzzy zones list (narrative breakdown points)
+    - Priority encoding targets (focus areas for ENCODE phase)
+    pass_criteria:
+    - All required outputs for M-CAL-004 are present.
+    - The response stays inside the correct stage rules.
+  - topic: top-down retell confidence
+    expected_outputs:
+    - Fuzzy zones list (narrative breakdown points)
+    - Priority encoding targets (focus areas for ENCODE phase)
+    - Optional probe seed suggestions for M-CAL-002
+    pass_criteria:
+    - The artifact is reusable without extra interpretation.
+    - No forbidden move is triggered during the run.
+  acceptance_criteria:
+  - Every required output is present and checkable.
+  - No forbidden moves from the source file are violated.
+  - The facilitation prompt can be pasted into ChatGPT and run without extra context.
+  known_issues:
+  - If the learner wants teaching during a diagnostic block, the tutor may need to restate the no-teach rule and narrow the
+    probe scope.

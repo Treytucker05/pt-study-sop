@@ -14,6 +14,7 @@ Purpose: Turn explained material into learner-built structures, explanations, ma
 - Convert explained material into coherent learner-owned mental models.
 - Full `KWIK Hook` belongs here as deeper encoding work; `KWIK Lite` is the lighter TEACH-side live slot.
 - Full `KWIK Hook` should run as `word sound -> real meaning -> meaning picture -> linked scene -> personalize -> lock`, not as a free-form mnemonic dump.
+- When using `M-ENC-016`, the learner must physically enact a safe simplified walkthrough and map each movement back to the real structure or mechanism.
 - Not for: passive rereading as the primary activity.
 - Not for: tutor-led first-contact explanation; that belongs in TEACH.
 
@@ -36,6 +37,7 @@ Purpose: Turn explained material into learner-built structures, explanations, ma
 | M-ENC-013 | Memory Palace | medium | 10 min | method_of_loci |
 | M-ENC-014 | Chain Linking | low | 5 min | serial_encoding |
 | M-ENC-015 | Hand-Draw Map | medium | 5 min | spatial_encoding, generation |
+| M-ENC-016 | Embodied Walkthrough | medium | 6 min | embodied_cognition, motor_encoding |
 
 ### Interrogate (category: `interrogate`, maps to ENCODE stage)
 

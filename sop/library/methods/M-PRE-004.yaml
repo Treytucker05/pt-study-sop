@@ -1,131 +1,280 @@
 id: M-PRE-004
 name: Hierarchical Advance Organizer
 category: prime
-description: Present a high-abstraction top-down framework (3-5 umbrella pillars + sub-branches) that still covers the full selected scope before detail study.
+subcategory: hierarchy
+description: Present a high-abstraction top-down framework as an ASCII concept map plus Obsidian-friendly hierarchy that covers the selected scope before detail study.
 control_stage: PRIME
-default_duration_min: 5
-energy_cost: low
-best_stage: first_exposure
 status: validated
-has_steps: Y
-has_outputs_or_artifacts: Y
-outputs_summary: PillarTree; PriorKnowledgeLinks; Hypotheses
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
 tags:
 - advance-organizer
 - hierarchy
 - top-down
-mechanisms:
-- schema_activation
-- subsumption
-stipulations:
-- Keep abstraction high; do not include leaf-level memorization details.
-- Start from most inclusive concept, then descend one level only.
-- The 3-5 pillar cap is a final grouping cap. Inventory the full supported structure first, then cluster it into broad pillars that still cover the whole selected scope.
-- PRIME boundary applies: no scoring and no quiz behavior.
-when_to_use:
-- New, dense, or mechanism-heavy topics.
-- Learners who prefer big-picture-first orientation.
-when_not_to_use:
-- Learner already demonstrates expert-level schema familiarity.
-- Ultra-familiar topics where organizer adds redundancy.
-knobs:
-  complexity_level: intermediate_outline
-  representation_format: markdown_tree
-constraints:
-  non_assessment: true
-  pillar_min: 3
-  pillar_max: 5
-  max_depth: 2
+- prime
+- orientation
+- prior-knowledge
+purpose: Present a high-abstraction top-down framework as an ASCII concept map plus Obsidian-friendly hierarchy that covers the selected scope before detail study. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
+not_for: Not for first-contact teaching, scored assessment, or full solution reveal. Use a TEACH or REFERENCE method when the goal is explanation rather than orientation.
+best_fit_topics:
+- 'New or complex material that needs a quick orientation pass: Hierarchical Advance Organizer'
+- Topics with prior notes, objective context, or an obvious structure to surface
+poor_fit_topics:
+- Brand-new content with no context or source packet
+- Scored retrieval or diagnostic testing
+learner_state_required: Source material is loaded, the topic is bounded, and the learner has at least some prior context or an objective to orient around.
 inputs:
-- Topic title
-- Learning objectives (preferred)
-- Prior mastered topics (optional)
+- description: Source material loaded in chat
+  required: true
+- description: Target topic or objective scope
+  required: true
+- description: Prior notes, North Star, or prior-session context
+  required: false
+outputs:
+- name: AsciiConceptMap
+  description: Structured artifact that captures the key hierarchical advance organizer relationships.
+  format: structured map or nested bullets
+- name: ObsidianHierarchy
+  description: Structured artifact that captures the key hierarchical advance organizer relationships.
+  format: ASCII tree or nested bullets
+required_outputs:
+- AsciiConceptMap
+- ObsidianHierarchy
+success_criteria:
+- 'Core structure is captured in the required outputs: AsciiConceptMap, ObsidianHierarchy.'
+- The method stays non-assessive and does not score the learner.
+- Any gaps, priorities, or blind spots are explicitly named for next-pass study.
+partial_criteria:
+- AsciiConceptMap is present but gaps or priorities are incomplete.
+- The output has useful structure but is missing one required linkage or objective tie.
 steps:
 - step: 1
+  name: Opening Step
   action: Identify the most inclusive parent concept
-  notes: One sentence maximum.
+  tutor_does: Identify the most inclusive parent concept. One sentence maximum
+  learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
+  max_lines: 4
+  check: What are the strongest anchors you already have for this topic?
+  example: 'Example: "Opening Step: Identify the most inclusive parent concept"'
 - step: 2
-  action: Inventory all major supported sections, then cluster them into 3-5 pillar concepts
-  notes: Pillars should subsume upcoming details and collectively cover the full selected scope.
+  name: Step 2
+  action: Cluster the supported structure into 3-5 pillar concepts
+  tutor_does: Cluster the supported structure into 3-5 pillar concepts. Pillars should collectively cover the selected scope
+  learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
+  max_lines: 4
+  check: Does the structure so far match what you expected from the material?
+  example: 'Example: "Step 2: Cluster the supported structure into 3-5 pillar concepts"'
 - step: 3
-  action: Add one sub-branch per pillar
-  notes: Keep depth <=2, omit leaf trivia, and make sub-branches representative rather than cherry-picked.
+  name: Step 3
+  action: Add one representative sub-branch per pillar
+  tutor_does: Add one representative sub-branch per pillar. Keep depth <=2 and omit leaf trivia
+  learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
+  max_lines: 4
+  check: Does the structure so far match what you expected from the material?
+  example: 'Example: "Step 3: Add one representative sub-branch per pillar"'
 - step: 4
-  action: Add one comparative link to prior knowledge for each pillar
-  notes: Use concise bridge statements.
-outputs:
-- PillarTree
-- PriorKnowledgeLinks
-- StructuralHypotheses
-stop_criteria:
-- Pillar count between 3 and 5
-- Depth <=2
-- Pillars collectively cover the full selected scope
-- Every pillar has at least one prior-knowledge bridge
-failure_modes:
-- mode: Tree becomes detail-heavy
-  mitigation: Collapse leaf nodes to pillar/sub-branch only.
-- mode: No prior bridge links
-  mitigation: Force one bridge sentence per pillar.
-logging_fields:
-- pillar_count
-- depth_level
-- bridge_link_count
-evidence_strength: high
-primary_citations:
-- Ausubel (1960)
-- Luiten et al. (1980)
-- Hattie (2009)
-facilitation_prompt: 'You are running M-PRE-004 (Hierarchical Advance Organizer) in PRIME stage.
-
-  This method is non-assessment.
-
-  Build a top-down organizer, not a lesson and not a quiz.
-
-
-  Requirements:
-
-  - 3-5 pillars, max depth 2.
-  - Pillars are umbrella groups that collectively cover the full selected scope.
-
-  - One concise prior-knowledge bridge per pillar.
-
-  - Output in {representation_format} at {complexity_level}.
-
-  - No scoring, no checks, no retrieval prompts.
-
-
-  Return exactly:
-
-  1) PillarTree
-
-  2) PriorKnowledgeLinks
-
-  3) StructuralHypotheses
-
-  '
-gating_rules:
-- Do not assess or score the learner in PRIME.
-- Stay at orientation level and avoid full solution reveal.
-artifact_type: notes
-evidence_raw: Ausubel (1960); Luiten et al. (1980); advance organizers facilitate subsumption of new material
+  name: Step 4
+  action: Render the organizer as an ASCII concept map and an Obsidian-friendly nested hierarchy
+  tutor_does: Render the organizer as an ASCII concept map and an Obsidian-friendly nested hierarchy. Keep structure clear and avoid paragraph explanations
+  learner_does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
+  max_lines: 4
+  check: Which gaps or next targets should we carry forward?
+  example: 'Example: "Step 4: Render the organizer as an ASCII concept map and an Obsidian-friendly nested hierarchy"'
+constraints:
+- rule: Do not assess, grade, or confidence-rate the learner
+  why: PRIME methods activate and organize knowledge instead of testing it.
+- rule: Stay at orientation level and avoid full solution reveal
+  why: The goal is to shape readiness, not finish the lesson for the learner.
+- rule: Do not assess or score the learner
+  why: This method is for orientation and teaching, not grading.
+- rule: 'Pillar Min: 3'
+  why: Carried forward from the legacy method card.
+- rule: 'Pillar Max: 5'
+  why: Carried forward from the legacy method card.
+- rule: 'Max Depth: 2'
+  why: Carried forward from the legacy method card.
 allowed_moves:
 - Present a top-down framework from most inclusive concept downward
-- Extract 3-5 umbrella pillar concepts that subsume upcoming details and collectively cover the full selected scope
+- Extract 3-5 umbrella pillar concepts
 - Add one sub-branch per pillar (max depth 2)
-- Add one comparative link to prior knowledge per pillar
-- Orient the learner to upcoming content structure
-- Use concise bridge statements to connect pillars to known material
+- Render the framework as an ASCII map plus Obsidian-friendly nested hierarchy
+- Activate prior knowledge with a bounded free recall or orientation prompt
+- Summarize structure, objectives, gaps, or blind spots without scoring
+- Link recalled ideas to the current objective or source packet
 forbidden_moves:
 - Score, grade, or assess the learner
 - Include leaf-level memorization details or trivia
-- Cherry-pick a few favorite sections while leaving major supported sections unrepresented
 - Teach new detailed content beyond structural framing
 - Exceed depth of 2 levels in the hierarchy
-- Run quizzes, retrieval prompts, or correctness checks
 - Lecture at length or provide paragraph explanations
 - Exceed 5 pillars
-required_outputs:
-- PillarTree (3-5 pillars, max depth 2, collectively covering the full selected scope)
-- PriorKnowledgeLinks (one bridge per pillar)
-- StructuralHypotheses
+- Score the learner or run retrieval grading
+stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
+failure_modes:
+- mode: Orientation drifts into assessment
+  detection: The tutor starts scoring, judging, or treating the learner like a test taker.
+  recovery: Re-state the non-assessment rule, reduce the scope to one objective, and return to structure or gaps.
+  fallback_method: M-PRE-010
+default_duration_min: 5
+energy_cost: low
+best_stage: first_exposure
+mechanisms:
+- schema_activation
+- subsumption
+- scaffolding
+- prior_knowledge_activation
+- organization
+evidence:
+  citation: Ausubel (1960)
+  finding: Ausubel (1960); Luiten et al. (1980); advance organizers facilitate subsumption of new material.
+  source: legacy method card
+knobs:
+  complexity_level: intermediate_outline
+  guidance_level: medium
+  objective_link_required: true
+  artifact_type: notes
+  evidence_strength: high
+  primary_citations:
+  - Ausubel (1960)
+  - Luiten et al. (1980)
+  - Hattie (2009)
+  outputs_summary: AsciiConceptMap; ObsidianHierarchy
+  has_steps: Y
+  has_outputs_or_artifacts: Y
+  output_format: bullets
+related_methods:
+- id: M-PRE-008
+  relationship: Use when the learner needs a compact structure first
+- id: M-PRE-005
+  relationship: Fallback when the topic is naturally hierarchical
+facilitation_prompt: 'You are a study tutor running M-PRE-004 (Hierarchical Advance Organizer) in the PRIME stage.
+
+  ROLE: You are a careful, supportive tutor. Your job is to run Hierarchical Advance Organizer exactly as specified and keep the output faithful, bounded, and useful.
+
+  OBJECTIVE: Present a high-abstraction top-down framework as an ASCII concept map plus Obsidian-friendly hierarchy that covers the selected scope before detail study. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
+
+  SCOPE: Present a high-abstraction top-down framework as an ASCII concept map plus Obsidian-friendly hierarchy that covers the selected scope before detail study.
+
+  RULES:
+
+  - Do not assess, grade, or confidence-rate the learner — because PRIME methods activate and organize knowledge instead of testing it.
+
+  - Stay at orientation level and avoid full solution reveal — because The goal is to shape readiness, not finish the lesson for the learner.
+
+  - Do not assess or score the learner — because This method is for orientation and teaching, not grading.
+
+  - Pillar Min: 3 — because Carried forward from the legacy method card.
+
+  - Pillar Max: 5 — because Carried forward from the legacy method card.
+
+  - Max Depth: 2 — because Carried forward from the legacy method card.
+
+
+  OUTPUTS TO PRODUCE:
+
+  1. AsciiConceptMap — Structured artifact that captures the key hierarchical advance organizer relationships. (structured map or nested bullets)
+
+  2. ObsidianHierarchy — Structured artifact that captures the key hierarchical advance organizer relationships. (ASCII tree or nested bullets)
+
+
+  RUN THE METHOD ONE STEP AT A TIME. Wait for my response before moving to the next step.
+
+  STEP 1 — Opening Step
+
+  - Tutor does: Identify the most inclusive parent concept. One sentence maximum
+
+  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
+
+  - Example: Example: "Opening Step: Identify the most inclusive parent concept"
+
+  - Check: What are the strongest anchors you already have for this topic?
+
+  Then stop and wait.
+
+  STEP 2 — Step 2
+
+  - Tutor does: Cluster the supported structure into 3-5 pillar concepts. Pillars should collectively cover the selected scope
+
+  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
+
+  - Example: Example: "Step 2: Cluster the supported structure into 3-5 pillar concepts"
+
+  - Check: Does the structure so far match what you expected from the material?
+
+  Then stop and wait.
+
+  STEP 3 — Step 3
+
+  - Tutor does: Add one representative sub-branch per pillar. Keep depth <=2 and omit leaf trivia
+
+  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
+
+  - Example: Example: "Step 3: Add one representative sub-branch per pillar"
+
+  - Check: Does the structure so far match what you expected from the material?
+
+  Then stop and wait.
+
+  STEP 4 — Step 4
+
+  - Tutor does: Render the organizer as an ASCII concept map and an Obsidian-friendly nested hierarchy. Keep structure clear and avoid paragraph explanations
+
+  - Learner does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
+
+  - Example: Example: "Step 4: Render the organizer as an ASCII concept map and an Obsidian-friendly nested hierarchy"
+
+  - Check: Which gaps or next targets should we carry forward?
+
+  Then stop and wait.
+
+
+  STOP CONDITIONS:
+
+  - Core structure is captured in the required outputs: AsciiConceptMap, ObsidianHierarchy.
+
+  - The method stays non-assessive and does not score the learner.
+
+  - Any gaps, priorities, or blind spots are explicitly named for next-pass study.
+
+
+  IF YOU GET STUCK:
+
+  If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
+
+  If the learner is still stuck after one rescue move, shrink the chunk, switch modality, or fall back to the listed fallback method.
+
+
+  GOOD OUTPUT EXAMPLE:
+
+  - AsciiConceptMap: a concise, source-faithful artifact that matches the method purpose and stays within scope.
+
+  - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
+
+
+  DONE WHEN:
+
+  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.'
+validation:
+  test_cases:
+  - topic: First pass on Hierarchical Advance Organizer with prior notes present
+    expected_outputs:
+    - AsciiConceptMap
+    - ObsidianHierarchy
+    pass_criteria:
+    - Required outputs appear and include at least one structural or gap-oriented artifact from AsciiConceptMap, ObsidianHierarchy.
+    - The output identifies what is known, what is missing, and what to do next.
+  - topic: Dense review topic where the learner needs orientation before detail
+    expected_outputs:
+    - AsciiConceptMap
+    - ObsidianHierarchy
+    pass_criteria:
+    - Required outputs appear and include at least one structural or gap-oriented artifact from AsciiConceptMap, ObsidianHierarchy.
+    - No scored probe, quiz behavior, or grading language appears in the response.
+  acceptance_criteria:
+  - Required outputs appear and include at least one structural or gap-oriented artifact from AsciiConceptMap, ObsidianHierarchy.
+  - No scored probe, quiz behavior, or grading language appears in the response.
+  - The output identifies what is known, what is missing, and what to do next.
+  known_issues:
+  - LLMs sometimes over-explain instead of staying at orientation level.
+  - If objective context is weak, the method can drift unless the prompt locks scope early.

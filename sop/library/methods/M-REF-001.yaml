@@ -1,121 +1,135 @@
 id: M-REF-001
 name: Error Autopsy
 category: reference
+subcategory: autopsy
 description: 'Review errors from retrieval practice. For each error: (1) What did I say? (2) What''s correct? (3) Why did
   I confuse them? (4) What cue will prevent this next time? Metacognitive error analysis.'
-default_duration_min: 5
-energy_cost: medium
-best_stage: exam_prep
 control_stage: REFERENCE
 status: validated
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
 tags:
 - error-analysis
 - metacognition
 - correction
 - evidence-based
-mechanisms:
-- error_correction
-- metacognition
-- elaboration
-- discrimination
-knobs:
-  artifact_depth: standard
-  link_density: medium
-constraints:
-  target_artifact_required: true
-  retrieval_blocked_without_targets: true
-  objective_scope_required: true
+purpose: Error Autopsy exists to run a structured error autopsy that turns retrieval misses into durable prevention cues and
+  artifact-ready notes. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for quizzing the learner or introducing new material. Use RETRIEVE when the goal is memory testing and
+  TEACH when the goal is explanation.
+best_fit_topics:
+- retrieval misses
+- wrong-answer analysis
+- prevention cue building
+poor_fit_topics:
+- pure lecture mode
+- testing without artifact creation
+- vague self-critique
+learner_state_required: Recent misses or objectives are available, the source is loaded, and the goal is artifact creation
+  rather than assessment.
 inputs:
-- List of errors from recent retrieval practice
-- Correct answers for each error
-- Reference materials for deep understanding
-- Error autopsy template (4-column format)
+- description: List of errors from recent retrieval practice
+  required: true
+- description: Correct answers for each error
+  required: true
+- description: Reference materials for deep understanding
+  required: true
+- description: Error autopsy template (4-column format)
+  required: true
+outputs:
+- name: Completed error autopsy table (all 4 columns for every error)
+  description: Four-column analysis of what was said, what is correct, why the confusion happened, and what cue prevents recurrence.
+  format: structured table
+- name: Root cause analysis for each error (Column 3 filled with specific conceptual confusion)
+  description: A reusable reference artifact that supports later retrieval for a structured error autopsy that turns retrieval
+    misses into durable prevention cues and artifact-ready notes.
+  format: structured response
+- name: Discrimination cues created (Column 4 with actionable prevention strategy)
+  description: A reusable reference artifact that supports later retrieval for a structured error autopsy that turns retrieval
+    misses into durable prevention cues and artifact-ready notes.
+  format: structured response
+- name: Anki card candidates identified from high-value errors
+  description: A draft card set for later Anki import or refinement.
+  format: formatted study artifact
+required_outputs:
+- Completed error autopsy table (all 4 columns for every error)
+- Root cause analysis for each error (Column 3 filled with specific conceptual confusion)
+- Discrimination cues created (Column 4 with actionable prevention strategy)
+- Anki card candidates identified from high-value errors
+success_criteria:
+- All required outputs are present for M-REF-001.
+- A reusable artifact is produced and preserved instead of a loose discussion transcript.
+- The learner or tutor can point to the output artifact and reuse it later without ambiguity.
+partial_criteria:
+- 'One or more required outputs are present but one core artifact is incomplete: Completed error autopsy table (all 4 columns
+  for every error).'
+- The method stayed in the correct stage but the final artifact needs one more pass to be reusable.
 steps:
 - step: 1
-  action: Collect all errors from recent retrieval session
-  notes: Use sprint quiz misses, free recall gaps, or exam review errors
+  name: Collect all errors from
+  action: Collect all errors from recent retrieval session. Use sprint quiz misses, free recall gaps, or exam review errors
+  tutor_does: Capture collect all errors from recent retrieval session. use sprint quiz misses, free recall gaps, or exam
+    review errors into a reusable artifact and keep the structure deterministic.
+  learner_does: Supplies or confirms the source content and helps save the artifact for later retrieval.
+  max_lines: 8
+  check: Has the source material been collected and organized for artifact building?
+  example: 'Tutor: "Collect the source errors and keep them in the original wording where possible." Learner: "Ready."'
 - step: 2
-  action: 'For each error, write Column 1: ''What did I say?'''
-  notes: Record your exact wrong answer — no sanitizing
+  name: For each error, write
+  action: 'For each error, write Column 1: ''What did I say?''. Record your exact wrong answer — no sanitizing'
+  tutor_does: 'Capture for each error, write column 1: ''what did i say?''. record your exact wrong answer — no sanitizing
+    into a reusable artifact and keep the structure deterministic.'
+  learner_does: Supplies or confirms the source content and helps save the artifact for later retrieval.
+  max_lines: 8
+  check: Is this step complete and ready to advance?
+  example: Tutor adds a single row to the artifact and keeps the column structure consistent.
 - step: 3
-  action: 'Write Column 2: ''What''s correct?'''
-  notes: Record the accurate answer with source citation if possible
+  name: 'Write Column 2: ''What''s'
+  action: 'Write Column 2: ''What''s correct?''. Record the accurate answer with source citation if possible'
+  tutor_does: 'Capture write column 2: ''what''s correct?''. record the accurate answer with source citation if possible into
+    a reusable artifact and keep the structure deterministic.'
+  learner_does: Supplies or confirms the source content and helps save the artifact for later retrieval.
+  max_lines: 10
+  check: Is this step complete and ready to advance?
+  example: Tutor writes the anchor or seed artifact in a format that can be reused later.
 - step: 4
-  action: 'Write Column 3: ''Why did I confuse them?'''
-  notes: This is the key insight — identify the conceptual confusion or memory interference
+  name: 'Write Column 3: ''Why'
+  action: 'Write Column 3: ''Why did I confuse them?''. This is the key insight — identify the conceptual confusion or memory
+    interference'
+  tutor_does: 'Capture write column 3: ''why did i confuse them?''. this is the key insight — identify the conceptual confusion
+    or memory interference into a reusable artifact and keep the structure deterministic.'
+  learner_does: Supplies or confirms the source content and helps save the artifact for later retrieval.
+  max_lines: 10
+  check: Is this step complete and ready to advance?
+  example: Tutor saves the artifact and asks for one final verification.
 - step: 5
-  action: 'Write Column 4: ''What cue will prevent this next time?'''
-  notes: Create a discrimination cue or mnemonic to prevent recurrence
+  name: 'Write Column 4: ''What'
+  action: 'Write Column 4: ''What cue will prevent this next time?''. Create a discrimination cue or mnemonic to prevent recurrence'
+  tutor_does: 'Capture write column 4: ''what cue will prevent this next time?''. create a discrimination cue or mnemonic
+    to prevent recurrence into a reusable artifact and keep the structure deterministic.'
+  learner_does: Supplies or confirms the source content and helps save the artifact for later retrieval.
+  max_lines: 10
+  check: Is this step complete and ready to advance?
+  example: Tutor saves the artifact and asks for one final verification.
 - step: 6
-  action: Convert high-value autopsies into Anki cards
-  notes: Error-based cards are high-yield for exam prep
-outputs:
-- Completed error autopsy table
-- Root cause analysis for each error
-- Discrimination cues created
-- Anki card candidates identified
-stop_criteria:
-- All errors from session analyzed
-- Each error has a prevention cue
-- High-value errors converted to study artifacts
-failure_modes:
-- mode: Superficial analysis (just noting "I was wrong")
-  mitigation: Column 3 (Why confused?) is mandatory — dig into the root cause
-- mode: Skipping the prevention cue (Column 4)
-  mitigation: No closure without a specific cue to prevent recurrence
-- mode: Defensive attribution ("trick question", "unfair")
-  mitigation: Assume the error reveals something to learn — own it
-logging_fields:
-- errors_analyzed
-- root_causes_identified
-- prevention_cues_created
-- anki_cards_drafted
-evidence:
-  citation: Metcalfe (2017)
-  finding: error correction with feedback is more effective than errorless learning
-  source: seed_methods.py
-evidence_raw: Metcalfe (2017); error correction with feedback is more effective than errorless learning
-facilitation_prompt: 'You are running M-REF-001 (Error Autopsy) in REFERENCE stage.
-
-  Execute this method card exactly and keep outputs deterministic.
-
-
-  Stage hard rules:
-
-  - Build concrete anchors and artifacts.
-
-  - Map concept to applied context.
-
-  - Do not skip artifact creation.
-
-
-  Required outputs:
-
-  - Completed error autopsy table
-
-  - Root cause analysis for each error
-
-  - Discrimination cues created
-
-  - Anki card candidates identified
-
-
-  Stop conditions:
-
-  - All errors from session analyzed
-
-  - Each error has a prevention cue
-
-  - High-value errors converted to study artifacts
-
-
-  If required inputs are missing, request only the minimum needed input and continue.
-
-  '
-gating_rules:
-- Produce structured targets that RETRIEVE can directly test.
-- No retrieval drills until reference targets are explicit.
-artifact_type: notes
+  name: Convert high-value autopsies into
+  action: Convert high-value autopsies into Anki cards. Error-based cards are high-yield for exam prep
+  tutor_does: Capture convert high-value autopsies into anki cards. error-based cards are high-yield for exam prep into a
+    reusable artifact and keep the structure deterministic.
+  learner_does: Supplies or confirms the source content and helps save the artifact for later retrieval.
+  max_lines: 10
+  check: Is the artifact ready to save or reuse later?
+  example: Tutor saves the artifact and asks for one final verification.
+constraints:
+- rule: Artifact-first; do not turn the block into teaching or testing
+  why: Reference methods exist to build later-use assets, not to run a lesson or a quiz.
+- rule: Keep the structure deterministic and reusable
+  why: Later retrieval depends on stable headers, rows, and cue language.
+- rule: Preserve source language when it helps later recognition
+  why: Exact wording can become the cue that makes retrieval possible.
+- rule: Do not start retrieval drills until the reference target exists
+  why: The artifact is the prerequisite for later recall work.
 allowed_moves:
 - Analyze errors from retrieval practice systematically
 - Require root-cause analysis for each error (Column 3 is mandatory)
@@ -125,6 +139,10 @@ allowed_moves:
 - Convert high-value error analyses into Anki card candidates
 - Build discrimination cues that prevent specific recurrence
 - Map errors to applied clinical context where relevant
+- Organize misses into a reusable artifact
+- Preserve exact cues or definitions when they help later retrieval
+- Create compact lists, tables, or anchors that can be reused later
+- Tag content so RETRIEVE can target it later
 forbidden_moves:
 - Accept superficial analysis ("I was wrong" without WHY)
 - Skip Column 3 (Why confused?) — root cause is mandatory for every error
@@ -135,8 +153,116 @@ forbidden_moves:
 - Introduce entirely new content not yet encoded
 - Rush through errors without full 4-column analysis for each
 - Accept vague prevention cues ("be more careful")
-required_outputs:
-- Completed error autopsy table (all 4 columns for every error)
-- Root cause analysis for each error (Column 3 filled with specific conceptual confusion)
-- Discrimination cues created (Column 4 with actionable prevention strategy)
-- Anki card candidates identified from high-value errors
+- Turn the block into a lecture or quiz
+- Hide the source relationship between notes and evidence
+- Produce an artifact that cannot be reused later
+stuck_protocol: Collapse to a smaller artifact, keep the same headers, and capture one row at a time.
+failure_modes:
+- mode: Artifact becomes a loose discussion transcript
+  detection: There is no stable table, header, or reusable structure.
+  recovery: Reformat into a fixed artifact template with explicit fields.
+  fallback_method: M-REF-003
+- mode: The learner tries to use the block as a quiz
+  detection: The prompt turns into right-or-wrong testing instead of artifact building.
+  recovery: Reframe as capture-and-organize, not assess-and-grade.
+  fallback_method: M-REF-004
+- mode: Source language gets lost
+  detection: Key terms are paraphrased too aggressively and cues become fuzzy.
+  recovery: Restore the original wording where it matters most and add a short note beside it.
+  fallback_method: M-REF-001
+default_duration_min: 5
+energy_cost: medium
+best_stage: exam_prep
+mechanisms:
+- error_correction
+- metacognition
+- elaboration
+- discrimination
+evidence:
+  citation: Metcalfe (2017)
+  finding: error correction with feedback is more effective than errorless learning
+  source: seed_methods.py
+knobs:
+  default_duration_min: 5
+  energy_cost: medium
+  best_stage: exam_prep
+related_methods:
+- id: M-RET-001
+  relationship: Retrieval misses are the source material for the autopsy
+- id: M-REF-003
+  relationship: Useful when autopsy findings need a compact reference anchor
+facilitation_prompt: |-
+  You are a tutor running M-REF-001 (Error Autopsy) in REFERENCE mode.
+  ROLE: build durable artifacts for later retrieval and does not test the learner.
+  OBJECTIVE: Error Autopsy exists to run a structured error autopsy that turns retrieval misses into durable prevention cues and artifact-ready notes. It turns the current stage into a clean, reusable signal instead of a vague study session.
+  SCOPE: Use only the loaded source material and the learner's current responses.
+  RULES:
+  - Artifact-first; do not turn the block into teaching or testing
+  - Keep the structure deterministic and reusable
+  - Preserve source language when it helps later recognition
+  - Do not start retrieval drills until the reference target exists
+
+  RUN ONE STEP AT A TIME. Do not skip ahead. Wait for my reply before moving on.
+  1. Collect all errors from — Collect all errors from recent retrieval session. Use sprint quiz misses, free recall gaps, or exam review errors
+     Example: Tutor: "Collect the source errors and keep them in the original wording where possible." Learner: "Ready."
+     Check: Has the source material been collected and organized for artifact building?
+     Then stop and wait.
+  2. For each error, write — For each error, write Column 1: 'What did I say?'. Record your exact wrong answer — no sanitizing
+     Example: Tutor adds a single row to the artifact and keeps the column structure consistent.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  3. Write Column 2: 'What's — Write Column 2: 'What's correct?'. Record the accurate answer with source citation if possible
+     Example: Tutor writes the anchor or seed artifact in a format that can be reused later.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  4. Write Column 3: 'Why — Write Column 3: 'Why did I confuse them?'. This is the key insight — identify the conceptual confusion or memory interference
+     Example: Tutor saves the artifact and asks for one final verification.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  5. Write Column 4: 'What — Write Column 4: 'What cue will prevent this next time?'. Create a discrimination cue or mnemonic to prevent recurrence
+     Example: Tutor saves the artifact and asks for one final verification.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  6. Convert high-value autopsies into — Convert high-value autopsies into Anki cards. Error-based cards are high-yield for exam prep
+     Example: Tutor saves the artifact and asks for one final verification.
+     Check: Is the artifact ready to save or reuse later?
+     Then stop and wait.
+
+  REQUIRED OUTPUTS:
+  - Completed error autopsy table (all 4 columns for every error) (structured table)
+  - Root cause analysis for each error (Column 3 filled with specific conceptual confusion) (structured response)
+  - Discrimination cues created (Column 4 with actionable prevention strategy) (structured response)
+  - Anki card candidates identified from high-value errors (formatted study artifact)
+
+  STOP CONDITIONS:
+  - Stop when every required output exists and the final check passes.
+  - Stop early if the time cap or item cap is reached.
+  - Stop if the learner has crossed into a different stage or the format is no longer useful.
+
+  IF STUCK:
+  Collapse to a smaller artifact, keep the same headers, and capture one row at a time.
+  If that still fails, reduce scope to one smaller item, one row, or one rep and continue.
+validation:
+  test_cases:
+  - topic: retrieval misses
+    expected_outputs:
+    - Completed error autopsy table (all 4 columns for every error)
+    - Root cause analysis for each error (Column 3 filled with specific conceptual confusion)
+    - Discrimination cues created (Column 4 with actionable prevention strategy)
+    pass_criteria:
+    - All required outputs for M-REF-001 are present.
+    - The response stays inside the correct stage rules.
+  - topic: wrong-answer analysis
+    expected_outputs:
+    - Root cause analysis for each error (Column 3 filled with specific conceptual confusion)
+    - Discrimination cues created (Column 4 with actionable prevention strategy)
+    - Anki card candidates identified from high-value errors
+    pass_criteria:
+    - The artifact is reusable without extra interpretation.
+    - No forbidden move is triggered during the run.
+  acceptance_criteria:
+  - Every required output is present and checkable.
+  - No forbidden moves from the source file are violated.
+  - The facilitation prompt can be pasted into ChatGPT and run without extra context.
+  known_issues:
+  - Artifact building can drift into teaching unless the tutor keeps the structure explicit and source-linked.

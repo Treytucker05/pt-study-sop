@@ -1,5 +1,32 @@
 {
-    "allow_execution": [],
+    "allow_execution": [
+        "agent-browser",
+        "agent-browser click",
+        "agent-browser close",
+        "agent-browser console",
+        "agent-browser errors",
+        "agent-browser fill",
+        "agent-browser focus",
+        "agent-browser get",
+        "agent-browser inspect",
+        "agent-browser keyboard",
+        "agent-browser network",
+        "agent-browser open",
+        "agent-browser screenshot",
+        "agent-browser snapshot",
+        "agent-browser tab",
+        "agent-browser type",
+        "agent-browser wait",
+        "dev-browser",
+        "dev-browser --connect",
+        "dev-browser --headless",
+        "dev-browser browsers",
+        "dev-browser install",
+        "dev-browser install-skill",
+        "dev-browser run",
+        "dev-browser status",
+        "dev-browser stop"
+    ],
     "require_confirmation": [
         "del"
     ]

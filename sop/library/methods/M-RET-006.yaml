@@ -1,90 +1,93 @@
 id: M-RET-006
 name: Adversarial Drill
 category: retrieve
+subcategory: adversarial
 description: Run near-miss adversarial prompts that force distinction between confusable concepts under low support.
-default_duration_min: 8
-energy_cost: high
-best_stage: exam_prep
 control_stage: RETRIEVE
 status: validated
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
 tags:
 - retrieval
 - adversarial
 - confusables
-mechanisms:
-- discrimination
-- retrieval
-knobs:
-  difficulty: medium
-  feedback_timing: after_attempt
-constraints:
-  attempt_required_before_feedback: true
-  closed_note_first: true
-  route_back_on_repeated_miss: true
+purpose: Adversarial Drill exists to run an adversarial drill that uses near-miss prompts to force distinctions between confusable
+  concepts under low support. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for open-note review, answer-reveal first workflows, or deep teaching. Use REFERENCE if the learner needs
+  an anchor first.
+best_fit_topics:
+- near-miss distinctions
+- confusable concepts
+- low-support discrimination
+poor_fit_topics:
+- friendly prompts with obvious cues
+- teaching new material
+- open-note support
+learner_state_required: The learner already has source material or an anchor available, the source will be closed for recall,
+  and a retrieval target exists.
 inputs:
-- Confusable pairs from Spine or ErrorLog
-- Question Bank Seed
+- description: Confusable pairs from Spine or ErrorLog
+  required: true
+- description: Question Bank Seed
+  required: true
+outputs:
+- name: Adversarial near-miss results with discrimination accuracy
+  description: A structured output for an adversarial drill that uses near-miss prompts to force distinctions between confusable
+    concepts under low support.
+  format: structured log
+- name: ErrorLog updates (error_type and fix_applied per miss)
+  description: A structured output for an adversarial drill that uses near-miss prompts to force distinctions between confusable
+    concepts under low support.
+  format: structured log
+required_outputs:
+- Adversarial near-miss results with discrimination accuracy
+- ErrorLog updates (error_type and fix_applied per miss)
+success_criteria:
+- All required outputs are present for M-RET-006.
+- A genuine attempt-first recall happened before any comparison or feedback.
+- The learner or tutor can point to the output artifact and reuse it later without ambiguity.
+partial_criteria:
+- 'One or more required outputs are present but one core artifact is incomplete: Adversarial near-miss results with discrimination
+  accuracy.'
+- The method stayed in the correct stage but the final artifact needs one more pass to be reusable.
 steps:
 - step: 1
-  action: Select confusable pairs with highest error risk
-  notes: Use recent Confusion errors first
+  name: Select confusable pairs with
+  action: Select confusable pairs with highest error risk. Use recent Confusion errors first
+  tutor_does: Run select confusable pairs with highest error risk. use recent confusion errors first while protecting the
+    attempt-first rule, then compare only after recall is complete.
+  learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
+  max_lines: 8
+  check: Are all materials closed and is the learner ready to attempt recall?
+  example: 'Tutor: "Close your notes. Do not peek." Learner: "Notes are closed."'
 - step: 2
-  action: Ask near-miss prompts with minimal cues
-  notes: Require explicit discriminator in each response
+  name: Ask near-miss prompts with
+  action: Ask near-miss prompts with minimal cues. Require explicit discriminator in each response
+  tutor_does: Run ask near-miss prompts with minimal cues. require explicit discriminator in each response while protecting
+    the attempt-first rule, then compare only after recall is complete.
+  learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
+  max_lines: 8
+  check: Is this step complete and ready to advance?
+  example: Tutor starts the timer and asks for a free-response dump.
 - step: 3
-  action: Log misses to ErrorLog.csv
-  notes: Include error_type and fix_applied
-outputs:
-- Adversarial near-miss results
-- ErrorLog updates
-stop_criteria:
-- Near-miss set completed
-- All misses logged
-evidence:
-  citation: Rohrer et al. (2015)
-  finding: Interleaved discrimination practice improves transfer on confusable categories
-  source: control-plane migration
-evidence_raw: Rohrer et al. (2015); discrimination practice strengthens near-miss recognition
-facilitation_prompt: 'You are running M-RET-006 (Adversarial Drill) in RETRIEVE stage.
-
-  Execute this method card exactly and keep outputs deterministic.
-
-
-  Stage hard rules:
-
-  - Require learner attempt first.
-
-  - Do not reveal full answer before attempt.
-
-  - Capture errors and route signals.
-
-
-  Required outputs:
-
-  - Adversarial near-miss results
-
-  - ErrorLog updates
-
-
-  Stop conditions:
-
-  - Near-miss set completed
-
-  - All misses logged
-
-
-  If required inputs are missing, request only the minimum needed input and continue.
-
-  '
-gating_rules:
-- Require closed-note recall first, then feedback.
-- If repeated misses occur, route back to ENCODE or REFERENCE.
-failure_modes:
-- mode: Answer leakage
-  mitigation: Re-enforce attempt-first then feedback.
-- mode: Repeated misses
-  mitigation: Route back to ENCODE with targeted scaffold.
-artifact_type: notes
+  name: Log misses to ErrorLog.csv.
+  action: Log misses to ErrorLog.csv. Include error_type and fix_applied
+  tutor_does: Run log misses to errorlog.csv. include error_type and fix_applied while protecting the attempt-first rule,
+    then compare only after recall is complete.
+  learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
+  max_lines: 8
+  check: Is this step complete and ready to advance?
+  example: Tutor marks gaps with question marks and compares them after the attempt window ends.
+constraints:
+- rule: Closed-note first, open-note only after recall is complete
+  why: The retrieval signal disappears if the source is visible during the attempt.
+- rule: No hints or answer reveal before the learner attempts the item
+  why: Attempt-first is required for a valid memory readout.
+- rule: Compare against source only after the attempt window ends
+  why: Comparison is for repair, not for helping the recall itself.
+- rule: Stay within the timer or sprint cap
+  why: Time pressure is part of the retrieval design.
 allowed_moves:
 - Select confusable pairs with highest error risk from ErrorLog
 - Present near-miss prompts with minimal cues
@@ -94,6 +97,10 @@ allowed_moves:
 - Route back to ENCODE with targeted scaffold on repeated misses
 - Use recent Confusion errors as priority source
 - Increase discrimination difficulty progressively
+- Force an attempt before any comparison or feedback
+- Mark gaps explicitly with question marks or placeholders
+- Compare to the source after the attempt window closes
+- Track latency and accuracy when relevant
 forbidden_moves:
 - Reveal answer or discriminating feature before learner attempt
 - Provide hints during first attempt
@@ -103,6 +110,98 @@ forbidden_moves:
 - Accept "I don't know" without at least one discrimination attempt
 - Skip ErrorLog updates for missed items
 - Allow low-support items to leak answer through prompt wording
-required_outputs:
-- Adversarial near-miss results with discrimination accuracy
-- ErrorLog updates (error_type and fix_applied per miss)
+- Peek at materials during the recall window
+- Give hints before the first attempt
+- Teach new content during retrieval
+stuck_protocol: Give one narrower cue, keep materials closed, and ask for a best-effort attempt before any feedback.
+failure_modes:
+- mode: Materials are open during recall
+  detection: The learner can see the source or answer key before attempting the item.
+  recovery: Close the materials, restart the timer, and repeat the item from scratch.
+  fallback_method: M-REF-003
+- mode: No attempt is made
+  detection: The learner waits for hints or gives only "I do not know" without trying.
+  recovery: Ask for a best effort answer, then mark the gap and continue.
+  fallback_method: M-OVR-001
+- mode: Comparison happens too early
+  detection: Feedback or answer checking is introduced before the attempt window ends.
+  recovery: Delay comparison until after recall, then capture gaps cleanly.
+  fallback_method: M-REF-001
+default_duration_min: 8
+energy_cost: high
+best_stage: exam_prep
+mechanisms:
+- discrimination
+- retrieval
+evidence:
+  citation: Rohrer et al. (2015)
+  finding: Interleaved discrimination practice improves transfer on confusable categories
+  source: control-plane migration
+knobs:
+  default_duration_min: 8
+  energy_cost: high
+  best_stage: exam_prep
+related_methods:
+- id: M-REF-001
+  relationship: Adversarial misses should be autopsied
+- id: M-REF-003
+  relationship: Compact anchors help separate near-miss concepts
+facilitation_prompt: |-
+  You are a tutor running M-RET-006 (Adversarial Drill) in RETRIEVE mode.
+  ROLE: elicit memory under controlled conditions and protect the attempt-first rule.
+  OBJECTIVE: Adversarial Drill exists to run an adversarial drill that uses near-miss prompts to force distinctions between confusable concepts under low support. It turns the current stage into a clean, reusable signal instead of a vague study session.
+  SCOPE: Use only the loaded source material and the learner's current responses.
+  RULES:
+  - Closed-note first, open-note only after recall is complete
+  - No hints or answer reveal before the learner attempts the item
+  - Compare against source only after the attempt window ends
+  - Stay within the timer or sprint cap
+
+  RUN ONE STEP AT A TIME. Do not skip ahead. Wait for my reply before moving on.
+  1. Select confusable pairs with — Select confusable pairs with highest error risk. Use recent Confusion errors first
+     Example: Tutor: "Close your notes. Do not peek." Learner: "Notes are closed."
+     Check: Are all materials closed and is the learner ready to attempt recall?
+     Then stop and wait.
+  2. Ask near-miss prompts with — Ask near-miss prompts with minimal cues. Require explicit discriminator in each response
+     Example: Tutor starts the timer and asks for a free-response dump.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  3. Log misses to ErrorLog.csv. — Log misses to ErrorLog.csv. Include error_type and fix_applied
+     Example: Tutor marks gaps with question marks and compares them after the attempt window ends.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+
+  REQUIRED OUTPUTS:
+  - Adversarial near-miss results with discrimination accuracy (structured log)
+  - ErrorLog updates (error_type and fix_applied per miss) (structured log)
+
+  STOP CONDITIONS:
+  - Stop when every required output exists and the final check passes.
+  - Stop early if the time cap or item cap is reached.
+  - Stop if the learner has crossed into a different stage or the format is no longer useful.
+
+  IF STUCK:
+  Give one narrower cue, keep materials closed, and ask for a best-effort attempt before any feedback.
+  If that still fails, reduce scope to one smaller item, one row, or one rep and continue.
+validation:
+  test_cases:
+  - topic: near-miss distinctions
+    expected_outputs:
+    - Adversarial near-miss results with discrimination accuracy
+    - ErrorLog updates (error_type and fix_applied per miss)
+    pass_criteria:
+    - All required outputs for M-RET-006 are present.
+    - The response stays inside the correct stage rules.
+  - topic: confusable concepts
+    expected_outputs:
+    - Adversarial near-miss results with discrimination accuracy
+    - ErrorLog updates (error_type and fix_applied per miss)
+    pass_criteria:
+    - The artifact is reusable without extra interpretation.
+    - No forbidden move is triggered during the run.
+  acceptance_criteria:
+  - Every required output is present and checkable.
+  - No forbidden moves from the source file are violated.
+  - The facilitation prompt can be pasted into ChatGPT and run without extra context.
+  known_issues:
+  - Retrieval blocks can collapse into explanation unless the tutor protects the attempt-first rule.

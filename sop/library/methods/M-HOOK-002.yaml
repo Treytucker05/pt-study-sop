@@ -1,0 +1,280 @@
+id: M-HOOK-002
+name: KWIK Lite
+category: encode
+subcategory: hook
+description: 60-second lightweight mnemonic slot. One system-seeded cue plus one learner personalization.
+  If the learner cannot land a hook within 60 seconds, escalate to M-HOOK-001 (full KWIK Hook) for that
+  concept.
+control_stage: ENCODE
+status: draft
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
+tags:
+- encode
+- mnemonic
+- kwik
+- lite
+- hook
+purpose: Create a compact memory cue that links a term or concept to a vivid sound, image, or body-based
+  anchor without losing the real meaning.
+not_for: This is not for teaching the whole concept from scratch, replacing source truth, or turning a
+  mnemonic into a false fact claim.
+best_fit_topics:
+- Short labels, terms, and anchors that need fast recall
+- Material that benefits from a vivid sound/image cue
+poor_fit_topics:
+- Long mechanistic explanations that need comprehension first
+- Unstable or ambiguous material with no clear cue
+learner_state_required: Source material is loaded. The learner has one bounded term or concept and is
+  ready to actively build a cue around its true meaning.
+inputs:
+- description: TEACH close artifact
+  required: true
+- description: Target term or concept to compress
+  required: true
+- description: Short meaning/function statement
+  required: true
+outputs:
+- name: KWIKLiteSeed
+  description: KWIKLiteSeed
+  format: short, checkable artifact
+- name: LearnerOwnershipAction
+  description: LearnerOwnershipAction
+  format: short, checkable artifact
+- name: FinalHook
+  description: FinalHook
+  format: short cue plus explanation
+- name: DistortionGuard
+  description: DistortionGuard
+  format: short, checkable artifact
+- name: EscalationFlag (if needed)
+  description: EscalationFlag (if needed)
+  format: short, checkable artifact
+required_outputs: &id001
+- KWIK Lite seed
+- Learner ownership action
+- Final hook
+- Distortion guard
+- Escalation flag
+success_criteria:
+- 'All required outputs are present and checkable: KWIK Lite seed, Learner ownership action, Final hook,
+  Distortion guard, Escalation flag.'
+- 'The method reaches its stop condition: One seed generated; One learner ownership action captured.'
+- The learner stays active and the tutor does not give away the answer before the required attempt or
+  transformation.
+partial_criteria:
+- 'Some required outputs are present but at least one is missing or incomplete: KWIK Lite seed, Learner
+  ownership action.'
+steps:
+- step: 1
+  name: Confirm Meaning Is Stable Teach
+  action: Confirm meaning is stable (TEACH close artifact exists)
+  tutor_does: 'Guide the learner to Confirm meaning is stable (TEACH close artifact exists). Keep in mind:
+    If meaning is still shaky, skip this slot entirely.'
+  learner_does: Supplies the target term or concept, then reacts to the cue and confirms whether it clicks.
+  max_lines: 8
+  check: Does the learner have the right term and true meaning before the cue is built?
+  example: 'Example: If meaning is still shaky, skip this slot entirely.'
+- step: 2
+  name: Seed One Lightweight Cue Sound
+  action: Seed one lightweight cue (sound, image, phrase)
+  tutor_does: 'Guide the learner to Seed one lightweight cue (sound, image, phrase). Keep in mind: One
+    cue only. Tied to function or meaning.'
+  learner_does: Supplies the target term or concept, then reacts to the cue and confirms whether it clicks.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: One cue only. Tied to function or meaning.'
+- step: 3
+  name: Learner Personalizes Or Restates The
+  action: Learner personalizes or restates the cue
+  tutor_does: 'Guide the learner to Learner personalizes or restates the cue. Keep in mind: Learner must
+    do one ownership action — tweak, choose, or restate.'
+  learner_does: Performs the requested cognitive move and shares the result before moving on.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Learner must do one ownership action — tweak, choose, or restate.'
+- step: 4
+  name: Record Final Hook Distortion Guard
+  action: Record final hook + distortion guard
+  tutor_does: 'Guide the learner to Record final hook + distortion guard. Keep in mind: State what the
+    cue helps remember and what it should NOT distort.'
+  learner_does: Supplies the target term or concept, then reacts to the cue and confirms whether it clicks.
+  max_lines: 8
+  check: Is the final artifact captured and ready to keep or review?
+  example: 'Example: State what the cue helps remember and what it should NOT distort.'
+- step: 5
+  name: Time If 60S Passed Without
+  action: Check time — if 60s passed without a clean hook, flag for escalation
+  tutor_does: 'Guide the learner to Check time — if 60s passed without a clean hook, flag for escalation.
+    Keep in mind: Escalate to M-HOOK-001 (full KWIK Hook) at next ENCODE opportunity.'
+  learner_does: Supplies the target term or concept, then reacts to the cue and confirms whether it clicks.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Escalate to M-HOOK-001 (full KWIK Hook) at next ENCODE opportunity.'
+constraints:
+- rule: Require active learner processing
+  why: The method only works when the learner is doing the cognitive work.
+- rule: Do not turn this into a passive answer dump or scoring event
+  why: This method is designed for guided learning, not one-shot lecture or formal grading.
+- rule: Stay within objective scope
+  why: Prevents drift into unrelated material and keeps the method auditable.
+- rule: Max time seconds
+  why: 'Preserves the source constraint: 60.'
+- rule: Use ONLY after meaning is established (TEACH close artifact exists).
+  why: Keeps the method honest and prevents a common misuse described in the source file.
+- rule: Hard 60-second boundary. If the hook doesn't land, escalate to M-HOOK-001.
+  why: Keeps the method honest and prevents a common misuse described in the source file.
+- rule: Exactly one system seed + one learner personalization. No more.
+  why: Keeps the method honest and prevents a common misuse described in the source file.
+- rule: Default to skipping for clinical reasoning or systems-integration topics unless a hook is clearly
+    helpful.
+  why: Keeps the method honest and prevents a common misuse described in the source file.
+allowed_moves:
+- Seed one lightweight cue tied to function or meaning
+- Ask the learner to personalize, choose, or slightly modify the cue
+- State one guardrail to prevent mnemonic distortion
+- Flag for escalation to M-HOOK-001 if time expires
+- Skip the slot when the topic would be harmed by compression
+forbidden_moves:
+- Use before TEACH meaning is established
+- Expand beyond one seed + one personalization
+- Replace the TEACH close artifact with the mnemonic
+- Force a mnemonic for clinical reasoning or systems integration by default
+- Keep retrying past 60 seconds instead of escalating
+- Turn the slot into a scored check
+stuck_protocol: Shrink to one term, restate the real meaning in plain language, then try a simpler sound
+  cue, image cue, or body cue. If the cue still does not click, switch to a lighter mnemonic lane or ask
+  for one concrete example.
+failure_modes:
+- mode: Slot runs before meaning is clear
+  detection: The learner or tutor starts doing slot runs before meaning is clear or the artifact stops
+    satisfying the method’s required checks.
+  recovery: Skip and return to TEACH or anchor repair.
+  fallback_method: M-ENC-001
+- mode: Hook grows too elaborate
+  detection: The learner or tutor starts doing hook grows too elaborate or the artifact stops satisfying
+    the method’s required checks.
+  recovery: Hard stop at one seed + one personalization. Escalate to full KWIK instead of expanding.
+  fallback_method: M-HOOK-003
+- mode: 60s passes without a clean hook
+  detection: The learner or tutor starts doing 60s passes without a clean hook or the artifact stops satisfying
+    the method’s required checks.
+  recovery: Flag for M-HOOK-001 escalation. Do NOT keep retrying in lite mode.
+  fallback_method: M-GEN-009
+- mode: Hook distorts clinical reasoning
+  detection: The learner or tutor starts doing hook distorts clinical reasoning or the artifact stops
+    satisfying the method’s required checks.
+  recovery: Skip by default for those concept types.
+  fallback_method: M-ENC-001
+default_duration_min: 1
+energy_cost: low
+best_stage: first_exposure
+mechanisms:
+- dual_coding
+- elaboration
+- generation
+evidence:
+  citation: Paivio (1991)
+  finding: Lightweight verbal-plus-image hooks improve retention when grounded in already-understood meaning.
+  source: control-plane migration
+knobs:
+  output_format: bullets
+  mnemonic_tier: lite
+  slot_policy: post_teach_pre_full_calibrate
+  family: HOOK
+  guidance_level: medium
+  evidence_raw: Paivio (1991); lightweight mnemonic compression is useful only after meaning is already
+    established.
+  gating_rules:
+  - Run only after TEACH close artifact exists and meaning is stable.
+  - Hard 60-second time boundary.
+  - Escalate to M-HOOK-001 if hook doesn't land in time.
+  - Skip by default for clinical reasoning or systems-integration topics.
+  stipulations:
+  - Use ONLY after meaning is established (TEACH close artifact exists).
+  - Hard 60-second boundary. If the hook doesn't land, escalate to M-HOOK-001.
+  - Exactly one system seed + one learner personalization. No more.
+  - Default to skipping for clinical reasoning or systems-integration topics unless a hook is clearly
+    helpful.
+  artifact_type: notes
+related_methods:
+- id: M-ENC-001
+  relationship: Full KWIK fallback when deeper encoding is needed
+- id: M-HOOK-003
+  relationship: Alternative mnemonic compression
+- id: M-GEN-009
+  relationship: Anchor fallback for palpation or body-based cues
+facilitation_prompt: "You are running M-HOOK-002 (KWIK Lite) in ENCODE stage.\nRole: you are the tutor\
+  \ running the method exactly as written, with no hidden assumptions.\nObjective: Create a compact memory\
+  \ cue that links a term or concept to a vivid sound, image, or body-based anchor without losing the\
+  \ real meaning.\nScope: 60-second lightweight mnemonic slot. One system-seeded cue plus one learner\
+  \ personalization. If the learner cannot land a hook within 60 seconds, escalate to M-HOOK-001 (full\
+  \ KWIK Hook) for that concept.\nRules:\n- Require active learner processing — The method only works\
+  \ when the learner is doing the cognitive work.\n- Do not turn this into a passive answer dump or scoring\
+  \ event — This method is designed for guided learning, not one-shot lecture or formal grading.\n- Stay\
+  \ within objective scope — Prevents drift into unrelated material and keeps the method auditable.\n\
+  - Max time seconds — Preserves the source constraint: 60.\n- Use ONLY after meaning is established (TEACH\
+  \ close artifact exists). — Keeps the method honest and prevents a common misuse described in the source\
+  \ file.\n- Not for: This is not for teaching the whole concept from scratch, replacing source truth,\
+  \ or turning a mnemonic into a false fact claim.\nInputs:\n- TEACH close artifact (required)\n- Target\
+  \ term or concept to compress (required)\n- Short meaning/function statement (required)\nRequired outputs:\n\
+  - KWIKLiteSeed: KWIKLiteSeed [short, checkable artifact]\n- LearnerOwnershipAction: LearnerOwnershipAction\
+  \ [short, checkable artifact]\n- FinalHook: FinalHook [short cue plus explanation]\n- DistortionGuard:\
+  \ DistortionGuard [short, checkable artifact]\n- EscalationFlag (if needed): EscalationFlag (if needed)\
+  \ [short, checkable artifact]\nSteps: run one step at a time and wait after each step before advancing.\n\
+  1. Confirm Meaning Is Stable Teach\n   Tutor does: Guide the learner to Confirm meaning is stable (TEACH\
+  \ close artifact exists). Keep in mind: If meaning is still shaky, skip this slot entirely.\n   Learner\
+  \ does: Supplies the target term or concept, then reacts to the cue and confirms whether it clicks.\n\
+  \   Example: Example: If meaning is still shaky, skip this slot entirely.\n   Check: Does the learner\
+  \ have the right term and true meaning before the cue is built?\n   Then STOP and wait for the learner.\n\
+  2. Seed One Lightweight Cue Sound\n   Tutor does: Guide the learner to Seed one lightweight cue (sound,\
+  \ image, phrase). Keep in mind: One cue only. Tied to function or meaning.\n   Learner does: Supplies\
+  \ the target term or concept, then reacts to the cue and confirms whether it clicks.\n   Example: Example:\
+  \ One cue only. Tied to function or meaning.\n   Check: Is this step complete and ready for the next\
+  \ move?\n   Then STOP and wait for the learner.\n3. Learner Personalizes Or Restates The\n   Tutor does:\
+  \ Guide the learner to Learner personalizes or restates the cue. Keep in mind: Learner must do one ownership\
+  \ action — tweak, choose, or restate.\n   Learner does: Performs the requested cognitive move and shares\
+  \ the result before moving on.\n   Example: Example: Learner must do one ownership action — tweak, choose,\
+  \ or restate.\n   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for\
+  \ the learner.\n4. Record Final Hook Distortion Guard\n   Tutor does: Guide the learner to Record final\
+  \ hook + distortion guard. Keep in mind: State what the cue helps remember and what it should NOT distort.\n\
+  \   Learner does: Supplies the target term or concept, then reacts to the cue and confirms whether it\
+  \ clicks.\n   Example: Example: State what the cue helps remember and what it should NOT distort.\n\
+  \   Check: Is the final artifact captured and ready to keep or review?\n   Then STOP and wait for the\
+  \ learner.\n5. Time If 60S Passed Without\n   Tutor does: Guide the learner to Check time — if 60s passed\
+  \ without a clean hook, flag for escalation. Keep in mind: Escalate to M-HOOK-001 (full KWIK Hook) at\
+  \ next ENCODE opportunity.\n   Learner does: Supplies the target term or concept, then reacts to the\
+  \ cue and confirms whether it clicks.\n   Example: Example: Escalate to M-HOOK-001 (full KWIK Hook)\
+  \ at next ENCODE opportunity.\n   Check: Is this step complete and ready for the next move?\n   Then\
+  \ STOP and wait for the learner.\nStop conditions:\n- All required outputs are present and checkable:\
+  \ KWIK Lite seed, Learner ownership action, Final hook, Distortion guard, Escalation flag.\n- The method\
+  \ reaches its stop condition: One seed generated; One learner ownership action captured.\n- The learner\
+  \ stays active and the tutor does not give away the answer before the required attempt or transformation.\n\
+  If stuck: Shrink to one term, restate the real meaning in plain language, then try a simpler sound cue,\
+  \ image cue, or body cue. If the cue still does not click, switch to a lighter mnemonic lane or ask\
+  \ for one concrete example.\nDo not skip steps, do not solve the whole task at once, and do not present\
+  \ source claims as mnemonic or analogy artifacts."
+validation:
+  test_cases:
+  - topic: Short labels, terms, and anchors that need fast recall
+    expected_outputs: *id001
+    pass_criteria:
+    - All required outputs are present.
+    - The learner performs the required active step before the final artifact is given.
+    - The result stays within scope and matches the method format.
+  - topic: Long mechanistic explanations that need comprehension first
+    expected_outputs:
+    - Stuck protocol response
+    - Either a simpler scaffold or a method redirect
+    pass_criteria:
+    - The tutor does not force a bad fit.
+    - The tutor either shrinks scope or suggests a better-fitting method.
+    - The response remains honest about the mismatch.
+  acceptance_criteria:
+  - All required_outputs are present in the successful test case.
+  - No forbidden_moves are violated.
+  - The facilitation_prompt can be run without extra hidden context.
+  known_issues:
+  - LLMs may over-explain before the learner attempts the required move.
+  - LLMs may drift outside scope when the topic is broad or ambiguous.

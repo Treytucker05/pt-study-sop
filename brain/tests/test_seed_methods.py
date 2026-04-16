@@ -359,6 +359,8 @@ def test_load_from_yaml_includes_visible_teach_doctrine_cards() -> None:
 
     assert "M-TEA-006" in method_ids
     assert "M-TEA-007" in method_ids
+    assert "M-TEA-008" in method_ids
+    assert "M-ENC-016" in method_ids
 
 
 def test_depth_ladder_yaml_uses_literal_4_10_hs_pt_progression() -> None:
@@ -395,6 +397,40 @@ def test_kwik_hook_yaml_uses_word_sound_meaning_link_flow() -> None:
     prompt = str(data.get("facilitation_prompt", ""))
     assert "word sound -> real meaning -> meaning picture -> linked scene -> personalize -> lock" in prompt
     assert "sound cue + meaning link scene" in prompt
+
+
+def test_worked_example_fade_yaml_models_once_before_fading() -> None:
+    method_path = Path(__file__).resolve().parents[2] / "sop" / "library" / "methods" / "M-TEA-008.yaml"
+    data = yaml.safe_load(method_path.read_text(encoding="utf-8"))
+
+    assert data["id"] == "M-TEA-008"
+
+    step_actions = [str(step.get("action", "")) for step in data.get("steps", [])]
+    assert any("Present one fully worked example" in action for action in step_actions)
+    assert any("Fade 1-2 steps" in action for action in step_actions)
+    assert any("fill the missing steps" in action for action in step_actions)
+
+    prompt = str(data.get("facilitation_prompt", ""))
+    assert "Model once before you fade." in prompt
+    assert "Show one fully worked example before asking the learner to fill anything in." in prompt
+    assert "Do not turn the fade pass into a scored quiz." in prompt
+
+
+def test_embodied_walkthrough_yaml_requires_safe_movement_and_map_back() -> None:
+    method_path = Path(__file__).resolve().parents[2] / "sop" / "library" / "methods" / "M-ENC-016.yaml"
+    data = yaml.safe_load(method_path.read_text(encoding="utf-8"))
+
+    assert data["id"] == "M-ENC-016"
+
+    step_actions = [str(step.get("action", "")) for step in data.get("steps", [])]
+    assert any("Assign one safe movement or gesture" in action for action in step_actions)
+    assert any("Run the walkthrough slowly with live narration" in action for action in step_actions)
+    assert any("translate back into words or a sketch" in action for action in step_actions)
+
+    prompt = str(data.get("facilitation_prompt", ""))
+    assert "The learner must do the movement or gesture, not just watch it described." in prompt
+    assert "Every movement must be translated back into the real structure, mechanism, or sequence." in prompt
+    assert "End with a map-back explanation, list, or sketch rather than movement alone." in prompt
 
 
 def test_load_from_yaml_merges_chain_certification_registry(

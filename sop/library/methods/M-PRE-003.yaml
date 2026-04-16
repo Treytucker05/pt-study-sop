@@ -1,119 +1,112 @@
 id: M-PRE-003
 name: Prior Knowledge Scan
-category: calibrate
-description: Conditional CALIBRATE method that maps known concepts to the new topic when prior notes or North Star context
-  already exist.
-default_duration_min: 3
-energy_cost: low
-best_stage: first_exposure
-control_stage: CALIBRATE
+category: prime
+subcategory: recall-scan
+description: Conditional CALIBRATE method that maps known concepts to the new topic when prior notes or North Star context already exist.
+control_stage: PRIME
 status: validated
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
 tags:
 - schema-activation
 - connections
 - transfer
-mechanisms:
-- retrieval
-- elaboration
-- transfer
-stipulations:
-- Run only when prior context exists (North Star and/or prior notes linked to the current learning objective).
-- If no prior context exists, skip this method and route to M-PRE-010 followed by M-PRE-008.
-- CALIBRATE boundary: activation and readiness mapping only; no scored probes and no answer-checking.
-- Use this for connection mapping inside CALIBRATE, not for scoring.
-knobs:
-  priming_scope: single_focus
-  guidance_level: medium
-constraints:
-  non_assessment: true
-  no_scored_checks: true
-  no_retrieval_grading: true
+- prime
+- recall-scan
+- orientation
+- prior-knowledge
+- scan
+purpose: Conditional CALIBRATE method that maps known concepts to the new topic when prior notes or North Star context already exist. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
+not_for: Not for first-contact teaching, scored assessment, or full solution reveal. Use a TEACH or REFERENCE method when the goal is explanation rather than orientation.
+best_fit_topics:
+- 'New or complex material that needs a quick orientation pass: Prior Knowledge Scan'
+- Topics with prior notes, objective context, or an obvious structure to surface
+poor_fit_topics:
+- Brand-new content with no context or source packet
+- Scored retrieval or diagnostic testing
+learner_state_required: Source material is loaded, the topic is bounded, and the learner has at least some prior context or an objective to orient around.
 inputs:
-- New topic name
-- Access to previous module/course notes (required)
-- North Star objective context (preferred)
-steps:
-- step: 1
-  action: Write the new topic at center of page
-  notes: This becomes the hub for connection mapping
-- step: 2
-  action: List 3-5 related concepts you already know
-  notes: These can be from this course, other courses, or general knowledge
-- step: 3
-  action: Draw arrows showing how each relates to the new topic
-  notes: 'Label arrows with relationship type: ''causes'', ''part of'', ''similar to'''
-- step: 4
-  action: Identify the strongest connection
-  notes: This becomes your primary anchoring schema
-- step: 5
-  action: Note any prerequisite gaps
-  notes: If a connection feels weak, flag it for review
+- description: Source material loaded in chat
+  required: true
+- description: Target topic or objective scope
+  required: true
+- description: Prior notes, North Star, or prior-session context
+  required: false
 outputs:
+- name: Connection map (topic + related concepts)
+  description: Structured artifact that captures the key prior knowledge scan relationships.
+  format: structured map or nested bullets
+- name: Primary anchoring schema identified
+  description: Activation or structure artifact for prior knowledge scan.
+  format: bulleted artifact
+- name: Prerequisite gap list
+  description: Activation or structure artifact for prior knowledge scan.
+  format: bulleted artifact
+- name: Optional follow_up_targets list for unresolved prerequisite gaps
+  description: Activation or structure artifact for prior knowledge scan.
+  format: bulleted artifact
+required_outputs:
 - Connection map (topic + related concepts)
 - Primary anchoring schema identified
 - Prerequisite gap list
-- Optional follow_up_targets list for unresolved prerequisite gaps
-stop_criteria:
-- At least 1 prior context source referenced
-- 3-5 connections identified
-- Primary anchor selected
-- 3 minutes elapsed
-failure_modes:
-- mode: No prior context available
-  mitigation: Skip M-PRE-003 and run M-PRE-010 then M-PRE-008
-- mode: No connections found
-  mitigation: Prompt with broader categories - anatomy, physiology, pathology
-- mode: Connections too superficial
-  mitigation: Require relationship labels on arrows
-- mode: Spending too long on drawing
-  mitigation: Text list is acceptable; visual is optional enhancement
-logging_fields:
-- context_sources_used
-- connection_count
-- primary_anchor_topic
-- prerequisite_gaps
-- skipped_reason
-evidence:
-  citation: Ausubel (1968)
-  finding: Meaningful learning requires anchoring new information to existing schemas
-  source: seed_methods.py
-evidence_strength: high
-primary_citations:
-- Ausubel (1968)
-- Luiten et al. (1980)
-evidence_raw: Ausubel (1968); meaningful learning requires anchoring to existing schemas
-facilitation_prompt: 'You are running M-PRE-003 (Prior Knowledge Scan) in CALIBRATE stage.
-
-  This method is conditional and non-assessment.
-
-
-  Hard rules:
-
-  - Run only if prior notes/North Star context exist.
-
-  - If no prior context exists, skip and route to M-PRE-010 then M-PRE-008.
-
-  - Do not score or confidence-rate responses.
-
-
-  Produce exactly:
-
-  1) ConnectionMap (topic -> known related concepts with labeled links)
-
-  2) PrimaryAnchor
-
-  3) PrerequisiteGaps
-
-  4) FollowUpTargets
-
-
-  Keep to top-level orientation output; no deep teaching in this method.
-
-  '
-gating_rules:
-- Do not assess or score the learner in CALIBRATE.
-- Stay at orientation level and avoid full solution reveal.
-artifact_type: notes
+success_criteria:
+- 'Core structure is captured in the required outputs: Connection map (topic + related concepts), Primary anchoring schema identified.'
+- The method stays non-assessive and does not score the learner.
+- Any gaps, priorities, or blind spots are explicitly named for next-pass study.
+partial_criteria:
+- Connection map (topic + related concepts) is present but gaps or priorities are incomplete.
+- The output has useful structure but is missing one required linkage or objective tie.
+steps:
+- step: 1
+  name: Opening Step
+  action: Write the new topic at center of page
+  tutor_does: Write the new topic at center of page. This becomes the hub for connection mapping
+  learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
+  max_lines: 4
+  check: What are the strongest anchors you already have for this topic?
+  example: 'Example: "Opening Step: Write the new topic at center of page"'
+- step: 2
+  name: Step 2
+  action: List 3-5 related concepts you already know
+  tutor_does: List 3-5 related concepts you already know. These can be from this course, other courses, or general knowledge
+  learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
+  max_lines: 4
+  check: Does the structure so far match what you expected from the material?
+  example: 'Example: "Step 2: List 3-5 related concepts you already know"'
+- step: 3
+  name: Step 3
+  action: Draw arrows showing how each relates to the new topic
+  tutor_does: 'Draw arrows showing how each relates to the new topic. Label arrows with relationship type: ''causes'', ''part of'', ''similar to'''
+  learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
+  max_lines: 4
+  check: Does the structure so far match what you expected from the material?
+  example: 'Example: "Step 3: Draw arrows showing how each relates to the new topic"'
+- step: 4
+  name: Step 4
+  action: Identify the strongest connection
+  tutor_does: Identify the strongest connection. This becomes your primary anchoring schema
+  learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
+  max_lines: 4
+  check: Does the structure so far match what you expected from the material?
+  example: 'Example: "Step 4: Identify the strongest connection"'
+- step: 5
+  name: Step 5
+  action: Note any prerequisite gaps
+  tutor_does: Note any prerequisite gaps. If a connection feels weak, flag it for review
+  learner_does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
+  max_lines: 4
+  check: Which gaps or next targets should we carry forward?
+  example: 'Example: "Step 5: Note any prerequisite gaps"'
+constraints:
+- rule: Do not assess, grade, or confidence-rate the learner
+  why: PRIME methods activate and organize knowledge instead of testing it.
+- rule: Stay at orientation level and avoid full solution reveal
+  why: The goal is to shape readiness, not finish the lesson for the learner.
+- rule: Do not assess or score the learner
+  why: This method is for orientation and teaching, not grading.
+- rule: No Retrieval Grading
+  why: The method inherits this as a hard rule from the legacy card.
 allowed_moves:
 - Map known concepts to the new topic via connection mapping
 - Ask learner to list 3-5 related concepts they already know
@@ -130,7 +123,194 @@ forbidden_moves:
 - Run retrieval grading or correctness checks
 - Make confidence or mastery judgments
 - Spend excessive time perfecting the visual map (text list is acceptable)
-required_outputs:
-- Connection map (topic + related concepts with labeled links)
-- Primary anchoring schema identified
-- Prerequisite gap list
+stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
+failure_modes:
+- mode: No prior context available
+  detection: The output no longer matches the method’s core purpose.
+  recovery: Skip M-PRE-003 and run M-PRE-010 then M-PRE-008
+  fallback_method: M-PRE-010
+- mode: No connections found
+  detection: The output no longer matches the method’s core purpose.
+  recovery: Prompt with broader categories - anatomy, physiology, pathology
+  fallback_method: M-PRE-010
+default_duration_min: 3
+energy_cost: low
+best_stage: first_exposure
+mechanisms:
+- retrieval
+- elaboration
+- transfer
+- scaffolding
+- prior_knowledge_activation
+- organization
+evidence:
+  citation: Ausubel (1968)
+  finding: Meaningful learning requires anchoring new information to existing schemas
+  source: seed_methods.py
+knobs:
+  priming_scope: single_focus
+  guidance_level: medium
+  objective_link_required: true
+  artifact_type: notes
+  evidence_strength: high
+  primary_citations:
+  - Ausubel (1968)
+  - Luiten et al. (1980)
+  logging_fields:
+  - context_sources_used
+  - connection_count
+  - primary_anchor_topic
+  - prerequisite_gaps
+  - skipped_reason
+  output_format: bullets
+related_methods:
+- id: M-PRE-001
+  relationship: Follow with a quick recall dump
+- id: M-PRE-014
+  relationship: Use when the main goal is to find blind spots
+facilitation_prompt: 'You are a study tutor running M-PRE-003 (Prior Knowledge Scan) in the CALIBRATE stage.
+
+  ROLE: You are a careful, supportive tutor. Your job is to run Prior Knowledge Scan exactly as specified and keep the output faithful, bounded, and useful.
+
+  OBJECTIVE: Conditional CALIBRATE method that maps known concepts to the new topic when prior notes or North Star context already exist. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
+
+  SCOPE: Conditional CALIBRATE method that maps known concepts to the new topic when prior notes or North Star context already exist.
+
+  RULES:
+
+  - Do not assess, grade, or confidence-rate the learner — because PRIME methods activate and organize knowledge instead of testing it.
+
+  - Stay at orientation level and avoid full solution reveal — because The goal is to shape readiness, not finish the lesson for the learner.
+
+  - Do not assess or score the learner — because This method is for orientation and teaching, not grading.
+
+  - No Retrieval Grading — because The method inherits this as a hard rule from the legacy card.
+
+
+  OUTPUTS TO PRODUCE:
+
+  1. Connection map (topic + related concepts) — Structured artifact that captures the key prior knowledge scan relationships. (structured map or nested bullets)
+
+  2. Primary anchoring schema identified — Activation or structure artifact for prior knowledge scan. (bulleted artifact)
+
+  3. Prerequisite gap list — Activation or structure artifact for prior knowledge scan. (bulleted artifact)
+
+  4. Optional follow_up_targets list for unresolved prerequisite gaps — Activation or structure artifact for prior knowledge scan. (bulleted artifact)
+
+
+  RUN THE METHOD ONE STEP AT A TIME. Wait for my response before moving to the next step.
+
+  STEP 1 — Opening Step
+
+  - Tutor does: Write the new topic at center of page. This becomes the hub for connection mapping
+
+  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
+
+  - Example: Example: "Opening Step: Write the new topic at center of page"
+
+  - Check: What are the strongest anchors you already have for this topic?
+
+  Then stop and wait.
+
+  STEP 2 — Step 2
+
+  - Tutor does: List 3-5 related concepts you already know. These can be from this course, other courses, or general knowledge
+
+  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
+
+  - Example: Example: "Step 2: List 3-5 related concepts you already know"
+
+  - Check: Does the structure so far match what you expected from the material?
+
+  Then stop and wait.
+
+  STEP 3 — Step 3
+
+  - Tutor does: Draw arrows showing how each relates to the new topic. Label arrows with relationship type: ''causes'', ''part of'', ''similar to''
+
+  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
+
+  - Example: Example: "Step 3: Draw arrows showing how each relates to the new topic"
+
+  - Check: Does the structure so far match what you expected from the material?
+
+  Then stop and wait.
+
+  STEP 4 — Step 4
+
+  - Tutor does: Identify the strongest connection. This becomes your primary anchoring schema
+
+  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
+
+  - Example: Example: "Step 4: Identify the strongest connection"
+
+  - Check: Does the structure so far match what you expected from the material?
+
+  Then stop and wait.
+
+  STEP 5 — Step 5
+
+  - Tutor does: Note any prerequisite gaps. If a connection feels weak, flag it for review
+
+  - Learner does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
+
+  - Example: Example: "Step 5: Note any prerequisite gaps"
+
+  - Check: Which gaps or next targets should we carry forward?
+
+  Then stop and wait.
+
+
+  STOP CONDITIONS:
+
+  - Core structure is captured in the required outputs: Connection map (topic + related concepts), Primary anchoring schema identified.
+
+  - The method stays non-assessive and does not score the learner.
+
+  - Any gaps, priorities, or blind spots are explicitly named for next-pass study.
+
+
+  IF YOU GET STUCK:
+
+  If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
+
+  If the learner is still stuck after one rescue move, shrink the chunk, switch modality, or fall back to the listed fallback method.
+
+
+  GOOD OUTPUT EXAMPLE:
+
+  - Connection map (topic + related concepts): a concise, source-faithful artifact that matches the method purpose and stays within scope.
+
+  - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
+
+
+  DONE WHEN:
+
+  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.'
+validation:
+  test_cases:
+  - topic: First pass on Prior Knowledge Scan with prior notes present
+    expected_outputs:
+    - Connection map (topic + related concepts)
+    - Primary anchoring schema identified
+    - Prerequisite gap list
+    - Optional follow_up_targets list for unresolved prerequisite gaps
+    pass_criteria:
+    - Required outputs appear and include at least one structural or gap-oriented artifact from Connection map (topic + related concepts), Primary anchoring schema identified.
+    - The output identifies what is known, what is missing, and what to do next.
+  - topic: Dense review topic where the learner needs orientation before detail
+    expected_outputs:
+    - Connection map (topic + related concepts)
+    - Primary anchoring schema identified
+    - Prerequisite gap list
+    - Optional follow_up_targets list for unresolved prerequisite gaps
+    pass_criteria:
+    - Required outputs appear and include at least one structural or gap-oriented artifact from Connection map (topic + related concepts), Primary anchoring schema identified.
+    - No scored probe, quiz behavior, or grading language appears in the response.
+  acceptance_criteria:
+  - Required outputs appear and include at least one structural or gap-oriented artifact from Connection map (topic + related concepts), Primary anchoring schema identified.
+  - No scored probe, quiz behavior, or grading language appears in the response.
+  - The output identifies what is known, what is missing, and what to do next.
+  known_issues:
+  - LLMs sometimes over-explain instead of staying at orientation level.
+  - If objective context is weak, the method can drift unless the prompt locks scope early.

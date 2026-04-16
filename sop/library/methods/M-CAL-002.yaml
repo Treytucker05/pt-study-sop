@@ -1,103 +1,129 @@
 id: M-CAL-002
 name: Full Calibrate Probes
 category: calibrate
+subcategory: full
 description: Run the FULL CALIBRATE probe set after TEACH-close artifact to generate scored evidence for routing.
-default_duration_min: 6
-energy_cost: medium
-best_stage: first_exposure
 control_stage: CALIBRATE
 status: validated
-calibrate_phase: full
-calibrate_scope: post_teach
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
 tags:
 - calibrate
 - confidence
 - metacognition
 - risk-detection
 - full-calibrate
-mechanisms:
-- metacognitive_monitoring
-- calibration
-stipulations:
-- This is FULL CALIBRATE and runs after TEACH close artifact.
-- Confidence must be captured before correctness feedback.
-- High-confidence misses are highest-priority risk signals.
-- Confidence alone cannot lower difficulty without performance evidence.
-when_to_use:
-- After TEACH close artifact is produced.
-- Before ENCODE method selection and retrieval scheduling.
-when_not_to_use:
-- Never as a replacement for opening MICRO-CALIBRATE.
-- Skip only when a validated full-calibrate result already exists for the same objective scope.
-knobs:
-  item_count: 6
-  max_duration_min: 5
-  confidence_scale: HML
-  miscalibration_threshold: 0.2
-constraints:
-  full_calibrate_stage: true
-  confidence_before_feedback_required: true
-  confidence_only_adaptation_disallowed: true
-gating_rules:
-- Run scored probes only after TEACH-close artifact exists.
-- Capture confidence before correctness feedback for every attempted item.
-- Treat this block as diagnostic-only; do not teach or explain content deeply.
-- Never lower difficulty based on confidence alone; require correctness/latency corroboration.
-- Preserve a single confidence_scale throughout the block.
+purpose: Full Calibrate Probes exists to run a fuller scored probe set that captures evidence for routing after a TEACH-close
+  artifact. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for teaching new material, extended explanation, or open-ended discussion. Use TEACH when the goal is
+  instruction and use REFERENCE when the goal is artifact building.
+best_fit_topics:
+- scored probe batteries
+- post-teach readiness checks
+- routing decisions after a teaching block
+poor_fit_topics:
+- unscored discussion
+- answer-reveal first workflows
+- topics outside the TEACH-close scope
+learner_state_required: A TEACH-close artifact exists, the learner has already seen the material once, and the diagnostic
+  probe set should route based on scored evidence.
 inputs:
-- TEACH-close artifact (anchor/map/table/flow)
-- Full-calibrate probe set aligned to objective scope
-- Item correctness
-- Item latency
+- description: TEACH-close artifact (anchor/map/table/flow)
+  required: true
+- description: Full-calibrate probe set aligned to objective scope
+  required: true
+- description: Item correctness
+  required: true
+- description: Item latency
+  required: true
+outputs:
+- name: FullCalibrateItemResults (per-item correctness, latency, confidence)
+  description: A calibrated diagnostic output that supports routing for a fuller scored probe set that captures evidence for
+    routing after a TEACH-close artifact.
+  format: structured log
+- name: ConfidenceTaggedResults (per-item confidence + correctness)
+  description: A calibrated diagnostic output that supports routing for a fuller scored probe set that captures evidence for
+    routing after a TEACH-close artifact.
+  format: structured log
+- name: HighConfidenceMisses (overconfidence items)
+  description: A calibrated diagnostic output that supports routing for a fuller scored probe set that captures evidence for
+    routing after a TEACH-close artifact.
+  format: structured response
+- name: LowConfidenceHits (underconfidence items)
+  description: A calibrated diagnostic output that supports routing for a fuller scored probe set that captures evidence for
+    routing after a TEACH-close artifact.
+  format: structured response
+- name: CalibrationRiskFlags (routing signals for downstream methods)
+  description: A calibrated diagnostic output that supports routing for a fuller scored probe set that captures evidence for
+    routing after a TEACH-close artifact.
+  format: structured response
+- name: FullCalibrateSnapshot (post-TEACH diagnostic summary)
+  description: A calibrated diagnostic output that supports routing for a fuller scored probe set that captures evidence for
+    routing after a TEACH-close artifact.
+  format: short summary paragraph or bullets
+required_outputs:
+- FullCalibrateItemResults (per-item correctness, latency, confidence)
+- ConfidenceTaggedResults (per-item confidence + correctness)
+- HighConfidenceMisses (overconfidence items)
+- LowConfidenceHits (underconfidence items)
+- CalibrationRiskFlags (routing signals for downstream methods)
+- FullCalibrateSnapshot (post-TEACH diagnostic summary)
+success_criteria:
+- All required outputs are present for M-CAL-002.
+- The block remains diagnostic only and no teaching is introduced before the attempt.
+- The learner or tutor can point to the output artifact and reuse it later without ambiguity.
+partial_criteria:
+- 'One or more required outputs are present but one core artifact is incomplete: FullCalibrateItemResults (per-item correctness,
+  latency, confidence).'
+- The method stayed in the correct stage but the final artifact needs one more pass to be reusable.
 steps:
 - step: 1
-  action: Run item_count scored probes against current objective scope
-  notes: Use max_duration_min hard cap.
+  name: Run item_count scored probes
+  action: Run item_count scored probes against current objective scope. Use max_duration_min hard cap.
+  tutor_does: Present run item_count scored probes against current objective scope. use max_duration_min hard cap as a short
+    diagnostic move and do not teach the answer before the attempt.
+  learner_does: Attempts the item, reports confidence, and accepts routing feedback without turning the block into tutoring.
+  max_lines: 6
+  check: Is the scope set and is the learner ready for a diagnostic attempt?
+  example: 'Tutor: "Run item_count scored probes against current objective scope. Use max_duration_min hard cap." Learner:
+    "Ready."'
 - step: 2
-  action: Apply confidence tag before correctness feedback on each probe
-  notes: Use configured confidence_scale.
+  name: Apply confidence tag before
+  action: Apply confidence tag before correctness feedback on each probe. Use configured confidence_scale.
+  tutor_does: Present apply confidence tag before correctness feedback on each probe. use configured confidence_scale as a
+    short diagnostic move and do not teach the answer before the attempt.
+  learner_does: Attempts the item, reports confidence, and accepts routing feedback without turning the block into tutoring.
+  max_lines: 6
+  check: Is this step complete and ready to advance?
+  example: Tutor shows one brief probe and records answer, confidence, and latency.
 - step: 3
-  action: Identify high-confidence misses and low-confidence hits
-  notes: Both are miscalibration signals.
+  name: Identify high-confidence misses and
+  action: Identify high-confidence misses and low-confidence hits. Both are miscalibration signals.
+  tutor_does: Present identify high-confidence misses and low-confidence hits. both are miscalibration signals as a short
+    diagnostic move and do not teach the answer before the attempt.
+  learner_does: Attempts the item, reports confidence, and accepts routing feedback without turning the block into tutoring.
+  max_lines: 8
+  check: Is this step complete and ready to advance?
+  example: Tutor summarizes the weakest pattern and states whether the learner is ready to route onward.
 - step: 4
-  action: Compute full-calibrate bias and emit risk flags
-  notes: Feeds M-CAL-003 priority ranking and ENCODE routing.
-outputs:
-- FullCalibrateItemResults
-- ConfidenceTaggedResults
-- HighConfidenceMisses
-- LowConfidenceHits
-- CalibrationRiskFlags
-- FullCalibrateSnapshot
-artifact_type: notes
-stop_criteria:
-- item_count probes attempted or timer cap reached
-- Every attempted item has confidence tag
-- FullCalibrateSnapshot and risk flags generated
-failure_modes:
-- mode: Learner always picks same confidence level
-  mitigation: Collapse scale to HML and continue.
-- mode: Confidence captured after feedback
-  mitigation: Invalidate tag and re-prompt before revealing correctness.
-- mode: Confidence manipulated to force easier flow
-  mitigation: Weight adaptation by correctness and latency first.
-logging_fields:
-- item_count_attempted
-- item_count_correct
-- confidence_scale
-- high_confidence_miss_count
-- low_confidence_hit_count
-- calibration_bias_score
-- risk_flag_count
-evidence:
-  citation: Metcalfe (2017)
-  finding: Calibration monitoring supports targeted corrective learning.
-  source: control-plane migration
-evidence_strength: high
-primary_citations:
-- Metcalfe (2017)
-- Dunlosky et al. (2013)
-evidence_raw: Confidence-calibration signals improve targeting of corrective study actions.
+  name: Compute full-calibrate bias and
+  action: Compute full-calibrate bias and emit risk flags. Feeds M-CAL-003 priority ranking and ENCODE routing.
+  tutor_does: Present compute full-calibrate bias and emit risk flags. feeds m-cal-003 priority ranking and encode routing
+    as a short diagnostic move and do not teach the answer before the attempt.
+  learner_does: Attempts the item, reports confidence, and accepts routing feedback without turning the block into tutoring.
+  max_lines: 8
+  check: Is this step complete and ready to advance?
+  example: Tutor gives a short diagnostic prompt; learner responds with a best attempt.
+constraints:
+- rule: Diagnostic only; no teaching before or during the probe
+  why: Calibration must measure readiness, not change the learner state by explanation.
+- rule: Require one genuine attempt before hints or answer reveal
+  why: The diagnostic signal is only trustworthy when the learner has to produce a response first.
+- rule: Keep scope tied to the active objective set
+  why: Calibration is only useful when the items match what the learner is supposed to know.
+- rule: Respect item-count and time caps from the source file
+  why: Short calibration blocks preserve low-friction routing and reduce fatigue.
 allowed_moves:
 - Run scored full-calibrate probes against TEACH-covered objective scope
 - Apply confidence tag to each item using configured confidence scale
@@ -108,6 +134,10 @@ allowed_moves:
 - Emit risk flags for downstream routing
 - Collapse scale to HML if learner always picks same level
 - Invalidate and re-prompt if confidence captured after feedback
+- Run short scored probes inside the declared scope
+- Capture answer, confidence, and latency for each item
+- Provide only minimal clarification after the learner attempts an item
+- Summarize readiness and route the learner to the next stage
 forbidden_moves:
 - Run this block before TEACH-close artifact exists
 - Reveal correctness before confidence tag is captured (never reverse order)
@@ -117,44 +147,109 @@ forbidden_moves:
 - Switch into teaching or tutoring mode
 - Change confidence scale mid-block
 - Use confidence data to bypass performance-based routing
-required_outputs:
-- FullCalibrateItemResults (per-item correctness, latency, confidence)
-- ConfidenceTaggedResults (per-item confidence + correctness)
-- HighConfidenceMisses (overconfidence items)
-- LowConfidenceHits (underconfidence items)
-- CalibrationRiskFlags (routing signals for downstream methods)
-- FullCalibrateSnapshot (post-TEACH diagnostic summary)
-facilitation_prompt: 'You are running M-CAL-002 (Full Calibrate Probes) in CALIBRATE stage.
+- Teach the concept before the learner attempts the probe
+- Reveal the full answer before the attempt
+- Expand beyond the active objective scope
+stuck_protocol: Use one simpler probe, narrow the objective scope, and keep the block diagnostic only.
+failure_modes:
+- mode: Learner asks for teaching before attempting
+  detection: The response contains requests for explanation instead of a first attempt.
+  recovery: Restate the diagnostic rule, reduce the item to one short probe, and require an attempt.
+  fallback_method: M-CAL-004
+- mode: Probe is too broad to score cleanly
+  detection: The learner stalls, guesses, or gives a very long response with no clear target.
+  recovery: Narrow the scope to one objective or one subskill and rerun the probe.
+  fallback_method: M-CAL-001
+- mode: The block drifts into TEACH
+  detection: The tutor starts explaining content or giving step-by-step instruction.
+  recovery: Stop the explanation, reset to a diagnostic prompt, and summarize only the readiness signal.
+  fallback_method: M-CAL-003
+default_duration_min: 6
+energy_cost: medium
+best_stage: first_exposure
+mechanisms:
+- metacognitive_monitoring
+- calibration
+evidence:
+  citation: Metcalfe (2017)
+  finding: Calibration monitoring supports targeted corrective learning.
+  source: control-plane migration
+knobs:
+  default_duration_min: 6
+  energy_cost: medium
+  best_stage: first_exposure
+related_methods:
+- id: M-CAL-001
+  relationship: Use a faster micro baseline before a full probe set
+- id: M-CAL-003
+  relationship: Convert telemetry into the top three priorities after probing
+facilitation_prompt: |-
+  You are a tutor running M-CAL-002 (Full Calibrate Probes) in CALIBRATE mode.
+  ROLE: diagnose readiness and route the learner without teaching content.
+  OBJECTIVE: Full Calibrate Probes exists to run a fuller scored probe set that captures evidence for routing after a TEACH-close artifact. It turns the current stage into a clean, reusable signal instead of a vague study session.
+  SCOPE: Use only the loaded source material and the learner's current responses.
+  RULES:
+  - Diagnostic only; no teaching before or during the probe
+  - Require one genuine attempt before hints or answer reveal
+  - Keep scope tied to the active objective set
+  - Respect item-count and time caps from the source file
 
-  This is FULL CALIBRATE and must run after TEACH-close artifact.
+  RUN ONE STEP AT A TIME. Do not skip ahead. Wait for my reply before moving on.
+  1. Run item_count scored probes — Run item_count scored probes against current objective scope. Use max_duration_min hard cap.
+     Example: Tutor: "Run item_count scored probes against current objective scope. Use max_duration_min hard cap." Learner: "Ready."
+     Check: Is the scope set and is the learner ready for a diagnostic attempt?
+     Then stop and wait.
+  2. Apply confidence tag before — Apply confidence tag before correctness feedback on each probe. Use configured confidence_scale.
+     Example: Tutor shows one brief probe and records answer, confidence, and latency.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  3. Identify high-confidence misses and — Identify high-confidence misses and low-confidence hits. Both are miscalibration signals.
+     Example: Tutor summarizes the weakest pattern and states whether the learner is ready to route onward.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  4. Compute full-calibrate bias and — Compute full-calibrate bias and emit risk flags. Feeds M-CAL-003 priority ranking and ENCODE routing.
+     Example: Tutor gives a short diagnostic prompt; learner responds with a best attempt.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
 
+  REQUIRED OUTPUTS:
+  - FullCalibrateItemResults (per-item correctness, latency, confidence) (structured log)
+  - ConfidenceTaggedResults (per-item confidence + correctness) (structured log)
+  - HighConfidenceMisses (overconfidence items) (structured response)
+  - LowConfidenceHits (underconfidence items) (structured response)
+  - CalibrationRiskFlags (routing signals for downstream methods) (structured response)
+  - FullCalibrateSnapshot (post-TEACH diagnostic summary) (short summary paragraph or bullets)
 
-  Requirements:
+  STOP CONDITIONS:
+  - Stop when every required output exists and the final check passes.
+  - Stop early if the time cap or item cap is reached.
+  - Stop if the learner has crossed into a different stage or the format is no longer useful.
 
-  - Run {item_count} scored probes within {max_duration_min} minutes.
-
-  - Tag each item with confidence ({confidence_scale}) before correctness feedback.
-
-  - Detect and list high-confidence misses and low-confidence hits.
-
-  - Compute calibration risk using {miscalibration_threshold} as alert boundary.
-
-
-  Return exactly:
-
-  1) FullCalibrateItemResults
-
-  2) ConfidenceTaggedResults
-
-  3) HighConfidenceMisses
-
-  4) LowConfidenceHits
-
-  5) CalibrationRiskFlags
-
-  6) FullCalibrateSnapshot
-
-
-  Do not teach content here. This method is diagnostic routing only.
-
-  '
+  IF STUCK:
+  Use one simpler probe, narrow the objective scope, and keep the block diagnostic only.
+  If that still fails, reduce scope to one smaller item, one row, or one rep and continue.
+validation:
+  test_cases:
+  - topic: scored probe batteries
+    expected_outputs:
+    - FullCalibrateItemResults (per-item correctness, latency, confidence)
+    - ConfidenceTaggedResults (per-item confidence + correctness)
+    - HighConfidenceMisses (overconfidence items)
+    pass_criteria:
+    - All required outputs for M-CAL-002 are present.
+    - The response stays inside the correct stage rules.
+  - topic: post-teach readiness checks
+    expected_outputs:
+    - LowConfidenceHits (underconfidence items)
+    - CalibrationRiskFlags (routing signals for downstream methods)
+    - FullCalibrateSnapshot (post-TEACH diagnostic summary)
+    pass_criteria:
+    - The artifact is reusable without extra interpretation.
+    - No forbidden move is triggered during the run.
+  acceptance_criteria:
+  - Every required output is present and checkable.
+  - No forbidden moves from the source file are violated.
+  - The facilitation prompt can be pasted into ChatGPT and run without extra context.
+  known_issues:
+  - If the learner wants teaching during a diagnostic block, the tutor may need to restate the no-teach rule and narrow the
+    probe scope.

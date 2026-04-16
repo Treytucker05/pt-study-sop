@@ -1,117 +1,131 @@
 id: M-RET-003
 name: Fill-in-Blank
 category: retrieve
+subcategory: cloze
 description: Review notes with key terms blanked out. Fill from memory. Targets specific vocabulary recall.
-default_duration_min: 5
-energy_cost: low
-best_stage: review
 control_stage: RETRIEVE
 status: validated
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
 tags:
 - cloze
 - vocabulary
 - targeted
-mechanisms:
-- retrieval
-- cued_recall
-- vocabulary_encoding
-knobs:
-  difficulty: medium
-  feedback_timing: after_attempt
-constraints:
-  attempt_required_before_feedback: true
-  closed_note_first: true
-  route_back_on_repeated_miss: true
+purpose: Fill-in-Blank exists to run a fill-in-the-blank recall block that targets exact vocabulary and small but important
+  wording gaps. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for open-note review, answer-reveal first workflows, or deep teaching. Use REFERENCE if the learner needs
+  an anchor first.
+best_fit_topics:
+- exact vocabulary recall
+- cloze practice
+- targeted wording gaps
+poor_fit_topics:
+- broad synthesis essays
+- discussion without blanks
+- new vocabulary introduction
+learner_state_required: The learner already has source material or an anchor available, the source will be closed for recall,
+  and a retrieval target exists.
 inputs:
-- Notes or text with key terms identified
-- Cloze deletion tool (or manually blanked printout)
-- Answer key for verification
-steps:
-- step: 1
-  action: Prepare cloze material by blanking key terms (or use pre-made)
-  notes: Target vocabulary, definitions, key names, and critical facts
-- step: 2
-  action: Read each sentence with the blank
-  notes: Use context clues — this is cued recall, not free recall
-- step: 3
-  action: Write or speak the missing term before checking
-  notes: Commit to answer first — no peeking at answer key
-- step: 4
-  action: Check answer immediately after each item
-  notes: Immediate feedback strengthens correct memories, corrects errors
-- step: 5
-  action: Mark items missed for targeted review
-  notes: Create a miss list for focused re-study
-- step: 6
-  action: Re-attempt missed items after completing all blanks
-  notes: Second pass often shows improvement — track this
+- description: Notes or text with key terms identified
+  required: true
+- description: Cloze deletion tool (or manually blanked printout)
+  required: true
+- description: Answer key for verification
+  required: true
 outputs:
+- name: Completed cloze exercise
+  description: A cloze response set showing which blanks were filled correctly and which need another pass.
+  format: structured response
+- name: Accuracy count (correct/total blanks)
+  description: A structured output for a fill-in-the-blank recall block that targets exact vocabulary and small but important
+    wording gaps.
+  format: structured response
+- name: Miss list for targeted review
+  description: A structured output for a fill-in-the-blank recall block that targets exact vocabulary and small but important
+    wording gaps.
+  format: bulleted or tabular list
+- name: Second-pass improvement rate
+  description: A structured output for a fill-in-the-blank recall block that targets exact vocabulary and small but important
+    wording gaps.
+  format: structured response
+required_outputs:
 - Completed cloze exercise
 - Accuracy count (correct/total blanks)
 - Miss list for targeted review
 - Second-pass improvement rate
-stop_criteria:
-- All blanks attempted
-- Second pass on missed items complete
-- Accuracy threshold reached (e.g., 90%)
-failure_modes:
-- mode: Blanking too many terms (cognitive overload)
-  mitigation: 1 blank per sentence maximum; focus on highest-value terms
-- mode: Using blanks that have no context clues
-  mitigation: Ensure surrounding context provides retrieval cues
-- mode: Rushing without committing to answers
-  mitigation: Say/write answer before looking — no peeking
-logging_fields:
-- blanks_attempted
-- blanks_correct
-- accuracy_percent
-- second_pass_improvement
-evidence:
-  citation: Dunlosky et al. (2013)
-  finding: cloze-based retrieval is effective for factual knowledge
-  source: seed_methods.py
-evidence_raw: Dunlosky et al. (2013); cloze-based retrieval is effective for factual knowledge
-facilitation_prompt: 'You are running M-RET-003 (Fill-in-Blank) in RETRIEVE stage.
-
-  Execute this method card exactly and keep outputs deterministic.
-
-
-  Stage hard rules:
-
-  - Require learner attempt first.
-
-  - Do not reveal full answer before attempt.
-
-  - Capture errors and route signals.
-
-
-  Required outputs:
-
-  - Completed cloze exercise
-
-  - Accuracy count (correct/total blanks)
-
-  - Miss list for targeted review
-
-  - Second-pass improvement rate
-
-
-  Stop conditions:
-
-  - All blanks attempted
-
-  - Second pass on missed items complete
-
-  - Accuracy threshold reached (e.g., 90%)
-
-
-  If required inputs are missing, request only the minimum needed input and continue.
-
-  '
-gating_rules:
-- Require closed-note recall first, then feedback.
-- If repeated misses occur, route back to ENCODE or REFERENCE.
-artifact_type: notes
+success_criteria:
+- All required outputs are present for M-RET-003.
+- A genuine attempt-first recall happened before any comparison or feedback.
+- The learner or tutor can point to the output artifact and reuse it later without ambiguity.
+partial_criteria:
+- 'One or more required outputs are present but one core artifact is incomplete: Completed cloze exercise.'
+- The method stayed in the correct stage but the final artifact needs one more pass to be reusable.
+steps:
+- step: 1
+  name: Prepare cloze material by
+  action: Prepare cloze material by blanking key terms (or use pre-made). Target vocabulary, definitions, key names, and critical
+    facts
+  tutor_does: Run prepare cloze material by blanking key terms (or use pre-made). target vocabulary, definitions, key names,
+    and critical facts while protecting the attempt-first rule, then compare only after recall is complete.
+  learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
+  max_lines: 8
+  check: Are all materials closed and is the learner ready to attempt recall?
+  example: 'Tutor: "Close your notes. Do not peek." Learner: "Notes are closed."'
+- step: 2
+  name: Read each sentence with
+  action: Read each sentence with the blank. Use context clues — this is cued recall, not free recall
+  tutor_does: Run read each sentence with the blank. use context clues — this is cued recall, not free recall while protecting
+    the attempt-first rule, then compare only after recall is complete.
+  learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
+  max_lines: 8
+  check: Is this step complete and ready to advance?
+  example: Tutor starts the timer and asks for a free-response dump.
+- step: 3
+  name: Write or speak the
+  action: Write or speak the missing term before checking. Commit to answer first — no peeking at answer key
+  tutor_does: Run write or speak the missing term before checking. commit to answer first — no peeking at answer key while
+    protecting the attempt-first rule, then compare only after recall is complete.
+  learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
+  max_lines: 8
+  check: Is this step complete and ready to advance?
+  example: Tutor marks gaps with question marks and compares them after the attempt window ends.
+- step: 4
+  name: Check answer immediately after
+  action: Check answer immediately after each item. Immediate feedback strengthens correct memories, corrects errors
+  tutor_does: Run check answer immediately after each item. immediate feedback strengthens correct memories, corrects errors
+    while protecting the attempt-first rule, then compare only after recall is complete.
+  learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
+  max_lines: 8
+  check: Is this step complete and ready to advance?
+  example: Tutor compares to the source and notes missing items.
+- step: 5
+  name: Mark items missed for
+  action: Mark items missed for targeted review. Create a miss list for focused re-study
+  tutor_does: Run mark items missed for targeted review. create a miss list for focused re-study while protecting the attempt-first
+    rule, then compare only after recall is complete.
+  learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
+  max_lines: 8
+  check: Is this step complete and ready to advance?
+  example: Tutor compares to the source and notes missing items.
+- step: 6
+  name: Re-attempt missed items after
+  action: Re-attempt missed items after completing all blanks. Second pass often shows improvement — track this
+  tutor_does: Run re-attempt missed items after completing all blanks. second pass often shows improvement — track this while
+    protecting the attempt-first rule, then compare only after recall is complete.
+  learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
+  max_lines: 8
+  check: Is this step complete and ready to advance?
+  example: Tutor compares to the source and notes missing items.
+constraints:
+- rule: Closed-note first, open-note only after recall is complete
+  why: The retrieval signal disappears if the source is visible during the attempt.
+- rule: No hints or answer reveal before the learner attempts the item
+  why: Attempt-first is required for a valid memory readout.
+- rule: Compare against source only after the attempt window ends
+  why: Comparison is for repair, not for helping the recall itself.
+- rule: Stay within the timer or sprint cap
+  why: Time pressure is part of the retrieval design.
 allowed_moves:
 - Present cloze deletions with surrounding context as retrieval cues
 - Require committed answer before revealing the blanked term
@@ -121,6 +135,10 @@ allowed_moves:
 - Run second pass on missed items
 - Track second-pass improvement rate
 - Route back to ENCODE on repeated misses
+- Force an attempt before any comparison or feedback
+- Mark gaps explicitly with question marks or placeholders
+- Compare to the source after the attempt window closes
+- Track latency and accuracy when relevant
 forbidden_moves:
 - Reveal blanked term before learner commits an answer
 - Provide hints during first attempt at any blank
@@ -130,8 +148,115 @@ forbidden_moves:
 - Teach new material during retrieval
 - Use blanks with zero surrounding context clues
 - Accept "I don't know" without at least one attempt
-required_outputs:
-- Completed cloze exercise
-- Accuracy count (correct/total blanks)
-- Miss list for targeted review
-- Second-pass improvement rate
+- Peek at materials during the recall window
+- Give hints before the first attempt
+- Teach new content during retrieval
+stuck_protocol: Give one narrower cue, keep materials closed, and ask for a best-effort attempt before any feedback.
+failure_modes:
+- mode: Materials are open during recall
+  detection: The learner can see the source or answer key before attempting the item.
+  recovery: Close the materials, restart the timer, and repeat the item from scratch.
+  fallback_method: M-REF-003
+- mode: No attempt is made
+  detection: The learner waits for hints or gives only "I do not know" without trying.
+  recovery: Ask for a best effort answer, then mark the gap and continue.
+  fallback_method: M-OVR-001
+- mode: Comparison happens too early
+  detection: Feedback or answer checking is introduced before the attempt window ends.
+  recovery: Delay comparison until after recall, then capture gaps cleanly.
+  fallback_method: M-REF-001
+default_duration_min: 5
+energy_cost: low
+best_stage: review
+mechanisms:
+- retrieval
+- cued_recall
+- vocabulary_encoding
+evidence:
+  citation: Dunlosky et al. (2013)
+  finding: cloze-based retrieval is effective for factual knowledge
+  source: seed_methods.py
+knobs:
+  default_duration_min: 5
+  energy_cost: low
+  best_stage: review
+related_methods:
+- id: M-REF-003
+  relationship: Cloze items often come from the anchor sheet
+- id: M-REF-001
+  relationship: Missed blanks can be autopsied for confusion patterns
+facilitation_prompt: |-
+  You are a tutor running M-RET-003 (Fill-in-Blank) in RETRIEVE mode.
+  ROLE: elicit memory under controlled conditions and protect the attempt-first rule.
+  OBJECTIVE: Fill-in-Blank exists to run a fill-in-the-blank recall block that targets exact vocabulary and small but important wording gaps. It turns the current stage into a clean, reusable signal instead of a vague study session.
+  SCOPE: Use only the loaded source material and the learner's current responses.
+  RULES:
+  - Closed-note first, open-note only after recall is complete
+  - No hints or answer reveal before the learner attempts the item
+  - Compare against source only after the attempt window ends
+  - Stay within the timer or sprint cap
+
+  RUN ONE STEP AT A TIME. Do not skip ahead. Wait for my reply before moving on.
+  1. Prepare cloze material by — Prepare cloze material by blanking key terms (or use pre-made). Target vocabulary, definitions, key names, and critical facts
+     Example: Tutor: "Close your notes. Do not peek." Learner: "Notes are closed."
+     Check: Are all materials closed and is the learner ready to attempt recall?
+     Then stop and wait.
+  2. Read each sentence with — Read each sentence with the blank. Use context clues — this is cued recall, not free recall
+     Example: Tutor starts the timer and asks for a free-response dump.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  3. Write or speak the — Write or speak the missing term before checking. Commit to answer first — no peeking at answer key
+     Example: Tutor marks gaps with question marks and compares them after the attempt window ends.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  4. Check answer immediately after — Check answer immediately after each item. Immediate feedback strengthens correct memories, corrects errors
+     Example: Tutor compares to the source and notes missing items.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  5. Mark items missed for — Mark items missed for targeted review. Create a miss list for focused re-study
+     Example: Tutor compares to the source and notes missing items.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  6. Re-attempt missed items after — Re-attempt missed items after completing all blanks. Second pass often shows improvement — track this
+     Example: Tutor compares to the source and notes missing items.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+
+  REQUIRED OUTPUTS:
+  - Completed cloze exercise (structured response)
+  - Accuracy count (correct/total blanks) (structured response)
+  - Miss list for targeted review (bulleted or tabular list)
+  - Second-pass improvement rate (structured response)
+
+  STOP CONDITIONS:
+  - Stop when every required output exists and the final check passes.
+  - Stop early if the time cap or item cap is reached.
+  - Stop if the learner has crossed into a different stage or the format is no longer useful.
+
+  IF STUCK:
+  Give one narrower cue, keep materials closed, and ask for a best-effort attempt before any feedback.
+  If that still fails, reduce scope to one smaller item, one row, or one rep and continue.
+validation:
+  test_cases:
+  - topic: exact vocabulary recall
+    expected_outputs:
+    - Completed cloze exercise
+    - Accuracy count (correct/total blanks)
+    - Miss list for targeted review
+    pass_criteria:
+    - All required outputs for M-RET-003 are present.
+    - The response stays inside the correct stage rules.
+  - topic: cloze practice
+    expected_outputs:
+    - Accuracy count (correct/total blanks)
+    - Miss list for targeted review
+    - Second-pass improvement rate
+    pass_criteria:
+    - The artifact is reusable without extra interpretation.
+    - No forbidden move is triggered during the run.
+  acceptance_criteria:
+  - Every required output is present and checkable.
+  - No forbidden moves from the source file are violated.
+  - The facilitation prompt can be pasted into ChatGPT and run without extra context.
+  known_issues:
+  - Retrieval blocks can collapse into explanation unless the tutor protects the attempt-first rule.

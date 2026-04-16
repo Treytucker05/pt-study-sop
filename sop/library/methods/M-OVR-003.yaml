@@ -1,91 +1,92 @@
 id: M-OVR-003
 name: Drill Sheet Builder
 category: overlearn
+subcategory: drill_sheet
 description: Build an interleaved drill sheet (30-60 timed items) and define cross-session validation checks.
-default_duration_min: 10
-energy_cost: medium
-best_stage: consolidation
 control_stage: OVERLEARN
 status: validated
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
 tags:
 - overlearning
 - drills
 - consolidation
-mechanisms:
-- spacing
-- interleaving
-- retrieval
-knobs:
-  intensity: medium
-  speed_pressure: soft
-constraints:
-  mastery_required_before_speed: true
-  burnout_cap_rounds: 3
-  preserve_accuracy_threshold: 0.8
+purpose: Drill Sheet Builder exists to run an interleaved drill-sheet builder that packages practice items and validation
+  checks for later sessions. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for initial teaching, discovery, or broad remediation. Use TEACH or REFERENCE first if understanding
+  is not already present.
+best_fit_topics:
+- interleaved drill-sheet planning
+- timed practice architecture
+- validation checks
+poor_fit_topics:
+- single-item quizzing only
+- non-interleaved worksheets
+- open-ended note taking
+learner_state_required: Core understanding already exists, retrieval is reasonably stable, and the learner is ready for short
+  fluency reps rather than new instruction.
 inputs:
-- Question Bank Seed
-- ErrorLog trends
+- description: Question Bank Seed
+  required: true
+- description: ErrorLog trends
+  required: true
+outputs:
+- name: DrillSheet (30-60 interleaved items, objective-tagged)
+  description: A structured output for an interleaved drill-sheet builder that packages practice items and validation checks
+    for later sessions.
+  format: formatted study artifact
+- name: CrossSessionValidation checklist (two-session pass criteria)
+  description: A structured output for an interleaved drill-sheet builder that packages practice items and validation checks
+    for later sessions.
+  format: bulleted or tabular list
+required_outputs:
+- DrillSheet (30-60 interleaved items, objective-tagged)
+- CrossSessionValidation checklist (two-session pass criteria)
+success_criteria:
+- All required outputs are present for M-OVR-003.
+- The rep set stays brief, fluent, and below the fatigue threshold.
+- The learner or tutor can point to the output artifact and reuse it later without ambiguity.
+partial_criteria:
+- 'One or more required outputs are present but one core artifact is incomplete: DrillSheet (30-60 interleaved items, objective-tagged).'
+- The method stayed in the correct stage but the final artifact needs one more pass to be reusable.
 steps:
 - step: 1
-  action: Assemble 30-60 interleaved timed items
-  notes: Include weak objectives and prior misses
+  name: Assemble 30-60 interleaved timed
+  action: Assemble 30-60 interleaved timed items. Include weak objectives and prior misses
+  tutor_does: Run assemble 30-60 interleaved timed items. include weak objectives and prior misses as a bounded fluency rep
+    and stop before fatigue lowers accuracy.
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Is the learner already stable enough for fluency reps?
+  example: 'Tutor: "Keep this to a short, fluent rep set." Learner: "Understood."'
 - step: 2
-  action: Define two-session validation criteria
-  notes: Same objective must be passed across two sessions
+  name: Define two-session validation criteria.
+  action: Define two-session validation criteria. Same objective must be passed across two sessions
+  tutor_does: Run define two-session validation criteria. same objective must be passed across two sessions as a bounded fluency
+    rep and stop before fatigue lowers accuracy.
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Is this step complete and ready to advance?
+  example: Tutor asks for the next short answer and keeps the pace brisk.
 - step: 3
-  action: Store drill sheet and validation checklist artifacts
-  notes: Keep objective IDs attached to items
-outputs:
-- DrillSheet
-- CrossSessionValidation checklist
-stop_criteria:
-- Drill sheet has 30-60 items
-- Cross-session validation criteria defined
-evidence:
-  citation: Rawson & Dunlosky (2011)
-  finding: Successive relearning with repeated retrieval strengthens durable mastery
-  source: control-plane migration
-evidence_raw: Rawson & Dunlosky (2011); repeated relearning across sessions improves retention
-facilitation_prompt: 'You are running M-OVR-003 (Drill Sheet Builder) in OVERLEARN stage.
-
-  Execute this method card exactly and keep outputs deterministic.
-
-
-  Stage hard rules:
-
-  - Run bounded fluency reps.
-
-  - Respect fatigue and stop caps.
-
-  - Prioritize durable retention over speed only.
-
-
-  Required outputs:
-
-  - DrillSheet
-
-  - CrossSessionValidation checklist
-
-
-  Stop conditions:
-
-  - Drill sheet has 30-60 items
-
-  - Cross-session validation criteria defined
-
-
-  If required inputs are missing, request only the minimum needed input and continue.
-
-  '
-gating_rules:
-- Run only after stable retrieval performance.
-- Stop after cap is met to avoid burnout loops.
-failure_modes:
-- mode: Burnout/fatigue
-  mitigation: Stop loop early and schedule spaced review.
-- mode: Speed over accuracy collapse
-  mitigation: Reduce time pressure and recover accuracy first.
-artifact_type: notes
+  name: Store drill sheet and
+  action: Store drill sheet and validation checklist artifacts. Keep objective IDs attached to items
+  tutor_does: Run store drill sheet and validation checklist artifacts. keep objective ids attached to items as a bounded
+    fluency rep and stop before fatigue lowers accuracy.
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Is this step complete and ready to advance?
+  example: Tutor identifies one weak spot and asks for one more clean repetition.
+constraints:
+- rule: Understanding must already exist before fluency reps begin
+  why: Overlearning hardens what is already known; it does not teach from scratch.
+- rule: Keep reps short and bounded to avoid fatigue loops
+  why: Excess repetition lowers accuracy and wastes the fluency window.
+- rule: Stop when the cap is reached or accuracy starts to sag
+  why: The point is durable fluency, not endless repetition.
+- rule: Do not introduce new material during the rep set
+  why: New content belongs in TEACH or REFERENCE, not OVERLEARN.
 allowed_moves:
 - Assemble 30-60 interleaved timed drill items
 - Include weak objectives and prior misses in item pool
@@ -95,6 +96,10 @@ allowed_moves:
 - Store drill sheet and validation checklist as artifacts
 - Stop loop early on fatigue signals
 - Reduce time pressure if accuracy drops below threshold
+- Run short fluent reps on already-understood material
+- Tighten wording and reduce hesitation across repetitions
+- Stop when accuracy falls or the cap is reached
+- Convert the stable material into an artifact for later review
 forbidden_moves:
 - Accept fewer than 30 or more than 60 items in drill sheet
 - Create blocked (non-interleaved) drill sequences
@@ -104,6 +109,99 @@ forbidden_moves:
 - Include items from objectives not yet encoded
 - Skip cross-session validation criteria definition
 - Teach or explain content during drill assembly
-required_outputs:
-- DrillSheet (30-60 interleaved items, objective-tagged)
-- CrossSessionValidation checklist (two-session pass criteria)
+- Introduce brand-new content
+- Push through fatigue after the cap
+- Let the session drift into broad teaching
+stuck_protocol: Shorten the rep, narrow the item, and stop before fatigue changes the quality of the response.
+failure_modes:
+- mode: The session turns into new teaching
+  detection: The tutor starts adding unfamiliar content or long explanations.
+  recovery: Cut back to the known material and keep the rep set bounded.
+  fallback_method: M-REF-003
+- mode: Fluency collapses from fatigue
+  detection: Latency rises and errors accumulate across repeated reps.
+  recovery: Stop the set early, capture the weak item, and defer another rep to later.
+  fallback_method: M-RET-003
+- mode: The output becomes bloated
+  detection: Responses become long, unfocused, or repetitive.
+  recovery: Require shorter answers and a tighter format, then continue.
+  fallback_method: M-OVR-002
+default_duration_min: 10
+energy_cost: medium
+best_stage: consolidation
+mechanisms:
+- spacing
+- interleaving
+- retrieval
+evidence:
+  citation: Rawson & Dunlosky (2011)
+  finding: Successive relearning with repeated retrieval strengthens durable mastery
+  source: control-plane migration
+knobs:
+  default_duration_min: 10
+  energy_cost: medium
+  best_stage: consolidation
+related_methods:
+- id: M-RET-004
+  relationship: Interleaved retrieval practice is the downstream use of a drill sheet
+- id: M-REF-004
+  relationship: Question seeds can populate the drill sheet
+facilitation_prompt: |-
+  You are a tutor running M-OVR-003 (Drill Sheet Builder) in OVERLEARN mode.
+  ROLE: run bounded fluency reps that harden already-understood material.
+  OBJECTIVE: Drill Sheet Builder exists to run an interleaved drill-sheet builder that packages practice items and validation checks for later sessions. It turns the current stage into a clean, reusable signal instead of a vague study session.
+  SCOPE: Use only the loaded source material and the learner's current responses.
+  RULES:
+  - Understanding must already exist before fluency reps begin
+  - Keep reps short and bounded to avoid fatigue loops
+  - Stop when the cap is reached or accuracy starts to sag
+  - Do not introduce new material during the rep set
+
+  RUN ONE STEP AT A TIME. Do not skip ahead. Wait for my reply before moving on.
+  1. Assemble 30-60 interleaved timed — Assemble 30-60 interleaved timed items. Include weak objectives and prior misses
+     Example: Tutor: "Keep this to a short, fluent rep set." Learner: "Understood."
+     Check: Is the learner already stable enough for fluency reps?
+     Then stop and wait.
+  2. Define two-session validation criteria. — Define two-session validation criteria. Same objective must be passed across two sessions
+     Example: Tutor asks for the next short answer and keeps the pace brisk.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  3. Store drill sheet and — Store drill sheet and validation checklist artifacts. Keep objective IDs attached to items
+     Example: Tutor identifies one weak spot and asks for one more clean repetition.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+
+  REQUIRED OUTPUTS:
+  - DrillSheet (30-60 interleaved items, objective-tagged) (formatted study artifact)
+  - CrossSessionValidation checklist (two-session pass criteria) (bulleted or tabular list)
+
+  STOP CONDITIONS:
+  - Stop when every required output exists and the final check passes.
+  - Stop early if the time cap or item cap is reached.
+  - Stop if the learner has crossed into a different stage or the format is no longer useful.
+
+  IF STUCK:
+  Shorten the rep, narrow the item, and stop before fatigue changes the quality of the response.
+  If that still fails, reduce scope to one smaller item, one row, or one rep and continue.
+validation:
+  test_cases:
+  - topic: interleaved drill-sheet planning
+    expected_outputs:
+    - DrillSheet (30-60 interleaved items, objective-tagged)
+    - CrossSessionValidation checklist (two-session pass criteria)
+    pass_criteria:
+    - All required outputs for M-OVR-003 are present.
+    - The response stays inside the correct stage rules.
+  - topic: timed practice architecture
+    expected_outputs:
+    - DrillSheet (30-60 interleaved items, objective-tagged)
+    - CrossSessionValidation checklist (two-session pass criteria)
+    pass_criteria:
+    - The artifact is reusable without extra interpretation.
+    - No forbidden move is triggered during the run.
+  acceptance_criteria:
+  - Every required output is present and checkable.
+  - No forbidden moves from the source file are violated.
+  - The facilitation prompt can be pasted into ChatGPT and run without extra context.
+  known_issues:
+  - Fluency reps can become fatiguing or repetitive unless the tutor stops at the cap and keeps items bounded.

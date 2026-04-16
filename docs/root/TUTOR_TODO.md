@@ -28,6 +28,35 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 - Ops note (2026-03-25): `dev-browser` is now a shared agent skill projected into every supported agent root; this does not change Tutor sprint priority.
 
+- [x] SOP-METHOD-GAP-001. Add the two strongest remaining method-library gaps from the original SOP audit: worked-example fading in TEACH and embodied walkthrough encoding in ENCODE.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `sop/library/categories/TEACH.md`
+    - `sop/library/categories/ENCODE.md`
+    - `sop/library/methods/M-TEA-008.yaml`
+    - `sop/library/methods/M-ENC-016.yaml`
+    - `sop/library/15-method-library.md`
+    - `sop/runtime/knowledge_upload/06_METHODS.md`
+    - `sop/tests/golden/15-method-library.golden.md`
+    - `sop/tests/golden/06_METHODS.golden.md`
+    - `brain/tests/test_seed_methods.py`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - the live TEACH inventory includes a worked-example completion-fade card that models once before fading learner fill-in
+    - the live ENCODE inventory includes an embodied walkthrough card that uses safe movement plus explicit map-back to the real mechanism
+    - category references, generated method-library surfaces, and focused seed-method regressions all agree with the new canon
+  - Assignee: @codex-cli
+  - Completed: 2026-04-03
+  - Notes:
+    - Added `M-TEA-008 Worked Example -> Completion Fade` so TEACH now has an explicit model-first `worked example -> completion fade` contract instead of relying on older archive-only guidance.
+    - Added `M-ENC-016 Embodied Walkthrough` so ENCODE now has a dedicated safe movement / map-back method for anatomy, sequence, and procedure encoding without drifting into graded skill coaching.
+    - Updated `sop/library/categories/TEACH.md` and `sop/library/categories/ENCODE.md`, regenerated the readable/runtime method surfaces plus goldens, and added focused seed-method regressions that pin the new doctrine in YAML.
+  - Validation:
+    - `python sop/tools/build_runtime_bundle.py --update-golden`
+    - `python sop/tools/validate_library.py`
+    - `python brain/data/seed_methods.py --strict-sync`
+    - `pytest -q -p no:cacheprovider brain/tests/test_seed_methods.py -k "load_from_yaml_includes_visible_teach_doctrine_cards or worked_example_fade_yaml_models_once_before_fading or embodied_walkthrough_yaml_requires_safe_movement_and_map_back"`
+
 - [ ] SOP-ENCODE-001. Align `M-ENC-001 KWIK Hook` to the actual word-sound -> meaning -> linked-image mnemonic flow Trey wants to use.
 - [x] SOP-ENCODE-001. Align `M-ENC-001 KWIK Hook` to the actual word-sound -> meaning -> linked-image mnemonic flow Trey wants to use.
   - Scope:

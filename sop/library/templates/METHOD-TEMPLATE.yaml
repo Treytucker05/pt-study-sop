@@ -1,0 +1,275 @@
+# ============================================================================
+# METHOD CARD TEMPLATE v1.0
+# ============================================================================
+# Complete method specification for solo testing and chain composition.
+# Every field here exists because research says it's needed for an LLM to
+# run the method reliably without ambiguity.
+#
+# TWO-LAYER DESIGN:
+#   Layer A (this file) = Machine-readable spec for routing, composition, audit
+#   Layer B (facilitation_prompt) = Human+LLM-runnable prompt for ChatGPT
+#
+# Instructions:
+#   1. Copy this template to M-XXX-NNN.yaml
+#   2. Fill in every section — do not leave placeholder text
+#   3. Write the facilitation_prompt LAST (it depends on everything else)
+#   4. Test the facilitation_prompt solo in ChatGPT before composing into chains
+#   5. Mark status: draft → testing → validated
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+# SECTION 1: IDENTITY
+# ---------------------------------------------------------------------------
+id: M-XXX-NNN              # e.g., M-TEA-001, M-CAL-002, M-ENC-015
+name: ""                    # Human-readable name (e.g., "Story Spine")
+category: ""                # Family: prime | teach | calibrate | encode | reference | retrieve | overlearn
+subcategory: ""             # Optional: hook | gen | org | int (for encode methods)
+description: >-
+  One-sentence description of what this method does.
+  This is the routing blurb — should be enough to decide if this method fits.
+control_stage: ""           # Pipeline stage: PRIME | TEACH | CALIBRATE | ENCODE | REFERENCE | RETRIEVE | OVERLEARN
+status: draft               # draft | testing | validated
+version: "1.0"
+created: ""                 # YYYY-MM-DD
+updated: ""                 # YYYY-MM-DD
+
+tags: []
+# e.g., [story, narrative, sequence, causal-chain, teaching]
+
+# ---------------------------------------------------------------------------
+# SECTION 2: PURPOSE & SCOPE
+# ---------------------------------------------------------------------------
+purpose: >-
+  What is this method FOR? What learner need does it serve?
+  One paragraph. Be specific — "teaches causal mechanisms" not "helps learning".
+
+not_for: >-
+  What is this method NOT for? When should you pick a different method?
+  Being explicit here prevents misrouting.
+
+best_fit_topics:
+  - ""  # e.g., "Sequential processes or pathways"
+  - ""  # e.g., "Causal mechanisms with a clear beginning and end"
+
+poor_fit_topics:
+  - ""  # e.g., "Static definitions with no causal chain"
+  - ""  # e.g., "Lists of unrelated facts"
+
+learner_state_required: >-
+  What must the learner already have/know before this method runs?
+  e.g., "Source material loaded in chat. Zero prior knowledge assumed."
+  e.g., "TEACH-close artifact must exist. Learner has been through at least one teaching chunk."
+
+# ---------------------------------------------------------------------------
+# SECTION 3: INPUTS
+# ---------------------------------------------------------------------------
+inputs:
+  - description: ""         # e.g., "Source material loaded in chat"
+    required: true          # true | false
+  - description: ""
+    required: false
+# List everything the method needs to exist before it can run.
+# If nothing is required beyond "source material loaded", say that.
+
+# ---------------------------------------------------------------------------
+# SECTION 4: OUTPUTS
+# ---------------------------------------------------------------------------
+outputs:
+  - name: ""                # e.g., "StorySpine"
+    description: ""         # e.g., "Complete causal story from beginning state to breakpoint"
+    format: ""              # e.g., "3-5 sentence narrative paragraph"
+  - name: ""
+    description: ""
+    format: ""
+# These are the ARTIFACTS the method must produce.
+# Every output must be checkable — "did this get produced, yes or no?"
+
+required_outputs: []        # Subset of outputs that MUST appear for the method to count as complete.
+# e.g., [StorySpine, MechanismRestatement]
+
+# ---------------------------------------------------------------------------
+# SECTION 5: SUCCESS CRITERIA
+# ---------------------------------------------------------------------------
+success_criteria:
+  - ""  # e.g., "Beginning state, trigger, progression, and endpoint all present"
+  - ""  # e.g., "At least one clinical breakpoint named"
+  - ""  # e.g., "Story translated back to source terminology"
+# How do you know the method RAN SUCCESSFULLY?
+# These are objective, checkable conditions — not vibes.
+
+partial_criteria:
+  - ""  # e.g., "Story present but missing clinical breakpoint"
+# What counts as partially complete?
+
+# ---------------------------------------------------------------------------
+# SECTION 6: EXACT PROCEDURE
+# ---------------------------------------------------------------------------
+steps:
+  - step: 1
+    name: ""                # Short label e.g., "Beginning State"
+    action: >-
+      EXACT instruction for what the tutor does at this step.
+      Include: what to say, what to produce, what format.
+      Be as specific as a recipe — "Name the system before change begins"
+      is better than "Describe the starting point."
+    tutor_does: >-
+      What the TUTOR specifically produces at this step.
+      e.g., "State the normal state of the system in 1-2 sentences using source terms."
+    learner_does: >-
+      What the LEARNER is expected to do at this step.
+      e.g., "Reads and confirms understanding. Says NEXT to continue."
+      Leave blank if learner is passive at this step.
+    max_lines: 8            # Max lines the tutor should output for this step
+    check: ""               # Check-in question after this step. Empty = no check.
+    example: >-
+      A concrete example of good output for this step.
+      This teaches the LLM what "right" looks like.
+  - step: 2
+    name: ""
+    action: ""
+    tutor_does: ""
+    learner_does: ""
+    max_lines: 8
+    check: ""
+    example: ""
+# Add more steps as needed.
+# Each step MUST have: name, action, tutor_does, max_lines
+# Each step SHOULD have: example
+# Steps MAY have: learner_does, check
+
+# ---------------------------------------------------------------------------
+# SECTION 7: CONSTRAINTS & RULES
+# ---------------------------------------------------------------------------
+constraints:
+  - rule: ""
+    why: ""                 # Why this rule exists — helps the LLM understand intent
+  - rule: ""
+    why: ""
+# Hard rules that must never be violated.
+# e.g., "Non-assessment: no scoring, no quizzes" — why: "This is a teaching method, not a diagnostic"
+
+allowed_moves:
+  - ""
+  # What the tutor IS allowed to do.
+
+forbidden_moves:
+  - ""
+  # What the tutor is NOT allowed to do. Explicit prevents implicit violation.
+
+stuck_protocol: >-
+  What should the tutor do when the learner is stuck?
+  This can reference a global stuck protocol or define a method-specific one.
+  e.g., "Use one of: Simpler ladder, Format switch, Side-by-side contrast, Tiny clinical case."
+
+# ---------------------------------------------------------------------------
+# SECTION 8: FAILURE MODES & RECOVERY
+# ---------------------------------------------------------------------------
+failure_modes:
+  - mode: ""                # e.g., "Story becomes decorative, loses mechanism"
+    detection: ""           # How to tell this happened
+    recovery: ""            # What to do about it
+    fallback_method: ""     # e.g., "M-TEA-006 Depth Ladder" — what to switch to
+# Common ways this method breaks down.
+# Each needs: how to detect it, how to recover, and what to fall back to.
+
+# ---------------------------------------------------------------------------
+# SECTION 9: METADATA
+# ---------------------------------------------------------------------------
+default_duration_min: 5     # Estimated minutes for ONE application
+energy_cost: medium         # low | medium | high
+best_stage: first_exposure  # first_exposure | review | exam_prep | any
+mechanisms: []              # Learning science mechanisms e.g., [scaffolding, elaboration, dual_coding]
+evidence:
+  citation: ""
+  finding: ""
+  source: ""
+knobs: {}                   # Configurable parameters e.g., {item_count: 6, guidance_level: medium}
+
+# ---------------------------------------------------------------------------
+# SECTION 10: RELATED METHODS
+# ---------------------------------------------------------------------------
+related_methods:
+  - id: ""                  # e.g., "M-TEA-006"
+    relationship: ""        # e.g., "Fallback when Story Spine fails"
+  - id: ""
+    relationship: ""        # e.g., "Often composed after in C-FE-STD"
+# What methods does this one compose with? What are its alternatives?
+
+# ---------------------------------------------------------------------------
+# SECTION 11: FACILITATION PROMPT
+# ---------------------------------------------------------------------------
+# This is the SOLO TEST PROMPT — the actual text you paste into ChatGPT.
+# It must be self-contained: a user should be able to paste this + material
+# and the method runs correctly with no other context.
+#
+# Write this AFTER filling in all other sections.
+# It should contain:
+#   - Role/persona
+#   - Clear objective
+#   - Exact steps (numbered, one at a time)
+#   - Output format requirements
+#   - Constraints (what NOT to do)
+#   - Stop condition
+#   - At least one example of good output
+#   - Stuck protocol
+#   - Scope boundary
+# ---------------------------------------------------------------------------
+facilitation_prompt: ''
+# Write the full prompt as a multiline string.
+# This is what gets pasted into ChatGPT for solo testing.
+#
+# Example structure:
+#
+# facilitation_prompt: >
+#   You are a DPT tutor running [METHOD NAME] ([METHOD ID]).
+#
+#   OBJECTIVE: [what this method does, in one line]
+#
+#   SCOPE: [what material to cover, how much]
+#
+#   RULES:
+#   - [constraint 1]
+#   - [constraint 2]
+#   - ...
+#
+#   STEPS:
+#   Run ONE step at a time. Wait for my response before advancing.
+#
+#   STEP 1 — [NAME]
+#   [Exact instructions with example]
+#   [Check-in question]
+#   Then STOP. Wait for my response.
+#
+#   STEP 2 — [NAME]
+#   ...
+#
+#   AFTER ALL STEPS:
+#   [What to do at the end]
+#   [Final check-in]
+#
+#   STOP CONDITIONS:
+#   [When the method is done]
+#
+#   IF I'M STUCK:
+#   [Stuck protocol]
+
+# ---------------------------------------------------------------------------
+# SECTION 12: VALIDATION
+# ---------------------------------------------------------------------------
+# How to test whether this method actually works.
+# Before composing into a chain, the facilitation_prompt must pass these.
+# ---------------------------------------------------------------------------
+validation:
+  test_cases:
+    - topic: ""             # e.g., "Muscle spindle stretch reflex"
+      expected_outputs: []  # What should be produced
+      pass_criteria: []     # What counts as passing
+    - topic: ""
+      expected_outputs: []
+      pass_criteria: []
+  acceptance_criteria:
+    - ""  # e.g., "All required_outputs present in response"
+    - ""  # e.g., "No forbidden_moves violated"
+    - ""  # e.g., "Learner can explain concept back after method completes"
+  known_issues:
+    - ""  # e.g., "LLM sometimes skips clinical breakpoint on simple topics"

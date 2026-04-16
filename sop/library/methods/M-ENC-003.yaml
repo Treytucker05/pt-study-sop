@@ -1,117 +1,128 @@
 id: M-ENC-003
 name: Draw-Label
 category: encode
-description: Sketch the structure (anatomy, pathway, concept map) and label from memory. Fill gaps with source material.
-default_duration_min: 10
-energy_cost: high
-best_stage: first_exposure
+subcategory: org
+description: Sketch the structure (anatomy, pathway, concept map) and label from memory. Fill gaps with
+  source material.
 control_stage: ENCODE
 status: validated
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
 tags:
 - visual
 - anatomy
 - drawing
 - active
 - retrieval
-mechanisms:
-- dual_coding
-- retrieval
-- generation
-knobs:
-  guidance_level: medium
-  output_format: bullets
-constraints:
-  active_processing_required: true
-  objective_scope_required: true
-  no_final_answer_only: true
+purpose: Organize the material into a visible structure so relationships, sequence, contrast, or hierarchy
+  become easier to remember and explain.
+not_for: This is not for isolated trivia, free-form brainstorming, or content that has no meaningful structure
+  to map.
+best_fit_topics:
+- Structures, pathways, lists, tables, and maps with visible relationships
+- Material that benefits from spatial or hierarchical organization
+poor_fit_topics:
+- Single isolated facts that only need a quick cue
+- Highly abstract content with no separable parts or relationships
+learner_state_required: Source material is loaded. The learner can see or recall the parts and is ready
+  to organize them into a structure.
 inputs:
-- Structure to draw (anatomy, pathway, diagram)
-- Blank paper or drawing surface
-- Source material for gap-filling
-steps:
-- step: 1
-  action: Close or cover source material
-  notes: Drawing from memory is the key mechanism
-- step: 2
-  action: Sketch the basic structure/outline from memory
-  notes: Rough is fine — focus on spatial relationships
-- step: 3
-  action: Label as many parts as you can recall
-  notes: Leave blank where uncertain
-- step: 4
-  action: Check source material for gaps
-  notes: Note which labels you missed
-- step: 5
-  action: Fill in missing labels with a different color
-  notes: Different color highlights gaps for review
-- step: 6
-  action: Redraw from memory if >30% gaps
-  notes: Repeat until <30% gaps
+- description: Structure to draw (anatomy, pathway, diagram)
+  required: true
+- description: Blank paper or drawing surface
+  required: true
+- description: Source material for gap-filling
+  required: true
 outputs:
+- name: Completed labeled diagram
+  description: Completed labeled diagram
+  format: labeled visual structure
+- name: Gap list (what was missing)
+  description: Gap list (what was missing)
+  format: short, checkable artifact
+- name: Accuracy percentage
+  description: Accuracy percentage
+  format: short, checkable artifact
+required_outputs: &id001
 - Completed labeled diagram
 - Gap list (what was missing)
 - Accuracy percentage
-stop_criteria:
-- Diagram complete with all labels
-- Gap rate <30%
-- 10 minutes elapsed (or earlier if complete)
-failure_modes:
-- mode: Looking at source while drawing
-  mitigation: Physically cover source material
-- mode: Focusing on artistic quality
-  mitigation: Emphasize accuracy over beauty; stick figures acceptable
-- mode: Not tracking gaps
-  mitigation: Require different-color pen for filled gaps
-logging_fields:
-- structure_drawn
-- labels_recalled
-- labels_missed
-- gap_percentage
-- redraw_count
-evidence:
-  citation: Wammes et al. (2016)
-  finding: Drawing effect — drawing produces superior memory compared to writing, especially for visual-spatial content
-  source: seed_methods.py
-evidence_raw: Wammes et al. (2016); drawing effect — drawing produces superior memory compared to writing
-facilitation_prompt: 'You are running M-ENC-003 (Draw-Label) in ENCODE stage.
-
-  Execute this method card exactly and keep outputs deterministic.
-
-
-  Stage hard rules:
-
-  - Force active learner processing.
-
-  - Prefer transformation over passive lecture.
-
-  - Keep focus on target concept scope.
-
-
-  Required outputs:
-
-  - Completed labeled diagram
-
-  - Gap list (what was missing)
-
-  - Accuracy percentage
-
-
-  Stop conditions:
-
-  - Diagram complete with all labels
-
-  - Gap rate <30%
-
-  - 10 minutes elapsed (or earlier if complete)
-
-
-  If required inputs are missing, request only the minimum needed input and continue.
-
-  '
-gating_rules:
-- Force active processing (explain, transform, or map), not passive reading.
-- Keep output scoped to mapped objectives only.
-artifact_type: notes
+success_criteria:
+- 'All required outputs are present and checkable: Completed labeled diagram, Gap list (what was missing),
+  Accuracy percentage.'
+- 'The method reaches its stop condition: Diagram complete with all labels; Gap rate <30%.'
+- The learner stays active and the tutor does not give away the answer before the required attempt or
+  transformation.
+partial_criteria:
+- 'Some required outputs are present but at least one is missing or incomplete: Completed labeled diagram,
+  Gap list (what was missing).'
+steps:
+- step: 1
+  name: Or Cover Source Material
+  action: Close or cover source material
+  tutor_does: 'Guide the learner to Close or cover source material. Keep in mind: Drawing from memory
+    is the key mechanism'
+  learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Drawing from memory is the key mechanism'
+- step: 2
+  name: Sketch The Basic Structure Outline
+  action: Sketch the basic structure/outline from memory
+  tutor_does: 'Guide the learner to Sketch the basic structure/outline from memory. Keep in mind: Rough
+    is fine — focus on spatial relationships'
+  learner_does: Performs the requested cognitive move and shares the result before moving on.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Rough is fine — focus on spatial relationships'
+- step: 3
+  name: Label As Many Parts As
+  action: Label as many parts as you can recall
+  tutor_does: 'Guide the learner to Label as many parts as you can recall. Keep in mind: Leave blank where
+    uncertain'
+  learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Leave blank where uncertain'
+- step: 4
+  name: Source Material For Gaps
+  action: Check source material for gaps
+  tutor_does: 'Guide the learner to Check source material for gaps. Keep in mind: Note which labels you
+    missed'
+  learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Note which labels you missed'
+- step: 5
+  name: In Missing Labels With A
+  action: Fill in missing labels with a different color
+  tutor_does: 'Guide the learner to Fill in missing labels with a different color. Keep in mind: Different
+    color highlights gaps for review'
+  learner_does: Performs the requested cognitive move and shares the result before moving on.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Different color highlights gaps for review'
+- step: 6
+  name: Redraw From Memory If 30
+  action: Redraw from memory if >30% gaps
+  tutor_does: 'Guide the learner to Redraw from memory if >30% gaps. Keep in mind: Repeat until <30% gaps'
+  learner_does: Performs the requested cognitive move and shares the result before moving on.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Repeat until <30% gaps'
+constraints:
+- rule: Require active learner processing
+  why: The method depends on the learner generating, mapping, explaining, or transforming the material
+    rather than passively reading.
+- rule: Stay within objective scope
+  why: Prevents drift into unrelated material and keeps the method auditable.
+- rule: Do not turn this into a passive answer dump or scoring event
+  why: This method is designed for guided learning, not one-shot lecture or formal grading.
+- rule: Force active processing (explain, transform, or map), not passive reading.
+  why: This gating rule is part of the method’s execution contract.
+- rule: Keep output scoped to mapped objectives only.
+  why: This gating rule is part of the method’s execution contract.
 allowed_moves:
 - Prompt the learner to close source material before drawing
 - Describe what to draw (structure, pathway) and spatial relationships to focus on
@@ -130,7 +141,126 @@ forbidden_moves:
 - Focus feedback on artistic quality instead of structural accuracy
 - Generate outputs FOR the learner instead of reviewing their work
 - Move to retrieval before encoding is complete
-required_outputs:
-- Completed labeled diagram
-- Gap list (what was missing)
-- Accuracy percentage
+stuck_protocol: Reduce the scope to fewer nodes or rows, restate the parts in plain language, and then
+  rebuild the structure one relationship at a time. If needed, switch to a simpler map or flowchart.
+failure_modes:
+- mode: Looking at source while drawing
+  detection: The learner or tutor starts doing looking at source while drawing or the artifact stops satisfying
+    the method’s required checks.
+  recovery: Physically cover source material
+  fallback_method: M-ENC-009
+- mode: Focusing on artistic quality
+  detection: The learner or tutor starts doing focusing on artistic quality or the artifact stops satisfying
+    the method’s required checks.
+  recovery: Emphasize accuracy over beauty; stick figures acceptable
+  fallback_method: M-ENC-015
+- mode: Not tracking gaps
+  detection: The learner or tutor starts doing not tracking gaps or the artifact stops satisfying the
+    method’s required checks.
+  recovery: Require different-color pen for filled gaps
+  fallback_method: M-ENC-010
+default_duration_min: 10
+energy_cost: high
+best_stage: first_exposure
+mechanisms:
+- dual_coding
+- retrieval
+- generation
+evidence:
+  citation: Wammes et al. (2016)
+  finding: Drawing effect — drawing produces superior memory compared to writing, especially for visual-spatial
+    content
+  source: seed_methods.py
+knobs:
+  guidance_level: medium
+  output_format: bullets
+  evidence_raw: Wammes et al. (2016); drawing effect — drawing produces superior memory compared to writing
+  gating_rules:
+  - Force active processing (explain, transform, or map), not passive reading.
+  - Keep output scoped to mapped objectives only.
+  logging_fields:
+  - structure_drawn
+  - labels_recalled
+  - labels_missed
+  - gap_percentage
+  - redraw_count
+  artifact_type: notes
+related_methods:
+- id: M-ENC-009
+  relationship: Concept-map fallback for visual organization
+- id: M-ENC-015
+  relationship: Alternative map-building method
+- id: M-ENC-010
+  relationship: Comparison table if the task is contrast-heavy
+facilitation_prompt: "You are running M-ENC-003 (Draw-Label) in ENCODE stage.\nRole: you are the tutor\
+  \ running the method exactly as written, with no hidden assumptions.\nObjective: Organize the material\
+  \ into a visible structure so relationships, sequence, contrast, or hierarchy become easier to remember\
+  \ and explain.\nScope: Sketch the structure (anatomy, pathway, concept map) and label from memory. Fill\
+  \ gaps with source material.\nRules:\n- Require active learner processing — The method depends on the\
+  \ learner generating, mapping, explaining, or transforming the material rather than passively reading.\n\
+  - Stay within objective scope — Prevents drift into unrelated material and keeps the method auditable.\n\
+  - Do not turn this into a passive answer dump or scoring event — This method is designed for guided\
+  \ learning, not one-shot lecture or formal grading.\n- Force active processing (explain, transform,\
+  \ or map), not passive reading. — This gating rule is part of the method’s execution contract.\n- Keep\
+  \ output scoped to mapped objectives only. — This gating rule is part of the method’s execution contract.\n\
+  - Not for: This is not for isolated trivia, free-form brainstorming, or content that has no meaningful\
+  \ structure to map.\nInputs:\n- Structure to draw (anatomy, pathway, diagram) (required)\n- Blank paper\
+  \ or drawing surface (required)\n- Source material for gap-filling (required)\nRequired outputs:\n-\
+  \ Completed labeled diagram: Completed labeled diagram [labeled visual structure]\n- Gap list (what\
+  \ was missing): Gap list (what was missing) [short, checkable artifact]\n- Accuracy percentage: Accuracy\
+  \ percentage [short, checkable artifact]\nSteps: run one step at a time and wait after each step before\
+  \ advancing.\n1. Or Cover Source Material\n   Tutor does: Guide the learner to Close or cover source\
+  \ material. Keep in mind: Drawing from memory is the key mechanism\n   Learner does: Reads the prompt,\
+  \ does the thinking step, and returns the artifact or answer.\n   Example: Example: Drawing from memory\
+  \ is the key mechanism\n   Check: Is this step complete and ready for the next move?\n   Then STOP and\
+  \ wait for the learner.\n2. Sketch The Basic Structure Outline\n   Tutor does: Guide the learner to\
+  \ Sketch the basic structure/outline from memory. Keep in mind: Rough is fine — focus on spatial relationships\n\
+  \   Learner does: Performs the requested cognitive move and shares the result before moving on.\n  \
+  \ Example: Example: Rough is fine — focus on spatial relationships\n   Check: Is this step complete\
+  \ and ready for the next move?\n   Then STOP and wait for the learner.\n3. Label As Many Parts As\n\
+  \   Tutor does: Guide the learner to Label as many parts as you can recall. Keep in mind: Leave blank\
+  \ where uncertain\n   Learner does: Reads the prompt, does the thinking step, and returns the artifact\
+  \ or answer.\n   Example: Example: Leave blank where uncertain\n   Check: Is this step complete and\
+  \ ready for the next move?\n   Then STOP and wait for the learner.\n4. Source Material For Gaps\n  \
+  \ Tutor does: Guide the learner to Check source material for gaps. Keep in mind: Note which labels you\
+  \ missed\n   Learner does: Reads the prompt, does the thinking step, and returns the artifact or answer.\n\
+  \   Example: Example: Note which labels you missed\n   Check: Is this step complete and ready for the\
+  \ next move?\n   Then STOP and wait for the learner.\n5. In Missing Labels With A\n   Tutor does: Guide\
+  \ the learner to Fill in missing labels with a different color. Keep in mind: Different color highlights\
+  \ gaps for review\n   Learner does: Performs the requested cognitive move and shares the result before\
+  \ moving on.\n   Example: Example: Different color highlights gaps for review\n   Check: Is this step\
+  \ complete and ready for the next move?\n   Then STOP and wait for the learner.\n6. Redraw From Memory\
+  \ If 30\n   Tutor does: Guide the learner to Redraw from memory if >30% gaps. Keep in mind: Repeat until\
+  \ <30% gaps\n   Learner does: Performs the requested cognitive move and shares the result before moving\
+  \ on.\n   Example: Example: Repeat until <30% gaps\n   Check: Is this step complete and ready for the\
+  \ next move?\n   Then STOP and wait for the learner.\nStop conditions:\n- All required outputs are present\
+  \ and checkable: Completed labeled diagram, Gap list (what was missing), Accuracy percentage.\n- The\
+  \ method reaches its stop condition: Diagram complete with all labels; Gap rate <30%.\n- The learner\
+  \ stays active and the tutor does not give away the answer before the required attempt or transformation.\n\
+  If stuck: Reduce the scope to fewer nodes or rows, restate the parts in plain language, and then rebuild\
+  \ the structure one relationship at a time. If needed, switch to a simpler map or flowchart.\nDo not\
+  \ skip steps, do not solve the whole task at once, and do not present source claims as mnemonic or analogy\
+  \ artifacts."
+validation:
+  test_cases:
+  - topic: Structures, pathways, lists, tables, and maps with visible relationships
+    expected_outputs: *id001
+    pass_criteria:
+    - All required outputs are present.
+    - The learner performs the required active step before the final artifact is given.
+    - The result stays within scope and matches the method format.
+  - topic: Single isolated facts that only need a quick cue
+    expected_outputs:
+    - Stuck protocol response
+    - Either a simpler scaffold or a method redirect
+    pass_criteria:
+    - The tutor does not force a bad fit.
+    - The tutor either shrinks scope or suggests a better-fitting method.
+    - The response remains honest about the mismatch.
+  acceptance_criteria:
+  - All required_outputs are present in the successful test case.
+  - No forbidden_moves are violated.
+  - The facilitation_prompt can be run without extra hidden context.
+  known_issues:
+  - LLMs may over-explain before the learner attempts the required move.
+  - LLMs may drift outside scope when the topic is broad or ambiguous.

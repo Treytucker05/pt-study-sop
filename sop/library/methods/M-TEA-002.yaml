@@ -1,107 +1,307 @@
 id: M-TEA-002
 name: Confusable Contrast Teach
-category: encode
+category: teach
+subcategory: contrast
 description: Teach two confusable concepts side-by-side by naming the shared bucket, the key difference, the signature clue, and the classic trap.
-default_duration_min: 6
-energy_cost: medium
-best_stage: first_exposure
 control_stage: TEACH
 status: draft
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
 tags:
 - teach
 - compare
 - contrast
 - confusable
 - differential
-mechanisms:
-- discrimination
-- scaffolding
-- transfer
-stipulations:
-- Teach the contrast before asking the learner to build their own table.
-- End with a crisp discriminator, not a vague recap.
-knobs:
-  output_format: bullets
-constraints:
-  non_assessment: true
-  no_scored_checks: true
-  objective_scope_required: true
+- teaching
+- explanation
+purpose: Teach two confusable concepts side-by-side by naming the shared bucket, the key difference, the signature clue, and the classic trap. Use it to teach one bounded concept by turning the source into a learner-facing bridge that preserves the real mechanism.
+not_for: Not for open-ended brainstorming, scoring, or broad coverage of unrelated material. Use a PRIME method when the learner first needs orientation or objective framing.
+best_fit_topics:
+- Confusable items that need separation by features, cues, or exceptions
+- Topics that benefit from a bridge, contrast, case, example, or mnemonic
+poor_fit_topics:
+- Unbounded chapters that need broad coverage first
+- Material that should be assessed rather than taught
+learner_state_required: Source material is loaded and the learner is ready for a bounded teaching pass, not a full assessment.
 inputs:
-- Two confusable concepts
-- Source anchors for definitions and discriminators
-steps:
-- step: 1
-  action: State the common bucket both concepts belong to
-  notes: Start with what makes them seem similar.
-- step: 2
-  action: Name the one key difference
-  notes: Use plain language first, then formal terms.
-- step: 3
-  action: Give a signature clue for each concept
-  notes: What clue should make the learner lean one way?
-- step: 4
-  action: Name the classic trap
-  notes: Explain why people mix them up.
-- step: 5
-  action: Finish with one short application contrast
-  notes: Use a minimal example, not a full case drill.
+- description: Source material loaded in chat
+  required: true
+- description: Target concept, process, or comparison to teach
+  required: true
+- description: Learner familiarity signal or prerequisite anchor
+  required: false
 outputs:
+- name: Shared bucket statement
+  description: Learner-facing teaching artifact for confusable contrast teach.
+  format: bulleted artifact
+- name: Key difference statement
+  description: Learner-facing teaching artifact for confusable contrast teach.
+  format: bulleted artifact
+- name: Signature clues
+  description: Learner-facing teaching artifact for confusable contrast teach.
+  format: bulleted artifact
+- name: Classic trap
+  description: Learner-facing teaching artifact for confusable contrast teach.
+  format: bulleted artifact
+- name: Mini application contrast
+  description: Learner-facing teaching artifact for confusable contrast teach.
+  format: two-column table or tightly grouped bullets
+required_outputs:
 - Shared bucket statement
 - Key difference statement
 - Signature clues
-- Classic trap
-- Mini application contrast
-stop_criteria:
-- Shared bucket and discriminator are explicit
-- Each concept has a signature clue
-- One trap is named
-failure_modes:
-- mode: Contrast stays too abstract
-  mitigation: Force a concrete discriminator and one signature clue per concept.
-- mode: Too many differences create noise
-  mitigation: Rank and teach the top discriminator first.
-evidence:
-  citation: Alfieri et al. (2013)
-  finding: Comparison-based learning improves discrimination and concept formation
-  source: control-plane migration
-evidence_raw: Alfieri et al. (2013); comparison-based learning improves discrimination and concept formation
-facilitation_prompt: 'You are running M-TEA-002 (Confusable Contrast Teach) in TEACH stage.
-
-  This method is non-assessment. Teach the contrast clearly before any learner-built table.
-
-  Return exactly:
-
-  1) SharedBucket
-
-  2) KeyDifference
-
-  3) SignatureClues
-
-  4) ClassicTrap
-
-  5) MiniApplicationContrast
-
-  End with the cleanest discriminator in one sentence.
-
-  '
-gating_rules:
-- Teach the shared bucket before the difference.
-- Keep the contrast bounded to the active objective scope.
-- Use a minimal application example, not a scored check.
-artifact_type: table
+success_criteria:
+- The learner-facing explanation artifact is faithful to Confusable Contrast Teach and stays bounded.
+- The method includes a concrete bridge, example, or discriminating cue that makes the idea easier to hold.
+- The output ends with a clear carry-forward signal instead of drifting into a full lecture.
+partial_criteria:
+- Shared bucket statement is present but the bridge or example is underdeveloped.
+- The explanation is usable but still too broad, too abstract, or too long for fast learner uptake.
+steps:
+- step: 1
+  name: Opening Step
+  action: State the common bucket both concepts belong to
+  tutor_does: State the common bucket both concepts belong to. Start with what makes them seem similar
+  learner_does: Listens, tracks the explanation, and responds with the requested cue or check-in.
+  max_lines: 4
+  check: Which distinction matters most right now, and why?
+  example: 'Example: "Opening Step: State the common bucket both concepts belong to"'
+- step: 2
+  name: Step 2
+  action: Name the one key difference
+  tutor_does: Name the one key difference. Use plain language first, then formal terms
+  learner_does: Listens, tracks the explanation, and responds with the requested cue or check-in.
+  max_lines: 4
+  check: Which distinction matters most right now, and why?
+  example: 'Example: "Step 2: Name the one key difference"'
+- step: 3
+  name: Step 3
+  action: Give a signature clue for each concept
+  tutor_does: Give a signature clue for each concept. What clue should make the learner lean one way?
+  learner_does: Listens, tracks the explanation, and responds with the requested cue or check-in.
+  max_lines: 4
+  check: Which distinction matters most right now, and why?
+  example: 'Example: "Step 3: Give a signature clue for each concept"'
+- step: 4
+  name: Step 4
+  action: Name the classic trap
+  tutor_does: Name the classic trap. Explain why people mix them up
+  learner_does: Listens, tracks the explanation, and responds with the requested cue or check-in.
+  max_lines: 4
+  check: Which distinction matters most right now, and why?
+  example: 'Example: "Step 4: Name the classic trap"'
+- step: 5
+  name: Contrast
+  action: Finish with one short application contrast
+  tutor_does: Finish with one short application contrast. Use a minimal example, not a full case drill
+  learner_does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
+  max_lines: 4
+  check: Which distinction matters most right now, and why?
+  example: 'Example: "Contrast: Finish with one short application contrast"'
+constraints:
+- rule: Do not turn the method into a test or quiz
+  why: TEACH methods should build understanding, not create avoidable performance pressure.
+- rule: Stay faithful to the source and keep the chunk bounded
+  why: The learner needs a clear bridge, not an unbounded lecture.
+- rule: Do not assess or score the learner
+  why: This method is for orientation and teaching, not grading.
+- rule: Require the relevant objective or context before running
+  why: The method needs a bounded target to stay useful.
 allowed_moves:
 - Explain why the concepts are confusable
 - Name the key discriminator in plain language and source terms
 - Use one short compare/contrast example
 - Highlight the classic trap explicitly
+- Bridge the source into a learner-facing explanation, story, contrast, example, or mnemonic
+- Use a concise check-in to see whether the explanation landed
+- Translate back to the canonical terms or mechanism at the end
 forbidden_moves:
 - Turn the block into learner-first recall or quizzing
 - Present a long exhaustive table instead of a clean teaching contrast
 - Skip the classic trap
 - Leave the learner without one crisp discriminator
-required_outputs:
-- Shared bucket statement
-- Key difference statement
-- Signature clues
-- Classic trap
-- Mini application contrast
+- Turn the method into a quiz or scored assessment
+- Lose fidelity to the source or wander beyond the bounded topic
+stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For TEACH, fall back to M-TEA-004 or M-TEA-006.
+failure_modes:
+- mode: Contrast stays too abstract
+  detection: The two items blur together instead of separating cleanly.
+  recovery: Force a concrete discriminator and one signature clue per concept.
+  fallback_method: M-TEA-004
+- mode: Too many differences create noise
+  detection: The output no longer matches the method’s core purpose.
+  recovery: Rank and teach the top discriminator first.
+  fallback_method: M-TEA-004
+default_duration_min: 6
+energy_cost: medium
+best_stage: first_exposure
+mechanisms:
+- discrimination
+- scaffolding
+- transfer
+- elaboration
+evidence:
+  citation: Alfieri et al. (2013)
+  finding: Comparison-based learning improves discrimination and concept formation
+  source: control-plane migration
+knobs:
+  output_format: bullets
+  guidance_level: medium
+  artifact_type: table
+related_methods:
+- id: M-TEA-004
+  relationship: Switch modality if the contrast still feels fuzzy
+- id: M-PRE-014
+  relationship: Use first to identify the exact confusion
+facilitation_prompt: 'You are a study tutor running M-TEA-002 (Confusable Contrast Teach) in the TEACH stage.
+
+  ROLE: You are a careful, supportive tutor. Your job is to run Confusable Contrast Teach exactly as specified and keep the output faithful, bounded, and useful.
+
+  OBJECTIVE: Teach two confusable concepts side-by-side by naming the shared bucket, the key difference, the signature clue, and the classic trap. Use it to teach one bounded concept by turning the source into a learner-facing bridge that preserves the real mechanism.
+
+  SCOPE: Teach two confusable concepts side-by-side by naming the shared bucket, the key difference, the signature clue, and the classic trap.
+
+  RULES:
+
+  - Do not turn the method into a test or quiz — because TEACH methods should build understanding, not create avoidable performance pressure.
+
+  - Stay faithful to the source and keep the chunk bounded — because The learner needs a clear bridge, not an unbounded lecture.
+
+  - Do not assess or score the learner — because This method is for orientation and teaching, not grading.
+
+  - Require the relevant objective or context before running — because The method needs a bounded target to stay useful.
+
+
+  OUTPUTS TO PRODUCE:
+
+  1. Shared bucket statement — Learner-facing teaching artifact for confusable contrast teach. (bulleted artifact)
+
+  2. Key difference statement — Learner-facing teaching artifact for confusable contrast teach. (bulleted artifact)
+
+  3. Signature clues — Learner-facing teaching artifact for confusable contrast teach. (bulleted artifact)
+
+  4. Classic trap — Learner-facing teaching artifact for confusable contrast teach. (bulleted artifact)
+
+  5. Mini application contrast — Learner-facing teaching artifact for confusable contrast teach. (two-column table or tightly grouped bullets)
+
+
+  RUN THE METHOD ONE STEP AT A TIME. Wait for my response before moving to the next step.
+
+  STEP 1 — Opening Step
+
+  - Tutor does: State the common bucket both concepts belong to. Start with what makes them seem similar
+
+  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
+
+  - Example: Example: "Opening Step: State the common bucket both concepts belong to"
+
+  - Check: Which distinction matters most right now, and why?
+
+  Then stop and wait.
+
+  STEP 2 — Step 2
+
+  - Tutor does: Name the one key difference. Use plain language first, then formal terms
+
+  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
+
+  - Example: Example: "Step 2: Name the one key difference"
+
+  - Check: Which distinction matters most right now, and why?
+
+  Then stop and wait.
+
+  STEP 3 — Step 3
+
+  - Tutor does: Give a signature clue for each concept. What clue should make the learner lean one way?
+
+  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
+
+  - Example: Example: "Step 3: Give a signature clue for each concept"
+
+  - Check: Which distinction matters most right now, and why?
+
+  Then stop and wait.
+
+  STEP 4 — Step 4
+
+  - Tutor does: Name the classic trap. Explain why people mix them up
+
+  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
+
+  - Example: Example: "Step 4: Name the classic trap"
+
+  - Check: Which distinction matters most right now, and why?
+
+  Then stop and wait.
+
+  STEP 5 — Contrast
+
+  - Tutor does: Finish with one short application contrast. Use a minimal example, not a full case drill
+
+  - Learner does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
+
+  - Example: Example: "Contrast: Finish with one short application contrast"
+
+  - Check: Which distinction matters most right now, and why?
+
+  Then stop and wait.
+
+
+  STOP CONDITIONS:
+
+  - The learner-facing explanation artifact is faithful to Confusable Contrast Teach and stays bounded.
+
+  - The method includes a concrete bridge, example, or discriminating cue that makes the idea easier to hold.
+
+  - The output ends with a clear carry-forward signal instead of drifting into a full lecture.
+
+
+  IF YOU GET STUCK:
+
+  If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For TEACH, fall back to M-TEA-004 or M-TEA-006.
+
+  If the learner is still stuck after one rescue move, shrink the chunk, switch modality, or fall back to the listed fallback method.
+
+
+  GOOD OUTPUT EXAMPLE:
+
+  - Shared bucket statement: a concise, source-faithful artifact that matches the method purpose and stays within scope.
+
+  - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
+
+
+  DONE WHEN:
+
+  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.'
+validation:
+  test_cases:
+  - topic: Single concept explanation for Confusable Contrast Teach
+    expected_outputs:
+    - Shared bucket statement
+    - Key difference statement
+    - Signature clues
+    - Classic trap
+    - Mini application contrast
+    pass_criteria:
+    - Required outputs appear and the main learner-facing artifact is faithful to Confusable Contrast Teach.
+    - The method ends with a bounded check-in or carry-forward cue rather than an open-ended lecture.
+  - topic: A slightly harder variant with one confusable or clinical wrinkle
+    expected_outputs:
+    - Shared bucket statement
+    - Key difference statement
+    - Signature clues
+    - Classic trap
+    - Mini application contrast
+    pass_criteria:
+    - Required outputs appear and the main learner-facing artifact is faithful to Confusable Contrast Teach.
+    - The explanation includes a concrete bridge, example, or cue that would help a real learner remember it.
+  acceptance_criteria:
+  - Required outputs appear and the main learner-facing artifact is faithful to Confusable Contrast Teach.
+  - The explanation includes a concrete bridge, example, or cue that would help a real learner remember it.
+  - The method ends with a bounded check-in or carry-forward cue rather than an open-ended lecture.
+  known_issues:
+  - Some prompts may over-run the time budget if the source material is very dense.
+  - Without a clear topic boundary, the method can broaden instead of teaching one useful chunk.

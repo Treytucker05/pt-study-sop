@@ -1,97 +1,119 @@
 id: M-CAL-001
 name: Micro Precheck
 category: calibrate
+subcategory: micro
 description: Run a short scored micro-calibrate baseline (2-5 minutes) at session opening to estimate readiness before TEACH.
-default_duration_min: 4
-energy_cost: medium
-best_stage: first_exposure
 control_stage: CALIBRATE
 status: validated
-calibrate_phase: micro
-calibrate_scope: opening
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
 tags:
 - calibrate
 - diagnostic
 - baseline
 - confidence
-mechanisms:
-- calibration
-- retrieval
-- metacognitive_monitoring
-stipulations:
-- This is the opening MICRO-CALIBRATE block after PRIME.
-- Require an attempt before hints or full answer reveal.
-- Keep scope bounded to active objective targets.
-when_to_use:
-- Immediately after PRIME exits and before TEACH.
-- When readiness is unknown or likely drifted.
-when_not_to_use:
-- Never before PRIME for first exposure.
-- Skip only when emergency time constraints force direct review mode.
-knobs:
-  item_count: 5
-  max_duration_min: 4
-  confidence_scale: HML
-constraints:
-  scored_stage: true
-  hard_time_cap_min: 5
-  hint_before_attempt_disallowed: true
-gating_rules:
-- Require one best-attempt response per item before hints or answer reveal.
-- Keep all items constrained to active objective scope.
-- Maintain hard time cap; do not exceed max_duration_min.
-- Do not switch into TEACH or FULL CALIBRATE during this block.
+purpose: Micro Precheck exists to run a short scored micro-baseline that estimates readiness before TEACH without turning
+  the block into instruction. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for teaching new material, extended explanation, or open-ended discussion. Use TEACH when the goal is
+  instruction and use REFERENCE when the goal is artifact building.
+best_fit_topics:
+- single-objective readiness checks
+- brief baseline probes
+- confidence calibration before teaching
+poor_fit_topics:
+- deep teaching or explanation
+- open-ended essays
+- out-of-scope objectives
+learner_state_required: Source material is loaded, the objective scope is known, and the learner is ready for a diagnostic
+  attempt rather than a lesson.
 inputs:
-- Active objective targets
-- Calibrate item set aligned to scope
-- objective_scope and focus objective context
+- description: Active objective targets
+  required: true
+- description: Calibrate item set aligned to scope
+  required: true
+- description: objective_scope and focus objective context
+  required: true
+outputs:
+- name: CalibrateItemResults (per-item correctness, latency, confidence)
+  description: A calibrated diagnostic output that supports routing for a short scored micro-baseline that estimates readiness
+    before TEACH without turning the block into instruction.
+  format: structured log
+- name: ReadinessSnapshot (accuracy summary)
+  description: A calibrated diagnostic output that supports routing for a short scored micro-baseline that estimates readiness
+    before TEACH without turning the block into instruction.
+  format: short summary paragraph or bullets
+- name: CalibrationGapSummary (predicted vs actual gap)
+  description: A calibrated diagnostic output that supports routing for a short scored micro-baseline that estimates readiness
+    before TEACH without turning the block into instruction.
+  format: short summary paragraph or bullets
+- name: DominantErrorSeed (highest-frequency error class)
+  description: A tagged retrieval-question bank that can be reused later for practice or deck construction.
+  format: bulleted or tabular list
+- name: MicroCalibrateSnapshot (opening readiness signal for TEACH routing)
+  description: A calibrated diagnostic output that supports routing for a short scored micro-baseline that estimates readiness
+    before TEACH without turning the block into instruction.
+  format: short summary paragraph or bullets
+required_outputs:
+- CalibrateItemResults (per-item correctness, latency, confidence)
+- ReadinessSnapshot (accuracy summary)
+- CalibrationGapSummary (predicted vs actual gap)
+- DominantErrorSeed (highest-frequency error class)
+- MicroCalibrateSnapshot (opening readiness signal for TEACH routing)
+success_criteria:
+- All required outputs are present for M-CAL-001.
+- The block remains diagnostic only and no teaching is introduced before the attempt.
+- The learner or tutor can point to the output artifact and reuse it later without ambiguity.
+partial_criteria:
+- 'One or more required outputs are present but one core artifact is incomplete: CalibrateItemResults (per-item correctness,
+  latency, confidence).'
+- The method stayed in the correct stage but the final artifact needs one more pass to be reusable.
 steps:
 - step: 1
-  action: Start timed calibrate block
-  notes: Use max_duration_min hard cap.
+  name: Start timed calibrate block.
+  action: Start timed calibrate block. Use max_duration_min hard cap.
+  tutor_does: Present start timed calibrate block. use max_duration_min hard cap as a short diagnostic move and do not teach
+    the answer before the attempt.
+  learner_does: Attempts the item, reports confidence, and accepts routing feedback without turning the block into tutoring.
+  max_lines: 6
+  check: Is the scope set and is the learner ready for a diagnostic attempt?
+  example: 'Tutor: "Start timed calibrate block. Use max_duration_min hard cap." Learner: "Ready."'
 - step: 2
-  action: Deliver item_count short items with no hints first
-  notes: Attempt required for each item.
+  name: Deliver item_count short items
+  action: Deliver item_count short items with no hints first. Attempt required for each item.
+  tutor_does: Present deliver item_count short items with no hints first. attempt required for each item as a short diagnostic
+    move and do not teach the answer before the attempt.
+  learner_does: Attempts the item, reports confidence, and accepts routing feedback without turning the block into tutoring.
+  max_lines: 6
+  check: Is this step complete and ready to advance?
+  example: Tutor shows one brief probe and records answer, confidence, and latency.
 - step: 3
-  action: Capture correctness, latency, and confidence per item
-  notes: Confidence tagging required before correctness feedback.
+  name: Capture correctness, latency, and
+  action: Capture correctness, latency, and confidence per item. Confidence tagging required before correctness feedback.
+  tutor_does: Present capture correctness, latency, and confidence per item. confidence tagging required before correctness
+    feedback as a short diagnostic move and do not teach the answer before the attempt.
+  learner_does: Attempts the item, reports confidence, and accepts routing feedback without turning the block into tutoring.
+  max_lines: 8
+  check: Is this step complete and ready to advance?
+  example: Tutor summarizes the weakest pattern and states whether the learner is ready to route onward.
 - step: 4
-  action: Compute quick readiness snapshot
-  notes: Summarize accuracy, calibration gap, and dominant error class.
-outputs:
-- CalibrateItemResults
-- ReadinessSnapshot
-- CalibrationGapSummary
-- DominantErrorSeed
-- MicroCalibrateSnapshot
-artifact_type: notes
-stop_criteria:
-- item_count items attempted or timer cap reached
-- Per-item confidence tags captured
-- ReadinessSnapshot and MicroCalibrateSnapshot generated
-failure_modes:
-- mode: Learner requests answer without attempt
-  mitigation: Provide a minimal hint and require attempt.
-- mode: Overlong single item stalls the block
-  mitigation: Mark miss, continue to next item.
-- mode: Out-of-scope items appear
-  mitigation: Drop item and replace with objective-linked item.
-logging_fields:
-- item_count_attempted
-- item_count_correct
-- average_latency_sec
-- confidence_scale
-- overconfidence_miss_count
-- dominant_error_type
-evidence:
-  citation: Kornell et al. (2009)
-  finding: Pretesting improves later learning and reveals knowledge gaps.
-  source: control-plane migration
-evidence_strength: high
-primary_citations:
-- Kornell et al. (2009)
-- Roediger and Karpicke (2006)
-evidence_raw: Pretesting and retrieval attempts improve downstream encoding and retention.
+  name: Compute quick readiness snapshot.
+  action: Compute quick readiness snapshot. Summarize accuracy, calibration gap, and dominant error class.
+  tutor_does: Present compute quick readiness snapshot. summarize accuracy, calibration gap, and dominant error class as a
+    short diagnostic move and do not teach the answer before the attempt.
+  learner_does: Attempts the item, reports confidence, and accepts routing feedback without turning the block into tutoring.
+  max_lines: 8
+  check: Is this step complete and ready to advance?
+  example: Tutor gives a short diagnostic prompt; learner responds with a best attempt.
+constraints:
+- rule: Diagnostic only; no teaching before or during the probe
+  why: Calibration must measure readiness, not change the learner state by explanation.
+- rule: Require one genuine attempt before hints or answer reveal
+  why: The diagnostic signal is only trustworthy when the learner has to produce a response first.
+- rule: Keep scope tied to the active objective set
+  why: Calibration is only useful when the items match what the learner is supposed to know.
+- rule: Respect item-count and time caps from the source file
+  why: Short calibration blocks preserve low-friction routing and reduce fatigue.
 allowed_moves:
 - Run 2-5 scored items within hard 5-minute cap
 - Require one best-attempt response per item before hints or answer reveal
@@ -101,6 +123,10 @@ allowed_moves:
 - Keep all items constrained to active objective scope
 - Mark miss and move on if single item stalls the block
 - Replace out-of-scope items with objective-linked items
+- Run short scored probes inside the declared scope
+- Capture answer, confidence, and latency for each item
+- Provide only minimal clarification after the learner attempts an item
+- Summarize readiness and route the learner to the next stage
 forbidden_moves:
 - Reveal full answer before learner attempt
 - Provide hints before first attempt on any item
@@ -110,41 +136,109 @@ forbidden_moves:
 - Skip confidence capture for any item
 - Teach or explain content deeply (this is diagnostic only)
 - Run more than 5 items (scope is 2-5)
-required_outputs:
-- CalibrateItemResults (per-item correctness, latency, confidence)
-- ReadinessSnapshot (accuracy summary)
-- CalibrationGapSummary (predicted vs actual gap)
-- DominantErrorSeed (highest-frequency error class)
-- MicroCalibrateSnapshot (opening readiness signal for TEACH routing)
-facilitation_prompt: 'You are running M-CAL-001 (Micro Precheck) in CALIBRATE stage.
+- Teach the concept before the learner attempts the probe
+- Reveal the full answer before the attempt
+- Expand beyond the active objective scope
+stuck_protocol: Use one simpler probe, narrow the objective scope, and keep the block diagnostic only.
+failure_modes:
+- mode: Learner asks for teaching before attempting
+  detection: The response contains requests for explanation instead of a first attempt.
+  recovery: Restate the diagnostic rule, reduce the item to one short probe, and require an attempt.
+  fallback_method: M-CAL-004
+- mode: Probe is too broad to score cleanly
+  detection: The learner stalls, guesses, or gives a very long response with no clear target.
+  recovery: Narrow the scope to one objective or one subskill and rerun the probe.
+  fallback_method: M-CAL-001
+- mode: The block drifts into TEACH
+  detection: The tutor starts explaining content or giving step-by-step instruction.
+  recovery: Stop the explanation, reset to a diagnostic prompt, and summarize only the readiness signal.
+  fallback_method: M-CAL-003
+default_duration_min: 4
+energy_cost: medium
+best_stage: first_exposure
+mechanisms:
+- calibration
+- retrieval
+- metacognitive_monitoring
+evidence:
+  citation: Kornell et al. (2009)
+  finding: Pretesting improves later learning and reveals knowledge gaps.
+  source: control-plane migration
+knobs:
+  default_duration_min: 4
+  energy_cost: medium
+  best_stage: first_exposure
+related_methods:
+- id: M-CAL-002
+  relationship: Escalate to fuller probes when the micro baseline is too coarse
+- id: M-CAL-004
+  relationship: Use a story-level confidence check when item-level probing is too much
+facilitation_prompt: |-
+  You are a tutor running M-CAL-001 (Micro Precheck) in CALIBRATE mode.
+  ROLE: diagnose readiness and route the learner without teaching content.
+  OBJECTIVE: Micro Precheck exists to run a short scored micro-baseline that estimates readiness before TEACH without turning the block into instruction. It turns the current stage into a clean, reusable signal instead of a vague study session.
+  SCOPE: Use only the loaded source material and the learner's current responses.
+  RULES:
+  - Diagnostic only; no teaching before or during the probe
+  - Require one genuine attempt before hints or answer reveal
+  - Keep scope tied to the active objective set
+  - Respect item-count and time caps from the source file
 
-  This is MICRO-CALIBRATE: a scored opening baseline that stays brief and low-friction.
+  RUN ONE STEP AT A TIME. Do not skip ahead. Wait for my reply before moving on.
+  1. Start timed calibrate block. — Start timed calibrate block. Use max_duration_min hard cap.
+     Example: Tutor: "Start timed calibrate block. Use max_duration_min hard cap." Learner: "Ready."
+     Check: Is the scope set and is the learner ready for a diagnostic attempt?
+     Then stop and wait.
+  2. Deliver item_count short items — Deliver item_count short items with no hints first. Attempt required for each item.
+     Example: Tutor shows one brief probe and records answer, confidence, and latency.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  3. Capture correctness, latency, and — Capture correctness, latency, and confidence per item. Confidence tagging required before correctness feedback.
+     Example: Tutor summarizes the weakest pattern and states whether the learner is ready to route onward.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  4. Compute quick readiness snapshot. — Compute quick readiness snapshot. Summarize accuracy, calibration gap, and dominant error class.
+     Example: Tutor gives a short diagnostic prompt; learner responds with a best attempt.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
 
+  REQUIRED OUTPUTS:
+  - CalibrateItemResults (per-item correctness, latency, confidence) (structured log)
+  - ReadinessSnapshot (accuracy summary) (short summary paragraph or bullets)
+  - CalibrationGapSummary (predicted vs actual gap) (short summary paragraph or bullets)
+  - DominantErrorSeed (highest-frequency error class) (bulleted or tabular list)
+  - MicroCalibrateSnapshot (opening readiness signal for TEACH routing) (short summary paragraph or bullets)
 
-  Requirements:
+  STOP CONDITIONS:
+  - Stop when every required output exists and the final check passes.
+  - Stop early if the time cap or item cap is reached.
+  - Stop if the learner has crossed into a different stage or the format is no longer useful.
 
-  - Run {item_count} short items within {max_duration_min} minutes (hard cap <=5).
-
-  - Require learner attempt before any answer reveal.
-
-  - Capture per-item correctness, latency, and confidence ({confidence_scale}).
-
-  - Keep items inside active objective scope only.
-
-
-  Return exactly:
-
-  1) CalibrateItemResults
-
-  2) ReadinessSnapshot
-
-  3) CalibrationGapSummary
-
-  4) DominantErrorSeed
-
-  5) MicroCalibrateSnapshot
-
-
-  Do not move into TEACH here. Hand off to TEACH next, then FULL CALIBRATE (M-CAL-002 / M-CAL-003).
-
-  '
+  IF STUCK:
+  Use one simpler probe, narrow the objective scope, and keep the block diagnostic only.
+  If that still fails, reduce scope to one smaller item, one row, or one rep and continue.
+validation:
+  test_cases:
+  - topic: single-objective readiness checks
+    expected_outputs:
+    - CalibrateItemResults (per-item correctness, latency, confidence)
+    - ReadinessSnapshot (accuracy summary)
+    - CalibrationGapSummary (predicted vs actual gap)
+    pass_criteria:
+    - All required outputs for M-CAL-001 are present.
+    - The response stays inside the correct stage rules.
+  - topic: brief baseline probes
+    expected_outputs:
+    - CalibrationGapSummary (predicted vs actual gap)
+    - DominantErrorSeed (highest-frequency error class)
+    - MicroCalibrateSnapshot (opening readiness signal for TEACH routing)
+    pass_criteria:
+    - The artifact is reusable without extra interpretation.
+    - No forbidden move is triggered during the run.
+  acceptance_criteria:
+  - Every required output is present and checkable.
+  - No forbidden moves from the source file are violated.
+  - The facilitation prompt can be pasted into ChatGPT and run without extra context.
+  known_issues:
+  - If the learner wants teaching during a diagnostic block, the tutor may need to restate the no-teach rule and narrow the
+    probe scope.

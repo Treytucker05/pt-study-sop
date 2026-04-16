@@ -2398,3 +2398,32 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Validation passed:
   - `python sop/tools/export_method_chain_inventory.py`
   - `python sop/tools/validate_library.py`
+
+## 2026-04-03 - SOP method-gap additions for worked-example fading and embodied encoding
+
+- Added `sop/library/methods/M-TEA-008.yaml` (`Worked Example -> Completion Fade`) so TEACH now has an explicit model-once-then-fade card for novice first exposure instead of leaving worked examples only in archived SOP notes.
+- Added `sop/library/methods/M-ENC-016.yaml` (`Embodied Walkthrough`) so ENCODE now includes a safe movement / map-back method for sequence, spatial, and anatomy-heavy material without turning the block into graded technique coaching.
+- Updated `sop/library/categories/TEACH.md` and `sop/library/categories/ENCODE.md`, regenerated `sop/library/15-method-library.md`, `sop/runtime/knowledge_upload/06_METHODS.md`, and the matching SOP goldens, and added focused doctrine regressions in `brain/tests/test_seed_methods.py`.
+- Validation passed:
+  - `python sop/tools/build_runtime_bundle.py --update-golden`
+  - `python sop/tools/validate_library.py`
+  - `python brain/data/seed_methods.py --strict-sync`
+  - `pytest -q -p no:cacheprovider brain/tests/test_seed_methods.py -k "load_from_yaml_includes_visible_teach_doctrine_cards or worked_example_fade_yaml_models_once_before_fading or embodied_walkthrough_yaml_requires_safe_movement_and_map_back"`
+
+## 2026-04-04 - Restore browser command allowlist for dev-browser and agent-browser
+
+- Restored repo-level browser automation command allowlists in `permissions.json` and `.claude/permissions.json` after they had been reduced to an empty `allow_execution` list.
+- Added the shared `dev-browser` and `agent-browser` command prefixes and common subcommands back to the allowlist so repeated browser-tool confirmation prompts stop recurring for normal browser-debug workflows.
+
+## 2026-04-04 - Official ChatGPT desktop app verification and relaunch
+
+- Verified the official Windows package `OpenAI.ChatGPT-Desktop_1.2026.43.0_x64__2p2nqsd0c76g0` launches correctly from its packaged app entrypoint and creates a live `ChatGPT.exe` window from `C:\Program Files\WindowsApps\OpenAI.ChatGPT-Desktop_1.2026.43.0_x64__2p2nqsd0c76g0\app\ChatGPT.exe`.
+- Instrumented the app with Electron remote debugging and attached Playwright over CDP, confirming the real profile loads `https://chatgpt.com/?window_style=main_view`, reaches `document.readyState = "complete"`, and renders the normal ChatGPT home UI in renderer screenshots.
+- Confirmed the previous stale-wrapper root cause was specific to the legacy `lencx` desktop app; the official OpenAI app does not show the injected-script fault and is using its own separate profile under `C:\Users\treyt\AppData\Local\Packages\OpenAI.ChatGPT-Desktop_2p2nqsd0c76g0`.
+
+## 2026-04-12 - Shared `research:last30days` skill cleanup
+
+- Rewrote the shared `C:\Users\treyt\.agents\skills\research-last30days\SKILL.md` to remove stale Claude-specific path/tool instructions and document the canonical shared-skill path plus current flags like `--refresh`.
+- Patched the runtime to support cached report reuse, added a real `--refresh` flag, and made console/file output UTF-8-safe on Windows so compact output no longer crashes on narrow console encodings.
+- Realigned fixtures and tests with the current xAI alias (`grok-4-1-fast`), added cache round-trip coverage, and confirmed the skill test suite passes end to end.
+- Updated repo inventory references so the shared skill catalog and sync script both account for the canonical folder name `research-last30days` while preserving the legacy `last30days` naming surface.

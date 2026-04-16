@@ -1,122 +1,132 @@
 id: M-ENC-004
 name: Teach-Back
 category: encode
-description: Explain the concept aloud as if teaching a classmate. Identify points where explanation breaks down.
-default_duration_min: 5
-energy_cost: high
-best_stage: review
+subcategory: gen
+description: Explain the concept aloud as if teaching a classmate. Identify points where explanation breaks
+  down.
 control_stage: ENCODE
 status: validated
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
 tags:
 - verbal
 - feynman
 - deep-processing
 - sop-core
-mechanisms:
-- generation
-- elaboration
-- calibration
-stipulations:
-- Teach-back is a guided explanation block, not a surprise graded evaluation.
-- Use learner breakdowns to steer targeted review rather than to judge performance harshly.
-knobs:
-  guidance_level: medium
-  output_format: bullets
-constraints:
-  active_processing_required: true
-  objective_scope_required: true
-  no_final_answer_only: true
+purpose: Force the learner to actively generate, explain, sequence, or transform the material so encoding
+  is deeper than passive review.
+not_for: This is not for passive reading, copying answers, or letting the tutor do the cognitive work
+  for the learner.
+best_fit_topics:
+- Concepts the learner can explain, transform, or generate in their own words
+- Mechanisms and causal chains that benefit from active elaboration
+poor_fit_topics:
+- Pure passive rereading or copy-paste note taking
+- Items that are still completely unknown and cannot yet be transformed
+learner_state_required: Source material is loaded. The learner has a bounded concept and is ready to generate,
+  explain, or transform it before seeing help.
 inputs:
-- Concept to teach
-- Imaginary student (or real one)
-- Recording device (optional)
-steps:
-- step: 1
-  action: State the concept you will teach
-  notes: Be specific about scope
-- step: 2
-  action: Explain the concept aloud as if to a first-year student
-  notes: Use simple language; avoid jargon
-- step: 3
-  action: Note any points where you stumble or hesitate
-  notes: These are knowledge gaps
-- step: 4
-  action: Answer the imaginary student's "why?" and "how?" questions
-  notes: Force yourself to go deeper
-- step: 5
-  action: Identify breakdown points
-  notes: Where did the explanation fail?
-- step: 6
-  action: Return to source for breakdown areas only
-  notes: Targeted review, not full re-read
+- description: Concept to teach
+  required: true
+- description: Imaginary student (or real one)
+  required: true
+- description: Recording device (optional)
+  required: false
 outputs:
+- name: Verbal explanation (recorded or noted)
+  description: Verbal explanation (recorded or noted)
+  format: concise prose bullets or short paragraph
+- name: Breakdown points list
+  description: Breakdown points list
+  format: short, checkable artifact
+- name: Targeted review areas
+  description: Targeted review areas
+  format: short, checkable artifact
+required_outputs: &id001
 - Verbal explanation (recorded or noted)
 - Breakdown points list
 - Targeted review areas
-stop_criteria:
-- Full explanation delivered
-- Breakdown points identified
-- 5 minutes elapsed
-failure_modes:
-- mode: Reading instead of explaining
-  mitigation: Close source material during teach-back
-- mode: Skipping "dumb" questions
-  mitigation: Force "why?" after every statement
-- mode: Not identifying breakdowns
-  mitigation: Record and listen back; gaps become obvious
-logging_fields:
-- concept_taught
-- breakdown_count
-- fluency_rating
-- targeted_review_items
-evidence:
-  citation: Nestojko et al. (2014)
-  finding: Expecting to teach enhances encoding and organization of information
-  source: seed_methods.py
-evidence_raw: Nestojko et al. (2014); expecting to teach enhances encoding and organization
-facilitation_prompt: 'You are running M-ENC-004 (Teach-Back) in ENCODE stage.
-
-  Execute this method card exactly and keep outputs deterministic.
-
-
-  Stage hard rules:
-
-  - Force active learner processing.
-
-  - Prefer transformation over passive lecture.
-
-  - Keep focus on target concept scope.
-  - Guide the learner explanation before judging it.
-  - Do not switch into strict grading unless the chain explicitly requests evaluation.
-
-
-  Required outputs:
-
-  - Verbal explanation (recorded or noted)
-
-  - Breakdown points list
-
-  - Targeted review areas
-
-
-  Stop conditions:
-
-  - Full explanation delivered
-
-  - Breakdown points identified
-
-  - 5 minutes elapsed
-
-
-  If required inputs are missing, request only the minimum needed input and continue.
-
-  Use breakdown points to guide the next encoding move, not to spring an unexpected verdict.
-
-  '
-gating_rules:
-- Force active processing (explain, transform, or map), not passive reading.
-- Keep output scoped to mapped objectives only.
-artifact_type: notes
+success_criteria:
+- 'All required outputs are present and checkable: Verbal explanation (recorded or noted), Breakdown points
+  list, Targeted review areas.'
+- 'The method reaches its stop condition: Full explanation delivered; Breakdown points identified.'
+- The learner stays active and the tutor does not give away the answer before the required attempt or
+  transformation.
+partial_criteria:
+- 'Some required outputs are present but at least one is missing or incomplete: Verbal explanation (recorded
+  or noted), Breakdown points list.'
+steps:
+- step: 1
+  name: The Concept You Will Teach
+  action: State the concept you will teach
+  tutor_does: 'Guide the learner to State the concept you will teach. Keep in mind: Be specific about
+    scope'
+  learner_does: Performs the requested cognitive move and shares the result before moving on.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Be specific about scope'
+- step: 2
+  name: The Concept Aloud As If
+  action: Explain the concept aloud as if to a first-year student
+  tutor_does: 'Guide the learner to Explain the concept aloud as if to a first-year student. Keep in mind:
+    Use simple language; avoid jargon'
+  learner_does: Performs the requested cognitive move and shares the result before moving on.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Use simple language; avoid jargon'
+- step: 3
+  name: Note Any Points Where You
+  action: Note any points where you stumble or hesitate
+  tutor_does: 'Guide the learner to Note any points where you stumble or hesitate. Keep in mind: These
+    are knowledge gaps'
+  learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: These are knowledge gaps'
+- step: 4
+  name: Answer The Imaginary Student S
+  action: Answer the imaginary student's "why?" and "how?" questions
+  tutor_does: 'Guide the learner to Answer the imaginary student''s "why?" and "how?" questions. Keep
+    in mind: Force yourself to go deeper'
+  learner_does: Performs the requested cognitive move and shares the result before moving on.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Force yourself to go deeper'
+- step: 5
+  name: Breakdown Points
+  action: Identify breakdown points
+  tutor_does: 'Guide the learner to Identify breakdown points. Keep in mind: Where did the explanation
+    fail?'
+  learner_does: Performs the requested cognitive move and shares the result before moving on.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Where did the explanation fail?'
+- step: 6
+  name: To Source For Breakdown Areas
+  action: Return to source for breakdown areas only
+  tutor_does: 'Guide the learner to Return to source for breakdown areas only. Keep in mind: Targeted
+    review, not full re-read'
+  learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Targeted review, not full re-read'
+constraints:
+- rule: Require active learner processing
+  why: The method depends on the learner generating, mapping, explaining, or transforming the material
+    rather than passively reading.
+- rule: Stay within objective scope
+  why: Prevents drift into unrelated material and keeps the method auditable.
+- rule: Do not turn this into a passive answer dump or scoring event
+  why: This method is designed for guided learning, not one-shot lecture or formal grading.
+- rule: Teach-back is a guided explanation block, not a surprise graded evaluation.
+  why: Keeps the method honest and prevents a common misuse described in the source file.
+- rule: Use learner breakdowns to steer targeted review rather than to judge performance harshly.
+  why: Keeps the method honest and prevents a common misuse described in the source file.
+- rule: Force active processing (explain, transform, or map), not passive reading.
+  why: This gating rule is part of the method’s execution contract.
+- rule: Keep output scoped to mapped objectives only.
+  why: This gating rule is part of the method’s execution contract.
 allowed_moves:
 - Ask the learner to state the concept they will teach
 - Prompt the learner to explain the concept aloud in simple language
@@ -135,7 +145,126 @@ forbidden_moves:
 - Deliver a passive lecture instead of facilitating the teach-back
 - Move to retrieval before encoding is complete
 - Use breakdown points to spring an unexpected verdict on performance
-required_outputs:
-- Verbal explanation (recorded or noted)
-- Breakdown points list
-- Targeted review areas
+stuck_protocol: Offer one smaller hint, one simpler example, or one step back in the chain; then require
+  the learner to continue actively.
+failure_modes:
+- mode: Reading instead of explaining
+  detection: The learner or tutor starts doing reading instead of explaining or the artifact stops satisfying
+    the method’s required checks.
+  recovery: Close source material during teach-back
+  fallback_method: M-ENC-007
+- mode: Skipping "dumb" questions
+  detection: The learner or tutor starts doing skipping "dumb" questions or the artifact stops satisfying
+    the method’s required checks.
+  recovery: Force "why?" after every statement
+  fallback_method: M-ENC-005
+- mode: Not identifying breakdowns
+  detection: The learner or tutor starts doing not identifying breakdowns or the artifact stops satisfying
+    the method’s required checks.
+  recovery: Record and listen back; gaps become obvious
+  fallback_method: M-INT-002
+default_duration_min: 5
+energy_cost: high
+best_stage: review
+mechanisms:
+- generation
+- elaboration
+- calibration
+evidence:
+  citation: Nestojko et al. (2014)
+  finding: Expecting to teach enhances encoding and organization of information
+  source: seed_methods.py
+knobs:
+  guidance_level: medium
+  output_format: bullets
+  evidence_raw: Nestojko et al. (2014); expecting to teach enhances encoding and organization
+  gating_rules:
+  - Force active processing (explain, transform, or map), not passive reading.
+  - Keep output scoped to mapped objectives only.
+  stipulations:
+  - Teach-back is a guided explanation block, not a surprise graded evaluation.
+  - Use learner breakdowns to steer targeted review rather than to judge performance harshly.
+  logging_fields:
+  - concept_taught
+  - breakdown_count
+  - fluency_rating
+  - targeted_review_items
+  artifact_type: notes
+related_methods:
+- id: M-ENC-007
+  relationship: Similar self-explanation move
+- id: M-ENC-005
+  relationship: Why-chain fallback for deeper causality
+- id: M-INT-002
+  relationship: Clinical application if the learner needs context
+facilitation_prompt: "You are running M-ENC-004 (Teach-Back) in ENCODE stage.\nRole: you are the tutor\
+  \ running the method exactly as written, with no hidden assumptions.\nObjective: Force the learner to\
+  \ actively generate, explain, sequence, or transform the material so encoding is deeper than passive\
+  \ review.\nScope: Explain the concept aloud as if teaching a classmate. Identify points where explanation\
+  \ breaks down.\nRules:\n- Require active learner processing — The method depends on the learner generating,\
+  \ mapping, explaining, or transforming the material rather than passively reading.\n- Stay within objective\
+  \ scope — Prevents drift into unrelated material and keeps the method auditable.\n- Do not turn this\
+  \ into a passive answer dump or scoring event — This method is designed for guided learning, not one-shot\
+  \ lecture or formal grading.\n- Teach-back is a guided explanation block, not a surprise graded evaluation.\
+  \ — Keeps the method honest and prevents a common misuse described in the source file.\n- Use learner\
+  \ breakdowns to steer targeted review rather than to judge performance harshly. — Keeps the method honest\
+  \ and prevents a common misuse described in the source file.\n- Not for: This is not for passive reading,\
+  \ copying answers, or letting the tutor do the cognitive work for the learner.\nInputs:\n- Concept to\
+  \ teach (required)\n- Imaginary student (or real one) (required)\n- Recording device (optional) (optional)\n\
+  Required outputs:\n- Verbal explanation (recorded or noted): Verbal explanation (recorded or noted)\
+  \ [concise prose bullets or short paragraph]\n- Breakdown points list: Breakdown points list [short,\
+  \ checkable artifact]\n- Targeted review areas: Targeted review areas [short, checkable artifact]\n\
+  Steps: run one step at a time and wait after each step before advancing.\n1. The Concept You Will Teach\n\
+  \   Tutor does: Guide the learner to State the concept you will teach. Keep in mind: Be specific about\
+  \ scope\n   Learner does: Performs the requested cognitive move and shares the result before moving\
+  \ on.\n   Example: Example: Be specific about scope\n   Check: Is this step complete and ready for the\
+  \ next move?\n   Then STOP and wait for the learner.\n2. The Concept Aloud As If\n   Tutor does: Guide\
+  \ the learner to Explain the concept aloud as if to a first-year student. Keep in mind: Use simple language;\
+  \ avoid jargon\n   Learner does: Performs the requested cognitive move and shares the result before\
+  \ moving on.\n   Example: Example: Use simple language; avoid jargon\n   Check: Is this step complete\
+  \ and ready for the next move?\n   Then STOP and wait for the learner.\n3. Note Any Points Where You\n\
+  \   Tutor does: Guide the learner to Note any points where you stumble or hesitate. Keep in mind: These\
+  \ are knowledge gaps\n   Learner does: Reads the prompt, does the thinking step, and returns the artifact\
+  \ or answer.\n   Example: Example: These are knowledge gaps\n   Check: Is this step complete and ready\
+  \ for the next move?\n   Then STOP and wait for the learner.\n4. Answer The Imaginary Student S\n  \
+  \ Tutor does: Guide the learner to Answer the imaginary student's \"why?\" and \"how?\" questions. Keep\
+  \ in mind: Force yourself to go deeper\n   Learner does: Performs the requested cognitive move and shares\
+  \ the result before moving on.\n   Example: Example: Force yourself to go deeper\n   Check: Is this\
+  \ step complete and ready for the next move?\n   Then STOP and wait for the learner.\n5. Breakdown Points\n\
+  \   Tutor does: Guide the learner to Identify breakdown points. Keep in mind: Where did the explanation\
+  \ fail?\n   Learner does: Performs the requested cognitive move and shares the result before moving\
+  \ on.\n   Example: Example: Where did the explanation fail?\n   Check: Is this step complete and ready\
+  \ for the next move?\n   Then STOP and wait for the learner.\n6. To Source For Breakdown Areas\n   Tutor\
+  \ does: Guide the learner to Return to source for breakdown areas only. Keep in mind: Targeted review,\
+  \ not full re-read\n   Learner does: Reads the prompt, does the thinking step, and returns the artifact\
+  \ or answer.\n   Example: Example: Targeted review, not full re-read\n   Check: Is this step complete\
+  \ and ready for the next move?\n   Then STOP and wait for the learner.\nStop conditions:\n- All required\
+  \ outputs are present and checkable: Verbal explanation (recorded or noted), Breakdown points list,\
+  \ Targeted review areas.\n- The method reaches its stop condition: Full explanation delivered; Breakdown\
+  \ points identified.\n- The learner stays active and the tutor does not give away the answer before\
+  \ the required attempt or transformation.\nIf stuck: Offer one smaller hint, one simpler example, or\
+  \ one step back in the chain; then require the learner to continue actively.\nDo not skip steps, do\
+  \ not solve the whole task at once, and do not present source claims as mnemonic or analogy artifacts."
+validation:
+  test_cases:
+  - topic: Concepts the learner can explain, transform, or generate in their own words
+    expected_outputs: *id001
+    pass_criteria:
+    - All required outputs are present.
+    - The learner performs the required active step before the final artifact is given.
+    - The result stays within scope and matches the method format.
+  - topic: Pure passive rereading or copy-paste note taking
+    expected_outputs:
+    - Stuck protocol response
+    - Either a simpler scaffold or a method redirect
+    pass_criteria:
+    - The tutor does not force a bad fit.
+    - The tutor either shrinks scope or suggests a better-fitting method.
+    - The response remains honest about the mismatch.
+  acceptance_criteria:
+  - All required_outputs are present in the successful test case.
+  - No forbidden_moves are violated.
+  - The facilitation_prompt can be run without extra hidden context.
+  known_issues:
+  - LLMs may over-explain before the learner attempts the required move.
+  - LLMs may drift outside scope when the topic is broad or ambiguous.

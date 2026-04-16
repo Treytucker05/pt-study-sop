@@ -104,6 +104,7 @@ $LocalOnlyNames = @{
         "javascript-typescript",
         "json-canvas",
         "last30days",
+        "research-last30days",
         "learn-instinct",
         "leisure",
         "llm-application-dev",

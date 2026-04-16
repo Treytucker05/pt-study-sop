@@ -1,126 +1,144 @@
 id: M-OVR-002
 name: Anki Card Draft
 category: overlearn
+subcategory: cards
 description: Draft 3-5 Anki cards for the session's key concepts. Use cloze or basic format. Brain syncs to Anki.
-default_duration_min: 5
-energy_cost: low
-best_stage: consolidation
 control_stage: OVERLEARN
 status: validated
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
 tags:
 - anki
 - spaced-repetition
 - artifacts
-mechanisms:
-- spacing
-- retrieval
-- generation
-- artifact_creation
-knobs:
-  intensity: medium
-  speed_pressure: soft
-constraints:
-  mastery_required_before_speed: true
-  burnout_cap_rounds: 3
-  preserve_accuracy_threshold: 0.8
+purpose: Anki Card Draft exists to run a small Anki drafting pass that turns session concepts into reviewable cloze or basic
+  cards. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for initial teaching, discovery, or broad remediation. Use TEACH or REFERENCE first if understanding
+  is not already present.
+best_fit_topics:
+- card drafting
+- cloze/basic item writing
+- review deck preparation
+poor_fit_topics:
+- research-heavy synthesis
+- large deck engineering
+- new topic teaching
+learner_state_required: The learner already understands the core material well enough to draft cards without turning them
+  into a teaching session.
 inputs:
-- Session notes and key concepts
-- Anki card template (cloze or basic)
-- Card draft staging area (Brain or text file)
-- Target deck name
-gating_rules:
-- Output ONLY canonical card blocks. No prose before/after cards.
-- Produce 3-5 cards total.
-- Each card must use exact labels and line order: null
-  CARD N:, TYPE:, FRONT:, BACK:, TAGS: null
-- Do not use bullets, markdown tables, CSV, or JSON.
-steps:
-- step: 1
-  action: Review session notes and identify 3-5 highest-value concepts
-  notes: Prioritize weak anchors, new vocabulary, and easily confused items
-- step: 2
-  action: Choose card format for each concept (cloze vs. basic Q&A)
-  notes: Cloze for vocabulary/facts; Basic for "why" questions and processes
-- step: 3
-  action: Draft the front of each card (question or cloze deletion)
-  notes: One fact per card — no "double-barreled" cards
-- step: 4
-  action: Draft the back of each card (answer)
-  notes: Keep answers concise — elaboration goes in the "Extra" field
-- step: 5
-  action: Add context tags (topic, source, date)
-  notes: Tags enable filtered study and tracking
-- step: 6
-  action: Stage cards for sync to Anki via Brain
-  notes: Brain's Anki integration handles the actual sync
-- step: 7
-  action: Final format check before submit
-  notes: Verify output contains only CARD blocks and exact label lines
+- description: Session notes and key concepts
+  required: true
+- description: Anki card template (cloze or basic)
+  required: true
+- description: Card draft staging area (Brain or text file)
+  required: true
+- description: Target deck name
+  required: true
 outputs:
-- 3-5 drafted Anki cards
-- Cards tagged by topic and source
+- name: 3-5 drafted Anki cards in canonical CARD block format
+  description: A draft card set for later Anki import or refinement.
+  format: formatted study artifact
+- name: Each card tagged by topic and source
+  description: A structured output for a small Anki drafting pass that turns session concepts into reviewable cloze or basic
+    cards.
+  format: formatted study artifact
+- name: Cards staged in Brain for Anki sync
+  description: A structured output for a small Anki drafting pass that turns session concepts into reviewable cloze or basic
+    cards.
+  format: formatted study artifact
+- name: Card count logged to session record
+  description: A structured output for a small Anki drafting pass that turns session concepts into reviewable cloze or basic
+    cards.
+  format: structured log
+required_outputs:
+- 3-5 drafted Anki cards in canonical CARD block format
+- Each card tagged by topic and source
 - Cards staged in Brain for Anki sync
 - Card count logged to session record
-stop_criteria:
-- 3-5 cards drafted (minimum 3)
-- All cards follow single-fact rule
-- Every card has TYPE, FRONT, BACK, TAGS label lines
-- Cards staged for sync
-failure_modes:
-- mode: Double-barreled cards (multiple facts per card)
-  mitigation: Split into separate cards — one fact each
-- mode: Cards too complex (essay answers)
-  mitigation: If answer takes > 10 seconds to recall, simplify
-- mode: Drafting cards for material not yet understood
-  mitigation: Only card concepts you can already explain — cards are for retention, not learning
-logging_fields:
-- cards_drafted
-- card_format_breakdown
-- topics_covered
-- cards_synced_to_anki
-evidence:
-  citation: Kornell (2009)
-  finding: Cepeda et al. (2006); spaced retrieval via flashcards is high-utility
-  source: seed_methods.py
-evidence_raw: Kornell (2009); Cepeda et al. (2006); spaced retrieval via flashcards is high-utility
-facilitation_prompt: 'You are running M-OVR-002 (Anki Card Draft) in OVERLEARN stage.
-
-  Execute this method card exactly and keep outputs deterministic.
-
-
-  Stage hard rules:
-
-  - Run bounded fluency reps.
-
-  - Respect fatigue and stop caps.
-
-  - Prioritize durable retention over speed only.
-
-
-  Required outputs:
-
-  - 3-5 drafted Anki cards
-
-  - Cards tagged by topic and source
-
-  - Cards staged in Brain for Anki sync
-
-  - Card count logged to session record
-
-
-  Stop conditions:
-
-  - 3-5 cards drafted (minimum 3)
-
-  - All cards follow single-fact rule
-
-  - Every card has TYPE, FRONT, BACK, TAGS label lines
-
-
-  If required inputs are missing, request only the minimum needed input and continue.
-
-  '
-artifact_type: cards
+success_criteria:
+- All required outputs are present for M-OVR-002.
+- The rep set stays brief, fluent, and below the fatigue threshold.
+- The learner or tutor can point to the output artifact and reuse it later without ambiguity.
+partial_criteria:
+- 'One or more required outputs are present but one core artifact is incomplete: 3-5 drafted Anki cards in canonical CARD
+  block format.'
+- The method stayed in the correct stage but the final artifact needs one more pass to be reusable.
+steps:
+- step: 1
+  name: Review session notes and
+  action: Review session notes and identify 3-5 highest-value concepts. Prioritize weak anchors, new vocabulary, and easily
+    confused items
+  tutor_does: Run review session notes and identify 3-5 highest-value concepts. prioritize weak anchors, new vocabulary, and
+    easily confused items as a bounded fluency rep and stop before fatigue lowers accuracy.
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Is the learner already stable enough for fluency reps?
+  example: 'Tutor: "Keep this to a short, fluent rep set." Learner: "Understood."'
+- step: 2
+  name: Choose card format for
+  action: Choose card format for each concept (cloze vs. basic Q&A). Cloze for vocabulary/facts; Basic for "why" questions
+    and processes
+  tutor_does: Run choose card format for each concept (cloze vs. basic q&a). cloze for vocabulary/facts; basic for "why" questions
+    and processes as a bounded fluency rep and stop before fatigue lowers accuracy.
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Is this step complete and ready to advance?
+  example: Tutor asks for the next short answer and keeps the pace brisk.
+- step: 3
+  name: Draft the front of
+  action: Draft the front of each card (question or cloze deletion). One fact per card — no "double-barreled" cards
+  tutor_does: Run draft the front of each card (question or cloze deletion). one fact per card — no "double-barreled" cards
+    as a bounded fluency rep and stop before fatigue lowers accuracy.
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Is the artifact ready to save or reuse later?
+  example: Tutor identifies one weak spot and asks for one more clean repetition.
+- step: 4
+  name: Draft the back of
+  action: Draft the back of each card (answer). Keep answers concise — elaboration goes in the "Extra" field
+  tutor_does: Run draft the back of each card (answer). keep answers concise — elaboration goes in the "extra" field as a
+    bounded fluency rep and stop before fatigue lowers accuracy.
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Is the artifact ready to save or reuse later?
+  example: Tutor closes the rep set and records the final level of fluency.
+- step: 5
+  name: Add context tags (topic,
+  action: Add context tags (topic, source, date). Tags enable filtered study and tracking
+  tutor_does: Run add context tags (topic, source, date). tags enable filtered study and tracking as a bounded fluency rep
+    and stop before fatigue lowers accuracy.
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Is this step complete and ready to advance?
+  example: Tutor closes the rep set and records the final level of fluency.
+- step: 6
+  name: Stage cards for sync
+  action: Stage cards for sync to Anki via Brain. Brain's Anki integration handles the actual sync
+  tutor_does: Run stage cards for sync to anki via brain. brain's anki integration handles the actual sync as a bounded fluency
+    rep and stop before fatigue lowers accuracy.
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Is this step complete and ready to advance?
+  example: Tutor closes the rep set and records the final level of fluency.
+- step: 7
+  name: Final format check before
+  action: Final format check before submit. Verify output contains only CARD blocks and exact label lines
+  tutor_does: Run final format check before submit. verify output contains only card blocks and exact label lines as a bounded
+    fluency rep and stop before fatigue lowers accuracy.
+  learner_does: Replies quickly and accurately, keeps answers compact, and stops when the cap is reached.
+  max_lines: 6
+  check: Is this step complete and ready to advance?
+  example: Tutor closes the rep set and records the final level of fluency.
+constraints:
+- rule: Understanding must already exist before fluency reps begin
+  why: Overlearning hardens what is already known; it does not teach from scratch.
+- rule: Keep reps short and bounded to avoid fatigue loops
+  why: Excess repetition lowers accuracy and wastes the fluency window.
+- rule: Stop when the cap is reached or accuracy starts to sag
+  why: The point is durable fluency, not endless repetition.
+- rule: Do not introduce new material during the rep set
+  why: New content belongs in TEACH or REFERENCE, not OVERLEARN.
 allowed_moves:
 - Guide learner to identify 3-5 highest-value concepts from session
 - Help choose card format per concept (cloze for facts/vocab, basic for why/process)
@@ -130,6 +148,10 @@ allowed_moves:
 - Split double-barreled cards into separate cards
 - Simplify overly complex cards (if answer takes >10s to recall)
 - Stage cards for Anki sync via Brain
+- Run short fluent reps on already-understood material
+- Tighten wording and reduce hesitation across repetitions
+- Stop when accuracy falls or the cap is reached
+- Convert the stable material into an artifact for later review
 forbidden_moves:
 - Accept double-barreled cards (multiple facts per card)
 - Accept cards for material not yet understood (cards are for retention, not learning)
@@ -140,8 +162,120 @@ forbidden_moves:
 - Create cards with essay-length answers
 - Teach or explain new content during card drafting
 - Skip the final format check before submit
-required_outputs:
-- 3-5 drafted Anki cards in canonical CARD block format
-- Each card tagged by topic and source
-- Cards staged in Brain for Anki sync
-- Card count logged to session record
+- Introduce brand-new content
+- Push through fatigue after the cap
+- Let the session drift into broad teaching
+stuck_protocol: Shorten the rep, narrow the item, and stop before fatigue changes the quality of the response.
+failure_modes:
+- mode: The session turns into new teaching
+  detection: The tutor starts adding unfamiliar content or long explanations.
+  recovery: Cut back to the known material and keep the rep set bounded.
+  fallback_method: M-REF-003
+- mode: Fluency collapses from fatigue
+  detection: Latency rises and errors accumulate across repeated reps.
+  recovery: Stop the set early, capture the weak item, and defer another rep to later.
+  fallback_method: M-RET-003
+- mode: The output becomes bloated
+  detection: Responses become long, unfocused, or repetitive.
+  recovery: Require shorter answers and a tighter format, then continue.
+  fallback_method: M-OVR-002
+default_duration_min: 5
+energy_cost: low
+best_stage: consolidation
+mechanisms:
+- spacing
+- retrieval
+- generation
+- artifact_creation
+evidence:
+  citation: Kornell (2009)
+  finding: Cepeda et al. (2006); spaced retrieval via flashcards is high-utility
+  source: seed_methods.py
+knobs:
+  default_duration_min: 5
+  energy_cost: low
+  best_stage: consolidation
+related_methods:
+- id: M-REF-003
+  relationship: Anki cards should be grounded in a compact reference anchor
+- id: M-RET-003
+  relationship: Cloze retrieval is a natural test of drafted cards
+facilitation_prompt: |-
+  You are a tutor running M-OVR-002 (Anki Card Draft) in OVERLEARN mode.
+  ROLE: run bounded fluency reps that harden already-understood material.
+  OBJECTIVE: Anki Card Draft exists to run a small Anki drafting pass that turns session concepts into reviewable cloze or basic cards. It turns the current stage into a clean, reusable signal instead of a vague study session.
+  SCOPE: Use only the loaded source material and the learner's current responses.
+  RULES:
+  - Understanding must already exist before fluency reps begin
+  - Keep reps short and bounded to avoid fatigue loops
+  - Stop when the cap is reached or accuracy starts to sag
+  - Do not introduce new material during the rep set
+
+  RUN ONE STEP AT A TIME. Do not skip ahead. Wait for my reply before moving on.
+  1. Review session notes and — Review session notes and identify 3-5 highest-value concepts. Prioritize weak anchors, new vocabulary, and easily confused items
+     Example: Tutor: "Keep this to a short, fluent rep set." Learner: "Understood."
+     Check: Is the learner already stable enough for fluency reps?
+     Then stop and wait.
+  2. Choose card format for — Choose card format for each concept (cloze vs. basic Q&A). Cloze for vocabulary/facts; Basic for "why" questions and processes
+     Example: Tutor asks for the next short answer and keeps the pace brisk.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  3. Draft the front of — Draft the front of each card (question or cloze deletion). One fact per card — no "double-barreled" cards
+     Example: Tutor identifies one weak spot and asks for one more clean repetition.
+     Check: Is the artifact ready to save or reuse later?
+     Then stop and wait.
+  4. Draft the back of — Draft the back of each card (answer). Keep answers concise — elaboration goes in the "Extra" field
+     Example: Tutor closes the rep set and records the final level of fluency.
+     Check: Is the artifact ready to save or reuse later?
+     Then stop and wait.
+  5. Add context tags (topic, — Add context tags (topic, source, date). Tags enable filtered study and tracking
+     Example: Tutor closes the rep set and records the final level of fluency.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  6. Stage cards for sync — Stage cards for sync to Anki via Brain. Brain's Anki integration handles the actual sync
+     Example: Tutor closes the rep set and records the final level of fluency.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+  7. Final format check before — Final format check before submit. Verify output contains only CARD blocks and exact label lines
+     Example: Tutor closes the rep set and records the final level of fluency.
+     Check: Is this step complete and ready to advance?
+     Then stop and wait.
+
+  REQUIRED OUTPUTS:
+  - 3-5 drafted Anki cards in canonical CARD block format (formatted study artifact)
+  - Each card tagged by topic and source (formatted study artifact)
+  - Cards staged in Brain for Anki sync (formatted study artifact)
+  - Card count logged to session record (structured log)
+
+  STOP CONDITIONS:
+  - Stop when every required output exists and the final check passes.
+  - Stop early if the time cap or item cap is reached.
+  - Stop if the learner has crossed into a different stage or the format is no longer useful.
+
+  IF STUCK:
+  Shorten the rep, narrow the item, and stop before fatigue changes the quality of the response.
+  If that still fails, reduce scope to one smaller item, one row, or one rep and continue.
+validation:
+  test_cases:
+  - topic: card drafting
+    expected_outputs:
+    - 3-5 drafted Anki cards in canonical CARD block format
+    - Each card tagged by topic and source
+    - Cards staged in Brain for Anki sync
+    pass_criteria:
+    - All required outputs for M-OVR-002 are present.
+    - The response stays inside the correct stage rules.
+  - topic: cloze/basic item writing
+    expected_outputs:
+    - Each card tagged by topic and source
+    - Cards staged in Brain for Anki sync
+    - Card count logged to session record
+    pass_criteria:
+    - The artifact is reusable without extra interpretation.
+    - No forbidden move is triggered during the run.
+  acceptance_criteria:
+  - Every required output is present and checkable.
+  - No forbidden moves from the source file are violated.
+  - The facilitation prompt can be pasted into ChatGPT and run without extra context.
+  known_issues:
+  - Fluency reps can become fatiguing or repetitive unless the tutor stops at the cap and keeps items bounded.

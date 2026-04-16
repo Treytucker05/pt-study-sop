@@ -98,7 +98,7 @@ Review workflow:
 | `github` | `github` | shared | other | GitHub patterns for PRs, code review, branching, and repository management. Use when working with pull requests, stacked PRs, code reviews, GitHub or repository automation. |  |  |
 | `javascript-typescript` | `javascript-typescript` | shared | other | JavaScript and TypeScript development with ES6+, Node.js, React, and modern web frameworks. Use for frontend, backend, or full-stack JavaScript/TypeScript projects. |  |  |
 | `json-canvas` | `json-canvas` | shared | other | Create and edit JSON Canvas files (.canvas) with nodes, edges, groups, and connections. Use when working with .canvas files, creating visual canvases, mind maps, flowcharts, or when the user mentions Canvas files in Obsidian. |  |  |
-| `last30days` | `last30days` | shared | other | Research a topic from the last 30 days on Reddit + X + Web, become an expert, and write copy-paste-ready prompts for the user's target tool. |  |  |
+| `research:last30days` | `research-last30days` | shared | other | Research a topic from the last 30 days on Reddit + X + Web, then turn the findings into copy-paste-ready prompts or concrete recommendations. Legacy command naming may still refer to this as `last30days`. |  |  |
 | `learned` | `learned` | local-exception | tool-local |  |  |  |
 | `llm-application-dev` | `llm-application-dev` | shared | other | Building applications with Large Language Models - prompt engineering, RAG patterns, and LLM integration. Use for AI-powered features, chatbots, or LLM-based automation. |  |  |
 | `llm-council` | `multi-model-deep` | shared | planning | Multi-model planning council that collects and judges independent plans. | keep | niche deep-planning/council workflow, not daily default |

@@ -1,117 +1,104 @@
 id: M-PRE-002
 name: Overarching Pre-Question Set
 category: prime
+subcategory: question-set
 description: Generate 3-5 broad why/how/where-fit questions that jointly cover the whole selected material or module slice before deep study to set conceptual hooks.
-default_duration_min: 3
-energy_cost: low
-best_stage: first_exposure
 control_stage: PRIME
 status: validated
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
 tags:
 - priming
 - prequestions
 - metacognition
 - sop-core
-mechanisms:
-- generation
-- elaboration
-stipulations:
-- Use broad conceptual questions only (no narrow fact checks).
-- Questions are non-scored orientation prompts in PRIME.
-- The 3-5 prompt cap is a final grouping cap, not permission to cherry-pick isolated details. Inventory the full selected scope first, then write prompts broad enough to cover it.
-- If learner anxiety is high, reduce to 1-2 scaffolded prompts or skip.
-when_to_use:
-- New topic where conceptual framing is unclear.
-- Learner benefits from curiosity hooks before details.
-when_not_to_use:
-- Learner shows high anxiety with open-ended prompts.
-- Session time is too short to process questions meaningfully.
-knobs:
-  priming_scope: single_focus
-  guidance_level: medium
-constraints:
-  non_assessment: true
-  no_scored_checks: true
-  question_cap_min: 3
-  question_cap_max: 5
+- prime
+- question-set
+- orientation
+- prior-knowledge
+- question
+purpose: Generate 3-5 broad why/how/where-fit questions that jointly cover the whole selected material or module slice before deep study to set conceptual hooks. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
+not_for: Not for first-contact teaching, scored assessment, or full solution reveal. Use a TEACH or REFERENCE method when the goal is explanation rather than orientation.
+best_fit_topics:
+- 'New or complex material that needs a quick orientation pass: Overarching Pre-Question Set'
+- Topics with prior notes, objective context, or an obvious structure to surface
+poor_fit_topics:
+- Brand-new content with no context or source packet
+- Scored retrieval or diagnostic testing
+learner_state_required: Source material is loaded, the topic is bounded, and the learner has at least some prior context or an objective to orient around.
 inputs:
-- Topic title or lecture heading
-- Full heading structure or major sections for the selected material/module slice
-steps:
-- step: 1
-  action: Inventory the full set of major sections, concepts, and transitions from the selected scope
-  notes: Use the whole selected material/module slice before narrowing. Do not cherry-pick.
-- step: 2
-  action: Compress that inventory into 3-5 broad conceptual prompts
-  notes: Prefer stems like Why, How, Where does this fit. Each prompt should cover a broad cluster rather than an isolated detail.
-- step: 3
-  action: Rank prompts by expected leverage
-  notes: Choose top 1-2 prompts to carry into next method.
-- step: 4
-  action: Record unresolved prompts as follow-up targets
-  notes: Use these as CALIBRATE/ENCODE inputs.
+- description: Source material loaded in chat
+  required: true
+- description: Target topic or objective scope
+  required: true
+- description: Prior notes, North Star, or prior-session context
+  required: false
 outputs:
+- name: PreQuestionSet
+  description: Question set that surfaces what matters most about overarching pre-question set.
+  format: numbered question list
+- name: PriorityPrompts
+  description: Activation or structure artifact for overarching pre-question set.
+  format: bulleted artifact
+- name: FollowUpTargets
+  description: Next-pass targets for study or clarification.
+  format: bulleted artifact
+required_outputs:
 - PreQuestionSet
 - PriorityPrompts
 - FollowUpTargets
-stop_criteria:
-- 3-5 broad prompts jointly cover the full selected scope
-- Priority prompts selected
-- 3 minutes elapsed
-failure_modes:
-- mode: Prompts become detailed quiz items
-  mitigation: Reframe to conceptual why/how/fit questions only.
-- mode: Learner anxiety rises from open prompts
-  mitigation: Reduce to 1-2 scaffolded prompts or skip method.
-- mode: Prompts are too vague to use downstream
-  mitigation: Attach each prompt to one explicit objective tag.
-logging_fields:
-- prequestion_count
-- priority_prompt_count
-- skipped_for_anxiety
-evidence:
-  citation: Jamison et al. (2023/2024)
-  finding: Prequestions improve downstream learning when paired with structured follow-up.
-  source: research synthesis
-evidence_strength: high
-primary_citations:
-- Jamison et al. (2023/2024)
-- Roediger & Karpicke (2006)
-evidence_raw: Prequestions potentiate later learning and retrieval when scaffolded.
-facilitation_prompt: 'You are running M-PRE-002 (Overarching Pre-Question Set) in PRIME stage.
-
-  This method is non-assessment.
-
-  This method is orientation only and never scored.
-
-  First account for the full selected source/module scope, then compress it into exactly 3-5 broad conceptual prompts.
-  Treat the 3-5 cap as a final grouping cap, not as permission to ignore supported content.
-
-  Prompt style:
-
-  - Why does this matter?
-
-  - How does it work at a high level?
-
-  - Where does it fit in the module?
-
-
-  Then return:
-
-  1) PreQuestionSet
-
-  2) PriorityPrompts (top 1-2)
-
-  3) FollowUpTargets
-
-
-  If learner anxiety is high, reduce to 1-2 scaffolded prompts or skip and route to M-PRE-010.
-
-  '
-gating_rules:
-- Do not assess or score the learner in PRIME.
-- Stay at orientation level and avoid full solution reveal.
-artifact_type: notes
+success_criteria:
+- 'Core structure is captured in the required outputs: PreQuestionSet, PriorityPrompts.'
+- The method stays non-assessive and does not score the learner.
+- Any gaps, priorities, or blind spots are explicitly named for next-pass study.
+partial_criteria:
+- PreQuestionSet is present but gaps or priorities are incomplete.
+- The output has useful structure but is missing one required linkage or objective tie.
+steps:
+- step: 1
+  name: Opening Step
+  action: Inventory the full set of major sections, concepts, and transitions from the selected scope
+  tutor_does: Inventory the full set of major sections, concepts, and transitions from the selected scope. Use the whole selected material/module slice before narrowing. Do not cherry-pick
+  learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
+  max_lines: 4
+  check: What are the strongest anchors you already have for this topic?
+  example: 'Example: "Opening Step: Inventory the full set of major sections, concepts, and transitions from the selected scope"'
+- step: 2
+  name: Step 2
+  action: Compress that inventory into 3-5 broad conceptual prompts
+  tutor_does: Compress that inventory into 3-5 broad conceptual prompts. Prefer stems like Why, How, Where does this fit. Each prompt should cover a broad cluster rather than an isolated detail
+  learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
+  max_lines: 4
+  check: Does the structure so far match what you expected from the material?
+  example: 'Example: "Step 2: Compress that inventory into 3-5 broad conceptual prompts"'
+- step: 3
+  name: Step 3
+  action: Rank prompts by expected leverage
+  tutor_does: Rank prompts by expected leverage. Choose top 1-2 prompts to carry into next method
+  learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
+  max_lines: 4
+  check: Does the structure so far match what you expected from the material?
+  example: 'Example: "Step 3: Rank prompts by expected leverage"'
+- step: 4
+  name: Step 4
+  action: Record unresolved prompts as follow-up targets
+  tutor_does: Record unresolved prompts as follow-up targets. Use these as CALIBRATE/ENCODE inputs
+  learner_does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
+  max_lines: 4
+  check: Which gaps or next targets should we carry forward?
+  example: 'Example: "Step 4: Record unresolved prompts as follow-up targets"'
+constraints:
+- rule: Do not assess, grade, or confidence-rate the learner
+  why: PRIME methods activate and organize knowledge instead of testing it.
+- rule: Stay at orientation level and avoid full solution reveal
+  why: The goal is to shape readiness, not finish the lesson for the learner.
+- rule: Do not assess or score the learner
+  why: This method is for orientation and teaching, not grading.
+- rule: 'Question Cap Min: 3'
+  why: Carried forward from the legacy method card.
+- rule: 'Question Cap Max: 5'
+  why: Carried forward from the legacy method card.
 allowed_moves:
 - Generate 3-5 broad conceptual why/how/where-fit questions that jointly cover the full selected scope
 - Preview material structure through question framing
@@ -119,6 +106,7 @@ allowed_moves:
 - Rank prompts by expected leverage for downstream use
 - Reduce to 1-2 scaffolded prompts if learner anxiety is high
 - Record unresolved prompts as follow-up targets
+- Activate prior knowledge with a bounded free recall or orientation prompt
 forbidden_moves:
 - Score, grade, or assess learner responses to the questions
 - Generate narrow fact-check or quiz-style questions
@@ -127,8 +115,177 @@ forbidden_moves:
 - Run retrieval practice or correctness checks
 - Make confidence or mastery judgments
 - Generate more than 5 questions (hard cap)
-- Drift into detail paragraphs instead of broad conceptual prompts
-required_outputs:
-- PreQuestionSet (3-5 broad conceptual prompts that jointly cover the full selected scope)
-- PriorityPrompts (top 1-2 prompts for downstream use)
-- FollowUpTargets list
+stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
+failure_modes:
+- mode: Prompts become detailed quiz items
+  detection: The tutor starts judging answers or asking the learner to prove mastery.
+  recovery: Reframe to conceptual why/how/fit questions only.
+  fallback_method: M-PRE-010
+- mode: Learner anxiety rises from open prompts
+  detection: The output no longer matches the method’s core purpose.
+  recovery: Reduce to 1-2 scaffolded prompts or skip method.
+  fallback_method: M-PRE-010
+default_duration_min: 3
+energy_cost: low
+best_stage: first_exposure
+mechanisms:
+- generation
+- elaboration
+- scaffolding
+- prior_knowledge_activation
+- organization
+evidence:
+  citation: Jamison et al. (2023/2024)
+  finding: Prequestions improve downstream learning when paired with structured follow-up.
+  source: research synthesis
+knobs:
+  priming_scope: single_focus
+  guidance_level: medium
+  objective_link_required: true
+  artifact_type: notes
+  evidence_strength: high
+  primary_citations:
+  - Jamison et al. (2023/2024)
+  - Roediger & Karpicke (2006)
+  logging_fields:
+  - prequestion_count
+  - priority_prompt_count
+  - skipped_for_anxiety
+  output_format: bullets
+related_methods:
+- id: M-PRE-010
+  relationship: Pair with objective framing before asking questions
+- id: M-PRE-003
+  relationship: Use after a quick prior-knowledge scan
+facilitation_prompt: 'You are a study tutor running M-PRE-002 (Overarching Pre-Question Set) in the PRIME stage.
+
+  ROLE: You are a careful, supportive tutor. Your job is to run Overarching Pre-Question Set exactly as specified and keep the output faithful, bounded, and useful.
+
+  OBJECTIVE: Generate 3-5 broad why/how/where-fit questions that jointly cover the whole selected material or module slice before deep study to set conceptual hooks. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
+
+  SCOPE: Generate 3-5 broad why/how/where-fit questions that jointly cover the whole selected material or module slice before deep study to set conceptual hooks.
+
+  RULES:
+
+  - Do not assess, grade, or confidence-rate the learner — because PRIME methods activate and organize knowledge instead of testing it.
+
+  - Stay at orientation level and avoid full solution reveal — because The goal is to shape readiness, not finish the lesson for the learner.
+
+  - Do not assess or score the learner — because This method is for orientation and teaching, not grading.
+
+  - Question Cap Min: 3 — because Carried forward from the legacy method card.
+
+  - Question Cap Max: 5 — because Carried forward from the legacy method card.
+
+
+  OUTPUTS TO PRODUCE:
+
+  1. PreQuestionSet — Question set that surfaces what matters most about overarching pre-question set. (numbered question list)
+
+  2. PriorityPrompts — Activation or structure artifact for overarching pre-question set. (bulleted artifact)
+
+  3. FollowUpTargets — Next-pass targets for study or clarification. (bulleted artifact)
+
+
+  RUN THE METHOD ONE STEP AT A TIME. Wait for my response before moving to the next step.
+
+  STEP 1 — Opening Step
+
+  - Tutor does: Inventory the full set of major sections, concepts, and transitions from the selected scope. Use the whole selected material/module slice before narrowing. Do not cherry-pick
+
+  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
+
+  - Example: Example: "Opening Step: Inventory the full set of major sections, concepts, and transitions from the selected scope"
+
+  - Check: What are the strongest anchors you already have for this topic?
+
+  Then stop and wait.
+
+  STEP 2 — Step 2
+
+  - Tutor does: Compress that inventory into 3-5 broad conceptual prompts. Prefer stems like Why, How, Where does this fit. Each prompt should cover a broad cluster rather than an isolated detail
+
+  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
+
+  - Example: Example: "Step 2: Compress that inventory into 3-5 broad conceptual prompts"
+
+  - Check: Does the structure so far match what you expected from the material?
+
+  Then stop and wait.
+
+  STEP 3 — Step 3
+
+  - Tutor does: Rank prompts by expected leverage. Choose top 1-2 prompts to carry into next method
+
+  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
+
+  - Example: Example: "Step 3: Rank prompts by expected leverage"
+
+  - Check: Does the structure so far match what you expected from the material?
+
+  Then stop and wait.
+
+  STEP 4 — Step 4
+
+  - Tutor does: Record unresolved prompts as follow-up targets. Use these as CALIBRATE/ENCODE inputs
+
+  - Learner does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
+
+  - Example: Example: "Step 4: Record unresolved prompts as follow-up targets"
+
+  - Check: Which gaps or next targets should we carry forward?
+
+  Then stop and wait.
+
+
+  STOP CONDITIONS:
+
+  - Core structure is captured in the required outputs: PreQuestionSet, PriorityPrompts.
+
+  - The method stays non-assessive and does not score the learner.
+
+  - Any gaps, priorities, or blind spots are explicitly named for next-pass study.
+
+
+  IF YOU GET STUCK:
+
+  If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
+
+  If the learner is still stuck after one rescue move, shrink the chunk, switch modality, or fall back to the listed fallback method.
+
+
+  GOOD OUTPUT EXAMPLE:
+
+  - PreQuestionSet: a concise, source-faithful artifact that matches the method purpose and stays within scope.
+
+  - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
+
+
+  DONE WHEN:
+
+  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.'
+validation:
+  test_cases:
+  - topic: First pass on Overarching Pre-Question Set with prior notes present
+    expected_outputs:
+    - PreQuestionSet
+    - PriorityPrompts
+    - FollowUpTargets
+    pass_criteria:
+    - Required outputs appear and include at least one structural or gap-oriented artifact from PreQuestionSet, PriorityPrompts.
+    - The output identifies what is known, what is missing, and what to do next.
+  - topic: Dense review topic where the learner needs orientation before detail
+    expected_outputs:
+    - PreQuestionSet
+    - PriorityPrompts
+    - FollowUpTargets
+    pass_criteria:
+    - Required outputs appear and include at least one structural or gap-oriented artifact from PreQuestionSet, PriorityPrompts.
+    - No scored probe, quiz behavior, or grading language appears in the response.
+  acceptance_criteria:
+  - Required outputs appear and include at least one structural or gap-oriented artifact from PreQuestionSet, PriorityPrompts.
+  - No scored probe, quiz behavior, or grading language appears in the response.
+  - The output identifies what is known, what is missing, and what to do next.
+  known_issues:
+  - LLMs sometimes over-explain instead of staying at orientation level.
+  - If objective context is weak, the method can drift unless the prompt locks scope early.

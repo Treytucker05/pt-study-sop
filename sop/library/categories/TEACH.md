@@ -14,6 +14,7 @@ Purpose: Deliver first-contact explanation in bounded chunks so unfamiliar mater
 - Explain function before structure whenever possible.
 - Use one bounded teaching chunk at a time: source facts -> plain interpretation -> bridge move -> application -> anchor artifact.
 - When using `M-TEA-006`, the ladder is literal: `4-year-old -> 10-year-old -> high-school -> PT/DPT` on the same concept.
+- When using `M-TEA-008`, show one full worked example before fading missing steps on the same task family.
 - Bridge moves are support tools, not source claims.
 - Analogies must name at least one breakdown point.
 - Memory hooks come after meaning, not before meaning.
@@ -32,6 +33,7 @@ Purpose: Deliver first-contact explanation in bounded chunks so unfamiliar mater
 | M-TEA-005 | Jingle / Rhyme Hook | low | 3 min | mnemonic_compression |
 | M-TEA-006 | Depth Ladder (4-10-HS-PT) | medium | 6 min | literal_progressive_depth |
 | M-TEA-007 | KWIK Lite | low | 2 min | lightweight_mnemonic_compression |
+| M-TEA-008 | Worked Example -> Completion Fade | medium | 8 min | guidance_fading |
 
 ## Contract Summary
 
