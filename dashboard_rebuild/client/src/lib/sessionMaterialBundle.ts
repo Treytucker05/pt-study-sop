@@ -4,10 +4,13 @@ import type {
   TutorPrimingSourceInventoryItem,
 } from "@/api.types";
 import type { TutorArtifact } from "@/components/TutorArtifacts";
-import type {
-  PrimePromotedWorkspaceObject,
-  StudioPolishPromotedNote,
-} from "@/lib/studioWorkspaceObjects";
+import type { StudioWorkspaceObject } from "@/lib/studioWorkspaceObjects";
+import type { StudioPolishPromotedNote } from "@/lib/studioPacketSections";
+
+export type PrimePromotedWorkspaceObject = Extract<
+  StudioWorkspaceObject,
+  { kind: "excerpt" | "text_note" }
+>;
 
 export type SessionMaterialLearningObjective = {
   loCode: string | null;

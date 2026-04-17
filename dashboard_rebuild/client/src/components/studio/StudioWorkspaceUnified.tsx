@@ -51,8 +51,6 @@ export function StudioWorkspaceUnified({
   sessionMaterialBundle,
   ...canvasProps
 }: StudioWorkspaceUnifiedProps) {
-  // Phase 1: bundle plumbing only — downstream maps consume in later phases.
-  void sessionMaterialBundle;
   const [activeTab, setActiveTab] = useState<WorkspaceTabId>("canvas");
   const [visitedTabs, setVisitedTabs] = useState<Record<WorkspaceTabId, boolean>>({
     canvas: true,
@@ -158,7 +156,7 @@ export function StudioWorkspaceUnified({
           >
             {/* MindMapView owns its own vault/course fetches; the shell only mounts it. */}
             <Suspense fallback={<WorkspaceTabFallback label="mind map" />}>
-              <MindMapViewDeferred />
+              <MindMapViewDeferred sessionBundle={sessionMaterialBundle} />
             </Suspense>
           </div>
         ) : null}

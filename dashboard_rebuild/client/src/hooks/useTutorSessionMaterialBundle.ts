@@ -11,10 +11,8 @@ import {
   type SessionMaterialBundle,
   type SessionMaterialBundleInput,
 } from "@/lib/sessionMaterialBundle";
-import type {
-  PrimePromotedWorkspaceObject,
-  StudioPolishPromotedNote,
-} from "@/lib/studioWorkspaceObjects";
+import type { PrimePromotedWorkspaceObject } from "@/lib/sessionMaterialBundle";
+import type { StudioPolishPromotedNote } from "@/lib/studioPacketSections";
 
 export type UseTutorSessionMaterialBundleOptions = {
   workflowId: string | null;

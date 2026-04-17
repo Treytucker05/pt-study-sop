@@ -30,6 +30,12 @@ import { MindMapToolbar } from "@/components/brain/MindMapToolbar";
 import { MindMapDrawLayer, type DrawStroke } from "@/components/brain/MindMapDrawLayer";
 import { buildBrainCanvasMarkdown, sanitizeCanvasTitle } from "@/components/brain/brainDoc";
 import type { GraphCanvasCommand, GraphCanvasStatus } from "@/components/brain/graph-canvas-types";
+import {
+  buildMindMapFromBundle,
+  isBundleSeedEdgeId,
+  isBundleSeedNodeId,
+} from "@/lib/mindMapFromBundle";
+import type { SessionMaterialBundle } from "@/lib/sessionMaterialBundle";
 
 // Color indices: Cyan=6 (course), Yellow=4 (subfolder), Green=3 (note)
 const SEED_COLOR: Record<string, number> = { course: 6, subfolder: 4, note: 3 };
@@ -43,6 +49,7 @@ interface MindMapViewProps {
   hideToolbar?: boolean;
   externalCommand?: GraphCanvasCommand | null;
   onStatusChange?: (status: GraphCanvasStatus) => void;
+  sessionBundle?: SessionMaterialBundle;
 }
 
 interface CurriculumNode {
@@ -112,6 +119,8 @@ function MindMapSidebar({
   showNotes,
   vaultOnline,
   visibleSubfolders,
+  sessionReady,
+  onRefreshFromSession,
 }: {
   checkboxIdBase: string;
   courseNoteCounts: Map<string, number>;
@@ -126,6 +135,8 @@ function MindMapSidebar({
   showNotes: boolean;
   vaultOnline: boolean;
   visibleSubfolders: Array<{ key: string; name: string; courseId: string }>;
+  sessionReady: boolean;
+  onRefreshFromSession: () => void;
 }) {
   return (
     <div className="w-[160px] shrink-0 border-r border-secondary/30 bg-black/60 h-full overflow-y-auto">
@@ -220,7 +231,17 @@ function MindMapSidebar({
             </div>
           </div>
 
-          <div className="pt-2 border-t border-secondary/30">
+          <div className="pt-2 border-t border-secondary/30 space-y-1">
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full h-7 text-xs font-terminal border-primary/50 text-primary"
+              onClick={onRefreshFromSession}
+              disabled={!sessionReady}
+              title={sessionReady ? "Re-seed from the active session" : "No session material yet"}
+            >
+              Refresh from session
+            </Button>
             <Button
               size="sm"
               variant="outline"
@@ -923,6 +944,7 @@ export function MindMapView({
   hideToolbar = false,
   externalCommand,
   onStatusChange,
+  sessionBundle,
 }: MindMapViewProps) {
   const [nodes, setNodes, onNodesChangeBase] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChangeBase] = useEdgesState<Edge>([]);
@@ -946,6 +968,7 @@ export function MindMapView({
   const reactFlowRef = useRef<HTMLDivElement>(null);
   const lastCommandIdRef = useRef(0);
   const checkboxIdBase = useId();
+  const { toast } = useToast();
 
   const { data: obsidianStatus } = useQuery({
     queryKey: ["obsidian", "status"],
@@ -1023,6 +1046,72 @@ export function MindMapView({
       toggleDirection,
     });
 
+  const applySessionSeed = useCallback(() => {
+    if (!sessionBundle) return false;
+    const { nodes: seedNodes, edges: seedEdges } = buildMindMapFromBundle(sessionBundle);
+    if (seedNodes.length <= 1) return false;
+
+    // Preserve user-added (non-bundle) nodes/edges; replace any prior bundle seed.
+    const userNodes = nodes.filter((node) => !isBundleSeedNodeId(node.id));
+    const userEdges = edges.filter(
+      (edge) =>
+        !isBundleSeedEdgeId(edge.id) &&
+        !isBundleSeedNodeId(edge.source) &&
+        !isBundleSeedNodeId(edge.target),
+    );
+    const allNodes = [...seedNodes, ...userNodes];
+    const allEdges = [...seedEdges, ...userEdges];
+    const laidOut = applyDagreLayout(allNodes, allEdges, { direction });
+    setNodes(laidOut);
+    setEdges(allEdges);
+    patchViewState({ nodeCounter: allNodes.length });
+    return true;
+  }, [direction, edges, nodes, patchViewState, sessionBundle, setEdges, setNodes]);
+
+  const sessionSeedKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!sessionBundle?.isReady) return;
+    if (sessionSeedKeyRef.current === sessionBundle.sessionKey) return;
+    // Only auto-seed when user has not edited the map yet.
+    if (isDirty) {
+      sessionSeedKeyRef.current = sessionBundle.sessionKey;
+      return;
+    }
+    const applied = applySessionSeed();
+    if (applied) {
+      sessionSeedKeyRef.current = sessionBundle.sessionKey;
+    }
+    // applySessionSeed flips dirty implicitly via node changes — keep it clean
+    // after an automatic seed so a user refresh prompt only fires on real edits.
+    patchViewState({ isDirty: false });
+  }, [applySessionSeed, isDirty, patchViewState, sessionBundle]);
+
+  const handleRefreshFromSession = useCallback(() => {
+    if (!sessionBundle?.isReady) {
+      toast({
+        title: "No session material yet",
+        description: "Run Priming first so the map has something to seed from.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (isDirty) {
+      const confirmed =
+        typeof window !== "undefined"
+          ? window.confirm(
+              "Your mind map has edits. Re-seed from the session? Your custom nodes stay; only the session-seeded items will be replaced.",
+            )
+          : true;
+      if (!confirmed) return;
+    }
+    const applied = applySessionSeed();
+    if (applied) {
+      sessionSeedKeyRef.current = sessionBundle.sessionKey;
+      patchViewState({ isDirty: false });
+      toast({ title: "Mind map refreshed from session" });
+    }
+  }, [applySessionSeed, isDirty, patchViewState, sessionBundle, toast]);
+
   return (
     <div className="flex h-full" onPaste={handlePaste}>
       <MindMapSidebar
@@ -1039,6 +1128,8 @@ export function MindMapView({
         showNotes={showNotes}
         vaultOnline={vaultOnline}
         visibleSubfolders={visibleSubfolders}
+        sessionReady={Boolean(sessionBundle?.isReady)}
+        onRefreshFromSession={handleRefreshFromSession}
       />
 
       {/* Main canvas area */}
