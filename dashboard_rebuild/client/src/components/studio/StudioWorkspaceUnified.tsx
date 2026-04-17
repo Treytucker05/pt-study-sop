@@ -179,7 +179,10 @@ export function StudioWorkspaceUnified({
               activeTab === "canvas" ? "z-10" : "pointer-events-none z-0 opacity-0",
             )}
           >
-            <StudioTldrawWorkspaceLazy {...canvasProps} />
+            <StudioTldrawWorkspaceLazy
+              {...canvasProps}
+              sessionBundle={sessionMaterialBundle}
+            />
           </div>
         ) : null}
 

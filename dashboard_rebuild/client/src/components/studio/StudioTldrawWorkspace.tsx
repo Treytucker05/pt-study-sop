@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,11 @@ import {
   buildStudioCanvasShape,
   getStudioCanvasShapeId,
 } from "@/lib/studioCanvasShapes";
+import {
+  buildSessionSeedShapes,
+  SESSION_SEED_SHAPE_PREFIX,
+} from "@/lib/canvasFromBundle";
+import type { SessionMaterialBundle } from "@/lib/sessionMaterialBundle";
 import { Tldraw } from "tldraw";
 import "tldraw/tldraw.css";
 
@@ -33,6 +38,7 @@ export interface StudioTldrawWorkspaceProps {
   currentRunObjects: StudioWorkspaceObject[];
   selectedMaterialCount: number;
   promotedPrimeObjectIds?: string[];
+  sessionBundle?: SessionMaterialBundle;
   onPromoteExcerptToPrime?: (
     workspaceObject: Extract<StudioWorkspaceObject, { kind: "excerpt" }>,
   ) => void;
@@ -47,12 +53,79 @@ export function StudioTldrawWorkspace({
   currentRunObjects,
   selectedMaterialCount,
   promotedPrimeObjectIds = [],
+  sessionBundle,
   onPromoteExcerptToPrime,
   onPromoteTextNoteToPrime,
 }: StudioTldrawWorkspaceProps) {
   const [editor, setEditor] = useState<Editor | null>(null);
   const syncedObjectIdsRef = useRef<string[]>([]);
   const workspaceRootRef = useRef<HTMLDivElement | null>(null);
+  const sessionSeedKeyRef = useRef<string | null>(null);
+
+  const deleteSessionSeedShapes = useCallback(
+    (targetEditor: Editor) => {
+      const ids = targetEditor.getCurrentPageShapeIds();
+      const toDelete: string[] = [];
+      for (const id of ids) {
+        if (String(id).startsWith(`shape:${SESSION_SEED_SHAPE_PREFIX}-`)) {
+          toDelete.push(id as unknown as string);
+        }
+      }
+      if (toDelete.length > 0) {
+        targetEditor.deleteShapes(toDelete as never);
+      }
+    },
+    [],
+  );
+
+  const applySessionSeed = useCallback(
+    (targetEditor: Editor, bundle: SessionMaterialBundle) => {
+      const shapes = buildSessionSeedShapes(bundle);
+      if (shapes.length === 0) return false;
+      deleteSessionSeedShapes(targetEditor);
+      targetEditor.createShapes(shapes as never);
+      return true;
+    },
+    [deleteSessionSeedShapes],
+  );
+
+  useEffect(() => {
+    if (!editor) return;
+    if (!sessionBundle?.isReady) return;
+    if (sessionSeedKeyRef.current === sessionBundle.sessionKey) return;
+    // Only auto-seed a clean canvas: no synced workspace objects AND no
+    // user-created shapes yet (beyond stale session seeds we control).
+    if (canvasObjects.length > 0) {
+      sessionSeedKeyRef.current = sessionBundle.sessionKey;
+      return;
+    }
+    const userShapeIds = editor.getCurrentPageShapeIds();
+    const nonSeedShapes = [...userShapeIds].filter(
+      (id) => !String(id).startsWith(`shape:${SESSION_SEED_SHAPE_PREFIX}-`),
+    );
+    if (nonSeedShapes.length > 0) {
+      sessionSeedKeyRef.current = sessionBundle.sessionKey;
+      return;
+    }
+    const applied = applySessionSeed(editor, sessionBundle);
+    if (applied) {
+      sessionSeedKeyRef.current = sessionBundle.sessionKey;
+    }
+  }, [applySessionSeed, canvasObjects.length, editor, sessionBundle]);
+
+  const handleRefreshFromSession = useCallback(() => {
+    if (!editor || !sessionBundle?.isReady) return;
+    if (typeof window !== "undefined") {
+      const confirmed = window.confirm(
+        "Re-seed the canvas starter frames from the current session? Your freeform shapes stay; only the session-seeded frames are replaced.",
+      );
+      if (!confirmed) return;
+    }
+    const applied = applySessionSeed(editor, sessionBundle);
+    if (applied) {
+      sessionSeedKeyRef.current = sessionBundle.sessionKey;
+    }
+  }, [applySessionSeed, editor, sessionBundle]);
   const excerptObjects = canvasObjects.filter(
     (
       workspaceObject,
@@ -136,12 +209,29 @@ export function StudioTldrawWorkspace({
             {courseName || "No course selected"}
           </div>
         </div>
-        <Badge
-          variant="outline"
-          className="rounded-full border-primary/20 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-primary/84"
-        >
-          {selectedMaterialCount} source{selectedMaterialCount === 1 ? "" : "s"}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            data-testid="canvas-refresh-from-session"
+            onClick={handleRefreshFromSession}
+            disabled={!editor || !sessionBundle?.isReady}
+            title={
+              sessionBundle?.isReady
+                ? "Re-seed canvas starter frames from the active session"
+                : "No session material yet"
+            }
+            className="h-8 rounded-full border-primary/20 bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-primary/84 hover:bg-black/30 disabled:cursor-default disabled:opacity-50"
+          >
+            Refresh from session
+          </Button>
+          <Badge
+            variant="outline"
+            className="rounded-full border-primary/20 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-primary/84"
+          >
+            {selectedMaterialCount} source{selectedMaterialCount === 1 ? "" : "s"}
+          </Badge>
+        </div>
       </div>
       <div className="relative min-h-0 flex-1">
         <div className="pointer-events-none absolute left-4 top-4 z-10 w-full max-w-sm space-y-2">
