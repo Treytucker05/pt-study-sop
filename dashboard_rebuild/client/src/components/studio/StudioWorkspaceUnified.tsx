@@ -6,6 +6,7 @@ import {
 } from "@/components/studio/StudioTldrawWorkspace";
 import { StudioTldrawWorkspaceLazy } from "@/components/studio/StudioTldrawWorkspaceLazy";
 import { cn } from "@/lib/utils";
+import type { SessionMaterialBundle } from "@/lib/sessionMaterialBundle";
 
 type WorkspaceTabId = "canvas" | "mind-map" | "concept-map";
 
@@ -16,6 +17,7 @@ type StudioWorkspaceUnifiedProps = StudioTldrawWorkspaceProps & {
     mermaid: string;
     requestKey: number;
   } | null;
+  sessionMaterialBundle?: SessionMaterialBundle;
 };
 
 const MindMapViewDeferred = lazy(async () => {
@@ -46,8 +48,11 @@ export function StudioWorkspaceUnified({
   courseId,
   vaultFolder,
   conceptMapImportRequest,
+  sessionMaterialBundle,
   ...canvasProps
 }: StudioWorkspaceUnifiedProps) {
+  // Phase 1: bundle plumbing only — downstream maps consume in later phases.
+  void sessionMaterialBundle;
   const [activeTab, setActiveTab] = useState<WorkspaceTabId>("canvas");
   const [visitedTabs, setVisitedTabs] = useState<Record<WorkspaceTabId, boolean>>({
     canvas: true,

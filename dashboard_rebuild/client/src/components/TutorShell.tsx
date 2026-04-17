@@ -48,6 +48,7 @@ import type { UseTutorHubReturn } from "@/hooks/useTutorHub";
 import type { UseTutorSessionReturn } from "@/hooks/useTutorSession";
 import type { UseTutorWorkflowReturn } from "@/hooks/useTutorWorkflow";
 import { useBrainFeedback } from "@/hooks/useBrainFeedback";
+import { useTutorSessionMaterialBundle } from "@/hooks/useTutorSessionMaterialBundle";
 import type { TutorBoardScope } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import type { ChangeEvent } from "react";
@@ -1200,6 +1201,23 @@ export function TutorShell({
     },
     [liveTutorSessionId, workflow.activeWorkflowId, queryClient],
   );
+  const sessionMaterialBundle = useTutorSessionMaterialBundle({
+    workflowId: workflow.activeWorkflowId ?? null,
+    tutorSessionId: liveTutorSessionId ?? null,
+    topic: sourceShelfTopic,
+    studyUnit: sourceShelfStudyUnit,
+    courseId: hub.courseId ?? null,
+    courseName: sourceShelfCourseName ?? null,
+    sourceInventory: workflow.mergedPrimingSourceInventory,
+    primingMethodRuns: workflow.primingMethodRuns,
+    artifacts: session.artifacts,
+    turnCount: session.turnCount ?? 0,
+    capturedNotes: workflow.activeWorkflowDetail?.captured_notes ?? [],
+    primePacket: promotedPrimePacketObjects,
+    polishPacket: promotedPolishPacketNotes,
+    hasWorkflowDetail: Boolean(workflow.activeWorkflowDetail),
+  });
+
   const workspaceStudioContent = (
     <div className="absolute inset-0 flex min-h-0 min-w-0 flex-col">
       <StudioWorkspaceUnified
@@ -1211,6 +1229,7 @@ export function TutorShell({
         promotedPrimeObjectIds={promotedPrimeObjectIds}
         selectedMaterialCount={hub.selectedMaterials.length}
         vaultFolder={sourceShelfVaultFolder}
+        sessionMaterialBundle={sessionMaterialBundle}
         onPromoteExcerptToPrime={handlePromoteExcerptToPrime}
         onPromoteTextNoteToPrime={handlePromoteTextNoteToPrime}
       />
