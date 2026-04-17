@@ -269,16 +269,15 @@ These items affect implementation quality but are not themselves layout-spec req
 ## What gets deleted
 
 1. `StudioShell.tsx` — the fixed 3-column grid
-2. `TutorStudioShellPane.tsx` — the StudioShell wrapper
-3. `TutorShellDeferredPanels.tsx` — the lazy center-swap routing
-4. `StudioWorkspaceHome.tsx` — the management landing wrapper
-5. `TutorStudioHome.tsx` — the old management home with LaunchHub
-6. `TutorWorkflowLaunchHub.tsx` — workflows table/study wheel (move to Home page)
-7. `TutorTabBar.tsx` — tab switching (no tabs in the new model)
-8. `StudioTldrawWorkspace.tsx` — tldraw as the base (becomes a panel instead)
-9. `StudioTldrawWorkspaceLazy.tsx` — lazy wrapper for the above
-10. `studioView` switching logic in `TutorShell.tsx`
-11. `shellMode` toggle in `TutorShell.tsx`
+2. `TutorShellDeferredPanels.tsx` — the lazy center-swap routing
+3. `StudioWorkspaceHome.tsx` — the management landing wrapper
+4. `TutorStudioHome.tsx` — the old management home with LaunchHub
+5. `TutorWorkflowLaunchHub.tsx` — workflows table/study wheel (move to Home page)
+6. `TutorTabBar.tsx` — tab switching (no tabs in the new model)
+7. `StudioTldrawWorkspace.tsx` — tldraw as the base (becomes a panel instead)
+8. `StudioTldrawWorkspaceLazy.tsx` — lazy wrapper for the above
+9. `studioView` switching logic in `TutorShell.tsx`
+10. `shellMode` toggle in `TutorShell.tsx`
 
 ## What gets kept and rewired
 
