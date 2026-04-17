@@ -553,7 +553,7 @@ def call_chatgpt_responses(
     system_prompt: str,
     user_prompt: str,
     *,
-    model: str = "gpt-5.1",
+    model: str = "gpt-5.3-codex",
     timeout: int = 120,
     web_search: bool = False,
 ) -> Dict[str, Any]:
