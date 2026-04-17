@@ -16,7 +16,6 @@ import "@xyflow/react/dist/style.css";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { COURSE_FOLDERS } from "@/config/courses";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -129,9 +128,8 @@ function MindMapSidebar({
   visibleSubfolders: Array<{ key: string; name: string; courseId: string }>;
 }) {
   return (
-    <div className="w-[160px] shrink-0 border-r border-secondary/30 bg-black/60">
-      <ScrollArea className="h-full">
-        <div className="p-3 space-y-4">
+    <div className="w-[160px] shrink-0 border-r border-secondary/30 bg-black/60 h-full overflow-y-auto">
+      <div className="p-3 space-y-4">
           {!vaultOnline && (
             <div className="font-arcade text-xs text-red-400 text-center py-1 border border-red-500/30 bg-red-500/10">
               OBSIDIAN OFFLINE
@@ -233,8 +231,7 @@ function MindMapSidebar({
               Seed Map ({graphNodeCount})
             </Button>
           </div>
-        </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
