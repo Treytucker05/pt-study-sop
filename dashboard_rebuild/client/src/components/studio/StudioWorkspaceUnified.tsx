@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GraphCanvasCommand } from "@/components/brain/graph-canvas-types";
 
 import {
@@ -6,6 +6,7 @@ import {
 } from "@/components/studio/StudioTldrawWorkspace";
 import { StudioTldrawWorkspaceLazy } from "@/components/studio/StudioTldrawWorkspaceLazy";
 import { cn } from "@/lib/utils";
+import { buildConceptMapFromBundle } from "@/lib/conceptMapFromBundle";
 import type { SessionMaterialBundle } from "@/lib/sessionMaterialBundle";
 
 type WorkspaceTabId = "canvas" | "mind-map" | "concept-map";
@@ -59,6 +60,8 @@ export function StudioWorkspaceUnified({
   });
   const [conceptMapCommand, setConceptMapCommand] = useState<GraphCanvasCommand | null>(null);
   const lastConceptMapRequestKeyRef = useRef<number | null>(null);
+  const conceptMapCommandCounterRef = useRef<number>(1_000_000);
+  const conceptMapSessionSeedKeyRef = useRef<string | null>(null);
 
   const handleSelectTab = (nextTab: WorkspaceTabId) => {
     setActiveTab(nextTab);
@@ -85,6 +88,44 @@ export function StudioWorkspaceUnified({
       payload: conceptMapImportRequest?.mermaid || "",
     });
   }, [conceptMapImportRequest]);
+
+  const sessionConceptMapMermaid = useMemo(() => {
+    if (!sessionMaterialBundle?.isReady) return "";
+    return buildConceptMapFromBundle(sessionMaterialBundle);
+  }, [sessionMaterialBundle]);
+
+  useEffect(() => {
+    if (!sessionMaterialBundle?.isReady) return;
+    if (!visitedTabs["concept-map"]) return;
+    if (!sessionConceptMapMermaid) return;
+    if (conceptMapSessionSeedKeyRef.current === sessionMaterialBundle.sessionKey) return;
+    conceptMapSessionSeedKeyRef.current = sessionMaterialBundle.sessionKey;
+    const nextId = ++conceptMapCommandCounterRef.current;
+    setConceptMapCommand({
+      id: nextId,
+      target: "structured",
+      type: "import_mermaid",
+      payload: sessionConceptMapMermaid,
+    });
+  }, [sessionConceptMapMermaid, sessionMaterialBundle, visitedTabs]);
+
+  const handleRefreshConceptMapFromSession = useCallback(() => {
+    if (!sessionConceptMapMermaid) return;
+    if (typeof window !== "undefined") {
+      const confirmed = window.confirm(
+        "Re-seed the concept map from the current session? Your manual edits in this concept map will be replaced.",
+      );
+      if (!confirmed) return;
+    }
+    const nextId = ++conceptMapCommandCounterRef.current;
+    setConceptMapCommand({
+      id: nextId,
+      target: "structured",
+      type: "import_mermaid",
+      payload: sessionConceptMapMermaid,
+    });
+    conceptMapSessionSeedKeyRef.current = sessionMaterialBundle?.sessionKey ?? null;
+  }, [sessionConceptMapMermaid, sessionMaterialBundle]);
 
   return (
     <div
@@ -167,19 +208,37 @@ export function StudioWorkspaceUnified({
             aria-labelledby="studio-workspace-tab-concept-map"
             aria-hidden={activeTab !== "concept-map"}
             className={cn(
-              "absolute inset-0 min-h-0",
+              "absolute inset-0 flex min-h-0 flex-col",
               activeTab === "concept-map"
                 ? "z-10"
                 : "pointer-events-none z-0 opacity-0",
             )}
           >
+            <div className="flex shrink-0 items-center justify-end gap-2 border-b border-primary/10 bg-black/30 px-3 py-1.5">
+              <button
+                type="button"
+                data-testid="concept-map-refresh-from-session"
+                onClick={handleRefreshConceptMapFromSession}
+                disabled={!sessionConceptMapMermaid}
+                title={
+                  sessionConceptMapMermaid
+                    ? "Re-seed the concept map from the active session"
+                    : "No session material yet"
+                }
+                className="rounded-[0.65rem] border border-primary/25 bg-black/35 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-foreground/78 transition-colors hover:border-primary/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Refresh from session
+              </button>
+            </div>
             {/* ConceptMapStructured already owns import/export state; the shell only mounts it. */}
-            <Suspense fallback={<WorkspaceTabFallback label="concept map" />}>
-              <ConceptMapStructuredDeferred
-                externalCommand={conceptMapCommand}
-                className="h-full"
-              />
-            </Suspense>
+            <div className="flex-1 min-h-0">
+              <Suspense fallback={<WorkspaceTabFallback label="concept map" />}>
+                <ConceptMapStructuredDeferred
+                  externalCommand={conceptMapCommand}
+                  className="h-full"
+                />
+              </Suspense>
+            </div>
           </div>
         ) : null}
       </div>
