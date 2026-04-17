@@ -587,6 +587,10 @@ export const api = {
       }
       return result;
     },
+    launch: () =>
+      request<{ success: boolean; path?: string; error?: string }>("/anki/launch", {
+        method: "POST",
+      }),
     approveDraft: (id: number) => request<{ success: boolean }>(`/anki/drafts/${id}/approve`, {
       method: "POST",
     }),
@@ -642,6 +646,11 @@ export const api = {
       request<ObsidianTemplateRenderResult>("/obsidian/template/render", {
         method: "POST",
         body: JSON.stringify({ template_id: templateId, payload }),
+      }),
+    launch: (vault?: string) =>
+      request<{ success: boolean; uri?: string; error?: string }>("/obsidian/launch", {
+        method: "POST",
+        body: JSON.stringify(vault ? { vault } : {}),
       }),
   },
 

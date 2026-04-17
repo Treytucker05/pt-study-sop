@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Copy, Download } from "lucide-react";
+import { Copy, Download, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -194,16 +194,45 @@ export function StudioAnkiPanel({
             then export a CSV Anki can import.
           </p>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleExportCsv}
-          disabled={completeCards.length === 0}
-          className="shrink-0 rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-3 font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffd6de]"
-        >
-          <Download className="mr-2 h-3.5 w-3.5" />
-          Export CSV
-        </Button>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            data-testid="studio-anki-launch"
+            onClick={() => {
+              api.anki
+                .launch()
+                .then((result) => {
+                  if (result.success) {
+                    toast.success("Launching Anki...");
+                  } else {
+                    toast.error("Could not launch Anki", {
+                      description: result.error,
+                    });
+                  }
+                })
+                .catch((error: unknown) =>
+                  toast.error(
+                    error instanceof Error ? error.message : "Launch failed.",
+                  ),
+                );
+            }}
+            className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-3 font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffd6de]"
+          >
+            <ExternalLink className="mr-2 h-3.5 w-3.5" />
+            Open Anki
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleExportCsv}
+            disabled={completeCards.length === 0}
+            className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-3 font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffd6de]"
+          >
+            <Download className="mr-2 h-3.5 w-3.5" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">

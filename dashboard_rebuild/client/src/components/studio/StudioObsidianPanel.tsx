@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, ChevronDown, ChevronRight, FilePlus2, FolderTree, Save } from "lucide-react";
+import { BookOpen, ChevronDown, ChevronRight, ExternalLink, FilePlus2, FolderTree, Save } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -371,6 +371,34 @@ export function StudioObsidianPanel({
         </div>
 
         <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            data-testid="studio-obsidian-launch"
+            onClick={() => {
+              api.obsidian
+                .launch()
+                .then((result) => {
+                  if (result.success) {
+                    toast.success("Launching Obsidian...");
+                  } else {
+                    toast.error("Could not launch Obsidian", {
+                      description: result.error,
+                    });
+                  }
+                })
+                .catch((error: unknown) =>
+                  toast.error(
+                    error instanceof Error ? error.message : "Launch failed.",
+                  ),
+                );
+            }}
+            className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]"
+          >
+            <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+            Open Obsidian
+          </Button>
           <Button
             type="button"
             size="sm"
