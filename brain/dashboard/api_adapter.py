@@ -9838,6 +9838,55 @@ def trigger_anki_sync():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@adapter_bp.route("/anki/launch", methods=["POST"])
+def launch_anki_desktop():
+    """Open the local Anki desktop app via a Windows shortcut or exe path."""
+    import os
+
+    default_path = (
+        r"C:\Users\treyt\OneDrive\Desktop\anki.exe - Shortcut.lnk"
+    )
+    target_path = os.environ.get("ANKI_LAUNCH_PATH", default_path)
+
+    if not os.path.exists(target_path):
+        return jsonify(
+            {
+                "success": False,
+                "error": f"Launch target not found: {target_path}",
+            }
+        ), 404
+
+    try:
+        if hasattr(os, "startfile"):
+            os.startfile(target_path)  # type: ignore[attr-defined]
+            return jsonify({"success": True, "path": target_path})
+        return jsonify(
+            {"success": False, "error": "os.startfile is Windows-only"}
+        ), 501
+    except OSError as exc:
+        return jsonify({"success": False, "error": str(exc)}), 500
+
+
+@adapter_bp.route("/obsidian/launch", methods=["POST"])
+def launch_obsidian_desktop():
+    """Open Obsidian via the obsidian:// URI scheme, scoped to a vault if provided."""
+    import os
+
+    data = request.get_json(silent=True) or {}
+    vault = str(data.get("vault") or "").strip()
+    uri = f"obsidian://open?vault={vault}" if vault else "obsidian://"
+
+    try:
+        if hasattr(os, "startfile"):
+            os.startfile(uri)  # type: ignore[attr-defined]
+            return jsonify({"success": True, "uri": uri})
+        return jsonify(
+            {"success": False, "error": "os.startfile is Windows-only"}
+        ), 501
+    except OSError as exc:
+        return jsonify({"success": False, "error": str(exc)}), 500
+
+
 @adapter_bp.route("/anki/drafts", methods=["GET"])
 def get_card_drafts():
     """Get card drafts from the database."""
