@@ -2,10 +2,7 @@ id: M-ENC-001
 name: KWIK Hook
 category: encode
 subcategory: hook
-description: Structured 6-step encoding protocol for new terms and concepts. Start by turning the word
-  into something it sounds like, state the real meaning/function, create a picture for the meaning, link
-  the sound-picture to the meaning-picture, personalize it so it sticks, then lock it as a reusable note/card.
-  Each step is gated — do not skip ahead.
+description: Structured 6-step encoding protocol for new terms and concepts. Start by turning the word into something it sounds like, state the real meaning/function, create a picture for the meaning, link the sound-picture to the meaning-picture, personalize it so it sticks, then lock it as a reusable note/card. Each step is gated — do not skip ahead.
 control_stage: ENCODE
 status: validated
 version: '1.0'
@@ -18,18 +15,15 @@ tags:
 - gated
 - sop-core
 - dual-coding
-purpose: Create a compact memory cue that links a term or concept to a vivid sound, image, or body-based
-  anchor without losing the real meaning.
-not_for: This is not for teaching the whole concept from scratch, replacing source truth, or turning a
-  mnemonic into a false fact claim.
+purpose: Create a compact memory cue that links a term or concept to a vivid sound, image, or body-based anchor without losing the real meaning.
+not_for: This is not for teaching the whole concept from scratch, replacing source truth, or turning a mnemonic into a false fact claim.
 best_fit_topics:
 - Short labels, terms, and anchors that need fast recall
 - Material that benefits from a vivid sound/image cue
 poor_fit_topics:
 - Long mechanistic explanations that need comprehension first
 - Unstable or ambiguous material with no clear cue
-learner_state_required: Source material is loaded. The learner has one bounded term or concept and is
-  ready to actively build a cue around its true meaning.
+learner_state_required: Source material is loaded. The learner has one bounded term or concept and is ready to actively build a cue around its true meaning.
 inputs:
 - description: New term or concept to encode
   required: true
@@ -51,30 +45,24 @@ required_outputs: &id001
 - KWIK hook (sound cue + meaning link scene)
 - Session log entry
 success_criteria:
-- 'All required outputs are present and checkable: KWIK hook (sound cue + meaning link scene), Session
-  log entry.'
+- 'All required outputs are present and checkable: KWIK hook (sound cue + meaning link scene), Session log entry.'
 - 'The method reaches its stop condition: All 6 steps completed; Hook feels "locked" (resonance confirmed).'
-- The learner stays active and the tutor does not give away the answer before the required attempt or
-  transformation.
+- The learner stays active and the tutor does not give away the answer before the required attempt or transformation.
 partial_criteria:
-- 'Some required outputs are present but at least one is missing or incomplete: KWIK hook (sound cue +
-  meaning link scene), Session log entry.'
+- 'Some required outputs are present but at least one is missing or incomplete: KWIK hook (sound cue + meaning link scene), Session log entry.'
 steps:
 - step: 1
   name: Word Sound
   action: 'Word Sound: Turn the word into something it sounds like'
-  tutor_does: 'Guide the learner to Word Sound: Turn the word into something it sounds like. Keep in mind:
-    Find a phonetic cue, rhyme, or sound-alike proxy. Example: ''Sartorius'' sounds like ''sartorial''.'
+  tutor_does: 'Guide the learner to Word Sound: Turn the word into something it sounds like. Keep in mind: Find a phonetic cue, rhyme, or sound-alike proxy. Example: ''Sartorius'' sounds like ''sartorial''.'
   learner_does: Supplies the target term or concept, then reacts to the cue and confirms whether it clicks.
   max_lines: 8
   check: Does the learner have the right term and true meaning before the cue is built?
-  example: 'Example: Find a phonetic cue, rhyme, or sound-alike proxy. Example: ''Sartorius'' sounds like
-    ''sartorial''.'
+  example: 'Example: Find a phonetic cue, rhyme, or sound-alike proxy. Example: ''Sartorius'' sounds like ''sartorial''.'
 - step: 2
   name: Real Meaning
   action: 'Real Meaning: State the true meaning or function in one sentence'
-  tutor_does: 'Guide the learner to Real Meaning: State the true meaning or function in one sentence.
-    Keep in mind: Must come from source material (Source-Lock)'
+  tutor_does: 'Guide the learner to Real Meaning: State the true meaning or function in one sentence. Keep in mind: Must come from source material (Source-Lock)'
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -82,9 +70,7 @@ steps:
 - step: 3
   name: Meaning Picture
   action: 'Meaning Picture: Create a vivid picture that shows what the term means or does'
-  tutor_does: 'Guide the learner to Meaning Picture: Create a vivid picture that shows what the term means
-    or does. Keep in mind: Build a concrete picture for the real meaning before linking it to the sound
-    cue'
+  tutor_does: 'Guide the learner to Meaning Picture: Create a vivid picture that shows what the term means or does. Keep in mind: Build a concrete picture for the real meaning before linking it to the sound cue'
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -92,8 +78,7 @@ steps:
 - step: 4
   name: Link
   action: 'Link: Connect the sound-picture to the meaning-picture in one vivid scene'
-  tutor_does: 'Guide the learner to Link: Connect the sound-picture to the meaning-picture in one vivid
-    scene. Keep in mind: Make the scene active so the word-sound naturally points back to the real meaning'
+  tutor_does: 'Guide the learner to Link: Connect the sound-picture to the meaning-picture in one vivid scene. Keep in mind: Make the scene active so the word-sound naturally points back to the real meaning'
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -101,9 +86,7 @@ steps:
 - step: 5
   name: Personalize
   action: 'Personalize: Add emotion, absurdity, or personal relevance and say why it clicks'
-  tutor_does: 'Guide the learner to Personalize: Add emotion, absurdity, or personal relevance and say
-    why it clicks. Keep in mind: Say: ''This clicks because...'' and make the linked scene memorable to
-    YOU'
+  tutor_does: 'Guide the learner to Personalize: Add emotion, absurdity, or personal relevance and say why it clicks. Keep in mind: Say: ''This clicks because...'' and make the linked scene memorable to YOU'
   learner_does: Supplies the target term or concept, then reacts to the cue and confirms whether it clicks.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -111,16 +94,14 @@ steps:
 - step: 6
   name: Lock
   action: 'Lock: Record the hook as an Anki card or session log entry'
-  tutor_does: 'Guide the learner to Lock: Record the hook as an Anki card or session log entry. Keep in
-    mind: Capture for spaced repetition'
+  tutor_does: 'Guide the learner to Lock: Record the hook as an Anki card or session log entry. Keep in mind: Capture for spaced repetition'
   learner_does: Supplies the target term or concept, then reacts to the cue and confirms whether it clicks.
   max_lines: 8
   check: Is the final artifact captured and ready to keep or review?
   example: 'Example: Capture for spaced repetition'
 constraints:
 - rule: Require active learner processing
-  why: The method depends on the learner generating, mapping, explaining, or transforming the material
-    rather than passively reading.
+  why: The method depends on the learner generating, mapping, explaining, or transforming the material rather than passively reading.
 - rule: Stay within objective scope
   why: Prevents drift into unrelated material and keeps the method auditable.
 - rule: Do not turn this into a passive answer dump or scoring event
@@ -131,18 +112,15 @@ constraints:
   why: Keeps the method honest and prevents a common misuse described in the source file.
 - rule: Hooks support understanding; they do not replace explanation.
   why: Keeps the method honest and prevents a common misuse described in the source file.
-- rule: If a hook uses broader teaching knowledge or analogy, do not present it as if it came directly
-    from source material.
+- rule: If a hook uses broader teaching knowledge or analogy, do not present it as if it came directly from source material.
   why: Keeps the method honest and prevents a common misuse described in the source file.
-- rule: This is full KWIK for deeper ENCODE work, not the lightweight live mnemonic slot between TEACH
-    and FULL CALIBRATE.
+- rule: This is full KWIK for deeper ENCODE work, not the lightweight live mnemonic slot between TEACH and FULL CALIBRATE.
   why: Keeps the method honest and prevents a common misuse described in the source file.
 allowed_moves:
 - Explain concept function in one clear sentence before hook building begins
 - Guide learner through each of the 6 gated steps in order
 - Suggest phonetic cues or rhymes if learner is stuck on the Word Sound step
-- Prompt learner to create both a meaning picture and the final linked scene (do not create them for the
-  learner)
+- Prompt learner to create both a meaning picture and the final linked scene (do not create them for the learner)
 - Use Socratic questioning to deepen personal connection at the Personalize step
 - Provide scaffold hints at any step if learner is stuck for >30 seconds
 - Confirm resonance by asking learner to articulate why the hook clicks
@@ -157,33 +135,26 @@ forbidden_moves:
 - Present information outside the objective scope
 - Proceed to retrieval practice before encoding is complete
 - Use this card as the full KWIK path only; do not collapse it into the lightweight live mnemonic slot
-stuck_protocol: Shrink to one term, restate the real meaning in plain language, then try a simpler sound
-  cue, image cue, or body cue. If the cue still does not click, switch to a lighter mnemonic lane or ask
-  for one concrete example.
+stuck_protocol: Shrink to one term, restate the real meaning in plain language, then try a simpler sound cue, image cue, or body cue. If the cue still does not click, switch to a lighter mnemonic lane or ask for one concrete example.
 failure_modes:
 - mode: Skipping steps
-  detection: The learner or tutor starts doing skipping steps or the artifact stops satisfying the method’s
-    required checks.
+  detection: The learner or tutor starts doing skipping steps or the artifact stops satisfying the method’s required checks.
   recovery: Gate each step; don't proceed without completion
   fallback_method: M-HOOK-002
 - mode: Image too abstract
-  detection: The learner or tutor starts doing image too abstract or the artifact stops satisfying the
-    method’s required checks.
+  detection: The learner or tutor starts doing image too abstract or the artifact stops satisfying the method’s required checks.
   recovery: Make it concrete, visual, and bizarre
   fallback_method: M-HOOK-003
 - mode: Sound cue forced
-  detection: The learner or tutor starts doing sound cue forced or the artifact stops satisfying the method’s
-    required checks.
+  detection: The learner or tutor starts doing sound cue forced or the artifact stops satisfying the method’s required checks.
   recovery: If phonetics don't work, try acronym or first-letter cue
   fallback_method: M-ENC-002
 - mode: Sound cue never connects back to the actual meaning
-  detection: The learner or tutor starts doing sound cue never connects back to the actual meaning or
-    the artifact stops satisfying the method’s required checks.
+  detection: The learner or tutor starts doing sound cue never connects back to the actual meaning or the artifact stops satisfying the method’s required checks.
   recovery: Build a separate meaning picture first, then force one linked scene joining sound and meaning
   fallback_method: M-HOOK-002
 - mode: Weak personal connection
-  detection: The learner or tutor starts doing weak personal connection or the artifact stops satisfying
-    the method’s required checks.
+  detection: The learner or tutor starts doing weak personal connection or the artifact stops satisfying the method’s required checks.
   recovery: Add emotion, stakes, or personal relevance - why does this matter to YOU?
   fallback_method: M-HOOK-003
 default_duration_min: 3
@@ -196,8 +167,7 @@ mechanisms:
 - emotional_encoding
 evidence:
   citation: Paivio (1991)
-  finding: Dual-coding theory — combining verbal + visual improves retention by creating multiple retrieval
-    paths
+  finding: Dual-coding theory — combining verbal + visual improves retention by creating multiple retrieval paths
   source: seed_methods.py
 knobs:
   guidance_level: medium
@@ -212,12 +182,9 @@ knobs:
   stipulations:
   - Confirm the learner understands the concept's function before building the hook.
   - Hooks support understanding; they do not replace explanation.
-  - If a hook uses broader teaching knowledge or analogy, do not present it as if it came directly from
-    source material.
-  - This is full KWIK for deeper ENCODE work, not the lightweight live mnemonic slot between TEACH and
-    FULL CALIBRATE.
-  - If the chain declares a post-TEACH mnemonic slot, reserve that slot for KWIK Lite (separate method/runtime
-    lane).
+  - If a hook uses broader teaching knowledge or analogy, do not present it as if it came directly from source material.
+  - This is full KWIK for deeper ENCODE work, not the lightweight live mnemonic slot between TEACH and FULL CALIBRATE.
+  - If the chain declares a post-TEACH mnemonic slot, reserve that slot for KWIK Lite (separate method/runtime lane).
   logging_fields:
   - term_encoded
   - sound_cue
@@ -232,64 +199,7 @@ related_methods:
   relationship: Alternative mnemonic compression
 - id: M-ENC-002
   relationship: Fallback if the learner needs generation-first support
-facilitation_prompt: "You are running M-ENC-001 (KWIK Hook) in ENCODE stage.\nRole: you are the tutor\
-  \ running the method exactly as written, with no hidden assumptions.\nObjective: Create a compact memory\
-  \ cue that links a term or concept to a vivid sound, image, or body-based anchor without losing the\
-  \ real meaning.\nScope: Structured 6-step encoding protocol for new terms and concepts. Start by turning\
-  \ the word into something it sounds like, state the real meaning/function, create a picture for the\
-  \ meaning, link the sound-picture to the meaning-picture, personalize it so it sticks, then lock it\
-  \ as a reusable note/card. Each step is gated — do not skip ahead.\nRules:\n- Require active learner\
-  \ processing — The method depends on the learner generating, mapping, explaining, or transforming the\
-  \ material rather than passively reading.\n- Stay within objective scope — Prevents drift into unrelated\
-  \ material and keeps the method auditable.\n- Do not turn this into a passive answer dump or scoring\
-  \ event — This method is designed for guided learning, not one-shot lecture or formal grading.\n- Use\
-  \ the full KWIK workflow only — Prevents collapsing the method into a lighter mnemonic lane that serves\
-  \ a different purpose.\n- Confirm the learner understands the concept's function before building the\
-  \ hook. — Keeps the method honest and prevents a common misuse described in the source file.\n- Not\
-  \ for: This is not for teaching the whole concept from scratch, replacing source truth, or turning a\
-  \ mnemonic into a false fact claim.\nInputs:\n- New term or concept to encode (required)\n- Definition\
-  \ or meaning from source material (required)\n- Blank note area for hook creation (required)\nRequired\
-  \ outputs:\n- KWIK hook (sound cue + meaning link scene): KWIK hook (sound cue + meaning link scene)\
-  \ [short cue plus explanation]\n- Anki card draft (optional): Anki card draft (optional) [short, checkable\
-  \ artifact]\n- Session log entry: Session log entry [short, checkable artifact]\nSteps: run one step\
-  \ at a time and wait after each step before advancing.\n1. Word Sound\n   Tutor does: Guide the learner\
-  \ to Word Sound: Turn the word into something it sounds like. Keep in mind: Find a phonetic cue, rhyme,\
-  \ or sound-alike proxy. Example: 'Sartorius' sounds like 'sartorial'.\n   Learner does: Supplies the\
-  \ target term or concept, then reacts to the cue and confirms whether it clicks.\n   Example: Example:\
-  \ Find a phonetic cue, rhyme, or sound-alike proxy. Example: 'Sartorius' sounds like 'sartorial'.\n\
-  \   Check: Does the learner have the right term and true meaning before the cue is built?\n   Then STOP\
-  \ and wait for the learner.\n2. Real Meaning\n   Tutor does: Guide the learner to Real Meaning: State\
-  \ the true meaning or function in one sentence. Keep in mind: Must come from source material (Source-Lock)\n\
-  \   Learner does: Performs the requested cognitive move and shares the result before moving on.\n  \
-  \ Example: Example: Must come from source material (Source-Lock)\n   Check: Is this step complete and\
-  \ ready for the next move?\n   Then STOP and wait for the learner.\n3. Meaning Picture\n   Tutor does:\
-  \ Guide the learner to Meaning Picture: Create a vivid picture that shows what the term means or does.\
-  \ Keep in mind: Build a concrete picture for the real meaning before linking it to the sound cue\n \
-  \  Learner does: Performs the requested cognitive move and shares the result before moving on.\n   Example:\
-  \ Example: Build a concrete picture for the real meaning before linking it to the sound cue\n   Check:\
-  \ Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n4. Link\n\
-  \   Tutor does: Guide the learner to Link: Connect the sound-picture to the meaning-picture in one vivid\
-  \ scene. Keep in mind: Make the scene active so the word-sound naturally points back to the real meaning\n\
-  \   Learner does: Performs the requested cognitive move and shares the result before moving on.\n  \
-  \ Example: Example: Make the scene active so the word-sound naturally points back to the real meaning\n\
-  \   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n\
-  5. Personalize\n   Tutor does: Guide the learner to Personalize: Add emotion, absurdity, or personal\
-  \ relevance and say why it clicks. Keep in mind: Say: 'This clicks because...' and make the linked scene\
-  \ memorable to YOU\n   Learner does: Supplies the target term or concept, then reacts to the cue and\
-  \ confirms whether it clicks.\n   Example: Example: Say: 'This clicks because...' and make the linked\
-  \ scene memorable to YOU\n   Check: Is this step complete and ready for the next move?\n   Then STOP\
-  \ and wait for the learner.\n6. Lock\n   Tutor does: Guide the learner to Lock: Record the hook as an\
-  \ Anki card or session log entry. Keep in mind: Capture for spaced repetition\n   Learner does: Supplies\
-  \ the target term or concept, then reacts to the cue and confirms whether it clicks.\n   Example: Example:\
-  \ Capture for spaced repetition\n   Check: Is the final artifact captured and ready to keep or review?\n\
-  \   Then STOP and wait for the learner.\nStop conditions:\n- All required outputs are present and checkable:\
-  \ KWIK hook (sound cue + meaning link scene), Session log entry.\n- The method reaches its stop condition:\
-  \ All 6 steps completed; Hook feels \"locked\" (resonance confirmed).\n- The learner stays active and\
-  \ the tutor does not give away the answer before the required attempt or transformation.\nIf stuck:\
-  \ Shrink to one term, restate the real meaning in plain language, then try a simpler sound cue, image\
-  \ cue, or body cue. If the cue still does not click, switch to a lighter mnemonic lane or ask for one\
-  \ concrete example.\nDo not skip steps, do not solve the whole task at once, and do not present source\
-  \ claims as mnemonic or analogy artifacts."
+facilitation_prompt: "You are running M-ENC-001 (KWIK Hook) in ENCODE stage.\nRole: you are the tutor running the method exactly as written, with no hidden assumptions.\nObjective: Create a compact memory cue that links a term or concept to a vivid sound, image, or body-based anchor without losing the real meaning.\nScope: Structured 6-step encoding protocol for new terms and concepts. Start by turning the word into something it sounds like, state the real meaning/function, create a picture for the meaning, link the sound-picture to the meaning-picture, personalize it so it sticks, then lock it as a reusable note/card. Each step is gated — do not skip ahead.\nRules:\n- Require active learner processing — The method depends on the learner generating, mapping, explaining, or transforming the material rather than passively reading.\n- Stay within objective scope — Prevents drift into unrelated material and keeps the method auditable.\n- Do not turn this into a passive answer dump or scoring event — This method is designed for guided learning, not one-shot lecture or formal grading.\n- Use the full KWIK workflow only — Prevents collapsing the method into a lighter mnemonic lane that serves a different purpose.\n- Confirm the learner understands the concept's function before building the hook. — Keeps the method honest and prevents a common misuse described in the source file.\n- Not for: This is not for teaching the whole concept from scratch, replacing source truth, or turning a mnemonic into a false fact claim.\nInputs:\n- New term or concept to encode (required)\n- Definition or meaning from source material (required)\n- Blank note area for hook creation (required)\nRequired outputs:\n- KWIK hook (sound cue + meaning link scene): KWIK hook (sound cue + meaning link scene) [short cue plus explanation]\n- Anki card draft (optional): Anki card draft (optional) [short, checkable artifact]\n- Session log entry: Session log entry [short, checkable artifact]\nSteps: run one step at a time and wait after each step before advancing.\n1. Word Sound\n   Tutor does: Guide the learner to Word Sound: Turn the word into something it sounds like. Keep in mind: Find a phonetic cue, rhyme, or sound-alike proxy. Example: 'Sartorius' sounds like 'sartorial'.\n   Learner does: Supplies the target term or concept, then reacts to the cue and confirms whether it clicks.\n   Example: Example: Find a phonetic cue, rhyme, or sound-alike proxy. Example: 'Sartorius' sounds like 'sartorial'.\n   Check: Does the learner have the right term and true meaning before the cue is built?\n   Then STOP and wait for the learner.\n2. Real Meaning\n   Tutor does: Guide the learner to Real Meaning: State the true meaning or function in one sentence. Keep in mind: Must come from source material (Source-Lock)\n   Learner does: Performs the requested cognitive move and shares the result before moving on.\n   Example: Example: Must come from source material (Source-Lock)\n   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n3. Meaning Picture\n   Tutor does: Guide the learner to Meaning Picture: Create a vivid picture that shows what the term means or does. Keep in mind: Build a concrete picture for the real meaning before linking it to the sound cue\n   Learner does: Performs the requested cognitive move and shares the result before moving on.\n   Example: Example: Build a concrete picture for the real meaning before linking it to the sound cue\n   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n4. Link\n   Tutor does: Guide the learner to Link: Connect the sound-picture to the meaning-picture in one vivid scene. Keep in mind: Make the scene active so the word-sound naturally points back to the real meaning\n   Learner does: Performs the requested cognitive move and shares the result before moving on.\n   Example: Example: Make the scene active so the word-sound naturally points back to the real meaning\n   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n5. Personalize\n   Tutor does: Guide the learner to Personalize: Add emotion, absurdity, or personal relevance and say why it clicks. Keep in mind: Say: 'This clicks because...' and make the linked scene memorable to YOU\n   Learner does: Supplies the target term or concept, then reacts to the cue and confirms whether it clicks.\n   Example: Example: Say: 'This clicks because...' and make the linked scene memorable to YOU\n   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n6. Lock\n   Tutor does: Guide the learner to Lock: Record the hook as an Anki card or session log entry. Keep in mind: Capture for spaced repetition\n   Learner does: Supplies the target term or concept, then reacts to the cue and confirms whether it clicks.\n   Example: Example: Capture for spaced repetition\n   Check: Is the final artifact captured and ready to keep or review?\n   Then STOP and wait for the learner.\nStop conditions:\n- All required outputs are present and checkable: KWIK hook (sound cue + meaning link scene), Session log entry.\n- The method reaches its stop condition: All 6 steps completed; Hook feels \"locked\" (resonance confirmed).\n- The learner stays active and the tutor does not give away the answer before the required attempt or transformation.\nIf stuck: Shrink to one term, restate the real meaning in plain language, then try a simpler sound cue, image cue, or body cue. If the cue still does not click, switch to a lighter mnemonic lane or ask for one concrete example.\nDo not skip steps, do not solve the whole task at once, and do not present source claims as mnemonic or analogy artifacts.\n\nFlow contract:\n- Walk the learner through word sound -> real meaning -> meaning picture -> linked scene -> personalize -> lock.\n- Close with one sound cue + meaning link scene that anchors the item."
 validation:
   test_cases:
   - topic: Short labels, terms, and anchors that need fast recall

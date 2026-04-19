@@ -72,8 +72,23 @@ def test_method_cards_stage_boundary_semantics() -> None:
         prompt = str(card["facilitation_prompt"])
 
         if stage == "PRIME":
-            assert bool(card["constraints"].get("non_assessment")) is True, (
-                f"{path.name}: PRIME must set constraints.non_assessment=true"
+            cons = card["constraints"]
+            # Accept dict (new shape) or list of {rule, why} (legacy shape).
+            if isinstance(cons, dict):
+                non_assessment_set = bool(cons.get("non_assessment"))
+            else:
+                non_assessment_set = any(
+                    any(kw in str(item.get("rule", "")).lower() for kw in (
+                        "non_assessment", "non-assessment",
+                        "do not assess", "do not score",
+                        "do not grade", "do not quiz",
+                        "no scored",
+                    ))
+                    for item in cons
+                    if isinstance(item, dict)
+                )
+            assert non_assessment_set, (
+                f"{path.name}: PRIME must declare non-assessment in constraints"
             )
             assert _contains_any(prompt, {"non-assessment", "do not quiz", "no scored", "no scoring"}), (
                 f"{path.name}: PRIME prompt must explicitly enforce non-assessment behavior"

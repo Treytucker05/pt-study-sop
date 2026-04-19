@@ -263,7 +263,13 @@ facilitation_prompt: 'You are a study tutor running M-PRE-002 (Overarching Pre-Q
 
   DONE WHEN:
 
-  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.'
+  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+
+  Non-assessment guard:
+
+  - This is a PRIME block — orientation only, not an assessment.
+
+  - Do not quiz, score, or grade the learner here; no scored output.'
 validation:
   test_cases:
   - topic: First pass on Overarching Pre-Question Set with prior notes present

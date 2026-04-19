@@ -278,7 +278,11 @@ Stop conditions:
 - The method reaches its stop condition: All 6 steps completed; Hook feels "locked" (resonance confirmed).
 - The learner stays active and the tutor does not give away the answer before the required attempt or transformation.
 If stuck: Shrink to one term, restate the real meaning in plain language, then try a simpler sound cue, image cue, or body cue. If the cue still does not click, switch to a lighter mnemonic lane or ask for one concrete example.
-Do not skip steps, do not solve the whole task at once, and do not present source claims as mnemonic or analogy artifacts. |
+Do not skip steps, do not solve the whole task at once, and do not present source claims as mnemonic or analogy artifacts.
+
+Flow contract:
+- Walk the learner through word sound -> real meaning -> meaning picture -> linked scene -> personalize -> lock.
+- Close with one sound cue + meaning link scene that anchors the item. |
 | M-ENC-002 | Seed-Lock Generation | ENCODE | Learner generates their own encoding hook BEFORE the AI offers help. Start with your own association, metaphor, or mnemonic. AI only assists if you're stuck. Enforces active generation over passive reception. | {'description': 'New term or concept to encode', 'required': True}; {'description': 'Definition from source material', 'required': True}; {'description': '90-second timer', 'required': True} -> {'name': 'Learner-generated Seed (primary hook attempt)', 'description': 'Learner-generated Seed (primary hook attempt)', 'format': 'short cue plus explanation'}; {'name': 'Final locked hook', 'description': 'Final locked hook', 'format': 'short cue plus explanation'}; {'name': 'Generation success flag (self vs AI-assisted)', 'description': 'Generation success flag (self vs AI-assisted)', 'format': 'short, checkable artifact'} | MISSING | failure_mode:Asking AI immediately; failure_mode:Giving up too fast; failure_mode:Over-relying on AI hooks | operational_stage=ENCODE; guidance_level=medium; output_format=bullets; evidence_raw=Slamecka & Graf (1978); generation effect — self-generated items remembered better than read items; gating_rules=['Force active processing (explain, transform, or map), not passive reading.', 'Keep output scoped to mapped objectives only.']; logging_fields=['generation_type', 'seed_attempted', 'ai_assist_used', 'time_to_seed']; artifact_type=notes | You are running M-ENC-002 (Seed-Lock Generation) in ENCODE stage.
 Role: you are the tutor running the method exactly as written, with no hidden assumptions.
 Objective: Force the learner to actively generate, explain, sequence, or transform the material so encoding is deeper than passive review.
@@ -651,7 +655,11 @@ Stop conditions:
 - The method reaches its stop condition: Chain reaches final outcome; All "because" statements filled.
 - The learner stays active and the tutor does not give away the answer before the required attempt or transformation.
 If stuck: Offer one smaller hint, one simpler example, or one step back in the chain; then require the learner to continue actively.
-Do not skip steps, do not solve the whole task at once, and do not present source claims as mnemonic or analogy artifacts. |
+Do not skip steps, do not solve the whole task at once, and do not present source claims as mnemonic or analogy artifacts.
+
+Non-assessment guard:
+- This is a TEACH chunk, not an assessment.
+- Do not score or quiz the learner during this block; no scored output, no grading. |
 | M-ENC-009 | Concept Map | ENCODE | Generate a learner-usable concept map that captures core nodes and labeled links for objective-scoped encoding. | {'description': 'Target concept from objective map', 'required': True}; {'description': 'Current misconception or gap signal', 'required': True} -> {'name': 'Learner-generated explanation or structured encoding artifact', 'description': 'Learner-generated explanation or structured encoding artifact', 'format': 'labeled visual structure'} | MISSING | failure_mode:Overload; failure_mode:Passive repetition | operational_stage=ENCODE; diagram_format=mermaid; has_steps=Y; has_outputs_or_artifacts=Y; outputs_summary=Concept map (nodes + labeled links); Mermaid code; guidance_level=medium; evidence_raw=Novak & Canas (2008); concept mapping promotes meaningful learning through explicit relationship encoding; gating_rules=['Force active processing (explain, transform, or map), not passive reading.', 'Keep output scoped to mapped objectives only.']; stipulations=['The concept map must be learner-usable, not decorative.', 'The learner must be able to explain the map structure after it is built.', 'Start with a short top-down verbal frame before drawing the map.', 'Treat generated structure as teaching support, not source evidence, unless specific sources are cited.']; artifact_type=concept-map | You are running M-ENC-009 (Concept Map) in ENCODE stage.
 Role: you are the tutor running the method exactly as written, with no hidden assumptions.
 Objective: Organize the material into a visible structure so relationships, sequence, contrast, or hierarchy become easier to remember and explain.
@@ -1117,7 +1125,12 @@ Stop conditions:
 - The method reaches its stop condition: The learner performs one full safe walkthrough with explicit narration.; Each movement is mapped back to the real concept or mechanism..
 - The learner stays active and the tutor does not give away the answer before the required attempt or transformation.
 If stuck: Offer one smaller hint, one simpler example, or one step back in the chain; then require the learner to continue actively.
-Do not skip steps, do not solve the whole task at once, and do not present source claims as mnemonic or analogy artifacts. |
+Do not skip steps, do not solve the whole task at once, and do not present source claims as mnemonic or analogy artifacts.
+
+Embodied contract:
+- The learner must do the movement or gesture, not just watch it described.
+- Every movement must be translated back into the real structure, mechanism, or sequence.
+- End with a map-back explanation, list, or sketch rather than movement alone. |
 | M-GEN-001 | Seed-Lock Generation | MISSING | Learner generates their own encoding hook BEFORE the AI offers help. Start with your own association, metaphor, or mnemonic. AI only assists if you're stuck. Enforces active generation over passive reception. | {'description': 'New term or concept to encode', 'required': True}; {'description': 'Definition from source material', 'required': True}; {'description': '90-second timer', 'required': True} -> {'name': 'Learner-generated Seed (primary hook attempt)', 'description': 'Learner-generated Seed (primary hook attempt)', 'format': 'short cue plus explanation'}; {'name': 'Final locked hook', 'description': 'Final locked hook', 'format': 'short cue plus explanation'}; {'name': 'Generation success flag (self vs AI-assisted)', 'description': 'Generation success flag (self vs AI-assisted)', 'format': 'short, checkable artifact'} | MISSING | failure_mode:Asking AI immediately; failure_mode:Giving up too fast; failure_mode:Over-relying on AI hooks | operational_stage=MISSING; guidance_level=medium; output_format=bullets; evidence_raw=Slamecka & Graf (1978); generation effect — self-generated items remembered better than read items; gating_rules=['Force active processing (explain, transform, or map), not passive reading.', 'Keep output scoped to mapped objectives only.']; logging_fields=['generation_type', 'seed_attempted', 'ai_assist_used', 'time_to_seed']; artifact_type=notes | You are running M-GEN-001 (Seed-Lock Generation) in ENCODE stage.
 Role: you are the tutor running the method exactly as written, with no hidden assumptions.
 Objective: Force the learner to actively generate, explain, sequence, or transform the material so encoding is deeper than passive review.
@@ -1545,7 +1558,11 @@ Stop conditions:
 - The method reaches its stop condition: Chain reaches final outcome; All "because" statements filled.
 - The learner stays active and the tutor does not give away the answer before the required attempt or transformation.
 If stuck: Offer one smaller hint, one simpler example, or one step back in the chain; then require the learner to continue actively.
-Do not skip steps, do not solve the whole task at once, and do not present source claims as mnemonic or analogy artifacts. |
+Do not skip steps, do not solve the whole task at once, and do not present source claims as mnemonic or analogy artifacts.
+
+Non-assessment guard:
+- This is a TEACH chunk, not an assessment.
+- Do not score or quiz the learner during this block; no scored output, no grading. |
 | M-GEN-008 | Embodied Walkthrough | MISSING | Use safe body movement, gesture, or positioning to act out a process, spatial relation, or clinical sequence, then map each movement back to the real structure or mechanism. | {'description': 'Target process, spatial relation, or procedure slice', 'required': True}; {'description': '2-5 key steps, landmarks, or transitions to embody', 'required': True}; {'description': 'Enough open space for safe small movements or hand gestures', 'required': True} -> {'name': 'MovementMap', 'description': 'MovementMap', 'format': 'labeled visual structure'}; {'name': 'EmbodiedRunthrough', 'description': 'EmbodiedRunthrough', 'format': 'short, checkable artifact'}; {'name': 'TransitionNotes', 'description': 'TransitionNotes', 'format': 'short, checkable artifact'}; {'name': 'MapBackExplanation', 'description': 'MapBackExplanation', 'format': 'labeled visual structure'}; {'name': 'SafetyBoundaryNote', 'description': 'SafetyBoundaryNote', 'format': 'short, checkable artifact'} | MISSING | failure_mode:The activity drifts into full skill performance coaching; failure_mode:The learner performs gestures without saying what they mean; failure_mode:The movements become random charades with no concept mapping; failure_mode:The walkthrough uses unsafe, painful, or oversized motions | operational_stage=MISSING; guidance_level=medium; output_format=bullets; evidence_raw=Kontra et al. (2015); embodied interaction supports deeper conceptual learning by tying abstract ideas to sensorimotor experience.; gating_rules=['Require learner movement or gesture, not passive watching.', 'Keep all motions safe, simplified, and inside objective scope.', 'Map every gesture back to the real concept in words.', 'End with a non-movement artifact or explanation.']; stipulations=['The learner must do the movement; tutor narration alone does not count.', 'Every gesture or position must map back to the real structure, cue, or mechanism in plain language.', 'Keep the movement safe, simplified, and low-load; never force painful or risky motions.', 'Use this to encode structure or sequence, not to perform full skill training or graded technique.']; artifact_type=notes | You are running M-GEN-008 (Embodied Walkthrough) in ENCODE stage.
 Role: you are the tutor running the method exactly as written, with no hidden assumptions.
 Objective: Force the learner to actively generate, explain, sequence, or transform the material so encoding is deeper than passive review.
@@ -2030,7 +2047,11 @@ Stop conditions:
 - The method reaches its stop condition: Analogy created with 3+ mappings; At least 1 breakdown point identified.
 - The learner stays active and the tutor does not give away the answer before the required attempt or transformation.
 If stuck: Reduce the scope, ask for a smaller retrieval target, compare with a near-neighbor, or route back to ENCODE/REFERENCE if recall keeps failing. Do not keep guessing indefinitely.
-Do not skip steps, do not solve the whole task at once, and do not present source claims as mnemonic or analogy artifacts. |
+Do not skip steps, do not solve the whole task at once, and do not present source claims as mnemonic or analogy artifacts.
+
+Non-assessment guard:
+- This is a TEACH chunk, not an assessment.
+- Do not score or quiz the learner during this block; no scored output, no grading. |
 | M-INT-002 | Clinical Application | ENCODE | Apply the concept to a clinical scenario. Ask: how would this present? What would you test? How would you treat? | {'description': 'Concept to apply clinically', 'required': True}; {'description': 'Clinical scenario or patient type', 'required': True}; {'description': 'Source material for verification', 'required': True} -> {'name': 'Clinical application narrative', 'description': 'Clinical application narrative', 'format': 'concise prose bullets or short paragraph'}; {'name': 'Presentation, testing, intervention summary', 'description': 'Presentation, testing, intervention summary', 'format': 'short, checkable artifact'}; {'name': 'Verification notes', 'description': 'Verification notes', 'format': 'short, checkable artifact'} | MISSING | failure_mode:Generic application; failure_mode:Skipping assessment phase; failure_mode:Treatment without rationale | operational_stage=ENCODE; difficulty=medium; feedback_timing=after_attempt; guidance_level=medium; evidence_raw=Schmidt & Rikers (2007); clinical application strengthens illness script formation; gating_rules=['Require closed-note recall first, then feedback.', 'If repeated misses occur, route back to ENCODE or REFERENCE.']; logging_fields=['concept_applied', 'patient_population', 'interventions_identified', 'verification_status']; artifact_type=notes | You are running M-INT-002 (Clinical Application) in ENCODE stage.
 Role: you are the tutor running the method exactly as written, with no hidden assumptions.
 Objective: Interrogate already-encoded material through comparison, application, retrieval, or transfer so the learner can discriminate it under pressure.
@@ -2782,7 +2803,10 @@ GOOD OUTPUT EXAMPLE:
 - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
 
 DONE WHEN:
-You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue. |
+You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+Non-assessment guard:
+- This is a PRIME block — orientation only, not an assessment.
+- Do not quiz, score, or grade the learner here; no scored output. |
 | M-PRE-002 | Overarching Pre-Question Set | PRIME | Generate 3-5 broad why/how/where-fit questions that jointly cover the whole selected material or module slice before deep study to set conceptual hooks. | {'description': 'Source material loaded in chat', 'required': True}; {'description': 'Target topic or objective scope', 'required': True}; {'description': 'Prior notes, North Star, or prior-session context', 'required': False} -> {'name': 'PreQuestionSet', 'description': 'Question set that surfaces what matters most about overarching pre-question set.', 'format': 'numbered question list'}; {'name': 'PriorityPrompts', 'description': 'Activation or structure artifact for overarching pre-question set.', 'format': 'bulleted artifact'}; {'name': 'FollowUpTargets', 'description': 'Next-pass targets for study or clarification.', 'format': 'bulleted artifact'} | MISSING | failure_mode:Learner anxiety rises from open prompts; failure_mode:Prompts become detailed quiz items | operational_stage=PRIME; priming_scope=single_focus; guidance_level=medium; objective_link_required=True; artifact_type=notes; evidence_strength=high; primary_citations=['Jamison et al. (2023/2024)', 'Roediger & Karpicke (2006)']; logging_fields=['prequestion_count', 'priority_prompt_count', 'skipped_for_anxiety']; output_format=bullets | You are a study tutor running M-PRE-002 (Overarching Pre-Question Set) in the PRIME stage.
 ROLE: You are a careful, supportive tutor. Your job is to run Overarching Pre-Question Set exactly as specified and keep the output faithful, bounded, and useful.
 OBJECTIVE: Generate 3-5 broad why/how/where-fit questions that jointly cover the whole selected material or module slice before deep study to set conceptual hooks. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
@@ -2839,7 +2863,10 @@ GOOD OUTPUT EXAMPLE:
 - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
 
 DONE WHEN:
-You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue. |
+You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+Non-assessment guard:
+- This is a PRIME block — orientation only, not an assessment.
+- Do not quiz, score, or grade the learner here; no scored output. |
 | M-PRE-003 | Prior Knowledge Scan | PRIME | Conditional CALIBRATE method that maps known concepts to the new topic when prior notes or North Star context already exist. | {'description': 'Source material loaded in chat', 'required': True}; {'description': 'Target topic or objective scope', 'required': True}; {'description': 'Prior notes, North Star, or prior-session context', 'required': False} -> {'name': 'Connection map (topic + related concepts)', 'description': 'Structured artifact that captures the key prior knowledge scan relationships.', 'format': 'structured map or nested bullets'}; {'name': 'Primary anchoring schema identified', 'description': 'Activation or structure artifact for prior knowledge scan.', 'format': 'bulleted artifact'}; {'name': 'Prerequisite gap list', 'description': 'Activation or structure artifact for prior knowledge scan.', 'format': 'bulleted artifact'}; {'name': 'Optional follow_up_targets list for unresolved prerequisite gaps', 'description': 'Activation or structure artifact for prior knowledge scan.', 'format': 'bulleted artifact'} | MISSING | failure_mode:No connections found; failure_mode:No prior context available | operational_stage=PRIME; priming_scope=single_focus; guidance_level=medium; objective_link_required=True; artifact_type=notes; evidence_strength=high; primary_citations=['Ausubel (1968)', 'Luiten et al. (1980)']; logging_fields=['context_sources_used', 'connection_count', 'primary_anchor_topic', 'prerequisite_gaps', 'skipped_reason']; output_format=bullets | You are a study tutor running M-PRE-003 (Prior Knowledge Scan) in the CALIBRATE stage.
 ROLE: You are a careful, supportive tutor. Your job is to run Prior Knowledge Scan exactly as specified and keep the output faithful, bounded, and useful.
 OBJECTIVE: Conditional CALIBRATE method that maps known concepts to the new topic when prior notes or North Star context already exist. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
@@ -2902,7 +2929,10 @@ GOOD OUTPUT EXAMPLE:
 - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
 
 DONE WHEN:
-You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue. |
+You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+Non-assessment guard:
+- This is a PRIME block — orientation only, not an assessment.
+- Do not quiz, score, or grade the learner here; no scored output. |
 | M-PRE-004 | Hierarchical Advance Organizer | PRIME | Present a high-abstraction top-down framework as an ASCII concept map plus Obsidian-friendly hierarchy that covers the selected scope before detail study. | {'description': 'Source material loaded in chat', 'required': True}; {'description': 'Target topic or objective scope', 'required': True}; {'description': 'Prior notes, North Star, or prior-session context', 'required': False} -> {'name': 'AsciiConceptMap', 'description': 'Structured artifact that captures the key hierarchical advance organizer relationships.', 'format': 'structured map or nested bullets'}; {'name': 'ObsidianHierarchy', 'description': 'Structured artifact that captures the key hierarchical advance organizer relationships.', 'format': 'ASCII tree or nested bullets'} | MISSING | failure_mode:Orientation drifts into assessment | operational_stage=PRIME; complexity_level=intermediate_outline; guidance_level=medium; objective_link_required=True; artifact_type=notes; evidence_strength=high; primary_citations=['Ausubel (1960)', 'Luiten et al. (1980)', 'Hattie (2009)']; outputs_summary=AsciiConceptMap; ObsidianHierarchy; has_steps=Y; has_outputs_or_artifacts=Y; output_format=bullets | You are a study tutor running M-PRE-004 (Hierarchical Advance Organizer) in the PRIME stage.
 ROLE: You are a careful, supportive tutor. Your job is to run Hierarchical Advance Organizer exactly as specified and keep the output faithful, bounded, and useful.
 OBJECTIVE: Present a high-abstraction top-down framework as an ASCII concept map plus Obsidian-friendly hierarchy that covers the selected scope before detail study. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
@@ -2959,7 +2989,10 @@ GOOD OUTPUT EXAMPLE:
 - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
 
 DONE WHEN:
-You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue. |
+You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+Non-assessment guard:
+- This is a PRIME block — orientation only, not an assessment.
+- Do not quiz, score, or grade the learner here; no scored output. |
 | M-PRE-005 | Skeleton Concept Hierarchy | PRIME | Generate a bare concept hierarchy (topic core -> 4-6 umbrella categories -> short descriptors) that still covers the full selected scope without deep explanations. | {'description': 'Source material loaded in chat', 'required': True}; {'description': 'Target topic or objective scope', 'required': True}; {'description': 'Prior notes, North Star, or prior-session context', 'required': False} -> {'name': 'SkeletonMap', 'description': 'Structured artifact that captures the key skeleton concept hierarchy relationships.', 'format': 'structured map or nested bullets'}; {'name': 'CategoryLabels', 'description': 'Activation or structure artifact for skeleton concept hierarchy.', 'format': 'bulleted artifact'}; {'name': 'CrossLinks', 'description': 'Activation or structure artifact for skeleton concept hierarchy.', 'format': 'bulleted artifact'} | MISSING | failure_mode:Map turns into paragraph notes; failure_mode:Too many nodes causing overload | operational_stage=PRIME; node_count_cap=6; map_format=ascii_tree; guidance_level=medium; objective_link_required=True; artifact_type=concept-map; evidence_strength=medium; primary_citations=['Novak & Cañas (2008)', 'Paivio (1991)']; logging_fields=['category_count', 'cross_link_count', 'map_depth']; output_format=bullets | You are a study tutor running M-PRE-005 (Skeleton Concept Hierarchy) in the PRIME stage.
 ROLE: You are a careful, supportive tutor. Your job is to run Skeleton Concept Hierarchy exactly as specified and keep the output faithful, bounded, and useful.
 OBJECTIVE: Generate a bare concept hierarchy (topic core -> 4-6 umbrella categories -> short descriptors) that still covers the full selected scope without deep explanations. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
@@ -3015,7 +3048,10 @@ GOOD OUTPUT EXAMPLE:
 - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
 
 DONE WHEN:
-You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue. |
+You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+Non-assessment guard:
+- This is a PRIME block — orientation only, not an assessment.
+- Do not quiz, score, or grade the learner here; no scored output. |
 | M-PRE-006 | Structural Skimming + Pillar Mapping | PRIME | Rapidly skim headings and visual cues across the selected scope, then compress the structure into an ASCII concept map plus Obsidian-friendly hierarchy before deep reading. | {'description': 'Source material loaded in chat', 'required': True}; {'description': 'Target topic or objective scope', 'required': True}; {'description': 'Prior notes, North Star, or prior-session context', 'required': False} -> {'name': 'AsciiConceptMap', 'description': 'Structured artifact that captures the key structural skimming plus pillar mapping relationships.', 'format': 'structured map or nested bullets'}; {'name': 'ObsidianHierarchy', 'description': 'Structured artifact that captures the key structural skimming plus pillar mapping relationships.', 'format': 'ASCII tree or nested bullets'} | MISSING | failure_mode:LLM drifts into paragraph summarization; failure_mode:Too many pillars | operational_stage=PRIME; pillar_count=4; guidance_level=medium; objective_link_required=True; artifact_type=notes; evidence_strength=high; primary_citations=['Ausubel (1960)', 'Hattie (2009)']; output_format=bullets | You are a study tutor running M-PRE-006 (Structural Skimming + Pillar Mapping) in the PRIME stage.
 ROLE: You are a careful, supportive tutor. Your job is to run Structural Skimming + Pillar Mapping exactly as specified and keep the output faithful, bounded, and useful.
 OBJECTIVE: Rapidly skim headings and visual cues across the selected scope, then compress the structure into an ASCII concept map plus Obsidian-friendly hierarchy before deep reading. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
@@ -3070,7 +3106,10 @@ GOOD OUTPUT EXAMPLE:
 - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
 
 DONE WHEN:
-You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue. |
+You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+Non-assessment guard:
+- This is a PRIME block — orientation only, not an assessment.
+- Do not quiz, score, or grade the learner here; no scored output. |
 | M-PRE-007 | Pre-Test | PRIME | Attempt to answer questions on the topic BEFORE studying it. Getting answers wrong primes the brain to encode the correct information more deeply. | {'description': 'Source material loaded in chat', 'required': True}; {'description': 'Target topic or objective scope', 'required': True}; {'description': 'Prior notes, North Star, or prior-session context', 'required': False} -> {'name': 'Pre-test answers (with confidence ratings)', 'description': 'Activation or structure artifact for pre-test.', 'format': 'prompt set with brief answers'}; {'name': 'Encoding priming for correct answers', 'description': 'Activation or structure artifact for pre-test.', 'format': 'bulleted artifact'}; {'name': 'Calibration baseline', 'description': 'Activation or structure artifact for pre-test.', 'format': 'bulleted artifact'} | MISSING | failure_mode:Checking answers immediately; failure_mode:Refusing to guess | operational_stage=PRIME; probe_count=3; confidence_scale=h_m_l; guidance_level=medium; objective_link_required=True; artifact_type=notes; logging_fields=['pretest_question_count', 'pretest_correct_count', 'average_confidence', 'confidence_calibration_error']; output_format=bullets | You are a study tutor running M-PRE-007 (Pre-Test) in the CALIBRATE stage.
 ROLE: You are a careful, supportive tutor. Your job is to run Pre-Test exactly as specified and keep the output faithful, bounded, and useful.
 OBJECTIVE: Attempt to answer questions on the topic BEFORE studying it. Getting answers wrong primes the brain to encode the correct information more deeply. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
@@ -3133,7 +3172,10 @@ GOOD OUTPUT EXAMPLE:
 - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
 
 DONE WHEN:
-You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue. |
+You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+Non-assessment guard:
+- This is a PRIME block — orientation only, not an assessment.
+- Do not quiz, score, or grade the learner here; no scored output. |
 | M-PRE-008 | Structural Extraction | PRIME | Extract a compact structural spine from source material before detail work. Build high-signal nodes and link every node to at least one objective. | {'description': 'Source material loaded in chat', 'required': True}; {'description': 'Target topic or objective scope', 'required': True}; {'description': 'Prior notes, North Star, or prior-session context', 'required': False} -> {'name': 'StructuralSpine', 'description': 'Structured artifact that captures the key structural extraction relationships.', 'format': 'ordered bullets'}; {'name': 'Objective linkage map', 'description': 'Structured artifact that captures the key structural extraction relationships.', 'format': 'structured map or nested bullets'}; {'name': 'UnknownNodeList', 'description': 'Activation or structure artifact for structural extraction.', 'format': 'bulleted artifact'}; {'name': 'PriorityNodes', 'description': 'Activation or structure artifact for structural extraction.', 'format': 'bulleted artifact'} | MISSING | failure_mode:Drift into testing; failure_mode:Scope too broad | operational_stage=PRIME; priming_depth_mode=basic; node_cap=10; output_format=ascii_tree; objective_link_required=True; guidance_level=medium; artifact_type=notes; evidence_strength=medium_high; primary_citations=['Ausubel (1968)', 'Sung (2025)'] | You are a study tutor running M-PRE-008 (Structural Extraction) in the PRIME stage.
 ROLE: You are a careful, supportive tutor. Your job is to run Structural Extraction exactly as specified and keep the output faithful, bounded, and useful.
 OBJECTIVE: Extract a compact structural spine from source material before detail work. Build high-signal nodes and link every node to at least one objective. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
@@ -3192,7 +3234,10 @@ GOOD OUTPUT EXAMPLE:
 - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
 
 DONE WHEN:
-You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue. |
+You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+Non-assessment guard:
+- This is a PRIME block — orientation only, not an assessment.
+- Do not quiz, score, or grade the learner here; no scored output. |
 | M-PRE-009 | Syntopical Big-Picture Synthesis | PRIME | Synthesize top-level structure across 2-3 sources into one module-level hierarchy with cross-links. | {'description': 'Source material loaded in chat', 'required': True}; {'description': 'Target topic or objective scope', 'required': True}; {'description': 'Prior notes, North Star, or prior-session context', 'required': False} -> {'name': 'UnifiedTopDownTree', 'description': 'Activation or structure artifact for syntopical big-picture synthesis.', 'format': 'bulleted artifact'}; {'name': 'CrossSourceLinks', 'description': 'Activation or structure artifact for syntopical big-picture synthesis.', 'format': 'bulleted artifact'}; {'name': 'ConflictFlags', 'description': 'Activation or structure artifact for syntopical big-picture synthesis.', 'format': 'bulleted artifact'}; {'name': 'FollowUpTargets', 'description': 'Next-pass targets for study or clarification.', 'format': 'bulleted artifact'} | MISSING | failure_mode:Drift into testing; failure_mode:Scope too broad | operational_stage=PRIME; source_cap=3; synthesis_format=hierarchy; guidance_level=medium; objective_link_required=True; artifact_type=notes; evidence_strength=medium; primary_citations=['Ausubel (1968)', 'Sung (2025)']; output_format=bullets | You are a study tutor running M-PRE-009 (Syntopical Big-Picture Synthesis) in the PRIME stage.
 ROLE: You are a careful, supportive tutor. Your job is to run Syntopical Big-Picture Synthesis exactly as specified and keep the output faithful, bounded, and useful.
 OBJECTIVE: Synthesize top-level structure across 2-3 sources into one module-level hierarchy with cross-links. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
@@ -3243,7 +3288,10 @@ GOOD OUTPUT EXAMPLE:
 - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
 
 DONE WHEN:
-You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue. |
+You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+Non-assessment guard:
+- This is a PRIME block — orientation only, not an assessment.
+- Do not quiz, score, or grade the learner here; no scored output. |
 | M-PRE-010 | Learning Objectives Primer | PRIME | Build the study-target objective list for the current topic by accounting for all provided files first, then merging the objective signals into one clean set of learning targets. Also extract any explicit instructor objective statements found verbatim in the provided source material. | {'description': 'Source material loaded in chat', 'required': True}; {'description': 'Target topic or objective scope', 'required': True}; {'description': 'Prior notes, North Star, or prior-session context', 'required': False} -> {'name': 'SourceCoverageTable', 'description': 'Activation or structure artifact for learning objectives primer.', 'format': 'two-column table or tightly grouped bullets'}; {'name': 'CandidateObjectivesByFile', 'description': 'Activation or structure artifact for learning objectives primer.', 'format': 'bulleted artifact'}; {'name': 'FinalLearningObjectives', 'description': 'Activation or structure artifact for learning objectives primer.', 'format': 'bulleted artifact'}; {'name': 'ExplicitInstructorObjectives', 'description': 'Activation or structure artifact for learning objectives primer.', 'format': 'bulleted artifact'} | MISSING | failure_mode:Coverage rows are internally inconsistent; failure_mode:LLM samples one or two files and ignores the rest | operational_stage=PRIME; guidance_level=medium; objective_link_required=True; artifact_type=notes; evidence_strength=high; primary_citations=['Ausubel (1968)', 'Hattie (2009)']; outputs_summary=SourceCoverageTable; CandidateObjectivesByFile; FinalLearningObjectives; ExplicitInstructorObjectives; has_steps=Y; has_outputs_or_artifacts=Y; output_format=bullets | You are a study tutor running M-PRE-010 (Learning Objectives Primer) in the PRIME stage.
 ROLE: You are a careful, supportive tutor. Your job is to run Learning Objectives Primer exactly as specified and keep the output faithful, bounded, and useful.
 OBJECTIVE: Build the study-target objective list for the current topic by accounting for all provided files first, then merging the objective signals into one clean set of learning targets. Also extract any explicit instructor objective statements found verbatim in the provided source material. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
@@ -3296,7 +3344,10 @@ GOOD OUTPUT EXAMPLE:
 - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
 
 DONE WHEN:
-You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue. |
+You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+Non-assessment guard:
+- This is a PRIME block — orientation only, not an assessment.
+- Do not quiz, score, or grade the learner here; no scored output. |
 | M-PRE-012 | Terminology Pretraining | PRIME | Extract the minimum high-yield terms, abbreviations, and short definitions needed to read the topic without getting lost, plus the most important confusable distinctions. | {'description': 'Source material loaded in chat', 'required': True}; {'description': 'Target topic or objective scope', 'required': True}; {'description': 'Prior notes, North Star, or prior-session context', 'required': False} -> {'name': 'TerminologyList', 'description': 'Vocabulary or terminology support for terminology pretraining.', 'format': 'bulleted artifact'}; {'name': 'ConfusableTermFlags', 'description': 'Vocabulary or terminology support for terminology pretraining.', 'format': 'bulleted artifact'} | MISSING | failure_mode:Definitions become mini-lessons; failure_mode:Too many low-value terms | operational_stage=PRIME; guidance_level=medium; objective_link_required=True; artifact_type=notes; evidence_strength=high; primary_citations=['Mayer (2009)']; outputs_summary=TerminologyList; ConfusableTermFlags; has_steps=Y; has_outputs_or_artifacts=Y; output_format=bullets | You are a study tutor running M-PRE-012 (Terminology Pretraining) in the PRIME stage.
 ROLE: You are a careful, supportive tutor. Your job is to run Terminology Pretraining exactly as specified and keep the output faithful, bounded, and useful.
 OBJECTIVE: Extract the minimum high-yield terms, abbreviations, and short definitions needed to read the topic without getting lost, plus the most important confusable distinctions. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
@@ -3347,7 +3398,10 @@ GOOD OUTPUT EXAMPLE:
 - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
 
 DONE WHEN:
-You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue. |
+You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+Non-assessment guard:
+- This is a PRIME block — orientation only, not an assessment.
+- Do not quiz, score, or grade the learner here; no scored output. |
 | M-PRE-013 | Big-Picture Orientation Summary | PRIME | Generate a short source-grounded big-picture summary that states what the material is about, why it matters, and the main hook without crossing into full explanation. | {'description': 'Source material loaded in chat', 'required': True}; {'description': 'Target topic or objective scope', 'required': True}; {'description': 'Prior notes, North Star, or prior-session context', 'required': False} -> {'name': 'NorthStarSentence', 'description': 'Activation or structure artifact for big-picture orientation summary.', 'format': 'bulleted artifact'}; {'name': 'BigPictureSummary', 'description': 'Concise summary or framing artifact for big-picture orientation summary.', 'format': 'concise paragraph plus bullets'} | MISSING | failure_mode:Overview becomes too explanatory; failure_mode:Overview becomes too vague | operational_stage=PRIME; priming_depth_mode=basic; guidance_level=medium; objective_link_required=True; artifact_type=notes; evidence_strength=high; primary_citations=['Ausubel (1968)', 'Mayer (2009)']; outputs_summary=NorthStarSentence; BigPictureSummary; has_steps=Y; has_outputs_or_artifacts=Y; output_format=bullets | You are a study tutor running M-PRE-013 (Big-Picture Orientation Summary) in the PRIME stage.
 ROLE: You are a careful, supportive tutor. Your job is to run Big-Picture Orientation Summary exactly as specified and keep the output faithful, bounded, and useful.
 OBJECTIVE: Generate a short source-grounded big-picture summary that states what the material is about, why it matters, and the main hook without crossing into full explanation. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
@@ -3398,7 +3452,10 @@ GOOD OUTPUT EXAMPLE:
 - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
 
 DONE WHEN:
-You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue. |
+You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+Non-assessment guard:
+- This is a PRIME block — orientation only, not an assessment.
+- Do not quiz, score, or grade the learner here; no scored output. |
 | M-PRE-014 | Ambiguity and Blind-Spot Scan | PRIME | Scan the selected source for the most important ambiguities, unsupported jumps, misconceptions, or traps that TEACH should repair later. | {'description': 'Source material loaded in chat', 'required': True}; {'description': 'Target topic or objective scope', 'required': True}; {'description': 'Prior notes, North Star, or prior-session context', 'required': False} -> {'name': 'BlindSpotList', 'description': 'List of ambiguous points and blind spots that need clarification.', 'format': 'bulleted artifact'}; {'name': 'FollowUpTargets', 'description': 'Next-pass targets for study or clarification.', 'format': 'bulleted artifact'} | MISSING | failure_mode:Findings become vague complaints; failure_mode:Scan turns into diagnosis of the learner | operational_stage=PRIME; probe_count=3; guidance_level=medium; objective_link_required=True; artifact_type=notes; evidence_strength=medium; primary_citations=['Overoye et al. (2021)', 'Pan and Rivers (2023)', 'Hausman and Rhodes (2018)']; outputs_summary=BlindSpotList; FollowUpTargets; has_steps=Y; has_outputs_or_artifacts=Y; output_format=bullets | You are a study tutor running M-PRE-014 (Ambiguity and Blind-Spot Scan) in the PRIME stage.
 ROLE: You are a careful, supportive tutor. Your job is to run Ambiguity and Blind-Spot Scan exactly as specified and keep the output faithful, bounded, and useful.
 OBJECTIVE: Scan the selected source for the most important ambiguities, unsupported jumps, misconceptions, or traps that TEACH should repair later. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
@@ -3449,7 +3506,10 @@ GOOD OUTPUT EXAMPLE:
 - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
 
 DONE WHEN:
-You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue. |
+You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+Non-assessment guard:
+- This is a PRIME block — orientation only, not an assessment.
+- Do not quiz, score, or grade the learner here; no scored output. |
 | M-REF-001 | Error Autopsy | REFERENCE | Review errors from retrieval practice. For each error: (1) What did I say? (2) What's correct? (3) Why did I confuse them? (4) What cue will prevent this next time? Metacognitive error analysis. | {'description': 'List of errors from recent retrieval practice', 'required': True}; {'description': 'Correct answers for each error', 'required': True}; {'description': 'Reference materials for deep understanding', 'required': True}; {'description': 'Error autopsy template (4-column format)', 'required': True} -> {'name': 'Completed error autopsy table (all 4 columns for every error)', 'description': 'Four-column analysis of what was said, what is correct, why the confusion happened, and what cue prevents recurrence.', 'format': 'structured table'}; {'name': 'Root cause analysis for each error (Column 3 filled with specific conceptual confusion)', 'description': 'A reusable reference artifact that supports later retrieval for a structured error autopsy that turns retrieval misses into durable prevention cues and artifact-ready notes.', 'format': 'structured response'}; {'name': 'Discrimination cues created (Column 4 with actionable prevention strategy)', 'description': 'A reusable reference artifact that supports later retrieval for a structured error autopsy that turns retrieval misses into durable prevention cues and artifact-ready notes.', 'format': 'structured response'}; {'name': 'Anki card candidates identified from high-value errors', 'description': 'A draft card set for later Anki import or refinement.', 'format': 'formatted study artifact'} | MISSING | failure_mode:Artifact becomes a loose discussion transcript; failure_mode:Source language gets lost; failure_mode:The learner tries to use the block as a quiz | operational_stage=REFERENCE; default_duration_min=5; energy_cost=medium; best_stage=exam_prep | You are a tutor running M-REF-001 (Error Autopsy) in REFERENCE mode.
 ROLE: build durable artifacts for later retrieval and does not test the learner.
 OBJECTIVE: Error Autopsy exists to run a structured error autopsy that turns retrieval misses into durable prevention cues and artifact-ready notes. It turns the current stage into a clean, reusable signal instead of a vague study session.
@@ -4007,7 +4067,11 @@ GOOD OUTPUT EXAMPLE:
 - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
 
 DONE WHEN:
-You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue. |
+You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+
+Non-assessment guard:
+- This is a TEACH chunk, not an assessment.
+- Do not score or quiz the learner during this block; no scored output, no grading. |
 | M-TEA-002 | Confusable Contrast Teach | MISSING | Teach two confusable concepts side-by-side by naming the shared bucket, the key difference, the signature clue, and the classic trap. | {'description': 'Source material loaded in chat', 'required': True}; {'description': 'Target concept, process, or comparison to teach', 'required': True}; {'description': 'Learner familiarity signal or prerequisite anchor', 'required': False} -> {'name': 'Shared bucket statement', 'description': 'Learner-facing teaching artifact for confusable contrast teach.', 'format': 'bulleted artifact'}; {'name': 'Key difference statement', 'description': 'Learner-facing teaching artifact for confusable contrast teach.', 'format': 'bulleted artifact'}; {'name': 'Signature clues', 'description': 'Learner-facing teaching artifact for confusable contrast teach.', 'format': 'bulleted artifact'}; {'name': 'Classic trap', 'description': 'Learner-facing teaching artifact for confusable contrast teach.', 'format': 'bulleted artifact'}; {'name': 'Mini application contrast', 'description': 'Learner-facing teaching artifact for confusable contrast teach.', 'format': 'two-column table or tightly grouped bullets'} | MISSING | failure_mode:Contrast stays too abstract; failure_mode:Too many differences create noise | operational_stage=MISSING; output_format=bullets; guidance_level=medium; artifact_type=table | You are a study tutor running M-TEA-002 (Confusable Contrast Teach) in the TEACH stage.
 ROLE: You are a careful, supportive tutor. Your job is to run Confusable Contrast Teach exactly as specified and keep the output faithful, bounded, and useful.
 OBJECTIVE: Teach two confusable concepts side-by-side by naming the shared bucket, the key difference, the signature clue, and the classic trap. Use it to teach one bounded concept by turning the source into a learner-facing bridge that preserves the real mechanism.
@@ -4071,7 +4135,11 @@ GOOD OUTPUT EXAMPLE:
 - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
 
 DONE WHEN:
-You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue. |
+You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+
+Non-assessment guard:
+- This is a TEACH chunk, not an assessment.
+- Do not score or quiz the learner during this block; no scored output, no grading. |
 | M-TEA-003 | Anchor Mini-Case | MISSING | Use one tiny example scene to show why the concept matters practically without turning the block into a full case drill. | {'description': 'Source material loaded in chat', 'required': True}; {'description': 'Target concept, process, or comparison to teach', 'required': True}; {'description': 'Learner familiarity signal or prerequisite anchor', 'required': False} -> {'name': 'Mini-case scene', 'description': 'Short clinical scenario that anchors the target concept.', 'format': 'short vignette plus takeaways'}; {'name': 'Concept-to-case link', 'description': 'Learner-facing teaching artifact for clinical anchor mini-case.', 'format': 'short vignette plus takeaways'}; {'name': 'Clinical significance statement', 'description': 'Learner-facing teaching artifact for clinical anchor mini-case.', 'format': 'bulleted artifact'}; {'name': 'Overgeneralization boundary', 'description': 'Learner-facing teaching artifact for clinical anchor mini-case.', 'format': 'bulleted artifact'} | MISSING | failure_mode:Case feels detached from the concept; failure_mode:Case is too big and becomes a full reasoning drill | operational_stage=MISSING; output_format=bullets; guidance_level=medium; artifact_type=notes | You are a study tutor running M-TEA-003 (Anchor Mini-Case) in the TEACH stage.
 ROLE: You are a careful, supportive tutor. Your job is to run Anchor Mini-Case exactly as specified and keep the output faithful, bounded, and useful.
 OBJECTIVE: Use one tiny example scene to show why the concept matters practically without turning the block into a full case drill. Use it to teach one bounded concept by turning the source into a learner-facing bridge that preserves the real mechanism.
@@ -4128,7 +4196,11 @@ GOOD OUTPUT EXAMPLE:
 - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
 
 DONE WHEN:
-You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue. |
+You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+
+Non-assessment guard:
+- This is a TEACH chunk, not an assessment.
+- Do not score or quiz the learner during this block; no scored output, no grading. |
 | M-TEA-004 | Modality Switch | MISSING | Choose the best first representation for the concept and switch the explanation into that modality before overload sets in. | {'description': 'Source material loaded in chat', 'required': True}; {'description': 'Target concept, process, or comparison to teach', 'required': True}; {'description': 'Learner familiarity signal or prerequisite anchor', 'required': False} -> {'name': 'Concept type', 'description': 'Learner-facing teaching artifact for modality switch.', 'format': 'bulleted artifact'}; {'name': 'Chosen modality', 'description': 'Learner-facing teaching artifact for modality switch.', 'format': 'bulleted artifact'}; {'name': 'Re-expressed teaching chunk', 'description': 'Learner-facing teaching artifact for modality switch.', 'format': 'bulleted artifact'}; {'name': 'Modality rationale', 'description': 'Learner-facing teaching artifact for modality switch.', 'format': 'bulleted artifact'} | MISSING | failure_mode:Too many modalities at once; failure_mode:Wrong modality chosen for the concept | operational_stage=MISSING; guidance_level=medium; output_format=bullets; artifact_type=notes | You are a study tutor running M-TEA-004 (Modality Switch) in the TEACH stage.
 ROLE: You are a careful, supportive tutor. Your job is to run Modality Switch exactly as specified and keep the output faithful, bounded, and useful.
 OBJECTIVE: Choose the best first representation for the concept and switch the explanation into that modality before overload sets in. Use it to teach one bounded concept by turning the source into a learner-facing bridge that preserves the real mechanism.
@@ -4185,7 +4257,11 @@ GOOD OUTPUT EXAMPLE:
 - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
 
 DONE WHEN:
-You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue. |
+You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+
+Non-assessment guard:
+- This is a TEACH chunk, not an assessment.
+- Do not score or quiz the learner during this block; no scored output, no grading. |
 | M-TEA-005 | Jingle / Rhyme Hook | MISSING | Compress a fixed ordered list or stable sequence into a short jingle or rhyme after the learner understands the meaning of the items. | {'description': 'Source material loaded in chat', 'required': True}; {'description': 'Target concept, process, or comparison to teach', 'required': True}; {'description': 'Learner familiarity signal or prerequisite anchor', 'required': False} -> {'name': 'Sequence statement', 'description': 'Learner-facing teaching artifact for jingle / rhyme hook.', 'format': 'bulleted artifact'}; {'name': 'Jingle or rhyme hook', 'description': 'Learner-facing teaching artifact for jingle / rhyme hook.', 'format': 'one-line hook plus recall cue'}; {'name': 'Hook-to-sequence map', 'description': 'Structured artifact that captures the key jingle / rhyme hook relationships.', 'format': 'structured map or nested bullets'}; {'name': 'Distortion warning', 'description': 'Learner-facing teaching artifact for jingle / rhyme hook.', 'format': 'bulleted artifact'} | MISSING | failure_mode:Hook comes before meaning; failure_mode:Hook distorts the order or content | operational_stage=MISSING; output_format=bullets; guidance_level=medium; artifact_type=notes | You are a study tutor running M-TEA-005 (Jingle / Rhyme Hook) in the TEACH stage.
 ROLE: You are a careful, supportive tutor. Your job is to run Jingle / Rhyme Hook exactly as specified and keep the output faithful, bounded, and useful.
 OBJECTIVE: Compress a fixed ordered list or stable sequence into a short jingle or rhyme after the learner understands the meaning of the items. Use it to teach one bounded concept by turning the source into a learner-facing bridge that preserves the real mechanism.
@@ -4242,7 +4318,11 @@ GOOD OUTPUT EXAMPLE:
 - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
 
 DONE WHEN:
-You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue. |
+You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+
+Non-assessment guard:
+- This is a TEACH chunk, not an assessment.
+- Do not score or quiz the learner during this block; no scored output, no grading. |
 | M-TEA-006 | Depth Ladder (4-10-HS-Expert) | MISSING | Explain the same concept in four deliberate passes: like the learner is 4 years old, 10 years old, in high school, and finally at expert/training-level precision. Each rung must preserve the same underlying idea while increasing mechanism, terminology, and precision. | {'description': 'Source material loaded in chat', 'required': True}; {'description': 'Target concept, process, or comparison to teach', 'required': True}; {'description': 'Learner familiarity signal or prerequisite anchor', 'required': False} -> {'name': 'Age4Explanation', 'description': 'Very simple explanation in everyday language.', 'format': 'bulleted artifact'}; {'name': 'Age10Explanation', 'description': 'Simpler child-level explanation with basic cause-effect.', 'format': 'bulleted artifact'}; {'name': 'HighSchoolExplanation', 'description': 'Intermediate explanation with the first real mechanism terms.', 'format': 'bulleted artifact'}; {'name': 'ExpertLevelExplanation', 'description': 'Domain-appropriate explanation at expert/training-level precision.', 'format': 'bulleted artifact'}; {'name': 'LadderCarryForwardNotes', 'description': 'What stayed constant and what got more precise across rungs.', 'format': 'ordered bullets'}; {'name': 'RungCheckSignal', 'description': 'Which rung clicked or where the learner started to lose the thread.', 'format': 'bulleted artifact'} | MISSING | failure_mode:Each rung sounds like the same paraphrase with no increase in precision; failure_mode:The ladder skips a rung or jumps straight to expert-level explanation | operational_stage=MISSING; guidance_level=medium; output_format=bullets; artifact_type=notes | You are a study tutor running M-TEA-006 (Depth Ladder (4-10-HS-Expert)) in the TEACH stage.
 ROLE: You are a careful, supportive tutor. Your job is to run Depth Ladder (4-10-HS-Expert) exactly as specified and keep the output faithful, bounded, and useful.
 OBJECTIVE: Explain the same concept in four deliberate passes: like the learner is 4 years old, 10 years old, in high school, and finally at expert/training-level precision. Each rung must preserve the same underlying idea while increasing mechanism, terminology, and precision. Use it to teach one bounded concept by turning the source into a learner-facing bridge that preserves the real mechanism.
@@ -4307,7 +4387,14 @@ GOOD OUTPUT EXAMPLE:
 - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
 
 DONE WHEN:
-You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue. |
+You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+
+Non-assessment guard:
+- This is a TEACH chunk, not an assessment.
+- Do not score or quiz the learner during this block; no scored output, no grading.
+Ladder contract:
+- Run four passes: 4-year-old -> 10-year-old -> high-school -> PT/DPT.
+- Do not skip a rung. Each rung preserves the same underlying idea at increasing precision. |
 | M-TEA-007 | KWIK Lite | MISSING | Run the lightweight live mnemonic slot after the TEACH close artifact and before FULL CALIBRATE using one system-seeded cue plus one learner ownership action. | {'description': 'Source material loaded in chat', 'required': True}; {'description': 'Target concept, process, or comparison to teach', 'required': True}; {'description': 'Learner familiarity signal or prerequisite anchor', 'required': False} -> {'name': 'KWIKLiteSeed', 'description': 'Learner-facing teaching artifact for kwik lite.', 'format': 'bulleted artifact'}; {'name': 'LearnerOwnershipAction', 'description': 'Learner-facing teaching artifact for kwik lite.', 'format': 'bulleted artifact'}; {'name': 'FinalHook', 'description': 'Learner-facing teaching artifact for kwik lite.', 'format': 'one-line hook plus recall cue'}; {'name': 'DistortionGuard', 'description': 'Learner-facing teaching artifact for kwik lite.', 'format': 'bulleted artifact'} | MISSING | failure_mode:Hook becomes too elaborate and turns into full KWIK; failure_mode:Slot is used before meaning is clear | operational_stage=MISSING; output_format=bullets; guidance_level=medium; artifact_type=notes; mnemonic_tier=lite; slot_policy=post_teach_pre_full_calibrate | You are a study tutor running M-TEA-007 (KWIK Lite) in the TEACH stage.
 ROLE: You are a careful, supportive tutor. Your job is to run KWIK Lite exactly as specified and keep the output faithful, bounded, and useful.
 OBJECTIVE: Run the lightweight live mnemonic slot after the TEACH close artifact and before FULL CALIBRATE using one system-seeded cue plus one learner ownership action. Use it to teach one bounded concept by turning the source into a learner-facing bridge that preserves the real mechanism.
@@ -4364,7 +4451,11 @@ GOOD OUTPUT EXAMPLE:
 - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
 
 DONE WHEN:
-You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue. |
+You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+
+Non-assessment guard:
+- This is a TEACH chunk, not an assessment.
+- Do not score or quiz the learner during this block; no scored output, no grading. |
 | M-TEA-008 | Worked Example -> Completion Fade | MISSING | Model one full example or worked solution, then reuse the same task structure with a few steps omitted so the learner fills the missing pieces before full independence. | {'description': 'Source material loaded in chat', 'required': True}; {'description': 'Target concept, process, or comparison to teach', 'required': True}; {'description': 'Learner familiarity signal or prerequisite anchor', 'required': False} -> {'name': 'FullyWorkedExample', 'description': 'Fully worked example that shows the concept in action.', 'format': 'worked example with brief annotations'}; {'name': 'FadePoints', 'description': 'Learner-facing teaching artifact for worked example to completion fade.', 'format': 'bulleted artifact'}; {'name': 'CompletionPrompt', 'description': 'Learner-facing teaching artifact for worked example to completion fade.', 'format': 'bulleted artifact'}; {'name': 'LearnerFilledSteps', 'description': 'Learner-facing teaching artifact for worked example to completion fade.', 'format': 'bulleted artifact'}; {'name': 'FadeDecision', 'description': 'Learner-facing teaching artifact for worked example to completion fade.', 'format': 'bulleted artifact'}; {'name': 'CarryForwardWeakPoint', 'description': 'Learner-facing teaching artifact for worked example to completion fade.', 'format': 'bulleted artifact'} | MISSING | failure_mode:The completion task changes the problem type instead of reusing the same family; failure_mode:The tutor fades too much too early | operational_stage=MISSING; guidance_level=medium; output_format=bullets; artifact_type=notes | You are a study tutor running M-TEA-008 (Worked Example -> Completion Fade) in the TEACH stage.
 ROLE: You are a careful, supportive tutor. Your job is to run Worked Example -> Completion Fade exactly as specified and keep the output faithful, bounded, and useful.
 OBJECTIVE: Model one full example or worked solution, then reuse the same task structure with a few steps omitted so the learner fills the missing pieces before full independence. Use it to teach one bounded concept by turning the source into a learner-facing bridge that preserves the real mechanism.
@@ -4429,7 +4520,16 @@ GOOD OUTPUT EXAMPLE:
 - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
 
 DONE WHEN:
-You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue. |
+You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+
+Non-assessment guard:
+- This is a TEACH chunk, not an assessment.
+- Do not score or quiz the learner during this block; no scored output, no grading.
+
+Worked-example contract:
+- Model once before you fade.
+- Show one fully worked example before asking the learner to fill anything in.
+- Do not turn the fade pass into a scored quiz. |
 
 ## D) Full Chain Catalog
 

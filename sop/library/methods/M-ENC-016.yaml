@@ -2,8 +2,7 @@ id: M-ENC-016
 name: Embodied Walkthrough
 category: encode
 subcategory: gen
-description: Use safe body movement, gesture, or positioning to act out a process, spatial relation, or
-  clinical sequence, then map each movement back to the real structure or mechanism.
+description: Use safe body movement, gesture, or positioning to act out a process, spatial relation, or clinical sequence, then map each movement back to the real structure or mechanism.
 control_stage: ENCODE
 status: draft
 version: '1.0'
@@ -16,18 +15,15 @@ tags:
 - encoding
 - anatomy
 - procedure
-purpose: Force the learner to actively generate, explain, sequence, or transform the material so encoding
-  is deeper than passive review.
-not_for: This is not for passive reading, copying answers, or letting the tutor do the cognitive work
-  for the learner.
+purpose: Force the learner to actively generate, explain, sequence, or transform the material so encoding is deeper than passive review.
+not_for: This is not for passive reading, copying answers, or letting the tutor do the cognitive work for the learner.
 best_fit_topics:
 - Concepts the learner can explain, transform, or generate in their own words
 - Mechanisms and causal chains that benefit from active elaboration
 poor_fit_topics:
 - Pure passive rereading or copy-paste note taking
 - Items that are still completely unknown and cannot yet be transformed
-learner_state_required: Source material is loaded. The learner has a bounded concept and is ready to generate,
-  explain, or transform it before seeing help.
+learner_state_required: Source material is loaded. The learner has a bounded concept and is ready to generate, explain, or transform it before seeing help.
 inputs:
 - description: Target process, spatial relation, or procedure slice
   required: true
@@ -58,20 +54,16 @@ required_outputs: &id001
 - MapBackExplanation
 - SafetyBoundaryNote
 success_criteria:
-- 'All required outputs are present and checkable: MovementMap, EmbodiedRunthrough, TransitionNotes, MapBackExplanation,
-  SafetyBoundaryNote.'
-- 'The method reaches its stop condition: The learner performs one full safe walkthrough with explicit
-  narration.; Each movement is mapped back to the real concept or mechanism..'
-- The learner stays active and the tutor does not give away the answer before the required attempt or
-  transformation.
+- 'All required outputs are present and checkable: MovementMap, EmbodiedRunthrough, TransitionNotes, MapBackExplanation, SafetyBoundaryNote.'
+- 'The method reaches its stop condition: The learner performs one full safe walkthrough with explicit narration.; Each movement is mapped back to the real concept or mechanism..'
+- The learner stays active and the tutor does not give away the answer before the required attempt or transformation.
 partial_criteria:
 - 'Some required outputs are present but at least one is missing or incomplete: MovementMap, EmbodiedRunthrough.'
 steps:
 - step: 1
   name: Define The 2 5 Key
   action: Define the 2-5 key landmarks or steps
-  tutor_does: 'Guide the learner to Define the 2-5 key landmarks or steps. Keep in mind: Pick only the
-    core sequence or spatial anchors worth embodying.'
+  tutor_does: 'Guide the learner to Define the 2-5 key landmarks or steps. Keep in mind: Pick only the core sequence or spatial anchors worth embodying.'
   learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -79,8 +71,7 @@ steps:
 - step: 2
   name: Assign One Safe Movement Or
   action: Assign one safe movement or gesture to each landmark
-  tutor_does: 'Guide the learner to Assign one safe movement or gesture to each landmark. Keep in mind:
-    Keep each cue simple enough to remember and specific enough to mean something real.'
+  tutor_does: 'Guide the learner to Assign one safe movement or gesture to each landmark. Keep in mind: Keep each cue simple enough to remember and specific enough to mean something real.'
   learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -88,8 +79,7 @@ steps:
 - step: 3
   name: Run The Walkthrough Slowly With
   action: Run the walkthrough slowly with live narration
-  tutor_does: 'Guide the learner to Run the walkthrough slowly with live narration. Keep in mind: The
-    learner performs each gesture and says what it stands for in real terminology.'
+  tutor_does: 'Guide the learner to Run the walkthrough slowly with live narration. Keep in mind: The learner performs each gesture and says what it stands for in real terminology.'
   learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -97,8 +87,7 @@ steps:
 - step: 4
   name: Freeze At Transition Points And
   action: Freeze at transition points and name what changes
-  tutor_does: 'Guide the learner to Freeze at transition points and name what changes. Keep in mind: Call
-    out the key shift, decision point, or anatomical relationship at each handoff.'
+  tutor_does: 'Guide the learner to Freeze at transition points and name what changes. Keep in mind: Call out the key shift, decision point, or anatomical relationship at each handoff.'
   learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -106,19 +95,16 @@ steps:
 - step: 5
   name: Re Run From Memory And
   action: Re-run from memory and translate back into words or a sketch
-  tutor_does: 'Guide the learner to Re-run from memory and translate back into words or a sketch. Keep
-    in mind: The movement is the cue, but the exit product is a mapped-back explanation, list, or diagram.'
+  tutor_does: 'Guide the learner to Re-run from memory and translate back into words or a sketch. Keep in mind: The movement is the cue, but the exit product is a mapped-back explanation, list, or diagram.'
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Is this step complete and ready for the next move?
-  example: 'Example: The movement is the cue, but the exit product is a mapped-back explanation, list,
-    or diagram.'
+  example: 'Example: The movement is the cue, but the exit product is a mapped-back explanation, list, or diagram.'
 constraints:
 - rule: Do not turn this into a passive answer dump or scoring event
   why: This method is designed for guided learning, not one-shot lecture or formal grading.
 - rule: Require active learner processing
-  why: The method depends on the learner generating, mapping, explaining, or transforming the material
-    rather than passively reading.
+  why: The method depends on the learner generating, mapping, explaining, or transforming the material rather than passively reading.
 - rule: Stay within objective scope
   why: Prevents drift into unrelated material and keeps the method auditable.
 - rule: The learner must do the movement; tutor narration alone does not count.
@@ -143,27 +129,22 @@ forbidden_moves:
 - Treat the gesture sequence as self-explanatory without concept labels
 - Turn the block into graded performance coaching or physical correction
 - End with movement only and no map-back explanation
-stuck_protocol: Offer one smaller hint, one simpler example, or one step back in the chain; then require
-  the learner to continue actively.
+stuck_protocol: Offer one smaller hint, one simpler example, or one step back in the chain; then require the learner to continue actively.
 failure_modes:
 - mode: The movements become random charades with no concept mapping
-  detection: The learner or tutor starts doing the movements become random charades with no concept mapping
-    or the artifact stops satisfying the method’s required checks.
+  detection: The learner or tutor starts doing the movements become random charades with no concept mapping or the artifact stops satisfying the method’s required checks.
   recovery: Pause and relabel each gesture in real terms before continuing.
   fallback_method: M-GEN-009
 - mode: The walkthrough uses unsafe, painful, or oversized motions
-  detection: The learner or tutor starts doing the walkthrough uses unsafe, painful, or oversized motions
-    or the artifact stops satisfying the method’s required checks.
+  detection: The learner or tutor starts doing the walkthrough uses unsafe, painful, or oversized motions or the artifact stops satisfying the method’s required checks.
   recovery: Shrink to desk-safe gestures or hand positions only.
   fallback_method: M-INT-002
 - mode: The learner performs gestures without saying what they mean
-  detection: The learner or tutor starts doing the learner performs gestures without saying what they
-    mean or the artifact stops satisfying the method’s required checks.
+  detection: The learner or tutor starts doing the learner performs gestures without saying what they mean or the artifact stops satisfying the method’s required checks.
   recovery: Require brief live narration or an immediate map-back after each step.
   fallback_method: M-ENC-011
 - mode: The activity drifts into full skill performance coaching
-  detection: The learner or tutor starts doing the activity drifts into full skill performance coaching
-    or the artifact stops satisfying the method’s required checks.
+  detection: The learner or tutor starts doing the activity drifts into full skill performance coaching or the artifact stops satisfying the method’s required checks.
   recovery: Keep the scope to encoding the concept, landmarks, or sequence rather than perfect technique.
   fallback_method: M-GEN-009
 default_duration_min: 6
@@ -176,14 +157,12 @@ mechanisms:
 - generation
 evidence:
   citation: Kontra et al. (2015)
-  finding: Physical enactment and gesture-grounded learning improve later conceptual understanding compared
-    with passive observation alone.
+  finding: Physical enactment and gesture-grounded learning improve later conceptual understanding compared with passive observation alone.
   source: control-plane migration
 knobs:
   guidance_level: medium
   output_format: bullets
-  evidence_raw: Kontra et al. (2015); embodied interaction supports deeper conceptual learning by tying
-    abstract ideas to sensorimotor experience.
+  evidence_raw: Kontra et al. (2015); embodied interaction supports deeper conceptual learning by tying abstract ideas to sensorimotor experience.
   gating_rules:
   - Require learner movement or gesture, not passive watching.
   - Keep all motions safe, simplified, and inside objective scope.
@@ -202,59 +181,7 @@ related_methods:
   relationship: Clinical application fallback
 - id: M-ENC-011
   relationship: Flowchart fallback if the sequence needs structure
-facilitation_prompt: "You are running M-ENC-016 (Embodied Walkthrough) in ENCODE stage.\nRole: you are\
-  \ the tutor running the method exactly as written, with no hidden assumptions.\nObjective: Force the\
-  \ learner to actively generate, explain, sequence, or transform the material so encoding is deeper than\
-  \ passive review.\nScope: Use safe body movement, gesture, or positioning to act out a process, spatial\
-  \ relation, or clinical sequence, then map each movement back to the real structure or mechanism.\n\
-  Rules:\n- Do not turn this into a passive answer dump or scoring event — This method is designed for\
-  \ guided learning, not one-shot lecture or formal grading.\n- Require active learner processing — The\
-  \ method depends on the learner generating, mapping, explaining, or transforming the material rather\
-  \ than passively reading.\n- Stay within objective scope — Prevents drift into unrelated material and\
-  \ keeps the method auditable.\n- The learner must do the movement; tutor narration alone does not count.\
-  \ — Keeps the method honest and prevents a common misuse described in the source file.\n- Every gesture\
-  \ or position must map back to the real structure, cue, or mechanism in plain language. — Keeps the\
-  \ method honest and prevents a common misuse described in the source file.\n- Not for: This is not for\
-  \ passive reading, copying answers, or letting the tutor do the cognitive work for the learner.\nInputs:\n\
-  - Target process, spatial relation, or procedure slice (required)\n- 2-5 key steps, landmarks, or transitions\
-  \ to embody (required)\n- Enough open space for safe small movements or hand gestures (required)\nRequired\
-  \ outputs:\n- MovementMap: MovementMap [labeled visual structure]\n- EmbodiedRunthrough: EmbodiedRunthrough\
-  \ [short, checkable artifact]\n- TransitionNotes: TransitionNotes [short, checkable artifact]\n- MapBackExplanation:\
-  \ MapBackExplanation [labeled visual structure]\n- SafetyBoundaryNote: SafetyBoundaryNote [short, checkable\
-  \ artifact]\nSteps: run one step at a time and wait after each step before advancing.\n1. Define The\
-  \ 2 5 Key\n   Tutor does: Guide the learner to Define the 2-5 key landmarks or steps. Keep in mind:\
-  \ Pick only the core sequence or spatial anchors worth embodying.\n   Learner does: Reads the prompt,\
-  \ does the thinking step, and returns the artifact or answer.\n   Example: Example: Pick only the core\
-  \ sequence or spatial anchors worth embodying.\n   Check: Is this step complete and ready for the next\
-  \ move?\n   Then STOP and wait for the learner.\n2. Assign One Safe Movement Or\n   Tutor does: Guide\
-  \ the learner to Assign one safe movement or gesture to each landmark. Keep in mind: Keep each cue simple\
-  \ enough to remember and specific enough to mean something real.\n   Learner does: Reads the prompt,\
-  \ does the thinking step, and returns the artifact or answer.\n   Example: Example: Keep each cue simple\
-  \ enough to remember and specific enough to mean something real.\n   Check: Is this step complete and\
-  \ ready for the next move?\n   Then STOP and wait for the learner.\n3. Run The Walkthrough Slowly With\n\
-  \   Tutor does: Guide the learner to Run the walkthrough slowly with live narration. Keep in mind: The\
-  \ learner performs each gesture and says what it stands for in real terminology.\n   Learner does: Reads\
-  \ the prompt, does the thinking step, and returns the artifact or answer.\n   Example: Example: The\
-  \ learner performs each gesture and says what it stands for in real terminology.\n   Check: Is this\
-  \ step complete and ready for the next move?\n   Then STOP and wait for the learner.\n4. Freeze At Transition\
-  \ Points And\n   Tutor does: Guide the learner to Freeze at transition points and name what changes.\
-  \ Keep in mind: Call out the key shift, decision point, or anatomical relationship at each handoff.\n\
-  \   Learner does: Reads the prompt, does the thinking step, and returns the artifact or answer.\n  \
-  \ Example: Example: Call out the key shift, decision point, or anatomical relationship at each handoff.\n\
-  \   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n\
-  5. Re Run From Memory And\n   Tutor does: Guide the learner to Re-run from memory and translate back\
-  \ into words or a sketch. Keep in mind: The movement is the cue, but the exit product is a mapped-back\
-  \ explanation, list, or diagram.\n   Learner does: Performs the requested cognitive move and shares\
-  \ the result before moving on.\n   Example: Example: The movement is the cue, but the exit product is\
-  \ a mapped-back explanation, list, or diagram.\n   Check: Is this step complete and ready for the next\
-  \ move?\n   Then STOP and wait for the learner.\nStop conditions:\n- All required outputs are present\
-  \ and checkable: MovementMap, EmbodiedRunthrough, TransitionNotes, MapBackExplanation, SafetyBoundaryNote.\n\
-  - The method reaches its stop condition: The learner performs one full safe walkthrough with explicit\
-  \ narration.; Each movement is mapped back to the real concept or mechanism..\n- The learner stays active\
-  \ and the tutor does not give away the answer before the required attempt or transformation.\nIf stuck:\
-  \ Offer one smaller hint, one simpler example, or one step back in the chain; then require the learner\
-  \ to continue actively.\nDo not skip steps, do not solve the whole task at once, and do not present\
-  \ source claims as mnemonic or analogy artifacts."
+facilitation_prompt: "You are running M-ENC-016 (Embodied Walkthrough) in ENCODE stage.\nRole: you are the tutor running the method exactly as written, with no hidden assumptions.\nObjective: Force the learner to actively generate, explain, sequence, or transform the material so encoding is deeper than passive review.\nScope: Use safe body movement, gesture, or positioning to act out a process, spatial relation, or clinical sequence, then map each movement back to the real structure or mechanism.\nRules:\n- Do not turn this into a passive answer dump or scoring event — This method is designed for guided learning, not one-shot lecture or formal grading.\n- Require active learner processing — The method depends on the learner generating, mapping, explaining, or transforming the material rather than passively reading.\n- Stay within objective scope — Prevents drift into unrelated material and keeps the method auditable.\n- The learner must do the movement; tutor narration alone does not count. — Keeps the method honest and prevents a common misuse described in the source file.\n- Every gesture or position must map back to the real structure, cue, or mechanism in plain language. — Keeps the method honest and prevents a common misuse described in the source file.\n- Not for: This is not for passive reading, copying answers, or letting the tutor do the cognitive work for the learner.\nInputs:\n- Target process, spatial relation, or procedure slice (required)\n- 2-5 key steps, landmarks, or transitions to embody (required)\n- Enough open space for safe small movements or hand gestures (required)\nRequired outputs:\n- MovementMap: MovementMap [labeled visual structure]\n- EmbodiedRunthrough: EmbodiedRunthrough [short, checkable artifact]\n- TransitionNotes: TransitionNotes [short, checkable artifact]\n- MapBackExplanation: MapBackExplanation [labeled visual structure]\n- SafetyBoundaryNote: SafetyBoundaryNote [short, checkable artifact]\nSteps: run one step at a time and wait after each step before advancing.\n1. Define The 2 5 Key\n   Tutor does: Guide the learner to Define the 2-5 key landmarks or steps. Keep in mind: Pick only the core sequence or spatial anchors worth embodying.\n   Learner does: Reads the prompt, does the thinking step, and returns the artifact or answer.\n   Example: Example: Pick only the core sequence or spatial anchors worth embodying.\n   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n2. Assign One Safe Movement Or\n   Tutor does: Guide the learner to Assign one safe movement or gesture to each landmark. Keep in mind: Keep each cue simple enough to remember and specific enough to mean something real.\n   Learner does: Reads the prompt, does the thinking step, and returns the artifact or answer.\n   Example: Example: Keep each cue simple enough to remember and specific enough to mean something real.\n   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n3. Run The Walkthrough Slowly With\n   Tutor does: Guide the learner to Run the walkthrough slowly with live narration. Keep in mind: The learner performs each gesture and says what it stands for in real terminology.\n   Learner does: Reads the prompt, does the thinking step, and returns the artifact or answer.\n   Example: Example: The learner performs each gesture and says what it stands for in real terminology.\n   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n4. Freeze At Transition Points And\n   Tutor does: Guide the learner to Freeze at transition points and name what changes. Keep in mind: Call out the key shift, decision point, or anatomical relationship at each handoff.\n   Learner does: Reads the prompt, does the thinking step, and returns the artifact or answer.\n   Example: Example: Call out the key shift, decision point, or anatomical relationship at each handoff.\n   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n5. Re Run From Memory And\n   Tutor does: Guide the learner to Re-run from memory and translate back into words or a sketch. Keep in mind: The movement is the cue, but the exit product is a mapped-back explanation, list, or diagram.\n   Learner does: Performs the requested cognitive move and shares the result before moving on.\n   Example: Example: The movement is the cue, but the exit product is a mapped-back explanation, list, or diagram.\n   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\nStop conditions:\n- All required outputs are present and checkable: MovementMap, EmbodiedRunthrough, TransitionNotes, MapBackExplanation, SafetyBoundaryNote.\n- The method reaches its stop condition: The learner performs one full safe walkthrough with explicit narration.; Each movement is mapped back to the real concept or mechanism..\n- The learner stays active and the tutor does not give away the answer before the required attempt or transformation.\nIf stuck: Offer one smaller hint, one simpler example, or one step back in the chain; then require the learner to continue actively.\nDo not skip steps, do not solve the whole task at once, and do not present source claims as mnemonic or analogy artifacts.\n\nEmbodied contract:\n- The learner must do the movement or gesture, not just watch it described.\n- Every movement must be translated back into the real structure, mechanism, or sequence.\n- End with a map-back explanation, list, or sketch rather than movement alone."
 validation:
   test_cases:
   - topic: Concepts the learner can explain, transform, or generate in their own words

@@ -271,7 +271,14 @@ facilitation_prompt: 'You are a study tutor running M-TEA-001 (Story Spine) in t
 
   DONE WHEN:
 
-  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.'
+  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+
+
+  Non-assessment guard:
+
+  - This is a TEACH chunk, not an assessment.
+
+  - Do not score or quiz the learner during this block; no scored output, no grading.'
 validation:
   test_cases:
   - topic: Single concept explanation for Story Spine

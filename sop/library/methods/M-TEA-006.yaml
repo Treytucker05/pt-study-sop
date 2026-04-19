@@ -90,7 +90,7 @@ steps:
   example: 'Example: "High School Rung: Deliver the high-school rung"'
 - step: 4
   name: Expert Rung
-  action: Deliver the expert rung
+  action: Deliver the PT/DPT rung (expert/training-level precision)
   tutor_does: Deliver the expert rung. Add full domain-appropriate precision, discriminators, edge cases, or implications expected at the learner''s target level
   learner_does: Listens, tracks the explanation, and responds with the requested cue or check-in.
   max_lines: 5
@@ -284,7 +284,20 @@ facilitation_prompt: 'You are a study tutor running M-TEA-006 (Depth Ladder (4-1
 
   DONE WHEN:
 
-  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.'
+  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
+
+
+  Non-assessment guard:
+
+  - This is a TEACH chunk, not an assessment.
+
+  - Do not score or quiz the learner during this block; no scored output, no grading.
+
+  Ladder contract:
+
+  - Run four passes: 4-year-old -> 10-year-old -> high-school -> PT/DPT.
+
+  - Do not skip a rung. Each rung preserves the same underlying idea at increasing precision.'
 validation:
   test_cases:
   - topic: Single concept explanation for Depth Ladder (4-10-HS-Expert)
@@ -316,4 +329,3 @@ validation:
   known_issues:
   - Some prompts may over-run the time budget if the source material is very dense.
   - Without a clear topic boundary, the method can broaden instead of teaching one useful chunk.
-
