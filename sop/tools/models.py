@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import re
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional, Union
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field, field_validator
 
 class Category(str, Enum):
     prime = "prime"
+    teach = "teach"
     calibrate = "calibrate"
     encode = "encode"
     interrogate = "interrogate"
@@ -37,6 +38,7 @@ class Stage(str, Enum):
     review = "review"
     exam_prep = "exam_prep"
     consolidation = "consolidation"
+    any = "any"
 
 
 class AssessmentMode(str, Enum):
@@ -101,9 +103,11 @@ class MethodBlock(BaseModel):
     evidence_raw: Optional[str] = None
     # Rich fields (optional — populated incrementally via evidence tickets)
     mechanisms: Optional[list[str]] = None
-    inputs: Optional[list[str]] = None
+    # inputs/outputs accept either a plain string or a rich dict (YAML uses
+    # description/required and name/description/format respectively).
+    inputs: Optional[list[Union[str, dict[str, Any]]]] = None
     steps: Optional[list[dict]] = None
-    outputs: Optional[list[str]] = None
+    outputs: Optional[list[Union[str, dict[str, Any]]]] = None
     stop_criteria: Optional[list[str]] = None
     failure_modes: Optional[list[dict]] = None
     logging_fields: Optional[list[str]] = None
@@ -112,7 +116,7 @@ class MethodBlock(BaseModel):
     @field_validator("id")
     @classmethod
     def validate_id_format(cls, v: str) -> str:
-        if not re.match(r"^M-[A-Z]{3}-\d{3}$", v):
+        if not re.match(r"^M-[A-Z]{2,5}-\d{3}$", v):
             raise ValueError(f"Method ID must match M-XXX-NNN, got: {v}")
         return v
 

@@ -1,0 +1,262 @@
+id: M-HOOK-005
+name: Chain Linking
+category: encode
+subcategory: hook
+description: Create a bizarre narrative story connecting unrelated items. The absurdity makes it memorable
+  without spatial locations.
+control_stage: ENCODE
+status: validated
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
+tags:
+- memory
+- narrative
+- sequence
+- absurdity
+- kwik-inspired
+purpose: Create a compact memory cue that links a term or concept to a vivid sound, image, or body-based
+  anchor without losing the real meaning.
+not_for: This is not for teaching the whole concept from scratch, replacing source truth, or turning a
+  mnemonic into a false fact claim.
+best_fit_topics:
+- Short labels, terms, and anchors that need fast recall
+- Material that benefits from a vivid sound/image cue
+poor_fit_topics:
+- Long mechanistic explanations that need comprehension first
+- Unstable or ambiguous material with no clear cue
+learner_state_required: Source material is loaded. The learner has one bounded term or concept and is
+  ready to actively build a cue around its true meaning.
+inputs:
+- description: List of items to memorize in order
+  required: true
+- description: Creativity for bizarre connections
+  required: true
+outputs:
+- name: Bizarre story narrative
+  description: Bizarre story narrative
+  format: concise prose bullets or short paragraph
+- name: Retrieval success rate
+  description: Retrieval success rate
+  format: short, checkable artifact
+- name: Weak links (breaks in chain)
+  description: Weak links (breaks in chain)
+  format: short, checkable artifact
+required_outputs: &id001
+- Bizarre story narrative
+- Retrieval success rate
+- Weak links (breaks in chain)
+success_criteria:
+- 'All required outputs are present and checkable: Bizarre story narrative, Retrieval success rate, Weak
+  links (breaks in chain).'
+- 'The method reaches its stop condition: Story complete with all items; Can retrieve entire sequence.'
+- The learner stays active and the tutor does not give away the answer before the required attempt or
+  transformation.
+partial_criteria:
+- 'Some required outputs are present but at least one is missing or incomplete: Bizarre story narrative,
+  Retrieval success rate.'
+steps:
+- step: 1
+  name: List Items In Order
+  action: List items in order
+  tutor_does: 'Guide the learner to List items in order. Keep in mind: 5-8 items optimal for one chain'
+  learner_does: Supplies the target term or concept, then reacts to the cue and confirms whether it clicks.
+  max_lines: 8
+  check: Does the learner have the right term and true meaning before the cue is built?
+  example: 'Example: 5-8 items optimal for one chain'
+- step: 2
+  name: Vivid Image For Item 1
+  action: Create vivid image for item 1
+  tutor_does: 'Guide the learner to Create vivid image for item 1. Keep in mind: See it clearly'
+  learner_does: Performs the requested cognitive move and shares the result before moving on.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: See it clearly'
+- step: 3
+  name: Item 1 To 2 With
+  action: Connect item 1 to 2 with absurd interaction
+  tutor_does: 'Guide the learner to Connect item 1 to 2 with absurd interaction. Keep in mind: The more
+    bizarre, the better'
+  learner_does: Supplies the target term or concept, then reacts to the cue and confirms whether it clicks.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: The more bizarre, the better'
+- step: 4
+  name: Continue Linking Each Item
+  action: Continue linking each item
+  tutor_does: 'Guide the learner to Continue linking each item. Keep in mind: Each interacts with the
+    next'
+  learner_does: Performs the requested cognitive move and shares the result before moving on.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Each interacts with the next'
+- step: 5
+  name: Walk Through The Story
+  action: Walk through the story
+  tutor_does: 'Guide the learner to Walk through the story. Keep in mind: Replay the narrative'
+  learner_does: Supplies the target term or concept, then reacts to the cue and confirms whether it clicks.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Replay the narrative'
+- step: 6
+  name: Retrieval By Pulling The Chain
+  action: Test retrieval by "pulling the chain
+  tutor_does: 'Guide the learner to Test retrieval by "pulling the chain". Keep in mind: Start anywhere,
+    follow links'
+  learner_does: Performs the requested cognitive move and shares the result before moving on.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Start anywhere, follow links'
+constraints:
+- rule: Require active learner processing
+  why: The method depends on the learner generating, mapping, explaining, or transforming the material
+    rather than passively reading.
+- rule: Stay within objective scope
+  why: Prevents drift into unrelated material and keeps the method auditable.
+- rule: Do not turn this into a passive answer dump or scoring event
+  why: This method is designed for guided learning, not one-shot lecture or formal grading.
+- rule: Force active processing (explain, transform, or map), not passive reading.
+  why: This gating rule is part of the method’s execution contract.
+- rule: Keep output scoped to mapped objectives only.
+  why: This gating rule is part of the method’s execution contract.
+- rule: Confirm the true meaning before making the hook
+  why: Hooks support recall; they do not replace understanding.
+allowed_moves:
+- Help learner list items in the correct order for chain linking
+- Prompt learner to create a vivid image for the first item
+- Guide learner to connect each consecutive pair with an absurd interaction
+- Encourage bizarre, sensory, and emotional connections between items
+- Prompt the learner to walk through the complete story narrative
+- Test retrieval by asking learner to "pull the chain" from any starting point
+- Identify weak links (chain breaks) and prompt strengthening with more vivid imagery
+- Suggest splitting into multiple chains if list exceeds 8 items
+forbidden_moves:
+- Create the narrative story FOR the learner
+- Accept logical, mundane connections instead of absurd ones
+- Skip the story walkthrough retrieval test
+- Allow chains longer than 8 items without splitting
+- Deliver a passive list review instead of guiding narrative encoding
+- Accept weak links without prompting for sensory and emotional strengthening
+- Generate outputs FOR the learner instead of reviewing their creation
+- Move to retrieval before the learner can pull the complete chain
+stuck_protocol: Shrink to one term, restate the real meaning in plain language, then try a simpler sound
+  cue, image cue, or body cue. If the cue still does not click, switch to a lighter mnemonic lane or ask
+  for one concrete example.
+failure_modes:
+- mode: Story too logical
+  detection: The learner or tutor starts doing story too logical or the artifact stops satisfying the
+    method’s required checks.
+  recovery: Add absurd elements; gravity-defying, impossible actions
+  fallback_method: M-HOOK-004
+- mode: Weak links
+  detection: The learner or tutor starts doing weak links or the artifact stops satisfying the method’s
+    required checks.
+  recovery: Make interactions sensory and emotional
+  fallback_method: M-HOOK-003
+- mode: Chain too long
+  detection: The learner or tutor starts doing chain too long or the artifact stops satisfying the method’s
+    required checks.
+  recovery: Split into multiple chains if >8 items
+  fallback_method: M-HOOK-002
+default_duration_min: 8
+energy_cost: medium
+best_stage: first_exposure
+mechanisms:
+- elaboration
+- narrative_encoding
+- generation
+evidence:
+  citation: Bower & Winzenz (1970)
+  finding: Narrative chaining improves serial recall by creating meaningful connections between unrelated
+    items
+  source: Journal of Verbal Learning and Verbal Behavior
+knobs:
+  guidance_level: medium
+  output_format: bullets
+  gating_rules:
+  - Force active processing (explain, transform, or map), not passive reading.
+  - Keep output scoped to mapped objectives only.
+  logging_fields:
+  - items_linked
+  - story_length
+  - retrieval_accuracy
+  - chain_breaks
+  artifact_type: notes
+related_methods:
+- id: M-HOOK-004
+  relationship: Memory-palace cousin method
+- id: M-HOOK-003
+  relationship: Jingle/rhyme fallback for ordered recall
+- id: M-HOOK-002
+  relationship: KWIK Lite fallback for a short mnemonic lane
+facilitation_prompt: "You are running M-HOOK-005 (Chain Linking) in ENCODE stage.\nRole: you are the tutor\
+  \ running the method exactly as written, with no hidden assumptions.\nObjective: Create a compact memory\
+  \ cue that links a term or concept to a vivid sound, image, or body-based anchor without losing the\
+  \ real meaning.\nScope: Create a bizarre narrative story connecting unrelated items. The absurdity makes\
+  \ it memorable without spatial locations.\nRules:\n- Require active learner processing — The method\
+  \ depends on the learner generating, mapping, explaining, or transforming the material rather than passively\
+  \ reading.\n- Stay within objective scope — Prevents drift into unrelated material and keeps the method\
+  \ auditable.\n- Do not turn this into a passive answer dump or scoring event — This method is designed\
+  \ for guided learning, not one-shot lecture or formal grading.\n- Force active processing (explain,\
+  \ transform, or map), not passive reading. — This gating rule is part of the method’s execution contract.\n\
+  - Keep output scoped to mapped objectives only. — This gating rule is part of the method’s execution\
+  \ contract.\n- Not for: This is not for teaching the whole concept from scratch, replacing source truth,\
+  \ or turning a mnemonic into a false fact claim.\nInputs:\n- List of items to memorize in order (required)\n\
+  - Creativity for bizarre connections (required)\nRequired outputs:\n- Bizarre story narrative: Bizarre\
+  \ story narrative [concise prose bullets or short paragraph]\n- Retrieval success rate: Retrieval success\
+  \ rate [short, checkable artifact]\n- Weak links (breaks in chain): Weak links (breaks in chain) [short,\
+  \ checkable artifact]\nSteps: run one step at a time and wait after each step before advancing.\n1.\
+  \ List Items In Order\n   Tutor does: Guide the learner to List items in order. Keep in mind: 5-8 items\
+  \ optimal for one chain\n   Learner does: Supplies the target term or concept, then reacts to the cue\
+  \ and confirms whether it clicks.\n   Example: Example: 5-8 items optimal for one chain\n   Check: Does\
+  \ the learner have the right term and true meaning before the cue is built?\n   Then STOP and wait for\
+  \ the learner.\n2. Vivid Image For Item 1\n   Tutor does: Guide the learner to Create vivid image for\
+  \ item 1. Keep in mind: See it clearly\n   Learner does: Performs the requested cognitive move and shares\
+  \ the result before moving on.\n   Example: Example: See it clearly\n   Check: Is this step complete\
+  \ and ready for the next move?\n   Then STOP and wait for the learner.\n3. Item 1 To 2 With\n   Tutor\
+  \ does: Guide the learner to Connect item 1 to 2 with absurd interaction. Keep in mind: The more bizarre,\
+  \ the better\n   Learner does: Supplies the target term or concept, then reacts to the cue and confirms\
+  \ whether it clicks.\n   Example: Example: The more bizarre, the better\n   Check: Is this step complete\
+  \ and ready for the next move?\n   Then STOP and wait for the learner.\n4. Continue Linking Each Item\n\
+  \   Tutor does: Guide the learner to Continue linking each item. Keep in mind: Each interacts with the\
+  \ next\n   Learner does: Performs the requested cognitive move and shares the result before moving on.\n\
+  \   Example: Example: Each interacts with the next\n   Check: Is this step complete and ready for the\
+  \ next move?\n   Then STOP and wait for the learner.\n5. Walk Through The Story\n   Tutor does: Guide\
+  \ the learner to Walk through the story. Keep in mind: Replay the narrative\n   Learner does: Supplies\
+  \ the target term or concept, then reacts to the cue and confirms whether it clicks.\n   Example: Example:\
+  \ Replay the narrative\n   Check: Is this step complete and ready for the next move?\n   Then STOP and\
+  \ wait for the learner.\n6. Retrieval By Pulling The Chain\n   Tutor does: Guide the learner to Test\
+  \ retrieval by \"pulling the chain\". Keep in mind: Start anywhere, follow links\n   Learner does: Performs\
+  \ the requested cognitive move and shares the result before moving on.\n   Example: Example: Start anywhere,\
+  \ follow links\n   Check: Is this step complete and ready for the next move?\n   Then STOP and wait\
+  \ for the learner.\nStop conditions:\n- All required outputs are present and checkable: Bizarre story\
+  \ narrative, Retrieval success rate, Weak links (breaks in chain).\n- The method reaches its stop condition:\
+  \ Story complete with all items; Can retrieve entire sequence.\n- The learner stays active and the tutor\
+  \ does not give away the answer before the required attempt or transformation.\nIf stuck: Shrink to\
+  \ one term, restate the real meaning in plain language, then try a simpler sound cue, image cue, or\
+  \ body cue. If the cue still does not click, switch to a lighter mnemonic lane or ask for one concrete\
+  \ example.\nDo not skip steps, do not solve the whole task at once, and do not present source claims\
+  \ as mnemonic or analogy artifacts."
+validation:
+  test_cases:
+  - topic: Short labels, terms, and anchors that need fast recall
+    expected_outputs: *id001
+    pass_criteria:
+    - All required outputs are present.
+    - The learner performs the required active step before the final artifact is given.
+    - The result stays within scope and matches the method format.
+  - topic: Long mechanistic explanations that need comprehension first
+    expected_outputs:
+    - Stuck protocol response
+    - Either a simpler scaffold or a method redirect
+    pass_criteria:
+    - The tutor does not force a bad fit.
+    - The tutor either shrinks scope or suggests a better-fitting method.
+    - The response remains honest about the mismatch.
+  acceptance_criteria:
+  - All required_outputs are present in the successful test case.
+  - No forbidden_moves are violated.
+  - The facilitation_prompt can be run without extra hidden context.
+  known_issues:
+  - LLMs may over-explain before the learner attempts the required move.
+  - LLMs may drift outside scope when the topic is broad or ambiguous.

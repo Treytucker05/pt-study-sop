@@ -1,0 +1,212 @@
+id: M-ORG-001
+name: Concept Map
+category: encode
+subcategory: org
+description: Generate a learner-usable concept map that captures core nodes and labeled links for objective-scoped
+  encoding.
+control_stage: ENCODE
+status: draft
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
+tags: []
+purpose: Organize the material into a visible structure so relationships, sequence, contrast, or hierarchy
+  become easier to remember and explain.
+not_for: This is not for isolated trivia, free-form brainstorming, or content that has no meaningful structure
+  to map.
+best_fit_topics:
+- Structures, pathways, lists, tables, and maps with visible relationships
+- Material that benefits from spatial or hierarchical organization
+poor_fit_topics:
+- Single isolated facts that only need a quick cue
+- Highly abstract content with no separable parts or relationships
+learner_state_required: Source material is loaded. The learner can see or recall the parts and is ready
+  to organize them into a structure.
+inputs:
+- description: Target concept from objective map
+  required: true
+- description: Current misconception or gap signal
+  required: true
+outputs:
+- name: Learner-generated explanation or structured encoding artifact
+  description: Learner-generated explanation or structured encoding artifact
+  format: labeled visual structure
+required_outputs: &id001
+- Learner-generated explanation or structured encoding artifact
+- Concept map with nodes and labeled links
+success_criteria:
+- 'All required outputs are present and checkable: Learner-generated explanation or structured encoding
+  artifact, Concept map with nodes and labeled links.'
+- 'The method reaches its stop condition: Learner can explain concept in own words with minimal support.'
+- The learner stays active and the tutor does not give away the answer before the required attempt or
+  transformation.
+partial_criteria:
+- 'Some required outputs are present but at least one is missing or incomplete: Learner-generated explanation
+  or structured encoding artifact, Concept map with nodes and labeled links.'
+steps:
+- step: 1
+  name: Start Encode Protocol Within Scope
+  action: Start ENCODE protocol within scope
+  tutor_does: 'Guide the learner to Start ENCODE protocol within scope. Keep in mind: Respect stage boundaries.'
+  learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Respect stage boundaries.'
+- step: 2
+  name: Execute Method Actions In Order
+  action: Execute method actions in order
+  tutor_does: 'Guide the learner to Execute method actions in order. Keep in mind: Capture required telemetry/artifacts.'
+  learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Capture required telemetry/artifacts.'
+- step: 3
+  name: Emit Required Outputs And Handoff
+  action: Emit required outputs and handoff
+  tutor_does: 'Guide the learner to Emit required outputs and handoff. Keep in mind: Do not drift into
+    another stage.'
+  learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Do not drift into another stage.'
+constraints:
+- rule: Require active learner processing
+  why: The method depends on the learner generating, mapping, explaining, or transforming the material
+    rather than passively reading.
+- rule: Stay within objective scope
+  why: Prevents drift into unrelated material and keeps the method auditable.
+- rule: Do not turn this into a passive answer dump or scoring event
+  why: This method is designed for guided learning, not one-shot lecture or formal grading.
+- rule: The concept map must be learner-usable, not decorative.
+  why: Keeps the method honest and prevents a common misuse described in the source file.
+- rule: The learner must be able to explain the map structure after it is built.
+  why: Keeps the method honest and prevents a common misuse described in the source file.
+- rule: Start with a short top-down verbal frame before drawing the map.
+  why: Keeps the method honest and prevents a common misuse described in the source file.
+- rule: Treat generated structure as teaching support, not source evidence, unless specific sources are
+    cited.
+  why: Keeps the method honest and prevents a common misuse described in the source file.
+- rule: Force active processing (explain, transform, or map), not passive reading.
+  why: This gating rule is part of the method’s execution contract.
+allowed_moves:
+- Provide a brief top-down verbal frame before map building begins
+- Guide learner to identify core concept nodes from the objective scope
+- Prompt learner to create labeled links showing relationships between nodes
+- Use Socratic questioning to help learner discover missing connections
+- Suggest Mermaid or ASCII format for digital map output
+- Ask learner to explain the map structure in their own words
+- Review learner's map for missing relationships and prompt additions
+- Mark any tutor-added structure as teaching support, not source evidence
+forbidden_moves:
+- Build the concept map FOR the learner
+- Add nodes or links without learner involvement
+- Accept a map the learner cannot explain in their own words
+- Skip the top-down verbal frame before map construction
+- Create decorative maps that are not learner-usable
+- Deliver a passive summary instead of facilitating map building
+- Present tutor-generated structure as source evidence without citation
+- Move to retrieval before the learner can explain the map
+stuck_protocol: Reduce the scope to fewer nodes or rows, restate the parts in plain language, and then
+  rebuild the structure one relationship at a time. If needed, switch to a simpler map or flowchart.
+failure_modes:
+- mode: Passive repetition
+  detection: The learner or tutor starts doing passive repetition or the artifact stops satisfying the
+    method’s required checks.
+  recovery: Switch to self-explanation or transform-the-content prompt.
+  fallback_method: M-GEN-003
+- mode: Overload
+  detection: The learner or tutor starts doing overload or the artifact stops satisfying the method’s
+    required checks.
+  recovery: Lower complexity and continue with one concept at a time.
+  fallback_method: M-ORG-003
+default_duration_min: 10
+energy_cost: high
+best_stage: any
+mechanisms: []
+evidence:
+  citation: Novak & Canas (2008)
+  finding: concept mapping promotes meaningful learning through explicit relationship encoding
+  source: legacy evidence_raw
+knobs:
+  diagram_format: mermaid
+  has_steps: Y
+  has_outputs_or_artifacts: Y
+  outputs_summary: Concept map (nodes + labeled links); Mermaid code
+  guidance_level: medium
+  evidence_raw: Novak & Canas (2008); concept mapping promotes meaningful learning through explicit relationship
+    encoding
+  gating_rules:
+  - Force active processing (explain, transform, or map), not passive reading.
+  - Keep output scoped to mapped objectives only.
+  stipulations:
+  - The concept map must be learner-usable, not decorative.
+  - The learner must be able to explain the map structure after it is built.
+  - Start with a short top-down verbal frame before drawing the map.
+  - Treat generated structure as teaching support, not source evidence, unless specific sources are cited.
+  artifact_type: concept-map
+related_methods:
+- id: M-GEN-003
+  relationship: Draw-label fallback for spatial structure
+- id: M-ORG-003
+  relationship: Flowchart fallback for process ordering
+- id: M-GEN-004
+  relationship: Hand-draw map alternative
+facilitation_prompt: "You are running M-ORG-001 (Concept Map) in ENCODE stage.\nRole: you are the tutor\
+  \ running the method exactly as written, with no hidden assumptions.\nObjective: Organize the material\
+  \ into a visible structure so relationships, sequence, contrast, or hierarchy become easier to remember\
+  \ and explain.\nScope: Generate a learner-usable concept map that captures core nodes and labeled links\
+  \ for objective-scoped encoding.\nRules:\n- Require active learner processing — The method depends on\
+  \ the learner generating, mapping, explaining, or transforming the material rather than passively reading.\n\
+  - Stay within objective scope — Prevents drift into unrelated material and keeps the method auditable.\n\
+  - Do not turn this into a passive answer dump or scoring event — This method is designed for guided\
+  \ learning, not one-shot lecture or formal grading.\n- The concept map must be learner-usable, not decorative.\
+  \ — Keeps the method honest and prevents a common misuse described in the source file.\n- The learner\
+  \ must be able to explain the map structure after it is built. — Keeps the method honest and prevents\
+  \ a common misuse described in the source file.\n- Not for: This is not for isolated trivia, free-form\
+  \ brainstorming, or content that has no meaningful structure to map.\nInputs:\n- Target concept from\
+  \ objective map (required)\n- Current misconception or gap signal (required)\nRequired outputs:\n- Learner-generated\
+  \ explanation or structured encoding artifact: Learner-generated explanation or structured encoding\
+  \ artifact [labeled visual structure]\nSteps: run one step at a time and wait after each step before\
+  \ advancing.\n1. Start Encode Protocol Within Scope\n   Tutor does: Guide the learner to Start ENCODE\
+  \ protocol within scope. Keep in mind: Respect stage boundaries.\n   Learner does: Reads the prompt,\
+  \ does the thinking step, and returns the artifact or answer.\n   Example: Example: Respect stage boundaries.\n\
+  \   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n\
+  2. Execute Method Actions In Order\n   Tutor does: Guide the learner to Execute method actions in order.\
+  \ Keep in mind: Capture required telemetry/artifacts.\n   Learner does: Reads the prompt, does the thinking\
+  \ step, and returns the artifact or answer.\n   Example: Example: Capture required telemetry/artifacts.\n\
+  \   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n\
+  3. Emit Required Outputs And Handoff\n   Tutor does: Guide the learner to Emit required outputs and\
+  \ handoff. Keep in mind: Do not drift into another stage.\n   Learner does: Reads the prompt, does the\
+  \ thinking step, and returns the artifact or answer.\n   Example: Example: Do not drift into another\
+  \ stage.\n   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the\
+  \ learner.\nStop conditions:\n- All required outputs are present and checkable: Learner-generated explanation\
+  \ or structured encoding artifact, Concept map with nodes and labeled links.\n- The method reaches its\
+  \ stop condition: Learner can explain concept in own words with minimal support.\n- The learner stays\
+  \ active and the tutor does not give away the answer before the required attempt or transformation.\n\
+  If stuck: Reduce the scope to fewer nodes or rows, restate the parts in plain language, and then rebuild\
+  \ the structure one relationship at a time. If needed, switch to a simpler map or flowchart.\nDo not\
+  \ skip steps, do not solve the whole task at once, and do not present source claims as mnemonic or analogy\
+  \ artifacts."
+validation:
+  test_cases:
+  - topic: Structures, pathways, lists, tables, and maps with visible relationships
+    expected_outputs: *id001
+    pass_criteria:
+    - All required outputs are present.
+    - The learner performs the required active step before the final artifact is given.
+    - The result stays within scope and matches the method format.
+  - topic: Single isolated facts that only need a quick cue
+    expected_outputs:
+    - Stuck protocol response
+    - Either a simpler scaffold or a method redirect
+    pass_criteria:
+    - The tutor does not force a bad fit.
+    - The tutor either shrinks scope or suggests a better-fitting method.
+    - The response remains honest about the mismatch.
+  acceptance_criteria:
+  - All required_outputs are present in the successful test case.
+  - No forbidden_moves are violated.
+  - The facilitation_prompt can be run without extra hidden context.
+  known_issues:
+  - LLMs may over-explain before the learner attempts the required move.
+  - LLMs may drift outside scope when the topic is broad or ambiguous.

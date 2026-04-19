@@ -160,17 +160,17 @@ failure_modes:
   detection: The learner or tutor starts doing structure has no reliable surface landmark or the artifact
     stops satisfying the method’s required checks.
   recovery: Skip this method for that structure. Use Draw-Label or Embodied Walkthrough instead.
-  fallback_method: M-ENC-016
+  fallback_method: M-GEN-008
 - mode: Learner only reads about the landmark without palpating
   detection: The learner or tutor starts doing learner only reads about the landmark without palpating
     or the artifact stops satisfying the method’s required checks.
   recovery: Enforce physical action — pause until learner confirms they are touching it.
-  fallback_method: M-ENC-001
+  fallback_method: M-HOOK-001
 - mode: Unsafe palpation (deep pressure on nerve or artery)
   detection: The learner or tutor starts doing unsafe palpation (deep pressure on nerve or artery) or
     the artifact stops satisfying the method’s required checks.
   recovery: Remind learner to use light touch only. Flag vulnerable structures.
-  fallback_method: M-ENC-013
+  fallback_method: M-HOOK-004
 default_duration_min: 3
 energy_cost: medium
 best_stage: first_exposure
@@ -201,11 +201,11 @@ knobs:
   - Safe palpation only — no deep pressure on nerves, arteries, or vulnerable structures.
   artifact_type: notes
 related_methods:
-- id: M-ENC-016
+- id: M-GEN-008
   relationship: Embodied walkthrough cousin method
-- id: M-ENC-001
+- id: M-HOOK-001
   relationship: Hook fallback for fast recall
-- id: M-ENC-013
+- id: M-HOOK-004
   relationship: Memory palace if the anchor needs placement
 facilitation_prompt: "You are running M-GEN-009 (Palpation Anchor) in ENCODE stage.\nRole: you are the\
   \ tutor running the method exactly as written, with no hidden assumptions.\nObjective: Create a compact\

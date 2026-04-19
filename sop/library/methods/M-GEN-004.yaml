@@ -1,0 +1,289 @@
+id: M-GEN-004
+name: Hand-Draw Map
+category: encode
+subcategory: org
+description: Hand-draw a spatial mind map of the topic structure using own words, simple pictures, colors,
+  and spatial positioning. Close eyes afterward to recall layout — positions trigger details. Max 5 minutes,
+  never full rewrite.
+control_stage: ENCODE
+status: core
+version: '1.0'
+created: '2026-04-07'
+updated: '2026-04-14'
+tags:
+- spatial
+- hand-draw
+- mind-map
+- visual
+- encoding
+- own-words
+purpose: Organize the material into a visible structure so relationships, sequence, contrast, or hierarchy
+  become easier to remember and explain.
+not_for: This is not for isolated trivia, free-form brainstorming, or content that has no meaningful structure
+  to map.
+best_fit_topics:
+- Structures, pathways, lists, tables, and maps with visible relationships
+- Material that benefits from spatial or hierarchical organization
+poor_fit_topics:
+- Single isolated facts that only need a quick cue
+- Highly abstract content with no separable parts or relationships
+learner_state_required: Source material is loaded. The learner can see or recall the parts and is ready
+  to organize them into a structure.
+inputs:
+- description: Structural overview or H1 map from prior PRIME block
+  required: true
+- description: Blank paper and colored pens/markers
+  required: true
+- description: Timer set to 5 minutes
+  required: true
+outputs:
+- name: Hand-drawn spatial mind map (physical artifact)
+  description: Hand-drawn spatial mind map (physical artifact)
+  format: labeled visual structure
+- name: Spatial recall confidence (can you see the layout with eyes closed?)
+  description: Spatial recall confidence (can you see the layout with eyes closed?)
+  format: short, checkable artifact
+required_outputs: &id001
+- Hand-drawn spatial mind map (physical artifact, confirmed by learner)
+- Spatial recall confidence (can learner see layout with eyes closed?)
+- Time spent confirmation (within 5-minute cap)
+success_criteria:
+- 'All required outputs are present and checkable: Hand-drawn spatial mind map (physical artifact, confirmed
+  by learner), Spatial recall confidence (can learner see layout with eyes closed?), Time spent confirmation
+  (within 5-minute cap).'
+- 'The method reaches its stop condition: 5-minute timer ends (hard stop); Map has central concept + 3-5
+  broad branches that cover the full overview with at least 1 picture each.'
+- The learner stays active and the tutor does not give away the answer before the required attempt or
+  transformation.
+partial_criteria:
+- 'Some required outputs are present but at least one is missing or incomplete: Hand-drawn spatial mind
+  map (physical artifact, confirmed by learner), Spatial recall confidence (can learner see layout with
+  eyes closed?).'
+steps:
+- step: 1
+  name: Review The Structural Overview From
+  action: Review the structural overview from the previous block
+  tutor_does: 'Guide the learner to Review the structural overview from the previous block. Keep in mind:
+    Spend 30 seconds scanning — do NOT start drawing yet'
+  learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Spend 30 seconds scanning — do NOT start drawing yet'
+- step: 2
+  name: Place The Central Concept In
+  action: Place the central concept in the middle of the page
+  tutor_does: 'Guide the learner to Place the central concept in the middle of the page. Keep in mind:
+    Use your own words, not the textbook label'
+  learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Use your own words, not the textbook label'
+- step: 3
+  name: 3 5 Main Branches Using
+  action: Draw 3-5 main branches using different colors
+  tutor_does: 'Guide the learner to Draw 3-5 main branches using different colors. Keep in mind: Each
+    branch = one broad pillar or major category so the 3-5 branches still cover the full overview'
+  learner_does: Performs the requested cognitive move and shares the result before moving on.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Each branch = one broad pillar or major category so the 3-5 branches still cover
+    the full overview'
+- step: 4
+  name: Add Simple Pictures Or Icons
+  action: Add simple pictures or icons to anchor key concepts
+  tutor_does: 'Guide the learner to Add simple pictures or icons to anchor key concepts. Keep in mind:
+    Stick figures, arrows, symbols — not art. Speed over beauty'
+  learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Stick figures, arrows, symbols — not art. Speed over beauty'
+- step: 5
+  name: Eyes And Mentally Walk Through
+  action: Close eyes and mentally walk through the map layout
+  tutor_does: 'Guide the learner to Close eyes and mentally walk through the map layout. Keep in mind:
+    Can you see the positions? Colors? Pictures? This is the spatial recall test'
+  learner_does: Performs the requested cognitive move and shares the result before moving on.
+  max_lines: 8
+  check: Is this step complete and ready for the next move?
+  example: 'Example: Can you see the positions? Colors? Pictures? This is the spatial recall test'
+constraints:
+- rule: Do not turn this into a passive answer dump or scoring event
+  why: This method is designed for guided learning, not one-shot lecture or formal grading.
+- rule: Stay within the target scope
+  why: Prevents drift and keeps the artifact useful.
+- rule: Require active learner processing
+  why: The method depends on the learner generating, mapping, explaining, or transforming the material
+    rather than passively reading.
+- rule: Time cap minutes
+  why: 'Preserves the source constraint: 5.'
+- rule: Max per session
+  why: 'Preserves the source constraint: 2.'
+- rule: Own words required
+  why: Preserves the method-specific guardrail from the source file.
+- rule: Own words only — never copy verbatim from source
+  why: Keeps the method honest and prevents a common misuse described in the source file.
+- rule: Simple pictures and colors, not artistic drawings
+  why: Keeps the method honest and prevents a common misuse described in the source file.
+allowed_moves:
+- Prompt the learner to hand-draw a spatial mind map on paper
+- Guide central concept placement and branch structure
+- Encourage use of own words, simple pictures, colors, and spatial positioning
+- Prompt eyes-closed spatial recall of the map layout
+- Confirm map structure (central concept + branch count)
+- Enforce the 5-minute time cap and speed-over-beauty principle
+- Suggest broader umbrella categories if learner is stuck on branches or is narrowing too early
+forbidden_moves:
+- Generate or draw the map for the learner (learner must draw it themselves)
+- Score, grade, or assess the learner's map quality
+- Allow verbatim copying from source material
+- Let the learner use 3-5 narrow branches that ignore major parts of the structural overview
+- Exceed 5-minute time cap per block
+- Allow more than 2 hand-draw blocks per session
+- Skip the eyes-closed spatial recall step
+- Turn the activity into detailed note-taking or full rewriting
+- Provide artistic feedback on drawing quality
+stuck_protocol: Reduce the scope to fewer nodes or rows, restate the parts in plain language, and then
+  rebuild the structure one relationship at a time. If needed, switch to a simpler map or flowchart.
+failure_modes:
+- mode: Spending too long on drawing quality
+  detection: The learner or tutor starts doing spending too long on drawing quality or the artifact stops
+    satisfying the method’s required checks.
+  recovery: Set timer visible. Ugly is fine — speed over beauty
+  fallback_method: M-GEN-003
+- mode: Copying verbatim from source
+  detection: The learner or tutor starts doing copying verbatim from source or the artifact stops satisfying
+    the method’s required checks.
+  recovery: Close source material. Draw from memory of overview
+  fallback_method: M-ORG-001
+- mode: Drawing too many branches (overload)
+  detection: The learner or tutor starts doing drawing too many branches (overload) or the artifact stops
+    satisfying the method’s required checks.
+  recovery: Cap at branch_limit. Combine related items
+  fallback_method: M-HOOK-004
+- mode: Skipping the eyes-closed recall step
+  detection: The learner or tutor starts doing skipping the eyes-closed recall step or the artifact stops
+    satisfying the method’s required checks.
+  recovery: This IS the point. 10 seconds minimum with eyes closed
+  fallback_method: M-GEN-003
+default_duration_min: 5
+energy_cost: medium
+best_stage: first_exposure
+mechanisms:
+- dual_coding
+- generation
+- spatial_encoding
+- motor_encoding
+evidence:
+  citation: Wammes et al. (2016)
+  finding: Drawing effect — drawing doubles free-recall rates (45% vs 20%) through multimodal encoding
+    combining motor, visual, and semantic processing
+  source: grok-session
+knobs:
+  map_format: ascii_tree
+  node_count_cap: 5
+  confidence_scale: HML
+  evidence_strength: high
+  primary_citations:
+  - Wammes et al. (2016)
+  - Fan (2023)
+  - Van der Weel & Van der Meer (2024)
+  guidance_level: medium
+  evidence_raw: Wammes et al. (2016); drawing effect — 45% vs 20% recall; Fan (2023) drawing as cognitive
+    tool; Van der Weel (2024) handwriting brain connectivity
+  gating_rules:
+  - Do not assess or score the learner in ENCODE.
+  - Stay at encoding level — this is active production, not retrieval.
+  stipulations:
+  - Own words only — never copy verbatim from source
+  - Simple pictures and colors, not artistic drawings
+  - Max 5 minutes per block, max 1-2 hand-draws per session
+  - Purpose is spatial encoding, not note-taking
+  - When branch count is capped, each branch must be a broad umbrella category that helps cover the full
+    structural overview rather than a cherry-picked detail
+  logging_fields:
+  - branch_points
+  - node_count
+  - average_confidence
+  - total_time
+  artifact_type: notes
+related_methods:
+- id: M-GEN-003
+  relationship: Draw-label fallback for visual recall
+- id: M-ORG-001
+  relationship: Concept map fallback for relationships
+- id: M-HOOK-004
+  relationship: Memory palace if the learner needs placement cues
+facilitation_prompt: "You are running M-GEN-004 (Hand-Draw Map) in ENCODE stage.\nRole: you are the tutor\
+  \ running the method exactly as written, with no hidden assumptions.\nObjective: Organize the material\
+  \ into a visible structure so relationships, sequence, contrast, or hierarchy become easier to remember\
+  \ and explain.\nScope: Hand-draw a spatial mind map of the topic structure using own words, simple pictures,\
+  \ colors, and spatial positioning. Close eyes afterward to recall layout — positions trigger details.\
+  \ Max 5 minutes, never full rewrite.\nRules:\n- Do not turn this into a passive answer dump or scoring\
+  \ event — This method is designed for guided learning, not one-shot lecture or formal grading.\n- Stay\
+  \ within the target scope — Prevents drift and keeps the artifact useful.\n- Require active learner\
+  \ processing — The method depends on the learner generating, mapping, explaining, or transforming the\
+  \ material rather than passively reading.\n- Time cap minutes — Preserves the source constraint: 5.\n\
+  - Max per session — Preserves the source constraint: 2.\n- Not for: This is not for isolated trivia,\
+  \ free-form brainstorming, or content that has no meaningful structure to map.\nInputs:\n- Structural\
+  \ overview or H1 map from prior PRIME block (required)\n- Blank paper and colored pens/markers (required)\n\
+  - Timer set to 5 minutes (required)\nRequired outputs:\n- Hand-drawn spatial mind map (physical artifact):\
+  \ Hand-drawn spatial mind map (physical artifact) [labeled visual structure]\n- Spatial recall confidence\
+  \ (can you see the layout with eyes closed?): Spatial recall confidence (can you see the layout with\
+  \ eyes closed?) [short, checkable artifact]\nSteps: run one step at a time and wait after each step\
+  \ before advancing.\n1. Review The Structural Overview From\n   Tutor does: Guide the learner to Review\
+  \ the structural overview from the previous block. Keep in mind: Spend 30 seconds scanning — do NOT\
+  \ start drawing yet\n   Learner does: Reads the prompt, does the thinking step, and returns the artifact\
+  \ or answer.\n   Example: Example: Spend 30 seconds scanning — do NOT start drawing yet\n   Check: Is\
+  \ this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n2. Place\
+  \ The Central Concept In\n   Tutor does: Guide the learner to Place the central concept in the middle\
+  \ of the page. Keep in mind: Use your own words, not the textbook label\n   Learner does: Reads the\
+  \ prompt, does the thinking step, and returns the artifact or answer.\n   Example: Example: Use your\
+  \ own words, not the textbook label\n   Check: Is this step complete and ready for the next move?\n\
+  \   Then STOP and wait for the learner.\n3. 3 5 Main Branches Using\n   Tutor does: Guide the learner\
+  \ to Draw 3-5 main branches using different colors. Keep in mind: Each branch = one broad pillar or\
+  \ major category so the 3-5 branches still cover the full overview\n   Learner does: Performs the requested\
+  \ cognitive move and shares the result before moving on.\n   Example: Example: Each branch = one broad\
+  \ pillar or major category so the 3-5 branches still cover the full overview\n   Check: Is this step\
+  \ complete and ready for the next move?\n   Then STOP and wait for the learner.\n4. Add Simple Pictures\
+  \ Or Icons\n   Tutor does: Guide the learner to Add simple pictures or icons to anchor key concepts.\
+  \ Keep in mind: Stick figures, arrows, symbols — not art. Speed over beauty\n   Learner does: Reads\
+  \ the prompt, does the thinking step, and returns the artifact or answer.\n   Example: Example: Stick\
+  \ figures, arrows, symbols — not art. Speed over beauty\n   Check: Is this step complete and ready for\
+  \ the next move?\n   Then STOP and wait for the learner.\n5. Eyes And Mentally Walk Through\n   Tutor\
+  \ does: Guide the learner to Close eyes and mentally walk through the map layout. Keep in mind: Can\
+  \ you see the positions? Colors? Pictures? This is the spatial recall test\n   Learner does: Performs\
+  \ the requested cognitive move and shares the result before moving on.\n   Example: Example: Can you\
+  \ see the positions? Colors? Pictures? This is the spatial recall test\n   Check: Is this step complete\
+  \ and ready for the next move?\n   Then STOP and wait for the learner.\nStop conditions:\n- All required\
+  \ outputs are present and checkable: Hand-drawn spatial mind map (physical artifact, confirmed by learner),\
+  \ Spatial recall confidence (can learner see layout with eyes closed?), Time spent confirmation (within\
+  \ 5-minute cap).\n- The method reaches its stop condition: 5-minute timer ends (hard stop); Map has\
+  \ central concept + 3-5 broad branches that cover the full overview with at least 1 picture each.\n\
+  - The learner stays active and the tutor does not give away the answer before the required attempt or\
+  \ transformation.\nIf stuck: Reduce the scope to fewer nodes or rows, restate the parts in plain language,\
+  \ and then rebuild the structure one relationship at a time. If needed, switch to a simpler map or flowchart.\n\
+  Do not skip steps, do not solve the whole task at once, and do not present source claims as mnemonic\
+  \ or analogy artifacts."
+validation:
+  test_cases:
+  - topic: Structures, pathways, lists, tables, and maps with visible relationships
+    expected_outputs: *id001
+    pass_criteria:
+    - All required outputs are present.
+    - The learner performs the required active step before the final artifact is given.
+    - The result stays within scope and matches the method format.
+  - topic: Single isolated facts that only need a quick cue
+    expected_outputs:
+    - Stuck protocol response
+    - Either a simpler scaffold or a method redirect
+    pass_criteria:
+    - The tutor does not force a bad fit.
+    - The tutor either shrinks scope or suggests a better-fitting method.
+    - The response remains honest about the mismatch.
+  acceptance_criteria:
+  - All required_outputs are present in the successful test case.
+  - No forbidden_moves are violated.
+  - The facilitation_prompt can be run without extra hidden context.
+  known_issues:
+  - LLMs may over-explain before the learner attempts the required move.
+  - LLMs may drift outside scope when the topic is broad or ambiguous.

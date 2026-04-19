@@ -160,7 +160,7 @@ class TestRealLibrary:
 
     def test_real_library_method_count(self) -> None:
         methods_dir = Path(__file__).resolve().parents[1] / "library" / "methods"
-        assert len(list(methods_dir.glob("*.yaml"))) == 59
+        assert len(list(methods_dir.glob("*.yaml"))) == 62
 
     def test_real_library_chain_count(self) -> None:
         chains_dir = Path(__file__).resolve().parents[1] / "library" / "chains"
@@ -312,9 +312,9 @@ class TestChainValidation:
 
 class TestOperationalStageInference:
     def test_infer_operational_stage(self) -> None:
-        assert infer_operational_stage("M-PRE-001") == "CALIBRATE"
-        assert infer_operational_stage("M-PRE-003") == "CALIBRATE"
-        assert infer_operational_stage("M-PRE-007") == "CALIBRATE"
+        assert infer_operational_stage("M-PRE-001") == "PRIME"
+        assert infer_operational_stage("M-PRE-003") == "PRIME"
+        assert infer_operational_stage("M-PRE-007") == "PRIME"
         assert infer_operational_stage("M-TEA-001") == "TEACH"
         assert infer_operational_stage("M-CAL-001") == "CALIBRATE"
         assert infer_operational_stage("M-ENC-001") == "ENCODE"
@@ -323,6 +323,10 @@ class TestOperationalStageInference:
         assert infer_operational_stage("M-REF-001") == "REFERENCE"
         assert infer_operational_stage("M-RET-001") == "RETRIEVE"
         assert infer_operational_stage("M-OVR-001") == "OVERLEARN"
+        assert infer_operational_stage("M-GEN-001") == "ENCODE"
+        assert infer_operational_stage("M-GEN-007") == "TEACH"
+        assert infer_operational_stage("M-HOOK-001") == "ENCODE"
+        assert infer_operational_stage("M-ORG-001") == "ENCODE"
 
     def test_unknown_prefix_returns_none(self) -> None:
         assert infer_operational_stage("M-XYZ-001") is None

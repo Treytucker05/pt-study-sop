@@ -151,7 +151,7 @@ failure_modes:
   detection: The learner or tutor starts doing slot runs before meaning is clear or the artifact stops
     satisfying the method’s required checks.
   recovery: Skip and return to TEACH or anchor repair.
-  fallback_method: M-ENC-001
+  fallback_method: M-HOOK-001
 - mode: Hook grows too elaborate
   detection: The learner or tutor starts doing hook grows too elaborate or the artifact stops satisfying
     the method’s required checks.
@@ -166,7 +166,7 @@ failure_modes:
   detection: The learner or tutor starts doing hook distorts clinical reasoning or the artifact stops
     satisfying the method’s required checks.
   recovery: Skip by default for those concept types.
-  fallback_method: M-ENC-001
+  fallback_method: M-HOOK-001
 default_duration_min: 1
 energy_cost: low
 best_stage: first_exposure
@@ -199,7 +199,7 @@ knobs:
     helpful.
   artifact_type: notes
 related_methods:
-- id: M-ENC-001
+- id: M-HOOK-001
   relationship: Full KWIK fallback when deeper encoding is needed
 - id: M-HOOK-003
   relationship: Alternative mnemonic compression

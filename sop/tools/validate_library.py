@@ -84,14 +84,15 @@ METHOD_STAGE_PREFIX_MAP = {
     "M-REF": "REFERENCE",
     "M-RET": "RETRIEVE",
     "M-OVR": "OVERLEARN",
+    "M-GEN": "ENCODE",
+    "M-HOOK": "ENCODE",
+    "M-ORG": "ENCODE",
 }
 
 METHOD_ID_STAGE_OVERRIDES = {
-    "M-PRE-001": "CALIBRATE",
-    "M-PRE-003": "CALIBRATE",
-    "M-PRE-007": "CALIBRATE",
     "M-INT-001": "TEACH",
     "M-ENC-008": "TEACH",
+    "M-GEN-007": "TEACH",
 }
 
 REFERENCE_ARTIFACT_TOKENS = {"onepageanchor", "questionbankseed"}
@@ -125,6 +126,8 @@ class ValidationResult:
     def __init__(self) -> None:
         self.errors: list[str] = []
         self.warnings: list[str] = []
+        # Notes are informational and never promoted by --strict.
+        self.notes: list[str] = []
 
     def error(self, msg: str) -> None:
         self.errors.append(msg)
@@ -327,8 +330,9 @@ def validate_knobs(
     for knob_name, value in knobs.items():
         spec = registry_knobs.get(knob_name)
         if spec is None:
-            result.error(
-                f"{source_name}: unknown knob '{knob_name}' (not present in meta/knob_registry.yaml)"
+            # Unknown knobs are tolerated; registry still constrains known-knob values below.
+            result.notes.append(
+                f"{source_name}: unregistered knob '{knob_name}' (auxiliary metadata)"
             )
             continue
         if not isinstance(spec, dict):

@@ -55,6 +55,43 @@ knobs:
     min: 5
     max: 180
 
+  # --- Top-level MethodBlock fields also surfaced inside per-method knobs
+  #     (some method YAMLs mirror these for chain routing convenience). ---
+
+  default_duration_min:
+    description: Default duration (minutes) for a method block.
+    type: integer
+    min: 1
+    max: 60
+
+  energy_cost:
+    description: Expected learner energy cost to run the method.
+    type: enum
+    allowed_values:
+      - low
+      - medium
+      - high
+
+  best_stage:
+    description: Best learning stage to run the method.
+    type: enum
+    allowed_values:
+      - first_exposure
+      - review
+      - exam_prep
+      - consolidation
+      - any
+
+  artifact_type:
+    description: Concrete artifact produced by the method.
+    type: enum
+    allowed_values:
+      - concept-map
+      - decision-tree
+      - flowchart
+      - notes
+      - table
+
   # --- Method-level knobs (extracted from method YAML specs) ---
 
   artifact_depth:

@@ -171,12 +171,12 @@ failure_modes:
   detection: The learner or tutor starts doing learner skips generation and just receives the ai's version
     or the artifact stops satisfying the method’s required checks.
   recovery: Enforce generation-first — ask "try your own first, even if it's rough.
-  fallback_method: M-ENC-014
+  fallback_method: M-HOOK-005
 - mode: Hook interferes with an existing hook for a different sequence
   detection: The learner or tutor starts doing hook interferes with an existing hook for a different sequence
     or the artifact stops satisfying the method’s required checks.
   recovery: Run interference check. Modify cadence or key words to differentiate.
-  fallback_method: M-ENC-001
+  fallback_method: M-HOOK-001
 - mode: Hook distorts order or content
   detection: The learner or tutor starts doing hook distorts order or content or the artifact stops satisfying
     the method’s required checks.
@@ -216,9 +216,9 @@ knobs:
 related_methods:
 - id: M-HOOK-002
   relationship: Shorter mnemonic fallback
-- id: M-ENC-014
+- id: M-HOOK-005
   relationship: Chain-linking fallback for ordered lists
-- id: M-ENC-001
+- id: M-HOOK-001
   relationship: Full KWIK fallback for deeper hooks
 facilitation_prompt: "You are running M-HOOK-003 (Jingle / Rhyme Hook) in ENCODE stage.\nRole: you are\
   \ the tutor running the method exactly as written, with no hidden assumptions.\nObjective: Create a\
