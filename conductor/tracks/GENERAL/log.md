@@ -2427,3 +2427,16 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Patched the runtime to support cached report reuse, added a real `--refresh` flag, and made console/file output UTF-8-safe on Windows so compact output no longer crashes on narrow console encodings.
 - Realigned fixtures and tests with the current xAI alias (`grok-4-1-fast`), added cache round-trip coverage, and confirmed the skill test suite passes end to end.
 - Updated repo inventory references so the shared skill catalog and sync script both account for the canonical folder name `research-last30days` while preserving the legacy `last30days` naming surface.
+
+## 2026-04-16 - INV-TUTOR-TRACE-001 tutor flow trace
+
+- Traced the current Tutor pipeline end to end for the user: `Priming/PRIME -> Tutor -> Polish -> Final Sync`, with concrete file anchors across the frontend workflow hooks and backend tutor/workflow/session routes.
+- Confirmed the current contract split: Studio `Priming` persists a workflow-scoped `tutor_priming_bundles` record, but live Tutor session creation still starts from `preflight -> create_session` using the selected scope and then patches the parent workflow to `tutor`.
+- Confirmed the current post-Tutor persistence path: live Tutor writes `tutor_sessions`, `tutor_turns`, artifacts, captured notes, feedback, timing, and memory capsules; Polish writes `tutor_polish_bundles`; Final Sync writes Obsidian/Anki results plus `tutor_publish_results`.
+- Noted current implementation drift worth remembering for future fixes: Final Sync redundantly updates workflow status after backend publish-result creation, the Brain publish toggle is effectively always on, and some Obsidian writes already happen at Tutor end before Final Sync.
+
+## 2026-04-17 - Shared Yoga Book writing-mode skill and self-improve compatibility repair
+
+- Added shared skill `C:\Users\treyt\.agents\skills\yoga-book-writing-mode` with hardware-specific scripts to disable and restore bottom-screen touch on Trey's Lenovo Yoga Book 9i (`82YQ`) while leaving pen input enabled.
+- Restored the missing shared path `C:\Users\treyt\.agents\skills\self-improve\SKILL.md` as a compatibility alias that points legacy instructions back to the authoritative shared lifecycle protocol in `system-improve`.
+- Updated `C:\Users\treyt\.codex\AGENTS.md` to prefer `~/.agents/skills/system-improve/SKILL.md` and ran `scripts/sync_agent_skills.ps1` in both `Apply` and `Check` modes so the new shared skills project into Codex and the other supported roots.

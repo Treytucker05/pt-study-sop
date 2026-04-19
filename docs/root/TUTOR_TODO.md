@@ -28,6 +28,42 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 - Ops note (2026-03-25): `dev-browser` is now a shared agent skill projected into every supported agent root; this does not change Tutor sprint priority.
 
+- [x] INV-TUTOR-TRACE-001. Trace the Studio Priming -> Tutor -> Polish -> Final Sync path end to end and identify where Prime artifacts start, how they hand off into Tutor, and where Tutor outputs persist afterward.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `docs/root/AGENT_BOARD.md`
+    - `README.md`
+    - `docs/root/PROJECT_ARCHITECTURE.md`
+    - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - `dashboard_rebuild/client/src/components/TutorWorkflowPrimingPanel.tsx`
+    - `dashboard_rebuild/client/src/components/TutorWorkflowPolishStudio.tsx`
+    - `dashboard_rebuild/client/src/components/TutorWorkflowFinalSync.tsx`
+    - `dashboard_rebuild/client/src/lib/studioPacketSections.ts`
+    - `brain/dashboard/api_tutor_workflows.py`
+    - `brain/dashboard/api_tutor_sessions.py`
+    - `brain/dashboard/api_tutor_turns.py`
+    - `brain/dashboard/api_tutor_studio.py`
+    - `brain/dashboard/api_tutor_artifacts.py`
+    - `conductor/tracks/GENERAL/log.md`
+  - Done when:
+    - the Priming/Prime entrypoint and its saved bundle/artifact surfaces are identified
+    - the handoff from workflow Priming into live Tutor session creation is identified
+    - the post-Tutor flow into Polish, Final Sync, database tables, Studio items, Obsidian, and Anki is identified
+    - the findings are returned with concrete file anchors
+  - Assignee: @codex-cli
+  - Completed: 2026-04-16
+  - Notes:
+    - Confirmed the current product split: `Priming` is the Studio workflow stage, while `PRIME` is the control-stage/method layer that Priming runs and packages before Tutor starts.
+    - Confirmed the current handoff path: frontend Priming saves a workflow-scoped `tutor_priming_bundles` record, then Tutor session creation still starts from `preflight -> create_session` using the selected course/material/objective scope; the workflow is then patched to `tutor` with `active_tutor_session_id`.
+    - Confirmed the current post-Tutor path: Tutor runtime writes raw session/turn/artifact data plus workflow-scoped notes/feedback/memory capsules, then Polish writes `tutor_polish_bundles`, and Final Sync writes Obsidian/Anki results plus a `tutor_publish_results` snapshot.
+    - Noted key implementation drift: Final Sync redundantly patches workflow status after backend publish-result creation, the Brain toggle is effectively always on, and some Obsidian writes already happen at Tutor end before Final Sync.
+  - Validation:
+    - `rg -n "const (saveWorkflowPriming|runWorkflowPrimingAssist|createWorkflowAndOpenPriming|startTutorFromWorkflow|openWorkflowPolish|saveWorkflowPolish)" dashboard_rebuild/client/src/hooks/useTutorWorkflow.ts`
+    - `rg -n "const (startSession|endSessionById|handleStudioCapture)" dashboard_rebuild/client/src/hooks/useTutorSession.ts`
+    - `rg -n "def (preflight_session|create_session|end_session|get_session_summary)" brain/dashboard/api_tutor_sessions.py`
+    - `rg -n "def (_serialize_priming_bundle|upsert_tutor_priming_bundle|create_tutor_memory_capsule|upsert_tutor_polish_bundle|create_tutor_publish_result|run_tutor_priming_assist)" brain/dashboard/api_tutor_workflows.py`
+    - `rg -n "def (send_turn|create_artifact|capture_studio_item|save_studio_run|promote_studio_item)" brain/dashboard/api_tutor_turns.py brain/dashboard/api_tutor_artifacts.py brain/dashboard/api_tutor_studio.py`
+
 - [x] SOP-METHOD-GAP-001. Add the two strongest remaining method-library gaps from the original SOP audit: worked-example fading in TEACH and embodied walkthrough encoding in ENCODE.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
