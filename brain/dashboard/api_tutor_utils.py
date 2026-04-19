@@ -188,11 +188,20 @@ def _load_method_contracts() -> dict[str, dict[str, Any]]:
             continue
         knobs_raw = raw.get("knobs")
         knobs = knobs_raw if isinstance(knobs_raw, dict) else {}
+        # artifact_type lives at top level on some YAMLs and under knobs.artifact_type
+        # on others — accept either. Default to "notes" when the library hasn't
+        # annotated the method so downstream contract checks don't false-positive
+        # on library gaps; runtime behavior already treats "notes" as generic.
+        artifact_type = str(
+            raw.get("artifact_type") or knobs.get("artifact_type") or "notes"
+        ).strip()
+        # best_stage similarly mirrored in knobs.
+        best_stage = str(raw.get("best_stage") or knobs.get("best_stage") or "").strip()
         by_id[method_id] = {
             "method_id": method_id,
             "control_stage": str(raw.get("control_stage") or "").strip().upper(),
-            "artifact_type": str(raw.get("artifact_type") or "").strip(),
-            "best_stage": str(raw.get("best_stage") or "").strip(),
+            "artifact_type": artifact_type,
+            "best_stage": best_stage,
             "facilitation_prompt": str(raw.get("facilitation_prompt") or "").strip(),
             "knob_defaults": _extract_knob_defaults(knobs),
         }
