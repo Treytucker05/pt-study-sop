@@ -10,12 +10,12 @@ blocks:
   - M-PRE-010  # Learning Objectives Primer (mandatory first)
   - M-PRE-008  # Structural Extraction (Structure)
   - M-CAL-001  # Micro Precheck (Baseline)
-  - M-ENC-008  # Mechanism Trace (TEACH chunk)
+  - M-GEN-007  # Mechanism Trace (TEACH chunk)
   - M-REF-003  # One-Page Anchor (Cue Gen 1)
   - M-CAL-002  # Full Calibrate Probes
   - M-CAL-003  # Full Calibrate Priority Set
-  - M-ENC-010  # Comparison Table (Deep Encode)
-  - M-ENC-001  # Full KWIK Hook (deeper encode; not live KWIK Lite slot)
+  - M-ORG-002  # Comparison Table (Deep Encode)
+  - M-HOOK-001  # Full KWIK Hook (deeper encode; not live KWIK Lite slot)
   - M-REF-004  # Question Bank Seed (Cue Gen 2 - The Targets)
   - M-RET-007  # Timed Sprint Sets (Retrieval)
 allowed_modes:
@@ -46,13 +46,13 @@ runtime_profile:
     - FULL_CALIBRATE
   mnemonic_policy: mnemonic slot only after TEACH-close artifact; full KWIK stays in ENCODE depth work
 block_overrides:
-  M-ENC-008:
+  M-GEN-007:
     teach_packet:
       concept_type: mechanism
       bridge_choice: mechanism_trace
       artifact_target: one_page_anchor
       escalation_rule: brief_l0_hook_then_l3_mechanism_then_l4_precision_with_low_friction_function_confirmation
-  M-ENC-001:
+  M-HOOK-001:
     slot_policy:
       requires_teach_close_artifact: true
       runtime_live_slot: kwik_lite_pending_runtime_lane

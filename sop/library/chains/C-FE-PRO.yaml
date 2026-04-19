@@ -10,7 +10,7 @@ blocks:
   - M-PRE-008  # Structural Extraction
   - M-CAL-001  # Micro Precheck
   - M-TEA-001  # Story Spine (teach the ordered process)
-  - M-ENC-011  # Process Flowchart (TEACH-close artifact target)
+  - M-ORG-003  # Process Flowchart (TEACH-close artifact target)
   - M-CAL-002  # Full Calibrate Probes
   - M-CAL-003  # Full Calibrate Priority Set
   - M-REF-003  # One-Page Anchor

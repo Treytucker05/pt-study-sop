@@ -1,0 +1,5814 @@
+{
+  "meta": {
+    "generated_at": "2026-04-01T15:50:15",
+    "library_version": "1.0.0",
+    "method_count": 59,
+    "chain_count": 20,
+    "sources": {
+      "methods_dir": "sop/library/methods",
+      "chains_dir": "sop/library/chains",
+      "version_file": "sop/library/meta/version.yaml"
+    }
+  },
+  "summaries": {
+    "methods_by_stage": {
+      "PRIME": 10,
+      "TEACH": 9,
+      "CALIBRATE": 7,
+      "ENCODE": 18,
+      "REFERENCE": 4,
+      "RETRIEVE": 7,
+      "OVERLEARN": 4
+    },
+    "chains_by_control_plane_validity": {
+      "valid": 20,
+      "invalid": 0
+    }
+  },
+  "methods": [
+    {
+      "id": "M-CAL-001",
+      "name": "Micro Precheck",
+      "category": "calibrate",
+      "control_stage": "CALIBRATE",
+      "status": "validated",
+      "description": "Run a short scored micro-calibrate baseline (2-5 minutes) at session opening to estimate readiness before TEACH.",
+      "default_duration_min": 4,
+      "energy_cost": "medium",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [
+        "Immediately after PRIME exits and before TEACH.",
+        "When readiness is unknown or likely drifted."
+      ],
+      "when_not_to_use": [
+        "Never before PRIME for first exposure.",
+        "Skip only when emergency time constraints force direct review mode."
+      ],
+      "required_outputs": [
+        "CalibrateItemResults (per-item correctness, latency, confidence)",
+        "ReadinessSnapshot (accuracy summary)",
+        "CalibrationGapSummary (predicted vs actual gap)",
+        "DominantErrorSeed (highest-frequency error class)",
+        "MicroCalibrateSnapshot (opening readiness signal for TEACH routing)"
+      ],
+      "tags": [
+        "calibrate",
+        "diagnostic",
+        "baseline",
+        "confidence"
+      ],
+      "primary_citations": [
+        "Kornell et al. (2009)",
+        "Roediger and Karpicke (2006)"
+      ],
+      "source_file": "sop/library/methods/M-CAL-001.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "CAL",
+        "family_label": "Calibrate",
+        "sequence": "001",
+        "plain_english": "Method / Calibrate / item 001",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-CAL-002",
+      "name": "Full Calibrate Probes",
+      "category": "calibrate",
+      "control_stage": "CALIBRATE",
+      "status": "validated",
+      "description": "Run the FULL CALIBRATE probe set after TEACH-close artifact to generate scored evidence for routing.",
+      "default_duration_min": 6,
+      "energy_cost": "medium",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [
+        "After TEACH close artifact is produced.",
+        "Before ENCODE method selection and retrieval scheduling."
+      ],
+      "when_not_to_use": [
+        "Never as a replacement for opening MICRO-CALIBRATE.",
+        "Skip only when a validated full-calibrate result already exists for the same objective scope."
+      ],
+      "required_outputs": [
+        "FullCalibrateItemResults (per-item correctness, latency, confidence)",
+        "ConfidenceTaggedResults (per-item confidence + correctness)",
+        "HighConfidenceMisses (overconfidence items)",
+        "LowConfidenceHits (underconfidence items)",
+        "CalibrationRiskFlags (routing signals for downstream methods)",
+        "FullCalibrateSnapshot (post-TEACH diagnostic summary)"
+      ],
+      "tags": [
+        "calibrate",
+        "confidence",
+        "metacognition",
+        "risk-detection",
+        "full-calibrate"
+      ],
+      "primary_citations": [
+        "Metcalfe (2017)",
+        "Dunlosky et al. (2013)"
+      ],
+      "source_file": "sop/library/methods/M-CAL-002.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "CAL",
+        "family_label": "Calibrate",
+        "sequence": "002",
+        "plain_english": "Method / Calibrate / item 002",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-CAL-003",
+      "name": "Full Calibrate Priority Set",
+      "category": "calibrate",
+      "control_stage": "CALIBRATE",
+      "status": "validated",
+      "description": "Build a deterministic top-3 weakness set from FULL CALIBRATE telemetry to drive ENCODE method selection.",
+      "default_duration_min": 3,
+      "energy_cost": "low",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [
+        "After M-CAL-002 completes.",
+        "Before selecting ENCODE methods."
+      ],
+      "when_not_to_use": [
+        "If fewer than 3 valid items exist; run micro-recalibration first."
+      ],
+      "required_outputs": [
+        "FullCalibratePrioritySet (exactly 3 ranked weaknesses)",
+        "WeaknessScoreTable (scoring breakdown per weakness)",
+        "EncodeRoutingSeed (one ENCODE method-family recommendation per weakness)",
+        "FullCalibrateHandoff (diagnostic-to-encode handoff contract)"
+      ],
+      "tags": [
+        "calibrate",
+        "prioritization",
+        "sequencing",
+        "deterministic-routing",
+        "full-calibrate"
+      ],
+      "primary_citations": [
+        "Rawson and Dunlosky (2011)",
+        "Bjork and Bjork (2011)"
+      ],
+      "source_file": "sop/library/methods/M-CAL-003.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "CAL",
+        "family_label": "Calibrate",
+        "sequence": "003",
+        "plain_english": "Method / Calibrate / item 003",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-CAL-004",
+      "name": "Story Confidence Tag",
+      "category": "calibrate",
+      "control_stage": "CALIBRATE",
+      "status": "core",
+      "description": "After receiving the big-picture narrative overview, rate your confidence in the story as a whole. Can you retell the narrative thread? Where does the story break down? Light-touch calibration that respects top-down learners \u2014 no item-level quizzing.",
+      "default_duration_min": 2,
+      "energy_cost": "low",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [
+        "After a narrative PRIME or TEACH story chunk",
+        "When learner prefers top-down big-picture processing",
+        "As an optional supplement before FULL CALIBRATE probes"
+      ],
+      "when_not_to_use": [
+        "As the only calibrate method in a first-exposure chain",
+        "After FULL CALIBRATE has already been completed for the same scope",
+        "When material has no narrative structure"
+      ],
+      "required_outputs": [
+        "Story confidence rating (1-3 scale)",
+        "Fuzzy zones list (narrative breakdown points)",
+        "Priority encoding targets (focus areas for ENCODE phase)",
+        "Optional probe seed suggestions for M-CAL-002"
+      ],
+      "tags": [
+        "calibrate",
+        "confidence",
+        "narrative",
+        "top-down",
+        "metacognition"
+      ],
+      "primary_citations": [
+        "Metcalfe (2017)",
+        "Dunlosky et al. (2013)"
+      ],
+      "source_file": "sop/library/methods/M-CAL-004.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "CAL",
+        "family_label": "Calibrate",
+        "sequence": "004",
+        "plain_english": "Method / Calibrate / item 004",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-ENC-001",
+      "name": "KWIK Hook",
+      "category": "encode",
+      "control_stage": "ENCODE",
+      "status": "validated",
+      "description": "Structured 6-step encoding protocol for new terms. Sound (phonetic cue) \u2192 Function (true meaning) \u2192 Image (vivid visual tied to function) \u2192 Entwine (PIE method: personal meaning) \u2192 Resonance (learner confirms it clicks) \u2192 Lock (record as card/log). Each step is gated \u2014 don't skip ahead.",
+      "default_duration_min": 3,
+      "energy_cost": "medium",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "KWIK hook (sound-function-image triplet)",
+        "Session log entry"
+      ],
+      "tags": [
+        "mnemonic",
+        "kwik",
+        "hook",
+        "gated",
+        "sop-core",
+        "dual-coding"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-ENC-001.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "ENC",
+        "family_label": "Encode",
+        "sequence": "001",
+        "plain_english": "Method / Encode / item 001",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-ENC-002",
+      "name": "Seed-Lock Generation",
+      "category": "encode",
+      "control_stage": "ENCODE",
+      "status": "validated",
+      "description": "Learner generates their own encoding hook BEFORE the AI offers help. Start with your own association, metaphor, or mnemonic. AI only assists if you're stuck. Enforces active generation over passive reception.",
+      "default_duration_min": 3,
+      "energy_cost": "medium",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Learner-generated Seed (primary hook attempt)",
+        "Final locked hook",
+        "Generation success flag (self vs AI-assisted)"
+      ],
+      "tags": [
+        "seed-lock",
+        "generation-first",
+        "active",
+        "sop-core"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-ENC-002.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "ENC",
+        "family_label": "Encode",
+        "sequence": "002",
+        "plain_english": "Method / Encode / item 002",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-ENC-003",
+      "name": "Draw-Label",
+      "category": "encode",
+      "control_stage": "ENCODE",
+      "status": "validated",
+      "description": "Sketch the structure (anatomy, pathway, concept map) and label from memory. Fill gaps with source material.",
+      "default_duration_min": 10,
+      "energy_cost": "high",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Completed labeled diagram",
+        "Gap list (what was missing)",
+        "Accuracy percentage"
+      ],
+      "tags": [
+        "visual",
+        "anatomy",
+        "drawing",
+        "active",
+        "retrieval"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-ENC-003.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "ENC",
+        "family_label": "Encode",
+        "sequence": "003",
+        "plain_english": "Method / Encode / item 003",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-ENC-004",
+      "name": "Teach-Back",
+      "category": "encode",
+      "control_stage": "ENCODE",
+      "status": "validated",
+      "description": "Explain the concept aloud as if teaching a classmate. Identify points where explanation breaks down.",
+      "default_duration_min": 5,
+      "energy_cost": "high",
+      "best_stage": "review",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Verbal explanation (recorded or noted)",
+        "Breakdown points list",
+        "Targeted review areas"
+      ],
+      "tags": [
+        "verbal",
+        "feynman",
+        "deep-processing",
+        "sop-core"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-ENC-004.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "ENC",
+        "family_label": "Encode",
+        "sequence": "004",
+        "plain_english": "Method / Encode / item 004",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-ENC-005",
+      "name": "Why-Chain",
+      "category": "encode",
+      "control_stage": "ENCODE",
+      "status": "validated",
+      "description": "Ask 'why?' 3-5 times in succession about a concept to build causal depth. Each answer becomes the premise for the next question. Based on elaborative interrogation (Dunlosky et al.).",
+      "default_duration_min": 5,
+      "energy_cost": "medium",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Why-chain document (3-5 linked explanations)",
+        "Depth level reached",
+        "Verification status"
+      ],
+      "tags": [
+        "elaboration",
+        "causal",
+        "depth",
+        "evidence-based"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-ENC-005.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "ENC",
+        "family_label": "Encode",
+        "sequence": "005",
+        "plain_english": "Method / Encode / item 005",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-ENC-007",
+      "name": "Self-Explanation Protocol",
+      "category": "encode",
+      "control_stage": "ENCODE",
+      "status": "validated",
+      "description": "After reading each paragraph or concept, pause and explain WHY each step follows from the previous one. Supports silent, spoken, or written verbalization modes. Focus on reasoning, not restating facts. Merges Think-Aloud Protocol (formerly M-ENC-006).",
+      "default_duration_min": 7,
+      "energy_cost": "medium",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Self-explanation notes or think-aloud log (per paragraph)",
+        "Inference gap list",
+        "Confusion points flagged",
+        "Comprehension checkpoints"
+      ],
+      "tags": [
+        "self-explanation",
+        "comprehension",
+        "causal-reasoning",
+        "metacognition",
+        "verbal",
+        "evidence-based"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-ENC-007.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "ENC",
+        "family_label": "Encode",
+        "sequence": "007",
+        "plain_english": "Method / Encode / item 007",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-ENC-008",
+      "name": "Mechanism Trace",
+      "category": "encode",
+      "control_stage": "TEACH",
+      "status": "validated",
+      "description": "Trace the causal mechanism step-by-step: what triggers what, and why. Build a cause\u2192effect chain from input to output. Especially useful for pathophysiology and physiological pathways.",
+      "default_duration_min": 10,
+      "energy_cost": "high",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Complete mechanism chain (trigger to outcome)",
+        "Because statements for each step",
+        "Branch points identified",
+        "Verification status"
+      ],
+      "tags": [
+        "causal-reasoning",
+        "mechanism",
+        "pathophysiology",
+        "transfer",
+        "clinical"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-ENC-008.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "ENC",
+        "family_label": "Encode",
+        "sequence": "008",
+        "plain_english": "Method / Encode / item 008",
+        "runtime_note": "Historical ID prefix suggests ENCODE, but runtime control_stage is TEACH."
+      }
+    },
+    {
+      "id": "M-ENC-009",
+      "name": "Concept Map",
+      "category": "encode",
+      "control_stage": "ENCODE",
+      "status": "draft",
+      "description": "Generate a learner-usable concept map that captures core nodes and labeled links for objective-scoped encoding.",
+      "default_duration_min": 10,
+      "energy_cost": "high",
+      "best_stage": "",
+      "outputs_summary": "Concept map (nodes + labeled links); Mermaid code",
+      "artifact_type": "concept-map",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Learner-generated explanation or structured encoding artifact",
+        "Concept map with nodes and labeled links"
+      ],
+      "tags": [],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-ENC-009.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "ENC",
+        "family_label": "Encode",
+        "sequence": "009",
+        "plain_english": "Method / Encode / item 009",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-ENC-010",
+      "name": "Comparison Table",
+      "category": "encode",
+      "control_stage": "ENCODE",
+      "status": "validated",
+      "description": "Create a side-by-side table comparing 2-4 confusable concepts across shared features. Highlight discriminating features. Builds differential diagnosis skill.",
+      "default_duration_min": 7,
+      "energy_cost": "medium",
+      "best_stage": "review",
+      "outputs_summary": "",
+      "artifact_type": "table",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Completed comparison table",
+        "Discriminating features highlighted",
+        "Differential rules (1-2 per comparison)",
+        "Error list from initial attempt"
+      ],
+      "tags": [
+        "visual",
+        "comparison",
+        "discrimination",
+        "table",
+        "clinical"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-ENC-010.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "ENC",
+        "family_label": "Encode",
+        "sequence": "010",
+        "plain_english": "Method / Encode / item 010",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-ENC-011",
+      "name": "Process Flowchart",
+      "category": "encode",
+      "control_stage": "ENCODE",
+      "status": "validated",
+      "description": "Draw a sequential diagram showing a process, pathway, or algorithm. Include decision points where applicable. Use Mermaid graph TD syntax for dashboard editor.",
+      "default_duration_min": 10,
+      "energy_cost": "high",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "flowchart",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Completed flowchart",
+        "Decision point list",
+        "Loop/feedback points identified"
+      ],
+      "tags": [
+        "visual",
+        "mermaid",
+        "sequential",
+        "procedural"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-ENC-011.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "ENC",
+        "family_label": "Encode",
+        "sequence": "011",
+        "plain_english": "Method / Encode / item 011",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-ENC-012",
+      "name": "Clinical Decision Tree",
+      "category": "encode",
+      "control_stage": "ENCODE",
+      "status": "validated",
+      "description": "Build a branching decision diagram: presentation \u2192 key findings \u2192 differential \u2192 tests \u2192 diagnosis. Scaffolds clinical reasoning into explicit decision points.",
+      "default_duration_min": 10,
+      "energy_cost": "high",
+      "best_stage": "exam_prep",
+      "outputs_summary": "",
+      "artifact_type": "decision-tree",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Clinical decision tree",
+        "Red flag list",
+        "Confirmatory test per diagnosis"
+      ],
+      "tags": [
+        "visual",
+        "mermaid",
+        "clinical-reasoning",
+        "decision-tree",
+        "differential"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-ENC-012.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "ENC",
+        "family_label": "Encode",
+        "sequence": "012",
+        "plain_english": "Method / Encode / item 012",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-ENC-013",
+      "name": "Memory Palace",
+      "category": "encode",
+      "control_stage": "ENCODE",
+      "status": "validated",
+      "description": "Use spatial memory to encode ordered sequences by associating items with familiar locations. Based on the ancient Method of Loci used by Greek orators and memory champions.",
+      "default_duration_min": 10,
+      "energy_cost": "high",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Mental palace with placed items",
+        "Retrieval accuracy check",
+        "Weak links identified"
+      ],
+      "tags": [
+        "memory",
+        "spatial",
+        "sequence",
+        "visualization",
+        "kwik-inspired"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-ENC-013.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "ENC",
+        "family_label": "Encode",
+        "sequence": "013",
+        "plain_english": "Method / Encode / item 013",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-ENC-014",
+      "name": "Chain Linking",
+      "category": "encode",
+      "control_stage": "ENCODE",
+      "status": "validated",
+      "description": "Create a bizarre narrative story connecting unrelated items. The absurdity makes it memorable without spatial locations.",
+      "default_duration_min": 8,
+      "energy_cost": "medium",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Bizarre story narrative",
+        "Retrieval success rate",
+        "Weak links (breaks in chain)"
+      ],
+      "tags": [
+        "memory",
+        "narrative",
+        "sequence",
+        "absurdity",
+        "kwik-inspired"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-ENC-014.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "ENC",
+        "family_label": "Encode",
+        "sequence": "014",
+        "plain_english": "Method / Encode / item 014",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-ENC-015",
+      "name": "Hand-Draw Map",
+      "category": "encode",
+      "control_stage": "ENCODE",
+      "status": "core",
+      "description": "Hand-draw a spatial mind map of the topic structure using own words, simple pictures, colors, and spatial positioning. Close eyes afterward to recall layout \u2014 positions trigger details. Max 5 minutes, never full rewrite.",
+      "default_duration_min": 5,
+      "energy_cost": "medium",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [
+        "After receiving a structural overview (H1 map or advance organizer)",
+        "When spatial positioning aids recall (anatomy, pathways, hierarchies)",
+        "First exposure to new material with clear structure"
+      ],
+      "when_not_to_use": [
+        "Material is purely procedural or sequential (use flowchart instead)",
+        "Time is severely constrained (<15 min total session)",
+        "Learner has already hand-drawn this topic recently"
+      ],
+      "required_outputs": [
+        "Hand-drawn spatial mind map (physical artifact, confirmed by learner)",
+        "Spatial recall confidence (can learner see layout with eyes closed?)",
+        "Time spent confirmation (within 5-minute cap)"
+      ],
+      "tags": [
+        "spatial",
+        "hand-draw",
+        "mind-map",
+        "visual",
+        "encoding",
+        "own-words"
+      ],
+      "primary_citations": [
+        "Wammes et al. (2016)",
+        "Fan (2023)",
+        "Van der Weel & Van der Meer (2024)"
+      ],
+      "source_file": "sop/library/methods/M-ENC-015.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "ENC",
+        "family_label": "Encode",
+        "sequence": "015",
+        "plain_english": "Method / Encode / item 015",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-INT-001",
+      "name": "Analogy Bridge",
+      "category": "interrogate",
+      "control_stage": "TEACH",
+      "status": "validated",
+      "description": "Create an analogy linking this concept to something familiar. Test if the analogy holds at the edges.",
+      "default_duration_min": 3,
+      "energy_cost": "medium",
+      "best_stage": "review",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Analogy statement (A is to B as X is to Y)",
+        "Mapping table (3+ correspondences)",
+        "Breakdown points (where analogy fails and what that teaches)"
+      ],
+      "tags": [
+        "analogy",
+        "transfer",
+        "creative",
+        "sop-core"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-INT-001.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "INT",
+        "family_label": "Integration / Interrogation",
+        "sequence": "001",
+        "plain_english": "Method / Integration / Interrogation / item 001",
+        "runtime_note": "INT is an integration/interrogation family; use control_stage for runtime truth."
+      }
+    },
+    {
+      "id": "M-INT-002",
+      "name": "Clinical Application",
+      "category": "interrogate",
+      "control_stage": "ENCODE",
+      "status": "validated",
+      "description": "Apply the concept to a clinical scenario. Ask: how would this present? What would you test? How would you treat?",
+      "default_duration_min": 5,
+      "energy_cost": "high",
+      "best_stage": "exam_prep",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Clinical application narrative with specific patient characteristics",
+        "Presentation, testing, and intervention summary (all three addressed)",
+        "Verification notes (errors flagged against source material)"
+      ],
+      "tags": [
+        "clinical",
+        "application",
+        "pt-specific",
+        "sop-core"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-INT-002.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "INT",
+        "family_label": "Integration / Interrogation",
+        "sequence": "002",
+        "plain_english": "Method / Integration / Interrogation / item 002",
+        "runtime_note": "INT is an integration/interrogation family; use control_stage for runtime truth."
+      }
+    },
+    {
+      "id": "M-INT-003",
+      "name": "Cross-Topic Link",
+      "category": "interrogate",
+      "control_stage": "ENCODE",
+      "status": "validated",
+      "description": "Identify 2-3 connections between this topic and topics from other courses. Look for shared principles.",
+      "default_duration_min": 3,
+      "energy_cost": "medium",
+      "best_stage": "consolidation",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Cross-topic connection list (2-3 connections)",
+        "Explanatory sentences (each with a \"because\" clause)",
+        "Shared principles identified for each connection"
+      ],
+      "tags": [
+        "integration",
+        "cross-course",
+        "big-picture",
+        "transfer"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-INT-003.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "INT",
+        "family_label": "Integration / Interrogation",
+        "sequence": "003",
+        "plain_english": "Method / Integration / Interrogation / item 003",
+        "runtime_note": "INT is an integration/interrogation family; use control_stage for runtime truth."
+      }
+    },
+    {
+      "id": "M-INT-004",
+      "name": "Side-by-Side Comparison",
+      "category": "interrogate",
+      "control_stage": "ENCODE",
+      "status": "validated",
+      "description": "Place two confusable concepts in a comparison table (features, functions, clinical signs). Identify discriminating features. Builds differential diagnosis skill.",
+      "default_duration_min": 7,
+      "energy_cost": "medium",
+      "best_stage": "review",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Side-by-side comparison table (5-7 rows minimum)",
+        "Discriminating features highlighted (the key differentiators)",
+        "Error list from initial memory-first attempt"
+      ],
+      "tags": [
+        "comparison",
+        "discrimination",
+        "differential",
+        "table"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-INT-004.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "INT",
+        "family_label": "Integration / Interrogation",
+        "sequence": "004",
+        "plain_english": "Method / Integration / Interrogation / item 004",
+        "runtime_note": "INT is an integration/interrogation family; use control_stage for runtime truth."
+      }
+    },
+    {
+      "id": "M-INT-005",
+      "name": "Case Walkthrough",
+      "category": "interrogate",
+      "control_stage": "ENCODE",
+      "status": "draft",
+      "description": "Walk through a realistic case to retrieve reasoning steps, identify gaps, and reinforce application accuracy.",
+      "default_duration_min": 10,
+      "energy_cost": "high",
+      "best_stage": "",
+      "outputs_summary": "Case walkthrough narrative; Assessment plan; Reasoning verification",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "LearnerCaseResponse (attempt-first reasoning)",
+        "ErrorTags (typed classification of errors)",
+        "ConfidenceTag (learner self-assessment)",
+        "CorrectiveFeedback (post-attempt only)",
+        "NextTargetedProbe (follow-up question targeting identified gaps)"
+      ],
+      "tags": [],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-INT-005.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "INT",
+        "family_label": "Integration / Interrogation",
+        "sequence": "005",
+        "plain_english": "Method / Integration / Interrogation / item 005",
+        "runtime_note": "INT is an integration/interrogation family; use control_stage for runtime truth."
+      }
+    },
+    {
+      "id": "M-INT-006",
+      "name": "Illness Script Builder",
+      "category": "interrogate",
+      "control_stage": "ENCODE",
+      "status": "validated",
+      "description": "For a condition, build the illness script: (1) enabling conditions, (2) pathophysiological fault, (3) clinical consequences. Compare your script to the textbook version.",
+      "default_duration_min": 10,
+      "energy_cost": "high",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Complete illness script (enabling conditions, pathophysiological fault, clinical consequences)",
+        "Causal chain diagram (enabling -> fault -> consequences)",
+        "Comparison to textbook version (gaps identified)",
+        "Discriminating features vs. similar conditions"
+      ],
+      "tags": [
+        "illness-script",
+        "clinical-reasoning",
+        "pathology",
+        "sop-core"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-INT-006.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "INT",
+        "family_label": "Integration / Interrogation",
+        "sequence": "006",
+        "plain_english": "Method / Integration / Interrogation / item 006",
+        "runtime_note": "INT is an integration/interrogation family; use control_stage for runtime truth."
+      }
+    },
+    {
+      "id": "M-OVR-001",
+      "name": "Exit Ticket",
+      "category": "overlearn",
+      "control_stage": "OVERLEARN",
+      "status": "validated",
+      "description": "Answer three questions: (1) What did I learn? (2) What's still muddy? (3) What's my next action?",
+      "default_duration_min": 3,
+      "energy_cost": "low",
+      "best_stage": "consolidation",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Exit ticket (all 3 questions answered)",
+        "Key takeaways list (3-5 specific items)",
+        "Muddy points or weak anchors identified",
+        "Next action commitment (specific and actionable)",
+        "Questions for next session"
+      ],
+      "tags": [
+        "reflection",
+        "meta",
+        "wrap",
+        "sop-core"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-OVR-001.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "OVR",
+        "family_label": "Overlearn",
+        "sequence": "001",
+        "plain_english": "Method / Overlearn / item 001",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-OVR-002",
+      "name": "Anki Card Draft",
+      "category": "overlearn",
+      "control_stage": "OVERLEARN",
+      "status": "validated",
+      "description": "Draft 3-5 Anki cards for the session's key concepts. Use cloze or basic format. Brain syncs to Anki.",
+      "default_duration_min": 5,
+      "energy_cost": "low",
+      "best_stage": "consolidation",
+      "outputs_summary": "",
+      "artifact_type": "cards",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "3-5 drafted Anki cards in canonical CARD block format",
+        "Each card tagged by topic and source",
+        "Cards staged in Brain for Anki sync",
+        "Card count logged to session record"
+      ],
+      "tags": [
+        "anki",
+        "spaced-repetition",
+        "artifacts"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-OVR-002.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "OVR",
+        "family_label": "Overlearn",
+        "sequence": "002",
+        "plain_english": "Method / Overlearn / item 002",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-OVR-003",
+      "name": "Drill Sheet Builder",
+      "category": "overlearn",
+      "control_stage": "OVERLEARN",
+      "status": "validated",
+      "description": "Build an interleaved drill sheet (30-60 timed items) and define cross-session validation checks.",
+      "default_duration_min": 10,
+      "energy_cost": "medium",
+      "best_stage": "consolidation",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "DrillSheet (30-60 interleaved items, objective-tagged)",
+        "CrossSessionValidation checklist (two-session pass criteria)"
+      ],
+      "tags": [
+        "overlearning",
+        "drills",
+        "consolidation"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-OVR-003.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "OVR",
+        "family_label": "Overlearn",
+        "sequence": "003",
+        "plain_english": "Method / Overlearn / item 003",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-OVR-004",
+      "name": "Post-Learn Brain Dump",
+      "category": "overlearn",
+      "control_stage": "OVERLEARN",
+      "status": "core",
+      "description": "Close all materials. Write everything you remember from the session \u2014 stories, connections, details, anything. Then open materials, compare, identify gaps, and fill them in. Different from Free Recall Blurt: this is comprehensive session-level closure, not topic-level retrieval practice.",
+      "default_duration_min": 7,
+      "energy_cost": "medium",
+      "best_stage": "consolidation",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [
+        "End of any learning session as closure activity",
+        "After encoding + retrieval blocks to consolidate",
+        "When learner wants metacognitive summary of what stuck vs. what didn't"
+      ],
+      "when_not_to_use": [
+        "Very short sessions (<15 min) where Exit Ticket suffices",
+        "Pure drill/speed sessions where Exit Ticket is better fit"
+      ],
+      "required_outputs": [
+        "Brain dump text (raw recall output)",
+        "Gap list (what was missing or wrong)",
+        "Gap-fill annotations (one-line corrections)",
+        "Session retention estimate (percentage of material recalled)"
+      ],
+      "tags": [
+        "recall",
+        "brain-dump",
+        "metacognition",
+        "gap-detection",
+        "closure",
+        "session-wrap"
+      ],
+      "primary_citations": [
+        "Roediger & Karpicke (2006)",
+        "Karpicke & Blunt (2011)",
+        "RetrievalPractice.org (2017)"
+      ],
+      "source_file": "sop/library/methods/M-OVR-004.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "OVR",
+        "family_label": "Overlearn",
+        "sequence": "004",
+        "plain_english": "Method / Overlearn / item 004",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-PRE-001",
+      "name": "Brain Dump",
+      "category": "calibrate",
+      "control_stage": "CALIBRATE",
+      "status": "validated",
+      "description": "Rapid orientation recall over existing notes to identify strong anchors and missing nodes before deeper work.",
+      "default_duration_min": 3,
+      "energy_cost": "low",
+      "best_stage": "first_exposure",
+      "outputs_summary": "Connection refresh list; known-knowns snapshot; flagged gaps",
+      "artifact_type": "notes",
+      "when_to_use": [
+        "Learner is returning to a topic with existing notes.",
+        "Tutor needs a fast re-orientation pass before ENCODE/REFERENCE."
+      ],
+      "when_not_to_use": [
+        "Brand-new topic with no prior notes (route to M-PRE-010 then M-PRE-008).",
+        "High-anxiety learner who reads this as a test."
+      ],
+      "required_outputs": [
+        "StrongConnections list",
+        "MissingNodes list",
+        "FollowUpTargets list"
+      ],
+      "tags": [],
+      "primary_citations": [
+        "Ausubel (1968)",
+        "Bjork & Bjork (2011)"
+      ],
+      "source_file": "sop/library/methods/M-PRE-001.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "PRE",
+        "family_label": "Prime",
+        "sequence": "001",
+        "plain_english": "Method / Prime / item 001",
+        "runtime_note": "Historical ID prefix suggests PRIME, but runtime control_stage is CALIBRATE."
+      }
+    },
+    {
+      "id": "M-PRE-002",
+      "name": "Overarching Pre-Question Set",
+      "category": "prime",
+      "control_stage": "PRIME",
+      "status": "validated",
+      "description": "Generate 3-5 broad why/how/where-fit questions that jointly cover the whole selected material or module slice before deep study to set conceptual hooks.",
+      "default_duration_min": 3,
+      "energy_cost": "low",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [
+        "New topic where conceptual framing is unclear.",
+        "Learner benefits from curiosity hooks before details."
+      ],
+      "when_not_to_use": [
+        "Learner shows high anxiety with open-ended prompts.",
+        "Session time is too short to process questions meaningfully."
+      ],
+      "required_outputs": [
+        "PreQuestionSet (3-5 broad conceptual prompts that jointly cover the full selected scope)",
+        "PriorityPrompts (top 1-2 prompts for downstream use)",
+        "FollowUpTargets list"
+      ],
+      "tags": [
+        "priming",
+        "prequestions",
+        "metacognition",
+        "sop-core"
+      ],
+      "primary_citations": [
+        "Jamison et al. (2023/2024)",
+        "Roediger & Karpicke (2006)"
+      ],
+      "source_file": "sop/library/methods/M-PRE-002.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "PRE",
+        "family_label": "Prime",
+        "sequence": "002",
+        "plain_english": "Method / Prime / item 002",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-PRE-003",
+      "name": "Prior Knowledge Scan",
+      "category": "calibrate",
+      "control_stage": "CALIBRATE",
+      "status": "validated",
+      "description": "Conditional CALIBRATE method that maps known concepts to the new topic when prior notes or North Star context already exist.",
+      "default_duration_min": 3,
+      "energy_cost": "low",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Connection map (topic + related concepts with labeled links)",
+        "Primary anchoring schema identified",
+        "Prerequisite gap list"
+      ],
+      "tags": [
+        "schema-activation",
+        "connections",
+        "transfer"
+      ],
+      "primary_citations": [
+        "Ausubel (1968)",
+        "Luiten et al. (1980)"
+      ],
+      "source_file": "sop/library/methods/M-PRE-003.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "PRE",
+        "family_label": "Prime",
+        "sequence": "003",
+        "plain_english": "Method / Prime / item 003",
+        "runtime_note": "Historical ID prefix suggests PRIME, but runtime control_stage is CALIBRATE."
+      }
+    },
+    {
+      "id": "M-PRE-004",
+      "name": "Hierarchical Advance Organizer",
+      "category": "prime",
+      "control_stage": "PRIME",
+      "status": "validated",
+      "description": "Present a high-abstraction top-down framework (3-5 umbrella pillars + sub-branches) that still covers the full selected scope before detail study.",
+      "default_duration_min": 5,
+      "energy_cost": "low",
+      "best_stage": "first_exposure",
+      "outputs_summary": "PillarTree; PriorKnowledgeLinks; Hypotheses",
+      "artifact_type": "notes",
+      "when_to_use": [
+        "New, dense, or mechanism-heavy topics.",
+        "Learners who prefer big-picture-first orientation."
+      ],
+      "when_not_to_use": [
+        "Learner already demonstrates expert-level schema familiarity.",
+        "Ultra-familiar topics where organizer adds redundancy."
+      ],
+      "required_outputs": [
+        "PillarTree (3-5 pillars, max depth 2, collectively covering the full selected scope)",
+        "PriorKnowledgeLinks (one bridge per pillar)",
+        "StructuralHypotheses"
+      ],
+      "tags": [
+        "advance-organizer",
+        "hierarchy",
+        "top-down"
+      ],
+      "primary_citations": [
+        "Ausubel (1960)",
+        "Luiten et al. (1980)",
+        "Hattie (2009)"
+      ],
+      "source_file": "sop/library/methods/M-PRE-004.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "PRE",
+        "family_label": "Prime",
+        "sequence": "004",
+        "plain_english": "Method / Prime / item 004",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-PRE-005",
+      "name": "Skeleton Concept Hierarchy",
+      "category": "prime",
+      "control_stage": "PRIME",
+      "status": "validated",
+      "description": "Generate a bare concept hierarchy (topic core -> 4-6 umbrella categories -> short descriptors) that still covers the full selected scope without deep explanations.",
+      "default_duration_min": 5,
+      "energy_cost": "medium",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "concept-map",
+      "when_to_use": [
+        "Big-picture orientation for integrative topics.",
+        "Learners who think visually and need category scaffolding."
+      ],
+      "when_not_to_use": [
+        "Pure procedural skill acquisition where step flow is primary.",
+        "Sessions with <3 minutes available."
+      ],
+      "required_outputs": [
+        "SkeletonMap (central topic + 4-6 categories + descriptors that collectively cover the full selected scope)",
+        "CategoryLabels list",
+        "CrossLinks list"
+      ],
+      "tags": [
+        "organization",
+        "visual",
+        "grouping",
+        "chunking"
+      ],
+      "primary_citations": [
+        "Novak & Ca\u00f1as (2008)",
+        "Paivio (1991)"
+      ],
+      "source_file": "sop/library/methods/M-PRE-005.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "PRE",
+        "family_label": "Prime",
+        "sequence": "005",
+        "plain_english": "Method / Prime / item 005",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-PRE-006",
+      "name": "Structural Skimming + Pillar Mapping",
+      "category": "prime",
+      "control_stage": "PRIME",
+      "status": "validated",
+      "description": "Rapidly skim headings/visual cues across the full selected scope, then map 3-5 umbrella pillars before deep reading.",
+      "default_duration_min": 5,
+      "energy_cost": "medium",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [
+        "Slide decks, textbooks, lecture packets.",
+        "Learners who need fast structure before details."
+      ],
+      "when_not_to_use": [
+        "Highly spatial content where diagram-first review is required.",
+        "Sessions with fewer than 3 minutes total."
+      ],
+      "required_outputs": [
+        "PillarMap (3-5 pillars with structural descriptors that collectively cover the full selected scope)",
+        "ObjectiveLinks (pillar-to-objective mapping)",
+        "FollowUpTargets list"
+      ],
+      "tags": [
+        "skimming",
+        "structure",
+        "pillars",
+        "cognitive-load"
+      ],
+      "primary_citations": [
+        "Ausubel (1960)",
+        "Hattie (2009)"
+      ],
+      "source_file": "sop/library/methods/M-PRE-006.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "PRE",
+        "family_label": "Prime",
+        "sequence": "006",
+        "plain_english": "Method / Prime / item 006",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-PRE-007",
+      "name": "Pre-Test",
+      "category": "calibrate",
+      "control_stage": "CALIBRATE",
+      "status": "validated",
+      "description": "Attempt to answer questions on the topic BEFORE studying it. Getting answers wrong primes the brain to encode the correct information more deeply.",
+      "default_duration_min": 5,
+      "energy_cost": "low",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Pre-test answers with confidence ratings for each item",
+        "Calibration baseline (accuracy vs confidence alignment)",
+        "Encoding priming record (questions kept visible for study phase)"
+      ],
+      "tags": [
+        "pre-testing",
+        "priming",
+        "desirable-difficulty",
+        "sop-core"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-PRE-007.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "PRE",
+        "family_label": "Prime",
+        "sequence": "007",
+        "plain_english": "Method / Prime / item 007",
+        "runtime_note": "Historical ID prefix suggests PRIME, but runtime control_stage is CALIBRATE."
+      }
+    },
+    {
+      "id": "M-PRE-008",
+      "name": "Structural Extraction",
+      "category": "prime",
+      "control_stage": "PRIME",
+      "status": "validated",
+      "description": "Extract a compact structural spine from source material before detail work. Build high-signal nodes and link every node to at least one objective.",
+      "default_duration_min": 5,
+      "energy_cost": "medium",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [
+        "Dense or complex modules where the learner needs a high-signal schema first.",
+        "Medical/STEM/exam-prep content with many interacting concepts."
+      ],
+      "when_not_to_use": [
+        "Very short sessions where M-PRE-010 alone is sufficient.",
+        "Ultra-simple fact lists better handled with direct objective framing."
+      ],
+      "required_outputs": [
+        "StructuralSpine (node count within node_cap, high-signal nodes only)",
+        "Objective linkage map (every node linked to at least one objective)",
+        "UnknownNodeList (orientation gaps, not scores)",
+        "PriorityNodes list"
+      ],
+      "tags": [
+        "prime",
+        "structure",
+        "orientation",
+        "schema-priming"
+      ],
+      "primary_citations": [
+        "Ausubel (1968)",
+        "Sung (2025)"
+      ],
+      "source_file": "sop/library/methods/M-PRE-008.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "PRE",
+        "family_label": "Prime",
+        "sequence": "008",
+        "plain_english": "Method / Prime / item 008",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-PRE-009",
+      "name": "Syntopical Big-Picture Synthesis",
+      "category": "prime",
+      "control_stage": "PRIME",
+      "status": "validated",
+      "description": "Synthesize top-level structure across 2-3 sources into one module-level hierarchy with cross-links.",
+      "default_duration_min": 6,
+      "energy_cost": "low",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [
+        "Multi-source study packets (slides + summary + glossary).",
+        "Clinical reasoning or research-heavy topics that need integration."
+      ],
+      "when_not_to_use": [
+        "Single-source content where cross-source synthesis adds no value.",
+        "Time budgets below 3 minutes."
+      ],
+      "required_outputs": [
+        "UnifiedTopDownTree (integrated hierarchy from all sources)",
+        "CrossSourceLinks list",
+        "ConflictFlags list",
+        "FollowUpTargets list"
+      ],
+      "tags": [
+        "prime",
+        "syntopical",
+        "synthesis",
+        "hierarchy"
+      ],
+      "primary_citations": [
+        "Ausubel (1968)",
+        "Sung (2025)"
+      ],
+      "source_file": "sop/library/methods/M-PRE-009.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "PRE",
+        "family_label": "Prime",
+        "sequence": "009",
+        "plain_english": "Method / Prime / item 009",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-PRE-010",
+      "name": "Learning Objectives Primer",
+      "category": "prime",
+      "control_stage": "PRIME",
+      "status": "validated",
+      "description": "Anchor the session to instructor-aligned learning objectives and choose module-wide or single-focus direction before deeper study.",
+      "default_duration_min": 3,
+      "energy_cost": "low",
+      "best_stage": "",
+      "outputs_summary": "ModuleObjectiveMap or FocusObjectiveCard; selected focus objective; learner acknowledgment",
+      "artifact_type": "notes",
+      "when_to_use": [
+        "Session start for any new module/topic.",
+        "Re-entry after long gap where objective state must be re-anchored."
+      ],
+      "when_not_to_use": [
+        "Never skip for first exposure; this is the mandatory PRIME gate."
+      ],
+      "required_outputs": [
+        "ModuleObjectiveMap or FocusObjectiveCard (based on scope)",
+        "SelectedFocusObjectiveId",
+        "LearnerAcknowledgment"
+      ],
+      "tags": [],
+      "primary_citations": [
+        "Ausubel (1968)",
+        "Hattie (2009)"
+      ],
+      "source_file": "sop/library/methods/M-PRE-010.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "PRE",
+        "family_label": "Prime",
+        "sequence": "010",
+        "plain_english": "Method / Prime / item 010",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-PRE-012",
+      "name": "Terminology Pretraining",
+      "category": "prime",
+      "control_stage": "PRIME",
+      "status": "validated",
+      "description": "Extract the names, abbreviations, and short component definitions that the learner must recognize before TEACH begins.",
+      "default_duration_min": 4,
+      "energy_cost": "low",
+      "best_stage": "",
+      "outputs_summary": "TerminologySet; abbreviation map; concise component definitions",
+      "artifact_type": "notes",
+      "when_to_use": [
+        "Dense terminology, abbreviations, or nomenclature would otherwise make TEACH hard to follow.",
+        "First exposure to anatomy, neuro, or systems content with many named parts."
+      ],
+      "when_not_to_use": [
+        "Terminology load is already light and obvious from the source.",
+        "The learner already has a stable working vocabulary for this topic."
+      ],
+      "required_outputs": [
+        "TerminologySet",
+        "AbbreviationMap",
+        "ComponentDefinitionList"
+      ],
+      "tags": [],
+      "primary_citations": [
+        "Mayer (2009)"
+      ],
+      "source_file": "sop/library/methods/M-PRE-012.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "PRE",
+        "family_label": "Prime",
+        "sequence": "012",
+        "plain_english": "Method / Prime / item 012",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-PRE-013",
+      "name": "Big-Picture Orientation Summary",
+      "category": "prime",
+      "control_stage": "PRIME",
+      "status": "validated",
+      "description": "Generate a short source-grounded overview that orients the learner to what the material is about without crossing into full explanation.",
+      "default_duration_min": 4,
+      "energy_cost": "low",
+      "best_stage": "",
+      "outputs_summary": "OrientationSummary; major sections; north-star sentence",
+      "artifact_type": "notes",
+      "when_to_use": [
+        "The learner needs a quick big-picture frame before details.",
+        "The material has a clear storyline, sequence, or purpose that can be summarized at a high level."
+      ],
+      "when_not_to_use": [
+        "The learner is already using a stronger structural method and does not need an additional overview.",
+        "The requested move is really explanation-first TEACH rather than PRIME orientation."
+      ],
+      "required_outputs": [
+        "NorthStarSentence",
+        "OrientationSummary",
+        "MajorSectionList"
+      ],
+      "tags": [],
+      "primary_citations": [
+        "Ausubel (1968)",
+        "Mayer (2009)"
+      ],
+      "source_file": "sop/library/methods/M-PRE-013.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "PRE",
+        "family_label": "Prime",
+        "sequence": "013",
+        "plain_english": "Method / Prime / item 013",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-PRE-014",
+      "name": "Ambiguity and Blind-Spot Scan",
+      "category": "prime",
+      "control_stage": "PRIME",
+      "status": "validated",
+      "description": "Scan the selected source for ambiguities, unsupported jumps, contradictions, and follow-up targets that should be watched during TEACH.",
+      "default_duration_min": 4,
+      "energy_cost": "medium",
+      "best_stage": "",
+      "outputs_summary": "AmbiguityLog; unsupported jumps; follow-up targets",
+      "artifact_type": "notes",
+      "when_to_use": [
+        "The source is dense, compressed, or likely to skip reasoning steps.",
+        "The learner wants PRIME to surface where TEACH will need to slow down."
+      ],
+      "when_not_to_use": [
+        "The source is already very explicit and low ambiguity.",
+        "The requested move is learner diagnosis rather than source-gap scanning."
+      ],
+      "required_outputs": [
+        "AmbiguityLog",
+        "UnsupportedJumpList",
+        "FollowUpTargets"
+      ],
+      "tags": [],
+      "primary_citations": [
+        "Overoye et al. (2021)",
+        "Pan and Rivers (2023)",
+        "Hausman and Rhodes (2018)"
+      ],
+      "source_file": "sop/library/methods/M-PRE-014.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "PRE",
+        "family_label": "Prime",
+        "sequence": "014",
+        "plain_english": "Method / Prime / item 014",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-REF-001",
+      "name": "Error Autopsy",
+      "category": "reference",
+      "control_stage": "REFERENCE",
+      "status": "validated",
+      "description": "Review errors from retrieval practice. For each error: (1) What did I say? (2) What's correct? (3) Why did I confuse them? (4) What cue will prevent this next time? Metacognitive error analysis.",
+      "default_duration_min": 5,
+      "energy_cost": "medium",
+      "best_stage": "exam_prep",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Completed error autopsy table (all 4 columns for every error)",
+        "Root cause analysis for each error (Column 3 filled with specific conceptual confusion)",
+        "Discrimination cues created (Column 4 with actionable prevention strategy)",
+        "Anki card candidates identified from high-value errors"
+      ],
+      "tags": [
+        "error-analysis",
+        "metacognition",
+        "correction",
+        "evidence-based"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-REF-001.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "REF",
+        "family_label": "Reference",
+        "sequence": "001",
+        "plain_english": "Method / Reference / item 001",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-REF-002",
+      "name": "Mastery Loop",
+      "category": "reference",
+      "control_stage": "REFERENCE",
+      "status": "validated",
+      "description": "Re-study items missed during retrieval, then immediately re-test. Repeat until all items are recalled correctly. Based on successive relearning (Rawson & Dunlosky).",
+      "default_duration_min": 10,
+      "energy_cost": "medium",
+      "best_stage": "consolidation",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Mastery achieved on all targeted items (or partial progress with time noted)",
+        "Loop count per item (difficulty metric)",
+        "Weak anchor list (items needing 3+ loops)",
+        "Updated spacing recommendations based on loop performance"
+      ],
+      "tags": [
+        "successive-relearning",
+        "mastery",
+        "retest",
+        "evidence-based"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-REF-002.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "REF",
+        "family_label": "Reference",
+        "sequence": "002",
+        "plain_english": "Method / Reference / item 002",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-REF-003",
+      "name": "One-Page Anchor",
+      "category": "reference",
+      "control_stage": "REFERENCE",
+      "status": "validated",
+      "description": "Build a single-page reference anchor containing minimal definitions, decision rules, canonical examples, near-misses, and traps.",
+      "default_duration_min": 8,
+      "energy_cost": "medium",
+      "best_stage": "exam_prep",
+      "outputs_summary": "",
+      "artifact_type": "outline",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "One-Page Anchor (definitions, decision rules, examples, near-misses, traps \u2014 all present)",
+        "Trap list and near-miss set (3 canonical + 3 near-miss examples minimum)"
+      ],
+      "tags": [
+        "reference",
+        "anchor",
+        "synthesis"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-REF-003.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "REF",
+        "family_label": "Reference",
+        "sequence": "003",
+        "plain_english": "Method / Reference / item 003",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-REF-004",
+      "name": "Question Bank Seed",
+      "category": "reference",
+      "control_stage": "REFERENCE",
+      "status": "validated",
+      "description": "Generate a mode-tagged seed bank of 10-20 retrieval questions from objectives and anchor artifacts.",
+      "default_duration_min": 8,
+      "energy_cost": "medium",
+      "best_stage": "exam_prep",
+      "outputs_summary": "",
+      "artifact_type": "outline",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Question Bank Seed (10-20 items, each mode-tagged and objective-tagged)",
+        "Coverage check draft (confirming all objectives have at least one question)"
+      ],
+      "tags": [
+        "reference",
+        "question-bank",
+        "retrieval-design"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-REF-004.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "REF",
+        "family_label": "Reference",
+        "sequence": "004",
+        "plain_english": "Method / Reference / item 004",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-RET-001",
+      "name": "Timed Brain Dump",
+      "category": "retrieve",
+      "control_stage": "RETRIEVE",
+      "status": "validated",
+      "description": "Close materials. Set timer. Write everything you remember about the topic. No peeking. Compare after. Timed constraint adds desirable difficulty.",
+      "default_duration_min": 5,
+      "energy_cost": "medium",
+      "best_stage": "review",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Free recall dump with gaps marked",
+        "Accuracy assessment (correct vs incorrect items)",
+        "Gap list (missing items identified)",
+        "RSR percentage estimate"
+      ],
+      "tags": [
+        "recall",
+        "testing-effect",
+        "self-assessment"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-RET-001.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "RET",
+        "family_label": "Retrieve",
+        "sequence": "001",
+        "plain_english": "Method / Retrieve / item 001",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-RET-002",
+      "name": "Sprint Quiz",
+      "category": "retrieve",
+      "control_stage": "RETRIEVE",
+      "status": "validated",
+      "description": "Rapid-fire Q&A with Tutor. 10-15 questions in 5 min. Track accuracy for RSR.",
+      "default_duration_min": 5,
+      "energy_cost": "medium",
+      "best_stage": "review",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "RSR percentage (correct/total)",
+        "List of missed questions with correct answers",
+        "Weak anchor flags (uncertain but correct items)",
+        "Topics needing re-encoding"
+      ],
+      "tags": [
+        "quiz",
+        "speed",
+        "rsr",
+        "ai-assisted"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-RET-002.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "RET",
+        "family_label": "Retrieve",
+        "sequence": "002",
+        "plain_english": "Method / Retrieve / item 002",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-RET-003",
+      "name": "Fill-in-Blank",
+      "category": "retrieve",
+      "control_stage": "RETRIEVE",
+      "status": "validated",
+      "description": "Review notes with key terms blanked out. Fill from memory. Targets specific vocabulary recall.",
+      "default_duration_min": 5,
+      "energy_cost": "low",
+      "best_stage": "review",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Completed cloze exercise",
+        "Accuracy count (correct/total blanks)",
+        "Miss list for targeted review",
+        "Second-pass improvement rate"
+      ],
+      "tags": [
+        "cloze",
+        "vocabulary",
+        "targeted"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-RET-003.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "RET",
+        "family_label": "Retrieve",
+        "sequence": "003",
+        "plain_english": "Method / Retrieve / item 003",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-RET-004",
+      "name": "Mixed Practice",
+      "category": "retrieve",
+      "control_stage": "RETRIEVE",
+      "status": "validated",
+      "description": "Interleave questions from 2-3 different topics in a single retrieval block. Builds discrimination and prevents blocked-practice illusion. Based on interleaving research (Rohrer et al.).",
+      "default_duration_min": 10,
+      "energy_cost": "high",
+      "best_stage": "exam_prep",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Overall accuracy across all topics",
+        "Per-topic accuracy breakdown",
+        "Confusion matrix (which topics got mixed up)",
+        "Discrimination insights (cues that distinguish topics)"
+      ],
+      "tags": [
+        "interleaving",
+        "discrimination",
+        "mixed",
+        "evidence-based"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-RET-004.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "RET",
+        "family_label": "Retrieve",
+        "sequence": "004",
+        "plain_english": "Method / Retrieve / item 004",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-RET-005",
+      "name": "Variable Retrieval",
+      "category": "retrieve",
+      "control_stage": "RETRIEVE",
+      "status": "validated",
+      "description": "Retrieve the same concept in 3 different formats: (1) free recall, (2) application question, (3) compare/contrast. Varied retrieval contexts build more flexible memory traces.",
+      "default_duration_min": 10,
+      "energy_cost": "medium",
+      "best_stage": "review",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Three retrieval outputs (free recall, application, compare/contrast)",
+        "Accuracy assessment for each format",
+        "Difficulty ranking of formats",
+        "Flexibility gap identification"
+      ],
+      "tags": [
+        "varied-practice",
+        "transfer",
+        "flexible-retrieval"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-RET-005.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "RET",
+        "family_label": "Retrieve",
+        "sequence": "005",
+        "plain_english": "Method / Retrieve / item 005",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-RET-006",
+      "name": "Adversarial Drill",
+      "category": "retrieve",
+      "control_stage": "RETRIEVE",
+      "status": "validated",
+      "description": "Run near-miss adversarial prompts that force distinction between confusable concepts under low support.",
+      "default_duration_min": 8,
+      "energy_cost": "high",
+      "best_stage": "exam_prep",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Adversarial near-miss results with discrimination accuracy",
+        "ErrorLog updates (error_type and fix_applied per miss)"
+      ],
+      "tags": [
+        "retrieval",
+        "adversarial",
+        "confusables"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-RET-006.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "RET",
+        "family_label": "Retrieve",
+        "sequence": "006",
+        "plain_english": "Method / Retrieve / item 006",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-RET-007",
+      "name": "Timed Sprint Sets",
+      "category": "retrieve",
+      "control_stage": "RETRIEVE",
+      "status": "validated",
+      "description": "Execute timed retrieval sprints and record latency per item to expose speed bottlenecks.",
+      "default_duration_min": 8,
+      "energy_cost": "high",
+      "best_stage": "review",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Timed sprint result set with per-item accuracy",
+        "Latency log (time_to_answer per item)",
+        "ErrorLog updates (misses and speed failures tagged)"
+      ],
+      "tags": [
+        "retrieval",
+        "timing",
+        "latency"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-RET-007.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "RET",
+        "family_label": "Retrieve",
+        "sequence": "007",
+        "plain_english": "Method / Retrieve / item 007",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-TEA-001",
+      "name": "Story Spine",
+      "category": "encode",
+      "control_stage": "TEACH",
+      "status": "draft",
+      "description": "Teach a sequence or pathway as a compact story with a beginning state, trigger, causal progression, consequence, and clinical breakpoint.",
+      "default_duration_min": 6,
+      "energy_cost": "medium",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Story spine",
+        "Ordered step list",
+        "Clinical breakpoint",
+        "Source-backed mechanism restatement"
+      ],
+      "tags": [
+        "teach",
+        "story",
+        "sequence",
+        "pathway",
+        "narrative"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-TEA-001.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "TEA",
+        "family_label": "Teach",
+        "sequence": "001",
+        "plain_english": "Method / Teach / item 001",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-TEA-002",
+      "name": "Confusable Contrast Teach",
+      "category": "encode",
+      "control_stage": "TEACH",
+      "status": "draft",
+      "description": "Teach two confusable concepts side-by-side by naming the shared bucket, the key difference, the signature clue, and the classic trap.",
+      "default_duration_min": 6,
+      "energy_cost": "medium",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "table",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Shared bucket statement",
+        "Key difference statement",
+        "Signature clues",
+        "Classic trap",
+        "Mini application contrast"
+      ],
+      "tags": [
+        "teach",
+        "compare",
+        "contrast",
+        "confusable",
+        "differential"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-TEA-002.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "TEA",
+        "family_label": "Teach",
+        "sequence": "002",
+        "plain_english": "Method / Teach / item 002",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-TEA-003",
+      "name": "Clinical Anchor Mini-Case",
+      "category": "encode",
+      "control_stage": "TEACH",
+      "status": "draft",
+      "description": "Use one tiny patient scene to show why the concept matters clinically without turning the block into a full case drill.",
+      "default_duration_min": 5,
+      "energy_cost": "medium",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Mini-case scene",
+        "Concept-to-case link",
+        "Clinical significance statement",
+        "Overgeneralization boundary"
+      ],
+      "tags": [
+        "teach",
+        "clinical",
+        "anchor",
+        "relevance",
+        "case"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-TEA-003.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "TEA",
+        "family_label": "Teach",
+        "sequence": "003",
+        "plain_english": "Method / Teach / item 003",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-TEA-004",
+      "name": "Modality Switch",
+      "category": "encode",
+      "control_stage": "TEACH",
+      "status": "draft",
+      "description": "Choose the best first representation for the concept and switch the explanation into that modality before overload sets in.",
+      "default_duration_min": 3,
+      "energy_cost": "low",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Concept type",
+        "Chosen modality",
+        "Re-expressed teaching chunk",
+        "Modality rationale"
+      ],
+      "tags": [
+        "teach",
+        "modality",
+        "representation",
+        "scaffold",
+        "visual"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-TEA-004.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "TEA",
+        "family_label": "Teach",
+        "sequence": "004",
+        "plain_english": "Method / Teach / item 004",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-TEA-005",
+      "name": "Jingle / Rhyme Hook",
+      "category": "encode",
+      "control_stage": "TEACH",
+      "status": "draft",
+      "description": "Compress a fixed ordered list or stable sequence into a short jingle or rhyme after the learner understands the meaning of the items.",
+      "default_duration_min": 3,
+      "energy_cost": "low",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Sequence statement",
+        "Jingle or rhyme hook",
+        "Hook-to-sequence map",
+        "Distortion warning"
+      ],
+      "tags": [
+        "teach",
+        "mnemonic",
+        "sequence",
+        "hook",
+        "rhyme"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-TEA-005.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "TEA",
+        "family_label": "Teach",
+        "sequence": "005",
+        "plain_english": "Method / Teach / item 005",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-TEA-006",
+      "name": "Depth Ladder (4-10-HS-PT)",
+      "category": "encode",
+      "control_stage": "TEACH",
+      "status": "draft",
+      "description": "Route first-contact explanation through a brief hook, direct mechanism teaching, and DPT precision, using analogy or simple-language scaffolds only when comprehension actually needs recovery.",
+      "default_duration_min": 4,
+      "energy_cost": "low",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "Depth route plan",
+        "L0 hook",
+        "L3 mechanism",
+        "Fallback scaffold use or skip statement",
+        "Function confirmation",
+        "L4 precision restatement"
+      ],
+      "tags": [
+        "teach",
+        "depth",
+        "ladder",
+        "scaffold",
+        "sop-core"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-TEA-006.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "TEA",
+        "family_label": "Teach",
+        "sequence": "006",
+        "plain_english": "Method / Teach / item 006",
+        "runtime_note": ""
+      }
+    },
+    {
+      "id": "M-TEA-007",
+      "name": "KWIK Lite",
+      "category": "encode",
+      "control_stage": "TEACH",
+      "status": "draft",
+      "description": "Run the lightweight live mnemonic slot after the TEACH close artifact and before FULL CALIBRATE using one system-seeded cue plus one learner ownership action.",
+      "default_duration_min": 2,
+      "energy_cost": "low",
+      "best_stage": "first_exposure",
+      "outputs_summary": "",
+      "artifact_type": "notes",
+      "when_to_use": [],
+      "when_not_to_use": [],
+      "required_outputs": [
+        "KWIK Lite seed",
+        "Learner ownership action",
+        "Final hook",
+        "Distortion guard"
+      ],
+      "tags": [
+        "teach",
+        "mnemonic",
+        "kwik",
+        "lite",
+        "hook"
+      ],
+      "primary_citations": [],
+      "source_file": "sop/library/methods/M-TEA-007.yaml",
+      "id_decode": {
+        "kind": "Method",
+        "family_code": "TEA",
+        "family_label": "Teach",
+        "sequence": "007",
+        "plain_english": "Method / Teach / item 007",
+        "runtime_note": ""
+      }
+    }
+  ],
+  "chains": [
+    {
+      "id": "C-AD-001",
+      "name": "Anatomy Deep Dive",
+      "status": "draft",
+      "description": "Anatomy-focused chain with a short PRIME orientation, a calibrate check, and drawing-led encoding before retrieval and overlearn.",
+      "is_template": true,
+      "block_count": 8,
+      "blocks": [
+        {
+          "id": "M-PRE-010",
+          "name": "Learning Objectives Primer",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-PRE-003",
+          "name": "Prior Knowledge Scan",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-PRE-006",
+          "name": "Structural Skimming + Pillar Mapping",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-ENC-003",
+          "name": "Draw-Label",
+          "control_stage": "ENCODE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-003",
+          "name": "One-Page Anchor",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-004",
+          "name": "Question Bank Seed",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-RET-001",
+          "name": "Timed Brain Dump",
+          "control_stage": "RETRIEVE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-OVR-002",
+          "name": "Anki Card Draft",
+          "control_stage": "OVERLEARN",
+          "artifact_type": "cards",
+          "status": "validated"
+        }
+      ],
+      "block_ids": [
+        "M-PRE-010",
+        "M-PRE-003",
+        "M-PRE-006",
+        "M-ENC-003",
+        "M-REF-003",
+        "M-REF-004",
+        "M-RET-001",
+        "M-OVR-002"
+      ],
+      "block_names": [
+        "Learning Objectives Primer",
+        "Prior Knowledge Scan",
+        "Structural Skimming + Pillar Mapping",
+        "Draw-Label",
+        "One-Page Anchor",
+        "Question Bank Seed",
+        "Timed Brain Dump",
+        "Anki Card Draft"
+      ],
+      "stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "PRIME",
+        "ENCODE",
+        "REFERENCE",
+        "REFERENCE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "unique_stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "ENCODE",
+        "REFERENCE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "stage_coverage": {
+        "PRIME": true,
+        "TEACH": false,
+        "CALIBRATE": true,
+        "ENCODE": true,
+        "REFERENCE": true,
+        "RETRIEVE": true,
+        "OVERLEARN": true
+      },
+      "allowed_modes": [
+        "classification",
+        "mechanism",
+        "computation",
+        "definition",
+        "procedure",
+        "spatial",
+        "recognition",
+        "synthesis"
+      ],
+      "gates": [
+        "prime_artifacts_present",
+        "calibrate_attempt_completed",
+        "reference_targets_ready",
+        "retrieve_after_reference_only",
+        "exit_requires_rsr_or_remediation"
+      ],
+      "failure_actions": [
+        "inject_reference_targets_before_retrieve",
+        "substitute_by_error_type_mapping",
+        "re_run_retrieval_gate_after_insertion"
+      ],
+      "requires_reference_targets": true,
+      "context_tags": {
+        "class_type": "anatomy",
+        "stage": "first_exposure",
+        "energy": "high",
+        "time_available": 40
+      },
+      "default_knobs": {},
+      "runtime_profile": {},
+      "block_overrides": {},
+      "certification": {
+        "disposition": "baseline-certification",
+        "bar": "baseline",
+        "selectable": true,
+        "rationale": "Selectable anatomy-focused template chain; must pass end-to-end runtime certification."
+      },
+      "control_plane_valid": true,
+      "control_plane_violations": [],
+      "control_plane_warnings": [],
+      "source_file": "sop/library/chains/C-AD-001.yaml",
+      "id_decode": {
+        "kind": "Chain",
+        "family_code": "AD",
+        "family_label": "Anatomy Deep Dive",
+        "variant_code": "001",
+        "variant_label": "",
+        "plain_english": "Chain / Anatomy Deep Dive"
+      }
+    },
+    {
+      "id": "C-CI-001",
+      "name": "Clinical Reasoning Intake",
+      "status": "draft",
+      "description": "Clinical first exposure with a short PRIME orientation before pre-test, illness scripts, comparison, retrieval, and overlearn.",
+      "is_template": true,
+      "block_count": 8,
+      "blocks": [
+        {
+          "id": "M-PRE-010",
+          "name": "Learning Objectives Primer",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-PRE-007",
+          "name": "Pre-Test",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-INT-006",
+          "name": "Illness Script Builder",
+          "control_stage": "ENCODE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-INT-004",
+          "name": "Side-by-Side Comparison",
+          "control_stage": "ENCODE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-003",
+          "name": "One-Page Anchor",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-004",
+          "name": "Question Bank Seed",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-RET-001",
+          "name": "Timed Brain Dump",
+          "control_stage": "RETRIEVE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-OVR-002",
+          "name": "Anki Card Draft",
+          "control_stage": "OVERLEARN",
+          "artifact_type": "cards",
+          "status": "validated"
+        }
+      ],
+      "block_ids": [
+        "M-PRE-010",
+        "M-PRE-007",
+        "M-INT-006",
+        "M-INT-004",
+        "M-REF-003",
+        "M-REF-004",
+        "M-RET-001",
+        "M-OVR-002"
+      ],
+      "block_names": [
+        "Learning Objectives Primer",
+        "Pre-Test",
+        "Illness Script Builder",
+        "Side-by-Side Comparison",
+        "One-Page Anchor",
+        "Question Bank Seed",
+        "Timed Brain Dump",
+        "Anki Card Draft"
+      ],
+      "stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "ENCODE",
+        "ENCODE",
+        "REFERENCE",
+        "REFERENCE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "unique_stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "ENCODE",
+        "REFERENCE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "stage_coverage": {
+        "PRIME": true,
+        "TEACH": false,
+        "CALIBRATE": true,
+        "ENCODE": true,
+        "REFERENCE": true,
+        "RETRIEVE": true,
+        "OVERLEARN": true
+      },
+      "allowed_modes": [
+        "classification",
+        "mechanism",
+        "computation",
+        "definition",
+        "procedure",
+        "spatial",
+        "recognition",
+        "synthesis"
+      ],
+      "gates": [
+        "prime_artifacts_present",
+        "calibrate_attempt_completed",
+        "reference_targets_ready",
+        "retrieve_after_reference_only",
+        "exit_requires_rsr_or_remediation"
+      ],
+      "failure_actions": [
+        "inject_reference_targets_before_retrieve",
+        "substitute_by_error_type_mapping",
+        "re_run_retrieval_gate_after_insertion"
+      ],
+      "requires_reference_targets": true,
+      "context_tags": {
+        "class_type": "clinical",
+        "stage": "first_exposure",
+        "energy": "high",
+        "time_available": 45
+      },
+      "default_knobs": {},
+      "runtime_profile": {},
+      "block_overrides": {},
+      "certification": {
+        "disposition": "baseline-certification",
+        "bar": "baseline",
+        "selectable": true,
+        "rationale": "Selectable clinical intake template chain; must pass end-to-end runtime certification."
+      },
+      "control_plane_valid": true,
+      "control_plane_violations": [],
+      "control_plane_warnings": [],
+      "source_file": "sop/library/chains/C-CI-001.yaml",
+      "id_decode": {
+        "kind": "Chain",
+        "family_code": "CI",
+        "family_label": "Clinical Reasoning Intake",
+        "variant_code": "001",
+        "variant_label": "",
+        "plain_english": "Chain / Clinical Reasoning Intake"
+      }
+    },
+    {
+      "id": "C-CR-001",
+      "name": "Clinical Reasoning",
+      "status": "draft",
+      "description": "Build clinical reasoning chains with a short PRIME orientation, a calibrate scan, and contrast-heavy encoding before wrap.",
+      "is_template": true,
+      "block_count": 7,
+      "blocks": [
+        {
+          "id": "M-PRE-010",
+          "name": "Learning Objectives Primer",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-PRE-003",
+          "name": "Prior Knowledge Scan",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-PRE-006",
+          "name": "Structural Skimming + Pillar Mapping",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-INT-005",
+          "name": "Case Walkthrough",
+          "control_stage": "ENCODE",
+          "artifact_type": "notes",
+          "status": "draft"
+        },
+        {
+          "id": "M-INT-004",
+          "name": "Side-by-Side Comparison",
+          "control_stage": "ENCODE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-001",
+          "name": "Error Autopsy",
+          "control_stage": "REFERENCE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-OVR-002",
+          "name": "Anki Card Draft",
+          "control_stage": "OVERLEARN",
+          "artifact_type": "cards",
+          "status": "validated"
+        }
+      ],
+      "block_ids": [
+        "M-PRE-010",
+        "M-PRE-003",
+        "M-PRE-006",
+        "M-INT-005",
+        "M-INT-004",
+        "M-REF-001",
+        "M-OVR-002"
+      ],
+      "block_names": [
+        "Learning Objectives Primer",
+        "Prior Knowledge Scan",
+        "Structural Skimming + Pillar Mapping",
+        "Case Walkthrough",
+        "Side-by-Side Comparison",
+        "Error Autopsy",
+        "Anki Card Draft"
+      ],
+      "stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "PRIME",
+        "ENCODE",
+        "ENCODE",
+        "REFERENCE",
+        "OVERLEARN"
+      ],
+      "unique_stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "ENCODE",
+        "REFERENCE",
+        "OVERLEARN"
+      ],
+      "stage_coverage": {
+        "PRIME": true,
+        "TEACH": false,
+        "CALIBRATE": true,
+        "ENCODE": true,
+        "REFERENCE": true,
+        "RETRIEVE": false,
+        "OVERLEARN": true
+      },
+      "allowed_modes": [
+        "classification",
+        "mechanism",
+        "computation",
+        "definition",
+        "procedure",
+        "spatial",
+        "recognition",
+        "synthesis"
+      ],
+      "gates": [
+        "prime_artifacts_present",
+        "calibrate_attempt_completed",
+        "reference_targets_ready",
+        "retrieve_after_reference_only",
+        "exit_requires_rsr_or_remediation"
+      ],
+      "failure_actions": [
+        "inject_reference_targets_before_retrieve",
+        "substitute_by_error_type_mapping",
+        "re_run_retrieval_gate_after_insertion"
+      ],
+      "requires_reference_targets": false,
+      "context_tags": {
+        "class_type": "clinical",
+        "stage": "exam_prep",
+        "energy": "high",
+        "time_available": 45
+      },
+      "default_knobs": {},
+      "runtime_profile": {},
+      "block_overrides": {},
+      "certification": {
+        "disposition": "baseline-certification",
+        "bar": "baseline",
+        "selectable": true,
+        "rationale": "Selectable clinical reasoning template chain; must pass end-to-end runtime certification."
+      },
+      "control_plane_valid": true,
+      "control_plane_violations": [],
+      "control_plane_warnings": [],
+      "source_file": "sop/library/chains/C-CR-001.yaml",
+      "id_decode": {
+        "kind": "Chain",
+        "family_code": "CR",
+        "family_label": "Clinical Reasoning",
+        "variant_code": "001",
+        "variant_label": "",
+        "plain_english": "Chain / Clinical Reasoning"
+      }
+    },
+    {
+      "id": "C-DA-001",
+      "name": "Dense Anatomy Intake",
+      "status": "draft",
+      "description": "High-detail anatomy first exposure with a short PRIME orientation before pre-test, Draw-Label for spatial memory, retrieval, and later generative steps.",
+      "is_template": true,
+      "block_count": 8,
+      "blocks": [
+        {
+          "id": "M-PRE-010",
+          "name": "Learning Objectives Primer",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-PRE-007",
+          "name": "Pre-Test",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-ENC-003",
+          "name": "Draw-Label",
+          "control_stage": "ENCODE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-003",
+          "name": "One-Page Anchor",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-004",
+          "name": "Question Bank Seed",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-RET-001",
+          "name": "Timed Brain Dump",
+          "control_stage": "RETRIEVE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-ENC-001",
+          "name": "KWIK Hook",
+          "control_stage": "ENCODE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-OVR-002",
+          "name": "Anki Card Draft",
+          "control_stage": "OVERLEARN",
+          "artifact_type": "cards",
+          "status": "validated"
+        }
+      ],
+      "block_ids": [
+        "M-PRE-010",
+        "M-PRE-007",
+        "M-ENC-003",
+        "M-REF-003",
+        "M-REF-004",
+        "M-RET-001",
+        "M-ENC-001",
+        "M-OVR-002"
+      ],
+      "block_names": [
+        "Learning Objectives Primer",
+        "Pre-Test",
+        "Draw-Label",
+        "One-Page Anchor",
+        "Question Bank Seed",
+        "Timed Brain Dump",
+        "KWIK Hook",
+        "Anki Card Draft"
+      ],
+      "stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "ENCODE",
+        "REFERENCE",
+        "REFERENCE",
+        "RETRIEVE",
+        "ENCODE",
+        "OVERLEARN"
+      ],
+      "unique_stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "ENCODE",
+        "REFERENCE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "stage_coverage": {
+        "PRIME": true,
+        "TEACH": false,
+        "CALIBRATE": true,
+        "ENCODE": true,
+        "REFERENCE": true,
+        "RETRIEVE": true,
+        "OVERLEARN": true
+      },
+      "allowed_modes": [
+        "spatial"
+      ],
+      "gates": [
+        "prime_artifacts_present",
+        "calibrate_attempt_completed",
+        "reference_targets_ready",
+        "retrieve_after_reference_only",
+        "exit_requires_rsr_or_remediation"
+      ],
+      "failure_actions": [
+        "inject_reference_targets_before_retrieve",
+        "substitute_by_error_type_mapping",
+        "re_run_retrieval_gate_after_insertion"
+      ],
+      "requires_reference_targets": true,
+      "context_tags": {
+        "class_type": "anatomy",
+        "stage": "first_exposure",
+        "energy": "high",
+        "time_available": 40
+      },
+      "default_knobs": {},
+      "runtime_profile": {},
+      "block_overrides": {},
+      "certification": {
+        "disposition": "baseline-certification",
+        "bar": "baseline",
+        "selectable": true,
+        "rationale": "Selectable dense-anatomy template chain; must pass end-to-end runtime certification."
+      },
+      "control_plane_valid": true,
+      "control_plane_violations": [],
+      "control_plane_warnings": [],
+      "source_file": "sop/library/chains/C-DA-001.yaml",
+      "id_decode": {
+        "kind": "Chain",
+        "family_code": "DA",
+        "family_label": "Dense Anatomy Intake",
+        "variant_code": "001",
+        "variant_label": "",
+        "plain_english": "Chain / Dense Anatomy Intake"
+      }
+    },
+    {
+      "id": "C-DP-001",
+      "name": "DEPTH",
+      "status": "draft",
+      "description": "Pass 2: Selective mastery on high-priority objectives with a quick PRIME orientation, pre-test calibration, then depth encode/application work. Retrieval-driven. Cards only from errors.",
+      "is_template": true,
+      "block_count": 10,
+      "blocks": [
+        {
+          "id": "M-PRE-010",
+          "name": "Learning Objectives Primer",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-PRE-007",
+          "name": "Pre-Test",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-ENC-005",
+          "name": "Why-Chain",
+          "control_stage": "ENCODE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-ENC-007",
+          "name": "Self-Explanation Protocol",
+          "control_stage": "ENCODE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-INT-002",
+          "name": "Clinical Application",
+          "control_stage": "ENCODE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-003",
+          "name": "One-Page Anchor",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-004",
+          "name": "Question Bank Seed",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-RET-005",
+          "name": "Variable Retrieval",
+          "control_stage": "RETRIEVE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-001",
+          "name": "Error Autopsy",
+          "control_stage": "REFERENCE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-OVR-002",
+          "name": "Anki Card Draft",
+          "control_stage": "OVERLEARN",
+          "artifact_type": "cards",
+          "status": "validated"
+        }
+      ],
+      "block_ids": [
+        "M-PRE-010",
+        "M-PRE-007",
+        "M-ENC-005",
+        "M-ENC-007",
+        "M-INT-002",
+        "M-REF-003",
+        "M-REF-004",
+        "M-RET-005",
+        "M-REF-001",
+        "M-OVR-002"
+      ],
+      "block_names": [
+        "Learning Objectives Primer",
+        "Pre-Test",
+        "Why-Chain",
+        "Self-Explanation Protocol",
+        "Clinical Application",
+        "One-Page Anchor",
+        "Question Bank Seed",
+        "Variable Retrieval",
+        "Error Autopsy",
+        "Anki Card Draft"
+      ],
+      "stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "ENCODE",
+        "ENCODE",
+        "ENCODE",
+        "REFERENCE",
+        "REFERENCE",
+        "RETRIEVE",
+        "REFERENCE",
+        "OVERLEARN"
+      ],
+      "unique_stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "ENCODE",
+        "REFERENCE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "stage_coverage": {
+        "PRIME": true,
+        "TEACH": false,
+        "CALIBRATE": true,
+        "ENCODE": true,
+        "REFERENCE": true,
+        "RETRIEVE": true,
+        "OVERLEARN": true
+      },
+      "allowed_modes": [
+        "mechanism",
+        "computation",
+        "procedure"
+      ],
+      "gates": [
+        "prime_artifacts_present",
+        "calibrate_attempt_completed",
+        "reference_targets_ready",
+        "retrieve_after_reference_only",
+        "exit_requires_rsr_or_remediation"
+      ],
+      "failure_actions": [
+        "inject_reference_targets_before_retrieve",
+        "substitute_by_error_type_mapping",
+        "re_run_retrieval_gate_after_insertion"
+      ],
+      "requires_reference_targets": true,
+      "context_tags": {
+        "stage": "first_exposure",
+        "pass": "depth",
+        "energy": "high",
+        "time_available": 45
+      },
+      "default_knobs": {},
+      "runtime_profile": {},
+      "block_overrides": {},
+      "certification": {
+        "disposition": "baseline-certification",
+        "bar": "baseline",
+        "selectable": true,
+        "rationale": "Selectable DEPTH template chain; must pass end-to-end runtime certification."
+      },
+      "control_plane_valid": true,
+      "control_plane_violations": [],
+      "control_plane_warnings": [],
+      "source_file": "sop/library/chains/C-DP-001.yaml",
+      "id_decode": {
+        "kind": "Chain",
+        "family_code": "DP",
+        "family_label": "DEPTH",
+        "variant_code": "001",
+        "variant_label": "",
+        "plain_english": "Chain / DEPTH"
+      }
+    },
+    {
+      "id": "C-EP-001",
+      "name": "Exam Prep",
+      "status": "draft",
+      "description": "Exam-focused chain with interleaving and error analysis. Prepare \u2192 Retrieve \u2192 Interrogate \u2192 Refine \u2192 Overlearn.",
+      "is_template": true,
+      "block_count": 7,
+      "blocks": [
+        {
+          "id": "M-PRE-002",
+          "name": "Overarching Pre-Question Set",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-003",
+          "name": "One-Page Anchor",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-004",
+          "name": "Question Bank Seed",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-RET-004",
+          "name": "Mixed Practice",
+          "control_stage": "RETRIEVE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-INT-004",
+          "name": "Side-by-Side Comparison",
+          "control_stage": "ENCODE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-001",
+          "name": "Error Autopsy",
+          "control_stage": "REFERENCE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-OVR-002",
+          "name": "Anki Card Draft",
+          "control_stage": "OVERLEARN",
+          "artifact_type": "cards",
+          "status": "validated"
+        }
+      ],
+      "block_ids": [
+        "M-PRE-002",
+        "M-REF-003",
+        "M-REF-004",
+        "M-RET-004",
+        "M-INT-004",
+        "M-REF-001",
+        "M-OVR-002"
+      ],
+      "block_names": [
+        "Overarching Pre-Question Set",
+        "One-Page Anchor",
+        "Question Bank Seed",
+        "Mixed Practice",
+        "Side-by-Side Comparison",
+        "Error Autopsy",
+        "Anki Card Draft"
+      ],
+      "stage_sequence": [
+        "PRIME",
+        "REFERENCE",
+        "REFERENCE",
+        "RETRIEVE",
+        "ENCODE",
+        "REFERENCE",
+        "OVERLEARN"
+      ],
+      "unique_stage_sequence": [
+        "PRIME",
+        "REFERENCE",
+        "RETRIEVE",
+        "ENCODE",
+        "OVERLEARN"
+      ],
+      "stage_coverage": {
+        "PRIME": true,
+        "TEACH": false,
+        "CALIBRATE": false,
+        "ENCODE": true,
+        "REFERENCE": true,
+        "RETRIEVE": true,
+        "OVERLEARN": true
+      },
+      "allowed_modes": [
+        "classification",
+        "mechanism",
+        "computation",
+        "definition",
+        "procedure",
+        "spatial",
+        "recognition",
+        "synthesis"
+      ],
+      "gates": [
+        "prime_artifacts_present",
+        "calibrate_attempt_completed",
+        "reference_targets_ready",
+        "retrieve_after_reference_only",
+        "exit_requires_rsr_or_remediation"
+      ],
+      "failure_actions": [
+        "inject_reference_targets_before_retrieve",
+        "substitute_by_error_type_mapping",
+        "re_run_retrieval_gate_after_insertion"
+      ],
+      "requires_reference_targets": true,
+      "context_tags": {
+        "stage": "exam_prep",
+        "energy": "high",
+        "time_available": 35
+      },
+      "default_knobs": {},
+      "runtime_profile": {},
+      "block_overrides": {},
+      "certification": {
+        "disposition": "baseline-certification",
+        "bar": "baseline",
+        "selectable": true,
+        "rationale": "Selectable exam-prep template chain; must pass end-to-end runtime certification."
+      },
+      "control_plane_valid": true,
+      "control_plane_violations": [],
+      "control_plane_warnings": [],
+      "source_file": "sop/library/chains/C-EP-001.yaml",
+      "id_decode": {
+        "kind": "Chain",
+        "family_code": "EP",
+        "family_label": "Exam Prep",
+        "variant_code": "001",
+        "variant_label": "",
+        "plain_english": "Chain / Exam Prep"
+      }
+    },
+    {
+      "id": "C-FE-001",
+      "name": "First Exposure (Core)",
+      "status": "draft",
+      "description": "Control-plane first exposure flow with explicit MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE opening, followed by ENCODE, REFERENCE, RETRIEVE, and OVERLEARN.",
+      "is_template": true,
+      "block_count": 15,
+      "blocks": [
+        {
+          "id": "M-PRE-010",
+          "name": "Learning Objectives Primer",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-PRE-008",
+          "name": "Structural Extraction",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-PRE-009",
+          "name": "Syntopical Big-Picture Synthesis",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-CAL-001",
+          "name": "Micro Precheck",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-INT-001",
+          "name": "Analogy Bridge",
+          "control_stage": "TEACH",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-003",
+          "name": "One-Page Anchor",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-CAL-002",
+          "name": "Full Calibrate Probes",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-CAL-003",
+          "name": "Full Calibrate Priority Set",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-ENC-001",
+          "name": "KWIK Hook",
+          "control_stage": "ENCODE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-004",
+          "name": "Question Bank Seed",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-RET-001",
+          "name": "Timed Brain Dump",
+          "control_stage": "RETRIEVE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-RET-006",
+          "name": "Adversarial Drill",
+          "control_stage": "RETRIEVE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-RET-007",
+          "name": "Timed Sprint Sets",
+          "control_stage": "RETRIEVE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-OVR-002",
+          "name": "Anki Card Draft",
+          "control_stage": "OVERLEARN",
+          "artifact_type": "cards",
+          "status": "validated"
+        },
+        {
+          "id": "M-OVR-003",
+          "name": "Drill Sheet Builder",
+          "control_stage": "OVERLEARN",
+          "artifact_type": "notes",
+          "status": "validated"
+        }
+      ],
+      "block_ids": [
+        "M-PRE-010",
+        "M-PRE-008",
+        "M-PRE-009",
+        "M-CAL-001",
+        "M-INT-001",
+        "M-REF-003",
+        "M-CAL-002",
+        "M-CAL-003",
+        "M-ENC-001",
+        "M-REF-004",
+        "M-RET-001",
+        "M-RET-006",
+        "M-RET-007",
+        "M-OVR-002",
+        "M-OVR-003"
+      ],
+      "block_names": [
+        "Learning Objectives Primer",
+        "Structural Extraction",
+        "Syntopical Big-Picture Synthesis",
+        "Micro Precheck",
+        "Analogy Bridge",
+        "One-Page Anchor",
+        "Full Calibrate Probes",
+        "Full Calibrate Priority Set",
+        "KWIK Hook",
+        "Question Bank Seed",
+        "Timed Brain Dump",
+        "Adversarial Drill",
+        "Timed Sprint Sets",
+        "Anki Card Draft",
+        "Drill Sheet Builder"
+      ],
+      "stage_sequence": [
+        "PRIME",
+        "PRIME",
+        "PRIME",
+        "CALIBRATE",
+        "TEACH",
+        "REFERENCE",
+        "CALIBRATE",
+        "CALIBRATE",
+        "ENCODE",
+        "REFERENCE",
+        "RETRIEVE",
+        "RETRIEVE",
+        "RETRIEVE",
+        "OVERLEARN",
+        "OVERLEARN"
+      ],
+      "unique_stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "TEACH",
+        "REFERENCE",
+        "ENCODE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "stage_coverage": {
+        "PRIME": true,
+        "TEACH": true,
+        "CALIBRATE": true,
+        "ENCODE": true,
+        "REFERENCE": true,
+        "RETRIEVE": true,
+        "OVERLEARN": true
+      },
+      "allowed_modes": [
+        "classification",
+        "definition",
+        "recognition"
+      ],
+      "gates": [
+        "prime_artifacts_present",
+        "micro_calibrate_before_teach",
+        "teach_chunk_delivered_when_present",
+        "teach_close_artifact_ready",
+        "full_calibrate_after_teach",
+        "mnemonic_after_teach_close_artifact_only",
+        "reference_targets_ready",
+        "retrieve_after_reference_only",
+        "exit_requires_rsr_or_remediation"
+      ],
+      "failure_actions": [
+        "inject_reference_targets_before_retrieve",
+        "substitute_by_error_type_mapping",
+        "re_run_retrieval_gate_after_insertion"
+      ],
+      "requires_reference_targets": true,
+      "context_tags": {
+        "stage": "first_exposure",
+        "energy": "high",
+        "time_available": 55
+      },
+      "default_knobs": {},
+      "runtime_profile": {
+        "opening_sequence": [
+          "MICRO-CALIBRATE",
+          "TEACH",
+          "FULL_CALIBRATE"
+        ],
+        "mnemonic_policy": "mnemonic slot only after TEACH-close artifact; full KWIK remains ENCODE depth work"
+      },
+      "block_overrides": {
+        "M-INT-001": {
+          "teach_packet": {
+            "concept_type": "mechanism",
+            "bridge_choice": "analogy_bridge",
+            "artifact_target": "one_page_anchor",
+            "escalation_rule": "brief_l0_hook_then_l3_mechanism_then_l4_precision_with_low_friction_function_confirmation"
+          }
+        },
+        "M-ENC-001": {
+          "slot_policy": {
+            "requires_teach_close_artifact": true,
+            "runtime_live_slot": "kwik_lite_pending_runtime_lane",
+            "full_kwik_position": "encode_deepening"
+          }
+        }
+      },
+      "certification": {
+        "disposition": "baseline-certification",
+        "bar": "baseline",
+        "selectable": true,
+        "rationale": "Selectable core first-exposure chain; must pass end-to-end runtime certification."
+      },
+      "control_plane_valid": true,
+      "control_plane_violations": [],
+      "control_plane_warnings": [],
+      "source_file": "sop/library/chains/C-FE-001.yaml",
+      "id_decode": {
+        "kind": "Chain",
+        "family_code": "FE",
+        "family_label": "First Exposure",
+        "variant_code": "001",
+        "variant_label": "Core",
+        "plain_english": "Chain / First Exposure / Core"
+      }
+    },
+    {
+      "id": "C-FE-MIN",
+      "name": "First Exposure: Minimal",
+      "status": "draft",
+      "description": "Minimal first-exposure chain for low-energy sessions targeting definition and recognition modes. Uses compact opening sequence MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE, then light retrieval and wrap-up.",
+      "is_template": true,
+      "block_count": 9,
+      "blocks": [
+        {
+          "id": "M-PRE-010",
+          "name": "Learning Objectives Primer",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-PRE-008",
+          "name": "Structural Extraction",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-CAL-001",
+          "name": "Micro Precheck",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-TEA-004",
+          "name": "Modality Switch",
+          "control_stage": "TEACH",
+          "artifact_type": "notes",
+          "status": "draft"
+        },
+        {
+          "id": "M-REF-003",
+          "name": "One-Page Anchor",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-CAL-002",
+          "name": "Full Calibrate Probes",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-CAL-003",
+          "name": "Full Calibrate Priority Set",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-RET-001",
+          "name": "Timed Brain Dump",
+          "control_stage": "RETRIEVE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-OVR-001",
+          "name": "Exit Ticket",
+          "control_stage": "OVERLEARN",
+          "artifact_type": "notes",
+          "status": "validated"
+        }
+      ],
+      "block_ids": [
+        "M-PRE-010",
+        "M-PRE-008",
+        "M-CAL-001",
+        "M-TEA-004",
+        "M-REF-003",
+        "M-CAL-002",
+        "M-CAL-003",
+        "M-RET-001",
+        "M-OVR-001"
+      ],
+      "block_names": [
+        "Learning Objectives Primer",
+        "Structural Extraction",
+        "Micro Precheck",
+        "Modality Switch",
+        "One-Page Anchor",
+        "Full Calibrate Probes",
+        "Full Calibrate Priority Set",
+        "Timed Brain Dump",
+        "Exit Ticket"
+      ],
+      "stage_sequence": [
+        "PRIME",
+        "PRIME",
+        "CALIBRATE",
+        "TEACH",
+        "REFERENCE",
+        "CALIBRATE",
+        "CALIBRATE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "unique_stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "TEACH",
+        "REFERENCE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "stage_coverage": {
+        "PRIME": true,
+        "TEACH": true,
+        "CALIBRATE": true,
+        "ENCODE": false,
+        "REFERENCE": true,
+        "RETRIEVE": true,
+        "OVERLEARN": true
+      },
+      "allowed_modes": [
+        "definition",
+        "recognition"
+      ],
+      "gates": [
+        "micro_calibrate_before_teach",
+        "teach_close_artifact_ready",
+        "full_calibrate_after_teach",
+        "rsr_accuracy_ge_0.80"
+      ],
+      "failure_actions": [
+        "inject_reference_targets_before_retrieve",
+        "re_run_retrieval_gate_after_insertion"
+      ],
+      "requires_reference_targets": true,
+      "context_tags": {
+        "energy": "low",
+        "time_available": 20
+      },
+      "default_knobs": {
+        "energy": "low",
+        "retrieval_support": "minimal",
+        "time_available_min": 20,
+        "timed": "off"
+      },
+      "runtime_profile": {
+        "opening_sequence": [
+          "MICRO-CALIBRATE",
+          "TEACH",
+          "FULL_CALIBRATE"
+        ]
+      },
+      "block_overrides": {
+        "M-TEA-004": {
+          "teach_packet": {
+            "concept_type": "definition",
+            "bridge_choice": "modality_switch",
+            "artifact_target": "one_page_anchor",
+            "escalation_rule": "brief_l0_hook_then_l3_mechanism_then_l4_precision_with_low_friction_function_confirmation"
+          }
+        }
+      },
+      "certification": {
+        "disposition": "baseline-certification",
+        "bar": "baseline",
+        "selectable": true,
+        "rationale": "Selectable minimal first-exposure chain; must pass end-to-end runtime certification."
+      },
+      "control_plane_valid": true,
+      "control_plane_violations": [],
+      "control_plane_warnings": [],
+      "source_file": "sop/library/chains/C-FE-MIN.yaml",
+      "id_decode": {
+        "kind": "Chain",
+        "family_code": "FE",
+        "family_label": "First Exposure",
+        "variant_code": "MIN",
+        "variant_label": "Minimal",
+        "plain_english": "Chain / First Exposure / Minimal"
+      }
+    },
+    {
+      "id": "C-FE-PRO",
+      "name": "First Exposure: Procedure",
+      "status": "draft",
+      "description": "Procedure-focused first-exposure chain for high-energy sessions. Uses explicit opening sequence MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE, then process encoding, anchor generation, case walkthrough with fault injection, and timed sprint retrieval.",
+      "is_template": true,
+      "block_count": 10,
+      "blocks": [
+        {
+          "id": "M-PRE-010",
+          "name": "Learning Objectives Primer",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-PRE-008",
+          "name": "Structural Extraction",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-CAL-001",
+          "name": "Micro Precheck",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-TEA-001",
+          "name": "Story Spine",
+          "control_stage": "TEACH",
+          "artifact_type": "notes",
+          "status": "draft"
+        },
+        {
+          "id": "M-ENC-011",
+          "name": "Process Flowchart",
+          "control_stage": "ENCODE",
+          "artifact_type": "flowchart",
+          "status": "validated"
+        },
+        {
+          "id": "M-CAL-002",
+          "name": "Full Calibrate Probes",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-CAL-003",
+          "name": "Full Calibrate Priority Set",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-003",
+          "name": "One-Page Anchor",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-INT-005",
+          "name": "Case Walkthrough",
+          "control_stage": "ENCODE",
+          "artifact_type": "notes",
+          "status": "draft"
+        },
+        {
+          "id": "M-RET-007",
+          "name": "Timed Sprint Sets",
+          "control_stage": "RETRIEVE",
+          "artifact_type": "notes",
+          "status": "validated"
+        }
+      ],
+      "block_ids": [
+        "M-PRE-010",
+        "M-PRE-008",
+        "M-CAL-001",
+        "M-TEA-001",
+        "M-ENC-011",
+        "M-CAL-002",
+        "M-CAL-003",
+        "M-REF-003",
+        "M-INT-005",
+        "M-RET-007"
+      ],
+      "block_names": [
+        "Learning Objectives Primer",
+        "Structural Extraction",
+        "Micro Precheck",
+        "Story Spine",
+        "Process Flowchart",
+        "Full Calibrate Probes",
+        "Full Calibrate Priority Set",
+        "One-Page Anchor",
+        "Case Walkthrough",
+        "Timed Sprint Sets"
+      ],
+      "stage_sequence": [
+        "PRIME",
+        "PRIME",
+        "CALIBRATE",
+        "TEACH",
+        "ENCODE",
+        "CALIBRATE",
+        "CALIBRATE",
+        "REFERENCE",
+        "ENCODE",
+        "RETRIEVE"
+      ],
+      "unique_stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "TEACH",
+        "ENCODE",
+        "REFERENCE",
+        "RETRIEVE"
+      ],
+      "stage_coverage": {
+        "PRIME": true,
+        "TEACH": true,
+        "CALIBRATE": true,
+        "ENCODE": true,
+        "REFERENCE": true,
+        "RETRIEVE": true,
+        "OVERLEARN": false
+      },
+      "allowed_modes": [
+        "procedure"
+      ],
+      "gates": [
+        "micro_calibrate_before_teach",
+        "teach_chunk_delivered_when_present",
+        "teach_close_artifact_ready",
+        "full_calibrate_after_teach",
+        "cascade_misses_eq_0"
+      ],
+      "failure_actions": [
+        "inject_reference_targets_before_retrieve",
+        "substitute_by_error_type_mapping",
+        "re_run_retrieval_gate_after_insertion"
+      ],
+      "requires_reference_targets": true,
+      "context_tags": {
+        "energy": "high"
+      },
+      "default_knobs": {
+        "energy": "high",
+        "assessment_mode": "procedure",
+        "near_miss_intensity": "high"
+      },
+      "runtime_profile": {
+        "opening_sequence": [
+          "MICRO-CALIBRATE",
+          "TEACH",
+          "FULL_CALIBRATE"
+        ],
+        "mnemonic_policy": "no default mnemonic slot in this chain unless explicitly inserted after TEACH-close artifact"
+      },
+      "block_overrides": {
+        "M-TEA-001": {
+          "teach_packet": {
+            "concept_type": "procedure",
+            "bridge_choice": "story_spine",
+            "artifact_target": "process_flowchart",
+            "escalation_rule": "brief_l0_hook_then_l3_mechanism_then_l4_precision_with_low_friction_function_confirmation"
+          }
+        }
+      },
+      "certification": {
+        "disposition": "baseline-certification",
+        "bar": "baseline",
+        "selectable": true,
+        "rationale": "Selectable procedure-focused first-exposure chain; must pass end-to-end runtime certification."
+      },
+      "control_plane_valid": true,
+      "control_plane_violations": [],
+      "control_plane_warnings": [],
+      "source_file": "sop/library/chains/C-FE-PRO.yaml",
+      "id_decode": {
+        "kind": "Chain",
+        "family_code": "FE",
+        "family_label": "First Exposure",
+        "variant_code": "PRO",
+        "variant_label": "Procedure",
+        "plain_english": "Chain / First Exposure / Procedure"
+      }
+    },
+    {
+      "id": "C-FE-STD",
+      "name": "Trey's Favorite: Start Here",
+      "status": "draft",
+      "description": "Default start-here chain for Trey. Standard first-exposure flow for medium-energy sessions targeting classification and mechanism modes. Opening is explicit MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE, then ENCODE, reference generation, and timed retrieval sprint.",
+      "is_template": true,
+      "block_count": 11,
+      "blocks": [
+        {
+          "id": "M-PRE-010",
+          "name": "Learning Objectives Primer",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-PRE-008",
+          "name": "Structural Extraction",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-CAL-001",
+          "name": "Micro Precheck",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-ENC-008",
+          "name": "Mechanism Trace",
+          "control_stage": "TEACH",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-003",
+          "name": "One-Page Anchor",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-CAL-002",
+          "name": "Full Calibrate Probes",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-CAL-003",
+          "name": "Full Calibrate Priority Set",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-ENC-010",
+          "name": "Comparison Table",
+          "control_stage": "ENCODE",
+          "artifact_type": "table",
+          "status": "validated"
+        },
+        {
+          "id": "M-ENC-001",
+          "name": "KWIK Hook",
+          "control_stage": "ENCODE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-004",
+          "name": "Question Bank Seed",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-RET-007",
+          "name": "Timed Sprint Sets",
+          "control_stage": "RETRIEVE",
+          "artifact_type": "notes",
+          "status": "validated"
+        }
+      ],
+      "block_ids": [
+        "M-PRE-010",
+        "M-PRE-008",
+        "M-CAL-001",
+        "M-ENC-008",
+        "M-REF-003",
+        "M-CAL-002",
+        "M-CAL-003",
+        "M-ENC-010",
+        "M-ENC-001",
+        "M-REF-004",
+        "M-RET-007"
+      ],
+      "block_names": [
+        "Learning Objectives Primer",
+        "Structural Extraction",
+        "Micro Precheck",
+        "Mechanism Trace",
+        "One-Page Anchor",
+        "Full Calibrate Probes",
+        "Full Calibrate Priority Set",
+        "Comparison Table",
+        "KWIK Hook",
+        "Question Bank Seed",
+        "Timed Sprint Sets"
+      ],
+      "stage_sequence": [
+        "PRIME",
+        "PRIME",
+        "CALIBRATE",
+        "TEACH",
+        "REFERENCE",
+        "CALIBRATE",
+        "CALIBRATE",
+        "ENCODE",
+        "ENCODE",
+        "REFERENCE",
+        "RETRIEVE"
+      ],
+      "unique_stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "TEACH",
+        "REFERENCE",
+        "ENCODE",
+        "RETRIEVE"
+      ],
+      "stage_coverage": {
+        "PRIME": true,
+        "TEACH": true,
+        "CALIBRATE": true,
+        "ENCODE": true,
+        "REFERENCE": true,
+        "RETRIEVE": true,
+        "OVERLEARN": false
+      },
+      "allowed_modes": [
+        "classification",
+        "mechanism"
+      ],
+      "gates": [
+        "micro_calibrate_before_teach",
+        "teach_chunk_delivered_when_present",
+        "teach_close_artifact_ready",
+        "full_calibrate_after_teach",
+        "mnemonic_after_teach_close_artifact_only",
+        "tie_breakers_complete",
+        "rsr_accuracy_ge_0.85"
+      ],
+      "failure_actions": [
+        "inject_reference_targets_before_retrieve",
+        "substitute_by_error_type_mapping",
+        "re_run_retrieval_gate_after_insertion"
+      ],
+      "requires_reference_targets": true,
+      "context_tags": {
+        "energy": "medium",
+        "time_available": 35
+      },
+      "default_knobs": {
+        "energy": "medium",
+        "near_miss_intensity": "low",
+        "time_available_min": 35,
+        "timed": "soft"
+      },
+      "runtime_profile": {
+        "opening_sequence": [
+          "MICRO-CALIBRATE",
+          "TEACH",
+          "FULL_CALIBRATE"
+        ],
+        "mnemonic_policy": "mnemonic slot only after TEACH-close artifact; full KWIK stays in ENCODE depth work"
+      },
+      "block_overrides": {
+        "M-ENC-008": {
+          "teach_packet": {
+            "concept_type": "mechanism",
+            "bridge_choice": "mechanism_trace",
+            "artifact_target": "one_page_anchor",
+            "escalation_rule": "brief_l0_hook_then_l3_mechanism_then_l4_precision_with_low_friction_function_confirmation"
+          }
+        },
+        "M-ENC-001": {
+          "slot_policy": {
+            "requires_teach_close_artifact": true,
+            "runtime_live_slot": "kwik_lite_pending_runtime_lane",
+            "full_kwik_position": "encode_deepening"
+          }
+        }
+      },
+      "certification": {
+        "disposition": "baseline-certification",
+        "bar": "baseline",
+        "selectable": true,
+        "rationale": "Selectable standard first-exposure chain; must pass end-to-end runtime certification."
+      },
+      "control_plane_valid": true,
+      "control_plane_violations": [],
+      "control_plane_warnings": [],
+      "source_file": "sop/library/chains/C-FE-STD.yaml",
+      "id_decode": {
+        "kind": "Chain",
+        "family_code": "FE",
+        "family_label": "First Exposure",
+        "variant_code": "STD",
+        "variant_label": "Standard",
+        "plain_english": "Chain / First Exposure / Standard"
+      }
+    },
+    {
+      "id": "C-LE-001",
+      "name": "Low Energy",
+      "status": "draft",
+      "description": "Low-effort chain for tired days. Short PRIME orientation, quick calibrate pulse, then reference, retrieve, and overlearn. Maintain streak without burning out.",
+      "is_template": true,
+      "block_count": 7,
+      "blocks": [
+        {
+          "id": "M-PRE-010",
+          "name": "Learning Objectives Primer",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-PRE-001",
+          "name": "Brain Dump",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-PRE-004",
+          "name": "Hierarchical Advance Organizer",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-003",
+          "name": "One-Page Anchor",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-004",
+          "name": "Question Bank Seed",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-RET-003",
+          "name": "Fill-in-Blank",
+          "control_stage": "RETRIEVE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-OVR-001",
+          "name": "Exit Ticket",
+          "control_stage": "OVERLEARN",
+          "artifact_type": "notes",
+          "status": "validated"
+        }
+      ],
+      "block_ids": [
+        "M-PRE-010",
+        "M-PRE-001",
+        "M-PRE-004",
+        "M-REF-003",
+        "M-REF-004",
+        "M-RET-003",
+        "M-OVR-001"
+      ],
+      "block_names": [
+        "Learning Objectives Primer",
+        "Brain Dump",
+        "Hierarchical Advance Organizer",
+        "One-Page Anchor",
+        "Question Bank Seed",
+        "Fill-in-Blank",
+        "Exit Ticket"
+      ],
+      "stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "PRIME",
+        "REFERENCE",
+        "REFERENCE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "unique_stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "REFERENCE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "stage_coverage": {
+        "PRIME": true,
+        "TEACH": false,
+        "CALIBRATE": true,
+        "ENCODE": false,
+        "REFERENCE": true,
+        "RETRIEVE": true,
+        "OVERLEARN": true
+      },
+      "allowed_modes": [
+        "classification",
+        "mechanism",
+        "computation",
+        "definition",
+        "procedure",
+        "spatial",
+        "recognition",
+        "synthesis"
+      ],
+      "gates": [
+        "prime_artifacts_present",
+        "calibrate_attempt_completed",
+        "reference_targets_ready",
+        "retrieve_after_reference_only",
+        "exit_requires_rsr_or_remediation"
+      ],
+      "failure_actions": [
+        "inject_reference_targets_before_retrieve",
+        "substitute_by_error_type_mapping",
+        "re_run_retrieval_gate_after_insertion"
+      ],
+      "requires_reference_targets": true,
+      "context_tags": {
+        "energy": "low",
+        "time_available": 15
+      },
+      "default_knobs": {},
+      "runtime_profile": {},
+      "block_overrides": {},
+      "certification": {
+        "disposition": "baseline-certification",
+        "bar": "baseline",
+        "selectable": true,
+        "rationale": "Selectable low-energy chain; must pass end-to-end runtime certification."
+      },
+      "control_plane_valid": true,
+      "control_plane_violations": [],
+      "control_plane_warnings": [],
+      "source_file": "sop/library/chains/C-LE-001.yaml",
+      "id_decode": {
+        "kind": "Chain",
+        "family_code": "LE",
+        "family_label": "Low Energy",
+        "variant_code": "001",
+        "variant_label": "",
+        "plain_english": "Chain / Low Energy"
+      }
+    },
+    {
+      "id": "C-MR-001",
+      "name": "Mastery Review",
+      "status": "draft",
+      "description": "Deep consolidation with successive relearning. Retrieve \u2192 Refine \u2192 Overlearn.",
+      "is_template": true,
+      "block_count": 6,
+      "blocks": [
+        {
+          "id": "M-REF-003",
+          "name": "One-Page Anchor",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-004",
+          "name": "Question Bank Seed",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-RET-001",
+          "name": "Timed Brain Dump",
+          "control_stage": "RETRIEVE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-001",
+          "name": "Error Autopsy",
+          "control_stage": "REFERENCE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-002",
+          "name": "Mastery Loop",
+          "control_stage": "REFERENCE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-OVR-002",
+          "name": "Anki Card Draft",
+          "control_stage": "OVERLEARN",
+          "artifact_type": "cards",
+          "status": "validated"
+        }
+      ],
+      "block_ids": [
+        "M-REF-003",
+        "M-REF-004",
+        "M-RET-001",
+        "M-REF-001",
+        "M-REF-002",
+        "M-OVR-002"
+      ],
+      "block_names": [
+        "One-Page Anchor",
+        "Question Bank Seed",
+        "Timed Brain Dump",
+        "Error Autopsy",
+        "Mastery Loop",
+        "Anki Card Draft"
+      ],
+      "stage_sequence": [
+        "REFERENCE",
+        "REFERENCE",
+        "RETRIEVE",
+        "REFERENCE",
+        "REFERENCE",
+        "OVERLEARN"
+      ],
+      "unique_stage_sequence": [
+        "REFERENCE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "stage_coverage": {
+        "PRIME": false,
+        "TEACH": false,
+        "CALIBRATE": false,
+        "ENCODE": false,
+        "REFERENCE": true,
+        "RETRIEVE": true,
+        "OVERLEARN": true
+      },
+      "allowed_modes": [
+        "classification",
+        "mechanism",
+        "computation",
+        "definition",
+        "procedure",
+        "spatial",
+        "recognition",
+        "synthesis"
+      ],
+      "gates": [
+        "prime_artifacts_present",
+        "calibrate_attempt_completed",
+        "reference_targets_ready",
+        "retrieve_after_reference_only",
+        "exit_requires_rsr_or_remediation"
+      ],
+      "failure_actions": [
+        "inject_reference_targets_before_retrieve",
+        "substitute_by_error_type_mapping",
+        "re_run_retrieval_gate_after_insertion"
+      ],
+      "requires_reference_targets": true,
+      "context_tags": {
+        "stage": "consolidation",
+        "energy": "medium",
+        "time_available": 30
+      },
+      "default_knobs": {},
+      "runtime_profile": {},
+      "block_overrides": {},
+      "certification": {
+        "disposition": "baseline-certification",
+        "bar": "baseline",
+        "selectable": true,
+        "rationale": "Selectable mastery-review chain; must pass end-to-end runtime certification."
+      },
+      "control_plane_valid": true,
+      "control_plane_violations": [],
+      "control_plane_warnings": [],
+      "source_file": "sop/library/chains/C-MR-001.yaml",
+      "id_decode": {
+        "kind": "Chain",
+        "family_code": "MR",
+        "family_label": "Mastery Review",
+        "variant_code": "001",
+        "variant_label": "",
+        "plain_english": "Chain / Mastery Review"
+      }
+    },
+    {
+      "id": "C-PI-001",
+      "name": "Pathophysiology Intake",
+      "status": "draft",
+      "description": "Pathology first exposure with a short PRIME orientation before pre-test, self-explanation, concept clustering, retrieval, and refinement.",
+      "is_template": true,
+      "block_count": 8,
+      "blocks": [
+        {
+          "id": "M-PRE-010",
+          "name": "Learning Objectives Primer",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-PRE-007",
+          "name": "Pre-Test",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-ENC-007",
+          "name": "Self-Explanation Protocol",
+          "control_stage": "ENCODE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-PRE-005",
+          "name": "Skeleton Concept Hierarchy",
+          "control_stage": "PRIME",
+          "artifact_type": "concept-map",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-003",
+          "name": "One-Page Anchor",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-004",
+          "name": "Question Bank Seed",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-RET-001",
+          "name": "Timed Brain Dump",
+          "control_stage": "RETRIEVE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-001",
+          "name": "Error Autopsy",
+          "control_stage": "REFERENCE",
+          "artifact_type": "notes",
+          "status": "validated"
+        }
+      ],
+      "block_ids": [
+        "M-PRE-010",
+        "M-PRE-007",
+        "M-ENC-007",
+        "M-PRE-005",
+        "M-REF-003",
+        "M-REF-004",
+        "M-RET-001",
+        "M-REF-001"
+      ],
+      "block_names": [
+        "Learning Objectives Primer",
+        "Pre-Test",
+        "Self-Explanation Protocol",
+        "Skeleton Concept Hierarchy",
+        "One-Page Anchor",
+        "Question Bank Seed",
+        "Timed Brain Dump",
+        "Error Autopsy"
+      ],
+      "stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "ENCODE",
+        "PRIME",
+        "REFERENCE",
+        "REFERENCE",
+        "RETRIEVE",
+        "REFERENCE"
+      ],
+      "unique_stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "ENCODE",
+        "REFERENCE",
+        "RETRIEVE"
+      ],
+      "stage_coverage": {
+        "PRIME": true,
+        "TEACH": false,
+        "CALIBRATE": true,
+        "ENCODE": true,
+        "REFERENCE": true,
+        "RETRIEVE": true,
+        "OVERLEARN": false
+      },
+      "allowed_modes": [
+        "classification",
+        "mechanism",
+        "computation",
+        "definition",
+        "procedure",
+        "spatial",
+        "recognition",
+        "synthesis"
+      ],
+      "gates": [
+        "prime_artifacts_present",
+        "calibrate_attempt_completed",
+        "reference_targets_ready",
+        "retrieve_after_reference_only",
+        "exit_requires_rsr_or_remediation"
+      ],
+      "failure_actions": [
+        "inject_reference_targets_before_retrieve",
+        "substitute_by_error_type_mapping",
+        "re_run_retrieval_gate_after_insertion"
+      ],
+      "requires_reference_targets": true,
+      "context_tags": {
+        "class_type": "pathology",
+        "stage": "first_exposure",
+        "energy": "high",
+        "time_available": 45
+      },
+      "default_knobs": {},
+      "runtime_profile": {},
+      "block_overrides": {},
+      "certification": {
+        "disposition": "baseline-certification",
+        "bar": "baseline",
+        "selectable": true,
+        "rationale": "Selectable pathophysiology intake chain; must pass end-to-end runtime certification."
+      },
+      "control_plane_valid": true,
+      "control_plane_violations": [],
+      "control_plane_warnings": [],
+      "source_file": "sop/library/chains/C-PI-001.yaml",
+      "id_decode": {
+        "kind": "Chain",
+        "family_code": "PI",
+        "family_label": "Pathophysiology Intake",
+        "variant_code": "001",
+        "variant_label": "",
+        "plain_english": "Chain / Pathophysiology Intake"
+      }
+    },
+    {
+      "id": "C-QD-001",
+      "name": "Quick Drill",
+      "status": "draft",
+      "description": "Minimal time investment. Short PRIME orientation, quick calibrate pulse, then reference, retrieve, and overlearn. Good for spacing reviews.",
+      "is_template": true,
+      "block_count": 6,
+      "blocks": [
+        {
+          "id": "M-PRE-010",
+          "name": "Learning Objectives Primer",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-PRE-001",
+          "name": "Brain Dump",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-003",
+          "name": "One-Page Anchor",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-004",
+          "name": "Question Bank Seed",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-RET-002",
+          "name": "Sprint Quiz",
+          "control_stage": "RETRIEVE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-OVR-001",
+          "name": "Exit Ticket",
+          "control_stage": "OVERLEARN",
+          "artifact_type": "notes",
+          "status": "validated"
+        }
+      ],
+      "block_ids": [
+        "M-PRE-010",
+        "M-PRE-001",
+        "M-REF-003",
+        "M-REF-004",
+        "M-RET-002",
+        "M-OVR-001"
+      ],
+      "block_names": [
+        "Learning Objectives Primer",
+        "Brain Dump",
+        "One-Page Anchor",
+        "Question Bank Seed",
+        "Sprint Quiz",
+        "Exit Ticket"
+      ],
+      "stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "REFERENCE",
+        "REFERENCE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "unique_stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "REFERENCE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "stage_coverage": {
+        "PRIME": true,
+        "TEACH": false,
+        "CALIBRATE": true,
+        "ENCODE": false,
+        "REFERENCE": true,
+        "RETRIEVE": true,
+        "OVERLEARN": true
+      },
+      "allowed_modes": [
+        "classification",
+        "mechanism",
+        "computation",
+        "definition",
+        "procedure",
+        "spatial",
+        "recognition",
+        "synthesis"
+      ],
+      "gates": [
+        "prime_artifacts_present",
+        "calibrate_attempt_completed",
+        "reference_targets_ready",
+        "retrieve_after_reference_only",
+        "exit_requires_rsr_or_remediation"
+      ],
+      "failure_actions": [
+        "inject_reference_targets_before_retrieve",
+        "substitute_by_error_type_mapping",
+        "re_run_retrieval_gate_after_insertion"
+      ],
+      "requires_reference_targets": true,
+      "context_tags": {
+        "stage": "review",
+        "energy": "medium",
+        "time_available": 15
+      },
+      "default_knobs": {},
+      "runtime_profile": {},
+      "block_overrides": {},
+      "certification": {
+        "disposition": "baseline-certification",
+        "bar": "baseline",
+        "selectable": true,
+        "rationale": "Selectable quick-drill chain; must pass end-to-end runtime certification."
+      },
+      "control_plane_valid": true,
+      "control_plane_violations": [],
+      "control_plane_warnings": [],
+      "source_file": "sop/library/chains/C-QD-001.yaml",
+      "id_decode": {
+        "kind": "Chain",
+        "family_code": "QD",
+        "family_label": "Quick Drill",
+        "variant_code": "001",
+        "variant_label": "",
+        "plain_english": "Chain / Quick Drill"
+      }
+    },
+    {
+      "id": "C-QF-001",
+      "name": "Quick First Exposure",
+      "status": "draft",
+      "description": "Minimal intake chain when time is limited. Short PRIME orientation before pre-test, hierarchy setup, retrieval, and overlearn.",
+      "is_template": true,
+      "block_count": 7,
+      "blocks": [
+        {
+          "id": "M-PRE-010",
+          "name": "Learning Objectives Primer",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-PRE-007",
+          "name": "Pre-Test",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-PRE-004",
+          "name": "Hierarchical Advance Organizer",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-003",
+          "name": "One-Page Anchor",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-004",
+          "name": "Question Bank Seed",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-RET-001",
+          "name": "Timed Brain Dump",
+          "control_stage": "RETRIEVE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-OVR-001",
+          "name": "Exit Ticket",
+          "control_stage": "OVERLEARN",
+          "artifact_type": "notes",
+          "status": "validated"
+        }
+      ],
+      "block_ids": [
+        "M-PRE-010",
+        "M-PRE-007",
+        "M-PRE-004",
+        "M-REF-003",
+        "M-REF-004",
+        "M-RET-001",
+        "M-OVR-001"
+      ],
+      "block_names": [
+        "Learning Objectives Primer",
+        "Pre-Test",
+        "Hierarchical Advance Organizer",
+        "One-Page Anchor",
+        "Question Bank Seed",
+        "Timed Brain Dump",
+        "Exit Ticket"
+      ],
+      "stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "PRIME",
+        "REFERENCE",
+        "REFERENCE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "unique_stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "REFERENCE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "stage_coverage": {
+        "PRIME": true,
+        "TEACH": false,
+        "CALIBRATE": true,
+        "ENCODE": false,
+        "REFERENCE": true,
+        "RETRIEVE": true,
+        "OVERLEARN": true
+      },
+      "allowed_modes": [
+        "classification",
+        "mechanism",
+        "computation",
+        "definition",
+        "procedure",
+        "spatial",
+        "recognition",
+        "synthesis"
+      ],
+      "gates": [
+        "prime_artifacts_present",
+        "calibrate_attempt_completed",
+        "reference_targets_ready",
+        "retrieve_after_reference_only",
+        "exit_requires_rsr_or_remediation"
+      ],
+      "failure_actions": [
+        "inject_reference_targets_before_retrieve",
+        "substitute_by_error_type_mapping",
+        "re_run_retrieval_gate_after_insertion"
+      ],
+      "requires_reference_targets": true,
+      "context_tags": {
+        "stage": "first_exposure",
+        "energy": "medium",
+        "time_available": 20
+      },
+      "default_knobs": {},
+      "runtime_profile": {},
+      "block_overrides": {},
+      "certification": {
+        "disposition": "baseline-certification",
+        "bar": "baseline",
+        "selectable": true,
+        "rationale": "Selectable quick first-exposure chain; must pass end-to-end runtime certification."
+      },
+      "control_plane_valid": true,
+      "control_plane_violations": [],
+      "control_plane_warnings": [],
+      "source_file": "sop/library/chains/C-QF-001.yaml",
+      "id_decode": {
+        "kind": "Chain",
+        "family_code": "QF",
+        "family_label": "Quick First Exposure",
+        "variant_code": "001",
+        "variant_label": "",
+        "plain_english": "Chain / Quick First Exposure"
+      }
+    },
+    {
+      "id": "C-RS-001",
+      "name": "Review Sprint",
+      "status": "draft",
+      "description": "Fast review loop. Prepare \u2192 Retrieve \u2192 Interrogate (application) \u2192 Overlearn. Skips encode for known material.",
+      "is_template": true,
+      "block_count": 6,
+      "blocks": [
+        {
+          "id": "M-PRE-002",
+          "name": "Overarching Pre-Question Set",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-003",
+          "name": "One-Page Anchor",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-004",
+          "name": "Question Bank Seed",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-RET-002",
+          "name": "Sprint Quiz",
+          "control_stage": "RETRIEVE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-INT-002",
+          "name": "Clinical Application",
+          "control_stage": "ENCODE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-OVR-001",
+          "name": "Exit Ticket",
+          "control_stage": "OVERLEARN",
+          "artifact_type": "notes",
+          "status": "validated"
+        }
+      ],
+      "block_ids": [
+        "M-PRE-002",
+        "M-REF-003",
+        "M-REF-004",
+        "M-RET-002",
+        "M-INT-002",
+        "M-OVR-001"
+      ],
+      "block_names": [
+        "Overarching Pre-Question Set",
+        "One-Page Anchor",
+        "Question Bank Seed",
+        "Sprint Quiz",
+        "Clinical Application",
+        "Exit Ticket"
+      ],
+      "stage_sequence": [
+        "PRIME",
+        "REFERENCE",
+        "REFERENCE",
+        "RETRIEVE",
+        "ENCODE",
+        "OVERLEARN"
+      ],
+      "unique_stage_sequence": [
+        "PRIME",
+        "REFERENCE",
+        "RETRIEVE",
+        "ENCODE",
+        "OVERLEARN"
+      ],
+      "stage_coverage": {
+        "PRIME": true,
+        "TEACH": false,
+        "CALIBRATE": false,
+        "ENCODE": true,
+        "REFERENCE": true,
+        "RETRIEVE": true,
+        "OVERLEARN": true
+      },
+      "allowed_modes": [
+        "classification",
+        "mechanism",
+        "computation",
+        "definition",
+        "procedure",
+        "spatial",
+        "recognition",
+        "synthesis"
+      ],
+      "gates": [
+        "prime_artifacts_present",
+        "calibrate_attempt_completed",
+        "reference_targets_ready",
+        "retrieve_after_reference_only",
+        "exit_requires_rsr_or_remediation"
+      ],
+      "failure_actions": [
+        "inject_reference_targets_before_retrieve",
+        "substitute_by_error_type_mapping",
+        "re_run_retrieval_gate_after_insertion"
+      ],
+      "requires_reference_targets": true,
+      "context_tags": {
+        "stage": "review",
+        "energy": "medium",
+        "time_available": 25
+      },
+      "default_knobs": {},
+      "runtime_profile": {},
+      "block_overrides": {},
+      "certification": {
+        "disposition": "baseline-certification",
+        "bar": "baseline",
+        "selectable": true,
+        "rationale": "Selectable review sprint chain; must pass end-to-end runtime certification."
+      },
+      "control_plane_valid": true,
+      "control_plane_violations": [],
+      "control_plane_warnings": [],
+      "source_file": "sop/library/chains/C-RS-001.yaml",
+      "id_decode": {
+        "kind": "Chain",
+        "family_code": "RS",
+        "family_label": "Review Sprint",
+        "variant_code": "001",
+        "variant_label": "",
+        "plain_english": "Chain / Review Sprint"
+      }
+    },
+    {
+      "id": "C-SW-001",
+      "name": "SWEEP",
+      "status": "draft",
+      "description": "Pass 1: Fast structural understanding. Touch everything once. Produce visual maps, objectives, confusables, seed cards.",
+      "is_template": true,
+      "block_count": 7,
+      "blocks": [
+        {
+          "id": "M-PRE-005",
+          "name": "Skeleton Concept Hierarchy",
+          "control_stage": "PRIME",
+          "artifact_type": "concept-map",
+          "status": "validated"
+        },
+        {
+          "id": "M-ENC-009",
+          "name": "Concept Map",
+          "control_stage": "ENCODE",
+          "artifact_type": "concept-map",
+          "status": "draft"
+        },
+        {
+          "id": "M-ENC-010",
+          "name": "Comparison Table",
+          "control_stage": "ENCODE",
+          "artifact_type": "table",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-003",
+          "name": "One-Page Anchor",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-004",
+          "name": "Question Bank Seed",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-RET-002",
+          "name": "Sprint Quiz",
+          "control_stage": "RETRIEVE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-OVR-002",
+          "name": "Anki Card Draft",
+          "control_stage": "OVERLEARN",
+          "artifact_type": "cards",
+          "status": "validated"
+        }
+      ],
+      "block_ids": [
+        "M-PRE-005",
+        "M-ENC-009",
+        "M-ENC-010",
+        "M-REF-003",
+        "M-REF-004",
+        "M-RET-002",
+        "M-OVR-002"
+      ],
+      "block_names": [
+        "Skeleton Concept Hierarchy",
+        "Concept Map",
+        "Comparison Table",
+        "One-Page Anchor",
+        "Question Bank Seed",
+        "Sprint Quiz",
+        "Anki Card Draft"
+      ],
+      "stage_sequence": [
+        "PRIME",
+        "ENCODE",
+        "ENCODE",
+        "REFERENCE",
+        "REFERENCE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "unique_stage_sequence": [
+        "PRIME",
+        "ENCODE",
+        "REFERENCE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "stage_coverage": {
+        "PRIME": true,
+        "TEACH": false,
+        "CALIBRATE": false,
+        "ENCODE": true,
+        "REFERENCE": true,
+        "RETRIEVE": true,
+        "OVERLEARN": true
+      },
+      "allowed_modes": [
+        "synthesis"
+      ],
+      "gates": [
+        "prime_artifacts_present",
+        "calibrate_attempt_completed",
+        "reference_targets_ready",
+        "retrieve_after_reference_only",
+        "exit_requires_rsr_or_remediation"
+      ],
+      "failure_actions": [
+        "inject_reference_targets_before_retrieve",
+        "substitute_by_error_type_mapping",
+        "re_run_retrieval_gate_after_insertion"
+      ],
+      "requires_reference_targets": true,
+      "context_tags": {
+        "stage": "first_exposure",
+        "pass": "sweep",
+        "energy": "medium",
+        "time_available": 30
+      },
+      "default_knobs": {},
+      "runtime_profile": {},
+      "block_overrides": {},
+      "certification": {
+        "disposition": "baseline-certification",
+        "bar": "baseline",
+        "selectable": true,
+        "rationale": "Selectable SWEEP chain; must pass end-to-end runtime certification."
+      },
+      "control_plane_valid": true,
+      "control_plane_violations": [],
+      "control_plane_warnings": [],
+      "source_file": "sop/library/chains/C-SW-001.yaml",
+      "id_decode": {
+        "kind": "Chain",
+        "family_code": "SW",
+        "family_label": "SWEEP",
+        "variant_code": "001",
+        "variant_label": "",
+        "plain_english": "Chain / SWEEP"
+      }
+    },
+    {
+      "id": "C-TRY-001",
+      "name": "Top-Down Narrative Mastery",
+      "status": "draft",
+      "description": "Top-down first-exposure chain with explicit opening order: MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE. TEACH builds a story + analogy bridge, closes with a compact anchor artifact, then full calibrate determines ENCODE depth. Teach-back is not a default live gate.",
+      "is_template": true,
+      "block_count": 12,
+      "blocks": [
+        {
+          "id": "M-PRE-004",
+          "name": "Hierarchical Advance Organizer",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-CAL-001",
+          "name": "Micro Precheck",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-TEA-001",
+          "name": "Story Spine",
+          "control_stage": "TEACH",
+          "artifact_type": "notes",
+          "status": "draft"
+        },
+        {
+          "id": "M-INT-001",
+          "name": "Analogy Bridge",
+          "control_stage": "TEACH",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-003",
+          "name": "One-Page Anchor",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-CAL-002",
+          "name": "Full Calibrate Probes",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-CAL-003",
+          "name": "Full Calibrate Priority Set",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-ENC-015",
+          "name": "Hand-Draw Map",
+          "control_stage": "ENCODE",
+          "artifact_type": "notes",
+          "status": "core"
+        },
+        {
+          "id": "M-ENC-001",
+          "name": "KWIK Hook",
+          "control_stage": "ENCODE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-ENC-009",
+          "name": "Concept Map",
+          "control_stage": "ENCODE",
+          "artifact_type": "concept-map",
+          "status": "draft"
+        },
+        {
+          "id": "M-RET-001",
+          "name": "Timed Brain Dump",
+          "control_stage": "RETRIEVE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-OVR-004",
+          "name": "Post-Learn Brain Dump",
+          "control_stage": "OVERLEARN",
+          "artifact_type": "notes",
+          "status": "core"
+        }
+      ],
+      "block_ids": [
+        "M-PRE-004",
+        "M-CAL-001",
+        "M-TEA-001",
+        "M-INT-001",
+        "M-REF-003",
+        "M-CAL-002",
+        "M-CAL-003",
+        "M-ENC-015",
+        "M-ENC-001",
+        "M-ENC-009",
+        "M-RET-001",
+        "M-OVR-004"
+      ],
+      "block_names": [
+        "Hierarchical Advance Organizer",
+        "Micro Precheck",
+        "Story Spine",
+        "Analogy Bridge",
+        "One-Page Anchor",
+        "Full Calibrate Probes",
+        "Full Calibrate Priority Set",
+        "Hand-Draw Map",
+        "KWIK Hook",
+        "Concept Map",
+        "Timed Brain Dump",
+        "Post-Learn Brain Dump"
+      ],
+      "stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "TEACH",
+        "TEACH",
+        "REFERENCE",
+        "CALIBRATE",
+        "CALIBRATE",
+        "ENCODE",
+        "ENCODE",
+        "ENCODE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "unique_stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "TEACH",
+        "REFERENCE",
+        "ENCODE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "stage_coverage": {
+        "PRIME": true,
+        "TEACH": true,
+        "CALIBRATE": true,
+        "ENCODE": true,
+        "REFERENCE": true,
+        "RETRIEVE": true,
+        "OVERLEARN": true
+      },
+      "allowed_modes": [
+        "classification",
+        "mechanism",
+        "definition",
+        "procedure",
+        "spatial"
+      ],
+      "gates": [
+        "prime_artifacts_present",
+        "micro_calibrate_before_teach",
+        "teach_chunk_delivered_when_present",
+        "teach_close_artifact_ready",
+        "full_calibrate_after_teach",
+        "mnemonic_after_teach_close_artifact_only",
+        "retrieve_after_reference_only"
+      ],
+      "failure_actions": [
+        "if_micro_calibrate_unstable_reduce_teach_chunk_size",
+        "if_full_calibrate_poor_route_to_targeted_encode",
+        "substitute_by_error_type_mapping"
+      ],
+      "requires_reference_targets": true,
+      "context_tags": {
+        "stage": "first_exposure",
+        "energy": "medium",
+        "time_available": 45,
+        "learner_style": "top_down_narrative"
+      },
+      "default_knobs": {},
+      "runtime_profile": {
+        "opening_sequence": [
+          "MICRO-CALIBRATE",
+          "TEACH",
+          "FULL_CALIBRATE"
+        ],
+        "teaching_style": "explanation-first, big-picture narrative, interactive pauses",
+        "depth_policy": "brief_l0_hook_then_l3_mechanism_then_l4_precision_with_l1_l2_fallback_only",
+        "l3_to_l4_gate": "low_friction_function_confirmation",
+        "mnemonic_policy": "mnemonic slot only after TEACH-close artifact; full KWIK remains ENCODE depth work",
+        "provenance_mode": "strict",
+        "confidence_floor": "medium",
+        "output_policy": "notes and cards must be dependable session outputs"
+      },
+      "block_overrides": {
+        "M-TEA-001": {
+          "teach_packet": {
+            "concept_type": "procedure",
+            "bridge_choice": "story_spine",
+            "artifact_target": "one_page_anchor",
+            "escalation_rule": "brief_l0_hook_then_l3_mechanism_then_l4_precision_with_low_friction_function_confirmation"
+          }
+        },
+        "M-INT-001": {
+          "teach_packet": {
+            "concept_type": "mechanism",
+            "bridge_choice": "analogy_bridge",
+            "artifact_target": "one_page_anchor",
+            "escalation_rule": "brief_l0_hook_then_l3_mechanism_then_l4_precision_with_low_friction_function_confirmation"
+          }
+        },
+        "M-ENC-001": {
+          "slot_policy": {
+            "requires_teach_close_artifact": true,
+            "runtime_live_slot": "kwik_lite_pending_runtime_lane",
+            "full_kwik_position": "encode_deepening"
+          }
+        }
+      },
+      "certification": {
+        "disposition": "strict-certification",
+        "bar": "strict",
+        "selectable": true,
+        "gold_standard": true,
+        "rationale": "Primary top-down gold-standard chain; must pass the stricter teaching-quality bar."
+      },
+      "control_plane_valid": true,
+      "control_plane_violations": [],
+      "control_plane_warnings": [],
+      "source_file": "sop/library/chains/C-TRY-001.yaml",
+      "id_decode": {
+        "kind": "Chain",
+        "family_code": "TRY",
+        "family_label": "Top-Down",
+        "variant_code": "001",
+        "variant_label": "Narrative Mastery",
+        "plain_english": "Chain / Top-Down / Narrative Mastery"
+      }
+    },
+    {
+      "id": "C-TRY-002",
+      "name": "Top-Down Forward Progress",
+      "status": "draft",
+      "description": "Top-down first-exposure chain with tiered exits and explicit opening order: MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE. TEACH closes with a learner-usable anchor artifact before any mnemonic slot. Teach-back is removed from the default live path.",
+      "is_template": true,
+      "block_count": 12,
+      "blocks": [
+        {
+          "id": "M-PRE-004",
+          "name": "Hierarchical Advance Organizer",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-CAL-001",
+          "name": "Micro Precheck",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-ENC-008",
+          "name": "Mechanism Trace",
+          "control_stage": "TEACH",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-INT-001",
+          "name": "Analogy Bridge",
+          "control_stage": "TEACH",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-003",
+          "name": "One-Page Anchor",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-CAL-002",
+          "name": "Full Calibrate Probes",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-CAL-003",
+          "name": "Full Calibrate Priority Set",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-ENC-015",
+          "name": "Hand-Draw Map",
+          "control_stage": "ENCODE",
+          "artifact_type": "notes",
+          "status": "core"
+        },
+        {
+          "id": "M-ENC-001",
+          "name": "KWIK Hook",
+          "control_stage": "ENCODE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-ENC-009",
+          "name": "Concept Map",
+          "control_stage": "ENCODE",
+          "artifact_type": "concept-map",
+          "status": "draft"
+        },
+        {
+          "id": "M-RET-001",
+          "name": "Timed Brain Dump",
+          "control_stage": "RETRIEVE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-OVR-004",
+          "name": "Post-Learn Brain Dump",
+          "control_stage": "OVERLEARN",
+          "artifact_type": "notes",
+          "status": "core"
+        }
+      ],
+      "block_ids": [
+        "M-PRE-004",
+        "M-CAL-001",
+        "M-ENC-008",
+        "M-INT-001",
+        "M-REF-003",
+        "M-CAL-002",
+        "M-CAL-003",
+        "M-ENC-015",
+        "M-ENC-001",
+        "M-ENC-009",
+        "M-RET-001",
+        "M-OVR-004"
+      ],
+      "block_names": [
+        "Hierarchical Advance Organizer",
+        "Micro Precheck",
+        "Mechanism Trace",
+        "Analogy Bridge",
+        "One-Page Anchor",
+        "Full Calibrate Probes",
+        "Full Calibrate Priority Set",
+        "Hand-Draw Map",
+        "KWIK Hook",
+        "Concept Map",
+        "Timed Brain Dump",
+        "Post-Learn Brain Dump"
+      ],
+      "stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "TEACH",
+        "TEACH",
+        "REFERENCE",
+        "CALIBRATE",
+        "CALIBRATE",
+        "ENCODE",
+        "ENCODE",
+        "ENCODE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "unique_stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "TEACH",
+        "REFERENCE",
+        "ENCODE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "stage_coverage": {
+        "PRIME": true,
+        "TEACH": true,
+        "CALIBRATE": true,
+        "ENCODE": true,
+        "REFERENCE": true,
+        "RETRIEVE": true,
+        "OVERLEARN": true
+      },
+      "allowed_modes": [
+        "classification",
+        "mechanism",
+        "definition",
+        "procedure",
+        "spatial",
+        "recognition"
+      ],
+      "gates": [
+        "prime_artifacts_present",
+        "micro_calibrate_before_teach",
+        "teach_chunk_delivered_when_present",
+        "teach_close_artifact_ready",
+        "full_calibrate_after_teach",
+        "mnemonic_after_teach_close_artifact_only",
+        "retrieve_after_reference_only",
+        "tier_exit_allowed"
+      ],
+      "failure_actions": [
+        "if_micro_calibrate_unstable_reduce_initial_chunk",
+        "if_full_calibrate_poor_route_to_targeted_encode",
+        "substitute_by_error_type_mapping"
+      ],
+      "requires_reference_targets": true,
+      "context_tags": {
+        "stage": "first_exposure",
+        "energy": "medium",
+        "time_available": 50,
+        "learner_style": "top_down_structured"
+      },
+      "default_knobs": {
+        "energy": "medium",
+        "near_miss_intensity": "low",
+        "time_available_min": 50,
+        "timed": "soft"
+      },
+      "runtime_profile": {
+        "opening_sequence": [
+          "MICRO-CALIBRATE",
+          "TEACH",
+          "FULL_CALIBRATE"
+        ],
+        "depth_policy": "brief_l0_hook_then_l3_mechanism_then_l4_precision_with_l1_l2_fallback_only",
+        "l3_to_l4_gate": "low_friction_function_confirmation",
+        "teaching_style": "explanation-first but structured and target-oriented",
+        "mnemonic_policy": "mnemonic slot only after TEACH-close artifact; full KWIK remains ENCODE depth work",
+        "provenance_mode": "strict",
+        "confidence_floor": "medium"
+      },
+      "block_overrides": {
+        "M-ENC-008": {
+          "teach_packet": {
+            "concept_type": "mechanism",
+            "bridge_choice": "mechanism_trace",
+            "artifact_target": "one_page_anchor",
+            "escalation_rule": "brief_l0_hook_then_l3_mechanism_then_l4_precision_with_low_friction_function_confirmation"
+          }
+        },
+        "M-INT-001": {
+          "teach_packet": {
+            "concept_type": "compare_contrast",
+            "bridge_choice": "analogy_bridge",
+            "artifact_target": "one_page_anchor",
+            "escalation_rule": "brief_l0_hook_then_l3_mechanism_then_l4_precision_with_low_friction_function_confirmation"
+          }
+        },
+        "M-ENC-001": {
+          "slot_policy": {
+            "requires_teach_close_artifact": true,
+            "runtime_live_slot": "kwik_lite_pending_runtime_lane",
+            "full_kwik_position": "encode_deepening"
+          }
+        }
+      },
+      "certification": {
+        "disposition": "strict-certification",
+        "bar": "strict",
+        "selectable": true,
+        "gold_standard": true,
+        "rationale": "Structured top-down comparison chain; must pass the stricter teaching-quality bar."
+      },
+      "control_plane_valid": true,
+      "control_plane_violations": [],
+      "control_plane_warnings": [],
+      "source_file": "sop/library/chains/C-TRY-002.yaml",
+      "id_decode": {
+        "kind": "Chain",
+        "family_code": "TRY",
+        "family_label": "Top-Down",
+        "variant_code": "002",
+        "variant_label": "Forward Progress",
+        "plain_english": "Chain / Top-Down / Forward Progress"
+      }
+    },
+    {
+      "id": "C-VE-001",
+      "name": "Visual Encoding",
+      "status": "draft",
+      "description": "Visualization-first encoding for topics with confusable concepts. Short PRIME orientation, quick calibrate pulse, then build visual representations before retrieval.",
+      "is_template": true,
+      "block_count": 8,
+      "blocks": [
+        {
+          "id": "M-PRE-010",
+          "name": "Learning Objectives Primer",
+          "control_stage": "PRIME",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-PRE-001",
+          "name": "Brain Dump",
+          "control_stage": "CALIBRATE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-ENC-009",
+          "name": "Concept Map",
+          "control_stage": "ENCODE",
+          "artifact_type": "concept-map",
+          "status": "draft"
+        },
+        {
+          "id": "M-ENC-010",
+          "name": "Comparison Table",
+          "control_stage": "ENCODE",
+          "artifact_type": "table",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-003",
+          "name": "One-Page Anchor",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-REF-004",
+          "name": "Question Bank Seed",
+          "control_stage": "REFERENCE",
+          "artifact_type": "outline",
+          "status": "validated"
+        },
+        {
+          "id": "M-RET-001",
+          "name": "Timed Brain Dump",
+          "control_stage": "RETRIEVE",
+          "artifact_type": "notes",
+          "status": "validated"
+        },
+        {
+          "id": "M-OVR-001",
+          "name": "Exit Ticket",
+          "control_stage": "OVERLEARN",
+          "artifact_type": "notes",
+          "status": "validated"
+        }
+      ],
+      "block_ids": [
+        "M-PRE-010",
+        "M-PRE-001",
+        "M-ENC-009",
+        "M-ENC-010",
+        "M-REF-003",
+        "M-REF-004",
+        "M-RET-001",
+        "M-OVR-001"
+      ],
+      "block_names": [
+        "Learning Objectives Primer",
+        "Brain Dump",
+        "Concept Map",
+        "Comparison Table",
+        "One-Page Anchor",
+        "Question Bank Seed",
+        "Timed Brain Dump",
+        "Exit Ticket"
+      ],
+      "stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "ENCODE",
+        "ENCODE",
+        "REFERENCE",
+        "REFERENCE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "unique_stage_sequence": [
+        "PRIME",
+        "CALIBRATE",
+        "ENCODE",
+        "REFERENCE",
+        "RETRIEVE",
+        "OVERLEARN"
+      ],
+      "stage_coverage": {
+        "PRIME": true,
+        "TEACH": false,
+        "CALIBRATE": true,
+        "ENCODE": true,
+        "REFERENCE": true,
+        "RETRIEVE": true,
+        "OVERLEARN": true
+      },
+      "allowed_modes": [
+        "classification",
+        "mechanism",
+        "computation",
+        "definition",
+        "procedure",
+        "spatial",
+        "recognition",
+        "synthesis"
+      ],
+      "gates": [
+        "prime_artifacts_present",
+        "calibrate_attempt_completed",
+        "reference_targets_ready",
+        "retrieve_after_reference_only",
+        "exit_requires_rsr_or_remediation"
+      ],
+      "failure_actions": [
+        "inject_reference_targets_before_retrieve",
+        "substitute_by_error_type_mapping",
+        "re_run_retrieval_gate_after_insertion"
+      ],
+      "requires_reference_targets": true,
+      "context_tags": {
+        "stage": "first_exposure",
+        "energy": "high",
+        "time_available": 40
+      },
+      "default_knobs": {},
+      "runtime_profile": {},
+      "block_overrides": {},
+      "certification": {
+        "disposition": "baseline-certification",
+        "bar": "baseline",
+        "selectable": true,
+        "rationale": "Selectable visual-encoding chain; must pass end-to-end runtime certification."
+      },
+      "control_plane_valid": true,
+      "control_plane_violations": [],
+      "control_plane_warnings": [],
+      "source_file": "sop/library/chains/C-VE-001.yaml",
+      "id_decode": {
+        "kind": "Chain",
+        "family_code": "VE",
+        "family_label": "Visual Encoding",
+        "variant_code": "001",
+        "variant_label": "",
+        "plain_english": "Chain / Visual Encoding"
+      }
+    }
+  ]
+}

@@ -4,8 +4,8 @@ description: Visualization-first encoding for topics with confusable concepts. S
 blocks:
 - M-PRE-010
 - M-PRE-001
-- M-ENC-009
-- M-ENC-010
+- M-ORG-001
+- M-ORG-002
 - M-REF-003
 - M-REF-004
 - M-RET-001

@@ -10,7 +10,7 @@ blocks:
 - M-REF-003
 - M-CAL-002
 - M-CAL-003
-- M-ENC-001
+- M-HOOK-001
 - M-REF-004
 - M-RET-001
 - M-RET-006
@@ -53,7 +53,7 @@ block_overrides:
       bridge_choice: analogy_bridge
       artifact_target: one_page_anchor
       escalation_rule: brief_l0_hook_then_l3_mechanism_then_l4_precision_with_low_friction_function_confirmation
-  M-ENC-001:
+  M-HOOK-001:
     slot_policy:
       requires_teach_close_artifact: true
       runtime_live_slot: kwik_lite_pending_runtime_lane

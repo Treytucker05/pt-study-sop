@@ -7,8 +7,8 @@ description: >-
 blocks:
 - M-PRE-010
 - M-PRE-007
-- M-ENC-005
-- M-ENC-007
+- M-GEN-005
+- M-GEN-006
 - M-INT-002
 - M-REF-003
 - M-REF-004

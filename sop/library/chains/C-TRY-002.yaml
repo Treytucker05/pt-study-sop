@@ -9,15 +9,15 @@ blocks:
   # --- TIER 1: opening architecture complete ---
   - M-PRE-004      # Hierarchical Advance Organizer
   - M-CAL-001      # MICRO-CALIBRATE baseline
-  - M-ENC-008      # TEACH Mechanism Trace
+  - M-GEN-007      # TEACH Mechanism Trace
   - M-INT-001      # TEACH Analogy Bridge
   - M-REF-003      # TEACH-close artifact
   - M-CAL-002      # FULL CALIBRATE probes
   - M-CAL-003      # FULL CALIBRATE priority set
   # --- TIER 2: deep encode ---
-  - M-ENC-015      # Hand-Draw Map
-  - M-ENC-001      # Full KWIK Hook (deeper ENCODE)
-  - M-ENC-009      # Concept Map (learner-facing production)
+  - M-GEN-004      # Hand-Draw Map
+  - M-HOOK-001      # Full KWIK Hook (deeper ENCODE)
+  - M-ORG-001      # Concept Map (learner-facing production)
   # --- TIER 3: retrieval + closure ---
   - M-RET-001      # Timed Brain Dump
   - M-OVR-004      # Brain Dump + Exit
@@ -48,7 +48,7 @@ tier_exits:
     min_duration_min: 24
     description: "Opening architecture complete (MICRO-CALIBRATE -> TEACH -> FULL CALIBRATE). Safe to stop."
   tier_2:
-    after_block: M-ENC-009
+    after_block: M-ORG-001
     min_duration_min: 38
     description: "Deep encoding complete. Safe to stop."
   tier_3:
@@ -77,7 +77,7 @@ default_knobs:
   time_available_min: 50
   timed: soft
 block_overrides:
-  M-ENC-008:
+  M-GEN-007:
     teach_packet:
       concept_type: mechanism
       bridge_choice: mechanism_trace
@@ -89,7 +89,7 @@ block_overrides:
       bridge_choice: analogy_bridge
       artifact_target: one_page_anchor
       escalation_rule: brief_l0_hook_then_l3_mechanism_then_l4_precision_with_low_friction_function_confirmation
-  M-ENC-001:
+  M-HOOK-001:
     slot_policy:
       requires_teach_close_artifact: true
       runtime_live_slot: kwik_lite_pending_runtime_lane

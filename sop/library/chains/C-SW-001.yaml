@@ -5,8 +5,8 @@ description: >-
   Produce visual maps, objectives, confusables, seed cards.
 blocks:
 - M-PRE-005
-- M-ENC-009
-- M-ENC-010
+- M-ORG-001
+- M-ORG-002
 - M-REF-003
 - M-REF-004
 - M-RET-002

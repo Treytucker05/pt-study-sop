@@ -4,7 +4,7 @@ description: Pathology first exposure with a short PRIME orientation before pre-
 blocks:
 - M-PRE-010
 - M-PRE-007
-- M-ENC-007
+- M-GEN-006
 - M-PRE-005
 - M-REF-003
 - M-REF-004

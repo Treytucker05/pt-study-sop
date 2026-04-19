@@ -4,11 +4,11 @@ description: High-detail anatomy first exposure with a short PRIME orientation b
 blocks:
 - M-PRE-010
 - M-PRE-007
-- M-ENC-003
+- M-GEN-003
 - M-REF-003
 - M-REF-004
 - M-RET-001
-- M-ENC-001
+- M-HOOK-001
 - M-OVR-002
 allowed_modes:
 - spatial
