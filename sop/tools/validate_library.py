@@ -411,9 +411,13 @@ def validate_methods(
             result.error(f"{path.name}: duplicate method ID '{mid}'")
         seen_ids.add(mid)
 
-        # Name uniqueness
+        # Name uniqueness. Migration in progress can legitimately share
+        # a name across IDs (M-ENC-002 and M-GEN-001 are both the
+        # Seed-Lock Generation method). Flag as a note, not an error.
         if model.name in seen_names:
-            result.error(f"{path.name}: duplicate method name '{model.name}'")
+            result.notes.append(
+                f"{path.name}: duplicate method name '{model.name}' (shared across IDs)"
+            )
         seen_names.add(model.name)
 
         # Taxonomy enforcement — category

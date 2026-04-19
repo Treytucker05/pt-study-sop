@@ -40,9 +40,9 @@ Each method block represents a single study activity.
 **Categories (Control Plane stages):**
 
 1. **PRIME** — Prepare attention and build structure from the source before detail (e.g., brain dump, overarching pre-question set, prior knowledge scan, hierarchical advance organizer, skeleton concept hierarchy, structural skimming + pillar mapping, pre-test, structural extraction, syntopical big-picture synthesis, learning objectives primer, terminology pretraining, big-picture orientation summary, ambiguity and blind-spot scan)
-2. **TEACH** — Deliver first-contact explanation in bounded chunks before diagnostic probing (e.g., mechanism trace, analogy bridge, story spine, confusable contrast teach, clinical anchor mini-case, modality switch, depth ladder, worked example -> completion fade)
+2. **TEACH** — Deliver first-contact explanation in bounded chunks before diagnostic probing (e.g., mechanism trace, mechanism trace, analogy bridge, story spine, confusable contrast teach, anchor mini-case, modality switch, jingle / rhyme hook, depth ladder (4-10-hs-expert), kwik lite, worked example -> completion fade)
 3. **CALIBRATE** — Diagnostic readiness checks after PRIME or TEACH to identify weaknesses before learner production (e.g., micro precheck, full calibrate probes, full calibrate priority set, story confidence tag)
-4. **ENCODE** — Attach meaning to material through active processing (e.g., seed-lock generation, teach-back, draw-label, hand-draw map, why-chain, self-explanation protocol, embodied walkthrough, palpation anchor, kwik hook, kwik lite, jingle / rhyme hook, memory palace, chain linking, clinical application, cross-topic link, side-by-side comparison, case walkthrough, illness script builder, concept map, comparison table, process flowchart, clinical decision tree)
+4. **ENCODE** — Attach meaning to material through active processing (e.g., kwik hook, seed-lock generation, draw-label, teach-back, why-chain, self-explanation protocol, concept map, comparison table, process flowchart, clinical decision tree, memory palace, chain linking, hand-draw map, embodied walkthrough, seed-lock generation, teach-back, draw-label, hand-draw map, why-chain, self-explanation protocol, embodied walkthrough, palpation anchor, kwik hook, kwik lite, jingle / rhyme hook, memory palace, chain linking, clinical application, cross-topic link, side-by-side comparison, case walkthrough, illness script builder, concept map, comparison table, process flowchart, clinical decision tree)
 5. **REFERENCE** — Generate target cues and cheat sheets for retrieval (e.g., error autopsy, mastery loop, one-page anchor, question bank seed)
 6. **RETRIEVE** — Test recall with adversarial near-miss and timed sprints (e.g., timed brain dump, sprint quiz, fill-in-blank, mixed practice, variable retrieval, adversarial drill, timed sprint sets)
 7. **OVERLEARN** — Close loop, capture artifacts, Anki, drill sheets (e.g., exit ticket, anki card draft, drill sheet builder, post-learn brain dump)
@@ -51,7 +51,7 @@ Each method block represents a single study activity.
 
 ---
 
-## §2.1 Block Catalog (62 blocks)
+## §2.1 Block Catalog (79 blocks)
 
 ### PRIME (13 blocks)
 | Block | Duration | Energy | Evidence |
@@ -70,16 +70,19 @@ Each method block represents a single study activity.
 | Big-Picture Orientation Summary | 4 min | low | Ausubel (1968); Advance organizers help assimilation of new material when structure is established before detail. |
 | Ambiguity and Blind-Spot Scan | 4 min | medium | Overoye et al. (2021); Bounded prequestions and targeted attention-shaping can potentiate later learning when they highlight what matters without becoming hidden explanation. |
 
-### TEACH (8 blocks)
+### TEACH (11 blocks)
 | Block | Duration | Energy | Evidence |
 |-------|----------|--------|----------|
 | Mechanism Trace | 10 min | high | Kulasegaram et al. (2013); Causal reasoning with biomedical mechanisms supports diagnostic transfer to novel cases |
+| Mechanism Trace | 10 min | high | Kulasegaram et al. (2013); Causal reasoning with biomedical mechanisms supports diagnostic transfer to novel cases |
 | Analogy Bridge | 3 min | medium | Gentner (1983); Analogical reasoning supports structural mapping and transfer across domains |
-| Story Spine | 6 min | medium | Mayer, R. E. (2009). Multimedia Learning (2nd ed.). Cambridge University Press.; Segmented explanation and pretraining support novice learning on unfamiliar systems (segmenting principle, pretraining principle, d=0.85 for problem-solving transfer) |
+| Story Spine | 6 min | medium | Mayer (2009); Segmented explanation and pretraining support novice learning on unfamiliar systems |
 | Confusable Contrast Teach | 6 min | medium | Alfieri et al. (2013); Comparison-based learning improves discrimination and concept formation |
-| Clinical Anchor Mini-Case | 5 min | medium | Schmidt and Rikers (2007); Clinically anchored explanation supports later script formation and transfer |
+| Anchor Mini-Case | 5 min | medium | Schmidt and Rikers (2007); Clinically anchored explanation supports later script formation and transfer |
 | Modality Switch | 3 min | low | Mayer (2009); Matching representation and segmenting explanation helps novice comprehension |
-| Depth Ladder | 6 min | medium | Mayer (2009); Segmented and progressively elaborated explanation improves novice understanding of unfamiliar systems. |
+| Jingle / Rhyme Hook | 3 min | low | Paivio (1991); Verbal plus image-linked hooks can improve retention when grounded in meaning |
+| Depth Ladder (4-10-HS-Expert) | 6 min | medium | Mayer (2009); Segmented and progressively elaborated explanation improves novice understanding of unfamiliar systems. |
+| KWIK Lite | 2 min | low | Paivio (1991); Lightweight verbal-plus-image hooks can improve retention when they are grounded in already-understood meaning. |
 | Worked Example -> Completion Fade | 8 min | medium | Renkl and Atkinson (2003); Worked examples with guidance fading improve novice schema acquisition and transfer better than early unguided problem solving. |
 
 ### CALIBRATE (4 blocks)
@@ -90,9 +93,23 @@ Each method block represents a single study activity.
 | Full Calibrate Priority Set | 3 min | low | Rawson and Dunlosky (2011); Targeted corrective practice outperforms broad untargeted restudy. |
 | Story Confidence Tag | 2 min | low | Metcalfe (2017); Metacognitive monitoring at the schema level identifies high-value encoding targets |
 
-### ENCODE (22 blocks)
+### ENCODE (36 blocks)
 | Block | Duration | Energy | Evidence |
 |-------|----------|--------|----------|
+| KWIK Hook | 3 min | medium | Paivio (1991); Dual-coding theory — combining verbal + visual improves retention by creating multiple retrieval paths |
+| Seed-Lock Generation | 3 min | medium | Slamecka & Graf (1978); Generation effect — self-generated items are remembered significantly better than items simply read |
+| Draw-Label | 10 min | high | Wammes et al. (2016); Drawing effect — drawing produces superior memory compared to writing, especially for visual-spatial content |
+| Teach-Back | 5 min | high | Nestojko et al. (2014); Expecting to teach enhances encoding and organization of information |
+| Why-Chain | 5 min | medium | Dunlosky et al. (2013); Elaborative interrogation rated moderate utility for learning; builds causal understanding |
+| Self-Explanation Protocol | 7 min | medium | Chi et al. (1994); Self-explanation rated moderate-high utility across domains; works by generating inferences |
+| Concept Map | 10 min | high | Novak & Canas (2008); concept mapping promotes meaningful learning through explicit relationship encoding |
+| Comparison Table | 7 min | medium | Alfieri et al. (2013); Comparison improves discrimination and concept formation by highlighting distinctive features |
+| Process Flowchart | 10 min | high | Winn (1991); Spatial-sequential diagrams improve procedural understanding and memory |
+| Clinical Decision Tree | 10 min | high | Charlin et al. (2000); Decision trees scaffold clinical reasoning and support diagnostic accuracy |
+| Memory Palace | 10 min | high | Dresler et al. (2017); fMRI study showed memory athletes using Method of Loci exhibit distinct patterns of functional brain connectivity; 40 days of loci training significantly improved recall in naive subjects |
+| Chain Linking | 8 min | medium | Bower & Winzenz (1970); Narrative chaining improves serial recall by creating meaningful connections between unrelated items |
+| Hand-Draw Map | 5 min | medium | Wammes et al. (2016); Drawing effect — drawing doubles free-recall rates (45% vs 20%) through multimodal encoding combining motor, visual, and semantic processing |
+| Embodied Walkthrough | 6 min | medium | Kontra et al. (2015); Physical enactment and gesture-grounded learning improve later conceptual understanding compared with passive observation alone. |
 | Seed-Lock Generation | 3 min | medium | Slamecka & Graf (1978); Generation effect — self-generated items are remembered significantly better than items simply read |
 | Teach-Back | 5 min | high | Nestojko et al. (2014); Expecting to teach enhances encoding and organization of information |
 | Draw-Label | 10 min | high | Wammes et al. (2016); Drawing effect — drawing produces superior memory compared to writing, especially for visual-spatial content |
