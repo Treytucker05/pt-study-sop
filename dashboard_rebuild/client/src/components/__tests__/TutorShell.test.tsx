@@ -263,6 +263,7 @@ const getObsidianFileMock = vi.fn().mockResolvedValue({ success: true, content: 
 const saveObsidianFileMock = vi.fn().mockResolvedValue({ success: true });
 const createObsidianFolderMock = vi.fn().mockResolvedValue({ success: true, created: true });
 const uploadMaterialMock = vi.fn();
+const listSessionsMock = vi.fn().mockResolvedValue([]);
 
 beforeEach(() => {
   mockTldrawEditor.createShapes.mockReset().mockReturnThis();
@@ -274,6 +275,7 @@ beforeEach(() => {
   saveObsidianFileMock.mockReset().mockResolvedValue({ success: true });
   createObsidianFolderMock.mockReset().mockResolvedValue({ success: true, created: true });
   uploadMaterialMock.mockReset();
+  listSessionsMock.mockReset().mockResolvedValue([]);
   Object.defineProperty(navigator, "clipboard", {
     configurable: true,
     value: {
@@ -295,6 +297,7 @@ vi.mock("@/lib/api", () => ({
       captureWorkflowNote: vi.fn(),
       createWorkflow: vi.fn(),
       updateWorkflowStage: vi.fn(),
+      listSessions: (...args: unknown[]) => listSessionsMock(...args),
     },
     obsidian: {
       getFiles: (...args: unknown[]) => getObsidianFilesMock(...args),
@@ -438,6 +441,10 @@ function makeSession() {
     resumeSession: vi.fn().mockResolvedValue(undefined),
     hasActiveTutorSession: true,
     activeSessionStatus: "active",
+    artifacts: [],
+    capturedNotes: [],
+    sourceInventory: [],
+    primingMethodRuns: [],
   };
 }
 
@@ -1288,6 +1295,261 @@ describe("TutorShell studio routing", () => {
     expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
     expect(setPanelLayout).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: /open source shelf panel/i })).toBeInTheDocument();
+  });
+
+  it("exposes a New / Resume tab pair on the entry card and switches the active mode on click", async () => {
+    const user = userEvent.setup();
+
+    renderTutorShell("home", {
+      activeSessionId: null,
+      sessionOverrides: {
+        hasActiveTutorSession: false,
+      },
+      hubOverrides: {
+        courseId: 101,
+        courseLabel: "Exercise Physiology",
+        tutorContentSources: {
+          courses: [{ id: 101, name: "Exercise Physiology" }],
+        },
+      },
+      shellOverrides: {
+        panelLayout: [],
+      },
+    });
+
+    const newTab = await screen.findByRole("tab", { name: /new session/i });
+    const resumeTab = screen.getByRole("tab", { name: /resume session/i });
+
+    expect(newTab).toHaveAttribute("aria-selected", "true");
+    expect(resumeTab).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByTestId("tutor-entry-mode")).toHaveAttribute(
+      "data-mode",
+      "new",
+    );
+    expect(
+      screen.queryByTestId("tutor-entry-resume-panel"),
+    ).not.toBeInTheDocument();
+
+    await user.click(resumeTab);
+
+    expect(resumeTab).toHaveAttribute("aria-selected", "true");
+    expect(newTab).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByTestId("tutor-entry-mode")).toHaveAttribute(
+      "data-mode",
+      "resume",
+    );
+    expect(
+      await screen.findByTestId("tutor-entry-resume-panel"),
+    ).toBeInTheDocument();
+  });
+
+  it("fetches recent tutor sessions scoped by course when the Resume tab opens", async () => {
+    const user = userEvent.setup();
+    listSessionsMock.mockResolvedValue([]);
+
+    renderTutorShell("home", {
+      activeSessionId: null,
+      sessionOverrides: { hasActiveTutorSession: false },
+      hubOverrides: {
+        courseId: 101,
+        courseLabel: "Exercise Physiology",
+        tutorContentSources: {
+          courses: [{ id: 101, name: "Exercise Physiology" }],
+        },
+      },
+      shellOverrides: { panelLayout: [] },
+    });
+
+    expect(listSessionsMock).not.toHaveBeenCalled();
+    await user.click(
+      await screen.findByRole("tab", { name: /resume session/i }),
+    );
+
+    await waitFor(() => expect(listSessionsMock).toHaveBeenCalled());
+    expect(listSessionsMock).toHaveBeenLastCalledWith({
+      course_id: 101,
+      limit: 20,
+    });
+  });
+
+  it("renders a row per tutor session in the Resume tab with name and course", async () => {
+    const user = userEvent.setup();
+    listSessionsMock.mockResolvedValue([
+      {
+        session_id: "sess-1",
+        session_name: "Week 9 Basal Ganglia",
+        course_id: 101,
+        course_name: "Neuro",
+        study_unit: "Week 9",
+        topic: "Basal ganglia",
+        updated_at: "2026-04-18T09:00:00Z",
+        last_mode: "tutor",
+      },
+      {
+        session_id: "sess-2",
+        session_name: "Midterm Review",
+        course_id: 101,
+        course_name: "Neuro",
+        study_unit: null,
+        topic: null,
+        updated_at: "2026-04-17T09:00:00Z",
+        last_mode: "tutor",
+      },
+    ]);
+
+    renderTutorShell("home", {
+      activeSessionId: null,
+      sessionOverrides: { hasActiveTutorSession: false },
+      hubOverrides: {
+        courseId: 101,
+        courseLabel: "Neuro",
+        tutorContentSources: {
+          courses: [{ id: 101, name: "Neuro" }],
+        },
+      },
+      shellOverrides: { panelLayout: [] },
+    });
+
+    await user.click(
+      await screen.findByRole("tab", { name: /resume session/i }),
+    );
+
+    const rows = await screen.findAllByTestId("tutor-entry-resume-row");
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveTextContent(/Week 9 Basal Ganglia/);
+    expect(rows[0]).toHaveTextContent(/Neuro/);
+    expect(rows[1]).toHaveTextContent(/Midterm Review/);
+  });
+
+  it("shows an empty-state call to action when no past sessions exist", async () => {
+    const user = userEvent.setup();
+    listSessionsMock.mockResolvedValue([]);
+
+    renderTutorShell("home", {
+      activeSessionId: null,
+      sessionOverrides: { hasActiveTutorSession: false },
+      hubOverrides: {
+        courseId: 101,
+        tutorContentSources: { courses: [{ id: 101, name: "Neuro" }] },
+      },
+      shellOverrides: { panelLayout: [] },
+    });
+
+    await user.click(
+      await screen.findByRole("tab", { name: /resume session/i }),
+    );
+
+    expect(
+      await screen.findByTestId("tutor-entry-resume-empty"),
+    ).toHaveTextContent(/no past sessions yet/i);
+  });
+
+  it("surfaces a retry button when the session list fails to load", async () => {
+    const user = userEvent.setup();
+    listSessionsMock.mockRejectedValueOnce(new Error("network down"));
+
+    renderTutorShell("home", {
+      activeSessionId: null,
+      sessionOverrides: { hasActiveTutorSession: false },
+      hubOverrides: {
+        courseId: 101,
+        tutorContentSources: { courses: [{ id: 101, name: "Neuro" }] },
+      },
+      shellOverrides: { panelLayout: [] },
+    });
+
+    await user.click(
+      await screen.findByRole("tab", { name: /resume session/i }),
+    );
+
+    const retry = await screen.findByTestId("tutor-entry-resume-retry");
+    expect(retry).toBeInTheDocument();
+
+    listSessionsMock.mockResolvedValueOnce([]);
+    await user.click(retry);
+
+    expect(listSessionsMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("invokes onResumeHubCandidate with the row data when Resume is clicked", async () => {
+    const user = userEvent.setup();
+    const onResume = vi.fn();
+    listSessionsMock.mockResolvedValue([
+      {
+        session_id: "sess-42",
+        session_name: "Cardio Review",
+        course_id: 101,
+        course_name: "Neuro",
+        study_unit: null,
+        topic: "Cardio",
+        updated_at: "2026-04-18T09:00:00Z",
+        last_mode: "tutor",
+      },
+    ]);
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <TutorShell
+          activeSessionId={null}
+          hub={makeHubWithOverrides({
+            courseId: 101,
+            tutorContentSources: { courses: [{ id: 101, name: "Neuro" }] },
+          }) as never}
+          session={makeSessionWithOverrides({
+            hasActiveTutorSession: false,
+          }) as never}
+          workflow={makeWorkflowWithOverrides("home") as never}
+          showSetup={true}
+          restoredTurns={undefined}
+          activeBoardScope="project"
+          activeBoardId={null}
+          viewerState={null}
+          runtimeState={null as never}
+          tutorChainId={undefined as never}
+          tutorCustomBlockIds={undefined as never}
+          setActiveBoardScope={vi.fn()}
+          setActiveBoardId={vi.fn()}
+          setViewerState={vi.fn()}
+          setShowSetup={vi.fn()}
+          queryClient={new QueryClient()}
+          panelLayout={[] as never}
+          setPanelLayout={vi.fn() as never}
+          setCompactionTelemetry={undefined as never}
+          setActiveMemoryCapsuleId={undefined as never}
+          setDirectNoteSaveStatus={undefined as never}
+          setNotesDraft={undefined as never}
+          setTutorChainId={undefined as never}
+          setTutorCustomBlockIds={undefined as never}
+          primingMethodIds={undefined as never}
+          primingChainId={undefined as never}
+          primingCustomBlockIds={undefined as never}
+          setPrimingMethodIds={undefined as never}
+          setPrimingChainId={undefined as never}
+          setPrimingCustomBlockIds={undefined as never}
+          promotedPrimePacketObjects={undefined as never}
+          onPromotePrimePacketObject={undefined as never}
+          promotedPolishPacketNotes={undefined as never}
+          onPromotePolishPacketNote={undefined as never}
+          entrySessionName=""
+          onEntrySessionNameChange={vi.fn()}
+          entryMaterialSelectionTouched={false}
+          onEntryMaterialSelectionTouchedChange={vi.fn()}
+          onResumeHubCandidate={onResume}
+        />
+      </QueryClientProvider>,
+    );
+
+    await user.click(
+      await screen.findByRole("tab", { name: /resume session/i }),
+    );
+    const row = await screen.findByTestId("tutor-entry-resume-row");
+    await user.click(within(row).getByRole("button", { name: /^resume$/i }));
+
+    expect(onResume).toHaveBeenCalledTimes(1);
+    expect(onResume.mock.calls[0][0]).toMatchObject({
+      session_id: "sess-42",
+      session_name: "Cardio Review",
+    });
   });
 
   it("collects a session name and lets the entry card narrow materials before launch", async () => {

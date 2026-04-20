@@ -517,6 +517,35 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - focused Polish packet tests, the production frontend build, and live `dev-browser` verification of the tutor-chat-to-packet flow pass
   - Assignee: @codex-cli
 
+- [x] ENTRY-200. Tutor entry card exposes a Resume tab so past sessions can be reopened instead of only starting fresh.
+  - Scope:
+    - `docs/root/TUTOR_TODO.md`
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx`
+    - `dashboard_rebuild/client/src/components/__tests__/TutorShell.test.tsx`
+    - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+    - `scripts/verify-entry-card-history.js`
+  - Done when:
+    - the entry card renders a two-tab header: `New Session` (current form) and `Resume Session` (past sessions list)
+    - `Resume Session` tab fetches `api.tutor.listSessions` scoped to the selected course when one is picked, otherwise returns recent sessions across all courses
+    - each row shows session name, course / unit / topic, last-active timestamp, and a `Resume` button
+    - empty state reads `No past sessions yet — start a fresh one.` with a link back to the `New Session` tab
+    - fetch-error state surfaces a toast plus inline `Retry` button; retry refetches
+    - clicking `Resume` invokes the existing `resumeFromHubCandidate` path, closes the entry overlay, and seeds the `study` preset layout
+    - focused tests cover tab toggle, list fetch / empty / error states, course scoping, and resume click
+    - production frontend build + `dev-browser` smoke for the tab + resume flow pass
+  - Assignee: @claude
+  - Completed: 2026-04-19
+  - Notes:
+    - Added `entryMode` state + `role="tablist"` tab pair to the entry card in `TutorShell.tsx` and extracted an `EntryResumePanel` component that queries `api.tutor.listSessions` with optional `course_id` scoping via React Query.
+    - Resume rows show session name, course / unit / topic line, and relative timestamp; each row has a `Resume` button that invokes `onResumeHubCandidate` and closes the overlay through the existing hub-candidate path.
+    - Empty state renders `No past sessions yet — start a fresh one.` with a button that flips the tab back to `New Session`; error state surfaces a `Retry` button that refetches.
+    - Patched the `TutorShell.test.tsx` harness to supply `artifacts: []` etc. on the mock session (latent break introduced by workspace-maps Phase 1 `SessionMaterialBundle`) and added 5 focused tests covering tab toggle, fetch scoping, list render, empty, error + retry, and resume click.
+    - Smoke-verified via `dev-browser --headless run scripts/verify-entry-card-history.js` against a live build — tabs swap, `aria-selected` flips, real rows render.
+  - Validation:
+    - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorShell.test.tsx` (66/66 pass)
+    - `cd dashboard_rebuild && npx vite build`
+    - `dev-browser --headless --timeout 60 run scripts/verify-entry-card-history.js`
+
 - [x] HUD-256. Upgrade the Tutor Studio entry card into a full new-session setup form with session name and material selection.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
