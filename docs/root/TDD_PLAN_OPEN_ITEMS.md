@@ -96,7 +96,7 @@ Legend: **R** = write failing test, **G** = write production code to pass it, **
 
 ---
 
-## 4. SOP-ENCODE-001 — Fix M-ENC-001 KWIK Hook mnemonic flow
+## 4. SOP-ENCODE-001 — Fix M-ENC-001 KWIK Hook mnemonic flow  *(done 2026-04-01, duplicate entry removed 2026-04-19)*
 
 **Goal:** YAML + readable surfaces reflect the word-sound → meaning → linked-image flow (not the current placeholder).
 

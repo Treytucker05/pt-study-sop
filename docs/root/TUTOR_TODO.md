@@ -93,7 +93,6 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - `python brain/data/seed_methods.py --strict-sync`
     - `pytest -q -p no:cacheprovider brain/tests/test_seed_methods.py -k "load_from_yaml_includes_visible_teach_doctrine_cards or worked_example_fade_yaml_models_once_before_fading or embodied_walkthrough_yaml_requires_safe_movement_and_map_back"`
 
-- [ ] SOP-ENCODE-001. Align `M-ENC-001 KWIK Hook` to the actual word-sound -> meaning -> linked-image mnemonic flow Trey wants to use.
 - [x] SOP-ENCODE-001. Align `M-ENC-001 KWIK Hook` to the actual word-sound -> meaning -> linked-image mnemonic flow Trey wants to use.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
