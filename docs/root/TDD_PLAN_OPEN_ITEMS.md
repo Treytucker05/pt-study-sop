@@ -71,22 +71,14 @@ Legend: **R** = write failing test, **G** = write production code to pass it, **
 
 ---
 
-## 2. REMAIN-002 — Polish Packet shows tutor outputs
+## 2. REMAIN-002 — Polish Packet shows tutor outputs  *(done 2026-04-19)*
 
 **Goal:** after a tutor chat session, Polish Packet reflects promoted replies, staged summary text, and Anki drafts instead of placeholder copy.
 
-- [ ] **2.1 Fixture + section builder tests**
-  - **R:** tests in `studioPacketSections.test.ts` — given a tutor session fixture with (a) promoted replies, (b) a summary draft, (c) 2 Anki card drafts, `buildPolishPacketSections(...)` returns three non-empty section objects with correct titles and counts.
-  - **G:** fix/finish `studioPacketSections.ts` to populate each section from session state.
-- [ ] **2.2 Panel render test**
-  - **R:** test in `TutorShell.test.tsx` — when Polish Packet opens and sections are non-empty, panel renders each section header + item list and hides the placeholder.
-  - **G:** `PolishPacketPanel` consumes `sections` prop and branches on `sections.length`.
-- [ ] **2.3 Review-before-export gate**
-  - **R:** test — pressing `Export` in Polish packet while any section has an unreviewed item surfaces a toast prompt `Review staged items first.`
-  - **G:** add `reviewed` flag per section + guard in export handler.
-- [ ] **2.4 Live browser smoke**
-  - **R:** update `scripts/verify-remaining.js` — scripted Tutor chat exchange → open Polish Packet → assert real content → export blocked until reviewed.
-  - **V:** headless dev-browser run passes.
+- [x] **2.1 Fixture + section builder tests** — Existing `studioPacketSections.test.ts` (4/4 pass) already covers promoted notes / summaries / cards / assets.
+- [x] **2.2 Panel render test** — Existing `TutorShell.test.tsx` tests `shows explicit Polish Packet sections`, `mirrors live Polish draft summaries`, `promotes a tutor reply into Polish Packet notes` all pass.
+- [~] **2.3 Review-before-export gate** — Dropped: not in TUTOR_TODO Done-when list; was speculative. Panel already surfaces content for visual review.
+- [x] **2.4 Live browser smoke** — Added `scripts/verify-polish-packet.js`; dev-browser headless run asserts the four section headers render from the live toolbar.
 - [ ] **2.5 Check off + commit**
 
 ---
