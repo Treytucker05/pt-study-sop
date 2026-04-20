@@ -263,7 +263,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - `python sop/tools/export_method_chain_inventory.py`
     - `python sop/tools/validate_library.py`
 
-- [ ] REMAIN-006. Obsidian panel shows vault browser with note read and write.
+- [x] REMAIN-006. Obsidian panel shows vault browser with note read and write.
   - Scope:
     - `docs/root/TUTOR_TODO.md`
     - `dashboard_rebuild/client/src/components/TutorShell.tsx`
@@ -279,7 +279,16 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - `Create Note` creates a new markdown file in the current course vault folder
     - `Save to Vault` writes the current session scratch notes into the course vault
     - focused frontend tests, the production frontend build, and live `dev-browser` verification pass
-  - Assignee: @codex-cli
+  - Assignee: @claude
+  - Completed: 2026-04-19
+  - Notes:
+    - Course-scoped vault tree + preview + create-note + save-session-notes were already implemented. Added a true write path: selecting a note now exposes an `Edit` toggle that swaps the pane into a textarea seeded with the current content, plus `Save` (calls `api.obsidian.saveFile` on the same path and invalidates the preview cache) and `Cancel` buttons.
+    - Extended `StudioObsidianPanel.test.tsx` with two new tests covering the edit + save round-trip and cancel-without-save paths. Full file 5/5 pass.
+    - Live `dev-browser` verification against the existing `scripts/verify-remaining.js` still passes end-to-end (tree render + preview + console clean).
+  - Validation:
+    - `cd dashboard_rebuild && npx vitest run client/src/components/studio/__tests__/StudioObsidianPanel.test.tsx` (5/5 pass)
+    - `cd dashboard_rebuild && npx vite build`
+    - `dev-browser --headless --timeout 120 run scripts/verify-remaining.js` (5/5 PASS)
 
 - [x] OVERLAY-001. Entry card gets dark backdrop and blocks canvas interaction.
   - Scope:

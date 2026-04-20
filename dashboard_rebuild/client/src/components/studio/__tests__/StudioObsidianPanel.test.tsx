@@ -122,4 +122,56 @@ describe("StudioObsidianPanel", () => {
       );
     });
   });
+
+  it("lets the user edit an opened note and save changes back to the vault", async () => {
+    const user = userEvent.setup();
+    renderPanel();
+
+    await user.click(await screen.findByRole("button", { name: /overview\.md/i }));
+    await screen.findByText(/vault note content/i);
+
+    const editButton = await screen.findByTestId("studio-obsidian-edit-note");
+    await user.click(editButton);
+
+    const editor = await screen.findByTestId("studio-obsidian-editor");
+    expect(editor).toHaveValue("# Overview\n\nVault note content");
+
+    await user.clear(editor);
+    await user.type(editor, "# Overview\n\nEdited body");
+
+    saveFileMock.mockClear();
+    await user.click(screen.getByTestId("studio-obsidian-save-edit"));
+
+    await waitFor(() => {
+      expect(saveFileMock).toHaveBeenCalledWith(
+        "Neuro 101/Week 9/Overview.md",
+        "# Overview\n\nEdited body",
+      );
+    });
+
+    // After save, return to read view.
+    expect(
+      screen.queryByTestId("studio-obsidian-editor"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("cancels an edit without saving", async () => {
+    const user = userEvent.setup();
+    renderPanel();
+
+    await user.click(await screen.findByRole("button", { name: /overview\.md/i }));
+    await screen.findByText(/vault note content/i);
+
+    await user.click(await screen.findByTestId("studio-obsidian-edit-note"));
+    const editor = await screen.findByTestId("studio-obsidian-editor");
+    await user.clear(editor);
+    await user.type(editor, "garbage");
+
+    saveFileMock.mockClear();
+    await user.click(screen.getByTestId("studio-obsidian-cancel-edit"));
+
+    expect(saveFileMock).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("studio-obsidian-editor")).not.toBeInTheDocument();
+    expect(await screen.findByText(/vault note content/i)).toBeInTheDocument();
+  });
 });
