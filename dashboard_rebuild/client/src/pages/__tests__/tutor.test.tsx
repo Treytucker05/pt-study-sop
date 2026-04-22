@@ -1006,6 +1006,105 @@ describe("Tutor page restore", () => {
     ).toBeInTheDocument();
   });
 
+  // Audit 2026-04-22: the user's mental model of a "session" is the whole
+  // workflow (Priming → Workspace → Tutor → Polish). END SESSION must appear
+  // during Priming (workflow active, no live tutor session) and pressing it
+  // should confirm with the workflow-only message, skip endSessionById, and
+  // return to the wizard. Regression guard for the bug where clicking the
+  // hero in Priming silently destroyed the new workflow.
+  it("relabels the hero to END SESSION during Priming and resets via confirm without calling endSessionById", async () => {
+    window.history.replaceState({}, "", "/tutor?course_id=1&mode=studio");
+    getContentSourcesMock.mockResolvedValue({
+      courses: [{ id: 1, name: "Cardio" }],
+    });
+    getMaterialsMock.mockResolvedValue([
+      {
+        id: 101,
+        title: "Cardio Notes",
+        source_path: "uploads/cardio-notes.pdf",
+        folder_path: null,
+        file_type: "pdf",
+        file_size: 1024,
+        course_id: 1,
+        enabled: true,
+        extraction_error: null,
+        checksum: null,
+        created_at: new Date("2026-03-10T00:00:00Z").toISOString(),
+        updated_at: null,
+      },
+    ]);
+    createWorkflowMock.mockResolvedValueOnce({
+      workflow: makeWorkflowDetail({
+        workflow_id: "wf-priming-only",
+        course_id: 1,
+        course_name: "Cardio",
+        course_code: "CARDIO-1",
+      }).workflow,
+    });
+    getWorkflowMock.mockResolvedValue(
+      makeWorkflowDetail({
+        workflow_id: "wf-priming-only",
+        course_id: 1,
+        course_name: "Cardio",
+        course_code: "CARDIO-1",
+      }),
+    );
+
+    renderTutor();
+
+    // Start a new workflow from the wizard (no active tutor session).
+    await screen.findByTestId("studio-entry-state");
+    fireEvent.change(
+      screen.getByLabelText(/course for new priming session/i),
+      { target: { value: "1" } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: /start session/i }));
+
+    await waitFor(() => {
+      expect(createWorkflowMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          course_id: 1,
+          current_stage: "priming",
+          status: "priming_in_progress",
+        }),
+      );
+    });
+
+    // Workflow is active with no live tutor session → hero shows END SESSION.
+    const endButton = await screen.findByRole("button", {
+      name: /^end session$/i,
+    });
+    expect(
+      screen.queryByRole("button", { name: /^new session$/i }),
+    ).not.toBeInTheDocument();
+
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    try {
+      fireEvent.click(endButton);
+      await waitFor(() => {
+        expect(confirmSpy).toHaveBeenCalled();
+      });
+      // Confirm copy must use the workflow-only message, NOT the tutor-session
+      // one, so users know Priming progress is preserved for resume.
+      expect(confirmSpy).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /End the current study session\?.*Priming.*resume.*Previous Sessions/i,
+        ),
+      );
+    } finally {
+      confirmSpy.mockRestore();
+    }
+
+    // No live tutor session → endSessionById must not fire, no vault save.
+    expect(endSessionMock).not.toHaveBeenCalled();
+    expect(toastSuccessMock).not.toHaveBeenCalledWith(
+      expect.stringMatching(/Session saved to vault/i),
+    );
+
+    // Back to the wizard so the user can start or resume a workflow.
+    expect(await screen.findByTestId("studio-entry-state")).toBeInTheDocument();
+  });
+
   it("starts Priming from the entry card with the session name as topic and preserves manual material selection", async () => {
     const user = userEvent.setup();
 
