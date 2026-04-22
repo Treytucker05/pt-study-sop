@@ -635,35 +635,30 @@
   }
 
   .page-shell__meta {
-    display: flex;
+    display: grid;
     flex: 0 1 48rem;
     width: min(100%, 48rem);
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.65rem;
-  }
-
-  .page-shell__stat-grid {
-    display: grid;
-    width: 100%;
     gap: 0.65rem;
     grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    grid-auto-rows: minmax(44px, auto);
     align-items: stretch;
+    align-content: start;
   }
 
+  /* Stats and actions are flattened into the meta grid so leftover cells on
+     the stat row get filled by action buttons (e.g., NEW SESSION / REFRESH
+     slide up next to MATERIALS instead of stacking on a new row). */
+  .page-shell__stat-grid,
   .page-shell__actions {
-    display: flex;
-    width: 100%;
-    flex-wrap: wrap;
-    gap: 0.65rem;
-    align-items: center;
-    justify-content: flex-end;
+    display: contents;
   }
 
   .page-shell__actions > * {
     position: relative;
     isolation: isolate;
     overflow: hidden;
+    width: 100%;
+    min-width: 0;
     border: 1px solid rgba(255, 84, 116, 0.26);
     background:
       radial-gradient(circle, rgba(255, 84, 116, 0.12) 0%, rgba(0, 0, 0, 0) 95%),

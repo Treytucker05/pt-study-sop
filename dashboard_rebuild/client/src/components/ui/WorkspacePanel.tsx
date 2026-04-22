@@ -83,6 +83,39 @@ const PANEL_FIT_CONTENT_HORIZONTAL_CHROME = 24;
 const PANEL_FIT_CONTENT_VERTICAL_CHROME = 64;
 const FIT_CONTENT_SCROLL_EPSILON = 2;
 
+// Temporarily unhook Tailwind's `truncate` (overflow:hidden + text-overflow:
+// ellipsis) inside the measure root so scrollWidth / descendant bounding
+// rects reflect the natural unclipped width of the content instead of the
+// already-truncated width. Without this, clicking Fit on a panel like
+// Source Shelf measures the *clipped* filename width and resizes the panel
+// to keep showing "…file.pdf" instead of the whole filename.
+const FIT_MEASUREMENT_ATTR = "data-workspace-panel-fit-measuring";
+const FIT_MEASUREMENT_STYLE_ID = "workspace-panel-fit-measuring-style";
+
+function ensureFitMeasurementStyle() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(FIT_MEASUREMENT_STYLE_ID)) return;
+  const style = document.createElement("style");
+  style.id = FIT_MEASUREMENT_STYLE_ID;
+  style.textContent = `
+    [${FIT_MEASUREMENT_ATTR}="true"] .truncate,
+    [${FIT_MEASUREMENT_ATTR}="true"] .text-ellipsis,
+    [${FIT_MEASUREMENT_ATTR}="true"] .overflow-hidden {
+      overflow: visible !important;
+      text-overflow: clip !important;
+    }
+    [${FIT_MEASUREMENT_ATTR}="true"] .truncate,
+    [${FIT_MEASUREMENT_ATTR}="true"] .text-ellipsis {
+      white-space: nowrap !important;
+    }
+    [${FIT_MEASUREMENT_ATTR}="true"],
+    [${FIT_MEASUREMENT_ATTR}="true"] * {
+      min-width: 0 !important;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 function measureDescendantBounds(
   rootNode: HTMLElement,
 ): { width: number; height: number } | null {
@@ -276,6 +309,10 @@ export function WorkspacePanel({
         }
       : null;
 
+    ensureFitMeasurementStyle();
+    contentMeasureNode?.setAttribute(FIT_MEASUREMENT_ATTR, "true");
+    contentScrollNode.setAttribute(FIT_MEASUREMENT_ATTR, "true");
+
     try {
       if (panelBodyNode) {
         panelBodyNode.style.overflow = "visible";
@@ -354,6 +391,9 @@ export function WorkspacePanel({
         panelBodyNode.style.overflow = restorePanelBodyStyles.overflow;
         panelBodyNode.style.height = restorePanelBodyStyles.height;
       }
+
+      contentMeasureNode?.removeAttribute(FIT_MEASUREMENT_ATTR);
+      contentScrollNode.removeAttribute(FIT_MEASUREMENT_ATTR);
     }
   };
 

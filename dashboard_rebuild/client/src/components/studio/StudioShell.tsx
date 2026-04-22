@@ -10,6 +10,7 @@ import { createPortal } from "react-dom";
 import {
   BookOpen,
   Brain,
+  Crosshair,
   FileText,
   Layers,
   LayoutGrid,
@@ -1277,6 +1278,36 @@ export function StudioShell({
   // at-current-scale math pushed wide preset layouts off-screen.
   const fitOpenPanels = focusOpenPanels;
 
+  // Center Windows: pan the viewport to the centroid of all open panels at the
+  // current zoom (no rescale). Distinct from Fit to View — this is the
+  // "my windows drifted off; bring them back" action without changing zoom.
+  const centerOpenPanels = useCallback(() => {
+    if (
+      !transformRef.current ||
+      !canvasViewportRef.current ||
+      resolvedLayout.length === 0
+    ) {
+      return;
+    }
+
+    const activeElement = document.activeElement;
+    if (
+      activeElement instanceof HTMLElement &&
+      canvasViewportRef.current.contains(activeElement)
+    ) {
+      activeElement.blur();
+    }
+
+    const rect = canvasViewportRef.current.getBoundingClientRect();
+    const focus = buildStudioShellViewportCenter(
+      resolvedLayout,
+      rect.width,
+      rect.height,
+      canvasTransformRef.current.scale,
+    );
+    applyViewportFocus(focus);
+  }, [applyViewportFocus, resolvedLayout]);
+
   const zoomTo100 = useCallback(() => {
     applyCanvasScale(1);
   }, [applyCanvasScale]);
@@ -1477,6 +1508,13 @@ export function StudioShell({
       initialScale={1}
       minScale={CANVAS_MIN_SCALE}
       maxScale={CANVAS_MAX_SCALE}
+      // limitToBounds defaults to true which clamps positionX >= 0, making
+      // the canvas pan-able one direction only ("scrolls right but not
+      // left"). Disable so our custom pointer drag can freely reveal either
+      // side of the canvas workspace.
+      limitToBounds={false}
+      centerOnInit={false}
+      centerZoomedOut={false}
       onInit={(ref) => {
         transformRef.current = ref;
       }}
@@ -1688,14 +1726,22 @@ export function StudioShell({
                 onClick={() => {
                   queuePanelLayoutChange((current) =>
                     tilePanelLayout(
-                      current.map((item, index) => ({
-                        id: item.id,
-                        panel: item.panel,
-                        size: item.size,
-                        collapsed: item.collapsed,
-                        zIndex: item.zIndex || index + 1,
-                        groupId: item.groupId,
-                      })),
+                      current.map((item, index) => {
+                        // Reset to per-panel default size so a previously
+                        // Fit-expanded or manually resized panel doesn't
+                        // leave large gaps in the re-tiled grid.
+                        const normalizedKey = normalizePanelKey(item.panel);
+                        const defaults =
+                          PRESET_LAYOUT_DEFAULTS[normalizedKey];
+                        return {
+                          id: item.id,
+                          panel: item.panel,
+                          size: defaults?.defaultSize ?? item.size,
+                          collapsed: item.collapsed,
+                          zIndex: item.zIndex || index + 1,
+                          groupId: item.groupId,
+                        };
+                      }),
                     ),
                   );
                   setShouldFocusLayout(true);
@@ -1704,6 +1750,21 @@ export function StudioShell({
               >
                 <LayoutGrid className="mr-1.5 h-3.5 w-3.5" />
                 Tidy Up
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label="Center open panels in viewport"
+                title="Pan viewport to the center of open panels (no zoom change)"
+                disabled={resolvedLayout.length === 0}
+                onClick={() => {
+                  centerOpenPanels();
+                }}
+                className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white disabled:opacity-40"
+              >
+                <Crosshair className="mr-1.5 h-3.5 w-3.5" />
+                Center
               </Button>
               <Button
                 type="button"

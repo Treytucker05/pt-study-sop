@@ -2511,3 +2511,27 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Queued as `TUTOR-AUDIT-P2-001` in `docs/root/TUTOR_TODO.md` alongside Tracks A and B (both marked complete and linked back to commit `b745477d`).
 - Grounding signals used for the scope: `rg` counts of `conn = get_connection()`, `except ...: pass`, and `_LOG.*` across `brain/dashboard/api_tutor*.py`; `CREATE INDEX IF NOT EXISTS` inventory in `brain/db_setup.py`; timing-primitive usage in `api_tutor_turns.py`. All confirmed at the time of scoping; no code changes landed yet.
 - Also verified that the live dashboard running on port 5000 (PID 28596, started 12:49 PM) is pre-fix - `GET /api/tutor/sessions?limit=abc` currently returns HTTP 200 instead of the Track B HTTP 400. Leaving the user's running dashboard intact; the restart via `Start_Dashboard.bat` will pick up the new code when the user is ready.
+
+## 2026-04-22 - Studio Canvas UX hardening: Fit measurement, Tidy reset, Center button, pan bounds, hero meta grid
+
+- dashboard_rebuild/client/src/components/ui/WorkspacePanel.tsx — measureFitContentSize now scopes a temporary `<style id=""workspace-panel-fit-measuring-style"">` sheet via the `data-workspace-panel-fit-measuring` attribute so descendant `.truncate` / `.overflow-hidden` elements report their natural (unclipped) `scrollWidth` + `getBoundingClientRect` during Fit. Fixes the regression where `Fit` on Source Shelf resized the panel to the already-ellipsised filename width. Attribute is cleared in the `finally` block so normal truncation resumes immediately after measurement.
+- dashboard_rebuild/client/src/components/studio/StudioShell.tsx:
+  - Added centerOpenPanels callback + dedicated `Center` toolbar button (Crosshair icon) next to `Tidy Up`. `Center` uses `buildStudioShellViewportCenter` to pan the viewport onto the panel-cluster centroid at the current zoom (no rescale). Distinct from `Fit to View` / `fitOpenPanels`.
+  - `Tidy Up` now resets each panel's size to `PRESET_LAYOUT_DEFAULTS[normalizePanelKey(item.panel)].defaultSize` before calling `tilePanelLayout`. Previously wide/Fit-expanded panels produced ragged rows; Tidy is now a true reset.
+  - `TransformWrapper` props: `limitToBounds={false}`, `centerOnInit={false}`, `centerZoomedOut={false}`. The default `limitToBounds: true` clamped `positionX >= 0` so the canvas only panned one direction (`scrolls right but not left, left is cut off`). Disabling unblocks two-way panning via the existing custom pointer-drag path.
+  - Imported `Crosshair` from `lucide-react` alongside the existing icon set.
+- dashboard_rebuild/client/src/index.css:
+  - `.page-shell__meta` switched from `display: flex; flex-direction: column` to `display: grid` with `grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr))` and `grid-auto-rows: minmax(44px, auto)`. `.page-shell__stat-grid` and `.page-shell__actions` now use `display: contents` so stat tiles and action buttons flatten into the single meta grid.
+  - `.page-shell__actions > *` gained `width: 100%; min-width: 0;` so hero actions stretch cleanly into their grid cell without breaking the existing border/glow chrome.
+  - Net effect: Tutor hero `NEW SESSION` and `REFRESH` fill the empty stat-row slots next to `MATERIALS` instead of wrapping onto a new row. Same benefit is automatically inherited by every other page that uses `PageScaffold` (library / calendar / methods / scholar / brain / vault-health / mastery).
+- docs/root/TUTOR_TODO.md — logged as `STUDIO-CANVAS-UX-001` in the Active Sprint, with full scope, validation notes, and recommended next-step pickup list.
+
+Validation:
+- `dashboard_rebuild> npm run build` — green (`brain/static/dist/` regenerated).
+- Vitest deferred — local `vitest` run has been hanging the workstation; the paired unit tests queued for STUDIO-CANVAS-UX-001 are called out in the TUTOR_TODO entry under `Recommended next steps`.
+
+Recommended next steps:
+1. Manual/browser verify after `Start_Dashboard.bat` restart (Source Shelf Fit fits full filenames; Tidy Up resets sizes then tiles cleanly; Center pans without zoom change; canvas drags both directions; hero NEW SESSION/REFRESH sit on the stat row).
+2. Author Vitest for: (a) `measureFitContentSize` vs `truncate` descendants, (b) `Tidy Up` normalizing to `PRESET_LAYOUT_DEFAULTS`, (c) `PageScaffold` emitting stats + actions as siblings in one grid parent.
+3. Resume `TUTOR-AUDIT-P2-001` (remains the next major backlog item).
+4. Confirm `TutorShell.test.tsx "stale Tutor session id"` red-on-main regression; if still present, open a dedicated TutorShell-hardening task.
