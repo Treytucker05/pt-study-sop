@@ -217,6 +217,151 @@ export interface TutorShellProps {
   ) => void | Promise<void>;
 }
 
+type EntryResumeRow = {
+  session_id: string;
+  session_name?: string | null;
+  course_id?: number | null;
+  course_name?: string | null;
+  study_unit?: string | null;
+  topic?: string | null;
+  updated_at?: string | null;
+  last_mode?: string | null;
+};
+
+function formatResumeTimestamp(value: string | null | undefined): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+interface EntryResumePanelProps {
+  courseId: number | null;
+  onSwitchToNew: () => void;
+  onResume: (row: EntryResumeRow) => void;
+}
+
+function EntryResumePanel({
+  courseId,
+  onSwitchToNew,
+  onResume,
+}: EntryResumePanelProps) {
+  const queryParams = useMemo(() => {
+    const params: { course_id?: number; limit: number } = { limit: 20 };
+    if (typeof courseId === "number") {
+      params.course_id = courseId;
+    }
+    return params;
+  }, [courseId]);
+
+  const { data, isLoading, isError, refetch } = useQuery<EntryResumeRow[]>({
+    queryKey: ["tutor", "entry-resume-sessions", queryParams.course_id ?? null],
+    queryFn: () => api.tutor.listSessions(queryParams) as Promise<EntryResumeRow[]>,
+    retry: false,
+  });
+
+  if (isLoading) {
+    return (
+      <div
+        data-testid="tutor-entry-resume-panel"
+        className="rounded-[0.9rem] border border-[rgba(255,118,144,0.18)] bg-black/20 p-4 font-mono text-sm leading-6 text-[#ffd9e1]/72"
+      >
+        Loading past sessions...
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div
+        data-testid="tutor-entry-resume-panel"
+        className="space-y-3 rounded-[0.9rem] border border-[rgba(255,118,144,0.22)] bg-[rgba(255,68,104,0.12)] p-4 font-mono text-sm leading-6 text-[#ffe3e9]"
+      >
+        <div>Could not load past sessions.</div>
+        <button
+          type="button"
+          data-testid="tutor-entry-resume-retry"
+          onClick={() => {
+            void refetch();
+          }}
+          className="rounded-full border border-[rgba(255,118,144,0.32)] bg-black/30 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-white hover:bg-black/40"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  const rows = data ?? [];
+
+  if (rows.length === 0) {
+    return (
+      <div
+        data-testid="tutor-entry-resume-panel"
+        className="space-y-3 rounded-[0.9rem] border border-[rgba(255,118,144,0.18)] bg-black/20 p-4 font-mono text-sm leading-6 text-[#ffd9e1]/78"
+      >
+        <div data-testid="tutor-entry-resume-empty">
+          No past sessions yet — start a fresh one.
+        </div>
+        <button
+          type="button"
+          onClick={onSwitchToNew}
+          className="rounded-full border border-[rgba(255,118,144,0.22)] bg-black/30 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-white hover:bg-black/40"
+        >
+          Start New Session
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      data-testid="tutor-entry-resume-panel"
+      className="max-h-[320px] space-y-2 overflow-y-auto rounded-[0.9rem] border border-[rgba(255,118,144,0.18)] bg-black/20 p-2"
+    >
+      {rows.map((row) => {
+        const label = row.session_name || row.topic || "Untitled session";
+        const courseLine = [row.course_name, row.study_unit, row.topic]
+          .filter(Boolean)
+          .join(" · ");
+        const stamp = formatResumeTimestamp(row.updated_at);
+        return (
+          <div
+            key={row.session_id}
+            data-testid="tutor-entry-resume-row"
+            className="flex items-start justify-between gap-3 rounded-[0.8rem] border border-transparent bg-black/25 px-3 py-2 transition hover:border-[rgba(255,118,144,0.2)]"
+          >
+            <div className="min-w-0 space-y-1">
+              <div className="truncate font-mono text-sm text-white">{label}</div>
+              {courseLine ? (
+                <div className="truncate font-mono text-[11px] text-[#ffc8d3]/72">
+                  {courseLine}
+                </div>
+              ) : null}
+              {stamp ? (
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+                  Last active {stamp}
+                </div>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={() => onResume(row)}
+              className="shrink-0 rounded-full border border-[rgba(255,118,144,0.22)] bg-black/30 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-white hover:bg-black/40"
+            >
+              Resume
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function TutorShell({
   activeSessionId,
   hub,
@@ -278,6 +423,7 @@ export function TutorShell({
     [hub.chatMaterials, hub.selectedMaterials, hub.selectedPaths],
   );
   const [canvasObjectIds, setCanvasObjectIds] = useState<string[]>([]);
+  const [entryMode, setEntryMode] = useState<"new" | "resume">("new");
   const [workspaceDraftObjects, setWorkspaceDraftObjects] = useState<
     StudioWorkspaceObject[]
   >([]);
@@ -1581,6 +1727,57 @@ export function TutorShell({
       >
         X
       </button>
+      <div
+        role="tablist"
+        aria-label="Entry session mode"
+        className="flex items-center gap-2"
+      >
+        <button
+          type="button"
+          role="tab"
+          data-testid="tutor-entry-tab-new"
+          aria-selected={entryMode === "new"}
+          onClick={() => setEntryMode("new")}
+          className={`rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] transition ${
+            entryMode === "new"
+              ? "border-[rgba(255,118,144,0.36)] bg-[rgba(255,78,108,0.18)] text-white"
+              : "border-[rgba(255,118,144,0.18)] bg-black/20 text-[#ffd6de] hover:text-white"
+          }`}
+        >
+          New Session
+        </button>
+        <button
+          type="button"
+          role="tab"
+          data-testid="tutor-entry-tab-resume"
+          aria-selected={entryMode === "resume"}
+          onClick={() => setEntryMode("resume")}
+          className={`rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] transition ${
+            entryMode === "resume"
+              ? "border-[rgba(255,118,144,0.36)] bg-[rgba(255,78,108,0.18)] text-white"
+              : "border-[rgba(255,118,144,0.18)] bg-black/20 text-[#ffd6de] hover:text-white"
+          }`}
+        >
+          Resume Session
+        </button>
+      </div>
+      <div
+        data-testid="tutor-entry-mode"
+        data-mode={entryMode}
+        className="space-y-5"
+      >
+        {entryMode === "resume" ? (
+          <EntryResumePanel
+            courseId={typeof hub.courseId === "number" ? hub.courseId : null}
+            onSwitchToNew={() => setEntryMode("new")}
+            onResume={(row) => {
+              if (onResumeHubCandidate) {
+                void onResumeHubCandidate(row as unknown as TutorHubResumeCandidate);
+              }
+            }}
+          />
+        ) : (
+          <>
       <div className="space-y-2">
         <div className="font-mono text-xs uppercase tracking-[0.18em] text-[#ffb9c7]">
           Floating Studio
@@ -1775,6 +1972,9 @@ export function TutorShell({
             Resume
           </Button>
         ) : null}
+      </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, ChevronDown, ChevronRight, ExternalLink, FilePlus2, FolderTree, Save } from "lucide-react";
+import { BookOpen, ChevronDown, ChevronRight, ExternalLink, FilePlus2, FolderTree, Pencil, Save } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -226,6 +226,14 @@ export function StudioObsidianPanel({
   );
   const [isCreatingNote, setIsCreatingNote] = useState(false);
   const [isSavingSessionNotes, setIsSavingSessionNotes] = useState(false);
+  const [editMode, setEditMode] = useState<"read" | "edit">("read");
+  const [editorDraft, setEditorDraft] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  useEffect(() => {
+    setEditMode("read");
+    setEditorDraft("");
+  }, [selectedPath]);
 
   useEffect(() => {
     setExpandedFolders(new Set(rootFolder ? [rootFolder] : []));
@@ -287,6 +295,37 @@ export function StudioObsidianPanel({
       setIsCreatingNote(false);
     }
   }, [refreshTree, rootFolder]);
+
+  const handleStartEdit = useCallback(() => {
+    setEditorDraft(selectedContent);
+    setEditMode("edit");
+  }, [selectedContent]);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditMode("read");
+    setEditorDraft("");
+  }, []);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!selectedPath) return;
+    setIsSavingEdit(true);
+    try {
+      const result = await api.obsidian.saveFile(selectedPath, editorDraft);
+      if (!result.success) {
+        throw new Error(result.error || "Save failed");
+      }
+      await queryClient.invalidateQueries({
+        queryKey: ["studio-obsidian", "preview", selectedPath],
+      });
+      setEditMode("read");
+      toast.success("Saved note to the vault.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      toast.error("Failed to save note", { description: message });
+    } finally {
+      setIsSavingEdit(false);
+    }
+  }, [editorDraft, queryClient, selectedPath]);
 
   const handleSaveSessionNotes = useCallback(async () => {
     if (!rootFolder) {
@@ -461,12 +500,56 @@ export function StudioObsidianPanel({
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
-              Preview
+              {editMode === "edit" ? "Editing" : "Preview"}
             </div>
             <div className="truncate font-mono text-sm text-white">
               {selectedPath ? selectedPath.split("/").pop() : "Select a note"}
             </div>
           </div>
+          {selectedPath && previewResult?.success ? (
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              {editMode === "read" ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  data-testid="studio-obsidian-edit-note"
+                  onClick={handleStartEdit}
+                  className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]"
+                >
+                  <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                  Edit
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    data-testid="studio-obsidian-cancel-edit"
+                    disabled={isSavingEdit}
+                    onClick={handleCancelEdit}
+                    className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    data-testid="studio-obsidian-save-edit"
+                    disabled={isSavingEdit}
+                    onClick={() => {
+                      void handleSaveEdit();
+                    }}
+                    className="rounded-full border border-[rgba(255,118,144,0.22)] bg-[rgba(255,68,104,0.18)] px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-white hover:bg-[rgba(255,68,104,0.28)]"
+                  >
+                    <Save className="mr-1.5 h-3.5 w-3.5" />
+                    {isSavingEdit ? "Saving..." : "Save"}
+                  </Button>
+                </>
+              )}
+            </div>
+          ) : null}
         </div>
 
         <div
@@ -482,9 +565,19 @@ export function StudioObsidianPanel({
               Loading note...
             </div>
           ) : previewResult?.success ? (
-            <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-6 text-[#fff3f6]">
-              {selectedContent}
-            </pre>
+            editMode === "edit" ? (
+              <textarea
+                data-testid="studio-obsidian-editor"
+                value={editorDraft}
+                onChange={(event) => setEditorDraft(event.target.value)}
+                aria-label="Edit vault note"
+                className="h-full min-h-[240px] w-full resize-none rounded-[0.7rem] border border-[rgba(255,118,144,0.18)] bg-black/40 p-3 font-mono text-xs leading-6 text-[#fff3f6] outline-none"
+              />
+            ) : (
+              <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-6 text-[#fff3f6]">
+                {selectedContent}
+              </pre>
+            )
           ) : (
             <div className="font-mono text-xs leading-6 text-[#ffc8d3]/68">
               Unable to read this note from the vault.
