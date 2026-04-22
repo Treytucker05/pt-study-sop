@@ -14,6 +14,34 @@
     "codex-cli": {
       "command": "codex-mcp",
       "args": []
+    },
+    "windows-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "C:\\Users\\treyt\\Windows-MCP",
+        "run",
+        "main.py"
+      ]
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest"]
+    },
+    "obsidian-bridge": {
+      "url": "https://obsidian.ngrok.pizza/mcp"
+    },
+    "claude-peers": {
+      "command": "bun",
+      "args": ["C:\\Users\\treyt\\claude-peers-mcp\\server.ts"]
+    },
+    "sequentialthinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"]
     }
   }
 }

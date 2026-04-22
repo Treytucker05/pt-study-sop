@@ -7,6 +7,12 @@
   "enabledMcpjsonServers": [
     "github",
     "memory",
-    "codex-cli"
+    "codex-cli",
+    "windows-mcp",
+    "chrome-devtools",
+    "obsidian-bridge",
+    "claude-peers",
+    "sequentialthinking",
+    "fetch"
   ]
 }
