@@ -11,6 +11,7 @@ import {
   BookOpen,
   Brain,
   FileText,
+  Layers,
   LayoutGrid,
   Maximize2,
   MessageSquare,
@@ -20,6 +21,7 @@ import {
   Sparkles,
   StickyNote,
   Target,
+  X,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
@@ -606,6 +608,8 @@ export function StudioShell({
   const canvasViewportRef = useRef<HTMLDivElement | null>(null);
   const groupSequenceRef = useRef(1);
   const [shouldFocusLayout, setShouldFocusLayout] = useState(false);
+  const [windowsMenuOpen, setWindowsMenuOpen] = useState(false);
+  const windowsMenuRef = useRef<HTMLDivElement | null>(null);
   const lastExternalLayoutFocusRequestKeyRef = useRef<number | null>(null);
 
   const clampCanvasScale = useCallback((scale: number) => {
@@ -1119,6 +1123,29 @@ export function StudioShell({
     [applyPanelFrame, centerViewportOnPanel],
   );
 
+  // Click-to-front: raise the target panel above every other open panel by
+  // bumping its zIndex to (current max + 1). No-ops when the panel is already
+  // on top so we don't keep re-rendering on every title-bar click/drag.
+  const bringPanelToFront = useCallback(
+    (panelId: string) => {
+      queuePanelLayoutChange((current) => {
+        if (current.length === 0) return current;
+        let maxZIndex = 0;
+        let targetZIndex = 0;
+        for (const item of current) {
+          const z = item.zIndex || 0;
+          if (z > maxZIndex) maxZIndex = z;
+          if (item.id === panelId) targetZIndex = z;
+        }
+        if (targetZIndex === maxZIndex && maxZIndex > 0) return current;
+        return current.map((item) =>
+          item.id === panelId ? { ...item, zIndex: maxZIndex + 1 } : item,
+        );
+      });
+    },
+    [queuePanelLayoutChange],
+  );
+
   const focusOpenPanels = useCallback(() => {
     if (!transformRef.current || !canvasViewportRef.current || resolvedLayout.length === 0) {
       return;
@@ -1214,6 +1241,28 @@ export function StudioShell({
     resolvedLayout.length,
     zoomTo100,
   ]);
+
+  // Close the Windows menu when the user clicks outside it or presses Escape.
+  useEffect(() => {
+    if (!windowsMenuOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const menu = windowsMenuRef.current;
+      if (!menu) return;
+      if (event.target instanceof Node && menu.contains(event.target)) return;
+      setWindowsMenuOpen(false);
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setWindowsMenuOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [windowsMenuOpen]);
 
   // Native (non-passive) wheel listener so Ctrl + wheel reliably zooms the
   // canvas even in browsers that register React synthetic wheel events as
@@ -1445,6 +1494,87 @@ export function StudioShell({
                   {label}
                 </Button>
               ))}
+              <div className="relative" ref={windowsMenuRef}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  aria-label="List open windows"
+                  aria-haspopup="menu"
+                  aria-expanded={windowsMenuOpen}
+                  title="Raise or close any open window"
+                  disabled={resolvedLayout.length === 0}
+                  onClick={() => setWindowsMenuOpen((open) => !open)}
+                  className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white disabled:opacity-40"
+                >
+                  <Layers className="mr-1.5 h-3.5 w-3.5" />
+                  Windows ({resolvedLayout.length})
+                </Button>
+                {windowsMenuOpen && resolvedLayout.length > 0 ? (
+                  <div
+                    role="menu"
+                    aria-label="Open windows"
+                    className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-64 overflow-hidden rounded-xl border border-[rgba(255,118,144,0.22)] bg-black/90 p-1 shadow-[0_18px_36px_rgba(0,0,0,0.45)] backdrop-blur-sm"
+                  >
+                    {[...resolvedLayout]
+                      .sort((a, b) => (b.zIndex || 0) - (a.zIndex || 0))
+                      .map((item) => {
+                        const definition = panelsByKey.get(item.panel);
+                        if (!definition) return null;
+                        const Icon = definition.icon;
+                        const isTopmost =
+                          (item.zIndex || 0) ===
+                          Math.max(
+                            ...resolvedLayout.map((entry) => entry.zIndex || 0),
+                          );
+                        return (
+                          <div
+                            key={item.id}
+                            role="menuitem"
+                            className={cn(
+                              "flex items-center gap-2 rounded-lg px-2 py-1.5 font-mono text-[11px] text-[#ffd6de] hover:bg-[rgba(255,84,116,0.14)]",
+                              isTopmost && "bg-[rgba(255,84,116,0.10)]",
+                            )}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                bringPanelToFront(item.id);
+                                centerViewportOnPanel(item.id);
+                                setWindowsMenuOpen(false);
+                              }}
+                              className="flex min-w-0 flex-1 items-center gap-2 text-left hover:text-white"
+                              title={`Raise and center ${definition.title}`}
+                            >
+                              <Icon className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate">
+                                {definition.title}
+                              </span>
+                              {isTopmost ? (
+                                <span className="ml-auto shrink-0 rounded-full border border-[rgba(255,118,144,0.3)] bg-[rgba(255,84,116,0.16)] px-1.5 py-px text-[9px] uppercase tracking-[0.16em] text-white/80">
+                                  Top
+                                </span>
+                              ) : null}
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Close ${definition.title}`}
+                              title={`Close ${definition.title}`}
+                              onClick={() => {
+                                queuePanelLayoutChange((current) =>
+                                  current.filter((entry) => entry.id !== item.id),
+                                );
+                              }}
+                              className="rounded-md p-1 text-[#ffc9d5]/70 hover:bg-[rgba(255,84,116,0.2)] hover:text-white"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                  </div>
+                ) : null}
+              </div>
               <Button
                 type="button"
                 variant="ghost"
@@ -1613,6 +1743,7 @@ export function StudioShell({
                     className="bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02)_12%,rgba(0,0,0,0.18)_100%),linear-gradient(135deg,rgba(124,14,38,0.18),rgba(18,5,10,0.86)_58%,rgba(0,0,0,0.96)_100%)] shadow-[0_14px_32px_rgba(0,0,0,0.28),0_0_0_1px_rgba(255,86,118,0.12)]"
                     onTitlePointerDown={(event) => {
                       event.stopPropagation();
+                      bringPanelToFront(layoutItem.id);
                       const additiveSelection =
                         event.shiftKey || event.metaKey || event.ctrlKey;
                       const nextSelection = resolvePanelSelection(
