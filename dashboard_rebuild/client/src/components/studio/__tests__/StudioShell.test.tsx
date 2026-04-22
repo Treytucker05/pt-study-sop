@@ -156,7 +156,7 @@ describe("StudioShell", () => {
         />,
       );
 
-      fireEvent.click(screen.getByRole("button", { name: "Center Windows" }));
+      fireEvent.click(screen.getByRole("button", { name: "Fit to View" }));
 
       expect(scrollIntoViewSpy).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -552,12 +552,12 @@ describe("StudioShell", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Center Windows" }));
+    fireEvent.click(screen.getByRole("button", { name: "Fit to View" }));
 
     expect(setTransformSpy).toHaveBeenCalled();
   });
 
-  it("remounts panels after Center Windows applies a viewport transform", async () => {
+  it("remounts panels after Fit to View applies a viewport transform", async () => {
     render(
       <StudioShell
         panelLayout={buildStudioShellPresetLayout("minimal")}
@@ -568,17 +568,24 @@ describe("StudioShell", () => {
 
     const panelBefore = screen.getByTestId("studio-tutor-panel");
 
-    fireEvent.click(screen.getByRole("button", { name: "Center Windows" }));
+    fireEvent.click(screen.getByRole("button", { name: "Fit to View" }));
 
     await waitFor(() => {
       expect(screen.getByTestId("studio-tutor-panel")).not.toBe(panelBefore);
     });
   });
 
-  it("preserves the current zoom when the user recenters open panels", () => {
+  // Fit to View is allowed (and expected) to change the zoom level so every
+  // open panel is visible. This replaces the older behavior where "Center
+  // Windows" tried to preserve the current zoom, which silently broke on wide
+  // preset layouts by pushing panels off-screen.
+  it("applies the fit scale when the user clicks Fit to View", () => {
+    const layout = buildStudioShellPresetLayout("minimal");
+    const focus = buildStudioShellViewportFocus(layout, 1600, 900);
+
     render(
       <StudioShell
-        panelLayout={buildStudioShellPresetLayout("minimal")}
+        panelLayout={layout}
         setPanelLayout={vi.fn()}
         tutorPanel={<div>Tutor</div>}
       />,
@@ -595,15 +602,36 @@ describe("StudioShell", () => {
 
       setTransformSpy.mockClear();
 
-      fireEvent.click(screen.getByRole("button", { name: "Center Windows" }));
+      fireEvent.click(screen.getByRole("button", { name: "Fit to View" }));
 
-      const centerCall = setTransformSpy.mock.calls.at(-1);
-      expect(centerCall).toBeTruthy();
-      expect(centerCall?.[2]).toBeCloseTo(1.2);
-      expect(centerCall?.[3]).toBe(180);
+      const fitCall = setTransformSpy.mock.calls.at(-1);
+      expect(fitCall).toBeTruthy();
+      expect(fitCall?.[2]).toBeCloseTo(focus.scale);
+      expect(fitCall?.[3]).toBe(180);
     } finally {
       rectSpy.mockRestore();
     }
+  });
+
+  it("jumps the canvas zoom to 100% when the user clicks the 100% button", () => {
+    render(
+      <StudioShell
+        panelLayout={buildStudioShellPresetLayout("minimal")}
+        setPanelLayout={vi.fn()}
+        tutorPanel={<div>Tutor</div>}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+    fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+
+    setTransformSpy.mockClear();
+
+    fireEvent.click(screen.getByRole("button", { name: "Zoom to 100%" }));
+
+    const call = setTransformSpy.mock.calls.at(-1);
+    expect(call).toBeTruthy();
+    expect(call?.[2]).toBeCloseTo(1);
   });
 
   it("auto-focuses externally requested layouts after the Start Priming delay", async () => {
@@ -761,40 +789,6 @@ describe("StudioShell", () => {
           tutorPanel={<div>Tutor</div>}
         />,
       );
-    } finally {
-      rectSpy.mockRestore();
-    }
-  });
-
-  it("still refits the layout when the user resets the canvas view", () => {
-    const layout = buildStudioShellPresetLayout("minimal");
-    const focus = buildStudioShellViewportFocus(layout, 1600, 900);
-
-    render(
-      <StudioShell
-        panelLayout={layout}
-        setPanelLayout={vi.fn()}
-        tutorPanel={<div>Tutor</div>}
-      />,
-    );
-
-    const canvas = screen.getByTestId("studio-canvas");
-    const rectSpy = vi
-      .spyOn(canvas, "getBoundingClientRect")
-      .mockReturnValue(createViewportRect(1600, 900));
-
-    try {
-      fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
-      fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
-
-      setTransformSpy.mockClear();
-
-      fireEvent.click(screen.getByRole("button", { name: "Reset canvas view" }));
-
-      const resetCall = setTransformSpy.mock.calls.at(-1);
-      expect(resetCall).toBeTruthy();
-      expect(resetCall?.[2]).toBeCloseTo(focus.scale);
-      expect(resetCall?.[3]).toBe(180);
     } finally {
       rectSpy.mockRestore();
     }

@@ -11,13 +11,14 @@ import {
   BookOpen,
   Brain,
   FileText,
+  Maximize2,
   MessageSquare,
   NotebookPen,
   Package,
-  RefreshCcw,
   Settings2,
   Sparkles,
   StickyNote,
+  Target,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
@@ -1139,28 +1140,79 @@ export function StudioShell({
     applyViewportFocus(focus);
   }, [applyViewportFocus, resolvedLayout]);
 
-  const centerOpenPanels = useCallback(() => {
-    if (!transformRef.current || !canvasViewportRef.current || resolvedLayout.length === 0) {
-      return;
-    }
+  // Fit-to-View is the alias the UI calls on the "Fit" control. It always
+  // computes a scale that keeps every open panel inside the viewport, which is
+  // what the old "Center Windows" button was supposed to do; the previous
+  // at-current-scale math pushed wide preset layouts off-screen.
+  const fitOpenPanels = focusOpenPanels;
 
-    const activeElement = document.activeElement;
-    if (
-      activeElement instanceof HTMLElement &&
-      canvasViewportRef.current.contains(activeElement)
-    ) {
-      activeElement.blur();
-    }
+  const zoomTo100 = useCallback(() => {
+    applyCanvasScale(1);
+  }, [applyCanvasScale]);
 
-    const rect = canvasViewportRef.current.getBoundingClientRect();
-    const focus = buildStudioShellViewportCenter(
-      resolvedLayout,
-      rect.width,
-      rect.height,
-      canvasTransformRef.current.scale,
-    );
-    applyViewportFocus(focus);
-  }, [applyViewportFocus, resolvedLayout]);
+  // Canvas keyboard shortcuts (Figma-style). Only active when the canvas has
+  // panels and the user isn't typing in an input/textarea/contenteditable. We
+  // scope the listener to document so the canvas doesn't need focus for
+  // shortcuts to fire, but we respect text-entry contexts to avoid hijacking
+  // the user's keystrokes.
+  useEffect(() => {
+    if (resolvedLayout.length === 0) return;
+
+    const handler = (event: KeyboardEvent) => {
+      if (!event.shiftKey) return;
+      if (event.altKey || event.ctrlKey || event.metaKey) return;
+
+      const target = event.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (
+          tag === "INPUT" ||
+          tag === "TEXTAREA" ||
+          tag === "SELECT" ||
+          target.isContentEditable
+        ) {
+          return;
+        }
+      }
+
+      switch (event.key) {
+        case "!": // Shift + 1
+        case "1":
+          event.preventDefault();
+          fitOpenPanels();
+          return;
+        case ")": // Shift + 0
+        case "0":
+          event.preventDefault();
+          zoomTo100();
+          return;
+        case "+":
+        case "=":
+          event.preventDefault();
+          applyCanvasScale(
+            canvasTransformRef.current.scale + CANVAS_SCALE_STEP * 10,
+          );
+          return;
+        case "_":
+        case "-":
+          event.preventDefault();
+          applyCanvasScale(
+            canvasTransformRef.current.scale - CANVAS_SCALE_STEP * 10,
+          );
+          return;
+        default:
+          return;
+      }
+    };
+
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [
+    applyCanvasScale,
+    fitOpenPanels,
+    resolvedLayout.length,
+    zoomTo100,
+  ]);
 
   useEffect(() => {
     if (!shouldFocusLayout) return;
@@ -1379,92 +1431,6 @@ export function StudioShell({
               >
                 Clear Canvas
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                aria-label="Center Windows"
-                onClick={() => {
-                  if (resolvedLayout.length > 0) {
-                    centerOpenPanels();
-                  }
-                }}
-                className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white"
-              >
-                Center Windows
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="Reset canvas view"
-                onClick={() => {
-                  if (resolvedLayout.length === 0) {
-                    queuePanelLayoutChange(
-                      createPresetLayout(defaultPreset, panelDefinitions),
-                      "restore",
-                    );
-                    setShouldFocusLayout(true);
-                    return;
-                  }
-                  focusOpenPanels();
-                }}
-                className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 text-[#ffd6de] hover:text-white"
-              >
-                <RefreshCcw className="h-4 w-4" />
-              </Button>
-              <div className="flex items-center gap-2 rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Zoom out"
-                  onClick={() =>
-                    applyCanvasScale(
-                      canvasTransformRef.current.scale - CANVAS_SCALE_STEP * 10,
-                    )
-                  }
-                  className="h-8 w-8 rounded-full border border-[rgba(255,118,144,0.14)] bg-[rgba(255,84,116,0.08)] text-[#ffd6de] hover:text-white"
-                >
-                  <ZoomOut className="h-3.5 w-3.5" />
-                </Button>
-                <label className="sr-only" htmlFor="studio-canvas-zoom">
-                  Canvas zoom
-                </label>
-                <input
-                  id="studio-canvas-zoom"
-                  aria-label="Canvas zoom"
-                  type="range"
-                  min={CANVAS_MIN_SCALE}
-                  max={CANVAS_MAX_SCALE}
-                  step={CANVAS_SCALE_STEP}
-                  value={canvasScale}
-                  onChange={(event) => {
-                    applyCanvasScale(Number(event.currentTarget.value));
-                  }}
-                  className="h-1.5 w-32 cursor-pointer appearance-none rounded-full bg-[rgba(255,84,116,0.18)] accent-[rgb(255,108,138)] md:w-40"
-                />
-                <span
-                  aria-live="polite"
-                  className="min-w-[3.9rem] text-right font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]"
-                >
-                  {Math.round(canvasScale * 100)}%
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Zoom in"
-                  onClick={() =>
-                    applyCanvasScale(
-                      canvasTransformRef.current.scale + CANVAS_SCALE_STEP * 10,
-                    )
-                  }
-                  className="h-8 w-8 rounded-full border border-[rgba(255,118,144,0.14)] bg-[rgba(255,84,116,0.08)] text-[#ffd6de] hover:text-white"
-                >
-                  <ZoomIn className="h-3.5 w-3.5" />
-                </Button>
-              </div>
             </div>
           </div>
 
@@ -1654,6 +1620,92 @@ export function StudioShell({
                 );
               })}
             </TransformComponent>
+            {resolvedLayout.length > 0 ? (
+              <div
+                data-testid="studio-canvas-nav"
+                data-canvas-drag-disabled="true"
+                className="pointer-events-auto absolute bottom-4 right-4 z-30 flex items-center gap-1.5 rounded-full border border-[rgba(255,118,144,0.22)] bg-black/55 px-2 py-1.5 shadow-[0_14px_28px_rgba(0,0,0,0.35)] backdrop-blur-sm"
+                onPointerDown={(event) => event.stopPropagation()}
+                onWheel={(event) => event.stopPropagation()}
+              >
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Zoom out"
+                  title="Zoom out (Shift + -)"
+                  onClick={() =>
+                    applyCanvasScale(
+                      canvasTransformRef.current.scale - CANVAS_SCALE_STEP * 10,
+                    )
+                  }
+                  className="h-7 w-7 rounded-full border border-[rgba(255,118,144,0.14)] bg-[rgba(255,84,116,0.08)] text-[#ffd6de] hover:text-white"
+                >
+                  <ZoomOut className="h-3.5 w-3.5" />
+                </Button>
+                <label className="sr-only" htmlFor="studio-canvas-zoom">
+                  Canvas zoom
+                </label>
+                <input
+                  id="studio-canvas-zoom"
+                  aria-label="Canvas zoom"
+                  type="range"
+                  min={CANVAS_MIN_SCALE}
+                  max={CANVAS_MAX_SCALE}
+                  step={CANVAS_SCALE_STEP}
+                  value={canvasScale}
+                  onChange={(event) => {
+                    applyCanvasScale(Number(event.currentTarget.value));
+                  }}
+                  className="h-1.5 w-28 cursor-pointer appearance-none rounded-full bg-[rgba(255,84,116,0.18)] accent-[rgb(255,108,138)] md:w-36"
+                />
+                <span
+                  aria-live="polite"
+                  className="min-w-[3.25rem] text-right font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]"
+                >
+                  {Math.round(canvasScale * 100)}%
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Zoom in"
+                  title="Zoom in (Shift + +)"
+                  onClick={() =>
+                    applyCanvasScale(
+                      canvasTransformRef.current.scale + CANVAS_SCALE_STEP * 10,
+                    )
+                  }
+                  className="h-7 w-7 rounded-full border border-[rgba(255,118,144,0.14)] bg-[rgba(255,84,116,0.08)] text-[#ffd6de] hover:text-white"
+                >
+                  <ZoomIn className="h-3.5 w-3.5" />
+                </Button>
+                <div className="mx-1 h-5 w-px bg-[rgba(255,118,144,0.24)]" aria-hidden="true" />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Fit to View"
+                  title="Fit all panels to view (Shift + 1)"
+                  onClick={() => fitOpenPanels()}
+                  className="h-7 w-7 rounded-full border border-[rgba(255,118,144,0.14)] bg-[rgba(255,84,116,0.08)] text-[#ffd6de] hover:text-white"
+                >
+                  <Maximize2 className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  aria-label="Zoom to 100%"
+                  title="Zoom to 100% (Shift + 0)"
+                  onClick={() => zoomTo100()}
+                  className="h-7 rounded-full border border-[rgba(255,118,144,0.14)] bg-[rgba(255,84,116,0.08)] px-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white"
+                >
+                  <Target className="mr-1 h-3.5 w-3.5" />
+                  100%
+                </Button>
+              </div>
+            ) : null}
           </div>
           </div>
           {entryStateOverlay}
