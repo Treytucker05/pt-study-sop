@@ -1115,7 +1115,9 @@ function useTutorPageController() {
             }}
           >
             <span className="tutor-hero-action__label">
-              {liveTutorSessionId ? "END SESSION" : "NEW SESSION"}
+              {liveTutorSessionId && !sessionActionPending
+                ? "END SESSION"
+                : "NEW SESSION"}
             </span>
           </HudButton>
           {resumeCandidate ? (
