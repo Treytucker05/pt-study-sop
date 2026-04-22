@@ -140,7 +140,7 @@ try {
     );
   });
 
-  await page.getByRole("button", { name: /start priming/i }).click();
+  await page.getByRole("button", { name: /start session/i }).click();
   await createWorkflowResponse;
   await page.waitForSelector('[data-testid="studio-priming-panel"]', {
     timeout: 20000,

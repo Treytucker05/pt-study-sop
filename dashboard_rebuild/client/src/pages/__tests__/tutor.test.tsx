@@ -922,7 +922,7 @@ describe("Tutor page restore", () => {
         target: { value: "2" },
       },
     );
-    fireEvent.click(screen.getByRole("button", { name: /start priming/i }));
+    fireEvent.click(screen.getByRole("button", { name: /start session/i }));
 
     await waitFor(() => {
       expect(createWorkflowMock).toHaveBeenCalledWith(
@@ -1095,7 +1095,7 @@ describe("Tutor page restore", () => {
 
     expect(screen.getByText("2 of 3 materials selected")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /start priming/i }));
+    await user.click(screen.getByRole("button", { name: /start session/i }));
 
     await waitFor(() => {
       expect(createWorkflowMock).toHaveBeenCalledWith(
@@ -1215,7 +1215,7 @@ describe("Tutor page restore", () => {
     expect(screen.queryByRole("tab", { name: /^settings$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: /^launch$/i })).not.toBeInTheDocument();
     expect(screen.queryByText("OPEN WORKBENCH")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /start priming/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /start session/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /skip setup/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^refresh$/i })).toBeInTheDocument();
   });
@@ -1311,7 +1311,7 @@ describe("Tutor page restore", () => {
       expect(entryCard).toHaveClass("ring-primary/50");
       expect(endSessionMock).not.toHaveBeenCalled();
       expect(toastSuccessMock).toHaveBeenCalledWith(
-        "Ready — fill in session details and click Start Priming",
+        "Ready — fill in session details and click Start Session",
       );
 
       await act(async () => {
@@ -2328,7 +2328,7 @@ describe("Tutor page restore", () => {
     renderTutor();
 
     await expectStudioEntryState();
-    fireEvent.click(screen.getByRole("button", { name: /start priming/i }));
+    fireEvent.click(screen.getByRole("button", { name: /start session/i }));
 
     await waitFor(() => {
       expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
@@ -2379,7 +2379,7 @@ describe("Tutor page restore", () => {
     renderTutor();
 
     await expectStudioEntryState();
-    fireEvent.click(screen.getByRole("button", { name: /start priming/i }));
+    fireEvent.click(screen.getByRole("button", { name: /start session/i }));
     await waitFor(() => {
       expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
     });

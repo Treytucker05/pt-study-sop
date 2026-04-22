@@ -194,10 +194,10 @@ check("No material labels contain file paths", !hasPathChars);
 const buf2 = await page.screenshot();
 saveScreenshot(buf2, "verify-entry-002.png");
 
-// ENTRY-003: Click Start Priming and check panels auto-center
-const startBtn = await page.locator('button:has-text("Start Priming")');
+// ENTRY-003: Click Start Session and check panels auto-center
+const startBtn = await page.locator('button:has-text("Start Session")');
 const startBtnCount = await startBtn.count();
-check("Start Priming button exists", startBtnCount > 0);
+check("Start Session button exists", startBtnCount > 0);
 
 if (startBtnCount > 0) {
   const isDisabled = await startBtn.isDisabled();
@@ -207,7 +207,7 @@ if (startBtnCount > 0) {
 
     const panels = await page.locator('.workspace-panel-root');
     const panelCount = await panels.count();
-    check("At least one panel opened after Start Priming", panelCount > 0);
+    check("At least one panel opened after Start Session", panelCount > 0);
 
     if (panelCount > 0) {
       const firstPanel = await panels.first().boundingBox();
@@ -217,7 +217,7 @@ if (startBtnCount > 0) {
       check("Panel is visible in viewport (X >= -100)", firstPanel && firstPanel.x >= -100);
     }
   } else {
-    console.log("Start Priming is disabled (no course selected) - skipping ENTRY-003 click test");
+    console.log("Start Session is disabled (no course selected) - skipping ENTRY-003 click test");
   }
 }
 

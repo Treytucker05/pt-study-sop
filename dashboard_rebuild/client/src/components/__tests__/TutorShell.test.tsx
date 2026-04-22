@@ -1124,7 +1124,7 @@ describe("TutorShell studio routing", () => {
       screen.getByLabelText(/course for new priming session/i),
     ).toHaveValue("101");
 
-    await user.click(screen.getByRole("button", { name: /start priming/i }));
+    await user.click(screen.getByRole("button", { name: /start session/i }));
 
     expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-priming-panel")).not.toBeInTheDocument();

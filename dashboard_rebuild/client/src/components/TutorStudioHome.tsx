@@ -205,10 +205,10 @@ export function TutorStudioHome({
     }
     if (primingPreferred) {
       return {
-        label: workflow?.workflowId ? "CONTINUE PRIMING" : "START PRIMING",
+        label: workflow?.workflowId ? "CONTINUE SESSION" : "START SESSION",
         detail: workflow?.workflowId
-          ? "Return to Priming to finish setup, run PRIME methods, and complete the Tutor handoff."
-          : "Open Priming directly from Studio even if you have not created a workflow yet.",
+          ? "Return to your session in Priming to finish setup, run PRIME methods, and complete the Tutor handoff."
+          : "Start a session and jump into Priming directly from Studio even if you have not created a workflow yet.",
         onClick: onOpenPriming,
       };
     }

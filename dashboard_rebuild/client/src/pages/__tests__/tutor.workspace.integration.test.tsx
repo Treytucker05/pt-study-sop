@@ -357,7 +357,7 @@ describe("Tutor studio route integration", () => {
     expect(screen.getByTestId("studio-toolbar")).toBeInTheDocument();
     expect(screen.getByTestId("studio-canvas")).toBeInTheDocument();
     expect(screen.getByTestId("studio-entry-state")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /start priming/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /start session/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /open full studio/i })).toBeInTheDocument();
     expect(screen.queryByTestId("studio-stage-nav")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-source-shelf")).not.toBeInTheDocument();
@@ -568,6 +568,6 @@ describe("Tutor studio route integration", () => {
     expect(await screen.findByTestId("studio-entry-state")).toBeInTheDocument();
     expect(screen.queryByTestId("tutor-launch-hub")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /scholar strategy/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /start priming/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /start session/i })).toBeInTheDocument();
   });
 });

@@ -1594,7 +1594,7 @@ export function TutorShell({
           {hub.effectiveTopic ? ` · ${hub.effectiveTopic}` : ""}
         </div>
         <p className="font-mono text-sm leading-6 text-[#ffc8d3]/72">
-          Choose a course, then launch a clean Priming workspace. Start Priming opens a new workflow and loads that course&apos;s source materials into Source Shelf.
+          Choose a course, then launch a clean study session. Start Session opens a new workflow (Priming → Workspace → Tutor → Polish) and loads that course&apos;s source materials into Source Shelf.
         </p>
         {entryCardStatusMessage ? (
           <div
@@ -1744,7 +1744,7 @@ export function TutorShell({
           disabled={typeof hub.courseId !== "number" || isStartingPriming}
           className="rounded-full border border-[rgba(255,118,144,0.22)] bg-[rgba(255,68,104,0.18)] px-4 font-mono text-xs uppercase tracking-[0.18em] text-white hover:bg-[rgba(255,68,104,0.28)]"
         >
-          {isStartingPriming ? "Starting..." : "Start Priming"}
+          {isStartingPriming ? "Starting..." : "Start Session"}
         </Button>
         <Button
           type="button"

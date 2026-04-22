@@ -595,7 +595,7 @@ function useTutorPageController() {
         clearTimeout(entryCardFlashTimeoutRef.current);
       }
       setEntryCardFlashActive(true);
-      toast.success("Ready — fill in session details and click Start Priming");
+      toast.success("Ready — fill in session details and click Start Session");
       entryCardFlashTimeoutRef.current = setTimeout(() => {
         setEntryCardFlashActive(false);
         entryCardFlashTimeoutRef.current = null;
