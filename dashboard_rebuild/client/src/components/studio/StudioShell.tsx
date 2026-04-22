@@ -11,6 +11,7 @@ import {
   BookOpen,
   Brain,
   FileText,
+  LayoutGrid,
   Maximize2,
   MessageSquare,
   NotebookPen,
@@ -1214,6 +1215,36 @@ export function StudioShell({
     zoomTo100,
   ]);
 
+  // Native (non-passive) wheel listener so Ctrl + wheel reliably zooms the
+  // canvas even in browsers that register React synthetic wheel events as
+  // passive. react-zoom-pan-pinch's `activationKeys` path has historically
+  // missed Ctrl presses when the listener is passive, which showed up as
+  // "Ctrl + wheel doesn't zoom anymore". Handling it ourselves with
+  // { passive: false } lets preventDefault block page scroll before the
+  // library sees the event, and gives us a single source of truth for the
+  // canvas scale via applyCanvasScale.
+  useEffect(() => {
+    const canvas = canvasViewportRef.current;
+    if (!canvas) return;
+
+    const handleWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      const direction = event.deltaY > 0 ? -1 : 1;
+      const magnitude =
+        Math.min(Math.abs(event.deltaY), 120) / 120; // normalize trackpad/mouse
+      applyCanvasScale(
+        canvasTransformRef.current.scale +
+          direction * magnitude * CANVAS_SCALE_STEP * 10,
+      );
+    };
+
+    canvas.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      canvas.removeEventListener("wheel", handleWheel);
+    };
+  }, [applyCanvasScale]);
+
   useEffect(() => {
     if (!shouldFocusLayout) return;
 
@@ -1414,6 +1445,33 @@ export function StudioShell({
                   {label}
                 </Button>
               ))}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label="Tidy up panels"
+                title="Re-tile all open panels side by side"
+                disabled={resolvedLayout.length === 0}
+                onClick={() => {
+                  queuePanelLayoutChange((current) =>
+                    tilePanelLayout(
+                      current.map((item, index) => ({
+                        id: item.id,
+                        panel: item.panel,
+                        size: item.size,
+                        collapsed: item.collapsed,
+                        zIndex: item.zIndex || index + 1,
+                        groupId: item.groupId,
+                      })),
+                    ),
+                  );
+                  setShouldFocusLayout(true);
+                }}
+                className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white disabled:opacity-40"
+              >
+                <LayoutGrid className="mr-1.5 h-3.5 w-3.5" />
+                Tidy Up
+              </Button>
               <Button
                 type="button"
                 variant="ghost"
