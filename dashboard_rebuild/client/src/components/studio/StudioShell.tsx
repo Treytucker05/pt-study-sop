@@ -530,6 +530,106 @@ export function applyStudioShellPanelPositionUpdate(
   );
 }
 
+// Gap kept between panels when the collision resolver has to nudge a panel
+// out of the way. Matches the tile-layout grid spacing so shoved panels look
+// intentionally placed rather than jittered.
+const PANEL_COLLISION_GAP = 16;
+
+type Rect = { x: number; y: number; width: number; height: number };
+
+function rectFromLayoutItem(item: StudioPanelLayoutItem): Rect {
+  return {
+    x: item.position.x,
+    y: item.position.y,
+    width: item.size.width,
+    height: item.size.height,
+  };
+}
+
+function rectsOverlap(a: Rect, b: Rect): boolean {
+  return (
+    a.x < b.x + b.width &&
+    a.x + a.width > b.x &&
+    a.y < b.y + b.height &&
+    a.y + a.height > b.y
+  );
+}
+
+// Nudge every non-anchor panel that overlaps an anchor panel out of the way
+// along whichever axis has the smaller overlap (so it moves the least), then
+// iterate until no overlaps remain. The anchor panels (the one the user just
+// dragged/resized, plus any group/selection companions) never move — only
+// the panels in their way do. Iteration cap prevents pathological thrashing
+// when a push into one panel cascades into another.
+export function resolveStudioShellPanelCollisions(
+  layout: StudioPanelLayoutItem[],
+  anchorIds: string[],
+): StudioPanelLayoutItem[] {
+  if (layout.length < 2 || anchorIds.length === 0) return layout;
+
+  const anchors = new Set(anchorIds);
+  let touchedCount = 0;
+  const working = layout.map((item) => {
+    if (anchors.has(item.id)) return item;
+    return { ...item, position: { ...item.position } };
+  });
+
+  const maxIterations = Math.max(8, working.length * 3);
+  let changed = true;
+  let iterations = 0;
+
+  while (changed && iterations < maxIterations) {
+    changed = false;
+    iterations += 1;
+    for (let i = 0; i < working.length; i += 1) {
+      const item = working[i];
+      if (anchors.has(item.id)) continue;
+      let itemRect = rectFromLayoutItem(item);
+      for (let j = 0; j < working.length; j += 1) {
+        if (j === i) continue;
+        const other = working[j];
+        const otherRect = rectFromLayoutItem(other);
+        if (!rectsOverlap(itemRect, otherRect)) continue;
+
+        const overlapX =
+          Math.min(itemRect.x + itemRect.width, otherRect.x + otherRect.width) -
+          Math.max(itemRect.x, otherRect.x);
+        const overlapY =
+          Math.min(itemRect.y + itemRect.height, otherRect.y + otherRect.height) -
+          Math.max(itemRect.y, otherRect.y);
+
+        if (overlapX <= 0 || overlapY <= 0) continue;
+
+        if (overlapX < overlapY) {
+          const itemCenterX = itemRect.x + itemRect.width / 2;
+          const otherCenterX = otherRect.x + otherRect.width / 2;
+          const pushRight = itemCenterX >= otherCenterX;
+          item.position.x = pushRight
+            ? otherRect.x + otherRect.width + PANEL_COLLISION_GAP
+            : otherRect.x - itemRect.width - PANEL_COLLISION_GAP;
+        } else {
+          const itemCenterY = itemRect.y + itemRect.height / 2;
+          const otherCenterY = otherRect.y + otherRect.height / 2;
+          const pushDown = itemCenterY >= otherCenterY;
+          item.position.y = pushDown
+            ? otherRect.y + otherRect.height + PANEL_COLLISION_GAP
+            : otherRect.y - itemRect.height - PANEL_COLLISION_GAP;
+        }
+
+        if (item.position.x < 0) item.position.x = PANEL_COLLISION_GAP;
+        if (item.position.y < 0) item.position.y = PANEL_COLLISION_GAP;
+
+        itemRect = rectFromLayoutItem(item);
+        changed = true;
+        touchedCount += 1;
+      }
+    }
+  }
+
+  if (touchedCount === 0) return layout;
+  return working;
+}
+
 export interface StudioShellProps {
   entryCard?: ReactNode;
   defaultPreset?: StudioShellPreset;
@@ -998,13 +1098,16 @@ export function StudioShell({
   const applyPanelSize = useCallback(
     (panelId: string, size: { width: number; height: number }) => {
       queuePanelLayoutChange((current) =>
-        current.map((item) =>
-          item.id === panelId
-            ? {
-                ...item,
-                size,
-              }
-            : item,
+        resolveStudioShellPanelCollisions(
+          current.map((item) =>
+            item.id === panelId
+              ? {
+                  ...item,
+                  size,
+                }
+              : item,
+          ),
+          [panelId],
         ),
       );
     },
@@ -1779,21 +1882,33 @@ export function StudioShell({
                       handlePanelPresetSize(layoutItem.id, preset);
                     }}
                     onPositionChange={(position) => {
-                      queuePanelLayoutChange((current) =>
-                        applyStudioShellPanelPositionUpdate(
+                      queuePanelLayoutChange((current) => {
+                        const moved = applyStudioShellPanelPositionUpdate(
                           current,
                           layoutItem.id,
                           position,
                           selectedPanelIdsRef.current,
-                        ),
-                      );
+                        );
+                        const anchorIds = resolveDragTargetIds(
+                          current,
+                          layoutItem.id,
+                          selectedPanelIdsRef.current,
+                        );
+                        return resolveStudioShellPanelCollisions(
+                          moved,
+                          anchorIds,
+                        );
+                      });
                     }}
                     onSizeChange={(size) => {
-                      queuePanelLayoutChange((current) =>
-                        current.map((item) =>
+                      queuePanelLayoutChange((current) => {
+                        const resized = current.map((item) =>
                           item.id === layoutItem.id ? { ...item, size } : item,
-                        ),
-                      );
+                        );
+                        return resolveStudioShellPanelCollisions(resized, [
+                          layoutItem.id,
+                        ]);
+                      });
                     }}
                   >
                     <div
