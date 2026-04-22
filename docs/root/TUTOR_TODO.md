@@ -79,6 +79,23 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - `npx vitest run client/src/components/__tests__/useSSEStream.unmount.test.tsx client/src/components/tutor-shell/__tests__/TutorEndSessionDialog.a11y.test.tsx client/src/components/__tests__/TutorChat.test.tsx client/src/components/__tests__/TutorShell.f3.nested-boundary.test.tsx client/src/lib/__tests__/tutorSessionBridge.test.ts` => 25 passed.
   - Notes:
     - Pre-existing `TutorShell.test.tsx "stale Tutor session id"` red on `main` (out-of-scope; still tracked as a separate TutorShell-hardening task) is unaffected by this track. The new F3 inner boundary would cleanly contain that crash when triggered in the running app.
+    - Post-track follow-up (same day): the `sessionMaterialBundle.ts:225` normalization crash was closed as a defensive hardening pass on `buildSessionMaterialBundle()` in commit `b745477d` alongside the Track A + Track B fixes. TutorShell "stale Tutor session id" is now green.
+
+- [ ] TUTOR-AUDIT-P2-001. Tutor audit Pass 2: performance + observability + resource hygiene + index coverage + FE render cost. Strict TDD, same Red-Green cadence as Tracks A and B.
+  - Scope and candidate findings are tracked in `docs/root/TUTOR_AUDIT_P2.md` (`P2-PERF-*`, `P2-OBS-*`, `P2-RES-*`, `P2-IDX-*`, `P2-FE-*`).
+  - Execution plan (5 waves) also lives in `docs/root/TUTOR_AUDIT_P2.md`:
+    1. Observability quick wins (`turn_complete` INFO schema, `embed_status` timing, SSE disconnect log, SSE heartbeat register).
+    2. Resource hygiene (`tutor_db` contextmanager, try/finally sweep modelled on the B10 fix).
+    3. Index coverage (`idx_tutor_accuracy_events_session_created`, `idx_quick_notes_tutor_session`, composite `tutor_turns(tutor_session_id, turn_number)`, `tutor_artifacts(tutor_session_id, created_at)`), with EXPLAIN QUERY PLAN assertions.
+    4. Performance (session-list column trim first, retrieval context cache last).
+    5. Frontend render profiling on `useTutorSessionMaterialBundle`, `TutorShell` prop-tree size, and Polish lazy load cold-start.
+  - Out-of-scope: Tutor pedagogy / UX / session lifecycle. Scholar / Brain / SOP workstreams. Dashboard auth model.
+  - Validation gates:
+    - Every wave lands with new pytest / vitest regressions.
+    - No wave regresses the Track A + Track B suites or the F1/F2/F3/F4 + bundle Vitest suites.
+    - After every backend change, rebuild `dashboard_rebuild/` if frontend was touched and restart via `C:\pt-study-sop\Start_Dashboard.bat`; re-probe `/api/tutor/embed/status` and `/api/tutor/sessions?limit=abc` (expect 400 on the latter) to confirm B8 / B10 still hold in the live process.
+  - Assignee: @claude-cursor (unstarted)
+  - Dependencies: Tracks A + B must already be on `main` (they are, commit `b745477d`).
 
 - [x] INV-TUTOR-TRACE-001. Trace the Studio Priming -> Tutor -> Polish -> Final Sync path end to end and identify where Prime artifacts start, how they hand off into Tutor, and where Tutor outputs persist afterward.
   - Scope:

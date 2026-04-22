@@ -2,9 +2,20 @@
 
 Owner: Trey.
 
+Top-level repo truth: `README.md`.
+
 Personal study OS that captures sessions, produces metrics and Anki-ready outputs, keeps Obsidian as the primary knowledge base, and improves over time through Scholar research.
 
 Response style: straight to the point, no fluff.
+
+## Reply Format
+
+- Keep replies short and concise unless the user explicitly asks for more detail.
+- Prefer small structured replies over dense paragraphs.
+- When the user asks for instructions, give clear step-by-step directions.
+- Default to one step at a time for instructional replies unless the user asks for the full sequence at once.
+- When asking the user to run or check something, state exactly which machine, window, or shell the step belongs to.
+- When requesting output from the user, name the exact command to run and the exact output to send back.
 
 ## User-Directed Collaboration
 
