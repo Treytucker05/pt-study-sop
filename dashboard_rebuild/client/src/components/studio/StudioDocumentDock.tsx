@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { MaterialViewer } from "@/components/MaterialViewer";
 import { api } from "@/lib/api";
 import type { Material, MaterialContent } from "@/lib/api";
+import { basenameFromPath } from "@/lib/pathDisplay";
 import type { StudioDocumentTab } from "@/lib/studioPanelLayout";
 import {
   createStudioExcerptWorkspaceObject,
@@ -278,15 +279,18 @@ export function StudioDocumentDock({
           </div>
         ) : null}
         <div className="flex items-start justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
               Active document
             </div>
-            <div className="mt-1 text-sm text-foreground">
+            <div className="mt-1 truncate text-sm text-foreground" title={activeDocumentTitle}>
               {activeDocumentTitle}
             </div>
-            <div className="mt-1 break-all text-sm text-foreground/72">
-              {activeDocumentPath}
+            <div
+              className="mt-1 truncate text-xs text-foreground/60"
+              title={activeDocumentPath}
+            >
+              {basenameFromPath(activeDocumentPath) || activeDocumentPath}
             </div>
           </div>
           <Badge

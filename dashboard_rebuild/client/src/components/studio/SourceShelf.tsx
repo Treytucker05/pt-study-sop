@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import type { Material } from "@/lib/api";
+import { basenameFromPath as sharedBasenameFromPath, splitPath as sharedSplitPath } from "@/lib/pathDisplay";
 import type { StudioWorkspaceObject } from "@/lib/studioWorkspaceObjects";
 
 type SourceShelfFilter = "all" | "current_run" | "library" | "vault";
@@ -143,16 +144,11 @@ function createVaultWorkspaceObject(
   };
 }
 
-function splitPath(path: string): string[] {
-  return path
-    .split(/[\\/]/)
-    .map((segment) => segment.trim())
-    .filter(Boolean);
-}
+const splitPath = sharedSplitPath;
 
 function basenameFromPath(path: string): string {
-  const segments = splitPath(path);
-  return segments.length > 0 ? segments[segments.length - 1] : normalizeText(path);
+  const base = sharedBasenameFromPath(path);
+  return base || normalizeText(path);
 }
 
 function trimVaultRootSegments(segments: string[]): string[] {

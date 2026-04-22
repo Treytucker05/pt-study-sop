@@ -5,6 +5,7 @@ import type {
   TutorPrimingBundle,
   TutorPublishResult,
 } from "@/lib/api";
+import { basenameFromPath } from "@/lib/pathDisplay";
 import type { StudioWorkspaceObject } from "@/lib/studioWorkspaceObjects";
 
 export interface StudioPacketEntry {
@@ -136,7 +137,10 @@ function buildFallbackSourceEntries(
   return primingBundle.source_inventory.map((item) => ({
     id: `bundle-source:${item.id}`,
     title: item.title,
-    detail: item.source_path || item.folder_path || "Priming bundle source",
+    detail:
+      basenameFromPath(item.source_path) ||
+      item.folder_path ||
+      "Priming bundle source",
     badge: item.content_type?.toUpperCase() || "SOURCE",
   }));
 }
@@ -199,7 +203,12 @@ export function buildPrimePacketSections({
     .map((material) => ({
       id: `material:${material.id}`,
       title: material.title,
+      // Display only the file's basename so the packet doesn't wrap the
+      // whole absolute path (e.g. C:\pt-study-sop\brain\data\uploads\…). The
+      // full path is still available via material.source_path for consumers
+      // that need it; UI surfaces can surface it in a tooltip.
       detail:
+        basenameFromPath(material.source_path) ||
         material.source_path ||
         `${material.file_type?.toUpperCase() || "SOURCE"} material linked into this run`,
       badge: material.file_type?.toUpperCase() || "SOURCE",

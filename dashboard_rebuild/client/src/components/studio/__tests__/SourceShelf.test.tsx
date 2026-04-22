@@ -291,4 +291,79 @@ describe("SourceShelf", () => {
       );
     });
   });
+
+  // Audit 2026-04-22: material leaves previously rendered the full absolute
+  // source_path (e.g. C:\pt-study-sop\brain\data\uploads\…\Cardiovascular.pdf)
+  // which wrapped over 4 lines and made the Source Shelf unreadable. The leaf
+  // must display only the file's basename; the full path stays on the
+  // workspaceObject (for Document Dock) and is exposed via a hover title.
+  it("shows only the basename of a material's source_path in the leaf detail, not the full path", async () => {
+    const { container } = render(
+      <QueryClientProvider
+        client={
+          new QueryClient({
+            defaultOptions: {
+              queries: { retry: false, gcTime: 0 },
+              mutations: { retry: false },
+            },
+          })
+        }
+      >
+        <SourceShelf
+          courseId={1}
+          courseName="Exercise Physiology"
+          studyUnit="Week 7"
+          topic="Cardiac output"
+          materials={[
+            makeMaterial({
+              id: 701,
+              title: "Cardiovascular",
+              course_id: 1,
+              file_type: "pdf",
+              source_path:
+                "C:\\pt-study-sop\\brain\\data\\uploads\\b9b96302c2b9_Cardiovascular.pdf",
+            }),
+          ]}
+          selectedMaterialIds={[701]}
+          selectedMaterialCount={1}
+          selectedPaths={[]}
+          vaultFolder={null}
+          courseOptions={[{ id: 1, name: "Exercise Physiology" }]}
+          onSelectedMaterialIdsChange={() => {}}
+          onSelectedPathsChange={() => {}}
+        />
+      </QueryClientProvider>,
+    );
+
+    const shelf = screen.getByTestId("source-shelf-content");
+
+    // Basename is displayed as the leaf detail.
+    expect(
+      within(shelf).getByText("b9b96302c2b9_Cardiovascular.pdf"),
+    ).toBeInTheDocument();
+
+    // Full path must NOT be rendered anywhere visible in the tree.
+    expect(
+      within(shelf).queryByText(
+        /C:\\pt-study-sop\\brain\\data\\uploads\\b9b96302c2b9_Cardiovascular\.pdf/,
+      ),
+    ).not.toBeInTheDocument();
+
+    // Full path is preserved on the hover tooltip so power users can still
+    // see it without clicking through to Document Dock.
+    const detailNode = within(shelf).getByText(
+      "b9b96302c2b9_Cardiovascular.pdf",
+    );
+    expect(detailNode).toHaveAttribute(
+      "title",
+      "C:\\pt-study-sop\\brain\\data\\uploads\\b9b96302c2b9_Cardiovascular.pdf",
+    );
+
+    // The underlying workspace object still carries the full path so that
+    // callers like Document Dock / workspace integration don't regress.
+    const openButton = container.querySelector(
+      'button[aria-label="Open Cardiovascular in Document Dock"]',
+    );
+    expect(openButton).not.toBeNull();
+  });
 });
