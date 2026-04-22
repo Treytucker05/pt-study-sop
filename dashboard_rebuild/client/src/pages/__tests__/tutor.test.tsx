@@ -891,15 +891,24 @@ describe("Tutor page restore", () => {
     renderTutor();
 
     expect(await screen.findByTestId("studio-toolbar")).toBeInTheDocument();
+    // With an active session the hero button is labeled "END SESSION".
     const sessionActionButton = await screen.findByRole("button", {
-      name: /^new session$/i,
+      name: /^end session$/i,
     });
 
-    fireEvent.click(sessionActionButton);
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    try {
+      fireEvent.click(sessionActionButton);
 
-    await waitFor(() => {
-      expect(endSessionMock).toHaveBeenCalledWith("sess-cardio");
-    });
+      await waitFor(() => {
+        expect(confirmSpy).toHaveBeenCalled();
+      });
+      await waitFor(() => {
+        expect(endSessionMock).toHaveBeenCalledWith("sess-cardio");
+      });
+    } finally {
+      confirmSpy.mockRestore();
+    }
     await waitFor(() => {
       expect(toastSuccessMock).toHaveBeenCalledWith(
         "Session saved to vault: 0 note sections, 0 artifacts",
@@ -931,6 +940,70 @@ describe("Tutor page restore", () => {
     expect(sourceShelf).toHaveTextContent("2 materials loaded");
     expect(sourceShelf).toHaveTextContent("Renal Notes");
     expect(sourceShelf).toHaveTextContent("Renal Diagram");
+  });
+
+  // Audit 2026-04-22 regression: the hero action button silently ended any
+  // live session (no confirm) which is what caused "every session I start
+  // gets ended so I cannot resume it". We now require an explicit confirm
+  // and reflect the destructive action in the button label.
+  it("relabels the hero button to END SESSION when a tutor session is live and skips end on confirm-cancel", async () => {
+    window.history.replaceState({}, "", "/tutor?course_id=1&mode=studio");
+    getContentSourcesMock.mockResolvedValue({
+      courses: [{ id: 1, name: "Cardio" }],
+    });
+    getMaterialsMock.mockResolvedValue([]);
+    getProjectShellMock.mockResolvedValue(
+      makeProjectShell(1, {
+        last_mode: "tutor",
+        active_session_id: "sess-live",
+      }),
+    );
+    getSessionMock.mockResolvedValueOnce({
+      session_id: "sess-live",
+      status: "active",
+      turn_count: 2,
+      started_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+      topic: "Live session",
+      course_id: 1,
+      method_chain_id: null,
+      current_block_index: 0,
+      chain_blocks: [],
+      content_filter: {
+        material_ids: [],
+        accuracy_profile: "strict",
+        objective_scope: "module_all",
+      },
+      artifacts_json: "[]",
+      turns: [],
+    });
+
+    renderTutor();
+
+    const endButton = await screen.findByRole("button", {
+      name: /^end session$/i,
+    });
+    expect(
+      screen.queryByRole("button", { name: /^new session$/i }),
+    ).not.toBeInTheDocument();
+
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    try {
+      fireEvent.click(endButton);
+      await waitFor(() => {
+        expect(confirmSpy).toHaveBeenCalled();
+      });
+    } finally {
+      confirmSpy.mockRestore();
+    }
+
+    // Cancel → no end, no vault toast, session still live on the hero.
+    expect(endSessionMock).not.toHaveBeenCalled();
+    expect(toastSuccessMock).not.toHaveBeenCalledWith(
+      expect.stringMatching(/Session saved to vault/i),
+    );
+    expect(
+      await screen.findByRole("button", { name: /^end session$/i }),
+    ).toBeInTheDocument();
   });
 
   it("starts Priming from the entry card with the session name as topic and preserves manual material selection", async () => {

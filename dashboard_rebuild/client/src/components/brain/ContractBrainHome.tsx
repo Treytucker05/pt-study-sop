@@ -208,6 +208,8 @@ export function ContractBrainHome({
   const [deletingWorkflowId, setDeletingWorkflowId] = useState<string | null>(
     null,
   );
+  const [isBulkDeletingWorkflows, setIsBulkDeletingWorkflows] =
+    useState<boolean>(false);
 
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
     queryKey: ["brain", "sessions", "evidence"],
@@ -323,6 +325,39 @@ export function ContractBrainHome({
     }
   };
 
+  const handleBulkDeleteTutorWorkflows = async (
+    workflowsToDelete: TutorWorkflowSummary[],
+  ) => {
+    if (workflowsToDelete.length === 0) return;
+    setIsBulkDeletingWorkflows(true);
+    const failures: { workflow_id: string; error: string }[] = [];
+    try {
+      for (const workflow of workflowsToDelete) {
+        setDeletingWorkflowId(workflow.workflow_id);
+        try {
+          await api.tutor.deleteWorkflow(workflow.workflow_id);
+        } catch (error) {
+          failures.push({
+            workflow_id: workflow.workflow_id,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+      await queryClient.invalidateQueries({
+        queryKey: ["brain", "tutor-workflows"],
+      });
+      if (failures.length > 0) {
+        console.warn(
+          `Bulk workflow delete had ${failures.length} failure(s):`,
+          failures,
+        );
+      }
+    } finally {
+      setDeletingWorkflowId(null);
+      setIsBulkDeletingWorkflows(false);
+    }
+  };
+
   async function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -435,12 +470,16 @@ export function ContractBrainHome({
           onResumeCandidate={handleResumeTutorCandidate}
           onOpenWorkflow={handleOpenTutorWorkflow}
           onDeleteWorkflow={handleDeleteTutorWorkflow}
+          onDeleteWorkflows={(wfs) => {
+            void handleBulkDeleteTutorWorkflows(wfs);
+          }}
           resumeCandidate={tutorHub?.resume_candidate ?? null}
           tutorHub={tutorHub}
           tutorHubLoading={tutorHubLoading}
           activeWorkflowId={null}
           isCreating={false}
           deletingWorkflowId={deletingWorkflowId}
+          isBulkDeleting={isBulkDeletingWorkflows}
         />
 
         <SectionCard

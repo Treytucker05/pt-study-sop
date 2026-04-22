@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   TutorHubResumeCandidate,
   TutorHubResponse,
@@ -38,12 +39,23 @@ interface TutorWorkflowLaunchHubProps {
   onResumeCandidate?: (candidate: TutorHubResumeCandidate) => void;
   onOpenWorkflow: (workflow: TutorWorkflowSummary) => void;
   onDeleteWorkflow: (workflow: TutorWorkflowSummary) => void;
+  /**
+   * Bulk-delete hook: runs the shared confirm + loops the single-workflow
+   * delete endpoint. If omitted the component still renders checkboxes but
+   * the bulk-delete button stays disabled so old callers keep working.
+   */
+  onDeleteWorkflows?: (workflows: TutorWorkflowSummary[]) => void;
   resumeCandidate?: TutorHubResumeCandidate | null;
   tutorHub?: TutorHubResponse;
   tutorHubLoading?: boolean;
   activeWorkflowId?: string | null;
   isCreating?: boolean;
   deletingWorkflowId?: string | null;
+  /**
+   * True while a bulk-delete loop is in flight. Disables checkboxes and the
+   * bulk-delete button to prevent the user from stacking N+M operations.
+   */
+  isBulkDeleting?: boolean;
 }
 
 function formatDateLabel(value: string | null | undefined) {
@@ -147,13 +159,94 @@ export function TutorWorkflowLaunchHub({
   onResumeCandidate,
   onOpenWorkflow,
   onDeleteWorkflow,
+  onDeleteWorkflows,
   resumeCandidate = null,
   tutorHub,
   tutorHubLoading = false,
   activeWorkflowId,
   isCreating = false,
   deletingWorkflowId = null,
+  isBulkDeleting = false,
 }: TutorWorkflowLaunchHubProps) {
+  // Selection state for the bulk-delete UX. Keyed by workflow_id so that
+  // filter/search/sort changes don't accidentally drop selections for rows
+  // still in the visible set.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const selectAllRef = useRef<HTMLInputElement | null>(null);
+
+  // Prune any IDs that fell out of the visible workflow list so the
+  // select-all indicator and the bulk button stay accurate after filter
+  // changes or a successful bulk delete.
+  useEffect(() => {
+    setSelectedIds((previous) => {
+      if (previous.size === 0) return previous;
+      const visible = new Set(workflows.map((w) => w.workflow_id));
+      let changed = false;
+      const next = new Set<string>();
+      previous.forEach((id) => {
+        if (visible.has(id)) {
+          next.add(id);
+        } else {
+          changed = true;
+        }
+      });
+      return changed ? next : previous;
+    });
+  }, [workflows]);
+
+  const selectedCount = selectedIds.size;
+  const allVisibleSelected =
+    workflows.length > 0 && workflows.every((w) => selectedIds.has(w.workflow_id));
+  const someVisibleSelected =
+    !allVisibleSelected && workflows.some((w) => selectedIds.has(w.workflow_id));
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = someVisibleSelected;
+    }
+  }, [someVisibleSelected]);
+
+  const selectedWorkflows = useMemo(
+    () => workflows.filter((w) => selectedIds.has(w.workflow_id)),
+    [workflows, selectedIds],
+  );
+
+  const toggleOne = (workflowId: string, checked: boolean) => {
+    setSelectedIds((previous) => {
+      const next = new Set(previous);
+      if (checked) {
+        next.add(workflowId);
+      } else {
+        next.delete(workflowId);
+      }
+      return next;
+    });
+  };
+
+  const toggleAllVisible = (checked: boolean) => {
+    setSelectedIds((previous) => {
+      const next = new Set(previous);
+      if (checked) {
+        workflows.forEach((w) => next.add(w.workflow_id));
+      } else {
+        workflows.forEach((w) => next.delete(w.workflow_id));
+      }
+      return next;
+    });
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedCount === 0 || !onDeleteWorkflows) return;
+    const confirmed = window.confirm(
+      selectedCount === 1
+        ? `Delete ${selectedCount} selected workflow? This cannot be undone.`
+        : `Delete ${selectedCount} selected workflows? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+    onDeleteWorkflows(selectedWorkflows);
+    setSelectedIds(new Set());
+  };
+
   const wheelSnapshot = tutorHub?.study_wheel ?? null;
   const wheelCourses = [...(tutorHub?.class_projects ?? [])]
     .filter(
@@ -422,10 +515,51 @@ export function TutorWorkflowLaunchHub({
             ))}
           </div>
 
+          <div
+            className="flex flex-wrap items-center justify-between gap-2"
+            data-testid="tutor-launch-hub-bulk-actions"
+          >
+            <div className="font-terminal text-xs text-muted-foreground">
+              {selectedCount > 0
+                ? `${selectedCount} selected`
+                : "Select workflows to delete old stale ones in bulk."}
+            </div>
+            <Button
+              variant="destructive"
+              className="rounded-none font-arcade text-ui-2xs"
+              disabled={
+                selectedCount === 0 ||
+                isBulkDeleting ||
+                !onDeleteWorkflows
+              }
+              onClick={handleBulkDelete}
+              data-testid="tutor-launch-hub-bulk-delete"
+            >
+              <Trash2 className="mr-2 h-3.5 w-3.5" />
+              {isBulkDeleting
+                ? "DELETING..."
+                : selectedCount > 0
+                  ? `DELETE SELECTED (${selectedCount})`
+                  : "DELETE SELECTED"}
+            </Button>
+          </div>
+
           <div className="tutor-launch-hud__table-shell overflow-x-auto">
             <table className="tutor-launch-hud__table min-w-full divide-y divide-primary/10">
               <thead className="tutor-launch-hud__table-head">
                 <tr className="text-left font-arcade text-ui-2xs text-primary/75">
+                  <th className="w-10 px-3 py-2">
+                    <input
+                      ref={selectAllRef}
+                      type="checkbox"
+                      aria-label="Select all workflows"
+                      checked={allVisibleSelected}
+                      disabled={workflows.length === 0 || isBulkDeleting}
+                      onChange={(event) => toggleAllVisible(event.target.checked)}
+                      className="h-4 w-4 cursor-pointer accent-primary"
+                      data-testid="tutor-launch-hub-select-all"
+                    />
+                  </th>
                   <th className="px-3 py-2">Class</th>
                   <th className="px-3 py-2">Assignment / Scope</th>
                   <th className="px-3 py-2">Due</th>
@@ -437,7 +571,7 @@ export function TutorWorkflowLaunchHub({
               <tbody className="tutor-launch-hud__table-body divide-y divide-primary/10 font-terminal text-sm">
                 {workflows.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-3 py-8 text-center text-muted-foreground">
+                    <td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">
                       No workflows match the current filters.
                     </td>
                   </tr>
@@ -446,14 +580,28 @@ export function TutorWorkflowLaunchHub({
                     const active = workflow.workflow_id === activeWorkflowId;
                     const isDeleting = workflow.workflow_id === deletingWorkflowId;
                     const workflowLabel = workflowPrimaryLabel(workflow);
+                    const isSelected = selectedIds.has(workflow.workflow_id);
                     return (
                       <tr
                         key={workflow.workflow_id}
                         className={cn(
                           "tutor-launch-hud__row",
                           active && "tutor-launch-hud__row--active",
+                          isSelected && "tutor-launch-hud__row--selected",
                         )}
                       >
+                        <td className="px-3 py-3 align-top">
+                          <input
+                            type="checkbox"
+                            aria-label={`Select workflow ${workflowLabel}`}
+                            checked={isSelected}
+                            disabled={isDeleting || isBulkDeleting}
+                            onChange={(event) =>
+                              toggleOne(workflow.workflow_id, event.target.checked)
+                            }
+                            className="h-4 w-4 cursor-pointer accent-primary"
+                          />
+                        </td>
                         <td className="px-3 py-3 align-top">
                           <div className="tutor-launch-hud__row-title">
                             {workflowCourseLabel(workflow)}

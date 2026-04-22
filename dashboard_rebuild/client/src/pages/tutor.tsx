@@ -600,18 +600,44 @@ function useTutorPageController() {
       }, 1000);
       return;
     }
+    // Audit 2026-04-22: the previous handler ALWAYS ended a live session
+    // when this button was clicked. That was the root cause of "every
+    // session I start gets ended" — the primary hero button was labeled
+    // "NEW SESSION" but silently acted as "END SESSION" whenever a session
+    // was live, flipping tutor_sessions.status=completed and nulling
+    // tutor_workflows.active_tutor_session_id so resume never worked.
+    // Now we gate the end-session path behind an explicit confirm.
+    if (liveTutorSessionId) {
+      const confirmed = window.confirm(
+        "End the current Tutor session? This will close the session so you cannot resume it.",
+      );
+      if (!confirmed) {
+        return;
+      }
+      setSessionActionPending(true);
+      suppressProjectShellRestoreRef.current = true;
+      resumedFromProjectShellRef.current = true;
+      try {
+        await session.endSessionById(liveTutorSessionId);
+      } catch (error) {
+        toast.error(
+          `Failed to end session: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+        );
+      } finally {
+        setSessionActionPending(false);
+      }
+      return;
+    }
     setSessionActionPending(true);
     suppressProjectShellRestoreRef.current = true;
     resumedFromProjectShellRef.current = true;
     try {
-      if (liveTutorSessionId) {
-        await session.endSessionById(liveTutorSessionId);
-      } else {
-        resetTutorWorkspaceHome();
-      }
+      resetTutorWorkspaceHome();
     } catch (error) {
       toast.error(
-        `Failed to end session: ${
+        `Failed to reset workspace: ${
           error instanceof Error ? error.message : "Unknown error"
         }`,
       );
@@ -1088,7 +1114,9 @@ function useTutorPageController() {
               void handleTutorSessionAction();
             }}
           >
-            <span className="tutor-hero-action__label">NEW SESSION</span>
+            <span className="tutor-hero-action__label">
+              {liveTutorSessionId ? "END SESSION" : "NEW SESSION"}
+            </span>
           </HudButton>
           {resumeCandidate ? (
             <HudButton

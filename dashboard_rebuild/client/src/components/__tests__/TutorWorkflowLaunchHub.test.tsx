@@ -209,6 +209,149 @@ describe("TutorWorkflowLaunchHub", () => {
     expect(screen.getByText(/CARD-202 • Cardio/i)).toBeInTheDocument();
   });
 
+  it("shows a row checkbox, a select-all header checkbox, and a bulk-delete button", () => {
+    render(
+      <TutorWorkflowLaunchHub
+        workflows={[workflowFixture]}
+        totalCount={1}
+        courses={[{ id: 101, name: "Exercise Physiology", code: "EPHY-101" }]}
+        filters={{
+          search: "",
+          courseId: "all",
+          stage: "all",
+          status: "all",
+          dueBucket: "all",
+        }}
+        onFiltersChange={vi.fn()}
+        onStartNew={vi.fn()}
+        onOpenWorkflow={vi.fn()}
+        onDeleteWorkflow={vi.fn()}
+        onDeleteWorkflows={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("tutor-launch-hub-select-all")).toBeInTheDocument();
+    expect(
+      screen.getByRole("checkbox", { name: /select workflow week 7 study plan/i }),
+    ).toBeInTheDocument();
+    const bulkButton = screen.getByTestId("tutor-launch-hub-bulk-delete");
+    expect(bulkButton).toBeInTheDocument();
+    expect(bulkButton).toBeDisabled();
+  });
+
+  it("select-all checks every visible workflow and enables bulk delete", () => {
+    const onDeleteWorkflows = vi.fn();
+    const secondWorkflow: TutorWorkflowSummary = {
+      ...workflowFixture,
+      workflow_id: "wf-2",
+      assignment_title: "Week 8 Recovery",
+      updated_at: "2026-03-21T11:00:00Z",
+    };
+
+    render(
+      <TutorWorkflowLaunchHub
+        workflows={[workflowFixture, secondWorkflow]}
+        totalCount={2}
+        courses={[{ id: 101, name: "Exercise Physiology", code: "EPHY-101" }]}
+        filters={{
+          search: "",
+          courseId: "all",
+          stage: "all",
+          status: "all",
+          dueBucket: "all",
+        }}
+        onFiltersChange={vi.fn()}
+        onStartNew={vi.fn()}
+        onOpenWorkflow={vi.fn()}
+        onDeleteWorkflow={vi.fn()}
+        onDeleteWorkflows={onDeleteWorkflows}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("tutor-launch-hub-select-all"));
+
+    const rowCheckbox1 = screen.getByRole("checkbox", {
+      name: /select workflow week 7 study plan/i,
+    }) as HTMLInputElement;
+    const rowCheckbox2 = screen.getByRole("checkbox", {
+      name: /select workflow week 8 recovery/i,
+    }) as HTMLInputElement;
+    expect(rowCheckbox1.checked).toBe(true);
+    expect(rowCheckbox2.checked).toBe(true);
+
+    const bulkButton = screen.getByTestId("tutor-launch-hub-bulk-delete");
+    expect(bulkButton).not.toBeDisabled();
+    expect(bulkButton).toHaveTextContent(/delete selected \(2\)/i);
+
+    fireEvent.click(bulkButton);
+
+    expect(window.confirm).toHaveBeenCalledWith(
+      "Delete 2 selected workflows? This cannot be undone.",
+    );
+    expect(onDeleteWorkflows).toHaveBeenCalledTimes(1);
+    expect(onDeleteWorkflows).toHaveBeenCalledWith([workflowFixture, secondWorkflow]);
+  });
+
+  it("does not call bulk delete when confirmation is cancelled", () => {
+    window.confirm = vi.fn(() => false);
+    const onDeleteWorkflows = vi.fn();
+
+    render(
+      <TutorWorkflowLaunchHub
+        workflows={[workflowFixture]}
+        totalCount={1}
+        courses={[{ id: 101, name: "Exercise Physiology", code: "EPHY-101" }]}
+        filters={{
+          search: "",
+          courseId: "all",
+          stage: "all",
+          status: "all",
+          dueBucket: "all",
+        }}
+        onFiltersChange={vi.fn()}
+        onStartNew={vi.fn()}
+        onOpenWorkflow={vi.fn()}
+        onDeleteWorkflow={vi.fn()}
+        onDeleteWorkflows={onDeleteWorkflows}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /select workflow week 7 study plan/i }),
+    );
+    fireEvent.click(screen.getByTestId("tutor-launch-hub-bulk-delete"));
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(onDeleteWorkflows).not.toHaveBeenCalled();
+  });
+
+  it("disables the row checkbox while a per-row delete is in flight", () => {
+    render(
+      <TutorWorkflowLaunchHub
+        workflows={[workflowFixture]}
+        totalCount={1}
+        courses={[{ id: 101, name: "Exercise Physiology", code: "EPHY-101" }]}
+        filters={{
+          search: "",
+          courseId: "all",
+          stage: "all",
+          status: "all",
+          dueBucket: "all",
+        }}
+        onFiltersChange={vi.fn()}
+        onStartNew={vi.fn()}
+        onOpenWorkflow={vi.fn()}
+        onDeleteWorkflow={vi.fn()}
+        onDeleteWorkflows={vi.fn()}
+        deletingWorkflowId={workflowFixture.workflow_id}
+      />,
+    );
+
+    expect(
+      screen.getByRole("checkbox", { name: /select workflow week 7 study plan/i }),
+    ).toBeDisabled();
+  });
+
   it("renders safely without tutor hub data and still shows fallback workflow context", () => {
     const brokenDraft: TutorWorkflowSummary = {
       ...workflowFixture,
