@@ -2104,7 +2104,12 @@ def list_sessions():
 
     course_id = request.args.get("course_id", type=int)
     status = request.args.get("status")
-    limit = request.args.get("limit", 20, type=int)
+    raw_limit = request.args.get("limit", 20)
+    try:
+        limit = int(raw_limit)
+    except (TypeError, ValueError):
+        return jsonify({"error": "limit must be an integer"}), 400
+    limit = max(1, min(limit, 200))
 
     conn = get_connection()
     _ensure_selector_columns(conn)

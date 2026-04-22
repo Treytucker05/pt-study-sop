@@ -259,4 +259,37 @@ describe("buildSessionMaterialBundle", () => {
     expect(empty.isReady).toBe(false);
     expect(empty.learningObjectives).toEqual([]);
   });
+
+  /**
+   * Regression: the "stale Tutor session id" TutorShell test (plus a real
+   * runtime path when `workflow.activeWorkflowDetail` is partial) produces
+   * an input where typed-as-required collections arrive as `undefined`
+   * through `useTutorSessionMaterialBundle`. Pre-fix this crashed at
+   * `input.artifacts.map(...)` with `Cannot read properties of undefined
+   * (reading 'map')`. The builder must normalize every iterable field so
+   * a partial caller degrades into an empty, not-ready bundle instead of
+   * tearing down the Tutor subtree.
+   */
+  it("does not crash when optional iterable fields arrive as undefined", () => {
+    const partial = {
+      workflowId: null,
+      tutorSessionId: null,
+      topic: null,
+      studyUnit: null,
+      courseId: null,
+      courseName: null,
+      turnCount: 0,
+      hasWorkflowDetail: false,
+    } as unknown as SessionMaterialBundleInput;
+
+    expect(() => buildSessionMaterialBundle(partial)).not.toThrow();
+
+    const result = buildSessionMaterialBundle(partial);
+    expect(result.isReady).toBe(false);
+    expect(result.artifacts).toEqual([]);
+    expect(result.notes).toEqual([]);
+    expect(result.learningObjectives).toEqual([]);
+    expect(result.concepts).toEqual([]);
+    expect(result.terms).toEqual([]);
+  });
 });

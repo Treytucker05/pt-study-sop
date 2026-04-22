@@ -1373,7 +1373,13 @@ export function TutorShell({
   );
 
   const tutorStudioContent = (
-    <div className="flex-1 flex flex-col min-h-0">
+    // Audit F3: nest a Tutor-specific TutorErrorBoundary so a crash inside
+    // the live study pane (e.g. a malformed session bundle -- see the
+    // known-red TutorShell sessionMaterialBundle crash) does not cascade
+    // into Priming / Polish / Workspace panels that share the outer
+    // StudioShell boundary.
+    <TutorErrorBoundary fallbackLabel="Tutor live study">
+      <div className="flex-1 flex flex-col min-h-0">
       <TutorLiveStudyPane
         activeSessionId={liveTutorSessionId}
         hub={hub}
@@ -1458,7 +1464,8 @@ export function TutorShell({
         }}
         submitBrainFeedback={submitBrainFeedback}
       />
-    </div>
+      </div>
+    </TutorErrorBoundary>
   );
 
   const polishStudioContent = (

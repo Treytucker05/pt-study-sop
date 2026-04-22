@@ -31,7 +31,12 @@ def _register_accuracy_routes(tutor_bp):
                             avg_sources, avg_chunks } ] }
         """
         filter_session = request.args.get("session_id")
-        limit = min(int(request.args.get("limit", 50)), 200)
+        raw_limit = request.args.get("limit", 50)
+        try:
+            limit = int(raw_limit)
+        except (TypeError, ValueError):
+            return jsonify({"error": "limit must be an integer"}), 400
+        limit = max(1, min(limit, 200))
 
         conn = get_connection()
         conn.row_factory = sqlite3.Row

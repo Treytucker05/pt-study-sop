@@ -28,6 +28,58 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 - Ops note (2026-03-25): `dev-browser` is now a shared agent skill projected into every supported agent root; this does not change Tutor sprint priority.
 
+- [x] TUTOR-AUDIT-P0-001. Land Track A of the 2026-04-22 Tutor full-audit remediation (P0 correctness + security). Strict TDD: failing test first, minimal fix, green.
+  - Scope landed (bug IDs map to the 2026-04-22 audit report):
+    - `brain/dashboard/api_tutor_turns.py` — B2 silent turn-persistence swallow (now WARNING); B3 `adaptive_conn` `UnboundLocalError` in `finally` (pre-init + guarded close); B6 accuracy-log failure log level raised to WARNING.
+    - `brain/dashboard/api_tutor_materials.py` — SEC1/B1 `get_material_file` path containment via `_allowed_material_roots()` + `_path_is_inside_allowed_roots()` (lazy resolve so tests can monkeypatch roots).
+    - `brain/dashboard/api_tutor_accuracy.py` — B9 non-numeric `limit` now returns 400.
+    - `brain/llm_provider.py` — B5 `stream_chatgpt_responses` dedupes `tool_call` emission across `response.function_call_arguments.done` + `response.completed`.
+    - `brain/db_setup.py` — S1 stale `REFERENCES topics(id)` dropped from `tutor_turns` DDL + `idx_tutor_turns_tutor_session_id` moved after the `ADD COLUMN tutor_session_id` migration.
+    - `dashboard_rebuild/client/src/components/useSSEStream.ts` — F2 unmount effect aborts the in-flight `AbortController`.
+    - `dashboard_rebuild/client/src/components/tutor-shell/TutorEndSessionDialog.tsx` — F4 `role="dialog"` + `aria-modal` + `aria-labelledby`, plus an `isEnding` guard so rapid double-clicks fire `endSession` once.
+    - New regression suites:
+      - `brain/tests/test_tutor_audit_p0_remediation.py` — B2/B3/B5/B6/B9/SEC1/S1/R1.
+      - `dashboard_rebuild/client/src/components/__tests__/useSSEStream.unmount.test.tsx` — F2.
+      - `dashboard_rebuild/client/src/components/tutor-shell/__tests__/TutorEndSessionDialog.a11y.test.tsx` — F4.
+    - R1 (`brain/tutor_verdict.py`): existing brace-aware regex already tolerates embedded `}` and `-->`; regression test added, no source change required.
+    - `brain/tests/test_tutor_project_shell.py` — patched `test_material_file_route_streams_original_file` to point `api_tutor_utils.UPLOADS_DIR` at `tmp_path` so the new SEC1 guard still accepts legitimate test files.
+  - Deferred to Track B (intentionally out of P0 scope, now queued as follow-up items):
+    - B4 tool-round cap terminal `tool_result` + synthetic `function_call_output`.
+    - B7 note-branch swallow (`api_tutor_artifacts.py`).
+    - B8 non-numeric `limit` on session list (`api_tutor_sessions.py`).
+    - B10 `embed_status` connection leak (`api_tutor.py`).
+    - B11 `content_filter_json` parse logging.
+    - F1 `sessionRef` live read (`tutor.tsx` + `useTutorWorkflow.ts`).
+    - F3 `TutorErrorBoundary` wrap of the Tutor subtree (`TutorShell.tsx`).
+  - Assignee: @claude-cursor
+  - Completed: 2026-04-22
+  - Validation (all green on completion):
+    - `python -m pytest brain/tests/test_tutor_audit_p0_remediation.py brain/tests/test_tutor_turn_stream_contract.py brain/tests/test_tutor_verdict.py brain/tests/test_teach_back.py brain/tests/test_tutor_project_shell.py -q` => 69 passed.
+    - `npx vitest run client/src/components/__tests__/useSSEStream.unmount.test.tsx client/src/components/tutor-shell/__tests__/TutorEndSessionDialog.a11y.test.tsx client/src/components/__tests__/TutorChat.test.tsx` => 21 passed.
+  - Notes:
+    - `client/src/components/__tests__/TutorShell.test.tsx "stale Tutor session id"` is red on `main` independently of this track (crash in `lib/sessionMaterialBundle.ts:225` — `input.artifacts` undefined). Confirmed by stash-and-rerun; logged as a separate TutorShell-hardening task.
+
+- [x] TUTOR-AUDIT-P1-001. Land Track B of the 2026-04-22 Tutor full-audit remediation (deferred P1 reliability + frontend polish items). Strict TDD: failing test first, minimal fix, green.
+  - Scope landed:
+    - `brain/dashboard/api_tutor_sessions.py` — B8 `list_sessions` now rejects non-numeric `limit` with 400 and clamps legal values to `[1, 200]` so an oversize/missing cast cannot disable the SQL `LIMIT` clause.
+    - `brain/dashboard/api_tutor.py` — B10 `embed_status` route body split into `_embed_status_body(conn)` and the public route now wraps the helper in `try / finally` so the SQLite handle is always closed, even when a mid-route `SELECT` / PRAGMA raises.
+    - `brain/dashboard/api_tutor_turns.py` — B11 added `_parse_content_filter_json()` helper that logs at WARNING (with session id) when `content_filter_json` is corrupt/non-dict, replacing the silent `except (JSONDecodeError, TypeError): pass`; B4 when the tool-round cap (`MAX_TOOL_ROUNDS`, extracted to module-level) trips, we now emit a terminal `tool_result` SSE and append synthetic `function_call_output` entries for every tool_call in the capping round so the OpenAI Responses API invariant holds on the next user turn.
+    - `brain/dashboard/api_tutor_artifacts.py` — B7 note-branch `INSERT INTO quick_notes` failure now logs at WARNING with `exc_info` and flags the response with `status="persist_failed"` + `persist_error` instead of silently dropping the row.
+    - `dashboard_rebuild/client/src/lib/tutorSessionBridge.ts` — F1 new `createLiveSessionBridge()` returns a stable-identity object whose property reads forward live to `sessionRef.current`, fixing the stale-closure drift where `useTutorWorkflow` callbacks captured the default stub installed on initial render.
+    - `dashboard_rebuild/client/src/pages/tutor.tsx` — F1 consumer update: `tutor.tsx` now passes the live bridge into `useTutorWorkflow` via `liveSessionBridgeRef.current` so workflow-triggered session actions always hit the real `useTutorSession` return value.
+    - `dashboard_rebuild/client/src/components/TutorShell.tsx` — F3 wrapped `tutorStudioContent` in a dedicated `TutorErrorBoundary fallbackLabel="Tutor live study"` so a Tutor-live crash (including the known `sessionMaterialBundle` crash) no longer cascades into Priming / Polish / Workspace panels that share the outer `Studio Canvas` boundary.
+    - New regression suites:
+      - `brain/tests/test_tutor_audit_track_b.py` — B4/B7/B8/B10/B11 regressions.
+      - `dashboard_rebuild/client/src/lib/__tests__/tutorSessionBridge.test.ts` — F1 live-read semantics.
+      - `dashboard_rebuild/client/src/components/__tests__/TutorShell.f3.nested-boundary.test.tsx` — F3 structural assertion that `tutorStudioContent` owns its own Tutor-labelled boundary.
+  - Assignee: @claude-cursor
+  - Completed: 2026-04-22
+  - Validation (all green on completion):
+    - `python -m pytest brain/tests/test_tutor_audit_p0_remediation.py brain/tests/test_tutor_audit_track_b.py brain/tests/test_tutor_turn_stream_contract.py brain/tests/test_tutor_verdict.py brain/tests/test_teach_back.py brain/tests/test_tutor_project_shell.py -q` => 75 passed.
+    - `npx vitest run client/src/components/__tests__/useSSEStream.unmount.test.tsx client/src/components/tutor-shell/__tests__/TutorEndSessionDialog.a11y.test.tsx client/src/components/__tests__/TutorChat.test.tsx client/src/components/__tests__/TutorShell.f3.nested-boundary.test.tsx client/src/lib/__tests__/tutorSessionBridge.test.ts` => 25 passed.
+  - Notes:
+    - Pre-existing `TutorShell.test.tsx "stale Tutor session id"` red on `main` (out-of-scope; still tracked as a separate TutorShell-hardening task) is unaffected by this track. The new F3 inner boundary would cleanly contain that crash when triggered in the running app.
+
 - [x] INV-TUTOR-TRACE-001. Trace the Studio Priming -> Tutor -> Polish -> Final Sync path end to end and identify where Prime artifacts start, how they hand off into Tutor, and where Tutor outputs persist afterward.
   - Scope:
     - `docs/root/TUTOR_TODO.md`

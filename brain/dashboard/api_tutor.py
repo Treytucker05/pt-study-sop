@@ -342,7 +342,22 @@ def config_check():
 
 @tutor_bp.route("/embed/status", methods=["GET"])
 def embed_status():
+    # Audit B10: guarantee the DB handle closes even when a mid-route
+    # SELECT/PRAGMA raises. Pre-fix the single `conn.close()` lived only
+    # on the happy-path side of the body, so any uncaught exception
+    # between `get_connection()` and that close leaked a sqlite3.Connection
+    # for the remainder of the process.
     conn = get_connection()
+    try:
+        return _embed_status_body(conn)
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
+def _embed_status_body(conn):
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     try:
@@ -536,8 +551,6 @@ def embed_status():
             item["needs_reembed"] = True
         else:
             item["index_state"] = "pending"
-
-    conn.close()
 
     total = len(materials)
     embedded_count = sum(1 for m in materials if m["embedded"])

@@ -2213,6 +2213,53 @@ def get_material_content(material_id: int):
     )
 
 
+def _allowed_material_roots() -> tuple[Path, ...]:
+    """Resolve the active allow-list at call time.
+
+    Both the uploads root and the extracted-images root are dynamic: tests
+    monkeypatch ``api_tutor_utils.UPLOADS_DIR`` (and occasionally this
+    module's local copy) to redirect into a sandbox, so we look them up
+    fresh on each call rather than captureing them at import time.
+    """
+    from dashboard import api_tutor_utils as _utils
+
+    candidates: list[Path] = []
+    for source in (
+        getattr(_utils, "UPLOADS_DIR", None),
+        UPLOADS_DIR,
+        getattr(_utils, "EXTRACTED_IMAGES_ROOT", None),
+        EXTRACTED_IMAGES_ROOT,
+    ):
+        if source is None:
+            continue
+        try:
+            candidates.append(Path(source))
+        except (TypeError, ValueError):
+            continue
+    return tuple(candidates)
+
+
+def _path_is_inside_allowed_roots(candidate: Path) -> bool:
+    """Return True only if ``candidate`` resolves inside a known-good root.
+
+    Defence-in-depth against SEC1: even if the DB row claims a path, we
+    refuse to serve anything outside the configured uploads/extracted-image
+    roots so a tampered ``rag_docs`` row cannot be weaponised into an
+    arbitrary file-read primitive.
+    """
+    try:
+        resolved = candidate.resolve(strict=True)
+    except (OSError, RuntimeError):
+        return False
+    for root in _allowed_material_roots():
+        try:
+            resolved.relative_to(root.resolve())
+            return True
+        except (ValueError, OSError):
+            continue
+    return False
+
+
 @tutor_bp.route("/materials/<int:material_id>/file", methods=["GET"])
 def get_material_file(material_id: int):
     conn = get_connection()
@@ -2238,8 +2285,16 @@ def get_material_file(material_id: int):
         if not raw_path:
             continue
         candidate = Path(raw_path)
-        if candidate.exists() and candidate.is_file():
-            return send_file(candidate)
+        if not (candidate.exists() and candidate.is_file()):
+            continue
+        if not _path_is_inside_allowed_roots(candidate):
+            _LOG.warning(
+                "Refusing to serve material %s: path %r is outside allowed roots",
+                material_id,
+                raw_path,
+            )
+            return jsonify({"error": "Material file not accessible"}), 403
+        return send_file(candidate)
 
     return jsonify({"error": "Material file not found"}), 404
 

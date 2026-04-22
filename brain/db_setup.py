@@ -1191,8 +1191,10 @@ def init_database():
             unverified INTEGER DEFAULT 0,     -- 1 if answer was unverified
             source_lock_active INTEGER DEFAULT 0,
             created_at TEXT NOT NULL,
-            FOREIGN KEY(course_id) REFERENCES courses(id),
-            FOREIGN KEY(topic_id) REFERENCES topics(id)
+            FOREIGN KEY(course_id) REFERENCES courses(id)
+            -- NOTE: the legacy FK on topic_id was removed because the `topics`
+            -- table was dropped in v9.7. The column itself is retained for
+            -- backwards compatibility with existing rows.
         )
     """
     )
@@ -2976,6 +2978,19 @@ def init_database():
                 print(f"[INFO] Added '{col_name}' column to tutor_turns table")
             except sqlite3.OperationalError:
                 pass
+
+    # Index on tutor_session_id now that the column is guaranteed to exist.
+    # Hot-path queries in api_tutor_turns / api_tutor_sessions filter by this
+    # column; without this index they scan the full table (audit S1).
+    try:
+        cursor.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_tutor_turns_tutor_session_id
+            ON tutor_turns(tutor_session_id)
+            """
+        )
+    except sqlite3.OperationalError:
+        pass
 
     # card_drafts: add tutor_session_id
     cursor.execute("PRAGMA table_info(card_drafts)")

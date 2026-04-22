@@ -742,6 +742,7 @@ def stream_chatgpt_responses(
         url_citations: list = []
         response_id = ""
         thread_id = ""
+        emitted_tool_call_ids: set[str] = set()
 
         while True:
             line = resp.readline()
@@ -771,11 +772,16 @@ def stream_chatgpt_responses(
             elif evt_type == "response.web_search_call.completed":
                 yield {"type": "web_search", "status": "completed"}
             elif evt_type == "response.function_call_arguments.done":
+                tc_call_id = evt.get("call_id", evt.get("item_id", ""))
+                if tc_call_id and tc_call_id in emitted_tool_call_ids:
+                    continue
+                if tc_call_id:
+                    emitted_tool_call_ids.add(tc_call_id)
                 yield {
                     "type": "tool_call",
                     "name": evt.get("name", ""),
                     "arguments": evt.get("arguments", "{}"),
-                    "call_id": evt.get("call_id", evt.get("item_id", "")),
+                    "call_id": tc_call_id,
                 }
             elif evt_type == "response.completed":
                 r = evt.get("response", {})
@@ -791,13 +797,18 @@ def stream_chatgpt_responses(
 
                 for output_item in r.get("output", []):
                     if output_item.get("type") == "function_call":
+                        oi_call_id = output_item.get(
+                            "call_id", output_item.get("id", "")
+                        )
+                        if oi_call_id and oi_call_id in emitted_tool_call_ids:
+                            continue
+                        if oi_call_id:
+                            emitted_tool_call_ids.add(oi_call_id)
                         yield {
                             "type": "tool_call",
                             "name": output_item.get("name", ""),
                             "arguments": output_item.get("arguments", "{}"),
-                            "call_id": output_item.get(
-                                "call_id", output_item.get("id", "")
-                            ),
+                            "call_id": oi_call_id,
                         }
 
         conn.close()

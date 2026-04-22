@@ -118,6 +118,15 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
     }
   }, [createMessageId, sessionId, initialTurns]);
 
+  // Audit F2: on unmount, abort any in-flight SSE request so the async reader
+  // stops calling setMessages on an unmounted component.
+  useEffect(() => {
+    return () => {
+      streamAbortRef.current?.abort();
+      streamAbortRef.current = null;
+    };
+  }, []);
+
   const sendMessage = useCallback(async () => {
     if (!input.trim() || !sessionId || isStreaming) return;
 

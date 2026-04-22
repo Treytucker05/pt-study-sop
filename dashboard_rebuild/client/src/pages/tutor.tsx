@@ -13,6 +13,7 @@ import {
   type TutorWorkflowSessionBridge,
 } from "@/hooks/useTutorWorkflow";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { createLiveSessionBridge } from "@/lib/tutorSessionBridge";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
 import { api } from "@/lib/api";
@@ -198,10 +199,21 @@ function useTutorPageController() {
     latestCommittedAssistantMessage: null,
     artifacts: [],
   });
+  // Audit F1: stable-identity bridge whose property reads are forwarded
+  // live to `sessionBridgeRef.current`. Pre-fix we passed
+  // `sessionBridgeRef.current` by value, which froze the default stub
+  // into every `useCallback` inside `useTutorWorkflow` -- the real
+  // `useTutorSession` return (installed by the post-commit effect
+  // further down) never propagated into workflow-triggered actions on
+  // the initial render.
+  const liveSessionBridgeRef = useRef<TutorWorkflowSessionBridge | null>(null);
+  if (liveSessionBridgeRef.current === null) {
+    liveSessionBridgeRef.current = createLiveSessionBridge(sessionBridgeRef);
+  }
 
   const workflow = useTutorWorkflow({
     hub,
-    session: sessionBridgeRef.current,
+    session: liveSessionBridgeRef.current,
     activeSessionId,
     hasRestored,
   });

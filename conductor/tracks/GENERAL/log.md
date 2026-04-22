@@ -2440,3 +2440,67 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Added shared skill `C:\Users\treyt\.agents\skills\yoga-book-writing-mode` with hardware-specific scripts to disable and restore bottom-screen touch on Trey's Lenovo Yoga Book 9i (`82YQ`) while leaving pen input enabled.
 - Restored the missing shared path `C:\Users\treyt\.agents\skills\self-improve\SKILL.md` as a compatibility alias that points legacy instructions back to the authoritative shared lifecycle protocol in `system-improve`.
 - Updated `C:\Users\treyt\.codex\AGENTS.md` to prefer `~/.agents/skills/system-improve/SKILL.md` and ran `scripts/sync_agent_skills.ps1` in both `Apply` and `Check` modes so the new shared skills project into Codex and the other supported roots.
+
+## 2026-04-20 - Codex Windows trust-path normalization workaround
+
+- Added explicit trusted-project entries for `C:\pt-study-sop` and `c:\pt-study-sop` to `C:\Users\treyt\.codex\config.toml` alongside the existing `C:/pt-study-sop` key so Codex project-local config loading does not miss on Windows path-format drift.
+- Verified the updated global config still parses as valid TOML and confirmed the repo-local `.codex/config.toml` remains minimal (`sandbox_mode = "danger-full-access"`), so trusting the project now enables that local override instead of leaving it disabled.
+
+## 2026-04-21 - AGENTS reply-format clarification
+
+- Updated the root `AGENTS.md` reply rules to require short concise replies by default, small structured output, and explicit one-step-at-a-time instructions unless the user asks for the full sequence.
+- Added a concrete output-request rule so future troubleshooting replies specify the exact command to run, the exact machine or shell to run it in, and the exact output to send back.
+
+## 2026-04-21 - Cross-machine SSH folder split for desktop and work laptop
+
+- Reorganized `C:\Users\treyt\OneDrive\Desktop\SSH laptop to Desktop` into machine-specific subfolders: `Home Desktop` and `Work Laptop`.
+- Moved the existing home-desktop SSH launchers and Taildrive shortcuts into `Home Desktop`, added a machine-specific README there, and added a new `Work Laptop Shell (SSH).bat` plus README documenting the work-laptop route and the Windows administrator authorized-keys path required for key auth.
+- Rewrote the root `README_FOR_AGENTS.md` in that folder so future agents know which subfolder to use and what each one contains.
+
+## 2026-04-21 - Three-machine SSH routes and mirrored launchers
+
+- Added an alias-based work-laptop launcher (`Work Laptop Shell (Alias).bat`) in the shared `SSH laptop to Desktop` folder and updated `PowerHouseATX` SSH config so `ssh home-desktop` and `ssh work-laptop` both resolve locally.
+- Configured the home desktop and work laptop with machine-local SSH configs so they can reach the other machines by alias, then fixed the Windows OpenSSH ACL issues on the desktop key/config files so those aliases actually work.
+- Added the work-laptop public key to the desktop and `PowerHouseATX` administrator authorized-keys files, preserving the shared `PowerHouseATX`/desktop key on the work laptop, so work-laptop -> desktop and work-laptop -> `PowerHouseATX` are key-based.
+- Verified all four cross-machine routes: desktop -> `PowerHouseATX`, desktop -> work laptop, work laptop -> `PowerHouseATX`, and work laptop -> home desktop.
+
+## 2026-04-22 - Tutor full-audit Track A (P0 correctness + security) — TDD remediation landed
+
+- Executed strict Red-Green TDD against the 2026-04-22 Tutor audit report for TUTOR-AUDIT-P0-001. Every bug below has a dedicated failing-first regression test that now passes.
+- Backend fixes:
+  - `brain/dashboard/api_tutor_turns.py` — B3: pre-initialized `adaptive_conn = None` + finally-block guard so a `build_context` throw cannot surface as `UnboundLocalError`; B2/B6: turn persistence and accuracy-log insert failures now log at WARNING instead of silently swallowing.
+  - `brain/dashboard/api_tutor_materials.py` — SEC1/B1: added `_allowed_material_roots()` + `_path_is_inside_allowed_roots()` with lazy resolution so `get_material_file` refuses paths outside `UPLOADS_DIR` / `EXTRACTED_IMAGES_ROOT` even when the DB row claims otherwise.
+  - `brain/dashboard/api_tutor_accuracy.py` — B9: non-numeric `limit` now returns 400 instead of 500.
+  - `brain/llm_provider.py` — B5: `stream_chatgpt_responses` now dedupes tool_call emission across `response.function_call_arguments.done` and `response.completed`.
+  - `brain/db_setup.py` — S1: removed stale `REFERENCES topics(id)` FK from `tutor_turns` DDL and moved the `idx_tutor_turns_tutor_session_id` index creation after the `ALTER TABLE ... ADD COLUMN tutor_session_id` migration so fresh DBs get a clean schema.
+- Frontend fixes:
+  - `dashboard_rebuild/client/src/components/useSSEStream.ts` — F2: added an unmount cleanup effect that aborts the in-flight `AbortController`.
+  - `dashboard_rebuild/client/src/components/tutor-shell/TutorEndSessionDialog.tsx` — F4: added `role="dialog"` + `aria-modal` + `aria-labelledby` and an `isEnding` guard so rapid double-clicks on END SESSION only fire `endSession` once.
+- New regression suites: `brain/tests/test_tutor_audit_p0_remediation.py` (B3/B2/B6/B5/SEC1/B9/S1/R1), `dashboard_rebuild/client/src/components/__tests__/useSSEStream.unmount.test.tsx` (F2), `dashboard_rebuild/client/src/components/tutor-shell/__tests__/TutorEndSessionDialog.a11y.test.tsx` (F4).
+- Validation: `python -m pytest brain/tests/test_tutor_audit_p0_remediation.py brain/tests/test_tutor_turn_stream_contract.py brain/tests/test_tutor_verdict.py brain/tests/test_teach_back.py brain/tests/test_tutor_project_shell.py -q` => 69 passed. `npx vitest run useSSEStream.unmount.test.tsx TutorEndSessionDialog.a11y.test.tsx TutorChat.test.tsx` => 21 passed.
+- Deferred to Track B (not in P0 scope): F1 `sessionRef` live-read refactor, F3 `TutorErrorBoundary` wrap, B4 tool-round terminal function_call_output, B7 note-branch swallow, B8 session-list `limit` normalization, B10 `embed_status` conn leak, B11 `content_filter_json` parse logging. `client/src/components/__tests__/TutorShell.test.tsx "stale Tutor session id"` case is pre-existing red on `main` (crashes inside `sessionMaterialBundle.ts:225` — `input.artifacts` undefined); confirmed by stash-and-rerun and tracked for a separate track.
+
+## 2026-04-22 - Tutor full-audit Track B (P1 reliability + FE polish) — TDD remediation landed
+
+- Closed out every item that Track A deferred from the 2026-04-22 Tutor audit. Same strict Red-Green TDD flow; each bug has a dedicated regression test that failed first and now passes.
+- Backend fixes:
+  - `brain/dashboard/api_tutor_sessions.py` — B8: `list_sessions` now rejects non-numeric `limit` with HTTP 400 and clamps legal values to `[1, 200]`, so a bad cast (Flask's default `type=int` returns `None`) cannot disable the SQL `LIMIT` clause.
+  - `brain/dashboard/api_tutor.py` — B10: `embed_status` route body extracted into `_embed_status_body(conn)` and the public route now wraps the helper in `try / finally` so the SQLite handle is always closed, even when a mid-route `SELECT` / PRAGMA raises.
+  - `brain/dashboard/api_tutor_turns.py` — B11: new `_parse_content_filter_json()` helper logs at WARNING (with session id) when `content_filter_json` is corrupt/non-dict, replacing the silent `except (JSONDecodeError, TypeError): pass`. B4: tool-round cap (`MAX_TOOL_ROUNDS` promoted to a module-level constant) now emits a terminal `tool_result` SSE and appends a synthetic `function_call_output` for every `tool_call` in the capping round before yielding `tool_limit_reached`, so the OpenAI Responses API pairing invariant holds on the next user turn.
+  - `brain/dashboard/api_tutor_artifacts.py` — B7: note-branch `INSERT INTO quick_notes` failure now logs at WARNING with `exc_info` and flags the response with `status="persist_failed"` + `persist_error` so clients can detect drift instead of receiving a happy-path reply with no row.
+- Frontend fixes:
+  - `dashboard_rebuild/client/src/lib/tutorSessionBridge.ts` + `dashboard_rebuild/client/src/pages/tutor.tsx` — F1: introduced `createLiveSessionBridge()` — a stable-identity object whose property reads forward live to `sessionRef.current`. `tutor.tsx` now passes this bridge into `useTutorWorkflow` so workflow-triggered session actions always hit the current `useTutorSession` return value, eliminating stale-closure drift from the default stub that `useMemo` locked in on initial render.
+  - `dashboard_rebuild/client/src/components/TutorShell.tsx` — F3: wrapped `tutorStudioContent` in a dedicated `TutorErrorBoundary fallbackLabel="Tutor live study"` so a Tutor-only crash (including the known `sessionMaterialBundle` crash) no longer takes down Priming / Polish / Workspace panels that share the outer `Studio Canvas` boundary.
+- New regression suites:
+  - `brain/tests/test_tutor_audit_track_b.py` — B4/B7/B8/B10/B11.
+  - `dashboard_rebuild/client/src/lib/__tests__/tutorSessionBridge.test.ts` — F1 live-read semantics.
+  - `dashboard_rebuild/client/src/components/__tests__/TutorShell.f3.nested-boundary.test.tsx` — F3 structural assertion that `tutorStudioContent` owns its own Tutor-labelled boundary.
+- Validation: `python -m pytest brain/tests/test_tutor_audit_p0_remediation.py brain/tests/test_tutor_audit_track_b.py brain/tests/test_tutor_turn_stream_contract.py brain/tests/test_tutor_verdict.py brain/tests/test_teach_back.py brain/tests/test_tutor_project_shell.py -q` => 75 passed. `npx vitest run useSSEStream.unmount.test.tsx TutorEndSessionDialog.a11y.test.tsx TutorChat.test.tsx TutorShell.f3.nested-boundary.test.tsx tutorSessionBridge.test.ts` => 25 passed.
+- Out-of-scope / follow-up: the pre-existing `TutorShell.test.tsx "stale Tutor session id"` red case on `main` (crashes in `lib/sessionMaterialBundle.ts:225` when `input.artifacts` is undefined) is still open as a separate TutorShell-hardening task; the new F3 inner boundary would contain that crash in the live app but does not fix the bundle normalization bug itself.
+
+## 2026-04-22 - sessionMaterialBundle defensive normalization (TutorShell stale-session red closed)
+
+- Fixed the `lib/sessionMaterialBundle.ts:225` `TypeError: Cannot read properties of undefined (reading 'map')` crash that had been the sole red in `TutorShell.test.tsx "stale Tutor session id"` on `main` both before and during the 2026-04-22 Tutor audit.
+- `buildSessionMaterialBundle()` now coerces every iterable field (`sourceInventory`, `primingMethodRuns`, `artifacts`, `capturedNotes`, `primePacket`, `polishPacket`) to `[]` at the top of the function when a caller hands in an object with typed-as-required arrays missing. Pre-fix a partial input from `useTutorSessionMaterialBundle` (e.g. during a stale `activeSessionId` render) tore down the entire Tutor subtree; post-fix it degrades into an empty, not-ready bundle.
+- Added TDD regression `dashboard_rebuild/client/src/lib/__tests__/sessionMaterialBundle.test.ts > "does not crash when optional iterable fields arrive as undefined"`. Verified via `git stash`/rerun that the 5 other `TutorShell.test.tsx` Prime/Polish Packet reds are pre-existing on `main` and unrelated to this change (different `StudioTldrawWorkspace` crash inside `editor.getCurrentPageShapeIds()`), so they stay tracked as separate follow-up tasks.
+- Validation: `python -m pytest brain/tests/test_tutor_audit_p0_remediation.py brain/tests/test_tutor_audit_track_b.py brain/tests/test_tutor_turn_stream_contract.py brain/tests/test_tutor_verdict.py brain/tests/test_teach_back.py brain/tests/test_tutor_project_shell.py -q` => 75 passed. `npx vitest run client/src/lib/__tests__/sessionMaterialBundle.test.ts client/src/components/__tests__/TutorShell.test.tsx -t "stale Tutor session id"` => `TutorShell "stale Tutor session id"` green alongside the new bundle regression.

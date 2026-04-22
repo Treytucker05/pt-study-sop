@@ -1,3 +1,4 @@
+import { useCallback, useState } from "react";
 import { Loader2, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -14,14 +15,36 @@ export function TutorEndSessionDialog({
   hub,
   session,
 }: TutorEndSessionDialogProps) {
+  const [isEnding, setIsEnding] = useState(false);
+
+  const handleEndSession = useCallback(async () => {
+    if (isEnding || session.isShipping) return;
+    setIsEnding(true);
+    try {
+      await session.endSession();
+    } finally {
+      session.setShowEndConfirm(false);
+      setIsEnding(false);
+    }
+  }, [isEnding, session]);
+
   if (!session.showEndConfirm) {
     return null;
   }
 
+  const endBusy = isEnding || session.isShipping;
+
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 animate-fade-slide-in">
-      <div className="bg-black/95 border-2 border-primary/50 rounded-lg p-6 shadow-[0_0_60px_rgba(0,0,0,0.9)] max-w-md w-full mx-4 space-y-3">
-        <div className="section-header">SESSION COMPLETE</div>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tutor-end-session-title"
+        className="bg-black/95 border-2 border-primary/50 rounded-lg p-6 shadow-[0_0_60px_rgba(0,0,0,0.9)] max-w-md w-full mx-4 space-y-3"
+      >
+        <div id="tutor-end-session-title" className="section-header">
+          SESSION COMPLETE
+        </div>
         <div className={`flex items-center gap-4 ${TEXT_MUTED} text-xs`}>
           <span className="text-foreground">{hub.topic || "No topic"}</span>
           <span>{session.turnCount} turns</span>
@@ -38,7 +61,7 @@ export function TutorEndSessionDialog({
         <div className="flex items-center gap-2 pt-1">
           <Button
             onClick={session.shipToBrainAndEnd}
-            disabled={session.isShipping}
+            disabled={endBusy}
             className={`${BTN_PRIMARY} w-auto gap-1.5 h-9 px-4`}
           >
             {session.isShipping ? (
@@ -50,19 +73,16 @@ export function TutorEndSessionDialog({
           </Button>
           <Button
             variant="ghost"
-            onClick={() => {
-              void session.endSession();
-              session.setShowEndConfirm(false);
-            }}
-            disabled={session.isShipping}
+            onClick={handleEndSession}
+            disabled={endBusy}
             className={BTN_TOOLBAR}
           >
-            END SESSION
+            {isEnding ? "ENDING..." : "END SESSION"}
           </Button>
           <Button
             variant="ghost"
             onClick={() => session.setShowEndConfirm(false)}
-            disabled={session.isShipping}
+            disabled={endBusy}
             className={`${BTN_TOOLBAR} ml-auto`}
           >
             CANCEL

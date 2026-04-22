@@ -67,6 +67,10 @@ import llm_provider as _llm_provider
 from chain_validator import summarize_stage_truth
 
 _LOG = logging.getLogger(__name__)
+
+# Audit B4: ceiling on tool-call iterations per turn. Exposed at module
+# scope so integration tests can monkeypatch it without forking the route.
+MAX_TOOL_ROUNDS = 5
 _NON_ASSESSMENT_STAGES = {"PRIME", "TEACH"}
 _DEFAULT_COMPACTION_CONTEXT_WINDOW = 24_000
 
@@ -483,6 +487,40 @@ def _get_tutor_session(conn, session_id: str) -> Optional[dict]:
     cur.execute("SELECT * FROM tutor_sessions WHERE session_id = ?", (session_id,))
     row = cur.fetchone()
     return dict(row) if row else None
+
+
+def _parse_content_filter_json(
+    raw: Optional[str], *, session_id: Optional[str] = None
+) -> dict:
+    """Safely parse a ``tutor_sessions.content_filter_json`` payload.
+
+    Audit B11: the inline parse used to be
+    ``try: json.loads(...) except (JSONDecodeError, TypeError): pass`` which
+    silently erased material_ids / knob_snapshots / session_rules whenever
+    the row was corrupted. We now log at WARNING (with the session id, when
+    available) so operators can triage bad sessions instead of discovering
+    the gap days later.
+    """
+    if raw is None or raw == "":
+        return {}
+    try:
+        parsed = json.loads(raw)
+    except (json.JSONDecodeError, TypeError) as exc:
+        _LOG.warning(
+            "content_filter_json parse failed for session %s: %s",
+            session_id if session_id else "<unknown>",
+            exc,
+        )
+        return {}
+    if not isinstance(parsed, dict):
+        _LOG.warning(
+            "content_filter_json for session %s was not a dict (got %s);"
+            " coercing to empty filter",
+            session_id if session_id else "<unknown>",
+            type(parsed).__name__,
+        )
+        return {}
+    return parsed
 
 
 def _get_session_turns(conn, session_id: str, limit: int | None = None) -> list[dict]:
@@ -956,15 +994,12 @@ def send_turn(session_id: str):
 
     artifact_cmd = detect_artifact_command(question)
 
-    # Parse content filter for retriever
-    content_filter = None
-    if session.get("content_filter_json"):
-        try:
-            content_filter = json.loads(session["content_filter_json"])
-        except (json.JSONDecodeError, TypeError):
-            pass
-    if not isinstance(content_filter, dict):
-        content_filter = {}
+    # Parse content filter for retriever. Audit B11: surface parse failures
+    # at WARNING so corrupted session rows (bad JSON in content_filter_json)
+    # do not silently erase material_ids / knobs / session rules.
+    content_filter = _parse_content_filter_json(
+        session.get("content_filter_json"), session_id=session_id
+    )
     scholar_strategy = None
     if session.get("scholar_strategy_json"):
         try:
@@ -1167,6 +1202,10 @@ def send_turn(session_id: str):
                 )
             return payload
 
+        # Pre-initialise adaptive_conn so the finally-block never hits an
+        # UnboundLocalError if build_context / prompt building raises before
+        # the real connection is opened (audit B3).
+        adaptive_conn = None
         try:
             from llm_provider import call_codex_json
             from tutor_prompt_builder import build_prompt_with_contexts
@@ -1693,7 +1732,10 @@ def send_turn(session_id: str):
                     _needs_lo_save,
                     turn_number,
                 )
-                max_tool_rounds = 5
+                # Audit B4: exposed via module-level MAX_TOOL_ROUNDS so
+                # tests (and emergency ops) can tune the ceiling without
+                # redeploying.
+                max_tool_rounds = MAX_TOOL_ROUNDS
                 tool_round = 0
                 pending_tool_results: list[dict] = []
                 llm_timeout_seconds = 120
@@ -1781,6 +1823,49 @@ def send_turn(session_id: str):
                         tool_round += 1
                         if tool_round > max_tool_rounds:
                             _mark_first_visible_chunk()
+                            # Audit B4: emit a terminal tool_result SSE and
+                            # a synthetic function_call_output for every
+                            # tool_call seen in the capping round.
+                            #
+                            # Pre-fix we only yielded `tool_limit_reached`
+                            # which left OpenAI's server-side response
+                            # state with unpaired function_calls -- the
+                            # next user-initiated turn would then error
+                            # out because the Responses API requires each
+                            # function_call to be closed by a
+                            # function_call_output in the next request.
+                            cap_message = (
+                                "tool-round cap reached; no further tool "
+                                "calls executed this turn"
+                            )
+                            for _tc in tool_calls_this_round:
+                                _tc_name = _tc.get("name", "")
+                                _tc_call_id = _tc.get("call_id", "")
+                                yield format_sse_chunk(
+                                    _json.dumps(
+                                        {
+                                            "tool": _tc_name,
+                                            "call_id": _tc_call_id,
+                                            "success": False,
+                                            "message": cap_message,
+                                            "capped": True,
+                                        }
+                                    ),
+                                    chunk_type="tool_result",
+                                )
+                                pending_tool_results.append(
+                                    {
+                                        "type": "function_call_output",
+                                        "call_id": _tc_call_id,
+                                        "output": _json.dumps(
+                                            {
+                                                "success": False,
+                                                "message": cap_message,
+                                                "capped": True,
+                                            }
+                                        ),
+                                    }
+                                )
                             yield format_sse_chunk("", chunk_type="tool_limit_reached")
                             break
 
@@ -2109,10 +2194,11 @@ def send_turn(session_id: str):
             citations = []
             parsed_verdict = None
         finally:
-            try:
-                adaptive_conn.close()
-            except Exception:
-                pass
+            if adaptive_conn is not None:
+                try:
+                    adaptive_conn.close()
+                except Exception:
+                    pass
 
         # After streaming completes, log the turn
         try:
@@ -2225,12 +2311,23 @@ def send_turn(session_id: str):
                     ),
                 )
             except Exception as _acc_exc:
-                _LOG.debug("Accuracy log insert failed: %s", _acc_exc)
+                # Audit B6: upgrade to WARNING — accuracy-log failures were
+                # invisible at DEBUG and silently eroded the feedback loop.
+                _LOG.warning("Accuracy log insert failed: %s", _acc_exc)
 
             db_conn.commit()
             db_conn.close()
-        except Exception:
-            pass
+        except Exception as _persist_exc:
+            # Audit B2: previously swallowed silently. Persistence failure
+            # here means the turn rendered but never made it to
+            # tutor_turns — surface it to the server log so operators can
+            # triage instead of discovering the gap days later.
+            _LOG.warning(
+                "Failed to persist tutor turn for session %s: %s",
+                session_id,
+                _persist_exc,
+                exc_info=True,
+            )
 
     heartbeat_seconds = current_app.config.get("TUTOR_SSE_HEARTBEAT_SECONDS", 15.0)
     try:

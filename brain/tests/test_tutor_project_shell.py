@@ -809,7 +809,14 @@ def test_migration_handles_legacy_tutor_sessions_schema(app):
     conn.close()
 
 
-def test_material_file_route_streams_original_file(client, tmp_path):
+def test_material_file_route_streams_original_file(client, tmp_path, monkeypatch):
+    # Point the uploads root at the pytest tmp dir so the SEC1 containment
+    # check (added 2026-04-22) accepts files written inside tmp_path as
+    # legitimately-served materials.
+    from dashboard import api_tutor_utils as _utils
+
+    monkeypatch.setattr(_utils, "UPLOADS_DIR", tmp_path, raising=False)
+
     _insert_course(108, "Neuro")
     pdf_path = tmp_path / "brainstem.pdf"
     pdf_path.write_bytes(b"%PDF-1.4 test")

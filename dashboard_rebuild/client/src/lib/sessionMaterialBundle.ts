@@ -144,6 +144,30 @@ export function buildSessionMaterialBundle(
 ): SessionMaterialBundle {
   const sessionKey = sessionKeyFromInput(input);
 
+  // Defensive normalization: the type says these are required arrays, but
+  // real callers (notably the "stale Tutor session id" TutorShell path
+  // through `useTutorSessionMaterialBundle`) can hand us a partial object
+  // where some collections are `undefined`. Pre-fix this crashed at
+  // `input.artifacts.map(...)` and tore down the entire Tutor subtree.
+  // We now coerce every iterable field to `[]` so partial callers degrade
+  // into an empty, not-ready bundle instead.
+  const sourceInventory = Array.isArray(input.sourceInventory)
+    ? input.sourceInventory
+    : [];
+  const primingMethodRuns = Array.isArray(input.primingMethodRuns)
+    ? input.primingMethodRuns
+    : [];
+  const artifactsIn = Array.isArray(input.artifacts) ? input.artifacts : [];
+  const capturedNotesIn = Array.isArray(input.capturedNotes)
+    ? input.capturedNotes
+    : [];
+  const primePacketIn = Array.isArray(input.primePacket)
+    ? input.primePacket
+    : [];
+  const polishPacketIn = Array.isArray(input.polishPacket)
+    ? input.polishPacket
+    : [];
+
   const learningObjectives: SessionMaterialLearningObjective[] = [];
   const concepts: SessionMaterialConcept[] = [];
   const terms: SessionMaterialTerm[] = [];
@@ -151,7 +175,7 @@ export function buildSessionMaterialBundle(
   const rootExplanations: SessionMaterialTextItem[] = [];
   const gaps: SessionMaterialTextItem[] = [];
 
-  for (const item of input.sourceInventory) {
+  for (const item of sourceInventory) {
     const materialId = typeof item.id === "number" ? item.id : null;
     const sourceTitle = nonEmpty(item.title);
     const primingOutput = item.priming_output;
@@ -189,7 +213,7 @@ export function buildSessionMaterialBundle(
   }
 
   // Method runs can carry objectives that didn't land in priming_output
-  for (const run of input.primingMethodRuns) {
+  for (const run of primingMethodRuns) {
     const entries = Array.isArray((run.outputs as { entries?: unknown }).entries)
       ? ((run.outputs as { entries: unknown[] }).entries as Record<string, unknown>[])
       : [];
@@ -222,13 +246,13 @@ export function buildSessionMaterialBundle(
   const dedupedRoots = dedupeBy(rootExplanations, (r) => r.text);
   const dedupedGaps = dedupeBy(gaps, (g) => g.text.toLowerCase());
 
-  const artifacts: SessionMaterialArtifact[] = input.artifacts.map((artifact) => ({
+  const artifacts: SessionMaterialArtifact[] = artifactsIn.map((artifact) => ({
     type: artifact.type,
     title: artifact.title,
     content: artifact.content,
   }));
 
-  const notes: SessionMaterialNote[] = input.capturedNotes
+  const notes: SessionMaterialNote[] = capturedNotesIn
     .filter((note) => typeof note.content === "string" && note.content.trim().length > 0)
     .map((note) => ({
       id: note.id,
@@ -246,8 +270,8 @@ export function buildSessionMaterialBundle(
     dedupedGaps.length > 0 ||
     artifacts.length > 0 ||
     notes.length > 0 ||
-    input.primePacket.length > 0 ||
-    input.polishPacket.length > 0;
+    primePacketIn.length > 0 ||
+    polishPacketIn.length > 0;
 
   const isReady =
     (input.hasWorkflowDetail && Boolean(input.workflowId || input.tutorSessionId)) ||
@@ -268,8 +292,8 @@ export function buildSessionMaterialBundle(
     gaps: dedupedGaps,
     artifacts,
     turnCount: input.turnCount,
-    primePacket: [...input.primePacket],
-    polishPacket: [...input.polishPacket],
+    primePacket: [...primePacketIn],
+    polishPacket: [...polishPacketIn],
     notes,
   };
 }

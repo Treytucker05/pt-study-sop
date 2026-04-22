@@ -275,8 +275,18 @@ def create_artifact(session_id: str):
             result["quick_note_id"] = cur.lastrowid
             result["session_owned"] = True
             conn.commit()
-        except Exception:
-            pass
+        except Exception as _note_exc:
+            # Audit B7: previously swallowed silently. Surface the failure
+            # so persisted quick_notes loss is visible at WARNING, and mark
+            # the response so downstream clients can detect the drift.
+            _LOG.warning(
+                "Failed to persist quick_notes row for session %s: %s",
+                session_id,
+                _note_exc,
+                exc_info=True,
+            )
+            result["status"] = "persist_failed"
+            result["persist_error"] = str(_note_exc)
 
     elif artifact_type == "map":
         result["mermaid"] = content
