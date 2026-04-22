@@ -464,14 +464,14 @@ export function WorkspacePanel({
                 <button
                   type="button"
                   aria-label="Maximize panel"
-                  className={cn(SIZE_CONTROL_CLASSES, "px-2.5")}
+                  title="Maximize"
+                  className={cn(SIZE_CONTROL_CLASSES, "px-1.5")}
                   onClick={() => {
                     onMaximize();
                     setSizeMenuOpen(false);
                   }}
                 >
-                  <Maximize2 className="mr-1.5 h-3 w-3" />
-                  <span>Max</span>
+                  <Maximize2 className="h-3.5 w-3.5" />
                 </button>
               ) : null}
 
@@ -479,7 +479,8 @@ export function WorkspacePanel({
                 <button
                   type="button"
                   aria-label="Fit panel content"
-                  className={cn(SIZE_CONTROL_CLASSES, "px-2.5")}
+                  title="Fit content"
+                  className={cn(SIZE_CONTROL_CLASSES, "px-1.5")}
                   onClick={() => {
                     const measuredSize = measureFitContentSize();
                     if (measuredSize) {
@@ -489,8 +490,7 @@ export function WorkspacePanel({
                     setSizeMenuOpen(false);
                   }}
                 >
-                  <ScanSearch className="mr-1.5 h-3 w-3" />
-                  <span>Fit</span>
+                  <ScanSearch className="h-3.5 w-3.5" />
                 </button>
               ) : null}
 
@@ -498,14 +498,14 @@ export function WorkspacePanel({
                 <button
                   type="button"
                   aria-label="Center panel"
-                  className={cn(SIZE_CONTROL_CLASSES, "px-2.5")}
+                  title="Center"
+                  className={cn(SIZE_CONTROL_CLASSES, "px-1.5")}
                   onClick={() => {
                     onCenter();
                     setSizeMenuOpen(false);
                   }}
                 >
-                  <Crosshair className="mr-1.5 h-3 w-3" />
-                  <span>Center</span>
+                  <Crosshair className="h-3.5 w-3.5" />
                 </button>
               ) : null}
 
@@ -514,14 +514,14 @@ export function WorkspacePanel({
                   <button
                     type="button"
                     aria-label="Panel size presets"
+                    title="Size presets"
                     aria-expanded={sizeMenuOpen}
-                    className={cn(SIZE_CONTROL_CLASSES, "px-2.5")}
+                    className={cn(SIZE_CONTROL_CLASSES, "px-1.5")}
                     onClick={() => {
                       setSizeMenuOpen((current) => !current);
                     }}
                   >
-                    <Rows3 className="mr-1.5 h-3 w-3" />
-                    <span>Size</span>
+                    <Rows3 className="h-3.5 w-3.5" />
                   </button>
 
                   {sizeMenuOpen ? (

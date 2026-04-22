@@ -150,6 +150,11 @@ function splitPath(path: string): string[] {
     .filter(Boolean);
 }
 
+function basenameFromPath(path: string): string {
+  const segments = splitPath(path);
+  return segments.length > 0 ? segments[segments.length - 1] : normalizeText(path);
+}
+
 function trimVaultRootSegments(segments: string[]): string[] {
   if (segments.length <= 1) {
     return segments;
@@ -496,7 +501,7 @@ function buildSourceTree(args: {
       kind: "leaf",
       sourceType: "material",
       label: workspaceObject.title,
-      detail: workspaceObject.detail,
+      detail: basenameFromPath(workspaceObject.detail),
       badge: workspaceObject.badge,
       checked: selectedMaterialIdSet.has(material.id),
       workspaceObject,
@@ -582,11 +587,13 @@ function TreeCheckbox({
   indeterminate = false,
   ariaLabel,
   onChange,
+  className,
 }: {
   checked: boolean;
   indeterminate?: boolean;
   ariaLabel: string;
   onChange: () => void;
+  className?: string;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -602,7 +609,7 @@ function TreeCheckbox({
       checked={checked}
       aria-label={ariaLabel}
       onChange={onChange}
-      className="mt-1 h-4 w-4 shrink-0 accent-red-500"
+      className={className ?? "mt-1 h-4 w-4 shrink-0 accent-red-500"}
     />
   );
 }
@@ -639,48 +646,56 @@ function SourceShelfTreeNode({
 
     return (
       <div
-        className="space-y-2 rounded-[0.9rem] border border-primary/12 bg-black/15 px-3 py-3"
-        style={{ marginLeft: `${depth * 14}px` }}
+        className="rounded-md border border-primary/12 bg-black/15 px-2 py-1.5"
+        style={{ marginLeft: `${depth * 10}px` }}
       >
-        <div className="flex items-start gap-3">
+        <div className="flex items-center gap-2">
           <TreeCheckbox
             checked={node.checked}
             ariaLabel={`Include ${node.label} in current run`}
             onChange={() => onToggleLeaf(node)}
+            className="h-3.5 w-3.5 shrink-0 accent-red-500"
           />
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="min-w-0 break-words text-sm text-white">
+            <div className="flex items-center gap-1.5">
+              <span
+                className="min-w-0 flex-1 truncate text-sm text-white"
+                title={node.label}
+              >
                 {node.label}
-              </div>
+              </span>
               <Badge
                 variant="outline"
-                className="rounded-full border-primary/20 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-primary"
+                className="shrink-0 rounded-full border-primary/20 px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-primary"
               >
                 {node.badge}
               </Badge>
               {node.sourceType === "vault" ? (
                 <Badge
                   variant="outline"
-                  className="rounded-full border-primary/12 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-foreground/75"
+                  className="shrink-0 rounded-full border-primary/12 px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-foreground/75"
                 >
-                  Vault Link
+                  Vault
                 </Badge>
               ) : null}
             </div>
-            <div className="mt-1 break-all text-xs text-foreground/75">
+            <div
+              className="truncate text-[11px] text-foreground/60"
+              title={node.workspaceObject.detail}
+            >
               {node.detail}
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex shrink-0 items-center gap-0.5">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenInDocumentDock?.(node.workspaceObject)}
               aria-label={`Open ${node.label} in Document Dock`}
-              className="h-8 w-8 rounded-full border-primary/18 bg-black/20 p-0 text-white/82 hover:bg-black/30 hover:text-white"
+              title="Open in Document Dock"
+              className="h-6 w-6 rounded-full border-primary/18 bg-black/20 p-0 text-white/82 hover:bg-black/30 hover:text-white"
             >
-              <ExternalLink className="h-3.5 w-3.5" />
+              <ExternalLink className="h-3 w-3" />
             </Button>
             {onAddToWorkspace ? (
               <Button
@@ -693,9 +708,12 @@ function SourceShelfTreeNode({
                     ? `${node.label} already in workspace`
                     : `Add ${node.label} to workspace`
                 }
-                className="h-8 w-8 rounded-full border-primary/18 bg-black/20 p-0 text-white/82 hover:bg-black/30 hover:text-white disabled:cursor-default disabled:opacity-100 disabled:text-foreground/82"
+                title={
+                  isInWorkspace ? "Already in workspace" : "Add to workspace"
+                }
+                className="h-6 w-6 rounded-full border-primary/18 bg-black/20 p-0 text-white/82 hover:bg-black/30 hover:text-white disabled:cursor-default disabled:opacity-100 disabled:text-foreground/82"
               >
-                <Plus className="h-3.5 w-3.5" />
+                <Plus className="h-3 w-3" />
               </Button>
             ) : null}
           </div>
@@ -711,40 +729,41 @@ function SourceShelfTreeNode({
   const isExpanded = searchActive || expandedNodeIds.has(node.id);
 
   return (
-    <div className="space-y-2" style={{ marginLeft: `${depth * 14}px` }}>
-      <div className="flex items-start gap-3 border-l-2 border-primary/25 py-1.5 pl-3">
+    <div className="space-y-1" style={{ marginLeft: `${depth * 10}px` }}>
+      <div className="flex items-center gap-2 border-l border-primary/20 py-0.5 pl-2">
         <TreeCheckbox
           checked={allChecked}
           indeterminate={partiallyChecked}
           ariaLabel={`Include all ${node.label} in current run`}
           onChange={() => onToggleFolder(node)}
+          className="h-3.5 w-3.5 shrink-0 accent-red-500"
         />
         <button
           type="button"
           onClick={() => onToggleExpanded(node.id)}
-          className="flex min-w-0 flex-1 items-center gap-2 rounded-sm bg-transparent px-1 py-1 text-left transition-colors hover:bg-white/5"
+          className="flex min-w-0 flex-1 items-center gap-1.5 rounded-sm bg-transparent px-1 py-0.5 text-left transition-colors hover:bg-white/5"
         >
           {isExpanded ? (
-            <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-primary/78" />
+            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-primary/78" />
           ) : (
-            <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-primary/78" />
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-primary/78" />
           )}
           {node.folderType === "course" ? (
-            <FolderTree className="mt-0.5 h-4 w-4 shrink-0 text-primary/78" />
+            <FolderTree className="h-3.5 w-3.5 shrink-0 text-primary/78" />
           ) : (
-            <Folder className="mt-0.5 h-4 w-4 shrink-0 text-primary/78" />
+            <Folder className="h-3.5 w-3.5 shrink-0 text-primary/78" />
           )}
-          <div className="min-w-0">
-            <div className="truncate text-sm text-white">{node.label}</div>
-            <div className="text-xs text-foreground/90">
-              {checkedLeafCount}/{leafNodes.length} loaded
-            </div>
-          </div>
+          <span className="min-w-0 flex-1 truncate text-sm text-white">
+            {node.label}
+          </span>
+          <span className="shrink-0 text-[10px] text-foreground/70">
+            {checkedLeafCount}/{leafNodes.length} loaded
+          </span>
         </button>
       </div>
 
       {isExpanded ? (
-        <div className="space-y-2">
+        <div className="space-y-1">
           {node.children.map((child) => (
             <SourceShelfTreeNode
               key={child.id}
