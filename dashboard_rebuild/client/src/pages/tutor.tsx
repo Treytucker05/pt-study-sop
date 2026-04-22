@@ -588,7 +588,9 @@ function useTutorPageController() {
 
   const handleTutorSessionAction = useCallback(async () => {
     if (sessionActionPending) return;
-    if (showSetup && panelLayout.length === 0 && !liveTutorSessionId) {
+    const activeWorkflowId = workflow.activeWorkflowId;
+    const hasActiveWork = Boolean(liveTutorSessionId || activeWorkflowId);
+    if (showSetup && panelLayout.length === 0 && !hasActiveWork) {
       if (entryCardFlashTimeoutRef.current) {
         clearTimeout(entryCardFlashTimeoutRef.current);
       }
@@ -600,25 +602,31 @@ function useTutorPageController() {
       }, 1000);
       return;
     }
-    // Audit 2026-04-22: the previous handler ALWAYS ended a live session
-    // when this button was clicked. That was the root cause of "every
-    // session I start gets ended" — the primary hero button was labeled
-    // "NEW SESSION" but silently acted as "END SESSION" whenever a session
-    // was live, flipping tutor_sessions.status=completed and nulling
-    // tutor_workflows.active_tutor_session_id so resume never worked.
-    // Now we gate the end-session path behind an explicit confirm.
-    if (liveTutorSessionId) {
-      const confirmed = window.confirm(
-        "End the current Tutor session? This will close the session so you cannot resume it.",
-      );
-      if (!confirmed) {
+    // Audit 2026-04-22: a "session" in the user's mental model is the whole
+    // study workflow (Start Priming → Priming → Workspace/Packets → Tutor →
+    // Polish), not just the Tutor chat. The hero button must treat any
+    // active workflow OR a live tutor session as "in a session" so the
+    // label + confirm gate fire correctly. Live tutor sessions still go
+    // through endSessionById so server-side stage timers and vault save
+    // run; workflow-only cases (e.g. mid-Priming) just reset the
+    // workspace locally — the workflow persists on the server and shows
+    // up under PREVIOUS SESSIONS for resume or bulk-delete.
+    if (hasActiveWork) {
+      const confirmMessage = liveTutorSessionId
+        ? "End the current Tutor session? Your workflow progress stays saved and you can resume it from Previous Sessions."
+        : "End the current study session? Your Priming and workspace progress stay saved and you can resume this workflow from Previous Sessions.";
+      if (!window.confirm(confirmMessage)) {
         return;
       }
       setSessionActionPending(true);
       suppressProjectShellRestoreRef.current = true;
       resumedFromProjectShellRef.current = true;
       try {
-        await session.endSessionById(liveTutorSessionId);
+        if (liveTutorSessionId) {
+          await session.endSessionById(liveTutorSessionId);
+        } else {
+          resetTutorWorkspaceHome();
+        }
       } catch (error) {
         toast.error(
           `Failed to end session: ${
@@ -652,6 +660,7 @@ function useTutorPageController() {
     session,
     sessionActionPending,
     showSetup,
+    workflow.activeWorkflowId,
   ]);
 
   const handleStartPrimingFromEntry = useCallback(async () => {
@@ -1115,7 +1124,8 @@ function useTutorPageController() {
             }}
           >
             <span className="tutor-hero-action__label">
-              {liveTutorSessionId && !sessionActionPending
+              {(liveTutorSessionId || workflow.activeWorkflowId) &&
+              !sessionActionPending
                 ? "END SESSION"
                 : "NEW SESSION"}
             </span>
