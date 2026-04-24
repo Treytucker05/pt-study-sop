@@ -64,6 +64,10 @@ The original SOP files were consolidated into `sop/library/`. `sop/runtime/` is 
 
 Codex MCP's `ask-codex` ignores full diff/code embedded in the prompt and asks for a repo path instead. When the repo is not reachable by Codex, do code review manually using the standard checklist: bugs, edge cases, security, performance, type correctness.
 
+### Codex Windows Sandbox Setting
+
+Do not change Codex Windows sandbox settings during setup cleanup unless Trey explicitly asks. In particular, do not enable or normalize `[windows] sandbox = "elevated"` as a generic best-practice fix. Trey intentionally keeps this setting the way he wants it because enabling/changing it has caused more workflow problems than it prevents.
+
 ### Tutor RAG "6 Files" Symptom Diagnosis
 
 **Problem:** Tutor appeared to pull only ~6 files even when ~30 files were selected.  

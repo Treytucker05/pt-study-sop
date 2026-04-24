@@ -182,6 +182,16 @@ Current fix:
 
 This keeps subagents stable without moving project policy into TOML.
 
+## Codex Windows Sandbox Preference
+
+Do not enable, normalize, or "fix" the Codex Windows elevated sandbox setting during setup audits or config cleanup unless Trey explicitly asks for that change. Trey intentionally keeps the Windows sandbox behavior where he wants it; changing it has historically caused more problems than it prevents.
+
+Allowed setup-audit behavior:
+
+- Report the current `C:\Users\treyt\.codex\config.toml` Windows sandbox setting if relevant.
+- Explain the tradeoff if asked.
+- Do not edit `[windows] sandbox` or related sandbox mode settings as a best-practice cleanup.
+
 ## Outside-Claude Home-Directory Systems
 
 Inventory result on this machine:
