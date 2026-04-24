@@ -2535,3 +2535,11 @@ Recommended next steps:
 2. Author Vitest for: (a) `measureFitContentSize` vs `truncate` descendants, (b) `Tidy Up` normalizing to `PRESET_LAYOUT_DEFAULTS`, (c) `PageScaffold` emitting stats + actions as siblings in one grid parent.
 3. Resume `TUTOR-AUDIT-P2-001` (remains the next major backlog item).
 4. Confirm `TutorShell.test.tsx "stale Tutor session id"` red-on-main regression; if still present, open a dedicated TutorShell-hardening task.
+
+## 2026-04-24 - Codex setup alignment check
+
+- Reviewed current Codex setup against official OpenAI Codex docs for config layering, AGENTS.md instruction discovery, approvals/sandboxing, and best-practice workflow setup.
+- Confirmed the repo is aligned on the important structure: project policy stays in root `AGENTS.md`, runtime/model/tool settings stay in `C:\Users\treyt\.codex\config.toml`, repo-local `.codex/config.toml` is trusted and intentionally minimal, and `AGENTS.md` is below the default 32 KiB project-doc limit.
+- Fixed the one validation drift found during setup checks: `scripts/sync_agent_skills.ps1` now preserves `codex-primary-runtime` as Codex-local plugin/runtime material instead of reporting it as an unexpected extra skill.
+- Validation: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync_agent_config.ps1 -Mode Check` => PASS. `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync_agent_skills.ps1 -Mode Check` => PASS.
+- Tradeoff noted: this repo still uses `sandbox_mode = "danger-full-access"` for speed/autonomy. That matches the user's current operating model but is less restrictive than OpenAI's safer default `workspace-write` posture.

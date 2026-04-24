@@ -44,7 +44,7 @@ Supported active projection roots:
 
 Documented local exceptions:
 
-- Codex: see `scripts/sync_agent_skills.ps1` `LocalOnlyNames.codex` for the current local-only allowlist; `dev-browser` is now a shared skill projected from `C:\Users\treyt\.agents\skills`
+- Codex: see `scripts/sync_agent_skills.ps1` `LocalOnlyNames.codex` for the current local-only allowlist; `dev-browser` is now a shared skill projected from `C:\Users\treyt\.agents\skills`; `codex-primary-runtime` is preserved as Codex-local plugin/runtime material
 - Claude: `continuous-learning`, `learned`
 - Cursor: `C:\Users\treyt\.cursor\skills-cursor`
 - OpenCode: `agent-strategy`, `ensure-agent-workflow`

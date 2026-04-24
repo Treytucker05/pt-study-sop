@@ -29,6 +29,7 @@ $LocalOnlyNames = @{
         "agent-browser",
         "agent-skills",
         "chrome-cdp",
+        "codex-primary-runtime",
         "context7",
         "gemini-computer-use",
         "llm-council",
