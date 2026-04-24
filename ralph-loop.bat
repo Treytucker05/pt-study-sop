@@ -1,9 +1,25 @@
 @echo off
+setlocal EnableExtensions
 title Ralph Loop - PT Study SOP
 color 0A
 
-set GIT_BASH="C:\Program Files\Git\bin\bash.exe"
-set REPO=/c/pt-study-sop
+set "GIT_BASH=C:\Program Files\Git\bin\bash.exe"
+set "REPO_ROOT=C:\pt-study-sop"
+set "REPO=/c/pt-study-sop"
+set "RALPH_LOOP=.agents/ralph/loop.sh"
+
+if not exist "%GIT_BASH%" (
+    echo [ERROR] Git Bash was not found at "%GIT_BASH%".
+    echo         Install Git for Windows or update GIT_BASH in this launcher.
+    pause
+    exit /b 1
+)
+
+if not exist "%REPO_ROOT%\.agents\ralph\loop.sh" (
+    echo [ERROR] Ralph loop script was not found at "%REPO_ROOT%\.agents\ralph\loop.sh".
+    pause
+    exit /b 1
+)
 
 echo ============================================
 echo   RALPH LOOP - PT Study SOP
@@ -21,7 +37,11 @@ echo.
 echo ============================================
 echo.
 
-cd /d C:\pt-study-sop
+cd /d "%REPO_ROOT%" || (
+    echo [ERROR] Could not enter repo: "%REPO_ROOT%"
+    pause
+    exit /b 1
+)
 
 :menu
 set /p choice="Pick [1-6]: "
@@ -38,9 +58,13 @@ goto menu
 echo.
 echo [Codex gpt-5.4 medium] Starting Ralph...
 echo.
-%GIT_BASH% -c "cd %REPO% && .agents/ralph/loop.sh build 40"
+"%GIT_BASH%" -c "cd %REPO% && %RALPH_LOOP% build 40"
 echo.
-echo Done. Check .ralph\progress.md
+if errorlevel 1 (
+    echo [ERROR] Ralph Codex run failed.
+) else (
+    echo Done. Check .ralph\progress.md
+)
 echo.
 goto menu
 
@@ -48,9 +72,13 @@ goto menu
 echo.
 echo [Codex Spark] Starting Ralph (fast mode)...
 echo.
-%GIT_BASH% -c "cd %REPO% && AGENT_CMD='codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check -c model=gpt-5.3-codex-spark -c model_reasoning_effort=low -' .agents/ralph/loop.sh build 40"
+"%GIT_BASH%" -c "cd %REPO% && AGENT_CMD='codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check -c model=gpt-5.3-codex-spark -c model_reasoning_effort=low -' %RALPH_LOOP% build 40"
 echo.
-echo Done. Check .ralph\progress.md
+if errorlevel 1 (
+    echo [ERROR] Ralph Codex Spark run failed.
+) else (
+    echo Done. Check .ralph\progress.md
+)
 echo.
 goto menu
 
@@ -58,9 +86,13 @@ goto menu
 echo.
 echo [Claude Code] Starting Ralph (deep reasoning)...
 echo.
-%GIT_BASH% -c "cd %REPO% && AGENT_CMD='claude -p --dangerously-skip-permissions' .agents/ralph/loop.sh build 40"
+"%GIT_BASH%" -c "cd %REPO% && AGENT_CMD='claude -p --dangerously-skip-permissions' %RALPH_LOOP% build 40"
 echo.
-echo Done. Check .ralph\progress.md
+if errorlevel 1 (
+    echo [ERROR] Ralph Claude run failed.
+) else (
+    echo Done. Check .ralph\progress.md
+)
 echo.
 goto menu
 
@@ -68,9 +100,13 @@ goto menu
 echo.
 echo [Gemini CLI] Starting Ralph (fresh perspective)...
 echo.
-%GIT_BASH% -c "cd %REPO% && AGENT_CMD='gemini --yolo -' .agents/ralph/loop.sh build 40"
+"%GIT_BASH%" -c "cd %REPO% && AGENT_CMD='gemini --yolo -' %RALPH_LOOP% build 40"
 echo.
-echo Done. Check .ralph\progress.md
+if errorlevel 1 (
+    echo [ERROR] Ralph Gemini run failed.
+) else (
+    echo Done. Check .ralph\progress.md
+)
 echo.
 goto menu
 
@@ -88,7 +124,7 @@ git log --oneline -8
 echo.
 echo === Last 10 Activity ===
 if exist .ralph\activity.log (
-    powershell -Command "Get-Content .ralph\activity.log | Select-Object -Last 10"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Content .ralph\activity.log | Select-Object -Last 10"
 ) else (
     echo No activity yet.
 )

@@ -2544,3 +2544,12 @@ Recommended next steps:
 - Validation: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync_agent_config.ps1 -Mode Check` => PASS. `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync_agent_skills.ps1 -Mode Check` => PASS.
 - Tradeoff noted: this repo still uses `sandbox_mode = "danger-full-access"` for speed/autonomy. That matches the user's current operating model but is less restrictive than OpenAI's safer default `workspace-write` posture.
 - User correction after the audit: do not enable, normalize, or "best-practice fix" Codex Windows sandbox settings, especially `[windows] sandbox = "elevated"`, unless Trey explicitly asks. He intentionally keeps that behavior where he wants it because changing it causes more problems than it stops.
+
+## 2026-04-24 - Windows batch launcher hardening
+
+- Hardened repo `.bat` launchers after the Codex launcher update issue exposed a stale/broken executable failure mode.
+- `Start_Dashboard.bat` now verifies a working Python launcher before selecting it, checks that `dashboard_rebuild\build-and-sync.ps1` exists before running the frontend build, and uses robust nested quoting for the spawned Flask server command.
+- Thin PowerShell wrappers (`memory-watchdog.bat`, `ralph-monitor.bat`, `Paste_Image_Hotkey.bat`, `dashboard_rebuild\build-and-sync.bat`) now check target scripts exist, use `-NoProfile`, and return/pause on errors.
+- `ralph-loop.bat` now checks Git Bash and `.agents\ralph\loop.sh` before showing the menu, quotes executable paths safely, and avoids printing "Done" after failed agent runs.
+- `scripts\run_scholar.bat` now resolves the actual `codex` executable with `where codex` and verifies `codex --version` before unattended Scholar execution, matching the lesson from the stale Codex Windows shim incident.
+- Validation: wrapper targets exist; `codex --version` => `codex-cli 0.124.0`; `python --version` and `py -3 --version` resolve; `git diff --check` passed; `sync_agent_config.ps1 -Mode Check` passed.

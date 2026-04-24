@@ -28,6 +28,22 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 - Ops note (2026-03-25): `dev-browser` is now a shared agent skill projected into every supported agent root; this does not change Tutor sprint priority.
 
+- [x] OPS-BAT-HARDENING-2026-04-24. Harden Windows `.bat` launchers against stale/broken executable and wrapper assumptions.
+  - Scope landed:
+    - `Start_Dashboard.bat` now verifies a working Python launcher before selecting it, checks `dashboard_rebuild\build-and-sync.ps1` exists before running the build path, and uses robust nested quoting for the spawned Flask server command.
+    - Thin PowerShell wrappers (`memory-watchdog.bat`, `ralph-monitor.bat`, `Paste_Image_Hotkey.bat`, `dashboard_rebuild\build-and-sync.bat`) now check target scripts exist, use `-NoProfile`, and return/pause on errors.
+    - `ralph-loop.bat` now checks Git Bash and `.agents\ralph\loop.sh` before showing the menu, quotes paths safely, and reports failed agent runs without printing a false success.
+    - `scripts\run_scholar.bat` now resolves the actual `codex` executable with `where codex` and runs `codex --version` before unattended Scholar execution.
+    - `Open_Travel_Laptop.bat` now returns explicit success/failure exit codes.
+  - Assignee: @codex-cli
+  - Completed: 2026-04-24
+  - Validation:
+    - Verified every wrapper target exists.
+    - `codex --version` => `codex-cli 0.124.0`.
+    - `python --version` and `py -3 --version` both resolve.
+    - `git diff --check` passed.
+    - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync_agent_config.ps1 -Mode Check` => PASS.
+
 - [x] TUTOR-AUDIT-P0-001. Land Track A of the 2026-04-22 Tutor full-audit remediation (P0 correctness + security). Strict TDD: failing test first, minimal fix, green.
   - Scope landed (bug IDs map to the 2026-04-22 audit report):
     - `brain/dashboard/api_tutor_turns.py` — B2 silent turn-persistence swallow (now WARNING); B3 `adaptive_conn` `UnboundLocalError` in `finally` (pre-init + guarded close); B6 accuracy-log failure log level raised to WARNING.

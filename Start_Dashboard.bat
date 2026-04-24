@@ -43,18 +43,32 @@ if exist "%ONEDRIVE_RAG%" (
 
 rem Configure API Keys via brain\.env (loaded by brain\config.py)
 
-rem Resolve Python (prefer python, fallback to py -3)
+rem Resolve Python (prefer a working python.exe, fallback to py -3)
 set "PYEXE="
 set "PYEXE_ARGS="
-for %%I in (python py) do (
-    where %%I >nul 2>nul && set "PYEXE=%%I" && goto :PYFOUND
+where python >nul 2>nul
+if not errorlevel 1 (
+    python --version >nul 2>nul
+    if not errorlevel 1 (
+        set "PYEXE=python"
+        goto :PYFOUND
+    )
+)
+where py >nul 2>nul
+if not errorlevel 1 (
+    py -3 --version >nul 2>nul
+    if not errorlevel 1 (
+        set "PYEXE=py"
+        set "PYEXE_ARGS=-3"
+        goto :PYFOUND
+    )
 )
 echo [ERROR] Python was not found on PATH. Install Python 3 or add it to PATH.
 echo         If you use the Python Launcher, install it so `py -3` works.
 goto END_FAIL
 
 :PYFOUND
-if /I "%PYEXE%"=="py" set "PYEXE_ARGS=-3"
+echo [INFO] Using Python launcher: %PYEXE% %PYEXE_ARGS%
 
 echo [1/5] Ensuring Brain database is initialized...
 cd /d "%SERVER_DIR%"
@@ -93,7 +107,7 @@ if not exist "%SERVER_DIR%\dashboard_web.py" (
     goto END_FAIL
 )
 
-start "PT Study Brain Dashboard" cmd /k "cd /d "%SERVER_DIR%" && "%PYEXE%" %PYEXE_ARGS% dashboard_web.py"
+start "PT Study Brain Dashboard" cmd /k "cd /d ""%SERVER_DIR%"" && ""%PYEXE%"" %PYEXE_ARGS% dashboard_web.py"
 if errorlevel 1 (
     echo [ERROR] Failed to launch dashboard server.
     goto END_FAIL
@@ -123,6 +137,10 @@ goto :EOF
 :BUILD_UI
 if not exist "%REBUILD_DIR%\package.json" (
     echo [ERROR] Could not find dashboard_rebuild\package.json from %~dp0.
+    exit /b 1
+)
+if not exist "%REBUILD_DIR%\build-and-sync.ps1" (
+    echo [ERROR] Could not find dashboard_rebuild\build-and-sync.ps1 from %~dp0.
     exit /b 1
 )
 rem Always run the PowerShell build path; npm can be exposed as npm.ps1 even when cmd cannot resolve it.

@@ -23,6 +23,8 @@ set "LOG_PATH=%RUN_DIR%\unattended_%TS%.log"
 set "FINAL_PATH=%RUN_DIR%\unattended_final_%TS%.md"
 set "PROMPT_FILE=%REPO_ROOT%\scholar\workflows\orchestrator_run_prompt.md"
 set "STATUS_FILE=%REPO_ROOT%\scholar\outputs\STATUS.md"
+set "CODEX_EXE="
+set "CODEX_FALLBACK="
 
 goto menu
 
@@ -117,8 +119,14 @@ if not exist "%PROMPT_FILE%" (
   exit /b 1
 )
 
+call :resolve_codex
+if errorlevel 1 (
+  pause
+  goto menu
+)
+
 REM Unified with dashboard: use 'codex exec' (no --search flag)
-codex exec --cd "%REPO_ROOT%" --dangerously-bypass-approvals-and-sandbox --output-last-message "%FINAL_PATH%" - < "%PROMPT_FILE%" >> "%LOG_PATH%" 2>&1
+"%CODEX_EXE%" exec --cd "%REPO_ROOT%" --dangerously-bypass-approvals-and-sandbox --output-last-message "%FINAL_PATH%" - < "%PROMPT_FILE%" >> "%LOG_PATH%" 2>&1
 set "EC=%ERRORLEVEL%"
 
 echo.
@@ -198,6 +206,31 @@ goto menu
 :refresh_status
 powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%\scripts\update_status.ps1" >nul 2>&1
 goto :eof
+
+:resolve_codex
+if defined CODEX_EXE (
+  if exist "%CODEX_EXE%" goto verify_codex
+)
+set "CODEX_EXE="
+set "CODEX_FALLBACK="
+for /f "usebackq delims=" %%C in (`where codex 2^>nul`) do (
+  if not defined CODEX_FALLBACK set "CODEX_FALLBACK=%%C"
+  if /I "%%~xC"==".cmd" if not defined CODEX_EXE set "CODEX_EXE=%%C"
+)
+if not defined CODEX_EXE set "CODEX_EXE=%CODEX_FALLBACK%"
+if not defined CODEX_EXE (
+  echo ERROR: codex was not found on PATH.
+  echo Install or repair the Codex CLI before running unattended Scholar.
+  exit /b 1
+)
+:verify_codex
+echo Codex executable: %CODEX_EXE%
+"%CODEX_EXE%" --version
+if errorlevel 1 (
+  echo ERROR: codex was found but failed to report a version.
+  exit /b 1
+)
+exit /b 0
 
 :open_file
 REM usage: call :open_file "C:\path\file.md"

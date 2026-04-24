@@ -1,4 +1,5 @@
 @echo off
+setlocal EnableExtensions
 echo ========================================
 echo   PT Study SOP - Build
 echo ========================================
@@ -6,7 +7,14 @@ echo.
 echo This builds directly to brain/static/dist
 echo.
 
-powershell -ExecutionPolicy Bypass -File "%~dp0build-and-sync.ps1" %*
+set "SCRIPT=%~dp0build-and-sync.ps1"
+if not exist "%SCRIPT%" (
+    echo [ERROR] Missing script: "%SCRIPT%"
+    pause
+    exit /b 1
+)
+
+powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT%" %*
 
 if %errorlevel% neq 0 (
     echo.
