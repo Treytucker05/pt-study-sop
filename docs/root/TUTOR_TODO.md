@@ -52,7 +52,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - `Hermes.bat` fixed the delayed-expansion error around `choice`, and Hermes wrappers now pause on failures.
     - `hermes-wsl.bat`, `ralph-monitor.bat`, and `Run Scroll Speed.bat` now check required executables/scripts before launch.
     - `ralph-loop.bat` now checks Git Bash and the Ralph loop script before showing the menu, quotes paths safely, and avoids false success messages.
-    - `FT Sync (Active Chrome).bat` now writes the dev-browser JS script to a temp file directly, checks `dev-browser`/`ft`, parses token JSON through PowerShell, and fails clearly on extraction/sync errors.
+    - `X Scraper (Active Chrome).bat` now writes the dev-browser JS script to a temp file directly, checks `dev-browser`/`ft`, parses token JSON through PowerShell, and fails clearly on extraction/sync errors.
     - `OHMYOpenCode.bat` now actually launches OpenCode after its update/version checks instead of falling through to teardown.
   - Assignee: @codex-cli
   - Completed: 2026-04-24
