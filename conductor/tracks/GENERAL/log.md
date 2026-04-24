@@ -2553,3 +2553,14 @@ Recommended next steps:
 - `ralph-loop.bat` now checks Git Bash and `.agents\ralph\loop.sh` before showing the menu, quotes executable paths safely, and avoids printing "Done" after failed agent runs.
 - `scripts\run_scholar.bat` now resolves the actual `codex` executable with `where codex` and verifies `codex --version` before unattended Scholar execution, matching the lesson from the stale Codex Windows shim incident.
 - Validation: wrapper targets exist; `codex --version` => `codex-cli 0.124.0`; `python --version` and `py -3 --version` resolve; `git diff --check` passed; `sync_agent_config.ps1 -Mode Check` passed.
+
+## 2026-04-24 - Travel Laptop batch launcher hardening
+
+- Corrected the task scope to `C:\Users\treyt\OneDrive\Desktop\Travel Laptop` and hardened the launcher files there.
+- `Codex.bat` now verifies Codex before launch, verifies npm before update, blocks update while `codex.exe` is running, reinstalls with `npm install -g @openai/codex@latest`, re-resolves `codex.cmd`, and verifies the updated binary version before launch.
+- `claude.bat`, `Gemini.bat`, `KIMI.bat`, `OpenCodeReg.bat`, `OHMYOpenCode.bat`, `Copilot.bat`, and `docling.bat` now fail early when their resolved tools cannot report versions.
+- `Hermes.bat` fixed the delayed-expansion error around `choice`; Hermes wrappers now pause on failures; `hermes-wsl.bat`, `ralph-monitor.bat`, and `Run Scroll Speed.bat` check required executables/scripts before launch.
+- `ralph-loop.bat` now checks Git Bash and `C:\pt-study-sop-courses\.agents\ralph\loop.sh`, quotes paths safely, and avoids false success messages after failed agent runs.
+- `FT Sync (Active Chrome).bat` now writes the dev-browser JS script to a temp file directly, checks `dev-browser`/`ft`, parses token JSON through PowerShell, and fails clearly on extraction/sync errors.
+- `OHMYOpenCode.bat` now actually launches OpenCode after its update/version checks instead of falling through to teardown.
+- Validation: Codex `0.124.0`; Claude `2.1.118`; Gemini `0.37.1`; OpenCode `1.14.20`; GitHub CLI `2.88.1`; Kimi `1.37.0`; Docling `2.74.0`; required Travel wrapper targets exist. Codex sandbox/config settings were not changed.

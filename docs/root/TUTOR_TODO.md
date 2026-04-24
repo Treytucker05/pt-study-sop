@@ -44,6 +44,23 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - `git diff --check` passed.
     - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync_agent_config.ps1 -Mode Check` => PASS.
 
+- [x] OPS-TRAVEL-BAT-HARDENING-2026-04-24. Harden Windows `.bat` launchers in `C:\Users\treyt\OneDrive\Desktop\Travel Laptop`.
+  - Scope landed:
+    - Hardened the actual Travel Laptop launcher folder, not just repo-local `.bat` files.
+    - `Codex.bat` now verifies Codex before launch, verifies npm before update, blocks update while `codex.exe` is running, reinstalls with `npm install -g @openai/codex@latest`, re-resolves `codex.cmd`, and verifies the updated binary version before launch.
+    - `claude.bat`, `Gemini.bat`, `KIMI.bat`, `OpenCodeReg.bat`, `OHMYOpenCode.bat`, `Copilot.bat`, and `docling.bat` now fail early when their resolved tools cannot report versions.
+    - `Hermes.bat` fixed the delayed-expansion error around `choice`, and Hermes wrappers now pause on failures.
+    - `hermes-wsl.bat`, `ralph-monitor.bat`, and `Run Scroll Speed.bat` now check required executables/scripts before launch.
+    - `ralph-loop.bat` now checks Git Bash and the Ralph loop script before showing the menu, quotes paths safely, and avoids false success messages.
+    - `FT Sync (Active Chrome).bat` now writes the dev-browser JS script to a temp file directly, checks `dev-browser`/`ft`, parses token JSON through PowerShell, and fails clearly on extraction/sync errors.
+    - `OHMYOpenCode.bat` now actually launches OpenCode after its update/version checks instead of falling through to teardown.
+  - Assignee: @codex-cli
+  - Completed: 2026-04-24
+  - Validation:
+    - Verified key CLI resolutions: Codex `0.124.0`, Claude `2.1.118`, Gemini `0.37.1`, OpenCode `1.14.20`, GitHub CLI `2.88.1`, Kimi `1.37.0`, Docling `2.74.0`.
+    - Verified required wrapper targets exist: Git Bash, `C:\pt-study-sop-courses\.agents\ralph\loop.sh`, Travel `scripts\ralph-monitor.ps1`, and Travel `mouse\ScrollSpeed.ahk`.
+    - Did not change Codex sandbox/config settings.
+
 - [x] TUTOR-AUDIT-P0-001. Land Track A of the 2026-04-22 Tutor full-audit remediation (P0 correctness + security). Strict TDD: failing test first, minimal fix, green.
   - Scope landed (bug IDs map to the 2026-04-22 audit report):
     - `brain/dashboard/api_tutor_turns.py` — B2 silent turn-persistence swallow (now WARNING); B3 `adaptive_conn` `UnboundLocalError` in `finally` (pre-init + guarded close); B6 accuracy-log failure log level raised to WARNING.
