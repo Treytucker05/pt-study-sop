@@ -1449,6 +1449,23 @@ export function StudioShell({
     };
   }, []);
 
+  // Reap popout state for any panel that disappeared from the layout via a
+  // path that didn't go through our `onClose` handler — Windows menu close,
+  // preset restore, Clear Canvas, programmatic layout swap, etc. Without
+  // this, the child window stays open and its transport / poll interval
+  // keep running.
+  useEffect(() => {
+    const layoutPanelIds = new Set(resolvedLayout.map((item) => item.id));
+    Object.keys(popoutHandlesRef.current).forEach((panelId) => {
+      if (layoutPanelIds.has(panelId)) return;
+      const handle = popoutHandlesRef.current[panelId];
+      if (handle && !handle.window.closed) {
+        handle.close();
+      }
+      cleanupPopoutBookkeeping(panelId);
+    });
+  }, [resolvedLayout, cleanupPopoutBookkeeping]);
+
   // Canvas keyboard shortcuts (Figma-style). Only active when the canvas has
   // panels and the user isn't typing in an input/textarea/contenteditable. We
   // scope the listener to document so the canvas doesn't need focus for
