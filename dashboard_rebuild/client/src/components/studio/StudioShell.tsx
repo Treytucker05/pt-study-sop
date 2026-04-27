@@ -1262,11 +1262,53 @@ export function StudioShell({
     [queuePanelLayoutChange],
   );
 
+  const popoutPollIntervalsRef = useRef<
+    Record<string, ReturnType<typeof setInterval>>
+  >({});
+
+  const cleanupPopoutBookkeeping = useCallback((panelId: string) => {
+    setPopouts((prev) => {
+      if (!(panelId in prev)) return prev;
+      const next = { ...prev };
+      delete next[panelId];
+      return next;
+    });
+    const transport = popoutTransportsRef.current[panelId];
+    if (transport) {
+      transport.close();
+      delete popoutTransportsRef.current[panelId];
+    }
+    delete popoutHandlesRef.current[panelId];
+    const interval = popoutPollIntervalsRef.current[panelId];
+    if (interval !== undefined) {
+      clearInterval(interval);
+      delete popoutPollIntervalsRef.current[panelId];
+    }
+  }, []);
+
+  const handleSendBack = useCallback(
+    (panelId: string) => {
+      const popout = popouts[panelId];
+      if (popout && !popout.handle.window.closed) {
+        popout.handle.close();
+      }
+      cleanupPopoutBookkeeping(panelId);
+    },
+    [popouts, cleanupPopoutBookkeeping],
+  );
+
   const handlePopOut = useCallback(
     (panelId: string) => {
-      if (popouts[panelId]) {
-        popouts[panelId].handle.window.focus();
-        return;
+      const existing = popouts[panelId];
+      if (existing) {
+        if (existing.handle.window.closed) {
+          // Stale entry left behind by an OS-level close that we never saw —
+          // clean up before re-opening.
+          cleanupPopoutBookkeeping(panelId);
+        } else {
+          existing.handle.window.focus();
+          return;
+        }
       }
       const item = resolvedLayout.find((entry) => entry.id === panelId);
       if (!item) return;
@@ -1287,6 +1329,10 @@ export function StudioShell({
         return;
       }
 
+      // The helper already created a transport on this channel name; we open
+      // a sibling transport here so listeners on the same window can receive
+      // the helper's broadcasts. (BroadcastChannel does not echo to its own
+      // instance.)
       const transport = createPanelPopoutTransport(panelChannelName(panelId));
       popoutTransportsRef.current[panelId] = transport;
       popoutHandlesRef.current[panelId] = handle;
@@ -1297,44 +1343,28 @@ export function StudioShell({
             msg.type === "panel.child-closed") &&
           msg.panelId === panelId
         ) {
-          setPopouts((prev) => {
-            const next = { ...prev };
-            delete next[panelId];
-            return next;
-          });
-          transport.close();
-          delete popoutTransportsRef.current[panelId];
-          delete popoutHandlesRef.current[panelId];
           unsub();
+          cleanupPopoutBookkeeping(panelId);
         }
       });
+
+      // Parent-side polling so we still notice an OS-level window close even
+      // when BroadcastChannel is unavailable (the helper falls back to a
+      // no-op transport in that case).
+      const pollInterval = setInterval(() => {
+        if (handle.window.closed) {
+          unsub();
+          cleanupPopoutBookkeeping(panelId);
+        }
+      }, 500);
+      popoutPollIntervalsRef.current[panelId] = pollInterval;
 
       setPopouts((prev) => ({
         ...prev,
         [panelId]: { container, handle },
       }));
     },
-    [popouts, resolvedLayout, panelsByKey],
-  );
-
-  const handleSendBack = useCallback(
-    (panelId: string) => {
-      const popout = popouts[panelId];
-      if (!popout) return;
-      popout.handle.close();
-      setPopouts((prev) => {
-        const next = { ...prev };
-        delete next[panelId];
-        return next;
-      });
-      const transport = popoutTransportsRef.current[panelId];
-      if (transport) {
-        transport.close();
-        delete popoutTransportsRef.current[panelId];
-      }
-      delete popoutHandlesRef.current[panelId];
-    },
-    [popouts],
+    [popouts, resolvedLayout, panelsByKey, cleanupPopoutBookkeeping],
   );
 
   const focusOpenPanels = useCallback(() => {
@@ -1399,10 +1429,15 @@ export function StudioShell({
     applyCanvasScale(1);
   }, [applyCanvasScale]);
 
-  // Close any open popout windows + transports when StudioShell unmounts so we
-  // don't leak BroadcastChannel listeners or orphan child windows.
+  // Close any open popout windows + transports + poll intervals when
+  // StudioShell unmounts so we don't leak BroadcastChannel listeners,
+  // orphan child windows, or background timers.
   useEffect(() => {
     return () => {
+      Object.values(popoutPollIntervalsRef.current).forEach((interval) => {
+        clearInterval(interval);
+      });
+      popoutPollIntervalsRef.current = {};
       Object.values(popoutTransportsRef.current).forEach((transport) => {
         transport.close();
       });
