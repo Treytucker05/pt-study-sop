@@ -149,8 +149,10 @@ class ValidationResult:
             "status": "pass" if self.ok else "fail",
             "errors": self.errors,
             "warnings": self.warnings,
+            "notes": self.notes,
             "error_count": len(self.errors),
             "warning_count": len(self.warnings),
+            "note_count": len(self.notes),
         }
 
 
@@ -797,6 +799,9 @@ def main() -> int:
     if args.json:
         print(json.dumps(result.to_dict(), indent=2))
     else:
+        if result.notes:
+            for n in result.notes:
+                print(f"NOTE: {n}")
         if result.warnings:
             for w in result.warnings:
                 print(f"WARN: {w}")
@@ -804,7 +809,10 @@ def main() -> int:
             for e in result.errors:
                 print(f"ERROR: {e}")
         if result.ok:
-            print(f"OK — 0 errors, {len(result.warnings)} warnings")
+            print(
+                f"OK — 0 errors, {len(result.warnings)} warnings, "
+                f"{len(result.notes)} notes"
+            )
             # Print summary
             method_count = len(list(METHODS_DIR.glob("*.yaml"))) if METHODS_DIR.exists() else 0
             chain_count = len(list(CHAINS_DIR.glob(CHAIN_FILE_GLOB))) if CHAINS_DIR.exists() else 0
