@@ -796,6 +796,17 @@ def _active_control_stage_for_session(
     conn: sqlite3.Connection,
     session_row: dict[str, Any],
 ) -> str:
+    """Return the active block's runtime stage for the given session.
+
+    Shared by /turn, artifact creation, and vault endpoints. The returned
+    value is collapsed onto the legacy 7-stage runtime vocabulary
+    (PRIME / TEACH / CALIBRATE / ENCODE / REFERENCE / RETRIEVE /
+    OVERLEARN) so callers gating on ``stage in {"PRIME", "TEACH"}`` (e.g.
+    api_tutor_artifacts.py) treat vault-hardened ORIENT / EXPLAIN /
+    INTERROGATE / CONSOLIDATE blocks and runtime-pinned methods
+    (M-INT-001 / M-ENC-008 / M-GEN-007 -> TEACH) as their runtime
+    equivalent rather than as their literal vault declaration.
+    """
     chain_id = session_row.get("method_chain_id")
     if not chain_id:
         return ""
@@ -809,7 +820,12 @@ def _active_control_stage_for_session(
         idx = 0
     if idx < 0 or idx >= len(blocks):
         return ""
-    return str(blocks[idx].get("control_stage") or "").upper()
+    block = blocks[idx]
+    raw = str(block.get("control_stage") or "").upper()
+    if not raw:
+        return ""
+    method_id = str(block.get("method_id") or "").strip()
+    return _runtime_stage(method_id, raw)
 
 
 # ---------------------------------------------------------------------------
