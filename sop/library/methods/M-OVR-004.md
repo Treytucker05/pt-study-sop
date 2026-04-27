@@ -6,7 +6,7 @@ status: core
 version: '1.2'
 created: '2026-04-07'
 updated: '2026-04-21'
-tags: [method, OVR, overlearn]
+tags: [method, M-OVR, overlearn]
 ---
 
 # M-OVR-004 — Post-Learn Brain Dump

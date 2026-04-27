@@ -47,13 +47,14 @@ def _legacy_category_for_stage(control_stage: str) -> str:
     }.get(stage, stage.lower())
 
 
-def _extract_chain_block_id(block) -> str | None:
+def _extract_chain_block_id(block: object) -> str | None:
     """Resolve a chain block entry to a method id string.
 
     Supports both legacy flat shape (string method ids) and rich shape
-    (dict with method_id / method_ref / id). Returns None when the block
-    is a workflow step that does not map to a method block (e.g., dicts
-    with only method_ref to a non-method action like vault_handoff).
+    (dict with method_id / id / method_ref keys). Returns None when the
+    block is a workflow-step wrapper that does not map to a real method
+    block (e.g., dicts with only method_ref to a non-method action like
+    vault_handoff).
     """
     if isinstance(block, str):
         return block
@@ -61,12 +62,10 @@ def _extract_chain_block_id(block) -> str | None:
         mid = block.get("method_id")
         if isinstance(mid, str) and mid:
             return mid
-        bid = block.get("id")
-        if isinstance(bid, str) and bid.startswith("M-"):
-            return bid
-        ref = block.get("method_ref")
-        if isinstance(ref, str) and ref.startswith("M-"):
-            return ref
+        for key in ("id", "method_ref"):
+            value = block.get(key)
+            if isinstance(value, str) and value.startswith("M-"):
+                return value
     return None
 
 

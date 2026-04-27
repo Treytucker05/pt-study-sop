@@ -14,14 +14,14 @@ tags: [method, M-TEA, explain]
 ## Summary
 Teach a sequence or pathway as a compact story with a beginning state, trigger, causal progression, consequence, and application breakpoint. The method stays on one bounded pathway, uses causal progression instead of ornamental storytelling, and ends by translating back to formal source terms.
 
-**Not for:** Not for open-ended brainstorming, scoring, or broad coverage of unrelated material. Use a PRIME method when the learner first needs orientation or objective framing.
+**Not for:** Not for open-ended brainstorming, scoring, or broad coverage of unrelated material. Use an ORIENT method when the learner first needs orientation or objective framing.
 
 ## Core Steps
 1. **Beginning State** -- State the beginning state and trigger
-2. **Sequence** -- Walk the sequence as a causal story
-3. **Sequence** -- Mark the main consequence or endpoint
+2. **Causal Sequence** -- Walk the sequence as a causal story
+3. **Endpoint** -- Mark the main consequence or endpoint
 4. **Breakpoint** -- Add one application breakpoint or failure point
-5. **Step 5** -- Return to the formal mechanism terms
+5. **Formal Terms** -- Return to the formal mechanism terms
 
 ## Inputs
 - Source material loaded in chat

@@ -38,7 +38,7 @@ blocks:
     method_id: M-PRE-010
     stage: PRIME
     description: Learning Objectives Primer — source coverage table + final merged objectives.
-    on_pass: G1_prime_complete
+    on_pass: step3_objectives_done
     on_fail: halt_prime_incomplete
 
   - step: 4
@@ -59,7 +59,7 @@ blocks:
     method_id: M-HOOK-002
     stage: ENCODE
     description: KWIK Lite — one compact memory cue per pass, learner-owned.
-    on_pass: step6_hook_done
+    on_pass: G4_encode_complete
     on_fail: loop_back_to_teach
 
   - step: 7
@@ -73,10 +73,9 @@ gates:
   - step1_terminology_done
   - step2_northstar_done
   - step3_objectives_done
-  - G1_prime_complete
+  - G1_prime_complete  # composite: terminology + northstar + objectives
   - G2_teach_complete
   - G3_retrieve_pass
-  - step6_hook_done
   - G4_encode_complete
   - G5_overlearn_complete
 

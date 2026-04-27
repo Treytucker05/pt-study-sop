@@ -16,28 +16,37 @@ from config import DB_PATH
 
 
 _METHOD_BLOCKS_CONTROL_STAGES = (
+    "PLAN",
+    "ORIENT",
     "PRIME",
     "TEACH",
+    "EXPLAIN",
     "CALIBRATE",
     "ENCODE",
+    "INTERROGATE",
     "REFERENCE",
     "RETRIEVE",
     "OVERLEARN",
+    "CONSOLIDATE",
 )
 
 
 def _control_stage_normalize_sql(column_name: str = "control_stage") -> str:
     return f"""
         CASE UPPER(COALESCE({column_name}, ''))
+            WHEN 'PLAN' THEN 'PLAN'
+            WHEN 'ORIENT' THEN 'ORIENT'
             WHEN 'PRIME' THEN 'PRIME'
             WHEN 'TEACH' THEN 'TEACH'
+            WHEN 'EXPLAIN' THEN 'EXPLAIN'
             WHEN 'CALIBRATE' THEN 'CALIBRATE'
             WHEN 'ENCODE' THEN 'ENCODE'
+            WHEN 'INTERROGATE' THEN 'INTERROGATE'
             WHEN 'REFERENCE' THEN 'REFERENCE'
             WHEN 'RETRIEVE' THEN 'RETRIEVE'
             WHEN 'OVERLEARN' THEN 'OVERLEARN'
+            WHEN 'CONSOLIDATE' THEN 'CONSOLIDATE'
             WHEN 'PREPARE' THEN 'PRIME'
-            WHEN 'INTERROGATE' THEN 'REFERENCE'
             WHEN 'REFINE' THEN 'OVERLEARN'
             ELSE 'ENCODE'
         END
@@ -47,13 +56,13 @@ def _control_stage_normalize_sql(column_name: str = "control_stage") -> str:
 def _ensure_method_blocks_control_stage_constraint(cursor) -> None:
     """
     Rebuild legacy method_blocks tables whose control_stage CHECK constraint
-    predates TEACH support.
+    is missing any of the canonical stages in _METHOD_BLOCKS_CONTROL_STAGES.
 
-    Older live databases can still enforce:
-      CHECK(control_stage IN ('PRIME', 'CALIBRATE', 'ENCODE', ...))
-
-    That causes live seed sync to fail as soon as a TEACH-era method card is
-    inserted. Rebuild only when the persisted table SQL is stale.
+    Older live databases can enforce stale stage sets (e.g. only the original
+    7 stages without TEACH; or the 7+TEACH set without the 2026-04-21 vault
+    additions PLAN/ORIENT/EXPLAIN/INTERROGATE/CONSOLIDATE). That causes live
+    seed sync to fail as soon as a method card with a newer stage is inserted.
+    Rebuild whenever the persisted table SQL is stale.
     """
     cursor.execute(
         "SELECT sql FROM sqlite_master WHERE type='table' AND name='method_blocks'"
@@ -64,7 +73,10 @@ def _ensure_method_blocks_control_stage_constraint(cursor) -> None:
         return
 
     normalized_sql = table_sql.upper()
-    if "CONTROL_STAGE" not in normalized_sql or "'TEACH'" in normalized_sql:
+    if "CONTROL_STAGE" not in normalized_sql:
+        return
+    # Already covers every canonical stage — nothing to do.
+    if all(f"'{stage}'" in normalized_sql for stage in _METHOD_BLOCKS_CONTROL_STAGES):
         return
 
     cursor.execute("PRAGMA table_info(method_blocks)")
@@ -142,7 +154,10 @@ def _ensure_method_blocks_control_stage_constraint(cursor) -> None:
         """
     )
     cursor.execute("PRAGMA foreign_keys=ON")
-    print("[INFO] Rebuilt legacy method_blocks table to allow TEACH control_stage rows")
+    print(
+        "[INFO] Rebuilt legacy method_blocks table to allow control_stage rows: "
+        + ", ".join(_METHOD_BLOCKS_CONTROL_STAGES)
+    )
 
 
 def _create_learner_profile_tables(cursor) -> None:
@@ -1895,7 +1910,7 @@ def init_database():
             method_id TEXT,
             name TEXT NOT NULL,
             category TEXT,
-            control_stage TEXT DEFAULT 'ENCODE' CHECK(control_stage IN ('PRIME', 'TEACH', 'CALIBRATE', 'ENCODE', 'REFERENCE', 'RETRIEVE', 'OVERLEARN')),
+            control_stage TEXT DEFAULT 'ENCODE' CHECK(control_stage IN ('PLAN', 'ORIENT', 'PRIME', 'TEACH', 'EXPLAIN', 'CALIBRATE', 'ENCODE', 'INTERROGATE', 'REFERENCE', 'RETRIEVE', 'OVERLEARN', 'CONSOLIDATE')),
             description TEXT,
             default_duration_min INTEGER DEFAULT 5,
             energy_cost TEXT DEFAULT 'medium',

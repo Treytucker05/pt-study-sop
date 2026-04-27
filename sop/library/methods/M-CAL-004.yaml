@@ -161,6 +161,35 @@ knobs:
   fade_intensity: minimal
   output_layout: labeled_sections
   explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: One-shot; collect the 1-3 confidence tag, one fuzzy zone, and one priority encoding target.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Interactive; pair the confidence rating with a fuller retell check and a richer focus-target handoff.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: One-shot refresh; use a compact Confidence | Story break | Next target table.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Stepwise; turn the story-break points into an applied routing grid for next-step encoding or probing.
 related_methods:
 - id: M-CAL-002
   relationship: Escalate here when the light-touch story tag is too coarse and a fuller probe set is needed
@@ -209,32 +238,3 @@ validation:
   - The facilitation prompt can be pasted into ChatGPT and run without extra context.
   known_issues:
   - If the learner wants teaching during a diagnostic block, the tutor may need to restate the no-teach rule and narrow the probe scope.
-presets:
-  exam_cram:
-    guidance_level: light
-    delivery_mode: one_shot
-    fade_intensity: minimal
-    output_layout: bullets
-    explanation_density: lean
-    behavior: One-shot; collect the 1-3 confidence tag, one fuzzy zone, and one priority encoding target.
-  deep_mastery:
-    guidance_level: high
-    delivery_mode: interactive
-    fade_intensity: adaptive_light
-    output_layout: labeled_sections
-    explanation_density: detailed
-    behavior: Interactive; pair the confidence rating with a fuller retell check and a richer focus-target handoff.
-  quick_review:
-    guidance_level: light
-    delivery_mode: one_shot
-    fade_intensity: minimal
-    output_layout: table
-    explanation_density: lean
-    behavior: One-shot refresh; use a compact Confidence | Story break | Next target table.
-  clinical_bridge:
-    guidance_level: medium
-    delivery_mode: stepwise
-    fade_intensity: adaptive_light
-    output_layout: table
-    explanation_density: focused
-    behavior: Stepwise; turn the story-break points into an applied routing grid for next-step encoding or probing.
