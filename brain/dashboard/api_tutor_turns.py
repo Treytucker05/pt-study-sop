@@ -52,6 +52,7 @@ from dashboard.api_tutor_utils import (
     _safe_json_dict,
     _extract_knob_defaults,
     _load_method_contracts,
+    _runtime_stage,
     _validate_chain_launch_blocks,
     _normalize_wikilinks,
     _normalize_objective_scope,
@@ -905,7 +906,17 @@ def send_turn(session_id: str):
     runtime_drift_events: list[dict[str, Any]] = []
     if block_info and active_method_id:
         expected_stage = str(method_contract.get("control_stage") or "").strip().upper()
-        if expected_stage and active_stage and expected_stage != active_stage:
+        # Collapse vault-hardened stages (INTERROGATE/EXPLAIN/CONSOLIDATE/
+        # ORIENT/PLAN) onto the legacy runtime vocabulary before
+        # comparing, so a method whose YAML declares INTERROGATE matches
+        # a chain block stored as TEACH (the runtime stage that
+        # M-INT-001 / M-ENC-008 / M-GEN-007 are pinned to).
+        if (
+            expected_stage
+            and active_stage
+            and _runtime_stage(active_method_id, expected_stage)
+            != _runtime_stage(active_method_id, active_stage)
+        ):
             conn.close()
             return (
                 jsonify(
