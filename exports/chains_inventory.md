@@ -10,12 +10,15 @@
 | C-FE-MIN | First Exposure: Minimal | M-PRE-010, M-PRE-008, M-CAL-001, M-TEA-004, M-REF-003, M-CAL-002, M-CAL-003, M-RET-001, M-OVR-001 | sop/library/chains/C-FE-MIN.yaml |
 | C-FE-PRO | First Exposure: Procedure | M-PRE-010, M-PRE-008, M-CAL-001, M-TEA-001, M-ORG-003, M-CAL-002, M-CAL-003, M-REF-003, M-INT-005, M-RET-007 | sop/library/chains/C-FE-PRO.yaml |
 | C-FE-STD | Trey's Favorite: Start Here | M-PRE-010, M-PRE-008, M-CAL-001, M-GEN-007, M-REF-003, M-CAL-002, M-CAL-003, M-ORG-002, M-HOOK-001, M-REF-004, M-RET-007 | sop/library/chains/C-FE-STD.yaml |
+| C-FINALS-PREP | Finals Prep Chain | M-PRE-012, M-PRE-013, M-PRE-010, M-TEA-006, M-RET-001, M-HOOK-002, M-OVR-002 | sop/library/chains/C-FINALS-PREP.yaml |
 | C-LE-001 | Low Energy | M-PRE-010, M-PRE-001, M-PRE-004, M-REF-003, M-REF-004, M-RET-003, M-OVR-001 | sop/library/chains/C-LE-001.yaml |
 | C-MR-001 | Mastery Review | M-REF-003, M-REF-004, M-RET-001, M-REF-001, M-REF-002, M-OVR-002 | sop/library/chains/C-MR-001.yaml |
 | C-PI-001 | Pathophysiology Intake | M-PRE-010, M-PRE-007, M-GEN-006, M-PRE-005, M-REF-003, M-REF-004, M-RET-001, M-REF-001 | sop/library/chains/C-PI-001.yaml |
+| C-PRIME-ONCE | Prime Once (Per Topic) | M-PRE-010, M-PRE-012, M-PRE-004, M-PRE-006, M-PRE-013, M-PRE-014 | sop/library/chains/C-PRIME-ONCE.yaml |
 | C-QD-001 | Quick Drill | M-PRE-010, M-PRE-001, M-REF-003, M-REF-004, M-RET-002, M-OVR-001 | sop/library/chains/C-QD-001.yaml |
 | C-QF-001 | Quick First Exposure | M-PRE-010, M-PRE-007, M-PRE-004, M-REF-003, M-REF-004, M-RET-001, M-OVR-001 | sop/library/chains/C-QF-001.yaml |
 | C-RS-001 | Review Sprint | M-PRE-002, M-REF-003, M-REF-004, M-RET-002, M-INT-002, M-OVR-001 | sop/library/chains/C-RS-001.yaml |
+| C-STUDY-LOOP | Study Loop (Finals) | M-TEA-001, M-TEA-006, M-HOOK-001, M-CAL-001, M-RET-001, M-OVR-002 | sop/library/chains/C-STUDY-LOOP.yaml |
 | C-SW-001 | SWEEP | M-PRE-005, M-ORG-001, M-ORG-002, M-REF-003, M-REF-004, M-RET-002, M-OVR-002 | sop/library/chains/C-SW-001.yaml |
 | C-TRY-001 | Top-Down Narrative Mastery | M-PRE-004, M-CAL-001, M-TEA-001, M-INT-001, M-REF-003, M-CAL-002, M-CAL-003, M-GEN-004, M-HOOK-001, M-ORG-001, M-RET-001, M-OVR-004 | sop/library/chains/C-TRY-001.yaml |
 | C-TRY-002 | Top-Down Forward Progress | M-PRE-004, M-CAL-001, M-GEN-007, M-INT-001, M-REF-003, M-CAL-002, M-CAL-003, M-GEN-004, M-HOOK-001, M-ORG-001, M-RET-001, M-OVR-004 | sop/library/chains/C-TRY-002.yaml |
