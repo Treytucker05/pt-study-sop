@@ -5,7 +5,10 @@ import {
   useMemo,
   useRef,
   useState,
+  type Dispatch,
+  type MutableRefObject,
   type ReactNode,
+  type SetStateAction,
 } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -229,6 +232,33 @@ const PRESET_LAYOUT_DEFAULTS: Record<
 
 function normalizePanelKey(panel: string): string {
   return PANEL_ALIASES[panel] ?? panel;
+}
+
+function useClickOutsideClose<T extends HTMLElement>(
+  isOpen: boolean,
+  ref: MutableRefObject<T | null>,
+  setOpen: Dispatch<SetStateAction<boolean>>,
+) {
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const node = ref.current;
+      if (!node) return;
+      if (event.target instanceof Node && node.contains(event.target)) return;
+      setOpen(false);
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, ref, setOpen]);
 }
 
 function buildPanelId(
@@ -1429,49 +1459,9 @@ export function StudioShell({
     zoomTo100,
   ]);
 
-  // Close the Windows menu when the user clicks outside it or presses Escape.
-  useEffect(() => {
-    if (!windowsMenuOpen) return;
-
-    const handlePointerDown = (event: PointerEvent) => {
-      const menu = windowsMenuRef.current;
-      if (!menu) return;
-      if (event.target instanceof Node && menu.contains(event.target)) return;
-      setWindowsMenuOpen(false);
-    };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setWindowsMenuOpen(false);
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [windowsMenuOpen]);
-
-  // Close the Layout menu when the user clicks outside it or presses Escape.
-  useEffect(() => {
-    if (!layoutMenuOpen) return;
-
-    const handlePointerDown = (event: PointerEvent) => {
-      const menu = layoutMenuRef.current;
-      if (!menu) return;
-      if (event.target instanceof Node && menu.contains(event.target)) return;
-      setLayoutMenuOpen(false);
-    };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setLayoutMenuOpen(false);
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [layoutMenuOpen]);
+  // Close the Windows / Layout menus when the user clicks outside or presses Escape.
+  useClickOutsideClose(windowsMenuOpen, windowsMenuRef, setWindowsMenuOpen);
+  useClickOutsideClose(layoutMenuOpen, layoutMenuRef, setLayoutMenuOpen);
 
   // Native (non-passive) wheel listener so Ctrl + wheel reliably zooms the
   // canvas even in browsers that register React synthetic wheel events as
@@ -1687,7 +1677,8 @@ export function StudioShell({
                 );
               })}
 
-              {SIDE_CLUSTERS.map((cluster, clusterIndex) => {
+              <div className="ml-auto" aria-hidden="true" />
+              {SIDE_CLUSTERS.map((cluster) => {
                 const clusterPanels = panelDefinitions.filter(
                   (definition) =>
                     PANEL_STAGE_MAP[definition.panel] === cluster.key,
@@ -1697,10 +1688,7 @@ export function StudioShell({
                   <div
                     key={cluster.key}
                     data-testid={`studio-toolbar-zone-${cluster.key}`}
-                    className={cn(
-                      "flex flex-col gap-1.5 border-l border-dashed border-[rgba(255,118,144,0.16)] pl-3 px-2.5 py-1",
-                      clusterIndex === 0 && "ml-auto",
-                    )}
+                    className="flex flex-col gap-1.5 border-l border-dashed border-[rgba(255,118,144,0.16)] pl-3 px-2.5 py-1"
                   >
                     <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[rgba(255,201,213,0.44)]">
                       {cluster.label}
