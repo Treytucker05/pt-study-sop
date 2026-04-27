@@ -868,11 +868,24 @@ def send_turn(session_id: str):
         block_info, chain_info = _build_chain_info(
             conn, session["method_chain_id"], current_idx
         )
-    active_stage = str(
+    raw_active_stage = str(
         (block_info or {}).get("control_stage")
         or (block_info or {}).get("category")
         or ""
     ).upper()
+    # Collapse vault-hardened stages (EXPLAIN/INTERROGATE/CONSOLIDATE/
+    # ORIENT/PLAN) and per-method runtime pins (M-INT-001/M-ENC-008/
+    # M-GEN-007 -> TEACH) onto the legacy 7-stage runtime vocabulary so
+    # downstream TEACH/PRIME guardrails fire correctly. The raw stage is
+    # preserved for error payloads and trace logging, but every behavior
+    # gate (assessment block, TEACH guardrail injection, PRIME first-turn
+    # detection, payload tagging) keys on the runtime equivalent.
+    _active_method_id_for_stage = str((block_info or {}).get("method_id") or "").strip()
+    active_stage = (
+        _runtime_stage(_active_method_id_for_stage, raw_active_stage)
+        if raw_active_stage
+        else raw_active_stage
+    )
     is_first_turn_in_active_block = False
     if session.get("method_chain_id"):
         try:
@@ -906,16 +919,12 @@ def send_turn(session_id: str):
     runtime_drift_events: list[dict[str, Any]] = []
     if block_info and active_method_id:
         expected_stage = str(method_contract.get("control_stage") or "").strip().upper()
-        # Collapse vault-hardened stages (INTERROGATE/EXPLAIN/CONSOLIDATE/
-        # ORIENT/PLAN) onto the legacy runtime vocabulary before
-        # comparing, so a method whose YAML declares INTERROGATE matches
-        # a chain block stored as TEACH (the runtime stage that
-        # M-INT-001 / M-ENC-008 / M-GEN-007 are pinned to).
+        # active_stage is already normalized to the runtime equivalent
+        # above; collapse expected_stage the same way before comparing.
         if (
             expected_stage
             and active_stage
-            and _runtime_stage(active_method_id, expected_stage)
-            != _runtime_stage(active_method_id, active_stage)
+            and _runtime_stage(active_method_id, expected_stage) != active_stage
         ):
             conn.close()
             return (
@@ -923,7 +932,7 @@ def send_turn(session_id: str):
                     {
                         "error": "Active block stage does not match canonical method contract.",
                         "code": "METHOD_STAGE_MISMATCH_RUNTIME",
-                        "active_stage": active_stage,
+                        "active_stage": raw_active_stage,
                         "method_id": active_method_id,
                         "expected_stage": expected_stage,
                     }
