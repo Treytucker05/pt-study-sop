@@ -34,19 +34,45 @@ CONTROL_STAGE_ORDER = {
 CONTROL_STAGE_LABELS = {stage: stage.title() for stage in CONTROL_STAGE_ORDER}
 
 
+# 2026-04-21 vault hardening expanded the operational stage taxonomy
+# (PLAN, ORIENT, EXPLAIN, INTERROGATE, CONSOLIDATE). The chain validator
+# routes these to the legacy 7-stage runtime vocabulary so coverage and
+# stage-order checks continue to operate against PRIME / TEACH /
+# CALIBRATE / ENCODE / REFERENCE / RETRIEVE / OVERLEARN. The richer
+# taxonomy stays visible in the YAML specs themselves.
+_RUNTIME_STAGE_EQUIVALENT = {
+    "PLAN": "PRIME",
+    "ORIENT": "PRIME",
+    "PRIME": "PRIME",
+    "TEACH": "TEACH",
+    "EXPLAIN": "TEACH",
+    "CALIBRATE": "CALIBRATE",
+    "ENCODE": "ENCODE",
+    "INTERROGATE": "REFERENCE",
+    "REFERENCE": "REFERENCE",
+    "CONSOLIDATE": "REFERENCE",
+    "RETRIEVE": "RETRIEVE",
+    "OVERLEARN": "OVERLEARN",
+}
+
+
 def _normalize_control_stage(block: dict[str, Any]) -> str:
     raw_stage = str(block.get("control_stage") or "").strip().upper()
     if raw_stage:
-        return raw_stage
+        return _RUNTIME_STAGE_EQUIVALENT.get(raw_stage, raw_stage)
     raw_category = str(block.get("category") or "").strip().lower()
     return {
+        "plan": "PRIME",
+        "orient": "PRIME",
         "prime": "PRIME",
         "teach": "TEACH",
+        "explain": "TEACH",
         "calibrate": "CALIBRATE",
         "prepare": "PRIME",
         "encode": "ENCODE",
-        "interrogate": "ENCODE",
+        "interrogate": "REFERENCE",
         "reference": "REFERENCE",
+        "consolidate": "REFERENCE",
         "retrieve": "RETRIEVE",
         "refine": "RETRIEVE",
         "overlearn": "OVERLEARN",

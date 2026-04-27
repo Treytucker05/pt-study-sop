@@ -105,24 +105,52 @@ def _safe_yaml_load(path: Path) -> dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
+# 2026-04-21 vault hardening introduced richer operational stages
+# (ORIENT, EXPLAIN, INTERROGATE, CONSOLIDATE, PLAN). For routing purposes
+# the selector collapses them onto the legacy 7-stage runtime vocabulary
+# so downstream consumers (dashboard, chain certification, golden flows)
+# continue to see PRIME / TEACH / CALIBRATE / ENCODE / REFERENCE /
+# RETRIEVE / OVERLEARN. The richer taxonomy remains visible in the YAML
+# specs themselves for human readers and the validator.
+_STAGE_RUNTIME_EQUIVALENT = {
+    "PLAN": "PRIME",
+    "ORIENT": "PRIME",
+    "PRIME": "PRIME",
+    "TEACH": "TEACH",
+    "EXPLAIN": "TEACH",
+    "CALIBRATE": "CALIBRATE",
+    "ENCODE": "ENCODE",
+    "INTERROGATE": "REFERENCE",
+    "REFERENCE": "REFERENCE",
+    "CONSOLIDATE": "REFERENCE",
+    "RETRIEVE": "RETRIEVE",
+    "OVERLEARN": "OVERLEARN",
+}
+
+
 def _normalize_control_stage(raw_stage: Any, raw_category: Any = None) -> str:
     stage = str(raw_stage or "").strip().upper()
     if stage:
-        return stage
+        return _STAGE_RUNTIME_EQUIVALENT.get(stage, stage)
 
     category = str(raw_category or "").strip().lower()
-    return {
+    legacy = {
+        "plan": "PRIME",
+        "orient": "PRIME",
         "prime": "PRIME",
         "teach": "TEACH",
+        "explain": "TEACH",
         "calibrate": "CALIBRATE",
         "prepare": "PRIME",
         "encode": "ENCODE",
         "interrogate": "REFERENCE",
         "reference": "REFERENCE",
+        "consolidate": "REFERENCE",
         "retrieve": "RETRIEVE",
         "refine": "OVERLEARN",
         "overlearn": "OVERLEARN",
     }.get(category, "ENCODE")
+    return legacy
 
 
 def _summarize_stage_truth(blocks: list[dict[str, Any]]) -> dict[str, Any]:
