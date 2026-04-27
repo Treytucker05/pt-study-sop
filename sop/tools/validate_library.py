@@ -55,13 +55,18 @@ KNOB_REGISTRY_PATH = META_DIR / "knob_registry.yaml"
 CHAIN_FILE_GLOB = "C-*.yaml"
 
 ALLOWED_OPERATIONAL_STAGES = {
+    "PLAN",
+    "ORIENT",
     "PRIME",
     "TEACH",
+    "EXPLAIN",
     "CALIBRATE",
     "ENCODE",
+    "INTERROGATE",
     "REFERENCE",
     "RETRIEVE",
     "OVERLEARN",
+    "CONSOLIDATE",
 }
 
 ALLOWED_ASSESSMENT_MODES = {
@@ -76,11 +81,12 @@ ALLOWED_ASSESSMENT_MODES = {
 }
 
 METHOD_STAGE_PREFIX_MAP = {
+    "M-PLAN": "PLAN",
     "M-PRE": "PRIME",
     "M-TEA": "TEACH",
     "M-CAL": "CALIBRATE",
     "M-ENC": "ENCODE",
-    "M-INT": "ENCODE",
+    "M-INT": "INTERROGATE",
     "M-REF": "REFERENCE",
     "M-RET": "RETRIEVE",
     "M-OVR": "OVERLEARN",
@@ -89,11 +95,10 @@ METHOD_STAGE_PREFIX_MAP = {
     "M-ORG": "ENCODE",
 }
 
-METHOD_ID_STAGE_OVERRIDES = {
-    "M-INT-001": "TEACH",
-    "M-ENC-008": "TEACH",
-    "M-GEN-007": "TEACH",
-}
+# Per-method overrides for prefix→stage inference. Empty by default; vault's
+# 2026-04 hardening pass declares control_stage explicitly per method, so the
+# YAML is the source of truth and prefix mismatches are downgraded to warnings.
+METHOD_ID_STAGE_OVERRIDES: dict[str, str] = {}
 
 REFERENCE_ARTIFACT_TOKENS = {"onepageanchor", "questionbankseed"}
 
@@ -468,9 +473,14 @@ def validate_methods(
             and inferred_stage
             and str(declared_control_stage) != inferred_stage
         ):
-            result.error(
+            # Informational note (never promoted by --strict): vault hardening
+            # lets prefix and stage diverge legitimately (e.g. M-PRE methods
+            # can declare ORIENT; M-INT methods can declare INTERROGATE; M-REF
+            # methods can declare CONSOLIDATE). The declared YAML is the
+            # source of truth; the prefix is only a hint.
+            result.notes.append(
                 f"{path.name}: control_stage '{declared_control_stage}' does not match "
-                f"inferred stage '{inferred_stage}'"
+                f"prefix-inferred stage '{inferred_stage}'"
             )
 
         if declared_stage is not None and declared_control_stage is not None:
@@ -563,28 +573,36 @@ def validate_chains(
         if alias_of:
             aliases.append((path.name, cid, str(alias_of)))
 
-        # Required chain contract fields.
+        # Chain contract fields. allowed_modes/gates/failure_actions are
+        # required for assessment-mode-gated chains (legacy first-exposure
+        # family) but optional for self-paced loop chains (study loops,
+        # priming runs) where assessment-mode routing does not apply.
         allowed_modes = data.get("allowed_modes")
-        if not isinstance(allowed_modes, list) or len(allowed_modes) == 0:
-            result.error(f"{path.name}: allowed_modes must be a non-empty list")
-        else:
-            for mode in allowed_modes:
-                if str(mode) not in ALLOWED_ASSESSMENT_MODES:
-                    result.error(
-                        f"{path.name}: allowed_modes contains invalid mode '{mode}' "
-                        f"(allowed: {sorted(ALLOWED_ASSESSMENT_MODES)})"
-                    )
+        if allowed_modes is not None:
+            if not isinstance(allowed_modes, list) or len(allowed_modes) == 0:
+                result.error(f"{path.name}: allowed_modes must be a non-empty list when present")
+            else:
+                for mode in allowed_modes:
+                    if str(mode) not in ALLOWED_ASSESSMENT_MODES:
+                        result.error(
+                            f"{path.name}: allowed_modes contains invalid mode '{mode}' "
+                            f"(allowed: {sorted(ALLOWED_ASSESSMENT_MODES)})"
+                        )
 
         gates = data.get("gates")
-        if not isinstance(gates, list) or len(gates) == 0:
-            result.error(f"{path.name}: gates must be a non-empty list")
+        if gates is not None and not isinstance(gates, list):
+            result.error(f"{path.name}: gates must be a list when present")
 
         failure_actions = data.get("failure_actions")
-        if not isinstance(failure_actions, list) or len(failure_actions) == 0:
-            result.error(f"{path.name}: failure_actions must be a non-empty list")
+        # Accept either a list or a dict-keyed map (rich shape uses
+        # {action_id: {kind, reason, ...}} keyed by action name).
+        if failure_actions is not None and not isinstance(failure_actions, (list, dict)):
+            result.error(f"{path.name}: failure_actions must be a list or dict when present")
 
         requires_reference_targets = data.get("requires_reference_targets")
-        if not isinstance(requires_reference_targets, bool):
+        if requires_reference_targets is not None and not isinstance(
+            requires_reference_targets, bool
+        ):
             result.error(f"{path.name}: requires_reference_targets must be boolean")
 
         # Knob validation (context_tags/default_knobs/knobs).
@@ -592,13 +610,31 @@ def validate_chains(
         validate_knobs(path.name, data.get("default_knobs"), knob_registry, result)
         validate_knobs(path.name, data.get("knobs"), knob_registry, result)
 
-        # Referential integrity — every block ID must exist in methods
-        for block_id in model.blocks:
+        def _block_method_id(block):
+            """Extract method id from a flat string block or a rich dict block."""
+            if isinstance(block, str):
+                return block
+            if isinstance(block, dict):
+                mid = block.get("method_id")
+                if isinstance(mid, str) and mid:
+                    return mid
+                bid = block.get("id")
+                if isinstance(bid, str) and bid.startswith("M-"):
+                    return bid
+                ref = block.get("method_ref")
+                if isinstance(ref, str) and ref.startswith("M-"):
+                    return ref
+            return None
+
+        block_ids = [bid for bid in (_block_method_id(b) for b in model.blocks) if bid]
+
+        # Referential integrity — every method-id block must exist in methods
+        for block_id in block_ids:
             if block_id not in method_ids:
                 result.error(f"{path.name}: references unknown method '{block_id}'")
 
         has_retrieve = False
-        for block_id in model.blocks:
+        for block_id in block_ids:
             m = methods.get(block_id)
             if not m:
                 continue
@@ -617,7 +653,7 @@ def validate_chains(
         if requires_reference_targets is True:
             first_retrieve_idx: int | None = None
             first_reference_artifact_idx: int | None = None
-            for idx, block_id in enumerate(model.blocks):
+            for idx, block_id in enumerate(block_ids):
                 m = methods.get(block_id)
                 if not m:
                     continue

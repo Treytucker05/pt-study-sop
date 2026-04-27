@@ -16,12 +16,18 @@ knobs:
     description: Control-plane operational stage.
     type: enum
     allowed_values:
+      - PLAN
+      - ORIENT
       - PRIME
+      - TEACH
+      - EXPLAIN
       - CALIBRATE
       - ENCODE
+      - INTERROGATE
       - REFERENCE
       - RETRIEVE
       - OVERLEARN
+      - CONSOLIDATE
 
   energy:
     description: Expected learner energy for chain matching.
@@ -80,6 +86,8 @@ knobs:
       - review
       - exam_prep
       - consolidation
+      - session_opening
+      - weekly_reset
       - any
 
   artifact_type:
@@ -274,8 +282,10 @@ knobs:
       - ascii_tree
       - bulleted_spine
       - bullets
+      - map
       - markdown_table
       - table
+      - text
 
   verbalization_mode:
     description: Mode of verbal expression for self-explanation and think-aloud protocols.
