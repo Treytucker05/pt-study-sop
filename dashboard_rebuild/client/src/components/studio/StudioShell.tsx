@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -10,6 +11,7 @@ import { createPortal } from "react-dom";
 import {
   BookOpen,
   Brain,
+  ChevronDown,
   Crosshair,
   FileText,
   Layers,
@@ -75,6 +77,55 @@ const PANEL_ALIASES: Record<string, string> = {
   prime_packet: "prime_packet",
   polish_packet: "polish_packet",
 };
+
+type PipelineStage =
+  | "load"
+  | "read"
+  | "prime"
+  | "tutor"
+  | "polish"
+  | "export"
+  | "workbench"
+  | "settings";
+
+const PIPELINE_STAGES: { key: PipelineStage; label: string }[] = [
+  { key: "load", label: "LOAD" },
+  { key: "read", label: "READ" },
+  { key: "prime", label: "PRIME" },
+  { key: "tutor", label: "TUTOR" },
+  { key: "polish", label: "POLISH" },
+  { key: "export", label: "EXPORT" },
+];
+
+const SIDE_CLUSTERS: { key: PipelineStage; label: string }[] = [
+  { key: "workbench", label: "WORKBENCH" },
+  { key: "settings", label: "SETTINGS" },
+];
+
+const PANEL_STAGE_MAP: Record<string, PipelineStage> = {
+  source_shelf: "load",
+  document_dock: "read",
+  priming_chat: "prime",
+  prime_packet: "prime",
+  tutor_chat: "tutor",
+  polish_packet: "tutor",
+  polish_chat: "polish",
+  obsidian: "export",
+  anki: "export",
+  workspace: "workbench",
+  notes: "workbench",
+  run_config: "settings",
+  memory: "settings",
+};
+
+const LAYOUT_PRESETS: { key: StudioShellPreset; label: string; hint: string }[] =
+  [
+    { key: "priming", label: "Prime", hint: "Sources + Workspace + Prime Packet" },
+    { key: "study", label: "Study", hint: "Live tutoring set" },
+    { key: "polish", label: "Polish", hint: "Polish + outputs" },
+    { key: "full_studio", label: "Full Studio", hint: "Every panel" },
+    { key: "minimal", label: "Minimal", hint: "Bare canvas" },
+  ];
 
 const PRESET_PANEL_KEYS: Record<StudioShellPreset, string[]> = {
   priming: [
@@ -711,6 +762,8 @@ export function StudioShell({
   const [shouldFocusLayout, setShouldFocusLayout] = useState(false);
   const [windowsMenuOpen, setWindowsMenuOpen] = useState(false);
   const windowsMenuRef = useRef<HTMLDivElement | null>(null);
+  const [layoutMenuOpen, setLayoutMenuOpen] = useState(false);
+  const layoutMenuRef = useRef<HTMLDivElement | null>(null);
   const lastExternalLayoutFocusRequestKeyRef = useRef<number | null>(null);
 
   const clampCanvasScale = useCallback((scale: number) => {
@@ -1398,6 +1451,28 @@ export function StudioShell({
     };
   }, [windowsMenuOpen]);
 
+  // Close the Layout menu when the user clicks outside it or presses Escape.
+  useEffect(() => {
+    if (!layoutMenuOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const menu = layoutMenuRef.current;
+      if (!menu) return;
+      if (event.target instanceof Node && menu.contains(event.target)) return;
+      setLayoutMenuOpen(false);
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setLayoutMenuOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [layoutMenuOpen]);
+
   // Native (non-passive) wheel listener so Ctrl + wheel reliably zooms the
   // canvas even in browsers that register React synthetic wheel events as
   // passive. react-zoom-pan-pinch's `activationKeys` path has historically
@@ -1541,101 +1616,244 @@ export function StudioShell({
           >
             <div
               data-testid="studio-toolbar"
-              className="flex flex-wrap items-center gap-2 rounded-[1rem] border border-[rgba(255,118,144,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.14)_100%)] px-3 py-3 shadow-[0_14px_28px_rgba(0,0,0,0.2)]"
+              className="flex flex-col gap-3 rounded-[1rem] border border-[rgba(255,118,144,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.14)_100%)] px-3 py-3 shadow-[0_14px_28px_rgba(0,0,0,0.2)]"
             >
-            {panelDefinitions.map((definition) => {
-              const panelAlreadyOpen = resolvedLayout.some(
-                (item) => item.panel === definition.panel,
-              );
-              return (
-                <Button
-                  key={definition.panel}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  aria-label={`Open ${definition.title} panel`}
-                  onClick={() => {
-                    queuePanelLayoutChange((current) =>
-                      spawnPanelLayout(current, definition),
-                    );
-                    if (resolvedLayout.length === 0) {
-                      setShouldFocusLayout(true);
-                    }
-                  }}
-                  className={cn(
-                    "rounded-full border-[rgba(255,120,146,0.18)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]",
-                    panelAlreadyOpen &&
-                      !definition.allowMultiple &&
-                      "border-[rgba(255,124,150,0.36)] bg-[rgba(255,78,108,0.14)] text-white",
-                  )}
-                >
-                  <definition.icon className="mr-1.5 h-3.5 w-3.5" />
-                  {definition.title}
-                </Button>
-              );
-            })}
+            <div
+              data-testid="studio-toolbar-pipeline"
+              className="flex flex-wrap items-stretch gap-0"
+            >
+              {PIPELINE_STAGES.map((stage, stageIndex) => {
+                const stagePanels = panelDefinitions.filter(
+                  (definition) =>
+                    PANEL_STAGE_MAP[definition.panel] === stage.key,
+                );
+                if (stagePanels.length === 0) return null;
+                return (
+                  <Fragment key={stage.key}>
+                    {stageIndex > 0 ? (
+                      <div
+                        aria-hidden="true"
+                        className="flex shrink-0 items-end pb-2 pr-1.5 pl-0.5 font-mono text-[12px] text-[rgba(255,118,144,0.32)]"
+                      >
+                        →
+                      </div>
+                    ) : null}
+                    <div
+                      data-testid={`studio-toolbar-zone-${stage.key}`}
+                      className={cn(
+                        "flex flex-col gap-1.5 px-2.5 py-1",
+                        stageIndex > 0 &&
+                          "border-l border-dashed border-[rgba(255,118,144,0.12)] pl-3",
+                      )}
+                    >
+                      <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[rgba(255,201,213,0.44)]">
+                        {stage.label}
+                      </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {stagePanels.map((definition) => {
+                          const panelAlreadyOpen = resolvedLayout.some(
+                            (item) => item.panel === definition.panel,
+                          );
+                          return (
+                            <Button
+                              key={definition.panel}
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              aria-label={`Open ${definition.title} panel`}
+                              onClick={() => {
+                                queuePanelLayoutChange((current) =>
+                                  spawnPanelLayout(current, definition),
+                                );
+                                if (resolvedLayout.length === 0) {
+                                  setShouldFocusLayout(true);
+                                }
+                              }}
+                              className={cn(
+                                "rounded-full border-[rgba(255,120,146,0.18)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]",
+                                panelAlreadyOpen &&
+                                  !definition.allowMultiple &&
+                                  "border-[rgba(255,124,150,0.36)] bg-[rgba(255,78,108,0.14)] text-white",
+                              )}
+                            >
+                              <definition.icon className="mr-1.5 h-3.5 w-3.5" />
+                              {definition.title}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </Fragment>
+                );
+              })}
 
-            <div className="ml-auto flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-[rgba(255,118,144,0.12)] bg-black/20 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffc9d5]">
-                {selectedPanelIds.length} Selected
-              </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                aria-label="Group selected windows"
-                disabled={!canGroupSelection}
-                onClick={() => {
-                  const groupId = nextGroupId();
-                  queuePanelLayoutChange((current) =>
-                    applyGroupIdToPanels(current, selectedPanelIds, groupId),
-                  );
-                }}
-                className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white disabled:opacity-40"
-              >
-                Group
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                aria-label="Ungroup selected windows"
-                disabled={!canUngroupSelection}
-                onClick={() => {
-                  queuePanelLayoutChange((current) =>
-                    applyGroupIdToPanels(current, selectedPanelIds, null),
-                  );
-                }}
-                className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white disabled:opacity-40"
-              >
-                Ungroup
-              </Button>
-              {([
-                ["priming", "Priming"],
-                ["study", "Study"],
-                ["polish", "Polish"],
-                ["full_studio", "Full Studio"],
-                ["minimal", "Minimal"],
-              ] as const).map(([preset, label]) => (
-                <Button
-                  key={preset}
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  aria-label={`Apply ${label} preset`}
-                  onClick={() => {
-                    queuePanelLayoutChange(
-                      createPresetLayout(preset, panelDefinitions),
-                      "restore",
-                    );
-                    setShouldFocusLayout(true);
-                  }}
-                  className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white"
-                >
-                  {label}
-                </Button>
-              ))}
-              <div className="relative" ref={windowsMenuRef}>
+              {SIDE_CLUSTERS.map((cluster, clusterIndex) => {
+                const clusterPanels = panelDefinitions.filter(
+                  (definition) =>
+                    PANEL_STAGE_MAP[definition.panel] === cluster.key,
+                );
+                if (clusterPanels.length === 0) return null;
+                return (
+                  <div
+                    key={cluster.key}
+                    data-testid={`studio-toolbar-zone-${cluster.key}`}
+                    className={cn(
+                      "flex flex-col gap-1.5 border-l border-dashed border-[rgba(255,118,144,0.16)] pl-3 px-2.5 py-1",
+                      clusterIndex === 0 && "ml-auto",
+                    )}
+                  >
+                    <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[rgba(255,201,213,0.44)]">
+                      {cluster.label}
+                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {clusterPanels.map((definition) => {
+                        const panelAlreadyOpen = resolvedLayout.some(
+                          (item) => item.panel === definition.panel,
+                        );
+                        return (
+                          <Button
+                            key={definition.panel}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            aria-label={`Open ${definition.title} panel`}
+                            onClick={() => {
+                              queuePanelLayoutChange((current) =>
+                                spawnPanelLayout(current, definition),
+                              );
+                              if (resolvedLayout.length === 0) {
+                                setShouldFocusLayout(true);
+                              }
+                            }}
+                            className={cn(
+                              "rounded-full border-[rgba(255,120,146,0.18)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]",
+                              panelAlreadyOpen &&
+                                !definition.allowMultiple &&
+                                "border-[rgba(255,124,150,0.36)] bg-[rgba(255,78,108,0.14)] text-white",
+                            )}
+                          >
+                            <definition.icon className="mr-1.5 h-3.5 w-3.5" />
+                            {definition.title}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div
+              data-testid="studio-toolbar-controls"
+              className="flex flex-wrap items-end gap-0 border-t border-dashed border-[rgba(255,118,144,0.10)] pt-3"
+            >
+              <div className="flex flex-col gap-1.5 px-2.5 py-1">
+                <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[rgba(255,201,213,0.44)]">
+                  START
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="relative" ref={layoutMenuRef}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      aria-label="Choose layout preset"
+                      aria-haspopup="menu"
+                      aria-expanded={layoutMenuOpen}
+                      title="Apply a saved layout preset"
+                      onClick={() => setLayoutMenuOpen((open) => !open)}
+                      className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white"
+                    >
+                      <LayoutGrid className="mr-1.5 h-3.5 w-3.5" />
+                      Layout
+                      <ChevronDown className="ml-1 h-3 w-3" />
+                    </Button>
+                    {layoutMenuOpen ? (
+                      <div
+                        role="menu"
+                        aria-label="Layout presets"
+                        className="absolute left-0 top-[calc(100%+0.5rem)] z-40 w-72 overflow-hidden rounded-xl border border-[rgba(255,118,144,0.22)] bg-black/90 p-1 shadow-[0_18px_36px_rgba(0,0,0,0.45)] backdrop-blur-sm"
+                      >
+                        {LAYOUT_PRESETS.map(({ key: preset, label, hint }) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            role="menuitem"
+                            aria-label={`Apply ${label} preset`}
+                            onClick={() => {
+                              queuePanelLayoutChange(
+                                createPresetLayout(preset, panelDefinitions),
+                                "restore",
+                              );
+                              setShouldFocusLayout(true);
+                              setLayoutMenuOpen(false);
+                            }}
+                            className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left font-mono text-[11px] text-[#ffd6de] hover:bg-[rgba(255,84,116,0.14)] hover:text-white"
+                          >
+                            <span className="uppercase tracking-[0.16em]">
+                              {label}
+                            </span>
+                            <span className="truncate text-[9px] uppercase tracking-[0.12em] text-[rgba(255,201,213,0.4)]">
+                              {hint}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5 border-l border-dashed border-[rgba(255,118,144,0.16)] px-3 py-1">
+                <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[rgba(255,201,213,0.44)]">
+                  SELECT
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  {selectedPanelIds.length > 0 ? (
+                    <span className="rounded-full border border-[rgba(255,118,144,0.12)] bg-black/20 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffc9d5]">
+                      {selectedPanelIds.length} Selected
+                    </span>
+                  ) : null}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Group selected windows"
+                    disabled={!canGroupSelection}
+                    onClick={() => {
+                      const groupId = nextGroupId();
+                      queuePanelLayoutChange((current) =>
+                        applyGroupIdToPanels(current, selectedPanelIds, groupId),
+                      );
+                    }}
+                    className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white disabled:opacity-40"
+                  >
+                    Group
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Ungroup selected windows"
+                    disabled={!canUngroupSelection}
+                    onClick={() => {
+                      queuePanelLayoutChange((current) =>
+                        applyGroupIdToPanels(current, selectedPanelIds, null),
+                      );
+                    }}
+                    className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white disabled:opacity-40"
+                  >
+                    Ungroup
+                  </Button>
+                </div>
+              </div>
+
+              <div className="ml-auto flex flex-col gap-1.5 border-l border-dashed border-[rgba(255,118,144,0.16)] px-3 py-1">
+                <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[rgba(255,201,213,0.44)]">
+                  ARRANGE
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="relative" ref={windowsMenuRef}>
                 <Button
                   type="button"
                   variant="ghost"
@@ -1783,6 +2001,8 @@ export function StudioShell({
               >
                 Clear Canvas
               </Button>
+                </div>
+              </div>
             </div>
           </div>
 
