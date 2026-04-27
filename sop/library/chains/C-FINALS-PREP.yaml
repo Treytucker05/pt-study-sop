@@ -79,32 +79,35 @@ gates:
   - G4_encode_complete
   - G5_overlearn_complete
 
+# List form preserves runtime compatibility (seed_methods.py and
+# api_tutor_turns.py only iterate list-shaped failure_actions). Each
+# entry's `id` is the on_pass / on_fail target referenced from blocks.
 failure_actions:
-  warn_short_termlist:
+  - id: warn_short_termlist
     kind: warn_continue
     reason: "Terminology may be too thin; advance but flag in ledger."
 
-  warn_missing_northstar:
+  - id: warn_missing_northstar
     kind: warn_continue
     reason: "BigPictureSummary present but north-star missing; advance with warning."
 
-  halt_prime_incomplete:
+  - id: halt_prime_incomplete
     kind: halt
     reason: "PRIME composite gate failed — cannot enter TEACH without all three priming artifacts."
 
-  loop_back_to_prime:
+  - id: loop_back_to_prime
     kind: loop_to_step
     target_step: 1
     max_loops: 1
     reason: "TEACH did not land — re-do PRIME for the concept then retry TEACH."
 
-  loop_back_to_teach:
+  - id: loop_back_to_teach
     kind: loop_to_step
     target_step: 4
     max_loops: 2
     reason: "Hard rule from C-FINALS-PREP: RSR < 70% (or HOOK without meaning) routes back to TEACH."
 
-  warn_card_underflow:
+  - id: warn_card_underflow
     kind: warn_continue
     reason: "Fewer than 3 atomic cards staged; revisit OVR-002 inputs."
 
