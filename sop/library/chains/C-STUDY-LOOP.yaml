@@ -6,7 +6,7 @@ description: >
   CALIBRATE → RETRIEVE → OVERLEARN in a single ChatGPT chat.
   35-45 min per session. Ends with 3-5 staged Anki cards.
 
-is_template: false
+is_template: true
 status: active
 proving_ground: false
 

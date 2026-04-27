@@ -6,7 +6,7 @@ description: >
   Obsidian as persistent reference material. 15-25 min. Run once per topic;
   re-run only to fill gaps or fix errors flagged during study.
 
-is_template: false
+is_template: true
 status: active
 proving_ground: false
 
