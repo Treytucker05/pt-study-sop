@@ -290,12 +290,23 @@ def _build_teach_context(
     objective_scope: str,
     focus_objective_id: str,
     selected_material_labels: list[str],
+    active_stage_runtime: Optional[str] = None,
 ) -> Optional[dict[str, Any]]:
-    active_stage = str(
-        (block_info or {}).get("control_stage")
-        or (block_info or {}).get("category")
-        or ""
-    ).strip().upper()
+    # Use the caller-supplied runtime stage when available so vault
+    # methods declared as EXPLAIN (or pinned to TEACH via
+    # _METHOD_ID_RUNTIME_STAGE) still build TEACH context. Fall back to
+    # normalizing block_info for callers that have not adopted the
+    # runtime stage yet.
+    if active_stage_runtime:
+        active_stage = active_stage_runtime.strip().upper()
+    else:
+        raw = str(
+            (block_info or {}).get("control_stage")
+            or (block_info or {}).get("category")
+            or ""
+        ).strip().upper()
+        method_id = str((block_info or {}).get("method_id") or "").strip()
+        active_stage = _runtime_stage(method_id, raw) if raw else raw
     if active_stage != "TEACH":
         return None
 
@@ -1172,6 +1183,7 @@ def send_turn(session_id: str):
         objective_scope=objective_scope,
         focus_objective_id=focus_objective_id,
         selected_material_labels=selected_material_labels,
+        active_stage_runtime=active_stage,
     )
 
     def generate():
@@ -1410,10 +1422,10 @@ def send_turn(session_id: str):
                     "Targets:\n"
                     f"{bounded_targets}"
                 )
-            if (
-                block_info
-                and str(block_info.get("control_stage") or "").upper() == "PRIME"
-            ):
+            # Gate on the normalized runtime stage so vault-hardened
+            # ORIENT/PLAN methods inherit PRIME hard guardrails, not just
+            # methods whose YAML declares PRIME literally.
+            if block_info and active_stage == "PRIME":
                 system_prompt += (
                     "\n\n## PRIME Stage Guardrails (Hard)\n"
                     "- PRIME is orientation only.\n"
@@ -1435,10 +1447,10 @@ def send_turn(session_id: str):
                         "This is a PRIME block. As you engage with the student, identify and extract the key learning objectives from the loaded materials. "
                         "Use the save_learning_objectives tool to save them. Extract 3-7 specific, measurable learning objectives.\n"
                     )
-            if (
-                block_info
-                and str(block_info.get("control_stage") or "").upper() == "TEACH"
-            ):
+            # Gate on the normalized runtime stage so vault EXPLAIN
+            # methods and runtime-pinned M-INT-001 / M-ENC-008 / M-GEN-007
+            # still inherit TEACH hard guardrails.
+            if block_info and active_stage == "TEACH":
                 system_prompt += (
                     "\n\n## TEACH Stage Guardrails (Hard)\n"
                     "- TEACH is explanation-first, not assessment-first.\n"
