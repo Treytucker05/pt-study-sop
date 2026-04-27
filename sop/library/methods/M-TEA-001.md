@@ -96,7 +96,7 @@ If no preset is specified, use the default knobs. One-shot returns the full arti
 
 ## Related Methods
 - [[M-TEA-004]] -- Use when the concept needs a modality switch rather than a causal story spine
-- [[M-INT-005]] -- Escalate when the learner needs a fuller case walkthrough after the bounded story pass
+- [[M-ELB-003]] -- Escalate when the learner needs a fuller case walkthrough after the bounded story pass
 
 ## Changelog
 - **v1.2** -- production hardening pass: upgraded the evidence stack to stronger narrative coherence and causal sequence teaching sources, added the standard knob schema plus four distinct presets, tightened the runtime prompt, rebuilt the markdown note into the current template, and preserved the original method logic, steps, outputs, and constraints.

@@ -162,7 +162,7 @@ failure_modes:
 - mode: The walkthrough uses unsafe, painful, or oversized motions
   detection: The learner needs large, awkward, or uncomfortable movements to continue.
   recovery: Shrink to desk-safe gestures or hand positions only.
-  fallback_method: M-INT-002
+  fallback_method: M-ELB-002
 - mode: The learner performs gestures without saying what they mean
   detection: The walkthrough proceeds, but the narration or map-back stays empty.
   recovery: Require brief live narration or an immediate map-back after each step.
@@ -240,7 +240,7 @@ presets:
 related_methods:
 - id: M-GEN-009
   relationship: Kinesthetic anchor cousin method when one gesture cue is enough
-- id: M-INT-002
+- id: M-ELB-002
   relationship: Clinical application fallback when the learner needs a case frame instead of movement mapping
 - id: M-ORG-003
   relationship: Flowchart fallback if the sequence needs a static visual structure

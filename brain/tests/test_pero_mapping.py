@@ -20,25 +20,29 @@ from pero_mapping import (
 class TestGetPeroStage:
     """Test basic stage mapping logic."""
 
-    def test_category_defaults_all_six(self):
+    def test_category_defaults_all(self):
         assert get_pero_stage("Any Method", "prepare") == "P"
         assert get_pero_stage("Any Method", "encode") == "E"
+        assert get_pero_stage("Any Method", "elaborate") == "E"
+        assert get_pero_stage("Any Method", "interleave") == "R"
         assert get_pero_stage("Any Method", "retrieve") == "R"
-        assert get_pero_stage("Any Method", "interrogate") == "E"
         assert get_pero_stage("Any Method", "refine") == "R"
         assert get_pero_stage("Any Method", "overlearn") == "O"
 
     def test_method_override_clinical_application(self):
-        assert get_pero_stage("Clinical Application", "interrogate") == "R"
+        assert get_pero_stage("Clinical Application", "elaborate") == "R"
 
     def test_method_override_pre_test(self):
         assert get_pero_stage("Pre-Test", "prepare") == "P"
 
     def test_method_override_case_walkthrough(self):
-        assert get_pero_stage("Case Walkthrough", "interrogate") == "R"
+        assert get_pero_stage("Case Walkthrough", "elaborate") == "R"
 
     def test_method_override_analogy_bridge(self):
-        assert get_pero_stage("Analogy Bridge", "interrogate") == "E"
+        assert get_pero_stage("Analogy Bridge", "elaborate") == "E"
+
+    def test_method_override_cross_topic_link(self):
+        assert get_pero_stage("Cross-Topic Link", "interleave") == "E"
 
     def test_method_override_error_autopsy(self):
         assert get_pero_stage("Error Autopsy", "refine") == "R"
@@ -64,12 +68,12 @@ class TestGetPeroInfo:
         assert info["category"] == "prepare"
 
     def test_method_override_returns_subtag(self):
-        info = get_pero_info("Clinical Application", "interrogate")
+        info = get_pero_info("Clinical Application", "elaborate")
         assert info["pero"] == "R"
         assert info["label"] == "Retrieval"
         assert info["subtag"] == "application"
         assert info["exception"] is False
-        assert info["category"] == "interrogate"
+        assert info["category"] == "elaborate"
 
     def test_pre_test_has_exception_true(self):
         info = get_pero_info("Pre-Test", "prepare")
@@ -84,7 +88,7 @@ class TestGetPeroInfo:
         assert info["exception"] is False
 
     def test_analogy_bridge_elaboration_subtag(self):
-        info = get_pero_info("Analogy Bridge", "interrogate")
+        info = get_pero_info("Analogy Bridge", "elaborate")
         assert info["pero"] == "E"
         assert info["subtag"] == "elaboration"
 
@@ -102,7 +106,7 @@ class TestGetPeroSequence:
         blocks = [
             {"name": "Pre-Test", "category": "prepare"},
             {"name": "Cornell Notes", "category": "encode"},
-            {"name": "Clinical Application", "category": "interrogate"},
+            {"name": "Clinical Application", "category": "elaborate"},
             {"name": "Reflection", "category": "overlearn"},
         ]
         seq = get_pero_sequence(blocks)
@@ -178,7 +182,7 @@ class TestGetStageCoverage:
         blocks = [
             {"name": "Cornell Notes", "category": "encode"},
             {"name": "Concept Map", "category": "encode"},
-            {"name": "Analogy Bridge", "category": "interrogate"},
+            {"name": "Analogy Bridge", "category": "elaborate"},
         ]
         coverage = get_stage_coverage(blocks)
         assert coverage["E"] is True
@@ -188,7 +192,7 @@ class TestGetStageCoverage:
 
     def test_coverage_respects_overrides(self):
         blocks = [
-            {"name": "Clinical Application", "category": "interrogate"},
+            {"name": "Clinical Application", "category": "elaborate"},
         ]
         coverage = get_stage_coverage(blocks)
         assert coverage["R"] is True
@@ -208,7 +212,7 @@ class TestGetExceptionFlags:
     def test_normal_methods_not_flagged(self):
         blocks = [
             {"name": "Cornell Notes", "category": "encode"},
-            {"name": "Clinical Application", "category": "interrogate"},
+            {"name": "Clinical Application", "category": "elaborate"},
             {"name": "Flashcards", "category": "retrieve"},
         ]
         flags = get_exception_flags(blocks)

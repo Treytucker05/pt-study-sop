@@ -163,7 +163,7 @@ failure_modes:
 - mode: Not identifying breakdowns
   detection: The learner or tutor starts doing not identifying breakdowns or the artifact stops satisfying the method’s required checks.
   recovery: Replay or reread the explanation and turn every hesitation into an explicit gap note.
-  fallback_method: M-INT-002
+  fallback_method: M-ELB-002
 default_duration_min: 5
 energy_cost: high
 best_stage: review
@@ -219,7 +219,7 @@ related_methods:
   relationship: Similar self-explanation move
 - id: M-GEN-005
   relationship: Why-chain fallback for deeper causality
-- id: M-INT-002
+- id: M-ELB-002
   relationship: Clinical application if the learner needs context
 system_prompt_override:
   relaxes:

@@ -1,21 +1,21 @@
-id: M-INT-002
+id: M-ELB-002
 name: Clinical Application
-category: INTERROGATE
+category: ELABORATE
 subcategory: clinical-application
 description: Apply an already-encoded concept to a concrete clinical scenario and work through how it would present, what you would test, and how you would intervene.
-control_stage: INTERROGATE
+control_stage: ELABORATE
 status: validated
 version: '1.2'
 created: '2026-04-07'
 updated: '2026-04-21'
 tags:
-- interrogate
+- elaborate
 - clinical
 - application
 - clinical-reasoning
 - illness-script
 - sop-core
-purpose: Clinical Application exists to interrogate already-encoded material by forcing the learner to apply it to a concrete patient scenario, predict how it would present, decide what to test, and choose how to intervene. It turns the current stage into a clean, reusable signal instead of a vague study session.
+purpose: Clinical Application exists to elaborate already-encoded material by forcing the learner to apply it to a concrete patient scenario, predict how it would present, decide what to test, and choose how to intervene. It turns the current stage into a clean, reusable signal instead of a vague study session.
 not_for: This is not for first exposure, direct lecturing, or introducing brand-new material that has not already been encoded.
 best_fit_topics:
 - Previously encoded concepts that need comparison, application, or discrimination
@@ -23,7 +23,7 @@ best_fit_topics:
 - Conditions, impairments, or mechanisms that benefit from patient-specific reasoning
 poor_fit_topics:
 - Brand-new material that has not been encoded yet
-- Tasks that need direct teaching rather than retrieval or interrogation
+- Tasks that need direct teaching rather than retrieval or elaborate
 - Abstract topics that cannot be anchored to a realistic patient context
 learner_state_required: The target concept has already been taught or encoded. The learner can attempt retrieval, comparison, or application before seeing the answer.
 inputs:
@@ -62,7 +62,7 @@ required_outputs:
 - Presentation, testing, and intervention summary (all three addressed)
 - Verification notes (errors flagged against source material)
 success_criteria:
-- All required outputs are present for M-INT-002.
+- All required outputs are present for M-ELB-002.
 - The learner addresses presentation, testing, and intervention for a specific patient scenario before verification.
 - The learner stays active and the tutor does not give away the answer before the required attempt or transformation.
 partial_criteria:
@@ -147,11 +147,11 @@ failure_modes:
 - mode: Generic application
   detection: The learner or tutor starts doing generic application or the artifact stops satisfying the method’s required checks.
   recovery: Require specific patient characteristics.
-  fallback_method: M-INT-005
+  fallback_method: M-ELB-003
 - mode: Skipping assessment phase
   detection: The learner or tutor starts doing skipping assessment phase or the artifact stops satisfying the method’s required checks.
   recovery: Must include at least two tests or assessments.
-  fallback_method: M-INT-006
+  fallback_method: M-ELB-004
 - mode: Treatment without rationale
   detection: The learner or tutor starts doing treatment without rationale or the artifact stops satisfying the method’s required checks.
   recovery: Explain why this treatment fits this patient.
@@ -207,9 +207,9 @@ presets:
     explanation_density: focused
     behavior: Applied case pass. Use a more realistic vignette with red flags or confounders, emphasize differential and prioritization, and render the output as a clinical reasoning grid.
 related_methods:
-- id: M-INT-005
+- id: M-ELB-003
   relationship: Case walkthrough cousin method
-- id: M-INT-006
+- id: M-ELB-004
   relationship: Illness script fallback for mechanism-based clinical reasoning
 - id: M-ORG-004
   relationship: Decision-tree fallback if branching decisions dominate
@@ -222,7 +222,7 @@ system_prompt_override:
   - Keep the scenario concrete before reasoning begins: age, context, patient type, or constraint must be specified before you expand the clinical branch.
   reason: Clinical Application only works if the learner commits to a specific patient-specific reasoning path first. Generic prompting or early tutor completion collapses the method into vague discussion.
 facilitation_prompt: |
-  You are running M-INT-002 (Clinical Application) in the INTERROGATE stage.
+  You are running M-ELB-002 (Clinical Application) in the ELABORATE stage.
   Use only the loaded source. Ask only for missing required inputs.
   Produce: Clinical application narrative, Presentation/testing/intervention summary, and Verification notes.
   Apply one already-encoded concept to a concrete patient scenario, work through how it would present, what you would test, and how you would intervene, then verify the reasoning against source without turning the run into a lecture.

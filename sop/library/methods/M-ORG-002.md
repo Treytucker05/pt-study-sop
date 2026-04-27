@@ -97,7 +97,7 @@ If no preset is specified, use the default knobs. One-shot returns the full arti
 - **Needs research:** `false`
 
 ## Related Methods
-- [[M-INT-004]] -- Use when the learner needs a fuller side-by-side teaching pass before encoding the table
+- [[M-ILV-002]] -- Use when the learner needs a fuller side-by-side teaching pass before encoding the table
 - [[M-RET-006]] -- Use when the finished discriminators should be stress-tested with near-miss retrieval prompts
 
 ## Changelog

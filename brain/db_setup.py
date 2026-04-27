@@ -23,7 +23,8 @@ _METHOD_BLOCKS_CONTROL_STAGES = (
     "EXPLAIN",
     "CALIBRATE",
     "ENCODE",
-    "INTERROGATE",
+    "ELABORATE",
+    "INTERLEAVE",
     "REFERENCE",
     "RETRIEVE",
     "OVERLEARN",
@@ -41,7 +42,9 @@ def _control_stage_normalize_sql(column_name: str = "control_stage") -> str:
             WHEN 'EXPLAIN' THEN 'EXPLAIN'
             WHEN 'CALIBRATE' THEN 'CALIBRATE'
             WHEN 'ENCODE' THEN 'ENCODE'
-            WHEN 'INTERROGATE' THEN 'INTERROGATE'
+            WHEN 'ELABORATE' THEN 'ELABORATE'
+            WHEN 'INTERLEAVE' THEN 'INTERLEAVE'
+            WHEN 'INTERROGATE' THEN 'ELABORATE'
             WHEN 'REFERENCE' THEN 'REFERENCE'
             WHEN 'RETRIEVE' THEN 'RETRIEVE'
             WHEN 'OVERLEARN' THEN 'OVERLEARN'
@@ -60,8 +63,9 @@ def _ensure_method_blocks_control_stage_constraint(cursor) -> None:
 
     Older live databases can enforce stale stage sets (e.g. only the original
     7 stages without TEACH; or the 7+TEACH set without the 2026-04-21 vault
-    additions PLAN/ORIENT/EXPLAIN/INTERROGATE/CONSOLIDATE). That causes live
-    seed sync to fail as soon as a method card with a newer stage is inserted.
+    additions PLAN/ORIENT/EXPLAIN/CONSOLIDATE/ELABORATE/INTERLEAVE). That
+    causes live seed sync to fail as soon as a method card with a newer stage
+    is inserted.
     Rebuild whenever the persisted table SQL is stale.
     """
     cursor.execute(
@@ -1910,7 +1914,7 @@ def init_database():
             method_id TEXT,
             name TEXT NOT NULL,
             category TEXT,
-            control_stage TEXT DEFAULT 'ENCODE' CHECK(control_stage IN ('PLAN', 'ORIENT', 'PRIME', 'TEACH', 'EXPLAIN', 'CALIBRATE', 'ENCODE', 'INTERROGATE', 'REFERENCE', 'RETRIEVE', 'OVERLEARN', 'CONSOLIDATE')),
+            control_stage TEXT DEFAULT 'ENCODE' CHECK(control_stage IN ('PLAN', 'ORIENT', 'PRIME', 'TEACH', 'EXPLAIN', 'CALIBRATE', 'ENCODE', 'ELABORATE', 'INTERLEAVE', 'REFERENCE', 'RETRIEVE', 'OVERLEARN', 'CONSOLIDATE')),
             description TEXT,
             default_duration_min INTEGER DEFAULT 5,
             energy_cost TEXT DEFAULT 'medium',

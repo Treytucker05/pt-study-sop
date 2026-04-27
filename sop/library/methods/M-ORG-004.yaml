@@ -153,7 +153,7 @@ failure_modes:
 - mode: Too many branches at one node
   detection: "The learner or tutor starts doing too many branches at one node or the artifact stops satisfying the method\u2019s required checks."
   recovery: Limit to 2-3 branches per decision point
-  fallback_method: M-INT-002
+  fallback_method: M-ELB-002
 - mode: Non-discriminating questions
   detection: "The learner or tutor starts doing non-discriminating questions or the artifact stops satisfying the method\u2019s required checks."
   recovery: Each question must meaningfully narrow differential
@@ -181,7 +181,7 @@ knobs:
   output_layout: labeled_sections
   explanation_density: focused
 related_methods:
-- id: M-INT-005
+- id: M-ELB-003
   relationship: Use when the learner needs a fuller case walkthrough before compressing the pathway into a decision tree
 - id: M-CAL-002
   relationship: Use when the completed branches should feed a fuller scored probe set after teaching

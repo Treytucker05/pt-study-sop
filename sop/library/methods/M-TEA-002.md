@@ -95,7 +95,7 @@ If no preset is specified, use the default knobs. One-shot returns the full arti
 - **Needs research:** `false`
 
 ## Related Methods
-- [[M-INT-004]] -- Use when the learner needs a fuller side-by-side comparison artifact after the teaching pass
+- [[M-ILV-002]] -- Use when the learner needs a fuller side-by-side comparison artifact after the teaching pass
 - [[M-RET-006]] -- Use when the next step should be adversarial discrimination practice on the same confusable pair
 
 ## Changelog

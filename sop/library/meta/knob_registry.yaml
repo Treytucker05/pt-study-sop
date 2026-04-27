@@ -23,7 +23,8 @@ knobs:
       - EXPLAIN
       - CALIBRATE
       - ENCODE
-      - INTERROGATE
+      - ELABORATE
+      - INTERLEAVE
       - REFERENCE
       - RETRIEVE
       - OVERLEARN

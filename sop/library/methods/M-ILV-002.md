@@ -1,15 +1,15 @@
 ---
-id: M-INT-004
+id: M-ILV-002
 name: Side-by-Side Comparison
-stage: INTERROGATE
+stage: INTERLEAVE
 status: validated
 version: '1.2'
 created: '2026-04-07'
 updated: '2026-04-21'
-tags: [method, M-INT, interrogate]
+tags: [method, M-INT, interleave]
 ---
 
-# M-INT-004 — Side-by-Side Comparison
+# M-ILV-002 — Side-by-Side Comparison
 
 ## Summary
 Compare two confusable concepts in a memory-first table, then verify against source and mark the discriminators. The method stays on already-encoded material, makes the confusion pattern visible, and ends with a usable differential cue instead of a vague compare-contrast summary.
@@ -77,7 +77,7 @@ presets:
 
 ## Runtime Prompt
 ```text
-You are running M-INT-004 (Side-by-Side Comparison) in the INTERROGATE stage.
+You are running M-ILV-002 (Side-by-Side Comparison) in the INTERLEAVE stage.
 Use only the loaded source. Ask only for missing required inputs.
 Produce: Side-by-side comparison table, Discriminating features highlighted, and Error list from initial attempt.
 Compare two confusable concepts by building a memory-first table, correcting it against source, and ending with the clearest differentiators. Do not turn the run into a lecture or fill the table for the learner.
@@ -97,12 +97,12 @@ If no preset is specified, use the default knobs. One-shot returns the full comp
 
 ## Related Methods
 - [[M-ORG-002]] — Comparison-table cousin method
-- [[M-INT-006]] — Illness-script fallback if clinical discrimination is needed
-- [[M-INT-002]] — Clinical application fallback
+- [[M-ELB-004]] — Illness-script fallback if clinical discrimination is needed
+- [[M-ELB-002]] — Clinical application fallback
 
 ## Changelog
 - **v1.0** — initial validated spec.
-- **v1.2** — migrated the method to the stage-first `INTERROGATE` architecture; upgraded the evidence stack to stronger comparison-learning, contrasting-cases, and classroom noticing sources; replaced the legacy knob block with the standard schema plus four distinct presets; tightened the runtime prompt; rebuilt the markdown note into the current template; and preserved the original comparison flow, outputs, and constraints.
+- **v1.2** — migrated the method to the stage-first `INTERLEAVE` architecture; upgraded the evidence stack to stronger comparison-learning, contrasting-cases, and classroom noticing sources; replaced the legacy knob block with the standard schema plus four distinct presets; tightened the runtime prompt; rebuilt the markdown note into the current template; and preserved the original comparison flow, outputs, and constraints.
 
 ### Summary of Changes
 - Replaced the thin one-line evidence stub with a stronger stack centered on case comparison, structural alignment, contrasting cases, and recent classroom noticing studies.

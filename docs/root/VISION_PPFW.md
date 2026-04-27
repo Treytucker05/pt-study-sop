@@ -122,8 +122,8 @@ These are the foundational theories of cognition that dictate how the **Tutor** 
 
 **System Implementation:**
 - **Concept Map (M-ENC-009):** Visualizes knowledge networks
-- **Cross-Topic Link (M-INT-003):** Builds inter-concept connections
-- **Analogy Bridge (M-INT-001):** Maps new concepts to familiar domains
+- **Cross-Topic Link (M-ILV-001):** Builds inter-concept connections
+- **Analogy Bridge (M-ELB-001):** Maps new concepts to familiar domains
 - **Knowledge Graphs:** Obsidian vault integration for networked notes
 
 ---
@@ -249,7 +249,7 @@ These are the evidence-based "rules" that must be present in every study session
 - **Why-Chain (M-ENC-005):** Repeat "Why?" until bedrock
 - **Self-Explanation Protocol (M-ENC-007):** Explain each paragraph in own words
 - **Teach-Back (M-ENC-004):** Explain concept to AI without notes
-- **Analogy Bridge (M-INT-001):** Map to familiar domain
+- **Analogy Bridge (M-ELB-001):** Map to familiar domain
 
 **Key Citation:** Chi et al. (1994) — "Eliciting self-explanations improves understanding," *Cognitive Science*.
 
@@ -363,7 +363,7 @@ These are multi-step methodologies that organize principles into repeatable proc
 **System Implementation:**
 - **Source Packets:** Multiple NotebookLM sources per topic
 - **Comparison Table (M-ENC-010):** Side-by-side analysis
-- **Cross-Topic Link (M-INT-003):** Finds shared principles
+- **Cross-Topic Link (M-ILV-001):** Finds shared principles
 
 ---
 
@@ -498,12 +498,12 @@ These are specific, interchangeable tactics that plug into the Meso-phases. The 
 | | M-ENC-010 | Comparison Table | 10 min | High | Discrimination |
 | | M-ENC-011 | Process Flowchart | 10 min | High | Visual Encoding |
 | | M-ENC-012 | Clinical Decision Tree | 10 min | High | Transfer |
-| **Interrogate** | M-INT-001 | Analogy Bridge | 5 min | Medium | Far Transfer |
-| | M-INT-002 | Clinical Application | 10 min | High | Near Transfer |
-| | M-INT-003 | Cross-Topic Link | 5 min | Medium | Connectivism |
-| | M-INT-004 | Side-by-Side Comparison | 10 min | High | Discrimination |
-| | M-INT-005 | Case Walkthrough | 10 min | High | Case-Based Learning |
-| | M-INT-006 | Illness Script Builder | 10 min | High | Schema Building |
+| **Interrogate** | M-ELB-001 | Analogy Bridge | 5 min | Medium | Far Transfer |
+| | M-ELB-002 | Clinical Application | 10 min | High | Near Transfer |
+| | M-ILV-001 | Cross-Topic Link | 5 min | Medium | Connectivism |
+| | M-ILV-002 | Side-by-Side Comparison | 10 min | High | Discrimination |
+| | M-ELB-003 | Case Walkthrough | 10 min | High | Case-Based Learning |
+| | M-ELB-004 | Illness Script Builder | 10 min | High | Schema Building |
 | **Retrieve** | M-RET-001 | Free Recall Blurt | 5 min | Medium | Testing Effect |
 | | M-RET-002 | Sprint Quiz | 5 min | Medium | Retrieval Practice |
 | | M-RET-003 | Fill-in-Blank | 5 min | Low | Cloze Deletion |

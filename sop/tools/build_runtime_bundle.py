@@ -360,7 +360,7 @@ CONTROL PLANE -> PRIME -> TEACH -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE 
   Recall, Confusion, Rule, Representation, Procedure, Computation, Speed
 - support_level: high|medium|low ; prior_exposure_band: new|intermediate|advanced ; dependency_fix_applied: 0|1
 - Mandatory overrides:
-  - Confusion -> M-ENC-010 + M-INT-004
+  - Confusion -> M-ENC-010 + M-ILV-002
   - Speed -> M-RET-007
 
 ## Pacing rules
@@ -751,7 +751,7 @@ Use the IDs as compact labels, not as something you are expected to memorize wit
 **Important runtime rule:** the live `control_stage` is the truth for execution when an older prefix and the current runtime stage differ.
 
 - Example: `M-ENC-008` still carries an older `ENC` prefix in its ID, but it currently runs as a `TEACH` block in the live library.
-- Example: `M-INT-*` methods are integration/interrogation families; use the current `control_stage`, not the raw prefix alone, to know where they run in a chain.
+- Example: methods occasionally declare a `control_stage` that diverges from their historical prefix family; use the live `control_stage`, not the raw prefix alone, to know where they run in a chain.
 
 **Current chain family codes in this library:**
 
@@ -782,7 +782,8 @@ Use the IDs as compact labels, not as something you are expected to memorize wit
 | `CAL` | CALIBRATE-family method ID |
 | `TEA` | TEACH-family method ID |
 | `ENC` | ENCODE-family method ID |
-| `INT` | Integration/interrogation method ID family |
+| `ELB` | ELABORATE-family method ID |
+| `ILV` | INTERLEAVE-family method ID |
 | `REF` | REFERENCE-family method ID |
 | `RET` | RETRIEVE-family method ID |
 | `OVR` | OVERLEARN-family method ID |

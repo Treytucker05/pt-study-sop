@@ -1,21 +1,21 @@
-id: M-INT-001
+id: M-ELB-001
 name: Analogy Bridge
-category: INTERROGATE
+category: ELABORATE
 subcategory: analogy-bridge
 description: Create an analogy linking the concept to something familiar, map the structure explicitly, and test where the analogy breaks.
-control_stage: INTERROGATE
+control_stage: ELABORATE
 status: validated
 version: '1.2'
 created: '2026-04-07'
 updated: '2026-04-21'
 tags:
-- interrogate
+- elaborate
 - analogy
 - transfer
 - structure-mapping
 - comparison
 - sop-core
-purpose: Analogy Bridge exists to interrogate already-encoded material by linking the target concept to a familiar domain, mapping the structure, and making the limits explicit. It turns the current stage into a clean, reusable signal instead of a vague study session.
+purpose: Analogy Bridge exists to elaborate already-encoded material by linking the target concept to a familiar domain, mapping the structure, and making the limits explicit. It turns the current stage into a clean, reusable signal instead of a vague study session.
 not_for: This is not for first exposure, direct lecturing, or introducing brand-new material that has not already been encoded.
 best_fit_topics:
 - Previously encoded concepts that need comparison, application, or discrimination
@@ -23,7 +23,7 @@ best_fit_topics:
 - Mechanisms, relationships, or processes that benefit from a familiar bridge
 poor_fit_topics:
 - Brand-new material that has not been encoded yet
-- Tasks that need direct teaching rather than retrieval or interrogation
+- Tasks that need direct teaching rather than retrieval or elaborate
 - Topics where no structurally aligned familiar domain is available
 learner_state_required: The target concept has already been taught or encoded. The learner can attempt retrieval, comparison, or application before seeing the answer.
 inputs:
@@ -60,7 +60,7 @@ required_outputs:
 - Mapping table (3+ correspondences)
 - Breakdown points (where analogy fails and what that teaches)
 success_criteria:
-- All required outputs are present for M-INT-001.
+- All required outputs are present for M-ELB-001.
 - The analogy includes at least three explicit correspondences and at least one real breakdown point.
 - The learner stays active and the tutor does not give away the answer before the required attempt or transformation.
 partial_criteria:
@@ -145,7 +145,7 @@ failure_modes:
 - mode: Analogy too superficial
   detection: The learner or tutor starts doing analogy too superficial or the artifact stops satisfying the method’s required checks.
   recovery: Require structural mapping, not just surface similarity.
-  fallback_method: M-INT-003
+  fallback_method: M-ILV-001
 - mode: Ignoring breakdown points
   detection: The learner or tutor starts doing ignoring breakdown points or the artifact stops satisfying the method’s required checks.
   recovery: Force identification of at least one limitation.
@@ -153,7 +153,7 @@ failure_modes:
 - mode: Familiar domain not actually familiar
   detection: The learner or tutor starts doing familiar domain not actually familiar or the artifact stops satisfying the method’s required checks.
   recovery: Choose domains the learner genuinely knows well.
-  fallback_method: M-INT-004
+  fallback_method: M-ILV-002
 default_duration_min: 3
 energy_cost: medium
 best_stage: review
@@ -217,11 +217,11 @@ presets:
     explanation_density: focused
     behavior: Applied bridge. Choose an analogy that supports a real-world or clinical cue, map the correspondences in a cue table, and make the breakdowns explicit so the learner does not overextend the analogy in practice.
 related_methods:
-- id: M-INT-003
+- id: M-ILV-001
   relationship: Cross-topic transfer cousin method
 - id: M-GEN-002
   relationship: Teach-back fallback if the analogy needs explanation
-- id: M-INT-004
+- id: M-ILV-002
   relationship: Comparison fallback for discrimination
 system_prompt_override:
   relaxes:
@@ -231,7 +231,7 @@ system_prompt_override:
   - When the analogy starts to overextend, switch from elaboration to boundary-setting: name the breakdown, then restate the real concept in source-faithful language.
   reason: Analogy Bridge only works if the learner actively maps the structure and sees where it breaks. A fully supplied analogy too early collapses the interrogation step and hides the limits of the bridge.
 facilitation_prompt: |
-  You are running M-INT-001 (Analogy Bridge) in the INTERROGATE stage.
+  You are running M-ELB-001 (Analogy Bridge) in the ELABORATE stage.
   Use only the loaded source. Ask only for missing required inputs.
   Produce: Analogy statement, Mapping table, and Breakdown points.
   Build one analogy for an already-encoded concept, map at least 3 structural correspondences, test where the analogy fails, and return to the real concept without turning the run into a lecture or quiz.

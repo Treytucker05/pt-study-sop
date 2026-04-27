@@ -28,9 +28,9 @@ Sessions are driven by the **Tutor Wizard** (3-step startup) and a **Method Chai
 | **Chain Execution** | Tutor walks the learner through each block in order | PRIME → TEACH? → CALIBRATE → ENCODE → REFERENCE → RETRIEVE (per block tags) |
 | **Wrap** | Exit Ticket + Session Ledger | OVERLEARN → CONTROL PLANE (exit) |
 
-### PEIRRO Compatibility
+### Library Categories
 
-PEIRRO categories (`prepare`, `encode`, `interrogate`, `retrieve`, `refine`, `overlearn`) remain canonical in YAML schemas and validators. Each method block carries a PEIRRO `category` tag. Chains sequence blocks across these categories.
+Library categories (`prepare`, `encode`, `elaborate`, `interleave`, `retrieve`, `refine`, `overlearn`) remain canonical in YAML schemas and validators. Each method block carries a `category` tag. Chains sequence blocks across these categories.
 
 ## Quick-Start: Study Session
 

@@ -222,14 +222,14 @@ A living document for tracking ongoing research into learning science. The **Sch
 | Topic | Tier | Question | Target File |
 |-------|------|----------|-------------|
 | Procedure Engine | Framework | How to teach physical skills (goniometry)? | New engine spec |
-| Case-Based Reasoning | Framework | Optimize clinical case learning? | M-INT-005.yaml |
+| Case-Based Reasoning | Framework | Optimize clinical case learning? | M-ELB-003.yaml |
 | Generation Effect | Principle | Optimal generation prompts? | M-ENC-002.yaml |
 
 ### Medium Priority
 | Topic | Tier | Question | Target File |
 |-------|------|----------|-------------|
 | Debate Engine | Framework | Dialectical learning for clinical defense? | New engine spec |
-| Transfer & Generalization | Principle | How to maximize far transfer? | M-INT-001.yaml |
+| Transfer & Generalization | Principle | How to maximize far transfer? | M-ELB-001.yaml |
 | Math/Physics Engine | Framework | Problem-solving for Biomechanics? | New engine spec |
 
 ### Low Priority

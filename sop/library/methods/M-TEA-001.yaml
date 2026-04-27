@@ -173,7 +173,7 @@ knobs:
 related_methods:
 - id: M-TEA-004
   relationship: Use when the concept needs a modality switch rather than a causal story spine
-- id: M-INT-005
+- id: M-ELB-003
   relationship: Escalate when the learner needs a fuller case walkthrough after the bounded story pass
 facilitation_prompt: |-
   You are running M-TEA-001 (Story Spine) in the EXPLAIN stage.

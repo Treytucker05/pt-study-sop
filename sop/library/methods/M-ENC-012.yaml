@@ -152,7 +152,7 @@ failure_modes:
   detection: The learner or tutor starts doing too many branches at one node or the artifact stops satisfying
     the method’s required checks.
   recovery: Limit to 2-3 branches per decision point
-  fallback_method: M-INT-002
+  fallback_method: M-ELB-002
 - mode: Non-discriminating questions
   detection: The learner or tutor starts doing non-discriminating questions or the artifact stops satisfying
     the method’s required checks.
@@ -189,7 +189,7 @@ knobs:
   - verification_status
   artifact_type: decision-tree
 related_methods:
-- id: M-INT-002
+- id: M-ELB-002
   relationship: Clinical application cousin
 - id: M-ENC-011
   relationship: Flowchart fallback for branching decisions

@@ -39,15 +39,17 @@ Purpose: Turn explained material into learner-built structures, explanations, ma
 | M-ENC-015 | Hand-Draw Map | medium | 5 min | spatial_encoding, generation |
 | M-ENC-016 | Embodied Walkthrough | medium | 6 min | embodied_cognition, motor_encoding |
 
-### Interrogate (category: `interrogate`, maps to ENCODE stage)
+### Cross-listed: ELABORATE / INTERLEAVE (run after ENCODE in chains)
+
+These methods live in their own categories (`elaborate`, `interleave`) and are listed here only because they often follow ENCODE blocks in chains. See [ELABORATE.md](ELABORATE.md) and [INTERLEAVE.md](INTERLEAVE.md) for the canonical contracts.
 
 | ID | Name | Energy | Duration | Key Mechanism |
 |----|------|--------|----------|--------------|
-| M-INT-002 | Clinical Application | medium | 8 min | application_transfer |
-| M-INT-003 | Cross-Topic Link | medium | 5 min | interleaving |
-| M-INT-004 | Side-by-Side Comparison | medium | 8 min | discrimination |
-| M-INT-005 | Case Walkthrough | medium | 10 min | case_based_reasoning |
-| M-INT-006 | Illness Script Builder | medium | 10 min | schema_construction |
+| M-ELB-002 | Clinical Application | medium | 8 min | application_transfer |
+| M-ILV-001 | Cross-Topic Link | medium | 5 min | interleaving |
+| M-ILV-002 | Side-by-Side Comparison | medium | 8 min | discrimination |
+| M-ELB-003 | Case Walkthrough | medium | 10 min | case_based_reasoning |
+| M-ELB-004 | Illness Script Builder | medium | 10 min | schema_construction |
 
 ## Contract Summary
 

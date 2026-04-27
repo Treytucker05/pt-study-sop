@@ -1,15 +1,15 @@
 ---
-id: M-INT-006
+id: M-ELB-004
 name: Illness Script Builder
-stage: INTERROGATE
+stage: ELABORATE
 status: validated
 version: '1.2'
 created: '2026-04-07'
 updated: '2026-04-21'
-tags: [method, M-INT, interrogate]
+tags: [method, M-INT, elaborate]
 ---
 
-# M-INT-006 — Illness Script Builder
+# M-ELB-004 — Illness Script Builder
 
 ## Summary
 Build a disease script by linking enabling conditions, the pathophysiological fault, and the resulting consequences, then compare it against source and mark the discriminators. The method stays on already-encoded material, organizes clinical knowledge into a usable script, and closes with look-alike separation instead of a loose fact list.
@@ -78,7 +78,7 @@ presets:
 
 ## Runtime Prompt
 ```text
-You are running M-INT-006 (Illness Script Builder) in the INTERROGATE stage.
+You are running M-ELB-004 (Illness Script Builder) in the ELABORATE stage.
 Use only the loaded source. Ask only for missing required inputs.
 Produce: Complete illness script, Causal chain diagram, Comparison to textbook, and Discriminating features.
 Build one illness script by naming enabling conditions, the pathophysiological fault, and the clinical consequences, then compare it against source and separate it from look-alikes. Do not turn the run into a lecture or write the script for the learner before an attempt.
@@ -97,13 +97,13 @@ If no preset is specified, use the default knobs. One-shot returns the full illn
 - **Needs research:** `false`
 
 ## Related Methods
-- [[M-INT-002]] — Clinical application cousin method
-- [[M-INT-005]] — Case walkthrough fallback
+- [[M-ELB-002]] — Clinical application cousin method
+- [[M-ELB-003]] — Case walkthrough fallback
 - [[M-GEN-007]] — Mechanism trace fallback for causal sequencing
 
 ## Changelog
 - **v1.0** — initial validated spec.
-- **v1.2** — migrated the method to the stage-first `INTERROGATE` architecture; upgraded the evidence stack to stronger illness-script, clinical-reasoning, and script-instruction sources; replaced the legacy knob block with the standard schema plus four distinct presets; tightened the runtime prompt; rebuilt the markdown note into the current template; and preserved the original script-building flow, outputs, and constraints.
+- **v1.2** — migrated the method to the stage-first `ELABORATE` architecture; upgraded the evidence stack to stronger illness-script, clinical-reasoning, and script-instruction sources; replaced the legacy knob block with the standard schema plus four distinct presets; tightened the runtime prompt; rebuilt the markdown note into the current template; and preserved the original script-building flow, outputs, and constraints.
 
 ### Summary of Changes
 - Replaced the thin illness-script stub with a stronger stack centered on clinical reasoning, illness scripts, and explicit script-building instruction.

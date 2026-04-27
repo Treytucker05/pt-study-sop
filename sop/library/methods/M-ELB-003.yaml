@@ -1,21 +1,21 @@
-id: M-INT-005
+id: M-ELB-003
 name: Case Walkthrough
-category: INTERROGATE
+category: ELABORATE
 subcategory: case-walkthrough
 description: Walk through one realistic case to retrieve reasoning steps, identify gaps, and reinforce application accuracy before moving to the next probe.
-control_stage: INTERROGATE
+control_stage: ELABORATE
 status: validated
 version: '1.2'
 created: '2026-04-07'
 updated: '2026-04-21'
 tags:
-- interrogate
+- elaborate
 - case-based-learning
 - case-walkthrough
 - clinical-reasoning
 - progressive-disclosure
 - transfer
-purpose: Case Walkthrough exists to interrogate already-encoded material by forcing the learner to work through one realistic case from memory, expose reasoning gaps, and leave with one targeted next probe instead of a vague discussion. It turns the current stage into a clean, reusable signal instead of a vague study session.
+purpose: Case Walkthrough exists to elaborate already-encoded material by forcing the learner to work through one realistic case from memory, expose reasoning gaps, and leave with one targeted next probe instead of a vague discussion. It turns the current stage into a clean, reusable signal instead of a vague study session.
 not_for: This is not for first exposure, direct lecturing, or introducing brand-new material that has not already been encoded.
 best_fit_topics:
 - Previously encoded concepts that need comparison, application, or discrimination
@@ -23,7 +23,7 @@ best_fit_topics:
 - Topics that benefit from reasoning through a full case structure instead of isolated facts
 poor_fit_topics:
 - Brand-new material that has not been encoded yet
-- Tasks that need direct teaching rather than retrieval or interrogation
+- Tasks that need direct teaching rather than retrieval or elaborate
 - Topics that cannot be anchored to a realistic case or scenario
 learner_state_required: The target concept has already been taught or encoded. The learner can attempt retrieval, comparison, or application before seeing the answer.
 inputs:
@@ -72,7 +72,7 @@ required_outputs:
 - CorrectiveFeedback (post-attempt only)
 - NextTargetedProbe (follow-up question targeting identified gaps)
 success_criteria:
-- All required outputs are present for M-INT-005.
+- All required outputs are present for M-ELB-003.
 - The learner works through one concrete case before correction instead of receiving the answer up front.
 - The run ends with tagged errors, a confidence signal, and one targeted next probe rather than drifting into broad teaching.
 partial_criteria:
@@ -143,11 +143,11 @@ failure_modes:
 - mode: Answer leakage
   detection: The learner or tutor starts doing answer leakage or the artifact stops satisfying the method’s required checks.
   recovery: Re-enforce attempt-first then feedback.
-  fallback_method: M-INT-002
+  fallback_method: M-ELB-002
 - mode: Repeated misses
   detection: The learner or tutor starts doing repeated misses or the artifact stops satisfying the method’s required checks.
   recovery: Route back to ENCODE with targeted scaffold.
-  fallback_method: M-INT-006
+  fallback_method: M-ELB-004
 default_duration_min: 10
 energy_cost: high
 best_stage: exam_prep
@@ -199,9 +199,9 @@ presets:
     explanation_density: focused
     behavior: Applied case pass. Use a realistic handoff-style case with red flags, prioritization, and disposition pressure, and render the reasoning as a clinical decision grid with the targeted next probe tied to the next real move.
 related_methods:
-- id: M-INT-002
+- id: M-ELB-002
   relationship: Clinical application cousin method
-- id: M-INT-006
+- id: M-ELB-004
   relationship: Illness-script fallback for explicit reasoning structure
 - id: M-ORG-004
   relationship: Decision-tree fallback if the case branches
@@ -214,7 +214,7 @@ system_prompt_override:
   - Use progressive disclosure only to sharpen reasoning after the initial attempt. Every correction must point to the specific gap or premature closure it fixes, then end with one targeted next probe.
   reason: Case Walkthrough only works if the learner reasons through a concrete case before feedback. Early tutor completion collapses the method into answer leakage instead of interrogation.
 facilitation_prompt: |
-  You are running M-INT-005 (Case Walkthrough) in the INTERROGATE stage.
+  You are running M-ELB-003 (Case Walkthrough) in the ELABORATE stage.
   Use only the loaded source. Ask only for missing required inputs.
   Produce: LearnerCaseResponse, ErrorTags, ConfidenceTag, CorrectiveFeedback, and NextTargetedProbe.
   Run one realistic case from memory. Require a closed-note first-pass interpretation before feedback, walk the learner through differential, workup, and management as needed, tag the specific reasoning gap, capture confidence before correction, and end with one targeted next probe.

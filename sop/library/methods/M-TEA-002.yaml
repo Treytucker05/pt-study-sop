@@ -201,7 +201,7 @@ presets:
     explanation_density: focused
     behavior: Stepwise; use an applied contrast grid with cue, likely mistake, and confirming clue columns to support real-world separation.
 related_methods:
-- id: M-INT-004
+- id: M-ILV-002
   relationship: Use when the learner needs a fuller side-by-side comparison artifact after the teaching pass
 - id: M-RET-006
   relationship: Use when the next step should be adversarial discrimination practice on the same confusable pair

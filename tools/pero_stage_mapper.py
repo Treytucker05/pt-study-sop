@@ -28,11 +28,13 @@ REFERENCE_OUTPUT_MARKERS = (
 
 OVERLEARN_OVERRIDES = {"M-OVR-002", "M-OVR-001"}
 CALIBRATE_OVERRIDES = {"M-CAL-001", "M-CAL-002", "M-CAL-003"}
-INTERROGATE_RETRIEVAL_OVERRIDES = {"M-INT-005", "M-INT-002"}
+ELABORATE_RETRIEVAL_OVERRIDES = {"M-ELB-003", "M-ELB-002"}
 
 CATEGORY_TO_STAGE = {
     "prepare": "priming",
     "encode": "encoding",
+    "elaborate": "encoding",
+    "interleave": "retrieval",
     "retrieve": "retrieval",
     "refine": "retrieval",
     "overlearn": "overlearning",
@@ -67,12 +69,12 @@ def get_display_stage(
 
     derived_reference = is_reference_artifact(artifact_type, outputs)
 
-    if category == "interrogate":
+    if category in ("elaborate", "interleave"):
         if derived_reference:
             return "reference"
-        if method_id and method_id in INTERROGATE_RETRIEVAL_OVERRIDES:
+        if method_id and method_id in ELABORATE_RETRIEVAL_OVERRIDES:
             return "retrieval"
-        return "encoding"
+        return CATEGORY_TO_STAGE.get(category, "encoding")
 
     if category == "refine":
         return "retrieval"

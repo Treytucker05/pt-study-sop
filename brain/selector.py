@@ -76,7 +76,7 @@ _FALLBACK_CHAIN_CATALOG: dict[str, dict[str, Any]] = {
             "M-TEA-001",
             "M-ENC-011",
             "M-REF-003",
-            "M-INT-005",
+            "M-ELB-003",
             "M-RET-007",
         ],
         "selected_blocks": ["PRIME", "TEACH", "ENCODE", "REFERENCE", "RETRIEVE"],
@@ -127,12 +127,13 @@ def _extract_block_method_id(block: Any) -> str | None:
 
 
 # 2026-04-21 vault hardening introduced richer operational stages
-# (ORIENT, EXPLAIN, INTERROGATE, CONSOLIDATE, PLAN). For routing purposes
-# the selector collapses them onto the legacy 7-stage runtime vocabulary
-# so downstream consumers (dashboard, chain certification, golden flows)
-# continue to see PRIME / TEACH / CALIBRATE / ENCODE / REFERENCE /
-# RETRIEVE / OVERLEARN. The richer taxonomy remains visible in the YAML
-# specs themselves for human readers and the validator.
+# (ORIENT, EXPLAIN, ELABORATE, INTERLEAVE, CONSOLIDATE, PLAN). For
+# routing purposes the selector collapses them onto the legacy 7-stage
+# runtime vocabulary so downstream consumers (dashboard, chain
+# certification, golden flows) continue to see PRIME / TEACH /
+# CALIBRATE / ENCODE / REFERENCE / RETRIEVE / OVERLEARN. The richer
+# taxonomy remains visible in the YAML specs themselves for human
+# readers and the validator.
 _STAGE_RUNTIME_EQUIVALENT = {
     "PLAN": "PRIME",
     "ORIENT": "PRIME",
@@ -141,7 +142,8 @@ _STAGE_RUNTIME_EQUIVALENT = {
     "EXPLAIN": "TEACH",
     "CALIBRATE": "CALIBRATE",
     "ENCODE": "ENCODE",
-    "INTERROGATE": "REFERENCE",
+    "ELABORATE": "REFERENCE",
+    "INTERLEAVE": "REFERENCE",
     "REFERENCE": "REFERENCE",
     "CONSOLIDATE": "REFERENCE",
     "RETRIEVE": "RETRIEVE",
@@ -150,12 +152,12 @@ _STAGE_RUNTIME_EQUIVALENT = {
 
 # Per-method runtime stage pins. The control-plane / runtime keys on the
 # legacy 7-stage TEACH for these methods even though their vault YAML
-# declares ENCODE/INTERROGATE — they fill the TEACH slot in
-# first-exposure chains (C-FE-*) and removing them from TEACH would
-# silently bypass TEACH-only guardrails in the tutor turn flow. The
-# validator still treats vault YAML as the source of truth.
+# declares ENCODE/ELABORATE — they fill the TEACH slot in first-exposure
+# chains (C-FE-*) and removing them from TEACH would silently bypass
+# TEACH-only guardrails in the tutor turn flow. The validator still
+# treats vault YAML as the source of truth.
 _METHOD_ID_RUNTIME_STAGE = {
-    "M-INT-001": "TEACH",
+    "M-ELB-001": "TEACH",
     "M-ENC-008": "TEACH",
     "M-GEN-007": "TEACH",
 }
@@ -176,7 +178,8 @@ def _normalize_control_stage(raw_stage: Any, raw_category: Any = None) -> str:
         "calibrate": "CALIBRATE",
         "prepare": "PRIME",
         "encode": "ENCODE",
-        "interrogate": "REFERENCE",
+        "elaborate": "REFERENCE",
+        "interleave": "REFERENCE",
         "reference": "REFERENCE",
         "consolidate": "REFERENCE",
         "retrieve": "RETRIEVE",

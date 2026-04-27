@@ -38,7 +38,7 @@ CONTROL PLANE -> PRIME -> TEACH -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE 
   Recall, Confusion, Rule, Representation, Procedure, Computation, Speed
 - support_level: high|medium|low ; prior_exposure_band: new|intermediate|advanced ; dependency_fix_applied: 0|1
 - Mandatory overrides:
-  - Confusion -> M-ENC-010 + M-INT-004
+  - Confusion -> M-ENC-010 + M-ILV-002
   - Speed -> M-RET-007
 
 ## Pacing rules

@@ -35,11 +35,11 @@ CONTROL_STAGE_LABELS = {stage: stage.title() for stage in CONTROL_STAGE_ORDER}
 
 
 # 2026-04-21 vault hardening expanded the operational stage taxonomy
-# (PLAN, ORIENT, EXPLAIN, INTERROGATE, CONSOLIDATE). The chain validator
-# routes these to the legacy 7-stage runtime vocabulary so coverage and
-# stage-order checks continue to operate against PRIME / TEACH /
-# CALIBRATE / ENCODE / REFERENCE / RETRIEVE / OVERLEARN. The richer
-# taxonomy stays visible in the YAML specs themselves.
+# (PLAN, ORIENT, EXPLAIN, ELABORATE, INTERLEAVE, CONSOLIDATE). The chain
+# validator routes these to the legacy 7-stage runtime vocabulary so
+# coverage and stage-order checks continue to operate against PRIME /
+# TEACH / CALIBRATE / ENCODE / REFERENCE / RETRIEVE / OVERLEARN. The
+# richer taxonomy stays visible in the YAML specs themselves.
 _RUNTIME_STAGE_EQUIVALENT = {
     "PLAN": "PRIME",
     "ORIENT": "PRIME",
@@ -48,7 +48,8 @@ _RUNTIME_STAGE_EQUIVALENT = {
     "EXPLAIN": "TEACH",
     "CALIBRATE": "CALIBRATE",
     "ENCODE": "ENCODE",
-    "INTERROGATE": "REFERENCE",
+    "ELABORATE": "REFERENCE",
+    "INTERLEAVE": "REFERENCE",
     "REFERENCE": "REFERENCE",
     "CONSOLIDATE": "REFERENCE",
     "RETRIEVE": "RETRIEVE",
@@ -70,7 +71,8 @@ def _normalize_control_stage(block: dict[str, Any]) -> str:
         "calibrate": "CALIBRATE",
         "prepare": "PRIME",
         "encode": "ENCODE",
-        "interrogate": "REFERENCE",
+        "elaborate": "REFERENCE",
+        "interleave": "REFERENCE",
         "reference": "REFERENCE",
         "consolidate": "REFERENCE",
         "retrieve": "RETRIEVE",

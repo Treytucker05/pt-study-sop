@@ -287,7 +287,7 @@ def test_seed_methods_repairs_control_stage_drift_without_strict_sync(
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
-            "M-INT-001",
+            "M-ELB-001",
             "Analogy Bridge",
             "ENCODE",
             "Canonical description already present",
@@ -317,7 +317,7 @@ def test_seed_methods_repairs_control_stage_drift_without_strict_sync(
             "version": "test",
             "methods": [
                 {
-                    "method_id": "M-INT-001",
+                    "method_id": "M-ELB-001",
                     "name": "Analogy Bridge",
                     "control_stage": "TEACH",
                     "description": "Canonical description already present",
@@ -339,13 +339,13 @@ def test_seed_methods_repairs_control_stage_drift_without_strict_sync(
     cur = conn.cursor()
     cur.execute(
         "SELECT method_id, name, control_stage FROM method_blocks WHERE method_id = ?",
-        ("M-INT-001",),
+        ("M-ELB-001",),
     )
     row = cur.fetchone()
     conn.close()
 
     assert row is not None
-    assert row[0] == "M-INT-001"
+    assert row[0] == "M-ELB-001"
     assert row[1] == "Analogy Bridge"
     assert row[2] == "TEACH"
 

@@ -803,8 +803,8 @@ def _active_control_stage_for_session(
     (PRIME / TEACH / CALIBRATE / ENCODE / REFERENCE / RETRIEVE /
     OVERLEARN) so callers gating on ``stage in {"PRIME", "TEACH"}`` (e.g.
     api_tutor_artifacts.py) treat vault-hardened ORIENT / EXPLAIN /
-    INTERROGATE / CONSOLIDATE blocks and runtime-pinned methods
-    (M-INT-001 / M-ENC-008 / M-GEN-007 -> TEACH) as their runtime
+    ELABORATE / INTERLEAVE / CONSOLIDATE blocks and runtime-pinned methods
+    (M-ELB-001 / M-ENC-008 / M-GEN-007 -> TEACH) as their runtime
     equivalent rather than as their literal vault declaration.
     """
     chain_id = session_row.get("method_chain_id")
@@ -900,8 +900,8 @@ def send_turn(session_id: str):
         or (block_info or {}).get("category")
         or ""
     ).upper()
-    # Collapse vault-hardened stages (EXPLAIN/INTERROGATE/CONSOLIDATE/
-    # ORIENT/PLAN) and per-method runtime pins (M-INT-001/M-ENC-008/
+    # Collapse vault-hardened stages (EXPLAIN/ELABORATE/INTERLEAVE/
+    # CONSOLIDATE/ORIENT/PLAN) and per-method runtime pins (M-ELB-001/M-ENC-008/
     # M-GEN-007 -> TEACH) onto the legacy 7-stage runtime vocabulary so
     # downstream TEACH/PRIME guardrails fire correctly. The raw stage is
     # preserved for error payloads and trace logging, but every behavior
@@ -1464,7 +1464,7 @@ def send_turn(session_id: str):
                         "Use the save_learning_objectives tool to save them. Extract 3-7 specific, measurable learning objectives.\n"
                     )
             # Gate on the normalized runtime stage so vault EXPLAIN
-            # methods and runtime-pinned M-INT-001 / M-ENC-008 / M-GEN-007
+            # methods and runtime-pinned M-ELB-001 / M-ENC-008 / M-GEN-007
             # still inherit TEACH hard guardrails.
             if block_info and active_stage == "TEACH":
                 system_prompt += (

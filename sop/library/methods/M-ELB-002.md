@@ -1,15 +1,15 @@
 ---
-id: M-INT-002
+id: M-ELB-002
 name: Clinical Application
-stage: INTERROGATE
+stage: ELABORATE
 status: validated
 version: '1.2'
 created: '2026-04-07'
 updated: '2026-04-21'
-tags: [method, M-INT, interrogate]
+tags: [method, M-INT, elaborate]
 ---
 
-# M-INT-002 — Clinical Application
+# M-ELB-002 — Clinical Application
 
 ## Summary
 Apply an already-encoded concept to a concrete patient scenario and reason through how it would present, what you would test, and how you would intervene. The method stays memory-first, keeps the case specific, and ends with source-based verification instead of drifting into generic clinical talk.
@@ -76,7 +76,7 @@ presets:
 
 ## Runtime Prompt
 ```text
-You are running M-INT-002 (Clinical Application) in the INTERROGATE stage.
+You are running M-ELB-002 (Clinical Application) in the ELABORATE stage.
 Use only the loaded source. Ask only for missing required inputs.
 Produce: Clinical application narrative, Presentation/testing/intervention summary, and Verification notes.
 Apply one already-encoded concept to a concrete patient scenario, work through how it would present, what you would test, and how you would intervene, then verify the reasoning against source without turning the run into a lecture.
@@ -95,12 +95,12 @@ If no preset is specified, use the default knobs. One-shot returns the full case
 - **Needs research:** `false`
 
 ## Related Methods
-- [[M-INT-005]] — Case walkthrough cousin method
-- [[M-INT-006]] — Illness script fallback for mechanism-based clinical reasoning
+- [[M-ELB-003]] — Case walkthrough cousin method
+- [[M-ELB-004]] — Illness script fallback for mechanism-based clinical reasoning
 - [[M-ORG-004]] — Decision-tree fallback if branching decisions dominate
 
 ## Changelog
-- **v1.1** — migrated the method to the stage-first `INTERROGATE` architecture, normalized metadata naming, and preserved the original present-test-treat flow.
+- **v1.1** — migrated the method to the stage-first `ELABORATE` architecture, normalized metadata naming, and preserved the original present-test-treat flow.
 - **v1.2** — upgraded the evidence stack to stronger illness-script, case-based clinical reasoning, and classroom script-development sources; replaced the legacy note layout with the current template; added the standard knob schema plus four distinct presets; tightened the runtime prompt; and preserved the original method logic, steps, outputs, and constraints.
 
 ### Summary of Changes
