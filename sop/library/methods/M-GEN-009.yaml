@@ -1,33 +1,32 @@
 id: M-GEN-009
 name: Palpation Anchor
-category: encode
-subcategory: hook
-description: Pair a deep anatomical structure with a visible or palpable surface landmark on your own
-  body. Physically locate it, name it, and link it to the structure's clinical function. Turns abstract
-  anatomy into kinesthetic memory.
+category: ENCODE
+subcategory: palpation-anchor
+description: Pair a deep anatomical structure with a visible or palpable surface landmark on your own body, physically locate it, and link that landmark to the structure's real clinical function.
 control_stage: ENCODE
-status: draft
-version: '1.0'
+status: validated
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
 - encode
 - anatomy
 - palpation
+- surface-anatomy
 - kinesthetic
+- clinical
 - pt-specific
-purpose: Create a compact memory cue that links a term or concept to a vivid sound, image, or body-based
-  anchor without losing the real meaning.
-not_for: This is not for teaching the whole concept from scratch, replacing source truth, or turning a
-  mnemonic into a false fact claim.
+purpose: Palpation Anchor exists to turn one anatomical structure into a fast but honest surface-landmark cue by requiring the learner to touch a real landmark, say what is underneath, and tie it to one clinical use. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for teaching the whole concept from scratch, replacing source truth, inventing a tactile cue where none exists, or turning a body anchor into unsafe palpation practice.
 best_fit_topics:
-- Short labels, terms, and anchors that need fast recall
-- Material that benefits from a vivid sound/image cue
+- Bony landmarks, tendons, pulses, or other structures with reliable surface anchors
+- Anatomy that benefits from linking deep structure to a palpable or visible cue
+- PT or clinical items where surface landmark location matters for exam setup or patient handling
 poor_fit_topics:
+- Deep or internal structures with no reliable surface landmark
 - Long mechanistic explanations that need comprehension first
-- Unstable or ambiguous material with no clear cue
-learner_state_required: Source material is loaded. The learner has one bounded term or concept and is
-  ready to actively build a cue around its true meaning.
+- Sensitive or vulnerable areas where safe self-palpation is not appropriate
+learner_state_required: Source material is loaded. The learner has one bounded anatomical target, can perform light safe self-palpation, and is ready to build a surface landmark cue around the true function of the structure.
 inputs:
 - description: Target anatomical structure name
   required: true
@@ -37,107 +36,116 @@ inputs:
   required: true
 outputs:
 - name: StructureName
-  description: StructureName
-  format: short, checkable artifact
+  description: Structure name paired with its true clinical function.
+  format: short summary paragraph or bullets
 - name: SurfaceLandmark
-  description: SurfaceLandmark
-  format: short, checkable artifact
+  description: Specific visible or palpable landmark used to find the structure.
+  format: short summary paragraph or bullets
 - name: PalpationNote (what you felt)
-  description: PalpationNote (what you felt)
-  format: short, checkable artifact
+  description: Brief note describing what the learner actually felt at the landmark.
+  format: short summary paragraph or bullets
 - name: ClinicalLink
-  description: ClinicalLink
-  format: short, checkable artifact
+  description: One concrete patient-facing or exam-facing use of the landmark.
+  format: short summary paragraph or bullets
 - name: AnchorLine (one-line summary)
-  description: AnchorLine (one-line summary)
-  format: short cue plus explanation
-required_outputs: &id001
-- Structure name and function
-- Surface landmark location
-- Palpation note (what was felt)
-- Clinical link
-- Anchor line (one-line summary)
+  description: One-line anchor that preserves structure, landmark, feel, and clinical relevance.
+  format: single-line study cue
+artifact_schemas:
+  StructureName: paragraph
+  SurfaceLandmark: paragraph
+  PalpationNote (what you felt): paragraph
+  ClinicalLink: paragraph
+  AnchorLine (one-line summary): string
+produces:
+- StructureName
+- SurfaceLandmark
+- PalpationNote (what you felt)
+- ClinicalLink
+- AnchorLine (one-line summary)
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
+required_outputs:
+- StructureName
+- SurfaceLandmark
+- PalpationNote (what you felt)
+- ClinicalLink
+- AnchorLine (one-line summary)
 success_criteria:
-- 'All required outputs are present and checkable: Structure name and function, Surface landmark location,
-  Palpation note (what was felt), Clinical link, Anchor line (one-line summary).'
-- 'The method reaches its stop condition: Structure named with function; Surface landmark identified.'
-- The learner stays active and the tutor does not give away the answer before the required attempt or
-  transformation.
+- All required outputs are present for M-GEN-009.
+- The learner physically locates the landmark with safe light touch rather than answering verbally only.
+- The final anchor preserves structure, landmark, feel, and one clinical use instead of becoming a false or vague mnemonic.
 partial_criteria:
-- 'Some required outputs are present but at least one is missing or incomplete: Structure name and function,
-  Surface landmark location.'
+- 'One or more required outputs are present but one core artifact is incomplete: StructureName.'
+- The learner found a landmark, but the palpation note, clinical link, or anchor line stayed too weak to reuse later.
 steps:
 - step: 1
-  name: Name The Deep Structure And
-  action: Name the deep structure and its clinical function
-  tutor_does: 'Guide the learner to Name the deep structure and its clinical function. Keep in mind: State
-    what it does and why a PT would need to know it.'
-  learner_does: Supplies the target term or concept, then reacts to the cue and confirms whether it clicks.
+  name: Name the deep structure and its clinical function
+  action: Name the deep structure and its clinical function.
+  tutor_does: Guide the learner to state what the structure does and why a PT or clinician would need to know it before any cue is built.
+  learner_does: Supplies the target structure and function, then confirms the meaning is correct before moving on.
   max_lines: 8
-  check: Does the learner have the right term and true meaning before the cue is built?
+  check: Does the learner have the right structure and true function before the anchor is built?
   example: 'Example: State what it does and why a PT would need to know it.'
 - step: 2
-  name: The Surface Landmark Where The
-  action: Identify the surface landmark where the structure can be felt or located
-  tutor_does: 'Guide the learner to Identify the surface landmark where the structure can be felt or located.
-    Keep in mind: Bone prominence, tendon, pulse point, skin crease, etc.'
+  name: Identify the surface landmark where the structure can be felt or located
+  action: Identify the surface landmark where the structure can be felt or located.
+  tutor_does: Guide the learner to pick the clearest reliable landmark such as a bone prominence, tendon, pulse point, or skin crease.
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
-  check: Is this step complete and ready for the next move?
+  check: Is the landmark specific, reliable, and appropriate for safe self-location?
   example: 'Example: Bone prominence, tendon, pulse point, skin crease, etc.'
 - step: 3
-  name: Physically Palpate The Landmark On
-  action: Physically palpate the landmark on your own body
-  tutor_does: 'Guide the learner to Physically palpate the landmark on your own body. Keep in mind: Actually
-    touch it. No skipping this step.'
-  learner_does: Supplies the target term or concept, then reacts to the cue and confirms whether it clicks.
+  name: Physically palpate the landmark on your own body
+  action: Physically palpate the landmark on your own body.
+  tutor_does: Guide the learner to actually touch the landmark with light safe palpation and not skip the physical step.
+  learner_does: Physically palpates the landmark and confirms the touch step is complete before moving on.
   max_lines: 8
-  check: Is this step complete and ready for the next move?
+  check: Has the learner actually touched the landmark rather than just talking about it?
   example: 'Example: Actually touch it. No skipping this step.'
 - step: 4
-  name: What You Feel And Name
-  action: State what you feel and name the structure underneath
-  tutor_does: 'Guide the learner to State what you feel and name the structure underneath. Keep in mind:
-    Under this bump/ridge/groove is [structure].'
+  name: State what you feel and name the structure underneath
+  action: State what you feel and name the structure underneath.
+  tutor_does: Guide the learner to describe the felt cue and connect it to the real structure underneath in plain language.
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
-  check: Is this step complete and ready for the next move?
-  example: 'Example: Under this bump/ridge/groove is [structure].'
+  check: Does the learner describe a real felt cue and tie it back to the target structure?
+  example: 'Example: Under this bump, ridge, groove, or tendon line is [structure].'
 - step: 5
-  name: One Clinical Link How Would
+  name: Create one clinical link — how would you use this landmark with a patient?
   action: Create one clinical link — how would you use this landmark with a patient?
-  tutor_does: 'Guide the learner to Create one clinical link — how would you use this landmark with a
-    patient?. Keep in mind: Goniometry landmark, manual muscle test position, injection site, etc.'
+  tutor_does: Guide the learner to attach one concrete use such as exam setup, goniometry, manual muscle testing, or patient instruction.
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
-  check: Is this step complete and ready for the next move?
-  example: 'Example: Goniometry landmark, manual muscle test position, injection site, etc.'
+  check: Is the clinical link concrete enough to be used in practice rather than staying generic?
+  example: 'Example: Goniometry landmark, manual muscle test position, injection site, palpation setup, etc.'
 - step: 6
-  name: Record The Anchor Structure Landmark
-  action: Record the anchor — structure, landmark, feel, clinical link
-  tutor_does: 'Guide the learner to Record the anchor — structure, landmark, feel, clinical link. Keep
-    in mind: One line you can review later.'
+  name: Record the anchor — structure, landmark, feel, clinical link
+  action: Record the anchor — structure, landmark, feel, clinical link.
+  tutor_does: Guide the learner to compress the full anchor into one line that can be reviewed later without losing truth.
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
-  check: Is this step complete and ready for the next move?
+  check: Does the final line preserve the real structure, the landmark, the felt cue, and the clinical use?
   example: 'Example: One line you can review later.'
 constraints:
 - rule: Require active learner processing
-  why: The method depends on the learner generating, mapping, explaining, or transforming the material
-    rather than passively reading.
+  why: The method depends on the learner generating, mapping, explaining, or transforming the material rather than passively reading.
 - rule: Stay within the target scope
   why: Prevents drift and keeps the artifact useful.
 - rule: Physical action required
   why: Preserves the method-specific guardrail from the source file.
 - rule: Safe palpation only
   why: Preserves the method-specific guardrail from the source file.
-- rule: Use for anatomical structures that have a surface landmark (bone, tendon, pulse point, etc.).
+- rule: Use for anatomical structures that have a surface landmark (bone, tendon, pulse point, etc.)
   why: Keeps the method honest and prevents a common misuse described in the source file.
-- rule: Not every structure is palpable — skip if no reliable landmark exists.
+- rule: Not every structure is palpable — skip if no reliable landmark exists
   why: Keeps the method honest and prevents a common misuse described in the source file.
-- rule: Learner must physically touch the landmark on their own body, not just read about it.
+- rule: Learner must physically touch the landmark on their own body, not just read about it
   why: Keeps the method honest and prevents a common misuse described in the source file.
-- rule: Safe palpation only — no deep pressure on nerves, arteries, or vulnerable structures.
+- rule: Safe palpation only — no deep pressure on nerves, arteries, or vulnerable structures
   why: Keeps the method honest and prevents a common misuse described in the source file.
 allowed_moves:
 - Name the structure and its clinical function
@@ -152,136 +160,137 @@ forbidden_moves:
 - Use for structures with no surface landmark
 - Accept a verbal-only answer without physical action
 - Replace the kinesthetic experience with a description
-stuck_protocol: Shrink to one term, restate the real meaning in plain language, then try a simpler sound
-  cue, image cue, or body cue. If the cue still does not click, switch to a lighter mnemonic lane or ask
-  for one concrete example.
+- Invent a tactile finding the learner did not actually confirm
+stuck_protocol: Shrink to one term, restate the real meaning in plain language, then try a simpler body anchor. If no safe reliable landmark exists, switch methods instead of forcing a bad fit.
 failure_modes:
 - mode: Structure has no reliable surface landmark
-  detection: The learner or tutor starts doing structure has no reliable surface landmark or the artifact
-    stops satisfying the method’s required checks.
-  recovery: Skip this method for that structure. Use Draw-Label or Embodied Walkthrough instead.
+  detection: The landmark stays vague, inconsistent, or anatomically unreliable.
+  recovery: Skip this method for that structure and use Draw-Label or Embodied Walkthrough instead.
   fallback_method: M-GEN-008
 - mode: Learner only reads about the landmark without palpating
-  detection: The learner or tutor starts doing learner only reads about the landmark without palpating
-    or the artifact stops satisfying the method’s required checks.
-  recovery: Enforce physical action — pause until learner confirms they are touching it.
+  detection: The learner can talk about the location but has not actually touched it.
+  recovery: Pause until the learner confirms light self-palpation or end the method.
   fallback_method: M-HOOK-001
-- mode: Unsafe palpation (deep pressure on nerve or artery)
-  detection: The learner or tutor starts doing unsafe palpation (deep pressure on nerve or artery) or
-    the artifact stops satisfying the method’s required checks.
-  recovery: Remind learner to use light touch only. Flag vulnerable structures.
+- mode: Unsafe palpation
+  detection: The learner starts using deep pressure or targeting vulnerable structures.
+  recovery: Switch immediately to light touch only, flag the area as unsafe, or stop the method.
   fallback_method: M-HOOK-004
 default_duration_min: 3
 energy_cost: medium
 best_stage: first_exposure
 mechanisms:
+- haptic_exploration
 - embodied_cognition
+- motor_encoding
 - dual_coding
 - generation
-- motor_encoding
+- contextual_cueing
 evidence:
-  citation: Klatzky et al. (1989); James & Gauthier (2009)
-  finding: Haptic exploration and motor encoding strengthen spatial memory for body-part knowledge. Embodied
-    encoding outperforms visual-only for anatomy retention.
-  source: research review
+  citation: Lederman and Klatzky (1987); Alibali and Nathan (2012); Rabattu, Debarnot, and Hoyek (2023); Walrod, Boucher, Conroy, McCamey, Hartz, Way, Jonesco, Albrechta, Bockbrader, and Bahner (2019); Koch, Gassner, Gerlach, Festl-Wietek, Hirt, Joos, and Shiozawa (2025); Liu, Zuo, Zhao, and Lu (2025)
+  finding: >-
+    Palpation Anchor is best supported as a constrained surface-landmark method
+    that uses active touch to stabilize anatomical recall and orient the learner
+    toward a clinically usable location cue. Foundational haptic-exploration and
+    embodiment work supports the idea that hand movements and touch are not just
+    outputs but structured ways of taking in information, and newer anatomy and
+    medical-education studies show that movement-based anatomy learning,
+    repeated palpation practice, and integrated landmark-focused examination
+    teaching can improve later identification and performance. At the same time,
+    the classroom and training evidence also points to clear limits: the benefit
+    depends on a real, task-relevant landmark, enough practice to make the cue
+    stable, and safe tactile interaction rather than vague body awareness or
+    unsafe deep pressure. The practical implication for this method is to use it
+    only when a reliable surface landmark exists, require actual light
+    self-palpation, record what was felt, and tie the landmark to one concrete
+    clinical use so the anchor stays anatomically honest.
+  source: https://doi.org/10.1016/0010-0285(87)90008-9; https://doi.org/10.1080/10508406.2011.611446; https://doi.org/10.1002/ase.2172; https://doi.org/10.1002/jum.14894; https://doi.org/10.2196/62666; https://doi.org/10.3389/fpsyg.2025.1658797
+  needs_research: false
 knobs:
-  output_format: bullets
   guidance_level: medium
-  family: GEN
-  evidence_raw: Klatzky et al. (1989) haptic exploration improves spatial memory; James & Gauthier (2009)
-    motor experience with objects enhances visual recognition.
-  gating_rules:
-  - Use only for structures with reliable surface landmarks.
-  - Enforce physical palpation — not optional.
-  - Safe palpation only.
-  stipulations:
-  - Use for anatomical structures that have a surface landmark (bone, tendon, pulse point, etc.).
-  - Not every structure is palpable — skip if no reliable landmark exists.
-  - Learner must physically touch the landmark on their own body, not just read about it.
-  - Safe palpation only — no deep pressure on nerves, arteries, or vulnerable structures.
-  artifact_type: notes
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest pass. Use one structure only and return terse bullets for structure/function, landmark, feel, one clinical use, and one final anchor line.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Full protocol pass. Keep separate sections for structure/function, surface landmark, palpation note, clinical link, anchor line, and a brief safety note before closing.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: Refresh pass. Render the anchor as a compact table with structure, landmark, feel, clinical use, and anchor-line columns.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied pass. Use a clinic-facing table with structure, landmark, what to palpate lightly, why it matters with a patient, and safety boundary columns.
 related_methods:
 - id: M-GEN-008
-  relationship: Embodied walkthrough cousin method
+  relationship: Embodied walkthrough cousin method when the concept needs a short sequence instead of one landmark
 - id: M-HOOK-001
-  relationship: Hook fallback for fast recall
+  relationship: Hook fallback when no safe palpable cue exists
 - id: M-HOOK-004
-  relationship: Memory palace if the anchor needs placement
-facilitation_prompt: "You are running M-GEN-009 (Palpation Anchor) in ENCODE stage.\nRole: you are the\
-  \ tutor running the method exactly as written, with no hidden assumptions.\nObjective: Create a compact\
-  \ memory cue that links a term or concept to a vivid sound, image, or body-based anchor without losing\
-  \ the real meaning.\nScope: Pair a deep anatomical structure with a visible or palpable surface landmark\
-  \ on your own body. Physically locate it, name it, and link it to the structure's clinical function.\
-  \ Turns abstract anatomy into kinesthetic memory.\nRules:\n- Require active learner processing — The\
-  \ method depends on the learner generating, mapping, explaining, or transforming the material rather\
-  \ than passively reading.\n- Stay within the target scope — Prevents drift and keeps the artifact useful.\n\
-  - Physical action required — Preserves the method-specific guardrail from the source file.\n- Safe palpation\
-  \ only — Preserves the method-specific guardrail from the source file.\n- Use for anatomical structures\
-  \ that have a surface landmark (bone, tendon, pulse point, etc.). — Keeps the method honest and prevents\
-  \ a common misuse described in the source file.\n- Not for: This is not for teaching the whole concept\
-  \ from scratch, replacing source truth, or turning a mnemonic into a false fact claim.\nInputs:\n- Target\
-  \ anatomical structure name (required)\n- Surface landmark location (or request to identify one) (required)\n\
-  - Clinical function or relevance (required)\nRequired outputs:\n- StructureName: StructureName [short,\
-  \ checkable artifact]\n- SurfaceLandmark: SurfaceLandmark [short, checkable artifact]\n- PalpationNote\
-  \ (what you felt): PalpationNote (what you felt) [short, checkable artifact]\n- ClinicalLink: ClinicalLink\
-  \ [short, checkable artifact]\n- AnchorLine (one-line summary): AnchorLine (one-line summary) [short\
-  \ cue plus explanation]\nSteps: run one step at a time and wait after each step before advancing.\n\
-  1. Name The Deep Structure And\n   Tutor does: Guide the learner to Name the deep structure and its\
-  \ clinical function. Keep in mind: State what it does and why a PT would need to know it.\n   Learner\
-  \ does: Supplies the target term or concept, then reacts to the cue and confirms whether it clicks.\n\
-  \   Example: Example: State what it does and why a PT would need to know it.\n   Check: Does the learner\
-  \ have the right term and true meaning before the cue is built?\n   Then STOP and wait for the learner.\n\
-  2. The Surface Landmark Where The\n   Tutor does: Guide the learner to Identify the surface landmark\
-  \ where the structure can be felt or located. Keep in mind: Bone prominence, tendon, pulse point, skin\
-  \ crease, etc.\n   Learner does: Performs the requested cognitive move and shares the result before\
-  \ moving on.\n   Example: Example: Bone prominence, tendon, pulse point, skin crease, etc.\n   Check:\
-  \ Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n3. Physically\
-  \ Palpate The Landmark On\n   Tutor does: Guide the learner to Physically palpate the landmark on your\
-  \ own body. Keep in mind: Actually touch it. No skipping this step.\n   Learner does: Supplies the target\
-  \ term or concept, then reacts to the cue and confirms whether it clicks.\n   Example: Example: Actually\
-  \ touch it. No skipping this step.\n   Check: Is this step complete and ready for the next move?\n \
-  \  Then STOP and wait for the learner.\n4. What You Feel And Name\n   Tutor does: Guide the learner\
-  \ to State what you feel and name the structure underneath. Keep in mind: Under this bump/ridge/groove\
-  \ is [structure].\n   Learner does: Performs the requested cognitive move and shares the result before\
-  \ moving on.\n   Example: Example: Under this bump/ridge/groove is [structure].\n   Check: Is this step\
-  \ complete and ready for the next move?\n   Then STOP and wait for the learner.\n5. One Clinical Link\
-  \ How Would\n   Tutor does: Guide the learner to Create one clinical link — how would you use this landmark\
-  \ with a patient?. Keep in mind: Goniometry landmark, manual muscle test position, injection site, etc.\n\
-  \   Learner does: Performs the requested cognitive move and shares the result before moving on.\n  \
-  \ Example: Example: Goniometry landmark, manual muscle test position, injection site, etc.\n   Check:\
-  \ Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n6. Record\
-  \ The Anchor Structure Landmark\n   Tutor does: Guide the learner to Record the anchor — structure,\
-  \ landmark, feel, clinical link. Keep in mind: One line you can review later.\n   Learner does: Performs\
-  \ the requested cognitive move and shares the result before moving on.\n   Example: Example: One line\
-  \ you can review later.\n   Check: Is this step complete and ready for the next move?\n   Then STOP\
-  \ and wait for the learner.\nStop conditions:\n- All required outputs are present and checkable: Structure\
-  \ name and function, Surface landmark location, Palpation note (what was felt), Clinical link, Anchor\
-  \ line (one-line summary).\n- The method reaches its stop condition: Structure named with function;\
-  \ Surface landmark identified.\n- The learner stays active and the tutor does not give away the answer\
-  \ before the required attempt or transformation.\nIf stuck: Shrink to one term, restate the real meaning\
-  \ in plain language, then try a simpler sound cue, image cue, or body cue. If the cue still does not\
-  \ click, switch to a lighter mnemonic lane or ask for one concrete example.\nDo not skip steps, do not\
-  \ solve the whole task at once, and do not present source claims as mnemonic or analogy artifacts."
+  relationship: Memory palace fallback when the anchor needs spatial placement rather than touch
+system_prompt_override:
+  relaxes:
+  - Never reveal the full answer without letting me attempt first. Progressive hints, not solutions.
+  - Highly interactive. One teaching chunk (8-12 lines max), one check, one question at a time.
+  replaces_with:
+  - Require actual light self-palpation or explicitly skip the method if no reliable landmark exists. Do not fake tactile findings on the learner's behalf.
+  - Keep the cue anatomically honest and safe. Never suggest deep pressure on nerves, arteries, or vulnerable structures, and never let the anchor substitute for the real structure or function.
+  reason: Palpation Anchor only works when the learner physically confirms a safe landmark and ties it back to real anatomy. Simulated touch or unsafe palpation breaks the method.
+facilitation_prompt: |
+  You are running M-GEN-009 (Palpation Anchor) in the ENCODE stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: StructureName, SurfaceLandmark, PalpationNote, ClinicalLink, and AnchorLine.
+  Have the learner name one anatomical structure and function, identify one reliable surface landmark, lightly palpate it on their own body, say what they feel, tie it to one clinical use, and compress the result into one reviewable anchor line. Do not fake tactile findings, do not force the method when no safe landmark exists, and do not allow verbal-only completion.
+  Preset behavior:
+  - exam_cram: one-shot; terse bullets for one structure, landmark, feel, clinical use, and final anchor line.
+  - deep_mastery: interactive; labeled sections for structure, landmark, palpation note, clinical link, anchor line, and safety.
+  - quick_review: one-shot refresh; compact structure-landmark-feel-use-anchor table.
+  - clinical_bridge: stepwise; clinic-facing table with structure, landmark, palpation cue, patient use, and safety boundary.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode moves structure/function -> landmark -> palpation -> feel/map -> clinical link -> anchor line and waits.
 validation:
   test_cases:
-  - topic: Short labels, terms, and anchors that need fast recall
-    expected_outputs: *id001
+  - topic: Bony landmarks, tendons, pulses, or other structures with reliable surface anchors
+    expected_outputs:
+    - StructureName
+    - SurfaceLandmark
+    - PalpationNote (what you felt)
+    - ClinicalLink
+    - AnchorLine (one-line summary)
     pass_criteria:
     - All required outputs are present.
     - The learner performs the required active step before the final artifact is given.
     - The result stays within scope and matches the method format.
-  - topic: Long mechanistic explanations that need comprehension first
+  - topic: Deep or internal structures with no reliable surface anchor
     expected_outputs:
     - Stuck protocol response
-    - Either a simpler scaffold or a method redirect
+    - Either a safer scaffold or a method redirect
     pass_criteria:
     - The tutor does not force a bad fit.
-    - The tutor either shrinks scope or suggests a better-fitting method.
+    - The tutor either shrinks scope safely or suggests a better-fitting method.
     - The response remains honest about the mismatch.
   acceptance_criteria:
   - All required_outputs are present in the successful test case.
   - No forbidden_moves are violated.
   - The facilitation_prompt can be run without extra hidden context.
   known_issues:
-  - LLMs may over-explain before the learner attempts the required move.
-  - LLMs may drift outside scope when the topic is broad or ambiguous.
+  - LLMs may over-explain anatomy instead of enforcing the actual touch step.
+  - Some structures invite false confidence when learners assume a landmark exists without verifying it physically.

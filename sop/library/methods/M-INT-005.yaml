@@ -1,27 +1,31 @@
 id: M-INT-005
 name: Case Walkthrough
-category: interrogate
-subcategory: int
-description: Walk through a realistic case to retrieve reasoning steps, identify gaps, and reinforce application
-  accuracy.
-control_stage: ENCODE
+category: INTERROGATE
+subcategory: case-walkthrough
+description: Walk through one realistic case to retrieve reasoning steps, identify gaps, and reinforce application accuracy before moving to the next probe.
+control_stage: INTERROGATE
 status: validated
-version: '1.0'
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
-tags: []
-purpose: Interrogate already-encoded material through comparison, application, retrieval, or transfer
-  so the learner can discriminate it under pressure.
-not_for: This is not for first exposure, direct lecturing, or introducing brand-new material that has
-  not already been encoded.
+updated: '2026-04-21'
+tags:
+- interrogate
+- case-based-learning
+- case-walkthrough
+- clinical-reasoning
+- progressive-disclosure
+- transfer
+purpose: Case Walkthrough exists to interrogate already-encoded material by forcing the learner to work through one realistic case from memory, expose reasoning gaps, and leave with one targeted next probe instead of a vague discussion. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for first exposure, direct lecturing, or introducing brand-new material that has not already been encoded.
 best_fit_topics:
 - Previously encoded concepts that need comparison, application, or discrimination
 - Material the learner can retrieve without notes and test under pressure
+- Topics that benefit from reasoning through a full case structure instead of isolated facts
 poor_fit_topics:
 - Brand-new material that has not been encoded yet
 - Tasks that need direct teaching rather than retrieval or interrogation
-learner_state_required: The target concept has already been taught or encoded. The learner can attempt
-  retrieval, comparison, or application before seeing the answer.
+- Topics that cannot be anchored to a realistic case or scenario
+learner_state_required: The target concept has already been taught or encoded. The learner can attempt retrieval, comparison, or application before seeing the answer.
 inputs:
 - description: Reference targets or question bank
   required: true
@@ -29,63 +33,76 @@ inputs:
   required: true
 outputs:
 - name: LearnerCaseResponse
-  description: LearnerCaseResponse
+  description: Attempt-first case reasoning showing how the learner interpreted the case before correction.
   format: concise prose bullets or short paragraph
 - name: ErrorTags
-  description: ErrorTags
-  format: concise prose bullets or short paragraph
+  description: Typed classification of reasoning errors, omissions, or premature closure in the case response.
+  format: bulleted or tabular list
 - name: ConfidenceTag
-  description: ConfidenceTag
+  description: Short confidence label captured before corrective feedback.
   format: concise prose bullets or short paragraph
 - name: CorrectiveFeedback
-  description: CorrectiveFeedback
-  format: concise prose bullets or short paragraph
+  description: Post-attempt corrective feedback naming what was right, what was missing, and what source detail changes the reasoning.
+  format: short summary paragraph or bullets
 - name: NextTargetedProbe
-  description: NextTargetedProbe
+  description: Follow-up probe aimed directly at the gap exposed in the current case.
   format: concise prose bullets or short paragraph
-required_outputs: &id001
+artifact_schemas:
+  LearnerCaseResponse: paragraph
+  ErrorTags: bullet_list
+  ConfidenceTag: paragraph
+  CorrectiveFeedback: bullet_list
+  NextTargetedProbe: paragraph
+produces:
+- LearnerCaseResponse
+- ErrorTags
+- ConfidenceTag
+- CorrectiveFeedback
+- NextTargetedProbe
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
+required_outputs:
 - LearnerCaseResponse (attempt-first reasoning)
 - ErrorTags (typed classification of errors)
 - ConfidenceTag (learner self-assessment)
 - CorrectiveFeedback (post-attempt only)
 - NextTargetedProbe (follow-up question targeting identified gaps)
 success_criteria:
-- 'All required outputs are present and checkable: LearnerCaseResponse (attempt-first reasoning), ErrorTags
-  (typed classification of errors), ConfidenceTag (learner self-assessment), CorrectiveFeedback (post-attempt
-  only), NextTargetedProbe (follow-up question targeting identified gaps).'
-- 'The method reaches its stop condition: Attempt-first response completed; Corrective feedback delivered.'
-- The learner stays active and the tutor does not give away the answer before the required attempt or
-  transformation.
+- All required outputs are present for M-INT-005.
+- The learner works through one concrete case before correction instead of receiving the answer up front.
+- The run ends with tagged errors, a confidence signal, and one targeted next probe rather than drifting into broad teaching.
 partial_criteria:
-- 'Some required outputs are present but at least one is missing or incomplete: LearnerCaseResponse (attempt-first
-  reasoning), ErrorTags (typed classification of errors).'
+- 'One or more required outputs are present but one core artifact is incomplete: LearnerCaseResponse (attempt-first reasoning).'
+- The learner attempted the case but the correction or next targeted probe remained too vague to drive the next move.
 steps:
 - step: 1
   name: Start Retrieve Protocol Within Scope
-  action: Start RETRIEVE protocol within scope
-  tutor_does: 'Guide the learner to Start RETRIEVE protocol within scope. Keep in mind: Respect stage
-    boundaries.'
+  action: Start RETRIEVE protocol within scope by presenting one realistic case stem and requiring a closed-note first-pass response.
+  tutor_does: Guide the learner to anchor the run to one concrete case, keep the scope objective-linked, and require an attempt before any correction.
   learner_does: Attempts retrieval, application, or comparison from memory before asking for support.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: Respect stage boundaries.'
+  example: 'Example: 58-year-old with exertional calf pain, diminished distal pulses, and smoking history; what is your leading interpretation and why?'
 - step: 2
   name: Execute Method Actions In Order
-  action: Execute method actions in order
-  tutor_does: 'Guide the learner to Execute method actions in order. Keep in mind: Capture required telemetry/artifacts.'
+  action: Execute method actions in order by walking the case through differential, workup, and management with progressive disclosure as needed.
+  tutor_does: Guide the learner to reason through the case structure in order, capture confidence before correction, and tag gaps or reasoning errors instead of skipping straight to answers.
   learner_does: Attempts retrieval, application, or comparison from memory before asking for support.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: Capture required telemetry/artifacts.'
+  example: 'Example: Name the leading diagnosis, one meaningful alternative, what you would test next, and what management move follows.'
 - step: 3
   name: Emit Required Outputs And Handoff
-  action: Emit required outputs and handoff
-  tutor_does: 'Guide the learner to Emit required outputs and handoff. Keep in mind: Do not drift into
-    another stage.'
+  action: Emit required outputs and handoff by summarizing the learner response, tagging errors, giving post-attempt corrective feedback, and ending with one targeted follow-up probe.
+  tutor_does: Guide the learner to close the case with reusable telemetry and one precise next probe without drifting into a lecture or a new case.
   learner_does: Attempts retrieval, application, or comparison from memory before asking for support.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: Do not drift into another stage.'
+  example: 'Example: Error tag = premature closure; next probe = what finding would most strongly separate PAD from lumbar stenosis in this case?'
 constraints:
 - rule: Require active learner processing
   why: The method only works when the learner is doing the cognitive work.
@@ -97,112 +114,125 @@ constraints:
   why: Forces retrieval before verification so the learner cannot copy the answer.
 - rule: Route back to a simpler method on repeated misses
   why: Repeated failure means the learner needs a lower-friction scaffold or a different lane.
-- rule: Require closed-note recall first, then feedback.
+- rule: Require closed-note recall first, then feedback
   why: This gating rule is part of the method’s execution contract.
-- rule: If repeated misses occur, route back to ENCODE or REFERENCE.
+- rule: If repeated misses occur, route back to ENCODE or REFERENCE
   why: This gating rule is part of the method’s execution contract.
 allowed_moves:
 - Present realistic clinical cases with full structure (presenting complaint, history, exam findings)
 - Require attempt-first case reasoning before any feedback
-- Use progressive disclosure — reveal case details in stages as learner reasons through
+- Use progressive disclosure and reveal case details in stages as the learner reasons through the case
 - Tag errors by type (knowledge gap, reasoning error, premature closure)
-- Provide corrective feedback only AFTER learner attempt
+- Provide corrective feedback only after the learner attempt
 - Generate targeted follow-up probes based on identified gaps
 - Adjust scaffold level based on guidance_level knob (case_prompt_only, partial_scaffold, targeted_hint)
 - Route back to ENCODE on repeated misses
-- Challenge differential diagnosis — demand alternatives considered
+- Challenge differential diagnosis and demand alternatives considered
 forbidden_moves:
 - Reveal the diagnosis or management plan before the learner attempts reasoning
 - Accept surface-level case responses without probing clinical reasoning
 - Skip any part of the full case structure (presenting complaint, differential, workup, management)
-- Provide answers instead of probing questions when learner is stuck
-- Teach new content — interrogation uses what was already encoded
+- Provide answers instead of probing questions when the learner is stuck
+- Teach new content because interrogation uses what was already encoded
 - Skip error tagging on incorrect responses
 - Move on without producing a targeted next probe
 - Accept one-word answers without follow-up reasoning
 - Present content outside the mapped objective scope
-stuck_protocol: Reduce the scope, ask for a smaller retrieval target, compare with a near-neighbor, or
-  route back to ENCODE/REFERENCE if recall keeps failing. Do not keep guessing indefinitely.
+stuck_protocol: Reduce the scope, ask for a smaller retrieval target, compare with a near-neighbor, or route back to ENCODE or REFERENCE if recall keeps failing. Do not keep guessing indefinitely.
 failure_modes:
 - mode: Answer leakage
-  detection: The learner or tutor starts doing answer leakage or the artifact stops satisfying the method’s
-    required checks.
+  detection: The learner or tutor starts doing answer leakage or the artifact stops satisfying the method’s required checks.
   recovery: Re-enforce attempt-first then feedback.
   fallback_method: M-INT-002
 - mode: Repeated misses
-  detection: The learner or tutor starts doing repeated misses or the artifact stops satisfying the method’s
-    required checks.
+  detection: The learner or tutor starts doing repeated misses or the artifact stops satisfying the method’s required checks.
   recovery: Route back to ENCODE with targeted scaffold.
   fallback_method: M-INT-006
 default_duration_min: 10
 energy_cost: high
-best_stage: any
-mechanisms: []
+best_stage: exam_prep
+mechanisms:
+- case_based_reasoning
+- illness_script_formation
+- diagnostic_reasoning
+- progressive_disclosure
+- error_correction
+- transfer
 evidence:
-  citation: Schmidt & Rikers (2007)
-  finding: case-based walkthrough strengthens illness script formation and transfer
-  source: legacy evidence_raw
+  citation: Schmidt and Rikers (2007); Charlin, Boshuizen, Custers, and Feltovich (2007); Moghadami, Amini, Moghadami, Dalal, and Charlin (2021); Chen (2024); Wang, Jiang, Fu, Gou, Sun, Li, Zhang, Nie, Wang, Zhao, and Zhang (2025); Elhassan, Sieben, Köhler, Joosten-ten Brinke, and Dolmans (2025)
+  finding: Case Walkthrough is best supported as a case-based reasoning method that improves learning when the learner must commit to a concrete interpretation before feedback rather than passively reading a solved case. Foundational illness-script work argues that clinical reasoning becomes more usable when knowledge is organized around patient problems, differentials, and consequences rather than stored as disconnected facts. More recent experimental and classroom studies suggest that structured illness-script teaching, unfolding cases, interactive case-based video, and staged-release case discussion can improve diagnostic accuracy, clinical reasoning, or perceived reasoning quality when the case is concrete, information is revealed in a controlled sequence, and the learner has to explain or defend the next move. The practical implication for this method is to run one realistic case at a time, require a memory-first attempt, use progressive disclosure without leaking the answer, tag the specific reasoning failure, and end with one targeted next probe instead of drifting into broad reteaching.
+  source: https://doi.org/10.1111/j.1365-2923.2007.02915.x; https://doi.org/10.1111/j.1365-2923.2007.02924.x; https://doi.org/10.1186/s12909-021-02522-0; https://doi.org/10.1016/j.nedt.2024.106168; https://doi.org/10.3389/fmed.2025.1556018; https://doi.org/10.1080/0142159X.2025.2610409
+  needs_research: false
 knobs:
-  guidance_level: partial_scaffold
-  has_steps: Y
-  has_outputs_or_artifacts: Y
-  outputs_summary: Case walkthrough narrative; Assessment plan; Reasoning verification
-  evidence_raw: Schmidt & Rikers (2007); case-based walkthrough strengthens illness script formation and
-    transfer
-  gating_rules:
-  - Require closed-note recall first, then feedback.
-  - If repeated misses occur, route back to ENCODE or REFERENCE.
-  artifact_type: notes
+  guidance_level: medium
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest case pass. Use one short case stem, terse bullets for differential, workup, and management, one confidence tag, one correction note, and one next probe.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Full case reasoning pass. Use staged disclosure, require explicit differential and rationale, keep separate sections for response, errors, confidence, correction, and next probe, and allow one richer source-check at the end.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: Refresh case pass. Compress the run into a compact table with case stem, likely interpretation, alternative, next test, management, error tag, and correction columns.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied case pass. Use a realistic handoff-style case with red flags, prioritization, and disposition pressure, and render the reasoning as a clinical decision grid with the targeted next probe tied to the next real move.
 related_methods:
 - id: M-INT-002
   relationship: Clinical application cousin method
 - id: M-INT-006
   relationship: Illness-script fallback for explicit reasoning structure
-- id: M-ENC-012
+- id: M-ORG-004
   relationship: Decision-tree fallback if the case branches
-facilitation_prompt: "You are running M-INT-005 (Case Walkthrough) in ENCODE stage.\nRole: you are the\
-  \ tutor running the method exactly as written, with no hidden assumptions.\nObjective: Interrogate already-encoded\
-  \ material through comparison, application, retrieval, or transfer so the learner can discriminate it\
-  \ under pressure.\nScope: Walk through a realistic case to retrieve reasoning steps, identify gaps,\
-  \ and reinforce application accuracy.\nRules:\n- Require active learner processing — The method only\
-  \ works when the learner is doing the cognitive work.\n- Stay within the target scope — Prevents drift\
-  \ and keeps the artifact useful.\n- Require an attempt before feedback — Retrieval or reasoning effort\
-  \ must happen before correction to preserve learning value.\n- Start closed-note or memory-first — Forces\
-  \ retrieval before verification so the learner cannot copy the answer.\n- Route back to a simpler method\
-  \ on repeated misses — Repeated failure means the learner needs a lower-friction scaffold or a different\
-  \ lane.\n- Not for: This is not for first exposure, direct lecturing, or introducing brand-new material\
-  \ that has not already been encoded.\nInputs:\n- Reference targets or question bank (required)\n- Scoring\
-  \ rubric and confidence capture (required)\nRequired outputs:\n- LearnerCaseResponse: LearnerCaseResponse\
-  \ [concise prose bullets or short paragraph]\n- ErrorTags: ErrorTags [concise prose bullets or short\
-  \ paragraph]\n- ConfidenceTag: ConfidenceTag [concise prose bullets or short paragraph]\n- CorrectiveFeedback:\
-  \ CorrectiveFeedback [concise prose bullets or short paragraph]\n- NextTargetedProbe: NextTargetedProbe\
-  \ [concise prose bullets or short paragraph]\nSteps: run one step at a time and wait after each step\
-  \ before advancing.\n1. Start Retrieve Protocol Within Scope\n   Tutor does: Guide the learner to Start\
-  \ RETRIEVE protocol within scope. Keep in mind: Respect stage boundaries.\n   Learner does: Attempts\
-  \ retrieval, application, or comparison from memory before asking for support.\n   Example: Example:\
-  \ Respect stage boundaries.\n   Check: Has the learner attempted retrieval or application before any\
-  \ corrective help?\n   Then STOP and wait for the learner.\n2. Execute Method Actions In Order\n   Tutor\
-  \ does: Guide the learner to Execute method actions in order. Keep in mind: Capture required telemetry/artifacts.\n\
-  \   Learner does: Attempts retrieval, application, or comparison from memory before asking for support.\n\
-  \   Example: Example: Capture required telemetry/artifacts.\n   Check: Has the learner attempted retrieval\
-  \ or application before any corrective help?\n   Then STOP and wait for the learner.\n3. Emit Required\
-  \ Outputs And Handoff\n   Tutor does: Guide the learner to Emit required outputs and handoff. Keep in\
-  \ mind: Do not drift into another stage.\n   Learner does: Attempts retrieval, application, or comparison\
-  \ from memory before asking for support.\n   Example: Example: Do not drift into another stage.\n  \
-  \ Check: Has the learner attempted retrieval or application before any corrective help?\n   Then STOP\
-  \ and wait for the learner.\nStop conditions:\n- All required outputs are present and checkable: LearnerCaseResponse\
-  \ (attempt-first reasoning), ErrorTags (typed classification of errors), ConfidenceTag (learner self-assessment),\
-  \ CorrectiveFeedback (post-attempt only), NextTargetedProbe (follow-up question targeting identified\
-  \ gaps).\n- The method reaches its stop condition: Attempt-first response completed; Corrective feedback\
-  \ delivered.\n- The learner stays active and the tutor does not give away the answer before the required\
-  \ attempt or transformation.\nIf stuck: Reduce the scope, ask for a smaller retrieval target, compare\
-  \ with a near-neighbor, or route back to ENCODE/REFERENCE if recall keeps failing. Do not keep guessing\
-  \ indefinitely.\nDo not skip steps, do not solve the whole task at once, and do not present source claims\
-  \ as mnemonic or analogy artifacts."
+system_prompt_override:
+  relaxes:
+  - Never reveal the full answer without letting me attempt first. Progressive hints, not solutions.
+  - Highly interactive. One teaching chunk (8-12 lines max), one check, one question at a time.
+  replaces_with:
+  - Require one closed-note case interpretation before any correction. Do not reveal the diagnosis, workup, or management plan before the learner commits to a first-pass reasoning path.
+  - Use progressive disclosure only to sharpen reasoning after the initial attempt. Every correction must point to the specific gap or premature closure it fixes, then end with one targeted next probe.
+  reason: Case Walkthrough only works if the learner reasons through a concrete case before feedback. Early tutor completion collapses the method into answer leakage instead of interrogation.
+facilitation_prompt: |
+  You are running M-INT-005 (Case Walkthrough) in the INTERROGATE stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: LearnerCaseResponse, ErrorTags, ConfidenceTag, CorrectiveFeedback, and NextTargetedProbe.
+  Run one realistic case from memory. Require a closed-note first-pass interpretation before feedback, walk the learner through differential, workup, and management as needed, tag the specific reasoning gap, capture confidence before correction, and end with one targeted next probe.
+  Preset behavior:
+  - exam_cram: one-shot; short case; terse bullets; one correction note; one next probe.
+  - deep_mastery: interactive; staged disclosure; explicit rationale, error tags, and fuller source check.
+  - quick_review: one-shot refresh; compact case reasoning table.
+  - clinical_bridge: stepwise; handoff-style case with red flags, prioritization, and a decision grid.
+  If no preset is specified, use the default knobs. One-shot returns the full case artifact in one bounded reply; interactive or stepwise mode moves case -> response -> correction -> next probe and waits.
 validation:
   test_cases:
   - topic: Previously encoded concepts that need comparison, application, or discrimination
-    expected_outputs: *id001
+    expected_outputs:
+    - LearnerCaseResponse (attempt-first reasoning)
+    - ErrorTags (typed classification of errors)
+    - ConfidenceTag (learner self-assessment)
+    - CorrectiveFeedback (post-attempt only)
+    - NextTargetedProbe (follow-up question targeting identified gaps)
     pass_criteria:
     - All required outputs are present.
     - The learner performs the required active step before the final artifact is given.
@@ -221,4 +251,4 @@ validation:
   - The facilitation_prompt can be run without extra hidden context.
   known_issues:
   - LLMs may over-explain before the learner attempts the required move.
-  - LLMs may drift outside scope when the topic is broad or ambiguous.
+  - LLMs may drift into generic case talk if the case stem is underspecified or the tutor fails to enforce a concrete first-pass response.

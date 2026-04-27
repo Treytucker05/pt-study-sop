@@ -1,34 +1,32 @@
 id: M-GEN-006
 name: Self-Explanation Protocol
-category: encode
-subcategory: gen
-description: After reading each paragraph or concept, pause and explain WHY each step follows from the
-  previous one. Supports silent, spoken, or written verbalization modes. Focus on reasoning, not restating
-  facts. Merges Think-Aloud Protocol (formerly M-GEN-006 slot).
+category: ENCODE
+subcategory: self-explanation
+description: After each paragraph or concept unit, stop and explain why it follows from what came before, predict what comes next, and log the inference gaps before moving on.
 control_stage: ENCODE
 status: validated
-version: '1.0'
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
+- encode
 - self-explanation
+- think-aloud
 - comprehension
-- causal-reasoning
+- inference
 - metacognition
-- verbal
-- evidence-based
-purpose: Force the learner to actively generate, explain, sequence, or transform the material so encoding
-  is deeper than passive review.
-not_for: This is not for passive reading, copying answers, or letting the tutor do the cognitive work
-  for the learner.
+- prediction
+purpose: Self-Explanation Protocol exists to force the learner to explain how each unit of content fits with the previous one, exposing whether they are building inferences or merely rereading words. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for passive reading, copying answers, or letting the tutor do the cognitive work for the learner.
 best_fit_topics:
 - Concepts the learner can explain, transform, or generate in their own words
 - Mechanisms and causal chains that benefit from active elaboration
+- Passages or sequences where local understanding depends on connecting each step to what came before
 poor_fit_topics:
 - Pure passive rereading or copy-paste note taking
 - Items that are still completely unknown and cannot yet be transformed
-learner_state_required: Source material is loaded. The learner has a bounded concept and is ready to generate,
-  explain, or transform it before seeing help.
+- Topics so broad that paragraph-level processing is not meaningful
+learner_state_required: Source material is loaded. The learner has a bounded passage or concept sequence and is ready to process it one unit at a time before seeing help.
 inputs:
 - description: Text passage or concept sequence
   required: true
@@ -38,255 +36,254 @@ inputs:
   required: false
 outputs:
 - name: Self-explanation notes or think-aloud log (per paragraph)
-  description: Self-explanation notes or think-aloud log (per paragraph)
+  description: Unit-by-unit explanation record showing how each section was interpreted and linked to prior content.
   format: concise prose bullets or short paragraph
 - name: Inference gap list
-  description: Inference gap list
-  format: short, checkable artifact
+  description: Specific places where the learner could not justify a link, assumption, or transition.
+  format: bulleted or tabular list
 - name: Confusion points flagged
-  description: Confusion points flagged
-  format: short, checkable artifact
+  description: Points of uncertainty or contradiction that need later clarification.
+  format: bulleted or tabular list
 - name: Comprehension checkpoints
-  description: Comprehension checkpoints
-  format: short, checkable artifact
-required_outputs: &id001
+  description: Short checkpoints showing whether the learner could explain and predict at each unit.
+  format: short summary paragraph or bullets
+artifact_schemas:
+  Self-explanation notes or think-aloud log (per paragraph): paragraph
+  Inference gap list: bullet_list
+  Confusion points flagged: bullet_list
+  Comprehension checkpoints: paragraph
+produces:
+- Self-explanation notes or think-aloud log (per paragraph)
+- Inference gap list
+- Confusion points flagged
+- Comprehension checkpoints
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
+required_outputs:
 - Self-explanation notes or think-aloud log (per paragraph)
 - Inference gap list
 - Confusion points flagged
 - Comprehension checkpoints
 success_criteria:
-- 'All required outputs are present and checkable: Self-explanation notes or think-aloud log (per paragraph),
-  Inference gap list, Confusion points flagged, Comprehension checkpoints.'
-- 'The method reaches its stop condition: All paragraphs processed; Major gaps and confusion points flagged.'
-- The learner stays active and the tutor does not give away the answer before the required attempt or
-  transformation.
+- All required outputs are present for M-GEN-006.
+- The learner processes one unit at a time and explains why it follows from prior content instead of only restating facts.
+- The method ends with visible inference gaps and comprehension checkpoints instead of drifting into passive summary.
 partial_criteria:
-- 'Some required outputs are present but at least one is missing or incomplete: Self-explanation notes
-  or think-aloud log (per paragraph), Inference gap list.'
+- 'One or more required outputs are present but one core artifact is incomplete: Self-explanation notes or think-aloud log (per paragraph).'
+- The learner explained some units, but the gaps, confusion points, or checkpoints remained too vague to guide follow-up.
 steps:
 - step: 1
-  name: Read One Paragraph Or Concept
-  action: Read one paragraph or concept unit
-  tutor_does: 'Guide the learner to Read one paragraph or concept unit. Keep in mind: One unit at a time
-    — don''t batch'
+  name: Read one paragraph or concept unit
+  action: Read one paragraph or concept unit.
+  tutor_does: Guide the learner to process one bounded unit at a time so the explanation stays local and inspectable.
   learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
   max_lines: 8
-  check: Is this step complete and ready for the next move?
-  example: 'Example: One unit at a time — don''t batch'
+  check: Is the learner processing one unit rather than batching several together?
+  example: 'Example: One paragraph or concept chunk at a time, not the whole page.'
 - step: 2
-  name: Stop And Explain Why This
-  action: Stop and explain WHY this follows from the previous content
-  tutor_does: 'Guide the learner to Stop and explain WHY this follows from the previous content. Keep
-    in mind: Ask: ''Why does this make sense given what came before?'''
+  name: Stop and explain why this follows from the previous content
+  action: Stop and explain why this follows from the previous content.
+  tutor_does: Guide the learner to explain the local logic or mechanism using causal connectors rather than surface restatement.
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
-  check: Is this step complete and ready for the next move?
-  example: 'Example: Ask: ''Why does this make sense given what came before?'
+  check: Did the learner explain the connection instead of just repeating the line?
+  example: 'Example: Ask, Why does this make sense given what came before?'
 - step: 3
-  name: Predict What Comes Next Before
-  action: Predict what comes next before reading on
-  tutor_does: 'Guide the learner to Predict what comes next before reading on. Keep in mind: Prediction
-    forces active engagement and exposes assumptions'
+  name: Predict what comes next before reading on
+  action: Predict what comes next before reading on.
+  tutor_does: Guide the learner to commit to a likely next step or idea so hidden assumptions become visible.
   learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
   max_lines: 8
-  check: Is this step complete and ready for the next move?
-  example: 'Example: Prediction forces active engagement and exposes assumptions'
+  check: Has the learner made a concrete prediction before advancing?
+  example: 'Example: Prediction should be specific enough to be right, wrong, or incomplete.'
 - step: 4
-  name: Express Your Explanation In Your
-  action: Express your explanation in your chosen verbalization mode
-  tutor_does: 'Guide the learner to Express your explanation in your chosen verbalization mode. Keep in
-    mind: Written forces precision; spoken exposes hesitation; silent is fastest but least accountable'
+  name: Express your explanation in your chosen verbalization mode
+  action: Express your explanation in your chosen verbalization mode.
+  tutor_does: Guide the learner to stay accountable in written, spoken, or silent mode while preserving actual explanation rather than summary.
   learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
   max_lines: 8
-  check: Is this step complete and ready for the next move?
-  example: 'Example: Written forces precision; spoken exposes hesitation; silent is fastest but least
-    accountable'
+  check: Is the chosen verbalization mode producing a real explanation artifact?
+  example: 'Example: Written is slow but precise; spoken exposes hesitation; silent is acceptable only if the learner still reports the checkpoint outputs.'
 - step: 5
-  name: Any Inference Gaps Or Confusion
-  action: Identify any inference gaps or confusion points
-  tutor_does: 'Guide the learner to Identify any inference gaps or confusion points. Keep in mind: Where
-    are you assuming knowledge you don''t have? Note confusion aloud if in spoken mode'
+  name: Identify any inference gaps or confusion points
+  action: Identify any inference gaps or confusion points.
+  tutor_does: Guide the learner to flag where they had to assume missing knowledge, could not justify a transition, or noticed confusion.
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
-  check: Is this step complete and ready for the next move?
-  example: 'Example: Where are you assuming knowledge you don''t have? Note confusion aloud if in spoken
-    mode'
+  check: Are the gaps and confusion points specific enough to revisit later?
+  example: 'Example: Name the exact jump you could not justify rather than saying this was confusing.'
 - step: 6
-  name: Flag Gaps For Follow Up
-  action: Flag gaps for follow-up
-  tutor_does: 'Guide the learner to Flag gaps for follow-up. Keep in mind: These become targeted study
-    items'
+  name: Flag gaps for follow-up
+  action: Flag gaps for follow-up.
+  tutor_does: Guide the learner to turn the exposed gaps into explicit study items instead of letting them disappear.
   learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
   max_lines: 8
-  check: Is this step complete and ready for the next move?
-  example: 'Example: These become targeted study items'
+  check: Have the gaps been converted into reusable follow-up items?
+  example: 'Example: Turn each missing inference into one short repair target.'
 - step: 7
-  name: Move To Next Unit And
-  action: Move to next unit and repeat
-  tutor_does: 'Guide the learner to Move to next unit and repeat. Keep in mind: Continue through entire
-    passage'
+  name: Move to next unit and repeat
+  action: Move to next unit and repeat.
+  tutor_does: Guide the learner to continue through the passage one unit at a time without batching or skipping.
   learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
   max_lines: 8
-  check: Is this step complete and ready for the next move?
-  example: 'Example: Continue through entire passage'
+  check: Is the learner ready to advance to the next unit with the current outputs logged?
+  example: 'Example: Continue only after the explanation, prediction, and gap notes are visible for the current unit.'
 constraints:
 - rule: Require active learner processing
-  why: The method depends on the learner generating, mapping, explaining, or transforming the material
-    rather than passively reading.
+  why: The method depends on the learner generating, mapping, explaining, or transforming the material rather than passively reading.
 - rule: Stay within objective scope
   why: Prevents drift into unrelated material and keeps the method auditable.
 - rule: Do not turn this into a passive answer dump or scoring event
   why: This method is designed for guided learning, not one-shot lecture or formal grading.
-- rule: Force active processing (explain, transform, or map), not passive reading.
+- rule: Force active processing (explain, transform, or map), not passive reading
   why: This gating rule is part of the method’s execution contract.
-- rule: Keep output scoped to mapped objectives only.
+- rule: Keep output scoped to mapped objectives only
   why: This gating rule is part of the method’s execution contract.
 allowed_moves:
 - Present one paragraph or concept unit at a time for processing
-- Prompt learner to explain WHY current content follows from previous content
+- Prompt the learner to explain why current content follows from previous content
 - Require prediction of what comes next before reading on
-- Ask learner to express explanation in their chosen verbalization mode
-- Require causal connectors (because, therefore, this leads to) in explanations
-- Identify inference gaps and prompt learner to flag them
-- Prompt learner to note confusion points for follow-up
-- Adjust pacing based on verbalization mode (written requires more time)
+- Ask the learner to express explanation in the chosen verbalization mode
+- Require causal connectors such as because, therefore, or this leads to in explanations
+- Identify inference gaps and prompt the learner to flag them
+- Prompt the learner to note confusion points for follow-up
+- Adjust pacing based on verbalization mode
 forbidden_moves:
-- Explain the reasoning FOR the learner instead of prompting self-explanation
+- Explain the reasoning for the learner instead of prompting self-explanation
 - Allow the learner to just restate facts without causal reasoning
-- Skip the prediction step before moving to next content unit
+- Skip the prediction step before moving to the next content unit
 - Batch multiple paragraphs instead of processing one unit at a time
 - Accept silent reading without explanation in spoken mode
-- Skip "obvious" sections without explanation
+- Skip obvious sections without explanation
 - Deliver a passive summary instead of facilitating self-explanation
-- Move to retrieval before all paragraphs are processed
-stuck_protocol: Offer one smaller hint, one simpler example, or one step back in the chain; then require
-  the learner to continue actively.
+- Move to retrieval before all units are processed
+stuck_protocol: Offer one smaller hint, one simpler example, or one step back in the chain, then require the learner to continue actively.
 failure_modes:
 - mode: Just restating facts
-  detection: The learner or tutor starts doing just restating facts or the artifact stops satisfying the
-    method’s required checks.
-  recovery: Require causal connectors — "because", "therefore", "this leads to
+  detection: The learner repeats the text without explaining why it follows or how it connects.
+  recovery: Require causal connectors such as because, therefore, or this leads to in the next explanation.
   fallback_method: M-GEN-002
-- mode: Skipping "obvious" sections
-  detection: The learner or tutor starts doing skipping "obvious" sections or the artifact stops satisfying
-    the method’s required checks.
-  recovery: Explain everything; "obvious" often means "unexamined
+- mode: Skipping obvious sections
+  detection: The learner tries to pass over content that seems obvious without explaining it.
+  recovery: Require a brief explanation anyway because obvious often means unexamined.
   fallback_method: M-GEN-005
-- mode: Not writing explanations (in written mode)
-  detection: The learner or tutor starts doing not writing explanations (in written mode) or the artifact
-    stops satisfying the method’s required checks.
-  recovery: Written notes required; verbal insufficient for written mode
+- mode: Not writing explanations in written mode
+  detection: The learner claims to understand but does not produce the required written explanation in written mode.
+  recovery: Require a short written explanation before continuing.
   fallback_method: M-GEN-007
-- mode: Silent reading without explaining (in spoken mode)
-  detection: The learner or tutor starts doing silent reading without explaining (in spoken mode) or the
-    artifact stops satisfying the method’s required checks.
-  recovery: Must vocalize; silent defeats the purpose of think-aloud
+- mode: Silent reading without explaining in spoken mode
+  detection: The learner reads quietly but does not verbalize any explanation in spoken mode.
+  recovery: Require overt verbalization because silent reading defeats the think-aloud purpose.
   fallback_method: M-GEN-002
 - mode: Skipping prediction step
-  detection: The learner or tutor starts doing skipping prediction step or the artifact stops satisfying
-    the method’s required checks.
-  recovery: Prediction is required — commit before reading ahead
+  detection: The learner keeps moving forward without committing to what comes next.
+  recovery: Pause and require one concrete prediction before advancing.
   fallback_method: M-GEN-005
 default_duration_min: 7
 energy_cost: medium
 best_stage: first_exposure
 mechanisms:
+- self_explanation
 - elaboration
 - generation
+- prediction
 - calibration
-- feedback
+- metacognitive_monitoring
 evidence:
-  citation: Chi et al. (1994)
-  finding: Self-explanation rated moderate-high utility across domains; works by generating inferences
-  source: Cognitive Science, 18(3), 439-477
+  citation: Chi, De Leeuw, Chiu, and LaVancher (1994); Dunlosky, Rawson, Marsh, Nathan, and Willingham (2013); Bisra, Liu, Nesbit, Salimi, and Winne (2018); Ryan and Koppenhofer (2024); Zhang and Fiorella (2024); Beege and Ploetzner (2025)
+  finding: >-
+    Self-Explanation Protocol is best supported as a unit-by-unit
+    inference-building method that works when learners must explain how new
+    information connects to what came before rather than simply restating the
+    text. The classic self-explanation work and later meta-analysis support
+    prompting learners to generate inferences and explanatory links, but both
+    the broader strategy review and newer studies show important boundary
+    conditions: self-explanation is not automatically beneficial, its effects
+    depend on prompt quality and learner engagement, and gains are strongest
+    when learners actually generate explanatory inferences rather than shallow
+    paraphrases. Recent studies on prompted self-explanations in statistics,
+    error correction, and interactive video reinforce the same practical lesson
+    from different angles: explanation quality and scaffolding matter, and
+    prompts can fail or even add cost when learners only go through the
+    motions. The practical implication for this method is to process one unit
+    at a time, force local why-links and next-step predictions, log inference
+    gaps explicitly, and treat verbalization mode as a way to expose reasoning
+    quality rather than as an end in itself.
+  source: https://doi.org/10.1207/s15516709cog1803_7; https://doi.org/10.1177/1529100612453266; https://doi.org/10.1007/s10648-018-9434-x; https://doi.org/10.1177/00986283221114196; https://doi.org/10.1016/j.cedpsych.2024.102326; https://doi.org/10.1007/s11251-024-09693-5
+  needs_research: false
 knobs:
-  verbalization_mode: written
   guidance_level: medium
-  output_format: bullets
-  evidence_raw: Chi et al. (1994); Dunlosky et al. (2013); self-explanation rated moderate-high utility
-    across domains. Think-aloud verbalization (Ericsson & Simon, 1993) exposes reasoning gaps that silent
-    processing misses.
-  gating_rules:
-  - Force active processing (explain, transform, or map), not passive reading.
-  - Keep output scoped to mapped objectives only.
-  logging_fields:
-  - paragraphs_processed
-  - explanations_generated
-  - gaps_flagged
-  - confusion_points
-  - verbalization_mode_used
-  - time_per_unit
-  artifact_type: notes
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest pass. Produce terse per-unit explanation bullets, one next-step prediction, and one short gap note for each processed unit.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Full protocol pass. Keep separate sections for unit explanation, prediction, inference gaps, confusion points, and comprehension checkpoints across the passage.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: Refresh pass. Render the output as a compact unit-by-unit table with explanation, prediction, and gap columns.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied reasoning pass. Use a clinical table with unit, why it follows, what should come next, concern or gap, and checkpoint columns so the self-explanation stays practice-relevant.
 related_methods:
 - id: M-GEN-002
-  relationship: Teach-back cousin method
+  relationship: Teach-back cousin method when oral explanation across a larger chunk is more useful
 - id: M-GEN-005
-  relationship: Why-chain fallback for deeper causality
+  relationship: Why-chain fallback for deeper causal drilling on one specific statement
 - id: M-GEN-007
-  relationship: Mechanism trace if the explanation is mechanistic
-facilitation_prompt: "You are running M-GEN-006 (Self-Explanation Protocol) in ENCODE stage.\nRole: you\
-  \ are the tutor running the method exactly as written, with no hidden assumptions.\nObjective: Force\
-  \ the learner to actively generate, explain, sequence, or transform the material so encoding is deeper\
-  \ than passive review.\nScope: After reading each paragraph or concept, pause and explain WHY each step\
-  \ follows from the previous one. Supports silent, spoken, or written verbalization modes. Focus on reasoning,\
-  \ not restating facts. Merges Think-Aloud Protocol (formerly M-ENC-006).\nRules:\n- Require active learner\
-  \ processing — The method depends on the learner generating, mapping, explaining, or transforming the\
-  \ material rather than passively reading.\n- Stay within objective scope — Prevents drift into unrelated\
-  \ material and keeps the method auditable.\n- Do not turn this into a passive answer dump or scoring\
-  \ event — This method is designed for guided learning, not one-shot lecture or formal grading.\n- Force\
-  \ active processing (explain, transform, or map), not passive reading. — This gating rule is part of\
-  \ the method’s execution contract.\n- Keep output scoped to mapped objectives only. — This gating rule\
-  \ is part of the method’s execution contract.\n- Not for: This is not for passive reading, copying answers,\
-  \ or letting the tutor do the cognitive work for the learner.\nInputs:\n- Text passage or concept sequence\
-  \ (required)\n- Note-taking area (written mode) or quiet environment (spoken mode) (required)\n- Timer\
-  \ (optional) (optional)\nRequired outputs:\n- Self-explanation notes or think-aloud log (per paragraph):\
-  \ Self-explanation notes or think-aloud log (per paragraph) [concise prose bullets or short paragraph]\n\
-  - Inference gap list: Inference gap list [short, checkable artifact]\n- Confusion points flagged: Confusion\
-  \ points flagged [short, checkable artifact]\n- Comprehension checkpoints: Comprehension checkpoints\
-  \ [short, checkable artifact]\nSteps: run one step at a time and wait after each step before advancing.\n\
-  1. Read One Paragraph Or Concept\n   Tutor does: Guide the learner to Read one paragraph or concept\
-  \ unit. Keep in mind: One unit at a time — don't batch\n   Learner does: Reads the prompt, does the\
-  \ thinking step, and returns the artifact or answer.\n   Example: Example: One unit at a time — don't\
-  \ batch\n   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the\
-  \ learner.\n2. Stop And Explain Why This\n   Tutor does: Guide the learner to Stop and explain WHY this\
-  \ follows from the previous content. Keep in mind: Ask: 'Why does this make sense given what came before?'\n\
-  \   Learner does: Performs the requested cognitive move and shares the result before moving on.\n  \
-  \ Example: Example: Ask: 'Why does this make sense given what came before?\n   Check: Is this step complete\
-  \ and ready for the next move?\n   Then STOP and wait for the learner.\n3. Predict What Comes Next Before\n\
-  \   Tutor does: Guide the learner to Predict what comes next before reading on. Keep in mind: Prediction\
-  \ forces active engagement and exposes assumptions\n   Learner does: Reads the prompt, does the thinking\
-  \ step, and returns the artifact or answer.\n   Example: Example: Prediction forces active engagement\
-  \ and exposes assumptions\n   Check: Is this step complete and ready for the next move?\n   Then STOP\
-  \ and wait for the learner.\n4. Express Your Explanation In Your\n   Tutor does: Guide the learner to\
-  \ Express your explanation in your chosen verbalization mode. Keep in mind: Written forces precision;\
-  \ spoken exposes hesitation; silent is fastest but least accountable\n   Learner does: Reads the prompt,\
-  \ does the thinking step, and returns the artifact or answer.\n   Example: Example: Written forces precision;\
-  \ spoken exposes hesitation; silent is fastest but least accountable\n   Check: Is this step complete\
-  \ and ready for the next move?\n   Then STOP and wait for the learner.\n5. Any Inference Gaps Or Confusion\n\
-  \   Tutor does: Guide the learner to Identify any inference gaps or confusion points. Keep in mind:\
-  \ Where are you assuming knowledge you don't have? Note confusion aloud if in spoken mode\n   Learner\
-  \ does: Performs the requested cognitive move and shares the result before moving on.\n   Example: Example:\
-  \ Where are you assuming knowledge you don't have? Note confusion aloud if in spoken mode\n   Check:\
-  \ Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n6. Flag\
-  \ Gaps For Follow Up\n   Tutor does: Guide the learner to Flag gaps for follow-up. Keep in mind: These\
-  \ become targeted study items\n   Learner does: Reads the prompt, does the thinking step, and returns\
-  \ the artifact or answer.\n   Example: Example: These become targeted study items\n   Check: Is this\
-  \ step complete and ready for the next move?\n   Then STOP and wait for the learner.\n7. Move To Next\
-  \ Unit And\n   Tutor does: Guide the learner to Move to next unit and repeat. Keep in mind: Continue\
-  \ through entire passage\n   Learner does: Reads the prompt, does the thinking step, and returns the\
-  \ artifact or answer.\n   Example: Example: Continue through entire passage\n   Check: Is this step\
-  \ complete and ready for the next move?\n   Then STOP and wait for the learner.\nStop conditions:\n\
-  - All required outputs are present and checkable: Self-explanation notes or think-aloud log (per paragraph),\
-  \ Inference gap list, Confusion points flagged, Comprehension checkpoints.\n- The method reaches its\
-  \ stop condition: All paragraphs processed; Major gaps and confusion points flagged.\n- The learner\
-  \ stays active and the tutor does not give away the answer before the required attempt or transformation.\n\
-  If stuck: Offer one smaller hint, one simpler example, or one step back in the chain; then require the\
-  \ learner to continue actively.\nDo not skip steps, do not solve the whole task at once, and do not\
-  \ present source claims as mnemonic or analogy artifacts."
+  relationship: Mechanism trace if the explanation is primarily process-oriented
+system_prompt_override:
+  relaxes:
+  - Never reveal the full answer without letting me attempt first. Progressive hints, not solutions.
+  - Highly interactive. One teaching chunk (8-12 lines max), one check, one question at a time.
+  replaces_with:
+  - Require unit-by-unit self-explanation and prediction. Do not let the learner batch paragraphs, paraphrase the text, or hide behind silent reading while the outputs stay empty.
+  - Treat inference gaps and confusion points as first-class outputs. The protocol is incomplete until missing links are logged explicitly.
+  reason: Self-Explanation Protocol only works when each unit is processed constructively and the learner’s reasoning is visible enough to inspect. If the tutor summarizes or the learner only paraphrases, the inference-building mechanism disappears.
+facilitation_prompt: |
+  You are running M-GEN-006 (Self-Explanation Protocol) in the ENCODE stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: Self-explanation notes or think-aloud log, Inference gap list, Confusion points flagged, and Comprehension checkpoints.
+  Have the learner process one paragraph or concept unit at a time, explain why it follows from the previous content, predict what comes next, and flag any missing inference or confusion before moving on. Do not explain the reasoning for the learner, do not batch units, and do not allow pure restatement of the text.
+  Preset behavior:
+  - exam_cram: one-shot; terse per-unit explanation bullets, one prediction, one gap note.
+  - deep_mastery: interactive; separate explanation, prediction, gap, confusion, and checkpoint sections.
+  - quick_review: one-shot refresh; compact unit-by-unit explanation-prediction-gap table.
+  - clinical_bridge: stepwise; applied unit -> why -> next -> gap -> checkpoint table.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode moves unit read -> explanation -> prediction -> gap flag -> checkpoint and waits.
 validation:
   test_cases:
   - topic: Concepts the learner can explain, transform, or generate in their own words
-    expected_outputs: *id001
+    expected_outputs:
+    - Self-explanation notes or think-aloud log (per paragraph)
+    - Inference gap list
+    - Confusion points flagged
+    - Comprehension checkpoints
     pass_criteria:
     - All required outputs are present.
     - The learner performs the required active step before the final artifact is given.
@@ -304,5 +301,5 @@ validation:
   - No forbidden_moves are violated.
   - The facilitation_prompt can be run without extra hidden context.
   known_issues:
-  - LLMs may over-explain before the learner attempts the required move.
-  - LLMs may drift outside scope when the topic is broad or ambiguous.
+  - LLMs may over-explain instead of enforcing learner-generated links.
+  - Low-quality self-explanations can look fluent while still missing key inferences unless gaps are logged explicitly.

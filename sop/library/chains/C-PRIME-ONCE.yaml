@@ -1,0 +1,137 @@
+id: C-PRIME-ONCE
+name: "Prime Once (Per Topic)"
+description: >
+  One-time priming chain per topic. Builds the structural reference notes that
+  C-STUDY-LOOP reads from. Single ChatGPT chat, output goes straight into
+  Obsidian as persistent reference material. 15-25 min. Run once per topic;
+  re-run only to fill gaps or fix errors flagged during study.
+
+is_template: false
+status: active
+proving_ground: false
+
+assumes:
+  - One bounded topic per run
+  - Source materials available with full local paths
+  - Custom Instructions active in ChatGPT settings
+  - Obsidian topic note ready to receive the dump
+
+blocks:
+  - id: STEP_0_MATERIALS
+    method_ref: source_manifest_paste
+    purpose: "Load source files with paths; build coverage table"
+    required: true
+
+  - id: M-PRE-010
+    stage: PRIME
+    name: "Learning Objectives Primer"
+    purpose: "Extract candidate LOs per file, merge into final study targets, capture verbatim instructor objectives"
+    required: true
+
+  - id: M-PRE-012
+    stage: PRIME
+    name: "Terminology Pretraining"
+    purpose: "8-15 high-yield terms with one-line definitions and confusable contrasts"
+    required: true
+
+  - id: M-PRE-004
+    stage: PRIME
+    name: "Advance Organizer (ASCII Concept Map)"
+    purpose: "3-5 pillar tree with parent → child relationships"
+    required: true
+    alternative: M-PRE-006
+
+  - id: M-PRE-006
+    stage: PRIME
+    name: "Structural Skimming + Extraction"
+    purpose: "Alternative to M-PRE-004 when source has strong built-in document structure"
+    trigger: "Source is well-organized (textbook chapter, structured slide deck)"
+
+  - id: M-PRE-013
+    stage: PRIME
+    name: "Big-Picture Orientation"
+    purpose: "3-5 sentence summary: what it is, why it matters for PT, clinical hook"
+    required: true
+
+  - id: M-PRE-014
+    stage: PRIME
+    name: "Ambiguity Scan"
+    purpose: "2-4 common misconceptions, traps, gotchas"
+    required: true
+
+  - id: STEP_8_HANDOFF
+    method_ref: vault_handoff
+    purpose: "Package output for Obsidian: instructor objectives, source manifest, image manifest, coverage gaps"
+    required: true
+
+gates:
+  - id: materials_complete
+    description: "All source files listed with full local paths before objective synthesis"
+    after_block: STEP_0_MATERIALS
+    failure: "Stop. Get the missing paths or mark [PATH UNKNOWN] explicitly. Do not invent paths."
+
+  - id: coverage_consistent
+    description: "SourceCoverageTable rows are internally consistent (no scanned=no with objective signals=yes)"
+    after_block: M-PRE-010
+    failure: "Repair coverage rows before continuing"
+
+  - id: terminology_capped
+    description: "Term list is 8-15 items, lean — not a glossary dump"
+    after_block: M-PRE-012
+    failure: "Cut to high-yield only; flag dropped terms"
+
+  - id: map_atomic
+    description: "Concept map has 3-5 top-level pillars max with clear parent → child structure"
+    after_block: M-PRE-004
+    failure: "Compress; do not exceed 5 pillars"
+
+  - id: handoff_complete
+    description: "Vault handoff includes all 4 sections: instructor objectives, source manifest, image manifest, coverage gaps"
+    after_block: STEP_8_HANDOFF
+
+failure_actions:
+  - condition: "Coverage table internally inconsistent"
+    action: "Force repair before objective synthesis"
+  - condition: "More than 15 terms surface"
+    action: "Force cut to 8-15 high-yield; list dropped terms separately"
+  - condition: "Map exceeds 5 top-level pillars"
+    action: "Re-cluster until 3-5 pillars hold the structure"
+  - condition: "Source has no explicit instructor objectives"
+    action: "Write 'No explicit objectives found in source material' verbatim — do not invent"
+  - condition: "File path unknown"
+    action: "Write [PATH UNKNOWN] — do not guess"
+
+context:
+  energy: medium
+  time_available_min: 25
+  stage: orientation
+  learner_style: top_down_narrative
+
+knobs:
+  pillar_count_min: 3
+  pillar_count_max: 5
+  terminology_count_min: 8
+  terminology_count_max: 15
+  big_picture_sentence_max: 5
+  blind_spot_count_min: 2
+  blind_spot_count_max: 4
+  total_max_minutes: 25
+
+prompt_file: C-PRIME-ONCE.md
+prompt_implementation: option_a_integrated
+
+notes: >
+  Single-chat integrated prompt (Option A), same model as C-STUDY-LOOP. Modeled
+  on study-sop/17a - Test Prompt - PRIME.md, which was the working priming
+  prompt before the audit. Output is designed to drop straight into the topic's
+  Obsidian note as persistent reference material.
+
+  PRIME methods carry system_prompt_override blocks (per Track D) so the global
+  Socratic Custom Instructions don't fragment this one-shot artifact run. This
+  integrated prompt embodies that same spirit inline: ask all inputs in ONE
+  combined question, deliver the full artifact in ONE reply per step, do not
+  Socratic-gate or chunk file-by-file.
+
+  Updates to method facilitation_prompts do NOT auto-flow into C-PRIME-ONCE.md.
+  When tightening a method, check whether the change should be reflected here.
+  See "Notes & Tech Debt.md" for the 2026-04-19 rationale.

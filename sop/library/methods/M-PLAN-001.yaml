@@ -1,0 +1,265 @@
+id: M-PLAN-001
+name: Session Planning
+category: PLAN
+subcategory: session-planning
+description: "Choose scope and horizon, build a session or week plan, match methods to the learner goal preset, and schedule reviews before execution starts."
+control_stage: PLAN
+status: draft
+version: '1.0'
+created: '2026-04-21'
+updated: '2026-04-21'
+tags:
+- plan
+- planning
+- scope
+- scheduling
+- self-regulation
+- goal-setting
+- review-cadence
+purpose: "Session Planning exists to turn a learner goal into a bounded session or week plan with explicit scope, method selection, and review timing. It creates an execution-ready map before the work begins instead of leaving method choice and scheduling to improvisation."
+not_for: "This is not for teaching content, broad curriculum design across many months, or open-ended brainstorming with no active objective. Use EXPLAIN or ENCODE once the plan is already set."
+best_fit_topics:
+- single-session study design
+- one-week study planning
+- method selection by learner goal and time horizon
+- review scheduling before execution
+poor_fit_topics:
+- full course design across a semester
+- content teaching during the planning step
+- unbounded roadmap ideation with no learner objective
+learner_state_required: "A learner goal, usable objective scope, and at least rough time constraints are available, even if the source content has not been fully worked yet."
+inputs:
+- description: Learner goal or active preset target
+  required: true
+- description: Objective scope or target content set
+  required: true
+- description: Time horizon (single session or one-week plan)
+  required: true
+- description: Time and logistics constraints (minutes, days, exam date, duty context, energy)
+  required: true
+outputs:
+- name: ScopeAndHorizonDecision
+  description: "A bounded planning decision that states what will be covered, what will be excluded, and whether the plan is for one session or one week."
+  format: paragraph or bullets
+- name: SessionOrWeekPlan
+  description: "An ordered plan showing the planned blocks, their duration, and the intended method flow."
+  format: table
+- name: MethodSelectionMap
+  description: "A method-choice map that explains which methods are selected for this preset and why they fit the learner goal."
+  format: table
+- name: ReviewSchedule
+  description: "A review schedule with timing, review type, and stop or escalation cues."
+  format: table
+- name: PlanningGuardrails
+  description: "The constraints, cut lines, and carry-forward rules that keep the plan realistic."
+  format: bulleted list
+artifact_schemas:
+  ScopeAndHorizonDecision: paragraph
+  SessionOrWeekPlan: table
+  MethodSelectionMap: table
+  ReviewSchedule: table
+  PlanningGuardrails: bullet_list
+produces:
+- ScopeAndHorizonDecision
+- SessionOrWeekPlan
+- MethodSelectionMap
+- ReviewSchedule
+- PlanningGuardrails
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
+required_outputs:
+- ScopeAndHorizonDecision
+- SessionOrWeekPlan
+- MethodSelectionMap
+- ReviewSchedule
+- PlanningGuardrails
+success_criteria:
+- All required outputs are present for M-PLAN-001.
+- The plan has a bounded scope and a stated horizon instead of a vague wish list.
+- Method selection matches the active learner goal preset and is explained clearly enough to execute.
+- Review timing is scheduled explicitly rather than implied.
+partial_criteria:
+- "A usable plan exists but one core artifact is incomplete: ReviewSchedule."
+- "The plan stays bounded, but the method-selection logic or time allocation still needs one more pass."
+steps:
+- step: 1
+  name: Set Scope And Horizon
+  action: "Choose the planning horizon and cut the scope to something that can actually fit it."
+  tutor_does: "Define whether this is a single session or one-week plan, state what content is in scope, and state what is deliberately out of scope."
+  learner_does: "Confirms the target, available time, and any hard constraints that change the plan."
+  max_lines: 6
+  check: "Is the horizon explicit and is the scope small enough to execute without drift?"
+  example: 'Example: "We are planning one 75-minute exam-cram session on stroke syndromes, not the whole neuro block."'
+- step: 2
+  name: Match Goal To Method Mix
+  action: "Select the method pattern that fits the learner goal preset and the current constraints."
+  tutor_does: "Choose a small set of methods that fit the preset, explain why they fit, and avoid loading the plan with unnecessary stages."
+  learner_does: "Confirms whether speed, depth, refresh, or applied transfer is the real target for this plan."
+  max_lines: 6
+  check: "Does the method mix clearly match exam_cram, deep_mastery, quick_review, or clinical_bridge?"
+  example: 'Example: "For deep_mastery we will open with PRIME, use EXPLAIN plus ENCODE, then schedule retrieval and calibration later in the week."'
+- step: 3
+  name: Sequence The Plan
+  action: "Lay out the session or week as an ordered sequence with durations and handoffs."
+  tutor_does: "Build the actual block order, assign rough durations, and keep the chain realistic for the chosen horizon."
+  learner_does: "Reviews whether the order feels executable within the real available time."
+  max_lines: 6
+  check: "Is there a concrete ordered plan rather than a generic list of suggested methods?"
+  example: 'Example: "Block 1: 10 min PRIME. Block 2: 20 min EXPLAIN. Block 3: 15 min ENCODE."'
+- step: 4
+  name: Schedule Reviews
+  action: "Place the review touches, retrieval checks, and recalibration points on an actual schedule."
+  tutor_does: "Add review timing based on the horizon, specify what happens at each review point, and include stop or escalation cues."
+  learner_does: "Confirms the review times are realistic and tied to real calendar constraints."
+  max_lines: 6
+  check: "Is the review cadence explicit enough that someone could execute it later without re-planning?"
+  example: 'Example: "Do a 10-minute retrieval review tomorrow and a shorter mixed review three days later."'
+- step: 5
+  name: Emit Planning Guardrails
+  action: "State the cut lines, fallback moves, and carry-forward rules that keep the plan bounded."
+  tutor_does: "Name what to skip if time runs short, what to carry forward if the session under-runs, and when to reroute to a lighter or heavier plan."
+  learner_does: "Confirms the guardrails and the next execution trigger."
+  max_lines: 6
+  check: "Does the final plan include clear guardrails instead of assuming ideal execution?"
+  example: 'Example: "If the first retrieval block collapses, cut ENCODE depth and keep the scheduled review rather than extending the session."'
+constraints:
+- rule: Planning only; do not drift into live teaching
+  why: PLAN should decide how the work will run, not consume the time meant for execution.
+- rule: Scope must fit the stated horizon
+  why: A planning method fails if it produces an aspirational schedule that cannot be executed.
+- rule: Method selection must visibly match the learner goal preset
+  why: The whole value of the plan is choosing the right chain for speed, depth, refresh, or applied transfer.
+- rule: Review timing must be explicit and realistic
+  why: Unscheduled review is usually forgotten review.
+allowed_moves:
+- choose a single-session or one-week horizon
+- cut scope to the minimum viable target set
+- map the preset to an appropriate method chain
+- compress or expand the plan based on time and energy constraints
+- assign rough durations to plan blocks
+- place retrieval or calibration reviews on a concrete schedule
+- mark optional blocks versus non-negotiable blocks
+- include stop rules and carry-forward rules
+forbidden_moves:
+- start teaching content while supposedly planning
+- produce a plan with no stated horizon
+- select methods without tying them to the learner goal preset
+- omit review timing
+- build a plan so broad that execution would obviously fail
+- treat all methods as equally necessary regardless of time pressure
+stuck_protocol: "Shrink the horizon first, then cut the scope, then choose the minimum viable method chain. If the plan is still overloaded, fall back to one executable session plus one scheduled review."
+failure_modes:
+- mode: Scope is too broad for the horizon
+  detection: "The plan tries to cover too many objectives for the available session or week."
+  recovery: "Cut to one bounded objective cluster and rebuild the schedule around that smaller target."
+  fallback_method: M-PRE-010
+- mode: Preset and plan shape do not match
+  detection: "The method chain reads like deep_mastery while the learner actually needs exam_cram, or the reverse."
+  recovery: "Rebuild the chain using the correct preset as the primary constraint."
+  fallback_method: M-CAL-001
+- mode: Review schedule is not realistic
+  detection: "The planned reviews do not fit the actual calendar, energy, or execution context."
+  recovery: "Reduce the number of review touches and keep only the highest-yield scheduled reviews."
+  fallback_method: M-OVR-003
+default_duration_min: 5
+energy_cost: low
+best_stage: session_opening
+mechanisms:
+- goal_setting
+- self_regulated_learning
+- strategic_planning
+- implementation_intentions
+- spacing
+- time_management
+evidence:
+  citation: "Locke and Latham (2002); Zimmerman (2002); Panadero (2017); Cepeda, Pashler, Vul, Wixted, and Rohrer (2006); Xu, Li, and Yang (2024)"
+  finding: "Session Planning is best supported as a forethought-stage scaffold that makes goals, strategy choice, and review timing explicit before execution begins. Goal-setting theory supports specific, challenging, bounded goals over vague intentions; classic self-regulated-learning work places planning and task analysis at the front of effective study cycles; later SRL reviews show that forethought, monitoring, and reflection work best when they are structurally linked; spacing research supports planned review over massed one-shot study; and recent classroom evidence continues to link goal-planning strategies with stronger self-efficacy and engagement. The practical implication for this method is to choose a real horizon, cut the scope aggressively, select a small method mix that fits the learner goal, and place reviews on the calendar before the session starts."
+  source: "https://doi.org/10.1037/0003-066X.57.9.705; https://doi.org/10.1207/S15430421TIP4102_2; https://doi.org/10.3389/fpsyg.2017.00422; https://doi.org/10.1037/0033-2909.132.3.354; https://doi.org/10.1016/j.system.2024.103451"
+  needs_research: false
+knobs:
+  guidance_level: medium
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: "Fastest useful plan. Build one compressed study session with a minimal method chain, hard time cuts, and one or two short scheduled reviews in the next 72 hours."
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: "Fullest plan. Build a one-week arc with a richer stage mix, explicit block rationales, planned calibration points, and spaced review touches across the week."
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: "Refresh plan. Build a compact already-seen-material plan as a short table with a brief session block, one retrieval review, and one carry-forward check."
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: "Applied plan. Build the session or week around case exposure, decision cues, and safety-critical reviews, then present the schedule as an applied planning matrix."
+related_methods:
+- id: M-PRE-010
+  relationship: "Use when the learner first needs a tighter objective set before a plan can be built."
+- id: M-OVR-003
+  relationship: "Use when the plan needs an explicit drill or cross-session review artifact."
+system_prompt_override:
+  relaxes:
+  - Never reveal the full answer without letting me attempt first. Progressive hints, not solutions.
+  - Highly interactive. One teaching chunk (8-12 lines max), one check, one question at a time.
+  replaces_with:
+  - This is a planning method. Do not teach content; produce a bounded plan with explicit scope, method choice, and review timing.
+  - Ask only for missing planning inputs. If the core inputs are already present, generate the plan directly.
+  reason: "PLAN methods create an execution artifact, not a tutoring exchange."
+facilitation_prompt: |
+  You are running M-PLAN-001 (Session Planning) in the PLAN stage.
+  Use only the loaded source and ask only for missing required inputs.
+  Produce: ScopeAndHorizonDecision, SessionOrWeekPlan, MethodSelectionMap, ReviewSchedule, and PlanningGuardrails.
+  Build a bounded session or one-week plan by choosing the horizon, cutting the scope, selecting methods that match the learner goal preset, and scheduling review before execution starts. Do not drift into teaching.
+  Preset behavior:
+  - exam_cram: one-shot; compressed single-session plan; minimal chain; one or two short scheduled reviews.
+  - deep_mastery: interactive; one-week plan; richer stage mix; explicit calibration and spaced review points.
+  - quick_review: one-shot refresh; compact table for already-seen material with one retrieval review and one carry-forward check.
+  - clinical_bridge: stepwise; applied planning matrix built around case work, decision cues, and safety-critical reviews.
+  If no preset is specified, use the default knobs. One-shot returns the full plan in one bounded reply; interactive or stepwise mode moves scope -> method mix -> schedule -> guardrails and waits.
+validation:
+  test_cases:
+  - topic: single-session exam cram planning
+    expected_outputs:
+    - ScopeAndHorizonDecision
+    - SessionOrWeekPlan
+    - ReviewSchedule
+    pass_criteria:
+    - The plan is bounded to one session and includes at least one scheduled review.
+    - The selected method chain visibly matches the exam_cram preset.
+  - topic: one-week deep mastery planning
+    expected_outputs:
+    - MethodSelectionMap
+    - ReviewSchedule
+    - PlanningGuardrails
+    pass_criteria:
+    - The plan includes an explicit week horizon, review spacing, and a reasoned method mix.
+    - The output remains a planning artifact and does not drift into full teaching.
+  acceptance_criteria:
+  - Every required output is present and executable without extra interpretation.
+  - The plan states a clear horizon, a bounded scope, and an explicit review schedule.
+  - The facilitation prompt can be pasted into ChatGPT and run without extra context.
+  known_issues:
+  - If the learner objective is still fuzzy, the planning method may need a tighter upstream objective artifact before the schedule becomes reliable.

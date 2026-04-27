@@ -1,24 +1,24 @@
 id: M-TEA-004
 name: Modality Switch
-category: teach
-subcategory: modality-bridge
+category: EXPLAIN
+subcategory: modality-switch
 description: Choose the best first representation for the concept and switch the explanation into that modality before overload sets in.
-control_stage: TEACH
+control_stage: EXPLAIN
 status: draft
-version: '1.0'
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
-- teach
+- explain
 - modality
 - representation
 - scaffold
 - visual
-- modality-bridge
+- modality-switch
 - teaching
 - explanation
 purpose: Choose the best first representation for the concept and switch the explanation into that modality before overload sets in. Use it to teach one bounded concept by turning the source into a learner-facing bridge that preserves the real mechanism.
-not_for: Not for open-ended brainstorming, scoring, or broad coverage of unrelated material. Use a PRIME method when the learner first needs orientation or objective framing.
+not_for: Not for open-ended brainstorming, scoring, or broad coverage of unrelated material. Use an ORIENT method when the learner first needs orientation or objective framing.
 best_fit_topics:
 - 'A single bounded concept or pathway that can be taught in one pass: Modality Switch'
 - Topics that benefit from a bridge, contrast, case, example, or mnemonic
@@ -46,6 +46,22 @@ outputs:
 - name: Modality rationale
   description: Learner-facing teaching artifact for modality switch.
   format: bulleted artifact
+artifact_schemas:
+  Concept type: bullet_list
+  Chosen modality: bullet_list
+  Re-expressed teaching chunk: bullet_list
+  Modality rationale: bullet_list
+produces:
+- Concept type
+- Chosen modality
+- Re-expressed teaching chunk
+- Modality rationale
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
 required_outputs:
 - Concept type
 - Chosen modality
@@ -92,7 +108,7 @@ steps:
   example: 'Example: "Modality Shift: State why this modality was chosen"'
 constraints:
 - rule: Do not turn the method into a test or quiz
-  why: TEACH methods should build understanding, not create avoidable performance pressure.
+  why: EXPLAIN methods should build understanding, not create avoidable performance pressure.
 - rule: Stay faithful to the source and keep the chunk bounded
   why: The learner needs a clear bridge, not an unbounded lecture.
 - rule: Do not assess or score the learner
@@ -114,152 +130,82 @@ forbidden_moves:
 - Drift outside the active objective scope
 - Turn the method into a quiz or scored assessment
 - Lose fidelity to the source or wander beyond the bounded topic
-stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For TEACH, fall back to M-TEA-004 or M-TEA-006.
+stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For EXPLAIN, fall back to M-TEA-004 or M-TEA-006.
 failure_modes:
 - mode: Wrong modality chosen for the concept
-  detection: The output no longer matches the method’s core purpose.
+  detection: The output no longer matches the method's core purpose.
   recovery: Switch immediately and restate the chunk in the stronger modality.
   fallback_method: M-TEA-006
 - mode: Too many modalities at once
-  detection: The output no longer matches the method’s core purpose.
+  detection: The output no longer matches the method's core purpose.
   recovery: Start with one dominant modality and add a second only if needed.
   fallback_method: M-TEA-006
 default_duration_min: 3
 energy_cost: low
 best_stage: first_exposure
 mechanisms:
-- scaffolding
+- multimedia_learning
+- modality_effect
 - dual_coding
-- cognitive_load
-- elaboration
+- cognitive_load_management
+- scaffolding
 - transfer
 evidence:
-  citation: Mayer (2009)
-  finding: Matching representation and segmenting explanation helps novice comprehension
-  source: control-plane migration
+  citation: Mayer and Moreno (2003); Ginns (2005); Low and Sweller (2014); Liu, Lin, Gao, and Paas (2019); Haavisto, Jaakkola, and Lepola (2023); Cromley and Chen (2025)
+  finding: Research on multimedia learning and modality effects supports switching explanations into the representation that best distributes processing across channels and lowers split attention, rather than simply adding more media. Classical Mayer and Sweller work plus meta-analytic evidence support benefits for visuals paired with spoken language over picture-plus-written-text formats under many novice-learning conditions, but recent classroom-context studies show the effect depends on pacing, learner control, and the specific media used. The practical implication for this method is to choose one lead modality that fits the concept type, keep redundant text low, and add a second modality only when it resolves a specific bottleneck.
+  source: https://doi.org/10.1207/S15326985EP3801_6; https://doi.org/10.1016/j.learninstruc.2005.07.001; https://doi.org/10.1017/CBO9781139547369.012; https://doi.org/10.1111/bjet.12605; https://doi.org/10.1016/j.compedu.2023.104775; https://doi.org/10.1016/j.edurev.2025.100730
+  needs_research: false
 knobs:
   guidance_level: medium
-  output_format: bullets
-  artifact_type: notes
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest useful switch; choose one dominant representation only. Prefer a compact compare table, mini flow, or spatial bullet sketch and add at most one line of prose support.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Fuller switch with one lead modality and one complementary support modality. Pause after the first re-expression and add the second representation only if it removes a real bottleneck.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Refresh pass for already-seen material; compress Concept type and Modality rationale and convert the chunk into the single fastest discriminating format, usually a two-column table or terse procedure bullets.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied switch; render the explanation as a cue table or finding-to-action grid, optionally preceded by one line of scene-setting, so the representation changes what the learner notices or does.
 related_methods:
 - id: M-TEA-006
   relationship: Use when the learner needs a stepwise depth ladder
-- id: M-TEA-005
+- id: M-HOOK-003
   relationship: Use when a mnemonic hook would stick better
-facilitation_prompt: 'You are a study tutor running M-TEA-004 (Modality Switch) in the TEACH stage.
-
-  ROLE: You are a careful, supportive tutor. Your job is to run Modality Switch exactly as specified and keep the output faithful, bounded, and useful.
-
-  OBJECTIVE: Choose the best first representation for the concept and switch the explanation into that modality before overload sets in. Use it to teach one bounded concept by turning the source into a learner-facing bridge that preserves the real mechanism.
-
-  SCOPE: Choose the best first representation for the concept and switch the explanation into that modality before overload sets in.
-
-  RULES:
-
-  - Do not turn the method into a test or quiz — because TEACH methods should build understanding, not create avoidable performance pressure.
-
-  - Stay faithful to the source and keep the chunk bounded — because The learner needs a clear bridge, not an unbounded lecture.
-
-  - Do not assess or score the learner — because This method is for orientation and teaching, not grading.
-
-  - Require the relevant objective or context before running — because The method needs a bounded target to stay useful.
-
-
-  OUTPUTS TO PRODUCE:
-
-  1. Concept type — Learner-facing teaching artifact for modality switch. (bulleted artifact)
-
-  2. Chosen modality — Learner-facing teaching artifact for modality switch. (bulleted artifact)
-
-  3. Re-expressed teaching chunk — Learner-facing teaching artifact for modality switch. (bulleted artifact)
-
-  4. Modality rationale — Learner-facing teaching artifact for modality switch. (bulleted artifact)
-
-
-  RUN THE METHOD ONE STEP AT A TIME. Wait for my response before moving to the next step.
-
-  STEP 1 — Opening Step
-
-  - Tutor does: Identify the concept type. Examples: spatial, mechanism, definition, procedure, compare/contrast
-
-  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
-
-  - Example: Example: "Opening Step: Identify the concept type"
-
-  - Check: What part feels clearest, and what part still needs one more example?
-
-  Then stop and wait.
-
-  STEP 2 — Step 2
-
-  - Tutor does: Choose the best first representation. Image, motion, words, or table
-
-  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
-
-  - Example: Example: "Step 2: Choose the best first representation"
-
-  - Check: What part feels clearest, and what part still needs one more example?
-
-  Then stop and wait.
-
-  STEP 3 — Modality Shift
-
-  - Tutor does: Re-express the concept in that modality. Keep the explanation minimal and objective-scoped
-
-  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
-
-  - Example: Example: "Modality Shift: Re-express the concept in that modality"
-
-  - Check: What part feels clearest, and what part still needs one more example?
-
-  Then stop and wait.
-
-  STEP 4 — Modality Shift
-
-  - Tutor does: State why this modality was chosen. Make the teaching move explicit
-
-  - Learner does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
-
-  - Example: Example: "Modality Shift: State why this modality was chosen"
-
-  - Check: What part feels clearest, and what part still needs one more example?
-
-  Then stop and wait.
-
-
-  STOP CONDITIONS:
-
-  - The learner-facing explanation artifact is faithful to Modality Switch and stays bounded.
-
-  - The method includes a concrete bridge, example, or discriminating cue that makes the idea easier to hold.
-
-  - The output ends with a clear carry-forward signal instead of drifting into a full lecture.
-
-
-  IF YOU GET STUCK:
-
-  If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For TEACH, fall back to M-TEA-004 or M-TEA-006.
-
-  If the learner is still stuck after one rescue move, shrink the chunk, switch modality, or fall back to the listed fallback method.
-
-
-  GOOD OUTPUT EXAMPLE:
-
-  - Concept type: a concise, source-faithful artifact that matches the method purpose and stays within scope.
-
-  - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
-
-
-  DONE WHEN:
-
-  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
-
-
-  Non-assessment guard:
-
-  - This is a TEACH chunk, not an assessment.
-
-  - Do not score or quiz the learner during this block; no scored output, no grading.'
+facilitation_prompt: |
+  You are running M-TEA-004 (Modality Switch) in the EXPLAIN stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: Concept type, Chosen modality, Re-expressed teaching chunk, and Modality rationale.
+  Teach one bounded concept by identifying its type, choosing the lowest-friction lead representation, re-expressing the chunk in that modality, and stating why the switch helps. Keep one modality dominant and add a second only if it resolves a real bottleneck.
+  Preset behavior:
+  - exam_cram: one-shot; choose one dominant representation only; output terse bullets, a mini flow, or a two-column table plus a one-line rationale.
+  - deep_mastery: interactive; use labeled sections; start with one lead modality, pause after the first switch, and add one complementary second representation only if needed.
+  - quick_review: one-shot refresh; compress concept typing and rationale and convert the chunk into the fastest discriminating format, usually a table or terse procedure bullets.
+  - clinical_bridge: stepwise; use a cue table or finding-to-action grid, with optional one-line scene-setting, so the switch is tied to noticing or action.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode moves concept type -> modality choice -> re-expression -> rationale and waits.
 validation:
   test_cases:
   - topic: Single concept explanation for Modality Switch

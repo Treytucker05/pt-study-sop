@@ -1,21 +1,21 @@
 id: M-PRE-013
 name: Big-Picture Orientation Summary
-category: prime
-subcategory: overview
-description: Generate a short source-grounded big-picture summary that states what the material is about, why it matters, and the main hook without crossing into full explanation.
-control_stage: PRIME
+category: ORIENT
+subcategory: big-picture-orientation
+description: Generate a short source-grounded big-picture organizer that states what the material is about, why it matters, and the main organizing idea without crossing into full explanation.
+control_stage: ORIENT
 status: validated
-version: '1.0'
+version: '1.3'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
-- prime
+- orient
 - overview
 - orientation
-- prior-knowledge
+- framing
 - summary
-purpose: Generate a short source-grounded big-picture summary that states what the material is about, why it matters, and the main hook without crossing into full explanation. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
-not_for: Not for first-contact teaching, scored assessment, or full solution reveal. Use a TEACH or REFERENCE method when the goal is explanation rather than orientation.
+purpose: Generate a short source-grounded big-picture organizer that states what the material is about, why it matters, and the main organizing idea without crossing into full explanation. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
+not_for: Not for first-contact teaching, scored assessment, or full solution reveal. Use an EXPLAIN or CONSOLIDATE method when the goal is explanation rather than orientation.
 best_fit_topics:
 - 'New or complex material that needs a quick orientation pass: Big-Picture Orientation Summary'
 - Topics with prior notes, objective context, or an obvious structure to surface
@@ -28,53 +28,73 @@ inputs:
   required: true
 - description: Target topic or objective scope
   required: true
-- description: Prior notes, North Star, or prior-session context
+- description: Learner goal for this session (test prep / first exposure / review)
+  required: true
+- description: Prior notes, prior framing line, or prior-session context
   required: false
 outputs:
-- name: NorthStarSentence
-  description: Activation or structure artifact for big-picture orientation summary.
+- name: FrameLine
+  description: One-sentence framing artifact that says what the topic is really about and what kind of question it helps answer.
   format: bulleted artifact
 - name: BigPictureSummary
-  description: Concise summary or framing artifact for big-picture orientation summary.
-  format: concise paragraph plus bullets
-required_outputs:
-- NorthStarSentence
+  description: Short labeled organizer covering what it is, why it matters, and the main organizing idea.
+  format: bulleted artifact
+- name: TeachTargets
+  description: One to three next-step concepts or contrasts to teach next.
+  format: bulleted artifact
+artifact_schemas:
+  FrameLine: bullet_list
+  BigPictureSummary: bullet_list
+  TeachTargets: bullet_list
+produces:
+- FrameLine
 - BigPictureSummary
+- TeachTargets
+requires:
+- artifact: StructuralSpine
+  optional: true
+  alternatives:
+  - AsciiConceptMap
+  - FinalLearningObjectives
+required_outputs:
+- FrameLine
+- BigPictureSummary
+- TeachTargets
 success_criteria:
-- 'Core structure is captured in the required outputs: NorthStarSentence, BigPictureSummary.'
+- 'Core structure is captured in the required outputs: FrameLine, BigPictureSummary, TeachTargets.'
 - The method stays non-assessive and does not score the learner.
 - Any gaps, priorities, or blind spots are explicitly named for next-pass study.
 partial_criteria:
-- NorthStarSentence is present but gaps or priorities are incomplete.
+- FrameLine is present but gaps or priorities are incomplete.
 - The output has useful structure but is missing one required linkage or objective tie.
 steps:
 - step: 1
   name: Opening Step
-  action: Identify the source's north-star idea
-  tutor_does: Identify the source's north-star idea. Name what the material is mainly about in one plain-language sentence
+  action: Write the frame line
+  tutor_does: Write the frame line. Name what the material is mainly about and what kind of question or decision it helps with in one plain-language sentence
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: What are the strongest anchors you already have for this topic?
-  example: 'Example: "Opening Step: Identify the source''s north-star idea"'
+  example: 'Example: "Opening Step: Write the frame line"'
 - step: 2
   name: Step 2
-  action: Write a 3-5 sentence summary
-  tutor_does: Write a 3-5 sentence summary. Include what the topic is, why it matters, and the main hook
+  action: Write the big-picture organizer
+  tutor_does: Write the big-picture organizer. Use short labeled lines for what it is, why it matters, the main organizing idea, and if the learner goal is test prep the likely test angle or confusable boundary
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: Does the structure so far match what you expected from the material?
-  example: 'Example: "Step 2: Write a 3-5 sentence summary"'
+  example: 'Example: "Step 2: Write the big-picture organizer"'
 - step: 3
   name: Step 3
-  action: Stop before mechanism teaching
-  tutor_does: Stop before mechanism teaching. The goal is orientation, not explanation depth
+  action: Handoff to next study targets
+  tutor_does: Handoff to next study targets. List 1-3 specific concepts or contrasts that should be taught next, without drifting into mechanism teaching
   learner_does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
   max_lines: 4
   check: Which gaps or next targets should we carry forward?
-  example: 'Example: "Step 3: Stop before mechanism teaching"'
+  example: 'Example: "Step 3: Handoff to next study targets"'
 constraints:
 - rule: Do not assess, grade, or confidence-rate the learner
-  why: PRIME methods activate and organize knowledge instead of testing it.
+  why: ORIENT methods activate and organize knowledge instead of testing it.
 - rule: Stay at orientation level and avoid full solution reveal
   why: The goal is to shape readiness, not finish the lesson for the learner.
 - rule: Do not assess or score the learner
@@ -86,10 +106,11 @@ constraints:
 - rule: No Mechanism Teaching
   why: The method inherits this as a hard rule from the legacy card.
 allowed_moves:
-- Write a short source-grounded orientation summary
-- Highlight the north-star purpose of the material
+- Write a short source-grounded organizer in one reply
+- Highlight the framing purpose of the material
 - Name why the topic matters for PT
-- Point to the main hook without teaching the full mechanism
+- Point to the main organizing idea without teaching the full mechanism
+- If learner goal is test prep, name the likely test angle or confusable boundary
 - Activate prior knowledge with a bounded free recall or orientation prompt
 - Summarize structure, objectives, gaps, or blind spots without scoring
 - Link recalled ideas to the current objective or source packet
@@ -97,18 +118,18 @@ forbidden_moves:
 - Deliver full causal or mechanism explanation
 - Score, grade, or assess the learner
 - Add external content not supported by the source
-- Replace TEACH with a disguised lesson
+- Replace EXPLAIN with a disguised lesson
 - Score the learner or run retrieval grading
 - Teach detailed content as the final answer
-stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
+stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For ORIENT, fall back to M-PRE-010 or M-PRE-008.
 failure_modes:
 - mode: Overview becomes too vague
   detection: The output no longer matches the method’s core purpose.
-  recovery: Tie the summary back to the topic's main purpose and clinical relevance.
+  recovery: Tie the organizer back to the topic's main purpose, clinical relevance, or likely test angle.
   fallback_method: M-PRE-010
 - mode: Overview becomes too explanatory
   detection: The output no longer matches the method’s core purpose.
-  recovery: Compress back to a 3-5 sentence orientation frame.
+  recovery: Compress back to one frame line, 2-4 short organizer lines, and 1-3 teach targets.
   fallback_method: M-PRE-010
 default_duration_min: 4
 energy_cost: low
@@ -121,146 +142,94 @@ mechanisms:
 - prior_knowledge_activation
 - organization
 evidence:
-  citation: Ausubel (1968)
-  finding: Advance organizers help assimilation of new material when structure is established before detail.
-  source: legacy method card
+  citation: Ausubel (1960); Mayer (1979); Hattan and Alexander (2020); Hattan, Alexander, and Lupo (2024)
+  finding: Classic advance-organizer research supports giving learners a higher-level frame before unfamiliar material so later details can attach to an existing structure. Mayer's review suggests the organizer works best when it is more abstract, inclusive, and structurally clearer than the lesson itself, rather than a same-level preview. More recent classroom and review evidence suggests prior knowledge activation usually needs explicit prompts, especially for younger learners, and works best when the orientation cue highlights the governing structure, relevance, or question without turning into full explanation.
+  source: https://doi.org/10.1037/h0046669; https://doi.org/10.3102/00346543049002371; https://doi.org/10.1007/s11145-020-10022-8; https://doi.org/10.3102/00346543221148478
+  needs_research: false
 knobs:
-  priming_depth_mode: basic
   guidance_level: medium
-  objective_link_required: true
-  artifact_type: notes
-  evidence_strength: high
-  primary_citations:
-  - Ausubel (1968)
-  - Mayer (2009)
-  outputs_summary: NorthStarSentence; BigPictureSummary
-  has_steps: Y
-  has_outputs_or_artifacts: Y
-  output_format: bullets
+  delivery_mode: one_shot
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest usable organizer; keep the frame line to one line, give only two summary bullets, and close with the likely test angle or confusable boundary.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Slower and fuller organizer; keep the same three outputs, add one brief why-this-structure-matters line, and pause for one short learner check before teach targets.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Terse refresh for already-seen material; compress the frame line and focus the summary on what to reopen, refresh, or re-anchor.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied orientation pass; keep the same outputs but phrase the summary around practical stakes, decision context, or real-use relevance.
 related_methods:
 - id: M-PRE-010
   relationship: Use first when the learner needs the objective frame
 - id: M-PRE-009
   relationship: Use when multiple sources need synthesis
-facilitation_prompt: 'You are a study tutor running M-PRE-013 (Big-Picture Orientation Summary) in the PRIME stage.
-
-  ROLE: You are a careful, supportive tutor. Your job is to run Big-Picture Orientation Summary exactly as specified and keep the output faithful, bounded, and useful.
-
-  OBJECTIVE: Generate a short source-grounded big-picture summary that states what the material is about, why it matters, and the main hook without crossing into full explanation. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
-
-  SCOPE: Generate a short source-grounded big-picture summary that states what the material is about, why it matters, and the main hook without crossing into full explanation.
-
-  RULES:
-
-  - Do not assess, grade, or confidence-rate the learner — because PRIME methods activate and organize knowledge instead of testing it.
-
-  - Stay at orientation level and avoid full solution reveal — because The goal is to shape readiness, not finish the lesson for the learner.
-
-  - Do not assess or score the learner — because This method is for orientation and teaching, not grading.
-
-  - Source Grounded Only — because The method inherits this as a hard rule from the legacy card.
-
-  - Orientation Only — because The method inherits this as a hard rule from the legacy card.
-
-  - No Mechanism Teaching — because The method inherits this as a hard rule from the legacy card.
-
-
-  OUTPUTS TO PRODUCE:
-
-  1. NorthStarSentence — Activation or structure artifact for big-picture orientation summary. (bulleted artifact)
-
-  2. BigPictureSummary — Concise summary or framing artifact for big-picture orientation summary. (concise paragraph plus bullets)
-
-
-  RUN THE METHOD ONE STEP AT A TIME. Wait for my response before moving to the next step.
-
-  STEP 1 — Opening Step
-
-  - Tutor does: Identify the source''s north-star idea. Name what the material is mainly about in one plain-language sentence
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Opening Step: Identify the source''s north-star idea"
-
-  - Check: What are the strongest anchors you already have for this topic?
-
-  Then stop and wait.
-
-  STEP 2 — Step 2
-
-  - Tutor does: Write a 3-5 sentence summary. Include what the topic is, why it matters, and the main hook
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Step 2: Write a 3-5 sentence summary"
-
-  - Check: Does the structure so far match what you expected from the material?
-
-  Then stop and wait.
-
-  STEP 3 — Step 3
-
-  - Tutor does: Stop before mechanism teaching. The goal is orientation, not explanation depth
-
-  - Learner does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
-
-  - Example: Example: "Step 3: Stop before mechanism teaching"
-
-  - Check: Which gaps or next targets should we carry forward?
-
-  Then stop and wait.
-
-
-  STOP CONDITIONS:
-
-  - Core structure is captured in the required outputs: NorthStarSentence, BigPictureSummary.
-
-  - The method stays non-assessive and does not score the learner.
-
-  - Any gaps, priorities, or blind spots are explicitly named for next-pass study.
-
-
-  IF YOU GET STUCK:
-
-  If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
-
-  If the learner is still stuck after one rescue move, shrink the chunk, switch modality, or fall back to the listed fallback method.
-
-
-  GOOD OUTPUT EXAMPLE:
-
-  - NorthStarSentence: a concise, source-faithful artifact that matches the method purpose and stays within scope.
-
-  - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
-
-
-  DONE WHEN:
-
-  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
-
-  Non-assessment guard:
-
-  - This is a PRIME block — orientation only, not an assessment.
-
-  - Do not quiz, score, or grade the learner here; no scored output.'
+system_prompt_override:
+  relaxes:
+  - Highly interactive. One small teaching chunk, one short check, or one question at a time.
+  - Ask only one question at a time.
+  - Do not do more than one step at a time.
+  - Within EXPLAIN, deliver ONE chunk at a time, check in, then continue.
+  replaces_with:
+  - Ask all missing required inputs in one combined question, then proceed.
+  - Default to one-shot organizer delivery; if the active preset uses interactive or stepwise pacing, preserve the same outputs and stop between sections.
+  - Match the output layout to the active preset while keeping the organizer bounded.
+  - Adapt emphasis to learner goal: test prep -> discriminators and likely question angle; first exposure -> orientation and relevance; review -> gaps and structure refresh.
+  - Stop before mechanism teaching.
+  reason: ORIENT methods work best as compact preinstructional frames. The override preserves a short, source-grounded organizer while allowing preset-specific pacing and output shape.
+facilitation_prompt: |
+  You are running M-PRE-013 (Big-Picture Orientation Summary) in the ORIENT stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: FrameLine, BigPictureSummary, and TeachTargets.
+  Stay source-grounded, non-assessive, and stop before mechanism teaching.
+  Preset behavior:
+  - exam_cram: one-shot; bullets; 1-line FrameLine; 2 summary bullets; close with the likely test angle or confusable boundary.
+  - deep_mastery: interactive; labeled sections; 3-4 summary lines plus one why-this-structure-matters line; ask one short check before TeachTargets.
+  - quick_review: one-shot refresh; assume prior exposure; compress the FrameLine and focus on what to reopen, refresh, or re-anchor.
+  - clinical_bridge: stepwise; use an applied cue table or tightly labeled sections and frame the summary around practical stakes or decision context.
+  If no preset is specified, use the default knobs. One-shot returns all three outputs in one bounded reply; interactive or stepwise mode moves section by section and waits.
 validation:
   test_cases:
   - topic: First pass on Big-Picture Orientation Summary with prior notes present
     expected_outputs:
-    - NorthStarSentence
+    - FrameLine
     - BigPictureSummary
+    - TeachTargets
     pass_criteria:
-    - Required outputs appear and include at least one structural or gap-oriented artifact from NorthStarSentence, BigPictureSummary.
+    - Required outputs appear and include at least one structural or gap-oriented artifact from FrameLine, BigPictureSummary, TeachTargets.
     - The output identifies what is known, what is missing, and what to do next.
   - topic: Dense review topic where the learner needs orientation before detail
     expected_outputs:
-    - NorthStarSentence
+    - FrameLine
     - BigPictureSummary
+    - TeachTargets
     pass_criteria:
-    - Required outputs appear and include at least one structural or gap-oriented artifact from NorthStarSentence, BigPictureSummary.
+    - Required outputs appear and include at least one structural or gap-oriented artifact from FrameLine, BigPictureSummary, TeachTargets.
     - No scored probe, quiz behavior, or grading language appears in the response.
   acceptance_criteria:
-  - Required outputs appear and include at least one structural or gap-oriented artifact from NorthStarSentence, BigPictureSummary.
+  - Required outputs appear and include at least one structural or gap-oriented artifact from FrameLine, BigPictureSummary, TeachTargets.
   - No scored probe, quiz behavior, or grading language appears in the response.
   - The output identifies what is known, what is missing, and what to do next.
   known_issues:

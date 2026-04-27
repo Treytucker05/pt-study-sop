@@ -1,234 +1,237 @@
 id: M-INT-003
 name: Cross-Topic Link
-category: interrogate
-subcategory: int
-description: Identify 2-3 connections between this topic and topics from other courses. Look for shared
-  principles.
-control_stage: ENCODE
+category: INTERROGATE
+subcategory: cross-topic-link
+description: Identify 2-3 meaningful links between the current topic and topics from other courses, then name the shared principle behind each link.
+control_stage: INTERROGATE
 status: validated
-version: '1.0'
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
+- interrogate
 - integration
-- cross-course
-- big-picture
 - transfer
-purpose: Interrogate already-encoded material through comparison, application, retrieval, or transfer
-  so the learner can discriminate it under pressure.
-not_for: This is not for first exposure, direct lecturing, or introducing brand-new material that has
-  not already been encoded.
+- cross-course
+- shared-principles
+- big-picture
+purpose: Cross-Topic Link exists to interrogate already-encoded material by forcing the learner to connect the current topic to other domains, explain why the links hold, and name the shared principles beneath them. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for first exposure, direct lecturing, or introducing brand-new material that has not already been encoded.
 best_fit_topics:
 - Previously encoded concepts that need comparison, application, or discrimination
 - Material the learner can retrieve without notes and test under pressure
+- Topics whose value increases when connected across anatomy, physiology, pathology, pharmacology, or clinical reasoning
 poor_fit_topics:
 - Brand-new material that has not been encoded yet
 - Tasks that need direct teaching rather than retrieval or interrogation
-learner_state_required: The target concept has already been taught or encoded. The learner can attempt
-  retrieval, comparison, or application before seeing the answer.
+- Topics that cannot yet be linked because the prerequisite domains are not available
+learner_state_required: The target concept has already been taught or encoded. The learner can attempt retrieval, comparison, or application before seeing the answer.
 inputs:
 - description: Current topic
   required: true
-- description: Access to previous course notes (optional)
+- description: Access to previous course notes
   required: false
 outputs:
-- name: Cross-topic connection list (2-3)
-  description: Cross-topic connection list (2-3)
-  format: short, checkable artifact
-- name: Explanatory sentences
-  description: Explanatory sentences
-  format: short, checkable artifact
-- name: Shared principles identified
-  description: Shared principles identified
-  format: short, checkable artifact
-required_outputs: &id001
+- name: Cross-topic connection list (2-3 connections)
+  description: Two or three concrete cross-topic links worth carrying forward.
+  format: bulleted or tabular list
+- name: Explanatory sentences (each with a because clause)
+  description: One explanatory sentence for each connection using an explicit because-clause.
+  format: bulleted list or short paragraph set
+- name: Shared principles identified for each connection
+  description: General rule, mechanism, or structure that explains why the connection holds.
+  format: bulleted or tabular list
+artifact_schemas:
+  Cross-topic connection list (2-3 connections): bullet_list
+  Explanatory sentences (each with a because clause): bullet_list
+  Shared principles identified for each connection: bullet_list
+produces:
 - Cross-topic connection list (2-3 connections)
-- Explanatory sentences (each with a "because" clause)
+- Explanatory sentences (each with a because clause)
+- Shared principles identified for each connection
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
+required_outputs:
+- Cross-topic connection list (2-3 connections)
+- Explanatory sentences (each with a because clause)
 - Shared principles identified for each connection
 success_criteria:
-- 'All required outputs are present and checkable: Cross-topic connection list (2-3 connections), Explanatory
-  sentences (each with a "because" clause), Shared principles identified for each connection.'
-- 'The method reaches its stop condition: 2-3 connections identified; Each explained in one sentence.'
-- The learner stays active and the tutor does not give away the answer before the required attempt or
-  transformation.
+- All required outputs are present for M-INT-003.
+- The learner identifies 2-3 links and explains each one with a because-clause tied to a shared principle.
+- The learner stays active and the tutor does not give away the answer before the required attempt or transformation.
 partial_criteria:
-- 'Some required outputs are present but at least one is missing or incomplete: Cross-topic connection
-  list (2-3 connections), Explanatory sentences (each with a "because" clause).'
+- 'One or more required outputs are present but one core artifact is incomplete: Explanatory sentences (each with a because clause).'
+- The method stayed in the correct stage but the links remained too vague or too intra-course to be useful.
 steps:
 - step: 1
-  name: The Current Topic Clearly
-  action: State the current topic clearly
-  tutor_does: 'Guide the learner to State the current topic clearly. Keep in mind: What''s the core concept?'
+  name: State the current topic
+  action: State the current topic clearly.
+  tutor_does: Guide the learner to name the current topic clearly and identify the core concept that should anchor the links.
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: What''s the core concept?'
+  example: 'Example: What is the core concept?'
 - step: 2
-  name: Brainstorm Connections To Other Courses
-  action: Brainstorm connections to other courses
-  tutor_does: 'Guide the learner to Brainstorm connections to other courses. Keep in mind: Think: anatomy,
-    physiology, pathology, pharmacology, clinical'
+  name: Brainstorm cross-course candidates
+  action: Brainstorm connections to other courses.
+  tutor_does: Guide the learner to brainstorm possible links across anatomy, physiology, pathology, pharmacology, clinical, or other relevant domains.
   learner_does: Attempts retrieval, application, or comparison from memory before asking for support.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: Think: anatomy, physiology, pathology, pharmacology, clinical'
+  example: 'Example: Think anatomy, physiology, pathology, pharmacology, or clinical.'
 - step: 3
-  name: 2 3 Strongest Cross Topic
-  action: Identify 2-3 strongest cross-topic links
-  tutor_does: 'Guide the learner to Identify 2-3 strongest cross-topic links. Keep in mind: Look for:
-    shared mechanisms, shared structures, cause-effect chains'
+  name: Pick the strongest links
+  action: Identify 2-3 strongest cross-topic links.
+  tutor_does: Guide the learner to select the strongest links based on shared mechanism, shared structure, or cause-effect chain rather than loose theme overlap.
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: Look for: shared mechanisms, shared structures, cause-effect chains'
+  example: 'Example: Look for shared mechanisms, shared structures, or cause-effect chains.'
 - step: 4
-  name: A Sentence Explaining Each Connection
-  action: Write a sentence explaining each connection
-  tutor_does: 'Guide the learner to Write a sentence explaining each connection. Keep in mind: Format:
-    ''[Topic A] connects to [Topic B] because...'''
+  name: Explain each link
+  action: Write a sentence explaining each connection.
+  tutor_does: Guide the learner to write one sentence per connection using a because-clause that explains how the link operates.
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: Format: ''[Topic A] connects to [Topic B] because...'
+  example: 'Example: [Topic A] connects to [Topic B] because...'
 - step: 5
-  name: The Shared Principle Underlying The
-  action: Identify the shared principle underlying the connection
-  tutor_does: 'Guide the learner to Identify the shared principle underlying the connection. Keep in mind:
-    What general rule applies to both?'
+  name: Name the shared principle
+  action: Identify the shared principle underlying the connection.
+  tutor_does: Guide the learner to name the general rule, mechanism, or structure that underlies each connection.
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
   example: 'Example: What general rule applies to both?'
 constraints:
 - rule: Require active learner processing
-  why: The method depends on the learner generating, mapping, explaining, or transforming the material
-    rather than passively reading.
+  why: The method depends on the learner generating, mapping, explaining, or transforming the material rather than passively reading.
 - rule: Stay within objective scope
   why: Prevents drift into unrelated material and keeps the method auditable.
 - rule: Do not turn this into a passive answer dump or scoring event
   why: This method is designed for guided learning, not one-shot lecture or formal grading.
-- rule: Force active processing (explain, transform, or map), not passive reading.
+- rule: Force active processing (explain, transform, or map), not passive reading
   why: This gating rule is part of the method’s execution contract.
-- rule: Keep output scoped to mapped objectives only.
+- rule: Keep output scoped to mapped objectives only
   why: This gating rule is part of the method’s execution contract.
 allowed_moves:
-- Ask probing questions about why connections exist (demand "because" statements)
-- Challenge vague or superficial connections — require specific shared mechanisms
+- Ask probing questions about why connections exist and demand because-statements
+- Challenge vague or superficial connections and require a specific shared mechanism
 - Push for cross-course connections, not just within-course links
 - Require identification of the underlying shared principle
-- Use Socratic questioning to help learner discover deeper connections
-- Suggest alternative connection dimensions if learner is stuck (shared structure, cause-effect, shared
-  mechanism)
-- Demand the learner explain HOW the connection operates, not just that it exists
+- Use Socratic questioning to help the learner discover deeper connections
+- Suggest alternative connection dimensions if the learner is stuck, such as shared structure, cause-effect, or shared mechanism
+- Demand that the learner explain how the connection operates, not just that it exists
 forbidden_moves:
-- Accept connections without explanatory "because" statements
-- Accept only within-course connections (at least one must be cross-course)
-- Provide the connections FOR the learner
+- Accept connections without explanatory because-statements
+- Accept only within-course connections when a cross-course link is available
+- Provide the connections for the learner
 - Accept listing without explanation of shared principles
 - Skip the shared principle identification step
-- Teach new content — interrogation uses what was already encoded
+- Teach new content because interrogation uses what was already encoded
 - Move on with fewer than 2 connections identified
 - Accept one-word or surface-level answers without probing
 - Present content outside the mapped objective scope
-stuck_protocol: Reduce the scope, ask for a smaller retrieval target, compare with a near-neighbor, or
-  route back to ENCODE/REFERENCE if recall keeps failing. Do not keep guessing indefinitely.
+stuck_protocol: Reduce the scope, ask for a smaller retrieval target, compare with a near-neighbor, or route back to ENCODE/REFERENCE if recall keeps failing. Do not keep guessing indefinitely.
 failure_modes:
 - mode: Connections too vague
-  detection: The learner or tutor starts doing connections too vague or the artifact stops satisfying
-    the method’s required checks.
-  recovery: Require specific shared mechanism or structure
-  fallback_method: M-ENC-009
+  detection: The learner or tutor starts doing connections too vague or the artifact stops satisfying the method’s required checks.
+  recovery: Require a specific shared mechanism or structure.
+  fallback_method: M-ORG-001
 - mode: Only within-course connections
-  detection: The learner or tutor starts doing only within-course connections or the artifact stops satisfying
-    the method’s required checks.
-  recovery: At least one must be from a different course
+  detection: The learner or tutor starts doing only within-course connections or the artifact stops satisfying the method’s required checks.
+  recovery: At least one connection must come from a different course or domain when possible.
   fallback_method: M-INT-001
 - mode: Listing without explaining
-  detection: The learner or tutor starts doing listing without explaining or the artifact stops satisfying
-    the method’s required checks.
-  recovery: Each connection needs a "because" statement
+  detection: The learner or tutor starts doing listing without explaining or the artifact stops satisfying the method’s required checks.
+  recovery: Each connection needs an explicit because-statement.
   fallback_method: M-INT-004
 default_duration_min: 3
 energy_cost: medium
 best_stage: consolidation
 mechanisms:
-- elaboration
 - transfer
+- knowledge_integration
+- elaboration
+- analogical_reasoning
+- schema_abstraction
+- relational_reasoning
 evidence:
-  citation: Pugh & Bergin (2006)
-  finding: Interest and retention deepen when learners see cross-domain connections
-  source: seed_methods.py
+  citation: Barnett and Ceci (2002); Richland and Simms (2015); Lehmann, Rott, and Schmidt-Borcherding (2019); Fries, Son, Givvin, et al. (2021); Lehmann (2022)
+  finding: Cross-Topic Link is best supported as an explicit knowledge-integration and transfer method, not as a loose brainstorming exercise. Far-transfer research and analogy-informed learning theory both suggest that flexible use of knowledge depends on seeing structural relationships across contexts rather than storing topics as isolated units. More recent instructional and integration work also suggests that learners build more coherent knowledge when connections are made explicit, practiced repeatedly, and explained rather than merely noticed. The practical implication for this method is to require 2-3 concrete links, force a because-clause for each one, and name the shared principle so the learner leaves with a reusable cross-domain rule rather than a vague association.
+  source: https://doi.org/10.1037/0033-2909.128.4.612; https://doi.org/10.1002/wcs.1336; https://doi.org/10.1007/s11251-018-9472-2; https://doi.org/10.1007/s10648-020-09561-x; https://doi.org/10.1007/s10212-021-00577-7
+  needs_research: false
 knobs:
   guidance_level: medium
-  output_format: bullets
-  evidence_raw: Pugh & Bergin (2006); interest deepens when learners see cross-domain connections
-  gating_rules:
-  - Force active processing (explain, transform, or map), not passive reading.
-  - Keep output scoped to mapped objectives only.
-  logging_fields:
-  - topic_linked
-  - cross_topics
-  - shared_principles
-  artifact_type: notes
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest linkage pass. Return 2 concise cross-topic links, 2 because-sentences, and 2 shared-principle bullets.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Full integration pass. Build 3 links, explain each one in fuller prose, and include a dedicated section on why the shared principle matters across courses.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: Refresh linkage pass. Use a compact table with columns for current topic, linked topic, because, and shared principle.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied linkage pass. Anchor the links to patient care or clinical reasoning by showing how anatomy, physiology, pathology, or treatment logic converge in practice.
 related_methods:
-- id: M-ENC-009
+- id: M-ORG-001
   relationship: Concept map fallback for networked links
 - id: M-INT-001
   relationship: Analogy bridge cousin method
 - id: M-INT-004
   relationship: Comparison fallback if the links are confusion-driven
-facilitation_prompt: "You are running M-INT-003 (Cross-Topic Link) in ENCODE stage.\nRole: you are the\
-  \ tutor running the method exactly as written, with no hidden assumptions.\nObjective: Interrogate already-encoded\
-  \ material through comparison, application, retrieval, or transfer so the learner can discriminate it\
-  \ under pressure.\nScope: Identify 2-3 connections between this topic and topics from other courses.\
-  \ Look for shared principles.\nRules:\n- Require active learner processing — The method depends on the\
-  \ learner generating, mapping, explaining, or transforming the material rather than passively reading.\n\
-  - Stay within objective scope — Prevents drift into unrelated material and keeps the method auditable.\n\
-  - Do not turn this into a passive answer dump or scoring event — This method is designed for guided\
-  \ learning, not one-shot lecture or formal grading.\n- Force active processing (explain, transform,\
-  \ or map), not passive reading. — This gating rule is part of the method’s execution contract.\n- Keep\
-  \ output scoped to mapped objectives only. — This gating rule is part of the method’s execution contract.\n\
-  - Not for: This is not for first exposure, direct lecturing, or introducing brand-new material that\
-  \ has not already been encoded.\nInputs:\n- Current topic (required)\n- Access to previous course notes\
-  \ (optional) (optional)\nRequired outputs:\n- Cross-topic connection list (2-3): Cross-topic connection\
-  \ list (2-3) [short, checkable artifact]\n- Explanatory sentences: Explanatory sentences [short, checkable\
-  \ artifact]\n- Shared principles identified: Shared principles identified [short, checkable artifact]\n\
-  Steps: run one step at a time and wait after each step before advancing.\n1. The Current Topic Clearly\n\
-  \   Tutor does: Guide the learner to State the current topic clearly. Keep in mind: What's the core\
-  \ concept?\n   Learner does: Performs the requested cognitive move and shares the result before moving\
-  \ on.\n   Example: Example: What's the core concept?\n   Check: Has the learner attempted retrieval\
-  \ or application before any corrective help?\n   Then STOP and wait for the learner.\n2. Brainstorm\
-  \ Connections To Other Courses\n   Tutor does: Guide the learner to Brainstorm connections to other\
-  \ courses. Keep in mind: Think: anatomy, physiology, pathology, pharmacology, clinical\n   Learner does:\
-  \ Attempts retrieval, application, or comparison from memory before asking for support.\n   Example:\
-  \ Example: Think: anatomy, physiology, pathology, pharmacology, clinical\n   Check: Has the learner\
-  \ attempted retrieval or application before any corrective help?\n   Then STOP and wait for the learner.\n\
-  3. 2 3 Strongest Cross Topic\n   Tutor does: Guide the learner to Identify 2-3 strongest cross-topic\
-  \ links. Keep in mind: Look for: shared mechanisms, shared structures, cause-effect chains\n   Learner\
-  \ does: Performs the requested cognitive move and shares the result before moving on.\n   Example: Example:\
-  \ Look for: shared mechanisms, shared structures, cause-effect chains\n   Check: Has the learner attempted\
-  \ retrieval or application before any corrective help?\n   Then STOP and wait for the learner.\n4. A\
-  \ Sentence Explaining Each Connection\n   Tutor does: Guide the learner to Write a sentence explaining\
-  \ each connection. Keep in mind: Format: '[Topic A] connects to [Topic B] because...'\n   Learner does:\
-  \ Performs the requested cognitive move and shares the result before moving on.\n   Example: Example:\
-  \ Format: '[Topic A] connects to [Topic B] because...\n   Check: Has the learner attempted retrieval\
-  \ or application before any corrective help?\n   Then STOP and wait for the learner.\n5. The Shared\
-  \ Principle Underlying The\n   Tutor does: Guide the learner to Identify the shared principle underlying\
-  \ the connection. Keep in mind: What general rule applies to both?\n   Learner does: Performs the requested\
-  \ cognitive move and shares the result before moving on.\n   Example: Example: What general rule applies\
-  \ to both?\n   Check: Has the learner attempted retrieval or application before any corrective help?\n\
-  \   Then STOP and wait for the learner.\nStop conditions:\n- All required outputs are present and checkable:\
-  \ Cross-topic connection list (2-3 connections), Explanatory sentences (each with a \"because\" clause),\
-  \ Shared principles identified for each connection.\n- The method reaches its stop condition: 2-3 connections\
-  \ identified; Each explained in one sentence.\n- The learner stays active and the tutor does not give\
-  \ away the answer before the required attempt or transformation.\nIf stuck: Reduce the scope, ask for\
-  \ a smaller retrieval target, compare with a near-neighbor, or route back to ENCODE/REFERENCE if recall\
-  \ keeps failing. Do not keep guessing indefinitely.\nDo not skip steps, do not solve the whole task\
-  \ at once, and do not present source claims as mnemonic or analogy artifacts."
+system_prompt_override:
+  relaxes:
+  - Never reveal the full answer without letting me attempt first. Progressive hints, not solutions.
+  replaces_with:
+  - Require the learner to propose candidate links before you refine them. You may offer a domain menu, but do not supply the final cross-topic network before an attempt.
+  - Reject vague thematic associations. Every accepted link must include both a because-clause and a named shared principle.
+  reason: Cross-Topic Link only works when the learner performs the relational integration work rather than receiving a prebuilt list of connections.
+facilitation_prompt: |
+  You are running M-INT-003 (Cross-Topic Link) in the INTERROGATE stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: Cross-topic connection list, Explanatory sentences, and Shared principles.
+  Build 2-3 meaningful links between the current topic and other domains, explain each one with a because-clause, and name the shared principle without turning the run into a lecture or a loose brainstorm.
+  Preset behavior:
+  - exam_cram: one-shot; 2 terse links; because-sentences; principle bullets.
+  - deep_mastery: interactive; 3 fuller links with a dedicated shared-principle section.
+  - quick_review: one-shot refresh; compact connection table.
+  - clinical_bridge: stepwise; cross-domain links tied to patient care or clinical reasoning.
+  If no preset is specified, use the default knobs. One-shot returns the full linkage artifact in one bounded reply; interactive or stepwise mode moves topic -> candidates -> links -> principles and waits.
 validation:
   test_cases:
   - topic: Previously encoded concepts that need comparison, application, or discrimination
-    expected_outputs: *id001
+    expected_outputs:
+    - Cross-topic connection list (2-3 connections)
+    - Explanatory sentences (each with a because clause)
+    - Shared principles identified for each connection
     pass_criteria:
     - All required outputs are present.
     - The learner performs the required active step before the final artifact is given.
@@ -247,4 +250,4 @@ validation:
   - The facilitation_prompt can be run without extra hidden context.
   known_issues:
   - LLMs may over-explain before the learner attempts the required move.
-  - LLMs may drift outside scope when the topic is broad or ambiguous.
+  - LLMs may generate thematic but structurally weak links if the tutor does not enforce the because-clause and shared-principle steps.

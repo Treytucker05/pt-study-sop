@@ -1,13 +1,13 @@
 id: M-TEA-001
 name: Story Spine
-category: teach
+category: EXPLAIN
 subcategory: narrative-bridge
 description: Teach a sequence or pathway as a compact story with a beginning state, trigger, causal progression, consequence, and application breakpoint.
-control_stage: TEACH
-status: draft
-version: '1.0'
+control_stage: EXPLAIN
+status: validated
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
 - teach
 - story
@@ -17,6 +17,7 @@ tags:
 - narrative-bridge
 - teaching
 - explanation
+- explain
 purpose: Teach a sequence or pathway as a compact story with a beginning state, trigger, causal progression, consequence, and application breakpoint. Use it to teach one bounded concept by turning the source into a learner-facing bridge that preserves the real mechanism.
 not_for: Not for open-ended brainstorming, scoring, or broad coverage of unrelated material. Use a PRIME method when the learner first needs orientation or objective framing.
 best_fit_topics:
@@ -46,6 +47,22 @@ outputs:
 - name: Source-backed mechanism restatement
   description: Learner-facing teaching artifact for story spine.
   format: bulleted artifact
+artifact_schemas:
+  Story spine: ordered_steps
+  Ordered step list: bullet_list
+  Clinical breakpoint: bullet_list
+  Source-backed mechanism restatement: bullet_list
+produces:
+- Story spine
+- Ordered step list
+- Clinical breakpoint
+- Source-backed mechanism restatement
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
 required_outputs:
 - Story spine
 - Ordered step list
@@ -136,149 +153,39 @@ default_duration_min: 6
 energy_cost: medium
 best_stage: first_exposure
 mechanisms:
-- scaffolding
+- narrative_coding
+- causal_coherence
+- schema_abstraction
+- structure_signaling
 - elaboration
 - transfer
-- narrative_coding
 evidence:
-  citation: Mayer (2009)
-  finding: Segmented explanation and pretraining support novice learning on unfamiliar systems
-  source: control-plane migration
+  citation: van den Broek (1981); Reiser, Novak, McGill, and Penuel (2021); Chen and Bornstein (2024)
+  finding: 'Story Spine is best supported as a coherence-building explanation method that helps learners hold a causal sequence together when the narrative structure tracks the real mechanism. Story-comprehension work shows that causal links are central to building a stable representation of events, and storyline-based instructional work shows that learners follow an explanation more effectively when they can see why the sequence moves from one focus to the next. Recent narrative-memory review work sharpens the same point: causal coherence, not decorative storytelling, is what supports comprehension and recall. The practical implication for this method is to keep the story spine short, map each beat to a real causal step, and finish by translating the story back into formal mechanism terms so the narrative remains a bridge rather than a substitute.'
+  source: https://doi.org/10.1016/S0079-7421(08)60177-2; https://doi.org/10.1080/1046560X.2021.1884784; https://doi.org/10.1016/j.tics.2024.04.003
+  needs_research: false
 knobs:
   guidance_level: medium
-  output_format: bullets
-  artifact_type: notes
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
 related_methods:
-- id: M-TEA-006
-  relationship: Use when the learner needs progressively deeper layers
-- id: M-TEA-003
-  relationship: Use when a example case would anchor the story better
-facilitation_prompt: 'You are a study tutor running M-TEA-001 (Story Spine) in the TEACH stage.
-
-  ROLE: You are a careful, supportive tutor. Your job is to run Story Spine exactly as specified and keep the output faithful, bounded, and useful.
-
-  OBJECTIVE: Teach a sequence or pathway as a compact story with a beginning state, trigger, causal progression, consequence, and application breakpoint. Use it to teach one bounded concept by turning the source into a learner-facing bridge that preserves the real mechanism.
-
-  SCOPE: Teach a sequence or pathway as a compact story with a beginning state, trigger, causal progression, consequence, and application breakpoint.
-
-  RULES:
-
-  - Do not turn the method into a test or quiz — because TEACH methods should build understanding, not create avoidable performance pressure.
-
-  - Stay faithful to the source and keep the chunk bounded — because The learner needs a clear bridge, not an unbounded lecture.
-
-  - Do not assess or score the learner — because This method is for orientation and teaching, not grading.
-
-  - Require the relevant objective or context before running — because The method needs a bounded target to stay useful.
-
-
-  OUTPUTS TO PRODUCE:
-
-  1. Story spine — Structured artifact that captures the key story spine relationships. (ordered bullets)
-
-  2. Ordered step list — Learner-facing teaching artifact for story spine. (bulleted artifact)
-
-  3. Clinical breakpoint — Learner-facing teaching artifact for story spine. (bulleted artifact)
-
-  4. Source-backed mechanism restatement — Learner-facing teaching artifact for story spine. (bulleted artifact)
-
-
-  RUN THE METHOD ONE STEP AT A TIME. Wait for my response before moving to the next step.
-
-  STEP 1 — Beginning State
-
-  - Tutor does: State the beginning state and trigger. Name the system before change begins
-
-  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
-
-  - Example: Example: "Beginning State: State the beginning state and trigger"
-
-  - Check: Does the causal chain feel clear from start to finish?
-
-  Then stop and wait.
-
-  STEP 2 — Sequence
-
-  - Tutor does: Walk the sequence as a causal story. Each sentence should move the process forward
-
-  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
-
-  - Example: Example: "Sequence: Walk the sequence as a causal story"
-
-  - Check: Does the causal chain feel clear from start to finish?
-
-  Then stop and wait.
-
-  STEP 3 — Sequence
-
-  - Tutor does: Mark the main consequence or endpoint. Show why the sequence matters
-
-  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
-
-  - Example: Example: "Sequence: Mark the main consequence or endpoint"
-
-  - Check: Does the causal chain feel clear from start to finish?
-
-  Then stop and wait.
-
-  STEP 4 — Breakpoint
-
-  - Tutor does: Add one application breakpoint or failure point. Explain where the story goes wrong or breaks down in the real world
-
-  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
-
-  - Example: Example: "Breakpoint: Add one application breakpoint or failure point"
-
-  - Check: Does the causal chain feel clear from start to finish?
-
-  Then stop and wait.
-
-  STEP 5 — Step 5
-
-  - Tutor does: Return to the formal mechanism terms. Translate the story back to the real source language
-
-  - Learner does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
-
-  - Example: Example: "Step 5: Return to the formal mechanism terms"
-
-  - Check: Does the causal chain feel clear from start to finish?
-
-  Then stop and wait.
-
-
-  STOP CONDITIONS:
-
-  - The learner-facing explanation artifact is faithful to Story Spine and stays bounded.
-
-  - The method includes a concrete bridge, example, or discriminating cue that makes the idea easier to hold.
-
-  - The output ends with a clear carry-forward signal instead of drifting into a full lecture.
-
-
-  IF YOU GET STUCK:
-
-  If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For TEACH, fall back to M-TEA-004 or M-TEA-006.
-
-  If the learner is still stuck after one rescue move, shrink the chunk, switch modality, or fall back to the listed fallback method.
-
-
-  GOOD OUTPUT EXAMPLE:
-
-  - Story spine: a concise, source-faithful artifact that matches the method purpose and stays within scope.
-
-  - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
-
-
-  DONE WHEN:
-
-  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
-
-
-  Non-assessment guard:
-
-  - This is a TEACH chunk, not an assessment.
-
-  - Do not score or quiz the learner during this block; no scored output, no grading.'
+- id: M-TEA-004
+  relationship: Use when the concept needs a modality switch rather than a causal story spine
+- id: M-INT-005
+  relationship: Escalate when the learner needs a fuller case walkthrough after the bounded story pass
+facilitation_prompt: |-
+  You are running M-TEA-001 (Story Spine) in the EXPLAIN stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: Story spine, Ordered step list, Clinical breakpoint, and Source-backed mechanism restatement.
+  Teach one bounded pathway by stating the beginning state and trigger, walking the causal progression, naming the consequence, adding one breakpoint, and translating back to source terms.
+  Preset behavior:
+  - exam_cram: one-shot; terse story beats plus one breakpoint and one formal restatement.
+  - deep_mastery: interactive; labeled sections with explicit causal transitions before the final formal restatement.
+  - quick_review: one-shot refresh; compact Beat | Why it leads | Formal term table.
+  - clinical_bridge: stepwise; applied sequence grid with trigger, consequence, breakpoint, and practical implication.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode moves start state -> sequence -> breakpoint -> formal restatement and waits.
 validation:
   test_cases:
   - topic: Single concept explanation for Story Spine
@@ -306,3 +213,48 @@ validation:
   known_issues:
   - Some prompts may over-run the time budget if the source material is very dense.
   - Without a clear topic boundary, the method can broaden instead of teaching one useful chunk.
+  - "Single story does not reliably produce transfer \u2014 learner must explicitly abstract the schema (Gick & Holyoak, 1983)."
+  - Fictionalized or richly immersive stories can reduce comprehension relative to expository text.
+  - Seductive detail risk: interesting but irrelevant narrative elements hurt retention and transfer.
+  - Narratives can inflate learner confidence beyond actual understanding (illusion of comprehension).
+  - Breakpoint must function as a contrastive boundary case, not a dramatic flourish.
+boundary_conditions:
+  strongest_for:
+  - Novices learning unfamiliar bounded causal processes
+  - Content with a real causal pathway that can be walked step by step
+  - Non-fictional, concept-tight stories immediately connected to formal vocabulary
+  - Delayed retention and conceptual understanding outcomes
+  weakest_for:
+  - Symbol-heavy or precision-critical content (taxonomies, rule systems, symbolic procedures)
+  - Far transfer without explicit abstraction step
+  - Fictionalized or richly contextualized explanations
+  - Content where narrative coherence could oversimplify evidentiary nuance
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: One-shot; return 4-5 terse story beats, one breakpoint, and one formal mechanism restatement line.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Interactive; use labeled sections, make the causal transitions explicit, and pause before the final source-term restatement.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: One-shot refresh; compress the sequence into a Beat | Why it leads | Formal term table plus one carry-forward cue.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Stepwise; render the pathway as an applied sequence grid with trigger, consequence, breakpoint, and practical implication columns.

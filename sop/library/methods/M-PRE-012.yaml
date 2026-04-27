@@ -1,21 +1,21 @@
 id: M-PRE-012
 name: Terminology Pretraining
-category: prime
-subcategory: terminology
+category: ORIENT
+subcategory: terminology-pretraining
 description: Extract the minimum high-yield terms, abbreviations, and short definitions needed to read the topic without getting lost, plus the most important confusable distinctions.
-control_stage: PRIME
+control_stage: ORIENT
 status: validated
-version: '1.0'
+version: '1.3'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
-- prime
+- orient
 - terminology
-- orientation
+- pretraining
 - prior-knowledge
-- term
+- vocabulary
 purpose: Extract the minimum high-yield terms, abbreviations, and short definitions needed to read the topic without getting lost, plus the most important confusable distinctions. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
-not_for: Not for first-contact teaching, scored assessment, or full solution reveal. Use a TEACH or REFERENCE method when the goal is explanation rather than orientation.
+not_for: Not for first-contact teaching, scored assessment, or full solution reveal. Use an EXPLAIN or CONSOLIDATE method when the goal is explanation rather than orientation.
 best_fit_topics:
 - 'New or complex material that needs a quick orientation pass: Terminology Pretraining'
 - Topics with prior notes, objective context, or an obvious structure to surface
@@ -37,6 +37,13 @@ outputs:
 - name: ConfusableTermFlags
   description: Vocabulary or terminology support for terminology pretraining.
   format: bulleted artifact
+artifact_schemas:
+  TerminologyList: bullet_list
+  ConfusableTermFlags: bullet_list
+produces:
+- TerminologyList
+- ConfusableTermFlags
+requires: []
 required_outputs:
 - TerminologyList
 - ConfusableTermFlags
@@ -49,32 +56,32 @@ partial_criteria:
 - The output has useful structure but is missing one required linkage or objective tie.
 steps:
 - step: 1
-  name: Opening Step
-  action: Extract the smallest high-yield set of terms and abbreviations that unlocks the source
-  tutor_does: Extract the smallest high-yield set of terms and abbreviations that unlocks the source. Keep the list lean
+  name: Select Bottleneck Terms
+  action: Identify the smallest sufficient set of terms needed for gist and mechanism
+  tutor_does: Identify the smallest sufficient set of terms needed to follow the source's gist and mechanism. Prioritize conceptually difficult, central, high-utility items. Include abbreviations only if they are indispensable to parse the source. Skip peripheral or inferable words.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: What are the strongest anchors you already have for this topic?
-  example: 'Example: "Opening Step: Extract the smallest high-yield set of terms and abbreviations that unlocks the source"'
+  example: 'Example: For shoulder complex — keep "scapulohumeral rhythm", "glenohumeral", "ABER position"; skip generic anatomy words you already know.'
 - step: 2
-  name: Step 2
-  action: Attach concise source-grounded definitions
-  tutor_does: Attach concise source-grounded definitions. Definitions orient the learner; they do not replace TEACH
+  name: Functional Definitions
+  action: Attach a concise definition plus one function/state/context cue
+  tutor_does: For each term, give a concise definition AND one functional cue — what it does, where it is, or a sentence/context where it appears. Avoid dictionary-only glosses. Definitions orient the learner; they do not replace EXPLAIN.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: Does the structure so far match what you expected from the material?
-  example: 'Example: "Step 2: Attach concise source-grounded definitions"'
+  example: 'Example: "Glenohumeral joint = ball-and-socket joint of the shoulder; primary site of arm elevation and the joint most often dislocated."'
 - step: 3
-  name: Step 3
-  action: Flag the most important confusable or subtle distinctions
-  tutor_does: Flag the most important confusable or subtle distinctions. Only include distinctions that are likely to trip the learner
+  name: Critical Contrasts
+  action: Flag only the few confusable distinctions likely to derail comprehension
+  tutor_does: Flag only the few confusable distinctions likely to derail comprehension. Express each as a one-line contrast (e.g., "X is the structure; Y is the process"). Do not produce a long confusion list.
   learner_does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
   max_lines: 4
   check: Which gaps or next targets should we carry forward?
-  example: 'Example: "Step 3: Flag the most important confusable or subtle distinctions"'
+  example: 'Example: "Abduction = moving away from midline; Adduction = moving toward midline."'
 constraints:
 - rule: Do not assess, grade, or confidence-rate the learner
-  why: PRIME methods activate and organize knowledge instead of testing it.
+  why: ORIENT methods activate and organize knowledge instead of testing it.
 - rule: Stay at orientation level and avoid full solution reveal
   why: The goal is to shape readiness, not finish the lesson for the learner.
 - rule: Do not assess or score the learner
@@ -100,7 +107,7 @@ forbidden_moves:
 - Turn terminology extraction into a full lesson summary
 - Score the learner or run retrieval grading
 - Teach detailed content as the final answer
-stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
+stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For ORIENT, fall back to M-PRE-010 or M-PRE-008.
 failure_modes:
 - mode: Too many low-value terms
   detection: The output no longer matches the method’s core purpose.
@@ -116,131 +123,94 @@ best_stage: first_exposure
 mechanisms:
 - pretraining_principle
 - vocabulary_grounding
-- schema_activation
+- schema_construction
 - scaffolding
-- prior_knowledge_activation
-- organization
+- prerequisite_knowledge_building
+- selection_and_signaling_of_central_terms
+- cognitive_load_management
+- active_processing
+- semantic_integration
+- metacognitive_calibration
 evidence:
-  citation: Mayer (2009)
-  finding: Mayer (2009); pretraining helps novices when key parts and names are introduced before complex explanation.
-  source: legacy method card
+  citation: Mayer (2009); Stahl and Nagy (2006); Wright and Cervetti (2017); Cervetti, Fitzgerald, Hiebert, and Hebert (2023); Hattan, Alexander, and Lupo (2024)
+  finding: Terminology pretraining is strongest when learners meet the names and characteristics of central concepts before a complex explanation or dense reading task. Vocabulary research further suggests that comprehension gains are most reliable when instruction is selective, contextualized, and tied to function or use rather than dictionary-only glosses. More recent review evidence suggests that prior knowledge activation usually needs explicit prompting and that these supports matter most when learners lack enough domain vocabulary to orient themselves independently.
+  source: https://doi.org/10.1017/CBO9780511811678.014; https://www.routledge.com/Teaching-Word-Meanings/Stahl-Nagy/p/book/9781410615381; https://doi.org/10.1002/rrq.163; https://doi.org/10.1080/02702711.2023.2179146; https://doi.org/10.3102/00346543221148478
+  needs_research: false
+boundary_conditions:
+  strongest_for:
+  - Novices or learners with weak prior knowledge facing complex, terminology-dense material
+  - Sources where a small set of terms is genuinely central to comprehension
+  - Learners with weak reading comprehension or underdeveloped academic vocabulary
+  - Designs that pair term support with context, use, comparison, or multiple encounters
+  weakest_for:
+  - Knowledgeable learners (expertise reversal — benefit shrinks or disappears)
+  - Simple, familiar, or self-paced material where terminology is not the bottleneck
+  - Peripheral or inferable words rather than conceptually central terms
+  - Goals requiring far transfer when the method is used as a substitute for deeper instruction
 knobs:
   guidance_level: medium
-  objective_link_required: true
-  artifact_type: notes
-  evidence_strength: high
-  primary_citations:
-  - Mayer (2009)
-  outputs_summary: TerminologyList; ConfusableTermFlags
-  has_steps: Y
-  has_outputs_or_artifacts: Y
-  output_format: bullets
+  delivery_mode: one_shot
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest usable primer; keep only the most test-relevant bottleneck terms, use terse functional cues, and flag just the highest-risk confusions.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Slower and fuller primer; group terms lightly, allow richer function or context cues, and pause once before the confusable contrasts to check that the structure feels right.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Refresh pass for previously seen material; keep only shaky, confusable, or easily forgotten terms and skip beginner-level glosses.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied orientation pass; tie each cue or contrast to practical relevance, chart language, exam findings, or bedside distinctions without drifting into full teaching.
 related_methods:
 - id: M-PRE-010
   relationship: Frame the vocabulary in the active objective
 - id: M-PRE-008
   relationship: Follow with structural extraction after pretraining terms
-facilitation_prompt: 'You are a study tutor running M-PRE-012 (Terminology Pretraining) in the PRIME stage.
-
-  ROLE: You are a careful, supportive tutor. Your job is to run Terminology Pretraining exactly as specified and keep the output faithful, bounded, and useful.
-
-  OBJECTIVE: Extract the minimum high-yield terms, abbreviations, and short definitions needed to read the topic without getting lost, plus the most important confusable distinctions. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
-
-  SCOPE: Extract the minimum high-yield terms, abbreviations, and short definitions needed to read the topic without getting lost, plus the most important confusable distinctions.
-
-  RULES:
-
-  - Do not assess, grade, or confidence-rate the learner — because PRIME methods activate and organize knowledge instead of testing it.
-
-  - Stay at orientation level and avoid full solution reveal — because The goal is to shape readiness, not finish the lesson for the learner.
-
-  - Do not assess or score the learner — because This method is for orientation and teaching, not grading.
-
-  - Source Grounded Only — because The method inherits this as a hard rule from the legacy card.
-
-  - No Mechanism Explanation — because The method inherits this as a hard rule from the legacy card.
-
-  - No Hidden Teaching — because The method inherits this as a hard rule from the legacy card.
-
-
-  OUTPUTS TO PRODUCE:
-
-  1. TerminologyList — Vocabulary or terminology support for terminology pretraining. (bulleted artifact)
-
-  2. ConfusableTermFlags — Vocabulary or terminology support for terminology pretraining. (bulleted artifact)
-
-
-  RUN THE METHOD ONE STEP AT A TIME. Wait for my response before moving to the next step.
-
-  STEP 1 — Opening Step
-
-  - Tutor does: Extract the smallest high-yield set of terms and abbreviations that unlocks the source. Keep the list lean
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Opening Step: Extract the smallest high-yield set of terms and abbreviations that unlocks the source"
-
-  - Check: What are the strongest anchors you already have for this topic?
-
-  Then stop and wait.
-
-  STEP 2 — Step 2
-
-  - Tutor does: Attach concise source-grounded definitions. Definitions orient the learner; they do not replace TEACH
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Step 2: Attach concise source-grounded definitions"
-
-  - Check: Does the structure so far match what you expected from the material?
-
-  Then stop and wait.
-
-  STEP 3 — Step 3
-
-  - Tutor does: Flag the most important confusable or subtle distinctions. Only include distinctions that are likely to trip the learner
-
-  - Learner does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
-
-  - Example: Example: "Step 3: Flag the most important confusable or subtle distinctions"
-
-  - Check: Which gaps or next targets should we carry forward?
-
-  Then stop and wait.
-
-
-  STOP CONDITIONS:
-
-  - Core structure is captured in the required outputs: TerminologyList, ConfusableTermFlags.
-
-  - The method stays non-assessive and does not score the learner.
-
-  - Any gaps, priorities, or blind spots are explicitly named for next-pass study.
-
-
-  IF YOU GET STUCK:
-
-  If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
-
-  If the learner is still stuck after one rescue move, shrink the chunk, switch modality, or fall back to the listed fallback method.
-
-
-  GOOD OUTPUT EXAMPLE:
-
-  - TerminologyList: a concise, source-faithful artifact that matches the method purpose and stays within scope.
-
-  - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
-
-
-  DONE WHEN:
-
-  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
-
-  Non-assessment guard:
-
-  - This is a PRIME block — orientation only, not an assessment.
-
-  - Do not quiz, score, or grade the learner here; no scored output.'
+system_prompt_override:
+  relaxes:
+  - Highly interactive. One small teaching chunk, one short check, or one question at a time.
+  - Ask only one question at a time.
+  - Do not do more than one step at a time.
+  - Within EXPLAIN, deliver ONE chunk at a time, check in, then continue.
+  replaces_with:
+  - Ask only for missing required inputs, then run the method.
+  - Default to one bounded terminology artifact; if the active preset uses interactive or stepwise pacing, preserve the same outputs and stop between sections.
+  - Keep the term set selective, source-grounded, and orientation-level.
+  - Match the output shape to the active preset while preserving functional cues and critical contrasts.
+  reason: Terminology Pretraining works best as a compact orientation artifact. The override keeps the term list selective and usable while allowing preset-specific pacing and output shape.
+facilitation_prompt: |
+  You are running M-PRE-012 (Terminology Pretraining) in the ORIENT stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: TerminologyList and ConfusableTermFlags.
+  Select the smallest sufficient set of high-yield terms and indispensable abbreviations. For each term, give a concise definition plus one function, state, or context cue. Flag only the few confusable distinctions most likely to derail reading.
+  Stay source-grounded, non-assessive, and stop before mechanism teaching.
+  Preset behavior:
+  - exam_cram: one-shot; bullets; keep only the most test-relevant bottleneck terms; use terse cues and 2-3 critical contrasts.
+  - deep_mastery: interactive; labeled sections; group terms lightly, allow richer functional cues, and ask one short check before ConfusableTermFlags.
+  - quick_review: one-shot refresh; assume prior exposure; keep only shaky, easily confused, or easily forgotten terms and skip beginner-level glosses.
+  - clinical_bridge: stepwise; use a table or tightly labeled sections and tie cues or contrasts to applied relevance, chart language, exam findings, or bedside distinctions.
+  If no preset is specified, use the default knobs. One-shot returns both outputs in one bounded reply; interactive or stepwise mode moves section by section and waits.
 validation:
   test_cases:
   - topic: First pass on Terminology Pretraining with prior notes present
@@ -264,3 +234,9 @@ validation:
   known_issues:
   - LLMs sometimes over-explain instead of staying at orientation level.
   - If objective context is weak, the method can drift unless the prompt locks scope early.
+  - Definition-only encoding is shallow; pair definitions with one function/state/context cue.
+  - Near-transfer effects are much stronger than generalized-transfer effects.
+  - Risk of illusion of understanding (misplaced meaning effect) when learners feel "I know this term" after only seeing a label and gloss.
+  - Pretraining can become redundant or counterproductive for higher-knowledge learners (expertise reversal).
+  - No validated optimal term count — prioritize selectivity over a fixed number.
+  - Abbreviation handling has sparse direct evidence; include abbreviations only when indispensable to parse the source.

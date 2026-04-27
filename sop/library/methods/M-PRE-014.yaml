@@ -1,13 +1,13 @@
 id: M-PRE-014
 name: Ambiguity and Blind-Spot Scan
-category: prime
-subcategory: blind-spot-scan
+category: PRIME
+subcategory: ambiguity-and-blind-spot-scan
 description: Scan the selected source for the most important ambiguities, unsupported jumps, misconceptions, or traps that TEACH should repair later.
 control_stage: PRIME
 status: validated
-version: '1.0'
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
 - prime
 - blind-spot-scan
@@ -15,14 +15,18 @@ tags:
 - prior-knowledge
 - scan
 - blind-spot
-purpose: Scan the selected source for the most important ambiguities, unsupported jumps, misconceptions, or traps that TEACH should repair later. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
+- ambiguity
+- misconception
+purpose: Ambiguity and Blind-Spot Scan exists to surface the highest-yield ambiguities, unsupported jumps, misconceptions, or traps in the source so later teaching can slow down in the right places. It turns the current stage into a clean, reusable signal instead of a vague study session.
 not_for: Not for first-contact teaching, scored assessment, or full solution reveal. Use a TEACH or REFERENCE method when the goal is explanation rather than orientation.
 best_fit_topics:
-- 'New or complex material that needs a quick orientation pass: Ambiguity and Blind-Spot Scan'
-- Topics with prior notes, objective context, or an obvious structure to surface
+- Dense material where a few hidden traps or compressed leaps will cause later confusion
+- Topics with prior notes, objective context, or likely misconception points
+- Source packets that need a source-grounded repair list before teaching starts
 poor_fit_topics:
 - Brand-new content with no context or source packet
 - Scored retrieval or diagnostic testing
+- Situations where the user wants the blind spots resolved immediately instead of flagged for later teaching
 learner_state_required: Source material is loaded, the topic is bounded, and the learner has at least some prior context or an objective to orient around.
 inputs:
 - description: Source material loaded in chat
@@ -33,26 +37,38 @@ inputs:
   required: false
 outputs:
 - name: BlindSpotList
-  description: List of ambiguous points and blind spots that need clarification.
-  format: bulleted artifact
+  description: Short list of source-grounded ambiguities, traps, compressed leaps, or likely misconceptions.
+  format: bulleted or tabular list
 - name: FollowUpTargets
-  description: Next-pass targets for study or clarification.
-  format: bulleted artifact
+  description: TEACH-facing follow-up targets translated from the blind spots.
+  format: bulleted or tabular list
+artifact_schemas:
+  BlindSpotList: bullet_list
+  FollowUpTargets: bullet_list
+produces:
+- BlindSpotList
+- FollowUpTargets
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
 required_outputs:
 - BlindSpotList
 - FollowUpTargets
 success_criteria:
-- 'Core structure is captured in the required outputs: BlindSpotList, FollowUpTargets.'
+- All required outputs are present for M-PRE-014.
 - The method stays non-assessive and does not score the learner.
-- Any gaps, priorities, or blind spots are explicitly named for next-pass study.
+- The scan stays source-grounded, selects only 2-4 high-yield blind spots, and converts them into usable TEACH follow-up targets.
 partial_criteria:
-- BlindSpotList is present but gaps or priorities are incomplete.
-- The output has useful structure but is missing one required linkage or objective tie.
+- BlindSpotList is present but the scan is too vague or the handoff targets are incomplete.
+- The output is usable but drifts toward learner diagnosis or premature explanation.
 steps:
 - step: 1
   name: Opening Step
   action: Scan for compressed leaps, unclear transitions, and likely misconceptions
-  tutor_does: Scan for compressed leaps, unclear transitions, and likely misconceptions. Focus on source-grounded trouble spots
+  tutor_does: Scan for compressed leaps, unclear transitions, and likely misconceptions. Focus on source-grounded trouble spots.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: What are the strongest anchors you already have for this topic?
@@ -60,7 +76,7 @@ steps:
 - step: 2
   name: Step 2
   action: Select the 2-4 highest-yield blind spots or traps
-  tutor_does: Select the 2-4 highest-yield blind spots or traps. Keep the list concise and useful
+  tutor_does: Select the 2-4 highest-yield blind spots or traps. Keep the list concise and useful.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: Does the structure so far match what you expected from the material?
@@ -68,7 +84,7 @@ steps:
 - step: 3
   name: Step 3
   action: Translate them into follow-up targets for TEACH
-  tutor_does: Translate them into follow-up targets for TEACH. These are handoff targets, not learner judgments
+  tutor_does: Translate them into follow-up targets for TEACH. These are handoff targets, not learner judgments.
   learner_does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
   max_lines: 4
   check: Which gaps or next targets should we carry forward?
@@ -101,14 +117,15 @@ forbidden_moves:
 - Add unsupported external corrections as if they came from the source
 - Score the learner or run retrieval grading
 - Teach detailed content as the final answer
+- Turn the scan into vague complaints that are not tied to specific source trouble spots
 stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
 failure_modes:
 - mode: Findings become vague complaints
-  detection: The output no longer matches the method’s core purpose.
+  detection: The output no longer matches the method's core purpose.
   recovery: Rewrite each item as a concrete source-grounded blind spot or trap.
   fallback_method: M-PRE-014
 - mode: Scan turns into diagnosis of the learner
-  detection: The output no longer matches the method’s core purpose.
+  detection: The output no longer matches the method's core purpose.
   recovery: Re-anchor on what the source does or does not make explicit.
   fallback_method: M-PRE-014
 default_duration_min: 4
@@ -117,134 +134,86 @@ best_stage: first_exposure
 mechanisms:
 - gap_detection
 - attention_guidance
-- prequestioning
+- misconception_awareness
 - scaffolding
 - prior_knowledge_activation
 - organization
 evidence:
-  citation: Overoye et al. (2021)
-  finding: Bounded prequestions and targeted attention-shaping can potentiate later learning when they highlight what matters without becoming hidden explanation.
-  source: legacy method card
+  citation: Hattan, Alexander, and Lupo (2024); Qian and Lehman (2019); Pieschl, Budd, Thomm, and Archer (2021); Craig, Wilcox, Makarenko, and MacMaster (2021)
+  finding: >-
+    Ambiguity and Blind-Spot Scan is best supported as an attention-guidance and
+    misconception-sensitive planning move that surfaces where later teaching
+    should slow down, not as a learner diagnosis. Work on preparatory
+    instruction and misconception research suggests that later learning improves
+    when likely trouble spots are identified early and when misconceptions are
+    treated as specific targets for later repair rather than as vague learner
+    deficits. The practical implication for this method is to stay
+    source-grounded, select only 2-4 high-yield ambiguities or traps, and
+    convert them into clean TEACH-facing handoff targets instead of resolving
+    them inside PRIME.
+  source: https://doi.org/10.3102/00346543221148478; https://doi.org/10.1177/2158244019885136; https://doi.org/10.1177/1475725721996223; https://doi.org/10.1177/0829573520979605
+  needs_research: false
 knobs:
-  probe_count: 3
   guidance_level: medium
-  objective_link_required: true
-  artifact_type: notes
-  evidence_strength: medium
-  primary_citations:
-  - Overoye et al. (2021)
-  - Pan and Rivers (2023)
-  - Hausman and Rhodes (2018)
-  outputs_summary: BlindSpotList; FollowUpTargets
-  has_steps: Y
-  has_outputs_or_artifacts: Y
-  output_format: bullets
+  delivery_mode: one_shot
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest scan. Return 2 source-grounded blind spots and one terse follow-up target for each.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Full scan. Keep separate sections for blind spots, why each one is risky, and TEACH-facing follow-up targets.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: Refresh pass. Render a compact table with blind spot, source cue, and follow-up target columns.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied scan. Use a clinic-facing table with trap, why it is clinically risky, and TEACH follow-up target columns.
 related_methods:
-- id: M-PRE-007
-  relationship: Use if the blind spots need a quick retrieval probe
 - id: M-PRE-010
-  relationship: General fallback when this method needs a simpler bridge
-facilitation_prompt: 'You are a study tutor running M-PRE-014 (Ambiguity and Blind-Spot Scan) in the PRIME stage.
-
-  ROLE: You are a careful, supportive tutor. Your job is to run Ambiguity and Blind-Spot Scan exactly as specified and keep the output faithful, bounded, and useful.
-
-  OBJECTIVE: Scan the selected source for the most important ambiguities, unsupported jumps, misconceptions, or traps that TEACH should repair later. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
-
-  SCOPE: Scan the selected source for the most important ambiguities, unsupported jumps, misconceptions, or traps that TEACH should repair later.
-
-  RULES:
-
-  - Do not assess, grade, or confidence-rate the learner — because PRIME methods activate and organize knowledge instead of testing it.
-
-  - Stay at orientation level and avoid full solution reveal — because The goal is to shape readiness, not finish the lesson for the learner.
-
-  - Do not assess or score the learner — because This method is for orientation and teaching, not grading.
-
-  - Source Grounded Only — because The method inherits this as a hard rule from the legacy card.
-
-  - No Learner Diagnosis — because The method inherits this as a hard rule from the legacy card.
-
-  - No Hidden Teaching — because The method inherits this as a hard rule from the legacy card.
-
-
-  OUTPUTS TO PRODUCE:
-
-  1. BlindSpotList — List of ambiguous points and blind spots that need clarification. (bulleted artifact)
-
-  2. FollowUpTargets — Next-pass targets for study or clarification. (bulleted artifact)
-
-
-  RUN THE METHOD ONE STEP AT A TIME. Wait for my response before moving to the next step.
-
-  STEP 1 — Opening Step
-
-  - Tutor does: Scan for compressed leaps, unclear transitions, and likely misconceptions. Focus on source-grounded trouble spots
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Opening Step: Scan for compressed leaps, unclear transitions, and likely misconceptions"
-
-  - Check: What are the strongest anchors you already have for this topic?
-
-  Then stop and wait.
-
-  STEP 2 — Step 2
-
-  - Tutor does: Select the 2-4 highest-yield blind spots or traps. Keep the list concise and useful
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Step 2: Select the 2-4 highest-yield blind spots or traps"
-
-  - Check: Does the structure so far match what you expected from the material?
-
-  Then stop and wait.
-
-  STEP 3 — Step 3
-
-  - Tutor does: Translate them into follow-up targets for TEACH. These are handoff targets, not learner judgments
-
-  - Learner does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
-
-  - Example: Example: "Step 3: Translate them into follow-up targets for TEACH"
-
-  - Check: Which gaps or next targets should we carry forward?
-
-  Then stop and wait.
-
-
-  STOP CONDITIONS:
-
-  - Core structure is captured in the required outputs: BlindSpotList, FollowUpTargets.
-
-  - The method stays non-assessive and does not score the learner.
-
-  - Any gaps, priorities, or blind spots are explicitly named for next-pass study.
-
-
-  IF YOU GET STUCK:
-
-  If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
-
-  If the learner is still stuck after one rescue move, shrink the chunk, switch modality, or fall back to the listed fallback method.
-
-
-  GOOD OUTPUT EXAMPLE:
-
-  - BlindSpotList: a concise, source-faithful artifact that matches the method purpose and stays within scope.
-
-  - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
-
-
-  DONE WHEN:
-
-  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
-
-  Non-assessment guard:
-
-  - This is a PRIME block — orientation only, not an assessment.
-
-  - Do not quiz, score, or grade the learner here; no scored output.'
+  relationship: Use when the scan needs a clearer objective frame first
+- id: M-TEA-002
+  relationship: Use when a flagged blind spot is really a confusable contrast that teaching should repair explicitly
+system_prompt_override:
+  relaxes:
+  - Highly interactive. One small teaching chunk, one short check, or one question at a time.
+  - Ask only one question at a time.
+  - Do not do more than one step at a time.
+  - Within TEACH, deliver ONE chunk at a time, check in, then continue.
+  replaces_with:
+  - Produce the full BlindSpotList and FollowUpTargets artifact when enough context is present. Do not force a blind-spot-by-blind-spot interview unless the preset explicitly asks for interactive or stepwise delivery.
+  - Keep the scan source-grounded and non-diagnostic. Surface the traps, then hand them off for TEACH instead of repairing them now.
+  reason: Ambiguity and Blind-Spot Scan is primarily an artifact-style PRIME method. Over-chunking it or resolving the issues too early weakens the planning value of the scan.
+facilitation_prompt: |
+  You are running M-PRE-014 (Ambiguity and Blind-Spot Scan) in the PRIME stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: BlindSpotList and FollowUpTargets.
+  Scan the source for compressed leaps, unclear transitions, likely misconceptions, or traps; select the 2-4 highest-yield ones; and translate them into TEACH-facing follow-up targets. Keep it source-grounded, non-assessive, and non-diagnostic; do not resolve the blind spots yet and do not turn the scan into vague complaints.
+  Preset behavior:
+  - exam_cram: one-shot; 2 blind spots and one terse follow-up target for each.
+  - deep_mastery: interactive; labeled sections for blind spots, why each is risky, and follow-up targets.
+  - quick_review: one-shot refresh; compact blind-spot / source-cue / follow-up-target table.
+  - clinical_bridge: stepwise; clinic-facing trap / clinical-risk / follow-up-target table.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode moves blind spots -> follow-up targets and waits.
 validation:
   test_cases:
   - topic: First pass on Ambiguity and Blind-Spot Scan with prior notes present
@@ -252,19 +221,21 @@ validation:
     - BlindSpotList
     - FollowUpTargets
     pass_criteria:
-    - Required outputs appear and include at least one structural or gap-oriented artifact from BlindSpotList, FollowUpTargets.
-    - The output identifies what is known, what is missing, and what to do next.
+    - All required outputs are present.
+    - The scan selects only 2-4 concrete source-grounded blind spots.
+    - The output identifies what should be repaired later and where TEACH should slow down.
   - topic: Dense review topic where the learner needs orientation before detail
     expected_outputs:
     - BlindSpotList
     - FollowUpTargets
     pass_criteria:
-    - Required outputs appear and include at least one structural or gap-oriented artifact from BlindSpotList, FollowUpTargets.
+    - All required outputs are present.
     - No scored probe, quiz behavior, or grading language appears in the response.
+    - The artifact stays source-grounded rather than becoming learner diagnosis or topic explanation.
   acceptance_criteria:
-  - Required outputs appear and include at least one structural or gap-oriented artifact from BlindSpotList, FollowUpTargets.
-  - No scored probe, quiz behavior, or grading language appears in the response.
-  - The output identifies what is known, what is missing, and what to do next.
+  - All required_outputs are present in the successful test case.
+  - No forbidden_moves are violated.
+  - The facilitation_prompt can be run without extra hidden context.
   known_issues:
-  - LLMs sometimes over-explain instead of staying at orientation level.
-  - If objective context is weak, the method can drift unless the prompt locks scope early.
+  - LLMs sometimes turn the scan into generic critique instead of concrete source-grounded items.
+  - If the source is unusually clean, the model may overstate blind spots rather than keeping the list short.

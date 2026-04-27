@@ -1,22 +1,22 @@
 id: M-RET-002
 name: Sprint Quiz
-category: retrieve
-subcategory: quiz
+category: RETRIEVE
+subcategory: sprint-quiz
 description: Rapid-fire Q&A with Tutor. 10-15 questions in 5 min. Track accuracy for RSR.
 control_stage: RETRIEVE
 status: validated
-version: '1.0'
+version: '1.6'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
+- retrieve
+- retrieval
 - quiz
 - speed
 - rsr
 - ai-assisted
-purpose: Sprint Quiz exists to run a sprint quiz that pressures short-answer retrieval and records accuracy plus latency for
-  RSR tracking. It turns the current stage into a clean, reusable signal instead of a vague study session.
-not_for: This is not for open-note review, answer-reveal first workflows, or deep teaching. Use REFERENCE if the learner needs
-  an anchor first.
+purpose: Sprint Quiz exists to run a sprint quiz that pressures short-answer retrieval and records accuracy plus latency for RSR tracking. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for open-note review, answer-reveal first workflows, or deep teaching. Use CONSOLIDATE if the learner needs an anchor first.
 best_fit_topics:
 - rapid short-answer retrieval
 - single-topic fact checks
@@ -25,8 +25,7 @@ poor_fit_topics:
 - long lectures
 - unbounded essay answers
 - notes-open comparison before attempt
-learner_state_required: The learner already has source material or an anchor available, the source will be closed for recall,
-  and a retrieval target exists.
+learner_state_required: The learner already has source material or an anchor available, the source will be closed for recall, and a retrieval target exists.
 inputs:
 - description: Topic or concept set for quiz
   required: true
@@ -38,21 +37,33 @@ inputs:
   required: true
 outputs:
 - name: RSR percentage (correct/total)
-  description: A structured output for a sprint quiz that pressures short-answer retrieval and records accuracy plus latency
-    for RSR tracking.
+  description: A structured output for a sprint quiz that pressures short-answer retrieval and records accuracy plus latency for RSR tracking.
   format: structured response
 - name: List of missed questions with correct answers
-  description: A structured output for a sprint quiz that pressures short-answer retrieval and records accuracy plus latency
-    for RSR tracking.
+  description: A structured output for a sprint quiz that pressures short-answer retrieval and records accuracy plus latency for RSR tracking.
   format: bulleted or tabular list
 - name: Weak anchor flags (uncertain but correct items)
-  description: A compact reference artifact with the minimum definitions, rules, examples, near-misses, and traps needed for
-    later retrieval.
+  description: A compact reference artifact with the minimum definitions, rules, examples, near-misses, and traps needed for later retrieval.
   format: formatted study artifact
 - name: Topics needing re-encoding
-  description: A structured output for a sprint quiz that pressures short-answer retrieval and records accuracy plus latency
-    for RSR tracking.
+  description: A structured output for a sprint quiz that pressures short-answer retrieval and records accuracy plus latency for RSR tracking.
   format: structured response
+artifact_schemas:
+  RSR percentage (correct/total): scored_items
+  List of missed questions with correct answers: bullet_list
+  Weak anchor flags (uncertain but correct items): ordered_steps
+  Topics needing re-encoding: scored_items
+produces:
+- RSR percentage (correct/total)
+- List of missed questions with correct answers
+- Weak anchor flags (uncertain but correct items)
+- Topics needing re-encoding
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
 required_outputs:
 - RSR percentage (correct/total)
 - List of missed questions with correct answers
@@ -67,59 +78,53 @@ partial_criteria:
 - The method stayed in the correct stage but the final artifact needs one more pass to be reusable.
 steps:
 - step: 1
-  name: Request sprint quiz from
-  action: Request sprint quiz from Tutor on the target topic. Specify topic scope and number of questions (10-15 typical)
-  tutor_does: Run request sprint quiz from tutor on the target topic. specify topic scope and number of questions (10-15 typical)
-    while protecting the attempt-first rule, then compare only after recall is complete.
-  learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
-  max_lines: 8
-  check: Are all materials closed and is the learner ready to attempt recall?
-  example: 'Tutor: "Close your notes. Do not peek." Learner: "Notes are closed."'
+  name: Quiz Setup
+  action: Set the topic scope, question count, and closed-note rule before starting
+  tutor_does: Set the topic scope, confirm the sprint size, and enforce closed-note conditions before the first question appears.
+  learner_does: Confirms readiness, closes materials, and agrees to attempt from memory before any feedback.
+  max_lines: 6
+  check: Are materials closed and is the sprint scope tight enough to produce a real retrieval signal?
+  example: 'Example: Tutor says, "Closed notes, 12 questions, stroke localization only." Learner says, "Ready."'
 - step: 2
-  name: Set timer for 5
-  action: Set timer for 5 minutes. Speed adds desirable difficulty and prevents overthinking
-  tutor_does: Run set timer for 5 minutes. speed adds desirable difficulty and prevents overthinking while protecting the
-    attempt-first rule, then compare only after recall is complete.
-  learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
-  max_lines: 8
-  check: Is this step complete and ready to advance?
-  example: Tutor starts the timer and asks for a free-response dump.
+  name: Start Timer
+  action: Start the sprint timer and begin the rapid question block
+  tutor_does: Start the timer, begin the question stream, and keep pace high enough to discourage overthinking.
+  learner_does: Answers from memory under time pressure and does not open notes during the attempt window.
+  max_lines: 6
+  check: Is the sprint pace preserving speed pressure instead of turning into a slow review?
+  example: 'Example: Tutor starts a 5-minute block and immediately asks Question 1.'
 - step: 3
-  name: Answer each question aloud
-  action: Answer each question aloud or in writing before seeing feedback. Must commit to an answer — no "I think maybe..."
-  tutor_does: Run answer each question aloud or in writing before seeing feedback. must commit to an answer — no "i think
-    maybe..." while protecting the attempt-first rule, then compare only after recall is complete.
-  learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
-  max_lines: 8
-  check: Is this step complete and ready to advance?
-  example: Tutor marks gaps with question marks and compares them after the attempt window ends.
+  name: Commit Answers
+  action: Require a committed answer for each item before any comparison or reveal
+  tutor_does: Require a best-effort answer for every item and block hedging, hints, or answer leaks during the first attempt.
+  learner_does: Commits to an answer, marks uncertainty honestly, and keeps moving without waiting for help.
+  max_lines: 6
+  check: Is each response a real attempt rather than a hedge, hint request, or stall?
+  example: 'Example: Learner gives a best-effort answer instead of saying, "I think maybe..."'
 - step: 4
-  name: Track correct/incorrect for each
-  action: Track correct/incorrect for each question immediately. Keep running tally for RSR calculation
-  tutor_does: Run track correct/incorrect for each question immediately. keep running tally for rsr calculation while protecting
-    the attempt-first rule, then compare only after recall is complete.
-  learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
-  max_lines: 8
-  check: Is this step complete and ready to advance?
-  example: Tutor compares to the source and notes missing items.
+  name: Score Responses
+  action: Mark correct and incorrect responses only after the committed attempt is complete
+  tutor_does: Tally correct and incorrect items cleanly after the attempt point for each question or after the timed block, depending on the active preset.
+  learner_does: Accepts the score readout, notes misses, and does not reopen debate on already-scored items during the sprint.
+  max_lines: 6
+  check: Was scoring delayed until after commitment and kept clean enough for RSR tracking?
+  example: 'Example: Tutor marks the response incorrect, gives the correct answer, and advances immediately.'
 - step: 5
-  name: Note any questions that
-  action: Note any questions that felt uncertain even if correct. Near-misses are weak anchors — flag for review
-  tutor_does: Run note any questions that felt uncertain even if correct. near-misses are weak anchors — flag for review while
-    protecting the attempt-first rule, then compare only after recall is complete.
-  learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
-  max_lines: 8
-  check: Is this step complete and ready to advance?
-  example: Tutor compares to the source and notes missing items.
+  name: Flag Weak Anchors
+  action: Mark uncertain-but-correct items as weak anchors for later review
+  tutor_does: Flag near-misses, hesitation items, or low-confidence correct answers as weak anchors instead of treating them as fully secure.
+  learner_does: Identifies which correct answers felt shaky or slow and agrees to carry them forward for repair.
+  max_lines: 6
+  check: Are shaky correct answers being separated from strong retrieval wins?
+  example: 'Example: Tutor tags a correct-but-hesitant answer as a weak anchor rather than a clean win.'
 - step: 6
-  name: Calculate RSR percentage at
-  action: Calculate RSR percentage at end (correct / total × 100). RSR < 80% = needs more encoding; RSR > 85% = ready to advance
-  tutor_does: Run calculate rsr percentage at end (correct / total × 100). rsr < 80% = needs more encoding; rsr > 85% = ready
-    to advance while protecting the attempt-first rule, then compare only after recall is complete.
-  learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
-  max_lines: 8
-  check: Is this step complete and ready to advance?
-  example: Tutor compares to the source and notes missing items.
+  name: Calculate RSR and Route
+  action: Calculate RSR, list misses, and name what needs re-encoding next
+  tutor_does: Calculate the final RSR, list missed questions with correct answers, and route low-signal areas back to encoding or consolidation work.
+  learner_does: Reviews the sprint results, notes the weak anchors, and accepts the next-step routing.
+  max_lines: 6
+  check: Does the final output include RSR, misses, weak anchors, and a clear re-encoding target?
+  example: 'Example: Tutor closes with "RSR 73%, weak anchors on ACA vs MCA, re-encode stroke localization before the next sprint."'
 constraints:
 - rule: Closed-note first, open-note only after recall is complete
   why: The retrieval signal disappears if the source is visible during the attempt.
@@ -178,69 +183,71 @@ mechanisms:
 - calibration
 - spacing
 evidence:
-  citation: McDaniel et al. (2007)
-  finding: quiz-based retrieval enhances later exam performance
-  source: seed_methods.py
+  citation: Yang, Luo, Vadillo, Yu, and Shanks (2021); Agarwal, Nunes, and Blunt (2021); Little and McDaniel (2015); Walsh and Horgan (2024)
+  finding: Sprint Quiz is best supported as a short, high-frequency retrieval block that samples recall quickly enough to expose both clean misses and weak anchors. Meta-analytic retrieval-practice evidence supports brief quiz-like testing for retention gains, classroom reviews support frequent low-stakes quizzing when it yields actionable follow-up, and transfer-oriented quiz research shows that the format can reveal whether knowledge is stable or merely familiar. The practical implication for this method is to keep the block short, force direct answers before feedback, and log both outright misses and hesitant correct responses so the next routing move is based on evidence rather than impressions.
+  source: https://doi.org/10.1037/bul0000309; https://doi.org/10.1007/s10648-021-09595-9; https://doi.org/10.1037/a0021782; https://doi.org/10.1007/s11251-024-09680-w
+  needs_research: false
 knobs:
-  default_duration_min: 5
-  energy_cost: medium
-  best_stage: review
+  guidance_level: medium
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest sprint. Use 10 high-yield questions, terse score bullets, and only the most decision-relevant misses and weak anchors.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Fullest sprint. Use 15 questions, keep a fuller per-item score trace, and return a richer weak-anchor and routing analysis.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: Refresh sprint. Use 10-12 questions and present the result as a compact score table with one-line route guidance.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied sprint. Use rapid applied prompts or mini-scenarios and show misses, weak anchors, and route decisions in a short clinical-style table.
 related_methods:
 - id: M-REF-003
   relationship: Quiz misses are easier to analyze against a compact anchor
 - id: M-OVR-001
   relationship: Exit tickets can capture what remained muddy after the sprint
+system_prompt_override:
+  relaxes:
+  - Never reveal the full answer without letting me attempt first. Progressive hints, not solutions.
+  - 'If I''m stuck: do NOT repeat the same explanation. Pick exactly one recovery move (simpler ladder, format switch, side-by-side contrast, tiny clinical case).'
+  - Execute ONE step at a time. Do not advance to the next step until I say NEXT.
+  replaces_with:
+  - Closed-note recall. No hints at any point. After each committed answer, reveal the correct answer only when the active preset allows it, and keep tally clean for RSR.
+  - If stuck on a question, force a best-effort answer or mark a miss and move on. Do not re-teach during the sprint.
+  - Macro flow may vary by preset, but the attempt-first rule is never relaxed.
+  reason: Sprint Quiz depends on cold recall, speed pressure, and clean scoring. The override preserves retrieval validity while allowing preset-specific pacing and output style.
 facilitation_prompt: |-
-  You are a tutor running M-RET-002 (Sprint Quiz) in RETRIEVE mode.
-  ROLE: elicit memory under controlled conditions and protect the attempt-first rule.
-  OBJECTIVE: Sprint Quiz exists to run a sprint quiz that pressures short-answer retrieval and records accuracy plus latency for RSR tracking. It turns the current stage into a clean, reusable signal instead of a vague study session.
-  SCOPE: Use only the loaded source material and the learner's current responses.
-  RULES:
-  - Closed-note first, open-note only after recall is complete
-  - No hints or answer reveal before the learner attempts the item
-  - Compare against source only after the attempt window ends
-  - Stay within the timer or sprint cap
-
-  RUN ONE STEP AT A TIME. Do not skip ahead. Wait for my reply before moving on.
-  1. Request sprint quiz from — Request sprint quiz from Tutor on the target topic. Specify topic scope and number of questions (10-15 typical)
-     Example: Tutor: "Close your notes. Do not peek." Learner: "Notes are closed."
-     Check: Are all materials closed and is the learner ready to attempt recall?
-     Then stop and wait.
-  2. Set timer for 5 — Set timer for 5 minutes. Speed adds desirable difficulty and prevents overthinking
-     Example: Tutor starts the timer and asks for a free-response dump.
-     Check: Is this step complete and ready to advance?
-     Then stop and wait.
-  3. Answer each question aloud — Answer each question aloud or in writing before seeing feedback. Must commit to an answer — no "I think maybe..."
-     Example: Tutor marks gaps with question marks and compares them after the attempt window ends.
-     Check: Is this step complete and ready to advance?
-     Then stop and wait.
-  4. Track correct/incorrect for each — Track correct/incorrect for each question immediately. Keep running tally for RSR calculation
-     Example: Tutor compares to the source and notes missing items.
-     Check: Is this step complete and ready to advance?
-     Then stop and wait.
-  5. Note any questions that — Note any questions that felt uncertain even if correct. Near-misses are weak anchors — flag for review
-     Example: Tutor compares to the source and notes missing items.
-     Check: Is this step complete and ready to advance?
-     Then stop and wait.
-  6. Calculate RSR percentage at — Calculate RSR percentage at end (correct / total × 100). RSR < 80% = needs more encoding; RSR > 85% = ready to advance
-     Example: Tutor compares to the source and notes missing items.
-     Check: Is this step complete and ready to advance?
-     Then stop and wait.
-
-  REQUIRED OUTPUTS:
-  - RSR percentage (correct/total) (structured response)
-  - List of missed questions with correct answers (bulleted or tabular list)
-  - Weak anchor flags (uncertain but correct items) (formatted study artifact)
-  - Topics needing re-encoding (structured response)
-
-  STOP CONDITIONS:
-  - Stop when every required output exists and the final check passes.
-  - Stop early if the time cap or item cap is reached.
-  - Stop if the learner has crossed into a different stage or the format is no longer useful.
-
-  IF STUCK:
-  Give one narrower cue, keep materials closed, and ask for a best-effort attempt before any feedback.
-  If that still fails, reduce scope to one smaller item, one row, or one rep and continue.
+  You are running M-RET-002 (Sprint Quiz) in the RETRIEVE stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: RSR percentage, List of missed questions with correct answers, Weak anchor flags, and Topics needing re-encoding.
+  Run a short closed-note quiz with attempt-first answers, then score it cleanly and route from the pattern. Keep it fast, do not teach during the quiz, and flag uncertain correct answers separately from stable wins.
+  Preset behavior:
+  - exam_cram: one-shot; 10 questions; terse bullets; only the biggest misses and weak anchors.
+  - deep_mastery: interactive; 15 questions; fuller per-item trace and richer routing analysis.
+  - quick_review: one-shot refresh; 10-12 questions; compact score table plus one route call.
+  - clinical_bridge: stepwise; applied prompts or mini-scenarios with misses and route decisions in a short table.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode moves quiz -> scoring -> routing and waits.
 validation:
   test_cases:
   - topic: rapid short-answer retrieval

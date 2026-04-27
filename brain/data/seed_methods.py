@@ -36,6 +36,7 @@ _CHAIN_CERTIFICATION_REGISTRY_PATH = _CHAINS_DIR / "certification_registry.yaml"
 def _legacy_category_for_stage(control_stage: str) -> str:
     stage = str(control_stage or "").strip().upper()
     return {
+        "PLAN": "plan",
         "PRIME": "prepare",
         "TEACH": "prepare",
         "CALIBRATE": "prepare",
@@ -44,6 +45,29 @@ def _legacy_category_for_stage(control_stage: str) -> str:
         "RETRIEVE": "retrieve",
         "OVERLEARN": "overlearn",
     }.get(stage, stage.lower())
+
+
+def _extract_chain_block_id(block) -> str | None:
+    """Resolve a chain block entry to a method id string.
+
+    Supports both legacy flat shape (string method ids) and rich shape
+    (dict with method_id / method_ref / id). Returns None when the block
+    is a workflow step that does not map to a method block (e.g., dicts
+    with only method_ref to a non-method action like vault_handoff).
+    """
+    if isinstance(block, str):
+        return block
+    if isinstance(block, dict):
+        mid = block.get("method_id")
+        if isinstance(mid, str) and mid:
+            return mid
+        bid = block.get("id")
+        if isinstance(bid, str) and bid.startswith("M-"):
+            return bid
+        ref = block.get("method_ref")
+        if isinstance(ref, str) and ref.startswith("M-"):
+            return ref
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -1384,8 +1408,15 @@ def load_from_yaml() -> dict | None:
             continue
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
         if data:
-            # Resolve YAML method IDs (M-PRE-001) to names (Brain Dump) for DB
-            block_names = [id_to_name.get(bid, bid) for bid in data.get("blocks", [])]
+            # Resolve YAML method IDs (M-PRE-001) to names (Brain Dump) for DB.
+            # Supports both flat string lists and rich dict-shaped block entries.
+            raw_blocks = data.get("blocks", []) or []
+            block_ids = [
+                bid
+                for bid in (_extract_chain_block_id(b) for b in raw_blocks)
+                if bid
+            ]
+            block_names = [id_to_name.get(bid, bid) for bid in block_ids]
             context_tags = dict(data.get("context_tags", {}) or {})
             template_id = str(data.get("id", "") or "").strip()
             if template_id:

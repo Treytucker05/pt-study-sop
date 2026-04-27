@@ -1,13 +1,13 @@
 id: M-PRE-009
 name: Syntopical Big-Picture Synthesis
-category: prime
-subcategory: synthesis
+category: PRIME
+subcategory: syntopical-big-picture-synthesis
 description: Synthesize top-level structure across 2-3 sources into one module-level hierarchy with cross-links.
 control_stage: PRIME
 status: validated
-version: '1.0'
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
 - prime
 - syntopical
@@ -15,14 +15,18 @@ tags:
 - hierarchy
 - orientation
 - prior-knowledge
-purpose: Synthesize top-level structure across 2-3 sources into one module-level hierarchy with cross-links. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
+- multiple-texts
+- integration
+purpose: Syntopical Big-Picture Synthesis exists to merge the top-level structures of 2-3 sources into one high-level hierarchy with cross-links, conflict flags, and follow-up targets before deeper work begins. It turns the current stage into a clean, reusable signal instead of a vague study session.
 not_for: Not for first-contact teaching, scored assessment, or full solution reveal. Use a TEACH or REFERENCE method when the goal is explanation rather than orientation.
 best_fit_topics:
-- 'New or complex material that needs a quick orientation pass: Syntopical Big-Picture Synthesis'
-- Topics with prior notes, objective context, or an obvious structure to surface
+- Multi-source modules where 2-3 texts need one shared high-level map before detail study
+- Topics with prior notes, objective context, or overlapping source structures
+- Material where cross-source agreement and disagreement matter more than one source alone
 poor_fit_topics:
 - Brand-new content with no context or source packet
 - Scored retrieval or diagnostic testing
+- Single-source topics that do not need cross-source synthesis
 learner_state_required: Source material is loaded, the topic is bounded, and the learner has at least some prior context or an objective to orient around.
 inputs:
 - description: Source material loaded in chat
@@ -33,33 +37,49 @@ inputs:
   required: false
 outputs:
 - name: UnifiedTopDownTree
-  description: Activation or structure artifact for syntopical big-picture synthesis.
-  format: bulleted artifact
+  description: Unified high-level hierarchy synthesized across the selected sources.
+  format: bulleted or nested hierarchy
 - name: CrossSourceLinks
-  description: Activation or structure artifact for syntopical big-picture synthesis.
-  format: bulleted artifact
+  description: Short list of where major concepts align, overlap, or bridge across sources.
+  format: bulleted or tabular list
 - name: ConflictFlags
-  description: Activation or structure artifact for syntopical big-picture synthesis.
-  format: bulleted artifact
+  description: Source-grounded contradictions, mismatches, or unresolved differences that need later clarification.
+  format: bulleted or tabular list
 - name: FollowUpTargets
-  description: Next-pass targets for study or clarification.
-  format: bulleted artifact
+  description: Next-pass targets created from conflict flags, thin bridges, or unresolved cross-source gaps.
+  format: bulleted or tabular list
+artifact_schemas:
+  UnifiedTopDownTree: bullet_list
+  CrossSourceLinks: bullet_list
+  ConflictFlags: bullet_list
+  FollowUpTargets: bullet_list
+produces:
+- UnifiedTopDownTree
+- CrossSourceLinks
+- ConflictFlags
+- FollowUpTargets
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
 required_outputs:
 - UnifiedTopDownTree
 - CrossSourceLinks
 - ConflictFlags
 success_criteria:
-- 'Core structure is captured in the required outputs: UnifiedTopDownTree, CrossSourceLinks.'
+- All required outputs are present for M-PRE-009.
 - The method stays non-assessive and does not score the learner.
-- Any gaps, priorities, or blind spots are explicitly named for next-pass study.
+- The synthesis stays top-level, uses no more than 3 sources, and makes both overlaps and unresolved conflicts explicit.
 partial_criteria:
-- UnifiedTopDownTree is present but gaps or priorities are incomplete.
-- The output has useful structure but is missing one required linkage or objective tie.
+- UnifiedTopDownTree is present but cross-source links or conflict flags are incomplete.
+- The output is useful but too source-by-source, too detailed, or missing one major cross-source relationship.
 steps:
 - step: 1
   name: Opening Step
   action: Extract top-level pillars from each source
-  tutor_does: Extract top-level pillars from each source. Only headings and conceptual anchors
+  tutor_does: Extract top-level pillars from each source. Only headings and conceptual anchors.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: What are the strongest anchors you already have for this topic?
@@ -67,7 +87,7 @@ steps:
 - step: 2
   name: Step 2
   action: Merge overlapping pillars into one unified structure
-  tutor_does: Merge overlapping pillars into one unified structure. Preserve source-specific distinctions where needed
+  tutor_does: Merge overlapping pillars into one unified structure. Preserve source-specific distinctions where needed.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: Does the structure so far match what you expected from the material?
@@ -75,7 +95,7 @@ steps:
 - step: 3
   name: Step 3
   action: Add cross-links and conflict notes
-  tutor_does: Add cross-links and conflict notes. Mark unresolved conflicts as follow-up targets
+  tutor_does: Add cross-links and conflict notes. Mark unresolved conflicts as follow-up targets.
   learner_does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
   max_lines: 4
   check: Which gaps or next targets should we carry forward?
@@ -97,19 +117,21 @@ allowed_moves:
 - Synthesize structure across 2-3 sources at a high level
 - Preserve source-specific distinctions where needed
 - Activate prior knowledge with a bounded free recall or orientation prompt
+- Keep the synthesis source-grounded and top-level
 forbidden_moves:
 - Score, grade, or assess the learner
 - Teach new detailed content or provide in-depth explanations
 - Deep-dive into details when resolving contradictions
 - Exceed source_cap (3 default) for synthesis
 - Run quizzes, retrieval prompts, or correctness checks
-- Run this method with only one source (skip if single-source)
+- Run this method with only one source
 - Summarize paragraph-level content instead of structural pillars
+- Flatten away meaningful source-specific differences just to make the tree look neat
 stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
 failure_modes:
 - mode: Scope too broad
-  detection: The output no longer matches the method’s core purpose.
-  recovery: Reduce to objective-aligned scaffold and continue.
+  detection: The output no longer matches the method's core purpose.
+  recovery: Reduce to an objective-aligned scaffold and continue.
   fallback_method: M-PRE-010
 - mode: Drift into testing
   detection: The tutor starts judging answers or asking the learner to prove mastery.
@@ -124,127 +146,83 @@ mechanisms:
 - scaffolding
 - prior_knowledge_activation
 - organization
+- multiple_text_comprehension
 evidence:
-  citation: Ausubel (1968)
-  finding: Comparative organizers support integration across related sources.
-  source: research synthesis
+  citation: Alexander and List (2017); Yukhymenko-Lescroart, Goldman, Lawless, Pellegrino, and Shanahan (2022); Espinas and Wanzek (2024); Schallert, List, and Alexander (2025)
+  finding: >-
+    Syntopical Big-Picture Synthesis is best supported as a multiple-text
+    orientation move that helps learners build a top-level integrated structure
+    across a small number of sources before they dive into details. Research on
+    multiple-text comprehension emphasizes that integration across documents
+    depends on identifying shared ideas, preserving source-specific differences,
+    and making intertextual links explicit rather than simply summarizing each
+    source in isolation. The practical implication for this method is to keep
+    the synthesis bounded to 2-3 sources, extract pillars only, merge overlaps
+    into one unified tree, and flag unresolved conflicts for later study
+    instead of forcing premature resolution.
+  source: https://doi.org/10.1080/00461520.2017.1328309; https://doi.org/10.1080/01443410.2020.1811840; https://doi.org/10.1177/09388982241275650; https://doi.org/10.1080/00461520.2025.2592823
+  needs_research: false
 knobs:
-  source_cap: 3
-  synthesis_format: hierarchy
   guidance_level: medium
-  objective_link_required: true
-  artifact_type: notes
-  evidence_strength: medium
-  primary_citations:
-  - Ausubel (1968)
-  - Sung (2025)
-  output_format: bullets
+  delivery_mode: one_shot
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest synthesis pass. Return one terse unified tree, 2-3 cross-source links, and only the highest-yield conflict flags.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Full synthesis pass. Keep separate sections for source pillars, unified tree, cross-source links, conflict flags, and follow-up targets.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: Refresh pass. Render a compact table with source, shared pillar, cross-link, and conflict status columns before the final hierarchy.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied synthesis pass. Use a clinic-facing table with source, unified pillar, practical overlap, and conflict-risk columns before the final tree.
 related_methods:
-- id: M-PRE-013
-  relationship: Use to orient before a synthesis pass
 - id: M-PRE-010
-  relationship: General fallback when this method needs a simpler bridge
-facilitation_prompt: 'You are a study tutor running M-PRE-009 (Syntopical Big-Picture Synthesis) in the PRIME stage.
-
-  ROLE: You are a careful, supportive tutor. Your job is to run Syntopical Big-Picture Synthesis exactly as specified and keep the output faithful, bounded, and useful.
-
-  OBJECTIVE: Synthesize top-level structure across 2-3 sources into one module-level hierarchy with cross-links. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
-
-  SCOPE: Synthesize top-level structure across 2-3 sources into one module-level hierarchy with cross-links.
-
-  RULES:
-
-  - Do not assess, grade, or confidence-rate the learner — because PRIME methods activate and organize knowledge instead of testing it.
-
-  - Stay at orientation level and avoid full solution reveal — because The goal is to shape readiness, not finish the lesson for the learner.
-
-  - Do not assess or score the learner — because This method is for orientation and teaching, not grading.
-
-  - Source Cap Hard Lock — because The method inherits this as a hard rule from the legacy card.
-
-
-  OUTPUTS TO PRODUCE:
-
-  1. UnifiedTopDownTree — Activation or structure artifact for syntopical big-picture synthesis. (bulleted artifact)
-
-  2. CrossSourceLinks — Activation or structure artifact for syntopical big-picture synthesis. (bulleted artifact)
-
-  3. ConflictFlags — Activation or structure artifact for syntopical big-picture synthesis. (bulleted artifact)
-
-  4. FollowUpTargets — Next-pass targets for study or clarification. (bulleted artifact)
-
-
-  RUN THE METHOD ONE STEP AT A TIME. Wait for my response before moving to the next step.
-
-  STEP 1 — Opening Step
-
-  - Tutor does: Extract top-level pillars from each source. Only headings and conceptual anchors
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Opening Step: Extract top-level pillars from each source"
-
-  - Check: What are the strongest anchors you already have for this topic?
-
-  Then stop and wait.
-
-  STEP 2 — Step 2
-
-  - Tutor does: Merge overlapping pillars into one unified structure. Preserve source-specific distinctions where needed
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Step 2: Merge overlapping pillars into one unified structure"
-
-  - Check: Does the structure so far match what you expected from the material?
-
-  Then stop and wait.
-
-  STEP 3 — Step 3
-
-  - Tutor does: Add cross-links and conflict notes. Mark unresolved conflicts as follow-up targets
-
-  - Learner does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
-
-  - Example: Example: "Step 3: Add cross-links and conflict notes"
-
-  - Check: Which gaps or next targets should we carry forward?
-
-  Then stop and wait.
-
-
-  STOP CONDITIONS:
-
-  - Core structure is captured in the required outputs: UnifiedTopDownTree, CrossSourceLinks.
-
-  - The method stays non-assessive and does not score the learner.
-
-  - Any gaps, priorities, or blind spots are explicitly named for next-pass study.
-
-
-  IF YOU GET STUCK:
-
-  If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
-
-  If the learner is still stuck after one rescue move, shrink the chunk, switch modality, or fall back to the listed fallback method.
-
-
-  GOOD OUTPUT EXAMPLE:
-
-  - UnifiedTopDownTree: a concise, source-faithful artifact that matches the method purpose and stays within scope.
-
-  - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
-
-
-  DONE WHEN:
-
-  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
-
-  Non-assessment guard:
-
-  - This is a PRIME block — orientation only, not an assessment.
-
-  - Do not quiz, score, or grade the learner here; no scored output.'
+  relationship: Use to set the objective frame before synthesizing multiple sources
+- id: M-PRE-008
+  relationship: Use when a single source needs a compact structural spine instead of cross-source merging
+system_prompt_override:
+  relaxes:
+  - Highly interactive. One small teaching chunk, one short check, or one question at a time.
+  - Ask only one question at a time.
+  - Do not do more than one step at a time.
+  - Within TEACH, deliver ONE chunk at a time, check in, then continue.
+  replaces_with:
+  - Produce the full UnifiedTopDownTree, CrossSourceLinks, ConflictFlags, and FollowUpTargets artifact when enough context is present. Do not force a source-by-source interview unless the preset explicitly asks for interactive or stepwise delivery.
+  - Keep the synthesis top-level and source-grounded. Preserve conflicts as conflicts instead of resolving them with extra teaching.
+  reason: Syntopical Big-Picture Synthesis is primarily an artifact-style PRIME method. Over-chunking it or resolving contradictions too early weakens the multiple-source orientation value.
+facilitation_prompt: |
+  You are running M-PRE-009 (Syntopical Big-Picture Synthesis) in the PRIME stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: UnifiedTopDownTree, CrossSourceLinks, ConflictFlags, and FollowUpTargets.
+  Extract top-level pillars from 2-3 sources, merge overlaps into one unified hierarchy, add cross-source links, and flag unresolved conflicts for later study. Keep it orientation-only, non-assessive, and top-level; do not drift into paragraph summaries or source-by-source explanation.
+  Preset behavior:
+  - exam_cram: one-shot; terse unified tree, 2-3 cross-source links, and only the highest-yield conflict flags.
+  - deep_mastery: interactive; labeled sections for source pillars, unified tree, links, conflicts, and follow-up targets.
+  - quick_review: one-shot refresh; compact source / shared-pillar / link / conflict table plus final tree.
+  - clinical_bridge: stepwise; clinic-facing source / unified-pillar / practical-overlap / conflict-risk table.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode moves source pillars -> unified tree -> links and conflicts and waits.
 validation:
   test_cases:
   - topic: First pass on Syntopical Big-Picture Synthesis with prior notes present
@@ -254,8 +232,9 @@ validation:
     - ConflictFlags
     - FollowUpTargets
     pass_criteria:
-    - Required outputs appear and include at least one structural or gap-oriented artifact from UnifiedTopDownTree, CrossSourceLinks.
-    - The output identifies what is known, what is missing, and what to do next.
+    - All required outputs are present.
+    - The synthesis uses no more than 3 sources and keeps the tree top-level.
+    - The output identifies where sources overlap and where conflicts remain.
   - topic: Dense review topic where the learner needs orientation before detail
     expected_outputs:
     - UnifiedTopDownTree
@@ -263,12 +242,13 @@ validation:
     - ConflictFlags
     - FollowUpTargets
     pass_criteria:
-    - Required outputs appear and include at least one structural or gap-oriented artifact from UnifiedTopDownTree, CrossSourceLinks.
+    - All required outputs are present.
     - No scored probe, quiz behavior, or grading language appears in the response.
+    - The artifact stays structural rather than becoming a source-by-source recap.
   acceptance_criteria:
-  - Required outputs appear and include at least one structural or gap-oriented artifact from UnifiedTopDownTree, CrossSourceLinks.
-  - No scored probe, quiz behavior, or grading language appears in the response.
-  - The output identifies what is known, what is missing, and what to do next.
+  - All required_outputs are present in the successful test case.
+  - No forbidden_moves are violated.
+  - The facilitation_prompt can be run without extra hidden context.
   known_issues:
-  - LLMs sometimes over-explain instead of staying at orientation level.
-  - If objective context is weak, the method can drift unless the prompt locks scope early.
+  - LLMs sometimes flatten away source-specific distinctions when building the unified tree.
+  - If the sources do not actually overlap enough, the synthesis can become forced rather than clarifying.

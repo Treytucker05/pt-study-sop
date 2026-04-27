@@ -1,24 +1,20 @@
 id: M-RET-004
 name: Mixed Practice
-category: retrieve
+category: RETRIEVE
 subcategory: interleaved
-description: Interleave questions from 2-3 different topics in a single retrieval block. Builds discrimination and prevents
-  blocked-practice illusion. Based on interleaving research (Rohrer et al.).
+description: Interleave questions from 2-3 different topics in a single retrieval block. Builds discrimination and prevents blocked-practice illusion. Based on interleaving research (Rohrer et al.).
 control_stage: RETRIEVE
 status: validated
-version: '1.0'
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
 - interleaving
 - discrimination
 - mixed
 - evidence-based
-purpose: Mixed Practice exists to run mixed retrieval practice that interleaves two or three topics to build discrimination
-  and reduce blocked-practice illusion. It turns the current stage into a clean, reusable signal instead of a vague study
-  session.
-not_for: This is not for open-note review, answer-reveal first workflows, or deep teaching. Use REFERENCE if the learner needs
-  an anchor first.
+purpose: Mixed Practice exists to run mixed retrieval practice that interleaves two or three topics to build discrimination and reduce blocked-practice illusion. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for open-note review, answer-reveal first workflows, or deep teaching. Use REFERENCE if the learner needs an anchor first.
 best_fit_topics:
 - interleaving across topics
 - discrimination training
@@ -27,8 +23,7 @@ poor_fit_topics:
 - blocked practice only
 - single-topic drills
 - teaching new material
-learner_state_required: At least two topics are available and the learner can switch rapidly between them without needing
-  fresh teaching.
+learner_state_required: At least two topics are available and the learner can switch rapidly between them without needing fresh teaching.
 inputs:
 - description: 2-3 different topics for interleaving
   required: true
@@ -40,21 +35,33 @@ inputs:
   required: true
 outputs:
 - name: Overall accuracy across all topics
-  description: A structured output for mixed retrieval practice that interleaves two or three topics to build discrimination
-    and reduce blocked-practice illusion.
+  description: A structured output for mixed retrieval practice that interleaves two or three topics to build discrimination and reduce blocked-practice illusion.
   format: structured response
 - name: Per-topic accuracy breakdown
-  description: A structured output for mixed retrieval practice that interleaves two or three topics to build discrimination
-    and reduce blocked-practice illusion.
+  description: A structured output for mixed retrieval practice that interleaves two or three topics to build discrimination and reduce blocked-practice illusion.
   format: structured response
 - name: Confusion matrix (which topics got mixed up)
-  description: A structured output for mixed retrieval practice that interleaves two or three topics to build discrimination
-    and reduce blocked-practice illusion.
+  description: A structured output for mixed retrieval practice that interleaves two or three topics to build discrimination and reduce blocked-practice illusion.
   format: structured response
 - name: Discrimination insights (cues that distinguish topics)
-  description: A structured output for mixed retrieval practice that interleaves two or three topics to build discrimination
-    and reduce blocked-practice illusion.
+  description: A structured output for mixed retrieval practice that interleaves two or three topics to build discrimination and reduce blocked-practice illusion.
   format: structured response
+artifact_schemas:
+  Overall accuracy across all topics: scored_items
+  Per-topic accuracy breakdown: scored_items
+  Confusion matrix (which topics got mixed up): scored_items
+  Discrimination insights (cues that distinguish topics): scored_items
+produces:
+- Overall accuracy across all topics
+- Per-topic accuracy breakdown
+- Confusion matrix (which topics got mixed up)
+- Discrimination insights (cues that distinguish topics)
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
 required_outputs:
 - Overall accuracy across all topics
 - Per-topic accuracy breakdown
@@ -70,10 +77,8 @@ partial_criteria:
 steps:
 - step: 1
   name: Select 2-3 distinct but
-  action: Select 2-3 distinct but related topics for the session. Best with topics that could be confused (e.g., similar muscle
-    actions)
-  tutor_does: Run select 2-3 distinct but related topics for the session. best with topics that could be confused (e.g., similar
-    muscle actions) while protecting the attempt-first rule, then compare only after recall is complete.
+  action: Select 2-3 distinct but related topics for the session. Best with topics that could be confused (e.g., similar muscle actions)
+  tutor_does: Run select 2-3 distinct but related topics for the session. best with topics that could be confused (e.g., similar muscle actions) while protecting the attempt-first rule, then compare only after recall is complete.
   learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
   max_lines: 8
   check: Are all materials closed and is the learner ready to attempt recall?
@@ -81,18 +86,15 @@ steps:
 - step: 2
   name: Create or request a
   action: Create or request a mixed question set. Questions should be randomly ordered, not blocked by topic
-  tutor_does: Run create or request a mixed question set. questions should be randomly ordered, not blocked by topic while
-    protecting the attempt-first rule, then compare only after recall is complete.
+  tutor_does: Run create or request a mixed question set. questions should be randomly ordered, not blocked by topic while protecting the attempt-first rule, then compare only after recall is complete.
   learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
   max_lines: 8
   check: Is this step complete and ready to advance?
   example: Tutor starts the timer and asks for a free-response dump.
 - step: 3
   name: Answer each question, noting
-  action: Answer each question, noting which topic it belongs to. The discrimination ("which topic is this?") is part of the
-    learning
-  tutor_does: Run answer each question, noting which topic it belongs to. the discrimination ("which topic is this?") is part
-    of the learning while protecting the attempt-first rule, then compare only after recall is complete.
+  action: Answer each question, noting which topic it belongs to. The discrimination ("which topic is this?") is part of the learning
+  tutor_does: Run answer each question, noting which topic it belongs to. the discrimination ("which topic is this?") is part of the learning while protecting the attempt-first rule, then compare only after recall is complete.
   learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
   max_lines: 8
   check: Is this step complete and ready to advance?
@@ -100,8 +102,7 @@ steps:
 - step: 4
   name: After answering, verify correctness
   action: After answering, verify correctness AND topic classification. Both content and categorization matter
-  tutor_does: Run after answering, verify correctness and topic classification. both content and categorization matter while
-    protecting the attempt-first rule, then compare only after recall is complete.
+  tutor_does: Run after answering, verify correctness and topic classification. both content and categorization matter while protecting the attempt-first rule, then compare only after recall is complete.
   learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
   max_lines: 8
   check: Is this step complete and ready to advance?
@@ -109,18 +110,15 @@ steps:
 - step: 5
   name: Track accuracy by topic
   action: Track accuracy by topic separately. Identifies which topic needs more work
-  tutor_does: Run track accuracy by topic separately. identifies which topic needs more work while protecting the attempt-first
-    rule, then compare only after recall is complete.
+  tutor_does: Run track accuracy by topic separately. identifies which topic needs more work while protecting the attempt-first rule, then compare only after recall is complete.
   learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
   max_lines: 8
   check: Is this step complete and ready to advance?
   example: Tutor compares to the source and notes missing items.
 - step: 6
   name: Reflect on discrimination patterns
-  action: Reflect on discrimination patterns — which topics did you confuse?. Confusion patterns reveal conceptual boundaries
-    to strengthen
-  tutor_does: Run reflect on discrimination patterns — which topics did you confuse?. confusion patterns reveal conceptual
-    boundaries to strengthen while protecting the attempt-first rule, then compare only after recall is complete.
+  action: "Reflect on discrimination patterns \u2014 which topics did you confuse?. Confusion patterns reveal conceptual boundaries to strengthen"
+  tutor_does: "Run reflect on discrimination patterns \u2014 which topics did you confuse?. confusion patterns reveal conceptual boundaries to strengthen while protecting the attempt-first rule, then compare only after recall is complete."
   learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
   max_lines: 8
   check: Is this step complete and ready to advance?
@@ -183,69 +181,69 @@ mechanisms:
 - discrimination
 - transfer
 evidence:
-  citation: Rohrer et al. (2015)
-  finding: interleaved practice improves discrimination and transfer
-  source: seed_methods.py
+  citation: Kang and Pashler (2012); Rohrer, Dedrick, Hartwig, and Cheung (2020); Brunmair and Richter (2019); Carvalho and Goldstone (2023)
+  finding: Mixed Practice is best supported as an interleaved retrieval routine that improves later discrimination by forcing topic switching and comparison. Foundational interleaving work and later classroom studies show that mixed sets can outperform blocked formats on delayed performance when the learner must distinguish related categories or procedures, while broader interleaving reviews show that the benefit depends on the match between the mix and the discrimination demand. The practical implication for this method is to interleave genuinely confusable topics, score both answer accuracy and topic classification, and use the confusion pattern to decide what needs more focused repair.
+  source: https://doi.org/10.1007/s11251-007-9015-8; https://doi.org/10.1037/edu0000367; https://doi.org/10.1007/s11251-020-09504-7; https://doi.org/10.1007/s10212-023-00723-3
+  needs_research: false
 knobs:
-  default_duration_min: 10
-  energy_cost: high
-  best_stage: exam_prep
+  guidance_level: medium
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest interleave. Use 2 topics, a short mixed set, and terse bullets for per-topic accuracy plus one confusion cue.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Fullest interleave. Use 3 topics, a longer mixed set, and a fuller confusion matrix plus discrimination insights by topic.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: Refresh interleave. Use a compact table with item number, topic, result, and confusion tag for fast pattern spotting.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied interleave. Mix applied scenarios from 2-3 confusable domains and return a short routing matrix centered on likely downstream mix-ups.
 related_methods:
 - id: M-REF-004
   relationship: Question bank seeds can be tagged for interleaving
 - id: M-OVR-003
   relationship: Drill sheets can package the interleaved set for later use
+system_prompt_override:
+  relaxes:
+  - Never reveal the full answer without letting me attempt first. Progressive hints, not solutions.
+  - 'If I''m stuck: do NOT repeat the same explanation. Pick exactly one recovery move (simpler ladder, format switch, side-by-side contrast, tiny clinical case).'
+  replaces_with:
+  - Closed-note interleaved retrieval. No hints at any point. Reveal correct answer immediately after each committed attempt for tally.
+  - If stuck on an item, mark a miss and move to the next interleaved topic. Recovery move would defeat the discrimination signal interleaving is designed to build.
+  reason: Mixed Practice interleaves 2-3 topics to build discrimination. Hints or recovery moves collapse the discrimination signal.
 facilitation_prompt: |-
-  You are a tutor running M-RET-004 (Mixed Practice) in RETRIEVE mode.
-  ROLE: elicit memory under controlled conditions and protect the attempt-first rule.
-  OBJECTIVE: Mixed Practice exists to run mixed retrieval practice that interleaves two or three topics to build discrimination and reduce blocked-practice illusion. It turns the current stage into a clean, reusable signal instead of a vague study session.
-  SCOPE: Use only the loaded source material and the learner's current responses.
-  RULES:
-  - Closed-note first, open-note only after recall is complete
-  - No hints or answer reveal before the learner attempts the item
-  - Compare against source only after the attempt window ends
-  - Stay within the timer or sprint cap
-
-  RUN ONE STEP AT A TIME. Do not skip ahead. Wait for my reply before moving on.
-  1. Select 2-3 distinct but — Select 2-3 distinct but related topics for the session. Best with topics that could be confused (e.g., similar muscle actions)
-     Example: Tutor: "Close your notes. Do not peek." Learner: "Notes are closed."
-     Check: Are all materials closed and is the learner ready to attempt recall?
-     Then stop and wait.
-  2. Create or request a — Create or request a mixed question set. Questions should be randomly ordered, not blocked by topic
-     Example: Tutor starts the timer and asks for a free-response dump.
-     Check: Is this step complete and ready to advance?
-     Then stop and wait.
-  3. Answer each question, noting — Answer each question, noting which topic it belongs to. The discrimination ("which topic is this?") is part of the learning
-     Example: Tutor marks gaps with question marks and compares them after the attempt window ends.
-     Check: Is this step complete and ready to advance?
-     Then stop and wait.
-  4. After answering, verify correctness — After answering, verify correctness AND topic classification. Both content and categorization matter
-     Example: Tutor compares to the source and notes missing items.
-     Check: Is this step complete and ready to advance?
-     Then stop and wait.
-  5. Track accuracy by topic — Track accuracy by topic separately. Identifies which topic needs more work
-     Example: Tutor compares to the source and notes missing items.
-     Check: Is this step complete and ready to advance?
-     Then stop and wait.
-  6. Reflect on discrimination patterns — Reflect on discrimination patterns — which topics did you confuse?. Confusion patterns reveal conceptual boundaries to strengthen
-     Example: Tutor compares to the source and notes missing items.
-     Check: Is this step complete and ready to advance?
-     Then stop and wait.
-
-  REQUIRED OUTPUTS:
-  - Overall accuracy across all topics (structured response)
-  - Per-topic accuracy breakdown (structured response)
-  - Confusion matrix (which topics got mixed up) (structured response)
-  - Discrimination insights (cues that distinguish topics) (structured response)
-
-  STOP CONDITIONS:
-  - Stop when every required output exists and the final check passes.
-  - Stop early if the time cap or item cap is reached.
-  - Stop if the learner has crossed into a different stage or the format is no longer useful.
-
-  IF STUCK:
-  Give one narrower cue, keep materials closed, and ask for a best-effort attempt before any feedback.
-  If that still fails, reduce scope to one smaller item, one row, or one rep and continue.
+  You are running M-RET-004 (Mixed Practice) in the RETRIEVE stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: Overall accuracy, Per-topic accuracy breakdown, Confusion matrix, and Discrimination insights.
+  Run an interleaved closed-note retrieval block across 2-3 topics. Score both the answer and the topic classification, then use the confusion pattern to decide what needs repair.
+  Preset behavior:
+  - exam_cram: one-shot; 2 topics; short mixed set; terse bullets and one confusion cue.
+  - deep_mastery: interactive; 3 topics; longer mixed set; fuller confusion matrix and topic-level insights.
+  - quick_review: one-shot refresh; compact item-by-item confusion table.
+  - clinical_bridge: stepwise; applied scenarios from confusable domains with a short routing matrix.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode moves set -> scoring -> confusion review and waits.
 validation:
   test_cases:
   - topic: interleaving across topics

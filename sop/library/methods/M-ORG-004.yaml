@@ -1,32 +1,29 @@
 id: M-ORG-004
 name: Clinical Decision Tree
-category: encode
+category: ENCODE
 subcategory: org
-description: 'Build a branching decision diagram: presentation → key findings → differential → tests →
-  diagnosis. Scaffolds clinical reasoning into explicit decision points.'
+description: "Build a branching decision diagram: presentation \u2192 key findings \u2192 differential \u2192 tests \u2192 diagnosis. Scaffolds clinical reasoning into explicit decision points."
 control_stage: ENCODE
 status: validated
-version: '1.0'
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
 - visual
 - mermaid
 - clinical-reasoning
 - decision-tree
 - differential
-purpose: Organize the material into a visible structure so relationships, sequence, contrast, or hierarchy
-  become easier to remember and explain.
-not_for: This is not for isolated trivia, free-form brainstorming, or content that has no meaningful structure
-  to map.
+- encode
+purpose: Organize the material into a visible structure so relationships, sequence, contrast, or hierarchy become easier to remember and explain.
+not_for: This is not for isolated trivia, free-form brainstorming, or content that has no meaningful structure to map.
 best_fit_topics:
 - Structures, pathways, lists, tables, and maps with visible relationships
 - Material that benefits from spatial or hierarchical organization
 poor_fit_topics:
 - Single isolated facts that only need a quick cue
 - Highly abstract content with no separable parts or relationships
-learner_state_required: Source material is loaded. The learner can see or recall the parts and is ready
-  to organize them into a structure.
+learner_state_required: Source material is loaded. The learner can see or recall the parts and is ready to organize them into a structure.
 inputs:
 - description: Clinical presentation or chief complaint
   required: true
@@ -47,25 +44,37 @@ outputs:
 - name: Mermaid code (if using dashboard)
   description: Mermaid code (if using dashboard)
   format: short, checkable artifact
+artifact_schemas:
+  Clinical decision tree: tree_map
+  Red flag list: string
+  Confirmatory test per diagnosis: string
+  Mermaid code (if using dashboard): string
+produces:
+- Clinical decision tree
+- Red flag list
+- Confirmatory test per diagnosis
+- Mermaid code (if using dashboard)
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
 required_outputs: &id001
 - Clinical decision tree
 - Red flag list
 - Confirmatory test per diagnosis
 success_criteria:
-- 'All required outputs are present and checkable: Clinical decision tree, Red flag list, Confirmatory
-  test per diagnosis.'
+- 'All required outputs are present and checkable: Clinical decision tree, Red flag list, Confirmatory test per diagnosis.'
 - 'The method reaches its stop condition: All major diagnoses included; Decision points are truly discriminating.'
-- The learner stays active and the tutor does not give away the answer before the required attempt or
-  transformation.
+- The learner stays active and the tutor does not give away the answer before the required attempt or transformation.
 partial_criteria:
-- 'Some required outputs are present but at least one is missing or incomplete: Clinical decision tree,
-  Red flag list.'
+- 'Some required outputs are present but at least one is missing or incomplete: Clinical decision tree, Red flag list.'
 steps:
 - step: 1
   name: Start With The Chief Complaint
   action: Start with the chief complaint at top
-  tutor_does: 'Guide the learner to Start with the chief complaint at top. Keep in mind: Example: ''Chest
-    Pain'''
+  tutor_does: 'Guide the learner to Start with the chief complaint at top. Keep in mind: Example: ''Chest Pain'''
   learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -73,8 +82,7 @@ steps:
 - step: 2
   name: Branch By Key Discriminating Questions
   action: Branch by key discriminating questions
-  tutor_does: 'Guide the learner to Branch by key discriminating questions. Keep in mind: What single
-    question best splits the differential?'
+  tutor_does: 'Guide the learner to Branch by key discriminating questions. Keep in mind: What single question best splits the differential?'
   learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -82,8 +90,7 @@ steps:
 - step: 3
   name: At Each Branch Add The
   action: At each branch, add the most likely diagnoses
-  tutor_does: 'Guide the learner to At each branch, add the most likely diagnoses. Keep in mind: Narrow
-    the differential with each decision point'
+  tutor_does: 'Guide the learner to At each branch, add the most likely diagnoses. Keep in mind: Narrow the differential with each decision point'
   learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -91,8 +98,7 @@ steps:
 - step: 4
   name: Add The Confirmatory Test Or
   action: Add the confirmatory test or finding for each diagnosis
-  tutor_does: 'Guide the learner to Add the confirmatory test or finding for each diagnosis. Keep in mind:
-    What clinches the diagnosis?'
+  tutor_does: 'Guide the learner to Add the confirmatory test or finding for each diagnosis. Keep in mind: What clinches the diagnosis?'
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -100,8 +106,7 @@ steps:
 - step: 5
   name: Each Branch Against Clinical Guidelines
   action: Verify each branch against clinical guidelines
-  tutor_does: 'Guide the learner to Verify each branch against clinical guidelines. Keep in mind: Use
-    Source-Lock for accuracy'
+  tutor_does: 'Guide the learner to Verify each branch against clinical guidelines. Keep in mind: Use Source-Lock for accuracy'
   learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -109,24 +114,22 @@ steps:
 - step: 6
   name: Add Red Flags That Skip
   action: Add "red flags" that skip the tree (emergencies)
-  tutor_does: 'Guide the learner to Add "red flags" that skip the tree (emergencies). Keep in mind: Safety-critical
-    findings that override the algorithm'
+  tutor_does: 'Guide the learner to Add "red flags" that skip the tree (emergencies). Keep in mind: Safety-critical findings that override the algorithm'
   learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
   max_lines: 8
   check: Is this step complete and ready for the next move?
   example: 'Example: Safety-critical findings that override the algorithm'
 constraints:
 - rule: Require active learner processing
-  why: The method depends on the learner generating, mapping, explaining, or transforming the material
-    rather than passively reading.
+  why: The method depends on the learner generating, mapping, explaining, or transforming the material rather than passively reading.
 - rule: Stay within objective scope
   why: Prevents drift into unrelated material and keeps the method auditable.
 - rule: Do not turn this into a passive answer dump or scoring event
   why: This method is designed for guided learning, not one-shot lecture or formal grading.
 - rule: Force active processing (explain, transform, or map), not passive reading.
-  why: This gating rule is part of the method’s execution contract.
+  why: "This gating rule is part of the method\u2019s execution contract."
 - rule: Keep output scoped to mapped objectives only.
-  why: This gating rule is part of the method’s execution contract.
+  why: "This gating rule is part of the method\u2019s execution contract."
 allowed_moves:
 - Help learner identify the chief complaint as the tree root
 - Prompt learner to choose key discriminating questions at each branch point
@@ -145,22 +148,18 @@ forbidden_moves:
 - Skip source verification against clinical guidelines
 - Deliver a passive differential diagnosis instead of guiding tree construction
 - Move to retrieval before the tree is verified against guidelines
-stuck_protocol: Reduce the scope to fewer nodes or rows, restate the parts in plain language, and then
-  rebuild the structure one relationship at a time. If needed, switch to a simpler map or flowchart.
+stuck_protocol: Reduce the scope to fewer nodes or rows, restate the parts in plain language, and then rebuild the structure one relationship at a time. If needed, switch to a simpler map or flowchart.
 failure_modes:
 - mode: Too many branches at one node
-  detection: The learner or tutor starts doing too many branches at one node or the artifact stops satisfying
-    the method’s required checks.
+  detection: "The learner or tutor starts doing too many branches at one node or the artifact stops satisfying the method\u2019s required checks."
   recovery: Limit to 2-3 branches per decision point
   fallback_method: M-INT-002
 - mode: Non-discriminating questions
-  detection: The learner or tutor starts doing non-discriminating questions or the artifact stops satisfying
-    the method’s required checks.
+  detection: "The learner or tutor starts doing non-discriminating questions or the artifact stops satisfying the method\u2019s required checks."
   recovery: Each question must meaningfully narrow differential
   fallback_method: M-ORG-003
 - mode: Missing red flags
-  detection: The learner or tutor starts doing missing red flags or the artifact stops satisfying the
-    method’s required checks.
+  detection: "The learner or tutor starts doing missing red flags or the artifact stops satisfying the method\u2019s required checks."
   recovery: Always include "skip to emergency" path
   fallback_method: M-ORG-002
 default_duration_min: 10
@@ -171,82 +170,32 @@ mechanisms:
 - discrimination
 - transfer
 evidence:
-  citation: Charlin et al. (2000)
-  finding: Decision trees scaffold clinical reasoning and support diagnostic accuracy
-  source: seed_methods.py
+  citation: 'How to improve the teaching of clinical reasoning: a narrative review and a proposal (2015); Teaching clinical reasoning by making thinking visible (2014); Empirical comparison of three assessment instruments of clinical reasoning capability (2020); Clinical reasoning process with decision justification study (2024)'
+  finding: Clinical Decision Tree is best supported as an explicit reasoning-structure artifact for novice clinical thinking, not as a substitute for full expertise. Clinical-reasoning education reviews argue that novices benefit when diagnostic reasoning is taught and represented explicitly rather than left implicit. Studies on making thinking visible and on structured clinical-reasoning programs show that externalized branches, justification points, and confirmatory checks help learners discuss and monitor their reasoning more concretely. The practical implication for this method is to branch only on meaningful discriminators, keep likely diagnoses and confirmatory tests attached to each branch, and surface red flags that bypass the normal tree so the artifact stays usable and safe.
+  source: https://doi.org/10.1111/medu.12775; https://doi.org/10.1186/1472-6920-14-20; https://doi.org/10.1186/s12909-020-02185-3; https://doi.org/10.1186/s12909-024-06613-6
+  needs_research: false
 knobs:
   guidance_level: medium
-  output_format: bullets
-  evidence_raw: Charlin et al. (2000); decision trees scaffold clinical reasoning
-  gating_rules:
-  - Force active processing (explain, transform, or map), not passive reading.
-  - Keep output scoped to mapped objectives only.
-  logging_fields:
-  - presentation_type
-  - diagnoses_included
-  - decision_depth
-  - red_flags_count
-  - verification_status
-  artifact_type: decision-tree
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
 related_methods:
-- id: M-INT-002
-  relationship: Clinical application cousin
-- id: M-ORG-003
-  relationship: Flowchart fallback for branching decisions
-- id: M-ORG-002
-  relationship: Comparison table if differential diagnosis is needed
-facilitation_prompt: "You are running M-ORG-004 (Clinical Decision Tree) in ENCODE stage.\nRole: you are\
-  \ the tutor running the method exactly as written, with no hidden assumptions.\nObjective: Organize\
-  \ the material into a visible structure so relationships, sequence, contrast, or hierarchy become easier\
-  \ to remember and explain.\nScope: Build a branching decision diagram: presentation → key findings →\
-  \ differential → tests → diagnosis. Scaffolds clinical reasoning into explicit decision points.\nRules:\n\
-  - Require active learner processing — The method depends on the learner generating, mapping, explaining,\
-  \ or transforming the material rather than passively reading.\n- Stay within objective scope — Prevents\
-  \ drift into unrelated material and keeps the method auditable.\n- Do not turn this into a passive answer\
-  \ dump or scoring event — This method is designed for guided learning, not one-shot lecture or formal\
-  \ grading.\n- Force active processing (explain, transform, or map), not passive reading. — This gating\
-  \ rule is part of the method’s execution contract.\n- Keep output scoped to mapped objectives only.\
-  \ — This gating rule is part of the method’s execution contract.\n- Not for: This is not for isolated\
-  \ trivia, free-form brainstorming, or content that has no meaningful structure to map.\nInputs:\n- Clinical\
-  \ presentation or chief complaint (required)\n- Differential diagnosis list (required)\n- Source material\
-  \ with diagnostic criteria (required)\nRequired outputs:\n- Clinical decision tree: Clinical decision\
-  \ tree [labeled visual structure]\n- Red flag list: Red flag list [short, checkable artifact]\n- Confirmatory\
-  \ test per diagnosis: Confirmatory test per diagnosis [short, checkable artifact]\n- Mermaid code (if\
-  \ using dashboard): Mermaid code (if using dashboard) [short, checkable artifact]\nSteps: run one step\
-  \ at a time and wait after each step before advancing.\n1. Start With The Chief Complaint\n   Tutor\
-  \ does: Guide the learner to Start with the chief complaint at top. Keep in mind: Example: 'Chest Pain'\n\
-  \   Learner does: Reads the prompt, does the thinking step, and returns the artifact or answer.\n  \
-  \ Example: Example: 'Chest Pain\n   Check: Is this step complete and ready for the next move?\n   Then\
-  \ STOP and wait for the learner.\n2. Branch By Key Discriminating Questions\n   Tutor does: Guide the\
-  \ learner to Branch by key discriminating questions. Keep in mind: What single question best splits\
-  \ the differential?\n   Learner does: Reads the prompt, does the thinking step, and returns the artifact\
-  \ or answer.\n   Example: Example: What single question best splits the differential?\n   Check: Is\
-  \ this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n3. At Each\
-  \ Branch Add The\n   Tutor does: Guide the learner to At each branch, add the most likely diagnoses.\
-  \ Keep in mind: Narrow the differential with each decision point\n   Learner does: Reads the prompt,\
-  \ does the thinking step, and returns the artifact or answer.\n   Example: Example: Narrow the differential\
-  \ with each decision point\n   Check: Is this step complete and ready for the next move?\n   Then STOP\
-  \ and wait for the learner.\n4. Add The Confirmatory Test Or\n   Tutor does: Guide the learner to Add\
-  \ the confirmatory test or finding for each diagnosis. Keep in mind: What clinches the diagnosis?\n\
-  \   Learner does: Performs the requested cognitive move and shares the result before moving on.\n  \
-  \ Example: Example: What clinches the diagnosis?\n   Check: Is this step complete and ready for the\
-  \ next move?\n   Then STOP and wait for the learner.\n5. Each Branch Against Clinical Guidelines\n \
-  \  Tutor does: Guide the learner to Verify each branch against clinical guidelines. Keep in mind: Use\
-  \ Source-Lock for accuracy\n   Learner does: Reads the prompt, does the thinking step, and returns the\
-  \ artifact or answer.\n   Example: Example: Use Source-Lock for accuracy\n   Check: Is this step complete\
-  \ and ready for the next move?\n   Then STOP and wait for the learner.\n6. Add Red Flags That Skip\n\
-  \   Tutor does: Guide the learner to Add \"red flags\" that skip the tree (emergencies). Keep in mind:\
-  \ Safety-critical findings that override the algorithm\n   Learner does: Reads the prompt, does the\
-  \ thinking step, and returns the artifact or answer.\n   Example: Example: Safety-critical findings\
-  \ that override the algorithm\n   Check: Is this step complete and ready for the next move?\n   Then\
-  \ STOP and wait for the learner.\nStop conditions:\n- All required outputs are present and checkable:\
-  \ Clinical decision tree, Red flag list, Confirmatory test per diagnosis.\n- The method reaches its\
-  \ stop condition: All major diagnoses included; Decision points are truly discriminating.\n- The learner\
-  \ stays active and the tutor does not give away the answer before the required attempt or transformation.\n\
-  If stuck: Reduce the scope to fewer nodes or rows, restate the parts in plain language, and then rebuild\
-  \ the structure one relationship at a time. If needed, switch to a simpler map or flowchart.\nDo not\
-  \ skip steps, do not solve the whole task at once, and do not present source claims as mnemonic or analogy\
-  \ artifacts."
+- id: M-INT-005
+  relationship: Use when the learner needs a fuller case walkthrough before compressing the pathway into a decision tree
+- id: M-CAL-002
+  relationship: Use when the completed branches should feed a fuller scored probe set after teaching
+facilitation_prompt: |-
+  You are running M-ORG-004 (Clinical Decision Tree) in the ENCODE stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: Clinical decision tree, Red flag list, and Confirmatory test per diagnosis.
+  Build a branching decision artifact from presentation to likely diagnoses. Branch only on meaningful discriminators, attach confirmatory checks to each branch, and surface red flags that bypass the tree.
+  Preset behavior:
+  - exam_cram: one-shot; smallest safe tree plus separate red flags.
+  - deep_mastery: interactive; stepwise branching with visible justification and confirmatory checks.
+  - quick_review: one-shot refresh; Branch cue | Likely diagnosis | Confirm test table plus red flags.
+  - clinical_bridge: stepwise; applied decision matrix with presentation, discriminator, differential, confirmatory test, and bypass columns.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode moves presentation -> branches -> confirmatory checks -> red flags and waits.
 validation:
   test_cases:
   - topic: Structures, pathways, lists, tables, and maps with visible relationships
@@ -270,3 +219,32 @@ validation:
   known_issues:
   - LLMs may over-explain before the learner attempts the required move.
   - LLMs may drift outside scope when the topic is broad or ambiguous.
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: One-shot; build the smallest safe tree with the top branches, one confirmatory test per branch, and the red flags called out separately.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Interactive; branch the tree step by step, keep the reasoning visible, and annotate confirmatory tests and emergency exits explicitly.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: One-shot refresh; compress the artifact into a Branch cue | Likely diagnosis | Confirm test table plus red flags.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Stepwise; use an applied decision matrix that foregrounds presentation, discriminator, differential, confirmatory test, and red-flag bypasses.

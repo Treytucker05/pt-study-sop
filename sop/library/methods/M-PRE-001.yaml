@@ -1,27 +1,31 @@
 id: M-PRE-001
 name: Brain Dump
-category: prime
-subcategory: activation
-description: Rapid orientation recall over existing notes to identify strong anchors and missing nodes before deeper work.
+category: PRIME
+subcategory: brain-dump
+description: Run a short orientation-only recall pass over existing notes or context to surface strong anchors, obvious gaps, and next-pass targets before deeper work.
 control_stage: PRIME
 status: validated
-version: '1.0'
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
 - prime
 - activation
 - orientation
 - prior-knowledge
-purpose: Rapid orientation recall over existing notes to identify strong anchors and missing nodes before deeper work. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
+- schema
+- readiness
+purpose: Brain Dump exists to activate prior knowledge quickly, surface topic structure, and reveal missing nodes before instruction or heavier study begins. It turns the current stage into a clean, reusable signal instead of a vague study session.
 not_for: Not for first-contact teaching, scored assessment, or full solution reveal. Use a TEACH or REFERENCE method when the goal is explanation rather than orientation.
 best_fit_topics:
-- 'New or complex material that needs a quick orientation pass: Brain Dump'
-- Topics with prior notes, objective context, or an obvious structure to surface
+- New or complex material where the learner already has at least some notes, context, or prior exposure
+- Topics with prior notes, objective targets, or an obvious structure to surface quickly
+- Dense review blocks where the learner needs a fast map of what is already anchored versus still thin
 poor_fit_topics:
 - Brand-new content with no context or source packet
 - Scored retrieval or diagnostic testing
-learner_state_required: Source material is loaded, the topic is bounded, and the learner has at least some prior context or an objective to orient around.
+- Situations where the learner needs full explanation rather than a readiness map
+learner_state_required: Source material is loaded, the topic is bounded, and the learner has at least some prior context, notes, or objective scope to orient around.
 inputs:
 - description: Source material loaded in chat
   required: true
@@ -32,49 +36,63 @@ inputs:
 outputs:
 - name: StrongConnections
   description: Top-level anchors the learner already has tied to the topic.
-  format: bulleted artifact
+  format: bulleted or tabular list
 - name: MissingNodes
   description: Important anchors or gaps that should be revisited next.
-  format: bulleted artifact
+  format: bulleted or tabular list
 - name: FollowUpTargets
   description: Next-pass targets for study or clarification.
-  format: bulleted artifact
+  format: bulleted or tabular list
+artifact_schemas:
+  StrongConnections: bullet_list
+  MissingNodes: bullet_list
+  FollowUpTargets: bullet_list
+produces:
+- StrongConnections
+- MissingNodes
+- FollowUpTargets
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
 required_outputs:
 - StrongConnections
 - MissingNodes
 - FollowUpTargets
 success_criteria:
-- 'Core structure is captured in the required outputs: StrongConnections, MissingNodes.'
-- The method stays non-assessive and does not score the learner.
-- Any gaps, priorities, or blind spots are explicitly named for next-pass study.
+- All required outputs are present for M-PRE-001.
+- The method stays non-assessive and does not score or correct the learner as if this were a quiz.
+- The final artifact clearly names what is already anchored, what is missing, and what should happen next.
 partial_criteria:
 - StrongConnections is present but gaps or priorities are incomplete.
 - The output has useful structure but is missing one required linkage or objective tie.
 steps:
 - step: 1
   name: Free Write
-  action: Ask for a quick 60-120 second free write of what the learner already remembers
-  tutor_does: Ask for a quick 60-120 second free write of what the learner already remembers. Orientation only; no correctness scoring
+  action: Ask for a quick 60-120 second free write of what the learner already remembers.
+  tutor_does: Ask for a quick 60-120 second free write of what the learner already remembers. Keep it orientation-only and do not score correctness.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: What are the strongest anchors you already have for this topic?
-  example: 'Example: "Free Write: Ask for a quick 60-120 second free write of what the learner already remembers"'
+  example: 'Example: Ask for a quick 60-120 second free write of what the learner already remembers.'
 - step: 2
-  name: Step 2
-  action: Extract anchor nodes that align with existing objective targets
-  tutor_does: Extract anchor nodes that align with existing objective targets. Keep only top-level concepts
+  name: Extract anchor nodes that align with existing objective targets
+  action: Extract anchor nodes that align with existing objective targets.
+  tutor_does: Extract anchor nodes that align with existing objective targets. Keep only top-level concepts and objective-relevant anchors.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: Does the structure so far match what you expected from the material?
-  example: 'Example: "Step 2: Extract anchor nodes that align with existing objective targets"'
+  example: 'Example: Keep only top-level concepts that align with the active topic or objective.'
 - step: 3
-  name: Step 3
-  action: Mark obvious missing nodes as follow-up anchors
-  tutor_does: Mark obvious missing nodes as follow-up anchors. Missing nodes are routing hints, not penalties
+  name: Mark obvious missing nodes as follow-up anchors
+  action: Mark obvious missing nodes as follow-up anchors.
+  tutor_does: Mark obvious missing nodes as follow-up anchors. Missing nodes are routing hints, not penalties.
   learner_does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
   max_lines: 4
   check: Which gaps or next targets should we carry forward?
-  example: 'Example: "Step 3: Mark obvious missing nodes as follow-up anchors"'
+  example: 'Example: Missing nodes are routing hints, not penalties.'
 constraints:
 - rule: Do not assess, grade, or confidence-rate the learner
   why: PRIME methods activate and organize knowledge instead of testing it.
@@ -86,14 +104,14 @@ constraints:
   why: This method is for orientation and teaching, not grading.
 allowed_moves:
 - Activate prior knowledge through free recall of existing notes
-- Ask learner to write what they already remember (60-120 seconds)
+- Ask the learner to write what they already remember for 60-120 seconds
 - Extract anchor nodes that align with objective targets
 - Flag missing nodes as follow-up anchors non-judgmentally
 - Connect recalled concepts to upcoming learning objectives
 - Use supportive synthesis tone throughout
 - Activate prior knowledge with a bounded free recall or orientation prompt
 forbidden_moves:
-- Score, grade, or make mastery/confidence judgments
+- Score, grade, or make mastery or confidence judgments
 - Teach new detailed content or provide explanations
 - Reveal full answers or solutions
 - Run on first-contact content with no prior notes or North Star context
@@ -104,145 +122,100 @@ stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler exa
 failure_modes:
 - mode: Learner treats it like a quiz
   detection: The tutor starts judging answers or asking the learner to prove mastery.
-  recovery: Explicitly state this is orientation, not assessment.
+  recovery: Explicitly state that this is orientation, not assessment.
   fallback_method: M-PRE-010
 - mode: No prior context exists
-  detection: The output no longer matches the method’s core purpose.
-  recovery: Skip and route to M-PRE-010 then M-PRE-008.
+  detection: The learner has no notes, anchors, or objective framing to activate.
+  recovery: Skip and route to M-PRE-010, then M-PRE-008 if structure is still needed.
   fallback_method: M-PRE-010
 default_duration_min: 3
 energy_cost: low
 best_stage: first_exposure
 mechanisms:
-- scaffolding
 - prior_knowledge_activation
+- schema_activation
 - organization
+- readiness_signaling
+- generative_recall
 evidence:
-  citation: Ausubel (1968)
-  finding: Ausubel (1968); Bjork & Bjork (2011); prior knowledge activation strengthens subsequent encoding
-  source: legacy method card
+  citation: Dochy, Segers, and Buehl (1999); Hattan, Alexander, and Lupo (2024); van Kesteren, Krabbendam, and Meeter (2018); Brand, Loibl, and Rummel (2025a); Brand, Loibl, and Rummel (2025b)
+  finding: >-
+    Brain Dump is best supported as a short prior-knowledge activation and
+    organization move that prepares the learner for deeper instruction without
+    turning the opening into a quiz. Reviews on prior knowledge and newer
+    syntheses on activation show that what learners already know strongly shapes
+    comprehension and later learning, and that activation works best when the
+    relevant knowledge is surfaced and tied to the current goal rather than left
+    dormant or allowed to stay diffuse. Experimental and educational studies on
+    reactivation and preparatory designs reinforce the same practical point:
+    even partial activation of relevant prior knowledge can prepare learners for
+    subsequent instruction, but the activation has to be relevant enough to
+    serve as an anchor and not so evaluative that it becomes a disguised test.
+    The practical implication for this method is to keep the free write brief,
+    extract only top-level anchor nodes, mark obvious missing nodes
+    non-judgmentally, and route the next study move from the gap pattern rather
+    than from correctness scoring.
+  source: https://doi.org/10.3102/00346543069002145; https://doi.org/10.3102/00346543221148478; https://doi.org/10.1038/s41539-018-0027-8; https://doi.org/10.1007/s11251-025-09727-6; https://doi.org/10.1007/s10648-025-10074-8
+  needs_research: false
 knobs:
-  feedback_style: supportive_synthesis
   guidance_level: medium
-  objective_link_required: true
-  artifact_type: notes
-  evidence_strength: medium
-  primary_citations:
-  - Ausubel (1968)
-  - Bjork & Bjork (2011)
-  logging_fields:
-  - prior_context_present
-  - strong_connection_count
-  - missing_node_count
-  - skipped_reason
-  outputs_summary: Connection refresh list; known-knowns snapshot; flagged gaps
-  has_steps: Y
-  has_outputs_or_artifacts: Y
-  output_format: bullets
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest orientation pass. Return 3 StrongConnections, up to 2 MissingNodes, and 1-2 FollowUpTargets as terse bullets only.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Full orientation pass. Keep separate sections for StrongConnections, MissingNodes, and FollowUpTargets, and group anchors by objective or theme before routing forward.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: Refresh pass. Render the output as a compact table with known anchor, objective tie, missing node, and next target columns.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied orientation pass. Use a clinic-facing table with known clinical cue, why it matters, missing node, and follow-up target so the opening map points toward patient-facing study.
 related_methods:
 - id: M-PRE-010
   relationship: Best first companion when objective context is missing
 - id: M-PRE-008
   relationship: Follow with structure once anchors are surfaced
-facilitation_prompt: 'You are a study tutor running M-PRE-001 (Brain Dump) in the CALIBRATE stage.
-
-  ROLE: You are a careful, supportive tutor. Your job is to run Brain Dump exactly as specified and keep the output faithful, bounded, and useful.
-
-  OBJECTIVE: Rapid orientation recall over existing notes to identify strong anchors and missing nodes before deeper work. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
-
-  SCOPE: Rapid orientation recall over existing notes to identify strong anchors and missing nodes before deeper work.
-
-  RULES:
-
-  - Do not assess, grade, or confidence-rate the learner — because PRIME methods activate and organize knowledge instead of testing it.
-
-  - Stay at orientation level and avoid full solution reveal — because The goal is to shape readiness, not finish the lesson for the learner.
-
-  - Run only when prior context is available — because This method activates or structures existing knowledge.
-
-  - Do not assess or score the learner — because This method is for orientation and teaching, not grading.
-
-
-  OUTPUTS TO PRODUCE:
-
-  1. StrongConnections — Top-level anchors the learner already has tied to the topic. (bulleted artifact)
-
-  2. MissingNodes — Important anchors or gaps that should be revisited next. (bulleted artifact)
-
-  3. FollowUpTargets — Next-pass targets for study or clarification. (bulleted artifact)
-
-
-  RUN THE METHOD ONE STEP AT A TIME. Wait for my response before moving to the next step.
-
-  STEP 1 — Free Write
-
-  - Tutor does: Ask for a quick 60-120 second free write of what the learner already remembers. Orientation only; no correctness scoring
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Free Write: Ask for a quick 60-120 second free write of what the learner already remembers"
-
-  - Check: What are the strongest anchors you already have for this topic?
-
-  Then stop and wait.
-
-  STEP 2 — Step 2
-
-  - Tutor does: Extract anchor nodes that align with existing objective targets. Keep only top-level concepts
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Step 2: Extract anchor nodes that align with existing objective targets"
-
-  - Check: Does the structure so far match what you expected from the material?
-
-  Then stop and wait.
-
-  STEP 3 — Step 3
-
-  - Tutor does: Mark obvious missing nodes as follow-up anchors. Missing nodes are routing hints, not penalties
-
-  - Learner does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
-
-  - Example: Example: "Step 3: Mark obvious missing nodes as follow-up anchors"
-
-  - Check: Which gaps or next targets should we carry forward?
-
-  Then stop and wait.
-
-
-  STOP CONDITIONS:
-
-  - Core structure is captured in the required outputs: StrongConnections, MissingNodes.
-
-  - The method stays non-assessive and does not score the learner.
-
-  - Any gaps, priorities, or blind spots are explicitly named for next-pass study.
-
-
-  IF YOU GET STUCK:
-
-  If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
-
-  If the learner is still stuck after one rescue move, shrink the chunk, switch modality, or fall back to the listed fallback method.
-
-
-  GOOD OUTPUT EXAMPLE:
-
-  - StrongConnections: a concise, source-faithful artifact that matches the method purpose and stays within scope.
-
-  - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
-
-
-  DONE WHEN:
-
-  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
-
-  Non-assessment guard:
-
-  - This is a PRIME block — orientation only, not an assessment.
-
-  - Do not quiz, score, or grade the learner here; no scored output.'
+system_prompt_override:
+  relaxes:
+  - Never reveal the full answer without letting me attempt first. Progressive hints, not solutions.
+  - Highly interactive. One teaching chunk (8-12 lines max), one check, one question at a time.
+  replaces_with:
+  - Treat missing nodes as routing hints only. Do not correct recall as right or wrong, and do not turn silence into a low-score judgment.
+  - Keep the artifact at top-level anchor depth. Extract structure and gaps, but do not drift into full explanation while organizing the dump.
+  reason: Brain Dump only works when the opening stays orienting rather than evaluative. Once the tutor starts correcting or teaching, the readiness map turns into a quiz or lecture.
+facilitation_prompt: |
+  You are running M-PRE-001 (Brain Dump) in the PRIME stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: StrongConnections, MissingNodes, and FollowUpTargets.
+  Have the learner do a brief free write on what they already remember, extract only the top-level anchors that align with the active topic or objective, and mark obvious gaps as follow-up nodes. Keep it orientation-only, non-assessive, and source-grounded; do not teach, score, or correct the dump as if it were a quiz.
+  Preset behavior:
+  - exam_cram: one-shot; terse bullets with 3 strong anchors, up to 2 gaps, and 1-2 next targets.
+  - deep_mastery: interactive; labeled sections grouping anchors and gaps by objective or theme.
+  - quick_review: one-shot refresh; compact known-anchor / objective-tie / missing-node / next-target table.
+  - clinical_bridge: stepwise; clinic-facing cue / why-it-matters / missing-node / follow-up-target table.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode moves free write -> anchor extraction -> missing-node routing and waits.
 validation:
   test_cases:
   - topic: First pass on Brain Dump with prior notes present
@@ -251,20 +224,22 @@ validation:
     - MissingNodes
     - FollowUpTargets
     pass_criteria:
-    - Required outputs appear and include at least one structural or gap-oriented artifact from StrongConnections, MissingNodes.
+    - All required outputs are present.
     - The output identifies what is known, what is missing, and what to do next.
+    - No scoring or grading language appears.
   - topic: Dense review topic where the learner needs orientation before detail
     expected_outputs:
     - StrongConnections
     - MissingNodes
     - FollowUpTargets
     pass_criteria:
-    - Required outputs appear and include at least one structural or gap-oriented artifact from StrongConnections, MissingNodes.
+    - All required outputs are present.
+    - The artifact stays at orientation level rather than drifting into detailed teaching.
     - No scored probe, quiz behavior, or grading language appears in the response.
   acceptance_criteria:
-  - Required outputs appear and include at least one structural or gap-oriented artifact from StrongConnections, MissingNodes.
-  - No scored probe, quiz behavior, or grading language appears in the response.
-  - The output identifies what is known, what is missing, and what to do next.
+  - All required_outputs are present in the successful test case.
+  - No forbidden_moves are violated.
+  - The facilitation_prompt can be run without extra hidden context.
   known_issues:
   - LLMs sometimes over-explain instead of staying at orientation level.
   - If objective context is weak, the method can drift unless the prompt locks scope early.

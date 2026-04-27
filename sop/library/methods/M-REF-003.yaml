@@ -1,23 +1,20 @@
 id: M-REF-003
 name: One-Page Anchor
-category: reference
-subcategory: anchor
-description: Build a single-page reference anchor containing minimal definitions, decision rules, canonical examples, near-misses,
-  and traps.
-control_stage: REFERENCE
+category: CONSOLIDATE
+subcategory: one-page-anchor
+description: Build a single-page reference anchor containing minimal definitions, decision rules, canonical examples, near-misses, and traps.
+control_stage: CONSOLIDATE
 status: validated
-version: '1.0'
+version: '1.3'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
-- reference
+- consolidate
 - anchor
 - synthesis
-purpose: One-Page Anchor exists to run a one-page anchor that compresses definitions, decision rules, canonical examples,
-  near-misses, and traps into one reference artifact. It turns the current stage into a clean, reusable signal instead of
-  a vague study session.
-not_for: This is not for quizzing the learner or introducing new material. Use RETRIEVE when the goal is memory testing and
-  TEACH when the goal is explanation.
+- reference-artifact
+purpose: One-Page Anchor exists to run a one-page anchor that compresses definitions, decision rules, canonical examples, near-misses, and traps into one reference artifact. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for quizzing the learner or introducing new material. Use RETRIEVE when the goal is memory testing and EXPLAIN when the goal is explanation.
 best_fit_topics:
 - compact reference sheets
 - decision rules
@@ -26,8 +23,7 @@ poor_fit_topics:
 - long-form prose summaries
 - unbounded topic sprawl
 - testing learners instead of building a reference
-learner_state_required: Recent misses or objectives are available, the source is loaded, and the goal is artifact creation
-  rather than assessment.
+learner_state_required: Recent misses or objectives are available, the source is loaded, and the goal is artifact creation rather than assessment.
 inputs:
 - description: PrioritySet
   required: true
@@ -35,13 +31,22 @@ inputs:
   required: true
 outputs:
 - name: One-Page Anchor (definitions, decision rules, examples, near-misses, traps — all present)
-  description: A compact reference artifact with the minimum definitions, rules, examples, near-misses, and traps needed for
-    later retrieval.
+  description: A compact reference artifact with the minimum definitions, rules, examples, near-misses, and traps needed for later retrieval.
   format: formatted study artifact
 - name: Trap list and near-miss set (3 canonical + 3 near-miss examples minimum)
-  description: A reusable reference artifact that supports later retrieval for a one-page anchor that compresses definitions,
-    decision rules, canonical examples, near-misses, and traps into one reference artifact.
+  description: A reusable reference artifact that supports later retrieval for a one-page anchor that compresses definitions, decision rules, canonical examples, near-misses, and traps into one reference artifact.
   format: bulleted or tabular list
+artifact_schemas:
+  One-Page Anchor (definitions, decision rules, examples, near-misses, traps — all present): ordered_steps
+  Trap list and near-miss set (3 canonical + 3 near-miss examples minimum): bullet_list
+produces:
+- One-Page Anchor (definitions, decision rules, examples, near-misses, traps — all present)
+- Trap list and near-miss set (3 canonical + 3 near-miss examples minimum)
+requires:
+- artifact: FullCalibratePrioritySet (exactly 3 ranked weaknesses)
+  optional: true
+  alternatives:
+  - FinalLearningObjectives
 required_outputs:
 - One-Page Anchor (definitions, decision rules, examples, near-misses, traps — all present)
 - Trap list and near-miss set (3 canonical + 3 near-miss examples minimum)
@@ -50,15 +55,13 @@ success_criteria:
 - A reusable artifact is produced and preserved instead of a loose discussion transcript.
 - The learner or tutor can point to the output artifact and reuse it later without ambiguity.
 partial_criteria:
-- 'One or more required outputs are present but one core artifact is incomplete: One-Page Anchor (definitions, decision rules,
-  examples, near-misses, traps — all present).'
+- 'One or more required outputs are present but one core artifact is incomplete: One-Page Anchor (definitions, decision rules, examples, near-misses, traps — all present).'
 - The method stayed in the correct stage but the final artifact needs one more pass to be reusable.
 steps:
 - step: 1
   name: Capture minimal definitions only.
   action: Capture minimal definitions only. Keep to high-value distinctions
-  tutor_does: Capture capture minimal definitions only. keep to high-value distinctions into a reusable artifact and keep
-    the structure deterministic.
+  tutor_does: Capture capture minimal definitions only. keep to high-value distinctions into a reusable artifact and keep the structure deterministic.
   learner_does: Supplies or confirms the source content and helps save the artifact for later retrieval.
   max_lines: 8
   check: Has the source material been collected and organized for artifact building?
@@ -66,8 +69,7 @@ steps:
 - step: 2
   name: Write decision rules and
   action: Write decision rules and triggers. Focus on rapid discrimination cues
-  tutor_does: Capture write decision rules and triggers. focus on rapid discrimination cues into a reusable artifact and keep
-    the structure deterministic.
+  tutor_does: Capture write decision rules and triggers. focus on rapid discrimination cues into a reusable artifact and keep the structure deterministic.
   learner_does: Supplies or confirms the source content and helps save the artifact for later retrieval.
   max_lines: 8
   check: Is this step complete and ready to advance?
@@ -75,8 +77,7 @@ steps:
 - step: 3
   name: Add 3 canonical examples
   action: Add 3 canonical examples and 3 near-miss examples. Include trap notes for common errors
-  tutor_does: Capture add 3 canonical examples and 3 near-miss examples. include trap notes for common errors into a reusable
-    artifact and keep the structure deterministic.
+  tutor_does: Capture add 3 canonical examples and 3 near-miss examples. include trap notes for common errors into a reusable artifact and keep the structure deterministic.
   learner_does: Supplies or confirms the source content and helps save the artifact for later retrieval.
   max_lines: 10
   check: Is this step complete and ready to advance?
@@ -136,55 +137,69 @@ mechanisms:
 - elaboration
 - discrimination
 evidence:
-  citation: Schmidt & Rikers (2007)
-  finding: Structured scripts and discriminators improve transfer and diagnostic reasoning
-  source: control-plane migration
+  citation: Dunlosky, Rawson, Marsh, Nathan, and Willingham (2013); Bjork, Dunlosky, and Kornell (2013); Francis, Wieth, Zabel, and Carr (2020); Lechuga, Ortega-Tudela, and Gomez-Ariza (2024); Hsu and Lopez Ricoy (2025)
+  finding: One-Page Anchor is best supported as a structured retrieval-support artifact rather than as a passive summary. Dunlosky's review supports practice testing over rereading and highlighting, which favors compact anchors that preserve explicit cues for later self-testing instead of long prose. Bjork's self-regulated-learning review shows that learners are often misled by fluency and by cues that are present during study but absent later, which supports stable headers, decision rules, and source-linked cue language that can guide later search and checking. Recent classroom studies on retrieval-based concept mapping and collaborative study guides suggest that compact external organizers help most when they make hierarchy, relationships, and discriminators explicit enough to support later retrieval, comparison, and exam preparation.
+  source: https://doi.org/10.1177/1529100612453266; https://doi.org/10.1146/annurev-psych-113011-143823; https://doi.org/10.1177/1475725720924872; https://doi.org/10.3389/feduc.2024.1287744; https://doi.org/10.1177/0092055X241268768
+  needs_research: false
 knobs:
-  default_duration_min: 8
-  energy_cost: medium
-  best_stage: exam_prep
+  guidance_level: medium
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: table
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest anchor build; use one-line definitions and rules, terse example labels, and a stripped-down trap list aimed at last-minute review.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Fuller anchor build; keep every required section explicit, allow slightly richer cue wording, and pause between sections to confirm the artifact stays reusable and source-faithful.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Refresh sheet for already-seen material; keep only shaky definitions, highest-yield rules, and the most confusable near-misses and traps.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied anchor; render the artifact as a cue table with rule, example, near-miss, and consequence language so the sheet supports quick real-world discrimination.
 related_methods:
 - id: M-RET-001
   relationship: A compact anchor helps the learner compare recall against source
 - id: M-REF-004
   relationship: Question seeds can be generated from the anchor artifact
-facilitation_prompt: |-
-  You are a tutor running M-REF-003 (One-Page Anchor) in REFERENCE mode.
-  ROLE: build durable artifacts for later retrieval and does not test the learner.
-  OBJECTIVE: One-Page Anchor exists to run a one-page anchor that compresses definitions, decision rules, canonical examples, near-misses, and traps into one reference artifact. It turns the current stage into a clean, reusable signal instead of a vague study session.
-  SCOPE: Use only the loaded source material and the learner's current responses.
-  RULES:
-  - Artifact-first; do not turn the block into teaching or testing
-  - Keep the structure deterministic and reusable
-  - Preserve source language when it helps later recognition
-  - Do not start retrieval drills until the reference target exists
-
-  RUN ONE STEP AT A TIME. Do not skip ahead. Wait for my reply before moving on.
-  1. Capture minimal definitions only. — Capture minimal definitions only. Keep to high-value distinctions
-     Example: Tutor: "Collect the source errors and keep them in the original wording where possible." Learner: "Ready."
-     Check: Has the source material been collected and organized for artifact building?
-     Then stop and wait.
-  2. Write decision rules and — Write decision rules and triggers. Focus on rapid discrimination cues
-     Example: Tutor adds a single row to the artifact and keeps the column structure consistent.
-     Check: Is this step complete and ready to advance?
-     Then stop and wait.
-  3. Add 3 canonical examples — Add 3 canonical examples and 3 near-miss examples. Include trap notes for common errors
-     Example: Tutor writes the anchor or seed artifact in a format that can be reused later.
-     Check: Is this step complete and ready to advance?
-     Then stop and wait.
-
-  REQUIRED OUTPUTS:
-  - One-Page Anchor (definitions, decision rules, examples, near-misses, traps — all present) (formatted study artifact)
-  - Trap list and near-miss set (3 canonical + 3 near-miss examples minimum) (bulleted or tabular list)
-
-  STOP CONDITIONS:
-  - Stop when every required output exists and the final check passes.
-  - Stop early if the time cap or item cap is reached.
-  - Stop if the learner has crossed into a different stage or the format is no longer useful.
-
-  IF STUCK:
-  Collapse to a smaller artifact, keep the same headers, and capture one row at a time.
-  If that still fails, reduce scope to one smaller item, one row, or one rep and continue.
+system_prompt_override:
+  relaxes:
+  - Never reveal the full answer without letting me attempt first. Progressive hints, not solutions.
+  - Highly interactive. One teaching chunk (8-12 lines max), one check, one question at a time.
+  replaces_with:
+  - Build the anchor as a single one-page artifact. Write definitions, decision rules, canonical examples, near-misses, and traps directly. Do not gate on learner attempts — this is reference-building, not testing.
+  - Render the artifact whole when each section is ready. The one-page constraint and chunk caps are incompatible.
+  reason: One-Page Anchor is pure artifact authoring. Almost nothing CI provides applies cleanly here; this method effectively needs its own system prompt from scratch — see ci-conflict-audit.md.
+facilitation_prompt: |
+  You are running M-REF-003 (One-Page Anchor) in the CONSOLIDATE stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: One-Page Anchor and Trap list with near-misses.
+  Build one compact, reusable artifact with minimal definitions, decision rules, 3 canonical examples, 3 near-misses, and trap notes. Keep the structure deterministic, preserve source wording when it is the cue, and do not drift into teaching or quizzing.
+  Preset behavior:
+  - exam_cram: one-shot; terse bullets; one-line rules and definitions; minimal trap list for last-minute scan.
+  - deep_mastery: interactive; labeled sections; slightly richer cue wording and explicit section-by-section confirmation.
+  - quick_review: one-shot refresh; keep only shaky rules, confusable items, and the highest-yield traps.
+  - clinical_bridge: stepwise; use a compact cue table with rule, example, near-miss, and consequence language.
+  If no preset is specified, use the default knobs. One-shot returns the full anchor in one bounded reply; interactive or stepwise mode moves through definitions, rules, and examples in order and waits.
 validation:
   test_cases:
   - topic: compact reference sheets
