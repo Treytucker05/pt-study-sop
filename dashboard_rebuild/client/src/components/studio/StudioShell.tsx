@@ -40,6 +40,13 @@ import {
 import { Button } from "@/components/ui/button";
 import type { StudioPanelLayoutItem } from "@/lib/studioPanelLayout";
 import { cn } from "@/lib/utils";
+import {
+  openPanelPopoutWindow,
+  createPanelPopoutTransport,
+  panelChannelName,
+  type PopoutWindowHandle,
+  type PanelPopoutTransport,
+} from "@/lib/workspacePanelPopout";
 
 export type StudioShellPreset =
   | "priming"
@@ -711,6 +718,11 @@ export function StudioShell({
   const [shouldFocusLayout, setShouldFocusLayout] = useState(false);
   const [windowsMenuOpen, setWindowsMenuOpen] = useState(false);
   const windowsMenuRef = useRef<HTMLDivElement | null>(null);
+  const [popouts, setPopouts] = useState<
+    Record<string, { container: HTMLElement; handle: PopoutWindowHandle }>
+  >({});
+  const popoutTransportsRef = useRef<Record<string, PanelPopoutTransport>>({});
+  const popoutHandlesRef = useRef<Record<string, PopoutWindowHandle>>({});
   const lastExternalLayoutFocusRequestKeyRef = useRef<number | null>(null);
 
   const clampCanvasScale = useCallback((scale: number) => {
@@ -1250,6 +1262,81 @@ export function StudioShell({
     [queuePanelLayoutChange],
   );
 
+  const handlePopOut = useCallback(
+    (panelId: string) => {
+      if (popouts[panelId]) {
+        popouts[panelId].handle.window.focus();
+        return;
+      }
+      const item = resolvedLayout.find((entry) => entry.id === panelId);
+      if (!item) return;
+      const definition = panelsByKey.get(item.panel);
+      if (!definition) return;
+
+      const handle = openPanelPopoutWindow(
+        panelId,
+        definition.title,
+        Math.max(item.size.width, 480),
+        Math.max(item.size.height, 360),
+      );
+      if (!handle) return;
+
+      const container = handle.window.document.getElementById("popout-content");
+      if (!container) {
+        handle.close();
+        return;
+      }
+
+      const transport = createPanelPopoutTransport(panelChannelName(panelId));
+      popoutTransportsRef.current[panelId] = transport;
+      popoutHandlesRef.current[panelId] = handle;
+
+      const unsub = transport.subscribe((msg) => {
+        if (
+          (msg.type === "panel.send-back" ||
+            msg.type === "panel.child-closed") &&
+          msg.panelId === panelId
+        ) {
+          setPopouts((prev) => {
+            const next = { ...prev };
+            delete next[panelId];
+            return next;
+          });
+          transport.close();
+          delete popoutTransportsRef.current[panelId];
+          delete popoutHandlesRef.current[panelId];
+          unsub();
+        }
+      });
+
+      setPopouts((prev) => ({
+        ...prev,
+        [panelId]: { container, handle },
+      }));
+    },
+    [popouts, resolvedLayout, panelsByKey],
+  );
+
+  const handleSendBack = useCallback(
+    (panelId: string) => {
+      const popout = popouts[panelId];
+      if (!popout) return;
+      popout.handle.close();
+      setPopouts((prev) => {
+        const next = { ...prev };
+        delete next[panelId];
+        return next;
+      });
+      const transport = popoutTransportsRef.current[panelId];
+      if (transport) {
+        transport.close();
+        delete popoutTransportsRef.current[panelId];
+      }
+      delete popoutHandlesRef.current[panelId];
+    },
+    [popouts],
+  );
+
   const focusOpenPanels = useCallback(() => {
     if (!transformRef.current || !canvasViewportRef.current || resolvedLayout.length === 0) {
       return;
@@ -1311,6 +1398,21 @@ export function StudioShell({
   const zoomTo100 = useCallback(() => {
     applyCanvasScale(1);
   }, [applyCanvasScale]);
+
+  // Close any open popout windows + transports when StudioShell unmounts so we
+  // don't leak BroadcastChannel listeners or orphan child windows.
+  useEffect(() => {
+    return () => {
+      Object.values(popoutTransportsRef.current).forEach((transport) => {
+        transport.close();
+      });
+      popoutTransportsRef.current = {};
+      Object.values(popoutHandlesRef.current).forEach((handle) => {
+        handle.close();
+      });
+      popoutHandlesRef.current = {};
+    };
+  }, []);
 
   // Canvas keyboard shortcuts (Figma-style). Only active when the canvas has
   // panels and the user isn't typing in an input/textarea/contenteditable. We
@@ -1882,6 +1984,8 @@ export function StudioShell({
               {resolvedLayout.map((layoutItem) => {
                 const definition = panelsByKey.get(layoutItem.panel);
                 if (!definition) return null;
+                const popoutInfo = popouts[layoutItem.id];
+                const isPoppedOut = Boolean(popoutInfo);
 
                 return (
                   <WorkspacePanel
@@ -1903,6 +2007,9 @@ export function StudioShell({
                     selected={selectedPanelIds.includes(layoutItem.id)}
                     grouped={Boolean(layoutItem.groupId)}
                     defaultCollapsed
+                    isPoppedOut={isPoppedOut}
+                    onPopOut={() => handlePopOut(layoutItem.id)}
+                    onSendBack={() => handleSendBack(layoutItem.id)}
                     style={{ zIndex: layoutItem.zIndex }}
                     className="bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02)_12%,rgba(0,0,0,0.18)_100%),linear-gradient(135deg,rgba(124,14,38,0.18),rgba(18,5,10,0.86)_58%,rgba(0,0,0,0.96)_100%)] shadow-[0_14px_32px_rgba(0,0,0,0.28),0_0_0_1px_rgba(255,86,118,0.12)]"
                     onTitlePointerDown={(event) => {
@@ -1922,6 +2029,9 @@ export function StudioShell({
                       });
                     }}
                     onClose={() => {
+                      if (popouts[layoutItem.id]) {
+                        handleSendBack(layoutItem.id);
+                      }
                       queuePanelLayoutChange((current) =>
                         current.filter((item) => item.id !== layoutItem.id),
                       );
@@ -1979,8 +2089,16 @@ export function StudioShell({
                       data-panel-size={`${layoutItem.size.width},${layoutItem.size.height}`}
                       className="h-full min-h-0 min-w-0"
                     >
-                      {definition.content}
+                      {isPoppedOut ? null : definition.content}
                     </div>
+                    {isPoppedOut && popoutInfo
+                      ? createPortal(
+                          <div className="h-full w-full min-h-0 min-w-0 overflow-auto">
+                            {definition.content}
+                          </div>,
+                          popoutInfo.container,
+                        )
+                      : null}
                   </WorkspacePanel>
                 );
               })}
