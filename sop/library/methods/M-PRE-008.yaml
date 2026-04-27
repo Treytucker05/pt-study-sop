@@ -1,28 +1,32 @@
 id: M-PRE-008
 name: Structural Extraction
-category: prime
-subcategory: structure-extraction
+category: PRIME
+subcategory: structural-extraction
 description: Extract a compact structural spine from source material before detail work. Build high-signal nodes and link every node to at least one objective.
 control_stage: PRIME
 status: validated
-version: '1.0'
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
 - prime
 - structure
 - orientation
 - schema-priming
-- structure-extraction
+- structural-extraction
 - prior-knowledge
-purpose: Extract a compact structural spine from source material before detail work. Build high-signal nodes and link every node to at least one objective. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
+- objectives
+- scope-control
+purpose: Structural Extraction exists to pull a compact high-signal spine out of the source before detail work, then force every retained node to stay attached to at least one learning objective. It turns the current stage into a clean, reusable signal instead of a vague study session.
 not_for: Not for first-contact teaching, scored assessment, or full solution reveal. Use a TEACH or REFERENCE method when the goal is explanation rather than orientation.
 best_fit_topics:
-- 'New or complex material that needs a quick orientation pass: Structural Extraction'
-- Topics with prior notes, objective context, or an obvious structure to surface
+- New or complex material that needs a compact objective-linked structure before deeper work
+- Topics with prior notes, objective context, or an obvious mechanism or decision spine
+- Material where trivia needs to be stripped away in favor of high-signal nodes
 poor_fit_topics:
 - Brand-new content with no context or source packet
 - Scored retrieval or diagnostic testing
+- Topics with no usable objective frame yet
 learner_state_required: Source material is loaded, the topic is bounded, and the learner has at least some prior context or an objective to orient around.
 inputs:
 - description: Source material loaded in chat
@@ -33,33 +37,49 @@ inputs:
   required: false
 outputs:
 - name: StructuralSpine
-  description: Structured artifact that captures the key structural extraction relationships.
+  description: Compact ordered spine of high-signal nodes extracted from the source.
   format: ordered bullets
 - name: Objective linkage map
-  description: Structured artifact that captures the key structural extraction relationships.
+  description: Map linking each retained node to at least one objective ID or objective phrase.
   format: structured map or nested bullets
 - name: UnknownNodeList
-  description: Activation or structure artifact for structural extraction.
-  format: bulleted artifact
+  description: List of nodes that remain weak, missing, or low-confidence after extraction.
+  format: bulleted or tabular list
 - name: PriorityNodes
-  description: Activation or structure artifact for structural extraction.
-  format: bulleted artifact
+  description: Highest-priority nodes for the next study pass based on objective relevance and uncertainty.
+  format: bulleted or tabular list
+artifact_schemas:
+  StructuralSpine: ordered_steps
+  Objective linkage map: tree_map
+  UnknownNodeList: bullet_list
+  PriorityNodes: bullet_list
+produces:
+- StructuralSpine
+- Objective linkage map
+- UnknownNodeList
+- PriorityNodes
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
 required_outputs:
 - StructuralSpine
 - Objective linkage map
 - UnknownNodeList
 success_criteria:
-- 'Core structure is captured in the required outputs: StructuralSpine, Objective linkage map.'
+- All required outputs are present for M-PRE-008.
 - The method stays non-assessive and does not score the learner.
-- Any gaps, priorities, or blind spots are explicitly named for next-pass study.
+- Every retained node links to at least one objective and trivia-level nodes are removed from the structural spine.
 partial_criteria:
-- StructuralSpine is present but gaps or priorities are incomplete.
-- The output has useful structure but is missing one required linkage or objective tie.
+- StructuralSpine is present but the objective linkage or unknown-node marking is incomplete.
+- The output has useful structure but is missing one required linkage, objective tie, or priority call.
 steps:
 - step: 1
   name: Opening Step
   action: Resolve objective scope and objective set
-  tutor_does: Resolve objective scope and objective set. Objective context can come from M-PRE-010 in current flow OR existing North Star from prior sessions; module_all uses all active module objectives; single_focus uses only the selected objective
+  tutor_does: Resolve objective scope and objective set. Objective context can come from M-PRE-010 in current flow or an existing North Star from prior sessions; module_all uses all active module objectives; single_focus uses only the selected objective.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: What are the strongest anchors you already have for this topic?
@@ -67,7 +87,7 @@ steps:
 - step: 2
   name: Step 2
   action: Extract structural spine nodes
-  tutor_does: Extract structural spine nodes. Keep node count <= node_cap; prefer mechanism/decision nodes over trivia
+  tutor_does: Extract structural spine nodes. Keep node count <= node_cap; prefer mechanism or decision nodes over trivia.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: Does the structure so far match what you expected from the material?
@@ -75,7 +95,7 @@ steps:
 - step: 3
   name: Step 3
   action: Link each node to objective IDs
-  tutor_does: Link each node to objective IDs. Any unlinked node is removed when objective_link_required=true
+  tutor_does: Link each node to objective IDs. Any unlinked node is removed when objective_link_required=true.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: Does the structure so far match what you expected from the material?
@@ -83,7 +103,7 @@ steps:
 - step: 4
   name: Step 4
   action: Mark unknown or low-confidence nodes
-  tutor_does: Mark unknown or low-confidence nodes. Unknowns are orientation markers only; do not score or quiz
+  tutor_does: Mark unknown or low-confidence nodes. Unknowns are orientation markers only; do not score or quiz.
   learner_does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
   max_lines: 4
   check: Which gaps or next targets should we carry forward?
@@ -107,8 +127,9 @@ allowed_moves:
 - Mark unknown or low-confidence nodes as orientation markers
 - Resolve objective scope (module_all or single_focus)
 - Remove unlinked nodes when objective_link_required is true
-- Exclude trivia nodes in favor of mechanism/decision nodes
+- Exclude trivia nodes in favor of mechanism or decision nodes
 - Organize structure using configured output_format (ascii_tree default)
+- Convert objective context into an explicit filter before keeping nodes
 forbidden_moves:
 - Score, grade, or run retrieval checks on the learner
 - Teach detailed content or provide in-depth explanations
@@ -117,11 +138,12 @@ forbidden_moves:
 - Emit scored probes or retrieval grading
 - Run without objective context (must have M-PRE-010 or North Star first)
 - Include trivia or leaf-level memorization nodes
+- Keep nodes that cannot be linked to any active objective
 stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
 failure_modes:
 - mode: Scope too broad
-  detection: The output no longer matches the method’s core purpose.
-  recovery: Reduce to objective-aligned scaffold and continue.
+  detection: The output no longer matches the method's core purpose.
+  recovery: Reduce to an objective-aligned scaffold and continue.
   fallback_method: M-PRE-010
 - mode: Drift into testing
   detection: The tutor starts judging answers or asking the learner to prove mastery.
@@ -131,147 +153,88 @@ default_duration_min: 5
 energy_cost: medium
 best_stage: first_exposure
 mechanisms:
+- schema_activation
+- chunking
 - scaffolding
-- metacognitive_monitoring
 - prior_knowledge_activation
 - organization
+- selective_attention
 evidence:
-  citation: Ausubel (1968)
-  finding: Advance organizers improve comprehension when structure is established before detail.
-  source: control-plane migration
+  citation: Ausubel (1968); van Kesteren, Krabbendam, and Meeter (2018); Hattan, Alexander, and Lupo (2024); Bogaerds-Hazenberg, Evers-Vermeul, and van den Bergh (2020); Mehring and Kraft (2024)
+  finding: >-
+    Structural Extraction is best supported as a selective-attention and
+    structure-framing move that identifies a small number of high-signal nodes
+    before deeper study, not as a prose summary or quiz. Work on prior
+    knowledge, advance organization, and preparatory instruction supports
+    bringing a bounded structure into view before details accumulate, while
+    later text-structure research reinforces the value of keeping the extracted
+    scaffold brief and explicit. The practical implication for this method is to
+    resolve the objective frame first, keep only nodes that matter for those
+    objectives, remove unlinked trivia, and mark weak nodes as orientation cues
+    for later study rather than as graded failures.
+  source: https://doi.org/10.1037/h0026121; https://doi.org/10.1038/s41539-018-0027-8; https://doi.org/10.3102/00346543221148478; https://doi.org/10.1002/rrq.311; https://doi.org/10.1152/advan.00096.2023
+  needs_research: false
 knobs:
-  priming_depth_mode: basic
-  node_cap: 10
-  output_format: ascii_tree
-  objective_link_required: true
   guidance_level: medium
-  artifact_type: notes
-  evidence_strength: medium_high
-  primary_citations:
-  - Ausubel (1968)
-  - Sung (2025)
+  delivery_mode: one_shot
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest extraction pass. Return a 5-node structural spine, short objective tags, and a terse unknown-node list.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Full extraction pass. Keep separate sections for scope resolution, structural spine, objective linkage map, unknown nodes, and priority nodes.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: Refresh pass. Render a compact table with node, linked objective, uncertainty status, and priority columns before the final ordered spine.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied extraction pass. Use a clinic-facing table with node, clinical objective, uncertainty, and next-pass priority columns before the final spine.
 related_methods:
 - id: M-PRE-010
-  relationship: Useful when objective scope needs a clear frame
+  relationship: Use when objective scope still needs a clearer frame
 - id: M-PRE-005
-  relationship: Helpful if the source is deeply hierarchical
-facilitation_prompt: 'You are a study tutor running M-PRE-008 (Structural Extraction) in the PRIME stage.
-
-  ROLE: You are a careful, supportive tutor. Your job is to run Structural Extraction exactly as specified and keep the output faithful, bounded, and useful.
-
-  OBJECTIVE: Extract a compact structural spine from source material before detail work. Build high-signal nodes and link every node to at least one objective. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
-
-  SCOPE: Extract a compact structural spine from source material before detail work. Build high-signal nodes and link every node to at least one objective.
-
-  RULES:
-
-  - Do not assess, grade, or confidence-rate the learner — because PRIME methods activate and organize knowledge instead of testing it.
-
-  - Stay at orientation level and avoid full solution reveal — because The goal is to shape readiness, not finish the lesson for the learner.
-
-  - Do not assess or score the learner — because This method is for orientation and teaching, not grading.
-
-  - No Retrieval Grading — because The method inherits this as a hard rule from the legacy card.
-
-  - Require the relevant objective or context before running — because The method needs a bounded target to stay useful.
-
-  - Objective Context Sources: M-PRE-010, North_Star — because Carried forward from the legacy method card.
-
-
-  OUTPUTS TO PRODUCE:
-
-  1. StructuralSpine — Structured artifact that captures the key structural extraction relationships. (ordered bullets)
-
-  2. Objective linkage map — Structured artifact that captures the key structural extraction relationships. (structured map or nested bullets)
-
-  3. UnknownNodeList — Activation or structure artifact for structural extraction. (bulleted artifact)
-
-  4. PriorityNodes — Activation or structure artifact for structural extraction. (bulleted artifact)
-
-
-  RUN THE METHOD ONE STEP AT A TIME. Wait for my response before moving to the next step.
-
-  STEP 1 — Opening Step
-
-  - Tutor does: Resolve objective scope and objective set. Objective context can come from M-PRE-010 in current flow OR existing North Star from prior sessions; module_all uses all active module objectives; single_focus uses only the selected objective
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Opening Step: Resolve objective scope and objective set"
-
-  - Check: What are the strongest anchors you already have for this topic?
-
-  Then stop and wait.
-
-  STEP 2 — Step 2
-
-  - Tutor does: Extract structural spine nodes. Keep node count <= node_cap; prefer mechanism/decision nodes over trivia
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Step 2: Extract structural spine nodes"
-
-  - Check: Does the structure so far match what you expected from the material?
-
-  Then stop and wait.
-
-  STEP 3 — Step 3
-
-  - Tutor does: Link each node to objective IDs. Any unlinked node is removed when objective_link_required=true
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Step 3: Link each node to objective IDs"
-
-  - Check: Does the structure so far match what you expected from the material?
-
-  Then stop and wait.
-
-  STEP 4 — Step 4
-
-  - Tutor does: Mark unknown or low-confidence nodes. Unknowns are orientation markers only; do not score or quiz
-
-  - Learner does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
-
-  - Example: Example: "Step 4: Mark unknown or low-confidence nodes"
-
-  - Check: Which gaps or next targets should we carry forward?
-
-  Then stop and wait.
-
-
-  STOP CONDITIONS:
-
-  - Core structure is captured in the required outputs: StructuralSpine, Objective linkage map.
-
-  - The method stays non-assessive and does not score the learner.
-
-  - Any gaps, priorities, or blind spots are explicitly named for next-pass study.
-
-
-  IF YOU GET STUCK:
-
-  If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
-
-  If the learner is still stuck after one rescue move, shrink the chunk, switch modality, or fall back to the listed fallback method.
-
-
-  GOOD OUTPUT EXAMPLE:
-
-  - StructuralSpine: a concise, source-faithful artifact that matches the method purpose and stays within scope.
-
-  - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
-
-
-  DONE WHEN:
-
-  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
-
-  Non-assessment guard:
-
-  - This is a PRIME block — orientation only, not an assessment.
-
-  - Do not quiz, score, or grade the learner here; no scored output.'
+  relationship: Use when the source is naturally hierarchical and should be reduced to a bare category skeleton
+system_prompt_override:
+  relaxes:
+  - Highly interactive. One small teaching chunk, one short check, or one question at a time.
+  - Ask only one question at a time.
+  - Do not do more than one step at a time.
+  - Within TEACH, deliver ONE chunk at a time, check in, then continue.
+  replaces_with:
+  - Produce the full StructuralSpine, Objective linkage map, UnknownNodeList, and PriorityNodes artifact when enough context is present. Do not force a node-by-node interview unless the preset explicitly asks for interactive or stepwise delivery.
+  - Keep the extraction objective-linked and non-explanatory. Remove unlinked nodes rather than expanding into prose.
+  reason: Structural Extraction is primarily an artifact-style PRIME method. Over-chunking it or keeping unlinked trivia dilutes the objective-linked spine the method is meant to produce.
+facilitation_prompt: |
+  You are running M-PRE-008 (Structural Extraction) in the PRIME stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: StructuralSpine, Objective linkage map, UnknownNodeList, and PriorityNodes.
+  Resolve the active objective scope, extract a compact high-signal structural spine, link every retained node to at least one objective, and mark unknown nodes for later study. Keep it orientation-only, non-assessive, and objective-linked; do not turn the output into prose explanation or retain nodes that do not matter for the active objectives.
+  Preset behavior:
+  - exam_cram: one-shot; 5-node spine, short objective tags, and terse unknown-node list.
+  - deep_mastery: interactive; labeled sections for scope resolution, spine, linkage map, unknown nodes, and priorities.
+  - quick_review: one-shot refresh; compact node / linked-objective / uncertainty / priority table plus final spine.
+  - clinical_bridge: stepwise; clinic-facing node / clinical-objective / uncertainty / priority table.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode moves scope -> spine -> objective links -> unknown nodes and waits.
 validation:
   test_cases:
   - topic: First pass on Structural Extraction with prior notes present
@@ -281,7 +244,8 @@ validation:
     - UnknownNodeList
     - PriorityNodes
     pass_criteria:
-    - Required outputs appear and include at least one structural or gap-oriented artifact from StructuralSpine, Objective linkage map.
+    - All required outputs are present.
+    - Every retained node links to at least one objective.
     - The output identifies what is known, what is missing, and what to do next.
   - topic: Dense review topic where the learner needs orientation before detail
     expected_outputs:
@@ -290,12 +254,13 @@ validation:
     - UnknownNodeList
     - PriorityNodes
     pass_criteria:
-    - Required outputs appear and include at least one structural or gap-oriented artifact from StructuralSpine, Objective linkage map.
+    - All required outputs are present.
     - No scored probe, quiz behavior, or grading language appears in the response.
+    - The artifact stays compact and objective-linked rather than becoming a prose summary.
   acceptance_criteria:
-  - Required outputs appear and include at least one structural or gap-oriented artifact from StructuralSpine, Objective linkage map.
-  - No scored probe, quiz behavior, or grading language appears in the response.
-  - The output identifies what is known, what is missing, and what to do next.
+  - All required_outputs are present in the successful test case.
+  - No forbidden_moves are violated.
+  - The facilitation_prompt can be run without extra hidden context.
   known_issues:
-  - LLMs sometimes over-explain instead of staying at orientation level.
-  - If objective context is weak, the method can drift unless the prompt locks scope early.
+  - LLMs sometimes retain too many nodes unless the objective filter is stated explicitly.
+  - If objective context is weak, the method can drift unless the prompt locks scope before extraction.

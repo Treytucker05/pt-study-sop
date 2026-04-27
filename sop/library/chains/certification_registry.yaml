@@ -35,6 +35,21 @@ chains:
     bar: baseline
     selectable: true
     rationale: Selectable core first-exposure chain; must pass end-to-end runtime certification.
+  C-FINALS-PREP:
+    disposition: legacy/deferred
+    bar: baseline
+    selectable: false
+    rationale: 2026-04-21 vault hardening end-to-end finals-prep chain; rich block shape under proving-ground evaluation, certification deferred until runtime gate logic lands.
+  C-PRIME-ONCE:
+    disposition: legacy/deferred
+    bar: baseline
+    selectable: false
+    rationale: 2026-04-21 vault hardening one-time priming chain; rich block shape under proving-ground evaluation, certification deferred until runtime gate logic lands.
+  C-STUDY-LOOP:
+    disposition: legacy/deferred
+    bar: baseline
+    selectable: false
+    rationale: 2026-04-21 vault hardening per-session study-loop chain; rich block shape under proving-ground evaluation, certification deferred until runtime gate logic lands.
   C-FE-MIN:
     disposition: baseline-certification
     bar: baseline

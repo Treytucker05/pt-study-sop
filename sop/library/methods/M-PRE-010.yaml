@@ -1,27 +1,32 @@
 id: M-PRE-010
 name: Learning Objectives Primer
-category: prime
-subcategory: objective-framing
+category: PRIME
+subcategory: learning-objectives-primer
 description: Build the study-target objective list for the current topic by accounting for all provided files first, then merging the objective signals into one clean set of learning targets. Also extract any explicit instructor objective statements found verbatim in the provided source material.
 control_stage: PRIME
 status: validated
-version: '1.0'
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
 - prime
 - objective-framing
 - orientation
 - prior-knowledge
 - objective
-purpose: Build the study-target objective list for the current topic by accounting for all provided files first, then merging the objective signals into one clean set of learning targets. Also extract any explicit instructor objective statements found verbatim in the provided source material. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
+- alignment
+- scope
+- source-grounded
+purpose: Learning Objectives Primer exists to build a source-grounded study-target list by accounting for every provided file, extracting candidate objectives by file, and merging those signals into one clean final objective set. It turns the current stage into a clean, reusable signal instead of a vague study session.
 not_for: Not for first-contact teaching, scored assessment, or full solution reveal. Use a TEACH or REFERENCE method when the goal is explanation rather than orientation.
 best_fit_topics:
-- 'New or complex material that needs a quick orientation pass: Learning Objectives Primer'
-- Topics with prior notes, objective context, or an obvious structure to surface
+- New or complex material that needs a clear study-target frame before detail work
+- Multi-file packets where objective signals are distributed across slides, notes, guides, or handouts
+- Topics where explicit instructor objectives should be separated from inferred study targets
 poor_fit_topics:
 - Brand-new content with no context or source packet
 - Scored retrieval or diagnostic testing
+- Situations where the user wants immediate topic explanation instead of objective framing
 learner_state_required: Source material is loaded, the topic is bounded, and the learner has at least some prior context or an objective to orient around.
 inputs:
 - description: Source material loaded in chat
@@ -32,33 +37,49 @@ inputs:
   required: false
 outputs:
 - name: SourceCoverageTable
-  description: Activation or structure artifact for learning objectives primer.
-  format: two-column table or tightly grouped bullets
+  description: File-by-file table showing what was scanned, what was relevant, and what objective signals were found.
+  format: table or tightly grouped bullets
 - name: CandidateObjectivesByFile
-  description: Activation or structure artifact for learning objectives primer.
-  format: bulleted artifact
+  description: Objective candidates preserved at file level before merging.
+  format: bulleted or tabular list
 - name: FinalLearningObjectives
-  description: Activation or structure artifact for learning objectives primer.
-  format: bulleted artifact
+  description: Clean merged list of study-target objectives for the current topic.
+  format: bulleted or tabular list
 - name: ExplicitInstructorObjectives
-  description: Activation or structure artifact for learning objectives primer.
-  format: bulleted artifact
+  description: Verbatim objective statements explicitly stated in the source material.
+  format: bulleted or tabular list
+artifact_schemas:
+  SourceCoverageTable: table
+  CandidateObjectivesByFile: bullet_list
+  FinalLearningObjectives: bullet_list
+  ExplicitInstructorObjectives: bullet_list
+produces:
+- SourceCoverageTable
+- CandidateObjectivesByFile
+- FinalLearningObjectives
+- ExplicitInstructorObjectives
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
 required_outputs:
 - SourceCoverageTable
 - CandidateObjectivesByFile
 - FinalLearningObjectives
 success_criteria:
-- 'Core structure is captured in the required outputs: SourceCoverageTable, CandidateObjectivesByFile.'
+- All required outputs are present for M-PRE-010.
 - The method stays non-assessive and does not score the learner.
-- Any gaps, priorities, or blind spots are explicitly named for next-pass study.
+- Every provided file is accounted for before objective synthesis and the final objective list stays concise, source-grounded, and internally consistent.
 partial_criteria:
-- SourceCoverageTable is present but gaps or priorities are incomplete.
-- The output has useful structure but is missing one required linkage or objective tie.
+- SourceCoverageTable is present but file accounting or merged objective logic is incomplete.
+- The output is usable but misses file-level distinctions, explicit instructor objectives, or one major merged target.
 steps:
 - step: 1
   name: Opening Step
   action: Account for every provided file before objective synthesis
-  tutor_does: Account for every provided file before objective synthesis. Build a SourceCoverageTable with filename, source type, scanned, relevant, and objective signals found
+  tutor_does: Account for every provided file before objective synthesis. Build a SourceCoverageTable with filename, source type, scanned, relevant, and objective signals found.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: What are the strongest anchors you already have for this topic?
@@ -66,7 +87,7 @@ steps:
 - step: 2
   name: Step 2
   action: Extract candidate objective signals from each relevant file
-  tutor_does: Extract candidate objective signals from each relevant file. Preserve file-level distinctions before merging and capture any explicit instructor objective statements verbatim
+  tutor_does: Extract candidate objective signals from each relevant file. Preserve file-level distinctions before merging and capture any explicit instructor objective statements verbatim.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: Does the structure so far match what you expected from the material?
@@ -74,7 +95,7 @@ steps:
 - step: 3
   name: Step 3
   action: Merge overlapping objective signals into one clean study-target list
-  tutor_does: Merge overlapping objective signals into one clean study-target list. Merge duplicates, mark redundant files, and keep the final list concise
+  tutor_does: Merge overlapping objective signals into one clean study-target list. Merge duplicates, mark redundant files, and keep the final list concise.
   learner_does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
   max_lines: 4
   check: Which gaps or next targets should we carry forward?
@@ -100,6 +121,7 @@ allowed_moves:
 - Mark redundant files explicitly
 - Keep the final objective list concise and source-grounded
 - Activate prior knowledge with a bounded free recall or orientation prompt
+- Separate explicit instructor objectives from inferred study targets
 forbidden_moves:
 - Score, grade, or assess the learner
 - Teach core content or begin detailed instruction
@@ -108,152 +130,103 @@ forbidden_moves:
 - Invent unsupported objectives
 - Score the learner or run retrieval grading
 - Teach detailed content as the final answer
+- Choose a narrower focus than the source supports before the file-accounting step is complete
 stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
 failure_modes:
-- mode: LLM samples one or two files and ignores the rest
-  detection: The output no longer matches the method’s core purpose.
-  recovery: Force a SourceCoverageTable before objective synthesis.
+- mode: Files skipped during accounting
+  detection: The coverage table does not account for all provided files.
+  recovery: Rebuild the coverage table before merging objectives.
   fallback_method: M-PRE-010
-- mode: Coverage rows are internally inconsistent
-  detection: The output no longer matches the method’s core purpose.
-  recovery: Repair row logic before continuing.
+- mode: Objectives become invented or over-merged
+  detection: The final list includes targets that cannot be traced back to any file.
+  recovery: Re-anchor each objective to file-level evidence and split any merged target that hides meaningful distinctions.
   fallback_method: M-PRE-010
-default_duration_min: 3
-energy_cost: low
+default_duration_min: 5
+energy_cost: medium
 best_stage: first_exposure
 mechanisms:
 - goal_orientation
-- schema_activation
-- source_alignment
-- scaffolding
-- prior_knowledge_activation
+- constructive_alignment
+- selective_attention
 - organization
+- prior_knowledge_activation
+- scope_control
 evidence:
-  citation: Ausubel (1968)
-  finding: Ausubel (1968); Hattie (2009); explicit learning targets improve orientation and metacognitive direction when they are aligned to the full source scope.
-  source: legacy method card
+  citation: Biggs (1996); Tong and Chin (2020); Jung, Kim, Yoon, Park, and Oakley (2018); Tobiason (2022); Mehring and Kraft (2024)
+  finding: >-
+    Learning Objectives Primer is best supported as an alignment and attention-
+    focusing move that gives the learner a clear study-target frame before
+    detailed work begins, not as hidden teaching. Constructive-alignment
+    research argues that clearly specified outcomes help coordinate materials,
+    activities, and assessment, while later work on student learning objectives,
+    course structure, and lesson-level alignment suggests that learners benefit
+    when targets are explicit, coherent, and visibly tied to the actual course
+    materials. The practical implication for this method is to account for
+    every provided file first, preserve candidate objectives at file level, and
+    merge only the signals that remain source-grounded after comparison.
+  source: https://doi.org/10.1007/BF00138871; https://doi.org/10.1080/2331186X.2020.1713427; https://doi.org/10.1016/j.compedu.2018.10.001; https://doi.org/10.1177/14697874221092977; https://doi.org/10.1152/advan.00096.2023
+  needs_research: false
 knobs:
   guidance_level: medium
-  objective_link_required: true
-  artifact_type: notes
-  evidence_strength: high
-  primary_citations:
-  - Ausubel (1968)
-  - Hattie (2009)
-  outputs_summary: SourceCoverageTable; CandidateObjectivesByFile; FinalLearningObjectives; ExplicitInstructorObjectives
-  has_steps: Y
-  has_outputs_or_artifacts: Y
-  output_format: bullets
+  delivery_mode: one_shot
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest objective pass. Return a terse coverage table, short candidate objective bullets by file, and a compact final objective list.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Full objective pass. Keep separate sections for source coverage, candidate objectives by file, final merged objectives, and explicit instructor objectives.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: Refresh pass. Render a compact table with file, objective signal, merge result, and explicit-objective status columns before the final list.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied objective pass. Use a clinic-facing table with file, candidate objective, practical focus, and merged-target columns before the final objectives.
 related_methods:
 - id: M-PRE-008
-  relationship: Follow with structural extraction when the objective set is clear
+  relationship: Use when the next move is objective-linked structural extraction
 - id: M-PRE-007
-  relationship: Follow with a pre-test once objectives are defined
-facilitation_prompt: 'You are a study tutor running M-PRE-010 (Learning Objectives Primer) in the PRIME stage.
-
-  ROLE: You are a careful, supportive tutor. Your job is to run Learning Objectives Primer exactly as specified and keep the output faithful, bounded, and useful.
-
-  OBJECTIVE: Build the study-target objective list for the current topic by accounting for all provided files first, then merging the objective signals into one clean set of learning targets. Also extract any explicit instructor objective statements found verbatim in the provided source material. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
-
-  SCOPE: Build the study-target objective list for the current topic by accounting for all provided files first, then merging the objective signals into one clean set of learning targets. Also extract any explicit instructor objective statements found verbatim in the provided source material.
-
-  RULES:
-
-  - Do not assess, grade, or confidence-rate the learner — because PRIME methods activate and organize knowledge instead of testing it.
-
-  - Stay at orientation level and avoid full solution reveal — because The goal is to shape readiness, not finish the lesson for the learner.
-
-  - Do not assess or score the learner — because This method is for orientation and teaching, not grading.
-
-  - Source Grounded Only — because The method inherits this as a hard rule from the legacy card.
-
-  - No Hidden Teaching — because The method inherits this as a hard rule from the legacy card.
-
-  - No Focus Selection — because The method inherits this as a hard rule from the legacy card.
-
-
-  OUTPUTS TO PRODUCE:
-
-  1. SourceCoverageTable — Activation or structure artifact for learning objectives primer. (two-column table or tightly grouped bullets)
-
-  2. CandidateObjectivesByFile — Activation or structure artifact for learning objectives primer. (bulleted artifact)
-
-  3. FinalLearningObjectives — Activation or structure artifact for learning objectives primer. (bulleted artifact)
-
-  4. ExplicitInstructorObjectives — Activation or structure artifact for learning objectives primer. (bulleted artifact)
-
-
-  RUN THE METHOD ONE STEP AT A TIME. Wait for my response before moving to the next step.
-
-  STEP 1 — Opening Step
-
-  - Tutor does: Account for every provided file before objective synthesis. Build a SourceCoverageTable with filename, source type, scanned, relevant, and objective signals found
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Opening Step: Account for every provided file before objective synthesis"
-
-  - Check: What are the strongest anchors you already have for this topic?
-
-  Then stop and wait.
-
-  STEP 2 — Step 2
-
-  - Tutor does: Extract candidate objective signals from each relevant file. Preserve file-level distinctions before merging and capture any explicit instructor objective statements verbatim
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Step 2: Extract candidate objective signals from each relevant file"
-
-  - Check: Does the structure so far match what you expected from the material?
-
-  Then stop and wait.
-
-  STEP 3 — Step 3
-
-  - Tutor does: Merge overlapping objective signals into one clean study-target list. Merge duplicates, mark redundant files, and keep the final list concise
-
-  - Learner does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
-
-  - Example: Example: "Step 3: Merge overlapping objective signals into one clean study-target list"
-
-  - Check: Which gaps or next targets should we carry forward?
-
-  Then stop and wait.
-
-
-  STOP CONDITIONS:
-
-  - Core structure is captured in the required outputs: SourceCoverageTable, CandidateObjectivesByFile.
-
-  - The method stays non-assessive and does not score the learner.
-
-  - Any gaps, priorities, or blind spots are explicitly named for next-pass study.
-
-
-  IF YOU GET STUCK:
-
-  If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
-
-  If the learner is still stuck after one rescue move, shrink the chunk, switch modality, or fall back to the listed fallback method.
-
-
-  GOOD OUTPUT EXAMPLE:
-
-  - SourceCoverageTable: a concise, source-faithful artifact that matches the method purpose and stays within scope.
-
-  - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
-
-
-  DONE WHEN:
-
-  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
-
-  Non-assessment guard:
-
-  - This is a PRIME block — orientation only, not an assessment.
-
-  - Do not quiz, score, or grade the learner here; no scored output.'
+  relationship: Use when the objective frame is clear enough to build a short pre-test
+system_prompt_override:
+  relaxes:
+  - Highly interactive. One small teaching chunk, one short check, or one question at a time.
+  - Ask only one question at a time.
+  - Do not do more than one step at a time.
+  - Within TEACH, deliver ONE chunk at a time, check in, then continue.
+  replaces_with:
+  - Produce the full SourceCoverageTable, CandidateObjectivesByFile, FinalLearningObjectives, and ExplicitInstructorObjectives artifact when enough context is present. Do not force a file-by-file interview unless the preset explicitly asks for interactive or stepwise delivery.
+  - Keep the pass source-grounded and non-instructional. Objective synthesis should account for files and signals, not teach the topic.
+  reason: Learning Objectives Primer is primarily an artifact-style PRIME method. Over-chunking it or slipping into explanation weakens the clarity of the final objective frame.
+facilitation_prompt: |
+  You are running M-PRE-010 (Learning Objectives Primer) in the PRIME stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: SourceCoverageTable, CandidateObjectivesByFile, FinalLearningObjectives, and ExplicitInstructorObjectives.
+  Account for every provided file, extract candidate objective signals by file, preserve explicit instructor objectives verbatim, and merge the remaining signals into one clean study-target list. Keep it source-grounded, non-assessive, and non-instructional; do not skip files, invent objectives, or start teaching the topic.
+  Preset behavior:
+  - exam_cram: one-shot; terse coverage table, short candidate bullets by file, and compact final objectives.
+  - deep_mastery: interactive; labeled sections for coverage, candidates by file, merged objectives, and explicit instructor objectives.
+  - quick_review: one-shot refresh; compact file / objective-signal / merge-result / explicit-status table plus final list.
+  - clinical_bridge: stepwise; clinic-facing file / candidate objective / practical focus / merged-target table.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode moves file accounting -> candidate objectives -> final merge and waits.
 validation:
   test_cases:
   - topic: First pass on Learning Objectives Primer with prior notes present
@@ -263,8 +236,9 @@ validation:
     - FinalLearningObjectives
     - ExplicitInstructorObjectives
     pass_criteria:
-    - Required outputs appear and include at least one structural or gap-oriented artifact from SourceCoverageTable, CandidateObjectivesByFile.
-    - The output identifies what is known, what is missing, and what to do next.
+    - All required outputs are present.
+    - Every provided file is accounted for before objective synthesis.
+    - The final objective list is concise, source-grounded, and internally consistent.
   - topic: Dense review topic where the learner needs orientation before detail
     expected_outputs:
     - SourceCoverageTable
@@ -272,12 +246,13 @@ validation:
     - FinalLearningObjectives
     - ExplicitInstructorObjectives
     pass_criteria:
-    - Required outputs appear and include at least one structural or gap-oriented artifact from SourceCoverageTable, CandidateObjectivesByFile.
+    - All required outputs are present.
     - No scored probe, quiz behavior, or grading language appears in the response.
+    - The artifact stays objective-focused rather than turning into topic explanation.
   acceptance_criteria:
-  - Required outputs appear and include at least one structural or gap-oriented artifact from SourceCoverageTable, CandidateObjectivesByFile.
-  - No scored probe, quiz behavior, or grading language appears in the response.
-  - The output identifies what is known, what is missing, and what to do next.
+  - All required_outputs are present in the successful test case.
+  - No forbidden_moves are violated.
+  - The facilitation_prompt can be run without extra hidden context.
   known_issues:
-  - LLMs sometimes over-explain instead of staying at orientation level.
-  - If objective context is weak, the method can drift unless the prompt locks scope early.
+  - LLMs sometimes merge objectives too aggressively when multiple files repeat similar language.
+  - If a file is only partially relevant, the model can skip documenting it unless the coverage table is enforced first.

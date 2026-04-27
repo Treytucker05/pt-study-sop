@@ -1,33 +1,28 @@
 id: M-HOOK-003
 name: Jingle / Rhyme Hook
-category: encode
+category: ENCODE
 subcategory: hook
-description: Compress a fixed ordered list or stable sequence into a short jingle or rhyme. Learner must
-  attempt their own compression BEFORE the AI offers one. Check for interference with existing hooks before
-  finalizing.
+description: Compress a fixed ordered list or stable sequence into a short jingle or rhyme. Learner must attempt their own compression BEFORE the AI offers one. Check for interference with existing hooks before finalizing.
 control_stage: ENCODE
-status: draft
-version: '1.0'
+status: validated
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
 - encode
 - mnemonic
 - sequence
 - hook
 - rhyme
-purpose: Create a compact memory cue that links a term or concept to a vivid sound, image, or body-based
-  anchor without losing the real meaning.
-not_for: This is not for teaching the whole concept from scratch, replacing source truth, or turning a
-  mnemonic into a false fact claim.
+purpose: Create a compact memory cue that links a term or concept to a vivid sound, image, or body-based anchor without losing the real meaning.
+not_for: This is not for teaching the whole concept from scratch, replacing source truth, or turning a mnemonic into a false fact claim.
 best_fit_topics:
 - Short labels, terms, and anchors that need fast recall
 - Material that benefits from a vivid sound/image cue
 poor_fit_topics:
 - Long mechanistic explanations that need comprehension first
 - Unstable or ambiguous material with no clear cue
-learner_state_required: Source material is loaded. The learner has one bounded term or concept and is
-  ready to actively build a cue around its true meaning.
+learner_state_required: Source material is loaded. The learner has one bounded term or concept and is ready to actively build a cue around its true meaning.
 inputs:
 - description: Fixed sequence or ordered list
   required: true
@@ -54,6 +49,26 @@ outputs:
 - name: DistortionWarning
   description: DistortionWarning
   format: short, checkable artifact
+artifact_schemas:
+  SequenceStatement: string
+  LearnerAttempt: string
+  FinalJingleOrRhyme: string
+  HookSequenceMap: tree_map
+  InterferenceCheck: string
+  DistortionWarning: string
+produces:
+- SequenceStatement
+- LearnerAttempt
+- FinalJingleOrRhyme
+- HookSequenceMap
+- InterferenceCheck
+- DistortionWarning
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
 required_outputs: &id001
 - Sequence statement
 - Learner attempt
@@ -62,21 +77,16 @@ required_outputs: &id001
 - Interference check result
 - Distortion warning
 success_criteria:
-- 'All required outputs are present and checkable: Sequence statement, Learner attempt, Jingle or rhyme
-  hook, Hook-to-sequence map, Interference check result, Distortion warning.'
-- 'The method reaches its stop condition: Learner has attempted their own version (even if rough); Hook
-  is short and repeatable.'
-- The learner stays active and the tutor does not give away the answer before the required attempt or
-  transformation.
+- 'All required outputs are present and checkable: Sequence statement, Learner attempt, Jingle or rhyme hook, Hook-to-sequence map, Interference check result, Distortion warning.'
+- 'The method reaches its stop condition: Learner has attempted their own version (even if rough); Hook is short and repeatable.'
+- The learner stays active and the tutor does not give away the answer before the required attempt or transformation.
 partial_criteria:
-- 'Some required outputs are present but at least one is missing or incomplete: Sequence statement, Learner
-  attempt.'
+- 'Some required outputs are present but at least one is missing or incomplete: Sequence statement, Learner attempt.'
 steps:
 - step: 1
   name: The Sequence And Confirm Meaning
   action: State the sequence and confirm meaning of each item
-  tutor_does: 'Guide the learner to State the sequence and confirm meaning of each item. Keep in mind:
-    Meaning must be locked before compression.'
+  tutor_does: 'Guide the learner to State the sequence and confirm meaning of each item. Keep in mind: Meaning must be locked before compression.'
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Does the learner have the right term and true meaning before the cue is built?
@@ -84,8 +94,7 @@ steps:
 - step: 2
   name: The Learner To Attempt Their
   action: Ask the learner to attempt their own rhyme or cadence
-  tutor_does: 'Guide the learner to Ask the learner to attempt their own rhyme or cadence. Keep in mind:
-    Generation-first. Learner tries before AI offers help. Even a rough attempt counts.'
+  tutor_does: 'Guide the learner to Ask the learner to attempt their own rhyme or cadence. Keep in mind: Generation-first. Learner tries before AI offers help. Even a rough attempt counts.'
   learner_does: Supplies the target term or concept, then reacts to the cue and confirms whether it clicks.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -93,17 +102,15 @@ steps:
 - step: 3
   name: If Learner Is Stuck Offer
   action: If learner is stuck, offer one AI-authored jingle as a scaffold
-  tutor_does: 'Guide the learner to If learner is stuck, offer one AI-authored jingle as a scaffold. Keep
-    in mind: Scaffolding only — learner still personalizes or modifies it.'
+  tutor_does: "Guide the learner to If learner is stuck, offer one AI-authored jingle as a scaffold. Keep in mind: Scaffolding only \u2014 learner still personalizes or modifies it."
   learner_does: Supplies the target term or concept, then reacts to the cue and confirms whether it clicks.
   max_lines: 8
   check: Is this step complete and ready for the next move?
-  example: 'Example: Scaffolding only — learner still personalizes or modifies it.'
+  example: "Example: Scaffolding only \u2014 learner still personalizes or modifies it."
 - step: 4
   name: The Hook Back To The
   action: Map the hook back to the real sequence explicitly
-  tutor_does: 'Guide the learner to Map the hook back to the real sequence explicitly. Keep in mind: Make
-    every line-to-item correspondence clear.'
+  tutor_does: 'Guide the learner to Map the hook back to the real sequence explicitly. Keep in mind: Make every line-to-item correspondence clear.'
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -111,18 +118,15 @@ steps:
 - step: 5
   name: For Interference With Existing Hooks
   action: Check for interference with existing hooks
-  tutor_does: 'Guide the learner to Check for interference with existing hooks. Keep in mind: If this
-    jingle rhymes or cadences like a previous one for a different sequence, flag it and modify.'
+  tutor_does: 'Guide the learner to Check for interference with existing hooks. Keep in mind: If this jingle rhymes or cadences like a previous one for a different sequence, flag it and modify.'
   learner_does: Supplies the target term or concept, then reacts to the cue and confirms whether it clicks.
   max_lines: 8
   check: Is this step complete and ready for the next move?
-  example: 'Example: If this jingle rhymes or cadences like a previous one for a different sequence, flag
-    it and modify.'
+  example: 'Example: If this jingle rhymes or cadences like a previous one for a different sequence, flag it and modify.'
 - step: 6
   name: One Distortion Risk Or Simplification
   action: State one distortion risk or simplification limit
-  tutor_does: 'Guide the learner to State one distortion risk or simplification limit. Keep in mind: Prevent
-    mnemonic drift.'
+  tutor_does: 'Guide the learner to State one distortion risk or simplification limit. Keep in mind: Prevent mnemonic drift.'
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -158,28 +162,22 @@ forbidden_moves:
 - Leave the hook unmapped to the real sequence
 - Skip the interference check
 - Treat the mnemonic as source evidence
-stuck_protocol: Shrink to one term, restate the real meaning in plain language, then try a simpler sound
-  cue, image cue, or body cue. If the cue still does not click, switch to a lighter mnemonic lane or ask
-  for one concrete example.
+stuck_protocol: Shrink to one term, restate the real meaning in plain language, then try a simpler sound cue, image cue, or body cue. If the cue still does not click, switch to a lighter mnemonic lane or ask for one concrete example.
 failure_modes:
 - mode: Hook built before meaning is clear
-  detection: The learner or tutor starts doing hook built before meaning is clear or the artifact stops
-    satisfying the method’s required checks.
+  detection: "The learner or tutor starts doing hook built before meaning is clear or the artifact stops satisfying the method\u2019s required checks."
   recovery: Restate the real sequence first, then rebuild.
   fallback_method: M-HOOK-002
 - mode: Learner skips generation and just receives the AI's version
-  detection: The learner or tutor starts doing learner skips generation and just receives the ai's version
-    or the artifact stops satisfying the method’s required checks.
-  recovery: Enforce generation-first — ask "try your own first, even if it's rough.
+  detection: "The learner or tutor starts doing learner skips generation and just receives the ai's version or the artifact stops satisfying the method\u2019s required checks."
+  recovery: "Enforce generation-first \u2014 ask \"try your own first, even if it's rough."
   fallback_method: M-HOOK-005
 - mode: Hook interferes with an existing hook for a different sequence
-  detection: The learner or tutor starts doing hook interferes with an existing hook for a different sequence
-    or the artifact stops satisfying the method’s required checks.
+  detection: "The learner or tutor starts doing hook interferes with an existing hook for a different sequence or the artifact stops satisfying the method\u2019s required checks."
   recovery: Run interference check. Modify cadence or key words to differentiate.
   fallback_method: M-HOOK-001
 - mode: Hook distorts order or content
-  detection: The learner or tutor starts doing hook distorts order or content or the artifact stops satisfying
-    the method’s required checks.
+  detection: "The learner or tutor starts doing hook distorts order or content or the artifact stops satisfying the method\u2019s required checks."
   recovery: Add mapping line and explicit distortion warning.
   fallback_method: M-HOOK-002
 default_duration_min: 3
@@ -190,92 +188,32 @@ mechanisms:
 - elaboration
 - generation
 evidence:
-  citation: Paivio (1991); Dunlosky et al. (2013)
-  finding: Rhyme and rhythm improve ordered recall through dual coding, but only when the learner actively
-    generates the association.
-  source: control-plane migration + research review
+  citation: Wallace (1994); Rainey and Larsen (2002); Ludke, Ferreira, and Overy (2014)
+  finding: Jingle / Rhyme Hook is best supported as a melody-and-rhythm mnemonic for ordered verbal material when the pattern is short, repeated, and explicitly mapped back to the target sequence. Research on sung or melodic text recall shows that melody can improve verbatim or ordered recall when the tune is simple enough to be learned and reused, while later language-learning work shows that singing or rhythmic repetition can outperform plain speech on some recall tasks. The practical implication for this method is to keep the cadence compact, require a learner attempt first, map every phrase fragment back to a real item, and check for hook interference before locking the final jingle.
+  source: https://doi.org/10.1037/0278-7393.20.6.1471; https://doi.org/10.1525/mp.2002.20.2.173; https://doi.org/10.3758/s13421-013-0342-5
+  needs_research: false
 knobs:
-  output_format: bullets
-  family: HOOK
   guidance_level: medium
-  evidence_raw: Paivio (1991); Dunlosky et al. (2013); keyword/keyword-based mnemonics show moderate effect
-    but generation effect amplifies retention.
-  gating_rules:
-  - Confirm meaning before mnemonic compression.
-  - Enforce learner generation-first.
-  - Use only for fixed sequences or stable ordered sets.
-  - Run interference check before finalizing.
-  - Map the hook back to the real sequence before stopping.
-  stipulations:
-  - Meaning comes before the hook. Always.
-  - Use ONLY for fixed sequences or stable ordered sets.
-  - Learner must attempt their own jingle first (generation-first rule).
-  - Check for interference: does the new hook rhyme or cadence clash with an existing hook?
-  - Name the distortion risk if the jingle oversimplifies the source.
-  artifact_type: notes
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
 related_methods:
-- id: M-HOOK-002
-  relationship: Shorter mnemonic fallback
-- id: M-HOOK-005
-  relationship: Chain-linking fallback for ordered lists
 - id: M-HOOK-001
-  relationship: Full KWIK fallback for deeper hooks
-facilitation_prompt: "You are running M-HOOK-003 (Jingle / Rhyme Hook) in ENCODE stage.\nRole: you are\
-  \ the tutor running the method exactly as written, with no hidden assumptions.\nObjective: Create a\
-  \ compact memory cue that links a term or concept to a vivid sound, image, or body-based anchor without\
-  \ losing the real meaning.\nScope: Compress a fixed ordered list or stable sequence into a short jingle\
-  \ or rhyme. Learner must attempt their own compression BEFORE the AI offers one. Check for interference\
-  \ with existing hooks before finalizing.\nRules:\n- Require active learner processing — The method only\
-  \ works when the learner is doing the cognitive work.\n- Do not turn this into a passive answer dump\
-  \ or scoring event — This method is designed for guided learning, not one-shot lecture or formal grading.\n\
-  - Stay within objective scope — Prevents drift into unrelated material and keeps the method auditable.\n\
-  - Learner generation required — Preserves the method-specific guardrail from the source file.\n- Meaning\
-  \ comes before the hook. Always. — Keeps the method honest and prevents a common misuse described in\
-  \ the source file.\n- Not for: This is not for teaching the whole concept from scratch, replacing source\
-  \ truth, or turning a mnemonic into a false fact claim.\nInputs:\n- Fixed sequence or ordered list (required)\n\
-  - Plain-language meaning of each step (required)\n- List of existing hooks for interference check (if\
-  \ any) (required)\nRequired outputs:\n- SequenceStatement: SequenceStatement [short, checkable artifact]\n\
-  - LearnerAttempt: LearnerAttempt [short, checkable artifact]\n- FinalJingleOrRhyme: FinalJingleOrRhyme\
-  \ [short cue plus explanation]\n- HookSequenceMap: HookSequenceMap [labeled visual structure]\n- InterferenceCheck:\
-  \ InterferenceCheck [short, checkable artifact]\n- DistortionWarning: DistortionWarning [short, checkable\
-  \ artifact]\nSteps: run one step at a time and wait after each step before advancing.\n1. The Sequence\
-  \ And Confirm Meaning\n   Tutor does: Guide the learner to State the sequence and confirm meaning of\
-  \ each item. Keep in mind: Meaning must be locked before compression.\n   Learner does: Performs the\
-  \ requested cognitive move and shares the result before moving on.\n   Example: Example: Meaning must\
-  \ be locked before compression.\n   Check: Does the learner have the right term and true meaning before\
-  \ the cue is built?\n   Then STOP and wait for the learner.\n2. The Learner To Attempt Their\n   Tutor\
-  \ does: Guide the learner to Ask the learner to attempt their own rhyme or cadence. Keep in mind: Generation-first.\
-  \ Learner tries before AI offers help. Even a rough attempt counts.\n   Learner does: Supplies the target\
-  \ term or concept, then reacts to the cue and confirms whether it clicks.\n   Example: Example: Generation-first.\
-  \ Learner tries before AI offers help. Even a rough attempt counts.\n   Check: Is this step complete\
-  \ and ready for the next move?\n   Then STOP and wait for the learner.\n3. If Learner Is Stuck Offer\n\
-  \   Tutor does: Guide the learner to If learner is stuck, offer one AI-authored jingle as a scaffold.\
-  \ Keep in mind: Scaffolding only — learner still personalizes or modifies it.\n   Learner does: Supplies\
-  \ the target term or concept, then reacts to the cue and confirms whether it clicks.\n   Example: Example:\
-  \ Scaffolding only — learner still personalizes or modifies it.\n   Check: Is this step complete and\
-  \ ready for the next move?\n   Then STOP and wait for the learner.\n4. The Hook Back To The\n   Tutor\
-  \ does: Guide the learner to Map the hook back to the real sequence explicitly. Keep in mind: Make every\
-  \ line-to-item correspondence clear.\n   Learner does: Performs the requested cognitive move and shares\
-  \ the result before moving on.\n   Example: Example: Make every line-to-item correspondence clear.\n\
-  \   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n\
-  5. For Interference With Existing Hooks\n   Tutor does: Guide the learner to Check for interference\
-  \ with existing hooks. Keep in mind: If this jingle rhymes or cadences like a previous one for a different\
-  \ sequence, flag it and modify.\n   Learner does: Supplies the target term or concept, then reacts to\
-  \ the cue and confirms whether it clicks.\n   Example: Example: If this jingle rhymes or cadences like\
-  \ a previous one for a different sequence, flag it and modify.\n   Check: Is this step complete and\
-  \ ready for the next move?\n   Then STOP and wait for the learner.\n6. One Distortion Risk Or Simplification\n\
-  \   Tutor does: Guide the learner to State one distortion risk or simplification limit. Keep in mind:\
-  \ Prevent mnemonic drift.\n   Learner does: Performs the requested cognitive move and shares the result\
-  \ before moving on.\n   Example: Example: Prevent mnemonic drift.\n   Check: Is this step complete and\
-  \ ready for the next move?\n   Then STOP and wait for the learner.\nStop conditions:\n- All required\
-  \ outputs are present and checkable: Sequence statement, Learner attempt, Jingle or rhyme hook, Hook-to-sequence\
-  \ map, Interference check result, Distortion warning.\n- The method reaches its stop condition: Learner\
-  \ has attempted their own version (even if rough); Hook is short and repeatable.\n- The learner stays\
-  \ active and the tutor does not give away the answer before the required attempt or transformation.\n\
-  If stuck: Shrink to one term, restate the real meaning in plain language, then try a simpler sound cue,\
-  \ image cue, or body cue. If the cue still does not click, switch to a lighter mnemonic lane or ask\
-  \ for one concrete example.\nDo not skip steps, do not solve the whole task at once, and do not present\
-  \ source claims as mnemonic or analogy artifacts."
+  relationship: Use when the target needs a richer visual-sound hook instead of a rhythm-only compression
+- id: M-OVR-003
+  relationship: Use when the memorized sequence should be drilled later in timed mixed practice
+facilitation_prompt: |-
+  You are running M-HOOK-003 (Jingle / Rhyme Hook) in the ENCODE stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: SequenceStatement, LearnerAttempt, FinalJingleOrRhyme, HookSequenceMap, InterferenceCheck, and DistortionWarning.
+  Compress one fixed ordered list into a short repeatable cadence. Require a learner attempt first, offer one scaffold only if needed, map every phrase fragment back to the real sequence, and check for interference before locking the hook.
+  Preset behavior:
+  - exam_cram: one-shot; one short cadence, hook map, and interference warning.
+  - deep_mastery: interactive; learner attempt first, refined cadence, explicit interference and distortion check.
+  - quick_review: one-shot refresh; Sequence item | Jingle fragment | Real meaning table.
+  - clinical_bridge: stepwise; cadence-to-action grid for applied sequences.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode moves sequence -> learner attempt -> map -> interference check and waits.
 validation:
   test_cases:
   - topic: Short labels, terms, and anchors that need fast recall
@@ -299,3 +237,32 @@ validation:
   known_issues:
   - LLMs may over-explain before the learner attempts the required move.
   - LLMs may drift outside scope when the topic is broad or ambiguous.
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: One-shot; deliver one short rhyme or cadence, the hook-to-sequence map, and one interference warning.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Interactive; build the learner attempt first, refine the cadence, and finish with an explicit interference and distortion check.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: One-shot refresh; show Sequence item | Jingle fragment | Real meaning in a compact table.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Stepwise; use a cadence-to-action grid so each phrase fragment points to the correct practical step or cue.

@@ -1,24 +1,24 @@
 id: M-TEA-006
-name: Depth Ladder (4-10-HS-Expert)
-category: teach
+name: Depth Ladder
+category: EXPLAIN
 subcategory: depth-ladder
 description: 'Explain the same concept in four deliberate passes: like the learner is 4 years old, 10 years old, in high school, and finally at expert/training-level precision. Each rung must preserve the same underlying idea while increasing mechanism, terminology, and precision.'
-control_stage: TEACH
+control_stage: EXPLAIN
 status: draft
-version: '1.0'
+version: '1.3'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
-- teach
+- explain
 - depth
 - ladder
 - scaffold
 - sop-core
 - depth-ladder
-- teaching
-- explanation
+- age-ladder
+- progressive-precision
 purpose: 'Explain the same concept in four deliberate passes: like the learner is 4 years old, 10 years old, in high school, and finally at expert/training-level precision. Each rung must preserve the same underlying idea while increasing mechanism, terminology, and precision. Use it to teach one bounded concept by turning the source into a learner-facing bridge that preserves the real mechanism.'
-not_for: Not for open-ended brainstorming, scoring, or broad coverage of unrelated material. Use a PRIME method when the learner first needs orientation or objective framing.
+not_for: Not for open-ended brainstorming, scoring, or broad coverage of unrelated material. Use an ORIENT method when the learner first needs orientation or objective framing.
 best_fit_topics:
 - Concepts that need the same idea explained at several precision levels
 - Topics that benefit from a bridge, contrast, case, example, or mnemonic
@@ -35,16 +35,16 @@ inputs:
   required: false
 outputs:
 - name: Age4Explanation
-  description: Very simple explanation in everyday language.
+  description: Very simple explanation in kid-language using a labeled-section layout, with a tiny story or analogy.
   format: bulleted artifact
 - name: Age10Explanation
-  description: Simpler child-level explanation with basic cause-effect.
+  description: Simpler child-level explanation with basic cause-effect using the same labeled-section layout.
   format: bulleted artifact
 - name: HighSchoolExplanation
-  description: Intermediate explanation with the first real mechanism terms.
+  description: Intermediate explanation with the first real mechanism terms using the same labeled-section layout.
   format: bulleted artifact
 - name: ExpertLevelExplanation
-  description: Domain-appropriate explanation at expert/training-level precision.
+  description: Domain-appropriate explanation at expert/training-level precision using the same labeled-section layout.
   format: bulleted artifact
 - name: LadderCarryForwardNotes
   description: What stayed constant and what got more precise across rungs.
@@ -52,6 +52,26 @@ outputs:
 - name: RungCheckSignal
   description: Which rung clicked or where the learner started to lose the thread.
   format: bulleted artifact
+artifact_schemas:
+  Age4Explanation: bullet_list
+  Age10Explanation: bullet_list
+  HighSchoolExplanation: bullet_list
+  ExpertLevelExplanation: bullet_list
+  LadderCarryForwardNotes: ordered_steps
+  RungCheckSignal: bullet_list
+produces:
+- Age4Explanation
+- Age10Explanation
+- HighSchoolExplanation
+- ExpertLevelExplanation
+- LadderCarryForwardNotes
+- RungCheckSignal
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
 required_outputs:
 - Age4Explanation
 - Age10Explanation
@@ -67,7 +87,7 @@ steps:
 - step: 1
   name: Age 4 Rung
   action: Deliver the 4-year-old rung
-  tutor_does: Deliver the 4-year-old rung. Explain the concept in 1-3 concrete sentences using everyday language, purpose, and a simple felt-sense or image
+  tutor_does: Deliver the 4-year-old rung. Explain the concept using a short labeled-section layout with 3-4 sections and 1-2 sentences per section. Use everyday kid-language, a vivid image, and one tiny story, analogy, or pretend scene. It should sound like talking to a real child, not a simplified textbook
   learner_does: Listens, tracks the explanation, and responds with the requested cue or check-in.
   max_lines: 5
   check: Which rung made it click, and where did the explanation start to get fuzzy?
@@ -75,7 +95,7 @@ steps:
 - step: 2
   name: Age 10 Rung
   action: Deliver the 10-year-old rung
-  tutor_does: Deliver the 10-year-old rung. Add simple system logic and basic cause-effect while keeping the explanation non-technical and easy to picture
+  tutor_does: Deliver the 10-year-old rung. Add simple system logic and basic cause-effect while keeping the explanation non-technical and easy to picture. Use the same short labeled-section layout instead of one block
   learner_does: Listens, tracks the explanation, and responds with the requested cue or check-in.
   max_lines: 5
   check: Which rung made it click, and where did the explanation start to get fuzzy?
@@ -83,15 +103,15 @@ steps:
 - step: 3
   name: High School Rung
   action: Deliver the high-school rung
-  tutor_does: Deliver the high-school rung. Introduce the real mechanism with introductory terminology and a cleaner causal chain
+  tutor_does: Deliver the high-school rung. Introduce the real mechanism with introductory terminology and a cleaner causal chain using the same short labeled-section layout. Prefer labels such as Core definition, Important limit, Mechanism, Common confusion, or Clinical point
   learner_does: Listens, tracks the explanation, and responds with the requested cue or check-in.
   max_lines: 5
   check: Which rung made it click, and where did the explanation start to get fuzzy?
   example: 'Example: "High School Rung: Deliver the high-school rung"'
 - step: 4
   name: Expert Rung
-  action: Deliver the PT/DPT rung (expert/training-level precision)
-  tutor_does: Deliver the expert rung. Add full domain-appropriate precision, discriminators, edge cases, or implications expected at the learner''s target level
+  action: Deliver the expert rung
+  tutor_does: Deliver the expert rung. Add full domain-appropriate precision, discriminators, edge cases, or implications expected at the learner''s target level using the same short labeled-section layout. Prefer labels such as Precise definition, Key discriminator, Edge case, System interaction, or Clinical implication
   learner_does: Listens, tracks the explanation, and responds with the requested cue or check-in.
   max_lines: 5
   check: Which rung made it click, and where did the explanation start to get fuzzy?
@@ -106,16 +126,25 @@ steps:
   example: 'Example: "Rung Check: Run a low-friction rung check"'
 constraints:
 - rule: Do not turn the method into a test or quiz
-  why: TEACH methods should build understanding, not create avoidable performance pressure.
+  why: EXPLAIN methods should build understanding, not create avoidable performance pressure.
 - rule: Stay faithful to the source and keep the chunk bounded
   why: The learner needs a clear bridge, not an unbounded lecture.
 - rule: Do not assess or score the learner
   why: This method is for orientation and teaching, not grading.
 - rule: Require the relevant objective or context before running
   why: The method needs a bounded target to stay useful.
+- rule: Every rung should use a short labeled-section layout
+  why: The ladder should scan like a note card, not a paragraph.
+- rule: Do not write the Age 4 rung as simplified adult prose
+  why: The lowest rung should sound like talking to a child with a picture, story, or analogy.
+- rule: Do not make any rung shapeless
+  why: Keep the same content style for the rung, but present it in clean labeled sections.
 allowed_moves:
 - Explain the same idea in progressively deeper language across the four rungs
 - Use concrete imagery or felt-sense language in the lower rungs
+- Use a short labeled-section layout across all rungs with visible spacing between sections
+- Use a tiny story, analogy, or pretend scene in the Age 4 rung and optionally the Age 10 rung
+- Reuse the same layout pattern across rungs while changing only the depth, terminology, and precision
 - Introduce formal terms gradually instead of all at once
 - Add expert-level discriminators or final-rung implications only in the final rung
 - Ask which rung made the concept click or where the learner lost the thread
@@ -129,7 +158,7 @@ forbidden_moves:
 - Turn the depth ladder into a scored diagnostic
 - Turn the method into a quiz or scored assessment
 - Lose fidelity to the source or wander beyond the bounded topic
-stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For TEACH, fall back to M-TEA-004 or M-TEA-006.
+stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For EXPLAIN, fall back to M-TEA-004 or M-TEA-006.
 failure_modes:
 - mode: The ladder skips a rung or jumps straight to expert-level explanation
   detection: A rung is skipped or the explanation jumps to the deepest level too early.
@@ -138,6 +167,14 @@ failure_modes:
 - mode: Each rung sounds like the same paraphrase with no increase in precision
   detection: The output no longer matches the method’s core purpose.
   recovery: Make each rung add one clear layer of mechanism, terminology, or clinical nuance.
+  fallback_method: M-TEA-004
+- mode: The Age 4 rung reads like a dense, simplified textbook paragraph
+  detection: The output is one block of prose and does not sound like it is speaking to a child.
+  recovery: Re-run the rung with 3-4 labeled sections, kid-language, and one tiny story or analogy.
+  fallback_method: M-TEA-001
+- mode: A rung has the right content but the wrong layout
+  detection: The ideas are present, but they are presented as a mushy paragraph or loose list instead of short labeled sections.
+  recovery: Re-run that rung using labeled sections that fit the rung level, while keeping the same content and order of ideas.
   fallback_method: M-TEA-004
 default_duration_min: 6
 energy_cost: medium
@@ -150,154 +187,62 @@ mechanisms:
 - elaboration
 - progressive_elaboration
 evidence:
-  citation: Mayer (2009)
-  finding: Segmented and progressively elaborated explanation improves novice understanding of unfamiliar systems.
-  source: control-plane migration
+  citation: Renkl and Atkinson (2003); Kalyuga, Ayres, Chandler, and Sweller (2003); Belland, Walker, Kim, and Lefler (2017); Fyfe, McNeil, Son, and Goldstone (2014); Tetzlaff, Simonsmeier, Peters, and Brod (2025); Dominguez and Svihla (2023)
+  finding: Depth Ladder is most defensible when read as a scaffolding-and-fading method rather than a fixed age script. Worked-example and fading research supports starting learners with heavier structure and then moving toward more independent, more precise explanation. Expertise-reversal research suggests this support should stay richest for novices and lighten as prior knowledge rises. Scaffolding meta-analytic and classroom-review evidence suggests support is strongest when it is contingent, gradually faded, and paired with a transfer of responsibility. Concreteness-fading research adds support for moving from vivid, concrete representations toward more formal and abstract ones while preserving the same underlying idea.
+  source: https://doi.org/10.1207/S15326985EP3801_3; https://doi.org/10.1207/S15326985EP3801_4; https://doi.org/10.3102/0034654316670999; https://doi.org/10.1007/s10648-014-9249-3; https://doi.org/10.1016/j.learninstruc.2025.102142; https://doi.org/10.1016/j.ssaho.2023.100613
+  needs_research: false
 knobs:
   guidance_level: medium
-  output_format: bullets
-  artifact_type: notes
+  delivery_mode: stepwise
+  fade_intensity: adaptive_light
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest full ladder; keep every rung short, preserve all four levels, and make the carry-forward notes test-oriented rather than expansive.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_progressive
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Full teaching ladder with the richest pacing; pause after each rung for a short learner check and let each rung add visibly more mechanism and precision.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: adaptive_light
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Refresh ladder for already-seen material; compress the Age 4 and Age 10 rungs into micro-rungs and put most of the precision into the High School and Expert rungs.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied ladder; keep the same rung order but make the higher rungs emphasize discriminators, edge cases, and clinical implications in a more note-card or table-like layout.
 related_methods:
 - id: M-TEA-004
   relationship: Use when a modality switch would help the lower rungs land
 - id: M-TEA-001
   relationship: Use when a story bridge is more natural than a ladder
-facilitation_prompt: 'You are a study tutor running M-TEA-006 (Depth Ladder (4-10-HS-Expert)) in the TEACH stage.
-
-  ROLE: You are a careful, supportive tutor. Your job is to run Depth Ladder (4-10-HS-Expert) exactly as specified and keep the output faithful, bounded, and useful.
-
-  OBJECTIVE: Explain the same concept in four deliberate passes: like the learner is 4 years old, 10 years old, in high school, and finally at expert/training-level precision. Each rung must preserve the same underlying idea while increasing mechanism, terminology, and precision. Use it to teach one bounded concept by turning the source into a learner-facing bridge that preserves the real mechanism.
-
-  SCOPE: Explain the same concept in four deliberate passes: like the learner is 4 years old, 10 years old, in high school, and finally at expert/training-level precision. Each rung must preserve the same underlying idea while increasing mechanism, terminology, and precision.
-
-  RULES:
-
-  - Do not turn the method into a test or quiz — because TEACH methods should build understanding, not create avoidable performance pressure.
-
-  - Stay faithful to the source and keep the chunk bounded — because The learner needs a clear bridge, not an unbounded lecture.
-
-  - Do not assess or score the learner — because This method is for orientation and teaching, not grading.
-
-  - Require the relevant objective or context before running — because The method needs a bounded target to stay useful.
-
-
-  OUTPUTS TO PRODUCE:
-
-  1. Age4Explanation — Very simple explanation in everyday language. (bulleted artifact)
-
-  2. Age10Explanation — Simpler child-level explanation with basic cause-effect. (bulleted artifact)
-
-  3. HighSchoolExplanation — Intermediate explanation with the first real mechanism terms. (bulleted artifact)
-
-  4. ExpertLevelExplanation — Domain-appropriate explanation at expert/training-level precision. (bulleted artifact)
-
-  5. LadderCarryForwardNotes — What stayed constant and what got more precise across rungs. (ordered bullets)
-
-  6. RungCheckSignal — Which rung clicked or where the learner started to lose the thread. (bulleted artifact)
-
-
-  RUN THE METHOD ONE STEP AT A TIME. Wait for my response before moving to the next step.
-
-  STEP 1 — Age 4 Rung
-
-  - Tutor does: Deliver the 4-year-old rung. Explain the concept in 1-3 concrete sentences using everyday language, purpose, and a simple felt-sense or image
-
-  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
-
-  - Example: Example: "Age 4 Rung: Deliver the 4-year-old rung"
-
-  - Check: Which rung made it click, and where did the explanation start to get fuzzy?
-
-  Then stop and wait.
-
-  STEP 2 — Age 10 Rung
-
-  - Tutor does: Deliver the 10-year-old rung. Add simple system logic and basic cause-effect while keeping the explanation non-technical and easy to picture
-
-  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
-
-  - Example: Example: "Age 10 Rung: Deliver the 10-year-old rung"
-
-  - Check: Which rung made it click, and where did the explanation start to get fuzzy?
-
-  Then stop and wait.
-
-  STEP 3 — High School Rung
-
-  - Tutor does: Deliver the high-school rung. Introduce the real mechanism with introductory terminology and a cleaner causal chain
-
-  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
-
-  - Example: Example: "High School Rung: Deliver the high-school rung"
-
-  - Check: Which rung made it click, and where did the explanation start to get fuzzy?
-
-  Then stop and wait.
-
-  STEP 4 — Expert Rung
-
-  - Tutor does: Deliver the expert rung. Add full domain-appropriate precision, discriminators, edge cases, or implications expected at the learner''s target level
-
-  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
-
-  - Example: Example: "Expert Rung: Deliver the expert rung"
-
-  - Check: Which rung made it click, and where did the explanation start to get fuzzy?
-
-  Then stop and wait.
-
-  STEP 5 — Rung Check
-
-  - Tutor does: Run a low-friction rung check. Ask which rung made it click or where the concept started to get fuzzy, without turning the block into a quiz
-
-  - Learner does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
-
-  - Example: Example: "Rung Check: Run a low-friction rung check"
-
-  - Check: Which rung made it click, and where did the explanation start to get fuzzy?
-
-  Then stop and wait.
-
-
-  STOP CONDITIONS:
-
-  - The learner-facing explanation artifact is faithful to Depth Ladder (4-10-HS-Expert) and stays bounded.
-
-  - The method includes a concrete bridge, example, or discriminating cue that makes the idea easier to hold.
-
-  - The output ends with a clear carry-forward signal instead of drifting into a full lecture.
-
-
-  IF YOU GET STUCK:
-
-  If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For TEACH, fall back to M-TEA-004 or M-TEA-006.
-
-  If the learner is still stuck after one rescue move, shrink the chunk, switch modality, or fall back to the listed fallback method.
-
-
-  GOOD OUTPUT EXAMPLE:
-
-  - Age4Explanation: a concise, source-faithful artifact that matches the method purpose and stays within scope.
-
-  - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
-
-
-  DONE WHEN:
-
-  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
-
-
-  Non-assessment guard:
-
-  - This is a TEACH chunk, not an assessment.
-
-  - Do not score or quiz the learner during this block; no scored output, no grading.
-
-  Ladder contract:
-
-  - Run four passes: 4-year-old -> 10-year-old -> high-school -> PT/DPT.
-
-  - Do not skip a rung. Each rung preserves the same underlying idea at increasing precision.'
+facilitation_prompt: |
+  You are running M-TEA-006 (Depth Ladder) in the EXPLAIN stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: Age4Explanation, Age10Explanation, HighSchoolExplanation, ExpertLevelExplanation, LadderCarryForwardNotes, and RungCheckSignal.
+  Explain one bounded concept across four rungs. Preserve the same underlying idea while increasing mechanism, terminology, and precision. Every rung must use short labeled sections, and the Age 4 rung must sound like real child-directed language with one tiny story or analogy.
+  Stay source-faithful, bounded, and non-assessive.
+  Preset behavior:
+  - exam_cram: one-shot; keep each rung to 2-3 labeled sections; make LadderCarryForwardNotes terse and test-oriented.
+  - deep_mastery: interactive; use the fullest 3-5 section rungs; pause after each rung for a short learner check before continuing.
+  - quick_review: one-shot refresh; compress Age 4 and Age 10 into micro-rungs and put most of the precision into the High School and Expert rungs.
+  - clinical_bridge: stepwise; keep the same ladder order but make the higher rungs emphasize discriminators, edge cases, and clinical implications in a note-card or table-like layout.
+  If no preset is specified, use the default knobs. One-shot returns the full ladder in one bounded reply; interactive or stepwise mode moves rung by rung and waits.
 validation:
   test_cases:
   - topic: Single concept explanation for Depth Ladder (4-10-HS-Expert)

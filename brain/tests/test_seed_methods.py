@@ -363,7 +363,10 @@ def test_load_from_yaml_includes_visible_teach_doctrine_cards() -> None:
     assert "M-ENC-016" in method_ids
 
 
-def test_depth_ladder_yaml_uses_literal_4_10_hs_pt_progression() -> None:
+def test_depth_ladder_yaml_uses_literal_4_10_hs_expert_progression() -> None:
+    # 2026-04-21 vault hardening renamed the top rung from "PT/DPT" to the
+    # more general "expert" rung; the four-rung 4 -> 10 -> high-school ->
+    # expert progression remains the canonical Depth Ladder shape.
     method_path = Path(__file__).resolve().parents[2] / "sop" / "library" / "methods" / "M-TEA-006.yaml"
     data = yaml.safe_load(method_path.read_text(encoding="utf-8"))
 
@@ -373,11 +376,18 @@ def test_depth_ladder_yaml_uses_literal_4_10_hs_pt_progression() -> None:
     assert any("4-year-old" in action for action in step_actions)
     assert any("10-year-old" in action for action in step_actions)
     assert any("high-school" in action for action in step_actions)
-    assert any("PT/DPT" in action for action in step_actions)
+    assert any("expert" in action.lower() or "PT/DPT" in action for action in step_actions)
 
     prompt = str(data.get("facilitation_prompt", ""))
-    assert "4-year-old -> 10-year-old -> high-school -> PT/DPT" in prompt
-    assert "Do not skip a rung." in prompt
+    # The four canonical output artifacts must still be named in the prompt.
+    for needle in (
+        "Age4Explanation",
+        "Age10Explanation",
+        "HighSchoolExplanation",
+        "ExpertLevelExplanation",
+    ):
+        assert needle in prompt, f"Depth Ladder prompt missing required output: {needle}"
+    assert "four rungs" in prompt.lower() or "four-rung" in prompt.lower()
 
 
 def test_kwik_hook_yaml_uses_word_sound_meaning_link_flow() -> None:
@@ -400,6 +410,9 @@ def test_kwik_hook_yaml_uses_word_sound_meaning_link_flow() -> None:
 
 
 def test_worked_example_fade_yaml_models_once_before_fading() -> None:
+    # 2026-04-21 vault hardening reworded the prompt while preserving the
+    # core contract: show one full worked example first, mark decision
+    # points, fade 1-2 steps, and do not turn the first fade into a quiz.
     method_path = Path(__file__).resolve().parents[2] / "sop" / "library" / "methods" / "M-TEA-008.yaml"
     data = yaml.safe_load(method_path.read_text(encoding="utf-8"))
 
@@ -408,12 +421,13 @@ def test_worked_example_fade_yaml_models_once_before_fading() -> None:
     step_actions = [str(step.get("action", "")) for step in data.get("steps", [])]
     assert any("Present one fully worked example" in action for action in step_actions)
     assert any("Fade 1-2 steps" in action for action in step_actions)
-    assert any("fill the missing steps" in action for action in step_actions)
+    assert any("fill the missing steps" in action.lower() or "fill the gaps" in action.lower() for action in step_actions)
 
     prompt = str(data.get("facilitation_prompt", ""))
-    assert "Model once before you fade." in prompt
-    assert "Show one fully worked example before asking the learner to fill anything in." in prompt
-    assert "Do not turn the fade pass into a scored quiz." in prompt
+    # Worked example must come before any fade.
+    assert "showing one full example" in prompt or "one fully worked example" in prompt.lower()
+    # The first fade must not be a scored quiz.
+    assert "do not turn the first fade into a quiz" in prompt.lower() or "do not turn the fade pass into a scored quiz" in prompt.lower()
 
 
 def test_embodied_walkthrough_yaml_requires_safe_movement_and_map_back() -> None:

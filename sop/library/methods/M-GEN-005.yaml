@@ -1,31 +1,32 @@
 id: M-GEN-005
 name: Why-Chain
-category: encode
-subcategory: gen
-description: Ask 'why?' 3-5 times in succession about a concept to build causal depth. Each answer becomes
-  the premise for the next question. Based on elaborative interrogation (Dunlosky et al.).
+category: ENCODE
+subcategory: why-chain
+description: Ask why 3-5 times in succession about one bounded fact or claim so each answer becomes the premise for the next, then verify the chain against the source.
 control_stage: ENCODE
 status: validated
-version: '1.0'
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
-- elaboration
+- encode
+- why-chain
+- elaborative-interrogation
 - causal
-- depth
-- evidence-based
-purpose: Force the learner to actively generate, explain, sequence, or transform the material so encoding
-  is deeper than passive review.
-not_for: This is not for passive reading, copying answers, or letting the tutor do the cognitive work
-  for the learner.
+- explanation
+- mechanism
+- verification
+purpose: Why-Chain exists to push the learner past surface recall by forcing a linked sequence of why-explanations that expose whether they can generate real causal depth. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for passive reading, copying answers, or letting the tutor do the cognitive work for the learner.
 best_fit_topics:
 - Concepts the learner can explain, transform, or generate in their own words
 - Mechanisms and causal chains that benefit from active elaboration
+- Statements where each deeper why can introduce a new causal layer
 poor_fit_topics:
 - Pure passive rereading or copy-paste note taking
 - Items that are still completely unknown and cannot yet be transformed
-learner_state_required: Source material is loaded. The learner has a bounded concept and is ready to generate,
-  explain, or transform it before seeing help.
+- Claims so broad or ambiguous that a single why-chain cannot stay bounded
+learner_state_required: Source material is loaded. The learner has one bounded statement or fact and is ready to generate deeper explanations before seeing help.
 inputs:
 - description: Initial statement or fact to interrogate
   required: true
@@ -33,198 +34,222 @@ inputs:
   required: true
 outputs:
 - name: Why-chain document (3-5 linked explanations)
-  description: Why-chain document (3-5 linked explanations)
+  description: Linked sequence of why-explanations showing the learner’s causal depth across 3-5 levels.
   format: concise prose bullets or short paragraph
 - name: Depth level reached
-  description: Depth level reached
-  format: short, checkable artifact
+  description: Final why level completed before bedrock or the configured stop point.
+  format: short summary line
 - name: Verification status
-  description: Verification status
-  format: short, checkable artifact
-required_outputs: &id001
+  description: Whether the completed chain checked out against the source and where corrections were needed.
+  format: short summary paragraph or bullets
+artifact_schemas:
+  Why-chain document (3-5 linked explanations): paragraph
+  Depth level reached: paragraph
+  Verification status: paragraph
+produces:
+- Why-chain document (3-5 linked explanations)
+- Depth level reached
+- Verification status
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
+required_outputs:
 - Why-chain document (3-5 linked explanations)
 - Depth level reached
 - Verification status
 success_criteria:
-- 'All required outputs are present and checkable: Why-chain document (3-5 linked explanations), Depth
-  level reached, Verification status.'
-- 'The method reaches its stop condition: 3-5 why levels completed; Hit bedrock knowledge.'
-- The learner stays active and the tutor does not give away the answer before the required attempt or
-  transformation.
+- All required outputs are present for M-GEN-005.
+- The learner generates at least 3 real why levels before stopping unless the source clearly blocks further explanation.
+- The chain ends with explicit source verification instead of unverified causal improvisation.
 partial_criteria:
-- 'Some required outputs are present but at least one is missing or incomplete: Why-chain document (3-5
-  linked explanations), Depth level reached.'
+- 'One or more required outputs are present but one core artifact is incomplete: Why-chain document (3-5 linked explanations).'
+- The learner started the chain, but the depth or verification status remained too weak to guide the next move.
 steps:
 - step: 1
-  name: The Initial Statement Fact
-  action: Write the initial statement/fact
-  tutor_does: 'Guide the learner to Write the initial statement/fact. Keep in mind: Example: ''ACE inhibitors
-    cause cough'''
+  name: Write the initial statement or fact
+  action: Write the initial statement or fact.
+  tutor_does: Guide the learner to choose one bounded claim that is specific enough to interrogate and narrow enough to keep the why-chain coherent.
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
-  check: Is this step complete and ready for the next move?
-  example: 'Example: ''ACE inhibitors cause cough'
+  check: Is the starting statement specific enough for a real why-chain?
+  example: 'Example: ACE inhibitors cause cough.'
 - step: 2
-  name: Ask
-  action: 'Ask: ''Why is this true?'
-  tutor_does: 'Guide the learner to Ask: ''Why is this true?''. Keep in mind: Write the answer as a new
-    statement'
+  name: Ask why is this true
+  action: Ask why this is true.
+  tutor_does: Guide the learner to answer the first why in a fresh sentence that adds causal information rather than restating the starting claim.
   learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
   max_lines: 8
-  check: Is this step complete and ready for the next move?
-  example: 'Example: Write the answer as a new statement'
+  check: Does the answer introduce new information instead of circular wording?
+  example: 'Example: Write the answer as a new statement, not as a paraphrase of the prompt.'
 - step: 3
-  name: Why About Your Answer
-  action: Ask 'why?' about your answer
-  tutor_does: 'Guide the learner to Ask ''why?'' about your answer. Keep in mind: Go one level deeper'
+  name: Ask why about your answer
+  action: Ask why about your answer.
+  tutor_does: Guide the learner to take the previous answer as the new premise and go one level deeper into mechanism or logic.
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
-  check: Is this step complete and ready for the next move?
-  example: 'Example: Go one level deeper'
+  check: Has the learner actually gone one layer deeper?
+  example: 'Example: If the last answer named a mediator, the next why should explain why that mediator matters.'
 - step: 4
-  name: Repeat Until You Hit 3
-  action: Repeat until you hit 3-5 levels or bedrock knowledge
-  tutor_does: 'Guide the learner to Repeat until you hit 3-5 levels or bedrock knowledge. Keep in mind:
-    Bedrock = can''t explain further without new learning'
+  name: Repeat until you hit 3 to 5 levels or bedrock knowledge
+  action: Repeat until you hit 3-5 levels or bedrock knowledge.
+  tutor_does: Guide the learner to keep chaining why-questions until they hit the required depth or reach a point where further explanation truly requires new learning.
   learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
   max_lines: 8
-  check: Is this step complete and ready for the next move?
-  example: 'Example: Bedrock = can''t explain further without new learning'
+  check: Has the learner reached at least level 3 or a defensible bedrock stop?
+  example: 'Example: Bedrock means you cannot explain further without adding knowledge you do not yet have.'
 - step: 5
-  name: Chain Accuracy With Source Material
-  action: Verify chain accuracy with source material
-  tutor_does: 'Guide the learner to Verify chain accuracy with source material. Keep in mind: Flag any
-    errors for correction'
+  name: Verify chain accuracy with source material
+  action: Verify chain accuracy with source material.
+  tutor_does: Guide the learner to compare each link against the source, flag errors or unsupported leaps, and mark whether the chain stands as written.
   learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
   max_lines: 8
-  check: Is this step complete and ready for the next move?
-  example: 'Example: Flag any errors for correction'
+  check: Is the final chain marked as verified, partially verified, or in need of correction?
+  example: 'Example: Flag the exact link that fails source verification instead of correcting the whole chain silently.'
 constraints:
 - rule: Require active learner processing
-  why: The method depends on the learner generating, mapping, explaining, or transforming the material
-    rather than passively reading.
+  why: The method depends on the learner generating, mapping, explaining, or transforming the material rather than passively reading.
 - rule: Stay within objective scope
   why: Prevents drift into unrelated material and keeps the method auditable.
 - rule: Do not turn this into a passive answer dump or scoring event
   why: This method is designed for guided learning, not one-shot lecture or formal grading.
-- rule: Force active processing (explain, transform, or map), not passive reading.
+- rule: Force active processing (explain, transform, or map), not passive reading
   why: This gating rule is part of the method’s execution contract.
-- rule: Keep output scoped to mapped objectives only.
+- rule: Keep output scoped to mapped objectives only
   why: This gating rule is part of the method’s execution contract.
 allowed_moves:
 - Present the initial statement or fact for interrogation
-- Prompt the learner with "Why is this true?" at each level
+- Prompt the learner with why at each level
 - Require the learner to write each answer as a new statement before proceeding
 - Guide the learner to go deeper when answers are superficial
-- Flag circular reasoning and redirect to new information
-- Enforce minimum 3 levels of depth before allowing stop
-- Prompt learner to verify chain accuracy against source material
-- Help identify bedrock knowledge (point where further explanation requires new learning)
+- Flag circular reasoning and redirect to genuinely new information
+- Enforce a minimum of 3 levels before allowing stop unless bedrock is explicit
+- Prompt the learner to verify chain accuracy against source material
+- Help identify bedrock knowledge where new learning would be required
 forbidden_moves:
-- Answer the "why?" questions FOR the learner
+- Answer the why questions for the learner
 - Accept circular reasoning as a valid chain link
-- Allow stopping before 3 levels of depth are reached
+- Allow stopping before 3 levels of depth are reached without a defensible bedrock reason
 - Skip source verification of the completed chain
 - Deliver a passive causal explanation instead of guiding interrogation
 - Accept made-up explanations without verification
 - Present information outside the objective scope
 - Move to retrieval before the why-chain is complete and verified
-stuck_protocol: Offer one smaller hint, one simpler example, or one step back in the chain; then require
-  the learner to continue actively.
+stuck_protocol: Offer one smaller hint, one simpler example, or one step back in the chain, then require the learner to continue actively.
 failure_modes:
 - mode: Circular reasoning
-  detection: The learner or tutor starts doing circular reasoning or the artifact stops satisfying the
-    method’s required checks.
-  recovery: Each answer must introduce new information
+  detection: A why-answer merely restates the prior link or uses the same claim with different wording.
+  recovery: Require the next answer to add genuinely new information before the chain continues.
   fallback_method: M-GEN-006
 - mode: Stopping too early
-  detection: The learner or tutor starts doing stopping too early or the artifact stops satisfying the
-    method’s required checks.
-  recovery: Require minimum 3 levels
+  detection: The learner wants to stop before three levels without reaching defensible bedrock knowledge.
+  recovery: Require another why level or make the bedrock limit explicit.
   fallback_method: M-GEN-002
 - mode: Making up explanations
-  detection: The learner or tutor starts doing making up explanations or the artifact stops satisfying
-    the method’s required checks.
-  recovery: Verify each level against source
+  detection: One or more links are speculative, unsupported, or contradicted by the source.
+  recovery: Verify each level against the source and mark unsupported links for correction.
   fallback_method: M-GEN-007
 default_duration_min: 5
 energy_cost: medium
 best_stage: first_exposure
 mechanisms:
-- elaboration
+- elaborative_interrogation
 - generation
+- causal_elaboration
+- self_explanation
+- verification
+- metacognitive_monitoring
 evidence:
-  citation: Dunlosky et al. (2013)
-  finding: Elaborative interrogation rated moderate utility for learning; builds causal understanding
-  source: seed_methods.py
+  citation: Pressley, McDaniel, Turnure, Wood, and Ahmad (1987); Pressley, Symons, McDaniel, Snyder, and Turnure (1988); O'Reilly, Symons, and MacLatchy-Gaudet (1998); Dunlosky, Rawson, Marsh, Nathan, and Willingham (2013); Novak, Bailey, Blinsky, Soffe, Patterson, Ockey, and Jensen (2022); Jáñez, Parra-Domínguez, Gajate Bajo, and Guzmán-Ordaz (2025)
+  finding: >-
+    Why-Chain is best supported as an elaborative-interrogation method that
+    improves learning when learners must generate explanatory answers to
+    why-prompts instead of rereading or paraphrasing facts. The classic
+    elaborative-interrogation studies show that asking why can improve learning
+    of confusing or factual material when each answer adds new information, and
+    comparison work suggests that the benefit depends on explanation quality
+    rather than on the prompt alone. Dunlosky's review supports elaborative
+    interrogation as a moderate-utility strategy with clear boundary
+    conditions, and recent classroom work sharpens those conditions further:
+    active why-questioning can work in live or virtual settings, but recent
+    implementation research shows that self-generated interrogation helps only
+    when the prompts are used well and can even hurt when learners produce weak
+    or inappropriate explanations. The practical implication for this method is
+    to force each answer into a new statement, reject circular links, require
+    at least 3 levels unless bedrock is explicit, and verify the finished
+    chain against the source instead of trusting fluent-sounding explanations.
+  source: https://doi.org/10.1037/0278-7393.13.2.291; https://doi.org/10.1037/0022-0663.80.3.268; https://doi.org/10.1006/ceps.1997.0977; https://doi.org/10.1177/1529100612453266; https://doi.org/10.1128/jmbe.00232-21; https://doi.org/10.1080/02702711.2025.2482627
+  needs_research: false
 knobs:
   guidance_level: medium
-  output_format: bullets
-  evidence_raw: Dunlosky et al. (2013); elaborative interrogation rated moderate utility for learning
-  gating_rules:
-  - Force active processing (explain, transform, or map), not passive reading.
-  - Keep output scoped to mapped objectives only.
-  logging_fields:
-  - initial_statement
-  - chain_depth
-  - verification_status
-  - bedrock_reached
-  artifact_type: notes
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest chain pass. Produce exactly 3 why links, one bedrock or uncertainty line, and one short verification line.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Full depth pass. Keep separate sections for starting claim, why levels, circularity or gap notes, bedrock decision, and verification status.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: Refresh pass. Render the output as a compact why-level table with premise, why-answer, and verification status columns.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied causal pass. Use a clinical reasoning table with fact or finding, first why, deeper why, implication, and source check columns so the chain stays tied to use in practice.
 related_methods:
 - id: M-GEN-006
-  relationship: Similar self-explanation move
+  relationship: Similar self-explanation move when the learner needs a freer explanatory format
 - id: M-GEN-002
-  relationship: Teach-back fallback if oral explanation helps
+  relationship: Teach-back fallback if oral explanation helps surface the same gaps
 - id: M-GEN-007
-  relationship: Mechanism trace if the chain is causal
-facilitation_prompt: "You are running M-GEN-005 (Why-Chain) in ENCODE stage.\nRole: you are the tutor\
-  \ running the method exactly as written, with no hidden assumptions.\nObjective: Force the learner to\
-  \ actively generate, explain, sequence, or transform the material so encoding is deeper than passive\
-  \ review.\nScope: Ask 'why?' 3-5 times in succession about a concept to build causal depth. Each answer\
-  \ becomes the premise for the next question. Based on elaborative interrogation (Dunlosky et al.).\n\
-  Rules:\n- Require active learner processing — The method depends on the learner generating, mapping,\
-  \ explaining, or transforming the material rather than passively reading.\n- Stay within objective scope\
-  \ — Prevents drift into unrelated material and keeps the method auditable.\n- Do not turn this into\
-  \ a passive answer dump or scoring event — This method is designed for guided learning, not one-shot\
-  \ lecture or formal grading.\n- Force active processing (explain, transform, or map), not passive reading.\
-  \ — This gating rule is part of the method’s execution contract.\n- Keep output scoped to mapped objectives\
-  \ only. — This gating rule is part of the method’s execution contract.\n- Not for: This is not for passive\
-  \ reading, copying answers, or letting the tutor do the cognitive work for the learner.\nInputs:\n-\
-  \ Initial statement or fact to interrogate (required)\n- Source material for verification (required)\n\
-  Required outputs:\n- Why-chain document (3-5 linked explanations): Why-chain document (3-5 linked explanations)\
-  \ [concise prose bullets or short paragraph]\n- Depth level reached: Depth level reached [short, checkable\
-  \ artifact]\n- Verification status: Verification status [short, checkable artifact]\nSteps: run one\
-  \ step at a time and wait after each step before advancing.\n1. The Initial Statement Fact\n   Tutor\
-  \ does: Guide the learner to Write the initial statement/fact. Keep in mind: Example: 'ACE inhibitors\
-  \ cause cough'\n   Learner does: Performs the requested cognitive move and shares the result before\
-  \ moving on.\n   Example: Example: 'ACE inhibitors cause cough\n   Check: Is this step complete and\
-  \ ready for the next move?\n   Then STOP and wait for the learner.\n2. Ask\n   Tutor does: Guide the\
-  \ learner to Ask: 'Why is this true?'. Keep in mind: Write the answer as a new statement\n   Learner\
-  \ does: Reads the prompt, does the thinking step, and returns the artifact or answer.\n   Example: Example:\
-  \ Write the answer as a new statement\n   Check: Is this step complete and ready for the next move?\n\
-  \   Then STOP and wait for the learner.\n3. Why About Your Answer\n   Tutor does: Guide the learner\
-  \ to Ask 'why?' about your answer. Keep in mind: Go one level deeper\n   Learner does: Performs the\
-  \ requested cognitive move and shares the result before moving on.\n   Example: Example: Go one level\
-  \ deeper\n   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the\
-  \ learner.\n4. Repeat Until You Hit 3\n   Tutor does: Guide the learner to Repeat until you hit 3-5\
-  \ levels or bedrock knowledge. Keep in mind: Bedrock = can't explain further without new learning\n\
-  \   Learner does: Reads the prompt, does the thinking step, and returns the artifact or answer.\n  \
-  \ Example: Example: Bedrock = can't explain further without new learning\n   Check: Is this step complete\
-  \ and ready for the next move?\n   Then STOP and wait for the learner.\n5. Chain Accuracy With Source\
-  \ Material\n   Tutor does: Guide the learner to Verify chain accuracy with source material. Keep in\
-  \ mind: Flag any errors for correction\n   Learner does: Reads the prompt, does the thinking step, and\
-  \ returns the artifact or answer.\n   Example: Example: Flag any errors for correction\n   Check: Is\
-  \ this step complete and ready for the next move?\n   Then STOP and wait for the learner.\nStop conditions:\n\
-  - All required outputs are present and checkable: Why-chain document (3-5 linked explanations), Depth\
-  \ level reached, Verification status.\n- The method reaches its stop condition: 3-5 why levels completed;\
-  \ Hit bedrock knowledge.\n- The learner stays active and the tutor does not give away the answer before\
-  \ the required attempt or transformation.\nIf stuck: Offer one smaller hint, one simpler example, or\
-  \ one step back in the chain; then require the learner to continue actively.\nDo not skip steps, do\
-  \ not solve the whole task at once, and do not present source claims as mnemonic or analogy artifacts."
+  relationship: Mechanism trace if the chain needs a more explicit process sequence
+system_prompt_override:
+  relaxes:
+  - Never reveal the full answer without letting me attempt first. Progressive hints, not solutions.
+  - Highly interactive. One teaching chunk (8-12 lines max), one check, one question at a time.
+  replaces_with:
+  - Require each why-answer to stand as a new statement that adds causal information. Do not accept paraphrases, circular wording, or tutor-supplied links.
+  - Treat source verification as mandatory. A fluent why-chain is not complete until unsupported or incorrect links are flagged explicitly.
+  reason: Why-Chain only works when the learner generates real explanatory depth and the chain is checked for circularity and accuracy. If the tutor fills the chain in or skips verification, the method becomes empty rhetoric.
+facilitation_prompt: |
+  You are running M-GEN-005 (Why-Chain) in the ENCODE stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: Why-chain document, Depth level reached, and Verification status.
+  Have the learner start with one bounded statement, ask why 3-5 times in succession, and turn each answer into the next premise. Reject circular answers, stop only after at least 3 levels or clear bedrock knowledge, and verify every link against the source before closing. Do not answer the why questions for the learner.
+  Preset behavior:
+  - exam_cram: one-shot; 3 why links; one bedrock or uncertainty line; one verification line.
+  - deep_mastery: interactive; separate sections for claim, why levels, gap notes, bedrock decision, and verification.
+  - quick_review: one-shot refresh; compact premise-why-verification table.
+  - clinical_bridge: stepwise; applied fact -> why -> deeper why -> implication -> source-check table.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode moves claim -> why layers -> bedrock decision -> verification and waits.
 validation:
   test_cases:
   - topic: Concepts the learner can explain, transform, or generate in their own words
-    expected_outputs: *id001
+    expected_outputs:
+    - Why-chain document (3-5 linked explanations)
+    - Depth level reached
+    - Verification status
     pass_criteria:
     - All required outputs are present.
     - The learner performs the required active step before the final artifact is given.
@@ -242,5 +267,5 @@ validation:
   - No forbidden_moves are violated.
   - The facilitation_prompt can be run without extra hidden context.
   known_issues:
-  - LLMs may over-explain before the learner attempts the required move.
-  - LLMs may drift outside scope when the topic is broad or ambiguous.
+  - LLMs may over-explain instead of forcing the learner to generate each why layer.
+  - Learners may produce plausible but unsupported causal links unless verification is made explicit.

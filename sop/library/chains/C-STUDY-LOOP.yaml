@@ -1,0 +1,126 @@
+id: C-STUDY-LOOP
+name: "Study Loop (Finals)"
+description: >
+  Per-session study chain for finals prep. Assumes PRIME notes exist in Obsidian
+  (built once via C-PRIME-ONCE per topic). Walks TEACH → conditional ENCODE →
+  CALIBRATE → RETRIEVE → OVERLEARN in a single ChatGPT chat.
+  35-45 min per session. Ends with 3-5 staged Anki cards.
+
+is_template: true
+status: active
+proving_ground: false
+
+assumes:
+  - PRIME complete (notes in Obsidian: framework, key terms, learning objectives)
+  - One bounded topic per session
+  - Closed-note materials ready for the brain dump step
+
+blocks:
+  - id: STEP_0_CHECK_IN
+    method_ref: priming_notes_paste
+    purpose: "Confirm priming notes are loaded and complete"
+    required: true
+
+  - id: M-TEA-001
+    stage: TEACH
+    name: "Story Spine"
+    purpose: "Walk topic as causal narrative with clinical breakpoint"
+    fallback_to: M-TEA-006
+
+  - id: M-TEA-006
+    stage: TEACH
+    name: "Depth Ladder"
+    purpose: "Fallback — same concept at 4 levels (4yo → 10yo → HS → DPT)"
+    trigger: "Story Spine isn't landing"
+
+  - id: M-HOOK-001
+    stage: ENCODE
+    name: "KWIK Hook"
+    purpose: "Mnemonic compression for terms/sequences"
+    required: false
+    condition: "Learner understands concept but cannot recall terms"
+    skip_when: "Pure conceptual/application — no term memorization needed"
+
+  - id: M-CAL-001
+    stage: CALIBRATE
+    name: "Micro Check"
+    purpose: "5 H/M/L scored questions; did teaching land"
+    required: true
+
+  - id: M-RET-001
+    stage: RETRIEVE
+    name: "Timed Brain Dump"
+    purpose: "Closed-note free recall, RSR estimate"
+    required: true
+
+  - id: M-OVR-002
+    stage: OVERLEARN
+    name: "Anki Card Draft"
+    purpose: "Stage 3-5 atomic cards from session content"
+    required: true
+
+gates:
+  - id: priming_check
+    description: "Priming notes visible and complete before TEACH"
+    after_block: STEP_0_CHECK_IN
+    failure: "Stop session; complete C-PRIME-ONCE first"
+
+  - id: micro_check_pass
+    description: "Micro Check accuracy >= 80%"
+    after_block: M-CAL-001
+    threshold: 80
+    failure: "Switch to Depth Ladder fallback and re-teach OR re-PRIME if multiple concepts shaky"
+
+  - id: retrieve_pass
+    description: "RSR >= 70%"
+    after_block: M-RET-001
+    threshold: 70
+    failure: "Loop back to TEACH with missed concepts as new target"
+
+  - id: cards_staged
+    description: "3-5 atomic Anki cards drafted"
+    after_block: M-OVR-002
+
+failure_actions:
+  - condition: "Micro Check accuracy < 80%"
+    action: "Activate Depth Ladder (M-TEA-006) for missed concept; re-run Micro Check"
+  - condition: "Micro Check < 80% twice"
+    action: "Stop. Re-PRIME the topic with C-PRIME-ONCE (gaps in framework)."
+  - condition: "RSR < 70%"
+    action: "Loop back to STEP 1 with missed concepts as new TEACH target"
+  - condition: "Learner cannot recall terms despite understanding"
+    action: "Activate KWIK Hook (M-HOOK-001)"
+
+# Legacy chains use `context_tags` (read by seed_methods.py and the
+# tutor session prime-launch gate). The vault hardening originally
+# spelled this `context`; rename to `context_tags` so stage: review
+# correctly skips _chain_requires_prime_launch (this loop chain
+# legitimately opens with TEACH, assuming C-PRIME-ONCE has run first).
+context_tags:
+  energy: medium
+  time_available: 45
+  stage: review
+  learner_style: top_down_narrative
+
+knobs:
+  teaching_style: narrative
+  fallback_teaching_style: depth_ladder
+  micro_check_items: 5
+  micro_check_pass_threshold: 80
+  brain_dump_minutes: 5
+  rsr_pass_threshold: 70
+  card_count_min: 3
+  card_count_max: 5
+  total_max_minutes: 45
+
+prompt_file: C-STUDY-LOOP.md
+prompt_implementation: option_a_integrated
+
+notes: >
+  Single-chat integrated prompt (Option A). The .md file holds the actual prompt
+  to paste; this YAML is the design spec. They will drift over time — re-sync
+  manually when methods change. See "Notes & Tech Debt.md" for the 2026-04-19
+  decision rationale.
+
+  Updates to method facilitation_prompts do NOT auto-flow into C-STUDY-LOOP.md.
+  When tightening a method, check whether the change should be reflected here.

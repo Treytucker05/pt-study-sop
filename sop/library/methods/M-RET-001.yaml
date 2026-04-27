@@ -1,22 +1,19 @@
 id: M-RET-001
 name: Timed Brain Dump
-category: retrieve
+category: RETRIEVE
 subcategory: dump
-description: Close materials. Set timer. Write everything you remember about the topic. No peeking. Compare after. Timed constraint
-  adds desirable difficulty.
+description: Close materials. Set timer. Write everything you remember about the topic. No peeking. Compare after. Timed constraint adds desirable difficulty.
 control_stage: RETRIEVE
 status: validated
-version: '1.0'
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
 - recall
 - testing-effect
 - self-assessment
-purpose: Timed Brain Dump exists to run a timed free-recall dump that exposes what the learner can retrieve cold and what
-  still needs repair. It turns the current stage into a clean, reusable signal instead of a vague study session.
-not_for: This is not for open-note review, answer-reveal first workflows, or deep teaching. Use REFERENCE if the learner needs
-  an anchor first.
+purpose: Timed Brain Dump exists to run a timed free-recall dump that exposes what the learner can retrieve cold and what still needs repair. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for open-note review, answer-reveal first workflows, or deep teaching. Use REFERENCE if the learner needs an anchor first.
 best_fit_topics:
 - free recall under time pressure
 - broad topic recall
@@ -25,8 +22,7 @@ poor_fit_topics:
 - open-note review
 - answer-reveal first workflows
 - deep teaching during recall
-learner_state_required: The learner already has source material or an anchor available, the source will be closed for recall,
-  and a retrieval target exists.
+learner_state_required: The learner already has source material or an anchor available, the source will be closed for recall, and a retrieval target exists.
 inputs:
 - description: Topic or concept to recall
   required: true
@@ -41,17 +37,30 @@ outputs:
   description: A raw recall transcript with gaps marked, followed by comparison notes and gap repair.
   format: free-response text
 - name: Accuracy assessment (correct vs incorrect items)
-  description: A structured output for a timed free-recall dump that exposes what the learner can retrieve cold and what still
-    needs repair.
+  description: A structured output for a timed free-recall dump that exposes what the learner can retrieve cold and what still needs repair.
   format: structured response
 - name: Gap list (missing items identified)
-  description: A structured output for a timed free-recall dump that exposes what the learner can retrieve cold and what still
-    needs repair.
+  description: A structured output for a timed free-recall dump that exposes what the learner can retrieve cold and what still needs repair.
   format: bulleted or tabular list
 - name: RSR percentage estimate
-  description: A structured output for a timed free-recall dump that exposes what the learner can retrieve cold and what still
-    needs repair.
+  description: A structured output for a timed free-recall dump that exposes what the learner can retrieve cold and what still needs repair.
   format: structured response
+artifact_schemas:
+  Free recall dump with gaps marked: paragraph
+  Accuracy assessment (correct vs incorrect items): scored_items
+  Gap list (missing items identified): bullet_list
+  RSR percentage estimate: scored_items
+produces:
+- Free recall dump with gaps marked
+- Accuracy assessment (correct vs incorrect items)
+- Gap list (missing items identified)
+- RSR percentage estimate
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
 required_outputs:
 - Free recall dump with gaps marked
 - Accuracy assessment (correct vs incorrect items)
@@ -67,9 +76,8 @@ partial_criteria:
 steps:
 - step: 1
   name: Close all materials and
-  action: Close all materials and reference sources. Materials must be completely hidden — no peeking allowed
-  tutor_does: Run close all materials and reference sources. materials must be completely hidden — no peeking allowed while
-    protecting the attempt-first rule, then compare only after recall is complete.
+  action: "Close all materials and reference sources. Materials must be completely hidden \u2014 no peeking allowed"
+  tutor_does: "Run close all materials and reference sources. materials must be completely hidden \u2014 no peeking allowed while protecting the attempt-first rule, then compare only after recall is complete."
   learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
   max_lines: 8
   check: Are all materials closed and is the learner ready to attempt recall?
@@ -77,36 +85,31 @@ steps:
 - step: 2
   name: Set timer for 5
   action: Set timer for 5 minutes. Time pressure adds desirable difficulty
-  tutor_does: Run set timer for 5 minutes. time pressure adds desirable difficulty while protecting the attempt-first rule,
-    then compare only after recall is complete.
+  tutor_does: Run set timer for 5 minutes. time pressure adds desirable difficulty while protecting the attempt-first rule, then compare only after recall is complete.
   learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
   max_lines: 8
   check: Is this step complete and ready to advance?
   example: Tutor starts the timer and asks for a free-response dump.
 - step: 3
   name: Write everything you remember
-  action: Write everything you remember about the topic. Stream of consciousness — include facts, relationships, examples,
-    anything
-  tutor_does: Run write everything you remember about the topic. stream of consciousness — include facts, relationships, examples,
-    anything while protecting the attempt-first rule, then compare only after recall is complete.
+  action: "Write everything you remember about the topic. Stream of consciousness \u2014 include facts, relationships, examples, anything"
+  tutor_does: "Run write everything you remember about the topic. stream of consciousness \u2014 include facts, relationships, examples, anything while protecting the attempt-first rule, then compare only after recall is complete."
   learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
   max_lines: 8
   check: Is this step complete and ready to advance?
   example: Tutor marks gaps with question marks and compares them after the attempt window ends.
 - step: 4
   name: When stuck, write "?"
-  action: When stuck, write "?" and move to next thing you remember. Gaps are valuable data — mark them explicitly
-  tutor_does: Run when stuck, write "?" and move to next thing you remember. gaps are valuable data — mark them explicitly
-    while protecting the attempt-first rule, then compare only after recall is complete.
+  action: "When stuck, write \"?\" and move to next thing you remember. Gaps are valuable data \u2014 mark them explicitly"
+  tutor_does: "Run when stuck, write \"?\" and move to next thing you remember. gaps are valuable data \u2014 mark them explicitly while protecting the attempt-first rule, then compare only after recall is complete."
   learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
   max_lines: 8
   check: Is this step complete and ready to advance?
   example: Tutor compares to the source and notes missing items.
 - step: 5
   name: Stop when timer ends
-  action: Stop when timer ends or you've exhausted recall. Don't extend time — constraint is the feature
-  tutor_does: Run stop when timer ends or you've exhausted recall. don't extend time — constraint is the feature while protecting
-    the attempt-first rule, then compare only after recall is complete.
+  action: "Stop when timer ends or you've exhausted recall. Don't extend time \u2014 constraint is the feature"
+  tutor_does: "Run stop when timer ends or you've exhausted recall. don't extend time \u2014 constraint is the feature while protecting the attempt-first rule, then compare only after recall is complete."
   learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
   max_lines: 8
   check: Is this step complete and ready to advance?
@@ -114,8 +117,7 @@ steps:
 - step: 6
   name: Open materials and compare
   action: Open materials and compare your output to the source. Mark correct items, identify missing items, note errors
-  tutor_does: Run open materials and compare your output to the source. mark correct items, identify missing items, note errors
-    while protecting the attempt-first rule, then compare only after recall is complete.
+  tutor_does: Run open materials and compare your output to the source. mark correct items, identify missing items, note errors while protecting the attempt-first rule, then compare only after recall is complete.
   learner_does: Produces recall from memory, marks gaps, and waits for comparison until the recall window closes.
   max_lines: 8
   check: Has the learner compared the output against the source or answer key?
@@ -176,69 +178,69 @@ mechanisms:
 - generation
 - calibration
 evidence:
-  citation: Roediger & Karpicke (2006)
-  finding: testing effect — retrieval practice > re-reading for long-term retention
-  source: seed_methods.py
+  citation: Roediger and Karpicke (2006); Yang, Luo, Vadillo, Yu, and Shanks (2021); Agarwal, Nunes, and Blunt (2021)
+  finding: Timed Brain Dump is best supported as a free-recall retrieval routine whose value comes from the retrieval attempt itself, the visibility of omissions, and the compare-after feedback pass. Classic testing-effect work shows that recall attempts can outperform rereading on delayed retention, recent meta-analytic work confirms broad benefits for retrieval practice across materials and settings, and classroom reviews support retrieval as a practical way to surface what students can and cannot yet pull from memory. The practical implication for this method is to keep the first pass closed-note and time-bounded, treat gaps as usable data, and use the comparison step for repair rather than for helping during the attempt.
+  source: https://doi.org/10.1111/j.1467-9280.2006.01693.x; https://doi.org/10.1037/bul0000309; https://doi.org/10.1007/s10648-021-09595-9
+  needs_research: false
 knobs:
-  default_duration_min: 5
-  energy_cost: medium
-  best_stage: review
+  guidance_level: medium
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest dump. Use a 3-minute closed-note burst, terse bullets for the recall output, and a short miss list plus one repair target.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Fullest dump. Use the full time cap, keep the raw recall verbatim, and return a fuller item-by-item comparison plus a ranked repair list.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: Refresh pass. Use a compact dump plus a three-column table for correct, partial, and missed content with a quick RSR estimate.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied dump. Emphasize signs, actions, and discriminators from the session, then organize misses in a handoff table tied to the next practical review move.
 related_methods:
 - id: M-REF-003
   relationship: A one-page anchor is a good compare-against source artifact
 - id: M-REF-001
   relationship: Error autopsy turns misses into prevention cues
+system_prompt_override:
+  relaxes:
+  - Never reveal the full answer without letting me attempt first. Progressive hints, not solutions.
+  - 'If I''m stuck: do NOT repeat the same explanation. Pick exactly one recovery move (simpler ladder, format switch, side-by-side contrast, tiny clinical case).'
+  replaces_with:
+  - "Closed-note recall only. No hints at any point during the recall window \u2014 not before, not progressive, not after first attempt. Comparison and answer reveal happen only after the timer ends."
+  - If stuck, learner writes '?' and moves to the next item. Tutor does NOT switch format, give a clinical case, or rebuild upward. Gaps are the data.
+  reason: RETRIEVE methods test cold recall under closed-note conditions. CI's 'progressive hints' explicitly violates RET's no-hints rule, and CI's recovery moves are all forms of re-teaching during the recall window.
 facilitation_prompt: |-
-  You are a tutor running M-RET-001 (Timed Brain Dump) in RETRIEVE mode.
-  ROLE: elicit memory under controlled conditions and protect the attempt-first rule.
-  OBJECTIVE: Timed Brain Dump exists to run a timed free-recall dump that exposes what the learner can retrieve cold and what still needs repair. It turns the current stage into a clean, reusable signal instead of a vague study session.
-  SCOPE: Use only the loaded source material and the learner's current responses.
-  RULES:
-  - Closed-note first, open-note only after recall is complete
-  - No hints or answer reveal before the learner attempts the item
-  - Compare against source only after the attempt window ends
-  - Stay within the timer or sprint cap
-
-  RUN ONE STEP AT A TIME. Do not skip ahead. Wait for my reply before moving on.
-  1. Close all materials and — Close all materials and reference sources. Materials must be completely hidden — no peeking allowed
-     Example: Tutor: "Close your notes. Do not peek." Learner: "Notes are closed."
-     Check: Are all materials closed and is the learner ready to attempt recall?
-     Then stop and wait.
-  2. Set timer for 5 — Set timer for 5 minutes. Time pressure adds desirable difficulty
-     Example: Tutor starts the timer and asks for a free-response dump.
-     Check: Is this step complete and ready to advance?
-     Then stop and wait.
-  3. Write everything you remember — Write everything you remember about the topic. Stream of consciousness — include facts, relationships, examples, anything
-     Example: Tutor marks gaps with question marks and compares them after the attempt window ends.
-     Check: Is this step complete and ready to advance?
-     Then stop and wait.
-  4. When stuck, write "?" — When stuck, write "?" and move to next thing you remember. Gaps are valuable data — mark them explicitly
-     Example: Tutor compares to the source and notes missing items.
-     Check: Is this step complete and ready to advance?
-     Then stop and wait.
-  5. Stop when timer ends — Stop when timer ends or you've exhausted recall. Don't extend time — constraint is the feature
-     Example: Tutor compares to the source and notes missing items.
-     Check: Is this step complete and ready to advance?
-     Then stop and wait.
-  6. Open materials and compare — Open materials and compare your output to the source. Mark correct items, identify missing items, note errors
-     Example: Tutor compares to the source and notes missing items.
-     Check: Has the learner compared the output against the source or answer key?
-     Then stop and wait.
-
-  REQUIRED OUTPUTS:
-  - Free recall dump with gaps marked (free-response text)
-  - Accuracy assessment (correct vs incorrect items) (structured response)
-  - Gap list (missing items identified) (bulleted or tabular list)
-  - RSR percentage estimate (structured response)
-
-  STOP CONDITIONS:
-  - Stop when every required output exists and the final check passes.
-  - Stop early if the time cap or item cap is reached.
-  - Stop if the learner has crossed into a different stage or the format is no longer useful.
-
-  IF STUCK:
-  Give one narrower cue, keep materials closed, and ask for a best-effort attempt before any feedback.
-  If that still fails, reduce scope to one smaller item, one row, or one rep and continue.
+  You are running M-RET-001 (Timed Brain Dump) in the RETRIEVE stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: Free recall dump with gaps marked, Accuracy assessment, Gap list, and RSR percentage estimate.
+  Run one timed closed-note dump before any comparison. Keep the attempt window clean, mark gaps instead of teaching through them, then compare against the source only after the timer ends.
+  Preset behavior:
+  - exam_cram: one-shot; 3-minute dump; terse bullets; one repair target.
+  - deep_mastery: interactive; full-cap dump; verbatim recall plus fuller comparison and ranked repair list.
+  - quick_review: one-shot refresh; compact dump plus correct-partial-missed table and quick RSR.
+  - clinical_bridge: stepwise; applied recall focused on signs, actions, and discriminators with a handoff-style miss table.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode moves dump -> compare -> repair and waits.
 validation:
   test_cases:
   - topic: free recall under time pressure

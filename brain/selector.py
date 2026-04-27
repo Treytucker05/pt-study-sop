@@ -105,24 +105,85 @@ def _safe_yaml_load(path: Path) -> dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
+def _extract_block_method_id(block: Any) -> str | None:
+    """Resolve a chain block entry to a method id string.
+
+    Supports both legacy flat shape (string method ids) and rich shape
+    (dict with method_id / id / method_ref keys). Returns None when the
+    block is a workflow-step wrapper that does not map to a real method
+    block (e.g. STEP_0_MATERIALS).
+    """
+    if isinstance(block, str):
+        return block.strip() or None
+    if isinstance(block, dict):
+        mid = block.get("method_id")
+        if isinstance(mid, str) and mid.strip():
+            return mid.strip()
+        for key in ("id", "method_ref"):
+            value = block.get(key)
+            if isinstance(value, str) and value.startswith("M-"):
+                return value.strip()
+    return None
+
+
+# 2026-04-21 vault hardening introduced richer operational stages
+# (ORIENT, EXPLAIN, INTERROGATE, CONSOLIDATE, PLAN). For routing purposes
+# the selector collapses them onto the legacy 7-stage runtime vocabulary
+# so downstream consumers (dashboard, chain certification, golden flows)
+# continue to see PRIME / TEACH / CALIBRATE / ENCODE / REFERENCE /
+# RETRIEVE / OVERLEARN. The richer taxonomy remains visible in the YAML
+# specs themselves for human readers and the validator.
+_STAGE_RUNTIME_EQUIVALENT = {
+    "PLAN": "PRIME",
+    "ORIENT": "PRIME",
+    "PRIME": "PRIME",
+    "TEACH": "TEACH",
+    "EXPLAIN": "TEACH",
+    "CALIBRATE": "CALIBRATE",
+    "ENCODE": "ENCODE",
+    "INTERROGATE": "REFERENCE",
+    "REFERENCE": "REFERENCE",
+    "CONSOLIDATE": "REFERENCE",
+    "RETRIEVE": "RETRIEVE",
+    "OVERLEARN": "OVERLEARN",
+}
+
+# Per-method runtime stage pins. The control-plane / runtime keys on the
+# legacy 7-stage TEACH for these methods even though their vault YAML
+# declares ENCODE/INTERROGATE — they fill the TEACH slot in
+# first-exposure chains (C-FE-*) and removing them from TEACH would
+# silently bypass TEACH-only guardrails in the tutor turn flow. The
+# validator still treats vault YAML as the source of truth.
+_METHOD_ID_RUNTIME_STAGE = {
+    "M-INT-001": "TEACH",
+    "M-ENC-008": "TEACH",
+    "M-GEN-007": "TEACH",
+}
+
+
 def _normalize_control_stage(raw_stage: Any, raw_category: Any = None) -> str:
     stage = str(raw_stage or "").strip().upper()
     if stage:
-        return stage
+        return _STAGE_RUNTIME_EQUIVALENT.get(stage, stage)
 
     category = str(raw_category or "").strip().lower()
-    return {
+    legacy = {
+        "plan": "PRIME",
+        "orient": "PRIME",
         "prime": "PRIME",
         "teach": "TEACH",
+        "explain": "TEACH",
         "calibrate": "CALIBRATE",
         "prepare": "PRIME",
         "encode": "ENCODE",
         "interrogate": "REFERENCE",
         "reference": "REFERENCE",
+        "consolidate": "REFERENCE",
         "retrieve": "RETRIEVE",
         "refine": "OVERLEARN",
         "overlearn": "OVERLEARN",
     }.get(category, "ENCODE")
+    return legacy
 
 
 def _summarize_stage_truth(blocks: list[dict[str, Any]]) -> dict[str, Any]:
@@ -206,10 +267,16 @@ def get_chain_catalog() -> dict[str, dict[str, Any]]:
         data = _safe_yaml_load(path)
         chain_id = str(data.get("id") or "").strip()
         chain_name = str(data.get("name") or "").strip()
+        # Chain blocks may be flat method-id strings (legacy first-exposure
+        # chains) or rich dicts (2026-04-21 vault hardening: C-FINALS-PREP,
+        # C-PRIME-ONCE, C-STUDY-LOOP). Extract method ids from either shape.
         block_method_ids = [
-            str(method_id).strip()
-            for method_id in (data.get("blocks") or [])
-            if str(method_id or "").strip()
+            mid
+            for mid in (
+                _extract_block_method_id(block)
+                for block in (data.get("blocks") or [])
+            )
+            if mid
         ]
         if not chain_id or not chain_name or not block_method_ids:
             continue
@@ -217,7 +284,11 @@ def get_chain_catalog() -> dict[str, dict[str, Any]]:
         stage_blocks = [
             {
                 "name": method_id,
-                "control_stage": method_stage_map.get(method_id) or "ENCODE",
+                "control_stage": (
+                    _METHOD_ID_RUNTIME_STAGE.get(method_id)
+                    or method_stage_map.get(method_id)
+                    or "ENCODE"
+                ),
             }
             for method_id in block_method_ids
         ]

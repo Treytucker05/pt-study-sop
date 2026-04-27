@@ -1,23 +1,23 @@
 id: M-TEA-002
 name: Confusable Contrast Teach
-category: teach
-subcategory: contrast
+category: EXPLAIN
+subcategory: confusable-contrast
 description: Teach two confusable concepts side-by-side by naming the shared bucket, the key difference, the signature clue, and the classic trap.
-control_stage: TEACH
-status: draft
-version: '1.0'
+control_stage: EXPLAIN
+status: validated
+version: '1.6'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
-- teach
+- explain
 - compare
 - contrast
 - confusable
 - differential
-- teaching
+- discriminator
 - explanation
 purpose: Teach two confusable concepts side-by-side by naming the shared bucket, the key difference, the signature clue, and the classic trap. Use it to teach one bounded concept by turning the source into a learner-facing bridge that preserves the real mechanism.
-not_for: Not for open-ended brainstorming, scoring, or broad coverage of unrelated material. Use a PRIME method when the learner first needs orientation or objective framing.
+not_for: Not for open-ended brainstorming, scoring, or broad coverage of unrelated material. Use an ORIENT method when the learner first needs orientation or objective framing.
 best_fit_topics:
 - Confusable items that need separation by features, cues, or exceptions
 - Topics that benefit from a bridge, contrast, case, example, or mnemonic
@@ -48,6 +48,24 @@ outputs:
 - name: Mini application contrast
   description: Learner-facing teaching artifact for confusable contrast teach.
   format: two-column table or tightly grouped bullets
+artifact_schemas:
+  Shared bucket statement: bullet_list
+  Key difference statement: bullet_list
+  Signature clues: bullet_list
+  Classic trap: bullet_list
+  Mini application contrast: table
+produces:
+- Shared bucket statement
+- Key difference statement
+- Signature clues
+- Classic trap
+- Mini application contrast
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
 required_outputs:
 - Shared bucket statement
 - Key difference statement
@@ -61,48 +79,48 @@ partial_criteria:
 - The explanation is usable but still too broad, too abstract, or too long for fast learner uptake.
 steps:
 - step: 1
-  name: Opening Step
-  action: State the common bucket both concepts belong to
-  tutor_does: State the common bucket both concepts belong to. Start with what makes them seem similar
+  name: Shared Bucket
+  action: State the shared bucket and the 1-2 shared features that make the concepts confusable
+  tutor_does: State the shared bucket first and name the 1-2 features that make the concepts feel similar. Keep the opening concrete and source-faithful before introducing any difference.
   learner_does: Listens, tracks the explanation, and responds with the requested cue or check-in.
   max_lines: 4
-  check: Which distinction matters most right now, and why?
-  example: 'Example: "Opening Step: State the common bucket both concepts belong to"'
+  check: Does the learner see why these two concepts belong in the same bucket before the contrast begins?
+  example: 'Example: "Both are upper motor neuron patterns, so they live in the same neuro bucket before we separate them."'
 - step: 2
-  name: Step 2
-  action: Name the one key difference
-  tutor_does: Name the one key difference. Use plain language first, then formal terms
+  name: Key Difference
+  action: Name the one diagnostic difference in plain language and then in source terms
+  tutor_does: Name one deciding difference only. Give the plain-language contrast first, then translate it back to the canonical source language.
   learner_does: Listens, tracks the explanation, and responds with the requested cue or check-in.
   max_lines: 4
-  check: Which distinction matters most right now, and why?
-  example: 'Example: "Step 2: Name the one key difference"'
+  check: If the learner remembers only one discriminator, is it the right one?
+  example: 'Example: "The deciding difference is where the deficit shows up most strongly; in formal terms, distribution pattern is the discriminator."'
 - step: 3
-  name: Step 3
-  action: Give a signature clue for each concept
-  tutor_does: Give a signature clue for each concept. What clue should make the learner lean one way?
+  name: Signature Clues
+  action: Give one diagnostic clue for each concept tied to the key difference
+  tutor_does: Give one clue for each concept that points back to the deep difference, not a random surface mnemonic. Keep both clues visible as a pair.
   learner_does: Listens, tracks the explanation, and responds with the requested cue or check-in.
   max_lines: 4
-  check: Which distinction matters most right now, and why?
-  example: 'Example: "Step 3: Give a signature clue for each concept"'
+  check: Would each clue push the learner toward the correct concept for the right reason?
+  example: 'Example: "If you notice leg-dominant weakness, lean ACA; if you notice face-arm-language involvement, lean MCA."'
 - step: 4
-  name: Step 4
-  action: Name the classic trap
-  tutor_does: Name the classic trap. Explain why people mix them up
+  name: Classic Trap
+  action: Name one common wrong cue and refute it immediately
+  tutor_does: Name the common trap, explain why it misleads learners, and immediately redirect them back to the true discriminator.
   learner_does: Listens, tracks the explanation, and responds with the requested cue or check-in.
   max_lines: 4
-  check: Which distinction matters most right now, and why?
-  example: 'Example: "Step 4: Name the classic trap"'
+  check: Is the trap specific, corrected, and clearly weaker than the true clue?
+  example: 'Example: "Classic trap: people choose MCA for every weakness pattern; the fix is to check whether the distribution is face-arm or leg-dominant."'
 - step: 5
-  name: Contrast
-  action: Finish with one short application contrast
-  tutor_does: Finish with one short application contrast. Use a minimal example, not a full case drill
+  name: Mini Application Contrast
+  action: Finish with one short application contrast and one carry-forward cue
+  tutor_does: Give one minimal either-or example, state which feature decides it, and close with one carry-forward cue or next contrast to review.
   learner_does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
   max_lines: 4
-  check: Which distinction matters most right now, and why?
-  example: 'Example: "Contrast: Finish with one short application contrast"'
+  check: Can the learner apply the discriminator to one minimal case and say what to watch next?
+  example: 'Example: "Quick contrast: leg-heavy weakness with frontal signs leans ACA, not MCA; next time, watch the body-region distribution first."'
 constraints:
 - rule: Do not turn the method into a test or quiz
-  why: TEACH methods should build understanding, not create avoidable performance pressure.
+  why: EXPLAIN methods should build understanding, not create avoidable performance pressure.
 - rule: Stay faithful to the source and keep the chunk bounded
   why: The learner needs a clear bridge, not an unbounded lecture.
 - rule: Do not assess or score the learner
@@ -124,14 +142,14 @@ forbidden_moves:
 - Leave the learner without one crisp discriminator
 - Turn the method into a quiz or scored assessment
 - Lose fidelity to the source or wander beyond the bounded topic
-stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For TEACH, fall back to M-TEA-004 or M-TEA-006.
+stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For EXPLAIN, fall back to M-TEA-004 or M-TEA-006.
 failure_modes:
 - mode: Contrast stays too abstract
   detection: The two items blur together instead of separating cleanly.
   recovery: Force a concrete discriminator and one signature clue per concept.
   fallback_method: M-TEA-004
 - mode: Too many differences create noise
-  detection: The output no longer matches the method’s core purpose.
+  detection: "The output no longer matches the method\u2019s core purpose."
   recovery: Rank and teach the top discriminator first.
   fallback_method: M-TEA-004
 default_duration_min: 6
@@ -143,146 +161,61 @@ mechanisms:
 - transfer
 - elaboration
 evidence:
-  citation: Alfieri et al. (2013)
-  finding: Comparison-based learning improves discrimination and concept formation
-  source: control-plane migration
+  citation: Alfieri, Nokes-Malach, and Schunn (2013); Richland and McDonough (2010); Richland and Simms (2015); Kendeou, Walsh, Smith, and O'Brien (2014); Loibl, Tillema, Rummel, and van Gog (2020)
+  finding: 'Confusable Contrast Teach is best supported as a structured comparison method that first aligns the shared bucket and then isolates the small set of cues that actually discriminate the concepts. Comparison research shows that aligned contrasts help learners notice deep structure and build more differentiated categories than studying cases alone. Refutation research adds the second half of the method: tempting but wrong cues are less likely to stick when they are explicitly named, rejected, and replaced with the correct explanation. The practical implication for this method is to keep the contrast narrow, surface one true discriminator, attach one signature clue to each side, and explicitly kill the classic trap instead of hoping the learner will infer the difference alone.'
+  source: https://doi.org/10.1080/00461520.2013.775712; https://doi.org/10.1016/j.cedpsych.2009.09.001; https://doi.org/10.1002/wcs.1336; https://doi.org/10.1080/0163853X.2014.913961; https://doi.org/10.1007/s11251-020-09504-7
+  needs_research: false
 knobs:
-  output_format: bullets
   guidance_level: medium
-  artifact_type: table
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: One-shot; deliver the shared bucket, key difference, one clue per side, and one trap in terse bullets.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Interactive; use labeled sections, keep the clues and trap explicit, and end with a fuller application contrast before routing onward.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: One-shot refresh; compress the contrast into a two-column discriminator table plus one carry-forward cue.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Stepwise; use an applied contrast grid with cue, likely mistake, and confirming clue columns to support real-world separation.
 related_methods:
-- id: M-TEA-004
-  relationship: Switch modality if the contrast still feels fuzzy
-- id: M-PRE-014
-  relationship: Use first to identify the exact confusion
-facilitation_prompt: 'You are a study tutor running M-TEA-002 (Confusable Contrast Teach) in the TEACH stage.
-
-  ROLE: You are a careful, supportive tutor. Your job is to run Confusable Contrast Teach exactly as specified and keep the output faithful, bounded, and useful.
-
-  OBJECTIVE: Teach two confusable concepts side-by-side by naming the shared bucket, the key difference, the signature clue, and the classic trap. Use it to teach one bounded concept by turning the source into a learner-facing bridge that preserves the real mechanism.
-
-  SCOPE: Teach two confusable concepts side-by-side by naming the shared bucket, the key difference, the signature clue, and the classic trap.
-
-  RULES:
-
-  - Do not turn the method into a test or quiz — because TEACH methods should build understanding, not create avoidable performance pressure.
-
-  - Stay faithful to the source and keep the chunk bounded — because The learner needs a clear bridge, not an unbounded lecture.
-
-  - Do not assess or score the learner — because This method is for orientation and teaching, not grading.
-
-  - Require the relevant objective or context before running — because The method needs a bounded target to stay useful.
-
-
-  OUTPUTS TO PRODUCE:
-
-  1. Shared bucket statement — Learner-facing teaching artifact for confusable contrast teach. (bulleted artifact)
-
-  2. Key difference statement — Learner-facing teaching artifact for confusable contrast teach. (bulleted artifact)
-
-  3. Signature clues — Learner-facing teaching artifact for confusable contrast teach. (bulleted artifact)
-
-  4. Classic trap — Learner-facing teaching artifact for confusable contrast teach. (bulleted artifact)
-
-  5. Mini application contrast — Learner-facing teaching artifact for confusable contrast teach. (two-column table or tightly grouped bullets)
-
-
-  RUN THE METHOD ONE STEP AT A TIME. Wait for my response before moving to the next step.
-
-  STEP 1 — Opening Step
-
-  - Tutor does: State the common bucket both concepts belong to. Start with what makes them seem similar
-
-  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
-
-  - Example: Example: "Opening Step: State the common bucket both concepts belong to"
-
-  - Check: Which distinction matters most right now, and why?
-
-  Then stop and wait.
-
-  STEP 2 — Step 2
-
-  - Tutor does: Name the one key difference. Use plain language first, then formal terms
-
-  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
-
-  - Example: Example: "Step 2: Name the one key difference"
-
-  - Check: Which distinction matters most right now, and why?
-
-  Then stop and wait.
-
-  STEP 3 — Step 3
-
-  - Tutor does: Give a signature clue for each concept. What clue should make the learner lean one way?
-
-  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
-
-  - Example: Example: "Step 3: Give a signature clue for each concept"
-
-  - Check: Which distinction matters most right now, and why?
-
-  Then stop and wait.
-
-  STEP 4 — Step 4
-
-  - Tutor does: Name the classic trap. Explain why people mix them up
-
-  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
-
-  - Example: Example: "Step 4: Name the classic trap"
-
-  - Check: Which distinction matters most right now, and why?
-
-  Then stop and wait.
-
-  STEP 5 — Contrast
-
-  - Tutor does: Finish with one short application contrast. Use a minimal example, not a full case drill
-
-  - Learner does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
-
-  - Example: Example: "Contrast: Finish with one short application contrast"
-
-  - Check: Which distinction matters most right now, and why?
-
-  Then stop and wait.
-
-
-  STOP CONDITIONS:
-
-  - The learner-facing explanation artifact is faithful to Confusable Contrast Teach and stays bounded.
-
-  - The method includes a concrete bridge, example, or discriminating cue that makes the idea easier to hold.
-
-  - The output ends with a clear carry-forward signal instead of drifting into a full lecture.
-
-
-  IF YOU GET STUCK:
-
-  If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For TEACH, fall back to M-TEA-004 or M-TEA-006.
-
-  If the learner is still stuck after one rescue move, shrink the chunk, switch modality, or fall back to the listed fallback method.
-
-
-  GOOD OUTPUT EXAMPLE:
-
-  - Shared bucket statement: a concise, source-faithful artifact that matches the method purpose and stays within scope.
-
-  - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
-
-
-  DONE WHEN:
-
-  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
-
-
-  Non-assessment guard:
-
-  - This is a TEACH chunk, not an assessment.
-
-  - Do not score or quiz the learner during this block; no scored output, no grading.'
+- id: M-INT-004
+  relationship: Use when the learner needs a fuller side-by-side comparison artifact after the teaching pass
+- id: M-RET-006
+  relationship: Use when the next step should be adversarial discrimination practice on the same confusable pair
+facilitation_prompt: |-
+  You are running M-TEA-002 (Confusable Contrast Teach) in the EXPLAIN stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: Shared bucket statement, Key difference statement, Signature clues, Classic trap, and Mini application contrast.
+  Teach two confusable concepts by naming the shared bucket, isolating one real discriminator, attaching one signature clue to each side, killing one classic trap, and ending with a short application contrast.
+  Preset behavior:
+  - exam_cram: one-shot; terse bullets with one clue per side and one trap.
+  - deep_mastery: interactive; labeled sections with fuller clue, trap, and application handling.
+  - quick_review: one-shot refresh; compact discriminator table plus one carry-forward cue.
+  - clinical_bridge: stepwise; applied contrast grid with cue, likely mistake, and confirming clue columns.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode moves shared bucket -> discriminator -> clues/trap -> application contrast and waits.
 validation:
   test_cases:
   - topic: Single concept explanation for Confusable Contrast Teach

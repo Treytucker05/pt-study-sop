@@ -1,4 +1,14 @@
 categories:
+  plan:
+    label: "PLAN"
+    description: "Turn a learner goal into a bounded session/week/multi-week plan with explicit scope, method choice, and review timing"
+    prefix: PLAN
+    aliases: ["planning", "schedule", "preplan"]
+  orient:
+    label: "ORIENT"
+    description: "Quick orientation pass to surface terminology, big picture, and learning objectives before deeper teaching"
+    prefix: PRE
+    aliases: ["orientation", "scope", "preview"]
   prime:
     label: "PRIME"
     description: "Prepare attention and build structure from the source before detail"
@@ -8,7 +18,12 @@ categories:
     label: "TEACH"
     description: "Deliver first-contact explanation in bounded chunks before diagnostic probing"
     prefix: TEA
-    aliases: ["instruct", "explain", "teach_first", "guided_explanation"]
+    aliases: ["instruct", "teach_first", "guided_explanation"]
+  explain:
+    label: "EXPLAIN"
+    description: "Multi-level explanatory teaching (depth ladder, story spine, mechanism trace) — first-contact explanation specialized for narrative or layered exposure"
+    prefix: TEA
+    aliases: ["explanation", "teach_explain"]
   calibrate:
     label: "CALIBRATE"
     description: "Diagnostic readiness checks after PRIME or TEACH to identify weaknesses before learner production"
@@ -24,6 +39,11 @@ categories:
     description: "Generate target cues and cheat sheets for retrieval"
     prefix: REF
     aliases: ["cue_gen", "anchor", "target"]
+  consolidate:
+    label: "CONSOLIDATE"
+    description: "Stabilize and link reference artifacts (one-page anchors, question-bank seeds) so retrieval has explicit targets"
+    prefix: REF
+    aliases: ["consolidation", "stabilize", "anchor_finalize"]
   retrieve:
     label: "RETRIEVE"
     description: "Test recall with adversarial near-miss and timed sprints"
@@ -38,10 +58,10 @@ categories:
     label: "OVERLEARN"
     description: "Close loop, capture artifacts, Anki, drill sheets"
     prefix: OVR
-    aliases: ["wrap", "consolidate", "refine"]
+    aliases: ["wrap", "refine"]
 
 energy_levels: [low, medium, high]
-stages: [first_exposure, review, exam_prep, consolidation]
+stages: [first_exposure, review, exam_prep, consolidation, session_opening, weekly_reset]
 class_types: [anatomy, physiology, pathology, pharmacology, clinical, general]
 
 mechanisms:

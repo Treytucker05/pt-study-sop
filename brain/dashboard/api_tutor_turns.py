@@ -52,6 +52,7 @@ from dashboard.api_tutor_utils import (
     _safe_json_dict,
     _extract_knob_defaults,
     _load_method_contracts,
+    _runtime_stage,
     _validate_chain_launch_blocks,
     _normalize_wikilinks,
     _normalize_objective_scope,
@@ -289,12 +290,23 @@ def _build_teach_context(
     objective_scope: str,
     focus_objective_id: str,
     selected_material_labels: list[str],
+    active_stage_runtime: Optional[str] = None,
 ) -> Optional[dict[str, Any]]:
-    active_stage = str(
-        (block_info or {}).get("control_stage")
-        or (block_info or {}).get("category")
-        or ""
-    ).strip().upper()
+    # Use the caller-supplied runtime stage when available so vault
+    # methods declared as EXPLAIN (or pinned to TEACH via
+    # _METHOD_ID_RUNTIME_STAGE) still build TEACH context. Fall back to
+    # normalizing block_info for callers that have not adopted the
+    # runtime stage yet.
+    if active_stage_runtime:
+        active_stage = active_stage_runtime.strip().upper()
+    else:
+        raw = str(
+            (block_info or {}).get("control_stage")
+            or (block_info or {}).get("category")
+            or ""
+        ).strip().upper()
+        method_id = str((block_info or {}).get("method_id") or "").strip()
+        active_stage = _runtime_stage(method_id, raw) if raw else raw
     if active_stage != "TEACH":
         return None
 
@@ -784,6 +796,17 @@ def _active_control_stage_for_session(
     conn: sqlite3.Connection,
     session_row: dict[str, Any],
 ) -> str:
+    """Return the active block's runtime stage for the given session.
+
+    Shared by /turn, artifact creation, and vault endpoints. The returned
+    value is collapsed onto the legacy 7-stage runtime vocabulary
+    (PRIME / TEACH / CALIBRATE / ENCODE / REFERENCE / RETRIEVE /
+    OVERLEARN) so callers gating on ``stage in {"PRIME", "TEACH"}`` (e.g.
+    api_tutor_artifacts.py) treat vault-hardened ORIENT / EXPLAIN /
+    INTERROGATE / CONSOLIDATE blocks and runtime-pinned methods
+    (M-INT-001 / M-ENC-008 / M-GEN-007 -> TEACH) as their runtime
+    equivalent rather than as their literal vault declaration.
+    """
     chain_id = session_row.get("method_chain_id")
     if not chain_id:
         return ""
@@ -797,7 +820,12 @@ def _active_control_stage_for_session(
         idx = 0
     if idx < 0 or idx >= len(blocks):
         return ""
-    return str(blocks[idx].get("control_stage") or "").upper()
+    block = blocks[idx]
+    raw = str(block.get("control_stage") or "").upper()
+    if not raw:
+        return ""
+    method_id = str(block.get("method_id") or "").strip()
+    return _runtime_stage(method_id, raw)
 
 
 # ---------------------------------------------------------------------------
@@ -867,11 +895,24 @@ def send_turn(session_id: str):
         block_info, chain_info = _build_chain_info(
             conn, session["method_chain_id"], current_idx
         )
-    active_stage = str(
+    raw_active_stage = str(
         (block_info or {}).get("control_stage")
         or (block_info or {}).get("category")
         or ""
     ).upper()
+    # Collapse vault-hardened stages (EXPLAIN/INTERROGATE/CONSOLIDATE/
+    # ORIENT/PLAN) and per-method runtime pins (M-INT-001/M-ENC-008/
+    # M-GEN-007 -> TEACH) onto the legacy 7-stage runtime vocabulary so
+    # downstream TEACH/PRIME guardrails fire correctly. The raw stage is
+    # preserved for error payloads and trace logging, but every behavior
+    # gate (assessment block, TEACH guardrail injection, PRIME first-turn
+    # detection, payload tagging) keys on the runtime equivalent.
+    _active_method_id_for_stage = str((block_info or {}).get("method_id") or "").strip()
+    active_stage = (
+        _runtime_stage(_active_method_id_for_stage, raw_active_stage)
+        if raw_active_stage
+        else raw_active_stage
+    )
     is_first_turn_in_active_block = False
     if session.get("method_chain_id"):
         try:
@@ -905,14 +946,20 @@ def send_turn(session_id: str):
     runtime_drift_events: list[dict[str, Any]] = []
     if block_info and active_method_id:
         expected_stage = str(method_contract.get("control_stage") or "").strip().upper()
-        if expected_stage and active_stage and expected_stage != active_stage:
+        # active_stage is already normalized to the runtime equivalent
+        # above; collapse expected_stage the same way before comparing.
+        if (
+            expected_stage
+            and active_stage
+            and _runtime_stage(active_method_id, expected_stage) != active_stage
+        ):
             conn.close()
             return (
                 jsonify(
                     {
                         "error": "Active block stage does not match canonical method contract.",
                         "code": "METHOD_STAGE_MISMATCH_RUNTIME",
-                        "active_stage": active_stage,
+                        "active_stage": raw_active_stage,
                         "method_id": active_method_id,
                         "expected_stage": expected_stage,
                     }
@@ -1152,6 +1199,7 @@ def send_turn(session_id: str):
         objective_scope=objective_scope,
         focus_objective_id=focus_objective_id,
         selected_material_labels=selected_material_labels,
+        active_stage_runtime=active_stage,
     )
 
     def generate():
@@ -1390,10 +1438,10 @@ def send_turn(session_id: str):
                     "Targets:\n"
                     f"{bounded_targets}"
                 )
-            if (
-                block_info
-                and str(block_info.get("control_stage") or "").upper() == "PRIME"
-            ):
+            # Gate on the normalized runtime stage so vault-hardened
+            # ORIENT/PLAN methods inherit PRIME hard guardrails, not just
+            # methods whose YAML declares PRIME literally.
+            if block_info and active_stage == "PRIME":
                 system_prompt += (
                     "\n\n## PRIME Stage Guardrails (Hard)\n"
                     "- PRIME is orientation only.\n"
@@ -1415,10 +1463,10 @@ def send_turn(session_id: str):
                         "This is a PRIME block. As you engage with the student, identify and extract the key learning objectives from the loaded materials. "
                         "Use the save_learning_objectives tool to save them. Extract 3-7 specific, measurable learning objectives.\n"
                     )
-            if (
-                block_info
-                and str(block_info.get("control_stage") or "").upper() == "TEACH"
-            ):
+            # Gate on the normalized runtime stage so vault EXPLAIN
+            # methods and runtime-pinned M-INT-001 / M-ENC-008 / M-GEN-007
+            # still inherit TEACH hard guardrails.
+            if block_info and active_stage == "TEACH":
                 system_prompt += (
                     "\n\n## TEACH Stage Guardrails (Hard)\n"
                     "- TEACH is explanation-first, not assessment-first.\n"

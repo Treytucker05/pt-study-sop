@@ -1,2 +1,10 @@
-version: "1.0.0"
-last_updated: "2026-02-08"
+version: "1.1.0"
+last_updated: "2026-04-27"
+notes: |
+  1.1.0 — Vault hardening sync (2026-04-21 method library landed in repo).
+    - 61 method specs synced (PRIME/TEACH/HOOK/GEN/ORG/INT/CAL/RET/REF/OVR) at v1.2-1.6
+    - New PLAN category added: M-PLAN-001 (Session Planning), M-PLAN-002 (Weekly & Long-term Planning)
+    - New chains: C-FINALS-PREP, C-PRIME-ONCE, C-STUDY-LOOP (rich blocks shape)
+    - Companion .md files added alongside every method
+    - 5 narrative chain guides added under chains/narrative/
+    - Loader updated: PLAN stage map, rich chain block parsing

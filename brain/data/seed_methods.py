@@ -36,6 +36,7 @@ _CHAIN_CERTIFICATION_REGISTRY_PATH = _CHAINS_DIR / "certification_registry.yaml"
 def _legacy_category_for_stage(control_stage: str) -> str:
     stage = str(control_stage or "").strip().upper()
     return {
+        "PLAN": "plan",
         "PRIME": "prepare",
         "TEACH": "prepare",
         "CALIBRATE": "prepare",
@@ -44,6 +45,38 @@ def _legacy_category_for_stage(control_stage: str) -> str:
         "RETRIEVE": "retrieve",
         "OVERLEARN": "overlearn",
     }.get(stage, stage.lower())
+
+
+def _extract_chain_block_id(block: object) -> str | None:
+    """Resolve a chain block entry to a method id string.
+
+    Supports both legacy flat shape (string method ids) and rich shape
+    (dict with method_id / id / method_ref keys). Returns None when the
+    block is a workflow-step wrapper that does not map to a real method
+    block (e.g., dicts with only method_ref to a non-method action like
+    vault_handoff).
+    """
+    if isinstance(block, str):
+        return block
+    if isinstance(block, dict):
+        mid = block.get("method_id")
+        if isinstance(mid, str) and mid:
+            return mid
+        for key in ("id", "method_ref"):
+            value = block.get(key)
+            if isinstance(value, str) and value.startswith("M-"):
+                return value
+    return None
+
+
+def _block_is_required(block: object) -> bool:
+    """A rich-shaped chain block is mandatory by default. Only entries
+    with `required: false` are conditional (fallbacks, alternatives,
+    trigger-gated steps). Flat string blocks are always mandatory.
+    """
+    if isinstance(block, dict):
+        return block.get("required", True) is not False
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -1384,9 +1417,36 @@ def load_from_yaml() -> dict | None:
             continue
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
         if data:
-            # Resolve YAML method IDs (M-PRE-001) to names (Brain Dump) for DB
-            block_names = [id_to_name.get(bid, bid) for bid in data.get("blocks", [])]
+            # Resolve chain block references for the runtime sequence.
+            #
+            # Supports both flat string lists (legacy first-exposure
+            # chains) and rich dict-shaped block entries (2026-04-21
+            # vault hardening). Two correctness invariants:
+            #
+            # 1. Use method ids (M-PRE-001), not names. Method names
+            #    are not unique in the library — e.g. "KWIK Lite" maps
+            #    to both M-HOOK-002 and M-TEA-007 — so a single-key
+            #    name->id map round-trip can seed the wrong block.
+            #
+            # 2. Filter out blocks with `required: false`. Those are
+            #    conditional fallbacks / alternatives / trigger-gated
+            #    steps that do not belong in the linear seeded
+            #    sequence. The full block specs are persisted under
+            #    context_tags["block_specs"] so the runtime can still
+            #    read the conditional logic separately.
+            raw_blocks = data.get("blocks", []) or []
+            required_blocks = [b for b in raw_blocks if _block_is_required(b)]
+            block_refs = [
+                bid
+                for bid in (_extract_chain_block_id(b) for b in required_blocks)
+                if bid
+            ]
             context_tags = dict(data.get("context_tags", {}) or {})
+            # Preserve full rich-block semantics for runtime conditional
+            # logic. Only emit when at least one block is dict-shaped to
+            # avoid bloating legacy flat-list chains.
+            if any(isinstance(b, dict) for b in raw_blocks):
+                context_tags["block_specs"] = raw_blocks
             template_id = str(data.get("id", "") or "").strip()
             if template_id:
                 context_tags["template_id"] = template_id
@@ -1416,7 +1476,7 @@ def load_from_yaml() -> dict | None:
                 {
                     "name": data["name"],
                     "description": data.get("description", ""),
-                    "blocks": block_names,
+                    "blocks": block_refs,
                     "context_tags": context_tags,
                     "is_template": 1 if data.get("is_template", False) else 0,
                 }
@@ -1738,20 +1798,42 @@ def seed_methods(force: bool = False, strict_sync: bool = False):
     )
     existing_chains_by_name = {str(r[1]).strip().lower(): r for r in cursor.fetchall()}
 
+    # Method-id keyed lookup for chain block references. YAML-loaded
+    # chains now store method ids (M-PRE-001) directly; hardcoded
+    # TEMPLATE_CHAINS still use names. Both paths are supported.
+    method_id_to_db_id = {
+        mid: rec["id"] for mid, rec in existing_by_method_id.items() if mid
+    }
+    for block in methods_src:
+        mid = (block.get("method_id") or "").strip()
+        if mid and block["name"] in name_to_id:
+            method_id_to_db_id[mid] = name_to_id[block["name"]]
+
+    def _resolve_block_ref(ref: str) -> int | None:
+        """Resolve a chain block ref (method id or method name) to a
+        method_blocks.id. Method ids take precedence so duplicate names
+        like 'KWIK Lite' (M-HOOK-002 and M-TEA-007) can never collide.
+        """
+        if isinstance(ref, str) and ref.startswith("M-"):
+            db_id = method_id_to_db_id.get(ref)
+            if db_id is not None:
+                return db_id
+        return name_to_id.get(ref)
+
     inserted_chains = 0
     updated_chains = 0
     for chain in chains_src:
         if chain.get("is_template", 0) != 1:
             continue
 
-        missing = [b for b in chain["blocks"] if b not in name_to_id]
+        missing = [b for b in chain["blocks"] if _resolve_block_ref(b) is None]
         if missing:
             print(
                 f"[WARN] Skipping chain '{chain['name']}' (missing blocks: {', '.join(missing)})"
             )
             continue
 
-        block_ids = [name_to_id[name] for name in chain["blocks"]]
+        block_ids = [_resolve_block_ref(b) for b in chain["blocks"]]
         block_ids_json = json.dumps(block_ids)
         context_tags_json = json.dumps(chain["context_tags"])
         chain_name = chain["name"]

@@ -1,21 +1,22 @@
 id: M-REF-004
 name: Question Bank Seed
-category: reference
-subcategory: seed
+category: CONSOLIDATE
+subcategory: question-bank-seed
 description: Generate a mode-tagged seed bank of 10-20 retrieval questions from objectives and anchor artifacts.
-control_stage: REFERENCE
+control_stage: CONSOLIDATE
 status: validated
-version: '1.0'
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
-- reference
+- consolidate
 - question-bank
 - retrieval-design
-purpose: Question Bank Seed exists to run a question-bank seed that converts objectives and anchor artifacts into mode-tagged
-  retrieval prompts for later use. It turns the current stage into a clean, reusable signal instead of a vague study session.
-not_for: This is not for quizzing the learner or introducing new material. Use RETRIEVE when the goal is memory testing and
-  TEACH when the goal is explanation.
+- question-generation
+- objective-mapping
+- retrieval-support
+purpose: Question Bank Seed exists to run a question-bank seed that converts objectives and anchor artifacts into mode-tagged retrieval prompts for later use. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for quizzing the learner or introducing new material. Use RETRIEVE when the goal is memory testing and EXPLAIN when the goal is explanation.
 best_fit_topics:
 - retrieval question generation
 - objective coverage mapping
@@ -24,8 +25,7 @@ poor_fit_topics:
 - teaching new content
 - ungrouped question lists
 - overly narrow recall only
-learner_state_required: Recent misses or objectives are available, the source is loaded, and the goal is artifact creation
-  rather than assessment.
+learner_state_required: Recent misses or objectives are available, the source is loaded, and the goal is artifact creation rather than assessment.
 inputs:
 - description: Objectives
   required: true
@@ -38,9 +38,20 @@ outputs:
   description: A tagged retrieval-question bank that can be reused later for practice or deck construction.
   format: bulleted or tabular list
 - name: Coverage check draft (confirming all objectives have at least one question)
-  description: A reusable reference artifact that supports later retrieval for a question-bank seed that converts objectives
-    and anchor artifacts into mode-tagged retrieval prompts for later use.
+  description: Coverage check showing whether every objective received at least one tagged question.
   format: structured response
+artifact_schemas:
+  Question Bank Seed (10-20 items, each mode-tagged and objective-tagged): bullet_list
+  Coverage check draft (confirming all objectives have at least one question): scored_items
+produces:
+- Question Bank Seed (10-20 items, each mode-tagged and objective-tagged)
+- Coverage check draft (confirming all objectives have at least one question)
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
 required_outputs:
 - Question Bank Seed (10-20 items, each mode-tagged and objective-tagged)
 - Coverage check draft (confirming all objectives have at least one question)
@@ -49,37 +60,33 @@ success_criteria:
 - A reusable artifact is produced and preserved instead of a loose discussion transcript.
 - The learner or tutor can point to the output artifact and reuse it later without ambiguity.
 partial_criteria:
-- 'One or more required outputs are present but one core artifact is incomplete: Question Bank Seed (10-20 items, each mode-tagged
-  and objective-tagged).'
+- 'One or more required outputs are present but one core artifact is incomplete: Question Bank Seed (10-20 items, each mode-tagged and objective-tagged).'
 - The method stayed in the correct stage but the final artifact needs one more pass to be reusable.
 steps:
 - step: 1
-  name: Generate 10-20 questions tied
-  action: Generate 10-20 questions tied to objective IDs. Distribute across selected assessment mode
-  tutor_does: Capture generate 10-20 questions tied to objective ids. distribute across selected assessment mode into a reusable
-    artifact and keep the structure deterministic.
+  name: Generate Questions
+  action: Generate 10-20 questions tied to objective IDs. Distribute across selected assessment mode.
+  tutor_does: Generate 10-20 reusable questions tied to objective IDs and spread them across the selected assessment mode without drifting into live testing.
   learner_does: Supplies or confirms the source content and helps save the artifact for later retrieval.
   max_lines: 8
   check: Has the source material been collected and organized for artifact building?
   example: 'Tutor: "Collect the source errors and keep them in the original wording where possible." Learner: "Ready."'
 - step: 2
-  name: Tag each item with
-  action: Tag each item with mode and objective_id. Ensure coverage across objectives
-  tutor_does: Capture tag each item with mode and objective_id. ensure coverage across objectives into a reusable artifact
-    and keep the structure deterministic.
+  name: Tag Each Item
+  action: Tag each item with mode and objective_id. Ensure coverage across objectives.
+  tutor_does: Tag each item with its mode and objective ID, then check that the full objective set is actually covered.
   learner_does: Supplies or confirms the source content and helps save the artifact for later retrieval.
   max_lines: 8
   check: Is this step complete and ready to advance?
   example: Tutor adds a single row to the artifact and keeps the column structure consistent.
 - step: 3
-  name: Mark high-risk confusable items
-  action: Mark high-risk confusable items for adversarial drills. Feed directly into RETRIEVE stage
-  tutor_does: Capture mark high-risk confusable items for adversarial drills. feed directly into retrieve stage into a reusable
-    artifact and keep the structure deterministic.
+  name: Mark Confusable Items
+  action: Mark high-risk confusable items for adversarial drills. Feed directly into RETRIEVE stage.
+  tutor_does: Mark the questions that target confusable or high-risk distinctions so they can feed directly into later retrieval drills.
   learner_does: Supplies or confirms the source content and helps save the artifact for later retrieval.
   max_lines: 10
   check: Is this step complete and ready to advance?
-  example: Tutor writes the anchor or seed artifact in a format that can be reused later.
+  example: Tutor writes the seed artifact in a format that can be reused later.
 constraints:
 - rule: Artifact-first; do not turn the block into teaching or testing
   why: Reference methods exist to build later-use assets, not to run a lesson or a quiz.
@@ -104,10 +111,10 @@ allowed_moves:
 - Tag content so RETRIEVE can target it later
 forbidden_moves:
 - Accept fewer than 10 or more than 20 questions in the seed bank
-- Generate only factual recall questions — must include application/analysis level
+- Generate only factual recall questions; include application or analysis level items too
 - Skip mode-tagging or objective-tagging on any question
-- Generate the question bank FOR the learner without their input on content focus
-- Skip artifact creation — the question bank seed IS the output
+- Generate the question bank for the learner without their input on content focus
+- Skip artifact creation; the question bank seed is the output
 - Accept vague questions that cannot be objectively scored
 - Introduce entirely new content not yet encoded
 - Skip coverage check across objectives
@@ -133,58 +140,76 @@ default_duration_min: 8
 energy_cost: medium
 best_stage: exam_prep
 mechanisms:
-- retrieval
+- retrieval_practice
 - transfer
+- question_generation
+- generative_encoding
+- discrimination
+- coverage_mapping
 evidence:
-  citation: Roediger & Karpicke (2006)
-  finding: Retrieval-oriented item generation improves durable recall performance
-  source: control-plane migration
+  citation: Roediger and Karpicke (2006); Bugg and McDaniel (2012); Agarwal, Nunes, and Blunt (2021); Lin, Sun, and Zhang (2021); Ortega-Tudela, Lechuga, Bermúdez-Sierra, and Gómez-Ariza (2021); Causey and Spencer (2024)
+  finding: Question Bank Seed is best supported as a retrieval-support artifact that turns objectives and anchor material into reusable prompts, not as a quiz event by itself. Retrieval-practice evidence supports building prompts that will later require recall rather than passive rereading, and question self-generation research suggests that constructing and answering one’s own questions can improve learning from expository material. Applied reviews and classroom studies show that retrieval questions and self-generated quizzes can support engagement, later recall, and classroom review when the prompts are aligned to current objectives and are actually reused. The practical implication for this method is to build a compact, objective-tagged question bank that covers the full target set, includes some higher-level and confusable items, preserves source wording where useful, and stays reusable for later retrieval rather than drifting into live testing during generation.
+  source: https://doi.org/10.1111/j.1467-8721.2006.00429.x; https://doi.org/10.1037/a0028661; https://doi.org/10.1007/s10648-021-09595-9; https://doi.org/10.1080/01587919.2021.1956303; https://doi.org/10.1177/21582440211061569; https://doi.org/10.1016/j.tsc.2024.101608
+  needs_research: false
 knobs:
-  default_duration_min: 8
-  energy_cost: medium
-  best_stage: exam_prep
+  guidance_level: medium
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: table
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest seed build. Produce 10-12 terse items with direct objective tags, mostly factual or discriminative prompts, plus a minimal coverage check.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Fullest seed build. Produce 16-20 items with a deliberate mix of recall, application, and adversarial confusable questions, and make the coverage check explicit by objective.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: Refresh seed build. Produce 10-14 compact table rows with question, mode, and objective ID columns, focusing on shaky or high-yield objectives only.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied seed build. Produce 12-16 questions framed around discriminators, cue-to-action prompts, and case-linked comparisons, with a coverage table that highlights real-world confusions.
 related_methods:
 - id: M-RET-002
   relationship: Question bank seeds become sprint quiz items
 - id: M-OVR-002
   relationship: Card drafting can reuse high-quality question stems
-facilitation_prompt: |-
-  You are a tutor running M-REF-004 (Question Bank Seed) in REFERENCE mode.
-  ROLE: build durable artifacts for later retrieval and does not test the learner.
-  OBJECTIVE: Question Bank Seed exists to run a question-bank seed that converts objectives and anchor artifacts into mode-tagged retrieval prompts for later use. It turns the current stage into a clean, reusable signal instead of a vague study session.
-  SCOPE: Use only the loaded source material and the learner's current responses.
-  RULES:
-  - Artifact-first; do not turn the block into teaching or testing
-  - Keep the structure deterministic and reusable
-  - Preserve source language when it helps later recognition
-  - Do not start retrieval drills until the reference target exists
-
-  RUN ONE STEP AT A TIME. Do not skip ahead. Wait for my reply before moving on.
-  1. Generate 10-20 questions tied — Generate 10-20 questions tied to objective IDs. Distribute across selected assessment mode
-     Example: Tutor: "Collect the source errors and keep them in the original wording where possible." Learner: "Ready."
-     Check: Has the source material been collected and organized for artifact building?
-     Then stop and wait.
-  2. Tag each item with — Tag each item with mode and objective_id. Ensure coverage across objectives
-     Example: Tutor adds a single row to the artifact and keeps the column structure consistent.
-     Check: Is this step complete and ready to advance?
-     Then stop and wait.
-  3. Mark high-risk confusable items — Mark high-risk confusable items for adversarial drills. Feed directly into RETRIEVE stage
-     Example: Tutor writes the anchor or seed artifact in a format that can be reused later.
-     Check: Is this step complete and ready to advance?
-     Then stop and wait.
-
-  REQUIRED OUTPUTS:
-  - Question Bank Seed (10-20 items, each mode-tagged and objective-tagged) (bulleted or tabular list)
-  - Coverage check draft (confirming all objectives have at least one question) (structured response)
-
-  STOP CONDITIONS:
-  - Stop when every required output exists and the final check passes.
-  - Stop early if the time cap or item cap is reached.
-  - Stop if the learner has crossed into a different stage or the format is no longer useful.
-
-  IF STUCK:
-  Collapse to a smaller artifact, keep the same headers, and capture one row at a time.
-  If that still fails, reduce scope to one smaller item, one row, or one rep and continue.
+system_prompt_override:
+  relaxes:
+  - Never reveal the full answer without letting me attempt first. Progressive hints, not solutions.
+  - Highly interactive. One teaching chunk (8-12 lines max), one check, one question at a time.
+  replaces_with:
+  - Output the question bank as one structured artifact. Do not quiz the learner while generating it.
+  - Render complete question rows during artifact generation. Step gating applies between method phases such as drafting, tagging, and coverage review, not within each question row.
+  reason: Question Bank Seed generates a multi-item artifact for later retrieval use. Hint gating and live questioning distort the artifact-building workflow.
+facilitation_prompt: |
+  You are running M-REF-004 (Question Bank Seed) in the CONSOLIDATE stage.
+  Use only the loaded source and learner context. Ask only for missing required inputs.
+  Produce: Question Bank Seed and Coverage check draft.
+  Build a 10-20 item mode-tagged, objective-tagged question bank from the current objectives and anchor artifacts. Keep it source-grounded, reusable, and deterministic; include some application or confusable items, preserve source wording where it helps retrieval, and do not turn generation into live quizzing.
+  Preset behavior:
+  - exam_cram: one-shot; 10-12 terse bullet items; minimal coverage check.
+  - deep_mastery: interactive; 16-20 mixed-depth items; explicit objective-by-objective coverage review.
+  - quick_review: one-shot refresh; 10-14 compact table rows focused on shaky or high-yield objectives.
+  - clinical_bridge: stepwise; 12-16 applied or confusable questions with a coverage table emphasizing real-world discriminators.
+  If no preset is specified, use the default knobs. One-shot returns the full seed artifact in one bounded reply; interactive or stepwise mode moves draft -> tag -> coverage check and waits.
 validation:
   test_cases:
   - topic: retrieval question generation
@@ -206,4 +231,4 @@ validation:
   - No forbidden moves from the source file are violated.
   - The facilitation prompt can be pasted into ChatGPT and run without extra context.
   known_issues:
-  - Artifact building can drift into teaching unless the tutor keeps the structure explicit and source-linked.
+  - Question banks lose value quickly if coverage is uneven or if the prompts are too vague to score later in RETRIEVE.

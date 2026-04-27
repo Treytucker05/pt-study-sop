@@ -63,6 +63,26 @@ def line_for_block_id(text: str, block_id: str) -> int | None:
     return find_line_number(text, lambda ln: ln.strip() == target)
 
 
+def extract_block_id(block: Any) -> str | None:
+    """Resolve a chain block entry to a method id string.
+
+    Supports both legacy flat shape (string method ids) and rich shape
+    (dict with method_id / id / method_ref keys). Returns None when the
+    block is a workflow-step wrapper that does not map to a real method.
+    """
+    if isinstance(block, str):
+        return block
+    if isinstance(block, dict):
+        mid = block.get("method_id")
+        if isinstance(mid, str) and mid:
+            return mid
+        for key in ("id", "method_ref"):
+            value = block.get(key)
+            if isinstance(value, str) and value.startswith("M-"):
+                return value
+    return None
+
+
 def flag_value(has_key: bool, value: Any) -> str:
     if not has_key:
         return "MISSING"
@@ -195,7 +215,7 @@ def build_expected() -> dict[str, Any]:
         chain_id = str(data.get("id", ""))
         chain_name = str(data.get("name", ""))
         blocks_raw = data.get("blocks", []) or []
-        blocks = [str(b) for b in blocks_raw]
+        blocks = [bid for bid in (extract_block_id(b) for b in blocks_raw) if bid]
         chains.append(
             {
                 "chain_id": chain_id,

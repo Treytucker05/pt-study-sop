@@ -1,0 +1,151 @@
+id: C-FINALS-PREP
+name: Finals Prep Chain
+description: >-
+  End-to-end study chain built from the 7 finished finals-prep methods.
+  Runs PRIME -> TEACH -> RETRIEVE -> ENCODE -> OVERLEARN for one bounded topic
+  per session and ends with 3-5 Anki cards staged for review. Machine-readable
+  twin of chains/C-FINALS-PREP.md.
+version: "1.0"
+status: draft
+is_template: true
+tags: [chain, finals-prep, full-cycle]
+
+topic_input:
+  source: "SOP Testing/topics/T-*.md"
+  pause_if_needs_review: true
+  field_map:
+    topic_id: topic_id
+    title: title
+    source_files: source_files
+    high_yield_concepts: high_yield_concepts
+    prerequisite_topics: prerequisite_topics
+
+blocks:
+  - step: 1
+    method_id: M-PRE-012
+    stage: PRIME
+    description: Terminology Pretraining — minimum sufficient term list + critical contrasts.
+    on_pass: step1_terminology_done
+    on_fail: warn_short_termlist
+
+  - step: 2
+    method_id: M-PRE-013
+    stage: PRIME
+    description: Big-Picture Orientation — north-star sentence + 3-5 sentence summary, stop before mechanism.
+    on_pass: step2_northstar_done
+    on_fail: warn_missing_northstar
+
+  - step: 3
+    method_id: M-PRE-010
+    stage: PRIME
+    description: Learning Objectives Primer — source coverage table + final merged objectives.
+    on_pass: step3_objectives_done
+    on_fail: halt_prime_incomplete
+
+  - step: 4
+    method_id: M-TEA-006
+    stage: TEACH
+    description: Depth Ladder — 3-4 progressively deeper rungs, learner restates each.
+    on_pass: G2_teach_complete
+    on_fail: loop_back_to_prime
+
+  - step: 5
+    method_id: M-RET-001
+    stage: RETRIEVE
+    description: Timed Brain Dump — closed-note free recall, RSR computed against source.
+    on_pass: G3_retrieve_pass
+    on_fail: loop_back_to_teach
+
+  - step: 6
+    method_id: M-HOOK-002
+    stage: ENCODE
+    description: KWIK Lite — one compact memory cue per pass, learner-owned.
+    on_pass: G4_encode_complete
+    on_fail: loop_back_to_teach
+
+  - step: 7
+    method_id: M-OVR-002
+    stage: OVERLEARN
+    description: Anki Card Draft — 3-5 atomic, source-grounded review cards.
+    on_pass: G5_overlearn_complete
+    on_fail: warn_card_underflow
+
+gates:
+  - step1_terminology_done
+  - step2_northstar_done
+  - step3_objectives_done
+  - G1_prime_complete  # composite: terminology + northstar + objectives
+  - G2_teach_complete
+  - G3_retrieve_pass
+  - G4_encode_complete
+  - G5_overlearn_complete
+
+# List form preserves runtime compatibility (seed_methods.py and
+# api_tutor_turns.py only iterate list-shaped failure_actions). Each
+# entry's `id` is the on_pass / on_fail target referenced from blocks.
+failure_actions:
+  - id: warn_short_termlist
+    kind: warn_continue
+    reason: "Terminology may be too thin; advance but flag in ledger."
+
+  - id: warn_missing_northstar
+    kind: warn_continue
+    reason: "BigPictureSummary present but north-star missing; advance with warning."
+
+  - id: halt_prime_incomplete
+    kind: halt
+    reason: "PRIME composite gate failed — cannot enter TEACH without all three priming artifacts."
+
+  - id: loop_back_to_prime
+    kind: loop_to_step
+    target_step: 1
+    max_loops: 1
+    reason: "TEACH did not land — re-do PRIME for the concept then retry TEACH."
+
+  - id: loop_back_to_teach
+    kind: loop_to_step
+    target_step: 4
+    max_loops: 2
+    reason: "Hard rule from C-FINALS-PREP: RSR < 70% (or HOOK without meaning) routes back to TEACH."
+
+  - id: warn_card_underflow
+    kind: warn_continue
+    reason: "Fewer than 3 atomic cards staged; revisit OVR-002 inputs."
+
+outputs:
+  - artifact: TerminologyList
+    produced_by_step: 1
+  - artifact: ConfusableTermFlags
+    produced_by_step: 1
+    required: false
+  - artifact: NorthStarSentence
+    produced_by_step: 2
+  - artifact: BigPictureSummary
+    produced_by_step: 2
+  - artifact: FinalLearningObjectives
+    produced_by_step: 3
+  - artifact: Age4Explanation
+    produced_by_step: 4
+  - artifact: Age10Explanation
+    produced_by_step: 4
+  - artifact: HighSchoolExplanation
+    produced_by_step: 4
+  - artifact: ExpertLevelExplanation
+    produced_by_step: 4
+    required: false
+  - artifact: RungCheckSignal
+    produced_by_step: 4
+  - artifact: Free recall dump with gaps marked
+    produced_by_step: 5
+  - artifact: Accuracy assessment (correct vs incorrect items)
+    produced_by_step: 5
+  - artifact: RSR percentage estimate
+    produced_by_step: 5
+  - artifact: FinalHook
+    produced_by_step: 6
+  - artifact: DistortionGuard
+    produced_by_step: 6
+  - artifact: 3-5 drafted Anki cards in canonical CARD block format
+    produced_by_step: 7
+  - artifact: Card count logged to session record
+    produced_by_step: 7

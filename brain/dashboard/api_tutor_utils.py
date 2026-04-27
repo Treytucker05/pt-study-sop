@@ -211,6 +211,45 @@ def _load_method_contracts() -> dict[str, dict[str, Any]]:
     return by_id
 
 
+# 2026-04-21 vault hardening introduced richer operational stages
+# (PLAN, ORIENT, EXPLAIN, INTERROGATE, CONSOLIDATE). The runtime
+# collapses these onto the legacy 7-stage vocabulary so existing
+# TEACH/REFERENCE guardrails fire. Stage-mismatch checks need the same
+# collapse: a method that the YAML declares as INTERROGATE / EXPLAIN /
+# CONSOLIDATE may legitimately appear in a chain block as TEACH /
+# REFERENCE if the runtime pins it there.
+_RUNTIME_STAGE_EQUIVALENT: dict[str, str] = {
+    "PLAN": "PRIME",
+    "ORIENT": "PRIME",
+    "PRIME": "PRIME",
+    "TEACH": "TEACH",
+    "EXPLAIN": "TEACH",
+    "CALIBRATE": "CALIBRATE",
+    "ENCODE": "ENCODE",
+    "INTERROGATE": "REFERENCE",
+    "REFERENCE": "REFERENCE",
+    "CONSOLIDATE": "REFERENCE",
+    "RETRIEVE": "RETRIEVE",
+    "OVERLEARN": "OVERLEARN",
+}
+
+# Per-method runtime stage pins must match brain/selector.py's
+# _METHOD_ID_RUNTIME_STAGE so chain validation accepts the same shape
+# the selector / runtime emits.
+_METHOD_ID_RUNTIME_STAGE_OVERRIDE: dict[str, str] = {
+    "M-INT-001": "TEACH",
+    "M-ENC-008": "TEACH",
+    "M-GEN-007": "TEACH",
+}
+
+
+def _runtime_stage(method_id: str, stage: str) -> str:
+    pin = _METHOD_ID_RUNTIME_STAGE_OVERRIDE.get(method_id)
+    if pin:
+        return pin
+    return _RUNTIME_STAGE_EQUIVALENT.get(stage, stage)
+
+
 def _validate_chain_launch_blocks(blocks: list[dict[str, Any]]) -> list[dict[str, Any]]:
     issues: list[dict[str, Any]] = []
     contracts = _load_method_contracts()
@@ -221,7 +260,14 @@ def _validate_chain_launch_blocks(blocks: list[dict[str, Any]]) -> list[dict[str
         contract = contracts.get(method_id) or {}
         expected_stage = str(contract.get("control_stage") or "").strip().upper()
         actual_stage = str(block.get("control_stage") or "").strip().upper()
-        if expected_stage and actual_stage and expected_stage != actual_stage:
+        if not expected_stage or not actual_stage:
+            continue
+        # Compare on the legacy runtime vocabulary so vault-hardened
+        # methods (e.g. M-INT-001 declared INTERROGATE) match chain
+        # blocks that store the runtime stage (TEACH).
+        expected_runtime = _runtime_stage(method_id, expected_stage)
+        actual_runtime = _runtime_stage(method_id, actual_stage)
+        if expected_runtime != actual_runtime:
             issues.append(
                 {
                     "code": "METHOD_STAGE_MISMATCH",

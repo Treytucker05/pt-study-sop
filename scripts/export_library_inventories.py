@@ -44,6 +44,34 @@ def line_for_block_id(text: str, block_id: str) -> int | None:
     return find_line_number(text, lambda ln: ln.strip() == target)
 
 
+def extract_block_id(block) -> str | None:
+    """Resolve a chain block entry to a method id string.
+
+    Supports both legacy flat shape (string method ids) and rich shape
+    (dict with method_id / id / method_ref keys). Returns None when the
+    block is a workflow-step wrapper that does not map to a real method
+    block (e.g. STEP_0_MATERIALS).
+    """
+    if isinstance(block, str):
+        return block
+    if isinstance(block, dict):
+        mid = block.get("method_id")
+        if isinstance(mid, str) and mid:
+            return mid
+        for key in ("id", "method_ref"):
+            value = block.get(key)
+            if isinstance(value, str) and value.startswith("M-"):
+                return value
+    return None
+
+
+def block_method_ids(blocks) -> list[str]:
+    """Extract real method ids from a chain blocks list (str or dict shape)."""
+    if not isinstance(blocks, list):
+        return []
+    return [bid for bid in (extract_block_id(b) for b in blocks) if bid]
+
+
 def flag_value(has_key: bool, value) -> str:
     if not has_key:
         return "MISSING"
@@ -202,10 +230,11 @@ for path in chain_files:
     chain_id = data.get("id", "")
     chain_name = data.get("name", "")
     blocks = data.get("blocks", []) or []
+    blocks_resolved = block_method_ids(blocks)
     chain_entry = {
         "chain_id": chain_id,
         "chain_name": chain_name,
-        "method_ids_in_order": ", ".join(blocks),
+        "method_ids_in_order": ", ".join(blocks_resolved),
         "file_path": rel_path(path),
     }
     chains.append(chain_entry)
@@ -214,7 +243,7 @@ for path in chain_files:
             "id": chain_id,
             "name": chain_name,
             "description": data.get("description", ""),
-            "blocks": blocks,
+            "blocks": blocks_resolved,
             "context_tags": data.get("context_tags", {}),
             "default_knobs": data.get("default_knobs"),
             "gates": data.get("gates")
@@ -238,7 +267,7 @@ for path in chain_files:
     if chain_id:
         chain_id_map.setdefault(chain_id, []).append(path)
 
-    for block_id in blocks:
+    for block_id in blocks_resolved:
         if block_id not in method_ids:
             line_no = line_for_block_id(text, block_id)
             unknown_ids.append({

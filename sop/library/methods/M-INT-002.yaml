@@ -1,31 +1,31 @@
 id: M-INT-002
 name: Clinical Application
-category: interrogate
-subcategory: int
-description: 'Apply the concept to a clinical scenario. Ask: how would this present? What would you test?
-  How would you treat?'
-control_stage: ENCODE
+category: INTERROGATE
+subcategory: clinical-application
+description: Apply an already-encoded concept to a concrete clinical scenario and work through how it would present, what you would test, and how you would intervene.
+control_stage: INTERROGATE
 status: validated
-version: '1.0'
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
+- interrogate
 - clinical
 - application
-- pt-specific
+- clinical-reasoning
+- illness-script
 - sop-core
-purpose: Interrogate already-encoded material through comparison, application, retrieval, or transfer
-  so the learner can discriminate it under pressure.
-not_for: This is not for first exposure, direct lecturing, or introducing brand-new material that has
-  not already been encoded.
+purpose: Clinical Application exists to interrogate already-encoded material by forcing the learner to apply it to a concrete patient scenario, predict how it would present, decide what to test, and choose how to intervene. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for first exposure, direct lecturing, or introducing brand-new material that has not already been encoded.
 best_fit_topics:
 - Previously encoded concepts that need comparison, application, or discrimination
 - Material the learner can retrieve without notes and test under pressure
+- Conditions, impairments, or mechanisms that benefit from patient-specific reasoning
 poor_fit_topics:
 - Brand-new material that has not been encoded yet
 - Tasks that need direct teaching rather than retrieval or interrogation
-learner_state_required: The target concept has already been taught or encoded. The learner can attempt
-  retrieval, comparison, or application before seeing the answer.
+- Abstract topics that cannot be anchored to a realistic patient context
+learner_state_required: The target concept has already been taught or encoded. The learner can attempt retrieval, comparison, or application before seeing the answer.
 inputs:
 - description: Concept to apply clinically
   required: true
@@ -35,75 +35,80 @@ inputs:
   required: true
 outputs:
 - name: Clinical application narrative
-  description: Clinical application narrative
+  description: Patient-specific application narrative showing how the concept plays out in context.
   format: concise prose bullets or short paragraph
 - name: Presentation, testing, intervention summary
-  description: Presentation, testing, intervention summary
-  format: short, checkable artifact
+  description: Concise present-test-treat summary anchored to the selected patient.
+  format: short summary paragraph, bullets, or table
 - name: Verification notes
-  description: Verification notes
-  format: short, checkable artifact
-required_outputs: &id001
+  description: Short verification pass that flags errors, omissions, or corrections against source material.
+  format: short summary paragraph or bullets
+artifact_schemas:
+  Clinical application narrative: paragraph
+  Presentation, testing, intervention summary: paragraph
+  Verification notes: bullet_list
+produces:
+- Clinical application narrative
+- Presentation, testing, intervention summary
+- Verification notes
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
+required_outputs:
 - Clinical application narrative with specific patient characteristics
 - Presentation, testing, and intervention summary (all three addressed)
 - Verification notes (errors flagged against source material)
 success_criteria:
-- 'All required outputs are present and checkable: Clinical application narrative with specific patient
-  characteristics, Presentation, testing, and intervention summary (all three addressed), Verification
-  notes (errors flagged against source material).'
-- 'The method reaches its stop condition: All three questions answered (present, test, treat); Verified
-  against source.'
-- The learner stays active and the tutor does not give away the answer before the required attempt or
-  transformation.
+- All required outputs are present for M-INT-002.
+- The learner addresses presentation, testing, and intervention for a specific patient scenario before verification.
+- The learner stays active and the tutor does not give away the answer before the required attempt or transformation.
 partial_criteria:
-- 'Some required outputs are present but at least one is missing or incomplete: Clinical application narrative
-  with specific patient characteristics, Presentation, testing, and intervention summary (all three addressed).'
+- 'One or more required outputs are present but one core artifact is incomplete: Presentation, testing, and intervention summary (all three addressed).'
+- The method stayed in the correct stage but the case reasoning remained generic or insufficiently verified.
 steps:
 - step: 1
-  name: The Concept And Choose A
-  action: State the concept and choose a patient population
-  tutor_does: 'Guide the learner to State the concept and choose a patient population. Keep in mind: Example:
-    ''ACE inhibitors in a 65yo with CHF and diabetes'''
+  name: Choose the concept and patient
+  action: State the concept and choose a patient population.
+  tutor_does: Guide the learner to name the target concept and anchor it to a specific patient population or scenario.
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: ''ACE inhibitors in a 65yo with CHF and diabetes'
+  example: 'Example: ACE inhibitors in a 65-year-old with CHF and diabetes.'
 - step: 2
-  name: Ask
-  action: 'Ask: How would dysfunction/pathology present?'
-  tutor_does: 'Guide the learner to Ask: How would dysfunction/pathology present?. Keep in mind: What
-    symptoms and signs would you see?'
+  name: Predict presentation
+  action: Ask how the dysfunction or pathology would present.
+  tutor_does: Guide the learner to predict the symptoms, signs, and practical clinical picture this patient would show.
   learner_does: Attempts retrieval, application, or comparison from memory before asking for support.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
   example: 'Example: What symptoms and signs would you see?'
 - step: 3
-  name: Ask
-  action: 'Ask: What would you test or assess?'
-  tutor_does: 'Guide the learner to Ask: What would you test or assess?. Keep in mind: Physical exam findings,
-    lab tests, imaging'
+  name: Choose tests and assessment
+  action: Ask what you would test or assess.
+  tutor_does: Guide the learner to choose assessment moves, physical exam findings, labs, or imaging that fit the scenario.
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: Physical exam findings, lab tests, imaging'
+  example: 'Example: Physical exam findings, lab tests, imaging.'
 - step: 4
-  name: Ask
-  action: 'Ask: How would you intervene?'
-  tutor_does: 'Guide the learner to Ask: How would you intervene?. Keep in mind: Treatment, precautions,
-    patient education'
+  name: Choose intervention
+  action: Ask how you would intervene.
+  tutor_does: Guide the learner to choose treatment, precautions, and patient education that fit this patient specifically.
   learner_does: Attempts retrieval, application, or comparison from memory before asking for support.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: Treatment, precautions, patient education'
+  example: 'Example: Treatment, precautions, patient education.'
 - step: 5
-  name: Your Clinical Reasoning Against Source
-  action: Verify your clinical reasoning against source
-  tutor_does: 'Guide the learner to Verify your clinical reasoning against source. Keep in mind: Flag
-    any errors or gaps'
+  name: Verify against source
+  action: Verify your clinical reasoning against source.
+  tutor_does: Guide the learner to verify the reasoning against source material and flag any errors or gaps.
   learner_does: Attempts retrieval, application, or comparison from memory before asking for support.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: Flag any errors or gaps'
+  example: 'Example: Flag any errors or gaps.'
 constraints:
 - rule: Require active learner processing
   why: The method only works when the learner is doing the cognitive work.
@@ -115,129 +120,125 @@ constraints:
   why: Forces retrieval before verification so the learner cannot copy the answer.
 - rule: Route back to a simpler method on repeated misses
   why: Repeated failure means the learner needs a lower-friction scaffold or a different lane.
-- rule: Require closed-note recall first, then feedback.
+- rule: Require closed-note recall first, then feedback
   why: This gating rule is part of the method’s execution contract.
-- rule: If repeated misses occur, route back to ENCODE or REFERENCE.
+- rule: If repeated misses occur, route back to ENCODE or REFERENCE
   why: This gating rule is part of the method’s execution contract.
 allowed_moves:
 - Present realistic clinical scenarios with specific patient characteristics
 - Ask probing questions about presentation, testing, and intervention
-- Demand clinical reasoning rationale — WHY this treatment for THIS patient
-- Challenge incomplete assessments (require at least 2 tests/assessments)
+- Demand clinical reasoning rationale -- why this treatment for this patient
+- Challenge incomplete assessments and require at least two meaningful tests or assessments when appropriate
 - Push for differential diagnosis consideration
 - Require closed-note attempt before providing any feedback
 - Route back to ENCODE or REFERENCE on repeated misses
-- Test edge cases (comorbidities, contraindications, atypical presentations)
+- Test edge cases such as comorbidities, contraindications, and atypical presentations
 forbidden_moves:
 - Accept generic or abstract application without specific patient context
 - Provide answers before the learner attempts clinical reasoning
-- Skip the assessment/testing phase of the clinical walkthrough
+- Skip the assessment or testing phase of the clinical walkthrough
 - Accept treatment plans without explicit rationale
 - Use abstract theory instead of realistic clinical context
 - Move on when any of the three questions (present, test, treat) is unanswered
 - Accept one-word or surface-level clinical answers without probing deeper
 - Present content outside the mapped objective scope
-stuck_protocol: Reduce the scope, ask for a smaller retrieval target, compare with a near-neighbor, or
-  route back to ENCODE/REFERENCE if recall keeps failing. Do not keep guessing indefinitely.
+stuck_protocol: Reduce the scope, ask for a smaller retrieval target, compare with a near-neighbor, or route back to ENCODE/REFERENCE if recall keeps failing. Do not keep guessing indefinitely.
 failure_modes:
 - mode: Generic application
-  detection: The learner or tutor starts doing generic application or the artifact stops satisfying the
-    method’s required checks.
-  recovery: Require specific patient characteristics
+  detection: The learner or tutor starts doing generic application or the artifact stops satisfying the method’s required checks.
+  recovery: Require specific patient characteristics.
   fallback_method: M-INT-005
 - mode: Skipping assessment phase
-  detection: The learner or tutor starts doing skipping assessment phase or the artifact stops satisfying
-    the method’s required checks.
-  recovery: Must include at least 2 tests/assessments
+  detection: The learner or tutor starts doing skipping assessment phase or the artifact stops satisfying the method’s required checks.
+  recovery: Must include at least two tests or assessments.
   fallback_method: M-INT-006
 - mode: Treatment without rationale
-  detection: The learner or tutor starts doing treatment without rationale or the artifact stops satisfying
-    the method’s required checks.
-  recovery: Explain WHY this treatment for this patient
-  fallback_method: M-ENC-012
+  detection: The learner or tutor starts doing treatment without rationale or the artifact stops satisfying the method’s required checks.
+  recovery: Explain why this treatment fits this patient.
+  fallback_method: M-ORG-004
 default_duration_min: 5
 energy_cost: high
 best_stage: exam_prep
 mechanisms:
+- illness_script_formation
+- clinical_reasoning
 - transfer
 - elaboration
 - generation
+- case_based_reasoning
 evidence:
-  citation: Schmidt & Rikers (2007)
-  finding: Clinical application strengthens illness script formation and diagnostic reasoning
-  source: seed_methods.py
+  citation: Schmidt and Rikers (2007); Charlin, Boshuizen, Custers, and Feltovich (2007); Keemink, Custers, van Dijk, and ten Cate (2018); Lubarsky, Dory, Audétat, Custers, and Charlin (2020); Delavari, Monajemi, Baradaran, Myint, Yaghmae, and Soltani Arabshahi (2020)
+  finding: Clinical Application is best supported as a concrete case-based reasoning method that helps learners build and refine clinical scripts rather than merely restating textbook facts. Illness-script research supports organizing knowledge around enabling conditions, faults, and consequences, and related medical-education work suggests that learners improve when clinical reasoning is practiced in patient-specific contexts and then checked against stronger reference models. Classroom and curriculum studies on script-based clinical reasoning also suggest that repeated case-focused reasoning can strengthen diagnostic organization and performance when the learner must commit to a specific present-test-treat path before feedback. The practical implication for this method is to keep the scenario concrete, force a memory-first patient-specific attempt, require all three branches of reasoning, and end with explicit source-based verification instead of generic discussion.
+  source: https://doi.org/10.1111/j.1365-2923.2007.02915.x; https://doi.org/10.1111/j.1365-2923.2007.02924.x; https://doi.org/10.5116/ijme.5a5b.24a9; https://doi.org/10.36834/cmej.36631; https://doi.org/10.47176/mjiri.34.9
+  needs_research: false
 knobs:
-  difficulty: medium
-  feedback_timing: after_attempt
   guidance_level: medium
-  evidence_raw: Schmidt & Rikers (2007); clinical application strengthens illness script formation
-  gating_rules:
-  - Require closed-note recall first, then feedback.
-  - If repeated misses occur, route back to ENCODE or REFERENCE.
-  logging_fields:
-  - concept_applied
-  - patient_population
-  - interventions_identified
-  - verification_status
-  artifact_type: notes
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest case pass. Use one short patient vignette and return terse present-test-treat bullets plus one verification note.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Full case reasoning pass. Use a richer patient scenario with comorbidity or constraint, keep separate sections for presentation, testing, intervention, and rationale, and close with a fuller verification block.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: Refresh case pass. Compress the scenario into a compact table with patient, presentation, tests, intervention, and correction columns.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied case pass. Use a more realistic vignette with red flags or confounders, emphasize differential and prioritization, and render the output as a clinical reasoning grid.
 related_methods:
 - id: M-INT-005
   relationship: Case walkthrough cousin method
 - id: M-INT-006
   relationship: Illness script fallback for mechanism-based clinical reasoning
-- id: M-ENC-012
+- id: M-ORG-004
   relationship: Decision-tree fallback if branching decisions dominate
-facilitation_prompt: "You are running M-INT-002 (Clinical Application) in ENCODE stage.\nRole: you are\
-  \ the tutor running the method exactly as written, with no hidden assumptions.\nObjective: Interrogate\
-  \ already-encoded material through comparison, application, retrieval, or transfer so the learner can\
-  \ discriminate it under pressure.\nScope: Apply the concept to a clinical scenario. Ask: how would this\
-  \ present? What would you test? How would you treat?\nRules:\n- Require active learner processing —\
-  \ The method only works when the learner is doing the cognitive work.\n- Stay within the target scope\
-  \ — Prevents drift and keeps the artifact useful.\n- Require an attempt before feedback — Retrieval\
-  \ or reasoning effort must happen before correction to preserve learning value.\n- Start closed-note\
-  \ or memory-first — Forces retrieval before verification so the learner cannot copy the answer.\n- Route\
-  \ back to a simpler method on repeated misses — Repeated failure means the learner needs a lower-friction\
-  \ scaffold or a different lane.\n- Not for: This is not for first exposure, direct lecturing, or introducing\
-  \ brand-new material that has not already been encoded.\nInputs:\n- Concept to apply clinically (required)\n\
-  - Clinical scenario or patient type (required)\n- Source material for verification (required)\nRequired\
-  \ outputs:\n- Clinical application narrative: Clinical application narrative [concise prose bullets\
-  \ or short paragraph]\n- Presentation, testing, intervention summary: Presentation, testing, intervention\
-  \ summary [short, checkable artifact]\n- Verification notes: Verification notes [short, checkable artifact]\n\
-  Steps: run one step at a time and wait after each step before advancing.\n1. The Concept And Choose\
-  \ A\n   Tutor does: Guide the learner to State the concept and choose a patient population. Keep in\
-  \ mind: Example: 'ACE inhibitors in a 65yo with CHF and diabetes'\n   Learner does: Performs the requested\
-  \ cognitive move and shares the result before moving on.\n   Example: Example: 'ACE inhibitors in a\
-  \ 65yo with CHF and diabetes\n   Check: Has the learner attempted retrieval or application before any\
-  \ corrective help?\n   Then STOP and wait for the learner.\n2. Ask\n   Tutor does: Guide the learner\
-  \ to Ask: How would dysfunction/pathology present?. Keep in mind: What symptoms and signs would you\
-  \ see?\n   Learner does: Attempts retrieval, application, or comparison from memory before asking for\
-  \ support.\n   Example: Example: What symptoms and signs would you see?\n   Check: Has the learner attempted\
-  \ retrieval or application before any corrective help?\n   Then STOP and wait for the learner.\n3. Ask\n\
-  \   Tutor does: Guide the learner to Ask: What would you test or assess?. Keep in mind: Physical exam\
-  \ findings, lab tests, imaging\n   Learner does: Performs the requested cognitive move and shares the\
-  \ result before moving on.\n   Example: Example: Physical exam findings, lab tests, imaging\n   Check:\
-  \ Has the learner attempted retrieval or application before any corrective help?\n   Then STOP and wait\
-  \ for the learner.\n4. Ask\n   Tutor does: Guide the learner to Ask: How would you intervene?. Keep\
-  \ in mind: Treatment, precautions, patient education\n   Learner does: Attempts retrieval, application,\
-  \ or comparison from memory before asking for support.\n   Example: Example: Treatment, precautions,\
-  \ patient education\n   Check: Has the learner attempted retrieval or application before any corrective\
-  \ help?\n   Then STOP and wait for the learner.\n5. Your Clinical Reasoning Against Source\n   Tutor\
-  \ does: Guide the learner to Verify your clinical reasoning against source. Keep in mind: Flag any errors\
-  \ or gaps\n   Learner does: Attempts retrieval, application, or comparison from memory before asking\
-  \ for support.\n   Example: Example: Flag any errors or gaps\n   Check: Has the learner attempted retrieval\
-  \ or application before any corrective help?\n   Then STOP and wait for the learner.\nStop conditions:\n\
-  - All required outputs are present and checkable: Clinical application narrative with specific patient\
-  \ characteristics, Presentation, testing, and intervention summary (all three addressed), Verification\
-  \ notes (errors flagged against source material).\n- The method reaches its stop condition: All three\
-  \ questions answered (present, test, treat); Verified against source.\n- The learner stays active and\
-  \ the tutor does not give away the answer before the required attempt or transformation.\nIf stuck:\
-  \ Reduce the scope, ask for a smaller retrieval target, compare with a near-neighbor, or route back\
-  \ to ENCODE/REFERENCE if recall keeps failing. Do not keep guessing indefinitely.\nDo not skip steps,\
-  \ do not solve the whole task at once, and do not present source claims as mnemonic or analogy artifacts."
+system_prompt_override:
+  relaxes:
+  - Never reveal the full answer without letting me attempt first. Progressive hints, not solutions.
+  - Highly interactive. One teaching chunk (8-12 lines max), one check, one question at a time.
+  replaces_with:
+  - Require one memory-first present-test-treat attempt before any correction. Feedback should name what was right, what was missing, and what source detail changes the plan.
+  - Keep the scenario concrete before reasoning begins: age, context, patient type, or constraint must be specified before you expand the clinical branch.
+  reason: Clinical Application only works if the learner commits to a specific patient-specific reasoning path first. Generic prompting or early tutor completion collapses the method into vague discussion.
+facilitation_prompt: |
+  You are running M-INT-002 (Clinical Application) in the INTERROGATE stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: Clinical application narrative, Presentation/testing/intervention summary, and Verification notes.
+  Apply one already-encoded concept to a concrete patient scenario, work through how it would present, what you would test, and how you would intervene, then verify the reasoning against source without turning the run into a lecture.
+  Preset behavior:
+  - exam_cram: one-shot; short vignette; terse present-test-treat bullets; one correction note.
+  - deep_mastery: interactive; richer case with constraint or comorbidity; separate reasoning and verification sections.
+  - quick_review: one-shot refresh; compact clinical reasoning table.
+  - clinical_bridge: stepwise; realistic vignette with red flags or confounders and a prioritization grid.
+  If no preset is specified, use the default knobs. One-shot returns the full case artifact in one bounded reply; interactive or stepwise mode moves scenario -> presentation -> testing -> intervention -> verification and waits.
 validation:
   test_cases:
   - topic: Previously encoded concepts that need comparison, application, or discrimination
-    expected_outputs: *id001
+    expected_outputs:
+    - Clinical application narrative with specific patient characteristics
+    - Presentation, testing, and intervention summary (all three addressed)
+    - Verification notes (errors flagged against source material)
     pass_criteria:
     - All required outputs are present.
     - The learner performs the required active step before the final artifact is given.
@@ -256,4 +257,4 @@ validation:
   - The facilitation_prompt can be run without extra hidden context.
   known_issues:
   - LLMs may over-explain before the learner attempts the required move.
-  - LLMs may drift outside scope when the topic is broad or ambiguous.
+  - LLMs may drift into generic case talk if the patient context is underspecified.

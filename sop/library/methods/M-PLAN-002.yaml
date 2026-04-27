@@ -1,0 +1,276 @@
+id: M-PLAN-002
+name: Weekly & Long-term Planning
+category: PLAN
+subcategory: weekly-long-range-planning
+description: "Build a weekly or multi-week study plan that tracks mastery, schedules spaced reviews, and adjusts around deadlines, exams, and progress signals."
+control_stage: PLAN
+status: draft
+version: '1.0'
+created: '2026-04-21'
+updated: '2026-04-21'
+tags:
+- plan
+- weekly-planning
+- long-term-planning
+- mastery-tracking
+- spaced-review
+- deadlines
+- self-regulation
+purpose: "Weekly & Long-term Planning exists to turn a medium-range learner goal into a realistic weekly or multi-week plan with mastery checkpoints, spaced review timing, and deadline-sensitive adjustments. It creates a durable planning artifact instead of leaving progress tracking and review cadence to memory."
+not_for: "This is not for live teaching, one-session micro-planning, or semester-scale curriculum architecture. Use M-PLAN-001 for a single session and use execution-stage methods once the weekly or long-range plan is set."
+best_fit_topics:
+- weekly study planning
+- multi-week exam preparation
+- long-term mastery tracking
+- spaced review scheduling across deadlines
+poor_fit_topics:
+- one-off tutoring sessions with no carry-forward horizon
+- broad course design across an entire term
+- teaching content during the planning step
+learner_state_required: "A learner goal, a bounded content set, and at least one real external constraint such as an exam date, project deadline, or calendar limit are available."
+inputs:
+- description: Learner goal or active preset target
+  required: true
+- description: Objective set or content domains to cover
+  required: true
+- description: Planning horizon (one week or multi-week to deadline)
+  required: true
+- description: Deadline and logistics constraints (exam dates, project dates, duty schedule, fixed commitments)
+  required: true
+- description: Current progress signal or mastery estimate
+  required: true
+outputs:
+- name: HorizonAndPriorityPlan
+  description: "A bounded planning decision that defines the horizon, top priorities, and what will not be covered in this cycle."
+  format: paragraph or bullets
+- name: WeeklyOrLongRangePlan
+  description: "An ordered week-by-week or block-by-block plan with planned work sessions and objective coverage."
+  format: table
+- name: MasteryTrackingMap
+  description: "A mastery-tracking view showing objective status, evidence source, and next planned action."
+  format: table
+- name: SpacedReviewSchedule
+  description: "A spaced review schedule with review timing, review type, and escalation or stop cues."
+  format: table
+- name: DeadlineAdjustmentRules
+  description: "Explicit rules for compressing, expanding, or rerouting the plan when progress or deadlines change."
+  format: bulleted list
+artifact_schemas:
+  HorizonAndPriorityPlan: paragraph
+  WeeklyOrLongRangePlan: table
+  MasteryTrackingMap: table
+  SpacedReviewSchedule: table
+  DeadlineAdjustmentRules: bullet_list
+produces:
+- HorizonAndPriorityPlan
+- WeeklyOrLongRangePlan
+- MasteryTrackingMap
+- SpacedReviewSchedule
+- DeadlineAdjustmentRules
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
+required_outputs:
+- HorizonAndPriorityPlan
+- WeeklyOrLongRangePlan
+- MasteryTrackingMap
+- SpacedReviewSchedule
+- DeadlineAdjustmentRules
+success_criteria:
+- All required outputs are present for M-PLAN-002.
+- The plan has a real horizon, explicit priorities, and a visible mastery-tracking structure.
+- Reviews are scheduled across time rather than left as generic reminders.
+- Deadline pressure changes the plan shape in a stated, reproducible way.
+partial_criteria:
+- "A usable plan exists but one core artifact is incomplete: MasteryTrackingMap."
+- "The horizon and review cadence are clear, but the adjustment rules or priority logic need one more pass."
+steps:
+- step: 1
+  name: Define Horizon And Deadline Shape
+  action: "Set the planning horizon and anchor it to the real exam, project, or calendar deadlines."
+  tutor_does: "State whether the plan is one week or multi-week, identify the major deadline anchors, and decide how much runway actually exists."
+  learner_does: "Confirms the real dates, bottlenecks, and non-negotiable constraints that shape the plan."
+  max_lines: 6
+  check: "Is the horizon explicit and tied to real dates instead of a vague future goal?"
+  example: 'Example: "We are planning the next three weeks to the neuro exam, with one project deadline in week two."'
+- step: 2
+  name: Rank Priorities By Risk And Value
+  action: "Rank objectives by urgency, weakness, and payoff so the plan is not flat."
+  tutor_does: "Separate must-cover objectives from nice-to-cover material and make the ranking visible."
+  learner_does: "Confirms which weak areas, deadlines, or stakes should drive the order of work."
+  max_lines: 6
+  check: "Is there a clear priority stack rather than an equal-weight list of topics?"
+  example: 'Example: "Stroke localization stays first because it is high-yield, weak, and exam-near."'
+- step: 3
+  name: Build Weekly Work Blocks
+  action: "Lay out the actual week-by-week or block-by-block plan with methods, durations, and planned outputs."
+  tutor_does: "Build the ordered work blocks, match them to the active preset, and keep the workload realistic."
+  learner_does: "Checks whether the proposed blocks fit the real schedule and energy profile."
+  max_lines: 6
+  check: "Does the plan show actual work blocks and method choices rather than generic intentions?"
+  example: 'Example: "Monday: 45 min PLAN/PRIME. Tuesday: 60 min EXPLAIN+ENCODE. Thursday: 20 min RETRIEVE review."'
+- step: 4
+  name: Attach Mastery Tracking
+  action: "Define how progress will be tracked and what evidence will count as movement."
+  tutor_does: "Set mastery states, define the evidence source for each objective, and assign the next action when mastery is weak, partial, or stable."
+  learner_does: "Confirms that the tracking categories are usable in real study and not too heavy to maintain."
+  max_lines: 6
+  check: "Can progress be updated later without redesigning the plan?"
+  example: 'Example: "Mark each objective as fragile, building, stable, or ready, using retrieval results or drill performance as evidence."'
+- step: 5
+  name: Schedule Spaced Reviews
+  action: "Place spaced reviews and recalibration points across the horizon."
+  tutor_does: "Add review timing that fits the plan length, specify review type, and keep the cadence executable."
+  learner_does: "Confirms the review points fit the real calendar and can actually be run."
+  max_lines: 6
+  check: "Is the review cadence explicit enough that the plan will survive beyond the first work block?"
+  example: 'Example: "Review the new stroke set after one day, again after three days, then once more the following week."'
+- step: 6
+  name: Emit Adjustment Rules
+  action: "State how the plan changes when progress stalls, time collapses, or the deadline gets closer."
+  tutor_does: "Define compress, defer, and escalate rules so the plan can adapt without being rebuilt from scratch."
+  learner_does: "Confirms the fallback rules and the trigger for the next planning check."
+  max_lines: 6
+  check: "Does the final plan include explicit deadline and progress adjustment rules?"
+  example: 'Example: "If the week-two retrieval score is still weak, drop low-yield extras and add one more targeted review block before the exam."'
+constraints:
+- rule: Planning only; do not teach live content while building the plan
+  why: PLAN methods create execution structure, not a substitute lesson.
+- rule: The plan must rank priorities instead of treating all objectives equally
+  why: Long-range plans fail when urgency and weakness are flattened.
+- rule: Review timing must be explicitly scheduled across the horizon
+  why: Spaced review only works if it is placed on the timeline ahead of time.
+- rule: Deadline and progress changes must alter the plan by rule, not by vague intention
+  why: A long-range plan needs adaptation logic, not just an optimistic baseline schedule.
+allowed_moves:
+- choose a one-week or multi-week horizon
+- rank objectives by urgency, weakness, and yield
+- allocate weekly or recurring study blocks
+- map preset choice to a realistic method mix
+- define mastery states and evidence sources
+- place spaced reviews across the horizon
+- add recalibration points before major deadlines
+- specify what gets compressed or deferred under time pressure
+forbidden_moves:
+- start teaching content during planning
+- build a flat plan with no visible priorities
+- omit mastery tracking
+- leave reviews unscheduled
+- ignore real deadlines or fixed constraints
+- assume the plan will remain valid even if progress stalls
+stuck_protocol: "Shorten the horizon, reduce the active objective set, and keep only the highest-yield weekly blocks plus the minimum viable spaced reviews. If still overloaded, fall back to one week at a time."
+failure_modes:
+- mode: Priority stack is too broad
+  detection: "Too many objectives are marked as equally urgent, so the plan cannot focus."
+  recovery: "Cut to a smaller top tier and defer the rest to a later cycle."
+  fallback_method: M-PLAN-001
+- mode: Review schedule is too ambitious
+  detection: "The number of planned reviews clearly exceeds the actual calendar or energy budget."
+  recovery: "Keep only the highest-yield review points and remove low-value repetitions."
+  fallback_method: M-OVR-003
+- mode: Progress signals do not change the plan
+  detection: "Weak mastery evidence appears, but the schedule and method mix remain unchanged."
+  recovery: "Re-rank the priorities, increase review density on the weak set, and cut lower-value blocks."
+  fallback_method: M-CAL-002
+default_duration_min: 7
+energy_cost: medium
+best_stage: weekly_reset
+mechanisms:
+- goal_setting
+- self_regulated_learning
+- strategic_planning
+- implementation_intentions
+- spacing
+- adaptive_regulation
+- time_management
+evidence:
+  citation: "Locke and Latham (2002); Zimmerman (2002); Panadero (2017); Cepeda, Pashler, Vul, Wixted, and Rohrer (2006); Kitsantas, Winsler, and Huie (2008); Wirth, Fahr, and Seifried (2024)"
+  finding: "Weekly & Long-term Planning is best supported as a self-regulated forethought scaffold that combines clear goals, strategic planning, progress monitoring, and scheduled review across time. Goal-setting theory supports specific and challenging goals over vague intentions; self-regulated-learning theory places planning, task analysis, and adaptive monitoring at the start of effective study cycles; later SRL reviews support linking forethought, monitoring, and reflection rather than treating them as separate habits; spacing research supports planned review over massed study; and classroom time-management and planning studies show that explicit schedule-and-goal interventions can improve organization, reduce stress, and strengthen academic follow-through. The practical implication for this method is to make priority ranking visible, attach mastery tracking to evidence, pre-schedule reviews, and state exactly how the plan changes when progress or deadlines shift."
+  source: "https://doi.org/10.1037/0003-066X.57.9.705; https://doi.org/10.1207/S15430421TIP4102_2; https://doi.org/10.3389/fpsyg.2017.00422; https://doi.org/10.1037/0033-2909.132.3.354; https://doi.org/10.1016/j.appdev.2008.04.001; https://doi.org/10.14434/josotl.v22i3.32378"
+  needs_research: false
+knobs:
+  guidance_level: medium
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: "Fastest long-range plan. Build a short countdown plan to the next exam or deadline with aggressive priority cuts, compressed weekly blocks, and the minimum viable spaced reviews."
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: "Fullest long-range plan. Build a multi-week mastery plan with explicit milestones, richer method sequencing, recurring tracking updates, and spaced reviews across the whole horizon."
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: "Refresh plan. Build a compact weekly maintenance table for already-seen material with one main work block, one retrieval review, and one progress check."
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: "Applied plan. Build a weekly or multi-week planning matrix around cases, on-shift constraints, safety-critical topics, and deadline-sensitive review points."
+related_methods:
+- id: M-PLAN-001
+  relationship: "Use when the learner needs a single-session plan instead of a weekly or long-range arc."
+- id: M-CAL-002
+  relationship: "Use when the plan needs fuller progress evidence before the next re-ranking pass."
+system_prompt_override:
+  relaxes:
+  - Never reveal the full answer without letting me attempt first. Progressive hints, not solutions.
+  - Highly interactive. One teaching chunk (8-12 lines max), one check, one question at a time.
+  replaces_with:
+  - This is a planning method. Do not teach content; produce a bounded weekly or long-range plan with priorities, mastery tracking, spaced reviews, and adjustment rules.
+  - Ask only for missing planning inputs. If the core inputs are already present, generate the plan directly.
+  reason: "PLAN methods should emit planning artifacts, not drift into tutoring."
+facilitation_prompt: |
+  You are running M-PLAN-002 (Weekly & Long-term Planning) in the PLAN stage.
+  Use only the loaded source and ask only for missing required inputs.
+  Produce: HorizonAndPriorityPlan, WeeklyOrLongRangePlan, MasteryTrackingMap, SpacedReviewSchedule, and DeadlineAdjustmentRules.
+  Build a weekly or multi-week plan by setting the horizon, ranking priorities, assigning real work blocks, tracking mastery, scheduling spaced reviews, and stating how the plan changes when progress or deadlines shift. Do not drift into teaching.
+  Preset behavior:
+  - exam_cram: one-shot; short countdown plan to the next deadline; aggressive cuts; minimal viable spaced reviews.
+  - deep_mastery: interactive; multi-week mastery plan with milestones, recurring tracking, and fuller review spacing.
+  - quick_review: one-shot refresh; compact weekly maintenance table with one main block, one retrieval review, and one progress check.
+  - clinical_bridge: stepwise; applied weekly or multi-week matrix built around cases, shifts, safety-critical topics, and deadline-sensitive reviews.
+  If no preset is specified, use the default knobs. One-shot returns the full plan in one bounded reply; interactive or stepwise mode moves horizon -> priorities -> schedule -> reviews -> adjustment rules and waits.
+validation:
+  test_cases:
+  - topic: weekly exam preparation plan
+    expected_outputs:
+    - HorizonAndPriorityPlan
+    - WeeklyOrLongRangePlan
+    - SpacedReviewSchedule
+    pass_criteria:
+    - The weekly plan ranks priorities, schedules at least one spaced review, and stays within a realistic weekly horizon.
+    - The method mix visibly matches the active preset.
+  - topic: multi-week mastery plan to a major deadline
+    expected_outputs:
+    - MasteryTrackingMap
+    - SpacedReviewSchedule
+    - DeadlineAdjustmentRules
+    pass_criteria:
+    - The plan includes explicit mastery tracking, review timing, and rules for compression or escalation as the deadline approaches.
+    - The output remains a planning artifact rather than turning into a live lesson.
+  acceptance_criteria:
+  - Every required output is present and executable without extra interpretation.
+  - The plan includes explicit mastery tracking and spaced review scheduling.
+  - Deadline pressure and progress changes have clear adjustment rules.
+  known_issues:
+  - If the learner has no real progress signal yet, the first version of the mastery-tracking map may be coarse and need refinement after the first review cycle.

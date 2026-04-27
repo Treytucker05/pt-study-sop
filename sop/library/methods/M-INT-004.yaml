@@ -1,31 +1,32 @@
 id: M-INT-004
 name: Side-by-Side Comparison
-category: interrogate
-subcategory: int
-description: Place two confusable concepts in a comparison table (features, functions, clinical signs).
-  Identify discriminating features. Builds differential diagnosis skill.
-control_stage: ENCODE
+category: INTERROGATE
+subcategory: side-by-side-comparison
+description: Place two confusable concepts in a comparison table, fill the key rows from memory first, then verify against source and mark the discriminators.
+control_stage: INTERROGATE
 status: validated
-version: '1.0'
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
+- interrogate
 - comparison
 - discrimination
 - differential
 - table
-purpose: Interrogate already-encoded material through comparison, application, retrieval, or transfer
-  so the learner can discriminate it under pressure.
-not_for: This is not for first exposure, direct lecturing, or introducing brand-new material that has
-  not already been encoded.
+- contrasting-cases
+- retrieval
+purpose: Side-by-Side Comparison exists to interrogate already-encoded material by forcing the learner to contrast two confusable concepts row by row, correct memory errors against source, and name the highest-yield discriminators. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: This is not for first exposure, direct lecturing, or introducing brand-new material that has not already been encoded.
 best_fit_topics:
 - Previously encoded concepts that need comparison, application, or discrimination
 - Material the learner can retrieve without notes and test under pressure
+- Pairs of concepts that are easily confused and need a crisp differential cue
 poor_fit_topics:
 - Brand-new material that has not been encoded yet
 - Tasks that need direct teaching rather than retrieval or interrogation
-learner_state_required: The target concept has already been taught or encoded. The learner can attempt
-  retrieval, comparison, or application before seeing the answer.
+- Pairs that are too unrelated to support a meaningful contrast table
+learner_state_required: The target concepts have already been taught or encoded. The learner can attempt retrieval, comparison, or application before seeing the answer.
 inputs:
 - description: Two confusable concepts
   required: true
@@ -35,217 +36,227 @@ inputs:
   required: true
 outputs:
 - name: Side-by-side comparison table
-  description: Side-by-side comparison table
+  description: Completed comparison table with both concepts contrasted across the key dimensions.
   format: 2-column or multi-row table
 - name: Discriminating features highlighted
-  description: Discriminating features highlighted
-  format: short, checkable artifact
+  description: Highest-yield differentiators that separate the two concepts under pressure.
+  format: bulleted or tabular list
 - name: Error list from initial attempt
-  description: Error list from initial attempt
-  format: short, checkable artifact
-required_outputs: &id001
+  description: Rows or cells that required correction after source verification.
+  format: bulleted or tabular list
+artifact_schemas:
+  Side-by-side comparison table: table
+  Discriminating features highlighted: bullet_list
+  Error list from initial attempt: bullet_list
+produces:
+- Side-by-side comparison table
+- Discriminating features highlighted
+- Error list from initial attempt
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
+required_outputs:
 - Side-by-side comparison table (5-7 rows minimum)
 - Discriminating features highlighted (the key differentiators)
 - Error list from initial memory-first attempt
 success_criteria:
-- 'All required outputs are present and checkable: Side-by-side comparison table (5-7 rows minimum), Discriminating
-  features highlighted (the key differentiators), Error list from initial memory-first attempt.'
-- 'The method reaches its stop condition: Table complete (5-7 rows filled); Discriminators identified.'
-- The learner stays active and the tutor does not give away the answer before the required attempt or
-  transformation.
+- All required outputs are present for M-INT-004.
+- The table includes at least 5-7 useful dimensions and ends with a clear discriminator rather than a list of generic similarities.
+- The learner stays active and the tutor does not give away the answer before the required attempt or transformation.
 partial_criteria:
-- 'Some required outputs are present but at least one is missing or incomplete: Side-by-side comparison
-  table (5-7 rows minimum), Discriminating features highlighted (the key differentiators).'
+- 'One or more required outputs are present but one core artifact is incomplete: Side-by-side comparison table (5-7 rows minimum).'
+- The comparison is usable but still too shallow because the differentiators or correction notes are weak.
 steps:
 - step: 1
-  name: Two Concepts You Frequently Confuse
-  action: Choose two concepts you frequently confuse
-  tutor_does: 'Guide the learner to Choose two concepts you frequently confuse. Keep in mind: The more
-    confusable, the more valuable'
+  name: Choose the confusable pair
+  action: Choose two concepts you frequently confuse.
+  tutor_does: Guide the learner to choose two concepts that are genuinely easy to mix up so the comparison produces a useful differential.
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: The more confusable, the more valuable'
+  example: 'Example: The more confusable, the more valuable.'
 - step: 2
-  name: A Two Column Table
-  action: Create a two-column table
-  tutor_does: 'Guide the learner to Create a two-column table. Keep in mind: One column per concept'
+  name: Build the table frame
+  action: Create a two-column table.
+  tutor_does: Guide the learner to set one column per concept and prepare the table before any source check or correction.
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: One column per concept'
+  example: 'Example: One column per concept.'
 - step: 3
-  name: List 5 7 Comparison Dimensions
-  action: List 5-7 comparison dimensions as rows
-  tutor_does: 'Guide the learner to List 5-7 comparison dimensions as rows. Keep in mind: Include: definition,
-    mechanism, presentation, treatment, prognosis'
+  name: Set the comparison rows
+  action: List 5-7 comparison dimensions as rows.
+  tutor_does: Guide the learner to choose rows that expose the differences, such as definition, mechanism, presentation, treatment, or prognosis.
   learner_does: Attempts retrieval, application, or comparison from memory before asking for support.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: Include: definition, mechanism, presentation, treatment, prognosis'
+  example: 'Example: Include definition, mechanism, presentation, treatment, and prognosis.'
 - step: 4
-  name: Each Cell From Memory First
-  action: Fill each cell from memory first
-  tutor_does: 'Guide the learner to Fill each cell from memory first. Keep in mind: Retrieval before verification'
+  name: Fill from memory first
+  action: Fill each cell from memory first.
+  tutor_does: Guide the learner to complete the cells from memory before any verification so the errors and confusions stay visible.
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: Retrieval before verification'
+  example: 'Example: Retrieval before verification.'
 - step: 5
-  name: And Correct Against Source
-  action: Verify and correct against source
-  tutor_does: 'Guide the learner to Verify and correct against source. Keep in mind: Note which cells
-    you got wrong'
+  name: Verify and correct
+  action: Verify and correct against source.
+  tutor_does: Guide the learner to check each row against the source and record which cells or rows were wrong rather than silently replacing them.
   learner_does: Attempts retrieval, application, or comparison from memory before asking for support.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: Note which cells you got wrong'
+  example: 'Example: Note which cells you got wrong.'
 - step: 6
-  name: Highlight The Key Discriminating Features
-  action: Highlight the key discriminating features
-  tutor_does: 'Guide the learner to Highlight the key discriminating features. Keep in mind: What''s the
-    ONE thing that distinguishes them?'
+  name: Highlight the discriminators
+  action: Highlight the key discriminating features.
+  tutor_does: Guide the learner to mark the rows or cues that most reliably separate the two concepts and to name the single highest-yield discriminator.
   learner_does: Attempts retrieval, application, or comparison from memory before asking for support.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: What''s the ONE thing that distinguishes them?'
+  example: 'Example: What is the one thing that best distinguishes them?'
 constraints:
 - rule: Require active learner processing
-  why: The method depends on the learner generating, mapping, explaining, or transforming the material
-    rather than passively reading.
+  why: The method depends on the learner generating, mapping, explaining, or transforming the material rather than passively reading.
 - rule: Stay within objective scope
   why: Prevents drift into unrelated material and keeps the method auditable.
 - rule: Do not turn this into a passive answer dump or scoring event
   why: This method is designed for guided learning, not one-shot lecture or formal grading.
-- rule: Force active processing (explain, transform, or map), not passive reading.
-  why: This gating rule is part of the method’s execution contract.
-- rule: Keep output scoped to mapped objectives only.
-  why: This gating rule is part of the method’s execution contract.
+- rule: Force active processing (explain, transform, or map), not passive reading
+  why: This gating rule is part of the method's execution contract.
+- rule: Keep output scoped to mapped objectives only
+  why: This gating rule is part of the method's execution contract.
 allowed_moves:
-- Ask probing questions about why features differ between concepts
-- Challenge the learner to identify the MOST differentiating dimension
+- Ask probing questions about why the features differ between the two concepts
+- Challenge the learner to rank which row is the strongest discriminator
 - Require memory-first filling before source verification
 - Push for 5-7 comparison dimensions, not fewer
-- Demand explicit discriminating features (the "one thing" that separates them)
+- Demand explicit discriminating features rather than generic summaries
 - Question cells where the learner seems uncertain or vague
 - Use Socratic questioning to expose confusion between the two concepts
-- Require the learner to articulate what they got wrong and why
+- Require the learner to articulate what was wrong in the initial attempt and why
 forbidden_moves:
 - Accept a table with fewer than 5 comparison dimensions
-- Provide the comparison table or fill cells FOR the learner
-- Allow source lookup before memory-first attempt
+- Provide the comparison table or fill cells for the learner
+- Allow source lookup before the memory-first attempt
 - Skip discriminating feature identification
-- Accept features that are identical across both concepts without probing for differences
-- Teach new content — interrogation uses what was already encoded
+- Accept features that are identical across both concepts without probing for useful contrast
+- Teach new content because interrogation uses what was already encoded
 - Move on without the learner identifying at least one key discriminator
 - Accept one-word or surface-level answers without probing
 - Present content outside the mapped objective scope
-stuck_protocol: Reduce the scope, ask for a smaller retrieval target, compare with a near-neighbor, or
-  route back to ENCODE/REFERENCE if recall keeps failing. Do not keep guessing indefinitely.
+stuck_protocol: Reduce the scope, ask for a smaller retrieval target, compare with a near-neighbor, or route back to ENCODE or REFERENCE if recall keeps failing. Do not keep guessing indefinitely.
 failure_modes:
 - mode: Features too similar across concepts
-  detection: The learner or tutor starts doing features too similar across concepts or the artifact stops
-    satisfying the method’s required checks.
-  recovery: Focus on dimensions where they differ
-  fallback_method: M-ENC-010
+  detection: The learner or tutor starts doing features too similar across concepts or the artifact stops satisfying the method's required checks.
+  recovery: Focus on rows where the concepts differ rather than rows where they overlap.
+  fallback_method: M-ORG-002
 - mode: Not identifying discriminators
-  detection: The learner or tutor starts doing not identifying discriminators or the artifact stops satisfying
-    the method’s required checks.
-  recovery: Force ranking — which row is MOST differentiating?
+  detection: The learner or tutor starts doing not identifying discriminators or the artifact stops satisfying the method's required checks.
+  recovery: Force ranking and choose the most differentiating row.
   fallback_method: M-INT-006
 - mode: Looking up before trying
-  detection: The learner or tutor starts doing looking up before trying or the artifact stops satisfying
-    the method’s required checks.
-  recovery: Fill from memory first
+  detection: The learner or tutor starts doing looking up before trying or the artifact stops satisfying the method's required checks.
+  recovery: Reset to a memory-first pass before reopening the source.
   fallback_method: M-INT-002
 default_duration_min: 7
 energy_cost: medium
 best_stage: review
 mechanisms:
+- comparison
 - discrimination
-- elaboration
+- contrasting_cases
+- structural_alignment
+- retrieval_practice
+- error_correction
 evidence:
-  citation: Alfieri et al. (2013)
-  finding: Comparison-based learning improves discrimination and concept formation
-  source: seed_methods.py
+  citation: Alfieri, Nokes-Malach, and Schunn (2013); Richland and McDonough (2010); Richland and Simms (2015); Loibl, Tillema, Rummel, and van Gog (2020); Blair, Banes, and Martin (2024)
+  finding: >-
+    Side-by-Side Comparison is best supported as a guided comparison and
+    discrimination method, not as a passive review table. Meta-analytic and
+    review work on case comparison suggests that carefully aligned contrasts
+    help learners notice deep structure, form better categories, and separate
+    confusable alternatives more reliably than studying cases in isolation.
+    More recent classroom and instructional studies show both the benefit and
+    the constraint: contrasting cases can sharpen noticing and transfer, but
+    the effect depends on having well-chosen dimensions and enough guidance to
+    surface the deep features rather than leaving learners with shallow surface
+    contrasts. The practical implication for this method is to require a
+    memory-first table, enforce 5-7 meaningful dimensions, verify errors
+    explicitly, and end by naming the highest-yield discriminator instead of
+    stopping at generic compare-contrast prose.
+  source: https://doi.org/10.1080/00461520.2013.775712; https://doi.org/10.1016/j.cedpsych.2009.09.001; https://doi.org/10.1002/wcs.1336; https://doi.org/10.1007/s11251-020-09504-7; https://doi.org/10.1007/s11251-024-09661-z
+  needs_research: false
 knobs:
   guidance_level: medium
-  output_format: bullets
-  required_when_confusable: true
-  evidence_raw: Alfieri et al. (2013); comparison-based learning improves discrimination and concept formation
-  gating_rules:
-  - Force active processing (explain, transform, or map), not passive reading.
-  - Keep output scoped to mapped objectives only.
-  logging_fields:
-  - concepts_compared
-  - dimensions_used
-  - discriminators_found
-  - cells_corrected
-  artifact_type: notes
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest comparison pass. Build a 5-row sprint table, name 2-3 discriminator bullets, and log only the highest-value correction misses.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Full comparison pass. Build a 7-row table, rank the discriminators, and keep a fuller correction log that explains where the initial confusion came from.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: Refresh comparison pass. Use one compact table with columns for dimension, concept A, concept B, and discriminator, followed by a short correction list.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied differential pass. Weight the rows toward presentation, red flags, testing, treatment, and prognosis so the final discriminators read like decision cues under pressure.
 related_methods:
-- id: M-ENC-010
+- id: M-ORG-002
   relationship: Comparison-table cousin method
 - id: M-INT-006
   relationship: Illness-script fallback if clinical discrimination is needed
 - id: M-INT-002
   relationship: Clinical application fallback
-facilitation_prompt: "You are running M-INT-004 (Side-by-Side Comparison) in ENCODE stage.\nRole: you\
-  \ are the tutor running the method exactly as written, with no hidden assumptions.\nObjective: Interrogate\
-  \ already-encoded material through comparison, application, retrieval, or transfer so the learner can\
-  \ discriminate it under pressure.\nScope: Place two confusable concepts in a comparison table (features,\
-  \ functions, clinical signs). Identify discriminating features. Builds differential diagnosis skill.\n\
-  Rules:\n- Require active learner processing — The method depends on the learner generating, mapping,\
-  \ explaining, or transforming the material rather than passively reading.\n- Stay within objective scope\
-  \ — Prevents drift into unrelated material and keeps the method auditable.\n- Do not turn this into\
-  \ a passive answer dump or scoring event — This method is designed for guided learning, not one-shot\
-  \ lecture or formal grading.\n- Force active processing (explain, transform, or map), not passive reading.\
-  \ — This gating rule is part of the method’s execution contract.\n- Keep output scoped to mapped objectives\
-  \ only. — This gating rule is part of the method’s execution contract.\n- Not for: This is not for first\
-  \ exposure, direct lecturing, or introducing brand-new material that has not already been encoded.\n\
-  Inputs:\n- Two confusable concepts (required)\n- Comparison dimensions (features to compare) (required)\n\
-  - Source material for accuracy (required)\nRequired outputs:\n- Side-by-side comparison table: Side-by-side\
-  \ comparison table [2-column or multi-row table]\n- Discriminating features highlighted: Discriminating\
-  \ features highlighted [short, checkable artifact]\n- Error list from initial attempt: Error list from\
-  \ initial attempt [short, checkable artifact]\nSteps: run one step at a time and wait after each step\
-  \ before advancing.\n1. Two Concepts You Frequently Confuse\n   Tutor does: Guide the learner to Choose\
-  \ two concepts you frequently confuse. Keep in mind: The more confusable, the more valuable\n   Learner\
-  \ does: Performs the requested cognitive move and shares the result before moving on.\n   Example: Example:\
-  \ The more confusable, the more valuable\n   Check: Has the learner attempted retrieval or application\
-  \ before any corrective help?\n   Then STOP and wait for the learner.\n2. A Two Column Table\n   Tutor\
-  \ does: Guide the learner to Create a two-column table. Keep in mind: One column per concept\n   Learner\
-  \ does: Performs the requested cognitive move and shares the result before moving on.\n   Example: Example:\
-  \ One column per concept\n   Check: Has the learner attempted retrieval or application before any corrective\
-  \ help?\n   Then STOP and wait for the learner.\n3. List 5 7 Comparison Dimensions\n   Tutor does: Guide\
-  \ the learner to List 5-7 comparison dimensions as rows. Keep in mind: Include: definition, mechanism,\
-  \ presentation, treatment, prognosis\n   Learner does: Attempts retrieval, application, or comparison\
-  \ from memory before asking for support.\n   Example: Example: Include: definition, mechanism, presentation,\
-  \ treatment, prognosis\n   Check: Has the learner attempted retrieval or application before any corrective\
-  \ help?\n   Then STOP and wait for the learner.\n4. Each Cell From Memory First\n   Tutor does: Guide\
-  \ the learner to Fill each cell from memory first. Keep in mind: Retrieval before verification\n   Learner\
-  \ does: Performs the requested cognitive move and shares the result before moving on.\n   Example: Example:\
-  \ Retrieval before verification\n   Check: Has the learner attempted retrieval or application before\
-  \ any corrective help?\n   Then STOP and wait for the learner.\n5. And Correct Against Source\n   Tutor\
-  \ does: Guide the learner to Verify and correct against source. Keep in mind: Note which cells you got\
-  \ wrong\n   Learner does: Attempts retrieval, application, or comparison from memory before asking for\
-  \ support.\n   Example: Example: Note which cells you got wrong\n   Check: Has the learner attempted\
-  \ retrieval or application before any corrective help?\n   Then STOP and wait for the learner.\n6. Highlight\
-  \ The Key Discriminating Features\n   Tutor does: Guide the learner to Highlight the key discriminating\
-  \ features. Keep in mind: What's the ONE thing that distinguishes them?\n   Learner does: Attempts retrieval,\
-  \ application, or comparison from memory before asking for support.\n   Example: Example: What's the\
-  \ ONE thing that distinguishes them?\n   Check: Has the learner attempted retrieval or application before\
-  \ any corrective help?\n   Then STOP and wait for the learner.\nStop conditions:\n- All required outputs\
-  \ are present and checkable: Side-by-side comparison table (5-7 rows minimum), Discriminating features\
-  \ highlighted (the key differentiators), Error list from initial memory-first attempt.\n- The method\
-  \ reaches its stop condition: Table complete (5-7 rows filled); Discriminators identified.\n- The learner\
-  \ stays active and the tutor does not give away the answer before the required attempt or transformation.\n\
-  If stuck: Reduce the scope, ask for a smaller retrieval target, compare with a near-neighbor, or route\
-  \ back to ENCODE/REFERENCE if recall keeps failing. Do not keep guessing indefinitely.\nDo not skip\
-  \ steps, do not solve the whole task at once, and do not present source claims as mnemonic or analogy\
-  \ artifacts."
+system_prompt_override:
+  relaxes:
+  - Never reveal the full answer without letting me attempt first. Progressive hints, not solutions.
+  replaces_with:
+  - Require the learner to fill the table from memory before any source verification. Corrections should preserve the original misses instead of silently overwriting them.
+  - Reject shallow compare-contrast rows that do not help discriminate the pair. Push toward rows that actually separate the concepts under pressure.
+  reason: Side-by-Side Comparison only works when the learner externalizes the confusion pattern first and then sharpens it into useful differentiators.
+facilitation_prompt: |
+  You are running M-INT-004 (Side-by-Side Comparison) in the INTERROGATE stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: Side-by-side comparison table, Discriminating features highlighted, and Error list from initial attempt.
+  Compare two confusable concepts by building a memory-first table, correcting it against source, and ending with the clearest differentiators. Do not turn the run into a lecture or fill the table for the learner.
+  Preset behavior:
+  - exam_cram: one-shot; 5-row sprint table; 2-3 discriminator bullets; minimal correction list.
+  - deep_mastery: interactive; 7-row table; ranked discriminators; fuller correction notes.
+  - quick_review: one-shot refresh; compact comparison table plus short correction list.
+  - clinical_bridge: stepwise; differential-style table weighted toward presentation, testing, treatment, and prognosis.
+  If no preset is specified, use the default knobs. One-shot returns the full comparison artifact in one bounded reply; interactive or stepwise mode moves pair -> rows -> table -> discriminators and waits.
 validation:
   test_cases:
   - topic: Previously encoded concepts that need comparison, application, or discrimination
-    expected_outputs: *id001
+    expected_outputs:
+    - Side-by-side comparison table (5-7 rows minimum)
+    - Discriminating features highlighted (the key differentiators)
+    - Error list from initial memory-first attempt
     pass_criteria:
     - All required outputs are present.
     - The learner performs the required active step before the final artifact is given.
@@ -264,4 +275,4 @@ validation:
   - The facilitation_prompt can be run without extra hidden context.
   known_issues:
   - LLMs may over-explain before the learner attempts the required move.
-  - LLMs may drift outside scope when the topic is broad or ambiguous.
+  - LLMs may drift into generic similarities if the tutor does not enforce rows that produce real discrimination.

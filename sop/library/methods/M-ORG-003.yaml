@@ -1,31 +1,28 @@
 id: M-ORG-003
 name: Process Flowchart
-category: encode
+category: ENCODE
 subcategory: org
-description: Draw a sequential diagram showing a process, pathway, or algorithm. Include decision points
-  where applicable. Use Mermaid graph TD syntax for dashboard editor.
+description: Draw a sequential diagram showing a process, pathway, or algorithm. Include decision points where applicable. Use Mermaid graph TD syntax for dashboard editor.
 control_stage: ENCODE
 status: validated
-version: '1.0'
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
 - visual
 - mermaid
 - sequential
 - procedural
-purpose: Organize the material into a visible structure so relationships, sequence, contrast, or hierarchy
-  become easier to remember and explain.
-not_for: This is not for isolated trivia, free-form brainstorming, or content that has no meaningful structure
-  to map.
+- encode
+purpose: Organize the material into a visible structure so relationships, sequence, contrast, or hierarchy become easier to remember and explain.
+not_for: This is not for isolated trivia, free-form brainstorming, or content that has no meaningful structure to map.
 best_fit_topics:
 - Structures, pathways, lists, tables, and maps with visible relationships
 - Material that benefits from spatial or hierarchical organization
 poor_fit_topics:
 - Single isolated facts that only need a quick cue
 - Highly abstract content with no separable parts or relationships
-learner_state_required: Source material is loaded. The learner can see or recall the parts and is ready
-  to organize them into a structure.
+learner_state_required: Source material is loaded. The learner can see or recall the parts and is ready to organize them into a structure.
 inputs:
 - description: Process or algorithm to diagram
   required: true
@@ -46,25 +43,37 @@ outputs:
 - name: Loop/feedback points identified
   description: Loop/feedback points identified
   format: short, checkable artifact
+artifact_schemas:
+  Completed flowchart: tree_map
+  Mermaid code (if using dashboard): string
+  Decision point list: string
+  Loop/feedback points identified: string
+produces:
+- Completed flowchart
+- Mermaid code (if using dashboard)
+- Decision point list
+- Loop/feedback points identified
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
 required_outputs: &id001
 - Completed flowchart
 - Decision point list
 - Loop/feedback points identified
 success_criteria:
-- 'All required outputs are present and checkable: Completed flowchart, Decision point list, Loop/feedback
-  points identified.'
+- 'All required outputs are present and checkable: Completed flowchart, Decision point list, Loop/feedback points identified.'
 - 'The method reaches its stop condition: All steps included; All decisions branched correctly.'
-- The learner stays active and the tutor does not give away the answer before the required attempt or
-  transformation.
+- The learner stays active and the tutor does not give away the answer before the required attempt or transformation.
 partial_criteria:
-- 'Some required outputs are present but at least one is missing or incomplete: Completed flowchart, Decision
-  point list.'
+- 'Some required outputs are present but at least one is missing or incomplete: Completed flowchart, Decision point list.'
 steps:
 - step: 1
   name: The Start Point Input Trigger
   action: Identify the start point (input/trigger)
-  tutor_does: 'Guide the learner to Identify the start point (input/trigger). Keep in mind: What initiates
-    this process?'
+  tutor_does: 'Guide the learner to Identify the start point (input/trigger). Keep in mind: What initiates this process?'
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -72,8 +81,7 @@ steps:
 - step: 2
   name: List All Steps In Sequential
   action: List all steps in sequential order
-  tutor_does: 'Guide the learner to List all steps in sequential order. Keep in mind: Include every decision
-    point'
+  tutor_does: 'Guide the learner to List all steps in sequential order. Keep in mind: Include every decision point'
   learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -81,8 +89,7 @@ steps:
 - step: 3
   name: Boxes For Steps Diamonds For
   action: Draw boxes for steps, diamonds for decisions
-  tutor_does: 'Guide the learner to Draw boxes for steps, diamonds for decisions. Keep in mind: Standard
-    flowchart conventions'
+  tutor_does: 'Guide the learner to Draw boxes for steps, diamonds for decisions. Keep in mind: Standard flowchart conventions'
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -90,8 +97,7 @@ steps:
 - step: 4
   name: With Arrows Showing Flow Direction
   action: Connect with arrows showing flow direction
-  tutor_does: 'Guide the learner to Connect with arrows showing flow direction. Keep in mind: Label decision
-    branches (Yes/No, High/Low)'
+  tutor_does: 'Guide the learner to Connect with arrows showing flow direction. Keep in mind: Label decision branches (Yes/No, High/Low)'
   learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -99,8 +105,7 @@ steps:
 - step: 5
   name: Loops And Feedback Points
   action: Identify loops and feedback points
-  tutor_does: 'Guide the learner to Identify loops and feedback points. Keep in mind: Where does the process
-    repeat or reset?'
+  tutor_does: 'Guide the learner to Identify loops and feedback points. Keep in mind: Where does the process repeat or reset?'
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -108,24 +113,22 @@ steps:
 - step: 6
   name: Against Source Material
   action: Verify against source material
-  tutor_does: 'Guide the learner to Verify against source material. Keep in mind: Flag any missing or
-    incorrect steps'
+  tutor_does: 'Guide the learner to Verify against source material. Keep in mind: Flag any missing or incorrect steps'
   learner_does: Reads the prompt, does the thinking step, and returns the artifact or answer.
   max_lines: 8
   check: Is this step complete and ready for the next move?
   example: 'Example: Flag any missing or incorrect steps'
 constraints:
 - rule: Require active learner processing
-  why: The method depends on the learner generating, mapping, explaining, or transforming the material
-    rather than passively reading.
+  why: The method depends on the learner generating, mapping, explaining, or transforming the material rather than passively reading.
 - rule: Stay within objective scope
   why: Prevents drift into unrelated material and keeps the method auditable.
 - rule: Do not turn this into a passive answer dump or scoring event
   why: This method is designed for guided learning, not one-shot lecture or formal grading.
 - rule: Force active processing (explain, transform, or map), not passive reading.
-  why: This gating rule is part of the method’s execution contract.
+  why: "This gating rule is part of the method\u2019s execution contract."
 - rule: Keep output scoped to mapped objectives only.
-  why: This gating rule is part of the method’s execution contract.
+  why: "This gating rule is part of the method\u2019s execution contract."
 allowed_moves:
 - Help learner identify the start point (input/trigger) of the process
 - Prompt learner to list steps in sequential order including decision points
@@ -144,22 +147,18 @@ forbidden_moves:
 - Skip source material verification of the completed flowchart
 - Deliver a passive process description instead of guiding chart construction
 - Move to retrieval before the flowchart is verified
-stuck_protocol: Reduce the scope to fewer nodes or rows, restate the parts in plain language, and then
-  rebuild the structure one relationship at a time. If needed, switch to a simpler map or flowchart.
+stuck_protocol: Reduce the scope to fewer nodes or rows, restate the parts in plain language, and then rebuild the structure one relationship at a time. If needed, switch to a simpler map or flowchart.
 failure_modes:
 - mode: Missing decision branches
-  detection: The learner or tutor starts doing missing decision branches or the artifact stops satisfying
-    the method’s required checks.
+  detection: "The learner or tutor starts doing missing decision branches or the artifact stops satisfying the method\u2019s required checks."
   recovery: Every diamond must have labeled Yes/No paths
   fallback_method: M-GEN-007
 - mode: Linear-only thinking
-  detection: The learner or tutor starts doing linear-only thinking or the artifact stops satisfying the
-    method’s required checks.
+  detection: "The learner or tutor starts doing linear-only thinking or the artifact stops satisfying the method\u2019s required checks."
   recovery: Actively look for loops and feedback
   fallback_method: M-ORG-001
 - mode: Too complex single diagram
-  detection: The learner or tutor starts doing too complex single diagram or the artifact stops satisfying
-    the method’s required checks.
+  detection: "The learner or tutor starts doing too complex single diagram or the artifact stops satisfying the method\u2019s required checks."
   recovery: Split into sub-processes if >12 steps
   fallback_method: M-ORG-004
 default_duration_min: 10
@@ -170,80 +169,32 @@ mechanisms:
 - dual_coding
 - generation
 evidence:
-  citation: Winn (1991)
-  finding: Spatial-sequential diagrams improve procedural understanding and memory
-  source: seed_methods.py
+  citation: Winn (1991); How the design and complexity of concept maps influence cognitive learning processes (2022); How can procedural flowcharts support the development of mathematics problem-solving skills? (2024); Hsu and Lopez Ricoy (2025)
+  finding: Process Flowchart is best supported as a visual-organization method for procedural or mechanism-heavy material when sequence, decision points, and loops are made explicit. Visual-organization research shows that learners benefit when the structure of the representation makes relationships and paths salient rather than forcing them to infer order from dense prose. More recent work on concept-map design and learner-built procedural flowcharts shows that structure only helps when the diagram stays readable, preserves the true relations, and is actively constructed or repaired by the learner. The practical implication for this method is to keep the flow linear where possible, mark decisions and loops explicitly, and verify the diagram against the source before treating it as a stable study artifact.
+  source: https://doi.org/10.1007/s11423-022-10083-2; https://doi.org/10.1007/s13394-024-00483-3; https://doi.org/10.1177/0092055X241268768; https://doi.org/10.1080/00220671.2014.896315
+  needs_research: false
 knobs:
   guidance_level: medium
-  output_format: bullets
-  evidence_raw: Winn (1991); spatial-sequential diagrams improve procedural understanding
-  gating_rules:
-  - Force active processing (explain, transform, or map), not passive reading.
-  - Keep output scoped to mapped objectives only.
-  logging_fields:
-  - process_charted
-  - step_count
-  - decision_count
-  - loop_count
-  - verification_status
-  artifact_type: flowchart
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
 related_methods:
 - id: M-GEN-007
-  relationship: Mechanism trace for causal sequencing
-- id: M-ORG-001
-  relationship: Concept map for structure
-- id: M-ORG-004
-  relationship: Decision tree for decision branches
-facilitation_prompt: "You are running M-ORG-003 (Process Flowchart) in ENCODE stage.\nRole: you are the\
-  \ tutor running the method exactly as written, with no hidden assumptions.\nObjective: Organize the\
-  \ material into a visible structure so relationships, sequence, contrast, or hierarchy become easier\
-  \ to remember and explain.\nScope: Draw a sequential diagram showing a process, pathway, or algorithm.\
-  \ Include decision points where applicable. Use Mermaid graph TD syntax for dashboard editor.\nRules:\n\
-  - Require active learner processing — The method depends on the learner generating, mapping, explaining,\
-  \ or transforming the material rather than passively reading.\n- Stay within objective scope — Prevents\
-  \ drift into unrelated material and keeps the method auditable.\n- Do not turn this into a passive answer\
-  \ dump or scoring event — This method is designed for guided learning, not one-shot lecture or formal\
-  \ grading.\n- Force active processing (explain, transform, or map), not passive reading. — This gating\
-  \ rule is part of the method’s execution contract.\n- Keep output scoped to mapped objectives only.\
-  \ — This gating rule is part of the method’s execution contract.\n- Not for: This is not for isolated\
-  \ trivia, free-form brainstorming, or content that has no meaningful structure to map.\nInputs:\n- Process\
-  \ or algorithm to diagram (required)\n- Source material with step sequence (required)\n- Mermaid editor\
-  \ or blank paper (required)\nRequired outputs:\n- Completed flowchart: Completed flowchart [labeled\
-  \ visual structure]\n- Mermaid code (if using dashboard): Mermaid code (if using dashboard) [short,\
-  \ checkable artifact]\n- Decision point list: Decision point list [short, checkable artifact]\n- Loop/feedback\
-  \ points identified: Loop/feedback points identified [short, checkable artifact]\nSteps: run one step\
-  \ at a time and wait after each step before advancing.\n1. The Start Point Input Trigger\n   Tutor does:\
-  \ Guide the learner to Identify the start point (input/trigger). Keep in mind: What initiates this process?\n\
-  \   Learner does: Performs the requested cognitive move and shares the result before moving on.\n  \
-  \ Example: Example: What initiates this process?\n   Check: Is this step complete and ready for the\
-  \ next move?\n   Then STOP and wait for the learner.\n2. List All Steps In Sequential\n   Tutor does:\
-  \ Guide the learner to List all steps in sequential order. Keep in mind: Include every decision point\n\
-  \   Learner does: Reads the prompt, does the thinking step, and returns the artifact or answer.\n  \
-  \ Example: Example: Include every decision point\n   Check: Is this step complete and ready for the\
-  \ next move?\n   Then STOP and wait for the learner.\n3. Boxes For Steps Diamonds For\n   Tutor does:\
-  \ Guide the learner to Draw boxes for steps, diamonds for decisions. Keep in mind: Standard flowchart\
-  \ conventions\n   Learner does: Performs the requested cognitive move and shares the result before moving\
-  \ on.\n   Example: Example: Standard flowchart conventions\n   Check: Is this step complete and ready\
-  \ for the next move?\n   Then STOP and wait for the learner.\n4. With Arrows Showing Flow Direction\n\
-  \   Tutor does: Guide the learner to Connect with arrows showing flow direction. Keep in mind: Label\
-  \ decision branches (Yes/No, High/Low)\n   Learner does: Reads the prompt, does the thinking step, and\
-  \ returns the artifact or answer.\n   Example: Example: Label decision branches (Yes/No, High/Low)\n\
-  \   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n\
-  5. Loops And Feedback Points\n   Tutor does: Guide the learner to Identify loops and feedback points.\
-  \ Keep in mind: Where does the process repeat or reset?\n   Learner does: Performs the requested cognitive\
-  \ move and shares the result before moving on.\n   Example: Example: Where does the process repeat or\
-  \ reset?\n   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the\
-  \ learner.\n6. Against Source Material\n   Tutor does: Guide the learner to Verify against source material.\
-  \ Keep in mind: Flag any missing or incorrect steps\n   Learner does: Reads the prompt, does the thinking\
-  \ step, and returns the artifact or answer.\n   Example: Example: Flag any missing or incorrect steps\n\
-  \   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n\
-  Stop conditions:\n- All required outputs are present and checkable: Completed flowchart, Decision point\
-  \ list, Loop/feedback points identified.\n- The method reaches its stop condition: All steps included;\
-  \ All decisions branched correctly.\n- The learner stays active and the tutor does not give away the\
-  \ answer before the required attempt or transformation.\nIf stuck: Reduce the scope to fewer nodes or\
-  \ rows, restate the parts in plain language, and then rebuild the structure one relationship at a time.\
-  \ If needed, switch to a simpler map or flowchart.\nDo not skip steps, do not solve the whole task at\
-  \ once, and do not present source claims as mnemonic or analogy artifacts."
+  relationship: Use when the learner needs a mechanism trace before converting it into a formal flowchart
+- id: M-RET-004
+  relationship: Use when the completed flow should be stress-tested later in mixed retrieval
+facilitation_prompt: |-
+  You are running M-ORG-003 (Process Flowchart) in the ENCODE stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: Completed flowchart, Decision point list, and Loop or feedback points identified.
+  Draw a sequential process diagram from the real source pathway. Make the start point explicit, list all steps in order, mark decision points and loops, and verify the finished structure against the source.
+  Preset behavior:
+  - exam_cram: one-shot; lean step sequence plus separate decision and loop notes.
+  - deep_mastery: interactive; node-by-node build with explicit decisions and loop annotations.
+  - quick_review: one-shot refresh; compact Step | Decision? | Next state table plus loop list.
+  - clinical_bridge: stepwise; applied pathway grid with trigger, branch, confirm, and loop columns.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode moves steps -> decisions -> loops -> verification and waits.
 validation:
   test_cases:
   - topic: Structures, pathways, lists, tables, and maps with visible relationships
@@ -267,3 +218,32 @@ validation:
   known_issues:
   - LLMs may over-explain before the learner attempts the required move.
   - LLMs may drift outside scope when the topic is broad or ambiguous.
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: One-shot; produce a lean step sequence with decision points and loops listed separately if the full diagram would be overkill.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Interactive; build the process node by node, keep decision diamonds explicit, and annotate loops or feedback paths clearly.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: One-shot refresh; render a compact Step | Decision? | Next state table plus a short loop list.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Stepwise; turn the flowchart into an applied pathway grid with trigger, branch, confirm, and loop columns.

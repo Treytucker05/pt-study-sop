@@ -1,26 +1,30 @@
 id: M-INT-001
 name: Analogy Bridge
-category: interrogate
-subcategory: int
-description: Create an analogy linking this concept to something familiar. Test if the analogy holds at the edges.
-control_stage: TEACH
+category: INTERROGATE
+subcategory: analogy-bridge
+description: Create an analogy linking the concept to something familiar, map the structure explicitly, and test where the analogy breaks.
+control_stage: INTERROGATE
 status: validated
-version: '1.0'
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
+- interrogate
 - analogy
 - transfer
-- creative
+- structure-mapping
+- comparison
 - sop-core
-purpose: Interrogate already-encoded material through comparison, application, retrieval, or transfer so the learner can discriminate it under pressure.
+purpose: Analogy Bridge exists to interrogate already-encoded material by linking the target concept to a familiar domain, mapping the structure, and making the limits explicit. It turns the current stage into a clean, reusable signal instead of a vague study session.
 not_for: This is not for first exposure, direct lecturing, or introducing brand-new material that has not already been encoded.
 best_fit_topics:
 - Previously encoded concepts that need comparison, application, or discrimination
 - Material the learner can retrieve without notes and test under pressure
+- Mechanisms, relationships, or processes that benefit from a familiar bridge
 poor_fit_topics:
 - Brand-new material that has not been encoded yet
 - Tasks that need direct teaching rather than retrieval or interrogation
+- Topics where no structurally aligned familiar domain is available
 learner_state_required: The target concept has already been taught or encoded. The learner can attempt retrieval, comparison, or application before seeing the answer.
 inputs:
 - description: Concept to analogize
@@ -29,65 +33,80 @@ inputs:
   required: true
 outputs:
 - name: Analogy statement (A is to B as X is to Y)
-  description: Analogy statement (A is to B as X is to Y)
-  format: short, checkable artifact
+  description: One source-grounded analogy statement that frames the bridge cleanly.
+  format: short summary paragraph or bullets
 - name: Mapping table (3+ correspondences)
-  description: Mapping table (3+ correspondences)
+  description: Explicit mapping of at least three structural correspondences between the concept and the familiar domain.
   format: 2-column or multi-row table
-- name: Breakdown points (where analogy fails)
-  description: Breakdown points (where analogy fails)
-  format: short, checkable artifact
-required_outputs: &id001
+- name: Breakdown points (where analogy fails and what that teaches)
+  description: Limits of the analogy plus what those limits reveal about the real concept.
+  format: bulleted or tabular list
+artifact_schemas:
+  Analogy statement (A is to B as X is to Y): paragraph
+  Mapping table (3+ correspondences): table
+  Breakdown points (where analogy fails and what that teaches): bullet_list
+produces:
+- Analogy statement (A is to B as X is to Y)
+- Mapping table (3+ correspondences)
+- Breakdown points (where analogy fails and what that teaches)
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
+required_outputs:
 - Analogy statement (A is to B as X is to Y)
 - Mapping table (3+ correspondences)
 - Breakdown points (where analogy fails and what that teaches)
 success_criteria:
-- 'All required outputs are present and checkable: Analogy statement (A is to B as X is to Y), Mapping table (3+ correspondences), Breakdown points (where analogy fails and what that teaches).'
-- 'The method reaches its stop condition: Analogy created with 3+ mappings; At least 1 breakdown point identified.'
+- All required outputs are present for M-INT-001.
+- The analogy includes at least three explicit correspondences and at least one real breakdown point.
 - The learner stays active and the tutor does not give away the answer before the required attempt or transformation.
 partial_criteria:
-- 'Some required outputs are present but at least one is missing or incomplete: Analogy statement (A is to B as X is to Y), Mapping table (3+ correspondences).'
+- 'One or more required outputs are present but one core artifact is incomplete: Mapping table (3+ correspondences).'
+- The method stayed in the correct stage but the analogy remains too superficial or the breakdowns are underdeveloped.
 steps:
 - step: 1
-  name: The Concept You Want To
-  action: State the concept you want to understand better
-  tutor_does: 'Guide the learner to State the concept you want to understand better. Keep in mind: Be specific about what aspect needs clarification'
+  name: Name the target concept
+  action: State the concept you want to understand better.
+  tutor_does: Guide the learner to name the target concept clearly and keep the focus on the specific aspect that needs clarification.
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: Be specific about what aspect needs clarification'
+  example: 'Example: Be specific about what aspect needs clarification.'
 - step: 2
-  name: A Familiar Domain With Similar
-  action: Find a familiar domain with similar structure
-  tutor_does: 'Guide the learner to Find a familiar domain with similar structure. Keep in mind: Good sources: everyday objects, sports, cooking, machines'
+  name: Choose a familiar source domain
+  action: Find a familiar domain with similar structure.
+  tutor_does: Guide the learner to choose a genuinely familiar source domain with similar structure, not just something that feels loosely similar.
   learner_does: Attempts retrieval, application, or comparison from memory before asking for support.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: Good sources: everyday objects, sports, cooking, machines'
+  example: 'Example: Good sources can come from everyday objects, sports, cooking, or machines if the structure really matches.'
 - step: 3
-  name: The Analogy
-  action: 'Map the analogy: A is to B as X is to Y'
-  tutor_does: 'Guide the learner to Map the analogy: A is to B as X is to Y. Keep in mind: Identify 3+ corresponding elements'
+  name: Map the analogy
+  action: Map the analogy as A is to B as X is to Y.
+  tutor_does: Guide the learner to map the analogy and identify at least three corresponding elements or relationships.
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: Identify 3+ corresponding elements'
+  example: 'Example: Identify 3+ corresponding elements.'
 - step: 4
-  name: The Edges Where Does The
-  action: Test the edges — where does the analogy break down?
-  tutor_does: 'Guide the learner to Test the edges — where does the analogy break down?. Keep in mind: All analogies have limits; knowing them is part of learning'
+  name: Test the edges
+  action: Test the edges and identify where the analogy breaks down.
+  tutor_does: Guide the learner to test the limits of the analogy so it does not get mistaken for the full truth.
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: All analogies have limits; knowing them is part of learning'
+  example: 'Example: All analogies have limits; knowing them is part of learning.'
 - step: 5
-  name: Note What The Breakdown Teaches
-  action: Note what the breakdown teaches you
-  tutor_does: 'Guide the learner to Note what the breakdown teaches you. Keep in mind: The failure points often reveal important nuances'
+  name: Convert breakdown into insight
+  action: Note what the breakdown teaches you.
+  tutor_does: Guide the learner to convert the failure points into a clearer statement about the real concept.
   learner_does: Attempts retrieval, application, or comparison from memory before asking for support.
   max_lines: 8
   check: Has the learner attempted retrieval or application before any corrective help?
-  example: 'Example: The failure points often reveal important nuances'
+  example: 'Example: The failure points often reveal important nuances.'
 constraints:
 - rule: Require active learner processing
   why: The method depends on the learner generating, mapping, explaining, or transforming the material rather than passively reading.
@@ -95,15 +114,15 @@ constraints:
   why: Prevents drift into unrelated material and keeps the method auditable.
 - rule: Do not turn this into a passive answer dump or scoring event
   why: This method is designed for guided learning, not one-shot lecture or formal grading.
-- rule: Analogies are teaching bridges, not source claims.
+- rule: Analogies are teaching bridges, not source claims
   why: Keeps the method honest and prevents a common misuse described in the source file.
-- rule: Always return to the real concept after the analogy.
+- rule: Always return to the real concept after the analogy
   why: Keeps the method honest and prevents a common misuse described in the source file.
-- rule: Every analogy must name at least one breakdown point so the learner does not mistake it for the full truth.
+- rule: Every analogy must name at least one breakdown point so the learner does not mistake it for the full truth
   why: Keeps the method honest and prevents a common misuse described in the source file.
-- rule: Force active processing (explain, transform, or map), not passive reading.
+- rule: Force active processing (explain, transform, or map), not passive reading
   why: This gating rule is part of the method’s execution contract.
-- rule: Keep output scoped to mapped objectives only.
+- rule: Keep output scoped to mapped objectives only
   why: This gating rule is part of the method’s execution contract.
 allowed_moves:
 - Propose an analogy when the learner needs a bridge into an unfamiliar mechanism
@@ -125,56 +144,110 @@ stuck_protocol: Reduce the scope, ask for a smaller retrieval target, compare wi
 failure_modes:
 - mode: Analogy too superficial
   detection: The learner or tutor starts doing analogy too superficial or the artifact stops satisfying the method’s required checks.
-  recovery: Require structural mapping, not just surface similarity
+  recovery: Require structural mapping, not just surface similarity.
   fallback_method: M-INT-003
 - mode: Ignoring breakdown points
   detection: The learner or tutor starts doing ignoring breakdown points or the artifact stops satisfying the method’s required checks.
-  recovery: Force identification of at least one limitation
-  fallback_method: M-ENC-004
+  recovery: Force identification of at least one limitation.
+  fallback_method: M-GEN-002
 - mode: Familiar domain not actually familiar
   detection: The learner or tutor starts doing familiar domain not actually familiar or the artifact stops satisfying the method’s required checks.
-  recovery: Choose domains you know well
+  recovery: Choose domains the learner genuinely knows well.
   fallback_method: M-INT-004
 default_duration_min: 3
 energy_cost: medium
 best_stage: review
 mechanisms:
-- elaboration
+- structure_mapping
+- analogical_reasoning
 - transfer
+- elaboration
+- relational_reasoning
 - generation
 evidence:
-  citation: Gentner (1983)
-  finding: Analogical reasoning supports structural mapping and transfer across domains
-  source: seed_methods.py
+  citation: Gentner (1983); Harrison and Treagust (1993); Richland and McDonough (2010); Alfieri, Nokes-Malach, and Schunn (2013); Richland and Simms (2015)
+  finding: >-
+    Analogy Bridge is best supported as a structured comparison method that
+    helps learners align relational structure, not as a shortcut that makes a
+    concept true by resemblance. Structure-mapping theory and later analogy
+    research support explicit relational mapping over surface-feature matching,
+    and case-comparison evidence shows that comparing aligned examples or
+    analogs can improve conceptual learning and transfer. Educational reviews
+    and classroom studies also show the main risk: analogies mislead when the
+    source is only superficially familiar or when unshared attributes are left
+    implicit. The practical implication for this method is to choose one
+    structurally aligned familiar domain, require explicit correspondences, and
+    always end by naming at least one breakdown point and what it teaches about
+    the real concept.
+  source: https://doi.org/10.1207/s15516709cog0702_3; https://doi.org/10.1002/tea.3660301010; https://doi.org/10.1016/j.cedpsych.2009.09.001; https://doi.org/10.1080/00461520.2013.775712; https://doi.org/10.1002/wcs.1336
+  needs_research: false
 knobs:
   guidance_level: medium
-  output_format: bullets
-  evidence_raw: Gentner (1983); analogical reasoning supports structural mapping and transfer
-  gating_rules:
-  - Force active processing (explain, transform, or map), not passive reading.
-  - Keep output scoped to mapped objectives only.
-  stipulations:
-  - Analogies are teaching bridges, not source claims.
-  - Always return to the real concept after the analogy.
-  - Every analogy must name at least one breakdown point so the learner does not mistake it for the full truth.
-  logging_fields:
-  - concept_analogized
-  - familiar_domain
-  - mapping_count
-  - breakdown_points
-  artifact_type: notes
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest bridge. Return one tight analogy, 3 mapped correspondences, 1 breakdown point, and 1 one-line return-to-concept note.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Fuller bridge. Walk concept, source domain, 4-6 correspondences, and 2 breakdown points in sequence, then state exactly what the analogy does and does not capture.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: Refresh bridge. Use a compact table with target role, familiar analog, and caution columns plus a minimal analogy statement.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied bridge. Choose an analogy that supports a real-world or clinical cue, map the correspondences in a cue table, and make the breakdowns explicit so the learner does not overextend the analogy in practice.
 related_methods:
 - id: M-INT-003
   relationship: Cross-topic transfer cousin method
-- id: M-ENC-004
+- id: M-GEN-002
   relationship: Teach-back fallback if the analogy needs explanation
 - id: M-INT-004
   relationship: Comparison fallback for discrimination
-facilitation_prompt: "You are running M-INT-001 (Analogy Bridge) in TEACH stage.\nRole: you are the tutor running the method exactly as written, with no hidden assumptions.\nObjective: Interrogate already-encoded material through comparison, application, retrieval, or transfer so the learner can discriminate it under pressure.\nScope: Create an analogy linking this concept to something familiar. Test if the analogy holds at the edges.\nRules:\n- Require active learner processing — The method depends on the learner generating, mapping, explaining, or transforming the material rather than passively reading.\n- Stay within objective scope — Prevents drift into unrelated material and keeps the method auditable.\n- Do not turn this into a passive answer dump or scoring event — This method is designed for guided learning, not one-shot lecture or formal grading.\n- Analogies are teaching bridges, not source claims. — Keeps the method honest and prevents a common misuse described in the source file.\n- Always return to the real concept after the analogy. — Keeps the method honest and prevents a common misuse described in the source file.\n- Not for: This is not for first exposure, direct lecturing, or introducing brand-new material that has not already been encoded.\nInputs:\n- Concept to analogize (required)\n- Familiar domain for comparison (required)\nRequired outputs:\n- Analogy statement (A is to B as X is to Y): Analogy statement (A is to B as X is to Y) [short, checkable artifact]\n- Mapping table (3+ correspondences): Mapping table (3+ correspondences) [2-column or multi-row table]\n- Breakdown points (where analogy fails): Breakdown points (where analogy fails) [short, checkable artifact]\nSteps: run one step at a time and wait after each step before advancing.\n1. The Concept You Want To\n   Tutor does: Guide the learner to State the concept you want to understand better. Keep in mind: Be specific about what aspect needs clarification\n   Learner does: Performs the requested cognitive move and shares the result before moving on.\n   Example: Example: Be specific about what aspect needs clarification\n   Check: Has the learner attempted retrieval or application before any corrective help?\n   Then STOP and wait for the learner.\n2. A Familiar Domain With Similar\n   Tutor does: Guide the learner to Find a familiar domain with similar structure. Keep in mind: Good sources: everyday objects, sports, cooking, machines\n   Learner does: Attempts retrieval, application, or comparison from memory before asking for support.\n   Example: Example: Good sources: everyday objects, sports, cooking, machines\n   Check: Has the learner attempted retrieval or application before any corrective help?\n   Then STOP and wait for the learner.\n3. The Analogy\n   Tutor does: Guide the learner to Map the analogy: A is to B as X is to Y. Keep in mind: Identify 3+ corresponding elements\n   Learner does: Performs the requested cognitive move and shares the result before moving on.\n   Example: Example: Identify 3+ corresponding elements\n   Check: Has the learner attempted retrieval or application before any corrective help?\n   Then STOP and wait for the learner.\n4. The Edges Where Does The\n   Tutor does: Guide the learner to Test the edges — where does the analogy break down?. Keep in mind: All analogies have limits; knowing them is part of learning\n   Learner does: Performs the requested cognitive move and shares the result before moving on.\n   Example: Example: All analogies have limits; knowing them is part of learning\n   Check: Has the learner attempted retrieval or application before any corrective help?\n   Then STOP and wait for the learner.\n5. Note What The Breakdown Teaches\n   Tutor does: Guide the learner to Note what the breakdown teaches you. Keep in mind: The failure points often reveal important nuances\n   Learner does: Attempts retrieval, application, or comparison from memory before asking for support.\n   Example: Example: The failure points often reveal important nuances\n   Check: Has the learner attempted retrieval or application before any corrective help?\n   Then STOP and wait for the learner.\nStop conditions:\n- All required outputs are present and checkable: Analogy statement (A is to B as X is to Y), Mapping table (3+ correspondences), Breakdown points (where analogy fails and what that teaches).\n- The method reaches its stop condition: Analogy created with 3+ mappings; At least 1 breakdown point identified.\n- The learner stays active and the tutor does not give away the answer before the required attempt or transformation.\nIf stuck: Reduce the scope, ask for a smaller retrieval target, compare with a near-neighbor, or route back to ENCODE/REFERENCE if recall keeps failing. Do not keep guessing indefinitely.\nDo not skip steps, do not solve the whole task at once, and do not present source claims as mnemonic or analogy artifacts.\n\nNon-assessment guard:\n- This is a TEACH chunk, not an assessment.\n- Do not score or quiz the learner during this block; no scored output, no grading."
+system_prompt_override:
+  relaxes:
+  - Never reveal the full answer without letting me attempt first. Progressive hints, not solutions.
+  replaces_with:
+  - Require the learner to propose or refine the analogy before you complete the final bridge. You may scaffold with one candidate source domain or one partial correspondence, but do not hand over the full mapping before an attempt.
+  - When the analogy starts to overextend, switch from elaboration to boundary-setting: name the breakdown, then restate the real concept in source-faithful language.
+  reason: Analogy Bridge only works if the learner actively maps the structure and sees where it breaks. A fully supplied analogy too early collapses the interrogation step and hides the limits of the bridge.
+facilitation_prompt: |
+  You are running M-INT-001 (Analogy Bridge) in the INTERROGATE stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: Analogy statement, Mapping table, and Breakdown points.
+  Build one analogy for an already-encoded concept, map at least 3 structural correspondences, test where the analogy fails, and return to the real concept without turning the run into a lecture or quiz.
+  Preset behavior:
+  - exam_cram: one-shot; 1 tight analogy; 3 mappings; 1 breakdown; terse bullets.
+  - deep_mastery: interactive; 4-6 correspondences; 2 breakdowns; explicit return-to-concept section.
+  - quick_review: one-shot refresh; compact mapping table with minimal prose.
+  - clinical_bridge: stepwise; cue-focused analogy table with practical breakdown warnings.
+  If no preset is specified, use the default knobs. One-shot returns the full bridge artifact in one bounded reply; interactive or stepwise mode moves concept -> source domain -> mapping -> breakdown -> takeaway and waits.
 validation:
   test_cases:
   - topic: Previously encoded concepts that need comparison, application, or discrimination
-    expected_outputs: *id001
+    expected_outputs:
+    - Analogy statement (A is to B as X is to Y)
+    - Mapping table (3+ correspondences)
+    - Breakdown points (where analogy fails and what that teaches)
     pass_criteria:
     - All required outputs are present.
     - The learner performs the required active step before the final artifact is given.
@@ -193,4 +266,4 @@ validation:
   - The facilitation_prompt can be run without extra hidden context.
   known_issues:
   - LLMs may over-explain before the learner attempts the required move.
-  - LLMs may drift outside scope when the topic is broad or ambiguous.
+  - LLMs may pick source domains that feel familiar but do not preserve the target structure.

@@ -1,30 +1,32 @@
 id: M-PRE-007
 name: Pre-Test
-category: prime
-subcategory: diagnostic
-description: Attempt to answer questions on the topic BEFORE studying it. Getting answers wrong primes the brain to encode the correct information more deeply.
+category: PRIME
+subcategory: pre-test
+description: Attempt to answer questions on the topic before studying it. Wrong answers, guesses, and confidence ratings create encoding hooks for later learning.
 control_stage: PRIME
 status: validated
-version: '1.0'
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
+- prime
 - pre-testing
 - priming
 - desirable-difficulty
-- sop-core
-- prime
 - diagnostic
 - orientation
 - prior-knowledge
-purpose: Attempt to answer questions on the topic BEFORE studying it. Getting answers wrong primes the brain to encode the correct information more deeply. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
-not_for: Not for first-contact teaching, scored assessment, or full solution reveal. Use a TEACH or REFERENCE method when the goal is explanation rather than orientation.
+- calibration
+purpose: Pre-Test exists to generate a short low-stakes answer attempt before study begins so the learner enters the material with active questions, guesses, and confidence signals already on the table. It turns the current stage into a clean, reusable signal instead of a vague study session.
+not_for: Not for summative grading, gatekeeping, or immediate answer explanation. Use CALIBRATE when the goal is scored readiness routing and use TEACH or REFERENCE when the goal is explanation.
 best_fit_topics:
-- 'New or complex material that needs a quick orientation pass: Pre-Test'
-- Topics with prior notes, objective context, or an obvious structure to surface
+- New or complex material where a short prediction attempt can prime later learning
+- Topics with prior notes, objective context, or likely partially-known question formats
+- Material where calibration awareness matters as much as initial correctness
 poor_fit_topics:
-- Brand-new content with no context or source packet
-- Scored retrieval or diagnostic testing
+- Brand-new content with absolutely no usable prior cues
+- Summative or high-stakes testing situations
+- Study blocks where the tutor plans to reveal answers immediately instead of delaying answer checking
 learner_state_required: Source material is loaded, the topic is bounded, and the learner has at least some prior context or an objective to orient around.
 inputs:
 - description: Source material loaded in chat
@@ -35,54 +37,68 @@ inputs:
   required: false
 outputs:
 - name: Pre-test answers (with confidence ratings)
-  description: Activation or structure artifact for pre-test.
+  description: Short pre-study question set with guessed answers and confidence for each item.
   format: prompt set with brief answers
 - name: Encoding priming for correct answers
-  description: Activation or structure artifact for pre-test.
-  format: bulleted artifact
+  description: Short list of what the learner should watch for during study based on the questions attempted.
+  format: bulleted or tabular list
 - name: Calibration baseline
-  description: Activation or structure artifact for pre-test.
-  format: bulleted artifact
+  description: Low-stakes baseline comparing answer attempts with confidence levels before answer checking.
+  format: bulleted or tabular list
+artifact_schemas:
+  Pre-test answers (with confidence ratings): map
+  Encoding priming for correct answers: bullet_list
+  Calibration baseline: bullet_list
+produces:
+- Pre-test answers (with confidence ratings)
+- Encoding priming for correct answers
+- Calibration baseline
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
 required_outputs:
 - Pre-test answers (with confidence ratings)
 - Encoding priming for correct answers
 - Calibration baseline
 success_criteria:
-- 'Core structure is captured in the required outputs: Pre-test answers (with confidence ratings), Encoding priming for correct answers.'
-- The method stays non-assessive and does not score the learner.
-- Any gaps, priorities, or blind spots are explicitly named for next-pass study.
+- All required outputs are present for M-PRE-007.
+- The method stays low-stakes and non-summative even though it records answer attempts and confidence.
+- The artifact preserves unanswered or wrong attempts for later answer checking instead of collapsing into immediate explanation.
 partial_criteria:
-- Pre-test answers (with confidence ratings) is present but gaps or priorities are incomplete.
-- The output has useful structure but is missing one required linkage or objective tie.
+- Pre-test answers (with confidence ratings) is present but the watch-for cues or calibration baseline are incomplete.
+- The output is usable but drifts toward explanation, answer reveal, or scoring language.
 steps:
 - step: 1
   name: Question Set
   action: Read pre-test questions without looking at source material
-  tutor_does: Read pre-test questions without looking at source material. Questions can come from Tutor, past exams, or learning objectives
+  tutor_does: Read pre-test questions without looking at source material. Questions can come from Tutor, past exams, or learning objectives.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 5
   check: What are the strongest anchors you already have for this topic?
   example: 'Example: "Question Set: Read pre-test questions without looking at source material"'
 - step: 2
   name: Question Set
-  action: Attempt to answer each question — guess if uncertain
-  tutor_does: Attempt to answer each question — guess if uncertain. Wrong answers are valuable; they prime encoding
+  action: Attempt to answer each question - guess if uncertain
+  tutor_does: Attempt to answer each question - guess if uncertain. Wrong answers are valuable; they prime encoding.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 5
   check: Does the structure so far match what you expected from the material?
-  example: 'Example: "Question Set: Attempt to answer each question — guess if uncertain"'
+  example: 'Example: "Question Set: Attempt to answer each question - guess if uncertain"'
 - step: 3
   name: Step 3
   action: Rate confidence for each answer (1-5)
-  tutor_does: Rate confidence for each answer (1-5). Calibration awareness is part of the benefit
+  tutor_does: Rate confidence for each answer (1-5). Calibration awareness is part of the benefit.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: Does the structure so far match what you expected from the material?
   example: 'Example: "Step 3: Rate confidence for each answer (1-5)"'
 - step: 4
   name: Step 4
-  action: Do NOT check answers yet
-  tutor_does: Do NOT check answers yet. Answers come during study; the gap creates encoding motivation
+  action: Do not check answers yet
+  tutor_does: Do not check answers yet. Answers come during study; the gap creates encoding motivation.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 5
   check: Does the structure so far match what you expected from the material?
@@ -90,14 +106,14 @@ steps:
 - step: 5
   name: Step 5
   action: Keep pre-test visible during study
-  tutor_does: Keep pre-test visible during study. Check answers as you encounter them in the material
+  tutor_does: Keep pre-test visible during study. Check answers as you encounter them in the material.
   learner_does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
   max_lines: 4
   check: Which gaps or next targets should we carry forward?
   example: 'Example: "Step 5: Keep pre-test visible during study"'
 constraints:
-- rule: Do not assess, grade, or confidence-rate the learner
-  why: PRIME methods activate and organize knowledge instead of testing it.
+- rule: Do not treat the pre-test as a summative grade or gatekeeping decision
+  why: PRIME methods orient and prime later learning instead of certifying mastery.
 - rule: Stay at orientation level and avoid full solution reveal
   why: The goal is to shape readiness, not finish the lesson for the learner.
 - rule: Confidence Capture Required
@@ -110,13 +126,13 @@ allowed_moves:
 - Present 3-5 pre-test questions on the upcoming topic
 - Require the learner to attempt every question (guessing is the point)
 - Capture confidence ratings (1-5 or H/M/L) for each answer
-- Score answers diagnostically to establish a calibration baseline
-- Keep pre-test visible during subsequent study for answer checking
+- Record answer attempts diagnostically to establish a calibration baseline
+- Keep the pre-test visible during subsequent study for delayed answer checking
 - Include a mix of difficulty levels (some answerable from prior knowledge)
 - Encourage guessing when uncertain (wrong answers prime encoding)
 forbidden_moves:
 - Teach new content or provide explanations during the pre-test
-- Reveal correct answers before study begins (delay until ENCODE phase)
+- Reveal correct answers before study begins (delay until ENCODE or later study)
 - Let the learner check answers immediately after answering
 - Make mastery judgments or grade the learner summatively
 - Skip confidence capture for any item
@@ -125,170 +141,100 @@ forbidden_moves:
 stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
 failure_modes:
 - mode: Checking answers immediately
-  detection: The output no longer matches the method’s core purpose.
-  recovery: Delay answer checking until after encoding phase
+  detection: The output no longer matches the method's core purpose.
+  recovery: Delay answer checking until the learner encounters the material during study.
   fallback_method: M-PRE-007
 - mode: Refusing to guess
-  detection: The output no longer matches the method’s core purpose.
-  recovery: Require an answer for every question; guessing is the point
+  detection: The output no longer matches the method's core purpose.
+  recovery: Require an answer attempt for every question and restate that guessing is part of the method.
   fallback_method: M-PRE-007
-default_duration_min: 5
+default_duration_min: 4
 energy_cost: low
 best_stage: first_exposure
 mechanisms:
-- retrieval
-- desirable_difficulty
+- pretesting
+- retrieval_attempt
+- errorful_generation
+- metacognitive_monitoring
+- encoding_priming
 - calibration
-- scaffolding
-- prior_knowledge_activation
-- organization
-- retrieval_practice
 evidence:
-  citation: Richland et al. (2009)
-  finding: Pre-testing primes encoding even when initial answers are wrong; the attempt creates retrieval hooks
-  source: seed_methods.py
+  citation: Richland, Kornell, and Kao (2009); Glass, Brill, and Ingate (2008); Little and Bjork (2016); Pan and Carpenter (2024); Mera, Dianova, and Marin-Garcia (2025)
+  finding: >-
+    Pre-Test is best supported as a low-stakes pretesting and prediction move
+    that creates encoding hooks before study, not as an early grading event.
+    Foundational pretesting studies showed that attempting answers before study
+    can improve later learning even when many initial responses are wrong, and
+    classroom work suggests the same pattern can transfer to educational
+    settings when the pretest stays brief and is followed by later exposure to
+    the correct information. More recent review and robustness work shows the
+    effect depends on timing, question format, and what is later studied, which
+    means the method should stay short, require real guesses, capture
+    confidence, and delay answer checking rather than collapsing into immediate
+    correction.
+  source: https://doi.org/10.1037/a0016496; https://doi.org/10.1080/01443410701777280; https://doi.org/10.3758/s13421-016-0621-z; https://doi.org/10.1007/s10648-023-09814-5; https://doi.org/10.3758/s13421-025-01813-x
+  needs_research: false
 knobs:
-  probe_count: 3
-  confidence_scale: h_m_l
   guidance_level: medium
-  objective_link_required: true
-  artifact_type: notes
-  logging_fields:
-  - pretest_question_count
-  - pretest_correct_count
-  - average_confidence
-  - confidence_calibration_error
-  output_format: bullets
+  delivery_mode: one_shot
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest pretest pass. Use 3 questions, terse guessed answers with confidence, and a one-line watch-for cue per item.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Full pretest pass. Use 4-5 questions, keep answer attempts and calibration notes explicit, and end with a richer study watchlist without revealing answers.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: Refresh pass. Render a compact table with question, guess, confidence, and what-to-watch columns plus a short calibration note.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied pretest pass. Use short case or cue-based questions and render the result as a clinical guess / confidence / study-watch matrix.
 related_methods:
 - id: M-PRE-014
-  relationship: Use to spot blind spots before generating more questions
+  relationship: Use to surface blind spots before generating more pre-test prompts
 - id: M-PRE-010
-  relationship: Use if objective framing is still missing
-facilitation_prompt: 'You are a study tutor running M-PRE-007 (Pre-Test) in the CALIBRATE stage.
-
-  ROLE: You are a careful, supportive tutor. Your job is to run Pre-Test exactly as specified and keep the output faithful, bounded, and useful.
-
-  OBJECTIVE: Attempt to answer questions on the topic BEFORE studying it. Getting answers wrong primes the brain to encode the correct information more deeply. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
-
-  SCOPE: Attempt to answer questions on the topic BEFORE studying it. Getting answers wrong primes the brain to encode the correct information more deeply.
-
-  RULES:
-
-  - Do not assess, grade, or confidence-rate the learner — because PRIME methods activate and organize knowledge instead of testing it.
-
-  - Stay at orientation level and avoid full solution reveal — because The goal is to shape readiness, not finish the lesson for the learner.
-
-  - Confidence Capture Required — because The method inherits this as a hard rule from the legacy card.
-
-  - Short Window Min: 2 — because Carried forward from the legacy method card.
-
-  - Short Window Max: 5 — because Carried forward from the legacy method card.
-
-
-  OUTPUTS TO PRODUCE:
-
-  1. Pre-test answers (with confidence ratings) — Activation or structure artifact for pre-test. (prompt set with brief answers)
-
-  2. Encoding priming for correct answers — Activation or structure artifact for pre-test. (bulleted artifact)
-
-  3. Calibration baseline — Activation or structure artifact for pre-test. (bulleted artifact)
-
-
-  RUN THE METHOD ONE STEP AT A TIME. Wait for my response before moving to the next step.
-
-  STEP 1 — Question Set
-
-  - Tutor does: Read pre-test questions without looking at source material. Questions can come from Tutor, past exams, or learning objectives
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Question Set: Read pre-test questions without looking at source material"
-
-  - Check: What are the strongest anchors you already have for this topic?
-
-  Then stop and wait.
-
-  STEP 2 — Question Set
-
-  - Tutor does: Attempt to answer each question — guess if uncertain. Wrong answers are valuable; they prime encoding
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Question Set: Attempt to answer each question — guess if uncertain"
-
-  - Check: Does the structure so far match what you expected from the material?
-
-  Then stop and wait.
-
-  STEP 3 — Step 3
-
-  - Tutor does: Rate confidence for each answer (1-5). Calibration awareness is part of the benefit
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Step 3: Rate confidence for each answer (1-5)"
-
-  - Check: Does the structure so far match what you expected from the material?
-
-  Then stop and wait.
-
-  STEP 4 — Step 4
-
-  - Tutor does: Do NOT check answers yet. Answers come during study; the gap creates encoding motivation
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Step 4: Do NOT check answers yet"
-
-  - Check: Does the structure so far match what you expected from the material?
-
-  Then stop and wait.
-
-  STEP 5 — Step 5
-
-  - Tutor does: Keep pre-test visible during study. Check answers as you encounter them in the material
-
-  - Learner does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
-
-  - Example: Example: "Step 5: Keep pre-test visible during study"
-
-  - Check: Which gaps or next targets should we carry forward?
-
-  Then stop and wait.
-
-
-  STOP CONDITIONS:
-
-  - Core structure is captured in the required outputs: Pre-test answers (with confidence ratings), Encoding priming for correct answers.
-
-  - The method stays non-assessive and does not score the learner.
-
-  - Any gaps, priorities, or blind spots are explicitly named for next-pass study.
-
-
-  IF YOU GET STUCK:
-
-  If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
-
-  If the learner is still stuck after one rescue move, shrink the chunk, switch modality, or fall back to the listed fallback method.
-
-
-  GOOD OUTPUT EXAMPLE:
-
-  - Pre-test answers (with confidence ratings): a concise, source-faithful artifact that matches the method purpose and stays within scope.
-
-  - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
-
-
-  DONE WHEN:
-
-  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
-
-  Non-assessment guard:
-
-  - This is a PRIME block — orientation only, not an assessment.
-
-  - Do not quiz, score, or grade the learner here; no scored output.'
+  relationship: Use when objective framing is still too weak to build a good question set
+system_prompt_override:
+  relaxes:
+  - Highly interactive. One small teaching chunk, one short check, or one question at a time.
+  - Ask only one question at a time.
+  - Do not do more than one step at a time.
+  - Within TEACH, deliver ONE chunk at a time, check in, then continue.
+  replaces_with:
+  - Produce the full pre-test artifact when enough context is present. Keep the questions, answer attempts, and confidence together rather than dragging the method into a long Socratic exchange.
+  - Do not reveal correct answers during the pre-test. The artifact should prime later study, not resolve it.
+  reason: Pre-Test is a short priming pass. Over-chunking it or correcting answers immediately destroys the intended pretesting effect.
+facilitation_prompt: |
+  You are running M-PRE-007 (Pre-Test) in the PRIME stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: Pre-test answers (with confidence ratings), Encoding priming for correct answers, and Calibration baseline.
+  Build a short pre-study question set, require an answer attempt for every item, capture confidence for each answer, and keep the questions visible for later answer checking during study. Keep it low-stakes, non-summative, and priming-focused; do not reveal correct answers yet and do not drift into explanation.
+  Preset behavior:
+  - exam_cram: one-shot; 3 questions, terse guesses with confidence, and one watch-for cue per item.
+  - deep_mastery: interactive; 4-5 questions, explicit answer attempts, calibration notes, and a richer study watchlist.
+  - quick_review: one-shot refresh; compact question / guess / confidence / what-to-watch table plus short calibration note.
+  - clinical_bridge: stepwise; short case-based guess / confidence / study-watch matrix.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode moves questions -> answer attempts -> confidence -> watchlist and waits.
 validation:
   test_cases:
   - topic: First pass on Pre-Test with prior notes present
@@ -297,20 +243,22 @@ validation:
     - Encoding priming for correct answers
     - Calibration baseline
     pass_criteria:
-    - Required outputs appear and include at least one structural or gap-oriented artifact from Pre-test answers (with confidence ratings), Encoding priming for correct answers.
-    - The output identifies what is known, what is missing, and what to do next.
+    - All required outputs are present.
+    - The output preserves answer attempts and confidence without revealing answers.
+    - The artifact identifies what to watch for during later study.
   - topic: Dense review topic where the learner needs orientation before detail
     expected_outputs:
     - Pre-test answers (with confidence ratings)
     - Encoding priming for correct answers
     - Calibration baseline
     pass_criteria:
-    - Required outputs appear and include at least one structural or gap-oriented artifact from Pre-test answers (with confidence ratings), Encoding priming for correct answers.
-    - No scored probe, quiz behavior, or grading language appears in the response.
+    - All required outputs are present.
+    - No premature answer reveal or teaching drift appears in the response.
+    - The method stays low-stakes rather than becoming a graded quiz.
   acceptance_criteria:
-  - Required outputs appear and include at least one structural or gap-oriented artifact from Pre-test answers (with confidence ratings), Encoding priming for correct answers.
-  - No scored probe, quiz behavior, or grading language appears in the response.
-  - The output identifies what is known, what is missing, and what to do next.
+  - All required_outputs are present in the successful test case.
+  - No forbidden_moves are violated.
+  - The facilitation_prompt can be run without extra hidden context.
   known_issues:
-  - LLMs sometimes over-explain instead of staying at orientation level.
-  - If objective context is weak, the method can drift unless the prompt locks scope early.
+  - LLMs sometimes reveal answers too early unless the no-check-yet rule is explicit.
+  - If the question set is too broad or too difficult, the learner may stop guessing and the priming value drops.

@@ -1,26 +1,24 @@
 id: M-TEA-008
 name: Worked Example -> Completion Fade
-category: teach
-subcategory: completion-fade
+category: EXPLAIN
+subcategory: worked-example-fade
 description: Model one full example or worked solution, then reuse the same task structure with a few steps omitted so the learner fills the missing pieces before full independence.
-control_stage: TEACH
+control_stage: EXPLAIN
 status: draft
-version: '1.0'
+version: '1.3'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
-- teach
+- explain
 - worked-example
 - completion
 - fading
 - scaffolding
 - novice
-- completion-fade
-- teaching
-- explanation
+- worked-example-fade
 - example
 purpose: Model one full example or worked solution, then reuse the same task structure with a few steps omitted so the learner fills the missing pieces before full independence. Use it to teach one bounded concept by turning the source into a learner-facing bridge that preserves the real mechanism.
-not_for: Not for open-ended brainstorming, scoring, or broad coverage of unrelated material. Use a PRIME method when the learner first needs orientation or objective framing.
+not_for: Not for open-ended brainstorming, scoring, or broad coverage of unrelated material. Use an ORIENT method when the learner first needs orientation or objective framing.
 best_fit_topics:
 - 'A single bounded concept or pathway that can be taught in one pass: Worked Example to Completion Fade'
 - Topics that benefit from a bridge, contrast, case, example, or mnemonic
@@ -54,6 +52,26 @@ outputs:
 - name: CarryForwardWeakPoint
   description: Learner-facing teaching artifact for worked example to completion fade.
   format: bulleted artifact
+artifact_schemas:
+  FullyWorkedExample: ordered_steps
+  FadePoints: bullet_list
+  CompletionPrompt: bullet_list
+  LearnerFilledSteps: bullet_list
+  FadeDecision: bullet_list
+  CarryForwardWeakPoint: bullet_list
+produces:
+- FullyWorkedExample
+- FadePoints
+- CompletionPrompt
+- LearnerFilledSteps
+- FadeDecision
+- CarryForwardWeakPoint
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
 required_outputs:
 - FullyWorkedExample
 - FadePoints
@@ -108,7 +126,7 @@ steps:
   example: 'Example: "Completion Fade: Decide whether to deepen the fade or hold scaffold"'
 constraints:
 - rule: Do not turn the method into a test or quiz
-  why: TEACH methods should build understanding, not create avoidable performance pressure.
+  why: EXPLAIN methods should build understanding, not create avoidable performance pressure.
 - rule: Stay faithful to the source and keep the chunk bounded
   why: The learner needs a clear bridge, not an unbounded lecture.
 - rule: Do not assess or score the learner
@@ -131,14 +149,14 @@ forbidden_moves:
 - Accept filled steps without any why/cue explanation
 - Turn the method into a quiz or scored assessment
 - Lose fidelity to the source or wander beyond the bounded topic
-stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For TEACH, fall back to M-TEA-004 or M-TEA-006.
+stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For EXPLAIN, fall back to M-TEA-004 or M-TEA-006.
 failure_modes:
 - mode: The tutor fades too much too early
-  detection: The output no longer matches the method’s core purpose.
+  detection: The output no longer matches the method's core purpose.
   recovery: Return to a lighter fade with only 1-2 missing steps on the same structure.
   fallback_method: M-TEA-004
 - mode: The completion task changes the problem type instead of reusing the same family
-  detection: The output no longer matches the method’s core purpose.
+  detection: The output no longer matches the method's core purpose.
   recovery: Keep the first faded pass as a near-match of the original worked example.
   fallback_method: M-TEA-004
 default_duration_min: 8
@@ -153,157 +171,61 @@ mechanisms:
 - elaboration
 - transfer
 evidence:
-  citation: Renkl and Atkinson (2003)
-  finding: Worked examples with guidance fading improve novice schema acquisition and transfer better than early unguided problem solving.
-  source: control-plane migration
+  citation: Renkl and Atkinson (2003); Atkinson, Renkl, and Merrill (2003); Salden, Aleven, Schwonke, and Renkl (2010); McGinn, Young, Huyghe, and Booth (2023); Miller-Cotto and Auxter (2021); Bisra, Liu, Nesbit, Salimi, and Winne (2018)
+  finding: Worked Example -> Completion Fade is best supported as a novice-first scaffolding method in which learners study a complete solution, then complete a near-match with a small number of missing steps before moving toward greater independence. Foundational fading studies support this example-to-completion transition, especially when learners are prompted to attend to underlying principles rather than just copy steps. Adaptive-fading research suggests support should be removed based on learner performance rather than on a rigid schedule. Classroom studies show example-based assignments can improve authentic algebra and standardized-assessment outcomes, but they also show that extra self-explanation prompts are not automatically additive, so prompts should stay brief, targeted, and light enough to avoid overload.
+  source: https://doi.org/10.1207/S15326985EP3801_3; https://doi.org/10.1037/0022-0663.95.4.774; https://doi.org/10.1007/s11251-009-9107-8; https://doi.org/10.1080/19345747.2023.2243254; https://doi.org/10.1080/01443410.2019.1646411; https://doi.org/10.1007/s10648-018-9434-x
+  needs_research: false
 knobs:
   guidance_level: medium
-  output_format: bullets
-  artifact_type: notes
+  delivery_mode: stepwise
+  fade_intensity: adaptive_light
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest useful fade; keep the worked example lean, omit only one late step in the near-match example, and make the fade decision terse and test-oriented.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_progressive
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Full scaffolded pass; use richer annotations on the worked example, usually fade two steps in the near-match example, and require a brief why-cue for each learner-filled step before naming the next fade.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: adaptive_light
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Refresh pass for already-seen material; compress the worked example to a skeleton, focus on FadePoints and CompletionPrompt, and keep learner fill plus fade decision short.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied fade; cast the worked example as a short case or real-use task, frame decision points as discriminators or consequences, and tie the fade decision to the next practical move.
 related_methods:
 - id: M-TEA-004
   relationship: Use when a modality switch is needed to bridge the example
 - id: M-TEA-001
   relationship: Use if the concept is really sequential
-facilitation_prompt: 'You are a study tutor running M-TEA-008 (Worked Example -> Completion Fade) in the TEACH stage.
-
-  ROLE: You are a careful, supportive tutor. Your job is to run Worked Example -> Completion Fade exactly as specified and keep the output faithful, bounded, and useful.
-
-  OBJECTIVE: Model one full example or worked solution, then reuse the same task structure with a few steps omitted so the learner fills the missing pieces before full independence. Use it to teach one bounded concept by turning the source into a learner-facing bridge that preserves the real mechanism.
-
-  SCOPE: Model one full example or worked solution, then reuse the same task structure with a few steps omitted so the learner fills the missing pieces before full independence.
-
-  RULES:
-
-  - Do not turn the method into a test or quiz — because TEACH methods should build understanding, not create avoidable performance pressure.
-
-  - Stay faithful to the source and keep the chunk bounded — because The learner needs a clear bridge, not an unbounded lecture.
-
-  - Do not assess or score the learner — because This method is for orientation and teaching, not grading.
-
-  - Require the relevant objective or context before running — because The method needs a bounded target to stay useful.
-
-
-  OUTPUTS TO PRODUCE:
-
-  1. FullyWorkedExample — Fully worked example that shows the concept in action. (worked example with brief annotations)
-
-  2. FadePoints — Learner-facing teaching artifact for worked example to completion fade. (bulleted artifact)
-
-  3. CompletionPrompt — Learner-facing teaching artifact for worked example to completion fade. (bulleted artifact)
-
-  4. LearnerFilledSteps — Learner-facing teaching artifact for worked example to completion fade. (bulleted artifact)
-
-  5. FadeDecision — Learner-facing teaching artifact for worked example to completion fade. (bulleted artifact)
-
-  6. CarryForwardWeakPoint — Learner-facing teaching artifact for worked example to completion fade. (bulleted artifact)
-
-
-  RUN THE METHOD ONE STEP AT A TIME. Wait for my response before moving to the next step.
-
-  STEP 1 — Worked Example
-
-  - Tutor does: Present one fully worked example. Walk through the complete structure and name why each step is there before asking the learner to perform it
-
-  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
-
-  - Example: Example: "Worked Example: Present one fully worked example"
-
-  - Check: Can you complete the last step without the support line?
-
-  Then stop and wait.
-
-  STEP 2 — Step 2
-
-  - Tutor does: Mark the critical decision points. Highlight the steps or cues that make the example work so the learner knows what to watch for
-
-  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
-
-  - Example: Example: "Step 2: Mark the critical decision points"
-
-  - Check: Can you complete the last step without the support line?
-
-  Then stop and wait.
-
-  STEP 3 — Completion Fade
-
-  - Tutor does: Fade 1-2 steps in a near-match example. Reuse the same structure, then omit only the most instruction-worthy pieces instead of the whole task
-
-  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
-
-  - Example: Example: "Completion Fade: Fade 1-2 steps in a near-match example"
-
-  - Check: Can you complete the last step without the support line?
-
-  Then stop and wait.
-
-  STEP 4 — Step 4
-
-  - Tutor does: Have the learner fill the missing steps and explain why. Require short reasoning for each filled step without turning the block into a scored quiz
-
-  - Learner does: Listens, tracks the explanation, and responds with the requested cue or check-in.
-
-  - Example: Example: "Step 4: Have the learner fill the missing steps and explain why"
-
-  - Check: Can you complete the last step without the support line?
-
-  Then stop and wait.
-
-  STEP 5 — Completion Fade
-
-  - Tutor does: Decide whether to deepen the fade or hold scaffold. If the learner fills the gaps cleanly, remove one more support; if not, briefly re-model the weak step and try again
-
-  - Learner does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
-
-  - Example: Example: "Completion Fade: Decide whether to deepen the fade or hold scaffold"
-
-  - Check: Can you complete the last step without the support line?
-
-  Then stop and wait.
-
-
-  STOP CONDITIONS:
-
-  - The learner-facing explanation artifact is faithful to Worked Example -> Completion Fade and stays bounded.
-
-  - The method includes a concrete bridge, example, or discriminating cue that makes the idea easier to hold.
-
-  - The output ends with a clear carry-forward signal instead of drifting into a full lecture.
-
-
-  IF YOU GET STUCK:
-
-  If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For TEACH, fall back to M-TEA-004 or M-TEA-006.
-
-  If the learner is still stuck after one rescue move, shrink the chunk, switch modality, or fall back to the listed fallback method.
-
-
-  GOOD OUTPUT EXAMPLE:
-
-  - FullyWorkedExample: a concise, source-faithful artifact that matches the method purpose and stays within scope.
-
-  - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
-
-
-  DONE WHEN:
-
-  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
-
-
-  Non-assessment guard:
-
-  - This is a TEACH chunk, not an assessment.
-
-  - Do not score or quiz the learner during this block; no scored output, no grading.
-
-
-  Worked-example contract:
-
-  - Model once before you fade.
-
-  - Show one fully worked example before asking the learner to fill anything in.
-
-  - Do not turn the fade pass into a scored quiz.'
+facilitation_prompt: |
+  You are running M-TEA-008 (Worked Example -> Completion Fade) in the EXPLAIN stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: FullyWorkedExample, FadePoints, CompletionPrompt, LearnerFilledSteps, FadeDecision, and CarryForwardWeakPoint.
+  Teach one bounded task by showing one full example, marking the critical decision points, fading 1-2 steps in a near-match example, having the learner fill the gaps with brief why-cues, and then deciding whether to deepen the fade or hold scaffold. Stay in the same problem family, remain source-faithful, and do not turn the first fade into a quiz.
+  Preset behavior:
+  - exam_cram: one-shot; lean worked example, one omitted late step, terse cue bullets, and a one-line fade decision.
+  - deep_mastery: interactive; fuller annotations, usually two omitted steps, brief why-cues for each learner-filled step, and an explicit next-fade recommendation.
+  - quick_review: one-shot refresh; compress the worked example to a skeleton and focus most of the space on FadePoints, CompletionPrompt, and CarryForwardWeakPoint.
+  - clinical_bridge: stepwise; use a short applied case, frame decision points as discriminators or consequences, and tie FadeDecision to the next practical move.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode stops between phases and waits.
 validation:
   test_cases:
   - topic: Single concept explanation for Worked Example to Completion Fade

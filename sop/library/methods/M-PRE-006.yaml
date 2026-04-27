@@ -1,31 +1,33 @@
 id: M-PRE-006
 name: Structural Skimming + Pillar Mapping
-category: prime
-subcategory: skim-map
+category: PRIME
+subcategory: structural-skimming-pillar-mapping
 description: Rapidly skim headings and visual cues across the selected scope, then compress the structure into an ASCII concept map plus Obsidian-friendly hierarchy before deep reading.
 control_stage: PRIME
 status: validated
-version: '1.0'
+version: '1.3'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
+- prime
 - skimming
 - structure
 - pillars
 - cognitive-load
-- prime
-- skim-map
 - orientation
 - prior-knowledge
 - map
-purpose: Rapidly skim headings and visual cues across the selected scope, then compress the structure into an ASCII concept map plus Obsidian-friendly hierarchy before deep reading. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
+- text-structure
+purpose: Structural Skimming + Pillar Mapping exists to orient the learner by skimming headings and visual cues, inventorying the major supported sections, compressing them into 3-5 top pillars, and rendering the result as a structural map before detail reading starts. It turns the current stage into a clean, reusable signal instead of a vague study session.
 not_for: Not for first-contact teaching, scored assessment, or full solution reveal. Use a TEACH or REFERENCE method when the goal is explanation rather than orientation.
 best_fit_topics:
 - Dense material with a clear underlying structure or hierarchy
 - Topics with prior notes, objective context, or an obvious structure to surface
+- Long sections where structural cues should be skimmed before full reading
 poor_fit_topics:
 - Brand-new content with no context or source packet
 - Scored retrieval or diagnostic testing
+- Short topics that do not need a skim-and-compress pass
 learner_state_required: Source material is loaded, the topic is bounded, and the learner has at least some prior context or an objective to orient around.
 inputs:
 - description: Source material loaded in chat
@@ -36,26 +38,38 @@ inputs:
   required: false
 outputs:
 - name: AsciiConceptMap
-  description: Structured artifact that captures the key structural skimming plus pillar mapping relationships.
+  description: Structural map showing the 3-5 umbrella pillars extracted from the skimmed source.
   format: structured map or nested bullets
 - name: ObsidianHierarchy
-  description: Structured artifact that captures the key structural skimming plus pillar mapping relationships.
+  description: Obsidian-friendly nested hierarchy of the skimmed and compressed structure.
   format: ASCII tree or nested bullets
+artifact_schemas:
+  AsciiConceptMap: tree_map
+  ObsidianHierarchy: tree_map
+produces:
+- AsciiConceptMap
+- ObsidianHierarchy
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
 required_outputs:
 - AsciiConceptMap
 - ObsidianHierarchy
 success_criteria:
-- 'Core structure is captured in the required outputs: AsciiConceptMap, ObsidianHierarchy.'
+- All required outputs are present for M-PRE-006.
 - The method stays non-assessive and does not score the learner.
-- Any gaps, priorities, or blind spots are explicitly named for next-pass study.
+- The final structure stays structural rather than explanatory and compresses the skimmed scope into 3-5 broad pillars.
 partial_criteria:
 - AsciiConceptMap is present but gaps or priorities are incomplete.
-- The output has useful structure but is missing one required linkage or objective tie.
+- The output has useful structure but is missing one required linkage, pillar, or objective tie.
 steps:
 - step: 1
   name: Opening Step
   action: Scan structural cues only
-  tutor_does: Scan structural cues only. Use headings, subheadings, bold terms, and diagrams across the selected slice
+  tutor_does: Scan structural cues only. Use headings, subheadings, bold terms, and diagrams across the selected slice.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: What are the strongest anchors you already have for this topic?
@@ -63,7 +77,7 @@ steps:
 - step: 2
   name: Step 2
   action: Inventory the major supported sections and structural signals
-  tutor_does: Inventory the major supported sections and structural signals. Account for the whole slice before grouping
+  tutor_does: Inventory the major supported sections and structural signals. Account for the whole slice before grouping.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: Does the structure so far match what you expected from the material?
@@ -71,7 +85,7 @@ steps:
 - step: 3
   name: Step 3
   action: Compress the inventory into 3-5 top pillars
-  tutor_does: Compress the inventory into 3-5 top pillars. Pillars should be broad umbrella buckets that collectively cover the selected scope
+  tutor_does: Compress the inventory into 3-5 top pillars. Pillars should be broad umbrella buckets that collectively cover the selected scope.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: Does the structure so far match what you expected from the material?
@@ -79,7 +93,7 @@ steps:
 - step: 4
   name: Step 4
   action: Render the final structure as an ASCII concept map and Obsidian-friendly nested hierarchy
-  tutor_does: Render the final structure as an ASCII concept map and Obsidian-friendly nested hierarchy. Keep descriptors structural, not explanatory
+  tutor_does: Render the final structure as an ASCII concept map and Obsidian-friendly nested hierarchy. Keep descriptors structural, not explanatory.
   learner_does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
   max_lines: 4
   check: Which gaps or next targets should we carry forward?
@@ -101,6 +115,7 @@ allowed_moves:
 - Activate prior knowledge with a bounded free recall or orientation prompt
 - Summarize structure, objectives, gaps, or blind spots without scoring
 - Link recalled ideas to the current objective or source packet
+- Compress the skim inventory into umbrella pillars without dropping supported sections
 forbidden_moves:
 - Score, grade, or assess the learner
 - Summarize full paragraphs or detailed content
@@ -109,14 +124,15 @@ forbidden_moves:
 - Provide explanatory text instead of structural descriptors
 - Score the learner or run retrieval grading
 - Teach detailed content as the final answer
+- Skip headings or visual cues and jump straight into prose explanation
 stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
 failure_modes:
 - mode: LLM drifts into paragraph summarization
-  detection: The output no longer matches the method’s core purpose.
+  detection: The output no longer matches the method's core purpose.
   recovery: Enforce structural-only extraction output.
   fallback_method: M-PRE-008
 - mode: Too many pillars
-  detection: The output no longer matches the method’s core purpose.
+  detection: The output no longer matches the method's core purpose.
   recovery: Cap at pillar_count and merge related nodes.
   fallback_method: M-PRE-008
 default_duration_min: 5
@@ -128,134 +144,96 @@ mechanisms:
 - scaffolding
 - prior_knowledge_activation
 - organization
+- structural_preview
 evidence:
-  citation: Ausubel (1960)
-  finding: Structural pre-exposure reduces overload and improves comprehension.
-  source: legacy method card
+  citation: Ausubel (1960); Luiten, Ames, and Ackerson (1980); Voros, Rouet, and Pleh (2011); Bogaerds-Hazenberg, Evers-Vermeul, and van den Bergh (2020); Bogaerds-Hazenberg, Evers-Vermeul, and van den Bergh (2024)
+  finding: >-
+    Structural Skimming + Pillar Mapping is best supported as a quick
+    orientation move that exposes the visible structure of a source before deep
+    reading, not as a paragraph-summary method. Classic advance-organizer work
+    supports the value of pre-exposure to high-level structure, while later
+    studies on content organizers and text-structure instruction show that
+    learners navigate and comprehend dense material more effectively when
+    headings, structural cues, and overarching buckets are made explicit. The
+    practical implication for this method is to skim only structural signals,
+    inventory the whole slice, compress that inventory into 3-5 broad pillars,
+    and render the result as a structural map rather than a prose recap.
+  source: https://doi.org/10.1037/h0046669; https://doi.org/10.3102/00028312017002211; https://doi.org/10.1016/j.chb.2011.04.005; https://doi.org/10.1002/rrq.311; https://doi.org/10.1080/1046560X.2024.2373548
+  needs_research: false
 knobs:
-  pillar_count: 4
   guidance_level: medium
-  objective_link_required: true
-  artifact_type: notes
-  evidence_strength: high
-  primary_citations:
-  - Ausubel (1960)
-  - Hattie (2009)
-  output_format: bullets
+  delivery_mode: one_shot
+  fade_intensity: minimal
+  output_format: text
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest skim pass. Return 3 terse pillars from headings and visual cues plus a compact final map.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Full skim-to-map pass. Keep separate sections for structural cues, inventory, pillars, final ASCII map, and Obsidian hierarchy.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: Refresh pass. Render a compact table with structural cue, extracted section, final pillar, and note columns before the final hierarchy.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied skim pass. Use a clinic-facing table with cue, pillar, why it matters clinically, and follow-up note columns before the final map.
+  visual_map:
+    guidance_level: medium
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_format: map
+    output_layout: labeled_sections
+    explanation_density: focused
+    behavior: Map-first pass. Keep the same skim, inventory, and compression flow, but render the final artifact as a clean hierarchical pillar map using labeled sections, indentation, or simple ASCII structure.
 related_methods:
 - id: M-PRE-008
-  relationship: Structural extraction companion
-- id: M-PRE-013
-  relationship: Use after a big-picture pass
-facilitation_prompt: 'You are a study tutor running M-PRE-006 (Structural Skimming + Pillar Mapping) in the PRIME stage.
-
-  ROLE: You are a careful, supportive tutor. Your job is to run Structural Skimming + Pillar Mapping exactly as specified and keep the output faithful, bounded, and useful.
-
-  OBJECTIVE: Rapidly skim headings and visual cues across the selected scope, then compress the structure into an ASCII concept map plus Obsidian-friendly hierarchy before deep reading. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
-
-  SCOPE: Rapidly skim headings and visual cues across the selected scope, then compress the structure into an ASCII concept map plus Obsidian-friendly hierarchy before deep reading.
-
-  RULES:
-
-  - Do not assess, grade, or confidence-rate the learner — because PRIME methods activate and organize knowledge instead of testing it.
-
-  - Stay at orientation level and avoid full solution reveal — because The goal is to shape readiness, not finish the lesson for the learner.
-
-  - Do not assess or score the learner — because This method is for orientation and teaching, not grading.
-
-  - Paragraph Summaries Disallowed — because The method inherits this as a hard rule from the legacy card.
-
-
-  OUTPUTS TO PRODUCE:
-
-  1. AsciiConceptMap — Structured artifact that captures the key structural skimming plus pillar mapping relationships. (structured map or nested bullets)
-
-  2. ObsidianHierarchy — Structured artifact that captures the key structural skimming plus pillar mapping relationships. (ASCII tree or nested bullets)
-
-
-  RUN THE METHOD ONE STEP AT A TIME. Wait for my response before moving to the next step.
-
-  STEP 1 — Opening Step
-
-  - Tutor does: Scan structural cues only. Use headings, subheadings, bold terms, and diagrams across the selected slice
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Opening Step: Scan structural cues only"
-
-  - Check: What are the strongest anchors you already have for this topic?
-
-  Then stop and wait.
-
-  STEP 2 — Step 2
-
-  - Tutor does: Inventory the major supported sections and structural signals. Account for the whole slice before grouping
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Step 2: Inventory the major supported sections and structural signals"
-
-  - Check: Does the structure so far match what you expected from the material?
-
-  Then stop and wait.
-
-  STEP 3 — Step 3
-
-  - Tutor does: Compress the inventory into 3-5 top pillars. Pillars should be broad umbrella buckets that collectively cover the selected scope
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Step 3: Compress the inventory into 3-5 top pillars"
-
-  - Check: Does the structure so far match what you expected from the material?
-
-  Then stop and wait.
-
-  STEP 4 — Step 4
-
-  - Tutor does: Render the final structure as an ASCII concept map and Obsidian-friendly nested hierarchy. Keep descriptors structural, not explanatory
-
-  - Learner does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
-
-  - Example: Example: "Step 4: Render the final structure as an ASCII concept map and Obsidian-friendly nested hierarchy"
-
-  - Check: Which gaps or next targets should we carry forward?
-
-  Then stop and wait.
-
-
-  STOP CONDITIONS:
-
-  - Core structure is captured in the required outputs: AsciiConceptMap, ObsidianHierarchy.
-
-  - The method stays non-assessive and does not score the learner.
-
-  - Any gaps, priorities, or blind spots are explicitly named for next-pass study.
-
-
-  IF YOU GET STUCK:
-
-  If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
-
-  If the learner is still stuck after one rescue move, shrink the chunk, switch modality, or fall back to the listed fallback method.
-
-
-  GOOD OUTPUT EXAMPLE:
-
-  - AsciiConceptMap: a concise, source-faithful artifact that matches the method purpose and stays within scope.
-
-  - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
-
-
-  DONE WHEN:
-
-  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
-
-  Non-assessment guard:
-
-  - This is a PRIME block — orientation only, not an assessment.
-
-  - Do not quiz, score, or grade the learner here; no scored output.'
+  relationship: Use when the learner needs a more compact extraction pass without the skimming step
+- id: M-PRE-004
+  relationship: Use when the source is already understood well enough to jump straight to a top-down organizer
+system_prompt_override:
+  relaxes:
+  - Highly interactive. One small teaching chunk, one short check, or one question at a time.
+  - Ask only one question at a time.
+  - Do not do more than one step at a time.
+  - Within TEACH, deliver ONE chunk at a time, check in, then continue.
+  replaces_with:
+  - Produce the full AsciiConceptMap and ObsidianHierarchy artifact when enough context is present. Do not force a pillar-by-pillar interview unless the preset explicitly asks for interactive or stepwise delivery.
+  - Keep the output structural. Skim cues, inventory sections, compress to pillars, and avoid paragraph summaries or explanatory prose.
+  reason: Structural Skimming plus Pillar Mapping is primarily an artifact-style PRIME method. Over-chunking it or turning it into prose defeats the value of the skim-and-compress pass.
+facilitation_prompt: |
+  You are running M-PRE-006 (Structural Skimming + Pillar Mapping) in the PRIME stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: AsciiConceptMap and ObsidianHierarchy.
+  Skim headings and visual cues across the selected scope, inventory the major supported sections, compress the inventory into 3-5 umbrella pillars, and render the result as both an ASCII concept map and an Obsidian-friendly hierarchy. Keep it orientation-only, non-assessive, and structural; do not turn the skim into a paragraph summary or a topic explanation.
+  Output mode:
+  - If output_format is text, keep the current text-first artifact shape.
+  - If output_format is map, render a clean hierarchical pillar map using labeled sections, indentation, or simple ASCII structure.
+  Preset behavior:
+  - exam_cram: one-shot; 3 terse pillars from headings and visual cues plus a compact final map.
+  - deep_mastery: interactive; labeled sections for structural cues, inventory, pillars, final map, and final hierarchy.
+  - quick_review: one-shot refresh; compact cue / section / pillar / note table plus final hierarchy.
+  - clinical_bridge: stepwise; clinic-facing cue / pillar / why-it-matters / follow-up-note table.
+  - visual_map: one-shot; same skim and compression flow, but force a clean hierarchical map output.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode moves skim cues -> inventory -> pillars -> final maps and waits.
 validation:
   test_cases:
   - topic: First pass on Structural Skimming plus Pillar Mapping with prior notes present
@@ -263,19 +241,21 @@ validation:
     - AsciiConceptMap
     - ObsidianHierarchy
     pass_criteria:
-    - Required outputs appear and include at least one structural or gap-oriented artifact from AsciiConceptMap, ObsidianHierarchy.
+    - All required outputs are present.
+    - The structure compresses the skimmed scope into 3-5 pillars without paragraph summarization.
     - The output identifies what is known, what is missing, and what to do next.
   - topic: Dense review topic where the learner needs orientation before detail
     expected_outputs:
     - AsciiConceptMap
     - ObsidianHierarchy
     pass_criteria:
-    - Required outputs appear and include at least one structural or gap-oriented artifact from AsciiConceptMap, ObsidianHierarchy.
+    - All required outputs are present.
     - No scored probe, quiz behavior, or grading language appears in the response.
+    - The artifact stays structural rather than becoming a prose recap.
   acceptance_criteria:
-  - Required outputs appear and include at least one structural or gap-oriented artifact from AsciiConceptMap, ObsidianHierarchy.
-  - No scored probe, quiz behavior, or grading language appears in the response.
-  - The output identifies what is known, what is missing, and what to do next.
+  - All required_outputs are present in the successful test case.
+  - No forbidden_moves are violated.
+  - The facilitation_prompt can be run without extra hidden context.
   known_issues:
   - LLMs sometimes over-explain instead of staying at orientation level.
-  - If objective context is weak, the method can drift unless the prompt locks scope early.
+  - If structural cues are sparse, the model may still drift into prose unless the prompt keeps the extraction cue-first.

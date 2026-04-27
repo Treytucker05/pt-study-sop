@@ -1,31 +1,33 @@
 id: M-PRE-005
 name: Skeleton Concept Hierarchy
-category: prime
-subcategory: hierarchy-skeleton
+category: PRIME
+subcategory: skeleton-concept-hierarchy
 description: Generate a bare concept hierarchy (topic core -> 4-6 umbrella categories -> short descriptors) that still covers the full selected scope without deep explanations.
 control_stage: PRIME
 status: validated
-version: '1.0'
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
+- prime
+- hierarchy-skeleton
 - organization
 - visual
 - grouping
 - chunking
-- prime
-- hierarchy-skeleton
-- orientation
 - prior-knowledge
-- hierarchy
-purpose: Generate a bare concept hierarchy (topic core -> 4-6 umbrella categories -> short descriptors) that still covers the full selected scope without deep explanations. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
+- concept-map
+- orientation
+purpose: Skeleton Concept Hierarchy exists to give the learner a bare-bones structural frame by setting one central topic node, deriving 4-6 umbrella categories, attaching 1-2 descriptor tokens under each one, and marking any necessary cross-links. It turns the current stage into a clean, reusable signal instead of a vague study session.
 not_for: Not for first-contact teaching, scored assessment, or full solution reveal. Use a TEACH or REFERENCE method when the goal is explanation rather than orientation.
 best_fit_topics:
 - Dense material with a clear underlying structure or hierarchy
 - Topics with prior notes, objective context, or an obvious structure to surface
+- Material that benefits from a stripped-down skeleton before deeper mapping or explanation
 poor_fit_topics:
 - Brand-new content with no context or source packet
 - Scored retrieval or diagnostic testing
+- Topics that require full propositions or worked examples instead of a minimal category skeleton
 learner_state_required: Source material is loaded, the topic is bounded, and the learner has at least some prior context or an objective to orient around.
 inputs:
 - description: Source material loaded in chat
@@ -36,30 +38,44 @@ inputs:
   required: false
 outputs:
 - name: SkeletonMap
-  description: Structured artifact that captures the key skeleton concept hierarchy relationships.
+  description: Bare concept hierarchy showing the topic core, first-ring categories, and descriptor tokens.
   format: structured map or nested bullets
 - name: CategoryLabels
-  description: Activation or structure artifact for skeleton concept hierarchy.
-  format: bulleted artifact
+  description: Short category and descriptor label set extracted from the hierarchy.
+  format: bulleted or tabular list
 - name: CrossLinks
-  description: Activation or structure artifact for skeleton concept hierarchy.
-  format: bulleted artifact
+  description: Short labeled cross-links between categories where relationships need to stay visible.
+  format: bulleted or tabular list
+artifact_schemas:
+  SkeletonMap: tree_map
+  CategoryLabels: bullet_list
+  CrossLinks: bullet_list
+produces:
+- SkeletonMap
+- CategoryLabels
+- CrossLinks
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
 required_outputs:
 - SkeletonMap
 - CategoryLabels
 - CrossLinks
 success_criteria:
-- 'Core structure is captured in the required outputs: SkeletonMap, CategoryLabels.'
+- All required outputs are present for M-PRE-005.
 - The method stays non-assessive and does not score the learner.
-- Any gaps, priorities, or blind spots are explicitly named for next-pass study.
+- The hierarchy covers the selected scope with 4-6 umbrella categories, descriptor-only sublabels, and concise cross-links where needed.
 partial_criteria:
 - SkeletonMap is present but gaps or priorities are incomplete.
-- The output has useful structure but is missing one required linkage or objective tie.
+- The output has useful structure but is missing one required category, descriptor set, or cross-link.
 steps:
 - step: 1
   name: Opening Step
   action: Set central node as topic
-  tutor_does: Set central node as topic. Single core node only
+  tutor_does: Set central node as topic. Single core node only.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: What are the strongest anchors you already have for this topic?
@@ -67,7 +83,7 @@ steps:
 - step: 2
   name: Step 2
   action: Inventory all major supported sections, then derive 4-6 first-ring categories
-  tutor_does: Inventory all major supported sections, then derive 4-6 first-ring categories. Categories should be mutually distinct umbrella groups that still cover the full selected scope
+  tutor_does: Inventory all major supported sections, then derive 4-6 first-ring categories. Categories should be mutually distinct umbrella groups that still cover the full selected scope.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: Does the structure so far match what you expected from the material?
@@ -75,7 +91,7 @@ steps:
 - step: 3
   name: Step 3
   action: Attach 1-2 descriptor tokens under each category
-  tutor_does: Attach 1-2 descriptor tokens under each category. Descriptors are labels, not explanations, and should stay representative rather than cherry-picked
+  tutor_does: Attach 1-2 descriptor tokens under each category. Descriptors are labels, not explanations, and should stay representative rather than cherry-picked.
   learner_does: Reads, reflects, and provides the requested orientation material or quick confirmation.
   max_lines: 4
   check: Does the structure so far match what you expected from the material?
@@ -83,7 +99,7 @@ steps:
 - step: 4
   name: Step 4
   action: Add cross-links between categories where needed
-  tutor_does: Add cross-links between categories where needed. Use short relation labels only
+  tutor_does: Add cross-links between categories where needed. Use short relation labels only.
   learner_does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
   max_lines: 4
   check: Which gaps or next targets should we carry forward?
@@ -105,6 +121,7 @@ allowed_moves:
 - Orient the learner to the topic's conceptual structure
 - Use the configured map_format (ascii_tree default)
 - Activate prior knowledge with a bounded free recall or orientation prompt
+- Compress dense source material into umbrella groups before assigning descriptor labels
 forbidden_moves:
 - Score, grade, or assess the learner
 - Turn the map into paragraph notes or explanations
@@ -113,14 +130,15 @@ forbidden_moves:
 - Exceed max depth of 2 levels
 - Exceed node_count_cap (6 default)
 - Run quizzes or retrieval prompts
+- Turn descriptor tokens into sentence-level mini-explanations
 stuck_protocol: If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
 failure_modes:
 - mode: Map turns into paragraph notes
-  detection: The output no longer matches the method’s core purpose.
+  detection: The output no longer matches the method's core purpose.
   recovery: Enforce descriptor-only output.
   fallback_method: M-PRE-008
 - mode: Too many nodes causing overload
-  detection: The output no longer matches the method’s core purpose.
+  detection: The output no longer matches the method's core purpose.
   recovery: Apply node_count_cap and drop leaf-level detail.
   fallback_method: M-PRE-008
 default_duration_min: 5
@@ -132,141 +150,85 @@ mechanisms:
 - scaffolding
 - prior_knowledge_activation
 - organization
+- concept_mapping
 evidence:
-  citation: Novak & Cañas (2008)
-  finding: Concept mapping supports meaningful learning when structures are constrained and explicit.
-  source: research synthesis
+  citation: Novak and Gowin (1984); Hebert, Bohaty, Nelson, and Brown (2016); Bogaerds-Hazenberg, Evers-Vermeul, and van den Bergh (2020); Izci and Acikgoz Akkoc (2024); Hsu and Lopez Ricoy (2025)
+  finding: >-
+    Skeleton Concept Hierarchy is best supported as a minimal concept-mapping
+    and structure-framing move that helps learners organize a dense topic into a
+    few visible categories before explanation starts. Novak and Gowin's concept
+    mapping work frames the value of explicit schematic structures for focusing
+    attention on the small number of key ideas that matter. Text-structure
+    meta-analytic work and later classroom studies reinforce that visible
+    structure and stripped-down organizational cues can improve comprehension,
+    summarization, and later integration when learners are not overloaded with
+    full prose explanations. The practical implication for this method is to
+    keep the hierarchy skeletal: one core topic node, 4-6 umbrella categories,
+    1-2 descriptor tokens under each category, and only short cross-links where
+    the structure would otherwise become misleading.
+  source: https://doi.org/10.1017/CBO9781139173469.004; https://doi.org/10.1037/edu0000082; https://doi.org/10.1002/rrq.311; https://doi.org/10.1016/j.heliyon.2023.e23290; https://doi.org/10.1177/0092055X241268768
+  needs_research: false
 knobs:
-  node_count_cap: 6
-  map_format: ascii_tree
   guidance_level: medium
-  objective_link_required: true
-  artifact_type: concept-map
-  evidence_strength: medium
-  primary_citations:
-  - Novak & Cañas (2008)
-  - Paivio (1991)
-  logging_fields:
-  - category_count
-  - cross_link_count
-  - map_depth
-  output_format: bullets
+  delivery_mode: one_shot
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: Fastest skeleton pass. Return one topic core, 4 terse categories, 1 descriptor token per category, and only the most necessary cross-link bullets.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Full skeleton pass. Keep separate sections for topic core, first-ring categories, descriptor tokens, cross-links, and carry-forward notes.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: Refresh pass. Render a compact table with category, descriptor tokens, and cross-link columns before the final tree view.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Applied orientation pass. Use a clinic-facing table with category, cue descriptor, related category, and practical meaning columns before the final hierarchy.
 related_methods:
 - id: M-PRE-008
-  relationship: Use when the learner needs a compact structure first
-- id: M-PRE-010
-  relationship: General fallback when this method needs a simpler bridge
-facilitation_prompt: 'You are a study tutor running M-PRE-005 (Skeleton Concept Hierarchy) in the PRIME stage.
-
-  ROLE: You are a careful, supportive tutor. Your job is to run Skeleton Concept Hierarchy exactly as specified and keep the output faithful, bounded, and useful.
-
-  OBJECTIVE: Generate a bare concept hierarchy (topic core -> 4-6 umbrella categories -> short descriptors) that still covers the full selected scope without deep explanations. Use it to activate prior knowledge, surface structure, and identify missing nodes before deeper work.
-
-  SCOPE: Generate a bare concept hierarchy (topic core -> 4-6 umbrella categories -> short descriptors) that still covers the full selected scope without deep explanations.
-
-  RULES:
-
-  - Do not assess, grade, or confidence-rate the learner — because PRIME methods activate and organize knowledge instead of testing it.
-
-  - Stay at orientation level and avoid full solution reveal — because The goal is to shape readiness, not finish the lesson for the learner.
-
-  - Do not assess or score the learner — because This method is for orientation and teaching, not grading.
-
-  - Max Depth: 2 — because Carried forward from the legacy method card.
-
-
-  OUTPUTS TO PRODUCE:
-
-  1. SkeletonMap — Structured artifact that captures the key skeleton concept hierarchy relationships. (structured map or nested bullets)
-
-  2. CategoryLabels — Activation or structure artifact for skeleton concept hierarchy. (bulleted artifact)
-
-  3. CrossLinks — Activation or structure artifact for skeleton concept hierarchy. (bulleted artifact)
-
-
-  RUN THE METHOD ONE STEP AT A TIME. Wait for my response before moving to the next step.
-
-  STEP 1 — Opening Step
-
-  - Tutor does: Set central node as topic. Single core node only
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Opening Step: Set central node as topic"
-
-  - Check: What are the strongest anchors you already have for this topic?
-
-  Then stop and wait.
-
-  STEP 2 — Step 2
-
-  - Tutor does: Inventory all major supported sections, then derive 4-6 first-ring categories. Categories should be mutually distinct umbrella groups that still cover the full selected scope
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Step 2: Inventory all major supported sections, then derive 4-6 first-ring categories"
-
-  - Check: Does the structure so far match what you expected from the material?
-
-  Then stop and wait.
-
-  STEP 3 — Step 3
-
-  - Tutor does: Attach 1-2 descriptor tokens under each category. Descriptors are labels, not explanations, and should stay representative rather than cherry-picked
-
-  - Learner does: Reads, reflects, and provides the requested orientation material or quick confirmation.
-
-  - Example: Example: "Step 3: Attach 1-2 descriptor tokens under each category"
-
-  - Check: Does the structure so far match what you expected from the material?
-
-  Then stop and wait.
-
-  STEP 4 — Step 4
-
-  - Tutor does: Add cross-links between categories where needed. Use short relation labels only
-
-  - Learner does: Shares the final check-in signal or says what clicked, what is fuzzy, and what should be carried forward.
-
-  - Example: Example: "Step 4: Add cross-links between categories where needed"
-
-  - Check: Which gaps or next targets should we carry forward?
-
-  Then stop and wait.
-
-
-  STOP CONDITIONS:
-
-  - Core structure is captured in the required outputs: SkeletonMap, CategoryLabels.
-
-  - The method stays non-assessive and does not score the learner.
-
-  - Any gaps, priorities, or blind spots are explicitly named for next-pass study.
-
-
-  IF YOU GET STUCK:
-
-  If the learner stalls, shrink the chunk, switch to a simpler example or contrast, and then return to the same method. For PRIME, fall back to M-PRE-010 or M-PRE-008.
-
-  If the learner is still stuck after one rescue move, shrink the chunk, switch modality, or fall back to the listed fallback method.
-
-
-  GOOD OUTPUT EXAMPLE:
-
-  - SkeletonMap: a concise, source-faithful artifact that matches the method purpose and stays within scope.
-
-  - Keep the response bounded, concrete, and non-assessive unless the method explicitly requires retrieval practice.
-
-
-  DONE WHEN:
-
-  You have produced every required output, satisfied the stop conditions, and given a clear carry-forward or next-step cue.
-
-  Non-assessment guard:
-
-  - This is a PRIME block — orientation only, not an assessment.
-
-  - Do not quiz, score, or grade the learner here; no scored output.'
+  relationship: Use when the learner needs a more compact extraction-first structure pass
+- id: M-PRE-006
+  relationship: Use when the source should be skimmed for headings and structural cues before mapping
+system_prompt_override:
+  relaxes:
+  - Highly interactive. One small teaching chunk, one short check, or one question at a time.
+  - Ask only one question at a time.
+  - Do not do more than one step at a time.
+  - Within TEACH, deliver ONE chunk at a time, check in, then continue.
+  replaces_with:
+  - Produce the full SkeletonMap, CategoryLabels, and CrossLinks artifact when enough context is present. Do not force a category-by-category interview unless the preset explicitly asks for interactive or stepwise delivery.
+  - Keep the output descriptor-only. The hierarchy should stay skeletal and structural rather than turning into paragraph notes.
+  reason: Skeleton Concept Hierarchy is primarily an artifact-style PRIME method. Over-chunking and over-explaining both work against the method's intended minimal hierarchy.
+facilitation_prompt: |
+  You are running M-PRE-005 (Skeleton Concept Hierarchy) in the PRIME stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: SkeletonMap, CategoryLabels, and CrossLinks.
+  Build a bare hierarchy by setting one topic core, inventorying the full selected scope, compressing it into 4-6 first-ring categories, attaching 1-2 descriptor tokens under each category, and adding short cross-links where needed. Keep it orientation-only, non-assessive, and descriptor-first; do not turn the hierarchy into paragraph notes or a mini-lecture.
+  Preset behavior:
+  - exam_cram: one-shot; topic core, 4 terse categories, 1 descriptor each, and minimal cross-links.
+  - deep_mastery: interactive; labeled sections for topic core, categories, descriptors, cross-links, and carry-forward notes.
+  - quick_review: one-shot refresh; compact category / descriptors / cross-links table plus final tree view.
+  - clinical_bridge: stepwise; clinic-facing category / cue descriptor / related category / practical meaning table.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode moves topic core -> categories -> descriptor tokens -> cross-links and waits.
 validation:
   test_cases:
   - topic: First pass on Skeleton Concept Hierarchy with prior notes present
@@ -275,7 +237,8 @@ validation:
     - CategoryLabels
     - CrossLinks
     pass_criteria:
-    - Required outputs appear and include at least one structural or gap-oriented artifact from SkeletonMap, CategoryLabels.
+    - All required outputs are present.
+    - The hierarchy covers the selected scope with 4-6 umbrella categories and descriptor-only sublabels.
     - The output identifies what is known, what is missing, and what to do next.
   - topic: Dense review topic where the learner needs orientation before detail
     expected_outputs:
@@ -283,12 +246,13 @@ validation:
     - CategoryLabels
     - CrossLinks
     pass_criteria:
-    - Required outputs appear and include at least one structural or gap-oriented artifact from SkeletonMap, CategoryLabels.
+    - All required outputs are present.
     - No scored probe, quiz behavior, or grading language appears in the response.
+    - The hierarchy stays skeletal rather than turning into paragraph notes.
   acceptance_criteria:
-  - Required outputs appear and include at least one structural or gap-oriented artifact from SkeletonMap, CategoryLabels.
-  - No scored probe, quiz behavior, or grading language appears in the response.
-  - The output identifies what is known, what is missing, and what to do next.
+  - All required_outputs are present in the successful test case.
+  - No forbidden_moves are violated.
+  - The facilitation_prompt can be run without extra hidden context.
   known_issues:
   - LLMs sometimes over-explain instead of staying at orientation level.
-  - If objective context is weak, the method can drift unless the prompt locks scope early.
+  - If the source is dense, the model may under-cover the scope unless it inventories the major sections before deriving categories.

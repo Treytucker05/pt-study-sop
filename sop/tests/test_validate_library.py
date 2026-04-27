@@ -160,11 +160,11 @@ class TestRealLibrary:
 
     def test_real_library_method_count(self) -> None:
         methods_dir = Path(__file__).resolve().parents[1] / "library" / "methods"
-        assert len(list(methods_dir.glob("*.yaml"))) == 79
+        assert len(list(methods_dir.glob("*.yaml"))) == 81
 
     def test_real_library_chain_count(self) -> None:
         chains_dir = Path(__file__).resolve().parents[1] / "library" / "chains"
-        assert len(list(chains_dir.glob("C-*.yaml"))) == 20
+        assert len(list(chains_dir.glob("C-*.yaml"))) == 23
 
     def test_first_exposure_core_mode_coverage(self) -> None:
         chains_dir = Path(__file__).resolve().parents[1] / "library" / "chains"
@@ -302,29 +302,43 @@ class TestChainValidation:
         assert c.id == "C-TS-001"
         assert c.blocks == ["M-PRE-901"]
 
-    def test_missing_allowed_modes_fails(self) -> None:
+    def test_missing_allowed_modes_is_optional(self) -> None:
+        # Loop chains (study loops, priming runs) do not gate on assessment
+        # mode, so allowed_modes is optional in the schema. Missing should
+        # parse cleanly; only an empty list when explicitly provided fails.
         from models import Chain
         payload = dict(VALID_CHAIN)
         payload.pop("allowed_modes", None)
+        c = Chain(**payload)
+        assert c.allowed_modes is None
+
+    def test_invalid_allowed_modes_fails(self) -> None:
+        from models import Chain
+        payload = {**VALID_CHAIN, "allowed_modes": ["not_a_real_mode"]}
         with pytest.raises(Exception):
             Chain(**payload)
 
 
 class TestOperationalStageInference:
     def test_infer_operational_stage(self) -> None:
+        # Prefix-based inference covers the canonical case. Per-method
+        # overrides are no longer used: vault YAML's declared control_stage
+        # is the source of truth and prefix mismatches are reported as
+        # informational notes (see test_control_stage_mismatch_is_a_note).
+        assert infer_operational_stage("M-PLAN-001") == "PLAN"
         assert infer_operational_stage("M-PRE-001") == "PRIME"
         assert infer_operational_stage("M-PRE-003") == "PRIME"
         assert infer_operational_stage("M-PRE-007") == "PRIME"
         assert infer_operational_stage("M-TEA-001") == "TEACH"
         assert infer_operational_stage("M-CAL-001") == "CALIBRATE"
         assert infer_operational_stage("M-ENC-001") == "ENCODE"
-        assert infer_operational_stage("M-INT-001") == "TEACH"
-        assert infer_operational_stage("M-ENC-008") == "TEACH"
+        assert infer_operational_stage("M-INT-001") == "INTERROGATE"
+        assert infer_operational_stage("M-ENC-008") == "ENCODE"
         assert infer_operational_stage("M-REF-001") == "REFERENCE"
         assert infer_operational_stage("M-RET-001") == "RETRIEVE"
         assert infer_operational_stage("M-OVR-001") == "OVERLEARN"
         assert infer_operational_stage("M-GEN-001") == "ENCODE"
-        assert infer_operational_stage("M-GEN-007") == "TEACH"
+        assert infer_operational_stage("M-GEN-007") == "ENCODE"
         assert infer_operational_stage("M-HOOK-001") == "ENCODE"
         assert infer_operational_stage("M-ORG-001") == "ENCODE"
 
@@ -474,9 +488,13 @@ class TestControlStageValidation:
         assert not result.ok
         assert any("control_stage" in e for e in result.errors)
 
-    def test_control_stage_must_match_prefix_inference(
+    def test_control_stage_mismatch_is_a_note(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
+        # Vault hardening allows prefix and declared stage to diverge
+        # legitimately (e.g. M-PRE methods can declare ORIENT). The mismatch
+        # is reported as an informational note that --strict does not promote
+        # to an error.
         lib = tmp_path / "sop" / "library"
         self._write_common_meta(lib)
 
@@ -486,8 +504,15 @@ class TestControlStageValidation:
 
         self._with_temp_library(monkeypatch, lib)
         result = run_validation(strict=False)
-        assert not result.ok
-        assert any("does not match inferred stage 'PRIME'" in e for e in result.errors)
+        assert any(
+            "does not match prefix-inferred stage 'PRIME'" in n for n in result.notes
+        )
+        # Notes are informational; strict mode does not promote them.
+        strict_result = run_validation(strict=True)
+        assert all(
+            "does not match prefix-inferred stage" not in e
+            for e in strict_result.errors
+        )
 
 
 class TestChainContractValidation:

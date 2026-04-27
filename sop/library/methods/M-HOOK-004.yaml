@@ -1,32 +1,29 @@
 id: M-HOOK-004
 name: Memory Palace
-category: encode
+category: ENCODE
 subcategory: hook
-description: Use spatial memory to encode ordered sequences by associating items with familiar locations.
-  Based on the ancient Method of Loci used by Greek orators and memory champions.
+description: Use spatial memory to encode ordered sequences by associating items with familiar locations. Based on the ancient Method of Loci used by Greek orators and memory champions.
 control_stage: ENCODE
 status: validated
-version: '1.0'
+version: '1.2'
 created: '2026-04-07'
-updated: '2026-04-14'
+updated: '2026-04-21'
 tags:
 - memory
 - spatial
 - sequence
 - visualization
 - kwik-inspired
-purpose: Create a compact memory cue that links a term or concept to a vivid sound, image, or body-based
-  anchor without losing the real meaning.
-not_for: This is not for teaching the whole concept from scratch, replacing source truth, or turning a
-  mnemonic into a false fact claim.
+- encode
+purpose: Create a compact memory cue that links a term or concept to a vivid sound, image, or body-based anchor without losing the real meaning.
+not_for: This is not for teaching the whole concept from scratch, replacing source truth, or turning a mnemonic into a false fact claim.
 best_fit_topics:
 - Short labels, terms, and anchors that need fast recall
 - Material that benefits from a vivid sound/image cue
 poor_fit_topics:
 - Long mechanistic explanations that need comprehension first
 - Unstable or ambiguous material with no clear cue
-learner_state_required: Source material is loaded. The learner has one bounded term or concept and is
-  ready to actively build a cue around its true meaning.
+learner_state_required: Source material is loaded. The learner has one bounded term or concept and is ready to actively build a cue around its true meaning.
 inputs:
 - description: List of items to memorize (5-10 optimal)
   required: true
@@ -44,25 +41,35 @@ outputs:
 - name: Weak links identified
   description: Weak links identified
   format: short, checkable artifact
+artifact_schemas:
+  Mental palace with placed items: tree_map
+  Retrieval accuracy check: string
+  Weak links identified: string
+produces:
+- Mental palace with placed items
+- Retrieval accuracy check
+- Weak links identified
+requires:
+- artifact: FinalLearningObjectives
+  optional: true
+  alternatives:
+  - NorthStarSentence
+  - North_Star
 required_outputs: &id001
 - Mental palace with placed items
 - Retrieval accuracy check
 - Weak links identified
 success_criteria:
-- 'All required outputs are present and checkable: Mental palace with placed items, Retrieval accuracy
-  check, Weak links identified.'
+- 'All required outputs are present and checkable: Mental palace with placed items, Retrieval accuracy check, Weak links identified.'
 - 'The method reaches its stop condition: All items placed; Can retrieve forward and backward.'
-- The learner stays active and the tutor does not give away the answer before the required attempt or
-  transformation.
+- The learner stays active and the tutor does not give away the answer before the required attempt or transformation.
 partial_criteria:
-- 'Some required outputs are present but at least one is missing or incomplete: Mental palace with placed
-  items, Retrieval accuracy check.'
+- 'Some required outputs are present but at least one is missing or incomplete: Mental palace with placed items, Retrieval accuracy check.'
 steps:
 - step: 1
   name: A Familiar Location
   action: Choose a familiar location
-  tutor_does: 'Guide the learner to Choose a familiar location. Keep in mind: Must be deeply familiar
-    (your home, daily route)'
+  tutor_does: 'Guide the learner to Choose a familiar location. Keep in mind: Must be deeply familiar (your home, daily route)'
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Does the learner have the right term and true meaning before the cue is built?
@@ -70,8 +77,7 @@ steps:
 - step: 2
   name: 5 10 Specific Spots In
   action: Identify 5-10 specific spots in order
-  tutor_does: 'Guide the learner to Identify 5-10 specific spots in order. Keep in mind: Door, couch,
-    kitchen sink, bed, etc.'
+  tutor_does: 'Guide the learner to Identify 5-10 specific spots in order. Keep in mind: Door, couch, kitchen sink, bed, etc.'
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -79,8 +85,7 @@ steps:
 - step: 3
   name: Vivid Absurd Image For Item
   action: Create vivid absurd image for item 1
-  tutor_does: 'Guide the learner to Create vivid absurd image for item 1. Keep in mind: Exaggerated, emotional,
-    bizarre'
+  tutor_does: 'Guide the learner to Create vivid absurd image for item 1. Keep in mind: Exaggerated, emotional, bizarre'
   learner_does: Performs the requested cognitive move and shares the result before moving on.
   max_lines: 8
   check: Is this step complete and ready for the next move?
@@ -111,16 +116,15 @@ steps:
   example: 'Example: Retrieve items in order'
 constraints:
 - rule: Require active learner processing
-  why: The method depends on the learner generating, mapping, explaining, or transforming the material
-    rather than passively reading.
+  why: The method depends on the learner generating, mapping, explaining, or transforming the material rather than passively reading.
 - rule: Stay within objective scope
   why: Prevents drift into unrelated material and keeps the method auditable.
 - rule: Do not turn this into a passive answer dump or scoring event
   why: This method is designed for guided learning, not one-shot lecture or formal grading.
 - rule: Force active processing (explain, transform, or map), not passive reading.
-  why: This gating rule is part of the method’s execution contract.
+  why: "This gating rule is part of the method\u2019s execution contract."
 - rule: Keep output scoped to mapped objectives only.
-  why: This gating rule is part of the method’s execution contract.
+  why: "This gating rule is part of the method\u2019s execution contract."
 - rule: Confirm the true meaning before making the hook
   why: Hooks support recall; they do not replace understanding.
 allowed_moves:
@@ -141,23 +145,18 @@ forbidden_moves:
 - Allow more than 10 items in a single palace without splitting
 - Deliver a passive list review instead of guiding spatial encoding
 - Move to retrieval before the learner can walk the palace without errors
-stuck_protocol: Shrink to one term, restate the real meaning in plain language, then try a simpler sound
-  cue, image cue, or body cue. If the cue still does not click, switch to a lighter mnemonic lane or ask
-  for one concrete example.
+stuck_protocol: Shrink to one term, restate the real meaning in plain language, then try a simpler sound cue, image cue, or body cue. If the cue still does not click, switch to a lighter mnemonic lane or ask for one concrete example.
 failure_modes:
 - mode: Locations not familiar
-  detection: The learner or tutor starts doing locations not familiar or the artifact stops satisfying
-    the method’s required checks.
+  detection: "The learner or tutor starts doing locations not familiar or the artifact stops satisfying the method\u2019s required checks."
   recovery: Use your actual home, not imagined places
   fallback_method: M-HOOK-002
 - mode: Images not vivid/absurd
-  detection: The learner or tutor starts doing images not vivid/absurd or the artifact stops satisfying
-    the method’s required checks.
+  detection: "The learner or tutor starts doing images not vivid/absurd or the artifact stops satisfying the method\u2019s required checks."
   recovery: Add action, emotion, exaggeration
   fallback_method: M-HOOK-003
 - mode: Too many items
-  detection: The learner or tutor starts doing too many items or the artifact stops satisfying the method’s
-    required checks.
+  detection: "The learner or tutor starts doing too many items or the artifact stops satisfying the method\u2019s required checks."
   recovery: Max 10 per palace; create new palace for more
   fallback_method: M-HOOK-005
 default_duration_min: 10
@@ -169,80 +168,32 @@ mechanisms:
 - visualization
 - generation
 evidence:
-  citation: Dresler et al. (2017)
-  finding: fMRI study showed memory athletes using Method of Loci exhibit distinct patterns of functional
-    brain connectivity; 40 days of loci training significantly improved recall in naive subjects
-  source: Neuron, 93(5), 1227-1235
+  citation: Bellezza (1981); Dresler et al. (2017); Gross, Rebok, Unverzagt, Willis, and Brandt (2014); Wagner et al. (2021)
+  finding: Memory Palace is best supported as a method-of-loci strategy for ordered recall when the learner uses a fixed familiar route and one vivid image per locus. Mnemonic reviews identify loci as especially well suited to serial-order learning, and modern training studies show that method-of-loci practice can produce large recall gains and more durable memory in ordinary learners, not just memory athletes. The practical implication for this method is to keep the route stable, limit the number of loci, place one strong image at each stop, and finish with an explicit walk-through that exposes weak links before the sequence is trusted.
+  source: https://doi.org/10.3102/00346543051002247; https://doi.org/10.1016/j.neuron.2017.02.003; https://doi.org/10.1080/0361073X.2014.882204; https://doi.org/10.1126/sciadv.abc7606
+  needs_research: false
 knobs:
   guidance_level: medium
-  output_format: bullets
-  evidence_raw: Dresler et al. (2017); fMRI shows Method of Loci training rewires functional connectivity
-    and improves recall. Historical roots in Yates (1966), The Art of Memory.
-  gating_rules:
-  - Force active processing (explain, transform, or map), not passive reading.
-  - Keep output scoped to mapped objectives only.
-  logging_fields:
-  - items_memorized
-  - locations_used
-  - retrieval_accuracy
-  - time_to_build
-  artifact_type: notes
+  delivery_mode: stepwise
+  fade_intensity: minimal
+  output_layout: labeled_sections
+  explanation_density: focused
 related_methods:
-- id: M-HOOK-002
-  relationship: Mnemonic support for dense fact sets
-- id: M-HOOK-003
-  relationship: Rhyme hook fallback for ordered items
 - id: M-HOOK-005
-  relationship: Chain-linking alternative
-facilitation_prompt: "You are running M-HOOK-004 (Memory Palace) in ENCODE stage.\nRole: you are the tutor\
-  \ running the method exactly as written, with no hidden assumptions.\nObjective: Create a compact memory\
-  \ cue that links a term or concept to a vivid sound, image, or body-based anchor without losing the\
-  \ real meaning.\nScope: Use spatial memory to encode ordered sequences by associating items with familiar\
-  \ locations. Based on the ancient Method of Loci used by Greek orators and memory champions.\nRules:\n\
-  - Require active learner processing — The method depends on the learner generating, mapping, explaining,\
-  \ or transforming the material rather than passively reading.\n- Stay within objective scope — Prevents\
-  \ drift into unrelated material and keeps the method auditable.\n- Do not turn this into a passive answer\
-  \ dump or scoring event — This method is designed for guided learning, not one-shot lecture or formal\
-  \ grading.\n- Force active processing (explain, transform, or map), not passive reading. — This gating\
-  \ rule is part of the method’s execution contract.\n- Keep output scoped to mapped objectives only.\
-  \ — This gating rule is part of the method’s execution contract.\n- Not for: This is not for teaching\
-  \ the whole concept from scratch, replacing source truth, or turning a mnemonic into a false fact claim.\n\
-  Inputs:\n- List of items to memorize (5-10 optimal) (required)\n- Familiar location (home, route, etc.)\
-  \ (required)\n- Imagination for vivid imagery (required)\nRequired outputs:\n- Mental palace with placed\
-  \ items: Mental palace with placed items [labeled visual structure]\n- Retrieval accuracy check: Retrieval\
-  \ accuracy check [short, checkable artifact]\n- Weak links identified: Weak links identified [short,\
-  \ checkable artifact]\nSteps: run one step at a time and wait after each step before advancing.\n1.\
-  \ A Familiar Location\n   Tutor does: Guide the learner to Choose a familiar location. Keep in mind:\
-  \ Must be deeply familiar (your home, daily route)\n   Learner does: Performs the requested cognitive\
-  \ move and shares the result before moving on.\n   Example: Example: Must be deeply familiar (your home,\
-  \ daily route)\n   Check: Does the learner have the right term and true meaning before the cue is built?\n\
-  \   Then STOP and wait for the learner.\n2. 5 10 Specific Spots In\n   Tutor does: Guide the learner\
-  \ to Identify 5-10 specific spots in order. Keep in mind: Door, couch, kitchen sink, bed, etc.\n   Learner\
-  \ does: Performs the requested cognitive move and shares the result before moving on.\n   Example: Example:\
-  \ Door, couch, kitchen sink, bed, etc.\n   Check: Is this step complete and ready for the next move?\n\
-  \   Then STOP and wait for the learner.\n3. Vivid Absurd Image For Item\n   Tutor does: Guide the learner\
-  \ to Create vivid absurd image for item 1. Keep in mind: Exaggerated, emotional, bizarre\n   Learner\
-  \ does: Performs the requested cognitive move and shares the result before moving on.\n   Example: Example:\
-  \ Exaggerated, emotional, bizarre\n   Check: Is this step complete and ready for the next move?\n  \
-  \ Then STOP and wait for the learner.\n4. Place Image At Location 1\n   Tutor does: Guide the learner\
-  \ to Place image at location 1. Keep in mind: Mentally \"stick\" it there\n   Learner does: Supplies\
-  \ the target term or concept, then reacts to the cue and confirms whether it clicks.\n   Example: Example:\
-  \ Mentally \"stick\" it there\n   Check: Is this step complete and ready for the next move?\n   Then\
-  \ STOP and wait for the learner.\n5. Continue For All Items\n   Tutor does: Guide the learner to Continue\
-  \ for all items. Keep in mind: One item per location\n   Learner does: Supplies the target term or concept,\
-  \ then reacts to the cue and confirms whether it clicks.\n   Example: Example: One item per location\n\
-  \   Check: Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\n\
-  6. Walk Through Palace Mentally\n   Tutor does: Guide the learner to Walk through palace mentally. Keep\
-  \ in mind: Retrieve items in order\n   Learner does: Supplies the target term or concept, then reacts\
-  \ to the cue and confirms whether it clicks.\n   Example: Example: Retrieve items in order\n   Check:\
-  \ Is this step complete and ready for the next move?\n   Then STOP and wait for the learner.\nStop conditions:\n\
-  - All required outputs are present and checkable: Mental palace with placed items, Retrieval accuracy\
-  \ check, Weak links identified.\n- The method reaches its stop condition: All items placed; Can retrieve\
-  \ forward and backward.\n- The learner stays active and the tutor does not give away the answer before\
-  \ the required attempt or transformation.\nIf stuck: Shrink to one term, restate the real meaning in\
-  \ plain language, then try a simpler sound cue, image cue, or body cue. If the cue still does not click,\
-  \ switch to a lighter mnemonic lane or ask for one concrete example.\nDo not skip steps, do not solve\
-  \ the whole task at once, and do not present source claims as mnemonic or analogy artifacts."
+  relationship: Use when the sequence needs narrative chaining rather than spatial placement
+- id: M-OVR-003
+  relationship: Use when the palace sequence should be turned into a later drill sheet
+facilitation_prompt: |-
+  You are running M-HOOK-004 (Memory Palace) in the ENCODE stage.
+  Use only the loaded source. Ask only for missing required inputs.
+  Produce: Mental palace with placed items, Retrieval accuracy check, and Weak links identified.
+  Encode one ordered sequence with a fixed familiar route, one vivid image per locus, and a final retrieval walk that exposes weak placements before the palace is locked.
+  Preset behavior:
+  - exam_cram: one-shot; 5-locus micro-palace and one quick retrieval walk.
+  - deep_mastery: interactive; 8-10 loci, refined images, fuller retrieval walk, weak-link repair notes.
+  - quick_review: one-shot refresh; Locus | Image | Item | Weak link? table.
+  - clinical_bridge: stepwise; route-to-action grid for applied ordered steps or red flags.
+  If no preset is specified, use the default knobs. One-shot returns the full artifact in one bounded reply; interactive or stepwise mode moves route -> placements -> retrieval walk and waits.
 validation:
   test_cases:
   - topic: Short labels, terms, and anchors that need fast recall
@@ -266,3 +217,32 @@ validation:
   known_issues:
   - LLMs may over-explain before the learner attempts the required move.
   - LLMs may drift outside scope when the topic is broad or ambiguous.
+presets:
+  exam_cram:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: bullets
+    explanation_density: lean
+    behavior: One-shot; build a 5-locus micro-palace with item placements and one quick retrieval walk.
+  deep_mastery:
+    guidance_level: high
+    delivery_mode: interactive
+    fade_intensity: adaptive_light
+    output_layout: labeled_sections
+    explanation_density: detailed
+    behavior: Interactive; map 8-10 loci, refine the images, and run a fuller retrieval walk with weak-link repair notes.
+  quick_review:
+    guidance_level: light
+    delivery_mode: one_shot
+    fade_intensity: minimal
+    output_layout: table
+    explanation_density: lean
+    behavior: One-shot refresh; present Locus | Image | Item | Weak link? in a compact table.
+  clinical_bridge:
+    guidance_level: medium
+    delivery_mode: stepwise
+    fade_intensity: adaptive_light
+    output_layout: table
+    explanation_density: focused
+    behavior: Stepwise; use a route-to-action grid so each locus anchors a practical step, red flag, or ordered decision point.

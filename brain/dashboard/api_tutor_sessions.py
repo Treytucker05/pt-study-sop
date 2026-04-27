@@ -47,6 +47,7 @@ from dashboard.api_tutor_utils import (
     _store_preflight_bundle,
     _get_preflight_bundle,
     _record_tutor_delete_telemetry,
+    _runtime_stage,
     _validate_chain_launch_blocks,
     _gen_session_id,
     _wikilink,
@@ -712,7 +713,17 @@ def create_session():
                 }
             ), 400
         first_block = blocks[0]
-        first_stage = str(first_block.get("control_stage") or "").upper()
+        first_stage_raw = str(first_block.get("control_stage") or "").upper()
+        # Collapse vault-hardened ORIENT/PLAN onto PRIME so chains like
+        # C-FINALS-PREP that open with M-PRE-012 (declared ORIENT in
+        # vault YAML) still pass the prime-launch gate. The legacy
+        # 7-stage runtime treats them as PRIME-equivalent.
+        first_method_id = str(first_block.get("method_id") or "").strip()
+        first_stage = (
+            _runtime_stage(first_method_id, first_stage_raw)
+            if first_stage_raw
+            else first_stage_raw
+        )
         if _chain_requires_prime_launch(chain_context_tags) and first_stage != "PRIME":
             conn.close()
             return jsonify(
@@ -721,7 +732,7 @@ def create_session():
                     "code": "CHAIN_PRIME_REQUIRED",
                     "method_chain_id": method_chain_id,
                     "first_block_name": first_block.get("name"),
-                    "first_block_stage": first_stage or "UNKNOWN",
+                    "first_block_stage": first_stage_raw or "UNKNOWN",
                 }
             ), 400
         launch_issues = _validate_chain_launch_blocks(blocks)
