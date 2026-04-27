@@ -62,9 +62,11 @@ export function StudioWorkspaceUnified({
   });
   const [materialSidebarOpen, setMaterialSidebarOpen] = useState(true);
   const [conceptMapCommand, setConceptMapCommand] = useState<GraphCanvasCommand | null>(null);
+  const [mindMapCommand, setMindMapCommand] = useState<GraphCanvasCommand | null>(null);
   const lastConceptMapRequestKeyRef = useRef<number | null>(null);
   const conceptMapCommandCounterRef = useRef<number>(1_000_000);
   const conceptMapSessionSeedKeyRef = useRef<string | null>(null);
+  const addItemCommandCounterRef = useRef<number>(2_000_000);
 
   const handleSelectTab = (nextTab: WorkspaceTabId) => {
     setActiveTab(nextTab);
@@ -112,6 +114,30 @@ export function StudioWorkspaceUnified({
     });
   }, [sessionConceptMapMermaid, sessionMaterialBundle, visitedTabs]);
 
+  const handleAddItemToCanvas = useCallback(
+    (label: string) => {
+      const trimmed = label.trim();
+      if (!trimmed) return;
+      const nextId = ++addItemCommandCounterRef.current;
+      if (activeTab === "mind-map") {
+        setMindMapCommand({
+          id: nextId,
+          target: "mindmap",
+          type: "add_node",
+          payload: { label: trimmed },
+        });
+      } else if (activeTab === "concept-map") {
+        setConceptMapCommand({
+          id: nextId,
+          target: "structured",
+          type: "add_node",
+          payload: { label: trimmed },
+        });
+      }
+    },
+    [activeTab],
+  );
+
   const handleRefreshConceptMapFromSession = useCallback(() => {
     if (!sessionConceptMapMermaid) return;
     if (typeof window !== "undefined") {
@@ -138,7 +164,11 @@ export function StudioWorkspaceUnified({
       className="flex h-full min-h-0 flex-1 flex-row"
     >
       {materialSidebarOpen ? (
-        <StudioWorkspaceMaterialSidebar bundle={sessionMaterialBundle} />
+        <StudioWorkspaceMaterialSidebar
+          bundle={sessionMaterialBundle}
+          activeTabId={activeTab}
+          onAddToCanvas={handleAddItemToCanvas}
+        />
       ) : null}
 
       <div className="flex h-full min-h-0 flex-1 flex-col">
@@ -230,7 +260,10 @@ export function StudioWorkspaceUnified({
           >
             {/* MindMapView owns its own vault/course fetches; the shell only mounts it. */}
             <Suspense fallback={<WorkspaceTabFallback label="mind map" />}>
-              <MindMapViewDeferred sessionBundle={sessionMaterialBundle} />
+              <MindMapViewDeferred
+                sessionBundle={sessionMaterialBundle}
+                externalCommand={mindMapCommand}
+              />
             </Suspense>
           </div>
         ) : null}

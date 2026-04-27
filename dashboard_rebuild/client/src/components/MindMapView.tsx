@@ -412,7 +412,7 @@ function useMindMapCanvasPersistence({
   setNodes,
   toggleDirection,
 }: {
-  addNode: (shape: MindMapShape) => void;
+  addNode: (shape: MindMapShape, label?: string) => void;
   autoLayout: () => void;
   deleteSelected: () => void;
   direction: "TB" | "LR";
@@ -647,9 +647,18 @@ function useMindMapCanvasPersistence({
         }
         break;
       }
-      case "add_node":
-        addNode("rectangle");
+      case "add_node": {
+        const payload = externalCommand.payload;
+        const labelFromPayload =
+          payload && typeof payload === "object" && "label" in payload
+            ? (payload as { label?: unknown }).label
+            : undefined;
+        addNode(
+          "rectangle",
+          typeof labelFromPayload === "string" ? labelFromPayload : undefined,
+        );
         break;
+      }
       case "delete_selected":
         deleteSelected();
         break;
@@ -802,18 +811,32 @@ function useMindMapCanvasModel({
     );
   }, [obsidianConfig]);
 
-  const addNode = useCallback((shape: MindMapShape) => {
-    const nextIndex = nodeCounter + 1;
-    const newNode: Node = {
-      id: `mm-${nextIndex}`,
-      type: "mindmapShape",
-      position: { x: Math.random() * 300 + 50, y: Math.random() * 200 + 50 },
-      data: { label: `Node ${nextIndex}`, colorIdx: 0, shape },
-      style: getMindMapNodeStyle(shape),
-    };
-    setNodes((current) => [...current, newNode]);
-    patchViewState((prev) => ({ nodeCounter: prev.nodeCounter + 1, isDirty: true }));
-  }, [nodeCounter, patchViewState, setNodes]);
+  const addNode = useCallback(
+    (shape: MindMapShape, label?: string) => {
+      const nextIndex = nodeCounter + 1;
+      const trimmedLabel = typeof label === "string" ? label.trim() : "";
+      const newNode: Node = {
+        id: `mm-${nextIndex}`,
+        type: "mindmapShape",
+        position: {
+          x: Math.random() * 300 + 50,
+          y: Math.random() * 200 + 50,
+        },
+        data: {
+          label: trimmedLabel || `Node ${nextIndex}`,
+          colorIdx: 0,
+          shape,
+        },
+        style: getMindMapNodeStyle(shape),
+      };
+      setNodes((current) => [...current, newNode]);
+      patchViewState((prev) => ({
+        nodeCounter: prev.nodeCounter + 1,
+        isDirty: true,
+      }));
+    },
+    [nodeCounter, patchViewState, setNodes],
+  );
 
   const deleteSelected = useCallback(() => {
     setNodes((current) => current.filter((node) => !node.selected));

@@ -10,6 +10,7 @@ import {
   Lightbulb,
   ListChecks,
   Package,
+  Plus,
   Sparkles,
   StickyNote,
   Target,
@@ -260,15 +261,26 @@ function buildSections(
 
 // ── Component ────────────────────────────────────────────────────────
 
+export type StudioWorkspaceMaterialActiveTab =
+  | "canvas"
+  | "mind-map"
+  | "concept-map";
+
 export interface StudioWorkspaceMaterialSidebarProps {
   bundle: SessionMaterialBundle | undefined;
   className?: string;
+  activeTabId?: StudioWorkspaceMaterialActiveTab;
+  onAddToCanvas?: (label: string) => void;
 }
 
 export function StudioWorkspaceMaterialSidebar({
   bundle,
   className,
+  activeTabId,
+  onAddToCanvas,
 }: StudioWorkspaceMaterialSidebarProps) {
+  const canAddToCanvas =
+    activeTabId === "mind-map" || activeTabId === "concept-map";
   const sections = useMemo(() => buildSections(bundle), [bundle]);
   const [query, setQuery] = useState("");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -403,19 +415,36 @@ export function StudioWorkspaceMaterialSidebar({
                               <span className="font-mono text-[11px] leading-snug text-foreground/88">
                                 {item.title}
                               </span>
-                              <button
-                                type="button"
-                                onClick={() => copyItem(item)}
-                                title="Copy to clipboard"
-                                aria-label={`Copy ${item.title}`}
-                                className="shrink-0 rounded p-1 text-foreground/52 opacity-0 transition-opacity hover:bg-primary/10 hover:text-primary group-hover:opacity-100 focus:opacity-100"
-                              >
-                                {copiedId === item.id ? (
-                                  <ClipboardCheck className="h-3 w-3 text-emerald-300" />
-                                ) : (
-                                  <Copy className="h-3 w-3" />
-                                )}
-                              </button>
+                              <span className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                                {canAddToCanvas && onAddToCanvas ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => onAddToCanvas(item.title)}
+                                    title={
+                                      activeTabId === "mind-map"
+                                        ? "Add as Mind Map node"
+                                        : "Add as Concept Map node"
+                                    }
+                                    aria-label={`Add ${item.title} to ${activeTabId === "mind-map" ? "mind map" : "concept map"}`}
+                                    className="rounded p-1 text-foreground/52 transition-colors hover:bg-primary/10 hover:text-primary"
+                                  >
+                                    <Plus className="h-3 w-3" />
+                                  </button>
+                                ) : null}
+                                <button
+                                  type="button"
+                                  onClick={() => copyItem(item)}
+                                  title="Copy to clipboard"
+                                  aria-label={`Copy ${item.title}`}
+                                  className="rounded p-1 text-foreground/52 transition-colors hover:bg-primary/10 hover:text-primary"
+                                >
+                                  {copiedId === item.id ? (
+                                    <ClipboardCheck className="h-3 w-3 text-emerald-300" />
+                                  ) : (
+                                    <Copy className="h-3 w-3" />
+                                  )}
+                                </button>
+                              </span>
                             </div>
                             {item.snippet ? (
                               <span className="font-mono text-[10px] leading-relaxed text-foreground/62 line-clamp-3">

@@ -220,7 +220,7 @@ function useStructuredCanvasActions({
   reactFlowRef,
   toggleDirection,
 }: {
-  addNode: () => void;
+  addNode: (label?: string) => void;
   autoLayout: () => void;
   deleteSelected: () => void;
   direction: "TB" | "LR";
@@ -375,9 +375,17 @@ function useStructuredCanvasActions({
         }
         break;
       }
-      case "add_node":
-        addNode();
+      case "add_node": {
+        const payload = externalCommand.payload;
+        const labelFromPayload =
+          payload && typeof payload === "object" && "label" in payload
+            ? (payload as { label?: unknown }).label
+            : undefined;
+        addNode(
+          typeof labelFromPayload === "string" ? labelFromPayload : undefined,
+        );
         break;
+      }
       case "delete_selected":
         deleteSelected();
         break;
@@ -570,19 +578,33 @@ export function ConceptMapStructured({
     patchUiState({ direction: newDir, isDirty: true });
   }, [direction, nodes, edges, setNodes]);
 
-  const addNode = useCallback(() => {
-    const id = `N${nodeCounter + 1}`;
-    const size = SHAPE_SIZES[nodeShape];
-    const newNode: Node = {
-      id,
-      type: "structured",
-      position: { x: Math.random() * 300 + 50, y: Math.random() * 200 + 50 },
-      data: { label: `New Node ${nodeCounter + 1}`, colorIdx: 0, shape: nodeShape },
-      style: { width: size.width, height: size.height },
-    };
-    setNodes((nds) => [...nds, newNode]);
-    patchUiState((prev) => ({ nodeCounter: prev.nodeCounter + 1, isDirty: true }));
-  }, [nodeCounter, nodeShape, setNodes]);
+  const addNode = useCallback(
+    (label?: string) => {
+      const id = `N${nodeCounter + 1}`;
+      const size = SHAPE_SIZES[nodeShape];
+      const trimmedLabel = typeof label === "string" ? label.trim() : "";
+      const newNode: Node = {
+        id,
+        type: "structured",
+        position: {
+          x: Math.random() * 300 + 50,
+          y: Math.random() * 200 + 50,
+        },
+        data: {
+          label: trimmedLabel || `New Node ${nodeCounter + 1}`,
+          colorIdx: 0,
+          shape: nodeShape,
+        },
+        style: { width: size.width, height: size.height },
+      };
+      setNodes((nds) => [...nds, newNode]);
+      patchUiState((prev) => ({
+        nodeCounter: prev.nodeCounter + 1,
+        isDirty: true,
+      }));
+    },
+    [nodeCounter, nodeShape, patchUiState, setNodes],
+  );
 
   const deleteSelected = useCallback(() => {
     setNodes((nds) => nds.filter((n) => !n.selected));
