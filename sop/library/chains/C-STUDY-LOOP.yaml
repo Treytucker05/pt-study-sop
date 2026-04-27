@@ -91,9 +91,14 @@ failure_actions:
   - condition: "Learner cannot recall terms despite understanding"
     action: "Activate KWIK Hook (M-HOOK-001)"
 
-context:
+# Legacy chains use `context_tags` (read by seed_methods.py and the
+# tutor session prime-launch gate). The vault hardening originally
+# spelled this `context`; rename to `context_tags` so stage: review
+# correctly skips _chain_requires_prime_launch (this loop chain
+# legitimately opens with TEACH, assuming C-PRIME-ONCE has run first).
+context_tags:
   energy: medium
-  time_available_min: 45
+  time_available: 45
   stage: review
   learner_style: top_down_narrative
 

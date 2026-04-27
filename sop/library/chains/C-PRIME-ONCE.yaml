@@ -101,10 +101,13 @@ failure_actions:
   - condition: "File path unknown"
     action: "Write [PATH UNKNOWN] — do not guess"
 
-context:
+# Legacy chains use `context_tags` (read by seed_methods.py and the
+# tutor session prime-launch gate); rename for consistency with the
+# rest of the chain library.
+context_tags:
   energy: medium
-  time_available_min: 25
-  stage: orientation
+  time_available: 25
+  stage: first_exposure
   learner_style: top_down_narrative
 
 knobs:
