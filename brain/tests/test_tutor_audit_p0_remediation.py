@@ -324,8 +324,15 @@ def test_b5_stream_chatgpt_responses_dedupes_tool_calls(monkeypatch):
     monkeypatch.setattr(http.client, "HTTPSConnection", _Conn)
     monkeypatch.setattr(http.client, "HTTPConnection", _Conn)
 
-    # Ensure an API key is present so the function does not short-circuit.
-    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-dedup")
+    # The function authenticates via _load_codex_auth (~/.codex/auth.json),
+    # not OPENAI_API_KEY. Patch the auth loader directly so the function
+    # does not short-circuit before reading the SSE stream.
+    import llm_provider
+    monkeypatch.setattr(
+        llm_provider,
+        "_load_codex_auth",
+        lambda: {"access_token": "test-token", "account_id": "test-account"},
+    )
 
     from llm_provider import stream_chatgpt_responses
 
