@@ -64,28 +64,37 @@ function snippet(text: string | null | undefined, limit = 140): string | null {
   return trimmed.length > limit ? `${trimmed.slice(0, limit - 1)}…` : trimmed;
 }
 
+function joinTitleAndBody(title: string, body: string | null | undefined): string {
+  const safeTitle = title.trim();
+  const safeBody = (body ?? "").trim();
+  if (safeTitle && safeBody) return `${safeTitle}\n\n${safeBody}`;
+  return safeTitle || safeBody;
+}
+
 function buildPrimeItem(
   obj: PrimePromotedWorkspaceObject,
   index: number,
 ): MaterialItem {
   if (obj.kind === "excerpt") {
+    const title = obj.title || "Excerpt";
     return {
       id: `prime-excerpt-${obj.id ?? index}`,
-      title: obj.title || "Excerpt",
+      title,
       snippet: snippet(obj.detail),
       source:
         obj.provenance?.sourceTitle ||
         obj.provenance?.sourcePath ||
         null,
-      copyText: `${obj.title}\n\n${obj.detail}`.trim(),
+      copyText: joinTitleAndBody(title, obj.detail),
     };
   }
+  const title = obj.title || "Repair note";
   return {
     id: `prime-note-${obj.id ?? index}`,
-    title: obj.title || "Repair note",
+    title,
     snippet: snippet(obj.detail),
     source: null,
-    copyText: `${obj.title}\n\n${obj.detail}`.trim(),
+    copyText: joinTitleAndBody(title, obj.detail),
   };
 }
 
@@ -93,12 +102,13 @@ function buildPolishItem(
   note: StudioPolishPromotedNote,
   index: number,
 ): MaterialItem {
+  const title = note.title || "Tutor output";
   return {
     id: `polish-${note.id ?? index}`,
-    title: note.title || "Tutor output",
+    title,
     snippet: snippet(note.content),
     source: note.badge || null,
-    copyText: `${note.title}\n\n${note.content}`.trim(),
+    copyText: joinTitleAndBody(title, note.content),
   };
 }
 
@@ -306,15 +316,46 @@ export function StudioWorkspaceMaterialSidebar({
   );
 
   async function copyItem(item: MaterialItem) {
+    const text = item.copyText;
+    let ok = false;
     try {
-      await navigator.clipboard.writeText(item.copyText);
-      setCopiedId(item.id);
-      window.setTimeout(() => {
-        setCopiedId((current) => (current === item.id ? null : current));
-      }, 1400);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      }
     } catch {
-      // Clipboard unavailable; ignore so the user can still see the content.
+      // fall through to legacy execCommand path
     }
+    if (!ok) {
+      try {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        ok = document.execCommand("copy");
+        document.body.removeChild(textarea);
+      } catch {
+        ok = false;
+      }
+    }
+    if (!ok) {
+      // Surface failure briefly so the user knows the copy did not happen.
+      setCopiedId(`__failed__:${item.id}`);
+      window.setTimeout(() => {
+        setCopiedId((current) =>
+          current === `__failed__:${item.id}` ? null : current,
+        );
+      }, 1400);
+      return;
+    }
+    setCopiedId(item.id);
+    window.setTimeout(() => {
+      setCopiedId((current) => (current === item.id ? null : current));
+    }, 1400);
   }
 
   return (
@@ -434,12 +475,18 @@ export function StudioWorkspaceMaterialSidebar({
                                 <button
                                   type="button"
                                   onClick={() => copyItem(item)}
-                                  title="Copy to clipboard"
+                                  title={
+                                    copiedId === `__failed__:${item.id}`
+                                      ? "Copy failed — try again or paste manually"
+                                      : "Copy to clipboard"
+                                  }
                                   aria-label={`Copy ${item.title}`}
                                   className="rounded p-1 text-foreground/52 transition-colors hover:bg-primary/10 hover:text-primary"
                                 >
                                   {copiedId === item.id ? (
                                     <ClipboardCheck className="h-3 w-3 text-emerald-300" />
+                                  ) : copiedId === `__failed__:${item.id}` ? (
+                                    <Copy className="h-3 w-3 text-rose-400" />
                                   ) : (
                                     <Copy className="h-3 w-3" />
                                   )}

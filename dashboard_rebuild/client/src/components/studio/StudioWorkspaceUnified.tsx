@@ -172,16 +172,7 @@ export function StudioWorkspaceUnified({
       ) : null}
 
       <div className="flex h-full min-h-0 flex-1 flex-col">
-        <div
-          data-testid="studio-workspace-unified-tabs"
-          role="tablist"
-          aria-label={
-            canvasProps.courseName
-              ? `Workspace tools for ${canvasProps.courseName}`
-              : "Workspace tools"
-          }
-          className="flex shrink-0 items-center gap-2 border-b border-primary/12 bg-black/35 px-3 py-2"
-        >
+        <div className="flex shrink-0 items-center gap-2 border-b border-primary/12 bg-black/35 px-3 py-2">
           <button
             type="button"
             data-testid="studio-workspace-material-toggle"
@@ -204,6 +195,16 @@ export function StudioWorkspaceUnified({
               <PanelLeftOpen className="h-3.5 w-3.5" />
             )}
           </button>
+          <div
+            data-testid="studio-workspace-unified-tabs"
+            role="tablist"
+            aria-label={
+              canvasProps.courseName
+                ? `Workspace tools for ${canvasProps.courseName}`
+                : "Workspace tools"
+            }
+            className="flex items-center gap-2"
+          >
           {WORKSPACE_TABS.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -226,6 +227,7 @@ export function StudioWorkspaceUnified({
               </button>
             );
           })}
+          </div>
         </div>
 
         <div className="relative min-h-0 flex-1">
