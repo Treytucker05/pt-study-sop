@@ -118,13 +118,41 @@ const PANEL_STAGE_MAP: Record<string, PipelineStage> = {
   memory: "settings",
 };
 
+// Explicit display order within each pipeline stage. Action chips come before
+// their packet artifacts (e.g. Priming before Prime Packet) so the toolbar
+// reads "do X, then look at the packet X produced". Without this, ordering
+// would silently follow whatever order panels happen to appear in
+// `panelDefinitions`, which is fragile.
+const STAGE_PANEL_ORDER: Record<PipelineStage, readonly string[]> = {
+  load: ["source_shelf"],
+  read: ["document_dock"],
+  prime: ["priming_chat", "prime_packet"],
+  tutor: ["tutor_chat", "polish_packet"],
+  polish: ["polish_chat"],
+  export: ["obsidian", "anki"],
+  workbench: ["workspace", "notes"],
+  settings: ["run_config", "memory"],
+};
+
 const LAYOUT_PRESETS: { key: StudioShellPreset; label: string; hint: string }[] =
   [
-    { key: "priming", label: "Prime", hint: "Sources + Workspace + Prime Packet" },
-    { key: "study", label: "Study", hint: "Live tutoring set" },
-    { key: "polish", label: "Polish", hint: "Polish + outputs" },
+    {
+      key: "priming",
+      label: "Prime",
+      hint: "Sources + Doc + Priming + Prime Packet + Run Config",
+    },
+    {
+      key: "study",
+      label: "Study",
+      hint: "Doc + Workspace + Tutor + Memory",
+    },
+    {
+      key: "polish",
+      label: "Polish",
+      hint: "Polish + Polish Packet + Workspace",
+    },
     { key: "full_studio", label: "Full Studio", hint: "Every panel" },
-    { key: "minimal", label: "Minimal", hint: "Bare canvas" },
+    { key: "minimal", label: "Minimal", hint: "Tutor only" },
   ];
 
 const PRESET_PANEL_KEYS: Record<StudioShellPreset, string[]> = {
@@ -1623,10 +1651,16 @@ export function StudioShell({
               className="flex flex-wrap items-stretch gap-0"
             >
               {PIPELINE_STAGES.map((stage, stageIndex) => {
-                const stagePanels = panelDefinitions.filter(
-                  (definition) =>
-                    PANEL_STAGE_MAP[definition.panel] === stage.key,
-                );
+                const stagePanels = STAGE_PANEL_ORDER[stage.key]
+                  .map((panelKey) =>
+                    panelDefinitions.find(
+                      (definition) => definition.panel === panelKey,
+                    ),
+                  )
+                  .filter(
+                    (definition): definition is StudioPanelDefinition =>
+                      Boolean(definition),
+                  );
                 if (stagePanels.length === 0) return null;
                 return (
                   <Fragment key={stage.key}>
@@ -1687,20 +1721,24 @@ export function StudioShell({
                 );
               })}
 
-              {SIDE_CLUSTERS.map((cluster, clusterIndex) => {
-                const clusterPanels = panelDefinitions.filter(
-                  (definition) =>
-                    PANEL_STAGE_MAP[definition.panel] === cluster.key,
-                );
+              <div className="ml-auto" aria-hidden="true" />
+              {SIDE_CLUSTERS.map((cluster) => {
+                const clusterPanels = STAGE_PANEL_ORDER[cluster.key]
+                  .map((panelKey) =>
+                    panelDefinitions.find(
+                      (definition) => definition.panel === panelKey,
+                    ),
+                  )
+                  .filter(
+                    (definition): definition is StudioPanelDefinition =>
+                      Boolean(definition),
+                  );
                 if (clusterPanels.length === 0) return null;
                 return (
                   <div
                     key={cluster.key}
                     data-testid={`studio-toolbar-zone-${cluster.key}`}
-                    className={cn(
-                      "flex flex-col gap-1.5 border-l border-dashed border-[rgba(255,118,144,0.16)] pl-3 px-2.5 py-1",
-                      clusterIndex === 0 && "ml-auto",
-                    )}
+                    className="flex flex-col gap-1.5 border-l border-dashed border-[rgba(255,118,144,0.16)] pl-3 px-2.5 py-1"
                   >
                     <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[rgba(255,201,213,0.44)]">
                       {cluster.label}
