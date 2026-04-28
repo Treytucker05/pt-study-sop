@@ -30,6 +30,7 @@ import {
   consumeTutorLaunchHandoff,
   peekTutorLaunchHandoff,
   readTutorActiveSessionId,
+  readTutorEntryCardDismissed,
   readTutorSelectedMaterialIds,
   readTutorStoredStartState,
   writeTutorObjectiveScope,
@@ -835,7 +836,14 @@ function useTutorPageController() {
       }
     }
 
-    setShowSetup(true);
+    // Respect a prior dismissal of the FLOATING STUDIO entry card. If the
+    // user previously closed it on this device and there's nothing to resume,
+    // leave the entry card hidden so navigating away and back doesn't pop it
+    // again. They can re-open it any time via the hero NEW SESSION button,
+    // which clears the dismissal flag.
+    if (!readTutorEntryCardDismissed()) {
+      setShowSetup(true);
+    }
     const canonicalMaterialSelection = readTutorSelectedMaterialIds();
     if (canonicalMaterialSelection.length > 0) {
       hub.setSelectedMaterials(canonicalMaterialSelection);
