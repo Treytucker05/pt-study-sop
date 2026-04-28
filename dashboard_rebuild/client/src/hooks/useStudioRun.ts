@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type {
   TutorAccuracyProfile,
@@ -7,7 +7,9 @@ import type {
 } from "@/lib/api";
 import type { TutorBrainLaunchContext } from "@/lib/tutorClientState";
 import {
+  readTutorEntryCardDismissed,
   writeTutorAccuracyProfile,
+  writeTutorEntryCardDismissed,
   writeTutorObjectiveScope,
   writeTutorSelectedMaterialIds,
   writeTutorStoredStartState,
@@ -118,7 +120,15 @@ export function useStudioRun({
   const [tutorCustomBlockIds, setTutorCustomBlockIds] = useState<number[]>(
     customBlockIds,
   );
-  const [showSetup, setShowSetup] = useState<boolean>(() => !Boolean(initialSessionId));
+  // Initial showSetup is `false` if (a) we already have a session id to resume,
+  // (b) the user has previously dismissed the entry card on this device — so
+  // navigating away and back doesn't pop the FLOATING STUDIO modal again.
+  const [showSetup, setShowSetup] = useState<boolean>(
+    () =>
+      !Boolean(initialSessionId) &&
+      !readTutorEntryCardDismissed() &&
+      !shouldSuppressStoredSessionResume,
+  );
   const [brainLaunchContext, setBrainLaunchContext] =
     useState<TutorBrainLaunchContext | null>(
       pendingLaunchHandoff.brainLaunchContext,
@@ -137,6 +147,21 @@ export function useStudioRun({
   const entryKind: StudioRunEntryKind = activeSessionId
     ? "exact_resume"
     : "workspace_home";
+
+  // Persist the dismissal of the FLOATING STUDIO entry card. Once the user
+  // closes it (or a session gets resumed), don't pop it again on the next
+  // mount until they explicitly open a new session via the hero button.
+  const showSetupRef = useRef<boolean>(showSetup);
+  useEffect(() => {
+    const prev = showSetupRef.current;
+    showSetupRef.current = showSetup;
+    if (prev === showSetup) return;
+    if (prev === true && showSetup === false) {
+      writeTutorEntryCardDismissed(true);
+    } else if (prev === false && showSetup === true) {
+      writeTutorEntryCardDismissed(false);
+    }
+  }, [showSetup]);
 
   useEffect(() => {
     if (!persistStartState) return;
