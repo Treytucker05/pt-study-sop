@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tutor Toolbar — Workflow-Shaped Redesign</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --primary: #ff4e6c;
+    --primary-soft: rgba(255, 78, 108, 0.18);
+    --primary-glow: rgba(255, 78, 108, 0.36);
+    --primary-bg: rgba(255, 78, 108, 0.08);
+    --bg: #0a0608;
+    --bg-2: #120a0d;
+    --surface: rgba(0, 0, 0, 0.55);
+    --surface-2: rgba(20, 10, 14, 0.7);
+    --text: #ffe3ea;
+    --text-dim: rgba(255, 227, 234, 0.62);
+    --text-faint: rgba(255, 227, 234, 0.36);
+    --read: #60a5fa;
+    --think: #a78bfa;
+    --run: #ff4e6c;
+    --capture: #fbbf24;
+    --export: #4ade80;
+    --font-arcade: 'Courier New', monospace;
+    --font-mono: 'Consolas', 'Courier New', monospace;
+  }
+
+  body {
+    background:
+      radial-gradient(circle at 20% 0%, rgba(255, 78, 108, 0.08), transparent 40%),
+      radial-gradient(circle at 80% 100%, rgba(167, 139, 250, 0.05), transparent 40%),
+      var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    padding: 32px 24px 80px;
+  }
+
+  .wrap { max-width: 1400px; margin: 0 auto; }
+
+  h1 {
+    font-family: var(--font-arcade);
+    font-size: 22px;
+    letter-spacing: 4px;
+    color: var(--primary);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-bottom: 28px;
+    letter-spacing: 0.8px;
+  }
+
+  /* ── PIPELINE LEGEND ── */
+  .legend {
+    display: flex;
+    gap: 0;
+    align-items: center;
+    margin-bottom: 32px;
+    padding: 20px 24px;
+    background: var(--surface);
+    border: 1px solid var(--primary-soft);
+    border-radius: 12px;
+    overflow-x: auto;
+  }
+  .legend-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 110px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    padding: 6px 0;
+  }
+  .legend-stage:hover { opacity: 0.85; }
+  .stage-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    box-shadow: 0 0 14px currentColor;
+  }
+  .stage-name {
+    font-family: var(--font-arcade);
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: currentColor;
+  }
+  .stage-desc {
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.6px;
+    text-align: center;
+    max-width: 110px;
+  }
+  .legend-arrow {
+    color: var(--text-faint);
+    font-size: 18px;
+    flex-shrink: 0;
+    margin: 0 4px;
+  }
+  .stage-read    { color: var(--read); }
+  .stage-think   { color: var(--think); }
+  .stage-run     { color: var(--run); }
+  .stage-capture { color: var(--capture); }
+  .stage-export  { color: var(--export); }
+
+  /* ── TOOLBAR (redesign) ── */
+  .toolbar-shell {
+    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.16));
+    border: 1px solid var(--primary-soft);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 36px;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+  }
+
+  .row-label {
+    font-family: var(--font-arcade);
+    font-size: 9px;
+    letter-spacing: 2.4px;
+    color: var(--text-faint);
+    margin: 0 0 8px 6px;
+  }
+
+  .row {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .row:last-child { margin-bottom: 0; }
+
+  .zone {
+    display: flex;
+    flex-direction: column;
+    padding: 0 14px;
+    border-right: 1px dashed rgba(255, 78, 108, 0.16);
+    position: relative;
+  }
+  .zone:last-child { border-right: none; }
+  .zone:first-child { padding-left: 6px; }
+
+  .zone-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-arcade);
+    font-size: 9px;
+    letter-spacing: 2.4px;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+    transition: color 0.2s;
+  }
+  .zone-label .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .zone.zone-read .zone-label,
+  .zone.zone-read.active .zone-label { color: var(--read); }
+  .zone.zone-think .zone-label,
+  .zone.zone-think.active .zone-label { color: var(--think); }
+  .zone.zone-run .zone-label,
+  .zone.zone-run.active .zone-label { color: var(--run); }
+  .zone.zone-capture .zone-label,
+  .zone.zone-capture.active .zone-label { color: var(--capture); }
+  .zone.zone-export .zone-label,
+  .zone.zone-export.active .zone-label { color: var(--export); }
+  .zone.dim .zone-label { color: rgba(255,227,234,0.18); }
+
+  .chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .chip {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--primary-soft);
+    color: var(--text);
+    font-family: var(--font-arcade);
+    font-size: 10px;
+    padding: 7px 12px;
+    cursor: pointer;
+    letter-spacing: 1.2px;
+    border-radius: 999px;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+    user-select: none;
+  }
+  .chip:hover {
+    border-color: var(--primary-glow);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+  .chip.open {
+    background: rgba(255, 78, 108, 0.16);
+    border-color: var(--primary-glow);
+    color: #fff;
+  }
+  .chip.muted {
+    color: var(--text-dim);
+  }
+  .chip[disabled] {
+    opacity: 0.32;
+    cursor: not-allowed;
+  }
+
+  .chip .ico { display: inline-block; margin-right: 4px; opacity: 0.8; }
+
+  /* zone arrows between top-row zones */
+  .zone-arrow {
+    align-self: center;
+    color: rgba(255, 78, 108, 0.36);
+    font-size: 14px;
+    padding-top: 18px;
+    flex-shrink: 0;
+  }
+
+  /* ── flying packet arrows on hover ── */
+  .packet-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    font-size: 18px;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.4s;
+    color: var(--capture);
+    text-shadow: 0 0 12px currentColor;
+  }
+  .zone-run .packet-arrow.in  { left: -22px; }
+  .zone-run .packet-arrow.out { right: -22px; }
+  .show-prime-flow .zone-think + .zone-arrow {
+    color: var(--run);
+    text-shadow: 0 0 14px currentColor;
+    transform: translateX(4px);
+  }
+  .show-polish-flow .zone-run + .zone-arrow {
+    color: var(--export);
+    text-shadow: 0 0 14px currentColor;
+    transform: translateX(4px);
+  }
+
+  /* ── second row: layout dropdown / select / arrange ── */
+  .layout-dd {
+    position: relative;
+  }
+  .layout-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    background: #15090d;
+    border: 1px solid var(--primary-glow);
+    border-radius: 10px;
+    padding: 6px;
+    min-width: 180px;
+    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.5);
+    z-index: 30;
+    display: none;
+  }
+  .layout-dd.open .layout-menu { display: block; }
+  .layout-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-family: var(--font-arcade);
+    font-size: 10px;
+    letter-spacing: 1.2px;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .layout-item:hover { background: rgba(255, 78, 108, 0.14); color: #fff; }
+  .layout-item .preview {
+    color: var(--text-faint);
+    font-size: 9px;
+    letter-spacing: 0.6px;
+  }
+
+  .selection-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 78, 108, 0.1);
+    border: 1px solid var(--primary-soft);
+    color: var(--text);
+    font-family: var(--font-arcade);
+    font-size: 10px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    letter-spacing: 1.2px;
+  }
+  .selection-chip .count {
+    background: var(--primary);
+    color: #000;
+    border-radius: 999px;
+    padding: 1px 7px;
+    font-weight: bold;
+  }
+  .selection-chip.empty { display: none; }
+
+  /* ── caption notes under each row ── */
+  .row-note {
+    font-size: 11px;
+    color: var(--text-dim);
+    padding: 0 6px;
+    margin-top: 4px;
+    margin-bottom: 18px;
+  }
+
+  /* ── before/after section ── */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 36px;
+  }
+  .compare-col {
+    background: var(--surface);
+    border: 1px solid var(--primary-soft);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .compare-col h3 {
+    font-family: var(--font-arcade);
+    font-size: 11px;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+  }
+  .compare-col.before h3 { color: var(--text-dim); }
+  .compare-col.after h3  { color: var(--primary); }
+  .compare-col ul { list-style: none; }
+  .compare-col li {
+    padding: 6px 0;
+    font-size: 12px;
+    color: var(--text-dim);
+    border-bottom: 1px dashed rgba(255,255,255,0.04);
+  }
+  .compare-col li:last-child { border-bottom: none; }
+  .compare-col li b { color: var(--text); font-weight: normal; }
+  .compare-col.after li b { color: var(--primary); }
+
+  /* ── interactive flow demo ── */
+  .demo-controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    padding: 14px;
+    background: var(--surface-2);
+    border: 1px dashed var(--primary-soft);
+    border-radius: 10px;
+  }
+  .demo-controls .label {
+    font-family: var(--font-arcade);
+    font-size: 10px;
+    letter-spacing: 1.6px;
+    color: var(--text-faint);
+    margin-right: 8px;
+    align-self: center;
+  }
+  .demo-btn {
+    background: transparent;
+    border: 1px solid var(--primary-soft);
+    color: var(--text);
+    font-family: var(--font-arcade);
+    font-size: 10px;
+    padding: 6px 12px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    border-radius: 6px;
+  }
+  .demo-btn:hover { background: var(--primary-bg); color: var(--primary); border-color: var(--primary); }
+
+  /* ── interaction map ── */
+  .map {
+    background: var(--surface);
+    border: 1px solid var(--primary-soft);
+    border-radius: 12px;
+    padding: 22px;
+    margin-bottom: 32px;
+  }
+  .map h2 {
+    font-family: var(--font-arcade);
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--primary);
+    margin-bottom: 14px;
+  }
+  .map-grid {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 6px 16px;
+    font-size: 12px;
+  }
+  .map-stage {
+    font-family: var(--font-arcade);
+    font-size: 10px;
+    letter-spacing: 1.6px;
+    color: var(--text-dim);
+    align-self: start;
+    padding-top: 4px;
+  }
+  .map-flow {
+    color: var(--text-dim);
+    line-height: 1.6;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed rgba(255,255,255,0.04);
+  }
+  .map-flow b { color: var(--text); }
+  .map-flow .arrow { color: var(--primary); padding: 0 4px; }
+
+  .footnote {
+    color: var(--text-faint);
+    font-size: 11px;
+    text-align: center;
+    margin-top: 40px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Tutor Toolbar — Workflow-Shaped Redesign</h1>
+  <div class="subtitle">Read, Think, Run, Capture, Export — the toolbar reads like the pipeline.</div>
+
+  <!-- ── pipeline legend ── -->
+  <div class="legend" id="legend">
+    <div class="legend-stage stage-read" data-stage="read">
+      <div class="stage-dot"></div>
+      <div class="stage-name">READ</div>
+      <div class="stage-desc">Find sources, open documents</div>
+    </div>
+    <div class="legend-arrow">→</div>
+    <div class="legend-stage stage-think" data-stage="think">
+      <div class="stage-dot"></div>
+      <div class="stage-name">THINK</div>
+      <div class="stage-desc">Arrange, sketch, jot</div>
+    </div>
+    <div class="legend-arrow">→</div>
+    <div class="legend-stage stage-run" data-stage="run">
+      <div class="stage-dot"></div>
+      <div class="stage-name">RUN</div>
+      <div class="stage-desc">Prime + Tutor session</div>
+    </div>
+    <div class="legend-arrow">→</div>
+    <div class="legend-stage stage-capture" data-stage="capture">
+      <div class="stage-dot"></div>
+      <div class="stage-name">CAPTURE</div>
+      <div class="stage-desc">Polish what came out</div>
+    </div>
+    <div class="legend-arrow">→</div>
+    <div class="legend-stage stage-export" data-stage="export">
+      <div class="stage-dot"></div>
+      <div class="stage-name">EXPORT</div>
+      <div class="stage-desc">Notes, vault, cards</div>
+    </div>
+  </div>
+
+  <!-- ── interactive demo controls ── -->
+  <div class="demo-controls">
+    <span class="label">Try:</span>
+    <button class="demo-btn" data-demo="open-tutor">Click "Tutor"</button>
+    <button class="demo-btn" data-demo="hover-prime">Show Prime Packet flow</button>
+    <button class="demo-btn" data-demo="hover-polish">Show Polish Packet flow</button>
+    <button class="demo-btn" data-demo="select">Select 2 panels</button>
+    <button class="demo-btn" data-demo="layout">Open Layout menu</button>
+    <button class="demo-btn" data-demo="reset">Reset</button>
+  </div>
+
+  <!-- ── the redesigned toolbar ── -->
+  <div class="toolbar-shell" id="toolbar">
+
+    <div class="row-label">— PIPELINE —</div>
+    <div class="row" id="row-pipeline">
+
+      <div class="zone zone-read" data-stage="read">
+        <div class="zone-label"><span class="dot"></span>READ</div>
+        <div class="chips">
+          <button class="chip" data-panel="source_shelf"><span class="ico">📚</span>Source Shelf</button>
+          <button class="chip" data-panel="document_dock"><span class="ico">📄</span>Document Dock</button>
+        </div>
+      </div>
+      <div class="zone-arrow">→</div>
+
+      <div class="zone zone-think" data-stage="think">
+        <div class="zone-label"><span class="dot"></span>THINK</div>
+        <div class="chips">
+          <button class="chip" data-panel="workspace"><span class="ico">🗂</span>Workspace</button>
+          <button class="chip" data-panel="notes"><span class="ico">📝</span>Notes</button>
+        </div>
+      </div>
+      <div class="zone-arrow">→</div>
+
+      <div class="zone zone-run" data-stage="run">
+        <div class="zone-label"><span class="dot"></span>RUN</div>
+        <div class="chips">
+          <button class="chip" data-panel="prime_packet" data-flow="prime"><span class="ico">📦</span>Prime Packet</button>
+          <button class="chip" data-panel="priming"><span class="ico">✨</span>Priming</button>
+          <button class="chip" data-panel="tutor"><span class="ico">💬</span>Tutor</button>
+        </div>
+        <div class="packet-arrow in">↩</div>
+        <div class="packet-arrow out">↪</div>
+      </div>
+      <div class="zone-arrow">→</div>
+
+      <div class="zone zone-capture" data-stage="capture">
+        <div class="zone-label"><span class="dot"></span>CAPTURE</div>
+        <div class="chips">
+          <button class="chip" data-panel="polish_packet" data-flow="polish"><span class="ico">📦</span>Polish Packet</button>
+          <button class="chip" data-panel="polish"><span class="ico">✨</span>Polish</button>
+        </div>
+      </div>
+      <div class="zone-arrow">→</div>
+
+      <div class="zone zone-export" data-stage="export">
+        <div class="zone-label"><span class="dot"></span>EXPORT</div>
+        <div class="chips">
+          <button class="chip" data-panel="obsidian"><span class="ico">📓</span>Obsidian</button>
+          <button class="chip" data-panel="anki"><span class="ico">🧠</span>Anki</button>
+        </div>
+      </div>
+
+      <div class="zone" data-stage="settings" style="margin-left: auto; border-right: none;">
+        <div class="zone-label"><span class="dot" style="background: var(--text-faint)"></span>CROSS-CUTTING</div>
+        <div class="chips">
+          <button class="chip muted" data-panel="run_config"><span class="ico">⚙</span>Run Config</button>
+          <button class="chip muted" data-panel="memory"><span class="ico">🧬</span>Memory</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row-note">
+      Each stage feeds the next. <b>Run Config</b> + <b>Memory</b> are settings — they apply across stages.
+    </div>
+
+    <div class="row-label">— WORKSPACE CONTROLS —</div>
+    <div class="row" id="row-controls">
+
+      <div class="zone" data-stage="start">
+        <div class="zone-label"><span class="dot" style="background: var(--text-dim)"></span>START</div>
+        <div class="chips">
+          <div class="layout-dd" id="layout-dd">
+            <button class="chip" id="layout-trigger"><span class="ico">▦</span>Layout ▾</button>
+            <div class="layout-menu">
+              <div class="layout-item" data-preset="prime">
+                <span>Prime</span><span class="preview">Sources + Workspace + Prime Packet + Priming</span>
+              </div>
+              <div class="layout-item" data-preset="study">
+                <span>Study</span><span class="preview">Live tutoring set</span>
+              </div>
+              <div class="layout-item" data-preset="polish">
+                <span>Polish</span><span class="preview">Polish + Polish Packet + outputs</span>
+              </div>
+              <div class="layout-item" data-preset="full">
+                <span>Full Studio</span><span class="preview">Every panel</span>
+              </div>
+              <div class="layout-item" data-preset="minimal">
+                <span>Minimal</span><span class="preview">Bare canvas</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="zone" data-stage="select">
+        <div class="zone-label"><span class="dot" style="background: var(--text-dim)"></span>SELECT</div>
+        <div class="chips">
+          <span class="selection-chip empty" id="sel-chip"><span class="count">0</span>SELECTED</span>
+          <button class="chip" id="btn-group" disabled><span class="ico">⌗</span>Group</button>
+          <button class="chip" id="btn-ungroup" disabled><span class="ico">⌐</span>Ungroup</button>
+        </div>
+      </div>
+
+      <div class="zone" data-stage="arrange" style="border-right: none;">
+        <div class="zone-label"><span class="dot" style="background: var(--text-dim)"></span>ARRANGE</div>
+        <div class="chips">
+          <button class="chip" id="btn-windows"><span class="ico">▤</span>Windows (<span id="win-count">0</span>) ▾</button>
+          <button class="chip"><span class="ico">▥</span>Tidy Up</button>
+          <button class="chip"><span class="ico">⊕</span>Center</button>
+          <button class="chip" style="border-color: rgba(255,78,108,0.3); color: rgba(255,180,196,0.85)"><span class="ico">⌫</span>Clear Canvas</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row-note">
+      <b>Start</b> picks a preset layout. <b>Select</b> works on currently-selected panels. <b>Arrange</b> manages what's already open.
+    </div>
+  </div>
+
+  <!-- ── interaction map ── -->
+  <div class="map">
+    <h2>What flows where</h2>
+    <div class="map-grid">
+      <div class="map-stage stage-read">READ</div>
+      <div class="map-flow"><b>Source Shelf</b> <span class="arrow">→</span> <b>Document Dock</b> (open a doc) <span class="arrow">→</span> <b>Workspace</b> (drag in excerpts)</div>
+
+      <div class="map-stage stage-think">THINK</div>
+      <div class="map-flow"><b>Workspace</b> + <b>Notes</b> arrange excerpts, sketches, repair notes <span class="arrow">→</span> <b>Prime Packet</b></div>
+
+      <div class="map-stage stage-run">RUN</div>
+      <div class="map-flow"><b>Prime Packet</b> (inputs) + <b>Run Config</b> <span class="arrow">→</span> <b>Priming</b> sets up <span class="arrow">→</span> <b>Tutor</b> runs the live session</div>
+
+      <div class="map-stage stage-capture">CAPTURE</div>
+      <div class="map-flow"><b>Tutor</b> output <span class="arrow">→</span> <b>Polish Packet</b> (outputs) <span class="arrow">→</span> <b>Polish</b> reviews + packages</div>
+
+      <div class="map-stage stage-export">EXPORT</div>
+      <div class="map-flow"><b>Polish Packet</b> <span class="arrow">→</span> <b>Notes</b>, <b>Obsidian</b> (vault), <b>Anki</b> (cards)</div>
+
+      <div class="map-stage" style="color: var(--text-faint)">CROSS-CUTTING</div>
+      <div class="map-flow" style="border-bottom: none;"><b>Run Config</b> shapes Priming + Tutor. <b>Memory</b> resumes the next session.</div>
+    </div>
+  </div>
+
+  <!-- ── before/after ── -->
+  <div class="compare">
+    <div class="compare-col before">
+      <h3>BEFORE — flat strip, two collisions</h3>
+      <ul>
+        <li>13 panel chips in one row, no grouping <b>— eye has nothing to anchor on</b></li>
+        <li>"Priming" and "Polish" appear in <b>both</b> rows (panel vs preset) <b>— same word, different verb</b></li>
+        <li>Selection chip shows "0 Selected" forever <b>— noise</b></li>
+        <li>Group / Ungroup stranded between panels and presets</li>
+        <li>5 preset chips compete with 13 panel chips for visual weight</li>
+        <li>Prime Packet vs Polish Packet — easy to confuse by name alone</li>
+      </ul>
+    </div>
+    <div class="compare-col after">
+      <h3>AFTER — pipeline reads left-to-right</h3>
+      <ul>
+        <li><b>5 named zones</b>: READ → THINK → RUN → CAPTURE → EXPORT</li>
+        <li>Faint <b>→ arrows</b> between zones teach order in one glance</li>
+        <li><b>Layout ▾</b> dropdown ends the Priming/Polish name collision</li>
+        <li>Selection chip <b>only appears</b> when N ≥ 1</li>
+        <li>Group / Select / Arrange on row 2 — clear scope progression</li>
+        <li>Run Config + Memory pulled to a <b>cross-cutting</b> cluster — they're not pipeline stages</li>
+        <li>Stage label glows when a panel from that stage is open <b>— toolbar = progress indicator</b></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footnote">
+    Wireframe only. Click chips to toggle "open" state. Try the demo buttons above to feel the interactions.
+  </div>
+
+</div>
+
+<script>
+  // ── chip toggle (open/close panel) ──
+  const chips = document.querySelectorAll('.chip[data-panel]');
+  const winCount = document.getElementById('win-count');
+  const zones = document.querySelectorAll('.zone[data-stage]');
+
+  function refreshState() {
+    let open = 0;
+    const stagesActive = new Set();
+    chips.forEach(c => {
+      if (c.classList.contains('open')) {
+        open++;
+        const zone = c.closest('.zone');
+        if (zone) stagesActive.add(zone.dataset.stage);
+      }
+    });
+    winCount.textContent = open;
+    zones.forEach(z => {
+      if (stagesActive.has(z.dataset.stage)) z.classList.add('active');
+      else z.classList.remove('active');
+    });
+  }
+
+  chips.forEach(c => {
+    c.addEventListener('click', () => {
+      c.classList.toggle('open');
+      refreshState();
+    });
+  });
+
+  // ── packet flow hover ──
+  const toolbar = document.getElementById('toolbar');
+  document.querySelectorAll('[data-flow="prime"]').forEach(el => {
+    el.addEventListener('mouseenter', () => toolbar.classList.add('show-prime-flow'));
+    el.addEventListener('mouseleave', () => toolbar.classList.remove('show-prime-flow'));
+  });
+  document.querySelectorAll('[data-flow="polish"]').forEach(el => {
+    el.addEventListener('mouseenter', () => toolbar.classList.add('show-polish-flow'));
+    el.addEventListener('mouseleave', () => toolbar.classList.remove('show-polish-flow'));
+  });
+
+  // ── legend stage hover dims other zones ──
+  document.querySelectorAll('.legend-stage').forEach(s => {
+    s.addEventListener('mouseenter', () => {
+      const stage = s.dataset.stage;
+      zones.forEach(z => {
+        if (z.dataset.stage !== stage) z.classList.add('dim');
+      });
+    });
+    s.addEventListener('mouseleave', () => {
+      zones.forEach(z => z.classList.remove('dim'));
+    });
+  });
+
+  // ── layout dropdown ──
+  const dd = document.getElementById('layout-dd');
+  document.getElementById('layout-trigger').addEventListener('click', (e) => {
+    e.stopPropagation();
+    dd.classList.toggle('open');
+  });
+  document.addEventListener('click', () => dd.classList.remove('open'));
+  document.querySelectorAll('.layout-item').forEach(it => {
+    it.addEventListener('click', () => {
+      const preset = it.dataset.preset;
+      const presetMap = {
+        prime:   ['source_shelf', 'workspace', 'prime_packet', 'priming'],
+        study:   ['workspace', 'prime_packet', 'tutor', 'notes'],
+        polish:  ['polish_packet', 'polish', 'notes', 'obsidian'],
+        full:    ['source_shelf','document_dock','workspace','notes','prime_packet','priming','tutor','polish_packet','polish','obsidian','anki','run_config','memory'],
+        minimal: []
+      };
+      chips.forEach(c => c.classList.remove('open'));
+      (presetMap[preset] || []).forEach(p => {
+        const chip = document.querySelector(`.chip[data-panel="${p}"]`);
+        if (chip) chip.classList.add('open');
+      });
+      dd.classList.remove('open');
+      refreshState();
+    });
+  });
+
+  // ── selection demo ──
+  const selChip = document.getElementById('sel-chip');
+  const btnGroup = document.getElementById('btn-group');
+  const btnUngroup = document.getElementById('btn-ungroup');
+  let selected = 0;
+  function setSelected(n) {
+    selected = n;
+    selChip.querySelector('.count').textContent = n;
+    selChip.classList.toggle('empty', n === 0);
+    btnGroup.toggleAttribute('disabled', n < 2);
+    btnUngroup.toggleAttribute('disabled', n < 1);
+  }
+  setSelected(0);
+
+  // ── demo control buttons ──
+  document.querySelectorAll('.demo-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      const action = b.dataset.demo;
+      if (action === 'open-tutor') {
+        document.querySelector('.chip[data-panel="tutor"]').classList.add('open');
+        refreshState();
+      } else if (action === 'hover-prime') {
+        toolbar.classList.add('show-prime-flow');
+        setTimeout(() => toolbar.classList.remove('show-prime-flow'), 1800);
+      } else if (action === 'hover-polish') {
+        toolbar.classList.add('show-polish-flow');
+        setTimeout(() => toolbar.classList.remove('show-polish-flow'), 1800);
+      } else if (action === 'select') {
+        setSelected(2);
+      } else if (action === 'layout') {
+        dd.classList.add('open');
+      } else if (action === 'reset') {
+        chips.forEach(c => c.classList.remove('open'));
+        setSelected(0);
+        dd.classList.remove('open');
+        refreshState();
+      }
+    });
+  });
+
+  refreshState();
+</script>
+</body>
+</html>
