@@ -37,7 +37,7 @@ CHAINS_DIR = LIB_DIR / "chains"
 META_DIR = LIB_DIR / "meta"
 TICKETS_DIR = LIB_DIR / "research" / "tickets"
 
-PEIRRO_PHASES = ["prepare", "encode", "retrieve", "interrogate", "refine", "overlearn"]
+PEIRRO_PHASES = ["prepare", "encode", "elaborate", "interleave", "retrieve", "refine", "overlearn"]
 
 
 # ---------------------------------------------------------------------------

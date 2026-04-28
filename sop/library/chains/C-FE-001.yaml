@@ -6,7 +6,7 @@ blocks:
 - M-PRE-008
 - M-PRE-009
 - M-CAL-001
-- M-INT-001
+- M-ELB-001
 - M-REF-003
 - M-CAL-002
 - M-CAL-003
@@ -47,7 +47,7 @@ runtime_profile:
   - FULL_CALIBRATE
   mnemonic_policy: mnemonic slot only after TEACH-close artifact; full KWIK remains ENCODE depth work
 block_overrides:
-  M-INT-001:
+  M-ELB-001:
     teach_packet:
       concept_type: mechanism
       bridge_choice: analogy_bridge

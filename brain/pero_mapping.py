@@ -1,17 +1,22 @@
-"""PERO Stage Mapping — maps PEIRRO categories to PERO learning stages.
+"""PERO Stage Mapping — maps library categories to PERO learning stages.
 
-PERO collapses the 6 PEIRRO categories into 4 cognitive stages:
+PERO collapses the categories into 4 cognitive stages:
   P (Priming)      — activate prior knowledge, set expectations
   E (Encoding)     — create meaning, build hooks, attach structure
   R (Retrieval)    — test recall, practice retrieval, apply to cases
   O (Overlearning) — close loop, capture artifacts, reflect
 
-The "Interrogate" PEIRRO category is NOT a PERO stage. Methods in that
-category are mapped to Encoding (structure-building) or Retrieval
-(case-based application) based on each method's cognitive intent.
+The library splits the post-encoding work into two categories that map
+to different PERO stages by default:
+  - ELABORATE (analogy, schema construction) → Encoding by default
+  - INTERLEAVE (discrimination, cross-topic) → Retrieval by default
+
+Method-specific overrides handle the cases where a method's cognitive
+intent does not match its category default (e.g. case-based application
+methods land in Retrieval regardless of category).
 
 Within PERO "P" (prepare), runtime may display PRIME vs CALIBRATE
-as operational substages while keeping canonical PEIRRO category names.
+as operational substages while keeping canonical category names.
 
 YAML categories are NEVER renamed. This mapping is computed at runtime.
 
@@ -47,21 +52,23 @@ PERO_ORDER = {stage: i for i, stage in enumerate(PERO_STAGES)}
 # Category → Default PERO Stage (when no method-specific override exists)
 # ---------------------------------------------------------------------------
 #
-# | PEIRRO category | Default PERO | Rationale                           |
-# |-----------------|--------------|-------------------------------------|
-# | prepare         | P (Priming)  | Prior knowledge activation          |
-# | encode          | E (Encoding) | Meaning-making, hook creation       |
-# | retrieve        | R (Retrieval)| Testing recall, strengthening paths |
-# | interrogate     | E (Encoding) | Default: structure-building intent  |
-# | refine          | R (Retrieval)| Post-retrieval error correction     |
-# | overlearn       | O (Overlearn)| Artifact capture, reflection        |
+# | Category    | Default PERO | Rationale                                |
+# |-------------|--------------|------------------------------------------|
+# | prepare     | P (Priming)  | Prior knowledge activation               |
+# | encode      | E (Encoding) | Meaning-making, hook creation            |
+# | elaborate   | E (Encoding) | Default: structure-building, schema work |
+# | interleave  | R (Retrieval)| Default: discrimination from memory      |
+# | retrieve    | R (Retrieval)| Testing recall, strengthening paths      |
+# | refine      | R (Retrieval)| Post-retrieval error correction          |
+# | overlearn   | O (Overlearn)| Artifact capture, reflection             |
 
 _CATEGORY_DEFAULT: dict[str, str] = {
     "prepare": "P",
     "teach": "P",
     "encode": "E",
+    "elaborate": "E",    # default; case-based application methods overridden below
+    "interleave": "R",
     "retrieve": "R",
-    "interrogate": "E",  # default; overridden per method below
     "refine": "R",       # repair is post-retrieval
     "overlearn": "O",
 }
@@ -72,21 +79,26 @@ _CATEGORY_DEFAULT: dict[str, str] = {
 # ---------------------------------------------------------------------------
 # Some methods don't match their category's default PERO stage.
 #
-# "interrogate" methods split based on cognitive intent:
-#   - Structure-building (analogy, comparison, illness scripts) → Encoding
+# ELABORATE methods split based on cognitive intent:
+#   - Structure-building (analogy, illness scripts) → Encoding
 #   - Case-based application (clinical app, case walkthrough) → Retrieval
+#
+# INTERLEAVE methods are mostly Retrieval-flavored (discrimination from
+# memory), but cross-topic linking is more integrative → Encoding.
 #
 # "prepare" Pre-Test is diagnostic retrieval → flagged as P with exception
 
 _METHOD_OVERRIDES: dict[str, dict] = {
-    # --- interrogate → Retrieval (case-based application) ---
+    # --- ELABORATE → Retrieval (case-based application) ---
     "Clinical Application": {"pero": "R", "subtag": "application"},
     "Case Walkthrough":     {"pero": "R", "subtag": "application"},
-    # --- interrogate → Encoding (structure-building) — matches category default ---
+    # --- ELABORATE → Encoding (structure-building) — matches category default ---
     "Analogy Bridge":          {"pero": "E", "subtag": "elaboration"},
-    "Cross-Topic Link":        {"pero": "E", "subtag": "integration"},
-    "Side-by-Side Comparison": {"pero": "E", "subtag": "discrimination"},
     "Illness Script Builder":  {"pero": "E", "subtag": "schema-building"},
+    # --- INTERLEAVE → Retrieval (discrimination) — matches category default ---
+    "Side-by-Side Comparison": {"pero": "R", "subtag": "discrimination"},
+    # --- INTERLEAVE → Encoding (integrative cross-topic) ---
+    "Cross-Topic Link":        {"pero": "E", "subtag": "integration"},
     # --- prepare with diagnostic retrieval exception ---
     "Pre-Test": {"pero": "P", "subtag": "diagnostic-retrieval", "exception": True},
     # --- refine with repair subtags ---

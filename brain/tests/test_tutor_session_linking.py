@@ -2059,7 +2059,7 @@ def test_send_turn_blocks_teach_evaluate_mode(client):
     teach_block_id = _insert_method_block(
         name="Teach Guard Block",
         control_stage="TEACH",
-        method_id="M-INT-001",
+        method_id="M-ELB-001",
         facilitation_prompt="teach prompt",
         artifact_type="notes",
     )

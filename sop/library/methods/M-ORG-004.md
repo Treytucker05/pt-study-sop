@@ -96,7 +96,7 @@ If no preset is specified, use the default knobs. One-shot returns the full arti
 - **Needs research:** `false`
 
 ## Related Methods
-- [[M-INT-005]] -- Use when the learner needs a fuller case walkthrough before compressing the pathway into a decision tree
+- [[M-ELB-003]] -- Use when the learner needs a fuller case walkthrough before compressing the pathway into a decision tree
 - [[M-CAL-002]] -- Use when the completed branches should feed a fuller scored probe set after teaching
 
 ## Changelog

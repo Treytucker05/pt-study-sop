@@ -1,15 +1,15 @@
 ---
-id: M-INT-005
+id: M-ELB-003
 name: Case Walkthrough
-stage: INTERROGATE
+stage: ELABORATE
 status: validated
 version: '1.2'
 created: '2026-04-07'
 updated: '2026-04-21'
-tags: [method, M-INT, interrogate]
+tags: [method, M-INT, elaborate]
 ---
 
-# M-INT-005 — Case Walkthrough
+# M-ELB-003 — Case Walkthrough
 
 ## Summary
 Walk through one realistic case to retrieve reasoning steps, identify gaps, and reinforce application accuracy before moving to the next probe. The method stays attempt-first, exposes reasoning errors in context, and ends with one targeted follow-up instead of a lecture.
@@ -75,7 +75,7 @@ presets:
 
 ## Runtime Prompt
 ```text
-You are running M-INT-005 (Case Walkthrough) in the INTERROGATE stage.
+You are running M-ELB-003 (Case Walkthrough) in the ELABORATE stage.
 Use only the loaded source. Ask only for missing required inputs.
 Produce: LearnerCaseResponse, ErrorTags, ConfidenceTag, CorrectiveFeedback, and NextTargetedProbe.
 Run one realistic case from memory. Require a closed-note first-pass interpretation before feedback, walk the learner through differential, workup, and management as needed, tag the specific reasoning gap, capture confidence before correction, and end with one targeted next probe.
@@ -94,17 +94,17 @@ If no preset is specified, use the default knobs. One-shot returns the full case
 - **Needs research:** `false`
 
 ## Related Methods
-- [[M-INT-002]] — Clinical application cousin method
-- [[M-INT-006]] — Illness-script fallback for explicit reasoning structure
+- [[M-ELB-002]] — Clinical application cousin method
+- [[M-ELB-004]] — Illness-script fallback for explicit reasoning structure
 - [[M-ORG-004]] — Decision-tree fallback if the case branches
 
 ## Changelog
-- **v1.1** — restored the archived method into the active library and migrated it to the stage-first `INTERROGATE` architecture while preserving the original attempt-first case walkthrough flow.
+- **v1.1** — restored the archived method into the active library and migrated it to the stage-first `ELABORATE` architecture while preserving the original attempt-first case walkthrough flow.
 - **v1.2** — upgraded the evidence stack to stronger illness-script, unfolding-case, and staged case-discussion sources; rebuilt the method into the current template; made the four presets produce clearly distinct case depths and output formats; tightened the runtime prompt; and preserved the original logic, outputs, and constraints.
 
 ### Summary of Changes
-- Restored `M-INT-005` from the archived needs-work copy into the live method library.
-- Migrated the metadata from legacy `ENCODE` labeling to the current stage-first `INTERROGATE` pattern used by the rest of the hardened `M-INT` family.
+- Restored `M-ELB-003` from the archived needs-work copy into the live method library.
+- Migrated the metadata from legacy `ENCODE` labeling to the current stage-first `ELABORATE` pattern used by the rest of the hardened `M-INT` family.
 - Strengthened the evidence stack with foundational illness-script work plus newer classroom and experimental studies on unfolding cases, interactive case-based learning, and staged-release case discussion.
 - Rebuilt the preset behavior so each mode now produces a distinct case style and artifact shape:
   - `exam_cram` uses terse bullets on one short case.

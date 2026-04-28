@@ -41,7 +41,9 @@ def _legacy_category_for_stage(control_stage: str) -> str:
         "TEACH": "prepare",
         "CALIBRATE": "prepare",
         "ENCODE": "encode",
-        "REFERENCE": "interrogate",
+        "ELABORATE": "elaborate",
+        "INTERLEAVE": "interleave",
+        "REFERENCE": "reference",
         "RETRIEVE": "retrieve",
         "OVERLEARN": "overlearn",
     }.get(stage, stage.lower())
@@ -455,7 +457,7 @@ METHOD_BLOCKS = [
             "spacing_effect",
         ],
     },
-    # === INTERROGATE (link to prior knowledge, apply, compare) ===
+    # === ELABORATE / INTERLEAVE (deepen, link, compare, apply to cases) ===
     {
         "name": "Analogy Bridge",
         "control_stage": "TEACH",

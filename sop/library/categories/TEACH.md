@@ -24,7 +24,7 @@ Purpose: Deliver first-contact explanation in bounded chunks so unfamiliar mater
 
 | ID | Name | Energy | Duration | Key Mechanism |
 |----|------|--------|----------|--------------|
-| M-INT-001 | Analogy Bridge | medium | 3 min | analogical_transfer |
+| M-ELB-001 | Analogy Bridge | medium | 3 min | analogical_transfer |
 | M-ENC-008 | Mechanism Trace | high | 10 min | causal_explanation |
 | M-TEA-001 | Story Spine | medium | 6 min | narrative_scaffolding |
 | M-TEA-002 | Confusable Contrast Teach | medium | 6 min | contrastive_explanation |

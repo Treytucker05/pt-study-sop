@@ -1,21 +1,21 @@
-id: M-INT-006
+id: M-ELB-004
 name: Illness Script Builder
-category: INTERROGATE
+category: ELABORATE
 subcategory: illness-script-builder
 description: For a condition, build the illness script by naming enabling conditions, the pathophysiological fault, and the clinical consequences, then compare it against source and add differentiators.
-control_stage: INTERROGATE
+control_stage: ELABORATE
 status: validated
 version: '1.2'
 created: '2026-04-07'
 updated: '2026-04-21'
 tags:
-- interrogate
+- elaborate
 - illness-script
 - clinical-reasoning
 - pathology
 - causal-chain
 - differential
-purpose: Illness Script Builder exists to interrogate already-encoded material by forcing the learner to build a disease script from risk context through mechanism to consequences, verify it against source, and separate it from look-alikes. It turns the current stage into a clean, reusable signal instead of a vague study session.
+purpose: Illness Script Builder exists to elaborate already-encoded material by forcing the learner to build a disease script from risk context through mechanism to consequences, verify it against source, and separate it from look-alikes. It turns the current stage into a clean, reusable signal instead of a vague study session.
 not_for: This is not for first exposure, direct lecturing, or introducing brand-new material that has not already been encoded.
 best_fit_topics:
 - Previously encoded concepts that need comparison, application, or discrimination
@@ -23,7 +23,7 @@ best_fit_topics:
 - Conditions whose clinical reasoning depends on linking risk context, mechanism, and consequences
 poor_fit_topics:
 - Brand-new material that has not been encoded yet
-- Tasks that need direct teaching rather than retrieval or interrogation
+- Tasks that need direct teaching rather than retrieval or elaborate
 - Topics without a meaningful causal pathway or discriminating look-alikes
 learner_state_required: The target concept has already been taught or encoded. The learner can attempt retrieval, comparison, or application before seeing the answer.
 inputs:
@@ -68,7 +68,7 @@ required_outputs:
 - Comparison to textbook version (gaps identified)
 - Discriminating features vs. similar conditions
 success_criteria:
-- All required outputs are present for M-INT-006.
+- All required outputs are present for M-ELB-004.
 - The illness script clearly links enabling conditions to mechanism and consequences rather than listing disconnected facts.
 - The learner stays active and the tutor does not give away the answer before the required attempt or transformation.
 partial_criteria:
@@ -159,11 +159,11 @@ failure_modes:
 - mode: Consequences without mechanism
   detection: The learner or tutor starts doing consequences without mechanism or the artifact stops satisfying the method's required checks.
   recovery: Require an explicit pathophysiological link from fault to finding.
-  fallback_method: M-INT-002
+  fallback_method: M-ELB-002
 - mode: Generic enabling conditions
   detection: The learner or tutor starts doing generic enabling conditions or the artifact stops satisfying the method's required checks.
   recovery: Force prioritization of the most important risk factors and context.
-  fallback_method: M-INT-005
+  fallback_method: M-ELB-003
 - mode: Not discriminating from similar conditions
   detection: The learner or tutor starts doing not discriminating from similar conditions or the artifact stops satisfying the method's required checks.
   recovery: Add at least one unlike-X contrast tied to a concrete script difference.
@@ -219,9 +219,9 @@ presets:
     explanation_density: focused
     behavior: Applied script pass. Tie the script to patient-facing cues by emphasizing risk profile, mechanism-linked findings, red flags, and differentiators that change the next clinical move.
 related_methods:
-- id: M-INT-002
+- id: M-ELB-002
   relationship: Clinical application cousin method
-- id: M-INT-005
+- id: M-ELB-003
   relationship: Case walkthrough fallback
 - id: M-GEN-007
   relationship: Mechanism trace fallback for causal sequencing
@@ -233,7 +233,7 @@ system_prompt_override:
   - Reject disconnected fact lists. Every accepted consequence must be tied back to the stated fault, and every discriminator must separate the script from a real look-alike.
   reason: Illness Script Builder only works when the learner organizes disease knowledge into a causal script rather than receiving a preassembled clinical summary.
 facilitation_prompt: |
-  You are running M-INT-006 (Illness Script Builder) in the INTERROGATE stage.
+  You are running M-ELB-004 (Illness Script Builder) in the ELABORATE stage.
   Use only the loaded source. Ask only for missing required inputs.
   Produce: Complete illness script, Causal chain diagram, Comparison to textbook, and Discriminating features.
   Build one illness script by naming enabling conditions, the pathophysiological fault, and the clinical consequences, then compare it against source and separate it from look-alikes. Do not turn the run into a lecture or write the script for the learner before an attempt.

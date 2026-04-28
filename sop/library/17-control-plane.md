@@ -79,12 +79,12 @@ When a chain contains `TEACH` and `CALIBRATE` for unfamiliar material, enforce:
 - Live mode in this slot is `KWIK Lite` (system seed + one learner ownership action).
 - Full `KWIK Hook` remains a deeper method in `ENCODE` and/or `OVERLEARN`.
 
-## 4. PEIRRO Compatibility (Internal)
+## 4. Library Category Compatibility (Internal)
 
-PEIRRO categories remain compatibility taxonomy for validators, YAML schemas, and historical paths:
+Library categories remain a compatibility taxonomy for validators, YAML schemas, and historical paths:
 
 - `prepare` hosts `PRIME`, `TEACH`, and `CALIBRATE`
-- `encode` and `interrogate` host `ENCODE` and `REFERENCE` depending on method intent
+- `encode`, `elaborate`, and `interleave` host `ENCODE`, `ELABORATE`, and `INTERLEAVE` blocks (collapse to `ENCODE` or `REFERENCE` at runtime depending on method intent)
 - `retrieve` and `refine` host `RETRIEVE`
 - `overlearn` hosts `OVERLEARN`
 

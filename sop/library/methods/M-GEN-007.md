@@ -99,7 +99,7 @@ If no preset is specified, use the default knobs. One-shot returns the full arti
 ## Related Methods
 - [[M-ORG-003]] — Flowchart fallback for sequential mechanisms when the learner mainly needs visual sequencing
 - [[M-GEN-005]] — Why-chain fallback for causal depth on one specific claim
-- [[M-INT-006]] — Illness-script fallback when the learner needs a clinical pattern rather than a single traced pathway
+- [[M-ELB-004]] — Illness-script fallback when the learner needs a clinical pattern rather than a single traced pathway
 
 ## Changelog
 - **v1.1** — corrected the method back into the stage-first ENCODE architecture and cleaned up the legacy prompt surface while preserving the original trigger -> chain -> because -> verification -> branch flow.

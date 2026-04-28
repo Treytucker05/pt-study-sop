@@ -1,22 +1,22 @@
-id: M-INT-004
+id: M-ILV-002
 name: Side-by-Side Comparison
-category: INTERROGATE
+category: INTERLEAVE
 subcategory: side-by-side-comparison
 description: Place two confusable concepts in a comparison table, fill the key rows from memory first, then verify against source and mark the discriminators.
-control_stage: INTERROGATE
+control_stage: INTERLEAVE
 status: validated
 version: '1.2'
 created: '2026-04-07'
 updated: '2026-04-21'
 tags:
-- interrogate
+- interleave
 - comparison
 - discrimination
 - differential
 - table
 - contrasting-cases
 - retrieval
-purpose: Side-by-Side Comparison exists to interrogate already-encoded material by forcing the learner to contrast two confusable concepts row by row, correct memory errors against source, and name the highest-yield discriminators. It turns the current stage into a clean, reusable signal instead of a vague study session.
+purpose: Side-by-Side Comparison exists to interleave already-encoded material by forcing the learner to contrast two confusable concepts row by row, correct memory errors against source, and name the highest-yield discriminators. It turns the current stage into a clean, reusable signal instead of a vague study session.
 not_for: This is not for first exposure, direct lecturing, or introducing brand-new material that has not already been encoded.
 best_fit_topics:
 - Previously encoded concepts that need comparison, application, or discrimination
@@ -24,7 +24,7 @@ best_fit_topics:
 - Pairs of concepts that are easily confused and need a crisp differential cue
 poor_fit_topics:
 - Brand-new material that has not been encoded yet
-- Tasks that need direct teaching rather than retrieval or interrogation
+- Tasks that need direct teaching rather than retrieval or interleave
 - Pairs that are too unrelated to support a meaningful contrast table
 learner_state_required: The target concepts have already been taught or encoded. The learner can attempt retrieval, comparison, or application before seeing the answer.
 inputs:
@@ -63,7 +63,7 @@ required_outputs:
 - Discriminating features highlighted (the key differentiators)
 - Error list from initial memory-first attempt
 success_criteria:
-- All required outputs are present for M-INT-004.
+- All required outputs are present for M-ILV-002.
 - The table includes at least 5-7 useful dimensions and ends with a clear discriminator rather than a list of generic similarities.
 - The learner stays active and the tutor does not give away the answer before the required attempt or transformation.
 partial_criteria:
@@ -157,11 +157,11 @@ failure_modes:
 - mode: Not identifying discriminators
   detection: The learner or tutor starts doing not identifying discriminators or the artifact stops satisfying the method's required checks.
   recovery: Force ranking and choose the most differentiating row.
-  fallback_method: M-INT-006
+  fallback_method: M-ELB-004
 - mode: Looking up before trying
   detection: The learner or tutor starts doing looking up before trying or the artifact stops satisfying the method's required checks.
   recovery: Reset to a memory-first pass before reopening the source.
-  fallback_method: M-INT-002
+  fallback_method: M-ELB-002
 default_duration_min: 7
 energy_cost: medium
 best_stage: review
@@ -228,9 +228,9 @@ presets:
 related_methods:
 - id: M-ORG-002
   relationship: Comparison-table cousin method
-- id: M-INT-006
+- id: M-ELB-004
   relationship: Illness-script fallback if clinical discrimination is needed
-- id: M-INT-002
+- id: M-ELB-002
   relationship: Clinical application fallback
 system_prompt_override:
   relaxes:
@@ -240,7 +240,7 @@ system_prompt_override:
   - Reject shallow compare-contrast rows that do not help discriminate the pair. Push toward rows that actually separate the concepts under pressure.
   reason: Side-by-Side Comparison only works when the learner externalizes the confusion pattern first and then sharpens it into useful differentiators.
 facilitation_prompt: |
-  You are running M-INT-004 (Side-by-Side Comparison) in the INTERROGATE stage.
+  You are running M-ILV-002 (Side-by-Side Comparison) in the INTERLEAVE stage.
   Use only the loaded source. Ask only for missing required inputs.
   Produce: Side-by-side comparison table, Discriminating features highlighted, and Error list from initial attempt.
   Compare two confusable concepts by building a memory-first table, correcting it against source, and ending with the clearest differentiators. Do not turn the run into a lecture or fill the table for the learner.

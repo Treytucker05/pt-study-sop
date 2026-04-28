@@ -1,18 +1,18 @@
 ---
-id: M-INT-001
+id: M-ELB-001
 name: Analogy Bridge
-stage: INTERROGATE
+stage: ELABORATE
 status: validated
 version: '1.2'
 created: '2026-04-07'
 updated: '2026-04-21'
-tags: [method, M-INT, interrogate]
+tags: [method, M-INT, elaborate]
 ---
 
-# M-INT-001 — Analogy Bridge
+# M-ELB-001 — Analogy Bridge
 
 ## Summary
-Use one familiar source domain to interrogate an already-encoded concept through structured analogy. The method stays active, makes the mapping explicit, and ends by naming where the analogy fails so the learner does not mistake the bridge for the concept itself.
+Use one familiar source domain to elaborate an already-encoded concept through structured analogy. The method stays active, makes the mapping explicit, and ends by naming where the analogy fails so the learner does not mistake the bridge for the concept itself.
 
 **Not for:** first exposure, direct lecturing, or introducing brand-new material that has not already been encoded.
 
@@ -75,7 +75,7 @@ presets:
 
 ## Runtime Prompt
 ```text
-You are running M-INT-001 (Analogy Bridge) in the INTERROGATE stage.
+You are running M-ELB-001 (Analogy Bridge) in the ELABORATE stage.
 Use only the loaded source. Ask only for missing required inputs.
 Produce: Analogy statement, Mapping table, and Breakdown points.
 Build one analogy for an already-encoded concept, map at least 3 structural correspondences, test where the analogy fails, and return to the real concept without turning the run into a lecture or quiz.
@@ -94,12 +94,12 @@ If no preset is specified, use the default knobs. One-shot returns the full brid
 - **Needs research:** `false`
 
 ## Related Methods
-- [[M-INT-003]] — Cross-topic transfer cousin method
+- [[M-ILV-001]] — Cross-topic transfer cousin method
 - [[M-GEN-002]] — Teach-back fallback if the analogy needs explanation
-- [[M-INT-004]] — Comparison fallback for discrimination
+- [[M-ILV-002]] — Comparison fallback for discrimination
 
 ## Changelog
-- **v1.1** — migrated the method to the stage-first `INTERROGATE` architecture, normalized metadata naming, and preserved the original analogy-mapping flow.
+- **v1.1** — migrated the method to the stage-first `ELABORATE` architecture, normalized metadata naming, and preserved the original analogy-mapping flow.
 - **v1.2** — upgraded the evidence stack to stronger analogy, comparison, and classroom analogy-instruction sources; replaced the legacy note layout with the current template; added the standard knob schema plus four distinct presets; tightened the runtime prompt; and preserved the original method logic, steps, outputs, and constraints.
 
 ### Summary of Changes

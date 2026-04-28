@@ -98,7 +98,7 @@ If no preset is specified, use the default knobs. One-shot returns the full arti
 ## Related Methods
 - [[M-GEN-006]] — Similar self-explanation move
 - [[M-GEN-005]] — Why-chain fallback for deeper causality
-- [[M-INT-002]] — Clinical application if the learner needs context
+- [[M-ELB-002]] — Clinical application if the learner needs context
 
 ## Changelog
 - **v1.1** — migrated the method to the stage-first production metadata and cleaned up the legacy prompt scaffolding while preserving the original teach-back -> breakdown -> targeted review flow.

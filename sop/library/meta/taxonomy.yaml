@@ -49,11 +49,16 @@ categories:
     description: "Test recall with adversarial near-miss and timed sprints"
     prefix: RET
     aliases: ["recall", "test", "practice"]
-  interrogate:
-    label: "INTERROGATE"
-    description: "Active questioning and self-testing to strengthen encoding"
-    prefix: INT
-    aliases: ["question", "self_test", "interrogation"]
+  elaborate:
+    label: "ELABORATE"
+    description: "Deepen already-encoded material through analogy, schema construction, transfer, and worked application"
+    prefix: ELB
+    aliases: ["elaboration", "schema_building", "transfer", "interrogate", "interrogation"]
+  interleave:
+    label: "INTERLEAVE"
+    description: "Mix and contrast related-but-confusable concepts within one practice block to sharpen discrimination and cross-topic transfer"
+    prefix: ILV
+    aliases: ["interleaving", "contrasting_cases", "discrimination", "mixed_practice"]
   overlearn:
     label: "OVERLEARN"
     description: "Close loop, capture artifacts, Anki, drill sheets"

@@ -14,7 +14,7 @@ blocks:
   - M-CAL-002  # Full Calibrate Probes
   - M-CAL-003  # Full Calibrate Priority Set
   - M-REF-003  # One-Page Anchor
-  - M-INT-005  # Case Walkthrough (Fault Injection for procedures)
+  - M-ELB-003  # Case Walkthrough (Fault Injection for procedures)
   - M-RET-007  # Timed Sprint Sets
 allowed_modes:
   - procedure

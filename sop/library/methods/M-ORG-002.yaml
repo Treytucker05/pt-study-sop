@@ -154,7 +154,7 @@ failure_modes:
 - mode: Too many comparison dimensions
   detection: "The learner or tutor starts doing too many comparison dimensions or the artifact stops satisfying the method\u2019s required checks."
   recovery: Limit to 5-7 rows; prioritize clinical relevance
-  fallback_method: M-INT-004
+  fallback_method: M-ILV-002
 - mode: No discriminators identified
   detection: "The learner or tutor starts doing no discriminators identified or the artifact stops satisfying the method\u2019s required checks."
   recovery: "Force ranking \u2014 which row is MOST differentiating?"
@@ -182,7 +182,7 @@ knobs:
   output_layout: labeled_sections
   explanation_density: focused
 related_methods:
-- id: M-INT-004
+- id: M-ILV-002
   relationship: Use when the learner needs a fuller side-by-side teaching pass before encoding the table
 - id: M-RET-006
   relationship: Use when the finished discriminators should be stress-tested with near-miss retrieval prompts

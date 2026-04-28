@@ -5,7 +5,7 @@ blocks:
   - M-PRE-004      # Hierarchical Advance Organizer (H1 map)
   - M-CAL-001      # MICRO-CALIBRATE baseline
   - M-TEA-001      # TEACH Story Spine
-  - M-INT-001      # TEACH Analogy Bridge
+  - M-ELB-001      # TEACH Analogy Bridge
   - M-REF-003      # TEACH-close artifact (One-Page Anchor)
   - M-CAL-002      # FULL CALIBRATE probes
   - M-CAL-003      # FULL CALIBRATE priority set
@@ -57,7 +57,7 @@ block_overrides:
       bridge_choice: story_spine
       artifact_target: one_page_anchor
       escalation_rule: brief_l0_hook_then_l3_mechanism_then_l4_precision_with_low_friction_function_confirmation
-  M-INT-001:
+  M-ELB-001:
     teach_packet:
       concept_type: mechanism
       bridge_choice: analogy_bridge

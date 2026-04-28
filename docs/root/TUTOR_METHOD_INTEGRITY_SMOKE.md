@@ -23,12 +23,12 @@
 | M-ENC-012 | ENCODE | decision-tree | guidance_level, output_format | PASS | ok |
 | M-ENC-013 | ENCODE | notes | guidance_level, output_format | PASS | ok |
 | M-ENC-014 | ENCODE | notes | guidance_level, output_format | PASS | ok |
-| M-INT-001 | ENCODE | notes | guidance_level, output_format | PASS | ok |
-| M-INT-002 | ENCODE | notes | difficulty, feedback_timing | PASS | ok |
-| M-INT-003 | ENCODE | notes | guidance_level, output_format | PASS | ok |
-| M-INT-004 | ENCODE | notes | guidance_level, output_format | PASS | ok |
-| M-INT-005 | ENCODE | notes | guidance_level | PASS | ok |
-| M-INT-006 | ENCODE | notes | guidance_level, output_format | PASS | ok |
+| M-ELB-001 | ENCODE | notes | guidance_level, output_format | PASS | ok |
+| M-ELB-002 | ENCODE | notes | difficulty, feedback_timing | PASS | ok |
+| M-ILV-001 | ENCODE | notes | guidance_level, output_format | PASS | ok |
+| M-ILV-002 | ENCODE | notes | guidance_level, output_format | PASS | ok |
+| M-ELB-003 | ENCODE | notes | guidance_level | PASS | ok |
+| M-ELB-004 | ENCODE | notes | guidance_level, output_format | PASS | ok |
 | M-OVR-001 | OVERLEARN | notes | intensity, speed_pressure | PASS | ok |
 | M-OVR-002 | OVERLEARN | cards | intensity, speed_pressure | PASS | ok |
 | M-OVR-003 | OVERLEARN | notes | intensity, speed_pressure | PASS | ok |

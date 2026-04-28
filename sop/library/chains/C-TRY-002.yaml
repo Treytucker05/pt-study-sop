@@ -10,7 +10,7 @@ blocks:
   - M-PRE-004      # Hierarchical Advance Organizer
   - M-CAL-001      # MICRO-CALIBRATE baseline
   - M-GEN-007      # TEACH Mechanism Trace
-  - M-INT-001      # TEACH Analogy Bridge
+  - M-ELB-001      # TEACH Analogy Bridge
   - M-REF-003      # TEACH-close artifact
   - M-CAL-002      # FULL CALIBRATE probes
   - M-CAL-003      # FULL CALIBRATE priority set
@@ -83,7 +83,7 @@ block_overrides:
       bridge_choice: mechanism_trace
       artifact_target: one_page_anchor
       escalation_rule: brief_l0_hook_then_l3_mechanism_then_l4_precision_with_low_friction_function_confirmation
-  M-INT-001:
+  M-ELB-001:
     teach_packet:
       concept_type: compare_contrast
       bridge_choice: analogy_bridge

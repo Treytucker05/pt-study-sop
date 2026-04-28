@@ -98,7 +98,7 @@ If no preset is specified, use the default knobs. One-shot returns the full arti
 
 ## Related Methods
 - [[M-GEN-009]] — Kinesthetic anchor cousin method when one gesture cue is enough
-- [[M-INT-002]] — Clinical application fallback when the learner needs a case frame instead of movement mapping
+- [[M-ELB-002]] — Clinical application fallback when the learner needs a case frame instead of movement mapping
 - [[M-ORG-003]] — Flowchart fallback if the sequence needs a static visual structure
 
 ## Changelog

@@ -166,7 +166,7 @@ failure_modes:
 - mode: Linear thinking only
   detection: The learner forces the mechanism into one straight line and ignores meaningful divergence.
   recovery: Look actively for parallel or conditional downstream effects and mark them as branch points.
-  fallback_method: M-INT-006
+  fallback_method: M-ELB-004
 default_duration_min: 10
 energy_cost: high
 best_stage: first_exposure
@@ -237,7 +237,7 @@ related_methods:
   relationship: Flowchart fallback for sequential mechanisms when the learner mainly needs visual sequencing
 - id: M-GEN-005
   relationship: Why-chain fallback for causal depth on one specific claim
-- id: M-INT-006
+- id: M-ELB-004
   relationship: Illness-script fallback when the learner needs a clinical pattern rather than a single traced pathway
 system_prompt_override:
   relaxes:

@@ -4,8 +4,8 @@ description: Clinical first exposure with a short PRIME orientation before pre-t
 blocks:
 - M-PRE-010
 - M-PRE-007
-- M-INT-006
-- M-INT-004
+- M-ELB-004
+- M-ILV-002
 - M-REF-003
 - M-REF-004
 - M-RET-001

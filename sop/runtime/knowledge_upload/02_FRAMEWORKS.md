@@ -43,12 +43,12 @@ This sequence is an execution contract, not a new stage taxonomy.
 
 ---
 
-## Canonical PEIRRO Mapping (internal compatibility)
+## Canonical Category Mapping (internal compatibility)
 
-PEIRRO categories remain canonical in taxonomy, YAML schemas, and validators:
+Library categories remain canonical in taxonomy, YAML schemas, and validators:
 
 - `prepare` hosts PRIME, TEACH, and CALIBRATE method blocks.
-- `encode` and `interrogate` host ENCODE and REFERENCE method blocks.
+- `encode`, `elaborate`, and `interleave` host ENCODE / ELABORATE / INTERLEAVE method blocks (collapse to ENCODE or REFERENCE at runtime depending on method intent).
 - `retrieve` and `refine` host RETRIEVE method blocks.
 - `overlearn` hosts OVERLEARN method blocks.
 

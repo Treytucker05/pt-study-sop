@@ -16,7 +16,8 @@ METHODS_DIR = Path(__file__).resolve().parents[2] / "sop" / "library" / "methods
 #   PLAN          forethought / scope decisions before execution
 #   ORIENT        quick orientation pass for terms / objectives / big picture
 #   EXPLAIN       narrative or layered first-contact teaching
-#   INTERROGATE   active questioning and self-testing (split out of ENCODE)
+#   ELABORATE     deepen already-encoded material via analogy/schema/application
+#   INTERLEAVE    mix and contrast confusable concepts to sharpen discrimination
 #   CONSOLIDATE   stabilize and link reference artifacts before retrieval
 ALLOWED_STAGES = {
     "PLAN",
@@ -26,7 +27,8 @@ ALLOWED_STAGES = {
     "EXPLAIN",
     "CALIBRATE",
     "ENCODE",
-    "INTERROGATE",
+    "ELABORATE",
+    "INTERLEAVE",
     "REFERENCE",
     "RETRIEVE",
     "OVERLEARN",
@@ -156,12 +158,28 @@ def test_method_cards_stage_boundary_semantics() -> None:
                 f"{path.name}: ENCODE prompt must require active processing"
             )
 
-        if stage == "INTERROGATE":
+        if stage == "ELABORATE":
             assert _contains_any(
                 prompt,
-                {"interrogate", "question", "self-test", "probe", "challenge"},
+                {
+                    "elaborate", "analogy", "bridge", "schema",
+                    "illness script", "case", "application", "transfer",
+                    "deepen", "structure",
+                },
             ), (
-                f"{path.name}: INTERROGATE prompt must reference active questioning / self-testing"
+                f"{path.name}: ELABORATE prompt must reference analogy/schema/application/deepening"
+            )
+
+        if stage == "INTERLEAVE":
+            assert _contains_any(
+                prompt,
+                {
+                    "interleave", "interleaving", "contrast", "compare",
+                    "comparison", "discriminat", "side-by-side", "side by side",
+                    "cross-topic", "cross topic", "differential",
+                },
+            ), (
+                f"{path.name}: INTERLEAVE prompt must reference contrast/comparison/discrimination"
             )
 
         if stage in ("REFERENCE", "CONSOLIDATE"):

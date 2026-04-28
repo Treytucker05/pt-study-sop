@@ -73,11 +73,11 @@ Sources:
 - CP stages are **tags on method blocks**, not standalone runtime phases. The chain determines which stages are executed and in what order.
 - Control Plane rules (selector, coverage map, gates, adaptation) are canonical in `17-control-plane.md`.
 
-### PEIRRO Compatibility
-- PEIRRO categories (`prepare`, `encode`, `interrogate`, `retrieve`, `refine`, `overlearn`) remain canonical in YAML schemas and validators.
+### Library Category Compatibility
+- Library categories (`prepare`, `encode`, `elaborate`, `interleave`, `retrieve`, `refine`, `overlearn`) remain canonical in YAML schemas and validators.
 - For backward compatibility, operational stages map to canonical categories:
   - PRIME/TEACH/CALIBRATE → `prepare`
-  - ENCODE/REFERENCE → `encode` or `interrogate` depending on method intent
+  - ENCODE/REFERENCE → `encode`, `elaborate`, or `interleave` depending on method intent
   - RETRIEVE → `retrieve` or `refine`
   - OVERLEARN → `overlearn`
 

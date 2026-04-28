@@ -138,7 +138,7 @@ failure_modes:
 - mode: The walkthrough uses unsafe, painful, or oversized motions
   detection: The learner or tutor starts doing the walkthrough uses unsafe, painful, or oversized motions or the artifact stops satisfying the method’s required checks.
   recovery: Shrink to desk-safe gestures or hand positions only.
-  fallback_method: M-INT-002
+  fallback_method: M-ELB-002
 - mode: The learner performs gestures without saying what they mean
   detection: The learner or tutor starts doing the learner performs gestures without saying what they mean or the artifact stops satisfying the method’s required checks.
   recovery: Require brief live narration or an immediate map-back after each step.
@@ -177,7 +177,7 @@ knobs:
 related_methods:
 - id: M-GEN-009
   relationship: Kinesthetic anchor cousin method
-- id: M-INT-002
+- id: M-ELB-002
   relationship: Clinical application fallback
 - id: M-ENC-011
   relationship: Flowchart fallback if the sequence needs structure

@@ -212,12 +212,12 @@ def _load_method_contracts() -> dict[str, dict[str, Any]]:
 
 
 # 2026-04-21 vault hardening introduced richer operational stages
-# (PLAN, ORIENT, EXPLAIN, INTERROGATE, CONSOLIDATE). The runtime
-# collapses these onto the legacy 7-stage vocabulary so existing
-# TEACH/REFERENCE guardrails fire. Stage-mismatch checks need the same
-# collapse: a method that the YAML declares as INTERROGATE / EXPLAIN /
-# CONSOLIDATE may legitimately appear in a chain block as TEACH /
-# REFERENCE if the runtime pins it there.
+# (PLAN, ORIENT, EXPLAIN, ELABORATE, INTERLEAVE, CONSOLIDATE). The
+# runtime collapses these onto the legacy 7-stage vocabulary so
+# existing TEACH/REFERENCE guardrails fire. Stage-mismatch checks need
+# the same collapse: a method that the YAML declares as ELABORATE /
+# INTERLEAVE / EXPLAIN / CONSOLIDATE may legitimately appear in a chain
+# block as TEACH / REFERENCE if the runtime pins it there.
 _RUNTIME_STAGE_EQUIVALENT: dict[str, str] = {
     "PLAN": "PRIME",
     "ORIENT": "PRIME",
@@ -226,7 +226,8 @@ _RUNTIME_STAGE_EQUIVALENT: dict[str, str] = {
     "EXPLAIN": "TEACH",
     "CALIBRATE": "CALIBRATE",
     "ENCODE": "ENCODE",
-    "INTERROGATE": "REFERENCE",
+    "ELABORATE": "REFERENCE",
+    "INTERLEAVE": "REFERENCE",
     "REFERENCE": "REFERENCE",
     "CONSOLIDATE": "REFERENCE",
     "RETRIEVE": "RETRIEVE",
@@ -237,7 +238,7 @@ _RUNTIME_STAGE_EQUIVALENT: dict[str, str] = {
 # _METHOD_ID_RUNTIME_STAGE so chain validation accepts the same shape
 # the selector / runtime emits.
 _METHOD_ID_RUNTIME_STAGE_OVERRIDE: dict[str, str] = {
-    "M-INT-001": "TEACH",
+    "M-ELB-001": "TEACH",
     "M-ENC-008": "TEACH",
     "M-GEN-007": "TEACH",
 }
@@ -263,7 +264,7 @@ def _validate_chain_launch_blocks(blocks: list[dict[str, Any]]) -> list[dict[str
         if not expected_stage or not actual_stage:
             continue
         # Compare on the legacy runtime vocabulary so vault-hardened
-        # methods (e.g. M-INT-001 declared INTERROGATE) match chain
+        # methods (e.g. M-ELB-001 declared ELABORATE) match chain
         # blocks that store the runtime stage (TEACH).
         expected_runtime = _runtime_stage(method_id, expected_stage)
         actual_runtime = _runtime_stage(method_id, actual_stage)

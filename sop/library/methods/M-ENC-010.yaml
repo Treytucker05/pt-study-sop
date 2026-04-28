@@ -152,7 +152,7 @@ failure_modes:
   detection: The learner or tutor starts doing too many comparison dimensions or the artifact stops satisfying
     the method’s required checks.
   recovery: Limit to 5-7 rows; prioritize clinical relevance
-  fallback_method: M-INT-004
+  fallback_method: M-ILV-002
 - mode: No discriminators identified
   detection: The learner or tutor starts doing no discriminators identified or the artifact stops satisfying
     the method’s required checks.
@@ -190,7 +190,7 @@ knobs:
   - cells_corrected
   artifact_type: table
 related_methods:
-- id: M-INT-004
+- id: M-ILV-002
   relationship: Closest interrogation analogue
 - id: M-ENC-009
   relationship: Concept-map fallback for grouped comparison

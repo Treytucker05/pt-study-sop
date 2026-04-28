@@ -1,21 +1,21 @@
-id: M-INT-003
+id: M-ILV-001
 name: Cross-Topic Link
-category: INTERROGATE
+category: INTERLEAVE
 subcategory: cross-topic-link
 description: Identify 2-3 meaningful links between the current topic and topics from other courses, then name the shared principle behind each link.
-control_stage: INTERROGATE
+control_stage: INTERLEAVE
 status: validated
 version: '1.2'
 created: '2026-04-07'
 updated: '2026-04-21'
 tags:
-- interrogate
+- interleave
 - integration
 - transfer
 - cross-course
 - shared-principles
 - big-picture
-purpose: Cross-Topic Link exists to interrogate already-encoded material by forcing the learner to connect the current topic to other domains, explain why the links hold, and name the shared principles beneath them. It turns the current stage into a clean, reusable signal instead of a vague study session.
+purpose: Cross-Topic Link exists to interleave already-encoded material by forcing the learner to connect the current topic to other domains, explain why the links hold, and name the shared principles beneath them. It turns the current stage into a clean, reusable signal instead of a vague study session.
 not_for: This is not for first exposure, direct lecturing, or introducing brand-new material that has not already been encoded.
 best_fit_topics:
 - Previously encoded concepts that need comparison, application, or discrimination
@@ -23,7 +23,7 @@ best_fit_topics:
 - Topics whose value increases when connected across anatomy, physiology, pathology, pharmacology, or clinical reasoning
 poor_fit_topics:
 - Brand-new material that has not been encoded yet
-- Tasks that need direct teaching rather than retrieval or interrogation
+- Tasks that need direct teaching rather than retrieval or interleave
 - Topics that cannot yet be linked because the prerequisite domains are not available
 learner_state_required: The target concept has already been taught or encoded. The learner can attempt retrieval, comparison, or application before seeing the answer.
 inputs:
@@ -60,7 +60,7 @@ required_outputs:
 - Explanatory sentences (each with a because clause)
 - Shared principles identified for each connection
 success_criteria:
-- All required outputs are present for M-INT-003.
+- All required outputs are present for M-ILV-001.
 - The learner identifies 2-3 links and explains each one with a because-clause tied to a shared principle.
 - The learner stays active and the tutor does not give away the answer before the required attempt or transformation.
 partial_criteria:
@@ -145,11 +145,11 @@ failure_modes:
 - mode: Only within-course connections
   detection: The learner or tutor starts doing only within-course connections or the artifact stops satisfying the method’s required checks.
   recovery: At least one connection must come from a different course or domain when possible.
-  fallback_method: M-INT-001
+  fallback_method: M-ELB-001
 - mode: Listing without explaining
   detection: The learner or tutor starts doing listing without explaining or the artifact stops satisfying the method’s required checks.
   recovery: Each connection needs an explicit because-statement.
-  fallback_method: M-INT-004
+  fallback_method: M-ILV-002
 default_duration_min: 3
 energy_cost: medium
 best_stage: consolidation
@@ -203,9 +203,9 @@ presets:
 related_methods:
 - id: M-ORG-001
   relationship: Concept map fallback for networked links
-- id: M-INT-001
+- id: M-ELB-001
   relationship: Analogy bridge cousin method
-- id: M-INT-004
+- id: M-ILV-002
   relationship: Comparison fallback if the links are confusion-driven
 system_prompt_override:
   relaxes:
@@ -215,7 +215,7 @@ system_prompt_override:
   - Reject vague thematic associations. Every accepted link must include both a because-clause and a named shared principle.
   reason: Cross-Topic Link only works when the learner performs the relational integration work rather than receiving a prebuilt list of connections.
 facilitation_prompt: |
-  You are running M-INT-003 (Cross-Topic Link) in the INTERROGATE stage.
+  You are running M-ILV-001 (Cross-Topic Link) in the INTERLEAVE stage.
   Use only the loaded source. Ask only for missing required inputs.
   Produce: Cross-topic connection list, Explanatory sentences, and Shared principles.
   Build 2-3 meaningful links between the current topic and other domains, explain each one with a because-clause, and name the shared principle without turning the run into a lecture or a loose brainstorm.

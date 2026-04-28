@@ -102,7 +102,7 @@ Core mode = FIRST EXPOSURE. The learner has NOT seen this material before.
 - `support_level` must be one of `high|medium|low`; `prior_exposure_band` must be `new|intermediate|advanced`.
 - `dependency_fix_applied` must be `0` or `1`.
 - Apply mandatory adaptation overrides:
-  - Confusion -> require `M-ENC-010` + `M-INT-004`
+  - Confusion -> require `M-ENC-010` + `M-ILV-002`
   - Speed -> require `M-RET-007`
   - Rule/Representation/Procedure/Computation/Recall -> map to deterministic method overrides from control-plane rules
 

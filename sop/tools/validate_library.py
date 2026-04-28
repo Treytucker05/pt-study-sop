@@ -62,7 +62,8 @@ ALLOWED_OPERATIONAL_STAGES = {
     "EXPLAIN",
     "CALIBRATE",
     "ENCODE",
-    "INTERROGATE",
+    "ELABORATE",
+    "INTERLEAVE",
     "REFERENCE",
     "RETRIEVE",
     "OVERLEARN",
@@ -86,7 +87,8 @@ METHOD_STAGE_PREFIX_MAP = {
     "M-TEA": "TEACH",
     "M-CAL": "CALIBRATE",
     "M-ENC": "ENCODE",
-    "M-INT": "INTERROGATE",
+    "M-ELB": "ELABORATE",
+    "M-ILV": "INTERLEAVE",
     "M-REF": "REFERENCE",
     "M-RET": "RETRIEVE",
     "M-OVR": "OVERLEARN",
@@ -477,9 +479,8 @@ def validate_methods(
         ):
             # Informational note (never promoted by --strict): vault hardening
             # lets prefix and stage diverge legitimately (e.g. M-PRE methods
-            # can declare ORIENT; M-INT methods can declare INTERROGATE; M-REF
-            # methods can declare CONSOLIDATE). The declared YAML is the
-            # source of truth; the prefix is only a hint.
+            # can declare ORIENT; M-REF methods can declare CONSOLIDATE).
+            # The declared YAML is the source of truth; the prefix is only a hint.
             result.notes.append(
                 f"{path.name}: control_stage '{declared_control_stage}' does not match "
                 f"prefix-inferred stage '{inferred_stage}'"

@@ -38,7 +38,8 @@ CHAINS_DIR = ROOT / "sop" / "library" / "chains"
 CATEGORY_PREFIX = {
     "prepare": "PRE",
     "encode": "ENC",
-    "interrogate": "INT",
+    "elaborate": "ELB",
+    "interleave": "ILV",
     "retrieve": "RET",
     "refine": "REF",
     "overlearn": "OVR",

@@ -47,7 +47,8 @@ METHOD_FAMILY_LABELS = {
     "CAL": "Calibrate",
     "TEA": "Teach",
     "ENC": "Encode",
-    "INT": "Integration / Interrogation",
+    "ELB": "Elaborate",
+    "ILV": "Interleave",
     "REF": "Reference",
     "RET": "Retrieve",
     "OVR": "Overlearn",
@@ -57,6 +58,8 @@ METHOD_PREFIX_STAGE_HINTS = {
     "CAL": "CALIBRATE",
     "TEA": "TEACH",
     "ENC": "ENCODE",
+    "ELB": "ELABORATE",
+    "ILV": "INTERLEAVE",
     "REF": "REFERENCE",
     "RET": "RETRIEVE",
     "OVR": "OVERLEARN",
@@ -134,11 +137,7 @@ def decode_method_id(method_id: str, control_stage: str) -> dict[str, str]:
     family_label = METHOD_FAMILY_LABELS.get(family_code, family_code or "Unknown")
     prefix_stage = METHOD_PREFIX_STAGE_HINTS.get(family_code, "")
     runtime_note = ""
-    if family_code == "INT":
-        runtime_note = (
-            "INT is an integration/interrogation family; use control_stage for runtime truth."
-        )
-    elif prefix_stage and control_stage and prefix_stage != control_stage:
+    if prefix_stage and control_stage and prefix_stage != control_stage:
         runtime_note = (
             f"Historical ID prefix suggests {prefix_stage}, but runtime control_stage is "
             f"{control_stage}."

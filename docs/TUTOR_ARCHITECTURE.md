@@ -253,7 +253,7 @@ C-FE-MIN (Minimal / Low Energy) — 20 min, low energy
 C-FE-PRO (Procedure / Lab) — 45 min, high energy
 ┌──────────┬───────────┬───────────┬───────────┬───────────┬───────────┐
 │  PRIME   │  PRIME    │  ENCODE   │ REFERENCE │INTERLEAVE │ RETRIEVE  │
-│ M-PRE-010│ M-PRE-008 │ M-ENC-011 │ M-REF-003 │ M-INT-005 │ M-RET-007 │
+│ M-PRE-010│ M-PRE-008 │ M-ENC-011 │ M-REF-003 │ M-ELB-003 │ M-RET-007 │
 │ LO Primer│ Struct Ext│ Flowchart │ Anchor    │ Case Walk │ Sprints   │
 └──────────┴───────────┴───────────┴───────────┴───────────┴───────────┘
 ```

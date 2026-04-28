@@ -6,7 +6,7 @@ blocks:
 - M-REF-003
 - M-REF-004
 - M-RET-004
-- M-INT-004
+- M-ILV-002
 - M-REF-001
 - M-OVR-002
 allowed_modes:

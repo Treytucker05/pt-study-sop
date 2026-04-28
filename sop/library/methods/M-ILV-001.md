@@ -1,15 +1,15 @@
 ---
-id: M-INT-003
+id: M-ILV-001
 name: Cross-Topic Link
-stage: INTERROGATE
+stage: INTERLEAVE
 status: validated
 version: '1.2'
 created: '2026-04-07'
 updated: '2026-04-21'
-tags: [method, M-INT, interrogate]
+tags: [method, M-INT, interleave]
 ---
 
-# M-INT-003 — Cross-Topic Link
+# M-ILV-001 — Cross-Topic Link
 
 ## Summary
 Connect the current topic to other domains by naming 2-3 strong links, explaining why they hold, and extracting the shared principles beneath them. The method stays active, pushes past loose thematic overlap, and turns fragmented knowledge into reusable cross-domain rules.
@@ -75,7 +75,7 @@ presets:
 
 ## Runtime Prompt
 ```text
-You are running M-INT-003 (Cross-Topic Link) in the INTERROGATE stage.
+You are running M-ILV-001 (Cross-Topic Link) in the INTERLEAVE stage.
 Use only the loaded source. Ask only for missing required inputs.
 Produce: Cross-topic connection list, Explanatory sentences, and Shared principles.
 Build 2-3 meaningful links between the current topic and other domains, explain each one with a because-clause, and name the shared principle without turning the run into a lecture or a loose brainstorm.
@@ -95,11 +95,11 @@ If no preset is specified, use the default knobs. One-shot returns the full link
 
 ## Related Methods
 - [[M-ORG-001]] — Concept map fallback for networked links
-- [[M-INT-001]] — Analogy bridge cousin method
-- [[M-INT-004]] — Comparison fallback if the links are confusion-driven
+- [[M-ELB-001]] — Analogy bridge cousin method
+- [[M-ILV-002]] — Comparison fallback if the links are confusion-driven
 
 ## Changelog
-- **v1.1** — migrated the method to the stage-first `INTERROGATE` architecture, normalized metadata naming, and preserved the original cross-topic linking flow.
+- **v1.1** — migrated the method to the stage-first `INTERLEAVE` architecture, normalized metadata naming, and preserved the original cross-topic linking flow.
 - **v1.2** — upgraded the evidence stack to stronger transfer, knowledge-integration, and explicit-connection sources; replaced the legacy note layout with the current template; added the standard knob schema plus four distinct presets; tightened the runtime prompt; and preserved the original method logic, steps, outputs, and constraints.
 
 ### Summary of Changes

@@ -162,7 +162,7 @@ failure_modes:
   detection: The learner or tutor starts doing not identifying breakdowns or the artifact stops satisfying
     the method’s required checks.
   recovery: Record and listen back; gaps become obvious
-  fallback_method: M-INT-002
+  fallback_method: M-ELB-002
 default_duration_min: 5
 energy_cost: high
 best_stage: review
@@ -195,7 +195,7 @@ related_methods:
   relationship: Similar self-explanation move
 - id: M-ENC-005
   relationship: Why-chain fallback for deeper causality
-- id: M-INT-002
+- id: M-ELB-002
   relationship: Clinical application if the learner needs context
 facilitation_prompt: "You are running M-ENC-004 (Teach-Back) in ENCODE stage.\nRole: you are the tutor\
   \ running the method exactly as written, with no hidden assumptions.\nObjective: Force the learner to\
