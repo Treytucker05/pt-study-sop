@@ -29,8 +29,13 @@ import type {
 import type { StudioRunRuntimeState } from "@/lib/studioRunRuntimeState";
 import {
   buildStudioWorkspaceObjects,
+  normalizeStudioWorkspaceObjects,
   type StudioWorkspaceObject,
 } from "@/lib/studioWorkspaceObjects";
+import {
+  readTutorWorkspaceDraftObjects,
+  writeTutorWorkspaceDraftObjects,
+} from "@/lib/tutorClientState";
 import {
   buildPolishPacketSections,
   buildPrimePacketSections,
@@ -427,6 +432,15 @@ export function TutorShell({
   const [workspaceDraftObjects, setWorkspaceDraftObjects] = useState<
     StudioWorkspaceObject[]
   >([]);
+  const [hydratedDraftCourseId, setHydratedDraftCourseId] = useState<number | null>(
+    null,
+  );
+  const lastWorkspaceResetVersionRef = useRef<number>(0);
+  const [workspaceTabRequest, setWorkspaceTabRequest] = useState<{
+    tab: "canvas" | "mind-map" | "concept-map";
+    requestKey: number;
+  } | null>(null);
+  const workspaceTabRequestCounterRef = useRef<number>(3_000_000);
   const [localDocumentTabs, setLocalDocumentTabs] = useState<StudioDocumentTab[]>(
     controlledDocumentTabs ?? [],
   );
@@ -773,13 +787,83 @@ export function TutorShell({
       setViewerState,
     ],
   );
-  const handleClipExcerpt = useCallback((workspaceObject: StudioWorkspaceObject) => {
-    setWorkspaceDraftObjects((prev) =>
-      prev.some((existingObject) => existingObject.id === workspaceObject.id)
-        ? prev
-        : [...prev, workspaceObject],
+  const handleClipExcerpt = useCallback(
+    (workspaceObject: StudioWorkspaceObject) => {
+      setWorkspaceDraftObjects((prev) =>
+        prev.some((existingObject) => existingObject.id === workspaceObject.id)
+          ? prev
+          : [...prev, workspaceObject],
+      );
+      // Make sure the user actually sees the clip land. Spawn the Workspace
+      // panel if it isn't open yet, and switch its inner tab to the tldraw
+      // Canvas (where clipped objects render). Without this, clips disappeared
+      // into a closed panel or a non-Canvas tab.
+      setPanelLayout((current) => {
+        if (current.some((item) => item.panel === "workspace")) {
+          return current;
+        }
+        const nextZIndex =
+          current.reduce(
+            (highest, item) => Math.max(highest, item.zIndex || 0),
+            0,
+          ) + 1;
+        return [
+          ...current,
+          {
+            id: "panel-workspace",
+            panel: "workspace",
+            position: { x: 1090, y: 120 },
+            size: { width: 940, height: 760 },
+            zIndex: nextZIndex,
+            collapsed: false,
+          },
+        ];
+      });
+      workspaceTabRequestCounterRef.current += 1;
+      setWorkspaceTabRequest({
+        tab: "canvas",
+        requestKey: workspaceTabRequestCounterRef.current,
+      });
+    },
+    [setPanelLayout],
+  );
+
+  // Hydrate workspaceDraftObjects from localStorage when courseId resolves.
+  // Prevents clips from disappearing when the user navigates away and back.
+  // Uses state (not a ref) for the hydration sentinel so that the persist
+  // effect below sees the hydrated workspaceDraftObjects on the same render
+  // it sees `hydratedDraftCourseId === hub.courseId` — otherwise the persist
+  // effect would fire with the stale empty state and clobber localStorage.
+  useEffect(() => {
+    const courseId = hub.courseId;
+    if (typeof courseId !== "number") return;
+    if (hydratedDraftCourseId === courseId) return;
+    const stored = normalizeStudioWorkspaceObjects(
+      readTutorWorkspaceDraftObjects(courseId),
     );
-  }, []);
+    setWorkspaceDraftObjects((current) => {
+      if (stored.length === 0) return current;
+      if (current.length === 0) return stored;
+      const merged = [...current];
+      const seen = new Set(current.map((item) => item.id));
+      for (const obj of stored) {
+        if (!seen.has(obj.id)) {
+          merged.push(obj);
+          seen.add(obj.id);
+        }
+      }
+      return merged;
+    });
+    setHydratedDraftCourseId(courseId);
+  }, [hub.courseId, hydratedDraftCourseId]);
+
+  // Persist workspaceDraftObjects on every change so a reload restores them.
+  // Gated on hydration completion so the initial empty state from React's
+  // useState default doesn't blow away whatever is in localStorage.
+  useEffect(() => {
+    if (hydratedDraftCourseId !== hub.courseId) return;
+    writeTutorWorkspaceDraftObjects(hub.courseId, workspaceDraftObjects);
+  }, [hub.courseId, hydratedDraftCourseId, workspaceDraftObjects]);
   useEffect(() => {
     if (!activeDocumentTabId) return;
     const activeTab = documentTabs.find((tab) => tab.id === activeDocumentTabId);
@@ -1253,11 +1337,21 @@ export function TutorShell({
     setShowSetup(false);
   }, [setShowSetup]);
 
+  // Reset workspace state when an explicit reset is requested (workspaceResetVersion
+  // increments). Tracking the version itself instead of also depending on
+  // `setNotesDraft` — which is recreated on every parent render — prevents
+  // the effect from re-firing and wiping fresh hydrated state (e.g. clipped
+  // workspace objects pulled from localStorage).
   useEffect(() => {
     if (!hasAppliedInitialWorkspaceResetRef.current) {
       hasAppliedInitialWorkspaceResetRef.current = true;
+      lastWorkspaceResetVersionRef.current = workspaceResetVersion;
       return;
     }
+    if (lastWorkspaceResetVersionRef.current === workspaceResetVersion) {
+      return;
+    }
+    lastWorkspaceResetVersionRef.current = workspaceResetVersion;
     setCanvasObjectIds([]);
     setWorkspaceDraftObjects([]);
     setLocalDocumentTabs([]);
@@ -1371,6 +1465,7 @@ export function TutorShell({
         courseId={hub.courseId ?? null}
         courseName={sourceShelfCourseName || null}
         conceptMapImportRequest={conceptMapImportRequest}
+        workspaceTabRequest={workspaceTabRequest}
         currentRunObjects={currentRunWorkspaceObjects}
         promotedPrimeObjectIds={promotedPrimeObjectIds}
         selectedMaterialCount={hub.selectedMaterials.length}

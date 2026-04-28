@@ -20,6 +20,10 @@ type StudioWorkspaceUnifiedProps = StudioTldrawWorkspaceProps & {
     mermaid: string;
     requestKey: number;
   } | null;
+  workspaceTabRequest?: {
+    tab: WorkspaceTabId;
+    requestKey: number;
+  } | null;
   sessionMaterialBundle?: SessionMaterialBundle;
 };
 
@@ -51,6 +55,7 @@ export function StudioWorkspaceUnified({
   courseId,
   vaultFolder,
   conceptMapImportRequest,
+  workspaceTabRequest,
   sessionMaterialBundle,
   ...canvasProps
 }: StudioWorkspaceUnifiedProps) {
@@ -67,6 +72,7 @@ export function StudioWorkspaceUnified({
   const conceptMapCommandCounterRef = useRef<number>(1_000_000);
   const conceptMapSessionSeedKeyRef = useRef<string | null>(null);
   const addItemCommandCounterRef = useRef<number>(2_000_000);
+  const lastWorkspaceTabRequestKeyRef = useRef<number | null>(null);
 
   const handleSelectTab = (nextTab: WorkspaceTabId) => {
     setActiveTab(nextTab);
@@ -93,6 +99,26 @@ export function StudioWorkspaceUnified({
       payload: conceptMapImportRequest?.mermaid || "",
     });
   }, [conceptMapImportRequest]);
+
+  // External tab-switch request — used by the Document Dock clip flow so a
+  // freshly clipped excerpt actually shows up on the tldraw Canvas tab where
+  // it renders, instead of staying invisible on Mind Map / Concept Map.
+  useEffect(() => {
+    const requestKey = workspaceTabRequest?.requestKey;
+    const tab = workspaceTabRequest?.tab;
+    if (
+      typeof requestKey !== "number" ||
+      lastWorkspaceTabRequestKeyRef.current === requestKey ||
+      !tab
+    ) {
+      return;
+    }
+    lastWorkspaceTabRequestKeyRef.current = requestKey;
+    setActiveTab(tab);
+    setVisitedTabs((current) =>
+      current[tab] ? current : { ...current, [tab]: true },
+    );
+  }, [workspaceTabRequest]);
 
   const sessionConceptMapMermaid = useMemo(() => {
     if (!sessionMaterialBundle?.isReady) return "";

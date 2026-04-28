@@ -9,6 +9,7 @@ export const TUTOR_ACCURACY_PROFILE_KEY = "tutor.accuracy_profile.v1";
 export const TUTOR_OBJECTIVE_SCOPE_KEY = "tutor.objective_scope.v1";
 export const TUTOR_ACTIVE_SESSION_KEY = "tutor.active_session.v1";
 export const TUTOR_ENTRY_CARD_DISMISSED_KEY = "tutor.entry_card_dismissed.v1";
+export const TUTOR_WORKSPACE_DRAFT_OBJECTS_KEY = "tutor.workspace_draft_objects.v1";
 export const TUTOR_LIBRARY_HANDOFF_KEY = "tutor.open_from_library.v1";
 export const TUTOR_BRAIN_HANDOFF_KEY = "tutor.open_from_brain.v1";
 export const TUTOR_VAULT_FOLDER_KEY = "tutor.vault_folder.v1";
@@ -381,6 +382,43 @@ export function writeTutorEntryCardDismissed(
       storage.setItem(TUTOR_ENTRY_CARD_DISMISSED_KEY, "1");
     } else {
       storage.removeItem(TUTOR_ENTRY_CARD_DISMISSED_KEY);
+    }
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+function workspaceDraftObjectsStorageKey(courseId: number): string {
+  return `${TUTOR_WORKSPACE_DRAFT_OBJECTS_KEY}:${courseId}`;
+}
+
+export function readTutorWorkspaceDraftObjects(
+  courseId: number | null | undefined,
+  storage: Pick<Storage, "getItem"> = window.localStorage,
+): unknown[] {
+  if (typeof courseId !== "number") return [];
+  try {
+    const raw = storage.getItem(workspaceDraftObjectsStorageKey(courseId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeTutorWorkspaceDraftObjects(
+  courseId: number | null | undefined,
+  objects: unknown[],
+  storage: Pick<Storage, "setItem" | "removeItem"> = window.localStorage,
+): void {
+  if (typeof courseId !== "number") return;
+  const key = workspaceDraftObjectsStorageKey(courseId);
+  try {
+    if (!Array.isArray(objects) || objects.length === 0) {
+      storage.removeItem(key);
+    } else {
+      storage.setItem(key, JSON.stringify(objects));
     }
   } catch {
     // Ignore storage failures.
