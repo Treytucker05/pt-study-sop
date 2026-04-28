@@ -46,6 +46,7 @@ import {
 import { normalizeStudioPolishPromotedNotes } from "@/lib/studioPacketSections";
 import {
   normalizeStudioDocumentTabs,
+  normalizeStudioPanelLayout,
 } from "@/lib/studioPanelLayout";
 import {
   normalizeStudioRunRuntimeState,
@@ -367,6 +368,15 @@ function useTutorPageController() {
         setActiveBoardId(nextProjectShell.workspace_state.active_board_id);
       }
       setViewerState(nextProjectShell.workspace_state.viewer_state || null);
+      // Restore the floating panel layout (positions, sizes, collapsed state,
+      // groupings) from the server. Without this, every navigation to /tutor
+      // wiped the canvas because the persisted panel_layout was never read
+      // back even though it was being saved on every change.
+      setPanelLayout(
+        normalizeStudioPanelLayout(
+          nextProjectShell.workspace_state.panel_layout,
+        ),
+      );
       setDocumentTabs(
         normalizeStudioDocumentTabs(
           nextProjectShell.workspace_state.document_tabs,
@@ -418,13 +428,21 @@ function useTutorPageController() {
     },
     [
       activeBoardScope,
+      hub,
       initialRouteQuery,
-      setPromotedPolishPacketNotes,
+      setActiveBoardId,
+      setActiveBoardScope,
       setActiveDocumentTabId,
       setDocumentTabs,
+      setPanelLayout,
+      setPromotedPolishPacketNotes,
+      setPromotedPrimePacketObjects,
       setRuntimeState,
+      setShellHydratedCourseId,
+      setShellRevision,
       setTutorChainId,
       setTutorCustomBlockIds,
+      setViewerState,
     ],
   );
 
