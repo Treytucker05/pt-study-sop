@@ -1455,10 +1455,14 @@ export function StudioShell({
   // this, the child window stays open and its transport / poll interval
   // keep running.
   useEffect(() => {
+    const handles = popoutHandlesRef.current;
+    const handleIds = Object.keys(handles);
+    if (handleIds.length === 0) return;
     const layoutPanelIds = new Set(resolvedLayout.map((item) => item.id));
-    Object.keys(popoutHandlesRef.current).forEach((panelId) => {
-      if (layoutPanelIds.has(panelId)) return;
-      const handle = popoutHandlesRef.current[panelId];
+    const orphans = handleIds.filter((panelId) => !layoutPanelIds.has(panelId));
+    if (orphans.length === 0) return;
+    orphans.forEach((panelId) => {
+      const handle = handles[panelId];
       if (handle && !handle.window.closed) {
         handle.close();
       }
