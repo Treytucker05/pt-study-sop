@@ -1,10 +1,12 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import type { GraphCanvasCommand } from "@/components/brain/graph-canvas-types";
 
 import {
   type StudioTldrawWorkspaceProps,
 } from "@/components/studio/StudioTldrawWorkspace";
 import { StudioTldrawWorkspaceLazy } from "@/components/studio/StudioTldrawWorkspaceLazy";
+import { StudioWorkspaceMaterialSidebar } from "@/components/studio/StudioWorkspaceMaterialSidebar";
 import { cn } from "@/lib/utils";
 import { buildConceptMapFromBundle } from "@/lib/conceptMapFromBundle";
 import type { SessionMaterialBundle } from "@/lib/sessionMaterialBundle";
@@ -58,10 +60,13 @@ export function StudioWorkspaceUnified({
     "mind-map": false,
     "concept-map": false,
   });
+  const [materialSidebarOpen, setMaterialSidebarOpen] = useState(true);
   const [conceptMapCommand, setConceptMapCommand] = useState<GraphCanvasCommand | null>(null);
+  const [mindMapCommand, setMindMapCommand] = useState<GraphCanvasCommand | null>(null);
   const lastConceptMapRequestKeyRef = useRef<number | null>(null);
   const conceptMapCommandCounterRef = useRef<number>(1_000_000);
   const conceptMapSessionSeedKeyRef = useRef<string | null>(null);
+  const addItemCommandCounterRef = useRef<number>(2_000_000);
 
   const handleSelectTab = (nextTab: WorkspaceTabId) => {
     setActiveTab(nextTab);
@@ -109,6 +114,30 @@ export function StudioWorkspaceUnified({
     });
   }, [sessionConceptMapMermaid, sessionMaterialBundle, visitedTabs]);
 
+  const handleAddItemToCanvas = useCallback(
+    (label: string) => {
+      const trimmed = label.trim();
+      if (!trimmed) return;
+      const nextId = ++addItemCommandCounterRef.current;
+      if (activeTab === "mind-map") {
+        setMindMapCommand({
+          id: nextId,
+          target: "mindmap",
+          type: "add_node",
+          payload: { label: trimmed },
+        });
+      } else if (activeTab === "concept-map") {
+        setConceptMapCommand({
+          id: nextId,
+          target: "structured",
+          type: "add_node",
+          payload: { label: trimmed },
+        });
+      }
+    },
+    [activeTab],
+  );
+
   const handleRefreshConceptMapFromSession = useCallback(() => {
     if (!sessionConceptMapMermaid) return;
     if (typeof window !== "undefined") {
@@ -132,43 +161,76 @@ export function StudioWorkspaceUnified({
       data-testid="studio-workspace-unified"
       data-course-id={typeof courseId === "number" ? courseId : undefined}
       data-vault-folder={vaultFolder || undefined}
-      className="flex h-full min-h-0 flex-1 flex-col"
+      className="flex h-full min-h-0 flex-1 flex-row"
     >
-      <div
-        data-testid="studio-workspace-unified-tabs"
-        role="tablist"
-        aria-label={
-          canvasProps.courseName
-            ? `Workspace tools for ${canvasProps.courseName}`
-            : "Workspace tools"
-        }
-        className="flex shrink-0 items-center gap-2 border-b border-primary/12 bg-black/35 px-3 py-2"
-      >
-        {WORKSPACE_TABS.map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              id={`studio-workspace-tab-${tab.id}`}
-              type="button"
-              role="tab"
-              data-testid={`studio-workspace-tab-${tab.id}`}
-              aria-selected={isActive}
-              onClick={() => handleSelectTab(tab.id)}
-              className={cn(
-                "rounded-[0.65rem] border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] transition-colors",
-                isActive
-                  ? "border-primary/30 bg-black/20 text-white"
-                  : "border-transparent text-foreground/70 hover:border-primary/15 hover:bg-black/15 hover:text-white",
-              )}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+      {materialSidebarOpen ? (
+        <StudioWorkspaceMaterialSidebar
+          bundle={sessionMaterialBundle}
+          activeTabId={activeTab}
+          onAddToCanvas={handleAddItemToCanvas}
+        />
+      ) : null}
 
-      <div className="relative min-h-0 flex-1">
+      <div className="flex h-full min-h-0 flex-1 flex-col">
+        <div className="flex shrink-0 items-center gap-2 border-b border-primary/12 bg-black/35 px-3 py-2">
+          <button
+            type="button"
+            data-testid="studio-workspace-material-toggle"
+            onClick={() => setMaterialSidebarOpen((open) => !open)}
+            aria-label={
+              materialSidebarOpen
+                ? "Hide material sidebar"
+                : "Show material sidebar"
+            }
+            title={
+              materialSidebarOpen
+                ? "Hide material sidebar"
+                : "Show material sidebar"
+            }
+            className="inline-flex h-7 w-7 items-center justify-center rounded-[0.55rem] border border-primary/15 bg-black/30 text-foreground/68 transition-colors hover:border-primary/35 hover:bg-primary/10 hover:text-white"
+          >
+            {materialSidebarOpen ? (
+              <PanelLeftClose className="h-3.5 w-3.5" />
+            ) : (
+              <PanelLeftOpen className="h-3.5 w-3.5" />
+            )}
+          </button>
+          <div
+            data-testid="studio-workspace-unified-tabs"
+            role="tablist"
+            aria-label={
+              canvasProps.courseName
+                ? `Workspace tools for ${canvasProps.courseName}`
+                : "Workspace tools"
+            }
+            className="flex items-center gap-2"
+          >
+          {WORKSPACE_TABS.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                id={`studio-workspace-tab-${tab.id}`}
+                type="button"
+                role="tab"
+                data-testid={`studio-workspace-tab-${tab.id}`}
+                aria-selected={isActive}
+                onClick={() => handleSelectTab(tab.id)}
+                className={cn(
+                  "rounded-[0.65rem] border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] transition-colors",
+                  isActive
+                    ? "border-primary/30 bg-black/20 text-white"
+                    : "border-transparent text-foreground/70 hover:border-primary/15 hover:bg-black/15 hover:text-white",
+                )}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+          </div>
+        </div>
+
+        <div className="relative min-h-0 flex-1">
         {visitedTabs.canvas ? (
           <div
             role="tabpanel"
@@ -200,7 +262,10 @@ export function StudioWorkspaceUnified({
           >
             {/* MindMapView owns its own vault/course fetches; the shell only mounts it. */}
             <Suspense fallback={<WorkspaceTabFallback label="mind map" />}>
-              <MindMapViewDeferred sessionBundle={sessionMaterialBundle} />
+              <MindMapViewDeferred
+                sessionBundle={sessionMaterialBundle}
+                externalCommand={mindMapCommand}
+              />
             </Suspense>
           </div>
         ) : null}
@@ -244,6 +309,7 @@ export function StudioWorkspaceUnified({
             </div>
           </div>
         ) : null}
+        </div>
       </div>
     </div>
   );
