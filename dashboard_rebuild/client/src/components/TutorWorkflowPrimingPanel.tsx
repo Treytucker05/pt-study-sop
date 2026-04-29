@@ -15,6 +15,7 @@ import type {
 } from "@/api.types";
 import { ObsidianRenderer } from "@/components/ObsidianRenderer";
 import {
+  migratePrimingPanelSessionState,
   setPrimingPanelSessionState,
   usePrimingPanelSessionState,
   type PrimingChatTurn,
@@ -764,6 +765,20 @@ export function TutorWorkflowPrimingPanel({
     workflow?.active_tutor_session_id,
     workflow?.workflow_id,
   ]);
+  // When the panel re-keys (e.g. a freshly-created workflow_id replaces the
+  // course/material fallback key DURING a run), migrate any pending or
+  // displayed state to the new key. Without this, the first priming run on a
+  // brand-new workflow silently loses its `pendingMethodResult` because the
+  // falling-edge display effect reads from the new key, which hasn't seen
+  // pendingMethodResult set under the old key.
+  const previousPrimingPanelStateKeyRef = useRef<string>(primingPanelStateKey);
+  if (previousPrimingPanelStateKeyRef.current !== primingPanelStateKey) {
+    migratePrimingPanelSessionState(
+      previousPrimingPanelStateKeyRef.current,
+      primingPanelStateKey,
+    );
+    previousPrimingPanelStateKeyRef.current = primingPanelStateKey;
+  }
   const primingPanelState = usePrimingPanelSessionState(primingPanelStateKey);
   const {
     pendingMethodResult,
