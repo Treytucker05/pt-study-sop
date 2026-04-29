@@ -199,6 +199,98 @@ describe("TutorWorkflowPrimingPanel", () => {
     ).toBeInTheDocument();
   });
 
+  it("auto-checks the chain's methods when a chain is selected", async () => {
+    const setPrimingMethodsMock = vi.fn();
+    renderPanel({
+      setPrimingMethods: setPrimingMethodsMock,
+      templateChains: [
+        {
+          id: 7,
+          name: "Quick prime",
+          description: "",
+          context_tags: "",
+          blocks: [
+            {
+              id: 201,
+              name: "Learning Objectives Primer",
+              category: "prepare",
+              duration: 8,
+            },
+            {
+              id: 202,
+              name: "Structural Extraction",
+              category: "prepare",
+              duration: 12,
+            },
+          ],
+        },
+      ],
+    });
+
+    await waitFor(() => expect(getPrimeMethodsMock).toHaveBeenCalledWith("PRIME"));
+
+    fireEvent.change(
+      screen.getByRole("combobox", { name: /priming chain/i }),
+      { target: { value: "7" } },
+    );
+
+    expect(setPrimingMethodsMock).toHaveBeenLastCalledWith([
+      "M-PRE-010",
+      "M-PRE-013",
+    ]);
+  });
+
+  it("clears the chain selection when the user manually toggles a method", async () => {
+    const setChainIdMock = vi.fn();
+    renderPanel({
+      chainId: 7,
+      setChainId: setChainIdMock,
+      templateChains: [
+        {
+          id: 7,
+          name: "Quick prime",
+          description: "",
+          context_tags: "",
+          blocks: [
+            {
+              id: 201,
+              name: "Learning Objectives Primer",
+              category: "prepare",
+              duration: 8,
+            },
+          ],
+        },
+      ],
+    });
+
+    await waitFor(() => expect(getPrimeMethodsMock).toHaveBeenCalledWith("PRIME"));
+
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /structural extraction/i }),
+    );
+
+    expect(setChainIdMock).toHaveBeenCalledWith(undefined);
+  });
+
+  it("renders the chain selector above the method cards and the run button below them", async () => {
+    renderPanel();
+
+    await waitFor(() => expect(getPrimeMethodsMock).toHaveBeenCalledWith("PRIME"));
+
+    const chainSelect = screen.getByRole("combobox", { name: /priming chain/i });
+    const methodGrid = screen.getByTestId("priming-method-card-grid");
+    const runButton = screen.getByTestId("priming-run-button");
+
+    expect(
+      chainSelect.compareDocumentPosition(methodGrid) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      methodGrid.compareDocumentPosition(runButton) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it("shows selected state for more than one method card", async () => {
     renderPanel({
       primingMethods: ["M-PRE-010", "M-PRE-013"],
