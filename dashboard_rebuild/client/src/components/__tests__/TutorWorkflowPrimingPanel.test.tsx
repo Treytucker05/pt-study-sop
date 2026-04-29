@@ -199,6 +199,75 @@ describe("TutorWorkflowPrimingPanel", () => {
     ).toBeInTheDocument();
   });
 
+  it("hides Send to Workspace on text-only result blocks", async () => {
+    setPrimingPanelSessionState("workflow:wf-123", (current) => ({
+      ...current,
+      displayedRun: {
+        key: "method:M-PRE-010:1",
+        label: "Learning Objectives Primer",
+        kind: "method",
+        methodId: "M-PRE-010",
+        blocks: [
+          {
+            id: "block-1",
+            title: "Learning Objectives",
+            badge: "OBJECTIVES",
+            kind: "objectives",
+            sourceLabel: "Cardiac Output Lecture",
+            content: "Differentiate stroke volume modifiers",
+            materialId: 101,
+            objectives: [
+              { lo_code: "LO-1", title: "Differentiate stroke volume modifiers" },
+            ],
+          },
+        ],
+      },
+    }));
+    renderPanel();
+
+    await waitFor(() => expect(getPrimeMethodsMock).toHaveBeenCalledWith("PRIME"));
+
+    expect(
+      screen.getByRole("button", { name: /send to prime packet/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /send to workspace/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps both Send to Prime Packet and Send to Workspace on concept_map blocks", async () => {
+    setPrimingPanelSessionState("workflow:wf-123", (current) => ({
+      ...current,
+      displayedRun: {
+        key: "method:M-PRE-013:1",
+        label: "Concept Map",
+        kind: "method",
+        methodId: "M-PRE-013",
+        blocks: [
+          {
+            id: "block-graph-1",
+            title: "Cardiac Concept Map",
+            badge: "CONCEPT MAP",
+            kind: "concept_map",
+            sourceLabel: "Cardiac Output Lecture",
+            content: "graph TD\n  A[Heart] --> B[Stroke Volume]",
+            materialId: 101,
+          },
+        ],
+      },
+    }));
+    renderPanel();
+
+    await waitFor(() => expect(getPrimeMethodsMock).toHaveBeenCalledWith("PRIME"));
+
+    expect(
+      screen.getByRole("button", { name: /send to prime packet/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /send to workspace/i }),
+    ).toBeInTheDocument();
+  });
+
   it("auto-checks the chain's methods when a chain is selected", async () => {
     const setPrimingMethodsMock = vi.fn();
     renderPanel({
@@ -668,17 +737,13 @@ describe("TutorWorkflowPrimingPanel", () => {
       }),
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /send to workspace/i }));
-    expect(onSendResultToWorkspace).toHaveBeenCalledWith(
-      expect.objectContaining({
-        kind: "text_note",
-        title: expect.stringContaining("Learning Objectives"),
-        badge: "OBJECTIVES",
-        provenance: expect.objectContaining({
-          sourceType: "priming_result",
-        }),
-      }),
-    );
+    // Text-only result blocks (objectives) don't expose a Send to Workspace
+    // button — Workspace canvas is reserved for visual constructs. The
+    // onSendResultToWorkspace callback should remain unfired for this flow.
+    expect(
+      screen.queryByRole("button", { name: /send to workspace/i }),
+    ).not.toBeInTheDocument();
+    expect(onSendResultToWorkspace).not.toHaveBeenCalled();
   });
 
   it("enables Priming chat after RUN, sends a follow-up, and applies revised results", async () => {

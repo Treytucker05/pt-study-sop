@@ -1446,14 +1446,21 @@ export function TutorWorkflowPrimingPanel({
                       <Sparkles className="mr-2 h-3.5 w-3.5" />
                       Send to Prime Packet
                     </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => handleSendToWorkspace(block)}
-                      className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd9e1]"
-                    >
-                      Send to Workspace
-                    </Button>
+                    {/* "Send to Workspace" only renders for visual / graph-buildable
+                        result kinds. Text-only blocks (objectives, summaries,
+                        terms, generic) flow into the Prime Packet only — the
+                        Workspace canvas is reserved for things the user
+                        constructs visually (concept maps, sketches, mind maps). */}
+                    {block.kind === "concept_map" ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => handleSendToWorkspace(block)}
+                        className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd9e1]"
+                      >
+                        Send to Workspace
+                      </Button>
+                    ) : null}
                   </div>
                 </article>
               ))}
