@@ -104,6 +104,55 @@ export function setPrimingPanelSessionState(
   emitPrimingPanelSessionChange(key);
 }
 
+/**
+ * Read a panel state without subscribing — used during a key change to migrate
+ * pending state from the old key to the new key. Without this, kicking off a
+ * priming run before a workflow exists silently loses the in-flight
+ * `pendingMethodResult` (and the just-finished display) because the panel
+ * re-keys from `course:...` to `workflow:<id>` mid-run, and the new key starts
+ * at the default empty state.
+ */
+export function peekPrimingPanelSessionState(
+  key: string,
+): PrimingPanelSessionState {
+  return ensurePrimingPanelSessionState(key);
+}
+
+function isDefaultPrimingPanelSessionState(
+  state: PrimingPanelSessionState,
+): boolean {
+  return (
+    state.pendingMethodResult === null &&
+    state.displayedRun === null &&
+    state.runningChain === false &&
+    state.chatInput === "" &&
+    state.chatTurns.length === 0 &&
+    state.sendingChat === false &&
+    state.revealedConceptMapBlockIds.length === 0
+  );
+}
+
+/**
+ * Move panel state from one key to another. Only migrates when the destination
+ * key is still at default — never clobbers an existing state.
+ */
+export function migratePrimingPanelSessionState(
+  fromKey: string,
+  toKey: string,
+): boolean {
+  if (fromKey === toKey) return false;
+  const fromState = primingPanelStateByKey.get(fromKey);
+  if (!fromState) return false;
+  if (isDefaultPrimingPanelSessionState(fromState)) return false;
+  const toState = primingPanelStateByKey.get(toKey);
+  if (toState && !isDefaultPrimingPanelSessionState(toState)) return false;
+  primingPanelStateByKey.set(toKey, fromState);
+  primingPanelStateByKey.delete(fromKey);
+  emitPrimingPanelSessionChange(toKey);
+  emitPrimingPanelSessionChange(fromKey);
+  return true;
+}
+
 export function resetPrimingPanelSessionState(key?: string) {
   if (typeof key === "string" && key.trim().length > 0) {
     primingPanelStateByKey.delete(key);
