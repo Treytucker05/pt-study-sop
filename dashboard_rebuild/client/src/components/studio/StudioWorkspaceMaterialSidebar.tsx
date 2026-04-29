@@ -55,6 +55,26 @@ const STAGE_BADGE_CLASS: Record<MaterialSection["stage"], string> = {
   workbench: "border-pink-400/30 bg-pink-400/10 text-pink-200",
 };
 
+type StageFilter = "all" | MaterialSection["stage"];
+
+const STAGE_FILTER_ORDER: StageFilter[] = [
+  "all",
+  "load",
+  "prime",
+  "tutor",
+  "polish",
+  "workbench",
+];
+
+const STAGE_FILTER_LABEL: Record<StageFilter, string> = {
+  all: "All",
+  load: "Load",
+  prime: "Prime",
+  tutor: "Tutor",
+  polish: "Polish",
+  workbench: "Workbench",
+};
+
 // ── Section builders ─────────────────────────────────────────────────
 
 function snippet(text: string | null | undefined, limit = 140): string | null {
@@ -293,13 +313,18 @@ export function StudioWorkspaceMaterialSidebar({
     activeTabId === "mind-map" || activeTabId === "concept-map";
   const sections = useMemo(() => buildSections(bundle), [bundle]);
   const [query, setQuery] = useState("");
+  const [stageFilter, setStageFilter] = useState<StageFilter>("all");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const filteredSections = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return sections;
-    return sections
+    const stageMatched =
+      stageFilter === "all"
+        ? sections
+        : sections.filter((section) => section.stage === stageFilter);
+    if (!q) return stageMatched;
+    return stageMatched
       .map((section) => ({
         ...section,
         items: section.items.filter((item) => {
@@ -308,7 +333,7 @@ export function StudioWorkspaceMaterialSidebar({
         }),
       }))
       .filter((section) => section.items.length > 0);
-  }, [query, sections]);
+  }, [query, sections, stageFilter]);
 
   const totalItems = useMemo(
     () => sections.reduce((sum, section) => sum + section.items.length, 0),
@@ -379,7 +404,7 @@ export function StudioWorkspaceMaterialSidebar({
         </div>
       </div>
 
-      <div className="shrink-0 border-b border-primary/10 px-3 py-2">
+      <div className="flex shrink-0 flex-col gap-2 border-b border-primary/10 px-3 py-2">
         <Input
           data-testid="studio-workspace-material-search"
           value={query}
@@ -388,6 +413,37 @@ export function StudioWorkspaceMaterialSidebar({
           aria-label="Search workspace material"
           className="h-8 border-primary/15 bg-black/40 font-mono text-xs"
         />
+        <div
+          role="tablist"
+          aria-label="Filter material by pipeline stage"
+          className="flex flex-wrap gap-1"
+        >
+          {STAGE_FILTER_ORDER.map((stage) => {
+            const isActive = stageFilter === stage;
+            const accent =
+              stage === "all"
+                ? "border-primary/30 bg-primary/10 text-primary"
+                : STAGE_BADGE_CLASS[stage];
+            return (
+              <button
+                key={stage}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                data-testid={`studio-workspace-material-stage-filter-${stage}`}
+                onClick={() => setStageFilter(stage)}
+                className={cn(
+                  "rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em] transition-colors",
+                  isActive
+                    ? accent
+                    : "border-primary/15 bg-transparent text-foreground/52 hover:border-primary/25 hover:text-foreground/72",
+                )}
+              >
+                {STAGE_FILTER_LABEL[stage]}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <ScrollArea className="flex-1 min-h-0">
