@@ -13,8 +13,6 @@ import { StudioDocumentDock } from "@/components/studio/StudioDocumentDock";
 import { StudioAnkiPanel } from "@/components/studio/StudioAnkiPanel";
 import { StudioObsidianPanel } from "@/components/studio/StudioObsidianPanel";
 import { StudioWorkspaceUnified } from "@/components/studio/StudioWorkspaceUnified";
-import { PrimePacketPanel } from "@/components/studio/PrimePacketPanel";
-import { PolishPacketPanel } from "@/components/studio/PolishPacketPanel";
 import { MemoryPanel } from "@/components/studio/MemoryPanel";
 import { TutorLiveStudyPane } from "@/components/tutor-shell/TutorLiveStudyPane";
 import { TutorScholarStrategyPanel } from "@/components/tutor-shell/TutorScholarStrategyPanel";
@@ -37,7 +35,6 @@ import {
   writeTutorWorkspaceDraftObjects,
 } from "@/lib/tutorClientState";
 import {
-  buildPolishPacketSections,
   buildPrimePacketSections,
   type StudioPolishPromotedNote,
 } from "@/lib/studioPacketSections";
@@ -593,25 +590,6 @@ export function TutorShell({
   const primePacketContext = useMemo(
     () => serializeStudioPacketSectionsForTutor(primePacketSections),
     [primePacketSections],
-  );
-  const polishPacketSections = useMemo(
-    () =>
-      buildPolishPacketSections({
-        promotedNotes: promotedPolishPacketNotes,
-        capturedNotes: workflow.activeWorkflowDetail?.captured_notes ?? [],
-        polishBundle: workflow.activeWorkflowDetail?.polish_bundle ?? null,
-        publishResults: workflow.activeWorkflowDetail?.publish_results ?? [],
-        draftSummaryText: polishDraftPreview.summaryDraft,
-        draftCardRequestText: polishDraftPreview.cardRequestText,
-      }),
-    [
-      promotedPolishPacketNotes,
-      workflow.activeWorkflowDetail?.captured_notes,
-      workflow.activeWorkflowDetail?.polish_bundle,
-      workflow.activeWorkflowDetail?.publish_results,
-      polishDraftPreview.cardRequestText,
-      polishDraftPreview.summaryDraft,
-    ],
   );
   const memoryStatus = useMemo(
     () =>
@@ -2127,8 +2105,6 @@ export function TutorShell({
               onActivateCapsule={setActiveMemoryCapsuleId}
             />
           }
-          primePacket={<PrimePacketPanel sections={primePacketSections} />}
-          polishPacket={<PolishPacketPanel sections={polishPacketSections} />}
           notesPanel={notesPanel}
           obsidianPanel={obsidianPanel}
           ankiPanel={ankiPanel}

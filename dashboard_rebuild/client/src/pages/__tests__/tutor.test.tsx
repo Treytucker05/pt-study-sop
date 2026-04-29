@@ -2081,14 +2081,20 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    await openStudioPanel(/open prime packet panel/i);
-
-    const primePacket = await screen.findByTestId("studio-prime-packet");
-    await within(primePacket).findByText("Workspace Excerpt");
     await waitFor(() => {
-      expect(primePacket).toHaveTextContent(
-        "Cardiac output is determined by stroke volume multiplied by heart rate.",
-      );
+      expect(saveProjectShellStateMock).toHaveBeenCalled();
+      const lastCall =
+        saveProjectShellStateMock.mock.calls[
+          saveProjectShellStateMock.mock.calls.length - 1
+        ]?.[0];
+      expect(lastCall?.prime_packet_promoted_objects).toEqual([
+        expect.objectContaining({
+          kind: "excerpt",
+          title: "Excerpt: Cardiac Output Lecture",
+          detail:
+            "Cardiac output is determined by stroke volume multiplied by heart rate.",
+        }),
+      ]);
     });
   });
 
@@ -2116,15 +2122,6 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    await openStudioPanel(/open prime packet panel/i);
-
-    const primePacket = await screen.findByTestId("studio-prime-packet");
-    await within(primePacket).findByText("Misconception to repair");
-    await waitFor(() => {
-      expect(primePacket).toHaveTextContent(
-        "The reply mixed preload effects with heart-rate regulation.",
-      );
-    });
     await waitFor(() => {
       expect(saveProjectShellStateMock).toHaveBeenCalled();
       const lastCall =
@@ -2161,14 +2158,6 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    await openStudioPanel(/open polish packet panel/i);
-    const polishPacket = await screen.findByTestId("studio-polish-packet");
-    await within(polishPacket).findByText("Tutor Reply 3");
-    await waitFor(() => {
-      expect(polishPacket).toHaveTextContent(
-        "Cardiac output is determined by stroke volume multiplied by heart rate.",
-      );
-    });
     await waitFor(() => {
       expect(saveProjectShellStateMock).toHaveBeenCalled();
       const lastCall =
