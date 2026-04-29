@@ -837,12 +837,12 @@ export function TutorWorkflowPrimingPanel({
     setCustomBlockIds([]);
   }, [chainId, customBlockIds.length, setCustomBlockIds]);
 
-  useEffect(() => {
-    if (typeof chainId !== "number" || primingMethods.length === 0) {
-      return;
-    }
-    setPrimingMethods([]);
-  }, [chainId, primingMethods, setPrimingMethods]);
+  // Previously a useEffect cleared `primingMethods` whenever a chain was
+  // selected to keep "chain mode" and "method mode" mutually exclusive. The
+  // new flow inverts that: picking a chain *populates* method checkboxes from
+  // the chain's blocks (see handleChainSelectionChange). The user can then
+  // tweak which methods to actually run. Manual method toggling clears the
+  // chain selection (see handleToggleMethod). No clearing effect needed.
 
   useEffect(() => {
     const wasRunning = previousAssistRunningRef.current;
@@ -921,7 +921,22 @@ export function TutorWorkflowPrimingPanel({
     if (!Number.isFinite(parsedChainId)) {
       return;
     }
-    setPrimingMethods([]);
+    // Resolve the chain's blocks back to PRIME method_ids so picking a chain
+    // auto-checks the matching method cards. The chain block carries a numeric
+    // `id` matching `primeMethod.id`; we look up the string `method_id` so the
+    // checkbox UI (keyed by method_id) reflects the chain.
+    const selectedChainDefinition = templateChains.find(
+      (chain) => chain.id === parsedChainId,
+    );
+    const chainMethodIds = (selectedChainDefinition?.blocks ?? [])
+      .map((block) => {
+        const primeMethod = primeMethods.find(
+          (method) => method.id === block.id,
+        );
+        return primeMethod?.method_id ?? null;
+      })
+      .filter((value): value is string => Boolean(value));
+    setPrimingMethods(chainMethodIds);
     setChainId(parsedChainId);
     setCustomBlockIds([]);
   };
@@ -1154,6 +1169,29 @@ export function TutorWorkflowPrimingPanel({
             )}
           </div>
 
+          <label className="block">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]/76">
+              Optional Chain Mode
+            </div>
+            <select
+              aria-label="Priming chain"
+              data-testid="priming-chain-selector"
+              value={typeof chainId === "number" ? String(chainId) : ""}
+              onChange={(event) => handleChainSelectionChange(event.target.value)}
+              disabled={templateChainsLoading}
+              className="mt-2 h-11 w-full rounded-[0.85rem] border border-[rgba(255,118,144,0.18)] bg-black/30 px-3 text-sm text-white outline-none"
+            >
+              <option value="">
+                {templateChainsLoading ? "Loading chains..." : "Select a chain instead of method cards"}
+              </option>
+              {templateChains.map((chain) => (
+                <option key={chain.id} value={chain.id}>
+                  {chain.name || `Chain #${chain.id}`}
+                </option>
+              ))}
+            </select>
+          </label>
+
           <div className="space-y-3">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -1300,30 +1338,7 @@ export function TutorWorkflowPrimingPanel({
             </div>
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-            <label className="block">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]/76">
-                Optional Chain Mode
-              </div>
-              <select
-                aria-label="Priming chain"
-                data-testid="priming-chain-selector"
-                value={typeof chainId === "number" ? String(chainId) : ""}
-                onChange={(event) => handleChainSelectionChange(event.target.value)}
-                disabled={templateChainsLoading}
-                className="mt-2 h-11 w-full rounded-[0.85rem] border border-[rgba(255,118,144,0.18)] bg-black/30 px-3 text-sm text-white outline-none"
-              >
-                <option value="">
-                  {templateChainsLoading ? "Loading chains..." : "Select a chain instead of method cards"}
-                </option>
-                {templateChains.map((chain) => (
-                  <option key={chain.id} value={chain.id}>
-                    {chain.name || `Chain #${chain.id}`}
-                  </option>
-                ))}
-              </select>
-            </label>
-
+          <div className="flex justify-end">
             <Button
               type="button"
               data-testid="priming-run-button"
