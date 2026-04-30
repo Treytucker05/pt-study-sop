@@ -453,8 +453,18 @@ export function StudioWorkspaceMaterialSidebar({
                             className="group flex flex-col gap-1 rounded-md border border-primary/10 bg-black/30 px-2 py-1.5 transition-colors hover:border-primary/25 hover:bg-primary/8"
                           >
                             <div className="flex items-start justify-between gap-2">
-                              <span className="font-mono text-[11px] leading-snug text-foreground/88">
-                                {item.title}
+                              <span className="flex min-w-0 items-start gap-1.5">
+                                <span
+                                  className={cn(
+                                    "mt-0.5 shrink-0 rounded-full border px-1.5 py-px font-mono text-[8px] uppercase tracking-[0.16em]",
+                                    STAGE_BADGE_CLASS[section.stage],
+                                  )}
+                                >
+                                  {section.stage.toUpperCase()}
+                                </span>
+                                <span className="font-mono text-[11px] leading-snug text-foreground/88">
+                                  {item.title}
+                                </span>
                               </span>
                               <span className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
                                 {canAddToCanvas && onAddToCanvas ? (
