@@ -1035,7 +1035,7 @@ describe("TutorShell studio routing", () => {
     ).toBeInTheDocument();
   });
 
-  it("syncs Source Shelf checkbox membership into Current Run, Priming, and Prime Packet source context", async () => {
+  it("syncs Source Shelf checkbox membership into Current Run and Priming source context", async () => {
     const user = userEvent.setup();
 
     renderTutorShellWithStatefulSourceShelf();
@@ -1043,13 +1043,10 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
 
     const sourceShelf = screen.getByTestId("studio-source-shelf");
-    const primePacket = screen.getByTestId("studio-prime-packet");
 
     expect(screen.getByTestId("mock-priming-loaded-materials")).toHaveTextContent(
       "1 loaded materials",
     );
-    expect(primePacket).toHaveTextContent("Cardiac Output Lecture");
-    expect(primePacket).not.toHaveTextContent("Afterload Drill");
 
     await user.click(
       within(sourceShelf).getByRole("button", { name: /^library$/i }),
@@ -1063,7 +1060,6 @@ describe("TutorShell studio routing", () => {
     expect(screen.getByTestId("mock-priming-loaded-materials")).toHaveTextContent(
       "2 loaded materials",
     );
-    expect(primePacket).toHaveTextContent("Afterload Drill");
 
     await user.click(
       within(sourceShelf).getByRole("button", { name: /^current run$/i }),
@@ -1079,7 +1075,6 @@ describe("TutorShell studio routing", () => {
       "1 loaded materials",
     );
     expect(sourceShelf).not.toHaveTextContent("Afterload Drill");
-    expect(primePacket).not.toHaveTextContent("Afterload Drill");
   });
 
   it("shows a minimal entry state when the canvas has no open panels", async () => {
@@ -2097,7 +2092,7 @@ describe("TutorShell studio routing", () => {
     expect(within(tutorPanel).getByText("ASK / SOCRATIC")).toBeInTheDocument();
   });
 
-  it("reduces Priming chrome to source context, run config, and Prime Packet", async () => {
+  it("reduces Priming chrome to source context, run config, and the priming surface", async () => {
     renderTutorShell("priming", {
       shellOverrides: {
         panelLayout: buildStudioShellPresetLayout("priming"),
@@ -2109,10 +2104,10 @@ describe("TutorShell studio routing", () => {
     expect(screen.getByTestId("studio-document-dock")).toBeInTheDocument();
     expect(screen.getByTestId("studio-priming-panel")).toBeInTheDocument();
     expect(screen.getByTestId("studio-run-config")).toBeInTheDocument();
-    expect(screen.getByTestId("studio-prime-packet")).toBeInTheDocument();
     expect(screen.queryByTestId("studio-tutor-status")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-repair-candidates")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-memory")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-prime-packet")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-polish-packet")).not.toBeInTheDocument();
   });
 
@@ -2333,82 +2328,7 @@ describe("TutorShell studio routing", () => {
     expect(documentDock).toHaveTextContent("Exercise Physiology/Week 7/Cardio.md");
   });
 
-  it("shows explicit Prime Packet sections for source context and primed artifacts", async () => {
-    renderTutorShell("priming", {
-      hubOverrides: {
-        selectedMaterials: [101],
-        selectedPaths: ["Exercise Physiology/Week 7/Cardio.md"],
-        chatMaterials: [
-          {
-            id: 101,
-            title: "Cardiac Output Lecture",
-            file_type: "pdf",
-            source_path: "uploads/cardio-output.pdf",
-          },
-        ],
-      },
-      workflowOverrides: {
-        primingSummaryText: "Cardiac output sets whole-body perfusion.",
-        primingTerminologyText: "Stroke volume\nHeart rate",
-        primingStrategyText: "Start with retrieval, then increase scaffolding slowly.",
-      },
-    });
-
-    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
-
-    const primePacket = screen.getByTestId("studio-prime-packet");
-    expect(primePacket).toHaveTextContent("Source Context");
-    expect(primePacket).toHaveTextContent("Primed Artifacts");
-    expect(primePacket).toHaveTextContent("Cardiac Output Lecture");
-    expect(primePacket).toHaveTextContent("Exercise Physiology/Week 7/Cardio.md");
-    expect(primePacket).toHaveTextContent("Summary");
-    expect(primePacket).toHaveTextContent("Terminology");
-    expect(primePacket).toHaveTextContent("Tutor Strategy");
-  });
-
-  it("shows explicit Polish Packet sections for notes, summaries, cards, and assets", async () => {
-    renderTutorShell("polish", {
-      workflowOverrides: {
-        activeWorkflowDetail: {
-          captured_notes: [
-            {
-              id: 1,
-              note_mode: "exact",
-              title: "SV vs HR misconception",
-              content: "Need to separate preload from heart-rate effects.",
-            },
-          ],
-          polish_bundle: {
-            summaries: [{ title: "Hemodynamics summary" }],
-            card_requests: [{ front: "What determines cardiac output?" }],
-            status: "draft",
-          },
-          publish_results: [
-            {
-              id: 9,
-              status: "draft",
-              obsidian_results: [{ path: "Vault/Cardio.md" }],
-              anki_results: [],
-            },
-          ],
-        },
-      },
-    });
-
-    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
-
-    const polishPacket = screen.getByTestId("studio-polish-packet");
-    expect(polishPacket).toHaveTextContent("Notes");
-    expect(polishPacket).toHaveTextContent("Summaries");
-    expect(polishPacket).toHaveTextContent("Cards");
-    expect(polishPacket).toHaveTextContent("Assets");
-    expect(polishPacket).toHaveTextContent("SV vs HR misconception");
-    expect(polishPacket).toHaveTextContent("Hemodynamics summary");
-    expect(polishPacket).toHaveTextContent("What determines cardiac output?");
-    expect(polishPacket).toHaveTextContent("Vault/Cardio.md");
-  });
-
-  it("reduces Polish chrome to the main polish surface and Polish Packet", async () => {
+  it("reduces Polish chrome to the main polish surface and the workspace", async () => {
     renderTutorShell("polish", {
       shellOverrides: {
         panelLayout: buildStudioShellPresetLayout("polish"),
@@ -2417,13 +2337,13 @@ describe("TutorShell studio routing", () => {
 
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
     expect(screen.getByTestId("studio-polish-panel")).toBeInTheDocument();
-    expect(screen.getByTestId("studio-polish-packet")).toBeInTheDocument();
     expect(screen.getByTestId("studio-workspace-panel")).toBeInTheDocument();
     expect(screen.queryByTestId("studio-source-shelf")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-tutor-status")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-repair-candidates")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-memory")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-prime-packet")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-polish-packet")).not.toBeInTheDocument();
   });
 
   it("passes promoted tutor replies into the Polish panel surface", async () => {
@@ -2442,46 +2362,11 @@ describe("TutorShell studio routing", () => {
     });
 
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
-    const polishPanel = screen.getByTestId("mock-polish-panel");
+    const polishPanel = await screen.findByTestId("mock-polish-panel");
     expect(polishPanel).toHaveTextContent("Tutor Reply 2");
     expect(polishPanel).toHaveTextContent(
       "Venous return is the preload driver.",
     );
-  });
-
-  it("mirrors live Polish draft summaries and cards into the Polish Packet", async () => {
-    renderTutorShell("polish", {
-      workflowOverrides: {
-        activeWorkflowDetail: {
-          workflow: {
-            workflow_id: "wf-live-preview",
-          },
-          polish_bundle: {
-            summaries: [{ title: "Polish final summary draft" }],
-            card_requests: [],
-            studio_payload: {
-              test_live_preview: {
-                summaryDraft: "Venous return is the preload driver.",
-                cardRequestText:
-                  "What is the preload driver? :: Venous return",
-              },
-            },
-            status: "draft",
-          },
-        },
-      },
-    });
-
-    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
-    const polishPacket = screen.getByTestId("studio-polish-packet");
-    await waitFor(() => {
-      expect(polishPacket).toHaveTextContent(
-        "Venous return is the preload driver.",
-      );
-      expect(polishPacket).toHaveTextContent(
-        "What is the preload driver? :: Venous return",
-      );
-    });
   });
 
   it("seeds the workspace view with current-run source objects", async () => {
@@ -2674,7 +2559,6 @@ describe("TutorShell studio routing", () => {
     const sourceShelf = screen.getByTestId("studio-source-shelf");
     const documentDock = screen.getByTestId("studio-document-dock");
     const workspace = screen.getByTestId("studio-tldraw-workspace");
-    const primePacket = screen.getByTestId("studio-prime-packet");
 
     await user.click(
       within(sourceShelf).getByRole("button", {
@@ -2713,10 +2597,11 @@ describe("TutorShell studio routing", () => {
       }),
     );
 
-    expect(primePacket).toHaveTextContent("Workspace Excerpt");
-    expect(primePacket).toHaveTextContent(
-      "Cardiac output depends on stroke volume",
-    );
+    expect(
+      within(workspace).getByRole("button", {
+        name: /Excerpt: Cardiac Output Lecture already in Prime Packet/i,
+      }),
+    ).toBeInTheDocument();
   });
 
   it("supports multiple Document Dock tabs and clips from the active selected tab", async () => {
@@ -3096,7 +2981,6 @@ describe("TutorShell studio routing", () => {
 
     const documentDock = screen.getByTestId("studio-document-dock");
     const workspace = screen.getByTestId("studio-tldraw-workspace");
-    const primePacket = screen.getByTestId("studio-prime-packet");
 
     await user.click(
       within(documentDock).getByRole("button", {
@@ -3105,9 +2989,6 @@ describe("TutorShell studio routing", () => {
     );
 
     expect(workspace).toHaveTextContent("Workspace Excerpts");
-    expect(primePacket).not.toHaveTextContent(
-      "Cardiac output is determined by stroke volume multiplied by heart rate.",
-    );
 
     await user.click(
       within(workspace).getByRole("button", {
@@ -3115,10 +2996,6 @@ describe("TutorShell studio routing", () => {
       }),
     );
 
-    expect(primePacket).toHaveTextContent("Workspace Excerpt");
-    expect(primePacket).toHaveTextContent(
-      "Cardiac output is determined by stroke volume multiplied by heart rate.",
-    );
     expect(
       within(workspace).getByRole("button", {
         name: /Excerpt: Cardiac Output Lecture already in Prime Packet/i,
@@ -3243,26 +3120,6 @@ describe("TutorShell studio routing", () => {
           "The learner mixed preload effects with heart-rate regulation.",
         ),
       }),
-    );
-  });
-
-  it("promotes a tutor reply into Polish Packet notes", async () => {
-    const user = userEvent.setup();
-
-    renderTutorShellTutorHarness();
-
-    expect(await screen.findByTestId("mock-tutor-chat")).toBeInTheDocument();
-
-    await user.click(
-      screen.getByRole("button", {
-        name: /Promote reply to Polish Packet/i,
-      }),
-    );
-
-    const polishPacket = await screen.findByTestId("studio-polish-packet");
-    expect(polishPacket).toHaveTextContent("Tutor Reply 3");
-    expect(polishPacket).toHaveTextContent(
-      "Cardiac output is determined by stroke volume multiplied by heart rate.",
     );
   });
 

@@ -81,8 +81,6 @@ const PANEL_ALIASES: Record<string, string> = {
   workspace: "workspace",
   run_config: "run_config",
   memory: "memory",
-  prime_packet: "prime_packet",
-  polish_packet: "polish_packet",
 };
 
 type PipelineStage =
@@ -113,9 +111,7 @@ const PANEL_STAGE_MAP: Record<string, PipelineStage> = {
   source_shelf: "load",
   document_dock: "read",
   priming_chat: "prime",
-  prime_packet: "prime",
   tutor_chat: "tutor",
-  polish_packet: "tutor",
   polish_chat: "polish",
   obsidian: "export",
   anki: "export",
@@ -125,16 +121,14 @@ const PANEL_STAGE_MAP: Record<string, PipelineStage> = {
   memory: "settings",
 };
 
-// Explicit display order within each pipeline stage. Action chips come before
-// their packet artifacts (e.g. Priming before Prime Packet) so the toolbar
-// reads "do X, then look at the packet X produced". Without this, ordering
+// Explicit display order within each pipeline stage. Without this, ordering
 // would silently follow whatever order panels happen to appear in
 // `panelDefinitions`, which is fragile.
 const STAGE_PANEL_ORDER: Record<PipelineStage, readonly string[]> = {
   load: ["source_shelf"],
   read: ["document_dock"],
-  prime: ["priming_chat", "prime_packet"],
-  tutor: ["tutor_chat", "polish_packet"],
+  prime: ["priming_chat"],
+  tutor: ["tutor_chat"],
   polish: ["polish_chat"],
   export: ["obsidian", "anki"],
   workbench: ["workspace", "notes"],
@@ -146,7 +140,7 @@ const LAYOUT_PRESETS: { key: StudioShellPreset; label: string; hint: string }[] 
     {
       key: "priming",
       label: "Prime",
-      hint: "Sources + Doc + Priming + Prime Packet + Run Config",
+      hint: "Sources + Doc + Priming + Run Config",
     },
     {
       key: "study",
@@ -156,7 +150,7 @@ const LAYOUT_PRESETS: { key: StudioShellPreset; label: string; hint: string }[] 
     {
       key: "polish",
       label: "Polish",
-      hint: "Polish + Polish Packet + Workspace",
+      hint: "Polish + Workspace",
     },
     { key: "full_studio", label: "Full Studio", hint: "Every panel" },
     { key: "minimal", label: "Minimal", hint: "Tutor only" },
@@ -167,7 +161,6 @@ const PRESET_PANEL_KEYS: Record<StudioShellPreset, string[]> = {
     "source_shelf",
     "document_dock",
     "priming_chat",
-    "prime_packet",
     "run_config",
   ],
   study: [
@@ -176,7 +169,7 @@ const PRESET_PANEL_KEYS: Record<StudioShellPreset, string[]> = {
     "tutor_chat",
     "memory",
   ],
-  polish: ["polish_chat", "polish_packet", "workspace"],
+  polish: ["polish_chat", "workspace"],
   full_studio: [
     "source_shelf",
     "document_dock",
@@ -184,8 +177,6 @@ const PRESET_PANEL_KEYS: Record<StudioShellPreset, string[]> = {
     "priming_chat",
     "tutor_chat",
     "polish_chat",
-    "prime_packet",
-    "polish_packet",
     "run_config",
     "memory",
     "notes",
@@ -239,14 +230,6 @@ const PRESET_LAYOUT_DEFAULTS: Record<
   polish_chat: {
     defaultPosition: { x: 2360, y: 120 },
     defaultSize: { width: 560, height: 760 },
-  },
-  prime_packet: {
-    defaultPosition: { x: 72, y: 820 },
-    defaultSize: { width: 420, height: 520 },
-  },
-  polish_packet: {
-    defaultPosition: { x: 532, y: 820 },
-    defaultSize: { width: 420, height: 520 },
   },
   run_config: {
     defaultPosition: { x: 992, y: 920 },
@@ -730,8 +713,6 @@ export interface StudioShellProps {
   polishPanel?: ReactNode;
   runConfig?: ReactNode;
   memory?: ReactNode;
-  primePacket?: ReactNode;
-  polishPacket?: ReactNode;
   notesPanel?: ReactNode;
   obsidianPanel?: ReactNode;
   ankiPanel?: ReactNode;
@@ -758,8 +739,6 @@ export function StudioShell({
   polishPanel,
   runConfig,
   memory,
-  primePacket,
-  polishPacket,
   notesPanel,
   obsidianPanel,
   ankiPanel,
@@ -915,38 +894,6 @@ export function StudioShell({
           ),
       },
       {
-        panel: "prime_packet",
-        title: "Prime Packet",
-        testId: "studio-prime-packet",
-        icon: Package,
-        defaultPosition: { x: 72, y: 720 },
-        defaultSize: { width: 420, height: 520 },
-        minWidth: 360,
-        minHeight: 280,
-        content:
-          primePacket ??
-          makePlaceholder(
-            "Prime Packet",
-            "Promoted excerpts and repair notes live here as tutor context inputs.",
-          ),
-      },
-      {
-        panel: "polish_packet",
-        title: "Polish Packet",
-        testId: "studio-polish-packet",
-        icon: Package,
-        defaultPosition: { x: 472, y: 720 },
-        defaultSize: { width: 420, height: 520 },
-        minWidth: 360,
-        minHeight: 280,
-        content:
-          polishPacket ??
-          makePlaceholder(
-            "Polish Packet",
-            "Tutor replies, notes, summaries, cards, and assets are staged here.",
-          ),
-      },
-      {
         panel: "run_config",
         title: "Run Config",
         testId: "studio-run-config",
@@ -1035,9 +982,7 @@ export function StudioShell({
       notesPanel,
       obsidianPanel,
       ankiPanel,
-      polishPacket,
       polishPanel,
-      primePacket,
       primingPanel,
       runConfig,
       sourceShelf,
