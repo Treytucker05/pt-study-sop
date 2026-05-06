@@ -1621,6 +1621,9 @@ describe("Tutor page restore", () => {
     });
     expect(refreshButton).toHaveClass("tutor-hero-action");
     expect(refreshButton).toHaveClass("tutor-hero-action--outline");
+    expect(refreshButton.getAttribute("title")).toMatch(
+      /re-fetch|refetch|reload|stale/i,
+    );
 
     fireEvent.click(refreshButton);
 

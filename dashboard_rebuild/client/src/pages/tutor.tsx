@@ -1145,6 +1145,12 @@ function useTutorPageController() {
             variant="primary"
             className={`${tutorHeroActionClassName} tutor-hero-action--primary`}
             disabled={sessionActionPending}
+            title={
+              (liveTutorSessionId || workflow.activeWorkflowId) &&
+              !sessionActionPending
+                ? "End the current study session and save progress to your vault"
+                : "Open the entry card to set up and start a new study session"
+            }
             onClick={() => {
               void handleTutorSessionAction();
             }}
@@ -1160,6 +1166,7 @@ function useTutorPageController() {
             <HudButton
               variant="outline"
               className={`${tutorHeroActionClassName} tutor-hero-action--outline`}
+              title="Resume your most recent unfinished session and load the Study panel layout"
               onClick={() => {
                 void (async () => {
                   await resumeFromHubCandidate(resumeCandidate);
@@ -1173,6 +1180,7 @@ function useTutorPageController() {
           <HudButton
             variant="outline"
             className={`${tutorHeroActionClassName} tutor-hero-action--outline`}
+            title="Re-fetch session data, materials, and vault state — use when something looks stale"
             onClick={() => {
               void Promise.all([
                 queryClient.invalidateQueries({ queryKey: ["tutor-hub"] }),
