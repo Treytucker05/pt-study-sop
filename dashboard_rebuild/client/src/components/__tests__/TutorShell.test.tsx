@@ -166,6 +166,7 @@ const mockTldrawEditor = {
   createShapes: vi.fn().mockReturnThis(),
   updateShapes: vi.fn().mockReturnThis(),
   deleteShapes: vi.fn().mockReturnThis(),
+  getCurrentPageShapeIds: vi.fn().mockReturnValue(new Set()),
 };
 
 vi.mock("tldraw", () => ({
