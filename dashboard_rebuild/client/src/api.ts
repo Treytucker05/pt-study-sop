@@ -353,6 +353,8 @@ export const api = {
   courses: {
     getAll: () => request<Course[]>("/courses"),
     getActive: () => request<Course[]>("/courses/active"),
+    /** Includes archived courses too — for course management UI. */
+    getEvery: () => request<Course[]>("/courses/all"),
     getOne: (id: number) => request<Course>(`/courses/${id}`),
     create: (data: InsertCourse) => request<Course>("/courses", {
       method: "POST",
@@ -362,6 +364,16 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
+    archive: (id: number) =>
+      request<{ id: number; archived: boolean; archivedAt: string }>(
+        `/courses/${id}/archive`,
+        { method: "PATCH" },
+      ),
+    unarchive: (id: number) =>
+      request<{ id: number; archived: boolean }>(
+        `/courses/${id}/unarchive`,
+        { method: "PATCH" },
+      ),
     delete: (id: number) => request<void>(`/courses/${id}`, {
       method: "DELETE",
     }),

@@ -1,5 +1,5 @@
 import { PageScaffold } from "@/components/PageScaffold";
-import { useState, useEffect, useMemo, type ReactElement } from "react";
+import { useState, useEffect, useMemo, useCallback, type ReactElement } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import {
@@ -54,6 +54,9 @@ import {
   Eye,
   AlertTriangle,
   Upload,
+  Archive,
+  ArchiveRestore,
+  ChevronDown,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -722,6 +725,63 @@ function useLibraryPageController() {
     queryKey: ["tutor-embed-status"],
     queryFn: () => api.tutor.embedStatus(),
   });
+  // Archived courses live in a separate query so the active rail stays
+  // unaware of them. /api/courses/all returns both; we filter to archived.
+  const { data: allCoursesWithArchived = [] } = useQuery<Course[]>({
+    queryKey: ["courses-all"],
+    queryFn: () => api.courses.getEvery(),
+    enabled: sidebarMode === "courses",
+  });
+  const archivedCourses = useMemo(
+    () => allCoursesWithArchived.filter((c) => c.archived === true),
+    [allCoursesWithArchived],
+  );
+  const [archivedExpanded, setArchivedExpanded] = useState(false);
+
+  const handleArchiveCourse = useCallback(
+    async (courseId: number, courseName: string) => {
+      if (
+        !window.confirm(
+          `Archive "${courseName}"? It'll disappear from active dropdowns and the study wheel. Vault notes are kept and you can unarchive any time.`,
+        )
+      ) {
+        return;
+      }
+      try {
+        await api.courses.archive(courseId);
+        toast.success(`Archived ${courseName}`);
+        queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
+        queryClient.invalidateQueries({ queryKey: ["courses-active"] });
+        queryClient.invalidateQueries({ queryKey: ["courses-all"] });
+        queryClient.invalidateQueries({ queryKey: ["tutor-hub"] });
+      } catch (err) {
+        toast.error(
+          `Failed to archive: ${err instanceof Error ? err.message : "Unknown"}`,
+        );
+      }
+    },
+    [queryClient],
+  );
+
+  const handleUnarchiveCourse = useCallback(
+    async (courseId: number, courseName: string) => {
+      try {
+        await api.courses.unarchive(courseId);
+        toast.success(
+          `Unarchived ${courseName}. Re-add it to the study wheel if you want it spinning again.`,
+        );
+        queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
+        queryClient.invalidateQueries({ queryKey: ["courses-active"] });
+        queryClient.invalidateQueries({ queryKey: ["courses-all"] });
+        queryClient.invalidateQueries({ queryKey: ["tutor-hub"] });
+      } catch (err) {
+        toast.error(
+          `Failed to unarchive: ${err instanceof Error ? err.message : "Unknown"}`,
+        );
+      }
+    },
+    [queryClient],
+  );
 
   const folderTree = useMemo(() => buildFolderTree(materials), [materials]);
   const folderItems = useMemo(() => flattenFolders(folderTree), [folderTree]);
@@ -1605,24 +1665,49 @@ function useLibraryPageController() {
                       .map((course) => {
                         const isSelected = selectedCourseId === course.id;
                         return (
-                          <button
+                          <div
                             key={course.id}
-                            className={`w-full rounded-none border px-2 py-1.5 text-left text-sm font-terminal flex items-center gap-2 transition-colors ${
+                            className={`group relative flex w-full items-stretch rounded-none border transition-colors ${
                               isSelected
-                                ? "border-primary/60 bg-primary/20 text-primary"
-                                : "border-primary/15 text-muted-foreground hover:text-foreground hover:border-primary/40"
+                                ? "border-primary/60 bg-primary/20"
+                                : "border-primary/15 hover:border-primary/40"
                             }`}
-                            onClick={() => setSelectedCourseId(course.id!)}
-                            type="button"
                           >
-                            <GraduationCap className={ICON_SM} />
-                            <span className="truncate flex-1">
-                              {course.name || course.code}
-                            </span>
-                            <span className="text-ui-xs">
-                              {course.doc_count}
-                            </span>
-                          </button>
+                            <button
+                              className={`flex flex-1 items-center gap-2 px-2 py-1.5 text-left text-sm font-terminal transition-colors ${
+                                isSelected
+                                  ? "text-primary"
+                                  : "text-muted-foreground hover:text-foreground"
+                              }`}
+                              onClick={() => setSelectedCourseId(course.id!)}
+                              type="button"
+                            >
+                              <GraduationCap className={ICON_SM} />
+                              <span className="truncate flex-1">
+                                {course.name || course.code}
+                              </span>
+                              <span className="text-ui-xs">
+                                {course.doc_count}
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Archive ${course.name || course.code}`}
+                              title="Archive this course (hides from dropdowns; reversible)"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                if (typeof course.id === "number") {
+                                  void handleArchiveCourse(
+                                    course.id,
+                                    course.name || course.code || `Course ${course.id}`,
+                                  );
+                                }
+                              }}
+                              className="hidden items-center justify-center px-1.5 text-muted-foreground/60 transition-colors hover:text-foreground group-hover:flex"
+                            >
+                              <Archive className={ICON_SM} />
+                            </button>
+                          </div>
                         );
                       })}
                     <button
@@ -1638,6 +1723,65 @@ function useLibraryPageController() {
                       <span className="truncate flex-1">Unlinked</span>
                       <span className="text-ui-xs">{unlinkedCount}</span>
                     </button>
+                    {archivedCourses.length > 0 ? (
+                      <div className="mt-2 border-t border-primary/10 pt-2">
+                        <button
+                          type="button"
+                          aria-expanded={archivedExpanded}
+                          aria-controls="library-archived-courses"
+                          onClick={() => setArchivedExpanded((v) => !v)}
+                          className="flex w-full items-center gap-1.5 px-2 py-1.5 text-left text-xs font-terminal uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground"
+                        >
+                          {archivedExpanded ? (
+                            <ChevronDown className={ICON_SM} />
+                          ) : (
+                            <ChevronRight className={ICON_SM} />
+                          )}
+                          <span className="flex-1">Archived</span>
+                          <span className="text-ui-xs">
+                            {archivedCourses.length}
+                          </span>
+                        </button>
+                        {archivedExpanded ? (
+                          <div
+                            id="library-archived-courses"
+                            className="mt-1 space-y-1"
+                          >
+                            {archivedCourses.map((course) => (
+                              <div
+                                key={course.id}
+                                className="group flex w-full items-stretch rounded-none border border-primary/10 bg-black/10 transition-colors hover:border-primary/30"
+                              >
+                                <div className="flex flex-1 items-center gap-2 px-2 py-1.5 text-left text-sm font-terminal text-muted-foreground/70">
+                                  <Archive className={`${ICON_SM} opacity-60`} />
+                                  <span className="truncate flex-1">
+                                    {course.name || course.code}
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  aria-label={`Unarchive ${course.name || course.code}`}
+                                  title="Unarchive this course (it'll come back to active dropdowns; you'll need to re-add it to the study wheel manually)"
+                                  onClick={() => {
+                                    if (typeof course.id === "number") {
+                                      void handleUnarchiveCourse(
+                                        course.id,
+                                        course.name ||
+                                          course.code ||
+                                          `Course ${course.id}`,
+                                      );
+                                    }
+                                  }}
+                                  className="flex items-center justify-center px-1.5 text-muted-foreground/60 transition-colors hover:text-foreground"
+                                >
+                                  <ArchiveRestore className={ICON_SM} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </>
                 )}
               </div>

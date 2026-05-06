@@ -26,6 +26,9 @@ export const courses = sqliteTable("courses", {
   position: integer("position").notNull().default(0), // Round-robin order position
   totalSessions: integer("total_sessions").notNull().default(0),
   totalMinutes: integer("total_minutes").notNull().default(0),
+  archived: integer("archived", { mode: "boolean" }),
+  archivedAt: text("archived_at"),
+  vaultFolder: text("vault_folder"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
 });
 
