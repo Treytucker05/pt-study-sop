@@ -369,14 +369,18 @@ function useTutorPageController() {
       }
       setViewerState(nextProjectShell.workspace_state.viewer_state || null);
       // Restore the floating panel layout (positions, sizes, collapsed state,
-      // groupings) from the server. Without this, every navigation to /tutor
-      // wiped the canvas because the persisted panel_layout was never read
-      // back even though it was being saved on every change.
-      setPanelLayout(
-        normalizeStudioPanelLayout(
-          nextProjectShell.workspace_state.panel_layout,
-        ),
-      );
+      // groupings) from the server only when the user has previously
+      // dismissed the entry card on this device (PR #146 / PR #147). On
+      // first visit the entry card is the canvas — restoring stale panels
+      // underneath it would defeat the empty-start design and persist the
+      // hydrated layout right back over the user's intent.
+      if (readTutorEntryCardDismissed()) {
+        setPanelLayout(
+          normalizeStudioPanelLayout(
+            nextProjectShell.workspace_state.panel_layout,
+          ),
+        );
+      }
       setDocumentTabs(
         normalizeStudioDocumentTabs(
           nextProjectShell.workspace_state.document_tabs,

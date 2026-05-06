@@ -1009,7 +1009,12 @@ export function TutorShell({
     );
   }, [notesSessionKey, resolvedNotesDraft]);
   useEffect(() => {
+    // Only reset another session's draft when the user is actually inside an
+    // active session/workflow. On bare /tutor load (notesSessionKey === null)
+    // we have no scope to "switch into" — wiping the draft loses the
+    // persisted note for the session it belongs to.
     if (
+      notesSessionKey === null ||
       resolvedNotesDraft.sessionKey === notesSessionKey ||
       (resolvedNotesDraft.sessionKey === null &&
         resolvedNotesDraft.content.trim().length === 0)
