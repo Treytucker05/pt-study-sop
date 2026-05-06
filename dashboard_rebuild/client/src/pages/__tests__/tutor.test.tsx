@@ -1434,7 +1434,7 @@ describe("Tutor page restore", () => {
     });
 
     const entryCard = screen.getByTestId("studio-entry-state");
-    await user.click(within(entryCard).getByRole("button", { name: /^cancel$/i }));
+    await user.click(within(entryCard).getByRole("button", { name: /close setup overlay/i }));
 
     await waitFor(() => {
       expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
@@ -1511,7 +1511,7 @@ describe("Tutor page restore", () => {
 
     await user.click(
       within(screen.getByTestId("studio-entry-state")).getByRole("button", {
-        name: /^cancel$/i,
+        name: /close setup overlay/i,
       }),
     );
 
@@ -1531,7 +1531,7 @@ describe("Tutor page restore", () => {
     await expectStudioEntryState();
     await user.click(
       within(screen.getByTestId("studio-entry-state")).getByRole("button", {
-        name: /^cancel$/i,
+        name: /close setup overlay/i,
       }),
     );
 
