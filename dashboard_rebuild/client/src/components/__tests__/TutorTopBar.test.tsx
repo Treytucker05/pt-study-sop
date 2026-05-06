@@ -274,14 +274,16 @@ describe("TutorTopBar", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /previous sessions/i }));
 
+    // active session → Resume label
     expect(
       screen.getByRole("button", {
         name: /resume previous session renal review neuro/i,
       }),
     ).toBeInTheDocument();
+    // completed session → View label (not Resume)
     expect(
       screen.getByRole("button", {
-        name: /resume previous session cardio drill cardio/i,
+        name: /view previous session cardio drill cardio/i,
       }),
     ).toBeInTheDocument();
   });
@@ -303,5 +305,72 @@ describe("TutorTopBar", () => {
     expect(onDeleteSession).toHaveBeenCalledWith("sess-recent");
     expect(onResumeSession).not.toHaveBeenCalled();
     confirmSpy.mockRestore();
+  });
+
+  // ─── View mode tests ───
+
+  it("shows VIEW button on completed session row, not RESUME", () => {
+    renderTutorTopBar();
+
+    fireEvent.click(screen.getByRole("button", { name: /previous sessions/i }));
+
+    expect(
+      screen.getByRole("button", { name: /view previous session cardio drill cardio/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /resume previous session cardio drill cardio/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows RESUME button on active session row", () => {
+    renderTutorTopBar();
+
+    fireEvent.click(screen.getByRole("button", { name: /previous sessions/i }));
+
+    expect(
+      screen.getByRole("button", { name: /resume previous session renal review neuro/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /view previous session renal review neuro/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows VIEW button on abandoned session row, not RESUME", () => {
+    renderTutorTopBar();
+
+    fireEvent.click(screen.getByRole("button", { name: /previous sessions/i }));
+
+    expect(
+      screen.getByRole("button", { name: /view previous session abandoned mechanics cardio/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /resume previous session abandoned mechanics cardio/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("clicking VIEW on completed session does not call onResumeSession", () => {
+    const onResumeSession = vi.fn();
+    renderTutorTopBar({ onResumeSession });
+
+    fireEvent.click(screen.getByRole("button", { name: /previous sessions/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /view previous session cardio drill cardio/i }),
+    );
+
+    expect(onResumeSession).not.toHaveBeenCalled();
+  });
+
+  it("clicking VIEW on completed session opens a dialog with the topic", () => {
+    renderTutorTopBar();
+
+    fireEvent.click(screen.getByRole("button", { name: /previous sessions/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /view previous session cardio drill cardio/i }),
+    );
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByText(/cardio drill/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/3 turns/i)).toBeInTheDocument();
   });
 });

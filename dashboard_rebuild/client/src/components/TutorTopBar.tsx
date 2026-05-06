@@ -3,6 +3,13 @@ import { CONTROL_KICKER } from "@/components/shell/controlStyles";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
   ChevronDown,
   ChevronUp,
   MessageSquare,
@@ -160,6 +167,11 @@ function previousSessionTopicLabel(previousSession: TutorSessionSummary): string
   return previousSession.topic.trim() || "Freeform";
 }
 
+function isViewableSession(status: TutorSessionSummary["status"]): boolean {
+  const s = status.trim().toLowerCase();
+  return s === "completed" || s === "abandoned";
+}
+
 function RuntimeValue({
   field,
   detail,
@@ -218,6 +230,7 @@ export function TutorTopBar({
     useState<"all" | `${number}`>("all");
   const [previousSessionStatusFilter, setPreviousSessionStatusFilter] =
     useState<"all" | TutorSessionSummary["status"]>("all");
+  const [viewingSession, setViewingSession] = useState<TutorSessionSummary | null>(null);
   const workflowStageLabel = activeWorkflowDetail?.workflow?.current_stage
     ? activeWorkflowDetail.workflow.current_stage
         .replace(/_/g, " ")
@@ -261,6 +274,7 @@ export function TutorTopBar({
   ]);
 
   return (
+    <>
     <div className="flex flex-col gap-4">
       {!isTutorSessionView && brainLaunchContext?.title ? (
         <div
@@ -477,6 +491,7 @@ export function TutorTopBar({
                   const showEndedAt =
                     previousSession.status === "completed" &&
                     Boolean(previousSession.ended_at);
+                  const viewable = isViewableSession(previousSession.status);
                   return (
                   <div
                     key={previousSession.session_id}
@@ -487,8 +502,12 @@ export function TutorTopBar({
                   >
                     <button
                       type="button"
-                      onClick={() => onResumeSession(previousSession.session_id)}
-                      aria-label={`Resume previous session ${topicLabel} ${courseLabel}`}
+                      onClick={() =>
+                        viewable
+                          ? setViewingSession(previousSession)
+                          : onResumeSession(previousSession.session_id)
+                      }
+                      aria-label={`${viewable ? "View" : "Resume"} previous session ${topicLabel} ${courseLabel}`}
                       className="flex min-w-0 flex-1 flex-col text-left transition-colors duration-150 ease-out hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                     >
                       <span className="flex min-w-0 flex-wrap items-center gap-2">
@@ -811,5 +830,34 @@ export function TutorTopBar({
         </div>
       ) : null}
     </div>
+
+    <Dialog
+      open={viewingSession !== null}
+      onOpenChange={(open) => { if (!open) setViewingSession(null); }}
+    >
+      <DialogContent className="max-w-2xl">
+        {viewingSession ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>{previousSessionTopicLabel(viewingSession)}</DialogTitle>
+              <DialogDescription>
+                {viewingSession.turn_count} {viewingSession.turn_count === 1 ? "turn" : "turns"}
+                {viewingSession.started_at
+                  ? ` · Started ${formatPreviousSessionDate(viewingSession.started_at)}`
+                  : null}
+                {viewingSession.ended_at
+                  ? ` · Ended ${formatPreviousSessionDate(viewingSession.ended_at)}`
+                  : null}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-2 font-mono text-sm text-foreground/72">
+              <span className="uppercase tracking-[0.14em]">Status:</span>{" "}
+              {formatPreviousSessionStatusLabel(viewingSession.status)}
+            </div>
+          </>
+        ) : null}
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
