@@ -1250,7 +1250,8 @@ def _auto_link_materials_to_courses(conn: sqlite3.Connection) -> dict:
     )
     unlinked = cur.fetchall()
 
-    cur.execute("SELECT id, name FROM courses")
+    # Auto-linking should not match new uploads to archived courses.
+    cur.execute("SELECT id, name FROM courses WHERE archived_at IS NULL")
     courses = cur.fetchall()
     if not courses or not unlinked:
         return {"linked": 0, "unlinked": len(unlinked), "mappings": {}}
@@ -1620,24 +1621,29 @@ def content_sources():
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
-    # Academic courses only
+    # Academic courses only — archived courses are hidden by default; pass
+    # ?include_archived=true to opt in (course management surfaces).
+    include_archived = request.args.get("include_archived", "").lower() in ("1", "true", "yes")
+    archive_clause = "" if include_archived else " AND c.archived_at IS NULL"
     cur.execute(
-        """SELECT
+        f"""SELECT
                c.id,
                c.name,
                c.code,
                COUNT(DISTINCT r.id) AS doc_count,
                CASE WHEN w.id IS NULL THEN 0 ELSE 1 END AS wheel_linked,
                COALESCE(w.active, 0) AS wheel_active,
-               w.position AS wheel_position
+               w.position AS wheel_position,
+               c.archived_at
            FROM courses c
            LEFT JOIN wheel_courses w ON w.course_id = c.id
            LEFT JOIN rag_docs r ON r.course_id = c.id
                AND COALESCE(r.enabled, 1) = 1
                AND COALESCE(r.corpus, 'materials') = 'materials'
-           WHERE c.term IS NOT NULL
+           WHERE (c.term IS NOT NULL
               OR c.id IN (SELECT DISTINCT course_id FROM rag_docs WHERE course_id IS NOT NULL)
-              OR c.id IN (SELECT DISTINCT course_id FROM wheel_courses WHERE course_id IS NOT NULL)
+              OR c.id IN (SELECT DISTINCT course_id FROM wheel_courses WHERE course_id IS NOT NULL))
+              {archive_clause}
            GROUP BY c.id, w.id
            ORDER BY c.name"""
     )

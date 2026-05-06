@@ -5204,15 +5204,103 @@ def _ensure_wheel_course_links(cur):
 
 @adapter_bp.route("/courses", methods=["GET"])
 def get_courses():
-    """Get all courses for the study wheel ordered by position."""
+    """Get all courses for the study wheel ordered by position.
+
+    Excludes archived courses (c.archived_at IS NOT NULL) by default. Pass
+    ?include_archived=true to receive archived courses too — each row carries
+    an `archived` boolean and `archivedAt` timestamp so the UI can render them
+    in a separate section.
+    """
     try:
+        include_archived = request.args.get("include_archived", "").lower() in ("1", "true", "yes")
         conn = get_connection()
         cur = conn.cursor()
         _ensure_wheel_course_links(cur)
 
         # wheel_config: REMOVED — dead table, dropped in migration
 
-        # Query wheel_courses table ordered by position
+        # Query wheel_courses table ordered by position. Archive filter runs on
+        # the courses table so it survives wheel-active drift.
+        archive_clause = "" if include_archived else "AND (c.archived_at IS NULL OR c.id IS NULL)"
+        cur.execute(f"""
+            SELECT
+                w.id,
+                w.course_id,
+                w.name,
+                w.active,
+                w.position,
+                w.total_sessions,
+                w.total_minutes,
+                w.created_at,
+                c.name,
+                c.code,
+                c.term,
+                c.instructor,
+                c.default_study_mode,
+                c.delivery_format,
+                c.time_budget_per_week_minutes,
+                c.color,
+                c.last_scraped_at,
+                c.created_at,
+                c.archived_at,
+                c.vault_folder
+            FROM wheel_courses w
+            LEFT JOIN courses c ON c.id = w.course_id
+            WHERE w.active = 1 {archive_clause}
+            ORDER BY w.position ASC
+        """)
+        rows = cur.fetchall()
+
+        courses = []
+        for r in rows:
+            wheel_id = r[0]
+            course_id = r[1] or wheel_id
+            wheel_name = r[2]
+            course_name = r[8] or wheel_name
+            archived_at = r[17]
+            courses.append(
+                {
+                    "id": course_id,
+                    "name": course_name,
+                    "code": r[9],
+                    "term": r[10],
+                    "instructor": r[11],
+                    "defaultStudyMode": r[12],
+                    "deliveryFormat": r[13],
+                    "timeBudgetPerWeekMinutes": r[14] or 0,
+                    "color": r[15],
+                    "lastScrapedAt": r[16],
+                    "active": bool(r[3]),
+                    "position": r[4],
+                    "totalSessions": r[5] or 0,
+                    "totalMinutes": r[6] or 0,
+                    "createdAt": r[7] or (r[17] if include_archived else None) or datetime.now().isoformat(),
+                    "archived": archived_at is not None,
+                    "archivedAt": archived_at,
+                    "vaultFolder": r[18],
+                }
+            )
+
+        conn.close()
+        return jsonify(courses)
+    except Exception as e:
+        print(f"[GET COURSES] ERROR: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/courses/active", methods=["GET"])
+def get_active_courses():
+    """Get active courses only. Same as /courses since we filter by active."""
+    return get_courses()
+
+
+@adapter_bp.route("/courses/all", methods=["GET"])
+def get_all_courses():
+    """Get every course (active + archived). For course management UI."""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        _ensure_wheel_course_links(cur)
         cur.execute("""
             SELECT
                 w.id,
@@ -5232,20 +5320,21 @@ def get_courses():
                 c.time_budget_per_week_minutes,
                 c.color,
                 c.last_scraped_at,
-                c.created_at
+                c.created_at,
+                c.archived_at,
+                c.vault_folder
             FROM wheel_courses w
             LEFT JOIN courses c ON c.id = w.course_id
-            WHERE active = 1
-            ORDER BY position ASC
+            ORDER BY w.position ASC
         """)
         rows = cur.fetchall()
-
         courses = []
         for r in rows:
             wheel_id = r[0]
             course_id = r[1] or wheel_id
             wheel_name = r[2]
             course_name = r[8] or wheel_name
+            archived_at = r[17]
             courses.append(
                 {
                     "id": course_id,
@@ -5262,21 +5351,76 @@ def get_courses():
                     "position": r[4],
                     "totalSessions": r[5] or 0,
                     "totalMinutes": r[6] or 0,
-                    "createdAt": r[7] or r[17] or datetime.now().isoformat(),
+                    "createdAt": r[7] or datetime.now().isoformat(),
+                    "archived": archived_at is not None,
+                    "archivedAt": archived_at,
+                    "vaultFolder": r[18],
                 }
             )
-
         conn.close()
         return jsonify(courses)
     except Exception as e:
-        print(f"[GET COURSES] ERROR: {str(e)}")
+        print(f"[GET ALL COURSES] ERROR: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 
-@adapter_bp.route("/courses/active", methods=["GET"])
-def get_active_courses():
-    """Get active courses only. Same as /courses since we filter by active."""
-    return get_courses()
+@adapter_bp.route("/courses/<int:course_id>/archive", methods=["PATCH"])
+def archive_course(course_id: int):
+    """Archive a course: set archived_at and auto-deactivate its wheel slot.
+
+    Idempotent — re-archiving an already-archived course is a no-op.
+    """
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT id, archived_at FROM courses WHERE id = ?", (course_id,))
+        row = cur.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({"error": f"Course {course_id} not found"}), 404
+        now_iso = datetime.now().isoformat()
+        cur.execute(
+            "UPDATE courses SET archived_at = ? WHERE id = ?",
+            (now_iso, course_id),
+        )
+        # Auto-deactivate the wheel slot so the course disappears from the
+        # study wheel without forcing the user to also click through the wheel
+        # editor. Unarchive does NOT auto-reactivate — user re-adds to the
+        # wheel deliberately.
+        cur.execute(
+            "UPDATE wheel_courses SET active = 0 WHERE course_id = ?",
+            (course_id,),
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({"id": course_id, "archived": True, "archivedAt": now_iso})
+    except Exception as e:
+        print(f"[ARCHIVE COURSE] ERROR: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/courses/<int:course_id>/unarchive", methods=["PATCH"])
+def unarchive_course(course_id: int):
+    """Unarchive a course: clear archived_at. Wheel slot stays inactive — the
+    user must explicitly re-add the course to the wheel.
+    """
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM courses WHERE id = ?", (course_id,))
+        if not cur.fetchone():
+            conn.close()
+            return jsonify({"error": f"Course {course_id} not found"}), 404
+        cur.execute(
+            "UPDATE courses SET archived_at = NULL WHERE id = ?",
+            (course_id,),
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({"id": course_id, "archived": False})
+    except Exception as e:
+        print(f"[UNARCHIVE COURSE] ERROR: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 
 @adapter_bp.route("/courses", methods=["POST"])

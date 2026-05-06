@@ -426,9 +426,10 @@ def get_tutor_hub():
             LEFT JOIN rag_docs r ON r.course_id = c.id
                 AND COALESCE(r.enabled, 1) = 1
                 AND COALESCE(r.corpus, 'materials') = 'materials'
-            WHERE c.term IS NOT NULL
-               OR c.id IN (SELECT DISTINCT course_id FROM rag_docs WHERE course_id IS NOT NULL)
-               OR c.id IN (SELECT DISTINCT course_id FROM wheel_courses WHERE course_id IS NOT NULL)
+            WHERE c.archived_at IS NULL
+              AND (c.term IS NOT NULL
+                OR c.id IN (SELECT DISTINCT course_id FROM rag_docs WHERE course_id IS NOT NULL)
+                OR c.id IN (SELECT DISTINCT course_id FROM wheel_courses WHERE course_id IS NOT NULL))
             GROUP BY c.id, w.id
             ORDER BY c.name
             """

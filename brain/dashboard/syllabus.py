@@ -20,12 +20,14 @@ def fetch_all_courses_and_events():
     conn = get_connection()
     cur = conn.cursor()
 
-    # Courses (include color column)
+    # Courses (include color column). Archived courses excluded from
+    # the active syllabus rollup.
     cur.execute(
         """
         SELECT id, name, code, term, instructor,
                default_study_mode, time_budget_per_week_minutes, color
         FROM courses
+        WHERE archived_at IS NULL
         ORDER BY COALESCE(term, '') DESC, name ASC
         """
     )
