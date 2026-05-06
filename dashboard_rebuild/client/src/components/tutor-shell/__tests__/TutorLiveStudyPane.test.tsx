@@ -119,4 +119,69 @@ describe("TutorLiveStudyPane", () => {
       });
     });
   });
+
+  it("explains the difference between Save Exact and Save Editable via tooltips", () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false, gcTime: 0 },
+        mutations: { retry: false },
+      },
+    });
+    const session = {
+      handleArtifactCreated: vi.fn(),
+      handleStudioCapture: vi.fn(),
+      stageTimerDisplaySeconds: 0,
+      stageTimerRunning: false,
+      toggleWorkflowStudyTimer: vi.fn(),
+      commitAssistantMessage: vi.fn(),
+      setTurnCount: vi.fn(),
+    };
+
+    render(
+      <TutorLiveStudyPane
+        activeSessionId="sess-tooltip-001"
+        hub={
+          {
+            courseId: 1,
+            chatMaterials: [],
+            selectedMaterials: [],
+            accuracyProfile: "balanced",
+            setAccuracyProfile: vi.fn(),
+            setSelectedMaterials: vi.fn(),
+            refreshChatMaterials: vi.fn(),
+          } as never
+        }
+        session={session as never}
+        workflow={
+          {
+            captureWorkflowMessageNote: vi.fn(),
+            saveWorkflowMessageFeedback: vi.fn(),
+            saveWorkflowNoteToVault: vi.fn(),
+            quickCompactWorkflowMemory: vi.fn(),
+            createWorkflowMemoryCapsule: vi.fn(),
+            openWorkflowPolish: vi.fn(),
+            activeWorkflowId: "workflow-001",
+            savingRuntimeEvent: false,
+          } as never
+        }
+        restoredTurns={undefined}
+        onStartSession={vi.fn()}
+        onSaveGist={vi.fn()}
+        onPromoteTutorReplyToPolish={vi.fn()}
+        onCompactionTelemetry={vi.fn()}
+        submitBrainFeedback={vi.fn()}
+      />,
+      { wrapper: createWrapper(queryClient) },
+    );
+
+    const exactButton = screen.getByRole("button", {
+      name: /save exact to vault/i,
+    });
+    const editableButton = screen.getByRole("button", {
+      name: /save editable to vault/i,
+    });
+
+    expect(exactButton.getAttribute("title")).toMatch(/verbatim/i);
+    expect(editableButton.getAttribute("title")).toMatch(/rewrite|editable/i);
+  });
 });

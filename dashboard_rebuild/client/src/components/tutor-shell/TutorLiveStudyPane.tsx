@@ -184,6 +184,7 @@ export function TutorLiveStudyPane({
             void handleSaveNoteToVault("exact");
           }}
           disabled={!workflow.activeWorkflowId || workflow.savingRuntimeEvent}
+          title="Save the assistant's reply verbatim to your vault as a read-only-style note"
         >
           SAVE EXACT TO VAULT
         </Button>
@@ -195,6 +196,7 @@ export function TutorLiveStudyPane({
             void handleSaveNoteToVault("editable");
           }}
           disabled={!workflow.activeWorkflowId || workflow.savingRuntimeEvent}
+          title="Save a rewriteable copy of the reply to your vault notes for editing"
         >
           SAVE EDITABLE TO VAULT
         </Button>
