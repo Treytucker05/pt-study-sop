@@ -1135,7 +1135,7 @@ describe("TutorShell studio routing", () => {
     expect(openStudioPriming).toHaveBeenCalledTimes(1);
   });
 
-  it("renames Open Full Studio to Skip Setup, keeps the preset action, and hides Resume for placeholder hub data", async () => {
+  it("Skip Setup applies the Study preset and hides Resume for placeholder hub data", async () => {
     const user = userEvent.setup();
     const setPanelLayout = vi.fn();
 
