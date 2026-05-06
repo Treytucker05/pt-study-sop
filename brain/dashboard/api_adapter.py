@@ -5257,7 +5257,9 @@ def get_courses():
             course_id = r[1] or wheel_id
             wheel_name = r[2]
             course_name = r[8] or wheel_name
-            archived_at = r[17]
+            course_created_at = r[17]
+            archived_at = r[18]
+            vault_folder = r[19]
             courses.append(
                 {
                     "id": course_id,
@@ -5274,10 +5276,10 @@ def get_courses():
                     "position": r[4],
                     "totalSessions": r[5] or 0,
                     "totalMinutes": r[6] or 0,
-                    "createdAt": r[7] or (r[17] if include_archived else None) or datetime.now().isoformat(),
+                    "createdAt": r[7] or course_created_at or datetime.now().isoformat(),
                     "archived": archived_at is not None,
                     "archivedAt": archived_at,
-                    "vaultFolder": r[18],
+                    "vaultFolder": vault_folder,
                 }
             )
 
@@ -5301,16 +5303,12 @@ def get_all_courses():
         conn = get_connection()
         cur = conn.cursor()
         _ensure_wheel_course_links(cur)
+        # Pull EVERY course row, even ones without a wheel slot (archived
+        # courses get their wheel slot deactivated; cruft courses may never
+        # have had one). Using courses as the base table guarantees coverage.
         cur.execute("""
             SELECT
-                w.id,
-                w.course_id,
-                w.name,
-                w.active,
-                w.position,
-                w.total_sessions,
-                w.total_minutes,
-                w.created_at,
+                c.id,
                 c.name,
                 c.code,
                 c.term,
@@ -5322,39 +5320,41 @@ def get_all_courses():
                 c.last_scraped_at,
                 c.created_at,
                 c.archived_at,
-                c.vault_folder
-            FROM wheel_courses w
-            LEFT JOIN courses c ON c.id = w.course_id
-            ORDER BY w.position ASC
+                c.vault_folder,
+                w.id AS wheel_id,
+                w.active AS wheel_active,
+                w.position AS wheel_position,
+                w.total_sessions,
+                w.total_minutes,
+                w.created_at AS wheel_created_at
+            FROM courses c
+            LEFT JOIN wheel_courses w ON w.course_id = c.id
+            ORDER BY (c.archived_at IS NOT NULL) ASC, c.name ASC
         """)
         rows = cur.fetchall()
         courses = []
         for r in rows:
-            wheel_id = r[0]
-            course_id = r[1] or wheel_id
-            wheel_name = r[2]
-            course_name = r[8] or wheel_name
-            archived_at = r[17]
+            archived_at = r[11]
             courses.append(
                 {
-                    "id": course_id,
-                    "name": course_name,
-                    "code": r[9],
-                    "term": r[10],
-                    "instructor": r[11],
-                    "defaultStudyMode": r[12],
-                    "deliveryFormat": r[13],
-                    "timeBudgetPerWeekMinutes": r[14] or 0,
-                    "color": r[15],
-                    "lastScrapedAt": r[16],
-                    "active": bool(r[3]),
-                    "position": r[4],
-                    "totalSessions": r[5] or 0,
-                    "totalMinutes": r[6] or 0,
-                    "createdAt": r[7] or datetime.now().isoformat(),
+                    "id": r[0],
+                    "name": r[1],
+                    "code": r[2],
+                    "term": r[3],
+                    "instructor": r[4],
+                    "defaultStudyMode": r[5],
+                    "deliveryFormat": r[6],
+                    "timeBudgetPerWeekMinutes": r[7] or 0,
+                    "color": r[8],
+                    "lastScrapedAt": r[9],
+                    "active": bool(r[14]) if r[14] is not None else False,
+                    "position": r[15],
+                    "totalSessions": r[16] or 0,
+                    "totalMinutes": r[17] or 0,
+                    "createdAt": r[18] or r[10] or datetime.now().isoformat(),
                     "archived": archived_at is not None,
                     "archivedAt": archived_at,
-                    "vaultFolder": r[18],
+                    "vaultFolder": r[12],
                 }
             )
         conn.close()
