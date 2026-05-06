@@ -2024,7 +2024,15 @@ export function TutorShell({
         <Button
           type="button"
           variant="outline"
-          onClick={() => applyCanvasPreset("study")}
+          onClick={() => {
+            // Commit past the entry stage: setShowSetup(false) is what flips
+            // the persisted dismissal flag (via useStudioRun) so the next
+            // /tutor visit restores the panel layout we're about to load.
+            // Without this, Skip Setup loads panels locally but the next
+            // mount would show the entry card with an empty canvas again.
+            setShowSetup(false);
+            applyCanvasPreset("study");
+          }}
           className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-xs uppercase tracking-[0.18em] text-[#ffd6de]"
         >
           Skip Setup

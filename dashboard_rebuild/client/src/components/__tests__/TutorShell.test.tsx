@@ -576,6 +576,7 @@ function renderTutorShell(
       onPromotePolishPacketNote?: (...args: unknown[]) => void;
       panelLayout?: unknown[];
       setPanelLayout?: (...args: unknown[]) => void;
+      setShowSetup?: (...args: unknown[]) => void;
       runtimeState?: Record<string, unknown> | null;
       setCompactionTelemetry?: (...args: unknown[]) => void;
       setActiveMemoryCapsuleId?: (...args: unknown[]) => void;
@@ -624,7 +625,9 @@ function renderTutorShell(
         setActiveBoardScope={vi.fn()}
         setActiveBoardId={vi.fn()}
         setViewerState={vi.fn()}
-        setShowSetup={setShowSetup}
+        setShowSetup={
+          (shellOverrides?.setShowSetup as never) ?? (setShowSetup as never)
+        }
         queryClient={new QueryClient()}
         panelLayout={panelLayout as never}
         setPanelLayout={
@@ -1136,9 +1139,10 @@ describe("TutorShell studio routing", () => {
     expect(openStudioPriming).toHaveBeenCalledTimes(1);
   });
 
-  it("Skip Setup applies the Study preset and hides Resume for placeholder hub data", async () => {
+  it("Skip Setup applies the Study preset, dismisses the entry card, and hides Resume for placeholder hub data", async () => {
     const user = userEvent.setup();
     const setPanelLayout = vi.fn();
+    const setShowSetup = vi.fn();
 
     renderTutorShell("home", {
       activeSessionId: null,
@@ -1170,6 +1174,7 @@ describe("TutorShell studio routing", () => {
       shellOverrides: {
         panelLayout: [],
         setPanelLayout,
+        setShowSetup,
       },
     });
 
@@ -1189,6 +1194,11 @@ describe("TutorShell studio routing", () => {
     expect(setPanelLayout).toHaveBeenCalledWith(
       buildStudioShellPresetLayout("study"),
     );
+    // setShowSetup(false) is what flips the persisted dismissal flag, which
+    // is what gates panel hydration on subsequent /tutor mounts. Without
+    // this, Skip Setup loads panels locally but the next mount would show
+    // the entry card with an empty canvas instead of restoring the panels.
+    expect(setShowSetup).toHaveBeenCalledWith(false);
   });
 
   it("renders the entry-card Resume action only for a real resumable session", async () => {
