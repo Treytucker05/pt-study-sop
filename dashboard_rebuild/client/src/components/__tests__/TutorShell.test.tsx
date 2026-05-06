@@ -2121,6 +2121,44 @@ describe("TutorShell studio routing", () => {
     expect(screen.queryByTestId("studio-polish-packet")).not.toBeInTheDocument();
   });
 
+  it("warns Clear Canvas is not undoable via a tooltip", async () => {
+    renderTutorShell("priming", {
+      shellOverrides: {
+        panelLayout: buildStudioShellPresetLayout("priming"),
+      },
+    });
+
+    const clearCanvasButton = await screen.findByRole("button", {
+      name: /clear canvas/i,
+    });
+    expect(clearCanvasButton.getAttribute("title")).toMatch(
+      /undone|undo|irreversible/i,
+    );
+  });
+
+  it("hints shift-click selection on Group and Ungroup buttons", async () => {
+    renderTutorShell("priming", {
+      shellOverrides: {
+        panelLayout: buildStudioShellPresetLayout("priming"),
+      },
+    });
+
+    const groupButtons = await screen.findAllByRole("button", {
+      name: /group selected windows/i,
+    });
+    const ungroupButtons = await screen.findAllByRole("button", {
+      name: /ungroup selected windows/i,
+    });
+    expect(groupButtons.length).toBeGreaterThan(0);
+    expect(ungroupButtons.length).toBeGreaterThan(0);
+    for (const button of groupButtons) {
+      expect(button.getAttribute("title")).toMatch(/shift/i);
+    }
+    for (const button of ungroupButtons) {
+      expect(button.getAttribute("title")).toMatch(/shift|select/i);
+    }
+  });
+
   it("projects backend compaction telemetry into Memory", async () => {
     renderTutorShell("workspace", {
       sessionOverrides: {

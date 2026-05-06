@@ -1960,6 +1960,7 @@ export function StudioShell({
                     variant="ghost"
                     size="sm"
                     aria-label="Group selected windows"
+                    title="Shift-click panel titles to select multiple, then Group keeps them dragging together"
                     disabled={!canGroupSelection}
                     onClick={() => {
                       const groupId = nextGroupId();
@@ -1976,6 +1977,7 @@ export function StudioShell({
                     variant="ghost"
                     size="sm"
                     aria-label="Ungroup selected windows"
+                    title="Shift-click grouped panels to select them, then Ungroup separates them"
                     disabled={!canUngroupSelection}
                     onClick={() => {
                       queuePanelLayoutChange((current) =>
@@ -2130,6 +2132,7 @@ export function StudioShell({
                 variant="ghost"
                 size="sm"
                 aria-label="Clear canvas"
+                title="Removes every open panel from the canvas — this cannot be undone"
                 disabled={clearCanvasDisabled}
                 onClick={() => {
                   if (onClearCanvas) {
