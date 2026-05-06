@@ -2024,14 +2024,6 @@ export function TutorShell({
         >
           Skip Setup
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleDismissEntryCard}
-          className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-xs uppercase tracking-[0.18em] text-[#ffc8d3]/72"
-        >
-          Cancel
-        </Button>
         {resumeCandidate ? (
           <Button
             type="button"

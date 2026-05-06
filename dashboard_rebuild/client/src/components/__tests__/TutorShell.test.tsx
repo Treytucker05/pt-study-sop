@@ -1251,7 +1251,9 @@ describe("TutorShell studio routing", () => {
     expect(
       await screen.findByRole("button", { name: /close setup overlay/i }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^cancel$/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^cancel$/i }),
+    ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /close setup overlay/i }));
 
@@ -1263,7 +1265,7 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-source-shelf")).toBeInTheDocument();
   });
 
-  it("dismisses the entry card with Cancel without opening a preset layout", async () => {
+  it("dismisses the entry card with the close button and exposes only one close affordance", async () => {
     const user = userEvent.setup();
     const setPanelLayout = vi.fn();
 
@@ -1285,7 +1287,14 @@ describe("TutorShell studio routing", () => {
       },
     });
 
-    await user.click(await screen.findByRole("button", { name: /^cancel$/i }));
+    expect(
+      await screen.findByTestId("tutor-entry-close-button"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^cancel$/i }),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("tutor-entry-close-button"));
 
     expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
     expect(setPanelLayout).not.toHaveBeenCalled();
