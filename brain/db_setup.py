@@ -769,6 +769,8 @@ def init_database():
             default_study_mode TEXT,
             delivery_format TEXT,  -- synchronous/asynchronous/online_module/hybrid
             time_budget_per_week_minutes INTEGER DEFAULT 0,
+            archived_at TEXT DEFAULT NULL,  -- ISO timestamp; NULL = active
+            vault_folder TEXT DEFAULT NULL,  -- locked Obsidian folder path; NULL = derive from name
             created_at TEXT NOT NULL
         )
     """
@@ -984,6 +986,25 @@ def init_database():
         try:
             cursor.execute("ALTER TABLE courses ADD COLUMN delivery_format TEXT")
             print("[INFO] Added 'delivery_format' column to courses table")
+        except sqlite3.OperationalError:
+            pass
+
+    # archived_at: ISO timestamp; NULL = active, non-NULL = archived (when).
+    # Drives course-list filtering across the active-study UI surface.
+    if "archived_at" not in course_cols:
+        try:
+            cursor.execute("ALTER TABLE courses ADD COLUMN archived_at TEXT DEFAULT NULL")
+            print("[INFO] Added 'archived_at' column to courses table")
+        except sqlite3.OperationalError:
+            pass
+
+    # vault_folder: locked Obsidian folder path for the course. NULL means
+    # derive from name at runtime (legacy behavior). Setting an explicit value
+    # protects vault links from breaking when the course is renamed.
+    if "vault_folder" not in course_cols:
+        try:
+            cursor.execute("ALTER TABLE courses ADD COLUMN vault_folder TEXT DEFAULT NULL")
+            print("[INFO] Added 'vault_folder' column to courses table")
         except sqlite3.OperationalError:
             pass
 
