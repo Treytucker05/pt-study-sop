@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { CONTROL_KICKER } from "@/components/shell/controlStyles";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { api } from "@/lib/api";
 import {
   ChevronDown,
   ChevronUp,
@@ -831,33 +833,94 @@ export function TutorTopBar({
       ) : null}
     </div>
 
+    <ViewSessionDialog
+      session={viewingSession}
+      onClose={() => setViewingSession(null)}
+    />
+    </>
+  );
+}
+
+interface ViewSessionDialogProps {
+  session: TutorSessionSummary | null;
+  onClose: () => void;
+}
+
+function ViewSessionDialog({ session, onClose }: ViewSessionDialogProps) {
+  const sessionId = session?.session_id ?? null;
+  const { data: detail, isLoading, isError } = useQuery({
+    queryKey: ["tutor-session-detail", sessionId],
+    queryFn: () => api.tutor.getSession(sessionId!),
+    enabled: sessionId !== null,
+  });
+
+  return (
     <Dialog
-      open={viewingSession !== null}
-      onOpenChange={(open) => { if (!open) setViewingSession(null); }}
+      open={session !== null}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
     >
-      <DialogContent className="max-w-2xl">
-        {viewingSession ? (
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        {session ? (
           <>
             <DialogHeader>
-              <DialogTitle>{previousSessionTopicLabel(viewingSession)}</DialogTitle>
+              <DialogTitle>{previousSessionTopicLabel(session)}</DialogTitle>
               <DialogDescription>
-                {viewingSession.turn_count} {viewingSession.turn_count === 1 ? "turn" : "turns"}
-                {viewingSession.started_at
-                  ? ` · Started ${formatPreviousSessionDate(viewingSession.started_at)}`
+                {session.turn_count} {session.turn_count === 1 ? "turn" : "turns"}
+                {session.started_at
+                  ? ` · Started ${formatPreviousSessionDate(session.started_at)}`
                   : null}
-                {viewingSession.ended_at
-                  ? ` · Ended ${formatPreviousSessionDate(viewingSession.ended_at)}`
+                {session.ended_at
+                  ? ` · Ended ${formatPreviousSessionDate(session.ended_at)}`
                   : null}
               </DialogDescription>
             </DialogHeader>
             <div className="mt-2 font-mono text-sm text-foreground/72">
               <span className="uppercase tracking-[0.14em]">Status:</span>{" "}
-              {formatPreviousSessionStatusLabel(viewingSession.status)}
+              {formatPreviousSessionStatusLabel(session.status)}
+            </div>
+            <div
+              data-testid="view-session-transcript"
+              className="mt-4 space-y-4 border-t border-primary/15 pt-4"
+            >
+              {isLoading ? (
+                <div className="flex items-center gap-2 font-mono text-sm text-foreground/72">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Loading transcript...
+                </div>
+              ) : isError ? (
+                <div className="font-mono text-sm text-red-300">
+                  Could not load transcript.
+                </div>
+              ) : detail && detail.turns.length > 0 ? (
+                detail.turns.map((turn) => (
+                  <div key={turn.id} className="space-y-2">
+                    <div className="border-l-2 border-primary/40 pl-3">
+                      <div className={CONTROL_KICKER}>You · turn {turn.turn_number}</div>
+                      <div className="mt-1 whitespace-pre-wrap font-mono text-sm leading-6 text-foreground">
+                        {turn.question}
+                      </div>
+                    </div>
+                    {turn.answer ? (
+                      <div className="border-l-2 border-emerald-500/40 pl-3">
+                        <div className={CONTROL_KICKER}>Tutor</div>
+                        <div className="mt-1 whitespace-pre-wrap font-mono text-sm leading-6 text-foreground/82">
+                          {turn.answer}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ))
+              ) : (
+                <div className="font-mono text-sm text-foreground/62">
+                  No turns recorded for this session.
+                </div>
+              )}
             </div>
           </>
         ) : null}
       </DialogContent>
     </Dialog>
-    </>
   );
 }

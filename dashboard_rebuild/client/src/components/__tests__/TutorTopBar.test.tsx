@@ -1,9 +1,24 @@
-import type { ComponentProps } from "react";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import type { ComponentProps, ReactNode } from "react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 
 import { TutorTopBar } from "@/components/TutorTopBar";
 import type { TutorTeachRuntimeViewModel } from "@/components/TutorChat.types";
+
+vi.mock("@/lib/api", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/api")>("@/lib/api");
+  return {
+    ...actual,
+    api: {
+      ...actual.api,
+      tutor: {
+        ...actual.api.tutor,
+        getSession: vi.fn(),
+      },
+    },
+  };
+});
 
 const teachRuntime: TutorTeachRuntimeViewModel = {
   packetSource: "mixed",
@@ -129,10 +144,22 @@ function renderTutorTopBar(
     ...overrides,
   };
 
+  function TestWrapper({ children }: { children: ReactNode }) {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false, gcTime: 0 },
+        mutations: { retry: false },
+      },
+    });
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  }
+
   return {
     onDeleteSession,
     onResumeSession,
-    ...render(<TutorTopBar {...props} />),
+    ...render(<TutorTopBar {...props} />, { wrapper: TestWrapper }),
   };
 }
 
@@ -372,5 +399,69 @@ describe("TutorTopBar", () => {
     expect(dialog).toBeInTheDocument();
     expect(within(dialog).getByText(/cardio drill/i)).toBeInTheDocument();
     expect(within(dialog).getByText(/3 turns/i)).toBeInTheDocument();
+  });
+
+  it("VIEW dialog fetches the session transcript and renders question + answer pairs", async () => {
+    const { api } = await import("@/lib/api");
+    const getSessionMock = vi.mocked(api.tutor.getSession);
+    getSessionMock.mockResolvedValueOnce({
+      session_id: "sess-complete",
+      id: 1,
+      brain_session_id: null,
+      course_id: 8,
+      content_filter_json: null,
+      content_filter: { material_ids: [] },
+      status: "completed",
+      phase: "first_pass",
+      topic: "Cardio Drill",
+      turn_count: 2,
+      started_at: "2026-03-18T13:00:00Z",
+      ended_at: "2026-03-18T13:35:00Z",
+      method_chain_id: null,
+      current_block_index: 0,
+      chain_blocks: [],
+      artifacts_json: "[]",
+      turns: [
+        {
+          id: 1,
+          turn_number: 1,
+          question: "What's the primary determinant of cardiac output?",
+          answer: "Stroke volume times heart rate.",
+          citations_json: null,
+          phase: "first_pass",
+          artifacts_json: null,
+          created_at: "2026-03-18T13:01:00Z",
+        },
+        {
+          id: 2,
+          turn_number: 2,
+          question: "How does preload affect stroke volume?",
+          answer: "Higher preload stretches sarcomeres, increasing contractile force.",
+          citations_json: null,
+          phase: "first_pass",
+          artifacts_json: null,
+          created_at: "2026-03-18T13:05:00Z",
+        },
+      ],
+    } as never);
+
+    renderTutorTopBar();
+
+    fireEvent.click(screen.getByRole("button", { name: /previous sessions/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /view previous session cardio drill cardio/i }),
+    );
+
+    await waitFor(() => {
+      expect(getSessionMock).toHaveBeenCalledWith("sess-complete");
+    });
+
+    const dialog = await screen.findByRole("dialog");
+    await waitFor(() => {
+      expect(within(dialog).getByText(/primary determinant of cardiac output/i)).toBeInTheDocument();
+    });
+    expect(within(dialog).getByText(/stroke volume times heart rate/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/preload affect stroke volume/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/sarcomeres/i)).toBeInTheDocument();
   });
 });
