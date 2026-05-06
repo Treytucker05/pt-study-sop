@@ -2019,7 +2019,7 @@ export function TutorShell({
         <Button
           type="button"
           variant="outline"
-          onClick={() => applyCanvasPreset("full_studio")}
+          onClick={() => applyCanvasPreset("study")}
           className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-xs uppercase tracking-[0.18em] text-[#ffd6de]"
         >
           Skip Setup

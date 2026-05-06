@@ -1186,7 +1186,7 @@ describe("TutorShell studio routing", () => {
     await user.click(skipSetupButton);
 
     expect(setPanelLayout).toHaveBeenCalledWith(
-      buildStudioShellPresetLayout("full_studio"),
+      buildStudioShellPresetLayout("study"),
     );
   });
 
