@@ -1757,7 +1757,21 @@ def init_database():
     # Add content + cluster columns to scholar tables (v9.4 DB-first)
     for table, cols in [
         ("scholar_digests", [("content", "TEXT"), ("cluster_id", "TEXT")]),
-        ("scholar_proposals", [("content", "TEXT"), ("cluster_id", "TEXT")]),
+        (
+            "scholar_proposals",
+            [
+                ("content", "TEXT"),
+                ("cluster_id", "TEXT"),
+                # SCHOLAR-002: structured proposals (vs the legacy markdown
+                # filename/filepath shape). proposal_kind disambiguates, the
+                # rest hold the structured payload + apply lifecycle.
+                ("proposal_kind", "TEXT"),
+                ("structured_changes", "TEXT"),
+                ("apply_status", "TEXT"),
+                ("applied_at", "TEXT"),
+                ("apply_error", "TEXT"),
+            ],
+        ),
         (
             "scholar_questions",
             [

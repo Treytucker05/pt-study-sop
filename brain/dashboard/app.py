@@ -31,6 +31,7 @@ def create_app():
     from dashboard.api_brain_profile import brain_profile_bp
     from dashboard.api_product import product_bp
     from dashboard.api_scholar_research import scholar_research_bp
+    from dashboard.api_scholar_proposals import scholar_proposals_bp
 
     app.register_blueprint(adapter_bp)  # /api/* routes - must be first
     app.register_blueprint(methods_bp)  # /api/methods, /api/chains
@@ -42,6 +43,7 @@ def create_app():
     app.register_blueprint(brain_profile_bp)  # /api/brain/profile/*
     app.register_blueprint(product_bp)  # /api/product/*
     app.register_blueprint(scholar_research_bp)  # /api/scholar/investigations + research/*
+    app.register_blueprint(scholar_proposals_bp)  # /api/scholar/proposals + decide
     app.register_blueprint(dashboard_bp)
 
     # DEBUG: Print all registered routes
