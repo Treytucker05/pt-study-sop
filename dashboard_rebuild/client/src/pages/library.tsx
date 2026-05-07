@@ -57,6 +57,7 @@ import {
   Archive,
   ArchiveRestore,
   ChevronDown,
+  Plus,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -737,6 +738,50 @@ function useLibraryPageController() {
     [allCoursesWithArchived],
   );
   const [archivedExpanded, setArchivedExpanded] = useState(false);
+  const [addCourseDialogOpen, setAddCourseDialogOpen] = useState(false);
+  const [newCourseName, setNewCourseName] = useState("");
+  const [newCourseCode, setNewCourseCode] = useState("");
+  const [newCourseTerm, setNewCourseTerm] = useState("");
+  const [creatingCourse, setCreatingCourse] = useState(false);
+
+  const handleCreateCourse = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
+      const trimmedName = newCourseName.trim();
+      if (!trimmedName) {
+        toast.error("Course name is required.");
+        return;
+      }
+      setCreatingCourse(true);
+      try {
+        const created = await api.courses.create({
+          name: trimmedName,
+          code: newCourseCode.trim() || null,
+          term: newCourseTerm.trim() || null,
+          active: true,
+        } as never);
+        toast.success(`Created ${trimmedName}`);
+        setAddCourseDialogOpen(false);
+        setNewCourseName("");
+        setNewCourseCode("");
+        setNewCourseTerm("");
+        queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
+        queryClient.invalidateQueries({ queryKey: ["courses-active"] });
+        queryClient.invalidateQueries({ queryKey: ["courses-all"] });
+        queryClient.invalidateQueries({ queryKey: ["tutor-hub"] });
+        if (typeof created?.id === "number") {
+          setSelectedCourseId(created.id);
+        }
+      } catch (err) {
+        toast.error(
+          `Failed to create course: ${err instanceof Error ? err.message : "Unknown"}`,
+        );
+      } finally {
+        setCreatingCourse(false);
+      }
+    },
+    [newCourseName, newCourseCode, newCourseTerm, queryClient],
+  );
 
   const handleArchiveCourse = useCallback(
     async (courseId: number, courseName: string) => {
@@ -1551,6 +1596,18 @@ function useLibraryPageController() {
                     ? "Mirror your Obsidian-style folder tree."
                     : "Browse materials by linked course."}
                 </div>
+                {sidebarMode === "courses" ? (
+                  <button
+                    type="button"
+                    aria-label="Add new course"
+                    title="Create a new course (semester-start workflow)"
+                    onClick={() => setAddCourseDialogOpen(true)}
+                    className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-none border border-primary/30 border-dashed bg-primary/5 px-2 py-1.5 font-terminal text-xs uppercase tracking-[0.18em] text-primary/80 transition-colors hover:border-primary/60 hover:bg-primary/10 hover:text-primary"
+                  >
+                    <Plus className={ICON_SM} />
+                    New Course
+                  </button>
+                ) : null}
               </div>
               <div className="flex-1 overflow-y-auto p-2 space-y-1">
                 {sidebarMode === "folders" ? (
@@ -2399,6 +2456,88 @@ function useLibraryPageController() {
           </section>
         </div>
       </div>
+
+      <Dialog
+        open={addCourseDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) setAddCourseDialogOpen(false);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <GraduationCap className={ICON_SM} />
+              New Course
+            </DialogTitle>
+            <DialogDescription>
+              Creates a course record. Upload materials and create the
+              Obsidian folder afterward.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={handleCreateCourse}
+            className="space-y-3"
+            data-testid="library-add-course-form"
+          >
+            <label className="block">
+              <span className="block text-xs font-terminal uppercase tracking-[0.18em] text-muted-foreground">
+                Name <span className="text-primary">*</span>
+              </span>
+              <input
+                type="text"
+                value={newCourseName}
+                onChange={(e) => setNewCourseName(e.target.value)}
+                placeholder="e.g. Musculoskeletal Physical Therapy"
+                autoFocus
+                required
+                className="mt-1 h-10 w-full rounded-none border border-primary/20 bg-black/30 px-3 font-mono text-sm text-foreground outline-none focus:border-primary/60"
+              />
+            </label>
+            <label className="block">
+              <span className="block text-xs font-terminal uppercase tracking-[0.18em] text-muted-foreground">
+                Code
+              </span>
+              <input
+                type="text"
+                value={newCourseCode}
+                onChange={(e) => setNewCourseCode(e.target.value)}
+                placeholder="e.g. MSKPT 612"
+                className="mt-1 h-10 w-full rounded-none border border-primary/20 bg-black/30 px-3 font-mono text-sm text-foreground outline-none focus:border-primary/60"
+              />
+            </label>
+            <label className="block">
+              <span className="block text-xs font-terminal uppercase tracking-[0.18em] text-muted-foreground">
+                Term
+              </span>
+              <input
+                type="text"
+                value={newCourseTerm}
+                onChange={(e) => setNewCourseTerm(e.target.value)}
+                placeholder="e.g. Fall 2026"
+                className="mt-1 h-10 w-full rounded-none border border-primary/20 bg-black/30 px-3 font-mono text-sm text-foreground outline-none focus:border-primary/60"
+              />
+            </label>
+            <div className="flex gap-2 pt-2">
+              <HudButton
+                type="submit"
+                variant="primary"
+                disabled={creatingCourse || !newCourseName.trim()}
+                className="flex-1"
+              >
+                {creatingCourse ? "Creating..." : "Create Course"}
+              </HudButton>
+              <HudButton
+                type="button"
+                variant="outline"
+                onClick={() => setAddCourseDialogOpen(false)}
+                disabled={creatingCourse}
+              >
+                Cancel
+              </HudButton>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={viewingMaterialId !== null}
