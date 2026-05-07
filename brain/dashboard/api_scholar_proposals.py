@@ -7,9 +7,9 @@ SCHOLAR-006 — this module's ``decide`` endpoint sets ``status`` and stamps
 ``reviewed_at`` but defers ``apply_status`` to the applier.
 
 Endpoints:
-- ``POST /api/scholar/proposals``
-- ``GET /api/scholar/proposals?status=<pending|approved|rejected|all>``
-- ``POST /api/scholar/proposals/<id>/decide``
+- ``POST /api/scholar/method-proposals``
+- ``GET /api/scholar/method-proposals?status=<pending|approved|rejected|all>``
+- ``POST /api/scholar/method-proposals/<id>/decide``
 
 Schema additions used here (added in db_setup.py via SCHOLAR-002 migration):
 - proposal_kind, structured_changes, apply_status, applied_at, apply_error
@@ -18,6 +18,7 @@ Schema additions used here (added in db_setup.py via SCHOLAR-002 migration):
 from __future__ import annotations
 
 import json
+import uuid
 from datetime import datetime, timezone
 from typing import Any
 
@@ -50,11 +51,11 @@ def _row_to_dict(row: Any) -> dict:
 
 
 # ────────────────────────────────────────────────────────────────────────
-# POST /api/scholar/proposals
+# POST /api/scholar/method-proposals
 # ────────────────────────────────────────────────────────────────────────
 
 
-@scholar_proposals_bp.route("/scholar/proposals", methods=["POST"])
+@scholar_proposals_bp.route("/scholar/method-proposals", methods=["POST"])
 def post_scholar_proposal():
     """Insert a new proposal. Required: ``proposal_type``, ``rationale``.
     Optional: ``proposal_kind`` (default ``structured``), ``target_table``,
@@ -104,6 +105,11 @@ def post_scholar_proposal():
     conn = get_connection()
     try:
         cur = conn.cursor()
+        # filename is NOT NULL UNIQUE in the legacy schema; synthesize
+        # a sentinel for structured proposals so the constraint stays
+        # satisfied without a destructive migration.
+        synth_filename = f"structured-{uuid.uuid4().hex}.json"
+        synth_filepath = f"(structured)/{synth_filename}"
         cur.execute(
             """INSERT INTO scholar_proposals
                (filename, filepath, title, proposal_type, status,
@@ -113,14 +119,12 @@ def post_scholar_proposal():
                VALUES (?, ?, ?, ?, 'pending',
                        ?, ?, ?, ?, ?, ?, NULL, NULL, NULL)""",
             (
-                # filename/filepath are legacy markdown fields; null for
-                # structured proposals, kept nullable for back-compat.
-                None,
-                None,
+                synth_filename,
+                synth_filepath,
                 title or proposal_type,
                 proposal_type,
                 _now_iso(),
-                None,  # content_hash (legacy markdown)
+                None,  # content_hash (legacy markdown only)
                 rationale,  # reuse the legacy `content` column for the
                 # human-readable rationale text so existing tooling keeps
                 # working
@@ -137,11 +141,11 @@ def post_scholar_proposal():
 
 
 # ────────────────────────────────────────────────────────────────────────
-# GET /api/scholar/proposals?status=...
+# GET /api/scholar/method-proposals?status=...
 # ────────────────────────────────────────────────────────────────────────
 
 
-@scholar_proposals_bp.route("/scholar/proposals", methods=["GET"])
+@scholar_proposals_bp.route("/scholar/method-proposals", methods=["GET"])
 def list_scholar_proposals():
     status_filter = (request.args.get("status") or "pending").strip().lower()
     valid_filters = {"pending", "approved", "rejected", "all"}
@@ -176,12 +180,12 @@ def list_scholar_proposals():
 
 
 # ────────────────────────────────────────────────────────────────────────
-# POST /api/scholar/proposals/<id>/decide
+# POST /api/scholar/method-proposals/<id>/decide
 # ────────────────────────────────────────────────────────────────────────
 
 
 @scholar_proposals_bp.route(
-    "/scholar/proposals/<int:proposal_id>/decide", methods=["POST"]
+    "/scholar/method-proposals/<int:proposal_id>/decide", methods=["POST"]
 )
 def decide_scholar_proposal(proposal_id: int):
     """Approve or reject a pending proposal.

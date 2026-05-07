@@ -574,7 +574,7 @@ export const api = {
     /** SCHOLAR-002 — list proposals; default status='pending'. */
     getProposals: (status: "pending" | "approved" | "rejected" | "all" = "pending") =>
       request<ScholarProposal[]>(
-        `/scholar/proposals?status=${encodeURIComponent(status)}`,
+        `/scholar/method-proposals?status=${encodeURIComponent(status)}`,
       ),
     /** SCHOLAR-002 — approve or reject a pending proposal. */
     decideProposal: (
@@ -583,7 +583,7 @@ export const api = {
       reviewerNotes?: string,
     ) =>
       request<ScholarProposal>(
-        `/scholar/proposals/${encodeURIComponent(String(proposalId))}/decide`,
+        `/scholar/method-proposals/${encodeURIComponent(String(proposalId))}/decide`,
         {
           method: "POST",
           body: JSON.stringify({

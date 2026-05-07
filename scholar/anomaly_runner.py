@@ -202,6 +202,11 @@ def _insert_proposal(
 ) -> int:
     """Insert a proposal row (mirrors the column shape used by the API's
     POST endpoint). Returns new row id.
+
+    Note: ``scholar_proposals.filename`` is ``NOT NULL UNIQUE`` and
+    ``filepath`` is ``NOT NULL`` (legacy markdown-shaped). Structured
+    proposals don't have a real file; we synthesize a unique sentinel
+    name so the constraints stay satisfied without changing the schema.
     """
     cur = conn.cursor()
     structured_changes = json.dumps(
@@ -211,15 +216,19 @@ def _insert_proposal(
             "field_changes": payload["field_changes"],
         }
     )
+    synth_filename = f"structured-{uuid.uuid4().hex}.json"
+    synth_filepath = f"(structured)/{synth_filename}"
     cur.execute(
         """INSERT INTO scholar_proposals
            (filename, filepath, title, proposal_type, status,
             created_at, content_hash, content, cluster_id,
             proposal_kind, structured_changes,
             apply_status, applied_at, apply_error)
-           VALUES (NULL, NULL, ?, ?, 'pending',
+           VALUES (?, ?, ?, ?, 'pending',
                    ?, NULL, ?, ?, ?, ?, NULL, NULL, NULL)""",
         (
+            synth_filename,
+            synth_filepath,
             payload["title"],
             payload["proposal_type"],
             _now_iso(),

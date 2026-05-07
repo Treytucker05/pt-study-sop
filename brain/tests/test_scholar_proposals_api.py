@@ -99,7 +99,7 @@ class TestPostProposal:
             "title": "Tighten Cardio prompt",
         }
         resp = app_client.post(
-            "/api/scholar/proposals",
+            "/api/scholar/method-proposals",
             data=json.dumps(payload),
             content_type="application/json",
         )
@@ -116,7 +116,7 @@ class TestPostProposal:
             "field_changes": {"facilitation_prompt": "y"},
         }
         resp = app_client.post(
-            "/api/scholar/proposals",
+            "/api/scholar/method-proposals",
             data=json.dumps(payload),
             content_type="application/json",
         )
@@ -131,7 +131,7 @@ class TestPostProposal:
             # missing target_table / target_id / field_changes
         }
         resp = app_client.post(
-            "/api/scholar/proposals",
+            "/api/scholar/method-proposals",
             data=json.dumps(payload),
             content_type="application/json",
         )
@@ -156,7 +156,7 @@ class TestGetProposals:
                 "rationale": "r",
             }
             r = app_client.post(
-                "/api/scholar/proposals",
+                "/api/scholar/method-proposals",
                 data=json.dumps(payload),
                 content_type="application/json",
             )
@@ -164,12 +164,12 @@ class TestGetProposals:
             if status == "approved":
                 # Approve via decide so status flips
                 app_client.post(
-                    f"/api/scholar/proposals/{new_id}/decide",
+                    f"/api/scholar/method-proposals/{new_id}/decide",
                     data=json.dumps({"decision": "approve"}),
                     content_type="application/json",
                 )
 
-        resp = app_client.get("/api/scholar/proposals")  # default status=pending
+        resp = app_client.get("/api/scholar/method-proposals")  # default status=pending
         assert resp.status_code == 200
         rows = resp.get_json()
         assert all(r["status"] == "pending" for r in rows)
@@ -178,7 +178,7 @@ class TestGetProposals:
     def test_status_all_returns_everything(self, app_client):
         for _ in range(2):
             app_client.post(
-                "/api/scholar/proposals",
+                "/api/scholar/method-proposals",
                 data=json.dumps(
                     {
                         "proposal_type": "method_block_edit",
@@ -192,12 +192,12 @@ class TestGetProposals:
                 content_type="application/json",
             )
 
-        resp = app_client.get("/api/scholar/proposals?status=all")
+        resp = app_client.get("/api/scholar/method-proposals?status=all")
         assert resp.status_code == 200
         assert len(resp.get_json()) >= 2
 
     def test_invalid_status_400(self, app_client):
-        resp = app_client.get("/api/scholar/proposals?status=banana")
+        resp = app_client.get("/api/scholar/method-proposals?status=banana")
         assert resp.status_code == 400
 
 
@@ -209,7 +209,7 @@ class TestGetProposals:
 class TestDecide:
     def _create(self, app_client) -> int:
         r = app_client.post(
-            "/api/scholar/proposals",
+            "/api/scholar/method-proposals",
             data=json.dumps(
                 {
                     "proposal_type": "method_block_edit",
@@ -227,7 +227,7 @@ class TestDecide:
     def test_approve_flips_status_and_stamps_reviewed_at(self, app_client):
         pid = self._create(app_client)
         resp = app_client.post(
-            f"/api/scholar/proposals/{pid}/decide",
+            f"/api/scholar/method-proposals/{pid}/decide",
             data=json.dumps({"decision": "approve", "reviewer_notes": "lgtm"}),
             content_type="application/json",
         )
@@ -240,7 +240,7 @@ class TestDecide:
     def test_reject_flips_status(self, app_client):
         pid = self._create(app_client)
         resp = app_client.post(
-            f"/api/scholar/proposals/{pid}/decide",
+            f"/api/scholar/method-proposals/{pid}/decide",
             data=json.dumps({"decision": "reject"}),
             content_type="application/json",
         )
@@ -250,7 +250,7 @@ class TestDecide:
     def test_invalid_decision_400(self, app_client):
         pid = self._create(app_client)
         resp = app_client.post(
-            f"/api/scholar/proposals/{pid}/decide",
+            f"/api/scholar/method-proposals/{pid}/decide",
             data=json.dumps({"decision": "maybe"}),
             content_type="application/json",
         )
@@ -258,7 +258,7 @@ class TestDecide:
 
     def test_decide_missing_proposal_404(self, app_client):
         resp = app_client.post(
-            "/api/scholar/proposals/99999/decide",
+            "/api/scholar/method-proposals/99999/decide",
             data=json.dumps({"decision": "approve"}),
             content_type="application/json",
         )
@@ -268,13 +268,13 @@ class TestDecide:
         pid = self._create(app_client)
         # First approve
         app_client.post(
-            f"/api/scholar/proposals/{pid}/decide",
+            f"/api/scholar/method-proposals/{pid}/decide",
             data=json.dumps({"decision": "approve"}),
             content_type="application/json",
         )
         # Try again
         resp = app_client.post(
-            f"/api/scholar/proposals/{pid}/decide",
+            f"/api/scholar/method-proposals/{pid}/decide",
             data=json.dumps({"decision": "reject"}),
             content_type="application/json",
         )
