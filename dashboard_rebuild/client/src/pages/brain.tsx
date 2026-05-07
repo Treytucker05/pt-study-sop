@@ -5,6 +5,7 @@ import { PageScaffold } from "@/components/PageScaffold";
 import { HudPanel } from "@/components/ui/HudPanel";
 
 import { MainContent } from "@/components/brain/MainContent";
+import { PendingProposalsBadge } from "@/components/brain/PendingProposalsBadge";
 import { useBrainWorkspace } from "@/components/brain/useBrainWorkspace";
 
 export default function Brain() {
@@ -47,6 +48,7 @@ export default function Brain() {
         },
       ]}
     >
+      <PendingProposalsBadge />
       <HudPanel
         variant="b"
         className="flex min-h-[70vh] flex-1 flex-col overflow-hidden bg-transparent p-1"
