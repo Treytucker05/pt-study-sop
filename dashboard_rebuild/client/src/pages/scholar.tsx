@@ -14,6 +14,7 @@ import {
 import { CoreWorkspaceFrame } from "@/components/CoreWorkspaceFrame";
 
 import { PageScaffold } from "@/components/PageScaffold";
+import { ProposalsTab } from "@/components/scholar/ProposalsTab";
 import { ScholarRunStatus } from "@/components/ScholarRunStatus";
 import {
   CONTROL_CHIP,
@@ -186,6 +187,13 @@ function ScholarSidebar({
         </TabsTrigger>
         <TabsTrigger value="findings" className="justify-start">
           FINDINGS
+        </TabsTrigger>
+        <TabsTrigger
+          value="proposals"
+          className="justify-start"
+          data-testid="scholar-tab-proposals"
+        >
+          PROPOSALS
         </TabsTrigger>
         <TabsTrigger value="history" className="justify-start">
           HISTORY
@@ -874,6 +882,23 @@ export default function ScholarPage() {
     submittingQuestionIds,
   } = pageState;
 
+  // SCHOLAR-004 / SCHOLAR-005: pre-select Proposals tab when navigated
+  // here with ?tab=proposals (Brain dashboard badge click target).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const requestedTab = params.get("tab");
+      if (requestedTab === "proposals") {
+        patchPageState({ activeTab: "proposals" });
+      }
+    } catch {
+      // best-effort; never throw on URL parsing
+    }
+    // Run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem("scholar.open_from_brain.v1");
@@ -1219,6 +1244,16 @@ export default function ScholarPage() {
             submittingQuestionIds={submittingQuestionIds}
           />
           <ScholarFindingsTab findings={findings} />
+          <TabsContent value="proposals" className="mt-6">
+            <ProposalsTab
+              onToast={(message, kind) =>
+                toast({
+                  title: message,
+                  variant: kind === "error" ? "destructive" : "default",
+                })
+              }
+            />
+          </TabsContent>
           <ScholarHistoryTab investigations={investigations} />
         </CoreWorkspaceFrame>
       </Tabs>

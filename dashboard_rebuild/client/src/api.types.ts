@@ -203,6 +203,32 @@ export interface ScholarChatResponse {
   isStub: boolean;
 }
 
+// SCHOLAR-002 — proposals submitted by Scholar's research/anomaly agents,
+// reviewed and approved/rejected by the user via the Proposals tab.
+export interface ScholarProposalStructuredChanges {
+  target_table: string;
+  target_id: number | string;
+  field_changes: Record<string, unknown>;
+}
+
+export interface ScholarProposal {
+  id: number;
+  title: string | null;
+  proposal_type: string | null;
+  status: "pending" | "approved" | "rejected" | string;
+  proposal_kind: "structured" | "markdown" | string | null;
+  rationale?: string | null;
+  content?: string | null;
+  cluster_id?: string | null;
+  structured_changes?: ScholarProposalStructuredChanges | string | null;
+  created_at?: string | null;
+  reviewed_at?: string | null;
+  reviewer_notes?: string | null;
+  apply_status?: "pending" | "applied" | "failed" | string | null;
+  applied_at?: string | null;
+  apply_error?: string | null;
+}
+
 export interface ScholarFinding {
   id?: number;
   finding_id?: string;

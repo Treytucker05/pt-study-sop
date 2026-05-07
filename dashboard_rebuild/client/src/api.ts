@@ -571,6 +571,27 @@ export const api = {
     exportResearch: () =>
       request<Record<string, unknown>>("/scholar/export"),
     getTutorAudit: () => request<TutorAuditItem[]>("/scholar/tutor-audit"),
+    /** SCHOLAR-002 — list proposals; default status='pending'. */
+    getProposals: (status: "pending" | "approved" | "rejected" | "all" = "pending") =>
+      request<ScholarProposal[]>(
+        `/scholar/proposals?status=${encodeURIComponent(status)}`,
+      ),
+    /** SCHOLAR-002 — approve or reject a pending proposal. */
+    decideProposal: (
+      proposalId: number,
+      decision: "approve" | "reject",
+      reviewerNotes?: string,
+    ) =>
+      request<ScholarProposal>(
+        `/scholar/proposals/${encodeURIComponent(String(proposalId))}/decide`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            decision,
+            reviewer_notes: reviewerNotes ?? null,
+          }),
+        },
+      ),
     getClusters: () => request<ScholarClustersResponse>("/scholar/clusters"),
     runClustering: () => request<ScholarClustersResponse>("/scholar/clusters", { method: "POST" }),
     run: (payload?: { triggered_by?: string; mode?: "brain" | "tutor" }) =>
