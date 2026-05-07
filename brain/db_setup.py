@@ -1754,6 +1754,27 @@ def init_database():
         ON scholar_runs(started_at DESC)
     """)
 
+    # SCHOLAR-003: scan log for auto-trigger throttling.
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS scholar_scan_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL DEFAULT 'default',
+            session_id TEXT,
+            started_at TEXT NOT NULL,
+            finished_at TEXT,
+            anomalies_found INTEGER DEFAULT 0,
+            proposals_created INTEGER DEFAULT 0,
+            skip_reason TEXT,
+            error_text TEXT
+        )
+        """
+    )
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_scholar_scan_log_user_started "
+        "ON scholar_scan_log(user_id, started_at DESC)"
+    )
+
     # Add content + cluster columns to scholar tables (v9.4 DB-first)
     for table, cols in [
         ("scholar_digests", [("content", "TEXT"), ("cluster_id", "TEXT")]),

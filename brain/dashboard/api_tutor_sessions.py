@@ -1475,6 +1475,25 @@ def end_session(session_id: str):
 
     conn.close()
 
+    # SCHOLAR-003: fire Scholar's anomaly scan in a daemon thread AFTER all
+    # DB commits and connection close. If it crashes the session is already
+    # saved; the worker logs and continues. Throttle + toggle live inside
+    # run_scan so we don't have to gate here.
+    try:
+        import threading
+
+        def _scholar_scan_worker():
+            try:
+                from scholar.anomaly_runner import run_scan
+
+                run_scan(session_id=session_id)
+            except Exception as scan_exc:  # pragma: no cover — defensive
+                _LOG.warning("Scholar auto-scan worker failed: %s", scan_exc)
+
+        threading.Thread(target=_scholar_scan_worker, daemon=True).start()
+    except Exception as exc:  # pragma: no cover — defensive
+        _LOG.warning("Scholar auto-scan dispatch failed: %s", exc)
+
     return jsonify(
         {
             "session_id": session_id,
