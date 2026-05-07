@@ -239,8 +239,34 @@ def decide_scholar_proposal(proposal_id: int):
         )
         conn.commit()
 
-        # SCHOLAR-006 hook point — when decision is approve and proposal
-        # is structured, the applier should fire here. Wired in T6.
+        # SCHOLAR-006: on approve, hand off to the applier. Failures are
+        # recorded back on the proposal row via apply_status; the
+        # endpoint still returns 200 because the DECIDE step itself
+        # succeeded — apply outcome is reported in the response body so
+        # the UI can surface a follow-up toast if needed.
+        if decision == "approve":
+            try:
+                from scholar.proposal_applier import apply as apply_proposal
+
+                cur.execute(
+                    "SELECT * FROM scholar_proposals WHERE id = ?",
+                    (proposal_id,),
+                )
+                fresh_row = cur.fetchone()
+                if fresh_row is not None:
+                    apply_proposal(_row_to_dict(fresh_row), conn=conn)
+            except Exception as apply_exc:  # pragma: no cover — defensive
+                # Last-resort safety net; the applier already records
+                # known failure modes via apply_status='failed'. Anything
+                # raised past that line shouldn't crash the response.
+                cur.execute(
+                    """UPDATE scholar_proposals
+                          SET apply_status = 'failed',
+                              apply_error = ?
+                        WHERE id = ?""",
+                    (f"applier crashed: {apply_exc}", proposal_id),
+                )
+                conn.commit()
 
         cur.execute(
             "SELECT * FROM scholar_proposals WHERE id = ?", (proposal_id,)
