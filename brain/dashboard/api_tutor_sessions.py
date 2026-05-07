@@ -1328,6 +1328,13 @@ def end_session(session_id: str):
             _LOG.warning("end_session Map of Contents refresh failed: %s", exc)
 
     # --- Auto-capture method_ratings for completed blocks ---
+    # Effectiveness/engagement values come from brain.effectiveness — a
+    # session-level signal computed from the latest verdict, touched-topic
+    # mastery level, and retrieval confidence over the session's turns.
+    # v1: same value applied to every block in this session. v2 should
+    # refine per-block via tutor_block_transitions ranges.
+    # Engagement reuses the same scorer for v1; it deserves its own signal
+    # (e.g., turn-rate, interaction depth) in a future iteration.
     ratings_captured = 0
     try:
         cur_rt = conn.cursor()
@@ -1349,6 +1356,29 @@ def end_session(session_id: str):
             }
         )
 
+        # Compute the session-level effectiveness once and reuse for every
+        # block. If signal computation itself errors, fall back to
+        # NEUTRAL_FALLBACK rather than blocking the rating capture.
+        try:
+            from effectiveness import (  # noqa: PLC0415
+                NEUTRAL_FALLBACK,
+                compute_effectiveness,
+                compute_session_signals,
+            )
+
+            signals = compute_session_signals(session_id, conn)
+            session_effectiveness = compute_effectiveness(
+                signals["verdict"], signals["mastery"], signals["retrieval"]
+            )
+        except Exception as scoring_exc:  # pragma: no cover — defensive
+            _LOG.warning(
+                "end_session effectiveness scoring failed, using neutral fallback: %s",
+                scoring_exc,
+            )
+            from effectiveness import NEUTRAL_FALLBACK  # noqa: PLC0415
+
+            session_effectiveness = NEUTRAL_FALLBACK
+
         for block_row in completed_blocks:
             slug = block_row["block_slug"]
             notes = block_row["notes"]
@@ -1366,8 +1396,16 @@ def end_session(session_id: str):
                 """INSERT INTO method_ratings
                    (method_block_id, chain_id, session_id,
                     effectiveness, engagement, notes, context)
-                   VALUES (?, ?, ?, 3, 3, ?, ?)""",
-                (mb_id, method_chain_id, brain_session_id, notes, rating_context),
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    mb_id,
+                    method_chain_id,
+                    brain_session_id,
+                    session_effectiveness,
+                    session_effectiveness,
+                    notes,
+                    rating_context,
+                ),
             )
             ratings_captured += 1
 
