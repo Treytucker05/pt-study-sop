@@ -17,15 +17,17 @@ This guide covers how to run the stack, update docs, and extend the system safel
 
 ### Windows
 
-1. Install Python deps if needed: `python -m pip install -r brain/requirements.txt`
-2. Launch dashboard: `Start_Dashboard.bat`
-3. Open: `http://127.0.0.1:5000/brain`
+1. Install Python 3.12+ and Node/npm. Windows Python must expose either `python` or the `py -3` launcher.
+2. Confirm local paths in `brain/.env`; see `docs/root/MACHINE_PATHS.md`.
+3. Launch dashboard: `Start_Dashboard.bat`
+4. Open: `http://127.0.0.1:5000/brain`
 
 ### macOS
 
 1. Install Python 3.12+ and Node/npm if missing.
-2. Launch dashboard: `./Start_Dashboard.command`
-3. Open: `http://127.0.0.1:5127/brain`
+2. Confirm local paths in `brain/.env`; see `docs/root/MACHINE_PATHS.md`.
+3. Launch dashboard: `./Start_Dashboard.command`
+4. Open: `http://127.0.0.1:5127/brain`
 
 Full new-machine setup lives in `docs/root/INSTALL.md`.
 
@@ -55,6 +57,7 @@ Skip this section only for backend-only changes under `brain/`.
 ## Configuration
 - Calendar/Tasks: `brain/data/api_config.json`
 - OAuth tokens: `brain/data/gcal_token.json`
+- Machine-local path setup: `docs/root/MACHINE_PATHS.md`
 - System rules: `sop/library/` (canonical)
 - Tutor embeddings default to Gemini Embedding 2 preview via `GEMINI_API_KEY`, `TUTOR_RAG_EMBEDDING_PROVIDER=gemini`, and `TUTOR_RAG_GEMINI_EMBEDDING_MODEL=gemini-embedding-2-preview`
 - New machine install and data-transfer rules: `docs/root/INSTALL.md`
@@ -63,7 +66,7 @@ Skip this section only for backend-only changes under `brain/`.
 ## Harness Commands
 Use the repo-local harness commands to validate prerequisites, launch isolated app instances, and run fixture-backed harness scenarios.
 
-Examples below use `powershell`; `pwsh` also works if installed.
+Examples below use `powershell`; `pwsh` also works if installed. macOS users need PowerShell 7 (`brew install --cask powershell`) for these `.ps1` harness commands.
 
 Cross-agent proof status:
 - Headless proof captured for `Codex`, `Claude`, `Gemini`, and `OpenCode`.

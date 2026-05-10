@@ -35,6 +35,8 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - Documented that GitHub syncs app code/docs/SOP/tests/launchers, while `.env`, SQLite DB, uploads, Chroma/vector cache, extracted images, `.venv`, and `node_modules` are local runtime state.
     - Updated `README.md`, `docs/README.md`, `docs/root/README.md`, `docs/root/GUIDE_DEV.md`, and `docs/root/PROJECT_ARCHITECTURE.md` to point at the install guide and list the Windows/macOS launch ports.
     - Expanded `brain/.env.example` with Obsidian vault path, vault name, study-material root, and Mac/Windows port guidance.
+    - Follow-up 2026-05-10: added `docs/root/MACHINE_PATHS.md` and updated onboarding docs so GitHub explicitly calls out machine-local paths, copied DB path caveats, material-folder setup, Google Calendar redirect ports, and optional runtime folders.
+    - Follow-up 2026-05-10: removed the Windows-only default PT School path from the Library sync input, added `PT_GCAL_REDIRECT_URI`, and fixed the local-data bundle scripts to include `brain/data/gcal_token.json` plus `brain/data/vault_courses.yaml`.
   - Assignee: @codex-cli
   - Completed: 2026-05-10
   - Validation:

@@ -24,6 +24,6 @@ The application is run via the entry point `dashboard_web.py` in the `brain/` ro
 python dashboard_web.py
 ```
 
-Or via the `Start_Dashboard.bat` launcher.
+Or via the OS launcher in the repo root.
 
-Repo canonical run path: use `Start_Dashboard.bat` (port 5000).
+Repo canonical run path: use `Start_Dashboard.bat` on Windows (port `5000`) or `Start_Dashboard.command` on macOS (port `5127`). See `README.md` and `docs/root/GUIDE_DEV.md`.

@@ -46,7 +46,8 @@ if (-not (Test-Path $BundlePath)) {
 $FilesToRestore = @(
     "brain\data\api_config.json",
     "brain\data\pt_study.db",
-    "brain\gcal_token.json",
+    "brain\data\gcal_token.json",
+    "brain\data\vault_courses.yaml",
     "brain\.env"
 )
 
@@ -92,6 +93,7 @@ if ($SkippedCount -gt 0) {
 
 Write-Host ""
 Write-Host "=== Next Steps ===" -ForegroundColor Cyan
-Write-Host "1. Run Start_Dashboard.bat to launch the dashboard"
-Write-Host "2. If Google Calendar doesn't work, re-authenticate in the dashboard"
+Write-Host "1. Edit brain\.env for this machine's local paths"
+Write-Host "2. Run Start_Dashboard.bat on Windows or Start_Dashboard.command on macOS"
+Write-Host "3. If Google Calendar doesn't work, verify the redirect URI matches the local port and re-authenticate"
 Write-Host ""

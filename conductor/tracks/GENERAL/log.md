@@ -2573,3 +2573,12 @@ Recommended next steps:
 - Expanded `brain/.env.example` with Obsidian filesystem vault path, vault name, study-material root, and Windows/macOS port guidance.
 - Documented GitHub vs local runtime boundaries: GitHub carries code/docs/SOP/tests/launchers, while `.env`, `brain/data/pt_study.db`, uploads, Chroma/vector caches, extracted images, `.venv`, and `node_modules` stay local unless explicitly copied.
 - Validation: MacBook setup had already been proven live at `/Users/fst/pt-study-sop` with Python 3.12 and `http://127.0.0.1:5127/brain`; docs and shell syntax checks ran before push.
+
+## 2026-05-10 - Machine-local path audit and GitHub onboarding update
+
+- Added `docs/root/MACHINE_PATHS.md` to make the new-computer checklist explicit: repo path, `brain/.env`, Obsidian vault paths, PT School material root, dashboard port, Google redirect URI, local DB/config/token files, uploads, vector cache, extracted images, video artifacts, `.venv`, and `node_modules`.
+- Updated `README.md`, `docs/root/INSTALL.md`, `docs/root/GUIDE_DEV.md`, docs indexes, `brain/.env.example`, `docs/calendar_tasks.md`, `brain/README.md`, `brain/dashboard/README.md`, and `scripts/README.md` so GitHub now highlights which paths must be configured per machine.
+- Removed the Windows-only default from the Library sync folder input and changed the placeholder to ask for the local PT School folder path.
+- Added `PT_GCAL_REDIRECT_URI` support so macOS can override copied Google Calendar config that still points at port `5000`.
+- Fixed local-data transfer scripts so they bundle/restore `brain/data/gcal_token.json` and `brain/data/vault_courses.yaml` instead of the stale `brain/gcal_token.json` path.
+- Audit result: the Mac repo and DB are present, but `/Users/fst/Desktop/PT School`, `brain/data/uploads/`, `brain/data/chroma_tutor/`, and `brain/data/extracted_images/` were not present during the check. The copied DB still has Windows `rag_docs.source_path` and `rag_docs.file_path` rows, so old material previews need source/upload folders copied or current materials re-imported.

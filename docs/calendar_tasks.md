@@ -36,6 +36,13 @@
 }
 ```
 
+The redirect URI must match the local dashboard port:
+
+- Windows default: `http://localhost:5000/api/gcal/oauth/callback`
+- macOS default: `http://localhost:5127/api/gcal/oauth/callback`
+
+You can also set `GOOGLE_REDIRECT_URI` or `PT_GCAL_REDIRECT_URI` in `brain/.env`. The Google Cloud OAuth client must allow the same URI.
+
 ## OAuth Flow (Dashboard)
 1. Open the Calendar page.
 2. Click **Connect Google Calendar** (starts OAuth).

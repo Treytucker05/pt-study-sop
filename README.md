@@ -542,13 +542,17 @@ Short version:
 
 1. Install Git, Python 3.12+, Node/npm, and Obsidian.
 2. Clone `https://github.com/Treytucker05/pt-study-sop.git`.
-3. Copy `brain/.env.example` to `brain/.env` and set API keys, Obsidian vault path, and study-material root.
-4. Start with `Start_Dashboard.bat` on Windows or `Start_Dashboard.command` on macOS.
-5. Import current semester materials through `/library`.
+3. Copy `brain/.env.example` to `brain/.env`.
+4. Set the machine-local paths: Obsidian vault root, PT School material root, dashboard port, and Google redirect URI if using Calendar.
+5. Copy or recreate local runtime data only if needed: DB, API config, OAuth token, uploads, and material folders.
+6. Start with `Start_Dashboard.bat` on Windows or `Start_Dashboard.command` on macOS.
+7. Import current semester materials through `/library`.
 
-GitHub syncs the app code, docs, tests, launchers, and SOP/method library. It does not sync `.env`, `brain/data/pt_study.db`, uploads, vector caches, extracted images, `.venv`, or `node_modules`.
+GitHub syncs the app code, docs, tests, launchers, and SOP/method library. It does not sync `.env`, `brain/data/pt_study.db`, `brain/data/api_config.json`, `brain/data/gcal_token.json`, uploads, vector caches, extracted images, `.venv`, `node_modules`, Obsidian vault contents, or the local `PT School` source-material folder.
 
-For a new semester, old caches are optional. Install the app, connect the vault, import current materials, and let retrieval indexes rebuild as needed.
+For a new semester, old caches are optional. Install the app, connect the vault, create or copy the current semester material folder, import current materials, and let retrieval indexes rebuild as needed.
+
+Path checklist for new computers: `docs/root/MACHINE_PATHS.md`.
 
 ---
 

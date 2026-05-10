@@ -43,7 +43,7 @@ Send plain text or JSON intake payloads directly to the Brain intake endpoint. T
 - The Flask app serves `brain/static/dist/index.html` as the one true dashboard.
 - Frontend source lives in this repo at `dashboard_rebuild/`.
 - Build steps: run `npm run build` in `dashboard_rebuild/` (build output writes directly to `brain/static/dist`).
-- If the frontend breaks, rebuild and re-sync `brain/static/dist` (do not mix assets from other folders).
+- If the frontend breaks, rebuild `brain/static/dist` from `dashboard_rebuild/` (do not mix assets from other folders).
 
 ```powershell
 # Plain text

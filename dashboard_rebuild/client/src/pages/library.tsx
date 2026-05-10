@@ -655,9 +655,7 @@ function useLibraryPageController() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
-  const [materialsFolder, setMaterialsFolder] = useState(
-    "C:\\Users\\treyt\\OneDrive\\Desktop\\PT School",
-  );
+  const [materialsFolder, setMaterialsFolder] = useState("");
   const [uploadCourseTarget, setUploadCourseTarget] = useState<string>(
     initialLaunchState.uploadCourseTarget,
   );
@@ -1915,7 +1913,7 @@ function useLibraryPageController() {
                         handleMaterialsFolderChange(e.target.value)
                       }
                       className={INPUT_BASE}
-                      placeholder="C:\\Users\\...\\PT School"
+                      placeholder="Paste the local PT School folder path"
                     />
                     <div className="flex flex-wrap items-center gap-2">
                       <HudButton

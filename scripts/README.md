@@ -4,6 +4,8 @@ Automation utilities for the PT Study SOP repo.
 
 System context: scripts support CP-MSS v2.0 operations and governance.
 
+New-computer setup uses `docs/root/INSTALL.md` and `docs/root/MACHINE_PATHS.md`. Scripts that mention `C:/Users/treyt/...`, Travel Laptop, or Treys School are Trey machine-local workflow helpers, not standard product onboarding paths.
+
 ## Common entries
 - `generate_architecture_dump.ps1` - Regenerates `docs/root/ARCHITECTURE_CONTEXT.md`.
 - `harness.ps1` - Repo-local harness entrypoint. Supports `Bootstrap`, isolated `Run`, named `Eval` scenarios (`tutor-hermetic-smoke`, `tutor-hermetic-coverage-scope`, `app-live-golden-path`, `tutor-live-readonly`, `method-integrity-smoke`), root `events.jsonl` observability, and `Report` bundle generation with redacted environment data.

@@ -70,7 +70,9 @@ def load_gcal_config():
 
     env_client_id = os.environ.get("GOOGLE_CLIENT_ID")
     env_client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
-    env_redirect_uri = os.environ.get("GOOGLE_REDIRECT_URI")
+    env_redirect_uri = os.environ.get("GOOGLE_REDIRECT_URI") or os.environ.get(
+        "PT_GCAL_REDIRECT_URI"
+    )
 
     if env_client_id:
         gcal_config["client_id"] = env_client_id
@@ -86,6 +88,20 @@ def load_gcal_config():
             gcal_config.setdefault("client_secret", token_data.get("client_secret"))
 
     return gcal_config
+
+
+def _default_redirect_uri() -> str:
+    port = os.environ.get("PT_BRAIN_PORT", "5000").strip() or "5000"
+    return f"http://localhost:{port}/api/gcal/oauth/callback"
+
+
+def _redirect_uri_for_config(config: Dict) -> str:
+    return (
+        os.environ.get("GOOGLE_REDIRECT_URI")
+        or os.environ.get("PT_GCAL_REDIRECT_URI")
+        or config.get("redirect_uri")
+        or _default_redirect_uri()
+    )
 
 
 def normalize_gcal_config(config: Optional[Dict]) -> Dict:
@@ -199,6 +215,8 @@ def get_auth_url():
         return None, "Google Calendar not configured in api_config.json"
 
     assert Flow is not None
+    redirect_uri = _redirect_uri_for_config(config)
+
     flow = Flow.from_client_config(
         {
             "web": {
@@ -206,18 +224,12 @@ def get_auth_url():
                 "client_secret": config["client_secret"],
                 "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                 "token_uri": "https://oauth2.googleapis.com/token",
-                "redirect_uris": [
-                    config.get(
-                        "redirect_uri", "http://localhost:5000/api/gcal/oauth/callback"
-                    )
-                ],
+                "redirect_uris": [redirect_uri],
             }
         },
         scopes=SCOPES,
     )
-    flow.redirect_uri = config.get(
-        "redirect_uri", "http://localhost:5000/api/gcal/oauth/callback"
-    )
+    flow.redirect_uri = redirect_uri
 
     auth_url, state = flow.authorization_url(
         access_type="offline", include_granted_scopes="true", prompt="consent"
@@ -237,6 +249,8 @@ def complete_oauth(code):
 
     try:
         assert Flow is not None
+        redirect_uri = _redirect_uri_for_config(config)
+
         flow = Flow.from_client_config(
             {
                 "web": {
@@ -244,19 +258,12 @@ def complete_oauth(code):
                     "client_secret": config["client_secret"],
                     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                     "token_uri": "https://oauth2.googleapis.com/token",
-                    "redirect_uris": [
-                        config.get(
-                            "redirect_uri",
-                            "http://localhost:5000/api/gcal/oauth/callback",
-                        )
-                    ],
+                    "redirect_uris": [redirect_uri],
                 }
             },
             scopes=SCOPES,
         )
-        flow.redirect_uri = config.get(
-            "redirect_uri", "http://localhost:5000/api/gcal/oauth/callback"
-        )
+        flow.redirect_uri = redirect_uri
 
         flow.fetch_token(code=code)
         creds = flow.credentials

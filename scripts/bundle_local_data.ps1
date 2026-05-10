@@ -16,7 +16,8 @@ Write-Host ""
 $FilesToBundle = @(
     @{ Path = "brain\data\api_config.json"; Required = $false; Description = "API keys (OpenRouter, OpenAI)" },
     @{ Path = "brain\data\pt_study.db"; Required = $false; Description = "Study database" },
-    @{ Path = "brain\gcal_token.json"; Required = $false; Description = "Google Calendar OAuth token" },
+    @{ Path = "brain\data\gcal_token.json"; Required = $false; Description = "Google Calendar OAuth token" },
+    @{ Path = "brain\data\vault_courses.yaml"; Required = $false; Description = "Course to Obsidian folder map" },
     @{ Path = "brain\.env"; Required = $false; Description = "Environment variables" }
 )
 
@@ -84,7 +85,6 @@ $(foreach ($file in $FilesToBundle) {
 
 2. Copy bundle contents to repo:
    - Copy brain\data\* to brain\data\
-   - Copy brain\gcal_token.json to brain\
    - Copy brain\.env to brain\ (if exists)
 
 3. Or run the restore script:

@@ -39,6 +39,24 @@ GitHub does not sync local runtime data:
 
 For a new semester, you usually do not need old upload/cache folders. Keep or transfer `brain/data/pt_study.db` only if you want existing courses, methods, sessions, cards, or settings.
 
+## Machine-Local Path Checklist
+
+Before testing on a new computer, confirm these local roots are real on that machine:
+
+| Setting | Required for | macOS example |
+|---|---|---|
+| `OBSIDIAN_VAULT_FS_PATH` | Obsidian reads/writes | `/Users/fst/Desktop/Treys School/Treys School` |
+| `PT_OBSIDIAN_VAULT_PATH` | Obsidian helper alias | `/Users/fst/Desktop/Treys School/Treys School` |
+| `OBSIDIAN_VAULT_NAME` | `obsidian://` links | `Treys School` |
+| `PT_STUDY_RAG_DIR` | Library folder scan and material sync | `/Users/fst/Desktop/PT School` |
+| `TUTOR_MATERIALS_DIR` / `PT_SCHOOL_MATERIALS_DIR` | Optional material sync aliases | `/Users/fst/Desktop/PT School` |
+| `PT_BRAIN_PORT` | Dashboard URL and OAuth callbacks | `5127` |
+| `GOOGLE_REDIRECT_URI` or `PT_GCAL_REDIRECT_URI` | Google Calendar OAuth | `http://localhost:5127/api/gcal/oauth/callback` |
+
+Full path inventory: `docs/root/MACHINE_PATHS.md`.
+
+You do not need to rewrite every path in the repo. Most app paths are repo-relative or env-driven. You do need to update copied local config and any old database rows or material records that point at Windows-only files.
+
 ## Prerequisites
 
 Install these before setup:
@@ -66,6 +84,8 @@ git clone https://github.com/Treytucker05/pt-study-sop.git
 cd C:\pt-study-sop
 copy brain\.env.example brain\.env
 ```
+
+Install Python with the Python launcher or with `python` on `PATH`, and install Node/npm before first launch. The Windows launcher builds the UI, so Node/npm is required even if you are not editing frontend code.
 
 Edit `brain\.env`, then run:
 
@@ -113,6 +133,8 @@ If Node/npm is missing on macOS:
 brew install node
 ```
 
+The first macOS launch creates `.venv`, installs Python dependencies, installs npm dependencies, builds the UI, and initializes the database. It needs network access and can take a few minutes.
+
 ## First-Run Configuration
 
 Create `brain/.env` from `brain/.env.example` and fill only what you need.
@@ -141,6 +163,9 @@ Study material import root:
 
 ```dotenv
 PT_STUDY_RAG_DIR=/Users/you/Desktop/PT School
+TUTOR_MATERIALS_DIR=/Users/you/Desktop/PT School
+PT_SCHOOL_MATERIALS_DIR=/Users/you/Desktop/PT School
+PT_BRAIN_PREFER_ENV_PATHS=true
 ```
 
 Runtime overrides:
@@ -148,6 +173,7 @@ Runtime overrides:
 ```dotenv
 PT_BRAIN_HOST=127.0.0.1
 PT_BRAIN_PORT=5127
+PT_GCAL_REDIRECT_URI=http://localhost:5127/api/gcal/oauth/callback
 ```
 
 On Windows, vault/material examples usually look like:
@@ -156,6 +182,7 @@ On Windows, vault/material examples usually look like:
 OBSIDIAN_VAULT_FS_PATH=C:\Users\treyt\Desktop\Treys School
 PT_STUDY_RAG_DIR=C:\Users\treyt\OneDrive\Desktop\PT School
 PT_BRAIN_PORT=5000
+PT_GCAL_REDIRECT_URI=http://localhost:5000/api/gcal/oauth/callback
 ```
 
 On macOS, vault/material examples usually look like:
@@ -164,7 +191,10 @@ On macOS, vault/material examples usually look like:
 OBSIDIAN_VAULT_FS_PATH=/Users/fst/Desktop/Treys School/Treys School
 PT_STUDY_RAG_DIR=/Users/fst/Desktop/PT School
 PT_BRAIN_PORT=5127
+PT_GCAL_REDIRECT_URI=http://localhost:5127/api/gcal/oauth/callback
 ```
+
+The launcher guesses Trey-style Mac folders only as a convenience. If the vault or material folder lives somewhere else, set the paths explicitly in `brain/.env`.
 
 ## Transfer From An Existing Computer
 
@@ -183,6 +213,7 @@ Minimum useful transfer:
 - `brain/data/api_config.json`
 - `brain/data/gcal_token.json` if using Google Calendar
 - `brain/data/vault_courses.yaml` if customized
+- `brain/data/uploads/` only if old uploaded-file previews must work
 
 Do not transfer:
 
@@ -215,6 +246,12 @@ cp -R /tmp/pt-study-local-data/local_data_bundle/* .
 
 After transfer, edit `brain/.env` and replace Windows paths with macOS paths.
 
+Also check copied local config:
+
+- If `brain/data/api_config.json` contains a Windows `study_rag_path`, set `PT_BRAIN_PREFER_ENV_PATHS=true` or remove that saved path.
+- If Google Calendar was configured on Windows, change the redirect URI to the Mac port or set `PT_GCAL_REDIRECT_URI=http://localhost:5127/api/gcal/oauth/callback`.
+- If copied DB rows contain Windows `rag_docs.source_path` or `rag_docs.file_path` values, copy the matching source/upload files or re-import the materials on the Mac.
+
 ## New Semester Setup
 
 For a new semester, do not copy old caches unless you need them.
@@ -224,12 +261,13 @@ Recommended flow:
 1. Install the app from GitHub.
 2. Configure `brain/.env`.
 3. Confirm Obsidian Sync has pulled the current vault on the new machine.
-4. Start the dashboard.
-5. Open `/library`.
-6. Add or import current semester materials.
-7. Open `/tutor`.
-8. Choose the current course/material scope and start a Tutor session.
-9. Let the app rebuild retrieval/index data as needed.
+4. Create or copy the current semester material folder, for example `/Users/fst/Desktop/PT School`.
+5. Start the dashboard.
+6. Open `/library`.
+7. Add or import current semester materials.
+8. Open `/tutor`.
+9. Choose the current course/material scope and start a Tutor session.
+10. Let the app rebuild retrieval/index data as needed.
 
 Old `session_logs`, vector caches, extracted images, and uploaded files are optional for this flow.
 
@@ -291,3 +329,5 @@ The exact stats payload can vary by machine and database.
 - If the page loads but routes 404, rebuild the UI: `cd dashboard_rebuild && npm run build`.
 - If Obsidian writes fail, verify `OBSIDIAN_VAULT_FS_PATH`, `PT_OBSIDIAN_VAULT_PATH`, `OBSIDIAN_API_URL`, and the Obsidian Local REST API plugin.
 - If Library has no materials on a new semester install, that is expected. Import the current semester files fresh.
+- If Library folder scan fails on macOS, verify `/Users/fst/Desktop/PT School` exists or paste the actual local material folder path.
+- If Google Calendar auth redirects to port `5000` on macOS, update `PT_GCAL_REDIRECT_URI` or `brain/data/api_config.json` to use port `5127`.
