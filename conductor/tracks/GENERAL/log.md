@@ -2580,5 +2580,6 @@ Recommended next steps:
 - Updated `README.md`, `docs/root/INSTALL.md`, `docs/root/GUIDE_DEV.md`, docs indexes, `brain/.env.example`, `docs/calendar_tasks.md`, `brain/README.md`, `brain/dashboard/README.md`, and `scripts/README.md` so GitHub now highlights which paths must be configured per machine.
 - Removed the Windows-only default from the Library sync folder input and changed the placeholder to ask for the local PT School folder path.
 - Added `PT_GCAL_REDIRECT_URI` support so macOS can override copied Google Calendar config that still points at port `5000`.
+- Added Google Calendar client libraries to `brain/requirements.txt` so fresh installs include the documented Calendar integration dependencies.
 - Fixed local-data transfer scripts so they bundle/restore `brain/data/gcal_token.json` and `brain/data/vault_courses.yaml` instead of the stale `brain/gcal_token.json` path.
 - Audit result: the Mac repo and DB are present, but `/Users/fst/Desktop/PT School`, `brain/data/uploads/`, `brain/data/chroma_tutor/`, and `brain/data/extracted_images/` were not present during the check. The copied DB still has Windows `rag_docs.source_path` and `rag_docs.file_path` rows, so old material previews need source/upload folders copied or current materials re-imported.

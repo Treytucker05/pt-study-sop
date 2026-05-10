@@ -18,7 +18,7 @@
 
 ## Required Configuration
 1. Create/update `brain/data/api_config.json` with `google_calendar` credentials.
-2. Ensure Python dependencies are installed:
+2. Ensure Python dependencies are installed from `brain/requirements.txt`:
    - `google-auth`, `google-auth-oauthlib`, `google-api-python-client`
 3. Launch the dashboard and use the Calendar page to connect.
 
