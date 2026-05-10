@@ -1,0 +1,152 @@
+{
+  "title": "Scholar Loop Closure (v1)",
+  "description": "Close the Brain → Tutor → Scholar → Methods → Tutor self-improvement loop end-to-end with real effectiveness signal, gated by one-click human approval. Source PRD: tasks/prd-scholar-loop-closure.md. Source swarm plan: tasks/swarm-scholar-loop-closure.md (v2 post-Challenge).",
+  "stories": [
+    {
+      "id": "SCHOLAR-001",
+      "title": "T1: Real effectiveness scoring at session-end + consumer audit",
+      "description": "Replace the hardcoded `effectiveness=3, engagement=3` insert in api_tutor_sessions.py with real signal computation. Build new module brain/effectiveness.py that exposes: (1) verdict_score_5pt(verdict_dict) — extracts a 1-5 score from parse_verdict's output by trying common keys ('score', 'quality', 'pass'/'fail' → 5/1); returns None when no signal. (2) mastery_delta_5pt(session_id) — queries topic_mastery rows touched by the session, computes (after - before) * 5 + 3, clamps to [1,5]; None when no mastery rows touched. (3) retrieval_5pt(session_id) — averages tutor_accuracy_log.retrieval_confidence text values mapped (high=5, medium=3, low=1); None when no turns logged. (4) compute_effectiveness(verdict, mastery, retrieval) — pure scorer returning int(round(0.5*verdict + 0.3*mastery + 0.2*retrieval)). None inputs treated as neutral fallback 2 (distinguishable from legacy 3). All-None → 2. (5) compute_session_signals(session_id) — one-shot helper that runs all three adapters and returns the dict. Wire compute_session_signals + compute_effectiveness into the existing session-end insert site at brain/dashboard/api_tutor_sessions.py (find by grep 'INSERT INTO method_ratings'). Apply same value to both effectiveness and engagement columns (engagement deserves its own signal in v2 — leave a code comment). All blocks logged for the same session receive the same value (v1 limitation; document in code comment referencing tutor_block_transitions for future per-block attribution). Reference: parse_verdict source at brain/tutor_verdict.py. CONSUMER AUDIT (HIGH from Challenge): grep `effectiveness` reads across brain/, dashboard/, dashboard_rebuild/ source. For each consumer (UI, analytics endpoint, anomaly detector), document in a comment block at top of brain/effectiveness.py with filename + line + how it interprets effectiveness. Verify behavior is sane with values 1–5 — no assumption that =3 means 'no signal'.",
+      "acceptanceCriteria": [
+        "brain/effectiveness.py exists with all 5 helpers documented above",
+        "Pytest test_effectiveness.py covers ≥6 cases: all signals; verdict-only; mastery-only; retrieval-only; partial mix; all-none",
+        "Session-end insert no longer writes hardcoded 3; both effectiveness and engagement columns get computed values",
+        "All-None fallback returns 2, NOT 3 (so legacy rows stay distinguishable)",
+        "Comment block at top of brain/effectiveness.py lists ≥3 effectiveness-reading consumers with filename:line and interpretation note",
+        "Manual smoke: end a tutor session in dev → SQL `SELECT effectiveness, engagement FROM method_ratings ORDER BY id DESC LIMIT 5` returns values not all 3",
+        "Existing rows with effectiveness=3 are NOT modified (no backfill in v1)"
+      ],
+      "files": [
+        "brain/effectiveness.py",
+        "brain/dashboard/api_tutor_sessions.py",
+        "brain/tests/test_effectiveness.py"
+      ],
+      "verification": "uv run pytest brain/tests/test_effectiveness.py -v",
+      "status": "done"
+    },
+    {
+      "id": "SCHOLAR-002",
+      "title": "T2: Schema migration + Proposal API endpoints",
+      "description": "Schema half: add 5 new columns to scholar_proposals using the existing additive PRAGMA table_info migration pattern in brain/db_setup.py — proposal_kind TEXT (markdown|structured, nullable), structured_changes TEXT (nullable JSON: {target_table, target_id, field_changes}), apply_status TEXT (pending|applied|failed, nullable), applied_at TEXT (nullable ISO timestamp), apply_error TEXT (nullable). Idempotent — re-running db_setup.py is safe. API half: create new Flask blueprint at brain/dashboard/api_scholar_proposals.py and register in the main app entry (find via grep `register_blueprint`). Three endpoints: (1) POST /api/scholar/proposals — accepts proposal_kind (default 'structured'), proposal_type, target_table, target_id, field_changes (dict), rationale, cluster_id (optional), title; inserts row with status='pending'; returns row id. (2) GET /api/scholar/proposals?status=<pending|approved|rejected|all> — returns the list, default 'pending'. (3) POST /api/scholar/proposals/<id>/decide — accepts decision ('approve'|'reject') + optional reviewer_notes; updates status and stamps reviewed_at. On approve, the apply hook is called but apply logic itself is filled in by SCHOLAR-006 — for now the decide endpoint just leaves apply_status null after approve. cluster_id is metadata only; UI does NOT batch-approve in v1.",
+      "acceptanceCriteria": [
+        "Running `uv run python brain/db_setup.py` against existing DB completes without errors and adds the 5 columns",
+        "Re-running db_setup.py is idempotent (no errors second time)",
+        "Existing scholar_proposals rows still readable",
+        "POST /api/scholar/proposals returns 200 with new row id when given valid payload",
+        "POST returns 400 with informative error when required fields missing",
+        "GET /api/scholar/proposals?status=pending returns list",
+        "GET /api/scholar/proposals?status=all returns all rows regardless of status",
+        "POST /decide with approve sets status='approved' and stamps reviewed_at",
+        "POST /decide with reject sets status='rejected' and stamps reviewed_at",
+        "Pytest test_scholar_proposals_api.py covers ≥5 cases"
+      ],
+      "files": [
+        "brain/db_setup.py",
+        "brain/dashboard/api_scholar_proposals.py",
+        "brain/tests/test_scholar_proposals_api.py"
+      ],
+      "verification": "uv run python brain/db_setup.py && uv run pytest brain/tests/test_scholar_proposals_api.py -v",
+      "status": "done"
+    },
+    {
+      "id": "SCHOLAR-003",
+      "title": "T3: Auto-trigger Scholar scan on session-end",
+      "description": "Wire Scholar's existing anomaly detector (get_method_anomalies at brain/scholar/brain_reader.py:594) to fire automatically after Tutor session-end and post any actionable findings as proposals via the API from SCHOLAR-002. CRITICAL ORDERING (HIGH from Challenge): in api_tutor_sessions.py, all DB commits + vault save MUST complete first → then return 200 to client → THEN spawn the daemon thread. If the thread crashes, session is already saved. Use the canonical pattern: `Thread(target=_worker, daemon=True).start()` (matches usage at api_tutor_turns.py:473). Build new module brain/scholar/anomaly_runner.py that wraps get_method_anomalies + filters + posts proposals. THROTTLE: max once per 6 hours. Use a new `scholar_scan_log` table (id, user_id, started_at, finished_at, anomalies_found, proposals_created) — schema added in db_setup.py. If <6h since last scan, skip with a log line. ANOMALY FILTERING (HIGH from Challenge): from get_method_anomalies output, DROP any anomaly with category 'never_rated' or equivalent. Only 'low_effectiveness' and 'high_variance' (or analogous) flow into proposals. Default min anomaly confidence threshold = 0.6 (configurable). Per filtered anomaly, POST one proposal to /api/scholar/proposals with proposal_kind='structured' and field_changes containing a placeholder concrete change (acceptable to ship `{facilitation_prompt: '<auto-generated; refine in v1.1>'}` with rationale 'auto-generated; refine in next research run'). cluster_id set when multiple anomalies came from the same scan. TOGGLE: user-pref flag scholar_auto_scan_enabled (default true); if false, skip entirely. Look up user_prefs/user_settings table via grep. ERROR SWALLOWING: any exception in runner thread is caught and logged; never propagates to session-end response.",
+      "acceptanceCriteria": [
+        "End a session in dev with a contrived weak method → row appears in scholar_proposals within 30 seconds",
+        "End a session with no anomalies → scholar_proposals count unchanged",
+        "End two sessions back-to-back within 1 hour → only ONE scan ran (throttle); scholar_scan_log shows the second was skipped",
+        "Toggle scholar_auto_scan_enabled=false → no scan fires",
+        "Throw inside runner deliberately → session-end still returns 200; error logged",
+        "Anomaly sanity: never-rated anomalies are NOT turned into proposals (filtered out before POST)",
+        "Session-end response time unchanged (background thread fires after 200 returns)"
+      ],
+      "files": [
+        "brain/dashboard/api_tutor_sessions.py",
+        "brain/scholar/anomaly_runner.py",
+        "brain/db_setup.py",
+        "brain/tests/test_scholar_anomaly_runner.py"
+      ],
+      "verification": "uv run pytest brain/tests/test_scholar_anomaly_runner.py -v",
+      "status": "done"
+    },
+    {
+      "id": "SCHOLAR-004",
+      "title": "T4: Scholar Proposals UI tab",
+      "description": "Add a Proposals tab to the Scholar page (dashboard_rebuild/client/src/pages/scholar.tsx) next to existing Research and Questions tabs. New component at dashboard_rebuild/client/src/components/scholar/ProposalsTab.tsx. Tab fetches GET /api/scholar/proposals?status=pending via react-query with key ['scholar-proposals', 'pending'] and refetchInterval: 30000 (matches codebase pattern — see useBrainWorkspace.ts:97). Each proposal renders INDIVIDUALLY (cluster_id is metadata only in v1, NOT a UI grouping mechanism — Challenge Q5): title (or proposal_type), target method name + id (resolve via method_blocks lookup or just display target_id for v1), rationale text, structured_changes.field_changes rendered as a simple key→value diff table, Approve and Reject buttons. Approve/Reject calls POST /api/scholar/proposals/<id>/decide and removes the proposal from the pending list on success. Loading and error states present. Honor URL param ?tab=proposals to pre-select this tab on mount (so Brain badge clicks land here).",
+      "acceptanceCriteria": [
+        "Scholar page has a third tab 'Proposals' next to Research and Questions",
+        "Tab lists pending proposals with title, target method, rationale, field-change diff",
+        "Approve button fires POST /api/scholar/proposals/<id>/decide with decision=approve and removes the row on success",
+        "Reject button fires the same with decision=reject and removes the row",
+        "Loading state shows during fetch",
+        "Error state shows on fetch failure",
+        "?tab=proposals URL param pre-selects this tab",
+        "Vitest test_proposals_tab.test.tsx passes covering: list renders, approve fires correct request, reject fires correct request, empty state when no pending"
+      ],
+      "files": [
+        "dashboard_rebuild/client/src/pages/scholar.tsx",
+        "dashboard_rebuild/client/src/components/scholar/ProposalsTab.tsx",
+        "dashboard_rebuild/client/src/components/scholar/__tests__/ProposalsTab.test.tsx"
+      ],
+      "verification": "cd dashboard_rebuild && npx vitest run client/src/components/scholar/__tests__/ProposalsTab.test.tsx",
+      "status": "done"
+    },
+    {
+      "id": "SCHOLAR-005",
+      "title": "T5: Brain dashboard pending-proposals count badge",
+      "description": "Add a small count badge to the Brain dashboard reading `Proposals: N pending`. Hide when N=0. CRITICAL: shares react-query cache with SCHOLAR-004 (Challenge Q2). Use the same query key ['scholar-proposals', 'pending'] and refetchInterval: 30000. Click navigates to /scholar?tab=proposals (SCHOLAR-004 honors this param to pre-select tab). No duplicate polling — react-query deduplicates queries with identical keys.",
+      "acceptanceCriteria": [
+        "Badge text reads 'Proposals: N pending' when N≥1",
+        "Badge is hidden when N=0",
+        "Click on badge navigates to /scholar?tab=proposals",
+        "Polling interval is 30000ms (matches codebase pattern)",
+        "Uses the same react-query key as the Scholar page Proposals tab (cache shared, no duplicate fetches)",
+        "Vitest covers: badge shows count, hidden when 0, click navigates with ?tab=proposals"
+      ],
+      "files": [
+        "dashboard_rebuild/client/src/pages/brain.tsx",
+        "dashboard_rebuild/client/src/components/brain/__tests__/PendingProposalsBadge.test.tsx"
+      ],
+      "verification": "cd dashboard_rebuild && npx vitest run client/src/components/brain/__tests__/PendingProposalsBadge.test.tsx",
+      "status": "done"
+    },
+    {
+      "id": "SCHOLAR-006",
+      "title": "T6: Apply approved proposal to method_blocks",
+      "description": "Wire the apply hook in the SCHOLAR-002 decide endpoint. New module brain/scholar/proposal_applier.py with apply(proposal_row) function. Validates: proposal_kind == 'structured' (markdown proposals don't auto-apply in v1; skip with apply_status=null), target_table == 'method_blocks' (only target supported in v1), field_changes keys are NOT in forbidden list ['id', 'created_at', 'method_id', 'category']. On success: applier issues PUT against method_blocks for target_id with field changes (use existing PUT /api/methods/<id> at api_methods.py:487 internally); sets apply_status='applied' and applied_at=now() on the proposal row. On failure (forbidden field, target row missing, PUT non-200, JSON malformed): proposal row gets apply_status='failed', apply_error=<error>. Proposal stays at status='approved' for audit trail.",
+      "acceptanceCriteria": [
+        "Approving a structured proposal with valid field_changes updates the target method_blocks row",
+        "Approved proposal row has apply_status='applied' and applied_at stamped",
+        "Approving a proposal with forbidden field (e.g. id) sets apply_status='failed', apply_error populated",
+        "Approving a proposal whose target_id doesn't exist in method_blocks fails cleanly with apply_status='failed'",
+        "Approving a markdown-kind proposal does NOT call apply (apply_status stays null)",
+        "Pytest test_proposal_applier.py covers ≥5 cases (happy path, forbidden field, missing target, PUT failure mock, markdown-kind skip)"
+      ],
+      "files": [
+        "brain/dashboard/api_scholar_proposals.py",
+        "brain/scholar/proposal_applier.py",
+        "brain/tests/test_proposal_applier.py"
+      ],
+      "verification": "uv run pytest brain/tests/test_proposal_applier.py -v",
+      "status": "done"
+    },
+    {
+      "id": "SCHOLAR-007",
+      "title": "T7: End-to-end smoke test runbook",
+      "description": "Create a checklist runbook at tasks/scholar-loop-smoke-test.md (gitignored, local-only) that walks through the 6-step release-proof scenario top to bottom: (1) End a Tutor session that used a method whose effectiveness should compute non-3. (2) Within ~30 seconds, a proposal appears in scholar_proposals with status='pending' and proposal_kind='structured'. (3) Brain dashboard shows 'Proposals: 1 pending' badge. (4) Click badge → opens Scholar Proposals tab with the proposal visible. (5) Approving proposal updates method_blocks row (verified by SQL diff). (6) Next Tutor session uses the updated method (verified by inspecting served prompt). Each step has a verification command (SQL query, HTTP call, or UI assertion). Each step records a timestamp so the full cycle's wall time is captured. Run the runbook end-to-end once and capture transcript/screenshots.",
+      "acceptanceCriteria": [
+        "Runbook file exists at tasks/scholar-loop-smoke-test.md with all 6 steps",
+        "Each step has a concrete verification (SQL query, HTTP call, or UI assertion)",
+        "Each step records a timestamp",
+        "Runbook executed end-to-end once successfully with all 6 steps verified",
+        "Wall-time from 'session ended' to 'next session uses updated method' is under 5 minutes",
+        "Transcript or screenshot trail saved next to runbook"
+      ],
+      "files": [
+        "tasks/scholar-loop-smoke-test.md"
+      ],
+      "verification": "test -f tasks/scholar-loop-smoke-test.md && grep -c '^## Step' tasks/scholar-loop-smoke-test.md | grep -q '6'",
+      "status": "open"
+    }
+  ]
+}
