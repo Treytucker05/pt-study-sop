@@ -5,6 +5,7 @@ Documentation index for the PT Study repo.
 This file is reference-only.
 
 - Top-level repo truth: `README.md`
+- New computer install: `docs/root/INSTALL.md`
 - Execution queue: `docs/root/TUTOR_TODO.md`
 - Run/build/test workflow: `docs/root/GUIDE_DEV.md`
 - Technical architecture: `docs/root/PROJECT_ARCHITECTURE.md`
@@ -22,6 +23,7 @@ This file is reference-only.
 ## Primary Entry Points
 
 - Study system truth: `README.md`
+- New computer install: `docs/root/INSTALL.md`
 - Execution board: `docs/root/TUTOR_TODO.md`
 - Developer guide: `docs/root/GUIDE_DEV.md`
 - Technical architecture: `docs/root/PROJECT_ARCHITECTURE.md`

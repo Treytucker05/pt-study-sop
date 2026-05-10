@@ -2564,3 +2564,12 @@ Recommended next steps:
 - `X Scraper (Active Chrome).bat` now writes the dev-browser JS script to a temp file directly, checks `dev-browser`/`ft`, parses token JSON through PowerShell, and fails clearly on extraction/sync errors.
 - `OHMYOpenCode.bat` now actually launches OpenCode after its update/version checks instead of falling through to teardown.
 - Validation: Codex `0.124.0`; Claude `2.1.118`; Gemini `0.37.1`; OpenCode `1.14.20`; GitHub CLI `2.88.1`; Kimi `1.37.0`; Docling `2.74.0`; required Travel wrapper targets exist. Codex sandbox/config settings were not changed.
+
+## 2026-05-10 - New computer install docs and macOS launcher
+
+- Added `docs/root/INSTALL.md` as the canonical product-style setup path for installing PT Study OS on a fresh Windows or macOS machine.
+- Added `Start_Dashboard.command` and `scripts/start_dashboard_macos.sh` for macOS installs. The launcher uses Python 3.12+, prepares `.venv`, installs frontend dependencies when needed, builds the UI, initializes the Brain DB, and runs Flask on port `5127` by default because macOS often owns port `5000`.
+- Updated `README.md`, `docs/README.md`, `docs/root/README.md`, `docs/root/GUIDE_DEV.md`, and `docs/root/PROJECT_ARCHITECTURE.md` so setup docs now distinguish Windows `Start_Dashboard.bat` from macOS `Start_Dashboard.command`.
+- Expanded `brain/.env.example` with Obsidian filesystem vault path, vault name, study-material root, and Windows/macOS port guidance.
+- Documented GitHub vs local runtime boundaries: GitHub carries code/docs/SOP/tests/launchers, while `.env`, `brain/data/pt_study.db`, uploads, Chroma/vector caches, extracted images, `.venv`, and `node_modules` stay local unless explicitly copied.
+- Validation: MacBook setup had already been proven live at `/Users/fst/pt-study-sop` with Python 3.12 and `http://127.0.0.1:5127/brain`; docs and shell syntax checks ran before push.

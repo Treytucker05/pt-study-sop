@@ -316,7 +316,7 @@ The app shell is the current React/Vite frontend served by Flask. Public-surface
 
 **Frontend source:** `dashboard_rebuild/client/src/`
 **Build output:** `brain/static/dist/`
-**Backend entrypoint:** `brain/dashboard/app.py` via `Start_Dashboard.bat`
+**Backend entrypoint:** `brain/dashboard/app.py` via `Start_Dashboard.bat` on Windows or `Start_Dashboard.command` on macOS.
 
 ### 5.1 Current Surface
 
@@ -471,7 +471,8 @@ Operational scripts support validation, Scholar runs, and external sync workflow
 
 - `scripts/release_check.py`: broad verification gate for Python/tests and repo health.
 - `scripts/run_scholar.bat`: launches the Scholar flow from the local environment.
-- `Start_Dashboard.bat`: canonical dashboard startup path. Builds frontend assets as needed and runs Flask on port `5000`.
+- `Start_Dashboard.bat`: canonical Windows dashboard startup path. Builds frontend assets as needed and runs Flask on port `5000`.
+- `Start_Dashboard.command` / `scripts/start_dashboard_macos.sh`: canonical macOS startup path. Uses Python 3.12+, builds frontend assets as needed, initializes the DB, and runs Flask on port `5127` by default.
 - `scripts/scrape_blackboard.py`: pulls staged academic events into the sync workflow.
 
 ### 6.2 Principle
@@ -531,6 +532,18 @@ cd ..
 .\Start_Dashboard.bat
 ```
 
+macOS:
+
+```bash
+# Build the frontend directly into Flask's static output
+cd dashboard_rebuild
+npm run build
+
+# Start the dashboard on the macOS default port
+cd ..
+./Start_Dashboard.command
+```
+
 ---
 
 ## 9. Documentation Boundaries
@@ -538,9 +551,10 @@ cd ..
 Use the docs in this order:
 
 1. `README.md` for overall product vision, subsystem contracts, and route ownership.
-2. `sop/library/17-control-plane.md` plus the rest of `sop/library/` for pedagogy, rules, and chains.
-3. This file for technical architecture and code-level system map.
-4. `conductor/tracks/` and archive folders for historical evidence only.
+2. `docs/root/INSTALL.md` for new-machine setup and local data-transfer boundaries.
+3. `sop/library/17-control-plane.md` plus the rest of `sop/library/` for pedagogy, rules, and chains.
+4. This file for technical architecture and code-level system map.
+5. `conductor/tracks/` and archive folders for historical evidence only.
 
 ### 4. UI Component Reference
 

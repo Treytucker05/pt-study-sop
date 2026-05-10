@@ -11,18 +11,29 @@ This guide covers how to run the stack, update docs, and extend the system safel
 - Backend: Python + Flask (Brain + app shell APIs)
 - DB: SQLite (`brain/data/pt_study.db`)
 - Frontend: React build served from `brain/static/dist/`
-- Knowledge base: Obsidian vault at `C:\Users\treyt\Desktop\Treys School` (notes under `projects/pt-study-sop/`)
+- Knowledge base: Obsidian vault from `OBSIDIAN_VAULT_FS_PATH` / `PT_OBSIDIAN_VAULT_PATH`; Windows default is usually `C:\Users\treyt\Desktop\Treys School`, macOS is usually `/Users/fst/Desktop/Treys School/Treys School`.
 
 ## Run Locally
-1. Install Python deps (first time): `python -m pip install -r brain/requirements.txt`
+
+### Windows
+
+1. Install Python deps if needed: `python -m pip install -r brain/requirements.txt`
 2. Launch dashboard: `Start_Dashboard.bat`
-3. Open: `http://127.0.0.1:5000`
+3. Open: `http://127.0.0.1:5000/brain`
+
+### macOS
+
+1. Install Python 3.12+ and Node/npm if missing.
+2. Launch dashboard: `./Start_Dashboard.command`
+3. Open: `http://127.0.0.1:5127/brain`
+
+Full new-machine setup lives in `docs/root/INSTALL.md`.
 
 ## Live Tutor Smoke
 Use this when validating the real Tutor session path against the local dashboard.
 
-1. Start the app with `Start_Dashboard.bat`.
-2. Run `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5000`.
+1. Start the app with the OS launcher (`Start_Dashboard.bat` on Windows, `Start_Dashboard.command` on macOS).
+2. Run `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5000` on Windows, or `python scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5127` on macOS.
 3. Do the thin browser smoke:
    - `/tutor`: verify the Tutor shell loads, the Tutor start/resume panel is reachable when no active session is restored, Studio workspace controls render (`NOTES`, `CANVAS`, `GRAPH`, `TABLE`), and the selected material viewer appears without getting stuck on `Loading...`.
    - `/methods`: verify the Method Library loads, the `LIBRARY` / `CHAINS` / `ANALYTICS` controls render, and method cards populate without getting stuck on `Loading...`.
@@ -37,7 +48,7 @@ If you change anything under `dashboard_rebuild/`, you must:
 > **Note:** No copy/sync step needed - Vite outputs directly to `brain/static/dist/`.
 > Legacy reference: `dashboard_rebuild/dist/public` is no longer the active output path.
 
-Do NOT run `npm run dev` / `vite dev`. Always use `Start_Dashboard.bat` (port 5000).
+Do NOT run `npm run dev` / `vite dev`. Use `Start_Dashboard.bat` on Windows (port 5000) or `Start_Dashboard.command` on macOS (port 5127 by default).
 
 Skip this section only for backend-only changes under `brain/`.
 
@@ -46,6 +57,8 @@ Skip this section only for backend-only changes under `brain/`.
 - OAuth tokens: `brain/data/gcal_token.json`
 - System rules: `sop/library/` (canonical)
 - Tutor embeddings default to Gemini Embedding 2 preview via `GEMINI_API_KEY`, `TUTOR_RAG_EMBEDDING_PROVIDER=gemini`, and `TUTOR_RAG_GEMINI_EMBEDDING_MODEL=gemini-embedding-2-preview`
+- New machine install and data-transfer rules: `docs/root/INSTALL.md`
+- GitHub syncs code/docs; local runtime files such as `brain/.env`, `brain/data/pt_study.db`, uploads, and vector caches are copied or rebuilt separately.
 
 ## Harness Commands
 Use the repo-local harness commands to validate prerequisites, launch isolated app instances, and run fixture-backed harness scenarios.

@@ -24,6 +24,7 @@ If another active doc disagrees with this file on product meaning, route ownersh
 - [System Overview](#system-overview)
 - [Architecture](#architecture)
 - [Quick Start](#quick-start)
+- [Install On A New Computer](#install-on-a-new-computer)
 - [Control Plane Pipeline](#control-plane-pipeline)
 - [SOP Library](#sop-library)
 - [Brain (Backend)](#brain-backend)
@@ -504,19 +505,50 @@ Flask (brain/dashboard/app.py)
 
 ## Quick Start
 
+### Windows
+
 ```bash
 # One-click (recommended)
 Start_Dashboard.bat
 ```
 
-> **Note:** Vite outputs directly to `brain/static/dist/` — no copy step needed. Never use `npm run dev`, and do not start the dashboard through a direct Flask command. Use `Start_Dashboard.bat`.
+Open `http://127.0.0.1:5000/brain`.
+
+### macOS
+
+```bash
+# One-click (recommended)
+./Start_Dashboard.command
+```
+
+Open `http://127.0.0.1:5127/brain`.
+
+> **Note:** Vite outputs directly to `brain/static/dist/` — no copy step needed. Never use `npm run dev`. On Windows use `Start_Dashboard.bat`; on macOS use `Start_Dashboard.command` or `scripts/start_dashboard_macos.sh`.
 
 ### First Study Session
 
-1. Launch the app with `Start_Dashboard.bat`.
+1. Launch the app with the OS-specific launcher.
 2. Upload at least one study file on `/library`.
 3. Open `/tutor`, use the Tutor start panel to choose or resume the course/material scope, and start the session.
 4. Follow the active chain. Wrap writes the `Exit Ticket + Session Ledger` to Brain and, when enabled, to Obsidian and Anki.
+
+---
+
+## Install On A New Computer
+
+Use `docs/root/INSTALL.md` for the full product-style setup path.
+
+Short version:
+
+1. Install Git, Python 3.12+, Node/npm, and Obsidian.
+2. Clone `https://github.com/Treytucker05/pt-study-sop.git`.
+3. Copy `brain/.env.example` to `brain/.env` and set API keys, Obsidian vault path, and study-material root.
+4. Start with `Start_Dashboard.bat` on Windows or `Start_Dashboard.command` on macOS.
+5. Import current semester materials through `/library`.
+
+GitHub syncs the app code, docs, tests, launchers, and SOP/method library. It does not sync `.env`, `brain/data/pt_study.db`, uploads, vector caches, extracted images, `.venv`, or `node_modules`.
+
+For a new semester, old caches are optional. Install the app, connect the vault, import current materials, and let retrieval indexes rebuild as needed.
 
 ---
 
@@ -915,8 +947,8 @@ The `error_logs` table enables deterministic routing by tracking granular item-l
 
 ### Prerequisites
 
-- Python 3.10+
-- Node.js 18+
+- Python 3.12+
+- Node.js 20.19+
 - SQLite 3
 - Codex CLI authenticated (`codex login`) for tutor LLM
 - `GEMINI_API_KEY` for the default embedding path
@@ -925,8 +957,11 @@ The `error_logs` table enables deterministic routing by tracking granular item-l
 ### Commands
 
 ```bash
-# Start dashboard (recommended)
+# Start dashboard on Windows (recommended)
 Start_Dashboard.bat
+
+# Start dashboard on macOS (recommended)
+./Start_Dashboard.command
 
 # Validate hermetic harness prerequisites
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\harness.ps1 -Mode Bootstrap -Profile Hermetic -Json
@@ -955,7 +990,9 @@ is an accepted equivalent used in CI.
 
 ## Troubleshooting
 
-- **Nothing shows or the wrong server starts:** always launch with `Start_Dashboard.bat`. Do not use `npm run dev`.
+- **Nothing shows or the wrong server starts:** launch with `Start_Dashboard.bat` on Windows or `Start_Dashboard.command` on macOS. Do not use `npm run dev`.
+- **macOS fails with Python syntax/type errors:** Apple Python 3.9 is too old. Install Python 3.12+ and rerun `./Start_Dashboard.command`.
+- **macOS port 5000 is busy:** use the macOS default `5127`, or set `PT_BRAIN_PORT=5128` before starting.
 - **Frontend changes do not appear:** rebuild with `cd dashboard_rebuild && npm run build`, restart the app, then hard refresh the browser.
 - **Tutor shell loads stale or broken JS:** rebuild the frontend, restart Flask, and hard refresh.
 - **Tutor delete/reporting feels inconsistent:** use the returned `request_id` and inspect the persisted Tutor delete telemetry for the exact failure path.
@@ -1005,6 +1042,7 @@ pt-study-sop/
 +-- scripts/                # Automation scripts
 +-- exports/                # Generated exports (spreadsheets, etc.)
 +-- Start_Dashboard.bat     # One-click launcher
++-- Start_Dashboard.command # macOS one-click launcher
 +-- requirements.txt        # Python dependencies
 ```
 
@@ -1013,6 +1051,7 @@ pt-study-sop/
 | Doc | Location |
 |-----|----------|
 | Docs index | `docs/README.md` |
+| New computer install | `docs/root/INSTALL.md` |
 | Tutor architecture (visual) | `docs/TUTOR_ARCHITECTURE.md` |
 | Developer guide | `docs/root/GUIDE_DEV.md` |
 | Architecture | `docs/root/PROJECT_ARCHITECTURE.md` |

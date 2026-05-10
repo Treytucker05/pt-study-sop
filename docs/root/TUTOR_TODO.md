@@ -28,6 +28,19 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 - Ops note (2026-03-25): `dev-browser` is now a shared agent skill projected into every supported agent root; this does not change Tutor sprint priority.
 
+- [x] OPS-NEW-COMPUTER-INSTALL-2026-05-10. Productize new-computer install and macOS launch path.
+  - Scope landed:
+    - Added `docs/root/INSTALL.md` as the canonical product-style install guide for Windows/macOS prerequisites, fresh GitHub clone setup, first-run `.env` configuration, local data-transfer boundaries, new-semester setup, daily GitHub sync, verification, and troubleshooting.
+    - Added `Start_Dashboard.command` plus `scripts/start_dashboard_macos.sh` so macOS installs have a supported one-command launcher separate from the Windows `.bat` path.
+    - Documented that GitHub syncs app code/docs/SOP/tests/launchers, while `.env`, SQLite DB, uploads, Chroma/vector cache, extracted images, `.venv`, and `node_modules` are local runtime state.
+    - Updated `README.md`, `docs/README.md`, `docs/root/README.md`, `docs/root/GUIDE_DEV.md`, and `docs/root/PROJECT_ARCHITECTURE.md` to point at the install guide and list the Windows/macOS launch ports.
+    - Expanded `brain/.env.example` with Obsidian vault path, vault name, study-material root, and Mac/Windows port guidance.
+  - Assignee: @codex-cli
+  - Completed: 2026-05-10
+  - Validation:
+    - macOS dashboard path was proven live on Trey's MacBook at `/Users/fst/pt-study-sop` using Python 3.12 and port `5127`.
+    - Docs and launcher shell syntax checks run before push.
+
 - [x] OPS-BAT-HARDENING-2026-04-24. Harden Windows `.bat` launchers against stale/broken executable and wrapper assumptions.
   - Scope landed:
     - `Start_Dashboard.bat` now verifies a working Python launcher before selecting it, checks `dashboard_rebuild\build-and-sync.ps1` exists before running the build path, and uses robust nested quoting for the spawned Flask server command.
