@@ -329,6 +329,10 @@ describe("useStudioRun", () => {
       activeMemoryCapsuleId: null,
       compactionTelemetry: null,
       directNoteSaveStatus: null,
+      notesDraft: {
+        sessionKey: null,
+        content: "",
+      },
       primingMethodIds: [],
       primingChainId: null,
       primingCustomBlockIds: [],
@@ -357,6 +361,10 @@ describe("useStudioRun", () => {
       directNoteSaveStatus: {
         state: "saved",
         path: "Tutor Workspace/Cardio Note.md",
+      },
+      notesDraft: {
+        sessionKey: null,
+        content: "",
       },
       primingMethodIds: [],
       primingChainId: null,

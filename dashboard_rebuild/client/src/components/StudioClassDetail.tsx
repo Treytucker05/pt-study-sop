@@ -359,6 +359,7 @@ export function StudioClassDetail({
           </Button>
           <Button
             onClick={onLaunchSession}
+            aria-label="Launch session"
             className="h-12 rounded-none border-2 border-primary bg-primary/20 px-8 font-arcade text-sm text-primary transition-colors hover:bg-primary/30"
           >
             <Zap className="mr-1 h-4 w-4" /> START SESSION

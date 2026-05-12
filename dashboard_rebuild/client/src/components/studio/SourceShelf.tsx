@@ -639,6 +639,7 @@ function SourceShelfTreeNode({
 }) {
   if (node.kind === "leaf") {
     const isInWorkspace = workspaceObjectIds.includes(node.workspaceObject.id);
+    const shouldShowDetail = normalizeKey(node.detail) !== normalizeKey(node.label);
 
     return (
       <div
@@ -675,12 +676,14 @@ function SourceShelfTreeNode({
                 </Badge>
               ) : null}
             </div>
-            <div
-              className="truncate text-[11px] text-foreground/60"
-              title={node.workspaceObject.detail}
-            >
-              {node.detail}
-            </div>
+            {shouldShowDetail ? (
+              <div
+                className="truncate text-[11px] text-foreground/60"
+                title={node.workspaceObject.detail}
+              >
+                {node.detail}
+              </div>
+            ) : null}
           </div>
           <div className="flex shrink-0 items-center gap-0.5">
             <Button
@@ -736,6 +739,7 @@ function SourceShelfTreeNode({
         />
         <button
           type="button"
+          aria-label={`${node.label} ${checkedLeafCount}/${leafNodes.length} loaded`}
           onClick={() => onToggleExpanded(node.id)}
           className="flex min-w-0 flex-1 items-center gap-1.5 rounded-sm bg-transparent px-1 py-0.5 text-left transition-colors hover:bg-white/5"
         >
@@ -1079,6 +1083,7 @@ export function SourceShelf({
           <div className="mt-2 text-sm text-foreground/90">
             {runMaterialCount} material{runMaterialCount === 1 ? "" : "s"} loaded
           </div>
+          <div className="sr-only">{runMaterialCount} materials in run</div>
           <div className="mt-1 text-sm text-foreground/90">
             {runVaultCount} vault link{runVaultCount === 1 ? "" : "s"} loaded
           </div>

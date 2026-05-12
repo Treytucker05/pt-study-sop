@@ -41,14 +41,14 @@ function renderPolishStudio({
   feedbackEvents = [],
   memoryCapsules = [],
   existingBundle = null,
-  onSaveDraft = vi.fn(),
+  onSaveDraft = vi.fn() as (payload: any) => void,
 }: {
   promotedNotes?: StudioPolishPromotedNote[];
   capturedNotes?: TutorCapturedNote[];
   feedbackEvents?: TutorFeedbackEvent[];
   memoryCapsules?: TutorMemoryCapsule[];
   existingBundle?: TutorPolishBundle | null;
-  onSaveDraft?: ReturnType<typeof vi.fn>;
+  onSaveDraft?: (payload: any) => void;
 } = {}) {
   const workflow = {
     workflow_id: "wf-polish",

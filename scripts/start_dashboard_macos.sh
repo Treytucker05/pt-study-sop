@@ -119,17 +119,47 @@ cd "$SERVER_DIR"
 "$ROOT_DIR/.venv/bin/python" db_setup.py
 
 echo "[5/5] Starting dashboard..."
+DASHBOARD_URL="http://$PT_BRAIN_HOST:$PT_BRAIN_PORT/brain"
+HEALTH_URL="http://$PT_BRAIN_HOST:$PT_BRAIN_PORT/api/brain/status"
+
+open_dashboard_page() {
+  if [ "${PT_NO_BROWSER:-0}" != "1" ] && command -v open >/dev/null 2>&1; then
+    open "$DASHBOARD_URL" >/dev/null 2>&1 || true
+  fi
+}
+
+wait_and_open_dashboard_page() {
+  if [ "${PT_NO_BROWSER:-0}" = "1" ] || ! command -v open >/dev/null 2>&1; then
+    return
+  fi
+
+  (
+    if command -v curl >/dev/null 2>&1; then
+      for _ in {1..30}; do
+        if curl -fsS "$HEALTH_URL" >/dev/null 2>&1 || curl -fsS "$DASHBOARD_URL" >/dev/null 2>&1; then
+          open "$DASHBOARD_URL" >/dev/null 2>&1 || true
+          exit 0
+        fi
+        sleep 1
+      done
+    fi
+    open "$DASHBOARD_URL" >/dev/null 2>&1 || true
+  ) &
+}
+
 if command -v lsof >/dev/null 2>&1 && lsof -nP -iTCP:"$PT_BRAIN_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
-  echo "[ERROR] Port $PT_BRAIN_PORT is already in use."
+  if command -v curl >/dev/null 2>&1 && { curl -fsS "$HEALTH_URL" >/dev/null 2>&1 || curl -fsS "$DASHBOARD_URL" >/dev/null 2>&1; }; then
+    echo "[INFO] Dashboard is already running at $DASHBOARD_URL"
+    open_dashboard_page
+    exit 0
+  fi
+  echo "[ERROR] Port $PT_BRAIN_PORT is already in use, but it does not look like this dashboard."
   lsof -nP -iTCP:"$PT_BRAIN_PORT" -sTCP:LISTEN || true
   echo "Set PT_BRAIN_PORT to another port and rerun, for example: PT_BRAIN_PORT=5128 ./Start_Dashboard.command"
   exit 1
 fi
 
-DASHBOARD_URL="http://$PT_BRAIN_HOST:$PT_BRAIN_PORT/brain"
 echo "[INFO] Dashboard URL: $DASHBOARD_URL"
-if [ "${PT_NO_BROWSER:-0}" != "1" ] && command -v open >/dev/null 2>&1; then
-  open "$DASHBOARD_URL" >/dev/null 2>&1 || true
-fi
+wait_and_open_dashboard_page
 
 exec "$ROOT_DIR/.venv/bin/python" dashboard_web.py

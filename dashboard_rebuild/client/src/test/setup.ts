@@ -1,5 +1,48 @@
 import "@testing-library/jest-dom";
 
+function createMemoryStorage(): Storage {
+  const store = new Map<string, string>();
+  return {
+    get length() {
+      return store.size;
+    },
+    clear: () => {
+      store.clear();
+    },
+    getItem: (key: string) => store.get(String(key)) ?? null,
+    key: (index: number) => Array.from(store.keys())[index] ?? null,
+    removeItem: (key: string) => {
+      store.delete(String(key));
+    },
+    setItem: (key: string, value: string) => {
+      store.set(String(key), String(value));
+    },
+  };
+}
+
+function ensureStorage(name: "localStorage" | "sessionStorage") {
+  const current = globalThis[name] as Storage | undefined;
+  if (current && typeof current.clear === "function") {
+    return;
+  }
+
+  const storage = createMemoryStorage();
+  Object.defineProperty(globalThis, name, {
+    configurable: true,
+    writable: true,
+    value: storage,
+  });
+  if (typeof window !== "undefined") {
+    Object.defineProperty(window, name, {
+      configurable: true,
+      value: storage,
+    });
+  }
+}
+
+ensureStorage("localStorage");
+ensureStorage("sessionStorage");
+
 const matchMediaStub = (query: string): MediaQueryList => ({
   matches: false,
   media: query,

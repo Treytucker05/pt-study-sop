@@ -12,6 +12,7 @@ const useQueryMock = vi.fn();
 let draftQueryData: Array<{
   id: number;
   sessionId: string;
+  courseId?: number;
   deckName: string;
   cardType: string;
   front: string;

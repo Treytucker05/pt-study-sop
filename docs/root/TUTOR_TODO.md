@@ -28,6 +28,19 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 - Ops note (2026-03-25): `dev-browser` is now a shared agent skill projected into every supported agent root; this does not change Tutor sprint priority.
 
+- [x] OPS-CROSS-PLATFORM-AUDIT-P0-2026-05-11. Review Codex Cloud repo audit, restore frontend typecheck, and keep Mac/Windows launch behavior aligned.
+  - Scope:
+    - Reproduce and fix P0 frontend `npm run check` failures.
+    - Preserve Windows `Start_Dashboard.bat` behavior while hardening macOS `Start_Dashboard.command`.
+    - Run focused frontend checks/tests before broader cleanup.
+  - Assignee: @codex-cli
+  - Completed: 2026-05-11
+  - Validation:
+    - `cd dashboard_rebuild && npm run check` passed.
+    - `cd dashboard_rebuild && npm run test` passed: 97 files, 994 tests.
+    - `cd dashboard_rebuild && npm run build` passed and rebuilt `brain/static/dist`.
+    - `bash -n scripts/start_dashboard_macos.sh` passed.
+
 - [x] OPS-NEW-COMPUTER-INSTALL-2026-05-10. Productize new-computer install and macOS launch path.
   - Scope landed:
     - Added `docs/root/INSTALL.md` as the canonical product-style install guide for Windows/macOS prerequisites, fresh GitHub clone setup, first-run `.env` configuration, local data-transfer boundaries, new-semester setup, daily GitHub sync, verification, and troubleshooting.

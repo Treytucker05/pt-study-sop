@@ -12,6 +12,7 @@ import type {
   TutorPrimingMethodRun,
   TutorPrimingResultBlock,
   TutorPrimingSourceInventoryItem,
+  TutorPrimingSourceOutput,
 } from "@/api.types";
 import type { TutorPrimingReadinessItem } from "@/components/TutorWorkflowPrimingPanel";
 import type { TutorWorkflowLaunchFilters } from "@/components/TutorWorkflowLaunchHub";
@@ -34,9 +35,12 @@ export interface TutorWorkflowSessionBridge {
   checkpointWorkflowStudyTimer: UseTutorSessionReturn["checkpointWorkflowStudyTimer"];
   latestCommittedAssistantMessage: UseTutorSessionReturn["latestCommittedAssistantMessage"];
   artifacts: UseTutorSessionReturn["artifacts"];
+  activeContentFilter: UseTutorSessionReturn["activeContentFilter"];
 }
 
 export interface UseTutorWorkflowParams {
+  shellMode?: unknown;
+  setShellMode?: unknown;
   hub: UseTutorHubReturn;
   session: TutorWorkflowSessionBridge;
   activeSessionId: string | null;
@@ -985,25 +989,27 @@ export function useTutorWorkflow({
         }
 
         const outputs = buildDisplayedRunMethodOutputs(run, itemBlocks);
-        const nextPrimingOutput = {
+        const nextPrimingOutput: TutorPrimingSourceOutput = {
           ...(item.priming_output || {}),
           material_id: item.id,
           title: item.title,
           source_path: item.source_path ?? null,
-          ...(Array.isArray(outputs.learning_objectives)
-            ? { learning_objectives: outputs.learning_objectives as Array<Record<string, unknown>> }
-            : {}),
+          learning_objectives: Array.isArray(outputs.learning_objectives)
+            ? (outputs.learning_objectives as TutorPrimingSourceOutput["learning_objectives"])
+            : (item.priming_output?.learning_objectives ?? []),
+          concepts: Array.isArray(outputs.concepts)
+            ? (outputs.concepts as string[])
+            : (item.priming_output?.concepts ?? []),
+          terminology: Array.isArray(outputs.terminology)
+            ? (outputs.terminology as string[])
+            : (item.priming_output?.terminology ?? []),
+          gaps: Array.isArray(outputs.gaps)
+            ? (outputs.gaps as string[])
+            : Array.isArray(outputs.follow_up_targets)
+              ? (outputs.follow_up_targets as string[])
+              : (item.priming_output?.gaps ?? []),
           ...(typeof outputs.summary === "string" ? { summary: outputs.summary } : {}),
           ...(typeof outputs.map === "string" ? { root_explanation: outputs.map } : {}),
-          ...(Array.isArray(outputs.terminology)
-            ? { terminology: outputs.terminology as string[] }
-            : {}),
-          ...(Array.isArray(outputs.concepts) ? { concepts: outputs.concepts as string[] } : {}),
-          ...(Array.isArray(outputs.gaps)
-            ? { gaps: outputs.gaps as string[] }
-            : Array.isArray(outputs.follow_up_targets)
-              ? { gaps: outputs.follow_up_targets as string[] }
-              : {}),
         };
 
         if (!run.methodId) {

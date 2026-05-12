@@ -32,6 +32,9 @@ import type { UseTutorHubReturn } from "./useTutorHub";
 
 export interface UseTutorSessionParams {
   initialRouteQuery: TutorShellQuery;
+  shellMode?: unknown;
+  setShellMode?: unknown;
+  studioView?: unknown;
   hub: UseTutorHubReturn;
   tutorChainId: number | undefined;
   tutorCustomBlockIds: number[];

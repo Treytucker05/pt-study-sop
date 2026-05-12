@@ -54,6 +54,10 @@ import {
 } from "@/lib/studioRunRuntimeState";
 import { toast } from "sonner";
 
+function toJsonRecords<T extends object>(items: T[]): Record<string, unknown>[] {
+  return items.map((item) => ({ ...item }) as Record<string, unknown>);
+}
+
 function useTutorPageController() {
   const queryClient = useQueryClient();
   const initialRouteQuery = useMemo(() => readTutorShellQuery(), []);
@@ -194,12 +198,13 @@ function useTutorPageController() {
   ]);
 
   const sessionBridgeRef = useRef<TutorWorkflowSessionBridge>({
-    startSession: async () => undefined,
+    startSession: async () => null,
     resumeSession: async () => undefined,
     clearActiveSessionState: () => undefined,
     checkpointWorkflowStudyTimer: async () => 0,
     latestCommittedAssistantMessage: null,
     artifacts: [],
+    activeContentFilter: null,
   });
   // Audit F1: stable-identity bridge whose property reads are forwarded
   // live to `sessionBridgeRef.current`. Pre-fix we passed
@@ -260,10 +265,16 @@ function useTutorPageController() {
   }, [session]);
   const previousSessionCourses = useMemo(
     () =>
-      (hub.tutorContentSources?.courses || []).map((course) => ({
-        id: course.id,
-        name: course.name,
-      })),
+      (hub.tutorContentSources?.courses || []).flatMap((course) =>
+        typeof course.id === "number"
+          ? [
+              {
+                id: course.id,
+                name: course.name || `Course #${course.id}`,
+              },
+            ]
+          : [],
+      ),
     [hub.tutorContentSources?.courses],
   );
   const previousSessionCourseMap = useMemo(
@@ -368,13 +379,13 @@ function useTutorPageController() {
         setActiveBoardId(nextProjectShell.workspace_state.active_board_id);
       }
       setViewerState(nextProjectShell.workspace_state.viewer_state || null);
-      // Restore the floating panel layout (positions, sizes, collapsed state,
-      // groupings) from the server only when the user has previously
-      // dismissed the entry card on this device (PR #146 / PR #147). On
-      // first visit the entry card is the canvas — restoring stale panels
-      // underneath it would defeat the empty-start design and persist the
-      // hydrated layout right back over the user's intent.
-      if (readTutorEntryCardDismissed()) {
+      // Restore the floating panel layout from the server when the user has
+      // already committed to Studio on this device. A direct `mode=studio`
+      // route is also an explicit Studio entry, so it should honor saved
+      // panel state instead of showing an empty entry card over it.
+      const shouldRestoreSavedStudioLayout =
+        readTutorEntryCardDismissed() || initialRouteQuery.mode === "studio";
+      if (shouldRestoreSavedStudioLayout) {
         setPanelLayout(
           normalizeStudioPanelLayout(
             nextProjectShell.workspace_state.panel_layout,
@@ -996,14 +1007,14 @@ function useTutorPageController() {
       active_board_scope: activeBoardScope,
       active_board_id: activeBoardId,
       viewer_state: viewerState,
-      panel_layout: panelLayout,
-      document_tabs: documentTabs,
+      panel_layout: toJsonRecords(panelLayout),
+      document_tabs: toJsonRecords(documentTabs),
       active_document_tab_id: activeDocumentTabId,
       runtime_state: serializeStudioRunRuntimeState(runtimeState),
       tutor_chain_id: tutorChainId ?? null,
       tutor_custom_block_ids: tutorCustomBlockIds,
-      prime_packet_promoted_objects: promotedPrimePacketObjects,
-      polish_packet_promoted_notes: promotedPolishPacketNotes,
+      prime_packet_promoted_objects: toJsonRecords(promotedPrimePacketObjects),
+      polish_packet_promoted_notes: toJsonRecords(promotedPolishPacketNotes),
       selected_material_ids: hub.selectedMaterials,
     };
 
@@ -1274,6 +1285,7 @@ function useTutorPageController() {
           }
           entryCardFlashActive={entryCardFlashActive}
           entryCardStatusMessage={entryCardStatusMessage}
+          showEntryFullStudioAction
           onStartPriming={handleStartPrimingFromEntry}
           isStartingPriming={startPrimingPending}
           startPrimingViewportFocusRequestKey={

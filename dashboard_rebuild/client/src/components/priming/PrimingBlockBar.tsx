@@ -115,7 +115,7 @@ export function PrimingBlockBar({
       )}
 
       {/* Horizontal scrollable block bar */}
-      <ScrollArea className="w-full" type="scroll">
+      <ScrollArea className="w-full">
         <div className="flex items-center gap-2 px-3 py-2">
           {primeBlocks.map((block) => {
             const isActive = block.id === activeBlockId;

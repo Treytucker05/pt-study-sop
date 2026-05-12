@@ -83,7 +83,7 @@ export function RunConfigPanel({
 }: RunConfigPanelProps) {
   const tutorStart = getTutorStartSummary(tutorChainId, tutorCustomBlockIds);
   const primingMethodOptions = useMemo(() => {
-    const optionMap = new Map(
+    const optionMap = new Map<string, string>(
       PRIMING_METHOD_OPTIONS.map((option) => [option.id, option.label] as const),
     );
     for (const methodId of primingMethodIds) {
@@ -172,7 +172,7 @@ export function RunConfigPanel({
               </option>
               {templateChains.map((chain) => (
                 <option key={chain.id} value={String(chain.id)}>
-                  {chain.title || `Chain #${chain.id}`}
+                  {chain.name || `Chain #${chain.id}`}
                 </option>
               ))}
             </select>

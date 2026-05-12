@@ -202,7 +202,7 @@ export function buildPrimePacketSections({
     .filter((material) => selectedMaterialIdSet.has(material.id))
     .map((material) => ({
       id: `material:${material.id}`,
-      title: material.title,
+      title: material.title || `Material #${material.id}`,
       // Display only the file's basename so the packet doesn't wrap the
       // whole absolute path (e.g. C:\pt-study-sop\brain\data\uploads\…). The
       // full path is still available via material.source_path for consumers

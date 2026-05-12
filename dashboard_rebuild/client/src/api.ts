@@ -21,7 +21,7 @@ import type {
   SyllabusImportResult,
   JanitorIssue, JanitorOptions, JanitorHealthResponse, JanitorScanResponse,
   AiResolveResponse, AiApplyResponse, BatchEnrichResponse,
-  ScholarQuestion, ScholarChatResponse, ScholarFinding,
+  ScholarQuestion, ScholarChatResponse, ScholarFinding, ScholarProposal,
   ScholarInvestigation, ScholarInvestigationDetail, ScholarInvestigationCreatePayload,
   TutorAuditItem, ScholarClustersResponse, ScholarRunResult, ScholarRunStatus,
   ScholarRunHistoryItem,

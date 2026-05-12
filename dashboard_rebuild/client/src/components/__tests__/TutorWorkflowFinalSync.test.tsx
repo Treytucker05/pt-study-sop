@@ -64,7 +64,7 @@ function makeWorkflowDetail(): TutorWorkflowDetailResponse {
         artifacts: [],
       },
     },
-  } as TutorWorkflowDetailResponse;
+  } as unknown as TutorWorkflowDetailResponse;
 }
 
 function renderFinalSync() {

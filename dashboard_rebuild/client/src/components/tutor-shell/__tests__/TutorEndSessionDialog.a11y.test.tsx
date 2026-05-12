@@ -51,8 +51,8 @@ describe("TutorEndSessionDialog — audit F4", () => {
     let resolveEnd: () => void = () => {};
     const endSession = vi.fn(
       () =>
-        new Promise<void>((resolve) => {
-          resolveEnd = resolve;
+        new Promise<null>((resolve) => {
+          resolveEnd = () => resolve(null);
         }),
     );
     const setShowEndConfirm = vi.fn();

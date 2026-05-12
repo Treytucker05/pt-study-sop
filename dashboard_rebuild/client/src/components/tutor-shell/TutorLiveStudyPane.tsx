@@ -6,9 +6,10 @@ import { type ReactNode } from "react";
 import { TutorChat } from "@/components/TutorChat";
 import { TutorEmptyState } from "@/components/TutorEmptyState";
 import { TutorEndSessionDialog } from "@/components/tutor-shell/TutorEndSessionDialog";
-import { UseTutorHubReturn } from "@/hooks/useTutorHub";
-import { UseTutorSessionReturn } from "@/hooks/useTutorSession";
-import { UseTutorWorkflowReturn } from "@/hooks/useTutorWorkflow";
+import type { BrainFeedbackPayload } from "@/hooks/useBrainFeedback";
+import type { UseTutorHubReturn } from "@/hooks/useTutorHub";
+import type { UseTutorSessionReturn } from "@/hooks/useTutorSession";
+import type { UseTutorWorkflowReturn } from "@/hooks/useTutorWorkflow";
 
 interface TutorLiveStudyPaneProps {
   activeSessionId: string | null;
@@ -33,7 +34,7 @@ interface TutorLiveStudyPaneProps {
     index: number;
   }) => void;
   onCompactionTelemetry: (telemetry: Record<string, unknown> | null) => void;
-  submitBrainFeedback: (payload: Record<string, unknown>) => void | Promise<void>;
+  submitBrainFeedback: (payload: BrainFeedbackPayload) => void | Promise<void>;
 }
 
 export function TutorLiveStudyPane({
@@ -141,7 +142,18 @@ export function TutorLiveStudyPane({
             void onSaveGist(content);
           }}
           onPromoteToPolishPacket={(payload) => {
-            onPromoteTutorReplyToPolish(payload);
+            if (payload.message.role !== "assistant") {
+              return;
+            }
+            onPromoteTutorReplyToPolish({
+              message: {
+                messageId: payload.message.messageId,
+                sessionTurnNumber: payload.message.sessionTurnNumber,
+                role: "assistant",
+                content: payload.message.content,
+              },
+              index: payload.index,
+            });
           }}
           onFeedback={(payload) => {
             void workflow.saveWorkflowMessageFeedback(payload);

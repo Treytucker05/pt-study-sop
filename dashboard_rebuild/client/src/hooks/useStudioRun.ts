@@ -270,10 +270,10 @@ export function useStudioRun({
         ...current,
         primingMethodIds,
       })),
-    setPrimingChainId: (primingChainId: number | null) =>
+    setPrimingChainId: (primingChainId: number | null | undefined) =>
       setRuntimeState((current) => ({
         ...current,
-        primingChainId,
+        primingChainId: primingChainId ?? null,
       })),
     setPrimingCustomBlockIds: (primingCustomBlockIds: number[]) =>
       setRuntimeState((current) => ({

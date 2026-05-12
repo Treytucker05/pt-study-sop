@@ -55,14 +55,19 @@ import type { TutorBoardScope } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import type { ChangeEvent } from "react";
 
-type PrimePromotedWorkspaceObject = Extract<
-  StudioWorkspaceObject,
-  { kind: "excerpt" | "text_note" }
->;
+type PrimePromotedWorkspaceObject =
+  | Extract<StudioWorkspaceObject, { kind: "excerpt" }>
+  | Extract<StudioWorkspaceObject, { kind: "text_note" }>;
 
 function readTemplateChainLabel(chain: TutorTemplateChain): string {
   const legacyTitle = (chain as TutorTemplateChain & { title?: string }).title;
   return chain.name || legacyTitle || `Chain #${chain.id}`;
+}
+
+function isPrimePromotedWorkspaceObject(
+  workspaceObject: StudioWorkspaceObject,
+): workspaceObject is PrimePromotedWorkspaceObject {
+  return workspaceObject.kind === "excerpt" || workspaceObject.kind === "text_note";
 }
 
 function readCapsuleRecordLabel(record: Record<string, unknown> | null | undefined): string | null {
@@ -198,7 +203,7 @@ export interface TutorShellProps {
   queryClient: ReturnType<
     typeof import("@tanstack/react-query").useQueryClient
   >;
-  promotedPrimePacketObjects?: PrimePromotedWorkspaceObject[];
+  promotedPrimePacketObjects?: StudioWorkspaceObject[];
   promotedPolishPacketNotes?: StudioPolishPromotedNote[];
   onPromotePrimePacketObject?: (
     workspaceObject: PrimePromotedWorkspaceObject,
@@ -210,6 +215,7 @@ export interface TutorShellProps {
   onEntryMaterialSelectionTouchedChange?: (touched: boolean) => void;
   entryCardFlashActive?: boolean;
   entryCardStatusMessage?: string | null;
+  showEntryFullStudioAction?: boolean;
   onStartPriming?: () => void | Promise<void>;
   isStartingPriming?: boolean;
   startPrimingViewportFocusRequestKey?: number | null;
@@ -409,6 +415,7 @@ export function TutorShell({
   onEntryMaterialSelectionTouchedChange,
   entryCardFlashActive = false,
   entryCardStatusMessage = null,
+  showEntryFullStudioAction = false,
   onStartPriming,
   isStartingPriming = false,
   startPrimingViewportFocusRequestKey = null,
@@ -474,6 +481,9 @@ export function TutorShell({
     const merged = new Map<string, PrimePromotedWorkspaceObject>();
 
     for (const workspaceObject of controlledPromotedPrimePacketObjects ?? []) {
+      if (!isPrimePromotedWorkspaceObject(workspaceObject)) {
+        continue;
+      }
       merged.set(workspaceObject.id, workspaceObject);
     }
 
@@ -546,13 +556,8 @@ export function TutorShell({
       promotedPrimePacketObjects.filter(
         (
           workspaceObject,
-        ): workspaceObject is Exclude<
-          StudioWorkspaceObject,
-          { kind: "material" | "vault_path" | "excerpt" }
-        > =>
-          workspaceObject.kind !== "material" &&
-          workspaceObject.kind !== "vault_path" &&
-          workspaceObject.kind !== "excerpt",
+        ): workspaceObject is Extract<StudioWorkspaceObject, { kind: "text_note" }> =>
+          workspaceObject.kind === "text_note",
       ),
     [promotedPrimePacketObjects],
   );
@@ -1051,7 +1056,19 @@ export function TutorShell({
     [setPanelLayout],
   );
   const availableCourses = useMemo(
-    () => hub.tutorContentSources?.courses || [],
+    () =>
+      (hub.tutorContentSources?.courses || []).flatMap((course) =>
+        typeof course.id === "number"
+          ? [
+              {
+                id: course.id,
+                name: course.name || `Course #${course.id}`,
+                vault_folder: course.vault_folder,
+                vault_path: course.vault_path,
+              },
+            ]
+          : [],
+      ),
     [hub.tutorContentSources?.courses],
   );
   const selectedSourceShelfCourse = useMemo(
@@ -1483,7 +1500,7 @@ export function TutorShell({
           primingMethods={resolvedPrimingMethodIds}
           setPrimingMethods={handleSetPrimingMethods}
           primingMethodRuns={workflow.primingMethodRuns}
-          chainId={primingChainId}
+          chainId={primingChainId ?? undefined}
           setChainId={handleSetPrimingChainId}
           customBlockIds={primingCustomBlockIds}
           setCustomBlockIds={handleSetPrimingCustomBlockIds}
@@ -1729,17 +1746,17 @@ export function TutorShell({
         data-testid="studio-notes-textarea"
         value={notesScratchpad}
         onChange={(event) => {
-          setNotesScratchpad(event.target.value);
+          setNotesScratchpad(event.currentTarget.value);
           setNotesDraft?.({
             sessionKey: notesSessionKey,
-            content: event.target.value,
+            content: event.currentTarget.value,
           });
         }}
         onInput={(event) => {
-          setNotesScratchpad(event.target.value);
+          setNotesScratchpad(event.currentTarget.value);
           setNotesDraft?.({
             sessionKey: notesSessionKey,
-            content: event.target.value,
+            content: event.currentTarget.value,
           });
         }}
         placeholder="Capture quick notes, questions, and prompts here."
@@ -2037,6 +2054,19 @@ export function TutorShell({
         >
           Skip Setup
         </Button>
+        {showEntryFullStudioAction ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setShowSetup(false);
+              applyCanvasPreset("full_studio");
+            }}
+            className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-xs uppercase tracking-[0.18em] text-[#ffd6de]"
+          >
+            Open Full Studio
+          </Button>
+        ) : null}
         {resumeCandidate ? (
           <Button
             type="button"

@@ -8,7 +8,10 @@ import {
   resetPrimingPanelSessionState,
   setPrimingPanelSessionState,
 } from "@/components/priming/primingPanelState";
-import type { TutorPrimingMethodRun } from "@/api.types";
+import type {
+  TutorPrimingMethodRun,
+  TutorPrimingSourceInventoryItem,
+} from "@/api.types";
 
 const { getPrimeMethodsMock, startChainRunMock, refinePrimingAssistMock } = vi.hoisted(() => ({
   getPrimeMethodsMock: vi.fn(),
@@ -566,7 +569,9 @@ describe("TutorWorkflowPrimingPanel", () => {
     function Harness() {
       const [primingMethods, setPrimingMethods] = useState<string[]>([]);
       const [isRunningAssist, setIsRunningAssist] = useState(false);
-      const [sourceInventory, setSourceInventory] = useState([
+      const [sourceInventory, setSourceInventory] = useState<
+        TutorPrimingSourceInventoryItem[]
+      >([
         {
           id: 101,
           title: "Cardiac Output Lecture",
@@ -753,7 +758,9 @@ describe("TutorWorkflowPrimingPanel", () => {
     function Harness() {
       const [primingMethods, setPrimingMethods] = useState<string[]>([]);
       const [isRunningAssist, setIsRunningAssist] = useState(false);
-      const [sourceInventory, setSourceInventory] = useState([
+      const [sourceInventory, setSourceInventory] = useState<
+        TutorPrimingSourceInventoryItem[]
+      >([
         {
           id: 101,
           title: "Cardiac Output Lecture",

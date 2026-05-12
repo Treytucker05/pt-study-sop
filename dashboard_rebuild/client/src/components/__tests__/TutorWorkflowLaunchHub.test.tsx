@@ -362,7 +362,7 @@ describe("TutorWorkflowLaunchHub", () => {
       assignment_title: null,
       study_unit: null,
       topic: null,
-      updated_at: null,
+      updated_at: "",
     };
 
     render(

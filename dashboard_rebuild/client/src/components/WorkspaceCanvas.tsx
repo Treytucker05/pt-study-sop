@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo, lazy, Suspense, type ReactElement } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo, lazy, Suspense, type ReactElement } from "react";
 import { createPortal } from "react-dom";
 import {
   FileText,
@@ -18,6 +18,8 @@ import {
   Maximize,
   Maximize2,
   Minimize2,
+  MessageSquare,
+  Sparkles,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -29,7 +31,11 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { Material, MethodBlock } from "@/api.types";
 import type { Course } from "@shared/schema";
-import { PacketPanel, type PacketItem } from "@/components/workspace/PacketPanel";
+import { PacketPanel, type PacketItem as PacketPanelItem } from "@/components/workspace/PacketPanel";
+import { TutorChatPanel } from "@/components/workspace/TutorChatPanel";
+import { FlaggedRepliesPanel } from "@/components/workspace/FlaggedRepliesPanel";
+import { PolishAssistPanel } from "@/components/workspace/PolishAssistPanel";
+import { AnkiPanel } from "@/components/workspace/AnkiPanel";
 import { WorkspacePanel } from "@/components/ui/WorkspacePanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -67,7 +73,17 @@ const MindMapView = lazy(() =>
 export interface WorkspaceCanvasProps {
   courseId: number | null;
   selectedMaterialIds: number[];
+  sessionId?: string | null;
+  mode?: string;
+  addToPacket?: (item: PacketItem) => void;
+  packetItems?: PacketItem[];
 }
+
+export type PacketItem = Partial<PacketPanelItem> & {
+  id: string;
+  kind?: string;
+  label?: string;
+};
 
 // ── Panel registry types ──────────────────────────────────────────────
 
@@ -90,6 +106,10 @@ export const PANEL_REGISTRY: PanelRegistryEntry[] = [
   { type: "vault-graph",     label: "Vault Graph",     icon: GitBranch,   defaultSize: { width: 600, height: 500 }, allowMultiple: false },
   { type: "mind-map",        label: "Mind Map",        icon: Brain,       defaultSize: { width: 600, height: 500 }, allowMultiple: false },
   { type: "obsidian",        label: "Obsidian",        icon: BookOpen,    defaultSize: { width: 400, height: 500 }, allowMultiple: false },
+  { type: "tutor-chat",      label: "Tutor Chat",      icon: MessageSquare, defaultSize: { width: 420, height: 560 }, allowMultiple: false },
+  { type: "flagged-replies", label: "Flagged Replies", icon: MessageSquare, defaultSize: { width: 360, height: 420 }, allowMultiple: false },
+  { type: "polish-assist",   label: "Polish Assist",   icon: Sparkles,    defaultSize: { width: 420, height: 500 }, allowMultiple: false },
+  { type: "anki-cards",      label: "Anki Cards",      icon: BookOpen,    defaultSize: { width: 380, height: 480 }, allowMultiple: false },
 ];
 
 // ── Panel instance state ──────────────────────────────────────────────
@@ -140,6 +160,21 @@ function buildDefaultLayout(): PanelInstance[] {
       collapsed: false,
     },
   ];
+}
+
+function createPanelInstance(type: string, instanceCount: number): PanelInstance | null {
+  const entry = registryFor(type);
+  if (!entry) return null;
+  return {
+    id: nextPanelId(type),
+    type,
+    position: {
+      x: 20 + instanceCount * STAGGER_OFFSET,
+      y: 20 + instanceCount * STAGGER_OFFSET,
+    },
+    size: { ...entry.defaultSize },
+    collapsed: false,
+  };
 }
 
 // ── Lazy-loading placeholder ──────────────────────────────────────────
@@ -289,7 +324,11 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 const ALL_CATEGORY = "ALL" as const;
 
-function MethodRunnerContent(): ReactElement {
+function MethodRunnerContent({
+  onSendToPacket,
+}: {
+  onSendToPacket?: (item: PacketItem) => void;
+}): ReactElement {
   const [selectedBlock, setSelectedBlock] = useState<MethodBlock | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORY);
   const [searchQuery, setSearchQuery] = useState("");
@@ -383,6 +422,24 @@ function MethodRunnerContent(): ReactElement {
               ))}
             </div>
           )}
+          <button
+            type="button"
+            className="mt-3 rounded-sm border border-primary/25 px-2 py-1 font-terminal text-xs uppercase tracking-wider text-primary/80 hover:bg-primary/10"
+            onClick={() =>
+              onSendToPacket?.({
+                id: `method:${selectedBlock.id}`,
+                type: "method_output",
+                title: selectedBlock.name,
+                content:
+                  selectedBlock.facilitation_prompt ||
+                  selectedBlock.description ||
+                  selectedBlock.name,
+                methodId: selectedBlock.method_id ?? undefined,
+              })
+            }
+          >
+            Send to Packet
+          </button>
         </div>
       </div>
     );
@@ -501,8 +558,40 @@ function nextPacketItemId(): string {
   return `pkt-${_packetIdCounter}`;
 }
 
-function PacketPanelContent({ courseId }: { courseId: number | null }): ReactElement {
-  const [items, setItems] = useState<PacketItem[]>([]);
+function normalizePacketItem(item: PacketItem, index: number): PacketPanelItem {
+  const title = item.title || item.label || `Packet item ${index + 1}`;
+  const rawType = item.type || item.kind || "note";
+  const type: PacketPanelItem["type"] =
+    rawType === "material" ||
+    rawType === "method_output" ||
+    rawType === "note" ||
+    rawType === "objectives" ||
+    rawType === "drawing" ||
+    rawType === "custom"
+      ? rawType
+      : "note";
+  return {
+    id: item.id,
+    type,
+    title,
+    content: item.content ?? "",
+    methodId: item.methodId,
+    addedAt: item.addedAt || new Date(0).toISOString(),
+  };
+}
+
+function PacketPanelContent({
+  courseId,
+  packetItems,
+}: {
+  courseId: number | null;
+  packetItems?: PacketItem[];
+}): ReactElement {
+  const [items, setItems] = useState<PacketPanelItem[]>([]);
+  const controlledItems = useMemo(
+    () => packetItems?.map(normalizePacketItem),
+    [packetItems],
+  );
 
   const { data: course } = useQuery<Course>({
     queryKey: ["workspace-course", courseId],
@@ -510,8 +599,8 @@ function PacketPanelContent({ courseId }: { courseId: number | null }): ReactEle
     enabled: courseId !== null,
   });
 
-  const addItem = useCallback((item: Omit<PacketItem, "id" | "addedAt">) => {
-    const full: PacketItem = {
+  const addItem = useCallback((item: Omit<PacketPanelItem, "id" | "addedAt">) => {
+    const full: PacketPanelItem = {
       ...item,
       id: nextPacketItemId(),
       addedAt: new Date().toISOString(),
@@ -530,7 +619,7 @@ function PacketPanelContent({ courseId }: { courseId: number | null }): ReactEle
   return (
     <div className="h-full p-2">
       <PacketPanel
-        items={items}
+        items={controlledItems ?? items}
         onAddItem={addItem}
         onRemoveItem={removeItem}
         onClearAll={clearAll}
@@ -538,6 +627,38 @@ function PacketPanelContent({ courseId }: { courseId: number | null }): ReactEle
       />
     </div>
   );
+}
+
+function TutorChatPanelContent(): ReactElement {
+  return (
+    <TutorChatPanel
+      sessionId={null}
+      chainMode="auto"
+      onChainModeChange={() => undefined}
+      selectedChainId={null}
+      onChainSelect={() => undefined}
+      availableChains={[]}
+      availableMethods={[]}
+      selectedMethodId={null}
+      onMethodSelect={() => undefined}
+    >
+      <div data-testid="workspace-tutor-chat-empty" className="p-3 text-xs text-primary/60">
+        Tutor chat is managed by the Tutor shell.
+      </div>
+    </TutorChatPanel>
+  );
+}
+
+function FlaggedRepliesPanelContent(): ReactElement {
+  return <FlaggedRepliesPanel flaggedReplies={[]} />;
+}
+
+function PolishAssistPanelContent(): ReactElement {
+  return <PolishAssistPanel workflowId={null} />;
+}
+
+function AnkiPanelContent(): ReactElement {
+  return <AnkiPanel cardDrafts={[]} />;
 }
 
 // ── Tool panel content wrappers ───────────────────────────────────────
@@ -621,6 +742,9 @@ function ZoomControls(): ReactElement {
 export function WorkspaceCanvas({
   courseId,
   selectedMaterialIds,
+  mode,
+  addToPacket,
+  packetItems,
 }: WorkspaceCanvasProps): ReactElement {
   const [panels, setPanels] = useState<PanelInstance[]>(buildDefaultLayout);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -671,6 +795,26 @@ export function WorkspaceCanvas({
     },
     [panels],
   );
+
+  useEffect(() => {
+    if (mode !== "tutor" && mode !== "polish") return;
+    const panelTypes = mode === "polish"
+      ? ["flagged-replies", "polish-assist", "anki-cards"]
+      : ["tutor-chat"];
+    setPanels((current) => {
+      let next = current;
+      for (const panelType of panelTypes) {
+        if (next.some((panel) => panel.type === panelType)) {
+          continue;
+        }
+        const panel = createPanelInstance(panelType, next.length);
+        if (panel) {
+          next = [...next, panel];
+        }
+      }
+      return next;
+    });
+  }, [mode]);
 
   const closePanel = useCallback((id: string) => {
     setPanels((prev) => prev.filter((p) => p.id !== id));
@@ -785,9 +929,17 @@ export function WorkspaceCanvas({
             />
           );
         case "method-runner":
-          return <MethodRunnerContent />;
+          return <MethodRunnerContent onSendToPacket={addToPacket} />;
         case "packet":
-          return <PacketPanelContent courseId={courseId} />;
+          return <PacketPanelContent courseId={courseId} packetItems={packetItems} />;
+        case "flagged-replies":
+          return <FlaggedRepliesPanelContent />;
+        case "polish-assist":
+          return <PolishAssistPanelContent />;
+        case "anki-cards":
+          return <AnkiPanelContent />;
+        case "tutor-chat":
+          return <TutorChatPanelContent />;
         case "excalidraw":
           return <ExcalidrawPanelContent />;
         case "concept-map":

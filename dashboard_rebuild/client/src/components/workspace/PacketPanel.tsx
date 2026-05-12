@@ -119,6 +119,9 @@ export function PacketPanel({
         <h2 className="font-terminal text-sm tracking-wider text-primary/80 uppercase">
           PACKET ({items.length})
         </h2>
+        <span className="sr-only">
+          {items.length} {items.length === 1 ? "item" : "items"}
+        </span>
 
         <div className="flex items-center gap-2">
           {items.length > 0 && (
@@ -149,9 +152,12 @@ export function PacketPanel({
       {/* Item list */}
       <div className="flex-1 overflow-auto min-h-0">
         {items.length === 0 ? (
-          <p className="text-primary/40 text-sm font-terminal text-center py-6">
-            Drag items here or type below to add to your study packet
-          </p>
+          <div className="py-6 text-center font-terminal text-sm text-primary/40">
+            <p>Packet is empty</p>
+            <p className="mt-1 text-xs">
+              Drag items here or type below. Send materials or methods here to add to your study packet.
+            </p>
+          </div>
         ) : (
           <ul className="flex flex-col gap-1">
             {items.map((item) => {

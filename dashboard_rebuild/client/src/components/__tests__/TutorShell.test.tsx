@@ -11,6 +11,9 @@ import {
   getStudioExcerptObjectId,
   getStudioImageObjectId,
 } from "@/lib/studioWorkspaceObjects";
+import type { UseTutorHubReturn } from "@/hooks/useTutorHub";
+import type { UseTutorSessionReturn } from "@/hooks/useTutorSession";
+import type { UseTutorWorkflowReturn } from "@/hooks/useTutorWorkflow";
 
 vi.mock("@/components/TutorErrorBoundary", () => ({
   TutorErrorBoundary: ({ children }: { children: ReactNode }) => <>{children}</>,
@@ -322,9 +325,9 @@ function createQueryWrapper() {
   };
 }
 
-type HubOverrides = Partial<ReturnType<typeof makeHub>>;
+type HubOverrides = Record<string, any>;
 
-function makeHub() {
+function makeHub(): UseTutorHubReturn {
   const hub = {
     tutorContentSources: { courses: [] },
     tutorHub: null,
@@ -357,7 +360,7 @@ function makeHub() {
     setSelectedObjectiveGroup: vi.fn(),
     clearMaterialSelection: vi.fn(),
     refreshChatMaterials: vi.fn().mockResolvedValue(undefined),
-  };
+  } as unknown as UseTutorHubReturn;
   return {
     ...hub,
     getCourseMaterialIds: vi.fn((targetCourseId?: number) =>
@@ -374,10 +377,10 @@ function makeHub() {
             .map((material) => material.id)
         : [],
     ),
-  };
+  } as unknown as UseTutorHubReturn;
 }
 
-function makeHubWithOverrides(overrides: HubOverrides = {}) {
+function makeHubWithOverrides(overrides: HubOverrides = {}): UseTutorHubReturn {
   const base = makeHub();
   const merged = {
     ...base,
@@ -388,7 +391,7 @@ function makeHubWithOverrides(overrides: HubOverrides = {}) {
       base.effectiveStudyUnit,
     effectiveTopic:
       overrides.effectiveTopic ?? overrides.topic ?? base.effectiveTopic,
-  };
+  } as UseTutorHubReturn;
   return {
     ...merged,
     getCourseMaterialIds: vi.fn((targetCourseId?: number) =>
@@ -405,10 +408,10 @@ function makeHubWithOverrides(overrides: HubOverrides = {}) {
             .map((material) => material.id)
         : [],
     ),
-  };
+  } as unknown as UseTutorHubReturn;
 }
 
-function makeSession() {
+function makeSession(): UseTutorSessionReturn {
   return {
     preflight: { blockers: [] },
     preflightLoading: false,
@@ -446,22 +449,24 @@ function makeSession() {
     capturedNotes: [],
     sourceInventory: [],
     primingMethodRuns: [],
-  };
+  } as unknown as UseTutorSessionReturn;
 }
 
-type SessionOverrides = Partial<ReturnType<typeof makeSession>>;
+type SessionOverrides = Record<string, any>;
 
-function makeSessionWithOverrides(overrides: SessionOverrides = {}) {
+function makeSessionWithOverrides(
+  overrides: SessionOverrides = {},
+): UseTutorSessionReturn {
   return {
     ...makeSession(),
     ...overrides,
-  };
+  } as UseTutorSessionReturn;
 }
 
 type WorkflowView = "home" | "workspace" | "priming" | "polish" | "final_sync";
-type WorkflowOverrides = Partial<ReturnType<typeof makeWorkflow>>;
+type WorkflowOverrides = Record<string, any>;
 
-function makeWorkflow(studioView: WorkflowView) {
+function makeWorkflow(studioView: WorkflowView): UseTutorWorkflowReturn {
   return {
     studioView,
     activeWorkflowDetail: null,
@@ -540,17 +545,17 @@ function makeWorkflow(studioView: WorkflowView) {
     memoryCardRequestsText: "",
     setMemoryCardRequestsText: vi.fn(),
     createWorkflowMemoryCapsule: vi.fn(),
-  };
+  } as unknown as UseTutorWorkflowReturn;
 }
 
 function makeWorkflowWithOverrides(
   studioView: WorkflowView,
   overrides: WorkflowOverrides = {},
-) {
+): UseTutorWorkflowReturn {
   return {
     ...makeWorkflow(studioView),
     ...overrides,
-  };
+  } as UseTutorWorkflowReturn;
 }
 
 function renderTutorShell(
@@ -1826,7 +1831,7 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-entry-upload-status")).toHaveTextContent(
       "Uploading selected files to this course...",
     );
-    resolveUpload?.({ id: 104 });
+    (resolveUpload as unknown as (value: { id: number }) => void)({ id: 104 });
     await uploadPromise;
 
     await waitFor(() => {

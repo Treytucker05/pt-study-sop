@@ -732,7 +732,8 @@ export function TutorWorkflowPrimingPanel({
     () =>
       primeMethods.filter(
         (method): method is MethodBlock & { method_id: string } =>
-          Boolean(method.method_id) && primingMethods.includes(method.method_id),
+          typeof method.method_id === "string" &&
+          primingMethods.includes(method.method_id),
       ),
     [primeMethods, primingMethods],
   );

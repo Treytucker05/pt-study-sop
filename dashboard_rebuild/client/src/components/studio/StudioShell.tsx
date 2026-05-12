@@ -342,7 +342,7 @@ export function buildStudioShellPresetLayout(
   preset: StudioShellPreset,
 ): StudioPanelLayoutItem[] {
   const seeds = PRESET_PANEL_KEYS[preset]
-    .map((panelKey, index) => {
+    .map((panelKey, index): Omit<StudioPanelLayoutItem, "position"> | null => {
       const defaults = PRESET_LAYOUT_DEFAULTS[panelKey];
       if (!defaults) return null;
       return {
@@ -2447,7 +2447,7 @@ export function StudioShell({
                   className="h-7 rounded-full border border-[rgba(255,118,144,0.14)] bg-[rgba(255,84,116,0.08)] px-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white"
                 >
                   <Target className="mr-1 h-3.5 w-3.5" />
-                  100%
+                  1:1
                 </Button>
               </div>
             ) : null}
