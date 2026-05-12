@@ -1,6 +1,8 @@
 """Integration test: build_context with real ChromaDB (materials only)."""
 
 import os
+import sqlite3
+
 import pytest
 
 pytestmark = [
@@ -9,12 +11,27 @@ pytestmark = [
 ]
 
 
+def _rag_doc_count() -> int:
+    import config
+
+    conn = sqlite3.connect(config.DB_PATH)
+    try:
+        return int(conn.execute("SELECT COUNT(*) FROM rag_docs").fetchone()[0])
+    except sqlite3.Error as exc:
+        pytest.skip(f"rag_docs table is not present in this test environment: {exc}")
+    finally:
+        conn.close()
+
+
 @pytest.mark.skipif(
     not (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or os.environ.get("OPENAI_API_KEY")),
     reason="No embedding API key set (GEMINI_API_KEY, GOOGLE_API_KEY, or OPENAI_API_KEY)",
 )
 def test_build_context_auto_returns_materials_from_chroma():
-    """Materials collection has 14,583 vectors — this should return content."""
+    """A loaded material corpus should return content from Chroma."""
+    if _rag_doc_count() == 0:
+        pytest.skip("No material corpus is loaded for this local integration test")
+
     from tutor_context import build_context
 
     result = build_context(

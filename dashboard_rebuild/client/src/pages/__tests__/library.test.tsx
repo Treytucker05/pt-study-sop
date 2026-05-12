@@ -16,6 +16,8 @@ const {
   startSyncMaterialsFolderMock,
   getSyncMaterialsStatusMock,
   reextractMaterialMock,
+  semesterIntakePreviewMock,
+  semesterIntakeApplyMock,
   readTutorSelectedMaterialIdsMock,
   writeTutorSelectedMaterialIdsMock,
   writeTutorStoredStartStateMock,
@@ -33,6 +35,8 @@ const {
   startSyncMaterialsFolderMock: vi.fn(),
   getSyncMaterialsStatusMock: vi.fn(),
   reextractMaterialMock: vi.fn(),
+  semesterIntakePreviewMock: vi.fn(),
+  semesterIntakeApplyMock: vi.fn(),
   readTutorSelectedMaterialIdsMock: vi.fn(),
   writeTutorSelectedMaterialIdsMock: vi.fn(),
   writeTutorStoredStartStateMock: vi.fn(),
@@ -74,6 +78,10 @@ vi.mock("@/lib/api", () => ({
     },
     courses: {
       getActive: getActiveCoursesMock,
+    },
+    semesterIntake: {
+      preview: semesterIntakePreviewMock,
+      apply: semesterIntakeApplyMock,
     },
   },
 }));
@@ -146,6 +154,33 @@ describe("Library tutor handoff", () => {
       model: "gemini-embedding-2-preview",
       collection: "tutor_materials_gemini_gemini-embedding-2-preview",
       auto_selected_provider: false,
+    });
+    semesterIntakePreviewMock.mockResolvedValue({
+      ok: true,
+      folder: "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School",
+      courses: [],
+      global_schedule_files: [],
+      unassigned_material_files: [],
+      ignored_files: [],
+      counts: {
+        courses: 0,
+        syllabus_files: 0,
+        schedule_files: 0,
+        material_files: 0,
+        ignored_files: 0,
+      },
+    });
+    semesterIntakeApplyMock.mockResolvedValue({
+      ok: true,
+      coursesCreated: 0,
+      coursesUpdated: 0,
+      modulesCreated: 0,
+      objectivesCreated: 0,
+      eventsCreated: 0,
+      setupFilesParsed: 0,
+      setupParseErrors: [],
+      materialSyncJobs: [],
+      courses: [],
     });
   });
 
@@ -231,5 +266,103 @@ describe("Library tutor handoff", () => {
     expect(screen.getByRole("combobox", { name: /sync course/i })).toHaveValue(
       "9",
     );
+  });
+
+  it("scans a semester folder and applies course setup from Library", async () => {
+    semesterIntakePreviewMock.mockResolvedValue({
+      ok: true,
+      folder: "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School",
+      courses: [
+        {
+          name: "Dx Mgmt Integumentary",
+          folder_path: "10_Dx_Mgmt_Integumentary",
+          syllabus_files: [
+            {
+              path: "10_Dx_Mgmt_Integumentary/syllabus.docx",
+              name: "syllabus.docx",
+              roles: ["syllabus"],
+              size: 100,
+              modified_at: "2026-05-11T12:00:00",
+            },
+          ],
+          schedule_files: [],
+          material_files: [
+            {
+              path: "10_Dx_Mgmt_Integumentary/week-1.pdf",
+              name: "week-1.pdf",
+              roles: ["material"],
+              size: 200,
+              modified_at: "2026-05-11T12:00:00",
+            },
+          ],
+          readiness: {
+            course: "missing",
+            syllabus: "found",
+            schedule: "missing",
+            materials: "found",
+            embeddings: "pending",
+            readyForTutor: false,
+          },
+        },
+      ],
+      global_schedule_files: [
+        {
+          path: "00_Class_Schedules/semester-schedule.pdf",
+          name: "semester-schedule.pdf",
+          roles: ["schedule"],
+          size: 300,
+          modified_at: "2026-05-11T12:00:00",
+        },
+      ],
+      unassigned_material_files: [],
+      ignored_files: [],
+      counts: {
+        courses: 1,
+        syllabus_files: 1,
+        schedule_files: 1,
+        material_files: 1,
+        ignored_files: 0,
+      },
+    });
+    semesterIntakeApplyMock.mockResolvedValue({
+      ok: true,
+      coursesCreated: 1,
+      coursesUpdated: 0,
+      modulesCreated: 0,
+      objectivesCreated: 0,
+      eventsCreated: 0,
+      setupFilesParsed: 1,
+      setupParseErrors: [],
+      materialSyncJobs: [{ courseId: 1, jobId: "semester-sync-job" }],
+      courses: [{ id: 1, name: "Dx Mgmt Integumentary" }],
+    });
+
+    renderLibrary();
+
+    expect(await screen.findByText("SEMESTER INTAKE")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /scan intake/i }));
+
+    expect(await screen.findByText("Dx Mgmt Integumentary")).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: /apply course setup/i }),
+    );
+
+    await waitFor(() => {
+      expect(semesterIntakeApplyMock).toHaveBeenCalledWith({
+        folder_path:
+          "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School",
+        courses: [
+          {
+            name: "Dx Mgmt Integumentary",
+            folder_path: "10_Dx_Mgmt_Integumentary",
+            syllabus_files: ["10_Dx_Mgmt_Integumentary/syllabus.docx"],
+            schedule_files: [],
+            material_files: ["10_Dx_Mgmt_Integumentary/week-1.pdf"],
+            syllabus: { modules: [] },
+            schedule: { events: [] },
+          },
+        ],
+      });
+    });
   });
 });

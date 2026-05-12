@@ -6,10 +6,15 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 HARNESS_SCRIPT = REPO_ROOT / "scripts" / "harness.ps1"
 PWSH = shutil.which("pwsh") or shutil.which("powershell")
+pytestmark = pytest.mark.skipif(
+    PWSH is None,
+    reason="PowerShell executable is required for harness tests",
+)
 
 
 def _run_harness(

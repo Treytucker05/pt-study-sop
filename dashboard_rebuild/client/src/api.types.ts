@@ -2266,6 +2266,96 @@ export interface TutorSyncStartResult {
   course_id?: number | null;
 }
 
+export interface SemesterIntakeFile {
+  path: string;
+  name: string;
+  roles: ("syllabus" | "schedule" | "material")[];
+  size: number;
+  modified_at: string;
+}
+
+export interface SemesterIntakeCoursePreview {
+  name: string;
+  folder_path: string;
+  course_id?: number;
+  syllabus_files: SemesterIntakeFile[];
+  schedule_files: SemesterIntakeFile[];
+  material_files: SemesterIntakeFile[];
+  readiness: {
+    course: "exists" | "missing" | string;
+    syllabus: "found" | "missing" | string;
+    schedule: "found" | "missing" | string;
+    materials: "found" | "missing" | string;
+    embeddings: "ready" | "pending" | string;
+    readyForTutor: boolean;
+  };
+}
+
+export interface SemesterIntakePreviewResult {
+  ok: boolean;
+  folder: string;
+  courses: SemesterIntakeCoursePreview[];
+  global_schedule_files: SemesterIntakeFile[];
+  unassigned_material_files: SemesterIntakeFile[];
+  ignored_files: SemesterIntakeFile[];
+  counts: {
+    courses: number;
+    syllabus_files: number;
+    schedule_files: number;
+    material_files: number;
+    ignored_files: number;
+  };
+}
+
+export interface SemesterIntakeApplyCoursePayload {
+  name: string;
+  code?: string | null;
+  term?: string | null;
+  folder_path?: string;
+  syllabus_files?: string[];
+  schedule_files?: string[];
+  material_files?: string[];
+  syllabus?: {
+    modules?: {
+      name: string;
+      orderIndex?: number;
+      objectives?: {
+        title: string;
+        loCode?: string | null;
+      }[];
+    }[];
+  };
+  schedule?: {
+    events?: {
+      type?: string;
+      title: string;
+      date?: string | null;
+      dueDate?: string | null;
+      startTime?: string | null;
+      endTime?: string | null;
+      notes?: string | null;
+    }[];
+  };
+}
+
+export interface SemesterIntakeApplyPayload {
+  folder_path: string;
+  courses: SemesterIntakeApplyCoursePayload[];
+}
+
+export interface SemesterIntakeApplyResult {
+  ok: boolean;
+  coursesCreated: number;
+  coursesUpdated: number;
+  modulesCreated: number;
+  objectivesCreated: number;
+  eventsCreated: number;
+  setupFilesParsed: number;
+  setupParseErrors: string[];
+  materialSyncJobs: { courseId: number; jobId: string }[];
+  courses: { id: number; name: string; code?: string | null }[];
+}
+
 export interface TutorSyncJobStatus {
   job_id: string;
   status: "pending" | "running" | "completed" | "failed";

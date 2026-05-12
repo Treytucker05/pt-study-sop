@@ -12,6 +12,7 @@ Returns: { content: str, error: str | None, metadata: dict }
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import logging
 import inspect
 import re
@@ -40,12 +41,21 @@ def _check_pymupdf4llm() -> bool:
 
 
 @lru_cache(maxsize=1)
+def _check_pdfplumber() -> bool:
+    """Return True if pdfplumber is importable."""
+    try:
+        import pdfplumber  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
+@lru_cache(maxsize=1)
 def _check_docling() -> bool:
     """Return True if Docling is importable."""
     try:
-        from docling.document_converter import DocumentConverter  # noqa: F401
-
-        return True
+        return importlib.util.find_spec("docling.document_converter") is not None
     except Exception:
         return False
 
@@ -613,7 +623,7 @@ def get_pdf_capabilities() -> dict:
         "docling": _check_docling(),
         "mineru": _check_mineru(),
         "pymupdf4llm": _check_pymupdf4llm(),
-        "pdfplumber": True,  # always available
+        "pdfplumber": _check_pdfplumber(),
     }
 
 

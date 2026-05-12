@@ -3793,9 +3793,34 @@ def get_schema_version():
     cursor = conn.cursor()
 
     try:
-        cursor.execute("SELECT schema_version FROM sessions LIMIT 1")
+        cursor.execute("PRAGMA table_info(sessions)")
+        session_cols = {str(col[1]): col for col in cursor.fetchall()}
+        schema_col = session_cols.get("schema_version")
+        if schema_col is None:
+            return "pre-9.1"
+
+        cursor.execute(
+            """
+            SELECT schema_version
+            FROM sessions
+            WHERE schema_version IS NOT NULL AND TRIM(schema_version) != ''
+            ORDER BY id DESC
+            LIMIT 1
+            """
+        )
         result = cursor.fetchone()
-        version = result[0] if result else "unknown"
+        if result:
+            version = result[0]
+        else:
+            # Fresh current-schema databases can have zero session rows. In
+            # that case, use the schema column default instead of prompting for
+            # a legacy migration during launcher startup.
+            default_version = schema_col[4]
+            version = (
+                str(default_version).strip().strip("'\"")
+                if default_version is not None
+                else "9.4"
+            )
     except:
         version = "pre-9.1"
 

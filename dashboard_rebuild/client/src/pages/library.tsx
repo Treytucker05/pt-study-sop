@@ -16,6 +16,7 @@ import type {
   TutorContentSources,
   TutorSyncPreviewNode,
   TutorSyncPreviewResult,
+  SemesterIntakePreviewResult,
 } from "@/lib/api";
 import type { Course } from "@shared/schema";
 import { useLocation } from "wouter";
@@ -80,6 +81,8 @@ const FILE_TYPE_LABEL: Record<string, string> = {
   txt: "TXT",
 };
 const ALL_FOLDERS_KEY = "";
+const DEFAULT_SEMESTER_INTAKE_FOLDER =
+  "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School";
 const LIBRARY_PANEL_SURFACE =
   "bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01)_18%,rgba(0,0,0,0.18)_100%),linear-gradient(135deg,rgba(110,14,34,0.18),rgba(10,4,7,0.18)_58%,rgba(0,0,0,0.1)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_16px_30px_rgba(0,0,0,0.16)] backdrop-blur-xl";
 const LIBRARY_PANEL_INSET =
@@ -656,6 +659,16 @@ function useLibraryPageController() {
   const [editTitle, setEditTitle] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [materialsFolder, setMaterialsFolder] = useState("");
+  const [semesterIntakeFolder, setSemesterIntakeFolder] = useState(
+    DEFAULT_SEMESTER_INTAKE_FOLDER,
+  );
+  const [semesterPreview, setSemesterPreview] =
+    useState<SemesterIntakePreviewResult | null>(null);
+  const [semesterScanLoading, setSemesterScanLoading] = useState(false);
+  const [semesterApplyLoading, setSemesterApplyLoading] = useState(false);
+  const [semesterIntakeError, setSemesterIntakeError] = useState<string | null>(
+    null,
+  );
   const [uploadCourseTarget, setUploadCourseTarget] = useState<string>(
     initialLaunchState.uploadCourseTarget,
   );
@@ -1384,6 +1397,86 @@ function useLibraryPageController() {
     setSelectedSyncFiles(selectAll ? new Set(syncPreviewFiles) : new Set());
   };
 
+  const scanSemesterIntakeFolder = async () => {
+    const trimmedFolder = semesterIntakeFolder.trim();
+    if (!trimmedFolder || semesterScanLoading || semesterApplyLoading) return;
+
+    setSemesterScanLoading(true);
+    setSemesterIntakeError(null);
+    try {
+      const preview = await api.semesterIntake.preview({
+        folder_path: trimmedFolder,
+      });
+      setSemesterPreview(preview);
+      if (!preview.courses.length) {
+        toast.warning("Semester intake found no course folders.");
+      } else {
+        toast.success(`Found ${preview.courses.length} course folders.`);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown";
+      setSemesterPreview(null);
+      setSemesterIntakeError(message);
+      toast.error(`Semester intake scan failed: ${message}`);
+    } finally {
+      setSemesterScanLoading(false);
+    }
+  };
+
+  const applySemesterIntake = async () => {
+    const trimmedFolder = semesterIntakeFolder.trim();
+    if (!trimmedFolder || semesterApplyLoading || semesterScanLoading) return;
+    if (!semesterPreview) {
+      toast.error("Scan the semester folder first.");
+      return;
+    }
+    if (
+      normalizePathForCompare(semesterPreview.folder) !==
+      normalizePathForCompare(trimmedFolder)
+    ) {
+      toast.error("Folder path changed. Re-scan before applying setup.");
+      return;
+    }
+
+    const coursesToApply = semesterPreview.courses.map((course) => ({
+      name: course.name,
+      folder_path: course.folder_path,
+      syllabus_files: course.syllabus_files.map((file) => file.path),
+      schedule_files: course.schedule_files.map((file) => file.path),
+      material_files: course.material_files.map((file) => file.path),
+      syllabus: { modules: [] },
+      schedule: { events: [] },
+    }));
+    if (!coursesToApply.length) {
+      toast.error("No course folders are ready to apply.");
+      return;
+    }
+
+    setSemesterApplyLoading(true);
+    setSemesterIntakeError(null);
+    try {
+      const result = await api.semesterIntake.apply({
+        folder_path: trimmedFolder,
+        courses: coursesToApply,
+      });
+      queryClient.invalidateQueries({ queryKey: ["courses-active"] });
+      queryClient.invalidateQueries({ queryKey: ["courses-all"] });
+      queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
+      queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
+      queryClient.invalidateQueries({ queryKey: ["tutor-embed-status"] });
+      queryClient.invalidateQueries({ queryKey: ["tutor-hub"] });
+      toast.success(
+        `Semester setup applied: ${result.coursesCreated} created, ${result.coursesUpdated} updated, ${result.modulesCreated} modules, ${result.eventsCreated} events, ${result.materialSyncJobs.length} sync job${result.materialSyncJobs.length === 1 ? "" : "s"} started.`,
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown";
+      setSemesterIntakeError(message);
+      toast.error(`Semester setup failed: ${message}`);
+    } finally {
+      setSemesterApplyLoading(false);
+    }
+  };
+
   const scanSyncFolder = async () => {
     const trimmedFolder = materialsFolder.trim();
     if (!trimmedFolder || syncPreviewLoading || syncing) return;
@@ -1847,8 +1940,140 @@ function useLibraryPageController() {
             <HudPanel className="flex h-full min-h-0 flex-col overflow-hidden bg-transparent backdrop-blur-xl">
               <div className="border-b border-primary/20 bg-transparent">
                 <div
-                  className={`${PANEL_PADDING} grid gap-3 lg:grid-cols-[minmax(340px,1fr)_minmax(380px,1.2fr)]`}
+                  className={`${PANEL_PADDING} grid gap-3 xl:grid-cols-[minmax(320px,0.95fr)_minmax(340px,1fr)_minmax(380px,1.1fr)]`}
                 >
+                  <HudPanel
+                    variant="b"
+                    className={`${LIBRARY_PANEL_SURFACE} space-y-2 p-3`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className={ICON_SM} />
+                      <div className={TEXT_PANEL_TITLE}>SEMESTER INTAKE</div>
+                    </div>
+                    <div className={`${TEXT_MUTED} text-xs`}>
+                      Start from one PT School folder, separate course setup
+                      files from study materials, then create the Study courses.
+                    </div>
+                    <input
+                      aria-label="Semester intake folder"
+                      value={semesterIntakeFolder}
+                      onChange={(e) => setSemesterIntakeFolder(e.target.value)}
+                      className={INPUT_BASE}
+                      placeholder="Paste the semester folder path"
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <HudButton
+                        variant="outline"
+                        onClick={scanSemesterIntakeFolder}
+                        disabled={
+                          semesterScanLoading ||
+                          semesterApplyLoading ||
+                          !semesterIntakeFolder.trim()
+                        }
+                        className={LIBRARY_COMPACT_BUTTON}
+                      >
+                        {semesterScanLoading ? (
+                          <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
+                        ) : (
+                          <RefreshCw className={`${ICON_SM} mr-1`} />
+                        )}
+                        {semesterScanLoading ? "SCANNING..." : "SCAN INTAKE"}
+                      </HudButton>
+                      <HudButton
+                        onClick={applySemesterIntake}
+                        disabled={
+                          semesterScanLoading ||
+                          semesterApplyLoading ||
+                          !semesterPreview ||
+                          !semesterIntakeFolder.trim()
+                        }
+                        className={LIBRARY_COMPACT_BUTTON}
+                      >
+                        {semesterApplyLoading ? (
+                          <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
+                        ) : (
+                          <Check className={`${ICON_SM} mr-1`} />
+                        )}
+                        APPLY COURSE SETUP
+                      </HudButton>
+                    </div>
+                    {semesterPreview ? (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="border border-primary/15 bg-black/30 p-2">
+                            <div className={TEXT_MUTED}>Courses</div>
+                            <div className="font-terminal text-base text-foreground">
+                              {semesterPreview.counts.courses}
+                            </div>
+                          </div>
+                          <div className="border border-primary/15 bg-black/30 p-2">
+                            <div className={TEXT_MUTED}>Materials</div>
+                            <div className="font-terminal text-base text-foreground">
+                              {semesterPreview.counts.material_files}
+                            </div>
+                          </div>
+                          <div className="border border-primary/15 bg-black/30 p-2">
+                            <div className={TEXT_MUTED}>Syllabus</div>
+                            <div className="font-terminal text-base text-foreground">
+                              {semesterPreview.counts.syllabus_files}
+                            </div>
+                          </div>
+                          <div className="border border-primary/15 bg-black/30 p-2">
+                            <div className={TEXT_MUTED}>Schedule</div>
+                            <div className="font-terminal text-base text-foreground">
+                              {semesterPreview.counts.schedule_files}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="max-h-40 overflow-auto border border-primary/15 bg-black/30 p-2 space-y-1">
+                          {semesterPreview.courses.map((course) => (
+                            <div
+                              key={course.folder_path}
+                              className="flex items-center justify-between gap-2 text-xs"
+                            >
+                              <div className="min-w-0">
+                                <div className="truncate font-terminal text-foreground">
+                                  {course.name}
+                                </div>
+                                <div className={TEXT_MUTED}>
+                                  {course.syllabus_files.length} syllabus /{" "}
+                                  {course.schedule_files.length} schedule /{" "}
+                                  {course.material_files.length} material
+                                </div>
+                              </div>
+                              <Badge
+                                variant="outline"
+                                className="shrink-0 rounded-none border-primary/30 bg-primary/10 text-[10px] uppercase"
+                              >
+                                {course.readiness.course}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                        {semesterPreview.global_schedule_files.length ||
+                        semesterPreview.ignored_files.length ? (
+                          <div className={`${TEXT_MUTED} text-xs`}>
+                            Global schedules:{" "}
+                            {semesterPreview.global_schedule_files.length} /
+                            ignored: {semesterPreview.ignored_files.length}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <div
+                        className={`${TEXT_MUTED} border border-primary/15 bg-black/30 p-2 text-xs`}
+                      >
+                        Scan the semester folder before applying setup.
+                      </div>
+                    )}
+                    {semesterIntakeError ? (
+                      <div className="text-xs text-yellow-300 break-all">
+                        <AlertTriangle className={`${ICON_SM} inline mr-1`} />
+                        {semesterIntakeError}
+                      </div>
+                    ) : null}
+                  </HudPanel>
+
                   <HudPanel
                     variant="b"
                     className={`${LIBRARY_PANEL_SURFACE} space-y-2 p-3`}

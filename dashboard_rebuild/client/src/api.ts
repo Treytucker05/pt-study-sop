@@ -55,6 +55,8 @@ import type {
   TutorEmbedResult,
   TutorSyncPreviewPayload, TutorSyncStartPayload,
   TutorSyncPreviewResult, TutorSyncStartResult, TutorSyncJobStatus,
+  SemesterIntakeApplyPayload, SemesterIntakeApplyResult,
+  SemesterIntakePreviewResult,
   TutorVideoProcessStartResult, TutorVideoJobStatus,
   TutorVideoEnrichmentStatus, TutorVideoEnrichResult,
   Material, MaterialContent, AutoLinkResult, MaterialUploadResponse,
@@ -377,6 +379,19 @@ export const api = {
     delete: (id: number) => request<void>(`/courses/${id}`, {
       method: "DELETE",
     }),
+  },
+
+  semesterIntake: {
+    preview: (payload: { folder_path: string }) =>
+      request<SemesterIntakePreviewResult>("/semester-intake/preview", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    apply: (payload: SemesterIntakeApplyPayload) =>
+      request<SemesterIntakeApplyResult>("/semester-intake/apply", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
   },
 
   studyWheel: {

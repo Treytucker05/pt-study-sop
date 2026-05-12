@@ -13,6 +13,7 @@ DIST_INDEX="$SERVER_DIR/static/dist/index.html"
 export PATH="/opt/homebrew/opt/python@3.12/libexec/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 export PT_BRAIN_HOST="${PT_BRAIN_HOST:-127.0.0.1}"
 export PT_BRAIN_PORT="${PT_BRAIN_PORT:-5127}"
+export PYTHONPATH="$ROOT_DIR${PYTHONPATH:+:$PYTHONPATH}"
 
 if [ -z "${OBSIDIAN_VAULT_FS_PATH:-}" ]; then
   if [ -d "$HOME/Desktop/Treys School/Treys School" ]; then

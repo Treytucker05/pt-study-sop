@@ -2583,3 +2583,18 @@ Recommended next steps:
 - Added Google Calendar client libraries to `brain/requirements.txt` so fresh installs include the documented Calendar integration dependencies.
 - Fixed local-data transfer scripts so they bundle/restore `brain/data/gcal_token.json` and `brain/data/vault_courses.yaml` instead of the stale `brain/gcal_token.json` path.
 - Audit result: the Mac repo and DB are present, but `/Users/fst/Desktop/PT School`, `brain/data/uploads/`, `brain/data/chroma_tutor/`, and `brain/data/extracted_images/` were not present during the check. The copied DB still has Windows `rag_docs.source_path` and `rag_docs.file_path` rows, so old material previews need source/upload folders copied or current materials re-imported.
+
+## 2026-05-11 - Mac new-semester data reset
+
+- Archived the old Mac runtime DB and local material folders to `brain/data/backups/semester-reset-20260511_145114/` instead of deleting them.
+- Reinitialized `brain/data/pt_study.db` for the new semester; verified `courses`, `rag_docs`, `sessions`, and `tutor_sessions` are empty while `method_blocks` and `method_chains` are reseeded.
+- Fixed `db_setup.get_schema_version()` so an empty current-schema DB reports the `sessions.schema_version` default instead of prompting for a legacy migration on launcher restart.
+- Updated the macOS launcher to include the repo root in `PYTHONPATH` so adaptive tables register during DB setup.
+- Validation: `pytest brain/tests/test_db_setup.py -q`; `bash -n scripts/start_dashboard_macos.sh`; direct `db_setup.py` rerun no longer prompts on the fresh DB.
+
+## 2026-05-12 - Semester intake workflow
+
+- Added `/api/semester-intake/preview` and `/api/semester-intake/apply` so the Study app can scan one semester folder, separate syllabus/schedule/setup files from materials, create or update courses, parse setup files into modules/events, add courses to the study wheel, and launch material sync jobs.
+- Added the Library `SEMESTER INTAKE` panel with folder scan, course readiness counts, and apply controls for the Mac PT School folder.
+- Added semester intake, fresh-DB, and Mac-local integration precondition regression tests.
+- Validation: `pytest brain/tests/ -q`; `npm run test`; `npm run check`; `npm run build`; `bash -n scripts/start_dashboard_macos.sh`.
