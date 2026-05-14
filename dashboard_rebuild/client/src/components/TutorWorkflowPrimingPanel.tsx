@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CheckSquare2, Loader2, Play, SendHorizontal, Sparkles, Square } from "lucide-react";
 import { toast } from "sonner";
@@ -674,6 +674,7 @@ export function TutorWorkflowPrimingPanel({
   isRunningAssist,
 }: TutorWorkflowPrimingPanelProps) {
   const previousAssistRunningRef = useRef(isRunningAssist);
+  const autoCapturedRunKeyRef = useRef<string | null>(null);
 
   const {
     data: primeMethodResponse = [],
@@ -1015,25 +1016,36 @@ export function TutorWorkflowPrimingPanel({
     }
   };
 
-  const handlePromote = (block: ResultBlock) => {
-    const workspaceObject = createStudioPrimingResultWorkspaceObject({
+  const buildWorkspaceObjectFromBlock = useCallback((block: ResultBlock) => {
+    return createStudioPrimingResultWorkspaceObject({
       resultKey: block.id,
       title: block.title,
       detail: buildBlockMarkdown(block),
       badge: block.badge,
       sourceLabel: block.sourceLabel,
     }) as Extract<StudioWorkspaceObject, { kind: "text_note" }>;
+  }, []);
+
+  useEffect(() => {
+    if (!displayedRun || displayedRun.blocks.length === 0 || !onSendResultToWorkspace) {
+      return;
+    }
+    if (autoCapturedRunKeyRef.current === displayedRun.key) {
+      return;
+    }
+    autoCapturedRunKeyRef.current = displayedRun.key;
+    displayedRun.blocks.forEach((block) => {
+      onSendResultToWorkspace(buildWorkspaceObjectFromBlock(block));
+    });
+  }, [buildWorkspaceObjectFromBlock, displayedRun, onSendResultToWorkspace]);
+
+  const handlePromote = (block: ResultBlock) => {
+    const workspaceObject = buildWorkspaceObjectFromBlock(block);
     onPromoteResultToPrimePacket?.(workspaceObject);
   };
 
   const handleSendToWorkspace = (block: ResultBlock) => {
-    const workspaceObject = createStudioPrimingResultWorkspaceObject({
-      resultKey: block.id,
-      title: block.title,
-      detail: buildBlockMarkdown(block),
-      badge: block.badge,
-      sourceLabel: block.sourceLabel,
-    }) as Extract<StudioWorkspaceObject, { kind: "text_note" }>;
+    const workspaceObject = buildWorkspaceObjectFromBlock(block);
     onSendResultToWorkspace?.(workspaceObject);
   };
 

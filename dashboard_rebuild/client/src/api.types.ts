@@ -2276,6 +2276,7 @@ export interface SemesterIntakeFile {
 
 export interface SemesterIntakeCoursePreview {
   name: string;
+  code?: string | null;
   folder_path: string;
   course_id?: number;
   syllabus_files: SemesterIntakeFile[];

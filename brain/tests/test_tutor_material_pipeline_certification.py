@@ -7,7 +7,10 @@ import os
 import sqlite3
 import sys
 import tempfile
+import threading
+import time
 from pathlib import Path
+from unittest.mock import ANY
 
 import pytest
 
@@ -18,6 +21,7 @@ import db_setup
 import dashboard.api_data as _api_data_mod
 import dashboard.api_tutor as _api_tutor_mod
 import dashboard.api_adapter as _api_adapter_mod
+import dashboard.api_tutor_materials as _api_tutor_materials_mod
 from dashboard.app import create_app
 import rag_notes
 
@@ -253,6 +257,60 @@ def test_sync_start_validates_selected_files_and_course_id(client, monkeypatch: 
     assert payload["job_id"] == "job-sync-123"
     assert payload["selected_count"] == 1
     assert payload["course_id"] == 303
+
+
+def test_material_sync_job_embeds_only_docs_from_that_sync(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    root = tmp_path / "materials"
+    root.mkdir(parents=True)
+    finished = threading.Event()
+    embed_calls: list[dict] = []
+
+    def fake_sync_folder_to_rag(*args, **kwargs):  # noqa: ANN002, ANN003
+        return {
+            "ok": True,
+            "total": 2,
+            "processed": 2,
+            "failed": 0,
+            "errors": [],
+            "doc_ids": [101, 102],
+        }
+
+    def fake_embed_rag_docs(**kwargs):
+        embed_calls.append(kwargs)
+        finished.set()
+        return {"embedded": 2, "skipped": 0, "total_chunks": 2}
+
+    monkeypatch.setattr("rag_notes.sync_folder_to_rag", fake_sync_folder_to_rag)
+    monkeypatch.setattr("tutor_rag.embed_rag_docs", fake_embed_rag_docs)
+
+    job_id = _api_tutor_materials_mod._launch_materials_sync_job(
+        root,
+        None,
+        selected_files={"week1/slides.pdf", "week1/objectives.docx"},
+        course_id=77,
+    )
+
+    assert finished.wait(timeout=2), "sync job did not reach embedding"
+
+    deadline = time.time() + 2
+    status = None
+    while time.time() < deadline:
+        with _api_tutor_materials_mod.SYNC_JOBS_LOCK:
+            status = (_api_tutor_materials_mod.SYNC_JOBS.get(job_id) or {}).get("status")
+        if status == "completed":
+            break
+        time.sleep(0.01)
+
+    assert status == "completed"
+    assert embed_calls == [
+        {
+            "corpus": "materials",
+            "rag_doc_ids": [101, 102],
+            "progress_callback": ANY,
+        }
+    ]
 
 
 def test_sync_folder_to_rag_prunes_missing_files_on_full_sync(

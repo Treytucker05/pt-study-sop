@@ -2598,3 +2598,38 @@ Recommended next steps:
 - Added the Library `SEMESTER INTAKE` panel with folder scan, course readiness counts, and apply controls for the Mac PT School folder.
 - Added semester intake, fresh-DB, and Mac-local integration precondition regression tests.
 - Validation: `pytest brain/tests/ -q`; `npm run test`; `npm run check`; `npm run build`; `bash -n scripts/start_dashboard_macos.sh`.
+
+## 2026-05-13 - Complete study loop map, real-folder apply, and Tutor readiness
+
+- Added `docs/root/STUDY_LOOP_FLOW_AND_GAP_REVIEW.md` with the current coursework-to-study loop, Mermaid flowchart, validation matrix, gap register, and study-now handoff.
+- Real PT School preview on `/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School` found 3 course folders, 6 syllabus files, 6 schedule files, 27 material files, 14 ignored/admin files, and no unassigned material files.
+- Backed up `brain/data/pt_study.db` to `brain/data/backups/pt_study_before_study_loop_apply_2026-05-13.db`, then applied reviewed structure only: 0 new courses, 3 updated courses, 6 setup files parsed, 14 grouped objectives created, no setup parse errors, and no material sync jobs.
+- Fixed real study blockers: course-code matching for typo folders, module fallback objectives/grouping, material-backed Tutor preflight when Obsidian course mapping is absent, and preview readiness from existing embedded `rag_docs`.
+- Verified Professionalism Week 1 can preflight and restore as session `tutor-20260513-101225-0c7ef7`; Library and Tutor browser screenshots rendered. Full model-backed `live_tutor_smoke.py` turn was deferred because it can send coursework to the configured external LLM provider.
+- Validation: `npm run check`; `npm run build`; `npm run test -- client/src/pages/__tests__/library.test.tsx`; `pytest brain/tests/test_semester_intake.py -q`; focused Tutor preflight regression tests.
+
+## 2026-05-13 - Dashboard high-CPU material sync fix
+
+- Reviewed `scratch/bug_dashboard_high_cpu_2026-05-13.md`, `brain/dashboard_web.py`, `dashboard.create_app`, the macOS launcher, request-triggered background jobs, and material sync/embedding flow.
+- Confirmed no dashboard process was currently listening on `127.0.0.1:5127`, so the previously hot process had already been killed before this fix pass.
+- Root cause addressed: `_launch_materials_sync_job()` embedded the entire `materials` corpus after a selected course/folder sync. That could make one coursework intake keep the Flask process busy across unrelated library files.
+- Added `rag_doc_ids` scoping to `embed_rag_docs()` and now pass the `doc_ids` returned by `sync_folder_to_rag()`, so post-sync embedding is limited to the files touched by that job.
+- Added regression coverage in `test_tutor_material_pipeline_certification.py` proving sync jobs pass only their synced document IDs into embedding.
+- Validation: `.venv/bin/python -m pytest brain/tests/test_harness_startup.py brain/tests/test_tutor_material_pipeline_certification.py brain/tests/test_tutor_rag_embedding_provider.py brain/tests/test_semester_intake.py -q` passed.
+
+## 2026-05-13 - Library explicit file loading
+
+- Changed Library so folder-based workflows no longer imply mass loading.
+- Semester Intake still scans the semester folder for classification, syllabus, schedule, and course setup, but material files start unselected and only checked files are included in the apply payload.
+- Folder Sync preview now starts with zero selected files after scan; `SYNC SELECTED FILES` stays disabled until at least one file is checked.
+- Added file-level checkbox labels for Semester Intake and Folder Sync so tests and keyboard/screen-reader flows can target exact files.
+- Validation: `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`.
+
+## 2026-05-13 - Library course operations redesign
+
+- Redesigned `/library` around a course-first operations workflow: left Course Rail, central Add Coursework source switcher, Study Readiness handoff panel, and cleaner material table flow.
+- Course names are now the primary navigation label, with PHYT codes shown as secondary metadata.
+- Consolidated Semester Intake, Folder Sync, and Direct Upload into one `ADD COURSEWORK` control area so only one source workflow is active at a time.
+- Removed the redundant lower workflow card stack and moved Tutor queue actions into the single `STUDY READINESS` panel.
+- Added compact Library hero styling so the actual course/material workspace is visible much sooner in narrow in-app browser windows.
+- Validation: `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`; `curl -fsS http://127.0.0.1:5127/api/brain/status`; built-in browser DOM verification for `/library`.

@@ -9,7 +9,6 @@ import type {
   TutorProjectShellResponse,
   TutorScholarStrategy,
   TutorSessionEndResult,
-  TutorSessionPreflightResponse,
   TutorSessionWithTurns,
   TutorStrategyFeedback,
   TutorTurn,
@@ -199,7 +198,7 @@ export function useTutorSession({
   const [stageTimerDisplaySeconds, setStageTimerDisplaySeconds] = useState(0);
   const stageTimerSessionRef = useRef<string | null>(null);
 
-  // ─── Preflight ───
+  // ─── Workspace Context ───
   const preflightPayload = useMemo(() => {
     if (typeof hub.courseId !== "number") return null;
     const learningObjectives =
@@ -245,26 +244,9 @@ export function useTutorSession({
     workflowPrimingObjectives,
   ]);
 
-  const {
-    data: preflight,
-    isFetching: preflightLoading,
-    error: preflightError,
-  } = useQuery<TutorSessionPreflightResponse>({
-    queryKey: [
-      "tutor-session-preflight",
-      JSON.stringify(preflightPayload || {}),
-    ],
-    queryFn: () => api.tutor.preflightSession(preflightPayload!),
-    enabled: !!preflightPayload && hub.selectedMaterials.length > 0,
-    staleTime: 30 * 1000,
-  });
-
-  const preflightErrorMessage =
-    preflightError instanceof Error
-      ? preflightError.message
-      : preflightError
-        ? String(preflightError)
-        : null;
+  const preflight = null;
+  const preflightLoading = false;
+  const preflightErrorMessage = null;
 
   // ─── Config check ───
   const { data: configStatus } = useQuery<TutorConfigCheck>({
@@ -568,27 +550,27 @@ export function useTutorSession({
         resolvedChainId = customChain.id;
         setTutorChainId(customChain.id);
       }
-      const preflightResult = await api.tutor.preflightSession(preflightPayload);
-      if (preflightResult.blockers.length > 0) {
-        toast.error(preflightResult.blockers[0].message);
-        return null;
-      }
+      const contentFilter = {
+        ...preflightPayload.content_filter,
+        ...(opts?.session_rules && opts.session_rules.length > 0
+          ? { session_rules: opts.session_rules }
+          : {}),
+      };
 
       const session = await api.tutor.createSession({
-        preflight_id: preflightResult.preflight_id,
+        course_id: preflightPayload.course_id,
+        topic: preflightPayload.topic,
+        module_name: preflightPayload.module_name,
+        objective_scope: preflightPayload.objective_scope,
+        focus_objective_id: preflightPayload.focus_objective_id,
+        learning_objectives: preflightPayload.learning_objectives,
         phase: "first_pass",
         mode: "Core",
         method_chain_id: resolvedChainId,
+        content_filter: contentFilter,
         ...(opts?.packet_context ? { packet_context: opts.packet_context } : {}),
         ...(opts?.memory_capsule_context
           ? { memory_capsule_context: opts.memory_capsule_context }
-          : {}),
-        ...(opts?.session_rules && opts.session_rules.length > 0
-          ? {
-              content_filter: {
-                session_rules: opts.session_rules,
-              },
-            }
           : {}),
       });
       const full = await api.tutor.getSession(session.session_id);

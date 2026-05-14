@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import requests
 
-from scripts.live_tutor_smoke import select_preflight_ready_scope
+from scripts.live_tutor_smoke import select_workspace_context_ready_scope
 
 
 class _FakeResponse:
@@ -21,7 +21,6 @@ class _FakeResponse:
 
 class _FakeSession:
     def __init__(self) -> None:
-        self.preflight_payloads: list[dict] = []
         self._materials = {
             1: [{"id": 11, "title": "Cardio deck"}],
         }
@@ -31,10 +30,6 @@ class _FakeSession:
                 {"groupName": "Respiratory", "title": "Explain ventilation.", "loCode": "OBJ-2"},
             ],
         }
-        self._preflight_responses = [
-            _FakeResponse({"error": "Unmapped vault unit 'Cardiovascular'."}, status_code=500),
-            _FakeResponse({"ok": True, "preflight_id": "pf-1"}, status_code=200),
-        ]
 
     def get(self, url: str, params=None, timeout=None):  # noqa: ARG002
         if url.endswith("/api/tutor/materials"):
@@ -44,26 +39,23 @@ class _FakeSession:
         raise AssertionError(f"unexpected GET {url}")
 
     def post(self, url: str, json=None, timeout=None):  # noqa: ARG002
-        if url.endswith("/api/tutor/session/preflight"):
-            self.preflight_payloads.append(json)
-            if not self._preflight_responses:
-                raise AssertionError("unexpected extra preflight call")
-            return self._preflight_responses.pop(0)
         raise AssertionError(f"unexpected POST {url}")
 
 
-def test_select_preflight_ready_scope_skips_failing_group_and_uses_next_group() -> None:
+def test_select_workspace_context_ready_scope_builds_direct_session_payload() -> None:
     session = _FakeSession()
     course = {"id": 1, "name": "Exercise Physiology"}
 
-    selection = select_preflight_ready_scope(
+    selection = select_workspace_context_ready_scope(
         session=session,
         base_url="http://127.0.0.1:5000",
         course_candidates=[course],
     )
 
     assert selection["course"]["id"] == 1
-    assert selection["study_unit"] == "Respiratory"
-    assert selection["preflight"]["preflight_id"] == "pf-1"
-    attempted_units = [payload["study_unit"] for payload in session.preflight_payloads]
-    assert attempted_units == ["Cardiovascular", "Respiratory"]
+    assert selection["study_unit"] == "Cardiovascular"
+    payload = selection["workspace_context_payload"]
+    assert payload["course_id"] == 1
+    assert payload["topic"] == "Cardiovascular"
+    assert payload["module_name"] == "Cardiovascular"
+    assert payload["content_filter"]["material_ids"] == [11]

@@ -192,6 +192,7 @@ export function StudioWorkspaceUnified({
       {materialSidebarOpen ? (
         <StudioWorkspaceMaterialSidebar
           bundle={sessionMaterialBundle}
+          workspaceObjects={canvasProps.canvasObjects}
           activeTabId={activeTab}
           onAddToCanvas={handleAddItemToCanvas}
         />

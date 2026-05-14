@@ -22,7 +22,6 @@ import type { Course } from "@shared/schema";
 import { useLocation } from "wouter";
 import {
   TEXT_PAGE_TITLE,
-  TEXT_PANEL_TITLE,
   TEXT_BODY,
   TEXT_MUTED,
   TEXT_BADGE,
@@ -83,13 +82,32 @@ const FILE_TYPE_LABEL: Record<string, string> = {
 const ALL_FOLDERS_KEY = "";
 const DEFAULT_SEMESTER_INTAKE_FOLDER =
   "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School";
-const LIBRARY_PANEL_SURFACE =
-  "bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01)_18%,rgba(0,0,0,0.18)_100%),linear-gradient(135deg,rgba(110,14,34,0.18),rgba(10,4,7,0.18)_58%,rgba(0,0,0,0.1)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_16px_30px_rgba(0,0,0,0.16)] backdrop-blur-xl";
-const LIBRARY_PANEL_INSET =
-  "bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.06)_18%,rgba(0,0,0,0.14)_100%),linear-gradient(135deg,rgba(110,14,34,0.12),rgba(10,4,7,0.1)_58%,rgba(0,0,0,0.08)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_12px_24px_rgba(0,0,0,0.12)] backdrop-blur-lg";
-const LIBRARY_COMPACT_BUTTON = "w-auto h-8 min-h-[32px] px-3 text-xs";
-const LIBRARY_INLINE_BUTTON = "w-auto h-7 min-h-[28px] px-2 text-ui-xs";
-const LIBRARY_SELECT = `${SELECT_BASE} h-8 min-h-[32px] rounded-[0.95rem] border-primary/30 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.22)_100%)] px-2 text-sm`;
+const LIBRARY_PANEL_SURFACE = "library-panel-surface";
+const LIBRARY_PANEL_INSET = "library-panel-inset";
+const LIBRARY_ACTION_BUTTON = "library-action-button";
+const LIBRARY_COMPACT_BUTTON = `${LIBRARY_ACTION_BUTTON} w-auto h-9 min-h-[36px] px-4`;
+const LIBRARY_INLINE_BUTTON = `${LIBRARY_ACTION_BUTTON} library-action-button--inline w-auto h-8 min-h-[32px] px-3`;
+const LIBRARY_SELECT = `${SELECT_BASE} library-field h-10 min-h-[40px] rounded-[0.75rem] px-3`;
+const LIBRARY_SECTION_LABEL = "library-section-label";
+const LIBRARY_MAIN_TITLE =
+  "font-arcade text-base uppercase tracking-[0.16em] text-white";
+const LIBRARY_PANEL_TITLE = "library-panel-title";
+const LIBRARY_HELP_TEXT = "library-help-text";
+const LIBRARY_READY_BADGE =
+  "rounded-[0.55rem] border border-emerald-400/35 bg-emerald-400/10 px-2 py-1 font-terminal text-sm uppercase tracking-[0.12em] text-emerald-200";
+const LIBRARY_WARN_BADGE =
+  "rounded-[0.55rem] border border-amber-400/35 bg-amber-400/10 px-2 py-1 font-terminal text-sm uppercase tracking-[0.12em] text-amber-200";
+type AddCourseworkMode = "intake" | "sync" | "upload";
+type SemesterPreviewCourse = SemesterIntakePreviewResult["courses"][number];
+
+function collectSemesterMaterialFilePaths(
+  preview: SemesterIntakePreviewResult | null | undefined,
+): string[] {
+  if (!preview) return [];
+  return preview.courses.flatMap((course) =>
+    course.material_files.map((file) => file.path),
+  );
+}
 
 function getFileTypeLabel(fileType: string | null | undefined): string {
   const normalizedRaw = (fileType || "").toLowerCase().trim();
@@ -151,6 +169,35 @@ function getMaterialSize(mat: Material): number {
   return Number.isFinite(candidate) && candidate >= 0
     ? Math.floor(candidate)
     : 0;
+}
+
+function pluralizeCount(count: number, singular: string, plural = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function getSemesterCourseReviewStatus(course: SemesterPreviewCourse): {
+  label: string;
+  tone: "ready" | "warn";
+} {
+  if (course.readiness.readyForTutor) {
+    return { label: "Ready for Tutor", tone: "ready" };
+  }
+  if (
+    course.syllabus_files.length > 0 ||
+    course.schedule_files.length > 0 ||
+    course.material_files.length > 0
+  ) {
+    return { label: "Ready to review", tone: "ready" };
+  }
+  return { label: "Needs files", tone: "warn" };
+}
+
+function formatCourseSecondaryLabel(course: {
+  code?: string | null;
+  term?: string | null;
+}) {
+  const parts = [course.code, course.term].filter(Boolean);
+  return parts.length ? parts.join(" · ") : "No course code";
 }
 
 interface FolderNode {
@@ -351,7 +398,7 @@ function readInitialLibraryLaunchState(): InitialLibraryLaunchState {
   const handoff = consumeLibraryLaunchFromTutor();
   if (!handoff || typeof handoff.courseId !== "number") {
     return {
-      sidebarMode: "folders",
+      sidebarMode: "courses",
       selectedCourseId: null,
       uploadCourseTarget: "",
       syncCourseTarget: "",
@@ -399,10 +446,10 @@ function renderMaterialRow(
   return (
     <div
       key={mat.id}
-      className={`grid gap-2 px-2 py-1.5 items-center border-b border-primary/10 hover:bg-primary/5 transition-colors ${!mat.enabled ? "opacity-50" : ""}`}
+      className={`grid gap-3 px-3 py-2.5 items-center border-b border-primary/10 hover:bg-primary/5 transition-colors ${!mat.enabled ? "opacity-50" : ""}`}
       style={{
         gridTemplateColumns:
-          "28px minmax(210px,1.6fr) minmax(140px,1fr) 64px 72px 84px 116px",
+          "32px minmax(250px,1.55fr) minmax(180px,1fr) 78px 84px 92px 126px",
       }}
     >
       <div className="flex items-center justify-center">
@@ -585,17 +632,18 @@ function SyncPreviewTreeNode({
     const isChecked = selectedSyncFiles.has(node.path);
     return (
       <div
-        className="w-full rounded-none border border-primary/10 px-2 py-1 text-left text-xs font-terminal flex items-center gap-2 text-muted-foreground hover:text-foreground"
+        className="w-full rounded-none border border-primary/10 px-2 py-1.5 text-left text-sm font-terminal flex items-center gap-2 text-muted-foreground hover:text-foreground"
         style={{ paddingLeft: `${0.6 + depth * 0.8}rem` }}
         title={node.path}
       >
         <Checkbox
+          aria-label={`Sync ${node.name}`}
           checked={isChecked}
           onCheckedChange={() => onToggleFile(node.path)}
         />
         <FileText className={`${ICON_SM} shrink-0`} />
         <span className="truncate flex-1">{node.name}</span>
-        <span className="text-ui-xs">{formatSize(node.size)}</span>
+        <span className="text-sm">{formatSize(node.size)}</span>
       </div>
     );
   }
@@ -608,7 +656,7 @@ function SyncPreviewTreeNode({
     <div>
       {!isRoot && (
         <div
-          className="w-full rounded-none border border-primary/15 pr-2 py-1 text-left text-xs font-terminal flex items-center gap-1 text-muted-foreground hover:text-foreground"
+          className="w-full rounded-none border border-primary/15 pr-2 py-1.5 text-left text-sm font-terminal flex items-center gap-1 text-muted-foreground hover:text-foreground"
           style={{ paddingLeft: `${0.45 + depth * 0.8}rem` }}
           title={node.path}
         >
@@ -632,7 +680,7 @@ function SyncPreviewTreeNode({
             <Folder className={`${ICON_SM} shrink-0`} />
           )}
           <span className="truncate flex-1">{node.name}</span>
-          <span className="text-ui-xs">{children.length}</span>
+          <span className="text-sm">{children.length}</span>
         </div>
       )}
       {isExpanded &&
@@ -664,11 +712,15 @@ function useLibraryPageController() {
   );
   const [semesterPreview, setSemesterPreview] =
     useState<SemesterIntakePreviewResult | null>(null);
+  const [selectedSemesterMaterialFiles, setSelectedSemesterMaterialFiles] =
+    useState<Set<string>>(() => new Set());
   const [semesterScanLoading, setSemesterScanLoading] = useState(false);
   const [semesterApplyLoading, setSemesterApplyLoading] = useState(false);
   const [semesterIntakeError, setSemesterIntakeError] = useState<string | null>(
     null,
   );
+  const [addCourseworkMode, setAddCourseworkMode] =
+    useState<AddCourseworkMode>("intake");
   const [uploadCourseTarget, setUploadCourseTarget] = useState<string>(
     initialLaunchState.uploadCourseTarget,
   );
@@ -883,7 +935,7 @@ function useLibraryPageController() {
       const course = contentSources?.courses.find(
         (c) => c.id === selectedCourseId,
       );
-      return course ? course.code || course.name : "All Materials";
+      return course ? course.name || course.code : "All Materials";
     }
     return selectedFolderPath || "All Materials";
   }, [sidebarMode, selectedCourseId, contentSources, selectedFolderPath]);
@@ -953,10 +1005,22 @@ function useLibraryPageController() {
     () => collectSyncPreviewFilePaths(syncPreview?.tree),
     [syncPreview],
   );
+  const semesterMaterialFiles = useMemo(
+    () => collectSemesterMaterialFilePaths(semesterPreview),
+    [semesterPreview],
+  );
   const selectedSyncCount = selectedSyncFiles.size;
+  const selectedSemesterMaterialCount = semesterMaterialFiles.filter((path) =>
+    selectedSemesterMaterialFiles.has(path),
+  ).length;
   const allSyncFilesSelected =
     syncPreviewFiles.length > 0 &&
     syncPreviewFiles.every((path) => selectedSyncFiles.has(path));
+  const allSemesterMaterialFilesSelected =
+    semesterMaterialFiles.length > 0 &&
+    semesterMaterialFiles.every((path) =>
+      selectedSemesterMaterialFiles.has(path),
+    );
 
   useEffect(() => {
     writeTutorSelectedMaterialIds(selectedForTutor);
@@ -1082,6 +1146,17 @@ function useLibraryPageController() {
     const normalizedCurrent = normalizePathForCompare(value.trim());
     if (!normalizedCurrent || normalizedPreview === normalizedCurrent) return;
     resetSyncPreviewState("Folder path changed. Scan the folder again.");
+  };
+
+  const handleSemesterIntakeFolderChange = (value: string) => {
+    setSemesterIntakeFolder(value);
+    if (!semesterPreview) return;
+    const normalizedPreview = normalizePathForCompare(
+      semesterPreview.folder || "",
+    );
+    const normalizedCurrent = normalizePathForCompare(value.trim());
+    if (!normalizedCurrent || normalizedPreview === normalizedCurrent) return;
+    setSelectedSemesterMaterialFiles(new Set());
   };
 
   const finalizeSyncStatus = (status: TutorSyncJobStatus) => {
@@ -1397,6 +1472,24 @@ function useLibraryPageController() {
     setSelectedSyncFiles(selectAll ? new Set(syncPreviewFiles) : new Set());
   };
 
+  const toggleSemesterMaterialFile = (path: string) => {
+    setSelectedSemesterMaterialFiles((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+  };
+
+  const selectAllSemesterMaterialFiles = (selectAll: boolean) => {
+    setSelectedSemesterMaterialFiles(
+      selectAll ? new Set(semesterMaterialFiles) : new Set(),
+    );
+  };
+
   const scanSemesterIntakeFolder = async () => {
     const trimmedFolder = semesterIntakeFolder.trim();
     if (!trimmedFolder || semesterScanLoading || semesterApplyLoading) return;
@@ -1408,6 +1501,7 @@ function useLibraryPageController() {
         folder_path: trimmedFolder,
       });
       setSemesterPreview(preview);
+      setSelectedSemesterMaterialFiles(new Set());
       if (!preview.courses.length) {
         toast.warning("Semester intake found no course folders.");
       } else {
@@ -1416,6 +1510,7 @@ function useLibraryPageController() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown";
       setSemesterPreview(null);
+      setSelectedSemesterMaterialFiles(new Set());
       setSemesterIntakeError(message);
       toast.error(`Semester intake scan failed: ${message}`);
     } finally {
@@ -1440,10 +1535,13 @@ function useLibraryPageController() {
 
     const coursesToApply = semesterPreview.courses.map((course) => ({
       name: course.name,
+      code: course.code ?? null,
       folder_path: course.folder_path,
       syllabus_files: course.syllabus_files.map((file) => file.path),
       schedule_files: course.schedule_files.map((file) => file.path),
-      material_files: course.material_files.map((file) => file.path),
+      material_files: course.material_files
+        .filter((file) => selectedSemesterMaterialFiles.has(file.path))
+        .map((file) => file.path),
       syllabus: { modules: [] },
       schedule: { events: [] },
     }));
@@ -1493,7 +1591,7 @@ function useLibraryPageController() {
         .filter((child) => child.type === "folder")
         .map((child) => child.path);
       setSyncPreview(preview);
-      setSelectedSyncFiles(new Set(discoveredFiles));
+      setSelectedSyncFiles(new Set());
       setExpandedSyncFolders(new Set(["", ...topLevelFolderPaths]));
       if (!discoveredFiles.length) {
         setSyncPreviewError("No supported files found in this folder.");
@@ -1628,6 +1726,7 @@ function useLibraryPageController() {
       subtitle="Brain-owned study materials, Tutor scope, and clean handoff into live study all run through one intake surface."
       className="flex h-full min-h-[72vh] flex-col"
       contentClassName="flex-1 min-h-0"
+      heroClassName="library-page-hero"
       stats={[
         {
           label: "Embeddings",
@@ -1646,20 +1745,40 @@ function useLibraryPageController() {
         },
       ]}
     >
-      <div className="brain-workspace brain-workspace--ready app-workspace-shell relative flex-1 min-h-[70vh] w-full overflow-hidden">
+      <div className="brain-workspace brain-workspace--ready app-workspace-shell library-ops-workspace relative flex-1 min-h-[70vh] w-full overflow-hidden">
         <div className="flex flex-col lg:flex-row h-full min-h-0">
           <aside className="brain-workspace__sidebar-wrap w-full lg:w-80 shrink-0 min-h-0 max-h-[40vh] lg:max-h-none lg:pr-3">
             <HudPanel
               variant="b"
-              className="flex h-full min-h-0 flex-col overflow-hidden bg-transparent backdrop-blur-xl"
+              className="library-rail-panel flex h-full min-h-0 flex-col overflow-hidden"
             >
-              <div className={`${PANEL_PADDING} border-b border-primary/20`}>
-                <div className="flex items-center gap-0 mb-2">
+              <div className={`${PANEL_PADDING} border-b border-white/10`}>
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className={LIBRARY_SECTION_LABEL}>COURSE RAIL</div>
+                    <div className={`${LIBRARY_HELP_TEXT} mt-1`}>
+                      Course names are the primary way to browse; folders are a
+                      secondary filter.
+                    </div>
+                  </div>
+                  {sidebarMode === "courses" ? (
+                    <button
+                      type="button"
+                      aria-label="Add new course"
+                      title="Create a new course"
+                      onClick={() => setAddCourseDialogOpen(true)}
+                      className="library-icon-button shrink-0"
+                    >
+                      <Plus className={ICON_SM} />
+                    </button>
+                  ) : null}
+                </div>
+                <div className="library-segmented-control flex items-center gap-1 p-1">
                   <HudButton
                     type="button"
                     variant={sidebarMode === "folders" ? "primary" : "outline"}
                     className={cn(
-                      "flex-1 min-h-[38px] px-3 text-xs",
+                      "flex-1 min-h-[38px] px-3",
                       sidebarMode === "folders"
                         ? "bg-primary/20 text-primary"
                         : "text-muted-foreground hover:text-foreground",
@@ -1672,7 +1791,7 @@ function useLibraryPageController() {
                     type="button"
                     variant={sidebarMode === "courses" ? "primary" : "outline"}
                     className={cn(
-                      "flex-1 min-h-[38px] px-3 text-xs",
+                      "flex-1 min-h-[38px] px-3",
                       sidebarMode === "courses"
                         ? "bg-primary/20 text-primary"
                         : "text-muted-foreground hover:text-foreground",
@@ -1682,29 +1801,12 @@ function useLibraryPageController() {
                     COURSES
                   </HudButton>
                 </div>
-                <div className={TEXT_MUTED}>
-                  {sidebarMode === "folders"
-                    ? "Mirror your Obsidian-style folder tree."
-                    : "Browse materials by linked course."}
-                </div>
-                {sidebarMode === "courses" ? (
-                  <button
-                    type="button"
-                    aria-label="Add new course"
-                    title="Create a new course (semester-start workflow)"
-                    onClick={() => setAddCourseDialogOpen(true)}
-                    className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-none border border-primary/30 border-dashed bg-primary/5 px-2 py-1.5 font-terminal text-xs uppercase tracking-[0.18em] text-primary/80 transition-colors hover:border-primary/60 hover:bg-primary/10 hover:text-primary"
-                  >
-                    <Plus className={ICON_SM} />
-                    New Course
-                  </button>
-                ) : null}
               </div>
               <div className="flex-1 overflow-y-auto p-2 space-y-1">
                 {sidebarMode === "folders" ? (
                   <>
                     <button
-                      className={`w-full rounded-none border px-2 py-1.5 text-left text-sm font-terminal flex items-center gap-2 transition-colors ${
+                      className={`library-course-nav-row w-full rounded-none border px-3 py-2 text-left font-terminal flex items-center gap-2 transition-colors ${
                         selectedFolderPath === ALL_FOLDERS_KEY
                           ? "border-primary/60 bg-primary/20 text-primary"
                           : "border-primary/15 text-muted-foreground hover:text-foreground hover:border-primary/40"
@@ -1714,7 +1816,7 @@ function useLibraryPageController() {
                     >
                       <FolderOpen className={ICON_SM} />
                       <span className="truncate flex-1">All Materials</span>
-                      <span className="text-ui-xs">{materials.length}</span>
+                      <span className="text-sm">{materials.length}</span>
                     </button>
                     {visibleFolderItems.map((folder) => {
                       const isSelected = selectedFolderPath === folder.path;
@@ -1723,7 +1825,7 @@ function useLibraryPageController() {
                       return (
                         <div key={folder.path}>
                           <div
-                            className={`w-full rounded-none border pr-2 py-1.5 text-left text-sm font-terminal flex items-center gap-1 transition-colors ${
+                            className={`library-course-nav-row w-full rounded-none border pr-3 py-2 text-left font-terminal flex items-center gap-1 transition-colors ${
                               isSelected
                                 ? "border-primary/60 bg-primary/20 text-primary"
                                 : "border-primary/15 text-muted-foreground hover:text-foreground hover:border-primary/40"
@@ -1780,7 +1882,7 @@ function useLibraryPageController() {
                                 {folder.name}
                               </span>
                             </div>
-                            <span className="text-ui-xs">
+                            <span className="text-sm">
                               {folder.filesCount}
                             </span>
                           </div>
@@ -1788,7 +1890,7 @@ function useLibraryPageController() {
                       );
                     })}
                     {!folderItems.length && materials.length === 0 ? (
-                      <div className={`${TEXT_MUTED} px-2 py-3 text-xs`}>
+                      <div className={`${TEXT_MUTED} px-2 py-3 text-sm`}>
                         Sync a folder or upload files to populate this rail.
                       </div>
                     ) : null}
@@ -1796,7 +1898,7 @@ function useLibraryPageController() {
                 ) : (
                   <>
                     <button
-                      className={`w-full rounded-none border px-2 py-1.5 text-left text-sm font-terminal flex items-center gap-2 transition-colors ${
+                      className={`library-course-nav-row w-full rounded-none border px-3 py-2 text-left font-terminal flex items-center gap-2 transition-colors ${
                         selectedCourseId === null
                           ? "border-primary/60 bg-primary/20 text-primary"
                           : "border-primary/15 text-muted-foreground hover:text-foreground hover:border-primary/40"
@@ -1806,7 +1908,7 @@ function useLibraryPageController() {
                     >
                       <BookOpen className={ICON_SM} />
                       <span className="truncate flex-1">All Materials</span>
-                      <span className="text-ui-xs">{materials.length}</span>
+                      <span className="text-sm">{materials.length}</span>
                     </button>
                     {contentSources?.courses
                       .filter((c) => c.id !== null)
@@ -1822,7 +1924,7 @@ function useLibraryPageController() {
                             }`}
                           >
                             <button
-                              className={`flex flex-1 items-center gap-2 px-2 py-1.5 text-left text-sm font-terminal transition-colors ${
+                              className={`flex flex-1 items-center gap-2 px-3 py-2.5 text-left font-terminal transition-colors ${
                                 isSelected
                                   ? "text-primary"
                                   : "text-muted-foreground hover:text-foreground"
@@ -1831,10 +1933,17 @@ function useLibraryPageController() {
                               type="button"
                             >
                               <GraduationCap className={ICON_SM} />
-                              <span className="truncate flex-1">
-                                {course.name || course.code}
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-base text-foreground">
+                                  {course.name || course.code}
+                                </span>
+                                {course.code ? (
+                                  <span className="block truncate text-sm text-muted-foreground">
+                                    {course.code}
+                                  </span>
+                                ) : null}
                               </span>
-                              <span className="text-ui-xs">
+                              <span className="text-sm">
                                 {course.doc_count}
                               </span>
                             </button>
@@ -1869,7 +1978,7 @@ function useLibraryPageController() {
                     >
                       <FileText className={`${ICON_SM} opacity-50`} />
                       <span className="truncate flex-1">Unlinked</span>
-                      <span className="text-ui-xs">{unlinkedCount}</span>
+                      <span className="text-sm">{unlinkedCount}</span>
                     </button>
                     {archivedCourses.length > 0 ? (
                       <div className="mt-2 border-t border-primary/10 pt-2">
@@ -1878,7 +1987,7 @@ function useLibraryPageController() {
                           aria-expanded={archivedExpanded}
                           aria-controls="library-archived-courses"
                           onClick={() => setArchivedExpanded((v) => !v)}
-                          className="flex w-full items-center gap-1.5 px-2 py-1.5 text-left text-xs font-terminal uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground"
+                          className="flex w-full items-center gap-1.5 px-2 py-1.5 text-left text-sm font-terminal uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground"
                         >
                           {archivedExpanded ? (
                             <ChevronDown className={ICON_SM} />
@@ -1936,28 +2045,92 @@ function useLibraryPageController() {
             </HudPanel>
           </aside>
 
-          <section className="brain-workspace__main-wrap brain-workspace__canvas flex-1 min-h-0 flex flex-col overflow-hidden">
-            <HudPanel className="flex h-full min-h-0 flex-col overflow-hidden bg-transparent backdrop-blur-xl">
-              <div className="border-b border-primary/20 bg-transparent">
+              <section className="brain-workspace__main-wrap brain-workspace__canvas flex-1 min-h-0 flex flex-col overflow-hidden">
+            <HudPanel className="library-main-panel flex h-full min-h-0 flex-col overflow-hidden">
+              <div className="border-b border-primary/10 bg-transparent">
                 <div
-                  className={`${PANEL_PADDING} grid gap-3 xl:grid-cols-[minmax(320px,0.95fr)_minmax(340px,1fr)_minmax(380px,1.1fr)]`}
+                  className={`${PANEL_PADDING} space-y-3`}
                 >
+                  <HudPanel
+                    variant="b"
+                    className={`${LIBRARY_PANEL_SURFACE} p-3`}
+                  >
+                    <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                      <div className="min-w-0">
+                        <div className={LIBRARY_SECTION_LABEL}>ADD COURSEWORK</div>
+                        <div className={`${LIBRARY_HELP_TEXT} mt-1`}>
+                          Choose one source path at a time. Scans classify
+                          files; only checked materials are loaded.
+                        </div>
+                      </div>
+                      <div className="library-segmented-control grid grid-cols-3 gap-1 p-1">
+                        {[
+                          ["intake", "SEMESTER INTAKE"],
+                          ["sync", "FOLDER SYNC"],
+                          ["upload", "DIRECT UPLOAD"],
+                        ].map(([mode, label]) => (
+                          <HudButton
+                            key={mode}
+                            type="button"
+                            variant={
+                              addCourseworkMode === mode ? "primary" : "outline"
+                            }
+                            className={cn(
+                              "min-h-[38px] px-3",
+                              addCourseworkMode === mode
+                                ? "bg-primary/20 text-primary"
+                                : "text-muted-foreground hover:text-foreground",
+                            )}
+                            onClick={() =>
+                              setAddCourseworkMode(mode as AddCourseworkMode)
+                            }
+                          >
+                            {label}
+                          </HudButton>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="mt-3 grid gap-2 md:grid-cols-3">
+                      {[
+                        ["SOURCE", "Pick intake, sync, or direct upload."],
+                        ["REVIEW", "Confirm course setup and chosen files."],
+                        ["STUDY", "Send ready materials to Tutor."],
+                      ].map(([label, copy]) => (
+                        <div
+                          key={label}
+                            className="library-step-card rounded-[0.75rem] p-3"
+                        >
+                          <div className="font-arcade text-base uppercase tracking-[0.14em] text-primary/85">
+                            {label}
+                          </div>
+                          <div className={`${LIBRARY_HELP_TEXT} mt-1`}>
+                            {copy}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </HudPanel>
+
+                  <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.42fr)]">
+                  {addCourseworkMode === "intake" ? (
                   <HudPanel
                     variant="b"
                     className={`${LIBRARY_PANEL_SURFACE} space-y-2 p-3`}
                   >
                     <div className="flex items-center gap-2">
                       <GraduationCap className={ICON_SM} />
-                      <div className={TEXT_PANEL_TITLE}>SEMESTER INTAKE</div>
+                      <div className={LIBRARY_PANEL_TITLE}>SEMESTER INTAKE</div>
                     </div>
-                    <div className={`${TEXT_MUTED} text-xs`}>
+                    <div className={LIBRARY_HELP_TEXT}>
                       Start from one PT School folder, separate course setup
                       files from study materials, then create the Study courses.
                     </div>
                     <input
                       aria-label="Semester intake folder"
                       value={semesterIntakeFolder}
-                      onChange={(e) => setSemesterIntakeFolder(e.target.value)}
+                      onChange={(e) =>
+                        handleSemesterIntakeFolderChange(e.target.value)
+                      }
                       className={INPUT_BASE}
                       placeholder="Paste the semester folder path"
                     />
@@ -1994,12 +2167,12 @@ function useLibraryPageController() {
                         ) : (
                           <Check className={`${ICON_SM} mr-1`} />
                         )}
-                        APPLY COURSE SETUP
+                        APPLY SETUP + SELECTED FILES
                       </HudButton>
                     </div>
                     {semesterPreview ? (
                       <div className="space-y-2">
-                        <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="grid grid-cols-2 gap-2">
                           <div className="border border-primary/15 bg-black/30 p-2">
                             <div className={TEXT_MUTED}>Courses</div>
                             <div className="font-terminal text-base text-foreground">
@@ -2025,34 +2198,95 @@ function useLibraryPageController() {
                             </div>
                           </div>
                         </div>
+                        <div className="flex flex-wrap items-center justify-between gap-2 border border-primary/10 bg-black/45 p-2 text-sm">
+                          <div className={TEXT_MUTED}>
+                            {selectedSemesterMaterialCount} selected for
+                            Library
+                            {semesterMaterialFiles.length
+                              ? ` / ${semesterMaterialFiles.length} found`
+                              : ""}
+                          </div>
+                          <HudButton
+                            variant="outline"
+                            className={LIBRARY_INLINE_BUTTON}
+                            disabled={!semesterMaterialFiles.length}
+                            onClick={() =>
+                              selectAllSemesterMaterialFiles(
+                                !allSemesterMaterialFilesSelected,
+                              )
+                            }
+                          >
+                            {allSemesterMaterialFilesSelected
+                              ? "CLEAR MATERIALS"
+                              : "SELECT MATERIALS"}
+                          </HudButton>
+                        </div>
                         <div className="max-h-40 overflow-auto border border-primary/15 bg-black/30 p-2 space-y-1">
                           {semesterPreview.courses.map((course) => (
                             <div
                               key={course.folder_path}
-                              className="flex items-center justify-between gap-2 text-xs"
+                              className="border border-primary/10 bg-black/35 p-2 text-sm"
                             >
-                              <div className="min-w-0">
-                                <div className="truncate font-terminal text-foreground">
-                                  {course.name}
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <div className="truncate font-terminal text-base text-foreground">
+                                    {course.name}
+                                  </div>
+                                  <div className={TEXT_MUTED}>
+                                    {course.syllabus_files.length} syllabus /{" "}
+                                    {course.schedule_files.length} schedule /{" "}
+                                    {course.material_files.length} material
+                                  </div>
                                 </div>
-                                <div className={TEXT_MUTED}>
-                                  {course.syllabus_files.length} syllabus /{" "}
-                                  {course.schedule_files.length} schedule /{" "}
-                                  {course.material_files.length} material
-                                </div>
+                                <Badge
+                                  variant="outline"
+                                  className="shrink-0 rounded-none border-primary/25 bg-primary/10 text-sm uppercase"
+                                >
+                                  {course.readiness.course}
+                                </Badge>
                               </div>
-                              <Badge
-                                variant="outline"
-                                className="shrink-0 rounded-none border-primary/30 bg-primary/10 text-[10px] uppercase"
-                              >
-                                {course.readiness.course}
-                              </Badge>
+                              {course.material_files.length ? (
+                                <div className="mt-2 space-y-1">
+                                  {course.material_files.map((file) => {
+                                    const checked =
+                                      selectedSemesterMaterialFiles.has(
+                                        file.path,
+                                      );
+                                    return (
+                                      <div
+                                        key={file.path}
+                                        className="flex items-center gap-2 border border-primary/10 bg-black/35 px-2 py-1.5 font-terminal text-sm text-muted-foreground"
+                                        title={file.path}
+                                      >
+                                        <Checkbox
+                                          aria-label={`Load ${file.name} from ${course.name}`}
+                                          checked={checked}
+                                          onCheckedChange={() =>
+                                            toggleSemesterMaterialFile(
+                                              file.path,
+                                            )
+                                          }
+                                        />
+                                        <FileText
+                                          className={`${ICON_SM} shrink-0`}
+                                        />
+                                        <span className="min-w-0 flex-1 truncate">
+                                          {file.name}
+                                        </span>
+                                        <span className="text-ui-xs">
+                                          {formatSize(file.size)}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : null}
                             </div>
                           ))}
                         </div>
                         {semesterPreview.global_schedule_files.length ||
                         semesterPreview.ignored_files.length ? (
-                          <div className={`${TEXT_MUTED} text-xs`}>
+                          <div className={LIBRARY_HELP_TEXT}>
                             Global schedules:{" "}
                             {semesterPreview.global_schedule_files.length} /
                             ignored: {semesterPreview.ignored_files.length}
@@ -2061,28 +2295,30 @@ function useLibraryPageController() {
                       </div>
                     ) : (
                       <div
-                        className={`${TEXT_MUTED} border border-primary/15 bg-black/30 p-2 text-xs`}
+                        className={`${LIBRARY_HELP_TEXT} border border-primary/10 bg-black/45 p-3`}
                       >
                         Scan the semester folder before applying setup.
                       </div>
                     )}
                     {semesterIntakeError ? (
-                      <div className="text-xs text-yellow-300 break-all">
+                      <div className="text-sm text-yellow-300 break-all">
                         <AlertTriangle className={`${ICON_SM} inline mr-1`} />
                         {semesterIntakeError}
                       </div>
                     ) : null}
                   </HudPanel>
+                  ) : null}
 
+                  {addCourseworkMode === "upload" ? (
                   <HudPanel
                     variant="b"
                     className={`${LIBRARY_PANEL_SURFACE} space-y-2 p-3`}
                   >
                     <div className="flex items-center gap-2">
                       <Upload className={ICON_SM} />
-                      <div className={TEXT_PANEL_TITLE}>UPLOAD MATERIALS</div>
+                      <div className={LIBRARY_PANEL_TITLE}>UPLOAD MATERIALS</div>
                     </div>
-                    <div className={`${TEXT_MUTED} text-xs`}>
+                    <div className={LIBRARY_HELP_TEXT}>
                       Use this for one-off files from Downloads, email, or
                       Blackboard. Upload puts the file into the Tutor library
                       immediately.
@@ -2090,7 +2326,7 @@ function useLibraryPageController() {
                     <div className="flex items-center gap-2">
                       <label
                         htmlFor="library-upload-course-target"
-                        className={`${TEXT_MUTED} text-xs whitespace-nowrap`}
+                        className={`${LIBRARY_HELP_TEXT} whitespace-nowrap`}
                       >
                         Link uploads to course
                       </label>
@@ -2115,19 +2351,21 @@ function useLibraryPageController() {
                         uploadCourseTarget
                           ? Number(uploadCourseTarget)
                           : undefined
-                      }
+                        }
                     />
                   </HudPanel>
+                  ) : null}
 
+                  {addCourseworkMode === "sync" ? (
                   <HudPanel
                     variant="b"
                     className={`${LIBRARY_PANEL_SURFACE} space-y-2 p-3`}
                   >
                     <div className="flex items-center gap-2">
                       <FolderOpen className={ICON_SM} />
-                      <div className={TEXT_PANEL_TITLE}>SYNC STUDY FOLDER</div>
+                      <div className={LIBRARY_PANEL_TITLE}>SYNC STUDY FOLDER</div>
                     </div>
-                    <div className={`${TEXT_MUTED} text-xs`}>
+                    <div className={LIBRARY_HELP_TEXT}>
                       Use this for a whole course or week folder. Scan first,
                       choose files, then sync only the files you want in the
                       Tutor library.
@@ -2181,7 +2419,7 @@ function useLibraryPageController() {
                     <div className="flex items-center gap-2">
                       <label
                         htmlFor="library-sync-course-target"
-                        className={`${TEXT_MUTED} text-xs whitespace-nowrap`}
+                        className={`${LIBRARY_HELP_TEXT} whitespace-nowrap`}
                       >
                         Link synced files to course
                       </label>
@@ -2240,20 +2478,23 @@ function useLibraryPageController() {
                     ) : (
                       <HudPanel
                         variant="b"
-                        className={`${TEXT_MUTED} bg-black/30 p-2 text-xs`}
+                        className={`${LIBRARY_HELP_TEXT} bg-black/45 p-3`}
                       >
-                        Scan the folder to browse your structure and choose
-                        files.
+                        <div>0 selected</div>
+                        <div>
+                          Scan the folder to browse your structure and choose
+                          files.
+                        </div>
                       </HudPanel>
                     )}
                     {syncPreviewError ? (
-                      <div className="text-xs text-yellow-300 break-all">
+                      <div className="text-sm text-yellow-300 break-all">
                         <AlertTriangle className={`${ICON_SM} inline mr-1`} />
                         {syncPreviewError}
                       </div>
                     ) : null}
                     {(syncing || syncStatus) && (
-                      <div className="mt-1 border border-primary/20 bg-black/30 p-2 space-y-1 text-xs">
+                      <div className="mt-1 border border-primary/10 bg-black/45 p-3 space-y-1 text-sm">
                         <div className="flex items-center justify-between">
                           <span className={TEXT_MUTED}>Status</span>
                           <span className="font-terminal !text-white uppercase">
@@ -2292,7 +2533,7 @@ function useLibraryPageController() {
                             | undefined
                         )?.length ? (
                           <details className="mt-1">
-                            <summary className="text-red-400 cursor-pointer text-xs font-terminal">
+                            <summary className="text-red-400 cursor-pointer text-sm font-terminal">
                               {
                                 (syncStatus!.sync_result!.errors as string[])
                                   .length
@@ -2304,7 +2545,7 @@ function useLibraryPageController() {
                                 : ""}{" "}
                               — click to expand
                             </summary>
-                            <ul className="mt-1 text-red-300 text-xs font-terminal list-disc pl-4 max-h-32 overflow-y-auto">
+                            <ul className="mt-1 text-red-300 text-sm font-terminal list-disc pl-4 max-h-32 overflow-y-auto">
                               {(
                                 syncStatus!.sync_result!.errors as string[]
                               ).map((err: string) => (
@@ -2344,49 +2585,91 @@ function useLibraryPageController() {
                       </div>
                     )}
                   </HudPanel>
+                  ) : null}
+
+                  <HudPanel
+                    variant="b"
+                    className={`${LIBRARY_PANEL_SURFACE} space-y-3 p-3`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <BookOpen className={ICON_SM} />
+                      <div className={LIBRARY_PANEL_TITLE}>STUDY READINESS</div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className={LIBRARY_PANEL_INSET + " p-2"}>
+                        <div className={TEXT_MUTED}>Visible files</div>
+                        <div className="font-terminal text-lg text-foreground">
+                          {visibleMaterials.length}
+                        </div>
+                      </div>
+                      <div className={LIBRARY_PANEL_INSET + " p-2"}>
+                        <div className={TEXT_MUTED}>Tutor queue</div>
+                        <div className="font-terminal text-lg text-foreground">
+                          {selectedForTutor.length}
+                        </div>
+                      </div>
+                      <div className={LIBRARY_PANEL_INSET + " p-2"}>
+                        <div className={TEXT_MUTED}>Embedded</div>
+                        <div className="font-terminal text-lg text-foreground">
+                          {embedStatus?.embedded ?? 0}
+                        </div>
+                      </div>
+                      <div className={LIBRARY_PANEL_INSET + " p-2"}>
+                        <div className={TEXT_MUTED}>Needs work</div>
+                        <div className="font-terminal text-lg text-foreground">
+                          {(embedStatus?.pending ?? 0) + (embedStatus?.stale ?? 0)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className={LIBRARY_HELP_TEXT}>
+                      {selectedForTutor.length
+                        ? `${selectedForTutor.length} file${selectedForTutor.length === 1 ? "" : "s"} ready for Tutor handoff.`
+                        : "Select materials below to make them ready for Tutor handoff."}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <HudButton
+                        variant="outline"
+                        className={LIBRARY_COMPACT_BUTTON}
+                        disabled={!selectableVisibleMaterialIds.length}
+                        onClick={replaceTutorQueueWithVisible}
+                      >
+                        REPLACE WITH VIEW
+                      </HudButton>
+                      <HudButton
+                        variant="outline"
+                        className={LIBRARY_COMPACT_BUTTON}
+                        disabled={!selectableVisibleMaterialIds.length}
+                        onClick={addVisibleToTutorQueue}
+                      >
+                        ADD VIEW
+                      </HudButton>
+                      <HudButton
+                        variant="outline"
+                        className={LIBRARY_COMPACT_BUTTON}
+                        disabled={!selectedForTutor.length}
+                        onClick={clearTutorQueue}
+                      >
+                        CLEAR QUEUE
+                      </HudButton>
+                      <HudButton
+                        className={LIBRARY_COMPACT_BUTTON}
+                        disabled={!selectedForTutor.length}
+                        onClick={handleOpenTutor}
+                      >
+                        OPEN TUTOR ({selectedForTutor.length})
+                      </HudButton>
+                    </div>
+                  </HudPanel>
+                  </div>
                 </div>
               </div>
 
               <div
                 className={`${PANEL_PADDING} flex-1 min-h-0 flex flex-col gap-3`}
               >
-                <div className="grid gap-3 lg:grid-cols-3">
-                  <HudPanel
-                    variant="b"
-                    className={`${LIBRARY_PANEL_INSET} p-3`}
-                  >
-                    <div className={TEXT_PANEL_TITLE}>1. INGEST</div>
-                    <div className={`${TEXT_MUTED} mt-1 text-xs`}>
-                      Upload for one-off files. Sync for a folder tree you want
-                      to browse before import.
-                    </div>
-                  </HudPanel>
-                  <HudPanel
-                    variant="b"
-                    className={`${LIBRARY_PANEL_INSET} p-3`}
-                  >
-                    <div className={TEXT_PANEL_TITLE}>2. ORGANIZE</div>
-                    <div className={`${TEXT_MUTED} mt-1 text-xs`}>
-                      Use the course link control on the current view when files
-                      need to be assigned or reassigned.
-                    </div>
-                  </HudPanel>
-                  <HudPanel
-                    variant="b"
-                    className={`${LIBRARY_PANEL_INSET} p-3`}
-                  >
-                    <div className={TEXT_PANEL_TITLE}>3. SEND TO TUTOR</div>
-                    <div className={`${TEXT_MUTED} mt-1 text-xs`}>
-                      The Tutor queue persists across views. Replace it with the
-                      current view, add this view to it, or clear it before
-                      opening Tutor.
-                    </div>
-                  </HudPanel>
-                </div>
-
                 <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                   <div className="space-y-1">
-                    <div className={TEXT_PANEL_TITLE}>YOUR MATERIALS</div>
+                    <div className={LIBRARY_PANEL_TITLE}>YOUR MATERIALS</div>
                     <div className={TEXT_MUTED}>
                       {sidebarMode === "courses" ? "Course" : "Folder"}:{" "}
                       <span className="!text-white font-terminal">
@@ -2455,51 +2738,6 @@ function useLibraryPageController() {
 
                     <HudPanel
                       variant="b"
-                      className={`${LIBRARY_PANEL_INSET} space-y-2 p-2`}
-                    >
-                      <div
-                        className={`${TEXT_MUTED} text-ui-xs uppercase tracking-wide`}
-                      >
-                        Tutor Queue
-                      </div>
-                      <div className="flex items-center flex-wrap gap-2">
-                        <HudButton
-                          variant="outline"
-                          className={LIBRARY_COMPACT_BUTTON}
-                          disabled={!selectableVisibleMaterialIds.length}
-                          onClick={replaceTutorQueueWithVisible}
-                        >
-                          REPLACE WITH VIEW
-                        </HudButton>
-                        <HudButton
-                          variant="outline"
-                          className={LIBRARY_COMPACT_BUTTON}
-                          disabled={!selectableVisibleMaterialIds.length}
-                          onClick={addVisibleToTutorQueue}
-                        >
-                          ADD VIEW
-                        </HudButton>
-                        <HudButton
-                          variant="outline"
-                          className={LIBRARY_COMPACT_BUTTON}
-                          disabled={!selectedForTutor.length}
-                          onClick={clearTutorQueue}
-                        >
-                          CLEAR QUEUE
-                        </HudButton>
-                        <HudButton
-                          variant="outline"
-                          className={LIBRARY_COMPACT_BUTTON}
-                          disabled={!selectedForTutor.length}
-                          onClick={handleOpenTutor}
-                        >
-                          OPEN TUTOR ({selectedForTutor.length})
-                        </HudButton>
-                      </div>
-                    </HudPanel>
-
-                    <HudPanel
-                      variant="b"
                       className="space-y-2 border-destructive/30 bg-destructive/5 p-2"
                     >
                       <div className="text-ui-xs uppercase tracking-wide text-red-200">
@@ -2508,7 +2746,7 @@ function useLibraryPageController() {
                       <div className="flex items-center flex-wrap gap-2">
                         <HudButton
                           variant="outline"
-                          className="w-auto min-h-[32px] rounded-none border-destructive/50 px-3 text-xs text-destructive hover:bg-destructive/10"
+                          className="w-auto min-h-[34px] rounded-none border-destructive/50 px-3 text-sm text-destructive hover:bg-destructive/10"
                           disabled={
                             selectedVisibleMaterialIds.length === 0 ||
                             clearMaterialsMutation.isPending
@@ -2537,7 +2775,7 @@ function useLibraryPageController() {
                         </HudButton>
                         <HudButton
                           variant="outline"
-                          className="w-auto min-h-[32px] rounded-none border-destructive/50 px-3 text-xs text-destructive hover:bg-destructive/10"
+                          className="w-auto min-h-[34px] rounded-none border-destructive/50 px-3 text-sm text-destructive hover:bg-destructive/10"
                           disabled={
                             materials.length === 0 ||
                             clearMaterialsMutation.isPending
@@ -2571,7 +2809,7 @@ function useLibraryPageController() {
                 </div>
 
                 {hiddenTutorSelectionCount > 0 ? (
-                  <div className="border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-xs font-terminal text-yellow-100">
+                  <div className="border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-sm font-terminal text-yellow-100">
                     The Tutor queue still includes {hiddenTutorSelectionCount}{" "}
                     file{hiddenTutorSelectionCount === 1 ? "" : "s"} from other
                     views. Use{" "}
@@ -2609,12 +2847,12 @@ function useLibraryPageController() {
                     </div>
                   ) : (
                     <div className="h-full min-h-0 overflow-auto">
-                      <div className="min-w-[900px]">
+                      <div className="min-w-[1040px]">
                         <div
-                          className="grid gap-2 px-2 py-1 border-b border-primary/20 bg-black/60 sticky top-0 z-10"
+                          className="grid gap-3 px-3 py-2 border-b border-primary/15 bg-black/80 sticky top-0 z-10"
                           style={{
                             gridTemplateColumns:
-                              "28px minmax(210px,1.6fr) minmax(140px,1fr) 64px 72px 84px 116px",
+                              "32px minmax(250px,1.55fr) minmax(180px,1fr) 78px 84px 92px 126px",
                           }}
                         >
                           <div
@@ -2703,7 +2941,7 @@ function useLibraryPageController() {
             data-testid="library-add-course-form"
           >
             <label className="block">
-              <span className="block text-xs font-terminal uppercase tracking-[0.18em] text-muted-foreground">
+              <span className="block text-sm font-terminal uppercase tracking-[0.16em] text-muted-foreground">
                 Name <span className="text-primary">*</span>
               </span>
               <input
@@ -2717,7 +2955,7 @@ function useLibraryPageController() {
               />
             </label>
             <label className="block">
-              <span className="block text-xs font-terminal uppercase tracking-[0.18em] text-muted-foreground">
+              <span className="block text-sm font-terminal uppercase tracking-[0.16em] text-muted-foreground">
                 Code
               </span>
               <input
@@ -2729,7 +2967,7 @@ function useLibraryPageController() {
               />
             </label>
             <label className="block">
-              <span className="block text-xs font-terminal uppercase tracking-[0.18em] text-muted-foreground">
+              <span className="block text-sm font-terminal uppercase tracking-[0.16em] text-muted-foreground">
                 Term
               </span>
               <input
@@ -2805,7 +3043,7 @@ function useLibraryPageController() {
                     <div className="font-arcade text-sm text-yellow-400">
                       EXTRACTION INCOMPLETE
                     </div>
-                    <div className={`${TEXT_MUTED} text-xs mt-1`}>
+                    <div className={`${TEXT_MUTED} text-sm mt-1`}>
                       {Math.round(materialContent.replacement_ratio * 100)}% of
                       this PDF could not be decoded — it may use scanned images
                       or an embedded font. The readable portions are shown

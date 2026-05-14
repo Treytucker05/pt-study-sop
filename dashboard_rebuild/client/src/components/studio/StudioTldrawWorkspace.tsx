@@ -1,9 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import type { Editor } from "tldraw";
-import type { StudioWorkspaceObject } from "@/lib/studioWorkspaceObjects";
+import type {
+  StudioWorkspaceCardState,
+  StudioWorkspaceObject,
+  StudioWorkspaceObjectUpdate,
+} from "@/lib/studioWorkspaceObjects";
+import { buildObsidianHandoffMarkdown } from "@/lib/obsidianHandoffPacket";
 import {
   buildStudioCanvasShape,
   getStudioCanvasShapeId,
@@ -17,6 +23,8 @@ import { Tldraw } from "tldraw";
 import "tldraw/tldraw.css";
 
 const TLDRAW_VENDOR_CTA_RE = /get a license for production|made with tldraw/i;
+const WORKSPACE_CARD_BUTTON_CLASS =
+  "h-7 rounded-full border-primary/20 bg-black/20 px-2.5 font-mono text-[9px] uppercase tracking-[0.14em] text-primary/84 hover:bg-black/30 disabled:cursor-default disabled:opacity-100 disabled:text-foreground/60";
 
 function stripVendorCtas(root: ParentNode) {
   root.querySelectorAll("a, button").forEach((element) => {
@@ -45,6 +53,11 @@ export interface StudioTldrawWorkspaceProps {
   onPromoteTextNoteToPrime?: (
     workspaceObject: Extract<StudioWorkspaceObject, { kind: "text_note" }>,
   ) => void;
+  onUpdateWorkspaceObject?: (
+    objectId: string,
+    patch: StudioWorkspaceObjectUpdate,
+  ) => void;
+  onDeleteWorkspaceObject?: (objectId: string) => void;
 }
 
 export function StudioTldrawWorkspace({
@@ -56,11 +69,41 @@ export function StudioTldrawWorkspace({
   sessionBundle,
   onPromoteExcerptToPrime,
   onPromoteTextNoteToPrime,
+  onUpdateWorkspaceObject,
+  onDeleteWorkspaceObject,
 }: StudioTldrawWorkspaceProps) {
   const [editor, setEditor] = useState<Editor | null>(null);
+  const [editingCardId, setEditingCardId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const [editingDetail, setEditingDetail] = useState("");
   const syncedObjectIdsRef = useRef<string[]>([]);
   const workspaceRootRef = useRef<HTMLDivElement | null>(null);
   const sessionSeedKeyRef = useRef<string | null>(null);
+  const visibleCanvasObjects = useMemo(
+    () => canvasObjects.filter((workspaceObject) => !workspaceObject.workspace?.hidden),
+    [canvasObjects],
+  );
+  const obsidianHandoffObjects = useMemo(
+    () =>
+      canvasObjects.filter(
+        (workspaceObject) => workspaceObject.workspace?.obsidianHandoff === true,
+      ),
+    [canvasObjects],
+  );
+  const materialTitles = useMemo(
+    () =>
+      canvasObjects
+        .filter((workspaceObject) => workspaceObject.kind === "material")
+        .map((workspaceObject) => workspaceObject.title),
+    [canvasObjects],
+  );
+  const sessionGoal = useMemo(
+    () =>
+      [sessionBundle?.studyUnit, sessionBundle?.topic]
+        .filter((value): value is string => Boolean(value?.trim()))
+        .join(" / ") || null,
+    [sessionBundle?.studyUnit, sessionBundle?.topic],
+  );
 
   const deleteSessionSeedShapes = useCallback(
     (targetEditor: Editor) => {
@@ -95,7 +138,7 @@ export function StudioTldrawWorkspace({
     if (sessionSeedKeyRef.current === sessionBundle.sessionKey) return;
     // Only auto-seed a clean canvas: no synced workspace objects AND no
     // user-created shapes yet (beyond stale session seeds we control).
-    if (canvasObjects.length > 0) {
+    if (visibleCanvasObjects.length > 0) {
       sessionSeedKeyRef.current = sessionBundle.sessionKey;
       return;
     }
@@ -111,7 +154,7 @@ export function StudioTldrawWorkspace({
     if (applied) {
       sessionSeedKeyRef.current = sessionBundle.sessionKey;
     }
-  }, [applySessionSeed, canvasObjects.length, editor, sessionBundle]);
+  }, [applySessionSeed, editor, sessionBundle, visibleCanvasObjects.length]);
 
   const handleRefreshFromSession = useCallback(() => {
     if (!editor || !sessionBundle?.isReady) return;
@@ -126,6 +169,78 @@ export function StudioTldrawWorkspace({
       sessionSeedKeyRef.current = sessionBundle.sessionKey;
     }
   }, [applySessionSeed, editor, sessionBundle]);
+  const patchWorkspaceState = useCallback(
+    (workspaceObject: StudioWorkspaceObject, patch: StudioWorkspaceCardState) => {
+      onUpdateWorkspaceObject?.(workspaceObject.id, {
+        workspace: {
+          ...workspaceObject.workspace,
+          ...patch,
+        },
+      });
+    },
+    [onUpdateWorkspaceObject],
+  );
+
+  const beginCardEdit = useCallback((workspaceObject: StudioWorkspaceObject) => {
+    setEditingCardId(workspaceObject.id);
+    setEditingTitle(workspaceObject.title);
+    setEditingDetail(workspaceObject.detail);
+  }, []);
+
+  const cancelCardEdit = useCallback(() => {
+    setEditingCardId(null);
+    setEditingTitle("");
+    setEditingDetail("");
+  }, []);
+
+  const saveCardEdit = useCallback(() => {
+    if (!editingCardId) return;
+    onUpdateWorkspaceObject?.(editingCardId, {
+      title: editingTitle.trim() || "Untitled Workspace card",
+      detail: editingDetail.trim(),
+    });
+    cancelCardEdit();
+  }, [
+    cancelCardEdit,
+    editingCardId,
+    editingDetail,
+    editingTitle,
+    onUpdateWorkspaceObject,
+  ]);
+
+  const handleCopyObsidianHandoff = useCallback(async () => {
+    if (obsidianHandoffObjects.length === 0) {
+      toast.error("Select at least one Workspace card for Obsidian first");
+      return;
+    }
+    try {
+      if (
+        typeof window === "undefined" ||
+        !window.navigator.clipboard?.writeText
+      ) {
+        throw new Error("Clipboard unavailable");
+      }
+      const markdown = buildObsidianHandoffMarkdown({
+        courseName,
+        sessionGoal,
+        materialTitles,
+        workspaceObjects: canvasObjects,
+      });
+      await window.navigator.clipboard.writeText(markdown);
+      toast.success("Copied Obsidian handoff markdown");
+    } catch (err) {
+      toast.error("Could not copy Obsidian handoff", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    }
+  }, [
+    canvasObjects,
+    courseName,
+    materialTitles,
+    obsidianHandoffObjects.length,
+    sessionGoal,
+  ]);
+
   const excerptObjects = canvasObjects.filter(
     (
       workspaceObject,
@@ -148,12 +263,12 @@ export function StudioTldrawWorkspace({
   useEffect(() => {
     if (!editor) return;
 
-    const nextObjectIds = canvasObjects.map((workspaceObject) => workspaceObject.id);
+    const nextObjectIds = visibleCanvasObjects.map((workspaceObject) => workspaceObject.id);
     const previousObjectIds = syncedObjectIdsRef.current;
     const previousObjectIdSet = new Set(previousObjectIds);
     const nextObjectIdSet = new Set(nextObjectIds);
 
-    const shapesToCreate = canvasObjects
+    const shapesToCreate = visibleCanvasObjects
       .filter((workspaceObject) => !previousObjectIdSet.has(workspaceObject.id))
       .map((workspaceObject, index) => buildStudioCanvasShape(workspaceObject, index));
 
@@ -161,7 +276,7 @@ export function StudioTldrawWorkspace({
       editor.createShapes(shapesToCreate);
     }
 
-    const shapesToUpdate = canvasObjects
+    const shapesToUpdate = visibleCanvasObjects
       .filter((workspaceObject) => previousObjectIdSet.has(workspaceObject.id))
       .map((workspaceObject, index) => buildStudioCanvasShape(workspaceObject, index));
 
@@ -178,7 +293,7 @@ export function StudioTldrawWorkspace({
     }
 
     syncedObjectIdsRef.current = nextObjectIds;
-  }, [canvasObjects, editor]);
+  }, [editor, visibleCanvasObjects]);
 
   useEffect(() => {
     const root = workspaceRootRef.current;
@@ -210,6 +325,16 @@ export function StudioTldrawWorkspace({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCopyObsidianHandoff}
+            disabled={obsidianHandoffObjects.length === 0}
+            aria-label="Copy Obsidian markdown handoff"
+            className="h-8 rounded-full border-primary/20 bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-primary/84 hover:bg-black/30 disabled:cursor-default disabled:opacity-50"
+          >
+            Obsidian Handoff ({obsidianHandoffObjects.length})
+          </Button>
           <Button
             type="button"
             variant="outline"
@@ -250,8 +375,8 @@ export function StudioTldrawWorkspace({
               Canvas Objects
             </div>
             <div className="mt-1 text-sm text-foreground">
-              {canvasObjects.length} active canvas object
-              {canvasObjects.length === 1 ? "" : "s"}
+              {visibleCanvasObjects.length} active canvas object
+              {visibleCanvasObjects.length === 1 ? "" : "s"}
             </div>
           </div>
 
@@ -310,19 +435,141 @@ export function StudioTldrawWorkspace({
                   const isPromoted = promotedPrimeObjectIds.includes(
                     workspaceObject.id,
                   );
+                  const isEditing = editingCardId === workspaceObject.id;
+                  const isHidden = Boolean(workspaceObject.workspace?.hidden);
+                  const isTutorContext = Boolean(
+                    workspaceObject.workspace?.tutorContext || isPromoted,
+                  );
+                  const isObsidianHandoff = Boolean(
+                    workspaceObject.workspace?.obsidianHandoff,
+                  );
 
                   return (
                     <div
                       key={workspaceObject.id}
                       className="rounded-[0.75rem] border border-primary/12 bg-black/30 p-2.5"
                     >
-                      <div className="text-sm text-foreground">
-                        {workspaceObject.title}
-                      </div>
-                      <div className="mt-1 text-xs leading-5 text-foreground/62">
-                        {workspaceObject.detail}
-                      </div>
-                      <div className="mt-2">
+                      {isEditing ? (
+                        <div className="space-y-2">
+                          <label className="flex flex-col gap-1 text-[10px] uppercase tracking-[0.14em] text-primary/72">
+                            Workspace card title
+                            <input
+                              aria-label="Workspace card title"
+                              value={editingTitle}
+                              onChange={(event) => setEditingTitle(event.target.value)}
+                              className="rounded-[0.65rem] border border-primary/18 bg-black/40 px-2 py-1.5 text-xs normal-case tracking-normal text-foreground outline-none focus:border-primary/50"
+                            />
+                          </label>
+                          <label className="flex flex-col gap-1 text-[10px] uppercase tracking-[0.14em] text-primary/72">
+                            Workspace card detail
+                            <textarea
+                              aria-label="Workspace card detail"
+                              value={editingDetail}
+                              onChange={(event) => setEditingDetail(event.target.value)}
+                              rows={4}
+                              className="rounded-[0.65rem] border border-primary/18 bg-black/40 px-2 py-1.5 text-xs normal-case leading-5 tracking-normal text-foreground outline-none focus:border-primary/50"
+                            />
+                          </label>
+                          <div className="flex flex-wrap gap-1.5">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={saveCardEdit}
+                              className={WORKSPACE_CARD_BUTTON_CLASS}
+                            >
+                              Save Workspace Card
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={cancelCardEdit}
+                              className={WORKSPACE_CARD_BUTTON_CLASS}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="text-sm text-foreground">
+                              {workspaceObject.title}
+                            </div>
+                            {isHidden ? (
+                              <Badge
+                                variant="outline"
+                                className="shrink-0 rounded-full border-primary/18 px-2 py-0.5 text-[8px] uppercase tracking-[0.14em] text-foreground/58"
+                              >
+                                Hidden
+                              </Badge>
+                            ) : null}
+                          </div>
+                          <div className="mt-1 text-xs leading-5 text-foreground/62">
+                            {workspaceObject.detail}
+                          </div>
+                        </>
+                      )}
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() =>
+                            patchWorkspaceState(workspaceObject, {
+                              tutorContext: !isTutorContext,
+                            })
+                          }
+                          aria-label={
+                            isTutorContext
+                              ? `Remove ${workspaceObject.title} from Tutor context`
+                              : `Include ${workspaceObject.title} in Tutor context`
+                          }
+                          className={WORKSPACE_CARD_BUTTON_CLASS}
+                        >
+                          {isTutorContext ? "Tutor On" : "Tutor"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() =>
+                            patchWorkspaceState(workspaceObject, {
+                              obsidianHandoff: !isObsidianHandoff,
+                            })
+                          }
+                          aria-label={
+                            isObsidianHandoff
+                              ? `Remove ${workspaceObject.title} from Obsidian handoff`
+                              : `Include ${workspaceObject.title} in Obsidian handoff`
+                          }
+                          className={WORKSPACE_CARD_BUTTON_CLASS}
+                        >
+                          {isObsidianHandoff ? "Obsidian On" : "Obsidian"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => beginCardEdit(workspaceObject)}
+                          aria-label={`Edit Workspace card: ${workspaceObject.title}`}
+                          className={WORKSPACE_CARD_BUTTON_CLASS}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() =>
+                            patchWorkspaceState(workspaceObject, {
+                              hidden: !isHidden,
+                            })
+                          }
+                          aria-label={
+                            isHidden
+                              ? `Show Workspace card: ${workspaceObject.title}`
+                              : `Hide Workspace card: ${workspaceObject.title}`
+                          }
+                          className={WORKSPACE_CARD_BUTTON_CLASS}
+                        >
+                          {isHidden ? "Show" : "Hide"}
+                        </Button>
                         <Button
                           type="button"
                           variant="outline"
@@ -336,6 +583,15 @@ export function StudioTldrawWorkspace({
                           className="h-8 rounded-full border-primary/20 bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-primary/84 hover:bg-black/30 disabled:cursor-default disabled:opacity-100 disabled:text-foreground/60"
                         >
                           {isPromoted ? "In Prime Packet" : "Promote to Prime Packet"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => onDeleteWorkspaceObject?.(workspaceObject.id)}
+                          aria-label={`Delete Workspace card: ${workspaceObject.title}`}
+                          className={WORKSPACE_CARD_BUTTON_CLASS}
+                        >
+                          Delete
                         </Button>
                       </div>
                     </div>

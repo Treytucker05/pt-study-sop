@@ -9,7 +9,10 @@ interface RepairWorkspaceCandidate {
 }
 
 export type StudioWorkspaceObject =
-  | {
+  {
+    workspace?: StudioWorkspaceCardState;
+  } & (
+    | {
       id: string;
       kind: "material";
       title: string;
@@ -84,7 +87,21 @@ export type StudioWorkspaceObject =
             resultKey: string;
             sourceLabel: string;
           };
-    };
+    }
+  );
+
+export interface StudioWorkspaceCardState {
+  hidden?: boolean;
+  tutorContext?: boolean;
+  obsidianHandoff?: boolean;
+}
+
+export type StudioWorkspaceObjectUpdate = {
+  title?: string;
+  detail?: string;
+  badge?: string;
+  workspace?: StudioWorkspaceCardState;
+};
 
 function formatFileType(value: string | null | undefined): string {
   const normalized = String(value || "").trim();
@@ -240,6 +257,10 @@ export function createStudioPrimingResultWorkspaceObject({
     title: normalizedTitle,
     detail: normalizedDetail,
     badge: badge.trim() || "PRIMING",
+    workspace: {
+      tutorContext: true,
+      obsidianHandoff: true,
+    },
     provenance: {
       sourceType: "priming_result",
       resultKey: resultKey.trim(),
@@ -301,6 +322,21 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function isStudioWorkspaceCardState(
+  value: unknown,
+): value is StudioWorkspaceCardState | undefined {
+  if (typeof value === "undefined") return true;
+  if (!isPlainRecord(value)) return false;
+  return (
+    (typeof value.hidden === "undefined" ||
+      typeof value.hidden === "boolean") &&
+    (typeof value.tutorContext === "undefined" ||
+      typeof value.tutorContext === "boolean") &&
+    (typeof value.obsidianHandoff === "undefined" ||
+      typeof value.obsidianHandoff === "boolean")
+  );
+}
+
 export function isStudioWorkspaceObject(value: unknown): value is StudioWorkspaceObject {
   if (!isPlainRecord(value)) return false;
   if (
@@ -310,6 +346,9 @@ export function isStudioWorkspaceObject(value: unknown): value is StudioWorkspac
     typeof value.detail !== "string" ||
     typeof value.badge !== "string"
   ) {
+    return false;
+  }
+  if (!isStudioWorkspaceCardState(value.workspace)) {
     return false;
   }
 

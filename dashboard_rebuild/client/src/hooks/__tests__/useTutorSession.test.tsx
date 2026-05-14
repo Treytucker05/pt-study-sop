@@ -107,7 +107,7 @@ describe("useTutorSession", () => {
     createSessionMock.mockResolvedValue({ session_id: "sess-started" });
   });
 
-  it("uses carried-forward priming objectives in Tutor preflight when no approved objectives are loaded", () => {
+  it("uses carried-forward priming objectives in the Tutor Workspace context payload when no approved objectives are loaded", () => {
     const wrapper = createWrapper();
     const hub = createHubMock();
     const activeWorkflowDetail: TutorWorkflowDetailResponse = {
@@ -570,12 +570,12 @@ describe("useTutorSession", () => {
 
     expect(createSessionMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        content_filter: {
+        content_filter: expect.objectContaining({
           session_rules: [
             "Always force a function confirmation before L4 precision.",
             "Stay inside the assigned provenance boundary.",
           ],
-        },
+        }),
       }),
     );
   });
@@ -639,20 +639,16 @@ describe("useTutorSession", () => {
       await result.current.startSession();
     });
 
-    expect(preflightSessionMock).toHaveBeenCalledWith(
+    expect(preflightSessionMock).not.toHaveBeenCalled();
+    expect(createSessionMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        course_id: 1,
         topic: "Cardiovascular",
-        study_unit: "Cardiovascular",
         module_name: "Cardiovascular",
         content_filter: expect.objectContaining({
           material_ids: [561],
           vault_folder: "Courses/Exercise Physiology/Cardiovascular",
         }),
-      }),
-    );
-    expect(createSessionMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        preflight_id: "preflight-1",
       }),
     );
   });

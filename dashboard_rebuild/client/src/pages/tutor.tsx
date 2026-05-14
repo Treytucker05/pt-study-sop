@@ -1142,7 +1142,7 @@ function useTutorPageController() {
     session.advanceBlock,
   ]);
   const tutorHeroActionClassName =
-    "tutor-hero-action inline-flex min-h-[56px] min-w-[12rem] w-auto shrink-0 items-center justify-center gap-2.5 rounded-none px-6 py-3.5 font-arcade text-[0.92rem] leading-none tracking-[0.16em]";
+    "tutor-hero-action inline-flex min-h-[44px] min-w-[9.5rem] w-auto shrink-0 items-center justify-center gap-2 rounded-none px-3.5 py-2.5 font-arcade text-[0.72rem] leading-none tracking-[0.12em] sm:min-h-[50px] sm:min-w-[10.5rem] sm:px-5 sm:py-3 sm:text-[0.82rem] sm:tracking-[0.14em] xl:min-h-[56px] xl:min-w-[12rem] xl:px-6 xl:py-3.5 xl:text-[0.92rem] xl:tracking-[0.16em]";
 
   // ─── Render ───
   return (
@@ -1152,7 +1152,7 @@ function useTutorPageController() {
       subtitle="Run your study plan from Workspace Home through Priming, then move into Tutor and Final Sync without losing context."
       className="h-full min-h-0"
       contentClassName="gap-6"
-      heroClassName="min-h-[243px]"
+      heroClassName="tutor-page-hero"
       stats={tutorHeroStats}
       actions={
         <>

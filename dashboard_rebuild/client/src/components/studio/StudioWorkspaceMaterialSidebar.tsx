@@ -24,6 +24,7 @@ import type {
   SessionMaterialBundle,
   PrimePromotedWorkspaceObject,
 } from "@/lib/sessionMaterialBundle";
+import type { StudioWorkspaceObject } from "@/lib/studioWorkspaceObjects";
 import type { StudioPolishPromotedNote } from "@/lib/studioPacketSections";
 
 // ── Section model ────────────────────────────────────────────────────
@@ -132,11 +133,68 @@ function buildPolishItem(
   };
 }
 
+function readWorkspaceObjectSource(workspaceObject: StudioWorkspaceObject): string | null {
+  if (workspaceObject.kind !== "text_note") return null;
+  if (workspaceObject.provenance.sourceType === "priming_result") {
+    return workspaceObject.provenance.sourceLabel;
+  }
+  return workspaceObject.provenance.sourceLabel;
+}
+
+function buildWorkspaceItem(workspaceObject: StudioWorkspaceObject): MaterialItem {
+  return {
+    id: `workspace-${workspaceObject.id}`,
+    title: workspaceObject.title,
+    snippet: snippet(workspaceObject.detail),
+    source: readWorkspaceObjectSource(workspaceObject),
+    copyText: joinTitleAndBody(workspaceObject.title, workspaceObject.detail),
+  };
+}
+
+function getWorkspaceSectionId(workspaceObject: StudioWorkspaceObject): string {
+  const label = `${workspaceObject.badge} ${workspaceObject.title}`.toLowerCase();
+  if (label.includes("objective")) return "objectives";
+  if (label.includes("concept")) return "concepts";
+  if (label.includes("term")) return "terms";
+  if (label.includes("summar")) return "summaries";
+  if (label.includes("root")) return "root-explanations";
+  if (
+    label.includes("gap") ||
+    label.includes("question") ||
+    label.includes("unsupported")
+  ) {
+    return "gaps";
+  }
+  return "prime-packet";
+}
+
+function appendWorkspaceObjectsToSections(
+  sections: MaterialSection[],
+  workspaceObjects: StudioWorkspaceObject[],
+): MaterialSection[] {
+  if (workspaceObjects.length === 0) return sections;
+
+  const nextSections = sections.map((section) => ({
+    ...section,
+    items: [...section.items],
+  }));
+  const sectionById = new Map(nextSections.map((section) => [section.id, section]));
+
+  for (const workspaceObject of workspaceObjects) {
+    const targetSection = sectionById.get(getWorkspaceSectionId(workspaceObject));
+    if (!targetSection) continue;
+    targetSection.items.push(buildWorkspaceItem(workspaceObject));
+  }
+
+  return nextSections;
+}
+
 function buildSections(
   bundle: SessionMaterialBundle | undefined,
+  workspaceObjects: StudioWorkspaceObject[] = [],
 ): MaterialSection[] {
   if (!bundle) {
-    return [];
+    return appendWorkspaceObjectsToSections([], workspaceObjects);
   }
 
   const concepts: MaterialItem[] = bundle.concepts.map((c, i) => ({
@@ -205,7 +263,7 @@ function buildSections(
     copyText: n.content,
   }));
 
-  return [
+  return appendWorkspaceObjectsToSections([
     {
       id: "objectives",
       label: "Learning objectives",
@@ -286,7 +344,7 @@ function buildSections(
       emptyHint: "No notes captured yet.",
       items: noteItems,
     },
-  ];
+  ], workspaceObjects);
 }
 
 // ── Component ────────────────────────────────────────────────────────
@@ -298,6 +356,7 @@ export type StudioWorkspaceMaterialActiveTab =
 
 export interface StudioWorkspaceMaterialSidebarProps {
   bundle: SessionMaterialBundle | undefined;
+  workspaceObjects?: StudioWorkspaceObject[];
   className?: string;
   activeTabId?: StudioWorkspaceMaterialActiveTab;
   onAddToCanvas?: (label: string) => void;
@@ -305,13 +364,17 @@ export interface StudioWorkspaceMaterialSidebarProps {
 
 export function StudioWorkspaceMaterialSidebar({
   bundle,
+  workspaceObjects = [],
   className,
   activeTabId,
   onAddToCanvas,
 }: StudioWorkspaceMaterialSidebarProps) {
   const canAddToCanvas =
     activeTabId === "mind-map" || activeTabId === "concept-map";
-  const sections = useMemo(() => buildSections(bundle), [bundle]);
+  const sections = useMemo(
+    () => buildSections(bundle, workspaceObjects),
+    [bundle, workspaceObjects],
+  );
   const [query, setQuery] = useState("");
   const [stageFilter, setStageFilter] = useState<StageFilter>("all");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});

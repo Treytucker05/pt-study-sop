@@ -2,7 +2,7 @@
 Live Tutor Smoke Test
 
 Exercises the modern Tutor lifecycle:
-  course discovery -> material/objective discovery -> preflight ->
+  course discovery -> material/objective discovery -> Workspace Context ->
   create -> turn (SSE) -> restore -> summary -> end -> delete
 
 Prerequisites:
@@ -13,6 +13,7 @@ Prerequisites:
 
 Usage:
   python scripts/live_tutor_smoke.py [--base-url http://127.0.0.1:5000]
+  python scripts/live_tutor_smoke.py --skip-turn [--base-url http://127.0.0.1:5000]
 """
 
 from __future__ import annotations
@@ -107,7 +108,7 @@ def _group_objectives_by_study_unit(
     return list(grouped.items())
 
 
-def _build_preflight_payload(
+def _build_workspace_context_payload(
     *,
     course_id: int,
     study_unit: str,
@@ -118,6 +119,7 @@ def _build_preflight_payload(
         "course_id": course_id,
         "study_unit": study_unit,
         "topic": study_unit,
+        "module_name": study_unit,
         "objective_scope": "module_all",
         "learning_objectives": [
             {
@@ -135,14 +137,12 @@ def _build_preflight_payload(
     }
 
 
-def select_preflight_ready_scope(
+def select_workspace_context_ready_scope(
     *,
     session: requests.Session,
     base_url: str,
     course_candidates: list[dict],
 ) -> dict:
-    last_failure: str | None = None
-
     for course in course_candidates:
         course_id = course.get("id")
         if not course_id:
@@ -175,61 +175,34 @@ def select_preflight_ready_scope(
             continue
 
         for study_unit, unit_objectives in grouped_units:
-            payload = _build_preflight_payload(
+            payload = _build_workspace_context_payload(
                 course_id=int(course_id),
                 study_unit=study_unit,
                 objectives=unit_objectives,
                 selected_material_ids=selected_material_ids,
             )
-            resp = session.post(
-                f"{base_url}/api/tutor/session/preflight",
-                json=payload,
-                timeout=30,
-            )
-            if resp.status_code >= 400:
-                try:
-                    error_payload = resp.json()
-                except Exception:
-                    error_payload = resp.text
-                last_failure = (
-                    f"course={course.get('name') or course_id}, "
-                    f"study_unit={study_unit}, "
-                    f"error={error_payload}"
-                )
-                continue
-
-            preflight = resp.json()
-            if preflight.get("ok"):
-                grouped_objectives = [
-                    objective
-                    for _, grouped_objectives in grouped_units
-                    for objective in grouped_objectives
-                ]
-                return {
-                    "course": course,
-                    "materials": materials,
-                    "learning_objectives": learning_objectives,
-                    "grouped_objectives": grouped_objectives,
-                    "study_unit": study_unit,
-                    "unit_objectives": unit_objectives,
-                    "selected_material_ids": selected_material_ids,
-                    "preflight_payload": payload,
-                    "preflight": preflight,
-                }
-
-            last_failure = (
-                f"course={course.get('name') or course_id}, "
-                f"study_unit={study_unit}, "
-                f"preflight={preflight}"
-            )
+            grouped_objectives = [
+                objective
+                for _, grouped_objectives in grouped_units
+                for objective in grouped_objectives
+            ]
+            return {
+                "course": course,
+                "materials": materials,
+                "learning_objectives": learning_objectives,
+                "grouped_objectives": grouped_objectives,
+                "study_unit": study_unit,
+                "unit_objectives": unit_objectives,
+                "selected_material_ids": selected_material_ids,
+                "workspace_context_payload": payload,
+            }
 
     raise RuntimeError(
-        "No course has a preflight-ready study unit."
-        + (f" Last failure: {last_failure}" if last_failure else "")
+        "No course has a material-backed study unit ready for Workspace Context."
     )
 
 
-def smoke(base_url: str) -> None:
+def smoke(base_url: str, *, skip_turn: bool = False) -> None:
     session = requests.Session()
     failures: list[str] = []
     created_session_id: str | None = None
@@ -269,7 +242,7 @@ def smoke(base_url: str) -> None:
 
     course_candidates = courses.get("courses", []) if isinstance(courses, dict) else courses
     try:
-        selected_scope = select_preflight_ready_scope(
+        selected_scope = select_workspace_context_ready_scope(
             session=session,
             base_url=base_url,
             course_candidates=course_candidates,
@@ -285,7 +258,7 @@ def smoke(base_url: str) -> None:
     study_unit = selected_scope["study_unit"]
     unit_objectives = selected_scope["unit_objectives"]
     selected_material_ids = selected_scope["selected_material_ids"]
-    preflight_payload = selected_scope["preflight_payload"]
+    workspace_context_payload = selected_scope["workspace_context_payload"]
     course_id = selected_course.get("id")
     course_name = selected_course.get("name") or "Unknown Course"
     print(
@@ -295,22 +268,24 @@ def smoke(base_url: str) -> None:
     print("  [Tutor: list materials] OK")
     print("  [Tutor: list objectives] OK")
 
-    preflight = step(
-        "Tutor: preflight",
-        lambda: selected_scope["preflight"],
-    )
-    if not preflight or not preflight.get("ok"):
-        print("FATAL: Tutor preflight did not return ok=true.")
-        if preflight:
-            print(json.dumps(preflight, indent=2))
-        sys.exit(1)
+    print("  [Tutor: Workspace Context] OK")
 
     created = step(
         "Tutor: create session",
         lambda: (
             resp := session.post(
                 f"{base_url}/api/tutor/session",
-                json={"preflight_id": preflight["preflight_id"], "mode": "Core"},
+                json={
+                    **workspace_context_payload,
+                    "mode": "Core",
+                    "phase": "first_pass",
+                    "packet_context": (
+                        "Workspace Context smoke packet\n"
+                        f"- Course: {course_name}\n"
+                        f"- Study unit: {study_unit}\n"
+                        f"- Materials: {selected_material_ids}"
+                    ),
+                },
                 timeout=30,
             ),
             resp.raise_for_status(),
@@ -322,24 +297,27 @@ def smoke(base_url: str) -> None:
         sys.exit(1)
     created_session_id = created["session_id"]
 
-    turn_body = step(
-        "Tutor: send turn",
-        lambda: _run_turn(session, base_url, created_session_id),
-    )
-    if not turn_body:
-        print("FATAL: Tutor turn failed before response body was returned.")
-        sys.exit(1)
+    if skip_turn:
+        print("  [Tutor: send turn] SKIP - --skip-turn avoids external LLM calls")
+    else:
+        turn_body = step(
+            "Tutor: send turn",
+            lambda: _run_turn(session, base_url, created_session_id),
+        )
+        if not turn_body:
+            print("FATAL: Tutor turn failed before response body was returned.")
+            sys.exit(1)
 
-    turn_error = _extract_error_payload(turn_body)
-    if turn_error:
-        print("FATAL: Tutor turn returned an SSE error payload.")
-        print(json.dumps(turn_error, indent=2))
-        sys.exit(1)
+        turn_error = _extract_error_payload(turn_body)
+        if turn_error:
+            print("FATAL: Tutor turn returned an SSE error payload.")
+            print(json.dumps(turn_error, indent=2))
+            sys.exit(1)
 
-    turn_done = _extract_done_payload(turn_body)
-    if not turn_done:
-        print("FATAL: Tutor turn did not emit a done payload.")
-        sys.exit(1)
+        turn_done = _extract_done_payload(turn_body)
+        if not turn_done:
+            print("FATAL: Tutor turn did not emit a done payload.")
+            sys.exit(1)
 
     restored = step(
         "Tutor: restore session",
@@ -413,8 +391,13 @@ def main() -> None:
         default=os.environ.get("SMOKE_BASE_URL", DEFAULT_BASE),
         help=f"Dashboard base URL (default: {DEFAULT_BASE})",
     )
+    parser.add_argument(
+        "--skip-turn",
+        action="store_true",
+        help="Create/restore/end/delete a Tutor session without sending an LLM-backed turn.",
+    )
     args = parser.parse_args()
-    smoke(args.base_url)
+    smoke(args.base_url, skip_turn=args.skip_turn)
 
 
 if __name__ == "__main__":

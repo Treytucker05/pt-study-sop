@@ -29,6 +29,7 @@ import {
   buildStudioWorkspaceObjects,
   normalizeStudioWorkspaceObjects,
   type StudioWorkspaceObject,
+  type StudioWorkspaceObjectUpdate,
 } from "@/lib/studioWorkspaceObjects";
 import {
   readTutorWorkspaceDraftObjects,
@@ -68,6 +69,22 @@ function isPrimePromotedWorkspaceObject(
   workspaceObject: StudioWorkspaceObject,
 ): workspaceObject is PrimePromotedWorkspaceObject {
   return workspaceObject.kind === "excerpt" || workspaceObject.kind === "text_note";
+}
+
+function applyWorkspaceObjectUpdate<T extends StudioWorkspaceObject>(
+  workspaceObject: T,
+  patch: StudioWorkspaceObjectUpdate,
+): T {
+  return {
+    ...workspaceObject,
+    ...patch,
+    workspace: patch.workspace
+      ? {
+          ...workspaceObject.workspace,
+          ...patch.workspace,
+        }
+      : workspaceObject.workspace,
+  } as T;
 }
 
 function readCapsuleRecordLabel(record: Record<string, unknown> | null | undefined): string | null {
@@ -493,9 +510,31 @@ export function TutorShell({
 
     return Array.from(merged.values());
   }, [controlledPromotedPrimePacketObjects, localPromotedPrimePacketObjects]);
+  const tutorContextWorkspaceObjects = useMemo(
+    () =>
+      workspaceDraftObjects.filter(
+        (workspaceObject): workspaceObject is PrimePromotedWorkspaceObject =>
+          isPrimePromotedWorkspaceObject(workspaceObject) &&
+          workspaceObject.workspace?.tutorContext === true,
+      ),
+    [workspaceDraftObjects],
+  );
+  const tutorContextPacketObjects = useMemo(() => {
+    const merged = new Map<string, PrimePromotedWorkspaceObject>();
+
+    for (const workspaceObject of promotedPrimePacketObjects) {
+      merged.set(workspaceObject.id, workspaceObject);
+    }
+
+    for (const workspaceObject of tutorContextWorkspaceObjects) {
+      merged.set(workspaceObject.id, workspaceObject);
+    }
+
+    return Array.from(merged.values());
+  }, [promotedPrimePacketObjects, tutorContextWorkspaceObjects]);
   const promotedPrimeObjectIds = useMemo(
-    () => promotedPrimePacketObjects.map((workspaceObject) => workspaceObject.id),
-    [promotedPrimePacketObjects],
+    () => tutorContextPacketObjects.map((workspaceObject) => workspaceObject.id),
+    [tutorContextPacketObjects],
   );
   const documentTabs = controlledDocumentTabs ?? localDocumentTabs;
   const activeDocumentTabId =
@@ -543,23 +582,23 @@ export function TutorShell({
   );
   const promotedPrimeExcerptObjects = useMemo(
     () =>
-      promotedPrimePacketObjects.filter(
+      tutorContextPacketObjects.filter(
         (
           workspaceObject,
         ): workspaceObject is Extract<StudioWorkspaceObject, { kind: "excerpt" }> =>
           workspaceObject.kind === "excerpt",
       ),
-    [promotedPrimePacketObjects],
+    [tutorContextPacketObjects],
   );
   const promotedPrimeArtifactObjects = useMemo(
     () =>
-      promotedPrimePacketObjects.filter(
+      tutorContextPacketObjects.filter(
         (
           workspaceObject,
         ): workspaceObject is Extract<StudioWorkspaceObject, { kind: "text_note" }> =>
           workspaceObject.kind === "text_note",
       ),
-    [promotedPrimePacketObjects],
+    [tutorContextPacketObjects],
   );
   const primePacketSections = useMemo(
     () =>
@@ -672,6 +711,34 @@ export function TutorShell({
     },
     [],
   );
+  const handleUpdateWorkspaceObject = useCallback(
+    (objectId: string, patch: StudioWorkspaceObjectUpdate) => {
+      setWorkspaceDraftObjects((prev) =>
+        prev.map((workspaceObject) =>
+          workspaceObject.id === objectId
+            ? applyWorkspaceObjectUpdate(workspaceObject, patch)
+            : workspaceObject,
+        ),
+      );
+      setLocalPromotedPrimePacketObjects((prev) =>
+        prev.map((workspaceObject) =>
+          workspaceObject.id === objectId
+            ? applyWorkspaceObjectUpdate(workspaceObject, patch)
+            : workspaceObject,
+        ),
+      );
+    },
+    [],
+  );
+  const handleDeleteWorkspaceObject = useCallback((objectId: string) => {
+    setWorkspaceDraftObjects((prev) =>
+      prev.filter((workspaceObject) => workspaceObject.id !== objectId),
+    );
+    setCanvasObjectIds((prev) => prev.filter((existingId) => existingId !== objectId));
+    setLocalPromotedPrimePacketObjects((prev) =>
+      prev.filter((workspaceObject) => workspaceObject.id !== objectId),
+    );
+  }, []);
   const handleOpenSourceInDocumentDock = useCallback(
     (
       workspaceObject: Extract<
@@ -1453,7 +1520,7 @@ export function TutorShell({
     artifacts: session.artifacts,
     turnCount: session.turnCount ?? 0,
     capturedNotes: workflow.activeWorkflowDetail?.captured_notes ?? [],
-    primePacket: promotedPrimePacketObjects,
+    primePacket: tutorContextPacketObjects,
     polishPacket: promotedPolishPacketNotes,
     hasWorkflowDetail: Boolean(workflow.activeWorkflowDetail),
   });
@@ -1473,6 +1540,8 @@ export function TutorShell({
         sessionMaterialBundle={sessionMaterialBundle}
         onPromoteExcerptToPrime={handlePromoteExcerptToPrime}
         onPromoteTextNoteToPrime={handlePromoteTextNoteToPrime}
+        onUpdateWorkspaceObject={handleUpdateWorkspaceObject}
+        onDeleteWorkspaceObject={handleDeleteWorkspaceObject}
       />
     </div>
   );
@@ -1521,9 +1590,9 @@ export function TutorShell({
           sourceInventory={workflow.mergedPrimingSourceInventory}
           vaultFolderPreview={hub.derivedVaultFolder}
           readinessItems={workflow.primingReadinessItems}
-          preflightBlockers={session.preflight?.blockers || []}
-          preflightLoading={session.preflightLoading}
-          preflightError={session.preflightError}
+          preflightBlockers={[]}
+          preflightLoading={false}
+          preflightError={null}
           onBackToStudio={() => undefined}
           onSaveDraft={() => {
             void workflow.saveWorkflowPriming("draft");

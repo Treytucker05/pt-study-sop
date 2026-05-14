@@ -1352,6 +1352,14 @@ def _launch_materials_sync_job(
                 progress_callback=_progress,
             )
             sync_errors = sync_result.get("errors") or []
+            synced_doc_ids: list[int] = []
+            for raw_doc_id in sync_result.get("doc_ids") or []:
+                try:
+                    doc_id = int(raw_doc_id)
+                except (TypeError, ValueError):
+                    continue
+                if doc_id > 0:
+                    synced_doc_ids.append(doc_id)
             _update_sync_job(
                 job_id,
                 phase="embedding",
@@ -1386,8 +1394,20 @@ def _launch_materials_sync_job(
                     )
 
                 def _run_embed() -> dict:
+                    if not synced_doc_ids:
+                        return {
+                            "embedded": 0,
+                            "skipped": 0,
+                            "timed_out": 0,
+                            "total_chunks": 0,
+                            "failures": [],
+                            "scope": "synced_doc_ids",
+                            "scoped_doc_count": 0,
+                        }
                     return embed_rag_docs(
-                        corpus="materials", progress_callback=_embed_progress
+                        corpus="materials",
+                        rag_doc_ids=synced_doc_ids,
+                        progress_callback=_embed_progress,
                     )
 
                 with _TPE(max_workers=1) as _phase_executor:

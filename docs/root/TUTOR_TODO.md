@@ -28,6 +28,102 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 - Ops note (2026-03-25): `dev-browser` is now a shared agent skill projected into every supported agent root; this does not change Tutor sprint priority.
 
+- [x] LIBRARY-EXPLICIT-FILE-LOAD-2026-05-13. Make Library intake/sync load only files Trey explicitly selects.
+  - Scope:
+    - Semester Intake still scans a folder for classification, but material files are not auto-loaded.
+    - Folder Sync preview starts with zero selected files instead of selecting the whole folder tree.
+    - Add file-level controls so selected material files are the only files sent to sync/apply.
+  - Assignee: @codex-cli
+  - Completed: 2026-05-13
+  - Validation:
+    - Semester Intake scan now leaves material files unselected until Trey chooses them.
+    - Folder Sync preview now starts with zero selected files after scan instead of selecting the full folder tree.
+    - Apply/sync payloads include only selected material file paths.
+    - Checks passed: `npm run test -- client/src/pages/__tests__/library.test.tsx`, `npm run check`, and `npm run build`.
+  - Done when:
+    - Focused Library tests prove Semester Intake and Folder Sync send only selected files.
+    - Backend scoped embedding tests remain green.
+
+- [x] OPS-DASHBOARD-CPU-SYNC-SCOPE-2026-05-13. Stop dashboard material sync from turning one course intake into a whole-library CPU job.
+  - Scope:
+    - Review `scratch/bug_dashboard_high_cpu_2026-05-13.md` and the Mac dashboard startup/sync paths.
+    - Keep Flask startup/reloader behavior stable.
+    - Scope post-sync embedding to the documents touched by that sync job.
+    - Add focused regression coverage for the material sync embedding scope.
+  - Assignee: @codex-cli
+  - Completed: 2026-05-13
+  - Validation:
+    - Reviewed `scratch/bug_dashboard_high_cpu_2026-05-13.md`, the Mac launcher, Flask startup, route registration, polling/background-thread paths, and material sync/embedding flow.
+    - Confirmed no live dashboard was listening on `127.0.0.1:5127` during the fix pass, so the hot process had already been killed.
+    - Fixed material sync embedding so a sync job embeds only the `rag_docs` IDs returned by that sync, instead of scanning the whole materials corpus.
+    - Added regression coverage proving the sync job passes its own synced document IDs into embedding.
+    - Checks passed: `.venv/bin/python -m pytest brain/tests/test_harness_startup.py brain/tests/test_tutor_material_pipeline_certification.py brain/tests/test_tutor_rag_embedding_provider.py brain/tests/test_semester_intake.py -q`.
+  - Done when:
+    - Focused backend tests prove material sync jobs embed only their synced document IDs.
+    - The high-CPU root cause/gap is summarized with any remaining non-blocking risks.
+
+- [x] LIBRARY-COURSE-OPS-REDESIGN-2026-05-13. Redesign `/library` into a calmer course-first operations workflow.
+  - Scope:
+    - Replace the current competing intake/upload/sync panel stack with a clear Source -> Review -> Study workflow.
+    - Make course names the primary navigation signal and PHYT codes secondary metadata.
+    - Consolidate Semester Intake, Folder Sync, and Upload into one Add Coursework control area.
+    - Preserve existing Semester Intake, folder sync, direct upload, material management, course linking, cleanup, and Tutor handoff behavior.
+  - Assignee: @codex-cli
+  - Completed: 2026-05-13
+  - Validation:
+    - Library now defaults to a course-first rail with course names primary and PHYT codes secondary.
+    - Semester Intake, Folder Sync, and Direct Upload now live in one `ADD COURSEWORK` source switcher.
+    - Readiness and Tutor handoff controls now appear once in a dedicated `STUDY READINESS` panel instead of repeated workflow cards.
+    - Library hero is compacted so the operations workspace is reachable in a narrow in-app browser window.
+    - Checks passed: `npm run test -- client/src/pages/__tests__/library.test.tsx`, `npm run check`, `npm run build`, launcher health check at `http://127.0.0.1:5127/api/brain/status`, and built-in browser DOM verification for `/library`.
+  - Done when:
+    - Library renders as a course-first operations layout with calmer graphite/crimson/info/readiness colors.
+    - Movement Science II can be found by course name when present in course data or intake preview.
+    - Existing focused Library tests and new UI-flow tests pass.
+    - `npm run check`, `npm run build`, and browser verification for `/library` pass.
+
+- [x] STUDY-LOOP-WORKSPACE-CONTEXT-2026-05-13. Implement the real Library → Priming → Workspace cards/concept map → Tutor context packet → Obsidian markdown handoff loop.
+  - Scope:
+    - Make Priming outputs land as editable Workspace cards with hide/delete/edit controls.
+    - Use Workspace selection as Tutor context authority and remove the user-facing Preflight dependency.
+    - Generate a markdown Obsidian handoff packet for the external Obsidian agent.
+    - Keep syllabus/schedule intake as seed context while Priming creates actionable study objectives.
+  - Assignee: @codex-cli
+  - Completed: 2026-05-13
+  - Validation:
+    - Priming results now auto-create editable Workspace cards; sidebar buckets include Priming cards.
+    - Workspace cards support edit, hide, delete, Tutor-context selection, and Obsidian-handoff selection.
+    - Tutor session creation uses selected material plus Workspace Context directly; the user-facing Preflight dependency is removed from the start path.
+    - Obsidian markdown handoff packet can be copied from selected Workspace cards.
+    - Checks passed: `npm run check`, `npm run build`, focused frontend tests for Priming/Workspace/Obsidian/Tutor session wiring, `.venv/bin/python -m pytest brain/tests/test_tutor_session_linking.py brain/tests/test_semester_intake.py brain/tests/test_live_tutor_smoke.py -q`, and `scripts/live_tutor_smoke.py --base-url http://127.0.0.1:5127 --skip-turn`.
+    - Built-in browser verification passed for `/brain`, `/library`, and `/tutor`; Library shows `SEMESTER INTAKE`, and Tutor opens a `Professionalism` live session without visible Preflight.
+  - Done when:
+    - Workspace buckets populate from Priming results.
+    - Selected Workspace context starts/resumes Tutor without Preflight.
+    - Obsidian handoff markdown is available from the selected Workspace context.
+    - Focused frontend/backend/browser verification passes.
+
+- [x] OPS-STUDY-LOOP-MAP-GAP-2026-05-13. Map, test, and close the full PT Study OS coursework-to-study loop against the real Mac semester folder.
+  - Scope:
+    - Document the full system loop from real coursework input through Library, Tutor, Studio workflow stages, Brain telemetry, Scholar review, and SOP/method improvement.
+    - Test the loop against `/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School`.
+    - Classify gaps as P0/P1/P2 and fix only P0/P1 gaps that block real coursework intake, material sync, Tutor readiness, or the intended loop.
+  - Assignee: @codex-cli
+  - Completed: 2026-05-13
+  - Validation:
+    - `docs/root/STUDY_LOOP_FLOW_AND_GAP_REVIEW.md` now maps the full coursework-to-study loop with a Mermaid flowchart, validation matrix, gap register, and study-now handoff.
+    - Real PT School preview: 3 courses, 6 syllabus files, 6 schedule files, 27 material files, 14 ignored/admin files, 0 unassigned files.
+    - Real apply after DB backup: 0 courses created, 3 courses updated, 6 setup files parsed, 14 objectives created, 0 setup parse errors, 0 material sync jobs.
+    - Tutor readiness: Professionalism Week 1 preflight passed, session `tutor-20260513-101225-0c7ef7` created/restored, Library/Tutor rendered in browser screenshots.
+    - Checks: `npm run check`, `npm run build`, `npm run test -- client/src/pages/__tests__/library.test.tsx`, `pytest brain/tests/test_semester_intake.py -q`, and focused Tutor preflight regression tests passed.
+  - Notes:
+    - Full `scripts/live_tutor_smoke.py` model-backed turn was not run by Codex because it can send selected coursework to the configured external LLM provider; run only with explicit user approval.
+    - Movement Science II and Cardiovascular Pulmonary folders currently contain no supported study files, so they are not intake-visible yet.
+  - Done when:
+    - `docs/root/STUDY_LOOP_FLOW_AND_GAP_REVIEW.md` reflects the current app truth with Mermaid flowcharts and validation results.
+    - Semester Intake preview/apply, Library state, material ingestion, and Tutor readiness are validated against at least one real current course.
+    - Trey receives a short study-now handoff identifying a ready course/material and any non-blocking imperfections.
+
 - [x] OPS-CROSS-PLATFORM-AUDIT-P0-2026-05-11. Review Codex Cloud repo audit, restore frontend typecheck, and keep Mac/Windows launch behavior aligned.
   - Scope:
     - Reproduce and fix P0 frontend `npm run check` failures.

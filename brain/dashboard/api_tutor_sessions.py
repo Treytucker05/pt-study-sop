@@ -70,6 +70,7 @@ from dashboard.api_tutor_vault import (
     _vault_save_note,
     _sync_graph_for_paths,
     _ensure_moc_context,
+    _is_nonblocking_moc_error,
     _resolve_tutor_preflight,
 )
 
@@ -453,24 +454,9 @@ def create_session():
             content_filter.get("focus_objective_id") or focus_objective_id
         ).strip()
 
-    requires_certified_preflight = preflight_bundle is None and (
-        bool(focus_objective_id)
-        or bool(data.get("study_unit"))
-        or (
-            isinstance(data.get("learning_objectives"), list)
-            and objective_scope != "single_focus"
-        )
-    )
-    if requires_certified_preflight:
-        return (
-            jsonify(
-                {
-                    "error": "Objective-scoped certified Tutor sessions must start from preflight.",
-                    "code": "PREFLIGHT_REQUIRED",
-                }
-            ),
-            400,
-        )
+    # Workspace Context is now the user-facing session authority. The legacy
+    # preflight endpoint remains available for preview diagnostics, but direct
+    # Tutor starts may carry objective/material context in the create payload.
     map_of_contents_refresh = bool(
         data.get(
             "map_of_contents_refresh",
@@ -540,7 +526,15 @@ def create_session():
             path_override=vault_folder,
         )
         if map_of_contents_error:
-            return jsonify({"error": map_of_contents_error}), 500
+            if source_ids and _is_nonblocking_moc_error(map_of_contents_error):
+                _LOG.warning("Proceeding without MoC context: %s", map_of_contents_error)
+                if not isinstance(content_filter, dict):
+                    content_filter = {}
+                content_filter["map_of_contents_warning"] = map_of_contents_error
+                map_of_contents_ctx = None
+                map_of_contents_error = None
+            else:
+                return jsonify({"error": map_of_contents_error}), 500
 
     if not isinstance(content_filter, dict):
         content_filter = {}
