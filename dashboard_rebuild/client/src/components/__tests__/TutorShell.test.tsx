@@ -1854,7 +1854,7 @@ describe("TutorShell studio routing", () => {
     );
 
     expect(await screen.findByTestId("studio-entry-upload-status")).toHaveTextContent(
-      "Uploading selected files to this course...",
+      "Uploading to Library and Current Run...",
     );
     (resolveUpload as unknown as (value: { id: number }) => void)({ id: 104 });
     await uploadPromise;

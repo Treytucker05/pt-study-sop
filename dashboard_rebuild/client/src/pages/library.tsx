@@ -58,6 +58,7 @@ import {
   ArchiveRestore,
   ChevronDown,
   Plus,
+  Play,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -98,6 +99,7 @@ const LIBRARY_READY_BADGE =
 const LIBRARY_WARN_BADGE =
   "rounded-[0.55rem] border border-amber-400/35 bg-amber-400/10 px-2 py-1 font-terminal text-sm uppercase tracking-[0.12em] text-amber-200";
 type AddCourseworkMode = "intake" | "sync" | "upload";
+type MaterialRole = "study" | "reference" | "setup";
 type SemesterPreviewCourse = SemesterIntakePreviewResult["courses"][number];
 
 function collectSemesterMaterialFilePaths(
@@ -285,6 +287,45 @@ function getMaterialFolder(mat: Material): string {
   return folders.join("/") || "Unsorted";
 }
 
+function getMaterialRole(mat: Material): MaterialRole {
+  const segments = [
+    mat.folder_path || "",
+    mat.source_path || "",
+    mat.title || "",
+  ]
+    .join("/")
+    .replace(/\\/g, "/")
+    .split("/")
+    .map((part) => part.toLowerCase().trim())
+    .filter(Boolean);
+  const text = segments.join(" ");
+
+  if (
+    segments.some((segment) =>
+      /^(0?1|textbook|textbooks|reference|references)[\s_-]*(textbook|textbooks|reference|references)?$/.test(
+        segment,
+      ),
+    ) ||
+    /\b(textbook|course reference|reference material|references)\b/.test(text)
+  ) {
+    return "reference";
+  }
+
+  if (
+    segments.some((segment) =>
+      /\b(syllabus|schedule|course calendar|course map)\b/.test(segment),
+    )
+  ) {
+    return "setup";
+  }
+
+  return "study";
+}
+
+function isDefaultStudyMaterial(mat: Material): boolean {
+  return mat.enabled && getMaterialRole(mat) === "study";
+}
+
 function buildFolderTree(materials: Material[]): FolderNode {
   const root: FolderNode = { name: "root", files: [], children: {} };
 
@@ -425,6 +466,7 @@ function renderMaterialRow(
   setEditingId: (id: number | null) => void,
   saveEdit: () => void,
   toggleMaterialForTutor: (id: number) => void,
+  studyMaterialInTutor: (id: number) => void,
   toggleEnabled: (mat: Material) => void,
   deleteMutation: MutateDeleteLike,
   startEdit: (mat: Material) => void,
@@ -440,6 +482,7 @@ function renderMaterialRow(
   const canReextract = ["pdf", "docx", "pptx", "powerpoint"].includes(
     normalizedType,
   );
+  const materialRole = getMaterialRole(mat);
   const hasDoclingAssets = Boolean(mat.has_docling_assets);
   const doclingAssetCount = Number(mat.docling_asset_count || 0);
 
@@ -517,6 +560,24 @@ function renderMaterialRow(
         <Badge variant="outline" className={`${TEXT_BADGE} h-4 px-1 w-fit`}>
           {getFileTypeLabel(mat.file_type)}
         </Badge>
+        {materialRole === "reference" ? (
+          <Badge
+            variant="outline"
+            className={`${TEXT_BADGE} h-4 px-1 w-fit border-sky-500/50 text-sky-300`}
+            title="Course reference; manually selectable for Current Run"
+          >
+            COURSE REF
+          </Badge>
+        ) : null}
+        {materialRole === "setup" ? (
+          <Badge
+            variant="outline"
+            className={`${TEXT_BADGE} h-4 px-1 w-fit border-emerald-500/50 text-emerald-300`}
+            title="Course setup file"
+          >
+            SETUP
+          </Badge>
+        ) : null}
         {canReextract ? (
           <Badge
             variant="outline"
@@ -555,6 +616,15 @@ function renderMaterialRow(
 
       {/* Actions */}
       <div className="flex items-center gap-1 justify-end">
+        <button
+          onClick={() => studyMaterialInTutor(mat.id)}
+          disabled={!mat.enabled}
+          className="text-muted-foreground hover:text-primary transition-colors p-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
+          title="Study this file"
+          aria-label={`Study ${displayTitle} in Tutor`}
+        >
+          <Play className={ICON_SM} />
+        </button>
         <button
           onClick={() => viewContent(mat.id)}
           className="text-muted-foreground hover:text-primary transition-colors p-0.5"
@@ -983,8 +1053,8 @@ function useLibraryPageController() {
     }
     return dupes;
   }, [materials]);
-  const selectableVisibleMaterialIds = useMemo(
-    () => visibleMaterials.filter((m) => m.enabled).map((m) => m.id),
+  const defaultVisibleStudyMaterialIds = useMemo(
+    () => visibleMaterials.filter(isDefaultStudyMaterial).map((m) => m.id),
     [visibleMaterials],
   );
   const selectedVisibleMaterialIds = useMemo(
@@ -999,8 +1069,8 @@ function useLibraryPageController() {
     selectedForTutor.length - selectedVisibleMaterialIds.length,
   );
   const allTutorMaterialsSelected =
-    selectableVisibleMaterialIds.length > 0 &&
-    selectableVisibleMaterialIds.every((id) => selectedForTutorSet.has(id));
+    defaultVisibleStudyMaterialIds.length > 0 &&
+    defaultVisibleStudyMaterialIds.every((id) => selectedForTutorSet.has(id));
   const syncPreviewFiles = useMemo(
     () => collectSyncPreviewFilePaths(syncPreview?.tree),
     [syncPreview],
@@ -1026,13 +1096,13 @@ function useLibraryPageController() {
     writeTutorSelectedMaterialIds(selectedForTutor);
   }, [selectedForTutor]);
 
-  const handleOpenTutor = () => {
-    if (!selectedForTutor.length) {
-      toast.error("Choose files for the Tutor queue before opening Tutor.");
+  const openTutorWithMaterialIds = (materialIds: number[]) => {
+    if (!materialIds.length) {
+      toast.error("Choose a file for the Current Run before opening Tutor.");
       return;
     }
     const selectedTutorMaterials = materials.filter((material) =>
-      selectedForTutor.includes(material.id),
+      materialIds.includes(material.id),
     );
     const selectedCourseIds = Array.from(
       new Set(
@@ -1048,11 +1118,11 @@ function useLibraryPageController() {
           ? selectedCourseId
           : undefined;
 
-    writeTutorSelectedMaterialIds(selectedForTutor);
+    writeTutorSelectedMaterialIds(materialIds);
     writeTutorStoredStartState({
       courseId: handoffCourseId,
       topic: "",
-      selectedMaterials: selectedForTutor,
+      selectedMaterials: materialIds,
       chainId: undefined,
       customBlockIds: [],
       accuracyProfile: "strict",
@@ -1079,36 +1149,45 @@ function useLibraryPageController() {
     );
   };
 
+  const handleOpenTutor = () => {
+    openTutorWithMaterialIds(selectedForTutor);
+  };
+
+  const studyMaterialInTutor = (id: number) => {
+    setSelectedForTutor([id]);
+    openTutorWithMaterialIds([id]);
+  };
+
   const replaceTutorQueueWithVisible = () => {
-    if (!selectableVisibleMaterialIds.length) {
-      toast.error("No enabled files are visible in this view.");
+    if (!defaultVisibleStudyMaterialIds.length) {
+      toast.error("No enabled study files are visible in this view.");
       return;
     }
-    setSelectedForTutor([...selectableVisibleMaterialIds]);
+    setSelectedForTutor([...defaultVisibleStudyMaterialIds]);
     toast.success(
-      `Tutor queue replaced with ${selectableVisibleMaterialIds.length} visible file${selectableVisibleMaterialIds.length === 1 ? "" : "s"}.`,
+      `Current Run replaced with ${defaultVisibleStudyMaterialIds.length} study file${defaultVisibleStudyMaterialIds.length === 1 ? "" : "s"}.`,
     );
   };
 
   const addVisibleToTutorQueue = () => {
-    if (!selectableVisibleMaterialIds.length) {
-      toast.error("No enabled files are visible in this view.");
+    if (!defaultVisibleStudyMaterialIds.length) {
+      toast.error("No enabled study files are visible in this view.");
       return;
     }
     setSelectedForTutor((prev) => {
       const next = new Set(prev);
-      for (const id of selectableVisibleMaterialIds) next.add(id);
+      for (const id of defaultVisibleStudyMaterialIds) next.add(id);
       return [...next];
     });
     toast.success(
-      `Added ${selectableVisibleMaterialIds.length} visible file${selectableVisibleMaterialIds.length === 1 ? "" : "s"} to the Tutor queue.`,
+      `Added ${defaultVisibleStudyMaterialIds.length} study file${defaultVisibleStudyMaterialIds.length === 1 ? "" : "s"} to the Current Run.`,
     );
   };
 
   const clearTutorQueue = () => {
     if (!selectedForTutor.length) return;
     setSelectedForTutor([]);
-    toast.success("Tutor queue cleared.");
+    toast.success("Current Run cleared.");
   };
 
   useEffect(() => {
@@ -1266,12 +1345,12 @@ function useLibraryPageController() {
 
   const toggleAllMaterialsForTutor = () => {
     setSelectedForTutor((prev) => {
-      if (!selectableVisibleMaterialIds.length) return prev;
+      if (!defaultVisibleStudyMaterialIds.length) return prev;
       const next = new Set(prev);
       if (allTutorMaterialsSelected) {
-        for (const id of selectableVisibleMaterialIds) next.delete(id);
+        for (const id of defaultVisibleStudyMaterialIds) next.delete(id);
       } else {
-        for (const id of selectableVisibleMaterialIds) next.add(id);
+        for (const id of defaultVisibleStudyMaterialIds) next.add(id);
       }
       return [...next];
     });
@@ -2092,9 +2171,9 @@ function useLibraryPageController() {
                     </div>
                     <div className="mt-3 grid gap-2 md:grid-cols-3">
                       {[
-                        ["SOURCE", "Pick intake, sync, or direct upload."],
-                        ["REVIEW", "Confirm course setup and chosen files."],
-                        ["STUDY", "Send ready materials to Tutor."],
+                        ["COURSE SETUP", "Syllabus and schedule readiness."],
+                        ["STUDY MATERIALS", "Pick weekly files manually."],
+                        ["CURRENT RUN", "Study one file or a small set."],
                       ].map(([label, copy]) => (
                         <div
                           key={label}
@@ -2603,7 +2682,7 @@ function useLibraryPageController() {
                         </div>
                       </div>
                       <div className={LIBRARY_PANEL_INSET + " p-2"}>
-                        <div className={TEXT_MUTED}>Tutor queue</div>
+                        <div className={TEXT_MUTED}>Current Run</div>
                         <div className="font-terminal text-lg text-foreground">
                           {selectedForTutor.length}
                         </div>
@@ -2623,25 +2702,25 @@ function useLibraryPageController() {
                     </div>
                     <div className={LIBRARY_HELP_TEXT}>
                       {selectedForTutor.length
-                        ? `${selectedForTutor.length} file${selectedForTutor.length === 1 ? "" : "s"} ready for Tutor handoff.`
-                        : "Select materials below to make them ready for Tutor handoff."}
+                        ? `${selectedForTutor.length} file${selectedForTutor.length === 1 ? "" : "s"} in Current Run for Tutor handoff.`
+                        : "Use Study on a row or select files below to build the Current Run."}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <HudButton
                         variant="outline"
                         className={LIBRARY_COMPACT_BUTTON}
-                        disabled={!selectableVisibleMaterialIds.length}
+                        disabled={!defaultVisibleStudyMaterialIds.length}
                         onClick={replaceTutorQueueWithVisible}
                       >
-                        REPLACE WITH VIEW
+                        REPLACE RUN
                       </HudButton>
                       <HudButton
                         variant="outline"
                         className={LIBRARY_COMPACT_BUTTON}
-                        disabled={!selectableVisibleMaterialIds.length}
+                        disabled={!defaultVisibleStudyMaterialIds.length}
                         onClick={addVisibleToTutorQueue}
                       >
-                        ADD VIEW
+                        ADD STUDY FILES
                       </HudButton>
                       <HudButton
                         variant="outline"
@@ -2649,7 +2728,7 @@ function useLibraryPageController() {
                         disabled={!selectedForTutor.length}
                         onClick={clearTutorQueue}
                       >
-                        CLEAR QUEUE
+                        CLEAR RUN
                       </HudButton>
                       <HudButton
                         className={LIBRARY_COMPACT_BUTTON}
@@ -2679,7 +2758,7 @@ function useLibraryPageController() {
                       {visibleMaterials.length === 1 ? "" : "s"}
                     </div>
                     <div className={TEXT_MUTED}>
-                      Tutor queue: {selectedForTutor.length} file
+                      Current Run: {selectedForTutor.length} file
                       {selectedForTutor.length === 1 ? "" : "s"} total •{" "}
                       {selectedVisibleMaterialIds.length} in this view
                       {hiddenTutorSelectionCount > 0
@@ -2810,11 +2889,11 @@ function useLibraryPageController() {
 
                 {hiddenTutorSelectionCount > 0 ? (
                   <div className="border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-sm font-terminal text-yellow-100">
-                    The Tutor queue still includes {hiddenTutorSelectionCount}{" "}
+                    The Current Run still includes {hiddenTutorSelectionCount}{" "}
                     file{hiddenTutorSelectionCount === 1 ? "" : "s"} from other
                     views. Use{" "}
-                    <span className="text-white">REPLACE WITH VIEW</span> if you
-                    want Tutor to use only what is visible right now.
+                    <span className="text-white">REPLACE RUN</span> if you
+                    want Tutor to use only visible study files right now.
                   </div>
                 ) : null}
 
@@ -2859,20 +2938,20 @@ function useLibraryPageController() {
                             className="flex items-center justify-center"
                             title={
                               allTutorMaterialsSelected
-                                ? "Unselect all visible tutor materials"
-                                : "Select all visible tutor materials"
+                                ? "Unselect all visible study files"
+                                : "Select all visible study files"
                             }
                           >
                             <Checkbox
                               checked={allTutorMaterialsSelected}
                               onCheckedChange={toggleAllMaterialsForTutor}
                               disabled={
-                                selectableVisibleMaterialIds.length === 0
+                                defaultVisibleStudyMaterialIds.length === 0
                               }
                               aria-label={
                                 allTutorMaterialsSelected
-                                  ? "Unselect all visible tutor materials"
-                                  : "Select all visible tutor materials"
+                                  ? "Unselect all visible study files"
+                                  : "Select all visible study files"
                               }
                             />
                           </div>
@@ -2898,6 +2977,7 @@ function useLibraryPageController() {
                             setEditingId,
                             saveEdit,
                             toggleMaterialForTutor,
+                            studyMaterialInTutor,
                             toggleEnabled,
                             deleteMutation,
                             startEdit,

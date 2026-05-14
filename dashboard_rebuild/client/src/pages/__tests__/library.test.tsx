@@ -209,15 +209,15 @@ describe("Library tutor handoff", () => {
     expect(screen.getByText("Movement Science II")).toBeInTheDocument();
     expect(screen.getByText("PHYT 6242")).toBeInTheDocument();
     expect(screen.getByText("ADD COURSEWORK")).toBeInTheDocument();
-    expect(screen.getByText("SOURCE")).toBeInTheDocument();
-    expect(screen.getByText("REVIEW")).toBeInTheDocument();
-    expect(screen.getByText("STUDY")).toBeInTheDocument();
+    expect(screen.getByText("COURSE SETUP")).toBeInTheDocument();
+    expect(screen.getByText("STUDY MATERIALS")).toBeInTheDocument();
+    expect(screen.getByText("CURRENT RUN")).toBeInTheDocument();
     expect(screen.getByText("STUDY READINESS")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /semester intake/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /folder sync/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /direct upload/i })).toBeInTheDocument();
     expect(screen.getByText("YOUR MATERIALS")).toBeInTheDocument();
-    expect(screen.getByText(/ready for tutor handoff/i)).toBeInTheDocument();
+    expect(screen.getByText(/build the Current Run/i)).toBeInTheDocument();
     expect(
       screen.getAllByRole("option", {
         name: /Movement Science II \(PHYT 6242\)/i,
@@ -401,6 +401,104 @@ describe("Library tutor handoff", () => {
     expect(localStorage.getItem("tutor.wizard.progress.v1")).toBeNull();
     expect(localStorage.getItem("tutor-studio-last-tab")).toBe("workspace");
     expect(sessionStorage.getItem("tutor.open_from_library.v1")).toBe("1");
+    expect(setLocationMock).toHaveBeenCalledWith("/tutor?course_id=9");
+  });
+
+  it("keeps textbook references visible but out of default Current Run bulk actions", async () => {
+    getMaterialsMock.mockResolvedValue([
+      {
+        id: 101,
+        title: "MSII Topic 1 Objectives",
+        source_path:
+          "11_Movement Science II/10_Intro/MSII Topic 1 Objectives.pdf",
+        folder_path: "11_Movement Science II/10_Intro",
+        file_type: "pdf",
+        file_size: 1024,
+        course_id: 9,
+        enabled: true,
+        extraction_error: null,
+        checksum: "study-101",
+        created_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+        updated_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+      },
+      {
+        id: 102,
+        title: "Observational Gait Analysis",
+        source_path:
+          "11_Movement Science II/01_Textbook/Observational Gait Analysis.pdf",
+        folder_path: "11_Movement Science II/01_Textbook",
+        file_type: "pdf",
+        file_size: 4096,
+        course_id: 9,
+        enabled: true,
+        extraction_error: null,
+        checksum: "reference-102",
+        created_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+        updated_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+      },
+    ]);
+
+    renderLibrary();
+
+    expect(await screen.findByText("MSII Topic 1 Objectives")).toBeInTheDocument();
+    expect(screen.getByText("Observational Gait Analysis")).toBeInTheDocument();
+    expect(screen.getByText("COURSE REF")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /replace run/i }));
+
+    await waitFor(() => {
+      expect(writeTutorSelectedMaterialIdsMock).toHaveBeenCalledWith([101]);
+    });
+    expect(screen.getByText(/Current Run: 1 file total/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /open tutor \(1\)/i })).toBeEnabled();
+  });
+
+  it("launches Tutor with only the row file when Study this file is used", async () => {
+    getMaterialsMock.mockResolvedValue([
+      {
+        id: 1,
+        title: "Intro Notes",
+        source_path: "Uploaded Files/intro-notes.pdf",
+        folder_path: "Uploaded Files",
+        file_type: "pdf",
+        file_size: 1024,
+        course_id: 9,
+        enabled: true,
+        extraction_error: null,
+        checksum: "abc123",
+        created_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+        updated_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+      },
+      {
+        id: 2,
+        title: "Reference Chapter",
+        source_path: "Uploaded Files/reference-chapter.pdf",
+        folder_path: "Uploaded Files/01_Textbook",
+        file_type: "pdf",
+        file_size: 2048,
+        course_id: 9,
+        enabled: true,
+        extraction_error: null,
+        checksum: "def456",
+        created_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+        updated_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+      },
+    ]);
+
+    renderLibrary();
+
+    await screen.findByText("Intro Notes");
+    fireEvent.click(
+      screen.getByRole("button", { name: /study intro notes in tutor/i }),
+    );
+
+    expect(writeTutorSelectedMaterialIdsMock).toHaveBeenCalledWith([1]);
+    expect(writeTutorStoredStartStateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        courseId: 9,
+        selectedMaterials: [1],
+      }),
+    );
     expect(setLocationMock).toHaveBeenCalledWith("/tutor?course_id=9");
   });
 

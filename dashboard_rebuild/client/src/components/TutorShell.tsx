@@ -2055,7 +2055,9 @@ export function TutorShell({
             >
               <Upload className="mx-auto h-4 w-4 text-[#ffb9c7]" aria-hidden="true" />
               <div className="mt-2 text-[11px] uppercase tracking-[0.18em] text-white">
-                {sourceShelfUploading ? "Uploading Materials..." : "Upload New Materials"}
+                {sourceShelfUploading
+                  ? "Adding to Current Run..."
+                  : "Upload to Library + Current Run"}
               </div>
               <div className="mt-1 text-[11px] text-[#ffc8d3]/68">
                 PDF, DOCX, MP4, PPTX
@@ -2064,7 +2066,7 @@ export function TutorShell({
             <input
               ref={entryUploadInputRef}
               data-testid="studio-entry-upload-input"
-              aria-label="Upload new materials"
+              aria-label="Upload to Library and Current Run"
               type="file"
               accept={ENTRY_CARD_UPLOAD_ACCEPT}
               multiple
@@ -2076,7 +2078,7 @@ export function TutorShell({
                 data-testid="studio-entry-upload-status"
                 className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]"
               >
-                Uploading selected files to this course...
+                Uploading to Library and Current Run...
               </div>
             ) : null}
           </div>

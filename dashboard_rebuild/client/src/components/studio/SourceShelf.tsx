@@ -1039,7 +1039,7 @@ export function SourceShelf({
             className="h-10 rounded-full border-primary/20 bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-white/82 hover:bg-black/30 hover:text-white"
           >
             <Upload className="mr-2 h-3.5 w-3.5" />
-            {isUploading ? "Uploading..." : "Upload"}
+            {isUploading ? "Uploading..." : "Upload to Current Run"}
           </Button>
           <input
             ref={uploadInputRef}

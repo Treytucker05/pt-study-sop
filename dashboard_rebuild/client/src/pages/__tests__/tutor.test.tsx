@@ -1215,6 +1215,99 @@ describe("Tutor page restore", () => {
     expect(sourceShelf).toHaveTextContent("Brainstem Walkthrough");
   });
 
+  it("keeps a Library one-file handoff as the Current Run instead of auto-selecting the whole course", async () => {
+    const user = userEvent.setup();
+
+    window.history.replaceState({}, "", "/tutor?course_id=1");
+    localStorage.setItem("tutor.selected_material_ids.v2", JSON.stringify([101]));
+    localStorage.setItem(
+      "tutor.start.state.v2",
+      JSON.stringify({
+        courseId: 1,
+        topic: "",
+        selectedMaterials: [101],
+        customBlockIds: [],
+        accuracyProfile: "strict",
+        objectiveScope: "module_all",
+        selectedObjectiveId: "",
+        selectedObjectiveGroup: "",
+        selectedPaths: [],
+      }),
+    );
+    sessionStorage.setItem("tutor.open_from_library.v1", "1");
+    getContentSourcesMock.mockResolvedValue({
+      courses: [{ id: 1, name: "Movement Science II" }],
+    });
+    getMaterialsMock.mockResolvedValue([
+      {
+        id: 101,
+        title: "MSII Topic 1 Objectives",
+        source_path: "11_Movement Science II/10_Intro/MSII Topic 1 Objectives.pdf",
+        folder_path: "11_Movement Science II/10_Intro",
+        file_type: "pdf",
+        file_size: 1024,
+        course_id: 1,
+        enabled: true,
+        extraction_error: null,
+        checksum: null,
+        created_at: new Date("2026-03-10T00:00:00Z").toISOString(),
+        updated_at: null,
+      },
+      {
+        id: 102,
+        title: "Control of Human Movement",
+        source_path: "11_Movement Science II/10_Intro/Control of Human Movement.pptx",
+        folder_path: "11_Movement Science II/10_Intro",
+        file_type: "pptx",
+        file_size: 2048,
+        course_id: 1,
+        enabled: true,
+        extraction_error: null,
+        checksum: null,
+        created_at: new Date("2026-03-10T00:00:00Z").toISOString(),
+        updated_at: null,
+      },
+      {
+        id: 103,
+        title: "Observational Gait Analysis",
+        source_path: "11_Movement Science II/01_Textbook/Observational Gait Analysis.pdf",
+        folder_path: "11_Movement Science II/01_Textbook",
+        file_type: "pdf",
+        file_size: 4096,
+        course_id: 1,
+        enabled: true,
+        extraction_error: null,
+        checksum: null,
+        created_at: new Date("2026-03-10T00:00:00Z").toISOString(),
+        updated_at: null,
+      },
+    ]);
+    getProjectShellMock.mockResolvedValue(
+      makeProjectShell(1, { selected_material_ids: [102, 103] }),
+    );
+
+    renderTutor();
+
+    expect(await screen.findByTestId("studio-entry-state")).toBeInTheDocument();
+    expect(await screen.findByText("1 of 3 materials selected")).toBeInTheDocument();
+    expect(
+      screen.getByRole("checkbox", { name: /msii topic 1 objectives/i }),
+    ).toBeChecked();
+    expect(
+      screen.getByRole("checkbox", { name: /control of human movement/i }),
+    ).not.toBeChecked();
+    expect(
+      screen.getByRole("checkbox", { name: /observational gait analysis/i }),
+    ).not.toBeChecked();
+
+    await user.click(screen.getByRole("button", { name: /start session/i }));
+
+    const sourceShelf = await screen.findByTestId("studio-source-shelf");
+    expect(sourceShelf).toHaveTextContent("1 material loaded");
+    expect(sourceShelf).toHaveTextContent("1 materials in run");
+    expect(sourceShelf).toHaveTextContent("MSII Topic 1 Objectives");
+  });
+
   it("uploads entry-card materials into the selected course and refreshes the checklist", async () => {
     const user = userEvent.setup();
     let materialRequestCount = 0;
@@ -1854,10 +1947,10 @@ describe("Tutor page restore", () => {
     fireEvent.click(screen.getByRole("button", { name: /^start session$/i }));
 
     await waitFor(() => {
-      expect(preflightSessionMock).toHaveBeenCalledWith(
+      expect(createSessionMock).toHaveBeenCalledWith(
         expect.objectContaining({
+          course_id: 1,
           topic: "Cardiovascular",
-          study_unit: "Cardiovascular",
           module_name: "Cardiovascular",
           content_filter: expect.objectContaining({
             material_ids: [561],

@@ -28,6 +28,25 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 - Ops note (2026-03-25): `dev-browser` is now a shared agent skill projected into every supported agent root; this does not change Tutor sprint priority.
 
+- [x] LIBRARY-CURRENT-RUN-HANDOFF-2026-05-14. Keep Library one-file launches authoritative and make Library/Tutor wording Current Run-first.
+  - Scope:
+    - Preserve explicit Library-selected material IDs when Tutor opens from a Library handoff.
+    - Keep textbook/reference files visible as course references, but out of default bulk Current Run actions.
+    - Make Library actions favor one-file `Study this file` launches while keeping multi-file selection available.
+    - Clarify Tutor upload copy so uploads are understood as `Library + Current Run`.
+  - Assignee: @codex-cli
+  - Completed: 2026-05-14
+  - Validation:
+    - Library row `Study this file` launches Tutor with only that selected file in Current Run.
+    - Tutor preserves Library handoff material IDs and no longer expands an untouched handoff to the whole course.
+    - Textbook/reference files are labeled `COURSE REF` and excluded from default bulk Current Run actions.
+    - Tutor upload copy now says uploads go to Library and Current Run.
+    - Checks passed: `npm run test -- client/src/pages/__tests__/tutor.test.tsx client/src/pages/__tests__/library.test.tsx client/src/components/__tests__/TutorShell.test.tsx client/src/components/studio/__tests__/SourceShelf.test.tsx`, `npm run check`, `npm run build`.
+    - Built-in browser verification passed for `/library` and one-file Library -> Tutor handoff at `http://127.0.0.1:5127`.
+  - Done when:
+    - Focused Library/Tutor tests prove one-file handoff, reference exclusion, and Tutor upload wording.
+    - `npm run build` passes and `/library` plus Tutor handoff are browser-checked.
+
 - [x] LIBRARY-EXPLICIT-FILE-LOAD-2026-05-13. Make Library intake/sync load only files Trey explicitly selects.
   - Scope:
     - Semester Intake still scans a folder for classification, but material files are not auto-loaded.

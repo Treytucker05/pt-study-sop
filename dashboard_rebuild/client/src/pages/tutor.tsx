@@ -61,6 +61,7 @@ function toJsonRecords<T extends object>(items: T[]): Record<string, unknown>[] 
 function useTutorPageController() {
   const queryClient = useQueryClient();
   const initialRouteQuery = useMemo(() => readTutorShellQuery(), []);
+  const pendingLaunchHandoff = useMemo(() => peekTutorLaunchHandoff(), []);
   const lastPersistedShellKeyRef = useRef("");
   const pendingPersistShellKeyRef = useRef<string | null>(null);
   const pendingPersistShellPayloadRef =
@@ -82,12 +83,11 @@ function useTutorPageController() {
     useState<number | null>(null);
   const [entrySessionName, setEntrySessionName] = useState("");
   const [entryMaterialSelectionTouched, setEntryMaterialSelectionTouched] =
-    useState(false);
+    useState(() => pendingLaunchHandoff.fromLibraryHandoff);
   const [entryCardFlashActive, setEntryCardFlashActive] = useState(false);
   const [entryCardStatusMessage, setEntryCardStatusMessage] = useState<string | null>(null);
 
   // ─── Shell state ───
-  const pendingLaunchHandoff = useMemo(() => peekTutorLaunchHandoff(), []);
   const storedActiveSessionId = useMemo(() => readTutorActiveSessionId(), []);
   const studioRun = useStudioRun({
     initialRouteQuery,
@@ -880,6 +880,9 @@ function useTutorPageController() {
     const canonicalMaterialSelection = readTutorSelectedMaterialIds();
     if (canonicalMaterialSelection.length > 0) {
       hub.setSelectedMaterials(canonicalMaterialSelection);
+      if (fromLibraryHandoff) {
+        setEntryMaterialSelectionTouched(true);
+      }
     }
     if (!fromLibraryHandoff && !fromBrainHandoff) {
       restoredCourseId = applyStoredStartState(
