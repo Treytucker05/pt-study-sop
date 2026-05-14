@@ -248,6 +248,12 @@
   * {
     @apply border-border;
   }
+  html,
+  body,
+  #root {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
   /* Force VT323 on form elements that don't inherit */
   button,
   input,
@@ -1070,7 +1076,7 @@
     width: min(100%, 45rem);
   }
 
-  @media (max-width: 1279px) {
+  @media (max-width: 1535px) {
     .library-page-hero {
       padding-block: 0.8rem 0.7rem;
     }
@@ -1085,6 +1091,9 @@
       width: 100%;
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
+  }
+
+  @media (max-width: 1279px) {
 
     .tutor-page-hero {
       min-height: auto;

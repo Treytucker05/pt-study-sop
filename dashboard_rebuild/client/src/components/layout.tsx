@@ -777,7 +777,7 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <div
       className={cn(
-        "relative flex min-h-[100dvh] flex-col bg-transparent font-terminal text-foreground",
+        "relative flex min-h-[100dvh] w-full min-w-0 flex-col overflow-x-hidden bg-background font-terminal text-foreground",
       )}
     >
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
@@ -1375,11 +1375,11 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
       </button>
 
       {/* Hero portal — PageScaffold renders the page hero here, outside main */}
-      <div id="page-hero-portal" className="relative z-10" />
+      <div id="page-hero-portal" className="relative z-10 w-full min-w-0 overflow-x-hidden" />
 
       <main
         className={cn(
-          "relative z-10 w-full flex-1",
+          "relative z-10 w-full min-w-0 flex-1 overflow-x-hidden",
           isWorkspaceRoute ? "" : "px-2 py-3 sm:px-3 md:px-5 md:py-4",
         )}
       >

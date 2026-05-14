@@ -2055,7 +2055,7 @@ function useLibraryPageController() {
                     variant="b"
                     className={`${LIBRARY_PANEL_SURFACE} p-3`}
                   >
-                    <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                    <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
                       <div className="min-w-0">
                         <div className={LIBRARY_SECTION_LABEL}>ADD COURSEWORK</div>
                         <div className={`${LIBRARY_HELP_TEXT} mt-1`}>
@@ -2111,7 +2111,7 @@ function useLibraryPageController() {
                     </div>
                   </HudPanel>
 
-                  <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.42fr)]">
+                  <div className="grid gap-3 2xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.42fr)]">
                   {addCourseworkMode === "intake" ? (
                   <HudPanel
                     variant="b"
