@@ -213,9 +213,11 @@ describe("Library tutor handoff", () => {
     expect(screen.getByText("STUDY MATERIALS")).toBeInTheDocument();
     expect(screen.getByText("CURRENT RUN")).toBeInTheDocument();
     expect(screen.getByText("STUDY READINESS")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /choose files/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /semester intake/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /folder sync/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /direct upload/i })).toBeInTheDocument();
+    expect(screen.getByText("UPLOAD MATERIALS")).toBeInTheDocument();
+    expect(screen.getByTestId("material-uploader")).toBeInTheDocument();
     expect(screen.getByText("YOUR MATERIALS")).toBeInTheDocument();
     expect(screen.getByText(/build the Current Run/i)).toBeInTheDocument();
     expect(
@@ -243,7 +245,12 @@ describe("Library tutor handoff", () => {
     renderLibrary();
 
     expect(await screen.findByText("ADD COURSEWORK")).toBeInTheDocument();
+    expect(screen.getByText("UPLOAD MATERIALS")).toBeInTheDocument();
+    expect(screen.getByTestId("material-uploader")).toBeInTheDocument();
+
     expect(screen.getByRole("button", { name: /semester intake/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /semester intake/i }));
+
     expect(
       screen.getByRole("button", { name: /apply setup \+ selected files/i }),
     ).toBeInTheDocument();
@@ -254,7 +261,7 @@ describe("Library tutor handoff", () => {
     expect(screen.getByRole("button", { name: /sync selected files/i })).toBeDisabled();
     expect(screen.getByText(/0 selected/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /direct upload/i }));
+    fireEvent.click(screen.getByRole("button", { name: /choose files/i }));
 
     expect(screen.getByText("UPLOAD MATERIALS")).toBeInTheDocument();
     expect(screen.getByTestId("material-uploader")).toBeInTheDocument();
@@ -327,6 +334,7 @@ describe("Library tutor handoff", () => {
 
     renderLibrary();
 
+    fireEvent.click(await screen.findByRole("button", { name: /semester intake/i }));
     fireEvent.click(await screen.findByRole("button", { name: /scan intake/i }));
 
     expect(await screen.findByText("Movement Science II")).toBeInTheDocument();
@@ -519,7 +527,7 @@ describe("Library tutor handoff", () => {
     renderLibrary();
 
     expect(await screen.findByText("NEU-9")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /direct upload/i }));
+    fireEvent.click(screen.getByRole("button", { name: /choose files/i }));
     expect(
       screen.getByRole("combobox", { name: /upload course/i }),
     ).toHaveValue("9");
@@ -611,6 +619,7 @@ describe("Library tutor handoff", () => {
     expect(
       await screen.findByRole("button", { name: /semester intake/i }),
     ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /semester intake/i }));
     fireEvent.click(screen.getByRole("button", { name: /scan intake/i }));
 
     expect(await screen.findByText("Dx Mgmt Integumentary")).toBeInTheDocument();

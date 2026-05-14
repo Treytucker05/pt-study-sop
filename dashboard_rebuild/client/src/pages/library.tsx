@@ -790,7 +790,7 @@ function useLibraryPageController() {
     null,
   );
   const [addCourseworkMode, setAddCourseworkMode] =
-    useState<AddCourseworkMode>("intake");
+    useState<AddCourseworkMode>("upload");
   const [uploadCourseTarget, setUploadCourseTarget] = useState<string>(
     initialLaunchState.uploadCourseTarget,
   );
@@ -2138,15 +2138,15 @@ function useLibraryPageController() {
                       <div className="min-w-0">
                         <div className={LIBRARY_SECTION_LABEL}>ADD COURSEWORK</div>
                         <div className={`${LIBRARY_HELP_TEXT} mt-1`}>
-                          Choose one source path at a time. Scans classify
-                          files; only checked materials are loaded.
+                          Choose the files you want for this study run. Intake
+                          and sync stay available for setup and selective import.
                         </div>
                       </div>
                       <div className="library-segmented-control grid grid-cols-3 gap-1 p-1">
                         {[
+                          ["upload", "CHOOSE FILES"],
                           ["intake", "SEMESTER INTAKE"],
                           ["sync", "FOLDER SYNC"],
-                          ["upload", "DIRECT UPLOAD"],
                         ].map(([mode, label]) => (
                           <HudButton
                             key={mode}
@@ -2171,8 +2171,8 @@ function useLibraryPageController() {
                     </div>
                     <div className="mt-3 grid gap-2 md:grid-cols-3">
                       {[
-                        ["COURSE SETUP", "Syllabus and schedule readiness."],
                         ["STUDY MATERIALS", "Pick weekly files manually."],
+                        ["COURSE SETUP", "Syllabus and schedule readiness."],
                         ["CURRENT RUN", "Study one file or a small set."],
                       ].map(([label, copy]) => (
                         <div
