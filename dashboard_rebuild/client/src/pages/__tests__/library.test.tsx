@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 
@@ -279,11 +279,19 @@ describe("Library catalog", () => {
     );
     const markdownReader = screen.getByTestId("library-material-markdown");
     expect(markdownReader.className).toContain("library-material-markdown");
+    expect(markdownReader.className).toContain("max-w-[86ch]");
     expect(markdownReader.className).toContain("prose-headings:font-sans");
     expect(markdownReader.className).not.toContain("prose-headings:font-arcade");
     expect(screen.getByTestId("library-material-table-scroll")).toBeInTheDocument();
     expect(screen.getByRole("table")).toHaveTextContent("What to check");
-    expect(screen.getByRole("dialog", { name: "Intro Notes" })).toBeInTheDocument();
+    const contentDialog = screen.getByRole("dialog", { name: "Intro Notes" });
+    expect(contentDialog).toBeInTheDocument();
+    expect(
+      within(contentDialog).getByRole("heading", {
+        level: 2,
+        name: "Intro Notes",
+      }),
+    ).toHaveClass("library-material-dialog-title");
     expect(screen.getAllByText(/readable paragraph/i).length).toBeGreaterThan(1);
   });
 

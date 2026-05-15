@@ -88,7 +88,7 @@ const LIBRARY_HELP_TEXT = "library-help-text";
 const MATERIAL_TABLE_GRID_TEMPLATE =
   "40px minmax(340px,1.35fr) minmax(220px,0.9fr) minmax(240px,0.85fr) 92px 96px 132px";
 const MATERIAL_READER_MARKDOWN_CLASS = `
-  library-material-markdown prose prose-invert prose-base max-w-none font-sans text-[15px] leading-7 tracking-normal
+  library-material-markdown prose prose-invert prose-base mx-auto max-w-[86ch] font-sans text-[16px] leading-8 tracking-normal sm:text-[17px]
   prose-headings:font-sans prose-headings:font-semibold prose-headings:tracking-normal prose-headings:normal-case prose-headings:text-primary prose-headings:border-b prose-headings:border-primary/20 prose-headings:pb-2
   prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg
   prose-p:text-foreground/90 prose-p:leading-7
@@ -188,6 +188,14 @@ function getMaterialTitle(mat: Material): string {
   if (sourcePath) return toBaseName(sourcePath);
 
   return `Material ${mat.id}`;
+}
+
+function getMaterialContentTitle(material: MaterialContent | undefined): string {
+  const title = (material?.title || "").trim();
+  if (title) return title;
+  const rawPath = (material?.source_path || "").replace(/\\/g, "/").trim();
+  const fallback = rawPath.split("/").filter(Boolean).pop();
+  return fallback || "Material Content";
 }
 
 function getMaterialSize(mat: Material): number {
@@ -1747,16 +1755,18 @@ function useLibraryPageController() {
           if (!open) setViewingMaterialId(null);
         }}
       >
-        <DialogContent className="flex h-[90vh] max-h-[90vh] max-w-5xl flex-col gap-0 overflow-hidden p-0">
-          <DialogHeader className="shrink-0 border-b border-primary/20 px-5 py-4">
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className={ICON_SM} />
-              {materialContent?.title || "Material Content"}
+        <DialogContent className="flex h-[88vh] max-h-[88vh] max-w-6xl flex-col gap-0 overflow-hidden border-primary/35 bg-[#050506] p-0">
+          <DialogHeader className="shrink-0 border-b border-primary/15 bg-black/70 px-5 py-4">
+            <DialogTitle className="library-material-dialog-title flex items-start gap-2 pr-8">
+              <FileText className={`${ICON_SM} mt-1 shrink-0 text-primary/80`} />
+              <span className="min-w-0 truncate">
+                {getMaterialContentTitle(materialContent)}
+              </span>
             </DialogTitle>
             <DialogDescription asChild>
-              <div className="flex items-center gap-2 text-sm font-terminal text-muted-foreground">
+              <div className="mt-2 flex items-center gap-2 font-sans text-sm text-muted-foreground">
                 {materialContent?.file_type && (
-                  <Badge variant="outline" className={`${TEXT_BADGE} h-4 px-1`}>
+                  <Badge variant="outline" className="h-6 rounded-full px-2 font-mono text-xs uppercase tracking-normal">
                     {getFileTypeLabel(materialContent.file_type)}
                   </Badge>
                 )}
@@ -1770,10 +1780,10 @@ function useLibraryPageController() {
           </DialogHeader>
           <HudPanel
             variant="b"
-            className="min-h-0 flex-1 bg-black/40 p-0"
+            className="min-h-0 flex-1 bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(0,0,0,0.86))] p-0"
           >
             <div
-              className="relative z-10 h-full min-h-0 overflow-y-auto overscroll-contain p-5 sm:p-6"
+              className="library-material-reader-shell relative z-10 h-full min-h-0 overflow-y-auto overscroll-contain px-5 py-7 sm:px-8"
               data-testid="library-material-reader"
               tabIndex={0}
             >

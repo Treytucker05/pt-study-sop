@@ -310,6 +310,54 @@
 }
 
 @layer components {
+  .library-material-dialog-title {
+    margin: 0;
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      sans-serif,
+      "Apple Color Emoji",
+      "Segoe UI Emoji",
+      "Segoe UI Symbol",
+      "Noto Color Emoji" !important;
+    font-size: var(--text-lg) !important;
+    font-weight: 650;
+    letter-spacing: normal !important;
+    line-height: var(--text-lg--line-height) !important;
+    text-shadow: none !important;
+    text-transform: none !important;
+  }
+
+  .library-material-dialog-title * {
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      sans-serif,
+      "Apple Color Emoji",
+      "Segoe UI Emoji",
+      "Segoe UI Symbol",
+      "Noto Color Emoji" !important;
+    letter-spacing: normal !important;
+    text-transform: none !important;
+  }
+
+  .library-material-reader-shell {
+    scrollbar-gutter: stable;
+  }
+
+  .library-material-markdown {
+    text-rendering: optimizeLegibility;
+  }
+
+  .library-material-markdown > :first-child {
+    margin-top: 0;
+  }
+
+  .library-material-markdown p {
+    margin-block: 1rem;
+    line-height: 1.85;
+  }
+
   .library-material-markdown :is(h1, h2, h3, h4, h5, h6) {
     font-family:
       ui-sans-serif,
@@ -322,6 +370,8 @@
     font-weight: 600;
     letter-spacing: normal;
     line-height: 1.35;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
     text-shadow: none;
     text-transform: none;
   }

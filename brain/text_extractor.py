@@ -26,6 +26,12 @@ from path_utils import resolve_existing_path
 
 logger = logging.getLogger(__name__)
 
+_PDF_PRIVATE_USE_REPLACEMENTS: dict[str, str] = {
+    "\ue062": "Th",
+    "\ue0bb": "Th",
+    "\uf0e0": " -> ",
+}
+
 # ---------------------------------------------------------------------------
 # Tier availability checks (cached — only run once per process)
 # ---------------------------------------------------------------------------
@@ -172,6 +178,30 @@ def _has_garbled_content(content: str, threshold: float = 0.05) -> bool:
     bad += sum(len(m.group()) for m in re.finditer(r"GLYPH<[^>]*>", content))
     bad += sum(1 for c in content if "\u0100" <= c <= "\u024f")
     return bad / n > threshold
+
+
+def normalize_extracted_text(content: str) -> str:
+    """Clean common embedded-font artifacts from extracted course materials."""
+    if not content:
+        return content
+
+    text = content
+    for glyph, replacement in _PDF_PRIVATE_USE_REPLACEMENTS.items():
+        text = text.replace(glyph, replacement)
+
+    # Some PDFs extract ligatures as separated fragments: e ff orts, con fi dence.
+    text = re.sub(r"(?<=\w)\s+(ffi|ffl|fi|fl|ff)\s+(?=\w)", r"\1", text)
+    text = re.sub(r"\bTh\s+(?=[A-Za-z])", "Th", text)
+    text = re.sub(
+        r"\b([A-Za-z0-9]+)\s+'\s+(s|t|re|ve|ll|d|m)\b",
+        r"\1'\2",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(r"@\s+(?=[A-Za-z0-9])", "@", text)
+    text = re.sub(r"\s+([,.;:!?])", r"\1", text)
+    text = re.sub(r"[ \t]{2,}", " ", text)
+    return text
 
 
 def _build_pdf_pipeline_options(*, ocr_mode: bool = False) -> "PdfPipelineOptions":
@@ -603,6 +633,9 @@ def extract_text(file_path: str) -> dict:
                 "error": f"Unsupported file type: {ext}",
                 "metadata": metadata,
             }
+
+        if ext in (".pdf", ".docx", ".pptx"):
+            content = normalize_extracted_text(content)
 
         if extractor_name:
             metadata["extraction_method"] = extractor_name

@@ -2372,6 +2372,12 @@ def get_material_content(material_id: int):
 
     # Strip replacement characters so the viewer gets clean text
     content = raw_content.replace("\ufffd", "") if replacement_count else raw_content
+    try:
+        from text_extractor import normalize_extracted_text
+
+        content = normalize_extracted_text(content)
+    except Exception:
+        pass
     asset_dir = _find_extracted_asset_dir(row["source_path"], row["file_path"])
     content = _inject_extracted_images(
         content, material_id=row["id"], asset_dir=asset_dir

@@ -2689,3 +2689,11 @@ Recommended next steps:
 - Added scoped table reader CSS for normal cell wrapping, top-aligned cells, readable sans text, and wide-table horizontal scroll.
 - Added Library regression coverage proving extracted tables render through the table-scroll wrapper.
 - Validation: `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`; built-in browser verification on `http://127.0.0.1:5127/library` confirmed a real extracted material table renders with 4 table wrappers, scrollable overflow, wrapped cells, and clean console logs.
+
+## 2026-05-15 - Library material reader extraction cleanup
+
+- Fixed `/library` material content cleanup for embedded-PDF private-use glyphs that rendered as blocky missing letters, normalizing examples such as `\ue062 ere` -> `There`, `\ue062 ank` -> `Thank`, and `\ue0bb erapy` -> `Therapy`.
+- Tightened extracted-document formatting: the modal title now uses the material filename with readable sans typography, and the document body uses a narrower `86ch` reading column with improved paragraph spacing.
+- Added tests for private-use glyph cleanup, split-ligature cleanup, quoted-phrase safety, and the narrower material reader class.
+- Backed up `brain/data/pt_study.db` to `brain/data/backups/pt_study_before_extract_text_normalize_20260515_025808.db`, then normalized existing extracted rows in place so the current Library view is cleaned immediately.
+- Validation: `.venv/bin/python -m pytest brain/tests/test_text_extractor.py -q`; `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`; built-in browser verification on `/library` confirmed the cleaned PDF text and readable modal formatting.
