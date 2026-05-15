@@ -256,6 +256,28 @@ describe("Library catalog", () => {
     expect(screen.queryByText(/study run/i)).not.toBeInTheDocument();
   });
 
+  it("opens extracted material content in a readable scroll container", async () => {
+    getMaterialContentMock.mockResolvedValue({
+      id: 1,
+      title: "Intro Notes",
+      source_path: "Uploaded Files/intro-notes.pdf",
+      file_type: "pdf",
+      char_count: 12000,
+      content: "# Intro Notes\n\n" + "Readable paragraph.\n\n".repeat(80),
+      assets: [],
+    });
+
+    renderLibrary();
+
+    fireEvent.click(await screen.findByRole("button", { name: "View content" }));
+
+    expect(await screen.findByTestId("library-material-reader")).toHaveClass(
+      "overflow-y-auto",
+    );
+    expect(screen.getByRole("dialog", { name: "Intro Notes" })).toBeInTheDocument();
+    expect(screen.getAllByText(/readable paragraph/i).length).toBeGreaterThan(1);
+  });
+
   it("uploads files into the Library without setup/intake choices", async () => {
     getActiveCoursesMock.mockResolvedValue([
       { id: 9, name: "Dx Mgmt Integumentary", code: "PHYT 6262" },

@@ -2667,3 +2667,11 @@ Recommended next steps:
 - Removed the redundant lower workflow card stack and moved Tutor queue actions into the single `STUDY READINESS` panel.
 - Added compact Library hero styling so the actual course/material workspace is visible much sooner in narrow in-app browser windows.
 - Validation: `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`; `curl -fsS http://127.0.0.1:5127/api/brain/status`; built-in browser DOM verification for `/library`.
+
+## 2026-05-15 - Library readable file viewer fix
+
+- Fixed `/library` material catalog metadata overlap by widening the table shell and giving the Type column room to wrap multiple badges such as file type, `COURSE REF`, and Docling asset counts.
+- Fixed the extracted-material viewer so the document body is the scrollable reader instead of being clipped by shared HUD panel overflow styling.
+- Increased material-reader typography and cleaned dialog description markup so long extracted PDFs/DOCX/PPTX content is readable and valid HTML.
+- Added Library regression coverage for opening extracted material content in a scrollable reader.
+- Validation: `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`; built-in browser verification on `http://127.0.0.1:5127/library` confirmed reader scrollTop changes inside the modal and console logs stay clean.

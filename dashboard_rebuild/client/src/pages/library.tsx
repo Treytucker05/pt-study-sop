@@ -79,6 +79,20 @@ const LIBRARY_MAIN_TITLE =
   "font-arcade text-base uppercase tracking-[0.16em] text-white";
 const LIBRARY_PANEL_TITLE = "library-panel-title";
 const LIBRARY_HELP_TEXT = "library-help-text";
+const MATERIAL_TABLE_GRID_TEMPLATE =
+  "40px minmax(340px,1.35fr) minmax(220px,0.9fr) minmax(240px,0.85fr) 92px 96px 132px";
+const MATERIAL_READER_MARKDOWN_CLASS = `
+  prose prose-invert prose-base max-w-none font-sans text-[15px] leading-7
+  prose-headings:font-arcade prose-headings:text-primary prose-headings:border-b prose-headings:border-primary/20 prose-headings:pb-2
+  prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg
+  prose-p:text-foreground/90 prose-p:leading-7
+  prose-li:text-foreground/90 prose-li:leading-7
+  prose-strong:text-primary/90
+  prose-table:border-collapse prose-table:text-sm prose-th:border prose-th:border-primary/30 prose-th:bg-primary/10 prose-th:px-3 prose-th:py-2
+  prose-td:border prose-td:border-primary/20 prose-td:px-3 prose-td:py-2
+  prose-code:text-primary/80 prose-code:bg-primary/10 prose-code:px-1 prose-code:rounded-none
+  prose-pre:bg-black/60 prose-pre:border prose-pre:border-primary/20 prose-pre:text-sm
+`;
 type LibraryWorkflowTab = "upload" | "materials";
 type MaterialRole = "study" | "reference" | "setup";
 
@@ -441,8 +455,7 @@ function renderMaterialRow(
       key={mat.id}
       className={`grid gap-3 px-3 py-2.5 items-center border-b border-primary/10 hover:bg-primary/5 transition-colors ${!mat.enabled ? "opacity-50" : ""}`}
       style={{
-        gridTemplateColumns:
-          "32px minmax(250px,1.55fr) minmax(180px,1fr) 78px 84px 92px 126px",
+        gridTemplateColumns: MATERIAL_TABLE_GRID_TEMPLATE,
       }}
     >
       <div className="flex items-center justify-center">
@@ -493,22 +506,25 @@ function renderMaterialRow(
       </div>
 
       {/* Type */}
-      <div className="flex items-center gap-1">
+      <div className="flex min-w-0 flex-wrap items-center gap-1.5 overflow-visible">
         {isDuplicate ? (
           <Badge
             variant="outline"
-            className={`${TEXT_BADGE} h-4 px-1 w-fit border-yellow-500/50 text-yellow-400`}
+            className={`${TEXT_BADGE} h-4 shrink-0 px-1 w-fit border-yellow-500/50 text-yellow-400`}
           >
             DUPE
           </Badge>
         ) : null}
-        <Badge variant="outline" className={`${TEXT_BADGE} h-4 px-1 w-fit`}>
+        <Badge
+          variant="outline"
+          className={`${TEXT_BADGE} h-4 shrink-0 px-1 w-fit`}
+        >
           {getFileTypeLabel(mat.file_type)}
         </Badge>
         {materialRole === "reference" ? (
           <Badge
             variant="outline"
-            className={`${TEXT_BADGE} h-4 px-1 w-fit border-sky-500/50 text-sky-300`}
+            className={`${TEXT_BADGE} h-4 shrink-0 px-1 w-fit border-sky-500/50 text-sky-300`}
             title="Course reference; manually selectable for Tutor"
           >
             COURSE REF
@@ -517,7 +533,7 @@ function renderMaterialRow(
         {materialRole === "setup" ? (
           <Badge
             variant="outline"
-            className={`${TEXT_BADGE} h-4 px-1 w-fit border-emerald-500/50 text-emerald-300`}
+            className={`${TEXT_BADGE} h-4 shrink-0 px-1 w-fit border-emerald-500/50 text-emerald-300`}
             title="Course setup file"
           >
             SETUP
@@ -526,7 +542,7 @@ function renderMaterialRow(
         {canReextract ? (
           <Badge
             variant="outline"
-            className={`${TEXT_BADGE} h-4 px-1 w-fit ${hasDoclingAssets ? "border-green-500/60 text-green-300" : "border-yellow-500/60 text-yellow-300"}`}
+            className={`${TEXT_BADGE} h-4 shrink-0 px-1 w-fit ${hasDoclingAssets ? "border-green-500/60 text-green-300" : "border-yellow-500/60 text-yellow-300"}`}
             title={
               hasDoclingAssets
                 ? `${doclingAssetCount} Docling asset${doclingAssetCount === 1 ? "" : "s"} detected`
@@ -565,6 +581,7 @@ function renderMaterialRow(
           onClick={() => viewContent(mat.id)}
           className="text-muted-foreground hover:text-primary transition-colors p-0.5"
           title="View content"
+          aria-label="View content"
         >
           <Eye className={ICON_SM} />
         </button>
@@ -574,6 +591,7 @@ function renderMaterialRow(
             disabled={isReextracting}
             className="text-muted-foreground hover:text-primary transition-colors p-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Re-extract with Docling"
+            aria-label="Re-extract with Docling"
           >
             <RefreshCw
               className={`${ICON_SM} ${isReextracting ? "animate-spin" : ""}`}
@@ -584,6 +602,7 @@ function renderMaterialRow(
           onClick={() => startEdit(mat)}
           className="text-muted-foreground hover:text-primary transition-colors p-0.5"
           title="Edit title"
+          aria-label="Edit title"
         >
           <Pencil className={ICON_SM} />
         </button>
@@ -594,6 +613,7 @@ function renderMaterialRow(
               onClick={() => deleteMutation.mutate(mat.id)}
               className="text-red-400 hover:text-red-300 p-0.5"
               title="Confirm delete"
+              aria-label="Confirm delete"
             >
               <Check className={ICON_SM} />
             </button>
@@ -601,6 +621,7 @@ function renderMaterialRow(
               onClick={() => setDeleteConfirm(null)}
               className="text-muted-foreground hover:text-foreground p-0.5"
               title="Cancel"
+              aria-label="Cancel delete"
             >
               <X className={ICON_SM} />
             </button>
@@ -610,6 +631,7 @@ function renderMaterialRow(
             onClick={() => setDeleteConfirm(mat.id)}
             className="text-muted-foreground hover:text-red-400 transition-colors p-0.5"
             title="Delete"
+            aria-label="Delete"
           >
             <Trash2 className={ICON_SM} />
           </button>
@@ -1548,12 +1570,11 @@ function useLibraryPageController() {
                     </div>
                   ) : (
                     <div className="h-full min-h-0 overflow-auto">
-                      <div className="min-w-[1040px]">
+                      <div className="min-w-[1240px]">
                         <div
                           className="grid gap-3 px-3 py-2 border-b border-primary/15 bg-black/80 sticky top-0 z-10"
                           style={{
-                            gridTemplateColumns:
-                              "32px minmax(250px,1.55fr) minmax(180px,1fr) 78px 84px 92px 126px",
+                            gridTemplateColumns: MATERIAL_TABLE_GRID_TEMPLATE,
                           }}
                         >
                           <div aria-hidden="true" />
@@ -1687,135 +1708,127 @@ function useLibraryPageController() {
           if (!open) setViewingMaterialId(null);
         }}
       >
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col gap-0">
-          <DialogHeader className="shrink-0 pb-3">
+        <DialogContent className="flex h-[90vh] max-h-[90vh] max-w-5xl flex-col gap-0 overflow-hidden p-0">
+          <DialogHeader className="shrink-0 border-b border-primary/20 px-5 py-4">
             <DialogTitle className="flex items-center gap-2">
               <FileText className={ICON_SM} />
               {materialContent?.title || "Material Content"}
             </DialogTitle>
-            <DialogDescription className="flex items-center gap-2">
-              {materialContent?.file_type && (
-                <Badge variant="outline" className={`${TEXT_BADGE} h-4 px-1`}>
-                  {getFileTypeLabel(materialContent.file_type)}
-                </Badge>
-              )}
-              {materialContent?.char_count !== undefined && (
-                <span>
-                  {materialContent.char_count.toLocaleString()} characters
-                </span>
-              )}
+            <DialogDescription asChild>
+              <div className="flex items-center gap-2 text-sm font-terminal text-muted-foreground">
+                {materialContent?.file_type && (
+                  <Badge variant="outline" className={`${TEXT_BADGE} h-4 px-1`}>
+                    {getFileTypeLabel(materialContent.file_type)}
+                  </Badge>
+                )}
+                {materialContent?.char_count !== undefined && (
+                  <span>
+                    {materialContent.char_count.toLocaleString()} characters
+                  </span>
+                )}
+              </div>
             </DialogDescription>
           </DialogHeader>
           <HudPanel
             variant="b"
-            className="flex-1 min-h-0 overflow-y-auto bg-black/40 p-5"
+            className="min-h-0 flex-1 bg-black/40 p-0"
           >
-            {isContentLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2
-                  className={`${ICON_MD} animate-spin text-muted-foreground`}
-                />
-              </div>
-            ) : materialContent?.extraction_lossy ? (
-              <div className="space-y-4">
-                <div className="flex items-start gap-2 border border-yellow-500/40 bg-yellow-500/10 p-3">
-                  <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-arcade text-sm text-yellow-400">
-                      EXTRACTION INCOMPLETE
-                    </div>
-                    <div className={`${TEXT_MUTED} text-sm mt-1`}>
-                      {Math.round(materialContent.replacement_ratio * 100)}% of
-                      this PDF could not be decoded — it may use scanned images
-                      or an embedded font. The readable portions are shown
-                      below. Consider re-uploading with an OCR-processed
-                      version.
-                    </div>
-                  </div>
+            <div
+              className="relative z-10 h-full min-h-0 overflow-y-auto overscroll-contain p-5 sm:p-6"
+              data-testid="library-material-reader"
+              tabIndex={0}
+            >
+              {isContentLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2
+                    className={`${ICON_MD} animate-spin text-muted-foreground`}
+                  />
                 </div>
-                {materialContent.content ? (
-                  <div
-                    className="prose prose-invert prose-sm max-w-none font-terminal
-                    prose-headings:font-arcade prose-headings:text-primary prose-headings:border-b prose-headings:border-primary/20 prose-headings:pb-1
-                    prose-h1:text-lg prose-h2:text-base prose-h3:text-sm
-                    prose-p:text-foreground/90 prose-p:leading-relaxed
-                    prose-li:text-foreground/90
-                    prose-strong:text-primary/90
-                    prose-table:border-collapse prose-th:border prose-th:border-primary/30 prose-th:bg-primary/10 prose-th:px-2 prose-th:py-1
-                    prose-td:border prose-td:border-primary/20 prose-td:px-2 prose-td:py-1
-                    prose-code:text-primary/80 prose-code:bg-primary/10 prose-code:px-1 prose-code:rounded-none
-                    prose-pre:bg-black/60 prose-pre:border prose-pre:border-primary/20"
-                  >
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      components={{
-                        img: ({ src, alt }: { src?: string; alt?: string }) => {
-                          const resolvedSrc = resolveMaterialAssetUrl(
+              ) : materialContent?.extraction_lossy ? (
+                <div className="space-y-4">
+                  <div className="flex items-start gap-2 border border-yellow-500/40 bg-yellow-500/10 p-3">
+                    <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
+                    <div>
+                      <div className="font-arcade text-sm text-yellow-400">
+                        EXTRACTION INCOMPLETE
+                      </div>
+                      <div className={`${TEXT_MUTED} text-sm mt-1`}>
+                        {Math.round(materialContent.replacement_ratio * 100)}%
+                        of this PDF could not be decoded — it may use scanned
+                        images or an embedded font. The readable portions are
+                        shown below. Consider re-uploading with an OCR-processed
+                        version.
+                      </div>
+                    </div>
+                  </div>
+                  {materialContent.content ? (
+                    <div className={MATERIAL_READER_MARKDOWN_CLASS}>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          img: ({
                             src,
-                            materialContent.id,
-                          );
-                          if (!resolvedSrc) return null;
-                          return (
-                            <img
-                              src={resolvedSrc}
-                              alt={alt || "Extracted figure"}
-                              loading="lazy"
-                              className="max-w-full h-auto border border-primary/30 bg-black/20"
-                            />
-                          );
-                        },
-                      }}
-                    >
-                      {materialContent.content}
-                    </ReactMarkdown>
-                  </div>
-                ) : (
-                  <div className={`${TEXT_MUTED} text-center py-4`}>
-                    No readable text could be recovered.
-                  </div>
-                )}
-              </div>
-            ) : materialContent?.content ? (
-              <div
-                className="prose prose-invert prose-sm max-w-none font-terminal
-                prose-headings:font-arcade prose-headings:text-primary prose-headings:border-b prose-headings:border-primary/20 prose-headings:pb-1
-                prose-h1:text-lg prose-h2:text-base prose-h3:text-sm
-                prose-p:text-foreground/90 prose-p:leading-relaxed
-                prose-li:text-foreground/90
-                prose-strong:text-primary/90
-                prose-table:border-collapse prose-th:border prose-th:border-primary/30 prose-th:bg-primary/10 prose-th:px-2 prose-th:py-1
-                prose-td:border prose-td:border-primary/20 prose-td:px-2 prose-td:py-1
-                prose-code:text-primary/80 prose-code:bg-primary/10 prose-code:px-1 prose-code:rounded-none
-                prose-pre:bg-black/60 prose-pre:border prose-pre:border-primary/20"
-              >
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    img: ({ src, alt }: { src?: string; alt?: string }) => {
-                      const resolvedSrc = resolveMaterialAssetUrl(
-                        src,
-                        materialContent.id,
-                      );
-                      if (!resolvedSrc) return null;
-                      return (
-                        <img
-                          src={resolvedSrc}
-                          alt={alt || "Extracted figure"}
-                          loading="lazy"
-                          className="max-w-full h-auto border border-primary/30 bg-black/20"
-                        />
-                      );
-                    },
-                  }}
-                >
-                  {materialContent.content}
-                </ReactMarkdown>
-              </div>
-            ) : (
-              <div className={`${TEXT_MUTED} text-center py-8`}>
-                No extracted content available for this material.
-              </div>
-            )}
+                            alt,
+                          }: {
+                            src?: string;
+                            alt?: string;
+                          }) => {
+                            const resolvedSrc = resolveMaterialAssetUrl(
+                              src,
+                              materialContent.id,
+                            );
+                            if (!resolvedSrc) return null;
+                            return (
+                              <img
+                                src={resolvedSrc}
+                                alt={alt || "Extracted figure"}
+                                loading="lazy"
+                                className="max-w-full h-auto border border-primary/30 bg-black/20"
+                              />
+                            );
+                          },
+                        }}
+                      >
+                        {materialContent.content}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    <div className={`${TEXT_MUTED} text-center py-4`}>
+                      No readable text could be recovered.
+                    </div>
+                  )}
+                </div>
+              ) : materialContent?.content ? (
+                <div className={MATERIAL_READER_MARKDOWN_CLASS}>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      img: ({ src, alt }: { src?: string; alt?: string }) => {
+                        const resolvedSrc = resolveMaterialAssetUrl(
+                          src,
+                          materialContent.id,
+                        );
+                        if (!resolvedSrc) return null;
+                        return (
+                          <img
+                            src={resolvedSrc}
+                            alt={alt || "Extracted figure"}
+                            loading="lazy"
+                            className="max-w-full h-auto border border-primary/30 bg-black/20"
+                          />
+                        );
+                      },
+                    }}
+                  >
+                    {materialContent.content}
+                  </ReactMarkdown>
+                </div>
+              ) : (
+                <div className={`${TEXT_MUTED} text-center py-8`}>
+                  No extracted content available for this material.
+                </div>
+              )}
+            </div>
           </HudPanel>
         </DialogContent>
       </Dialog>
