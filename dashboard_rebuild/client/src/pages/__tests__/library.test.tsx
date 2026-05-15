@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 
@@ -11,6 +11,8 @@ const {
   getContentSourcesMock,
   getMaterialContentMock,
   previewSyncMaterialsFolderMock,
+  startSyncMaterialsFolderMock,
+  getSyncMaterialsStatusMock,
   getEmbedStatusMock,
   updateMaterialMock,
   deleteMaterialMock,
@@ -23,6 +25,8 @@ const {
   getContentSourcesMock: vi.fn(),
   getMaterialContentMock: vi.fn(),
   previewSyncMaterialsFolderMock: vi.fn(),
+  startSyncMaterialsFolderMock: vi.fn(),
+  getSyncMaterialsStatusMock: vi.fn(),
   getEmbedStatusMock: vi.fn(),
   updateMaterialMock: vi.fn(),
   deleteMaterialMock: vi.fn(),
@@ -60,6 +64,8 @@ vi.mock("@/lib/api", () => ({
       getContentSources: getContentSourcesMock,
       getMaterialContent: getMaterialContentMock,
       previewSyncMaterialsFolder: previewSyncMaterialsFolderMock,
+      startSyncMaterialsFolder: startSyncMaterialsFolderMock,
+      getSyncMaterialsStatus: getSyncMaterialsStatusMock,
       embedStatus: getEmbedStatusMock,
       updateMaterial: updateMaterialMock,
       deleteMaterial: deleteMaterialMock,
@@ -132,6 +138,28 @@ describe("Library catalog", () => {
       allowed_exts: [".pdf", ".docx", ".pptx", ".txt", ".md", ".mp4"],
       truncated: false,
       max_files: 5000,
+    });
+    startSyncMaterialsFolderMock.mockResolvedValue({
+      ok: true,
+      job_id: "source-upload-job",
+      selected_count: 1,
+      setup_count: 0,
+      course_id: null,
+    });
+    getSyncMaterialsStatusMock.mockResolvedValue({
+      job_id: "source-upload-job",
+      status: "completed",
+      phase: "done",
+      folder: "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School",
+      processed: 1,
+      total: 1,
+      index: 1,
+      current_file: null,
+      errors: 0,
+      sync_result: { ok: true, processed: 1, total: 1, doc_ids: [901] },
+      embed_result: null,
+      started_at: new Date("2026-05-15T12:00:00Z").toISOString(),
+      finished_at: new Date("2026-05-15T12:00:02Z").toISOString(),
     });
     getEmbedStatusMock.mockResolvedValue({
       materials: [
@@ -503,5 +531,115 @@ describe("Library catalog", () => {
       screen.getByRole("button", { name: /refresh source folders/i }),
     ).toBeInTheDocument();
     expect(screen.getByText(/2 source files detected/i)).toBeInTheDocument();
+  });
+
+  it("opens the Upload tab with checkbox candidates for unuploaded source-folder files", async () => {
+    const root =
+      "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School";
+    getMaterialsMock.mockResolvedValue([
+      {
+        id: 401,
+        title: "Already Loaded",
+        source_path: `${root}/10_Dx Mgmt Integumentary/10_Week 1/already-loaded.pdf`,
+        folder_path: "10_Dx Mgmt Integumentary/10_Week 1",
+        file_type: "pdf",
+        file_size: 100,
+        course_id: null,
+        enabled: true,
+        extraction_error: null,
+        checksum: "existing-401",
+        created_at: new Date("2026-05-15T12:00:00Z").toISOString(),
+        updated_at: new Date("2026-05-15T12:00:00Z").toISOString(),
+      },
+    ]);
+    previewSyncMaterialsFolderMock.mockResolvedValue({
+      ok: true,
+      folder: root,
+      tree: {
+        type: "folder",
+        name: "PT School",
+        path: "",
+        children: [
+          {
+            type: "folder",
+            name: "10_Dx Mgmt Integumentary",
+            path: "10_Dx Mgmt Integumentary",
+            children: [
+              {
+                type: "folder",
+                name: "10_Week 1",
+                path: "10_Dx Mgmt Integumentary/10_Week 1",
+                children: [
+                  {
+                    type: "file",
+                    name: "already-loaded.pdf",
+                    path: "10_Dx Mgmt Integumentary/10_Week 1/already-loaded.pdf",
+                    size: 100,
+                  },
+                  {
+                    type: "file",
+                    name: "Wound Healing Lecture.pptx",
+                    path: "10_Dx Mgmt Integumentary/10_Week 1/Wound Healing Lecture.pptx",
+                    size: 2200,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      counts: { folders: 2, files: 2 },
+      allowed_exts: [".pdf", ".pptx"],
+      truncated: false,
+      max_files: 5000,
+    });
+
+    renderLibrary();
+
+    fireEvent.click(await screen.findByRole("button", { name: /folders/i }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: /10_Dx Mgmt Integumentary/i }),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole("tab", { name: "UPLOAD" })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      ),
+    );
+    const candidatePanel = await screen.findByTestId(
+      "library-source-upload-candidates",
+    );
+    expect(
+      within(candidatePanel).getByRole("checkbox", {
+        name: /upload wound healing lecture\.pptx/i,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(candidatePanel).queryByRole("checkbox", {
+        name: /upload already-loaded\.pdf/i,
+      }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      within(candidatePanel).getByRole("checkbox", {
+        name: /upload wound healing lecture\.pptx/i,
+      }),
+    );
+    fireEvent.click(
+      within(candidatePanel).getByRole("button", {
+        name: /upload selected \(1\)/i,
+      }),
+    );
+
+    await waitFor(() =>
+      expect(startSyncMaterialsFolderMock).toHaveBeenCalledWith({
+        folder_path: root,
+        selected_files: [
+          "10_Dx Mgmt Integumentary/10_Week 1/Wound Healing Lecture.pptx",
+        ],
+        course_id: null,
+      }),
+    );
   });
 });

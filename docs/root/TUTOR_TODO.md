@@ -28,6 +28,24 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 - Ops note (2026-03-25): `dev-browser` is now a shared agent skill projected into every supported agent root; this does not change Tutor sprint priority.
 
+- [x] LIBRARY-SOURCE-FILE-PICKER-2026-05-15. Let live PT School source folders expose unuploaded files as explicit upload candidates.
+  - Scope:
+    - When a live source folder is selected, show source files that are not already uploaded into Library.
+    - Keep uploads explicit with per-file checkboxes and a selected-file upload action.
+    - Reuse the existing selected-file sync backend instead of mass-loading folders.
+  - Assignee: @codex-cli
+  - Completed: 2026-05-15
+  - Validation:
+    - Selecting a live source folder now switches to Upload and shows unchecked source-file candidates with per-file checkboxes.
+    - Selected candidates call the existing selected-file sync endpoint with relative source paths; no folder bulk load is triggered.
+    - Folder rail rows are real buttons so source folder selection works reliably in the browser.
+    - Checks passed: `npm run test -- client/src/pages/__tests__/library.test.tsx`, `.venv/bin/python -m pytest brain/tests/test_tutor_material_pipeline_certification.py -q`, `npm run check`, and `npm run build`.
+    - Built-in browser verification passed on `/library`; selecting `10_Dx Mgmt Integumentary` opened Upload with 9 checkbox candidates and selecting one updated the upload button to `Upload Selected (1)`.
+  - Done when:
+    - Selecting a source folder opens the Upload tab with unchecked source-file candidates.
+    - Checked files can be uploaded into the Library catalog.
+    - Focused Library/backend checks, typecheck, build, and browser verification pass.
+
 - [x] LIBRARY-CATALOG-ONLY-2026-05-15. Simplify `/library` so it is a searchable uploaded-file catalog plus upload surface, not Tutor/intake workflow control.
   - Scope:
     - Keep course/folder browsing, uploaded-file rows, file search, file viewing, metadata edit/delete, and simple upload.

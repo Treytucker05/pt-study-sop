@@ -2705,3 +2705,10 @@ Recommended next steps:
 - Added a Refresh source folders control and copy that explains counts are source files but rows are uploaded Library files.
 - Added regression coverage for env-backed sync preview with omitted `folder_path` and Library source-tree folder rendering.
 - Validation: `.venv/bin/python -m pytest brain/tests/test_tutor_material_pipeline_certification.py -q`; `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`; built-in browser verification on `/library` confirmed Dx Mgmt, Cardiovascular Pulmonary, class schedules, and other OneDrive PT School source folders appear in the Folders rail.
+
+## 2026-05-15 - Library source-file upload picker
+
+- Added a source-file picker to `/library` Upload: selecting a live PT School folder opens Upload and lists source files that are not already matched to uploaded Library rows.
+- Each source-file candidate has an explicit checkbox and `Upload Selected` action backed by the existing selected-file sync endpoint, keeping imports file-by-file instead of bulk folder ingestion.
+- Converted source folder rail rows from custom `div role="button"` controls to real buttons so browser clicks reliably activate folder selection.
+- Validation: `npm run test -- client/src/pages/__tests__/library.test.tsx`; `.venv/bin/python -m pytest brain/tests/test_tutor_material_pipeline_certification.py -q`; `npm run check`; `npm run build`; built-in browser verification on `/library` confirmed `10_Dx Mgmt Integumentary` opens Upload with source checkboxes and a checked candidate updates the button to `Upload Selected (1)`.

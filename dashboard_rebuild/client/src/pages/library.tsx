@@ -392,6 +392,15 @@ interface FolderListItem {
   hasChildren: boolean;
 }
 
+interface SourceUploadCandidate {
+  path: string;
+  name: string;
+  folderPath: string;
+  size: number;
+  modifiedAt?: string | null;
+  fileType: string;
+}
+
 function flattenFolders(
   node: FolderNode,
   depth = 0,
@@ -447,6 +456,97 @@ function flattenPreviewFolders(
   return items;
 }
 
+function getPreviewFolderNode(
+  root: TutorSyncPreviewNode | undefined,
+  folderPath: string,
+): TutorSyncPreviewNode | undefined {
+  if (!root) return undefined;
+  const normalizedPath = folderPath.replace(/^\/+|\/+$/g, "");
+  if (!normalizedPath) return root;
+  const parts = normalizedPath.split("/").filter(Boolean);
+  let node: TutorSyncPreviewNode | undefined = root;
+  for (const part of parts) {
+    node = node?.children?.find(
+      (child) => child.type === "folder" && child.name === part,
+    );
+    if (!node) return undefined;
+  }
+  return node;
+}
+
+function collectPreviewFiles(
+  node: TutorSyncPreviewNode | undefined,
+): TutorSyncPreviewNode[] {
+  if (!node?.children?.length) return [];
+  const files: TutorSyncPreviewNode[] = [];
+  for (const child of node.children) {
+    if (child.type === "file") {
+      files.push(child);
+    } else {
+      files.push(...collectPreviewFiles(child));
+    }
+  }
+  return files;
+}
+
+function getSourceFileFolder(path: string): string {
+  const normalized = path.replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+  const lastSlash = normalized.lastIndexOf("/");
+  return lastSlash > 0 ? normalized.slice(0, lastSlash) : "";
+}
+
+function getSourceFileType(path: string): string {
+  const suffix = path.split(".").pop()?.trim().toLowerCase();
+  return suffix && suffix !== path ? suffix : "file";
+}
+
+function normalizeComparablePath(value: string | null | undefined): string {
+  return String(value || "")
+    .replace(/\\/g, "/")
+    .replace(/^\/+|\/+$/g, "")
+    .toLowerCase();
+}
+
+function getPathBaseName(value: string | null | undefined): string {
+  const normalized = String(value || "").replace(/\\/g, "/").trim();
+  const parts = normalized.split("/").filter(Boolean);
+  return parts.at(-1) || "";
+}
+
+function materialMatchesSourceCandidate(
+  material: Material,
+  candidate: SourceUploadCandidate,
+): boolean {
+  const candidatePath = normalizeComparablePath(candidate.path);
+  const materialSource = normalizeComparablePath(material.source_path);
+  const materialFolder = normalizeComparablePath(material.folder_path);
+  const materialTitle = normalizeComparablePath(getMaterialTitle(material));
+  const materialFileName = normalizeComparablePath(
+    getPathBaseName(material.source_path) || getMaterialTitle(material),
+  );
+
+  if (
+    materialSource === candidatePath ||
+    materialSource.endsWith(`/${candidatePath}`)
+  ) {
+    return true;
+  }
+
+  if (
+    materialFolder &&
+    materialFileName &&
+    normalizeComparablePath(`${materialFolder}/${materialFileName}`) ===
+      candidatePath
+  ) {
+    return true;
+  }
+
+  return (
+    materialTitle === normalizeComparablePath(candidate.name) &&
+    getMaterialSize(material) === candidate.size
+  );
+}
+
 function materialIsInFolder(mat: Material, folderPath: string): boolean {
   if (!folderPath) return true;
   const normalizedFolder = folderPath.replace(/^\/+|\/+$/g, "");
@@ -491,6 +591,19 @@ function readInitialLibraryLaunchState(): InitialLibraryLaunchState {
     uploadCourseTarget: courseId,
     selectedFolderPath: ALL_FOLDERS_KEY,
   };
+}
+
+async function waitForMaterialSyncJob(jobId: string) {
+  let lastStatus: Awaited<ReturnType<typeof api.tutor.getSyncMaterialsStatus>> | null =
+    null;
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    lastStatus = await api.tutor.getSyncMaterialsStatus(jobId);
+    if (lastStatus.status === "completed" || lastStatus.status === "failed") {
+      return lastStatus;
+    }
+  }
+  return lastStatus;
 }
 
 function renderMaterialRow(
@@ -729,6 +842,9 @@ function useLibraryPageController() {
   const [selectedFolderPath, setSelectedFolderPath] = useState<string>(
     initialLaunchState.selectedFolderPath,
   );
+  const [selectedSourceUploadPaths, setSelectedSourceUploadPaths] = useState<
+    Set<string>
+  >(new Set());
   const [expandedFolderPaths, setExpandedFolderPaths] = useState<Set<string>>(
     new Set(),
   );
@@ -894,6 +1010,49 @@ function useLibraryPageController() {
     : uploadedFolderItems;
   const sourceFolderFileCount = sourceFolderPreview?.counts?.files;
   const sourceFolderRoot = sourceFolderPreview?.folder || "";
+  const selectedSourceFolderNode = useMemo(
+    () =>
+      getPreviewFolderNode(
+        sourceFolderPreview?.tree,
+        selectedFolderPath,
+      ),
+    [sourceFolderPreview, selectedFolderPath],
+  );
+  const sourceUploadCandidates = useMemo<SourceUploadCandidate[]>(() => {
+    if (
+      !hasLiveSourceFolders ||
+      sidebarMode !== "folders" ||
+      selectedFolderPath === ALL_FOLDERS_KEY
+    ) {
+      return [];
+    }
+    return collectPreviewFiles(selectedSourceFolderNode)
+      .map((file) => ({
+        path: file.path,
+        name: file.name,
+        folderPath: getSourceFileFolder(file.path),
+        size: Number(file.size || 0),
+        modifiedAt: file.modified_at,
+        fileType: getSourceFileType(file.path),
+      }))
+      .filter(
+        (candidate) =>
+          !materials.some((material) =>
+            materialMatchesSourceCandidate(material, candidate),
+          ),
+      )
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [
+    hasLiveSourceFolders,
+    materials,
+    selectedFolderPath,
+    selectedSourceFolderNode,
+    sidebarMode,
+  ]);
+  const sourceUploadCandidatePathSet = useMemo(
+    () => new Set(sourceUploadCandidates.map((candidate) => candidate.path)),
+    [sourceUploadCandidates],
+  );
   const activeFolderPathSet = useMemo(
     () => new Set(folderItems.map((item) => item.path)),
     [folderItems],
@@ -962,6 +1121,9 @@ function useLibraryPageController() {
   ]);
   const selectFolderPath = (path: string) => {
     setSelectedFolderPath(path);
+    if (path && hasLiveSourceFolders) {
+      setActiveLibraryTab("upload");
+    }
     const ancestors = getFolderAncestorPaths(path);
     if (!ancestors.length) return;
     setExpandedFolderPaths((prev) => {
@@ -992,6 +1154,63 @@ function useLibraryPageController() {
     }
     return dupes;
   }, [materials]);
+  const sourceUploadMutation = useMutation({
+    mutationFn: async (paths: string[]) => {
+      if (!paths.length) {
+        throw new Error("Choose at least one source file to upload.");
+      }
+      const courseId = uploadCourseTarget ? Number(uploadCourseTarget) : null;
+      const start = await api.tutor.startSyncMaterialsFolder({
+        folder_path: sourceFolderRoot || undefined,
+        selected_files: paths,
+        course_id: Number.isFinite(courseId || NaN) ? courseId : null,
+      });
+      const status = start.job_id
+        ? await waitForMaterialSyncJob(start.job_id)
+        : null;
+      if (status?.status === "failed") {
+        throw new Error(status.last_error || "Source upload failed.");
+      }
+      return { start, status, paths };
+    },
+    onSuccess: ({ status, paths }) => {
+      const processed =
+        Number(status?.sync_result?.processed || 0) || paths.length;
+      toast.success(
+        `Uploaded ${pluralizeCount(processed, "source file")} into Library.`,
+      );
+      setSelectedSourceUploadPaths(new Set());
+      setActiveLibraryTab("materials");
+      queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
+      queryClient.invalidateQueries({ queryKey: ["tutor-embed-status"] });
+      queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
+      queryClient.invalidateQueries({ queryKey: ["library-source-folder-preview"] });
+    },
+    onError: (err) => {
+      toast.error(
+        `Source upload failed: ${err instanceof Error ? err.message : "Unknown"}`,
+      );
+    },
+  });
+
+  const toggleSourceUploadPath = (path: string) => {
+    setSelectedSourceUploadPaths((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+  };
+
+  const selectAllSourceUploadCandidates = () => {
+    setSelectedSourceUploadPaths(
+      new Set(sourceUploadCandidates.map((candidate) => candidate.path)),
+    );
+  };
+
   useEffect(() => {
     if (isLoading) return;
     if (
@@ -1007,6 +1226,25 @@ function useLibraryPageController() {
     materials,
     selectedFolderPath,
   ]);
+
+  useEffect(() => {
+    setSelectedSourceUploadPaths((prev) => {
+      const next = new Set(
+        Array.from(prev).filter((path) => sourceUploadCandidatePathSet.has(path)),
+      );
+      return next.size === prev.size ? prev : next;
+    });
+  }, [sourceUploadCandidatePathSet]);
+
+  useEffect(() => {
+    if (
+      sidebarMode === "folders" &&
+      selectedFolderPath !== ALL_FOLDERS_KEY &&
+      sourceUploadCandidates.length > 0
+    ) {
+      setActiveLibraryTab("upload");
+    }
+  }, [selectedFolderPath, sidebarMode, sourceUploadCandidates.length]);
 
   useEffect(() => {
     // Start with top-level folders expanded so first interaction is not empty.
@@ -1128,6 +1366,7 @@ function useLibraryPageController() {
   const materialSectionTitle = "LIBRARY FILES";
   const visibleTabFileCount = visibleCatalogMaterials.length;
   const visibleTabFileLabel = "file";
+  const selectedSourceUploadCount = selectedSourceUploadPaths.size;
 
   return (
     <PageScaffold
@@ -1282,7 +1521,8 @@ function useLibraryPageController() {
                       const hasChildren = folder.hasChildren;
                       return (
                         <div key={folder.path}>
-                          <div
+                          <button
+                            type="button"
                             className={`library-course-nav-row w-full rounded-none border pr-3 py-2 text-left font-terminal flex items-center gap-1 transition-colors ${
                               isSelected
                                 ? "border-primary/60 bg-primary/20 text-primary"
@@ -1292,41 +1532,21 @@ function useLibraryPageController() {
                               paddingLeft: `${0.45 + folder.depth * 0.85}rem`,
                             }}
                             title={folder.path}
-                            role="button"
-                            tabIndex={0}
                             onClick={() => {
                               selectFolderPath(folder.path);
                               if (hasChildren && !isExpanded)
                                 toggleFolderExpanded(folder.path);
                             }}
-                            onKeyDown={(e) => {
-                              if (e.target !== e.currentTarget) return;
-                              if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                selectFolderPath(folder.path);
-                                if (hasChildren && !isExpanded)
-                                  toggleFolderExpanded(folder.path);
-                              }
-                            }}
                           >
                             {hasChildren ? (
-                              <button
-                                type="button"
-                                className="p-0.5 hover:text-primary transition-colors"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleFolderExpanded(folder.path);
-                                }}
-                                aria-label={
-                                  isExpanded
-                                    ? "Collapse folder"
-                                    : "Expand folder"
-                                }
+                              <span
+                                className="p-0.5 transition-colors"
+                                aria-hidden="true"
                               >
                                 <ChevronRight
                                   className={`${ICON_SM} transition-transform ${isExpanded ? "rotate-90" : "rotate-0"}`}
                                 />
-                              </button>
+                              </span>
                             ) : (
                               <span className="w-4" />
                             )}
@@ -1343,7 +1563,7 @@ function useLibraryPageController() {
                             <span className="text-sm">
                               {folder.filesCount}
                             </span>
-                          </div>
+                          </button>
                         </div>
                       );
                     })}
@@ -1620,6 +1840,109 @@ function useLibraryPageController() {
                         ))}
                       </select>
                     </div>
+                    {sidebarMode === "folders" &&
+                    selectedFolderPath !== ALL_FOLDERS_KEY ? (
+                      <div
+                        className="rounded-[0.85rem] border border-primary/15 bg-black/35 p-3"
+                        data-testid="library-source-upload-candidates"
+                      >
+                        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                          <div className="min-w-0">
+                            <div className={LIBRARY_SECTION_LABEL}>
+                              SOURCE FOLDER FILES
+                            </div>
+                            <div className={`${LIBRARY_HELP_TEXT} mt-1`}>
+                              Pick unchecked files from{" "}
+                              <span className="text-foreground">
+                                {selectedFolderLabel}
+                              </span>{" "}
+                              to upload them into the Library catalog.
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <HudButton
+                              type="button"
+                              variant="outline"
+                              className="min-h-[34px] px-3 text-ui-xs"
+                              onClick={selectAllSourceUploadCandidates}
+                              disabled={
+                                sourceUploadCandidates.length === 0 ||
+                                sourceUploadMutation.isPending
+                              }
+                            >
+                              Select All
+                            </HudButton>
+                            <HudButton
+                              type="button"
+                              variant="primary"
+                              className="min-h-[34px] px-3 text-ui-xs"
+                              disabled={
+                                selectedSourceUploadCount === 0 ||
+                                sourceUploadMutation.isPending
+                              }
+                              onClick={() =>
+                                sourceUploadMutation.mutate(
+                                  Array.from(selectedSourceUploadPaths),
+                                )
+                              }
+                            >
+                              {sourceUploadMutation.isPending
+                                ? "Uploading..."
+                                : `Upload Selected (${selectedSourceUploadCount})`}
+                            </HudButton>
+                          </div>
+                        </div>
+                        {sourceUploadCandidates.length > 0 ? (
+                          <div className="mt-3 max-h-72 overflow-y-auto border border-primary/10">
+                            {sourceUploadCandidates.map((candidate) => {
+                              const checked = selectedSourceUploadPaths.has(
+                                candidate.path,
+                              );
+                              return (
+                                <label
+                                  key={candidate.path}
+                                  className="flex cursor-pointer items-center gap-3 border-b border-primary/10 px-3 py-2 last:border-b-0 hover:bg-primary/5"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() =>
+                                      toggleSourceUploadPath(candidate.path)
+                                    }
+                                    disabled={sourceUploadMutation.isPending}
+                                    aria-label={`Upload ${candidate.name}`}
+                                    className="h-4 w-4 accent-primary"
+                                  />
+                                  <FileText className={`${ICON_SM} text-primary/70`} />
+                                  <span className="min-w-0 flex-1">
+                                    <span className="block truncate text-base text-foreground">
+                                      {candidate.name}
+                                    </span>
+                                    <span className="block truncate text-sm text-muted-foreground">
+                                      {candidate.folderPath || "PT School root"}
+                                    </span>
+                                  </span>
+                                  <Badge
+                                    variant="outline"
+                                    className={`${TEXT_BADGE} h-5 shrink-0 px-2`}
+                                  >
+                                    {getFileTypeLabel(candidate.fileType)}
+                                  </Badge>
+                                  <span className={`${TEXT_MUTED} shrink-0`}>
+                                    {formatSize(candidate.size)}
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className={`${TEXT_MUTED} mt-3 text-sm`}>
+                            This source folder does not have any new supported
+                            files to upload.
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
                     <MaterialUploader
                       courseId={
                         uploadCourseTarget
