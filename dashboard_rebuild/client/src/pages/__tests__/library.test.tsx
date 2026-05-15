@@ -274,6 +274,10 @@ describe("Library catalog", () => {
     expect(await screen.findByTestId("library-material-reader")).toHaveClass(
       "overflow-y-auto",
     );
+    const markdownReader = screen.getByTestId("library-material-markdown");
+    expect(markdownReader.className).toContain("library-material-markdown");
+    expect(markdownReader.className).toContain("prose-headings:font-sans");
+    expect(markdownReader.className).not.toContain("prose-headings:font-arcade");
     expect(screen.getByRole("dialog", { name: "Intro Notes" })).toBeInTheDocument();
     expect(screen.getAllByText(/readable paragraph/i).length).toBeGreaterThan(1);
   });

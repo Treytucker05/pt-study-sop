@@ -82,8 +82,8 @@ const LIBRARY_HELP_TEXT = "library-help-text";
 const MATERIAL_TABLE_GRID_TEMPLATE =
   "40px minmax(340px,1.35fr) minmax(220px,0.9fr) minmax(240px,0.85fr) 92px 96px 132px";
 const MATERIAL_READER_MARKDOWN_CLASS = `
-  prose prose-invert prose-base max-w-none font-sans text-[15px] leading-7
-  prose-headings:font-arcade prose-headings:text-primary prose-headings:border-b prose-headings:border-primary/20 prose-headings:pb-2
+  library-material-markdown prose prose-invert prose-base max-w-none font-sans text-[15px] leading-7 tracking-normal
+  prose-headings:font-sans prose-headings:font-semibold prose-headings:tracking-normal prose-headings:normal-case prose-headings:text-primary prose-headings:border-b prose-headings:border-primary/20 prose-headings:pb-2
   prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg
   prose-p:text-foreground/90 prose-p:leading-7
   prose-li:text-foreground/90 prose-li:leading-7
@@ -1762,7 +1762,10 @@ function useLibraryPageController() {
                     </div>
                   </div>
                   {materialContent.content ? (
-                    <div className={MATERIAL_READER_MARKDOWN_CLASS}>
+                    <div
+                      className={MATERIAL_READER_MARKDOWN_CLASS}
+                      data-testid="library-material-markdown"
+                    >
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
@@ -1799,7 +1802,10 @@ function useLibraryPageController() {
                   )}
                 </div>
               ) : materialContent?.content ? (
-                <div className={MATERIAL_READER_MARKDOWN_CLASS}>
+                <div
+                  className={MATERIAL_READER_MARKDOWN_CLASS}
+                  data-testid="library-material-markdown"
+                >
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{

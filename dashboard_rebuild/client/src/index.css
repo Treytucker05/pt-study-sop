@@ -309,6 +309,42 @@
   }
 }
 
+@layer components {
+  .library-material-markdown :is(h1, h2, h3, h4, h5, h6) {
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      sans-serif,
+      "Apple Color Emoji",
+      "Segoe UI Emoji",
+      "Segoe UI Symbol",
+      "Noto Color Emoji";
+    font-weight: 600;
+    letter-spacing: normal;
+    line-height: 1.35;
+    text-shadow: none;
+    text-transform: none;
+  }
+
+  .library-material-markdown h1 {
+    font-size: var(--text-2xl);
+    line-height: var(--text-2xl--line-height);
+  }
+
+  .library-material-markdown h2 {
+    font-size: var(--text-xl);
+    line-height: var(--text-xl--line-height);
+  }
+
+  .library-material-markdown h3,
+  .library-material-markdown h4,
+  .library-material-markdown h5,
+  .library-material-markdown h6 {
+    font-size: var(--text-lg);
+    line-height: var(--text-lg--line-height);
+  }
+}
+
 @layer utilities {
   .inline-flex {
     display: inline-flex;

@@ -2675,3 +2675,10 @@ Recommended next steps:
 - Increased material-reader typography and cleaned dialog description markup so long extracted PDFs/DOCX/PPTX content is readable and valid HTML.
 - Added Library regression coverage for opening extracted material content in a scrollable reader.
 - Validation: `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`; built-in browser verification on `http://127.0.0.1:5127/library` confirmed reader scrollTop changes inside the modal and console logs stay clean.
+
+## 2026-05-15 - Library material reader heading font fix
+
+- Fixed `/library` material content headings so extracted documents use readable sans typography instead of the global arcade heading treatment, which could make letters such as `T` appear missing or broken.
+- Confirmed the extracted material text still includes `t/T` characters; the issue was rendering-only, not extraction loss.
+- Added a scoped `library-material-markdown` reader class and regression coverage so document headings cannot silently fall back to `font-arcade`.
+- Validation: `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`; built-in browser verification on `http://127.0.0.1:5127/library` confirmed reader headings render with system sans, normal tracking, normal case, and clean console logs.
