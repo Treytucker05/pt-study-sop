@@ -14,6 +14,8 @@ export const TUTOR_LIBRARY_HANDOFF_KEY = "tutor.open_from_library.v1";
 export const TUTOR_BRAIN_HANDOFF_KEY = "tutor.open_from_brain.v1";
 export const TUTOR_VAULT_FOLDER_KEY = "tutor.vault_folder.v1";
 export const LIBRARY_TUTOR_HANDOFF_KEY = "library.open_from_tutor.v1";
+export const TUTOR_COURSE_SETUP_PRIMING_HANDOFF_KEY =
+  "tutor.course_setup_priming_handoff.v1";
 
 export type TutorBrainLaunchContext = {
   source?: string;
@@ -33,6 +35,15 @@ export type LibraryTutorLaunchContext = {
   courseEventId?: number;
   eventType?: string | null;
   target?: "load_materials";
+};
+
+export type TutorCourseSetupPrimingHandoff = {
+  courseId?: number;
+  courseName?: string;
+  materialId: number;
+  materialTitle: string;
+  setupKind?: string;
+  sourcePath?: string | null;
 };
 
 export type TutorPersistedStartState = {
@@ -199,6 +210,41 @@ function normalizeTutorStartState(
         : "",
     selectedPaths: normalizeStringArray(record.selectedPaths),
   };
+}
+
+function normalizeTutorCourseSetupPrimingHandoff(
+  value: unknown,
+): TutorCourseSetupPrimingHandoff | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  const materialId =
+    typeof record.materialId === "number" &&
+    Number.isInteger(record.materialId) &&
+    record.materialId > 0
+      ? record.materialId
+      : null;
+  const materialTitle =
+    typeof record.materialTitle === "string" && record.materialTitle.trim()
+      ? record.materialTitle.trim()
+      : "";
+  if (!materialId || !materialTitle) return null;
+  const next: TutorCourseSetupPrimingHandoff = {
+    materialId,
+    materialTitle,
+  };
+  if (
+    typeof record.courseId === "number" &&
+    Number.isInteger(record.courseId) &&
+    record.courseId > 0
+  ) {
+    next.courseId = record.courseId;
+  }
+  if (typeof record.courseName === "string") next.courseName = record.courseName;
+  if (typeof record.setupKind === "string") next.setupKind = record.setupKind;
+  if (typeof record.sourcePath === "string" || record.sourcePath === null) {
+    next.sourcePath = record.sourcePath;
+  }
+  return next;
 }
 
 export function readTutorSelectedMaterialIds(
@@ -450,6 +496,7 @@ export function consumeTutorLaunchHandoff(
 ): {
   fromLibraryHandoff: boolean;
   brainLaunchContext: TutorBrainLaunchContext | null;
+  courseSetupPrimingHandoff: TutorCourseSetupPrimingHandoff | null;
 } {
   const fromLibraryHandoff = storage.getItem(TUTOR_LIBRARY_HANDOFF_KEY) === "1";
   if (fromLibraryHandoff) {
@@ -477,7 +524,24 @@ export function consumeTutorLaunchHandoff(
     }
   }
 
-  return { fromLibraryHandoff, brainLaunchContext };
+  const rawSetupHandoff = storage.getItem(TUTOR_COURSE_SETUP_PRIMING_HANDOFF_KEY);
+  let courseSetupPrimingHandoff: TutorCourseSetupPrimingHandoff | null = null;
+  if (rawSetupHandoff !== null) {
+    try {
+      courseSetupPrimingHandoff = normalizeTutorCourseSetupPrimingHandoff(
+        JSON.parse(rawSetupHandoff),
+      );
+    } catch {
+      courseSetupPrimingHandoff = null;
+    }
+    try {
+      storage.removeItem(TUTOR_COURSE_SETUP_PRIMING_HANDOFF_KEY);
+    } catch {
+      // Ignore storage failures.
+    }
+  }
+
+  return { fromLibraryHandoff, brainLaunchContext, courseSetupPrimingHandoff };
 }
 
 export function peekTutorLaunchHandoff(
@@ -485,6 +549,7 @@ export function peekTutorLaunchHandoff(
 ): {
   fromLibraryHandoff: boolean;
   brainLaunchContext: TutorBrainLaunchContext | null;
+  courseSetupPrimingHandoff: TutorCourseSetupPrimingHandoff | null;
 } {
   const fromLibraryHandoff = storage.getItem(TUTOR_LIBRARY_HANDOFF_KEY) === "1";
   const rawBrainHandoff = storage.getItem(TUTOR_BRAIN_HANDOFF_KEY);
@@ -498,7 +563,33 @@ export function peekTutorLaunchHandoff(
       brainLaunchContext = null;
     }
   }
-  return { fromLibraryHandoff, brainLaunchContext };
+  const rawSetupHandoff = storage.getItem(TUTOR_COURSE_SETUP_PRIMING_HANDOFF_KEY);
+  let courseSetupPrimingHandoff: TutorCourseSetupPrimingHandoff | null = null;
+  if (rawSetupHandoff !== null) {
+    try {
+      courseSetupPrimingHandoff = normalizeTutorCourseSetupPrimingHandoff(
+        JSON.parse(rawSetupHandoff),
+      );
+    } catch {
+      courseSetupPrimingHandoff = null;
+    }
+  }
+  return { fromLibraryHandoff, brainLaunchContext, courseSetupPrimingHandoff };
+}
+
+export function writeTutorCourseSetupPrimingHandoff(
+  value: TutorCourseSetupPrimingHandoff,
+  storage: Pick<Storage, "setItem"> = window.sessionStorage,
+): TutorCourseSetupPrimingHandoff {
+  const normalized = normalizeTutorCourseSetupPrimingHandoff(value);
+  if (!normalized) {
+    throw new Error("A setup material id and title are required.");
+  }
+  storage.setItem(
+    TUTOR_COURSE_SETUP_PRIMING_HANDOFF_KEY,
+    JSON.stringify(normalized),
+  );
+  return normalized;
 }
 
 export function writeLibraryLaunchFromTutor(

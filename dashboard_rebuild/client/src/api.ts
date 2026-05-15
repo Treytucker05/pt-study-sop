@@ -1090,21 +1090,33 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ material_id: materialId, ...(opts || {}) }),
       }),
-    uploadMaterial: async (file: File, opts?: { course_id?: number; title?: string; tags?: string }) => {
+    uploadMaterial: async (
+      file: File,
+      opts?: {
+        course_id?: number;
+        title?: string;
+        tags?: string;
+        library_role?: "study" | "setup" | string;
+        setup_kind?: "syllabus" | "schedule" | "syllabus_schedule" | "course_setup" | string;
+      },
+    ) => {
       const form = new FormData();
       form.append("file", file);
       if (opts?.course_id) form.append("course_id", String(opts.course_id));
       if (opts?.title) form.append("title", opts.title);
       if (opts?.tags) form.append("tags", opts.tags);
+      if (opts?.library_role) form.append("library_role", opts.library_role);
+      if (opts?.setup_kind) form.append("setup_kind", opts.setup_kind);
       const res = await fetch(`${API_BASE}/tutor/materials/upload`, { method: "POST", body: form });
       if (!res.ok) throw new Error(`Upload failed: ${res.statusText}`);
       return res.json() as Promise<MaterialUploadResponse>;
     },
-    getMaterials: (params?: { course_id?: number; file_type?: string; enabled?: boolean }) => {
+    getMaterials: (params?: { course_id?: number; file_type?: string; enabled?: boolean; include_setup?: boolean }) => {
       const qs = new URLSearchParams();
       if (params?.course_id) qs.set("course_id", String(params.course_id));
       if (params?.file_type) qs.set("file_type", params.file_type);
       if (params?.enabled !== undefined) qs.set("enabled", params.enabled ? "1" : "0");
+      if (params?.include_setup) qs.set("include_setup", "1");
       const q = qs.toString();
       return request<Material[]>(`/tutor/materials${q ? `?${q}` : ""}`);
     },

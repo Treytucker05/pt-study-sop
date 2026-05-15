@@ -37,6 +37,7 @@ import {
   writeTutorSelectedMaterialIds,
   writeTutorStoredStartState,
   writeTutorVaultFolder,
+  type TutorCourseSetupPrimingHandoff,
 } from "@/lib/tutorClientState";
 import { resolveResumableTutorHubCandidate } from "@/lib/tutorResumeCandidate";
 import { readTutorShellQuery, writeTutorShellQuery } from "@/lib/tutorUtils";
@@ -84,8 +85,11 @@ function useTutorPageController() {
   const [entrySessionName, setEntrySessionName] = useState("");
   const [entryMaterialSelectionTouched, setEntryMaterialSelectionTouched] =
     useState(() => pendingLaunchHandoff.fromLibraryHandoff);
+  const [courseSetupPrimingHandoff, setCourseSetupPrimingHandoff] =
+    useState<TutorCourseSetupPrimingHandoff | null>(null);
   const [entryCardFlashActive, setEntryCardFlashActive] = useState(false);
   const [entryCardStatusMessage, setEntryCardStatusMessage] = useState<string | null>(null);
+  const setupPrimingStartedRef = useRef<string | null>(null);
 
   // ─── Shell state ───
   const storedActiveSessionId = useMemo(() => readTutorActiveSessionId(), []);
@@ -841,11 +845,25 @@ function useTutorPageController() {
   // ─── Restore shell state on mount ───
   const restoreTutorShellState = useCallback(async () => {
     let restoredCourseId = false;
-    const { fromLibraryHandoff, brainLaunchContext: nextBrainLaunchContext } =
-      consumeTutorLaunchHandoff();
+    const {
+      fromLibraryHandoff,
+      brainLaunchContext: nextBrainLaunchContext,
+      courseSetupPrimingHandoff: nextCourseSetupPrimingHandoff,
+    } = consumeTutorLaunchHandoff();
     const fromBrainHandoff = Boolean(nextBrainLaunchContext);
     if (nextBrainLaunchContext) {
       setBrainLaunchContext(nextBrainLaunchContext);
+    }
+    if (nextCourseSetupPrimingHandoff) {
+      setCourseSetupPrimingHandoff(nextCourseSetupPrimingHandoff);
+      setEntryMaterialSelectionTouched(true);
+      setShowSetup(false);
+      suppressProjectShellRestoreRef.current = true;
+      hub.setSelectedMaterials([nextCourseSetupPrimingHandoff.materialId]);
+      hub.setTopic(`Course setup: ${nextCourseSetupPrimingHandoff.materialTitle}`);
+      if (typeof nextCourseSetupPrimingHandoff.courseId === "number") {
+        hub.setCourseId(nextCourseSetupPrimingHandoff.courseId);
+      }
     }
 
     const resumeCandidateSessionId =
@@ -903,6 +921,46 @@ function useTutorPageController() {
       }
     }
   }, [applyStoredStartState, hub, initialRouteQuery, session]);
+
+  useEffect(() => {
+    if (!courseSetupPrimingHandoff || !hasRestored) return;
+    const courseId = courseSetupPrimingHandoff.courseId ?? hub.courseId;
+    if (typeof courseId !== "number") return;
+    const key = `${courseId}:${courseSetupPrimingHandoff.materialId}`;
+    if (setupPrimingStartedRef.current === key) return;
+    setupPrimingStartedRef.current = key;
+    suppressProjectShellRestoreRef.current = true;
+    setShowSetup(false);
+    hub.setCourseId(courseId);
+    hub.setSelectedMaterials([courseSetupPrimingHandoff.materialId]);
+    hub.setTopic(`Course setup: ${courseSetupPrimingHandoff.materialTitle}`);
+
+    void (async () => {
+      const workflowId = await workflow.createWorkflowAndOpenPriming({
+        courseId,
+        topic: `Course setup: ${courseSetupPrimingHandoff.materialTitle}`,
+        selectedMaterials: [courseSetupPrimingHandoff.materialId],
+        selectedPaths: [],
+        selectedObjectiveGroup: "",
+        selectedObjectiveId: "",
+        objectiveScope: "module_all",
+      });
+      if (workflowId) {
+        setPanelLayout(buildStudioShellPresetLayout("priming"));
+        setStartPrimingViewportFocusRequestKey((current) =>
+          typeof current === "number" ? current + 1 : 1,
+        );
+      }
+      setCourseSetupPrimingHandoff(null);
+    })();
+  }, [
+    courseSetupPrimingHandoff,
+    hasRestored,
+    hub,
+    setPanelLayout,
+    setShowSetup,
+    workflow,
+  ]);
 
   // ─── Effects ───
   useEffect(() => {

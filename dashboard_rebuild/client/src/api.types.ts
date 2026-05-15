@@ -2233,6 +2233,7 @@ export interface TutorSyncPreviewPayload {
 
 export interface TutorSyncStartPayload extends TutorSyncPreviewPayload {
   selected_files?: string[];
+  setup_files?: string[];
   course_id?: number | null;
 }
 
@@ -2263,6 +2264,7 @@ export interface TutorSyncStartResult {
   job_id: string;
   folder?: string;
   selected_count?: number | null;
+  setup_count?: number | null;
   course_id?: number | null;
 }
 
@@ -2444,6 +2446,11 @@ export interface Material {
   title: string | null;
   source_path: string | null;
   folder_path: string | null;
+  corpus?: string | null;
+  doc_type?: string | null;
+  topic_tags?: string | null;
+  material_role?: "study" | "setup" | "reference" | string | null;
+  setup_kind?: "syllabus" | "schedule" | "syllabus_schedule" | "course_setup" | string | null;
   file_type: string | null;
   file_size: number | null;
   course_id: number | null;
@@ -2480,6 +2487,8 @@ export interface MaterialUploadResponse {
   file_size: number;
   char_count: number;
   embedded: boolean;
+  library_role?: string | null;
+  setup_kind?: string | null;
   duplicate_of: { id: number; title: string } | null;
 }
 

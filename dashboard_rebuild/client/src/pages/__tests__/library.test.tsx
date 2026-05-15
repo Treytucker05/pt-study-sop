@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 
@@ -13,16 +13,7 @@ const {
   getEmbedStatusMock,
   updateMaterialMock,
   deleteMaterialMock,
-  previewSyncMaterialsFolderMock,
-  startSyncMaterialsFolderMock,
-  getSyncMaterialsStatusMock,
   reextractMaterialMock,
-  semesterIntakePreviewMock,
-  semesterIntakeApplyMock,
-  readTutorSelectedMaterialIdsMock,
-  writeTutorSelectedMaterialIdsMock,
-  writeTutorStoredStartStateMock,
-  setLocationMock,
 } = vi.hoisted(() => ({
   consumeLibraryLaunchFromTutorMock: vi.fn(),
   getMaterialsMock: vi.fn(),
@@ -33,16 +24,7 @@ const {
   getEmbedStatusMock: vi.fn(),
   updateMaterialMock: vi.fn(),
   deleteMaterialMock: vi.fn(),
-  previewSyncMaterialsFolderMock: vi.fn(),
-  startSyncMaterialsFolderMock: vi.fn(),
-  getSyncMaterialsStatusMock: vi.fn(),
   reextractMaterialMock: vi.fn(),
-  semesterIntakePreviewMock: vi.fn(),
-  semesterIntakeApplyMock: vi.fn(),
-  readTutorSelectedMaterialIdsMock: vi.fn(),
-  writeTutorSelectedMaterialIdsMock: vi.fn(),
-  writeTutorStoredStartStateMock: vi.fn(),
-  setLocationMock: vi.fn(),
 }));
 
 vi.mock("@/components/layout", () => ({
@@ -50,18 +32,23 @@ vi.mock("@/components/layout", () => ({
 }));
 
 vi.mock("@/components/MaterialUploader", () => ({
-  MaterialUploader: () => <div data-testid="material-uploader" />,
+  MaterialUploader: ({
+    courseId,
+    role,
+    setupKind,
+  }: {
+    courseId?: number;
+    role?: string;
+    setupKind?: string;
+  }) => (
+    <div data-testid={`material-uploader-${role || "study"}`}>
+      {role || "study"}:{setupKind || "none"}:{courseId || "none"}
+    </div>
+  ),
 }));
 
 vi.mock("@/lib/tutorClientState", () => ({
   consumeLibraryLaunchFromTutor: consumeLibraryLaunchFromTutorMock,
-  readTutorSelectedMaterialIds: readTutorSelectedMaterialIdsMock,
-  writeTutorSelectedMaterialIds: writeTutorSelectedMaterialIdsMock,
-  writeTutorStoredStartState: writeTutorStoredStartStateMock,
-}));
-
-vi.mock("wouter", () => ({
-  useLocation: () => ["/library", setLocationMock],
 }));
 
 vi.mock("@/lib/api", () => ({
@@ -73,18 +60,11 @@ vi.mock("@/lib/api", () => ({
       embedStatus: getEmbedStatusMock,
       updateMaterial: updateMaterialMock,
       deleteMaterial: deleteMaterialMock,
-      previewSyncMaterialsFolder: previewSyncMaterialsFolderMock,
-      startSyncMaterialsFolder: startSyncMaterialsFolderMock,
-      getSyncMaterialsStatus: getSyncMaterialsStatusMock,
       reextractMaterial: reextractMaterialMock,
     },
     courses: {
       getActive: getActiveCoursesMock,
       getEvery: getEveryCoursesMock,
-    },
-    semesterIntake: {
-      preview: semesterIntakePreviewMock,
-      apply: semesterIntakeApplyMock,
     },
   },
 }));
@@ -102,15 +82,13 @@ function renderLibrary() {
   );
 }
 
-describe("Library tutor handoff", () => {
+describe("Library catalog", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
     sessionStorage.clear();
 
     consumeLibraryLaunchFromTutorMock.mockReturnValue(null);
-    readTutorSelectedMaterialIdsMock.mockReturnValue([]);
-    writeTutorSelectedMaterialIdsMock.mockImplementation(() => {});
 
     getMaterialsMock.mockResolvedValue([
       {
@@ -159,36 +137,9 @@ describe("Library tutor handoff", () => {
       collection: "tutor_materials_gemini_gemini-embedding-2-preview",
       auto_selected_provider: false,
     });
-    semesterIntakePreviewMock.mockResolvedValue({
-      ok: true,
-      folder: "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School",
-      courses: [],
-      global_schedule_files: [],
-      unassigned_material_files: [],
-      ignored_files: [],
-      counts: {
-        courses: 0,
-        syllabus_files: 0,
-        schedule_files: 0,
-        material_files: 0,
-        ignored_files: 0,
-      },
-    });
-    semesterIntakeApplyMock.mockResolvedValue({
-      ok: true,
-      coursesCreated: 0,
-      coursesUpdated: 0,
-      modulesCreated: 0,
-      objectivesCreated: 0,
-      eventsCreated: 0,
-      setupFilesParsed: 0,
-      setupParseErrors: [],
-      materialSyncJobs: [],
-      courses: [],
-    });
   });
 
-  it("renders the course-first Library operations workflow", async () => {
+  it("renders Library as a catalog with upload, not intake or Tutor handoff", async () => {
     getActiveCoursesMock.mockResolvedValue([
       { id: 11, name: "Movement Science II", code: "PHYT 6242" },
     ]);
@@ -206,213 +157,134 @@ describe("Library tutor handoff", () => {
     renderLibrary();
 
     expect(await screen.findByText("COURSE RAIL")).toBeInTheDocument();
+    expect(getMaterialsMock).toHaveBeenCalledWith({ include_setup: true });
     expect(screen.getByText("Movement Science II")).toBeInTheDocument();
     expect(screen.getByText("PHYT 6242")).toBeInTheDocument();
-    expect(screen.getByText("ADD COURSEWORK")).toBeInTheDocument();
-    expect(screen.getByText("COURSE SETUP")).toBeInTheDocument();
-    expect(screen.getByText("STUDY MATERIALS")).toBeInTheDocument();
-    expect(screen.getByText("CURRENT RUN")).toBeInTheDocument();
-    expect(screen.getByText("STUDY READINESS")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /choose files/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /semester intake/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /folder sync/i })).toBeInTheDocument();
-    expect(screen.getByText("UPLOAD MATERIALS")).toBeInTheDocument();
-    expect(screen.getByTestId("material-uploader")).toBeInTheDocument();
-    expect(screen.getByText("YOUR MATERIALS")).toBeInTheDocument();
-    expect(screen.getByText(/build the Current Run/i)).toBeInTheDocument();
-    expect(
-      screen.getAllByRole("option", {
-        name: /Movement Science II \(PHYT 6242\)/i,
-      }).length,
-    ).toBeGreaterThan(0);
+    expect(screen.getByRole("tab", { name: /all files/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /upload/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /all files/i })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(screen.getByPlaceholderText(/search library files/i)).toBeInTheDocument();
+    expect(screen.getByText("LIBRARY FILES")).toBeInTheDocument();
+    expect(screen.getByText("Intro Notes")).toBeInTheDocument();
+
+    expect(screen.queryByText(/selected for tutor/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/study run/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /use visible/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /add visible/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /open tutor/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /semester intake/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /folder sync/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /refresh pt school/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: /upload/i }));
+    expect(screen.getAllByText("UPLOAD FILES").length).toBeGreaterThan(0);
+    expect(screen.getByTestId("material-uploader-study")).toBeInTheDocument();
+    expect(screen.queryByTestId("material-uploader-setup")).not.toBeInTheDocument();
+    expect(screen.queryByText(/course setup upload/i)).not.toBeInTheDocument();
   });
 
-  it("switches Add Coursework modes without losing selected-file safety", async () => {
+  it("uses a compact visual shell with catalog tabs as the primary navigation", async () => {
+    const { container } = renderLibrary();
+
+    expect(await screen.findByText("COURSE RAIL")).toBeInTheDocument();
+    expect(
+      container.querySelector(".library-ops-workspace--calm"),
+    ).toBeInTheDocument();
+
+    const workflowTabs = screen.getByRole("tablist", {
+      name: /library workflow/i,
+    });
+    expect(workflowTabs).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "ALL FILES" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "UPLOAD" }));
+    expect(screen.getByRole("tab", { name: "UPLOAD" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("shows setup files as ordinary catalog rows without study controls", async () => {
+    getMaterialsMock.mockResolvedValue([
+      {
+        id: 11,
+        title: "Dx Mgmt Syllabus and Schedule",
+        source_path: "Uploaded Files/dx-syllabus-schedule.docx",
+        folder_path: "Uploaded Files",
+        file_type: "docx",
+        doc_type: "course_setup",
+        material_role: "setup",
+        setup_kind: "syllabus_schedule",
+        file_size: 70122,
+        course_id: null,
+        enabled: true,
+        extraction_error: null,
+        checksum: "setup-11",
+        created_at: new Date("2026-05-14T12:00:00Z").toISOString(),
+        updated_at: new Date("2026-05-14T12:00:00Z").toISOString(),
+      },
+      {
+        id: 12,
+        title: "Dx Week 1 Wound Lecture",
+        source_path: "Uploaded Files/dx-week-1.pptx",
+        folder_path: "Uploaded Files",
+        file_type: "pptx",
+        doc_type: "upload",
+        material_role: "study",
+        file_size: 99000,
+        course_id: null,
+        enabled: true,
+        extraction_error: null,
+        checksum: "study-12",
+        created_at: new Date("2026-05-14T12:00:00Z").toISOString(),
+        updated_at: new Date("2026-05-14T12:00:00Z").toISOString(),
+      },
+    ]);
+
+    renderLibrary();
+
+    expect(await screen.findByText("Dx Mgmt Syllabus and Schedule")).toBeInTheDocument();
+    expect(screen.getByText("Dx Week 1 Wound Lecture")).toBeInTheDocument();
+    expect(screen.getByText("SETUP")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /open tutor/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/study run/i)).not.toBeInTheDocument();
+  });
+
+  it("uploads files into the Library without setup/intake choices", async () => {
     getActiveCoursesMock.mockResolvedValue([
-      { id: 11, name: "Movement Science II", code: "PHYT 6242" },
+      { id: 9, name: "Dx Mgmt Integumentary", code: "PHYT 6262" },
     ]);
     getContentSourcesMock.mockResolvedValue({
       courses: [
         {
-          id: 11,
-          name: "Movement Science II",
-          code: "PHYT 6242",
-          doc_count: 2,
+          id: 9,
+          name: "Dx Mgmt Integumentary",
+          code: "PHYT 6262",
+          doc_count: 0,
         },
       ],
     });
 
     renderLibrary();
 
-    expect(await screen.findByText("ADD COURSEWORK")).toBeInTheDocument();
-    expect(screen.getByText("UPLOAD MATERIALS")).toBeInTheDocument();
-    expect(screen.getByTestId("material-uploader")).toBeInTheDocument();
-
-    expect(screen.getByRole("button", { name: /semester intake/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /semester intake/i }));
-
-    expect(
-      screen.getByRole("button", { name: /apply setup \+ selected files/i }),
-    ).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: /folder sync/i }));
-
-    expect(screen.getByText("SYNC STUDY FOLDER")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /sync selected files/i })).toBeDisabled();
-    expect(screen.getByText(/0 selected/i)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: /choose files/i }));
-
-    expect(screen.getByText("UPLOAD MATERIALS")).toBeInTheDocument();
-    expect(screen.getByTestId("material-uploader")).toBeInTheDocument();
-  });
-
-  it("shows Movement Science II intake as a reviewable course row", async () => {
-    semesterIntakePreviewMock.mockResolvedValue({
-      ok: true,
-      folder: "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School",
-      courses: [
-        {
-          name: "Movement Science II",
-          code: "PHYT 6242",
-          folder_path: "11_Movement Science II",
-          syllabus_files: [
-            {
-              path: "11_Movement Science II/syllabus.docx",
-              name: "syllabus.docx",
-              roles: ["syllabus"],
-              size: 100,
-              modified_at: "2026-05-13T12:00:00",
-            },
-          ],
-          schedule_files: [
-            {
-              path: "11_Movement Science II/schedule.pdf",
-              name: "schedule.pdf",
-              roles: ["schedule"],
-              size: 120,
-              modified_at: "2026-05-13T12:00:00",
-            },
-          ],
-          material_files: [
-            {
-              path: "11_Movement Science II/Topic 1/objectives.docx",
-              name: "objectives.docx",
-              roles: ["material"],
-              size: 90,
-              modified_at: "2026-05-13T12:00:00",
-            },
-            {
-              path: "11_Movement Science II/Topic 1/intro-movement.pptx",
-              name: "intro-movement.pptx",
-              roles: ["material"],
-              size: 200,
-              modified_at: "2026-05-13T12:00:00",
-            },
-          ],
-          readiness: {
-            course: "missing",
-            syllabus: "found",
-            schedule: "found",
-            materials: "found",
-            embeddings: "pending",
-            readyForTutor: false,
-          },
-        },
-      ],
-      global_schedule_files: [],
-      unassigned_material_files: [],
-      ignored_files: [],
-      counts: {
-        courses: 1,
-        syllabus_files: 1,
-        schedule_files: 1,
-        material_files: 2,
-        ignored_files: 0,
-      },
+    fireEvent.click(await screen.findByRole("tab", { name: /upload/i }));
+    expect((await screen.findAllByText("UPLOAD FILES")).length).toBeGreaterThan(0);
+    expect(screen.queryByText("COURSE SETUP UPLOAD")).not.toBeInTheDocument();
+    expect(screen.queryByText("STUDY MATERIAL UPLOAD")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole("combobox", { name: /upload course/i }), {
+      target: { value: "9" },
     });
-
-    renderLibrary();
-
-    fireEvent.click(await screen.findByRole("button", { name: /semester intake/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /scan intake/i }));
-
-    expect(await screen.findByText("Movement Science II")).toBeInTheDocument();
-    expect(
-      screen.getByText(/1 syllabus \/ 1 schedule \/ 2 material/i),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/0 selected for Library/i)).toBeInTheDocument();
-    expect(
-      screen.getByRole("checkbox", {
-        name: /load objectives\.docx from movement science ii/i,
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("checkbox", {
-        name: /load intro-movement\.pptx from movement science ii/i,
-      }),
-    ).toBeInTheDocument();
+    expect(screen.queryByTestId("material-uploader-setup")).not.toBeInTheDocument();
+    expect(screen.getByTestId("material-uploader-study")).toHaveTextContent("study:none:9");
   });
 
-  it("writes selected tutor materials and clears stale wizard progress on open", async () => {
-    getMaterialsMock.mockResolvedValue([
-      {
-        id: 1,
-        title: "Intro Notes",
-        source_path: "Uploaded Files/intro-notes.pdf",
-        folder_path: "Uploaded Files",
-        file_type: "pdf",
-        file_size: 1024,
-        course_id: 9,
-        enabled: true,
-        extraction_error: null,
-        checksum: "abc123",
-        created_at: new Date("2026-03-05T12:00:00Z").toISOString(),
-        updated_at: new Date("2026-03-05T12:00:00Z").toISOString(),
-      },
-    ]);
-    localStorage.setItem(
-      "tutor.wizard.progress.v1",
-      JSON.stringify({ step: 2, chainMode: "template" }),
-    );
-
-    renderLibrary();
-
-    await screen.findByText("Intro Notes");
-    expect(screen.getByText("COURSE RAIL")).toBeInTheDocument();
-    fireEvent.click(
-      screen.getByRole("checkbox", { name: /select intro notes for tutor/i }),
-    );
-
-    await waitFor(() => {
-      expect(writeTutorSelectedMaterialIdsMock).toHaveBeenCalledWith([1]);
-    });
-
-    writeTutorSelectedMaterialIdsMock.mockClear();
-
-    fireEvent.click(screen.getByRole("button", { name: /open tutor/i }));
-
-    expect(writeTutorSelectedMaterialIdsMock).toHaveBeenCalledWith([1]);
-    expect(writeTutorStoredStartStateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        courseId: 9,
-        selectedMaterials: [1],
-        chainId: undefined,
-        customBlockIds: [],
-        accuracyProfile: "strict",
-        objectiveScope: "module_all",
-        selectedObjectiveId: "",
-        selectedObjectiveGroup: "",
-        selectedPaths: [],
-      }),
-    );
-    expect(localStorage.getItem("tutor.wizard.progress.v1")).toBeNull();
-    expect(localStorage.getItem("tutor-studio-last-tab")).toBe("workspace");
-    expect(sessionStorage.getItem("tutor.open_from_library.v1")).toBe("1");
-    expect(setLocationMock).toHaveBeenCalledWith("/tutor?course_id=9");
-  });
-
-  it("keeps textbook references visible but out of default Current Run bulk actions", async () => {
+  it("searches uploaded materials by title, folder, type, and source path", async () => {
     getMaterialsMock.mockResolvedValue([
       {
         id: 101,
@@ -422,7 +294,7 @@ describe("Library tutor handoff", () => {
         folder_path: "11_Movement Science II/10_Intro",
         file_type: "pdf",
         file_size: 1024,
-        course_id: 9,
+        course_id: null,
         enabled: true,
         extraction_error: null,
         checksum: "study-101",
@@ -431,16 +303,15 @@ describe("Library tutor handoff", () => {
       },
       {
         id: 102,
-        title: "Observational Gait Analysis",
-        source_path:
-          "11_Movement Science II/01_Textbook/Observational Gait Analysis.pdf",
-        folder_path: "11_Movement Science II/01_Textbook",
+        title: "Professional Writing",
+        source_path: "13_Professionalism/Professional Writing.pdf",
+        folder_path: "13_Professionalism",
         file_type: "pdf",
         file_size: 4096,
-        course_id: 9,
+        course_id: null,
         enabled: true,
         extraction_error: null,
-        checksum: "reference-102",
+        checksum: "study-102",
         created_at: new Date("2026-03-05T12:00:00Z").toISOString(),
         updated_at: new Date("2026-03-05T12:00:00Z").toISOString(),
       },
@@ -449,68 +320,24 @@ describe("Library tutor handoff", () => {
     renderLibrary();
 
     expect(await screen.findByText("MSII Topic 1 Objectives")).toBeInTheDocument();
-    expect(screen.getByText("Observational Gait Analysis")).toBeInTheDocument();
-    expect(screen.getByText("COURSE REF")).toBeInTheDocument();
+    expect(screen.getByText("Professional Writing")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /replace run/i }));
-
-    await waitFor(() => {
-      expect(writeTutorSelectedMaterialIdsMock).toHaveBeenCalledWith([101]);
+    fireEvent.change(screen.getByPlaceholderText(/search library files/i), {
+      target: { value: "professionalism" },
     });
-    expect(screen.getByText(/Current Run: 1 file total/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /open tutor \(1\)/i })).toBeEnabled();
+
+    expect(screen.queryByText("MSII Topic 1 Objectives")).not.toBeInTheDocument();
+    expect(screen.getByText("Professional Writing")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText(/search library files/i), {
+      target: { value: "pdf" },
+    });
+
+    expect(screen.getByText("MSII Topic 1 Objectives")).toBeInTheDocument();
+    expect(screen.getByText("Professional Writing")).toBeInTheDocument();
   });
 
-  it("launches Tutor with only the row file when Study this file is used", async () => {
-    getMaterialsMock.mockResolvedValue([
-      {
-        id: 1,
-        title: "Intro Notes",
-        source_path: "Uploaded Files/intro-notes.pdf",
-        folder_path: "Uploaded Files",
-        file_type: "pdf",
-        file_size: 1024,
-        course_id: 9,
-        enabled: true,
-        extraction_error: null,
-        checksum: "abc123",
-        created_at: new Date("2026-03-05T12:00:00Z").toISOString(),
-        updated_at: new Date("2026-03-05T12:00:00Z").toISOString(),
-      },
-      {
-        id: 2,
-        title: "Reference Chapter",
-        source_path: "Uploaded Files/reference-chapter.pdf",
-        folder_path: "Uploaded Files/01_Textbook",
-        file_type: "pdf",
-        file_size: 2048,
-        course_id: 9,
-        enabled: true,
-        extraction_error: null,
-        checksum: "def456",
-        created_at: new Date("2026-03-05T12:00:00Z").toISOString(),
-        updated_at: new Date("2026-03-05T12:00:00Z").toISOString(),
-      },
-    ]);
-
-    renderLibrary();
-
-    await screen.findByText("Intro Notes");
-    fireEvent.click(
-      screen.getByRole("button", { name: /study intro notes in tutor/i }),
-    );
-
-    expect(writeTutorSelectedMaterialIdsMock).toHaveBeenCalledWith([1]);
-    expect(writeTutorStoredStartStateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        courseId: 9,
-        selectedMaterials: [1],
-      }),
-    );
-    expect(setLocationMock).toHaveBeenCalledWith("/tutor?course_id=9");
-  });
-
-  it("consumes Tutor Page 1 handoff and preselects the course intake target", async () => {
+  it("consumes Tutor Page 1 handoff and preselects the upload course target", async () => {
     getActiveCoursesMock.mockResolvedValue([
       { id: 9, name: "Neuro", code: "NEU-9" },
     ]);
@@ -527,205 +354,36 @@ describe("Library tutor handoff", () => {
     renderLibrary();
 
     expect(await screen.findByText("NEU-9")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /choose files/i }));
-    expect(
-      screen.getByRole("combobox", { name: /upload course/i }),
-    ).toHaveValue("9");
-    fireEvent.click(screen.getByRole("button", { name: /folder sync/i }));
-    expect(screen.getByRole("combobox", { name: /sync course/i })).toHaveValue(
+    fireEvent.click(screen.getByRole("tab", { name: /upload/i }));
+    expect(screen.getByRole("combobox", { name: /upload course/i })).toHaveValue(
       "9",
     );
   });
 
-  it("scans a semester folder and applies course setup from Library", async () => {
-    semesterIntakePreviewMock.mockResolvedValue({
-      ok: true,
-      folder: "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School",
-      courses: [
-        {
-          name: "Dx Mgmt Integumentary",
-          code: "PHYT 6262",
-          folder_path: "10_Dx_Mgmt_Integumentary",
-          syllabus_files: [
-            {
-              path: "10_Dx_Mgmt_Integumentary/syllabus.docx",
-              name: "syllabus.docx",
-              roles: ["syllabus"],
-              size: 100,
-              modified_at: "2026-05-11T12:00:00",
-            },
-          ],
-          schedule_files: [],
-          material_files: [
-            {
-              path: "10_Dx_Mgmt_Integumentary/week-1.pdf",
-              name: "week-1.pdf",
-              roles: ["material"],
-              size: 200,
-              modified_at: "2026-05-11T12:00:00",
-            },
-            {
-              path: "10_Dx_Mgmt_Integumentary/week-1-extra.pptx",
-              name: "week-1-extra.pptx",
-              roles: ["material"],
-              size: 250,
-              modified_at: "2026-05-11T12:00:00",
-            },
-          ],
-          readiness: {
-            course: "missing",
-            syllabus: "found",
-            schedule: "missing",
-            materials: "found",
-            embeddings: "pending",
-            readyForTutor: false,
-          },
-        },
-      ],
-      global_schedule_files: [
-        {
-          path: "00_Class_Schedules/semester-schedule.pdf",
-          name: "semester-schedule.pdf",
-          roles: ["schedule"],
-          size: 300,
-          modified_at: "2026-05-11T12:00:00",
-        },
-      ],
-      unassigned_material_files: [],
-      ignored_files: [],
-      counts: {
-        courses: 1,
-        syllabus_files: 1,
-        schedule_files: 1,
-        material_files: 2,
-        ignored_files: 0,
-      },
-    });
-    semesterIntakeApplyMock.mockResolvedValue({
-      ok: true,
-      coursesCreated: 1,
-      coursesUpdated: 0,
-      modulesCreated: 0,
-      objectivesCreated: 0,
-      eventsCreated: 0,
-      setupFilesParsed: 1,
-      setupParseErrors: [],
-      materialSyncJobs: [{ courseId: 1, jobId: "semester-sync-job" }],
-      courses: [{ id: 1, name: "Dx Mgmt Integumentary" }],
-    });
-
-    renderLibrary();
-
-    expect(
-      await screen.findByRole("button", { name: /semester intake/i }),
-    ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /semester intake/i }));
-    fireEvent.click(screen.getByRole("button", { name: /scan intake/i }));
-
-    expect(await screen.findByText("Dx Mgmt Integumentary")).toBeInTheDocument();
-    expect(screen.getByText(/0 selected for Library/i)).toBeInTheDocument();
-    fireEvent.click(
-      screen.getByRole("checkbox", {
-        name: /load week-1\.pdf from dx mgmt integumentary/i,
-      }),
-    );
-    fireEvent.click(
-      screen.getByRole("button", { name: /apply setup \+ selected files/i }),
-    );
-
-    await waitFor(() => {
-      expect(semesterIntakeApplyMock).toHaveBeenCalledWith({
-        folder_path:
-          "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School",
-        courses: [
-          {
-            name: "Dx Mgmt Integumentary",
-            code: "PHYT 6262",
-            folder_path: "10_Dx_Mgmt_Integumentary",
-            syllabus_files: ["10_Dx_Mgmt_Integumentary/syllabus.docx"],
-            schedule_files: [],
-            material_files: ["10_Dx_Mgmt_Integumentary/week-1.pdf"],
-            syllabus: { modules: [] },
-            schedule: { events: [] },
-          },
-        ],
-      });
-    });
-  });
-
-  it("scans a folder without auto-selecting every file for sync", async () => {
-    previewSyncMaterialsFolderMock.mockResolvedValue({
-      ok: true,
-      type: "folder",
-      folder: "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School/Movement Science II",
-      counts: { folders: 1, files: 2 },
-      tree: {
-        type: "folder",
-        name: "Movement Science II",
-        path: "",
-        children: [
-          {
-            type: "folder",
-            name: "Topic 1",
-            path: "Topic 1",
-            children: [
-              {
-                type: "file",
-                name: "objectives.docx",
-                path: "Topic 1/objectives.docx",
-                size: 100,
-                modified_at: "2026-05-13T12:00:00",
-              },
-              {
-                type: "file",
-                name: "intro-movement.pptx",
-                path: "Topic 1/intro-movement.pptx",
-                size: 200,
-                modified_at: "2026-05-13T12:00:00",
-              },
-            ],
-          },
-        ],
-      },
-      allowed_exts: [".docx", ".pptx"],
-      truncated: false,
-    });
-    startSyncMaterialsFolderMock.mockResolvedValue({
-      ok: true,
-      job_id: "sync-selected-only",
-      folder:
-        "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School/Movement Science II",
-      selected_count: 1,
-      course_id: null,
-    });
-
-    renderLibrary();
-
-    fireEvent.click(await screen.findByRole("button", { name: /folder sync/i }));
-    fireEvent.change(screen.getByPlaceholderText(/paste the local pt school folder path/i), {
-      target: {
-        value:
-          "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School/Movement Science II",
-      },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /scan folder tree/i }));
-
-    expect(await screen.findByText(/2 files found/i)).toBeInTheDocument();
-    expect(screen.getByText(/0 selected/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /sync selected files/i })).toBeDisabled();
-
-    fireEvent.click(
-      screen.getByRole("checkbox", { name: /sync objectives\.docx/i }),
-    );
-    fireEvent.click(screen.getByRole("button", { name: /sync selected files/i }));
-
-    await waitFor(() => {
-      expect(startSyncMaterialsFolderMock).toHaveBeenCalledWith({
-        folder_path:
-          "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School/Movement Science II",
-        selected_files: ["Topic 1/objectives.docx"],
+  it("folder rail shows folders from uploaded Library materials only", async () => {
+    getMaterialsMock.mockResolvedValue([
+      {
+        id: 301,
+        title: "Topic 1 objectives",
+        source_path:
+          "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School/Movement Science II/Topic 1/objectives.pdf",
+        folder_path: "Movement Science II/Topic 1",
+        file_type: "pdf",
+        file_size: 200,
         course_id: null,
-      });
-    });
+        enabled: true,
+        extraction_error: null,
+        checksum: "existing-301",
+        created_at: new Date("2026-05-14T12:00:00Z").toISOString(),
+        updated_at: new Date("2026-05-14T12:00:00Z").toISOString(),
+      },
+    ]);
+
+    renderLibrary();
+
+    fireEvent.click(await screen.findByRole("button", { name: /folders/i }));
+    expect(await screen.findByText("Movement Science II")).toBeInTheDocument();
+    expect(screen.getByText("Topic 1")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /refresh pt school/i })).not.toBeInTheDocument();
   });
 });

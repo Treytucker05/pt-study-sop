@@ -28,6 +28,81 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 - Ops note (2026-03-25): `dev-browser` is now a shared agent skill projected into every supported agent root; this does not change Tutor sprint priority.
 
+- [x] LIBRARY-CATALOG-ONLY-2026-05-15. Simplify `/library` so it is a searchable uploaded-file catalog plus upload surface, not Tutor/intake workflow control.
+  - Scope:
+    - Keep course/folder browsing, uploaded-file rows, file search, file viewing, metadata edit/delete, and simple upload.
+    - Remove Library-owned Semester Intake, Folder Sync, Tutor selection/handoff, Course Setup processing, Send to Priming, Obsidian strip, and source-folder refresh/import paths from Library.
+    - Keep Tutor responsible for Priming, study launch, syllabus/schedule processing, Workspace, and Obsidian/Final Sync.
+  - Assignee: @codex-cli
+  - Completed: 2026-05-15
+  - Validation:
+    - `/library` primary tabs are now `All Files` and `Upload`.
+    - Library rows are catalog-only: no select-for-Tutor checkbox and no row Study action.
+    - Setup files render as ordinary catalog rows with a `SETUP` badge, without Send to Priming or Obsidian controls.
+    - Folder rail now reflects uploaded Library materials only; live PT School folder refresh/import is no longer part of Library.
+    - Checks passed: `npm run test -- client/src/pages/__tests__/library.test.tsx`, `npm run check`, and `npm run build`.
+    - Built-in browser verification passed at `http://127.0.0.1:5127/library`; `All Files` showed search/catalog rows, `Upload` showed one upload surface, and removed intake/Tutor/Obsidian controls stayed absent.
+  - Done when:
+    - Catalog-only Library passes focused tests, typecheck, build, and built-in browser verification.
+
+- [x] LIBRARY-PRIMARY-TAB-SIMPLIFY-2026-05-14. Simplify `/library` primary navigation to match the intended material-viewing workflow.
+  - Scope:
+    - Keep `Study Materials` as the main Library surface.
+    - Keep `Add Files` available for upload/intake/sync.
+    - Remove Course Setup, Tutor Handoff, and Advanced from the primary tab row.
+    - Preserve setup upload, setup-to-Priming, row Study action, and safe cleanup behavior without making those their own top-level tabs.
+  - Assignee: @codex-cli
+  - Completed: 2026-05-14
+  - Validation:
+    - `/library` now has only `Study Materials` and `Add Files` as primary tabs.
+    - Course Setup, Tutor Handoff, and Advanced are no longer primary workflow tabs.
+    - Setup files remain reachable as a collapsible syllabus/schedule section inside Study Materials, and setup upload remains available inside Add Files.
+    - Tutor selection actions remain available inside Study Materials without a separate Tutor Handoff tab, using `Selected for Tutor`, `Use Visible`, and `Add Visible` wording.
+    - Checks passed: `npm run test -- client/src/pages/__tests__/library.test.tsx`, `npm run check`, and `npm run build`.
+    - Built-in browser verification passed at `http://127.0.0.1:5127/library`; Study Materials and Add Files tabs rendered/clicked, removed tabs stayed absent, and console logs showed no errors/warnings.
+  - Done when:
+    - `/library` shows only the needed primary tabs.
+    - Focused Library tests, `npm run check`, `npm run build`, and browser verification pass.
+
+- [x] LIBRARY-VISUAL-DESIGN-FIX-2026-05-14. Make `/library` visually calmer, more readable, and easier to navigate after the tab workflow split.
+  - Scope:
+    - Reduce hero/header height and red visual weight on `/library`.
+    - Increase readable UI type and spacing in the Library workspace.
+    - Make the tabbed workflow feel like the primary navigation, not another nested HUD layer.
+    - Preserve current Library behavior, setup/material separation, folder refresh, and Tutor handoff.
+  - Assignee: @codex-cli
+  - Completed: 2026-05-14
+  - Validation:
+    - Compact Library hero/status strip reduces the page's vertical weight.
+    - Workflow controls are semantic tabs with selected state and calmer graphite/crimson styling.
+    - Library-specific panels, tabs, buttons, and helper text use a quieter graphite surface palette with larger readable type.
+    - Checks passed: `npm run test -- client/src/pages/__tests__/library.test.tsx`, `npm run check`, and `npm run build`.
+    - Built-in browser verification passed at `http://127.0.0.1:5127/library`; all workflow tabs clicked successfully and console logs showed no errors/warnings.
+  - Done when:
+    - `/library` first viewport clearly shows the course rail, workflow tabs, and current tab content without feeling cramped.
+    - Source, Course Setup, Study Materials, Tutor Handoff, and Advanced tabs remain accessible and understandable.
+    - Focused Library tests, `npm run check`, `npm run build`, and built-in browser visual verification pass.
+
+- [x] LIBRARY-SETUP-PRIMING-BOUNDARY-2026-05-14. Split Library course setup files from study materials and send syllabus/schedule setup into Tutor Priming.
+  - Scope:
+    - Keep Library as a course/file staging surface instead of an Obsidian/Tutor/Brain replacement.
+    - Save syllabus/schedule files raw as Course Setup sources, separate from normal Study Materials.
+    - Show only Obsidian status and destination context in Library.
+    - Add a Library -> Tutor Priming handoff for setup files.
+    - Keep Study Material uploads embedded for Tutor retrieval.
+  - Assignee: @codex-cli
+  - Completed: 2026-05-14
+  - Validation:
+    - `/library` explicitly requests setup rows while ordinary Tutor material lists continue to return study materials only.
+    - Course Setup uploads persist as `course_setup` and skip study embedding; Study Material uploads still embed for Tutor retrieval.
+    - Live browser check confirmed `Send to Priming` opens Tutor in the Priming stage with Dx Mgmt Integumentary setup context.
+    - Passed: `npm run check`, `npm run build`, focused Library/MaterialUploader/API tests, material pipeline tests, and semester intake tests.
+  - Done when:
+    - Course Setup files render separately from Study Materials in `/library`.
+    - Setup uploads are not embedded as normal study material by default.
+    - `Send to Priming` opens Tutor Studio/Priming with the setup file as context.
+    - Focused frontend/backend tests, `npm run check`, and `npm run build` pass.
+
 - [x] LIBRARY-CURRENT-RUN-HANDOFF-2026-05-14. Keep Library one-file launches authoritative and make Library/Tutor wording Current Run-first.
   - Scope:
     - Preserve explicit Library-selected material IDs when Tutor opens from a Library handoff.

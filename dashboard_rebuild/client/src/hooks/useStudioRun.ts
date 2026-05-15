@@ -33,6 +33,7 @@ export interface UseStudioRunParams {
   pendingLaunchHandoff: {
     fromLibraryHandoff: boolean;
     brainLaunchContext: TutorBrainLaunchContext | null;
+    courseSetupPrimingHandoff?: unknown;
   };
   persistStartState?: boolean;
   persistShellQuery?: boolean;

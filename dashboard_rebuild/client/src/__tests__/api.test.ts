@@ -745,10 +745,11 @@ describe("api.tutor", () => {
 
   it("getMaterials builds query string", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse([]));
-    await api.tutor.getMaterials({ course_id: 2, enabled: true });
+    await api.tutor.getMaterials({ course_id: 2, enabled: true, include_setup: true });
     const url = mockFetch.mock.calls[0][0] as string;
     expect(url).toContain("course_id=2");
     expect(url).toContain("enabled=1");
+    expect(url).toContain("include_setup=1");
   });
 
   it("uploadMaterial sends FormData via fetch", async () => {

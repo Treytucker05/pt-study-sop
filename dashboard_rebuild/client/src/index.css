@@ -860,132 +860,178 @@
   .library-page-hero {
     height: auto;
     min-height: 0;
-    padding-block: 0.95rem 0.85rem;
+    padding-block: 0.42rem 0.4rem;
   }
 
   .library-page-hero.page-shell__hero {
-    border-color: rgba(255, 74, 104, 0.18);
+    border-color: rgba(120, 142, 156, 0.18);
     background:
-      linear-gradient(180deg, rgba(6, 2, 4, 0.97), rgba(1, 1, 2, 0.98) 62%, rgba(0, 0, 0, 0.99)),
-      linear-gradient(90deg, rgba(255, 74, 104, 0.04), transparent 42%, rgba(255, 74, 104, 0.025));
+      linear-gradient(180deg, rgba(7, 9, 12, 0.98), rgba(3, 4, 6, 0.99) 62%, rgba(0, 0, 0, 0.99)),
+      linear-gradient(90deg, rgba(53, 92, 110, 0.08), transparent 44%, rgba(255, 74, 104, 0.025));
     box-shadow:
-      0 12px 32px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 rgba(255, 170, 188, 0.035);
+      0 10px 26px rgba(0, 0, 0, 0.44),
+      inset 0 1px 0 rgba(210, 232, 242, 0.04);
   }
 
   .library-page-hero.page-shell__hero::before {
-    height: 2.6rem;
-    background: linear-gradient(180deg, rgba(255, 48, 78, 0.055), transparent);
+    height: 1.4rem;
+    background: linear-gradient(180deg, rgba(62, 118, 138, 0.055), transparent);
   }
 
   .library-page-hero.page-shell__hero::after {
-    background: linear-gradient(90deg, rgba(255, 52, 82, 0.34), rgba(255, 52, 82, 0.09) 44%, transparent 76%);
+    background: linear-gradient(90deg, rgba(255, 72, 104, 0.26), rgba(48, 135, 150, 0.12) 48%, transparent 78%);
   }
 
   .library-page-hero .page-shell__header {
-    gap: 0.75rem;
+    gap: 0.55rem;
+  }
+
+  .library-page-hero .page-shell__eyebrow {
+    font-size: 0.64rem;
+    letter-spacing: 0.2em;
+    color: rgba(255, 126, 150, 0.78);
+  }
+
+  .library-page-hero .page-shell__title {
+    font-size: clamp(1.25rem, 1.9vw, 1.95rem);
+    line-height: 1;
+    letter-spacing: 0.05em;
+  }
+
+  .library-page-hero .page-shell__dipline {
+    opacity: 0.78;
+    transform: scaleY(0.7);
+    transform-origin: center;
   }
 
   .library-page-hero .page-shell__subtitle {
-    margin-top: 0.45rem;
-    max-width: min(56ch, 100%);
-    font-size: clamp(0.92rem, 1.3vw, 1.05rem);
-    line-height: 1.45;
+    display: none;
   }
 
   .library-page-hero .page-shell__meta {
-    flex-basis: 38rem;
-    width: min(100%, 38rem);
-    gap: 0.5rem;
+    flex-basis: 37rem;
+    width: min(100%, 37rem);
+    gap: 0.45rem;
   }
 
   .library-page-hero .page-shell__stat {
-    min-height: 3.6rem;
-    padding: 0.55rem 0.7rem;
-    border-color: rgba(255, 84, 116, 0.14);
-    border-top-color: rgba(255, 84, 116, 0.26);
+    min-height: 2.55rem;
+    padding: 0.38rem 0.58rem;
+    border-color: rgba(126, 150, 164, 0.14);
+    border-top-color: rgba(255, 84, 116, 0.18);
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(0, 0, 0, 0.12) 24%, rgba(0, 0, 0, 0.42) 100%),
-      rgba(3, 2, 3, 0.72);
+      linear-gradient(180deg, rgba(255, 255, 255, 0.024), rgba(0, 0, 0, 0.08) 24%, rgba(0, 0, 0, 0.36) 100%),
+      rgba(5, 8, 10, 0.76);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.035),
-      0 8px 18px rgba(0, 0, 0, 0.22);
+      inset 0 1px 0 rgba(255, 255, 255, 0.03),
+      0 6px 16px rgba(0, 0, 0, 0.2);
   }
 
   .library-page-hero .page-shell__stat-label {
-    font-size: 0.68rem;
-    letter-spacing: 0.12em;
+    font-size: 0.64rem;
+    letter-spacing: 0.1em;
+    color: rgba(197, 214, 222, 0.62);
   }
 
   .library-page-hero .page-shell__stat-value {
     overflow-wrap: anywhere;
-    font-size: clamp(0.88rem, 1.45vw, 1rem);
+    font-size: clamp(0.82rem, 1.05vw, 0.94rem);
     line-height: 1.22;
   }
 
   .library-ops-workspace.app-workspace-shell {
-    border-color: rgba(255, 74, 104, 0.14);
+    border-color: rgba(125, 147, 160, 0.16);
     background:
-      linear-gradient(180deg, rgba(5, 3, 4, 0.99), rgba(2, 2, 3, 0.99) 42%, rgba(0, 0, 0, 0.99) 100%),
-      linear-gradient(135deg, rgba(255, 46, 80, 0.018), rgba(0, 0, 0, 0.22) 44%, rgba(0, 0, 0, 0.58) 100%);
+      linear-gradient(180deg, rgba(7, 9, 11, 0.99), rgba(3, 5, 7, 0.99) 44%, rgba(0, 0, 0, 0.99) 100%),
+      linear-gradient(135deg, rgba(50, 115, 132, 0.035), rgba(0, 0, 0, 0.18) 44%, rgba(0, 0, 0, 0.52) 100%);
     box-shadow:
-      0 18px 44px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 rgba(255, 128, 152, 0.04);
-    font-size: 1rem;
+      0 14px 36px rgba(0, 0, 0, 0.44),
+      inset 0 1px 0 rgba(216, 238, 246, 0.035);
+    font-size: 1.04rem;
   }
 
   .library-ops-workspace.app-workspace-shell::before {
-    opacity: 0.2;
+    opacity: 0.11;
     background:
-      linear-gradient(180deg, rgba(255, 46, 82, 0.03), transparent 22%),
+      linear-gradient(180deg, rgba(64, 132, 148, 0.035), transparent 22%),
       linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.014), transparent);
   }
 
   .library-rail-panel,
   .library-main-panel {
-    border-color: rgba(255, 84, 116, 0.11) !important;
+    border-color: rgba(130, 153, 166, 0.14) !important;
     background:
-      linear-gradient(180deg, rgba(7, 5, 6, 0.9), rgba(2, 2, 3, 0.96)) !important;
+      linear-gradient(180deg, rgba(10, 13, 16, 0.92), rgba(3, 5, 7, 0.97)) !important;
     box-shadow:
-      inset 0 1px 0 rgba(255, 180, 196, 0.025),
-      0 12px 28px rgba(0, 0, 0, 0.42) !important;
+      inset 0 1px 0 rgba(220, 240, 248, 0.035),
+      0 10px 24px rgba(0, 0, 0, 0.38) !important;
     backdrop-filter: blur(10px);
   }
 
   .library-panel-surface {
-    border-radius: 0.9rem;
-    border: 1px solid rgba(255, 84, 116, 0.11);
+    border-radius: 0.75rem;
+    border: 1px solid rgba(132, 154, 166, 0.14);
     background:
-      linear-gradient(180deg, rgba(12, 9, 10, 0.74), rgba(4, 4, 5, 0.9) 40%, rgba(0, 0, 0, 0.92) 100%);
+      linear-gradient(180deg, rgba(15, 18, 21, 0.82), rgba(6, 8, 10, 0.92) 46%, rgba(1, 2, 3, 0.94) 100%);
     box-shadow:
-      inset 0 1px 0 rgba(255, 190, 202, 0.025),
-      0 12px 24px rgba(0, 0, 0, 0.34);
+      inset 0 1px 0 rgba(225, 242, 248, 0.03),
+      0 8px 20px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(10px);
   }
 
   .library-panel-inset,
   .library-step-card {
-    border: 1px solid rgba(255, 84, 116, 0.09);
-    background: rgba(0, 0, 0, 0.58);
+    border: 1px solid rgba(132, 154, 166, 0.11);
+    background: rgba(4, 7, 9, 0.68);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
   }
 
   .library-segmented-control {
-    border-radius: 0.85rem;
-    border: 1px solid rgba(255, 84, 116, 0.1);
-    background: rgba(0, 0, 0, 0.64);
+    border-radius: 0.65rem;
+    border: 1px solid rgba(132, 154, 166, 0.12);
+    background: rgba(3, 6, 8, 0.72);
+  }
+
+  .library-workflow-tabs {
+    gap: 0.45rem;
+    padding: 0.42rem;
+  }
+
+  .library-workflow-tabs [role="tab"] {
+    min-height: 2.65rem !important;
+    border-radius: 0.55rem !important;
+    border-color: rgba(126, 150, 164, 0.16) !important;
+    background: rgba(7, 10, 12, 0.74) !important;
+    color: rgba(219, 230, 235, 0.72) !important;
+    font-family: var(--font-mono) !important;
+    font-size: 0.96rem !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase;
+    box-shadow: none !important;
+  }
+
+  .library-workflow-tabs [role="tab"][aria-selected="true"] {
+    border-color: rgba(255, 104, 132, 0.42) !important;
+    background:
+      linear-gradient(180deg, rgba(255, 78, 110, 0.17), rgba(18, 12, 15, 0.9)) !important;
+    color: #ffe5ec !important;
+  }
+
+  .library-workflow-tabs [role="tab"]:hover {
+    border-color: rgba(255, 126, 152, 0.32) !important;
+    color: #fff4f7 !important;
   }
 
   .library-action-button {
-    border-color: rgba(255, 84, 116, 0.2) !important;
+    border-color: rgba(255, 104, 132, 0.24) !important;
     background:
-      linear-gradient(180deg, rgba(255, 74, 104, 0.055), rgba(6, 4, 5, 0.94) 52%, rgba(0, 0, 0, 0.96)) !important;
+      linear-gradient(180deg, rgba(255, 74, 104, 0.065), rgba(8, 9, 11, 0.94) 52%, rgba(0, 0, 0, 0.96)) !important;
     box-shadow:
       inset 0 1px 0 rgba(255, 210, 220, 0.035),
       0 8px 18px rgba(0, 0, 0, 0.3) !important;
-    color: #ffd8e2;
-    font-size: 0.84rem !important;
-    letter-spacing: 0.11em !important;
+    color: #ffe0e7;
+    font-size: 0.9rem !important;
+    letter-spacing: 0.09em !important;
   }
 
   .library-action-button:hover {
@@ -1022,38 +1068,38 @@
 
   .library-section-label {
     font-family: var(--font-mono);
-    font-size: 0.9rem;
+    font-size: 0.92rem;
     line-height: 1.35;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: rgba(255, 226, 232, 0.68);
+    color: rgba(220, 232, 238, 0.68);
   }
 
   .library-panel-title {
     font-family: var(--font-arcade);
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     line-height: 1.2;
-    letter-spacing: 0.13em;
+    letter-spacing: 0.11em;
     text-transform: uppercase;
-    color: rgba(255, 82, 112, 0.86);
+    color: rgba(255, 92, 122, 0.88);
   }
 
   .library-help-text {
     font-family: var(--font-mono);
-    font-size: 1rem;
-    line-height: 1.6;
-    color: hsl(var(--muted-foreground) / 0.94);
+    font-size: 1.04rem;
+    line-height: 1.55;
+    color: hsl(var(--foreground) / 0.66);
   }
 
   .library-field {
-    border-color: rgba(255, 84, 116, 0.15) !important;
-    background: rgba(0, 0, 0, 0.7) !important;
-    font-size: 1rem !important;
+    border-color: rgba(135, 158, 170, 0.18) !important;
+    background: rgba(3, 6, 8, 0.78) !important;
+    font-size: 1.04rem !important;
   }
 
   .library-course-nav-row {
-    font-size: 1.02rem;
-    line-height: 1.4;
+    font-size: 1.05rem;
+    line-height: 1.45;
   }
 
   .library-ops-workspace .text-ui-3xs {

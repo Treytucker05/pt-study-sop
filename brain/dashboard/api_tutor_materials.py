@@ -705,17 +705,30 @@ def _normalize_selected_sync_files(
 
 def _parse_sync_folder_payload(
     data: dict[str, Any]
-) -> tuple[Path, Optional[set[str]], Optional[set[str]], Optional[int]]:
+) -> tuple[Path, Optional[set[str]], Optional[set[str]], Optional[set[str]], Optional[int]]:
     root, allowed_exts = _parse_sync_folder_root_and_exts(data)
     selected_files = _normalize_selected_sync_files(
         data.get("selected_files"),
         root=root,
         allowed_exts=allowed_exts,
     )
-    if data.get("selected_files") is not None and not selected_files:
+    setup_files = _normalize_selected_sync_files(
+        data.get("setup_files"),
+        root=root,
+        allowed_exts=allowed_exts,
+    )
+    if setup_files is not None and selected_files is None:
+        selected_files = set()
+    if selected_files is not None and setup_files:
+        selected_files = selected_files - setup_files
+    if (
+        (data.get("selected_files") is not None or data.get("setup_files") is not None)
+        and not selected_files
+        and not setup_files
+    ):
         raise ValueError("selected_files is empty. Choose at least one file.")
     course_id = _parse_sync_course_id(data.get("course_id"))
-    return root, allowed_exts, selected_files, course_id
+    return root, allowed_exts, selected_files, setup_files, course_id
 
 
 def _build_sync_folder_preview(
@@ -1245,7 +1258,7 @@ def _auto_link_materials_to_courses(conn: sqlite3.Connection) -> dict:
     cur.execute(
         """SELECT id, folder_path FROM rag_docs
            WHERE course_id IS NULL
-             AND COALESCE(corpus, 'materials') = 'materials'
+             AND COALESCE(corpus, 'materials') IN ('materials', 'course_setup')
              AND folder_path IS NOT NULL AND TRIM(folder_path) != ''"""
     )
     unlinked = cur.fetchall()
@@ -1303,15 +1316,22 @@ def _launch_materials_sync_job(
     allowed_exts: Optional[set[str]],
     *,
     selected_files: Optional[set[str]] = None,
+    setup_files: Optional[set[str]] = None,
     course_id: Optional[int] = None,
 ) -> str:
     job_id = uuid.uuid4().hex
+    selected_total = (
+        None
+        if selected_files is None and setup_files is None
+        else len(selected_files or set()) + len(setup_files or set())
+    )
     _update_sync_job(
         job_id,
         status="pending",
         phase="pending",
         folder=str(root),
-        selected_count=len(selected_files) if selected_files is not None else None,
+        selected_count=selected_total,
+        setup_count=len(setup_files or set()),
         course_id=course_id,
         processed=0,
         total=0,
@@ -1343,15 +1363,50 @@ def _launch_materials_sync_job(
                     errors=int(payload.get("errors") or 0),
                 )
 
-            sync_result = sync_folder_to_rag(
-                str(root),
-                corpus="materials",
-                allowed_exts=allowed_exts,
-                include_paths=selected_files,
-                course_id=course_id,
-                progress_callback=_progress,
+            if selected_files == set():
+                sync_result = {
+                    "ok": True,
+                    "root": str(root),
+                    "total": 0,
+                    "processed": 0,
+                    "failed": 0,
+                    "deleted": 0,
+                    "deleted_paths": [],
+                    "errors": [],
+                    "doc_ids": [],
+                }
+            else:
+                sync_result = sync_folder_to_rag(
+                    str(root),
+                    corpus="materials",
+                    allowed_exts=allowed_exts,
+                    include_paths=selected_files,
+                    course_id=course_id,
+                    progress_callback=_progress,
+                )
+            setup_result = {
+                "ok": True,
+                "root": str(root),
+                "total": 0,
+                "processed": 0,
+                "failed": 0,
+                "deleted": 0,
+                "deleted_paths": [],
+                "errors": [],
+                "doc_ids": [],
+            }
+            if setup_files:
+                setup_result = sync_folder_to_rag(
+                    str(root),
+                    corpus="course_setup",
+                    allowed_exts=allowed_exts,
+                    include_paths=setup_files,
+                    course_id=course_id,
+                    progress_callback=_progress,
+                )
+            sync_errors = (sync_result.get("errors") or []) + (
+                setup_result.get("errors") or []
             )
-            sync_errors = sync_result.get("errors") or []
             synced_doc_ids: list[int] = []
             for raw_doc_id in sync_result.get("doc_ids") or []:
                 try:
@@ -1360,14 +1415,43 @@ def _launch_materials_sync_job(
                     continue
                 if doc_id > 0:
                     synced_doc_ids.append(doc_id)
+            setup_doc_ids: list[int] = []
+            for raw_doc_id in setup_result.get("doc_ids") or []:
+                try:
+                    doc_id = int(raw_doc_id)
+                except (TypeError, ValueError):
+                    continue
+                if doc_id > 0:
+                    setup_doc_ids.append(doc_id)
+            combined_sync_result = {
+                "ok": bool(sync_result.get("ok", True))
+                and bool(setup_result.get("ok", True)),
+                "root": str(root),
+                "total": int(sync_result.get("total") or 0)
+                + int(setup_result.get("total") or 0),
+                "processed": int(sync_result.get("processed") or 0)
+                + int(setup_result.get("processed") or 0),
+                "failed": int(sync_result.get("failed") or 0)
+                + int(setup_result.get("failed") or 0),
+                "deleted": int(sync_result.get("deleted") or 0)
+                + int(setup_result.get("deleted") or 0),
+                "deleted_paths": list(sync_result.get("deleted_paths") or [])
+                + list(setup_result.get("deleted_paths") or []),
+                "errors": sync_errors,
+                "doc_ids": synced_doc_ids + setup_doc_ids,
+                "material_doc_ids": synced_doc_ids,
+                "setup_doc_ids": setup_doc_ids,
+                "material_result": sync_result,
+                "setup_result": setup_result,
+            }
             _update_sync_job(
                 job_id,
                 phase="embedding",
-                sync_result=sync_result,
-                processed=int(sync_result.get("processed") or 0),
-                total=int(sync_result.get("total") or 0),
-                index=int(sync_result.get("total") or 0),
-                errors=int(sync_result.get("failed") or len(sync_errors)),
+                sync_result=combined_sync_result,
+                processed=int(combined_sync_result.get("processed") or 0),
+                total=int(combined_sync_result.get("total") or 0),
+                index=int(combined_sync_result.get("total") or 0),
+                errors=int(combined_sync_result.get("failed") or len(sync_errors)),
                 current_file=None,
             )
 
@@ -1735,6 +1819,26 @@ def upload_material():
     title = request.form.get("title", Path(file.filename).stem)
     course_id = request.form.get("course_id", type=int)
     tags = request.form.get("tags", "")
+    library_role = str(request.form.get("library_role") or "study").strip().lower()
+    if library_role not in {"study", "setup"}:
+        return jsonify({"error": "library_role must be study or setup"}), 400
+    setup_kind = str(request.form.get("setup_kind") or "").strip().lower()
+    if library_role == "setup" and setup_kind not in {
+        "syllabus",
+        "schedule",
+        "syllabus_schedule",
+        "course_setup",
+        "",
+    }:
+        return jsonify({"error": "unsupported setup_kind"}), 400
+    if library_role == "setup" and not setup_kind:
+        setup_kind = "course_setup"
+    corpus = "course_setup" if library_role == "setup" else "materials"
+    doc_type = "course_setup" if library_role == "setup" else "upload"
+    metadata = {
+        "library_role": library_role,
+        "setup_kind": setup_kind or None,
+    }
 
     # Save to disk
     os.makedirs(UPLOADS_DIR, exist_ok=True)
@@ -1776,8 +1880,8 @@ def upload_material():
     duplicate_of = None
     if checksum:
         cur.execute(
-            "SELECT id, title FROM rag_docs WHERE checksum = ? AND COALESCE(corpus, 'materials') = 'materials'",
-            (checksum,),
+            "SELECT id, title FROM rag_docs WHERE checksum = ? AND COALESCE(corpus, 'materials') = ?",
+            (checksum, corpus),
         )
         existing = cur.fetchone()
         if existing:
@@ -1790,19 +1894,22 @@ def upload_material():
         """INSERT INTO rag_docs
            (source_path, content, checksum, corpus, title, file_path, file_size,
             file_type, doc_type, topic_tags, course_id, enabled,
-            extraction_error, created_at, updated_at)
-           VALUES (?, ?, ?, 'materials', ?, ?, ?, ?, 'upload', ?, ?, 1, ?, ?, ?)""",
+            extraction_error, metadata_json, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)""",
         (
             str(disk_path),
             content,
             checksum,
+            corpus,
             title,
             str(disk_path),
             file_size,
             file_type,
+            doc_type,
             tags,
             course_id,
             extraction_error,
+            json.dumps(metadata, sort_keys=True),
             now,
             now,
         ),
@@ -1813,11 +1920,11 @@ def upload_material():
     # Attempt embedding (non-blocking -- don't fail the upload if embedding fails)
     # Skip for mp4 upload rows because they have no text until video processing runs.
     embedded = False
-    if ext != ".mp4" and content and not extraction_error:
+    if library_role != "setup" and ext != ".mp4" and content and not extraction_error:
         try:
             from tutor_rag import embed_rag_docs
 
-            result = embed_rag_docs(corpus="materials")
+            result = embed_rag_docs(corpus="materials", rag_doc_ids=[material_id])
             embedded = result.get("embedded", 0) > 0
         except Exception:
             pass
@@ -1835,6 +1942,8 @@ def upload_material():
             "embedded": embedded,
             "char_count": len(content) if content else 0,
             "duplicate_of": duplicate_of,
+            "library_role": library_role,
+            "setup_kind": setup_kind or None,
         }
     ), 201
 
@@ -1854,7 +1963,16 @@ def list_materials():
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
-    conditions = ["COALESCE(corpus, 'materials') = 'materials'"]
+    include_setup = str(request.args.get("include_setup") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    conditions = [
+        "COALESCE(corpus, 'materials') IN ('materials', 'course_setup')"
+        if include_setup
+        else "COALESCE(corpus, 'materials') = 'materials'"
+    ]
     params: list = []
 
     if course_id is not None:
@@ -1896,6 +2014,9 @@ def list_materials():
                      END
                    ) as file_type,
                    COALESCE(file_size, 0) as file_size, course_id, topic_tags,
+                   COALESCE(corpus, 'materials') as corpus,
+                   COALESCE(doc_type, '') as doc_type,
+                   COALESCE(metadata_json, '') as metadata_json,
                    COALESCE(enabled, 1) as enabled, extraction_error,
                    COALESCE(checksum, '') as checksum,
                    created_at, updated_at
@@ -1927,6 +2048,21 @@ def list_materials():
                 asset_count = 0
         material["has_docling_assets"] = asset_count > 0
         material["docling_asset_count"] = int(asset_count)
+        metadata: dict[str, Any] = {}
+        try:
+            raw_metadata = material.get("metadata_json")
+            if raw_metadata:
+                parsed_metadata = json.loads(str(raw_metadata))
+                if isinstance(parsed_metadata, dict):
+                    metadata = parsed_metadata
+        except Exception:
+            metadata = {}
+        material["material_role"] = (
+            metadata.get("library_role")
+            or ("setup" if material.get("corpus") == "course_setup" else "study")
+        )
+        material["setup_kind"] = metadata.get("setup_kind")
+        material.pop("metadata_json", None)
 
         try:
             if int(material.get("file_size") or 0) <= 0:
@@ -1975,7 +2111,7 @@ def get_material(material_id: int):
                    COALESCE(checksum, '') as checksum,
                    created_at, updated_at
             FROM rag_docs
-            WHERE id = ? AND COALESCE(corpus, 'materials') = 'materials'""",
+            WHERE id = ? AND COALESCE(corpus, 'materials') IN ('materials', 'course_setup')""",
         (material_id,),
     )
     row = cur.fetchone()
@@ -2003,7 +2139,7 @@ def update_material(material_id: int):
     cur = conn.cursor()
 
     cur.execute(
-        "SELECT id FROM rag_docs WHERE id = ? AND COALESCE(corpus, 'materials') = 'materials'",
+        "SELECT id FROM rag_docs WHERE id = ? AND COALESCE(corpus, 'materials') IN ('materials', 'course_setup')",
         (material_id,),
     )
     if not cur.fetchone():
@@ -2051,9 +2187,10 @@ def reextract_material(material_id: int):
         SELECT id, source_path, file_path, doc_type, file_type, course_id, topic_tags,
                COALESCE(corpus, 'materials') AS corpus,
                COALESCE(folder_path, '') AS folder_path,
-               COALESCE(enabled, 1) AS enabled
+               COALESCE(enabled, 1) AS enabled,
+               COALESCE(metadata_json, '') AS metadata_json
         FROM rag_docs
-        WHERE id = ? AND COALESCE(corpus, 'materials') = 'materials'
+        WHERE id = ? AND COALESCE(corpus, 'materials') IN ('materials', 'course_setup')
         """,
         (material_id,),
     )
@@ -2072,7 +2209,7 @@ def reextract_material(material_id: int):
     doc_type = str(row["doc_type"] or row["file_type"] or "").strip().lower()
     if doc_type in {"ppt", "pptx"}:
         doc_type = "powerpoint"
-    if doc_type == "upload":
+    if doc_type in {"upload", "course_setup"}:
         file_type = str(row["file_type"] or "").strip().lower()
         if file_type in {"ppt", "pptx"}:
             doc_type = "powerpoint"
@@ -2089,7 +2226,7 @@ def reextract_material(material_id: int):
     try:
         from rag_notes import ingest_document
 
-        ingest_document(
+        reextracted_id = ingest_document(
             path=source_path,
             doc_type=doc_type,
             course_id=row["course_id"],
@@ -2098,6 +2235,24 @@ def reextract_material(material_id: int):
             folder_path=str(row["folder_path"] or ""),
             enabled=int(row["enabled"] or 1),
         )
+        if str(row["corpus"] or "").strip().lower() == "course_setup":
+            setup_metadata: dict[str, Any] = {}
+            try:
+                parsed = json.loads(str(row["metadata_json"] or ""))
+                if isinstance(parsed, dict):
+                    setup_metadata = parsed
+            except Exception:
+                setup_metadata = {}
+            setup_metadata["library_role"] = "setup"
+            setup_metadata.setdefault("setup_kind", "course_setup")
+            conn = get_connection()
+            cur = conn.cursor()
+            cur.execute(
+                "UPDATE rag_docs SET metadata_json = ? WHERE id = ?",
+                (json.dumps(setup_metadata, sort_keys=True), int(reextracted_id or material_id)),
+            )
+            conn.commit()
+            conn.close()
     except Exception as exc:
         return jsonify({"error": f"Re-extract failed: {exc}"}), 500
 
@@ -2139,7 +2294,7 @@ def delete_material(material_id: int):
     cur = conn.cursor()
 
     cur.execute(
-        "SELECT id, file_path FROM rag_docs WHERE id = ? AND COALESCE(corpus, 'materials') = 'materials'",
+        "SELECT id, file_path FROM rag_docs WHERE id = ? AND COALESCE(corpus, 'materials') IN ('materials', 'course_setup')",
         (material_id,),
     )
     row = cur.fetchone()
@@ -2201,7 +2356,7 @@ def get_material_content(material_id: int):
 
     cur.execute(
         "SELECT id, title, source_path, file_path, file_type, content, course_id "
-        "FROM rag_docs WHERE id = ? AND COALESCE(corpus, 'materials') = 'materials'",
+        "FROM rag_docs WHERE id = ? AND COALESCE(corpus, 'materials') IN ('materials', 'course_setup')",
         (material_id,),
     )
     row = cur.fetchone()
@@ -2294,7 +2449,7 @@ def get_material_file(material_id: int):
 
     cur.execute(
         "SELECT id, source_path, file_path FROM rag_docs "
-        "WHERE id = ? AND COALESCE(corpus, 'materials') = 'materials'",
+        "WHERE id = ? AND COALESCE(corpus, 'materials') IN ('materials', 'course_setup')",
         (material_id,),
     )
     row = cur.fetchone()
@@ -2332,7 +2487,7 @@ def get_material_asset(material_id: int, asset_path: str):
     cur = conn.cursor()
     cur.execute(
         "SELECT id, source_path, file_path FROM rag_docs "
-        "WHERE id = ? AND COALESCE(corpus, 'materials') = 'materials'",
+        "WHERE id = ? AND COALESCE(corpus, 'materials') IN ('materials', 'course_setup')",
         (material_id,),
     )
     row = cur.fetchone()
@@ -2412,7 +2567,7 @@ def sync_materials_folder():
     data = request.get_json(silent=True) or {}
 
     try:
-        root, allowed_exts, selected_files, course_id = _parse_sync_folder_payload(data)
+        root, allowed_exts, selected_files, setup_files, course_id = _parse_sync_folder_payload(data)
     except (ValueError, FileNotFoundError) as exc:
         return jsonify({"error": str(exc)}), 400
     except Exception as exc:
@@ -2422,7 +2577,13 @@ def sync_materials_folder():
         root,
         allowed_exts,
         selected_files=selected_files,
+        setup_files=setup_files,
         course_id=course_id,
+    )
+    selected_count = (
+        None
+        if selected_files is None and setup_files is None
+        else len(selected_files or set()) + len(setup_files or set())
     )
     return (
         jsonify(
@@ -2430,9 +2591,8 @@ def sync_materials_folder():
                 "ok": True,
                 "job_id": job_id,
                 "folder": str(root),
-                "selected_count": (
-                    len(selected_files) if selected_files is not None else None
-                ),
+                "selected_count": selected_count,
+                "setup_count": len(setup_files or set()),
                 "course_id": course_id,
             }
         ),

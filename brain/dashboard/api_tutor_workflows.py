@@ -946,7 +946,7 @@ def _fetch_material_rows(conn: sqlite3.Connection, material_ids: list[int]) -> l
         f"""
         SELECT id, title, source_path, folder_path, course_id, file_type, content
         FROM rag_docs
-        WHERE id IN ({placeholders}) AND COALESCE(corpus, 'materials') = 'materials'
+        WHERE id IN ({placeholders}) AND COALESCE(corpus, 'materials') IN ('materials', 'course_setup')
         ORDER BY title COLLATE NOCASE, id
         """,
         tuple(material_ids),

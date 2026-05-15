@@ -1,25 +1,17 @@
 import { PageScaffold } from "@/components/PageScaffold";
-import { useState, useEffect, useMemo, useCallback, type ReactElement } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import {
   consumeLibraryLaunchFromTutor,
-  readTutorSelectedMaterialIds,
-  writeTutorStoredStartState,
-  writeTutorSelectedMaterialIds,
 } from "@/lib/tutorClientState";
 import type {
   Material,
   MaterialContent,
   TutorEmbedStatus,
-  TutorSyncJobStatus,
   TutorContentSources,
-  TutorSyncPreviewNode,
-  TutorSyncPreviewResult,
-  SemesterIntakePreviewResult,
 } from "@/lib/api";
 import type { Course } from "@shared/schema";
-import { useLocation } from "wouter";
 import {
   TEXT_PAGE_TITLE,
   TEXT_BODY,
@@ -46,7 +38,6 @@ import {
   X,
   BookOpen,
   RefreshCw,
-  Link2,
   Folder,
   FolderOpen,
   ChevronRight,
@@ -58,9 +49,7 @@ import {
   ArchiveRestore,
   ChevronDown,
   Plus,
-  Play,
 } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -81,35 +70,17 @@ const FILE_TYPE_LABEL: Record<string, string> = {
   txt: "TXT",
 };
 const ALL_FOLDERS_KEY = "";
-const DEFAULT_SEMESTER_INTAKE_FOLDER =
-  "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School";
 const LIBRARY_PANEL_SURFACE = "library-panel-surface";
 const LIBRARY_PANEL_INSET = "library-panel-inset";
 const LIBRARY_ACTION_BUTTON = "library-action-button";
-const LIBRARY_COMPACT_BUTTON = `${LIBRARY_ACTION_BUTTON} w-auto h-9 min-h-[36px] px-4`;
-const LIBRARY_INLINE_BUTTON = `${LIBRARY_ACTION_BUTTON} library-action-button--inline w-auto h-8 min-h-[32px] px-3`;
 const LIBRARY_SELECT = `${SELECT_BASE} library-field h-10 min-h-[40px] rounded-[0.75rem] px-3`;
 const LIBRARY_SECTION_LABEL = "library-section-label";
 const LIBRARY_MAIN_TITLE =
   "font-arcade text-base uppercase tracking-[0.16em] text-white";
 const LIBRARY_PANEL_TITLE = "library-panel-title";
 const LIBRARY_HELP_TEXT = "library-help-text";
-const LIBRARY_READY_BADGE =
-  "rounded-[0.55rem] border border-emerald-400/35 bg-emerald-400/10 px-2 py-1 font-terminal text-sm uppercase tracking-[0.12em] text-emerald-200";
-const LIBRARY_WARN_BADGE =
-  "rounded-[0.55rem] border border-amber-400/35 bg-amber-400/10 px-2 py-1 font-terminal text-sm uppercase tracking-[0.12em] text-amber-200";
-type AddCourseworkMode = "intake" | "sync" | "upload";
+type LibraryWorkflowTab = "upload" | "materials";
 type MaterialRole = "study" | "reference" | "setup";
-type SemesterPreviewCourse = SemesterIntakePreviewResult["courses"][number];
-
-function collectSemesterMaterialFilePaths(
-  preview: SemesterIntakePreviewResult | null | undefined,
-): string[] {
-  if (!preview) return [];
-  return preview.courses.flatMap((course) =>
-    course.material_files.map((file) => file.path),
-  );
-}
 
 function getFileTypeLabel(fileType: string | null | undefined): string {
   const normalizedRaw = (fileType || "").toLowerCase().trim();
@@ -173,25 +144,23 @@ function getMaterialSize(mat: Material): number {
     : 0;
 }
 
-function pluralizeCount(count: number, singular: string, plural = `${singular}s`) {
-  return `${count} ${count === 1 ? singular : plural}`;
+function materialMatchesLibrarySearch(mat: Material, query: string): boolean {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return true;
+  const haystack = [
+    getMaterialTitle(mat),
+    getMaterialFolder(mat),
+    mat.source_path || "",
+    mat.file_type || "",
+    getMaterialRole(mat),
+  ]
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(needle);
 }
 
-function getSemesterCourseReviewStatus(course: SemesterPreviewCourse): {
-  label: string;
-  tone: "ready" | "warn";
-} {
-  if (course.readiness.readyForTutor) {
-    return { label: "Ready for Tutor", tone: "ready" };
-  }
-  if (
-    course.syllabus_files.length > 0 ||
-    course.schedule_files.length > 0 ||
-    course.material_files.length > 0
-  ) {
-    return { label: "Ready to review", tone: "ready" };
-  }
-  return { label: "Needs files", tone: "warn" };
+function pluralizeCount(count: number, singular: string, plural = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : plural}`;
 }
 
 function formatCourseSecondaryLabel(course: {
@@ -288,6 +257,14 @@ function getMaterialFolder(mat: Material): string {
 }
 
 function getMaterialRole(mat: Material): MaterialRole {
+  const explicitRole = String(mat.material_role || "").toLowerCase().trim();
+  if (explicitRole === "setup" || String(mat.corpus || "").toLowerCase() === "course_setup") {
+    return "setup";
+  }
+  const explicitDocType = String(mat.doc_type || "").toLowerCase().trim();
+  if (explicitDocType === "course_setup" || explicitDocType === "syllabus" || explicitDocType === "schedule") {
+    return "setup";
+  }
   const segments = [
     mat.folder_path || "",
     mat.source_path || "",
@@ -320,10 +297,6 @@ function getMaterialRole(mat: Material): MaterialRole {
   }
 
   return "study";
-}
-
-function isDefaultStudyMaterial(mat: Material): boolean {
-  return mat.enabled && getMaterialRole(mat) === "study";
 }
 
 function buildFolderTree(materials: Material[]): FolderNode {
@@ -410,28 +383,10 @@ function getFolderAncestorPaths(path: string): string[] {
   return ancestors;
 }
 
-function normalizePathForCompare(path: string): string {
-  return path.replace(/\\/g, "/").replace(/\/+$/g, "").toLowerCase();
-}
-
-function collectSyncPreviewFilePaths(
-  node: TutorSyncPreviewNode | null | undefined,
-): string[] {
-  if (!node) return [];
-  if (node.type === "file") return [node.path];
-  const children = Array.isArray(node.children) ? node.children : [];
-  const files: string[] = [];
-  for (const child of children) {
-    files.push(...collectSyncPreviewFilePaths(child));
-  }
-  return files;
-}
-
 type InitialLibraryLaunchState = {
   sidebarMode: "folders" | "courses";
   selectedCourseId: number | "unlinked" | null;
   uploadCourseTarget: string;
-  syncCourseTarget: string;
   selectedFolderPath: string;
 };
 
@@ -442,7 +397,6 @@ function readInitialLibraryLaunchState(): InitialLibraryLaunchState {
       sidebarMode: "courses",
       selectedCourseId: null,
       uploadCourseTarget: "",
-      syncCourseTarget: "",
       selectedFolderPath: ALL_FOLDERS_KEY,
     };
   }
@@ -451,7 +405,6 @@ function readInitialLibraryLaunchState(): InitialLibraryLaunchState {
     sidebarMode: "courses",
     selectedCourseId: handoff.courseId,
     uploadCourseTarget: courseId,
-    syncCourseTarget: courseId,
     selectedFolderPath: ALL_FOLDERS_KEY,
   };
 }
@@ -459,14 +412,11 @@ function readInitialLibraryLaunchState(): InitialLibraryLaunchState {
 function renderMaterialRow(
   mat: Material,
   isDuplicate: boolean,
-  selectedForTutor: number[],
   editingId: number | null,
   editTitle: string,
   setEditTitle: (value: string) => void,
   setEditingId: (id: number | null) => void,
   saveEdit: () => void,
-  toggleMaterialForTutor: (id: number) => void,
-  studyMaterialInTutor: (id: number) => void,
   toggleEnabled: (mat: Material) => void,
   deleteMutation: MutateDeleteLike,
   startEdit: (mat: Material) => void,
@@ -496,12 +446,7 @@ function renderMaterialRow(
       }}
     >
       <div className="flex items-center justify-center">
-        <Checkbox
-          checked={selectedForTutor.includes(mat.id)}
-          onCheckedChange={() => toggleMaterialForTutor(mat.id)}
-          disabled={!mat.enabled}
-          aria-label={`Select ${displayTitle} for tutor`}
-        />
+        <FileText className={`${ICON_SM} text-primary/70`} />
       </div>
 
       {/* Title */}
@@ -564,7 +509,7 @@ function renderMaterialRow(
           <Badge
             variant="outline"
             className={`${TEXT_BADGE} h-4 px-1 w-fit border-sky-500/50 text-sky-300`}
-            title="Course reference; manually selectable for Current Run"
+            title="Course reference; manually selectable for Tutor"
           >
             COURSE REF
           </Badge>
@@ -616,15 +561,6 @@ function renderMaterialRow(
 
       {/* Actions */}
       <div className="flex items-center gap-1 justify-end">
-        <button
-          onClick={() => studyMaterialInTutor(mat.id)}
-          disabled={!mat.enabled}
-          className="text-muted-foreground hover:text-primary transition-colors p-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
-          title="Study this file"
-          aria-label={`Study ${displayTitle} in Tutor`}
-        >
-          <Play className={ICON_SM} />
-        </button>
         <button
           onClick={() => viewContent(mat.id)}
           className="text-muted-foreground hover:text-primary transition-colors p-0.5"
@@ -683,133 +619,17 @@ function renderMaterialRow(
   );
 }
 
-function SyncPreviewTreeNode({
-  node,
-  depth = 0,
-  selectedSyncFiles,
-  expandedSyncFolders,
-  onToggleFile,
-  onToggleFolder,
-}: {
-  node: TutorSyncPreviewNode;
-  depth?: number;
-  selectedSyncFiles: Set<string>;
-  expandedSyncFolders: Set<string>;
-  onToggleFile: (path: string) => void;
-  onToggleFolder: (path: string) => void;
-}): ReactElement | null {
-  if (node.type === "file") {
-    const isChecked = selectedSyncFiles.has(node.path);
-    return (
-      <div
-        className="w-full rounded-none border border-primary/10 px-2 py-1.5 text-left text-sm font-terminal flex items-center gap-2 text-muted-foreground hover:text-foreground"
-        style={{ paddingLeft: `${0.6 + depth * 0.8}rem` }}
-        title={node.path}
-      >
-        <Checkbox
-          aria-label={`Sync ${node.name}`}
-          checked={isChecked}
-          onCheckedChange={() => onToggleFile(node.path)}
-        />
-        <FileText className={`${ICON_SM} shrink-0`} />
-        <span className="truncate flex-1">{node.name}</span>
-        <span className="text-sm">{formatSize(node.size)}</span>
-      </div>
-    );
-  }
-
-  const children = Array.isArray(node.children) ? node.children : [];
-  const isRoot = node.path === "";
-  const isExpanded = isRoot || expandedSyncFolders.has(node.path);
-
-  return (
-    <div>
-      {!isRoot && (
-        <div
-          className="w-full rounded-none border border-primary/15 pr-2 py-1.5 text-left text-sm font-terminal flex items-center gap-1 text-muted-foreground hover:text-foreground"
-          style={{ paddingLeft: `${0.45 + depth * 0.8}rem` }}
-          title={node.path}
-        >
-          {children.length > 0 ? (
-            <button
-              type="button"
-              className="p-0.5 hover:text-primary transition-colors"
-              onClick={() => onToggleFolder(node.path)}
-              aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
-            >
-              <ChevronRight
-                className={`${ICON_SM} transition-transform ${isExpanded ? "rotate-90" : "rotate-0"}`}
-              />
-            </button>
-          ) : (
-            <span className="w-4" />
-          )}
-          {isExpanded ? (
-            <FolderOpen className={`${ICON_SM} shrink-0`} />
-          ) : (
-            <Folder className={`${ICON_SM} shrink-0`} />
-          )}
-          <span className="truncate flex-1">{node.name}</span>
-          <span className="text-sm">{children.length}</span>
-        </div>
-      )}
-      {isExpanded &&
-        children.map((child) => (
-          <SyncPreviewTreeNode
-            key={child.path}
-            node={child}
-            depth={isRoot ? depth : depth + 1}
-            selectedSyncFiles={selectedSyncFiles}
-            expandedSyncFolders={expandedSyncFolders}
-            onToggleFile={onToggleFile}
-            onToggleFolder={onToggleFolder}
-          />
-        ))}
-    </div>
-  );
-}
-
 function useLibraryPageController() {
-  const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const initialLaunchState = useMemo(() => readInitialLibraryLaunchState(), []);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
-  const [materialsFolder, setMaterialsFolder] = useState("");
-  const [semesterIntakeFolder, setSemesterIntakeFolder] = useState(
-    DEFAULT_SEMESTER_INTAKE_FOLDER,
-  );
-  const [semesterPreview, setSemesterPreview] =
-    useState<SemesterIntakePreviewResult | null>(null);
-  const [selectedSemesterMaterialFiles, setSelectedSemesterMaterialFiles] =
-    useState<Set<string>>(() => new Set());
-  const [semesterScanLoading, setSemesterScanLoading] = useState(false);
-  const [semesterApplyLoading, setSemesterApplyLoading] = useState(false);
-  const [semesterIntakeError, setSemesterIntakeError] = useState<string | null>(
-    null,
-  );
-  const [addCourseworkMode, setAddCourseworkMode] =
-    useState<AddCourseworkMode>("upload");
+  const [activeLibraryTab, setActiveLibraryTab] =
+    useState<LibraryWorkflowTab>("materials");
+  const [librarySearchQuery, setLibrarySearchQuery] = useState("");
   const [uploadCourseTarget, setUploadCourseTarget] = useState<string>(
     initialLaunchState.uploadCourseTarget,
-  );
-  const [syncCourseTarget, setSyncCourseTarget] = useState<string>(
-    initialLaunchState.syncCourseTarget,
-  );
-  const [syncJobId, setSyncJobId] = useState<string | null>(null);
-  const [syncStatus, setSyncStatus] = useState<TutorSyncJobStatus | null>(null);
-  const [syncing, setSyncing] = useState(false);
-  const [syncPreview, setSyncPreview] = useState<TutorSyncPreviewResult | null>(
-    null,
-  );
-  const [syncPreviewLoading, setSyncPreviewLoading] = useState(false);
-  const [syncPreviewError, setSyncPreviewError] = useState<string | null>(null);
-  const [selectedSyncFiles, setSelectedSyncFiles] = useState<Set<string>>(
-    new Set(),
-  );
-  const [expandedSyncFolders, setExpandedSyncFolders] = useState<Set<string>>(
-    new Set([""]),
   );
   const [reextractingMaterialIds, setReextractingMaterialIds] = useState<
     number[]
@@ -822,7 +642,6 @@ function useLibraryPageController() {
   );
   const [initializedFolderExpansion, setInitializedFolderExpansion] =
     useState(false);
-  const [courseLinkTarget, setCourseLinkTarget] = useState<string>("");
   const [sidebarMode, setSidebarMode] = useState<"folders" | "courses">(
     initialLaunchState.sidebarMode,
   );
@@ -832,13 +651,10 @@ function useLibraryPageController() {
   const [viewingMaterialId, setViewingMaterialId] = useState<number | null>(
     null,
   );
-  const [selectedForTutor, setSelectedForTutor] = useState<number[]>(() =>
-    readTutorSelectedMaterialIds(),
-  );
 
   const { data: materials = [], isLoading } = useQuery<Material[]>({
-    queryKey: ["tutor-materials"],
-    queryFn: () => api.tutor.getMaterials(),
+    queryKey: ["tutor-materials", "include-setup"],
+    queryFn: () => api.tutor.getMaterials({ include_setup: true }),
   });
   const { data: courses = [] } = useQuery<Course[]>({
     queryKey: ["courses-active"],
@@ -963,16 +779,21 @@ function useLibraryPageController() {
 
   const folderTree = useMemo(() => buildFolderTree(materials), [materials]);
   const folderItems = useMemo(() => flattenFolders(folderTree), [folderTree]);
+  const activeFolderItems = folderItems;
+  const activeFolderPathSet = useMemo(
+    () => new Set(activeFolderItems.map((item) => item.path)),
+    [activeFolderItems],
+  );
   const visibleFolderItems = useMemo(
     () =>
-      folderItems.filter((item) => {
+      activeFolderItems.filter((item) => {
         if (item.depth === 0) return true;
         const ancestorPaths = getFolderAncestorPaths(item.path).slice(0, -1);
         return ancestorPaths.every((ancestor) =>
           expandedFolderPaths.has(ancestor),
         );
       }),
-    [folderItems, expandedFolderPaths],
+    [activeFolderItems, expandedFolderPaths],
   );
   const selectedFolderNode = useMemo(
     () => getFolderNode(folderTree, selectedFolderPath),
@@ -997,7 +818,21 @@ function useLibraryPageController() {
     return collectFolderMaterials(selectedFolderNode).sort((a, b) =>
       getMaterialTitle(a).localeCompare(getMaterialTitle(b)),
     );
-  }, [sidebarMode, selectedCourseId, materials, selectedFolderNode]);
+  }, [
+    activeFolderPathSet,
+    selectedFolderPath,
+    selectedFolderNode,
+    selectedCourseId,
+    sidebarMode,
+    materials,
+  ]);
+  const visibleCatalogMaterials = useMemo(
+    () =>
+      visibleMaterials.filter((material) =>
+        materialMatchesLibrarySearch(material, librarySearchQuery),
+      ),
+    [librarySearchQuery, visibleMaterials],
+  );
   const selectedFolderLabel = useMemo(() => {
     if (sidebarMode === "courses") {
       if (selectedCourseId === null) return "All Materials";
@@ -1009,7 +844,6 @@ function useLibraryPageController() {
     }
     return selectedFolderPath || "All Materials";
   }, [sidebarMode, selectedCourseId, contentSources, selectedFolderPath]);
-
   const selectFolderPath = (path: string) => {
     setSelectedFolderPath(path);
     const ancestors = getFolderAncestorPaths(path);
@@ -1021,13 +855,6 @@ function useLibraryPageController() {
     });
   };
 
-  const resetSyncPreviewState = (errorMessage: string | null) => {
-    setSyncPreview(null);
-    setSelectedSyncFiles(new Set());
-    setExpandedSyncFolders(new Set([""]));
-    setSyncPreviewError(errorMessage);
-  };
-
   const handleSidebarModeChange = (mode: "folders" | "courses") => {
     setSidebarMode(mode);
     if (mode === "folders") {
@@ -1037,10 +864,6 @@ function useLibraryPageController() {
     }
   };
 
-  const selectedForTutorSet = useMemo(
-    () => new Set(selectedForTutor),
-    [selectedForTutor],
-  );
   const dupeChecksums = useMemo(() => {
     const counts = new Map<string, number>();
     for (const m of materials) {
@@ -1053,160 +876,27 @@ function useLibraryPageController() {
     }
     return dupes;
   }, [materials]);
-  const defaultVisibleStudyMaterialIds = useMemo(
-    () => visibleMaterials.filter(isDefaultStudyMaterial).map((m) => m.id),
-    [visibleMaterials],
-  );
-  const selectedVisibleMaterialIds = useMemo(
-    () =>
-      visibleMaterials
-        .filter((m) => m.enabled && selectedForTutorSet.has(m.id))
-        .map((m) => m.id),
-    [visibleMaterials, selectedForTutorSet],
-  );
-  const hiddenTutorSelectionCount = Math.max(
-    0,
-    selectedForTutor.length - selectedVisibleMaterialIds.length,
-  );
-  const allTutorMaterialsSelected =
-    defaultVisibleStudyMaterialIds.length > 0 &&
-    defaultVisibleStudyMaterialIds.every((id) => selectedForTutorSet.has(id));
-  const syncPreviewFiles = useMemo(
-    () => collectSyncPreviewFilePaths(syncPreview?.tree),
-    [syncPreview],
-  );
-  const semesterMaterialFiles = useMemo(
-    () => collectSemesterMaterialFilePaths(semesterPreview),
-    [semesterPreview],
-  );
-  const selectedSyncCount = selectedSyncFiles.size;
-  const selectedSemesterMaterialCount = semesterMaterialFiles.filter((path) =>
-    selectedSemesterMaterialFiles.has(path),
-  ).length;
-  const allSyncFilesSelected =
-    syncPreviewFiles.length > 0 &&
-    syncPreviewFiles.every((path) => selectedSyncFiles.has(path));
-  const allSemesterMaterialFilesSelected =
-    semesterMaterialFiles.length > 0 &&
-    semesterMaterialFiles.every((path) =>
-      selectedSemesterMaterialFiles.has(path),
-    );
-
-  useEffect(() => {
-    writeTutorSelectedMaterialIds(selectedForTutor);
-  }, [selectedForTutor]);
-
-  const openTutorWithMaterialIds = (materialIds: number[]) => {
-    if (!materialIds.length) {
-      toast.error("Choose a file for the Current Run before opening Tutor.");
-      return;
-    }
-    const selectedTutorMaterials = materials.filter((material) =>
-      materialIds.includes(material.id),
-    );
-    const selectedCourseIds = Array.from(
-      new Set(
-        selectedTutorMaterials
-          .map((material) => material.course_id)
-          .filter((value): value is number => typeof value === "number" && value > 0),
-      ),
-    );
-    const handoffCourseId =
-      selectedCourseIds.length === 1
-        ? selectedCourseIds[0]
-        : typeof selectedCourseId === "number"
-          ? selectedCourseId
-          : undefined;
-
-    writeTutorSelectedMaterialIds(materialIds);
-    writeTutorStoredStartState({
-      courseId: handoffCourseId,
-      topic: "",
-      selectedMaterials: materialIds,
-      chainId: undefined,
-      customBlockIds: [],
-      accuracyProfile: "strict",
-      objectiveScope: "module_all",
-      selectedObjectiveId: "",
-      selectedObjectiveGroup: "",
-      selectedPaths: [],
-    });
-    try {
-      localStorage.removeItem("tutor.wizard.progress.v1");
-      localStorage.setItem("tutor-studio-last-tab", "workspace");
-    } catch {
-      /* localStorage unavailable — ignore */
-    }
-    try {
-      sessionStorage.setItem("tutor.open_from_library.v1", "1");
-    } catch {
-      /* sessionStorage unavailable — ignore */
-    }
-    setLocation(
-      handoffCourseId
-        ? `/tutor?course_id=${handoffCourseId}`
-        : "/tutor",
-    );
-  };
-
-  const handleOpenTutor = () => {
-    openTutorWithMaterialIds(selectedForTutor);
-  };
-
-  const studyMaterialInTutor = (id: number) => {
-    setSelectedForTutor([id]);
-    openTutorWithMaterialIds([id]);
-  };
-
-  const replaceTutorQueueWithVisible = () => {
-    if (!defaultVisibleStudyMaterialIds.length) {
-      toast.error("No enabled study files are visible in this view.");
-      return;
-    }
-    setSelectedForTutor([...defaultVisibleStudyMaterialIds]);
-    toast.success(
-      `Current Run replaced with ${defaultVisibleStudyMaterialIds.length} study file${defaultVisibleStudyMaterialIds.length === 1 ? "" : "s"}.`,
-    );
-  };
-
-  const addVisibleToTutorQueue = () => {
-    if (!defaultVisibleStudyMaterialIds.length) {
-      toast.error("No enabled study files are visible in this view.");
-      return;
-    }
-    setSelectedForTutor((prev) => {
-      const next = new Set(prev);
-      for (const id of defaultVisibleStudyMaterialIds) next.add(id);
-      return [...next];
-    });
-    toast.success(
-      `Added ${defaultVisibleStudyMaterialIds.length} study file${defaultVisibleStudyMaterialIds.length === 1 ? "" : "s"} to the Current Run.`,
-    );
-  };
-
-  const clearTutorQueue = () => {
-    if (!selectedForTutor.length) return;
-    setSelectedForTutor([]);
-    toast.success("Current Run cleared.");
-  };
-
   useEffect(() => {
     if (isLoading) return;
-    setSelectedForTutor((ids) =>
-      ids.filter((id) => materials.some((m) => m.id === id)),
-    );
     if (
       selectedFolderPath !== ALL_FOLDERS_KEY &&
+      !activeFolderPathSet.has(selectedFolderPath) &&
       !getFolderNode(folderTree, selectedFolderPath)
     ) {
       selectFolderPath(ALL_FOLDERS_KEY);
     }
-  }, [isLoading, materials, selectedFolderPath, folderTree]);
+  }, [
+    activeFolderPathSet,
+    folderTree,
+    isLoading,
+    materials,
+    selectedFolderPath,
+  ]);
 
   useEffect(() => {
     if (initializedFolderExpansion) return;
     // Start with top-level folders expanded so first interaction is not empty.
-    const topLevelPaths = folderItems
+    const topLevelPaths = activeFolderItems
       .filter((item) => item.depth === 0)
       .map((item) => item.path);
     if (!topLevelPaths.length) return;
@@ -1216,145 +906,7 @@ function useLibraryPageController() {
       return next;
     });
     setInitializedFolderExpansion(true);
-  }, [folderItems, initializedFolderExpansion]);
-
-  const handleMaterialsFolderChange = (value: string) => {
-    setMaterialsFolder(value);
-    if (!syncPreview) return;
-    const normalizedPreview = normalizePathForCompare(syncPreview.folder || "");
-    const normalizedCurrent = normalizePathForCompare(value.trim());
-    if (!normalizedCurrent || normalizedPreview === normalizedCurrent) return;
-    resetSyncPreviewState("Folder path changed. Scan the folder again.");
-  };
-
-  const handleSemesterIntakeFolderChange = (value: string) => {
-    setSemesterIntakeFolder(value);
-    if (!semesterPreview) return;
-    const normalizedPreview = normalizePathForCompare(
-      semesterPreview.folder || "",
-    );
-    const normalizedCurrent = normalizePathForCompare(value.trim());
-    if (!normalizedCurrent || normalizedPreview === normalizedCurrent) return;
-    setSelectedSemesterMaterialFiles(new Set());
-  };
-
-  const finalizeSyncStatus = (status: TutorSyncJobStatus) => {
-    setSyncing(false);
-    setSyncJobId(null);
-    queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
-    queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
-
-    if (status.status === "completed") {
-      const syncCount = Number(
-        status.sync_result?.processed ?? status.processed ?? 0,
-      );
-      const failedCount = Number(
-        status.sync_result?.failed ?? status.errors ?? 0,
-      );
-      const embedResult = status.embed_result as
-        | { embedded?: number }
-        | null
-        | undefined;
-      const embedCount = Number(embedResult?.embedded ?? 0);
-      const embedErrorResult = status.embed_result as
-        | { error?: string }
-        | null
-        | undefined;
-      const embedError = (embedErrorResult?.error || "").trim();
-      if (embedError) {
-        toast.warning(
-          `Sync complete: ${syncCount} processed, ${failedCount} failed. Embedding error: ${embedError}`,
-        );
-      } else if (failedCount > 0) {
-        toast.warning(
-          `Sync complete: ${syncCount} processed, ${failedCount} failed${embedCount > 0 ? `, ${embedCount} embedded` : ""}`,
-        );
-      } else {
-        toast.success(`Synced ${syncCount} materials, embedded ${embedCount}`);
-      }
-      return;
-    }
-
-    toast.error(`Sync failed: ${status.last_error || "Unknown error"}`);
-  };
-
-  const handleSyncPollingFailure = (errorMessage: string) => {
-    setSyncing(false);
-    setSyncJobId(null);
-    toast.error(`Sync status failed after retries: ${errorMessage}`);
-  };
-
-  useEffect(() => {
-    if (!syncJobId) return;
-
-    let cancelled = false;
-    let transientFailures = 0;
-    let pollTimeoutId: number | null = null;
-
-    const scheduleNextPoll = () => {
-      if (cancelled) return;
-      if (pollTimeoutId !== null) {
-        window.clearTimeout(pollTimeoutId);
-      }
-      pollTimeoutId = window.setTimeout(pollSyncStatus, 1500);
-    };
-
-    const pollSyncStatus = async () => {
-      try {
-        const status = await api.tutor.getSyncMaterialsStatus(syncJobId);
-        if (cancelled) return;
-        transientFailures = 0;
-        setSyncStatus(status);
-
-        if (status.status === "completed" || status.status === "failed") {
-          finalizeSyncStatus(status);
-          return;
-        }
-      } catch (err) {
-        if (cancelled) return;
-        transientFailures += 1;
-        if (transientFailures < 5) {
-          scheduleNextPoll();
-          return;
-        }
-        handleSyncPollingFailure(
-          err instanceof Error ? err.message : "Unknown",
-        );
-        return;
-      }
-
-      scheduleNextPoll();
-    };
-
-    pollSyncStatus();
-
-    return () => {
-      cancelled = true;
-      if (pollTimeoutId !== null) {
-        window.clearTimeout(pollTimeoutId);
-      }
-    };
-  }, [syncJobId, queryClient]);
-
-  const toggleMaterialForTutor = (id: number) => {
-    setSelectedForTutor((prev) => {
-      if (prev.includes(id)) return prev.filter((x) => x !== id);
-      return [...prev, id];
-    });
-  };
-
-  const toggleAllMaterialsForTutor = () => {
-    setSelectedForTutor((prev) => {
-      if (!defaultVisibleStudyMaterialIds.length) return prev;
-      const next = new Set(prev);
-      if (allTutorMaterialsSelected) {
-        for (const id of defaultVisibleStudyMaterialIds) next.delete(id);
-      } else {
-        for (const id of defaultVisibleStudyMaterialIds) next.add(id);
-      }
-      return [...next];
-    });
-  };
+  }, [activeFolderItems, initializedFolderExpansion]);
 
   const toggleFolderExpanded = (path: string) => {
     const isCollapsing = expandedFolderPaths.has(path);
@@ -1377,20 +929,6 @@ function useLibraryPageController() {
     ) {
       selectFolderPath(ALL_FOLDERS_KEY);
     }
-  };
-
-  const handleLinkSelectedToCourse = () => {
-    const targetCourseId = Number(courseLinkTarget);
-    if (
-      !targetCourseId ||
-      !selectedVisibleMaterialIds.length ||
-      courseLinkMutation.isPending
-    )
-      return;
-    courseLinkMutation.mutate({
-      ids: [...selectedVisibleMaterialIds],
-      courseId: targetCourseId,
-    });
   };
 
   const updateMutation = useMutation({
@@ -1428,82 +966,6 @@ function useLibraryPageController() {
     },
   });
 
-  const clearMaterialsMutation = useMutation({
-    mutationFn: async (ids: number[]) => {
-      const results = await Promise.allSettled(
-        ids.map((id) => api.tutor.deleteMaterial(id)),
-      );
-      const failed = results.filter((r) => r.status === "rejected").length;
-      return {
-        deleted: ids.length - failed,
-        failed,
-        total: ids.length,
-      };
-    },
-    onSuccess: ({ deleted, failed, total }, ids) => {
-      queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
-      queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
-      setSelectedForTutor((prev) => prev.filter((id) => !ids.includes(id)));
-      if (failed > 0) {
-        toast.warning(
-          `${deleted}/${total} materials deleted; ${failed} failed. Some files may still remain.`,
-        );
-      } else {
-        toast.success(`Deleted ${deleted} materials`);
-      }
-    },
-    onError: (err) => {
-      toast.error(
-        `Clear failed: ${err instanceof Error ? err.message : "Unknown"}`,
-      );
-    },
-  });
-
-  const courseLinkMutation = useMutation({
-    mutationFn: async ({
-      ids,
-      courseId,
-    }: {
-      ids: number[];
-      courseId: number;
-    }) => {
-      let failed = 0;
-      for (const id of ids) {
-        try {
-          await api.tutor.updateMaterial(id, { course_id: courseId });
-        } catch {
-          failed += 1;
-        }
-      }
-      return {
-        linked: ids.length - failed,
-        failed,
-        total: ids.length,
-        courseId,
-      };
-    },
-    onSuccess: ({ linked, failed, total, courseId }) => {
-      const targetCourse = courses.find((course) => course.id === courseId);
-      const courseLabel =
-        targetCourse?.code || targetCourse?.name || `Course ${courseId}`;
-      queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
-      queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
-      setCourseLinkTarget("");
-      if (failed > 0) {
-        toast.warning(
-          `${linked}/${total} materials linked to ${courseLabel}; ${failed} failed.`,
-        );
-      } else {
-        toast.success(`Linked ${linked} materials to ${courseLabel}`);
-      }
-    },
-    onError: (err) => {
-      toast.error(
-        `Course link failed: ${err instanceof Error ? err.message : "Unknown"}`,
-      );
-    },
-  });
-
   const startEdit = (mat: Material) => {
     setEditingId(mat.id);
     setEditTitle(getMaterialTitle(mat));
@@ -1516,249 +978,6 @@ function useLibraryPageController() {
 
   const toggleEnabled = (mat: Material) => {
     updateMutation.mutate({ id: mat.id, data: { enabled: !mat.enabled } });
-  };
-
-  const toggleSyncFolderExpanded = (path: string) => {
-    if (!path) return;
-    setExpandedSyncFolders((prev) => {
-      const next = new Set(prev);
-      if (next.has(path)) {
-        for (const expandedPath of Array.from(next)) {
-          if (expandedPath === path || expandedPath.startsWith(`${path}/`)) {
-            next.delete(expandedPath);
-          }
-        }
-      } else {
-        next.add(path);
-      }
-      return next;
-    });
-  };
-
-  const toggleSyncFile = (path: string) => {
-    setSelectedSyncFiles((prev) => {
-      const next = new Set(prev);
-      if (next.has(path)) {
-        next.delete(path);
-      } else {
-        next.add(path);
-      }
-      return next;
-    });
-  };
-
-  const selectAllSyncFiles = (selectAll: boolean) => {
-    setSelectedSyncFiles(selectAll ? new Set(syncPreviewFiles) : new Set());
-  };
-
-  const toggleSemesterMaterialFile = (path: string) => {
-    setSelectedSemesterMaterialFiles((prev) => {
-      const next = new Set(prev);
-      if (next.has(path)) {
-        next.delete(path);
-      } else {
-        next.add(path);
-      }
-      return next;
-    });
-  };
-
-  const selectAllSemesterMaterialFiles = (selectAll: boolean) => {
-    setSelectedSemesterMaterialFiles(
-      selectAll ? new Set(semesterMaterialFiles) : new Set(),
-    );
-  };
-
-  const scanSemesterIntakeFolder = async () => {
-    const trimmedFolder = semesterIntakeFolder.trim();
-    if (!trimmedFolder || semesterScanLoading || semesterApplyLoading) return;
-
-    setSemesterScanLoading(true);
-    setSemesterIntakeError(null);
-    try {
-      const preview = await api.semesterIntake.preview({
-        folder_path: trimmedFolder,
-      });
-      setSemesterPreview(preview);
-      setSelectedSemesterMaterialFiles(new Set());
-      if (!preview.courses.length) {
-        toast.warning("Semester intake found no course folders.");
-      } else {
-        toast.success(`Found ${preview.courses.length} course folders.`);
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown";
-      setSemesterPreview(null);
-      setSelectedSemesterMaterialFiles(new Set());
-      setSemesterIntakeError(message);
-      toast.error(`Semester intake scan failed: ${message}`);
-    } finally {
-      setSemesterScanLoading(false);
-    }
-  };
-
-  const applySemesterIntake = async () => {
-    const trimmedFolder = semesterIntakeFolder.trim();
-    if (!trimmedFolder || semesterApplyLoading || semesterScanLoading) return;
-    if (!semesterPreview) {
-      toast.error("Scan the semester folder first.");
-      return;
-    }
-    if (
-      normalizePathForCompare(semesterPreview.folder) !==
-      normalizePathForCompare(trimmedFolder)
-    ) {
-      toast.error("Folder path changed. Re-scan before applying setup.");
-      return;
-    }
-
-    const coursesToApply = semesterPreview.courses.map((course) => ({
-      name: course.name,
-      code: course.code ?? null,
-      folder_path: course.folder_path,
-      syllabus_files: course.syllabus_files.map((file) => file.path),
-      schedule_files: course.schedule_files.map((file) => file.path),
-      material_files: course.material_files
-        .filter((file) => selectedSemesterMaterialFiles.has(file.path))
-        .map((file) => file.path),
-      syllabus: { modules: [] },
-      schedule: { events: [] },
-    }));
-    if (!coursesToApply.length) {
-      toast.error("No course folders are ready to apply.");
-      return;
-    }
-
-    setSemesterApplyLoading(true);
-    setSemesterIntakeError(null);
-    try {
-      const result = await api.semesterIntake.apply({
-        folder_path: trimmedFolder,
-        courses: coursesToApply,
-      });
-      queryClient.invalidateQueries({ queryKey: ["courses-active"] });
-      queryClient.invalidateQueries({ queryKey: ["courses-all"] });
-      queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
-      queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
-      queryClient.invalidateQueries({ queryKey: ["tutor-embed-status"] });
-      queryClient.invalidateQueries({ queryKey: ["tutor-hub"] });
-      toast.success(
-        `Semester setup applied: ${result.coursesCreated} created, ${result.coursesUpdated} updated, ${result.modulesCreated} modules, ${result.eventsCreated} events, ${result.materialSyncJobs.length} sync job${result.materialSyncJobs.length === 1 ? "" : "s"} started.`,
-      );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown";
-      setSemesterIntakeError(message);
-      toast.error(`Semester setup failed: ${message}`);
-    } finally {
-      setSemesterApplyLoading(false);
-    }
-  };
-
-  const scanSyncFolder = async () => {
-    const trimmedFolder = materialsFolder.trim();
-    if (!trimmedFolder || syncPreviewLoading || syncing) return;
-
-    setSyncPreviewLoading(true);
-    setSyncPreviewError(null);
-
-    try {
-      const preview = await api.tutor.previewSyncMaterialsFolder({
-        folder_path: trimmedFolder,
-      });
-      const discoveredFiles = collectSyncPreviewFilePaths(preview.tree);
-      const topLevelFolderPaths = (preview.tree.children || [])
-        .filter((child) => child.type === "folder")
-        .map((child) => child.path);
-      setSyncPreview(preview);
-      setSelectedSyncFiles(new Set());
-      setExpandedSyncFolders(new Set(["", ...topLevelFolderPaths]));
-      if (!discoveredFiles.length) {
-        setSyncPreviewError("No supported files found in this folder.");
-        toast.warning("Folder scanned: no supported files found.");
-      } else if (preview.truncated) {
-        setSyncPreviewError(
-          `Preview limited to first ${preview.max_files || 5000} files. Select from displayed files.`,
-        );
-        toast.warning(
-          `Preview loaded with ${discoveredFiles.length} files (truncated).`,
-        );
-      } else {
-        setSyncPreviewError(null);
-        toast.success(`Scanned ${discoveredFiles.length} files.`);
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown";
-      setSyncPreview(null);
-      setSelectedSyncFiles(new Set());
-      setExpandedSyncFolders(new Set([""]));
-      setSyncPreviewError(message);
-      toast.error(`Folder scan failed: ${message}`);
-    } finally {
-      setSyncPreviewLoading(false);
-    }
-  };
-
-  const startSync = async () => {
-    const trimmedFolder = materialsFolder.trim();
-    if (!trimmedFolder || syncing || syncPreviewLoading) return;
-    if (!syncPreview) {
-      toast.error("Scan the folder first so you can choose files.");
-      return;
-    }
-    if (
-      normalizePathForCompare(syncPreview.folder) !==
-      normalizePathForCompare(trimmedFolder)
-    ) {
-      toast.error("Folder path changed. Re-scan before syncing.");
-      return;
-    }
-    const selectedFiles = syncPreviewFiles.filter((path) =>
-      selectedSyncFiles.has(path),
-    );
-    if (!selectedFiles.length) {
-      toast.error("Choose at least one file to sync.");
-      return;
-    }
-    const parsedCourseId = syncCourseTarget ? Number(syncCourseTarget) : null;
-    const courseId =
-      parsedCourseId && Number.isFinite(parsedCourseId) ? parsedCourseId : null;
-
-    setSyncing(true);
-    setSyncStatus({
-      job_id: "pending",
-      status: "pending",
-      phase: "pending",
-      processed: 0,
-      total: 0,
-      index: 0,
-      current_file: null,
-      errors: 0,
-      started_at: new Date().toISOString(),
-    });
-
-    try {
-      const started = await api.tutor.startSyncMaterialsFolder({
-        folder_path: trimmedFolder,
-        selected_files: selectedFiles,
-        course_id: courseId,
-      });
-      setSyncJobId(started.job_id);
-      setSyncStatus((prev) =>
-        prev
-          ? { ...prev, job_id: started.job_id, folder: started.folder }
-          : prev,
-      );
-      toast.success(
-        `Sync started for ${selectedFiles.length} file${selectedFiles.length === 1 ? "" : "s"}`,
-      );
-    } catch (err) {
-      setSyncing(false);
-      setSyncJobId(null);
-      setSyncStatus(null);
-      toast.error(
-        `Sync failed: ${err instanceof Error ? err.message : "Unknown"}`,
-      );
-    }
   };
 
   const reextractMaterial = async (materialId: number) => {
@@ -1790,22 +1009,20 @@ function useLibraryPageController() {
     }
   };
 
-  const syncProgressPercent = useMemo(() => {
-    if (!syncStatus) return 0;
-    const total = Number(syncStatus.total ?? 0);
-    const indexed = Number(syncStatus.index ?? syncStatus.processed ?? 0);
-    if (!Number.isFinite(total) || total <= 0) return 0;
-    return Math.max(0, Math.min(100, Math.round((indexed / total) * 100)));
-  }, [syncStatus]);
+  const showSourceTab = activeLibraryTab === "upload";
+  const showMaterialsTab = activeLibraryTab === "materials";
+  const materialSectionTitle = "LIBRARY FILES";
+  const visibleTabFileCount = visibleCatalogMaterials.length;
+  const visibleTabFileLabel = "file";
 
   return (
     <PageScaffold
       eyebrow="Library Support System"
       title="Materials Library"
-      subtitle="Brain-owned study materials, Tutor scope, and clean handoff into live study all run through one intake surface."
+      subtitle="A searchable catalog of uploaded course files. Upload, find, rename, view, and organize coursework in one place."
       className="flex h-full min-h-[72vh] flex-col"
       contentClassName="flex-1 min-h-0"
-      heroClassName="library-page-hero"
+      heroClassName="library-page-hero library-page-hero--compact"
       stats={[
         {
           label: "Embeddings",
@@ -1824,7 +1041,7 @@ function useLibraryPageController() {
         },
       ]}
     >
-      <div className="brain-workspace brain-workspace--ready app-workspace-shell library-ops-workspace relative flex-1 min-h-[70vh] w-full overflow-hidden">
+      <div className="brain-workspace brain-workspace--ready app-workspace-shell library-ops-workspace library-ops-workspace--calm relative flex-1 min-h-[70vh] w-full overflow-hidden">
         <div className="flex flex-col lg:flex-row h-full min-h-0">
           <aside className="brain-workspace__sidebar-wrap w-full lg:w-80 shrink-0 min-h-0 max-h-[40vh] lg:max-h-none lg:pr-3">
             <HudPanel
@@ -1880,6 +1097,17 @@ function useLibraryPageController() {
                     COURSES
                   </HudButton>
                 </div>
+                {sidebarMode === "folders" ? (
+                  <div className="mt-3 rounded-[0.85rem] border border-primary/15 bg-black/35 p-2">
+                    <div className="min-w-0">
+                      <div className={LIBRARY_SECTION_LABEL}>FOLDERS</div>
+                      <div className={`${LIBRARY_HELP_TEXT} mt-1`}>
+                        Shows folders from files already uploaded into the
+                        Library catalog.
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
               </div>
               <div className="flex-1 overflow-y-auto p-2 space-y-1">
                 {sidebarMode === "folders" ? (
@@ -1895,7 +1123,9 @@ function useLibraryPageController() {
                     >
                       <FolderOpen className={ICON_SM} />
                       <span className="truncate flex-1">All Materials</span>
-                      <span className="text-sm">{materials.length}</span>
+                      <span className="text-sm">
+                        {materials.length}
+                      </span>
                     </button>
                     {visibleFolderItems.map((folder) => {
                       const isSelected = selectedFolderPath === folder.path;
@@ -1968,9 +1198,9 @@ function useLibraryPageController() {
                         </div>
                       );
                     })}
-                    {!folderItems.length && materials.length === 0 ? (
+                    {!activeFolderItems.length && materials.length === 0 ? (
                       <div className={`${TEXT_MUTED} px-2 py-3 text-sm`}>
-                        Sync a folder or upload files to populate this rail.
+                        Upload files to populate this rail.
                       </div>
                     ) : null}
                   </>
@@ -2008,7 +1238,11 @@ function useLibraryPageController() {
                                   ? "text-primary"
                                   : "text-muted-foreground hover:text-foreground"
                               }`}
-                              onClick={() => setSelectedCourseId(course.id!)}
+                              onClick={() => {
+                                const nextId = course.id!;
+                                setSelectedCourseId(nextId);
+                                setUploadCourseTarget(String(nextId));
+                              }}
                               type="button"
                             >
                               <GraduationCap className={ICON_SM} />
@@ -2126,54 +1360,63 @@ function useLibraryPageController() {
 
               <section className="brain-workspace__main-wrap brain-workspace__canvas flex-1 min-h-0 flex flex-col overflow-hidden">
             <HudPanel className="library-main-panel flex h-full min-h-0 flex-col overflow-hidden">
+              <div className={`${PANEL_PADDING} border-b border-primary/10 bg-black/25`}>
+                <div
+                  className="library-segmented-control library-workflow-tabs grid grid-cols-2 gap-1 p-1"
+                  aria-label="Library workflow"
+                  role="tablist"
+                >
+                  {[
+                    ["materials", "ALL FILES"],
+                    ["upload", "UPLOAD"],
+                  ].map(([tab, label]) => (
+                    <HudButton
+                      key={tab}
+                      type="button"
+                      role="tab"
+                      aria-selected={activeLibraryTab === tab}
+                      variant={
+                        activeLibraryTab === tab ? "primary" : "outline"
+                      }
+                      className={cn(
+                        "min-h-[38px] px-3",
+                        activeLibraryTab === tab
+                          ? "bg-primary/20 text-primary"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                      onClick={() =>
+                        setActiveLibraryTab(tab as LibraryWorkflowTab)
+                      }
+                    >
+                      {label}
+                    </HudButton>
+                  ))}
+                </div>
+              </div>
               <div className="border-b border-primary/10 bg-transparent">
                 <div
                   className={`${PANEL_PADDING} space-y-3`}
                 >
+                  {showSourceTab ? (
                   <HudPanel
                     variant="b"
                     className={`${LIBRARY_PANEL_SURFACE} p-3`}
                   >
                     <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
                       <div className="min-w-0">
-                        <div className={LIBRARY_SECTION_LABEL}>ADD COURSEWORK</div>
+                        <div className={LIBRARY_SECTION_LABEL}>UPLOAD FILES</div>
                         <div className={`${LIBRARY_HELP_TEXT} mt-1`}>
-                          Choose the files you want for this study run. Intake
-                          and sync stay available for setup and selective import.
+                          Add one-off files from Downloads, email, Blackboard,
+                          or your course folders. Library stores and extracts
+                          each file so it stays searchable.
                         </div>
-                      </div>
-                      <div className="library-segmented-control grid grid-cols-3 gap-1 p-1">
-                        {[
-                          ["upload", "CHOOSE FILES"],
-                          ["intake", "SEMESTER INTAKE"],
-                          ["sync", "FOLDER SYNC"],
-                        ].map(([mode, label]) => (
-                          <HudButton
-                            key={mode}
-                            type="button"
-                            variant={
-                              addCourseworkMode === mode ? "primary" : "outline"
-                            }
-                            className={cn(
-                              "min-h-[38px] px-3",
-                              addCourseworkMode === mode
-                                ? "bg-primary/20 text-primary"
-                                : "text-muted-foreground hover:text-foreground",
-                            )}
-                            onClick={() =>
-                              setAddCourseworkMode(mode as AddCourseworkMode)
-                            }
-                          >
-                            {label}
-                          </HudButton>
-                        ))}
                       </div>
                     </div>
                     <div className="mt-3 grid gap-2 md:grid-cols-3">
                       {[
-                        ["STUDY MATERIALS", "Pick weekly files manually."],
-                        ["COURSE SETUP", "Syllabus and schedule readiness."],
-                        ["CURRENT RUN", "Study one file or a small set."],
+                        ["CATALOG", "Uploaded files become searchable Library records."],
+                        ["COURSE LINK", "Choose a course when you know where a file belongs."],
+                        ["AVAILABLE LATER", "Keep the file organized here for future study."],
                       ].map(([label, copy]) => (
                         <div
                           key={label}
@@ -2189,218 +1432,21 @@ function useLibraryPageController() {
                       ))}
                     </div>
                   </HudPanel>
-
-                  <div className="grid gap-3 2xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.42fr)]">
-                  {addCourseworkMode === "intake" ? (
-                  <HudPanel
-                    variant="b"
-                    className={`${LIBRARY_PANEL_SURFACE} space-y-2 p-3`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <GraduationCap className={ICON_SM} />
-                      <div className={LIBRARY_PANEL_TITLE}>SEMESTER INTAKE</div>
-                    </div>
-                    <div className={LIBRARY_HELP_TEXT}>
-                      Start from one PT School folder, separate course setup
-                      files from study materials, then create the Study courses.
-                    </div>
-                    <input
-                      aria-label="Semester intake folder"
-                      value={semesterIntakeFolder}
-                      onChange={(e) =>
-                        handleSemesterIntakeFolderChange(e.target.value)
-                      }
-                      className={INPUT_BASE}
-                      placeholder="Paste the semester folder path"
-                    />
-                    <div className="flex flex-wrap items-center gap-2">
-                      <HudButton
-                        variant="outline"
-                        onClick={scanSemesterIntakeFolder}
-                        disabled={
-                          semesterScanLoading ||
-                          semesterApplyLoading ||
-                          !semesterIntakeFolder.trim()
-                        }
-                        className={LIBRARY_COMPACT_BUTTON}
-                      >
-                        {semesterScanLoading ? (
-                          <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
-                        ) : (
-                          <RefreshCw className={`${ICON_SM} mr-1`} />
-                        )}
-                        {semesterScanLoading ? "SCANNING..." : "SCAN INTAKE"}
-                      </HudButton>
-                      <HudButton
-                        onClick={applySemesterIntake}
-                        disabled={
-                          semesterScanLoading ||
-                          semesterApplyLoading ||
-                          !semesterPreview ||
-                          !semesterIntakeFolder.trim()
-                        }
-                        className={LIBRARY_COMPACT_BUTTON}
-                      >
-                        {semesterApplyLoading ? (
-                          <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
-                        ) : (
-                          <Check className={`${ICON_SM} mr-1`} />
-                        )}
-                        APPLY SETUP + SELECTED FILES
-                      </HudButton>
-                    </div>
-                    {semesterPreview ? (
-                      <div className="space-y-2">
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="border border-primary/15 bg-black/30 p-2">
-                            <div className={TEXT_MUTED}>Courses</div>
-                            <div className="font-terminal text-base text-foreground">
-                              {semesterPreview.counts.courses}
-                            </div>
-                          </div>
-                          <div className="border border-primary/15 bg-black/30 p-2">
-                            <div className={TEXT_MUTED}>Materials</div>
-                            <div className="font-terminal text-base text-foreground">
-                              {semesterPreview.counts.material_files}
-                            </div>
-                          </div>
-                          <div className="border border-primary/15 bg-black/30 p-2">
-                            <div className={TEXT_MUTED}>Syllabus</div>
-                            <div className="font-terminal text-base text-foreground">
-                              {semesterPreview.counts.syllabus_files}
-                            </div>
-                          </div>
-                          <div className="border border-primary/15 bg-black/30 p-2">
-                            <div className={TEXT_MUTED}>Schedule</div>
-                            <div className="font-terminal text-base text-foreground">
-                              {semesterPreview.counts.schedule_files}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap items-center justify-between gap-2 border border-primary/10 bg-black/45 p-2 text-sm">
-                          <div className={TEXT_MUTED}>
-                            {selectedSemesterMaterialCount} selected for
-                            Library
-                            {semesterMaterialFiles.length
-                              ? ` / ${semesterMaterialFiles.length} found`
-                              : ""}
-                          </div>
-                          <HudButton
-                            variant="outline"
-                            className={LIBRARY_INLINE_BUTTON}
-                            disabled={!semesterMaterialFiles.length}
-                            onClick={() =>
-                              selectAllSemesterMaterialFiles(
-                                !allSemesterMaterialFilesSelected,
-                              )
-                            }
-                          >
-                            {allSemesterMaterialFilesSelected
-                              ? "CLEAR MATERIALS"
-                              : "SELECT MATERIALS"}
-                          </HudButton>
-                        </div>
-                        <div className="max-h-40 overflow-auto border border-primary/15 bg-black/30 p-2 space-y-1">
-                          {semesterPreview.courses.map((course) => (
-                            <div
-                              key={course.folder_path}
-                              className="border border-primary/10 bg-black/35 p-2 text-sm"
-                            >
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="min-w-0">
-                                  <div className="truncate font-terminal text-base text-foreground">
-                                    {course.name}
-                                  </div>
-                                  <div className={TEXT_MUTED}>
-                                    {course.syllabus_files.length} syllabus /{" "}
-                                    {course.schedule_files.length} schedule /{" "}
-                                    {course.material_files.length} material
-                                  </div>
-                                </div>
-                                <Badge
-                                  variant="outline"
-                                  className="shrink-0 rounded-none border-primary/25 bg-primary/10 text-sm uppercase"
-                                >
-                                  {course.readiness.course}
-                                </Badge>
-                              </div>
-                              {course.material_files.length ? (
-                                <div className="mt-2 space-y-1">
-                                  {course.material_files.map((file) => {
-                                    const checked =
-                                      selectedSemesterMaterialFiles.has(
-                                        file.path,
-                                      );
-                                    return (
-                                      <div
-                                        key={file.path}
-                                        className="flex items-center gap-2 border border-primary/10 bg-black/35 px-2 py-1.5 font-terminal text-sm text-muted-foreground"
-                                        title={file.path}
-                                      >
-                                        <Checkbox
-                                          aria-label={`Load ${file.name} from ${course.name}`}
-                                          checked={checked}
-                                          onCheckedChange={() =>
-                                            toggleSemesterMaterialFile(
-                                              file.path,
-                                            )
-                                          }
-                                        />
-                                        <FileText
-                                          className={`${ICON_SM} shrink-0`}
-                                        />
-                                        <span className="min-w-0 flex-1 truncate">
-                                          {file.name}
-                                        </span>
-                                        <span className="text-ui-xs">
-                                          {formatSize(file.size)}
-                                        </span>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              ) : null}
-                            </div>
-                          ))}
-                        </div>
-                        {semesterPreview.global_schedule_files.length ||
-                        semesterPreview.ignored_files.length ? (
-                          <div className={LIBRARY_HELP_TEXT}>
-                            Global schedules:{" "}
-                            {semesterPreview.global_schedule_files.length} /
-                            ignored: {semesterPreview.ignored_files.length}
-                          </div>
-                        ) : null}
-                      </div>
-                    ) : (
-                      <div
-                        className={`${LIBRARY_HELP_TEXT} border border-primary/10 bg-black/45 p-3`}
-                      >
-                        Scan the semester folder before applying setup.
-                      </div>
-                    )}
-                    {semesterIntakeError ? (
-                      <div className="text-sm text-yellow-300 break-all">
-                        <AlertTriangle className={`${ICON_SM} inline mr-1`} />
-                        {semesterIntakeError}
-                      </div>
-                    ) : null}
-                  </HudPanel>
                   ) : null}
 
-                  {addCourseworkMode === "upload" ? (
+                  {showSourceTab ? (
                   <HudPanel
                     variant="b"
                     className={`${LIBRARY_PANEL_SURFACE} space-y-2 p-3`}
                   >
                     <div className="flex items-center gap-2">
                       <Upload className={ICON_SM} />
-                      <div className={LIBRARY_PANEL_TITLE}>UPLOAD MATERIALS</div>
+                      <div className={LIBRARY_PANEL_TITLE}>UPLOAD FILES</div>
                     </div>
                     <div className={LIBRARY_HELP_TEXT}>
-                      Use this for one-off files from Downloads, email, or
-                      Blackboard. Upload puts the file into the Tutor library
-                      immediately.
+                      Upload files into the Library catalog. Syllabus,
+                      schedule, slides, readings, notes, and recordings all
+                      land here as searchable file records.
                     </div>
                     <div className="flex items-center gap-2">
                       <label
@@ -2430,475 +1476,51 @@ function useLibraryPageController() {
                         uploadCourseTarget
                           ? Number(uploadCourseTarget)
                           : undefined
-                        }
-                    />
-                  </HudPanel>
-                  ) : null}
-
-                  {addCourseworkMode === "sync" ? (
-                  <HudPanel
-                    variant="b"
-                    className={`${LIBRARY_PANEL_SURFACE} space-y-2 p-3`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <FolderOpen className={ICON_SM} />
-                      <div className={LIBRARY_PANEL_TITLE}>SYNC STUDY FOLDER</div>
-                    </div>
-                    <div className={LIBRARY_HELP_TEXT}>
-                      Use this for a whole course or week folder. Scan first,
-                      choose files, then sync only the files you want in the
-                      Tutor library.
-                    </div>
-                    <input
-                      value={materialsFolder}
-                      onChange={(e) =>
-                        handleMaterialsFolderChange(e.target.value)
                       }
-                      className={INPUT_BASE}
-                      placeholder="Paste the local PT School folder path"
+                      role="study"
                     />
-                    <div className="flex flex-wrap items-center gap-2">
-                      <HudButton
-                        variant="outline"
-                        onClick={scanSyncFolder}
-                        disabled={
-                          syncPreviewLoading ||
-                          syncing ||
-                          !materialsFolder.trim()
-                        }
-                        className={LIBRARY_COMPACT_BUTTON}
-                      >
-                        {syncPreviewLoading ? (
-                          <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
-                        ) : (
-                          <RefreshCw className={`${ICON_SM} mr-1`} />
-                        )}
-                        {syncPreviewLoading
-                          ? "SCANNING..."
-                          : "SCAN FOLDER TREE"}
-                      </HudButton>
-                      <HudButton
-                        onClick={startSync}
-                        disabled={
-                          syncing ||
-                          syncPreviewLoading ||
-                          !materialsFolder.trim() ||
-                          selectedSyncCount === 0
-                        }
-                        className={LIBRARY_COMPACT_BUTTON}
-                      >
-                        {syncing ? (
-                          <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
-                        ) : (
-                          <RefreshCw className={`${ICON_SM} mr-1`} />
-                        )}
-                        SYNC SELECTED FILES
-                      </HudButton>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <label
-                        htmlFor="library-sync-course-target"
-                        className={`${LIBRARY_HELP_TEXT} whitespace-nowrap`}
-                      >
-                        Link synced files to course
-                      </label>
-                      <select
-                        id="library-sync-course-target"
-                        aria-label="Sync course"
-                        value={syncCourseTarget}
-                        onChange={(e) => setSyncCourseTarget(e.target.value)}
-                        className={cn(LIBRARY_SELECT, "flex-1")}
-                      >
-                        <option value="">No class</option>
-                        {courses.map((course) => (
-                          <option key={course.id} value={String(course.id)}>
-                            {course.name}
-                            {course.code ? ` (${course.code})` : ""}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    {syncPreview ? (
-                      <HudPanel
-                        variant="b"
-                        className="space-y-2 bg-black/35 p-2"
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className={TEXT_MUTED}>
-                            {syncPreview.counts.files} file
-                            {syncPreview.counts.files === 1 ? "" : "s"} found •{" "}
-                            {selectedSyncCount} selected
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <HudButton
-                              variant="outline"
-                              className={LIBRARY_INLINE_BUTTON}
-                              disabled={!syncPreviewFiles.length}
-                              onClick={() =>
-                                selectAllSyncFiles(!allSyncFilesSelected)
-                              }
-                            >
-                              {allSyncFilesSelected
-                                ? "CLEAR ALL"
-                                : "SELECT ALL"}
-                            </HudButton>
-                          </div>
-                        </div>
-                        <div className="max-h-48 overflow-auto border border-primary/15 bg-black/30 p-1 space-y-1">
-                          <SyncPreviewTreeNode
-                            node={syncPreview.tree}
-                            selectedSyncFiles={selectedSyncFiles}
-                            expandedSyncFolders={expandedSyncFolders}
-                            onToggleFile={toggleSyncFile}
-                            onToggleFolder={toggleSyncFolderExpanded}
-                          />
-                        </div>
-                      </HudPanel>
-                    ) : (
-                      <HudPanel
-                        variant="b"
-                        className={`${LIBRARY_HELP_TEXT} bg-black/45 p-3`}
-                      >
-                        <div>0 selected</div>
-                        <div>
-                          Scan the folder to browse your structure and choose
-                          files.
-                        </div>
-                      </HudPanel>
-                    )}
-                    {syncPreviewError ? (
-                      <div className="text-sm text-yellow-300 break-all">
-                        <AlertTriangle className={`${ICON_SM} inline mr-1`} />
-                        {syncPreviewError}
-                      </div>
-                    ) : null}
-                    {(syncing || syncStatus) && (
-                      <div className="mt-1 border border-primary/10 bg-black/45 p-3 space-y-1 text-sm">
-                        <div className="flex items-center justify-between">
-                          <span className={TEXT_MUTED}>Status</span>
-                          <span className="font-terminal !text-white uppercase">
-                            {syncStatus?.status ||
-                              (syncing ? "running" : "idle")}
-                          </span>
-                        </div>
-                        <div className="h-2 w-full bg-primary/15 overflow-hidden">
-                          <div
-                            className="h-full bg-primary transition-all duration-300"
-                            style={{ width: `${syncProgressPercent}%` }}
-                          />
-                        </div>
-                        <div className={TEXT_MUTED}>
-                          Processed {syncStatus?.processed ?? 0} /{" "}
-                          {syncStatus?.total ?? 0} files
-                          {typeof syncStatus?.errors === "number"
-                            ? ` • errors ${syncStatus.errors}`
-                            : ""}
-                        </div>
-                        <div className={`${TEXT_MUTED} break-all`}>
-                          Current:{" "}
-                          <span className="!text-white">
-                            {syncStatus?.current_file ||
-                              (syncing ? "Scanning files..." : "Idle")}
-                          </span>
-                        </div>
-                        {syncStatus?.last_error ? (
-                          <div className="text-red-300 break-all">
-                            {syncStatus.last_error}
-                          </div>
-                        ) : null}
-                        {(
-                          syncStatus?.sync_result?.errors as
-                            | string[]
-                            | undefined
-                        )?.length ? (
-                          <details className="mt-1">
-                            <summary className="text-red-400 cursor-pointer text-sm font-terminal">
-                              {
-                                (syncStatus!.sync_result!.errors as string[])
-                                  .length
-                              }{" "}
-                              file error
-                              {(syncStatus!.sync_result!.errors as string[])
-                                .length > 1
-                                ? "s"
-                                : ""}{" "}
-                              — click to expand
-                            </summary>
-                            <ul className="mt-1 text-red-300 text-sm font-terminal list-disc pl-4 max-h-32 overflow-y-auto">
-                              {(
-                                syncStatus!.sync_result!.errors as string[]
-                              ).map((err: string) => (
-                                <li key={err} className="break-all">
-                                  {err}
-                                </li>
-                              ))}
-                            </ul>
-                            {Number(
-                              (
-                                syncStatus?.sync_result as
-                                  | { errors_total?: number }
-                                  | undefined
-                              )?.errors_total || 0,
-                            ) >
-                            (syncStatus!.sync_result!.errors as string[])
-                              .length ? (
-                              <div className="mt-1 text-red-300">
-                                Showing first{" "}
-                                {
-                                  (syncStatus!.sync_result!.errors as string[])
-                                    .length
-                                }{" "}
-                                of{" "}
-                                {Number(
-                                  (
-                                    syncStatus!.sync_result as {
-                                      errors_total?: number;
-                                    }
-                                  ).errors_total,
-                                )}{" "}
-                                errors.
-                              </div>
-                            ) : null}
-                          </details>
-                        ) : null}
-                      </div>
-                    )}
                   </HudPanel>
                   ) : null}
+	                </div>
+	              </div>
 
-                  <HudPanel
-                    variant="b"
-                    className={`${LIBRARY_PANEL_SURFACE} space-y-3 p-3`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <BookOpen className={ICON_SM} />
-                      <div className={LIBRARY_PANEL_TITLE}>STUDY READINESS</div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className={LIBRARY_PANEL_INSET + " p-2"}>
-                        <div className={TEXT_MUTED}>Visible files</div>
-                        <div className="font-terminal text-lg text-foreground">
-                          {visibleMaterials.length}
-                        </div>
-                      </div>
-                      <div className={LIBRARY_PANEL_INSET + " p-2"}>
-                        <div className={TEXT_MUTED}>Current Run</div>
-                        <div className="font-terminal text-lg text-foreground">
-                          {selectedForTutor.length}
-                        </div>
-                      </div>
-                      <div className={LIBRARY_PANEL_INSET + " p-2"}>
-                        <div className={TEXT_MUTED}>Embedded</div>
-                        <div className="font-terminal text-lg text-foreground">
-                          {embedStatus?.embedded ?? 0}
-                        </div>
-                      </div>
-                      <div className={LIBRARY_PANEL_INSET + " p-2"}>
-                        <div className={TEXT_MUTED}>Needs work</div>
-                        <div className="font-terminal text-lg text-foreground">
-                          {(embedStatus?.pending ?? 0) + (embedStatus?.stale ?? 0)}
-                        </div>
-                      </div>
-                    </div>
-                    <div className={LIBRARY_HELP_TEXT}>
-                      {selectedForTutor.length
-                        ? `${selectedForTutor.length} file${selectedForTutor.length === 1 ? "" : "s"} in Current Run for Tutor handoff.`
-                        : "Use Study on a row or select files below to build the Current Run."}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <HudButton
-                        variant="outline"
-                        className={LIBRARY_COMPACT_BUTTON}
-                        disabled={!defaultVisibleStudyMaterialIds.length}
-                        onClick={replaceTutorQueueWithVisible}
-                      >
-                        REPLACE RUN
-                      </HudButton>
-                      <HudButton
-                        variant="outline"
-                        className={LIBRARY_COMPACT_BUTTON}
-                        disabled={!defaultVisibleStudyMaterialIds.length}
-                        onClick={addVisibleToTutorQueue}
-                      >
-                        ADD STUDY FILES
-                      </HudButton>
-                      <HudButton
-                        variant="outline"
-                        className={LIBRARY_COMPACT_BUTTON}
-                        disabled={!selectedForTutor.length}
-                        onClick={clearTutorQueue}
-                      >
-                        CLEAR RUN
-                      </HudButton>
-                      <HudButton
-                        className={LIBRARY_COMPACT_BUTTON}
-                        disabled={!selectedForTutor.length}
-                        onClick={handleOpenTutor}
-                      >
-                        OPEN TUTOR ({selectedForTutor.length})
-                      </HudButton>
-                    </div>
-                  </HudPanel>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className={`${PANEL_PADDING} flex-1 min-h-0 flex flex-col gap-3`}
-              >
+		              {showMaterialsTab ? (
+		              <div
+		                className={`${PANEL_PADDING} flex-1 min-h-0 flex flex-col gap-3`}
+		              >
                 <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                   <div className="space-y-1">
-                    <div className={LIBRARY_PANEL_TITLE}>YOUR MATERIALS</div>
+                    <div className={LIBRARY_PANEL_TITLE}>
+                      {materialSectionTitle}
+                    </div>
                     <div className={TEXT_MUTED}>
                       {sidebarMode === "courses" ? "Course" : "Folder"}:{" "}
                       <span className="!text-white font-terminal">
                         {selectedFolderLabel}
                       </span>{" "}
-                      • showing {visibleMaterials.length} file
-                      {visibleMaterials.length === 1 ? "" : "s"}
-                    </div>
-                    <div className={TEXT_MUTED}>
-                      Current Run: {selectedForTutor.length} file
-                      {selectedForTutor.length === 1 ? "" : "s"} total •{" "}
-                      {selectedVisibleMaterialIds.length} in this view
-                      {hiddenTutorSelectionCount > 0
-                        ? ` • ${hiddenTutorSelectionCount} from other views`
-                        : ""}
+                      • showing {visibleTabFileCount} {visibleTabFileLabel}
+                      {visibleTabFileCount === 1 ? "" : "s"}
                     </div>
                   </div>
-                  <div className="grid gap-2 lg:grid-cols-[auto_auto_auto]">
-                    <HudPanel
-                      variant="b"
-                      className={`${LIBRARY_PANEL_INSET} space-y-2 p-2`}
-                    >
-                      <div
-                        className={`${TEXT_MUTED} text-ui-xs uppercase tracking-wide`}
-                      >
-                        Course Linking
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <select
-                          value={courseLinkTarget}
-                          onChange={(e) => setCourseLinkTarget(e.target.value)}
-                          className={LIBRARY_SELECT}
-                          disabled={
-                            courses.length === 0 || courseLinkMutation.isPending
-                          }
-                        >
-                          <option value="">Select course</option>
-                          {courses.map((course) => (
-                            <option key={course.id} value={String(course.id)}>
-                              {course.name}
-                              {course.code ? ` (${course.code})` : ""}
-                            </option>
-                          ))}
-                        </select>
-                        <HudButton
-                          variant="outline"
-                          className={LIBRARY_COMPACT_BUTTON}
-                          disabled={
-                            courseLinkMutation.isPending ||
-                            !selectedVisibleMaterialIds.length ||
-                            !courseLinkTarget
-                          }
-                          onClick={handleLinkSelectedToCourse}
-                        >
-                          {courseLinkMutation.isPending ? (
-                            <Loader2
-                              className={`${ICON_SM} animate-spin mr-1`}
-                            />
-                          ) : (
-                            <Link2 className={`${ICON_SM} mr-1`} />
-                          )}
-                          LINK VIEW
-                        </HudButton>
-                      </div>
-                    </HudPanel>
+                  <div className="grid gap-2 lg:grid-cols-[minmax(260px,420px)_auto]">
+                    {showMaterialsTab ? (
+                      <input
+                        aria-label="Search Library files"
+                        className={INPUT_BASE}
+                        placeholder="Search Library files"
+                        value={librarySearchQuery}
+                        onChange={(event) =>
+                          setLibrarySearchQuery(event.target.value)
+                        }
+                      />
+                    ) : null}
 
-                    <HudPanel
-                      variant="b"
-                      className="space-y-2 border-destructive/30 bg-destructive/5 p-2"
-                    >
-                      <div className="text-ui-xs uppercase tracking-wide text-red-200">
-                        Library Cleanup
-                      </div>
-                      <div className="flex items-center flex-wrap gap-2">
-                        <HudButton
-                          variant="outline"
-                          className="w-auto min-h-[34px] rounded-none border-destructive/50 px-3 text-sm text-destructive hover:bg-destructive/10"
-                          disabled={
-                            selectedVisibleMaterialIds.length === 0 ||
-                            clearMaterialsMutation.isPending
-                          }
-                          onClick={() => {
-                            if (!selectedVisibleMaterialIds.length) return;
-                            if (
-                              !window.confirm(
-                                `Delete ${selectedVisibleMaterialIds.length} selected materials from the current folder view? This will not delete your local PT School files.`,
-                              )
-                            )
-                              return;
-                            clearMaterialsMutation.mutate([
-                              ...selectedVisibleMaterialIds,
-                            ]);
-                          }}
-                        >
-                          {clearMaterialsMutation.isPending ? (
-                            <Loader2
-                              className={`${ICON_SM} animate-spin mr-1`}
-                            />
-                          ) : (
-                            <Trash2 className={`${ICON_SM} mr-1`} />
-                          )}
-                          DELETE VIEW SELECTION
-                        </HudButton>
-                        <HudButton
-                          variant="outline"
-                          className="w-auto min-h-[34px] rounded-none border-destructive/50 px-3 text-sm text-destructive hover:bg-destructive/10"
-                          disabled={
-                            materials.length === 0 ||
-                            clearMaterialsMutation.isPending
-                          }
-                          onClick={() => {
-                            const safeCount = materials.length;
-                            if (!safeCount) return;
-                            if (
-                              !window.confirm(
-                                `Delete all ${safeCount} materials from tutor library? This will not delete your local PT School files.`,
-                              )
-                            )
-                              return;
-                            clearMaterialsMutation.mutate(
-                              materials.map((m) => m.id),
-                            );
-                          }}
-                        >
-                          {clearMaterialsMutation.isPending ? (
-                            <Loader2
-                              className={`${ICON_SM} animate-spin mr-1`}
-                            />
-                          ) : (
-                            <Trash2 className={`${ICON_SM} mr-1`} />
-                          )}
-                          DELETE ALL LIBRARY FILES
-                        </HudButton>
-                      </div>
-                    </HudPanel>
-                  </div>
-                </div>
+	                  </div>
+	                </div>
 
-                {hiddenTutorSelectionCount > 0 ? (
-                  <div className="border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-sm font-terminal text-yellow-100">
-                    The Current Run still includes {hiddenTutorSelectionCount}{" "}
-                    file{hiddenTutorSelectionCount === 1 ? "" : "s"} from other
-                    views. Use{" "}
-                    <span className="text-white">REPLACE RUN</span> if you
-                    want Tutor to use only visible study files right now.
-                  </div>
-                ) : null}
-
-                <HudPanel
-                  variant="b"
+	                {showMaterialsTab ? (
+	                <HudPanel
+	                  variant="b"
                   className="flex-1 min-h-0 overflow-hidden bg-transparent backdrop-blur-lg"
                 >
                   {isLoading ? (
@@ -2917,11 +1539,11 @@ function useLibraryPageController() {
                         Upload PDF, DOCX, PPTX, MD, or TXT files above
                       </div>
                     </div>
-                  ) : visibleMaterials.length === 0 ? (
+                  ) : visibleCatalogMaterials.length === 0 ? (
                     <div className="text-center py-10">
                       <FileText className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
                       <div className={TEXT_MUTED}>
-                        No materials found in this folder view.
+                        No materials found in this Library view.
                       </div>
                     </div>
                   ) : (
@@ -2934,27 +1556,7 @@ function useLibraryPageController() {
                               "32px minmax(250px,1.55fr) minmax(180px,1fr) 78px 84px 92px 126px",
                           }}
                         >
-                          <div
-                            className="flex items-center justify-center"
-                            title={
-                              allTutorMaterialsSelected
-                                ? "Unselect all visible study files"
-                                : "Select all visible study files"
-                            }
-                          >
-                            <Checkbox
-                              checked={allTutorMaterialsSelected}
-                              onCheckedChange={toggleAllMaterialsForTutor}
-                              disabled={
-                                defaultVisibleStudyMaterialIds.length === 0
-                              }
-                              aria-label={
-                                allTutorMaterialsSelected
-                                  ? "Unselect all visible study files"
-                                  : "Select all visible study files"
-                              }
-                            />
-                          </div>
+                          <div aria-hidden="true" />
                           <div className={TEXT_MUTED}>Title</div>
                           <div className={TEXT_MUTED}>Folder</div>
                           <div className={TEXT_MUTED}>Type</div>
@@ -2964,20 +1566,17 @@ function useLibraryPageController() {
                             Actions
                           </div>
                         </div>
-                        {visibleMaterials.map((mat) =>
+                        {visibleCatalogMaterials.map((mat) =>
                           renderMaterialRow(
                             mat,
                             Boolean(
                               mat.checksum && dupeChecksums.has(mat.checksum),
                             ),
-                            selectedForTutor,
                             editingId,
                             editTitle,
                             setEditTitle,
                             setEditingId,
                             saveEdit,
-                            toggleMaterialForTutor,
-                            studyMaterialInTutor,
                             toggleEnabled,
                             deleteMutation,
                             startEdit,
@@ -2990,9 +1589,11 @@ function useLibraryPageController() {
                         )}
                       </div>
                     </div>
-                  )}
-                </HudPanel>
-              </div>
+	                  )}
+	                </HudPanel>
+	                ) : null}
+	              </div>
+	              ) : null}
             </HudPanel>
           </section>
         </div>
@@ -3011,8 +1612,8 @@ function useLibraryPageController() {
               New Course
             </DialogTitle>
             <DialogDescription>
-              Creates a course record. Upload materials and create the
-              Obsidian folder afterward.
+              Creates a course record. Upload materials afterward when files
+              belong with this class.
             </DialogDescription>
           </DialogHeader>
           <form

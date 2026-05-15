@@ -2,6 +2,40 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-05-15 - Library catalog-only boundary
+
+- Simplified `/library` into an uploaded-file catalog and upload surface: primary tabs are now `All Files` and `Upload`.
+- Removed Library workflow paths for Semester Intake, Folder Sync, Tutor selection/handoff, Course Setup processing, Send to Priming, Obsidian destination, and PT School source refresh/import.
+- Added file search across uploaded Library rows and kept setup files visible as normal catalog rows with a `SETUP` badge.
+- Validation:
+  - `npm run test -- client/src/pages/__tests__/library.test.tsx`
+  - `npm run check`
+  - `npm run build`
+  - Built-in browser verification at `http://127.0.0.1:5127/library`; `All Files` and `Upload` render, search exists, and removed intake/Tutor/Obsidian controls are absent.
+
+## 2026-05-14 - Library visual design tightened
+
+- Made `/library` calmer and easier to read by reducing the Library hero/status strip height, muting the red HUD glow, and shifting the page-specific palette toward graphite surfaces with crimson accents.
+- Converted the Library workflow selector into semantic tabs so Source, Course Setup, Study Materials, Tutor Handoff, and Advanced behave like the primary navigation for the page.
+- Increased the readability of Library helper text, course rail rows, workflow tabs, and action controls while preserving the existing Library upload, intake, folder sync, and Tutor handoff behavior.
+- Validation:
+  - `npm run test -- client/src/pages/__tests__/library.test.tsx`
+  - `npm run check`
+  - `npm run build`
+  - Browser verification at `http://127.0.0.1:5127/library`; workflow tabs clicked successfully and console logs stayed clean.
+
+## 2026-05-14 - Library primary tabs simplified
+
+- Simplified `/library` primary navigation to the two user-facing surfaces Trey kept: `Study Materials` and `Add Files`.
+- Removed Course Setup, Tutor Handoff, and Advanced from the primary tab row while preserving setup upload, syllabus/schedule setup source rows, setup-to-Priming, one-file Study launch, and selective import/sync behavior.
+- Moved setup files into a compact syllabus/schedule collapsible inside Study Materials and kept Tutor selection controls inline instead of as a separate Tutor Handoff destination.
+- Renamed the inline handoff controls from vague `Study Run` language to `Selected for Tutor`, `Use Visible`, and `Add Visible`.
+- Validation:
+  - `npm run test -- client/src/pages/__tests__/library.test.tsx`
+  - `npm run check`
+  - `npm run build`
+  - Browser verification at `http://127.0.0.1:5127/library`; only Study Materials and Add Files appeared as primary tabs, both rendered correctly, and console logs stayed clean.
+
 ## 2026-04-01 - KWIK Hook aligned to literal word-sound -> meaning -> link flow
 
 - Rewrote `sop/library/methods/M-ENC-001.yaml` so full `KWIK Hook` now literally walks through `Word Sound -> Real Meaning -> Meaning Picture -> Link -> Personalize -> Lock`, which matches the mnemonic flow Trey wants to use during study.
