@@ -343,6 +343,35 @@
     font-size: var(--text-lg);
     line-height: var(--text-lg--line-height);
   }
+
+  .library-material-table-scroll {
+    margin-block: 1.25rem;
+    max-width: 100%;
+    overflow-x: auto;
+    border: 1px solid hsl(var(--primary) / 0.24);
+    background: rgba(0, 0, 0, 0.28);
+  }
+
+  .library-material-table-scroll table {
+    margin: 0;
+    min-width: 100%;
+    width: max-content;
+    border-collapse: collapse;
+    table-layout: auto;
+  }
+
+  .library-material-table-scroll :is(th, td) {
+    min-width: 9rem;
+    max-width: 28rem;
+    vertical-align: top;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  .library-material-table-scroll th {
+    font-weight: 700;
+  }
 }
 
 @layer utilities {

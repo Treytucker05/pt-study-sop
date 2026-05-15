@@ -263,7 +263,10 @@ describe("Library catalog", () => {
       source_path: "Uploaded Files/intro-notes.pdf",
       file_type: "pdf",
       char_count: 12000,
-      content: "# Intro Notes\n\n" + "Readable paragraph.\n\n".repeat(80),
+      content:
+        "# Intro Notes\n\n" +
+        "| Phase | What to check |\n|---|---|\n| Intake | Confirm the file renders clearly. |\n\n" +
+        "Readable paragraph.\n\n".repeat(80),
       assets: [],
     });
 
@@ -278,6 +281,8 @@ describe("Library catalog", () => {
     expect(markdownReader.className).toContain("library-material-markdown");
     expect(markdownReader.className).toContain("prose-headings:font-sans");
     expect(markdownReader.className).not.toContain("prose-headings:font-arcade");
+    expect(screen.getByTestId("library-material-table-scroll")).toBeInTheDocument();
+    expect(screen.getByRole("table")).toHaveTextContent("What to check");
     expect(screen.getByRole("dialog", { name: "Intro Notes" })).toBeInTheDocument();
     expect(screen.getAllByText(/readable paragraph/i).length).toBeGreaterThan(1);
   });

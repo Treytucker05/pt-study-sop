@@ -1,5 +1,11 @@
 import { PageScaffold } from "@/components/PageScaffold";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  type ComponentPropsWithoutRef,
+} from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import {
@@ -130,6 +136,39 @@ function resolveMaterialAssetUrl(
     .join("/");
   if (!encodedPath) return "";
   return `/api/tutor/materials/${materialId}/asset/${encodedPath}`;
+}
+
+function getMaterialMarkdownComponents(materialId: number) {
+  return {
+    table: ({
+      node: _node,
+      children,
+      ...props
+    }: ComponentPropsWithoutRef<"table"> & { node?: unknown }) => (
+      <div
+        className="library-material-table-scroll"
+        data-testid="library-material-table-scroll"
+      >
+        <table {...props}>{children}</table>
+      </div>
+    ),
+    img: ({
+      node: _node,
+      src,
+      alt,
+    }: ComponentPropsWithoutRef<"img"> & { node?: unknown }) => {
+      const resolvedSrc = resolveMaterialAssetUrl(src, materialId);
+      if (!resolvedSrc) return null;
+      return (
+        <img
+          src={resolvedSrc}
+          alt={alt || "Extracted figure"}
+          loading="lazy"
+          className="max-w-full h-auto border border-primary/30 bg-black/20"
+        />
+      );
+    },
+  };
 }
 
 function getMaterialTitle(mat: Material): string {
@@ -1768,29 +1807,9 @@ function useLibraryPageController() {
                     >
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
-                        components={{
-                          img: ({
-                            src,
-                            alt,
-                          }: {
-                            src?: string;
-                            alt?: string;
-                          }) => {
-                            const resolvedSrc = resolveMaterialAssetUrl(
-                              src,
-                              materialContent.id,
-                            );
-                            if (!resolvedSrc) return null;
-                            return (
-                              <img
-                                src={resolvedSrc}
-                                alt={alt || "Extracted figure"}
-                                loading="lazy"
-                                className="max-w-full h-auto border border-primary/30 bg-black/20"
-                              />
-                            );
-                          },
-                        }}
+                        components={getMaterialMarkdownComponents(
+                          materialContent.id,
+                        )}
                       >
                         {materialContent.content}
                       </ReactMarkdown>
@@ -1808,23 +1827,7 @@ function useLibraryPageController() {
                 >
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
-                    components={{
-                      img: ({ src, alt }: { src?: string; alt?: string }) => {
-                        const resolvedSrc = resolveMaterialAssetUrl(
-                          src,
-                          materialContent.id,
-                        );
-                        if (!resolvedSrc) return null;
-                        return (
-                          <img
-                            src={resolvedSrc}
-                            alt={alt || "Extracted figure"}
-                            loading="lazy"
-                            className="max-w-full h-auto border border-primary/30 bg-black/20"
-                          />
-                        );
-                      },
-                    }}
+                    components={getMaterialMarkdownComponents(materialContent.id)}
                   >
                     {materialContent.content}
                   </ReactMarkdown>

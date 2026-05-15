@@ -2682,3 +2682,10 @@ Recommended next steps:
 - Confirmed the extracted material text still includes `t/T` characters; the issue was rendering-only, not extraction loss.
 - Added a scoped `library-material-markdown` reader class and regression coverage so document headings cannot silently fall back to `font-arcade`.
 - Validation: `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`; built-in browser verification on `http://127.0.0.1:5127/library` confirmed reader headings render with system sans, normal tracking, normal case, and clean console logs.
+
+## 2026-05-15 - Library material reader table fix
+
+- Fixed extracted Markdown tables in `/library` material content so each table renders inside a horizontal scroll wrapper instead of squeezing or overflowing the document reader.
+- Added scoped table reader CSS for normal cell wrapping, top-aligned cells, readable sans text, and wide-table horizontal scroll.
+- Added Library regression coverage proving extracted tables render through the table-scroll wrapper.
+- Validation: `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`; built-in browser verification on `http://127.0.0.1:5127/library` confirmed a real extracted material table renders with 4 table wrappers, scrollable overflow, wrapped cells, and clean console logs.
