@@ -10,6 +10,7 @@ const {
   getEveryCoursesMock,
   getContentSourcesMock,
   getMaterialContentMock,
+  previewSyncMaterialsFolderMock,
   getEmbedStatusMock,
   updateMaterialMock,
   deleteMaterialMock,
@@ -21,6 +22,7 @@ const {
   getEveryCoursesMock: vi.fn(),
   getContentSourcesMock: vi.fn(),
   getMaterialContentMock: vi.fn(),
+  previewSyncMaterialsFolderMock: vi.fn(),
   getEmbedStatusMock: vi.fn(),
   updateMaterialMock: vi.fn(),
   deleteMaterialMock: vi.fn(),
@@ -57,6 +59,7 @@ vi.mock("@/lib/api", () => ({
       getMaterials: getMaterialsMock,
       getContentSources: getContentSourcesMock,
       getMaterialContent: getMaterialContentMock,
+      previewSyncMaterialsFolder: previewSyncMaterialsFolderMock,
       embedStatus: getEmbedStatusMock,
       updateMaterial: updateMaterialMock,
       deleteMaterial: deleteMaterialMock,
@@ -115,6 +118,20 @@ describe("Library catalog", () => {
       source_path: "Uploaded Files/intro-notes.pdf",
       content: "notes",
       assets: [],
+    });
+    previewSyncMaterialsFolderMock.mockResolvedValue({
+      ok: true,
+      folder: "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School",
+      tree: {
+        type: "folder",
+        name: "PT School",
+        path: "",
+        children: [],
+      },
+      counts: { folders: 0, files: 0 },
+      allowed_exts: [".pdf", ".docx", ".pptx", ".txt", ".md", ".mp4"],
+      truncated: false,
+      max_files: 5000,
     });
     getEmbedStatusMock.mockResolvedValue({
       materials: [
@@ -399,7 +416,7 @@ describe("Library catalog", () => {
     );
   });
 
-  it("folder rail shows folders from uploaded Library materials only", async () => {
+  it("folder rail refreshes from the live PT School source tree", async () => {
     getMaterialsMock.mockResolvedValue([
       {
         id: 301,
@@ -417,12 +434,74 @@ describe("Library catalog", () => {
         updated_at: new Date("2026-05-14T12:00:00Z").toISOString(),
       },
     ]);
+    previewSyncMaterialsFolderMock.mockResolvedValue({
+      ok: true,
+      folder: "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School",
+      tree: {
+        type: "folder",
+        name: "PT School",
+        path: "",
+        children: [
+          {
+            type: "folder",
+            name: "10_Dx Mgmt Integumentary",
+            path: "10_Dx Mgmt Integumentary",
+            children: [
+              {
+                type: "folder",
+                name: "10_Week 1 Course Intro Skin Anatomy and Wound Healing",
+                path: "10_Dx Mgmt Integumentary/10_Week 1 Course Intro Skin Anatomy and Wound Healing",
+                children: [
+                  {
+                    type: "file",
+                    name: "PHYT 6262 - Skin Anatomy.pptx",
+                    path: "10_Dx Mgmt Integumentary/10_Week 1 Course Intro Skin Anatomy and Wound Healing/PHYT 6262 - Skin Anatomy.pptx",
+                    size: 400,
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            type: "folder",
+            name: "11_Movement Science II",
+            path: "11_Movement Science II",
+            children: [
+              {
+                type: "folder",
+                name: "10_Intro and Perspective of Human Movement",
+                path: "11_Movement Science II/10_Intro and Perspective of Human Movement",
+                children: [
+                  {
+                    type: "file",
+                    name: "objectives.pdf",
+                    path: "11_Movement Science II/10_Intro and Perspective of Human Movement/objectives.pdf",
+                    size: 200,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      counts: { folders: 4, files: 2 },
+      allowed_exts: [".pdf", ".pptx"],
+      truncated: false,
+      max_files: 5000,
+    });
 
     renderLibrary();
 
     fireEvent.click(await screen.findByRole("button", { name: /folders/i }));
-    expect(await screen.findByText("Movement Science II")).toBeInTheDocument();
-    expect(screen.getByText("Topic 1")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /refresh pt school/i })).not.toBeInTheDocument();
+    expect(previewSyncMaterialsFolderMock).toHaveBeenCalledWith({});
+    expect(await screen.findByText("10_Dx Mgmt Integumentary")).toBeInTheDocument();
+    expect(screen.getByText("11_Movement Science II")).toBeInTheDocument();
+    expect(
+      screen.getByText("10_Intro and Perspective of Human Movement"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /refresh source folders/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/2 source files detected/i)).toBeInTheDocument();
   });
 });

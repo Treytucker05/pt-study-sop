@@ -39,7 +39,7 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
     - `/library` primary tabs are now `All Files` and `Upload`.
     - Library rows are catalog-only: no select-for-Tutor checkbox and no row Study action.
     - Setup files render as ordinary catalog rows with a `SETUP` badge, without Send to Priming or Obsidian controls.
-    - Folder rail now reflects uploaded Library materials only; live PT School folder refresh/import is no longer part of Library.
+    - Folder rail now reflects the live configured PT School source tree for navigation/counts, while the material table remains catalog-only for uploaded Library files; no source-folder import workflow is exposed in Library.
     - Checks passed: `npm run test -- client/src/pages/__tests__/library.test.tsx`, `npm run check`, and `npm run build`.
     - Built-in browser verification passed at `http://127.0.0.1:5127/library`; `All Files` showed search/catalog rows, `Upload` showed one upload surface, and removed intake/Tutor/Obsidian controls stayed absent.
   - Done when:

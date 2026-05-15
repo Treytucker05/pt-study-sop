@@ -2697,3 +2697,11 @@ Recommended next steps:
 - Added tests for private-use glyph cleanup, split-ligature cleanup, quoted-phrase safety, and the narrower material reader class.
 - Backed up `brain/data/pt_study.db` to `brain/data/backups/pt_study_before_extract_text_normalize_20260515_025808.db`, then normalized existing extracted rows in place so the current Library view is cleaned immediately.
 - Validation: `.venv/bin/python -m pytest brain/tests/test_text_extractor.py -q`; `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`; built-in browser verification on `/library` confirmed the cleaned PDF text and readable modal formatting.
+
+## 2026-05-15 - Library live PT School folder rail
+
+- Fixed `/library` Folders rail so it scans the configured PT School source folder through `/api/tutor/materials/sync/preview` instead of deriving folder names only from already-uploaded `rag_docs`.
+- Folder counts now reflect live PT School source files while the material table remains catalog-only for uploaded Library files.
+- Added a Refresh source folders control and copy that explains counts are source files but rows are uploaded Library files.
+- Added regression coverage for env-backed sync preview with omitted `folder_path` and Library source-tree folder rendering.
+- Validation: `.venv/bin/python -m pytest brain/tests/test_tutor_material_pipeline_certification.py -q`; `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`; built-in browser verification on `/library` confirmed Dx Mgmt, Cardiovascular Pulmonary, class schedules, and other OneDrive PT School source folders appear in the Folders rail.

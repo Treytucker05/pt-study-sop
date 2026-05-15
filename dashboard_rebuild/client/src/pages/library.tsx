@@ -16,6 +16,8 @@ import type {
   MaterialContent,
   TutorEmbedStatus,
   TutorContentSources,
+  TutorSyncPreviewNode,
+  TutorSyncPreviewResult,
 } from "@/lib/api";
 import type { Course } from "@shared/schema";
 import {
@@ -390,28 +392,6 @@ interface FolderListItem {
   hasChildren: boolean;
 }
 
-function getFolderNode(
-  root: FolderNode,
-  folderPath: string,
-): FolderNode | null {
-  if (!folderPath) return root;
-  const parts = folderPath.split("/").filter(Boolean);
-  let node: FolderNode | undefined = root;
-  for (const part of parts) {
-    node = node?.children[part];
-    if (!node) return null;
-  }
-  return node;
-}
-
-function collectFolderMaterials(node: FolderNode): Material[] {
-  const collected = [...node.files];
-  for (const child of Object.values(node.children)) {
-    collected.push(...collectFolderMaterials(child));
-  }
-  return collected;
-}
-
 function flattenFolders(
   node: FolderNode,
   depth = 0,
@@ -432,6 +412,49 @@ function flattenFolders(
     items.push(...flattenFolders(child, depth + 1, path));
   }
   return items;
+}
+
+function countPreviewFiles(node: TutorSyncPreviewNode | undefined): number {
+  if (!node?.children?.length) return 0;
+  return node.children.reduce((total, child) => {
+    if (child.type === "file") return total + 1;
+    return total + countPreviewFiles(child);
+  }, 0);
+}
+
+function flattenPreviewFolders(
+  node: TutorSyncPreviewNode | undefined,
+  depth = 0,
+): FolderListItem[] {
+  if (!node?.children?.length) return [];
+  const items: FolderListItem[] = [];
+  const folderChildren = node.children.filter((child) => child.type === "folder");
+
+  for (const child of folderChildren) {
+    const path = (child.path || child.name).replace(/^\/+|\/+$/g, "");
+    items.push({
+      path,
+      name: child.name,
+      depth,
+      filesCount: countPreviewFiles(child),
+      hasChildren: Boolean(
+        child.children?.some((grandchild) => grandchild.type === "folder"),
+      ),
+    });
+    items.push(...flattenPreviewFolders(child, depth + 1));
+  }
+
+  return items;
+}
+
+function materialIsInFolder(mat: Material, folderPath: string): boolean {
+  if (!folderPath) return true;
+  const normalizedFolder = folderPath.replace(/^\/+|\/+$/g, "");
+  const materialFolder = getMaterialFolder(mat).replace(/^\/+|\/+$/g, "");
+  return (
+    materialFolder === normalizedFolder ||
+    materialFolder.startsWith(`${normalizedFolder}/`)
+  );
 }
 
 function getFolderAncestorPaths(path: string): string[] {
@@ -725,6 +748,16 @@ function useLibraryPageController() {
     queryKey: ["tutor-materials", "include-setup"],
     queryFn: () => api.tutor.getMaterials({ include_setup: true }),
   });
+  const {
+    data: sourceFolderPreview,
+    error: sourceFolderPreviewError,
+    isFetching: isSourceFolderFetching,
+    refetch: refetchSourceFolderPreview,
+  } = useQuery<TutorSyncPreviewResult>({
+    queryKey: ["library-source-folder-preview"],
+    queryFn: () => api.tutor.previewSyncMaterialsFolder({}),
+    staleTime: 15_000,
+  });
   const { data: courses = [] } = useQuery<Course[]>({
     queryKey: ["courses-active"],
     queryFn: () => api.courses.getActive(),
@@ -846,27 +879,35 @@ function useLibraryPageController() {
     [queryClient],
   );
 
-  const folderTree = useMemo(() => buildFolderTree(materials), [materials]);
-  const folderItems = useMemo(() => flattenFolders(folderTree), [folderTree]);
-  const activeFolderItems = folderItems;
+  const uploadedFolderTree = useMemo(() => buildFolderTree(materials), [materials]);
+  const uploadedFolderItems = useMemo(
+    () => flattenFolders(uploadedFolderTree),
+    [uploadedFolderTree],
+  );
+  const sourceFolderItems = useMemo(
+    () => flattenPreviewFolders(sourceFolderPreview?.tree),
+    [sourceFolderPreview],
+  );
+  const hasLiveSourceFolders = sourceFolderItems.length > 0;
+  const folderItems = hasLiveSourceFolders
+    ? sourceFolderItems
+    : uploadedFolderItems;
+  const sourceFolderFileCount = sourceFolderPreview?.counts?.files;
+  const sourceFolderRoot = sourceFolderPreview?.folder || "";
   const activeFolderPathSet = useMemo(
-    () => new Set(activeFolderItems.map((item) => item.path)),
-    [activeFolderItems],
+    () => new Set(folderItems.map((item) => item.path)),
+    [folderItems],
   );
   const visibleFolderItems = useMemo(
     () =>
-      activeFolderItems.filter((item) => {
+      folderItems.filter((item) => {
         if (item.depth === 0) return true;
         const ancestorPaths = getFolderAncestorPaths(item.path).slice(0, -1);
         return ancestorPaths.every((ancestor) =>
           expandedFolderPaths.has(ancestor),
         );
       }),
-    [activeFolderItems, expandedFolderPaths],
-  );
-  const selectedFolderNode = useMemo(
-    () => getFolderNode(folderTree, selectedFolderPath),
-    [folderTree, selectedFolderPath],
+    [folderItems, expandedFolderPaths],
   );
   const unlinkedCount = materials.filter((m) => m.course_id === null).length;
   const visibleMaterials = useMemo(() => {
@@ -883,14 +924,13 @@ function useLibraryPageController() {
         getMaterialTitle(a).localeCompare(getMaterialTitle(b)),
       );
     }
-    if (!selectedFolderNode) return [];
-    return collectFolderMaterials(selectedFolderNode).sort((a, b) =>
-      getMaterialTitle(a).localeCompare(getMaterialTitle(b)),
-    );
+    return materials
+      .filter((material) => materialIsInFolder(material, selectedFolderPath))
+      .sort((a, b) =>
+        getMaterialTitle(a).localeCompare(getMaterialTitle(b)),
+      );
   }, [
-    activeFolderPathSet,
     selectedFolderPath,
-    selectedFolderNode,
     selectedCourseId,
     sidebarMode,
     materials,
@@ -911,8 +951,15 @@ function useLibraryPageController() {
       );
       return course ? course.name || course.code : "All Materials";
     }
-    return selectedFolderPath || "All Materials";
-  }, [sidebarMode, selectedCourseId, contentSources, selectedFolderPath]);
+    if (selectedFolderPath) return selectedFolderPath;
+    return hasLiveSourceFolders ? "All PT School folders" : "All Materials";
+  }, [
+    sidebarMode,
+    selectedCourseId,
+    contentSources,
+    selectedFolderPath,
+    hasLiveSourceFolders,
+  ]);
   const selectFolderPath = (path: string) => {
     setSelectedFolderPath(path);
     const ancestors = getFolderAncestorPaths(path);
@@ -950,22 +997,20 @@ function useLibraryPageController() {
     if (
       selectedFolderPath !== ALL_FOLDERS_KEY &&
       !activeFolderPathSet.has(selectedFolderPath) &&
-      !getFolderNode(folderTree, selectedFolderPath)
+      !materials.some((material) => materialIsInFolder(material, selectedFolderPath))
     ) {
       selectFolderPath(ALL_FOLDERS_KEY);
     }
   }, [
     activeFolderPathSet,
-    folderTree,
     isLoading,
     materials,
     selectedFolderPath,
   ]);
 
   useEffect(() => {
-    if (initializedFolderExpansion) return;
     // Start with top-level folders expanded so first interaction is not empty.
-    const topLevelPaths = activeFolderItems
+    const topLevelPaths = folderItems
       .filter((item) => item.depth === 0)
       .map((item) => item.path);
     if (!topLevelPaths.length) return;
@@ -974,8 +1019,8 @@ function useLibraryPageController() {
       for (const path of topLevelPaths) next.add(path);
       return next;
     });
-    setInitializedFolderExpansion(true);
-  }, [activeFolderItems, initializedFolderExpansion]);
+    if (!initializedFolderExpansion) setInitializedFolderExpansion(true);
+  }, [folderItems, initializedFolderExpansion]);
 
   const toggleFolderExpanded = (path: string) => {
     const isCollapsing = expandedFolderPaths.has(path);
@@ -1168,13 +1213,46 @@ function useLibraryPageController() {
                 </div>
                 {sidebarMode === "folders" ? (
                   <div className="mt-3 rounded-[0.85rem] border border-primary/15 bg-black/35 p-2">
-                    <div className="min-w-0">
-                      <div className={LIBRARY_SECTION_LABEL}>FOLDERS</div>
-                      <div className={`${LIBRARY_HELP_TEXT} mt-1`}>
-                        Shows folders from files already uploaded into the
-                        Library catalog.
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className={LIBRARY_SECTION_LABEL}>FOLDERS</div>
+                        <div className={`${LIBRARY_HELP_TEXT} mt-1`}>
+                          {hasLiveSourceFolders
+                            ? "Shows the live PT School source tree. Counts are source files; rows are uploaded Library files."
+                            : "Shows folders from uploaded Library files until the PT School source scan is available."}
+                        </div>
+                        {sourceFolderRoot ? (
+                          <div
+                            className={`${LIBRARY_HELP_TEXT} mt-2 truncate text-primary/70`}
+                            title={sourceFolderRoot}
+                          >
+                            Source: {sourceFolderRoot}
+                          </div>
+                        ) : null}
+                        {sourceFolderPreviewError ? (
+                          <div className="mt-2 text-ui-xs text-amber-300">
+                            Source scan unavailable.
+                          </div>
+                        ) : null}
                       </div>
+                      <button
+                        type="button"
+                        aria-label="Refresh source folders"
+                        title="Refresh source folders"
+                        className="library-icon-button shrink-0"
+                        onClick={() => void refetchSourceFolderPreview()}
+                        disabled={isSourceFolderFetching}
+                      >
+                        <RefreshCw
+                          className={`${ICON_SM} ${isSourceFolderFetching ? "animate-spin" : ""}`}
+                        />
+                      </button>
                     </div>
+                    {hasLiveSourceFolders && sourceFolderFileCount !== undefined ? (
+                      <div className={`${TEXT_MUTED} mt-2 text-ui-xs`}>
+                        {sourceFolderFileCount} source files detected.
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
               </div>
@@ -1191,9 +1269,11 @@ function useLibraryPageController() {
                       type="button"
                     >
                       <FolderOpen className={ICON_SM} />
-                      <span className="truncate flex-1">All Materials</span>
+                      <span className="truncate flex-1">
+                        {hasLiveSourceFolders ? "All PT School" : "All Materials"}
+                      </span>
                       <span className="text-sm">
-                        {materials.length}
+                        {sourceFolderFileCount ?? materials.length}
                       </span>
                     </button>
                     {visibleFolderItems.map((folder) => {
@@ -1267,9 +1347,9 @@ function useLibraryPageController() {
                         </div>
                       );
                     })}
-                    {!activeFolderItems.length && materials.length === 0 ? (
+                    {!folderItems.length && materials.length === 0 ? (
                       <div className={`${TEXT_MUTED} px-2 py-3 text-sm`}>
-                        Upload files to populate this rail.
+                        Upload files or refresh the PT School source scan to populate this rail.
                       </div>
                     ) : null}
                   </>

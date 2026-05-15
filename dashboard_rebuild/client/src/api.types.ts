@@ -2227,7 +2227,7 @@ export interface TutorEmbedResult {
 }
 
 export interface TutorSyncPreviewPayload {
-  folder_path: string;
+  folder_path?: string;
   allowed_exts?: string[];
 }
 

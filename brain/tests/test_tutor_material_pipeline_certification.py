@@ -440,6 +440,28 @@ def test_sync_preview_lists_supported_files_only(client, tmp_path: Path) -> None
     assert "ignore.png" not in names
 
 
+def test_sync_preview_uses_configured_material_folder_when_path_omitted(
+    client, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    root = tmp_path / "pt-school"
+    (root / "Dx Mgmt").mkdir(parents=True)
+    (root / "Dx Mgmt" / "skin-anatomy.pptx").write_bytes(b"pptx")
+    monkeypatch.setenv("PT_SCHOOL_MATERIALS_DIR", str(root))
+    monkeypatch.delenv("TUTOR_MATERIALS_DIR", raising=False)
+
+    resp = client.post("/api/tutor/materials/sync/preview", json={})
+
+    assert resp.status_code == 200
+    payload = resp.get_json()
+    assert payload["ok"] is True
+    assert payload["folder"] == str(root.resolve())
+    assert payload["counts"]["files"] == 1
+    dx_folder = next(
+        child for child in payload["tree"]["children"] if child["name"] == "Dx Mgmt"
+    )
+    assert dx_folder["children"][0]["name"] == "skin-anatomy.pptx"
+
+
 def test_sync_start_validates_selected_files_and_course_id(client, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     _insert_course(303, name="Brain Structure")
     root = tmp_path / "sync"
