@@ -28,6 +28,26 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 - Ops note (2026-03-25): `dev-browser` is now a shared agent skill projected into every supported agent root; this does not change Tutor sprint priority.
 
+- [x] LIBRARY-FILE-EXPLORER-TABLE-2026-05-15. Add basic file-explorer controls to the Library file list before bigger visual redesign work.
+  - Scope:
+    - Let table columns resize by dragging header separators.
+    - Let double-clicking a separator auto-fit a column to visible file text.
+    - Let headers drag to reorder columns.
+    - Add simple header filter buttons for file selection basics.
+    - Keep the Library catalog-only boundary; no Tutor handoff or ingestion workflow changes.
+  - Assignee: @codex-cli
+  - Completed: 2026-05-15
+  - Validation:
+    - Library file rows now render from a configurable column model instead of a fixed grid.
+    - Header separators resize columns by drag; double-clicking a separator auto-fits to visible file text.
+    - Header cells can be dragged to reorder columns, with order/widths persisted in local storage.
+    - Title, Folder, Type, and Status headers expose basic filter buttons; right-edge filters align inward so their controls remain visible.
+    - Checks passed: `npm run test -- client/src/pages/__tests__/library.test.tsx`, `npm run check`, and `npm run build`.
+    - Built-in browser verification before the final alignment tweak confirmed the controls render and the Type filter can narrow 11 rows to 1 row; final post-build reload was blocked by Browser Use URL policy, so the next operator refresh should visually confirm the right-edge menu placement.
+  - Done when:
+    - Focused Library tests cover filter, resize/autofit, and reorder behavior.
+    - `npm run test -- client/src/pages/__tests__/library.test.tsx`, `npm run check`, `npm run build`, and browser verification pass.
+
 - [x] LIBRARY-SOURCE-FILE-PICKER-2026-05-15. Let live PT School source folders expose unuploaded files as explicit upload candidates.
   - Scope:
     - When a live source folder is selected, show source files that are not already uploaded into Library.

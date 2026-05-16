@@ -5,6 +5,7 @@ import {
   useMemo,
   useCallback,
   type ComponentPropsWithoutRef,
+  type MouseEvent as ReactMouseEvent,
 } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -57,6 +58,7 @@ import {
   ArchiveRestore,
   ChevronDown,
   Plus,
+  ListFilter,
 } from "lucide-react";
 import {
   Dialog,
@@ -87,8 +89,8 @@ const LIBRARY_MAIN_TITLE =
   "font-arcade text-base uppercase tracking-[0.16em] text-white";
 const LIBRARY_PANEL_TITLE = "library-panel-title";
 const LIBRARY_HELP_TEXT = "library-help-text";
-const MATERIAL_TABLE_GRID_TEMPLATE =
-  "40px minmax(340px,1.35fr) minmax(220px,0.9fr) minmax(240px,0.85fr) 92px 96px 132px";
+const MATERIAL_TABLE_ICON_WIDTH = 40;
+const LIBRARY_TABLE_STORAGE_KEY = "pt-study.library.table.v1";
 const MATERIAL_READER_MARKDOWN_CLASS = `
   library-material-markdown prose prose-invert prose-base mx-auto max-w-[86ch] font-sans text-[16px] leading-8 tracking-normal sm:text-[17px]
   prose-headings:font-sans prose-headings:font-semibold prose-headings:tracking-normal prose-headings:normal-case prose-headings:text-primary prose-headings:border-b prose-headings:border-primary/20 prose-headings:pb-2
@@ -103,6 +105,92 @@ const MATERIAL_READER_MARKDOWN_CLASS = `
 `;
 type LibraryWorkflowTab = "upload" | "materials";
 type MaterialRole = "study" | "reference" | "setup";
+type LibraryTableColumnId =
+  | "title"
+  | "folder"
+  | "type"
+  | "size"
+  | "status"
+  | "actions";
+type LibraryTableFilterKey = "title" | "folder" | "type" | "status";
+type LibraryStatusFilter = "on" | "off";
+type LibraryTableColumnWidths = Record<LibraryTableColumnId, number>;
+
+interface LibraryTableColumnConfig {
+  id: LibraryTableColumnId;
+  label: string;
+  defaultWidth: number;
+  minWidth: number;
+  maxWidth: number;
+  align?: "left" | "right";
+  filter?: LibraryTableFilterKey;
+}
+
+interface LibraryTableFilters {
+  title: string;
+  folder: string;
+  types: string[];
+  statuses: LibraryStatusFilter[];
+}
+
+const LIBRARY_TABLE_COLUMNS: LibraryTableColumnConfig[] = [
+  {
+    id: "title",
+    label: "Title",
+    defaultWidth: 430,
+    minWidth: 220,
+    maxWidth: 720,
+    filter: "title",
+  },
+  {
+    id: "folder",
+    label: "Folder",
+    defaultWidth: 330,
+    minWidth: 170,
+    maxWidth: 620,
+    filter: "folder",
+  },
+  {
+    id: "type",
+    label: "Type",
+    defaultWidth: 250,
+    minWidth: 150,
+    maxWidth: 420,
+    filter: "type",
+  },
+  {
+    id: "size",
+    label: "Size",
+    defaultWidth: 100,
+    minWidth: 78,
+    maxWidth: 180,
+  },
+  {
+    id: "status",
+    label: "Status",
+    defaultWidth: 112,
+    minWidth: 90,
+    maxWidth: 170,
+    filter: "status",
+  },
+  {
+    id: "actions",
+    label: "Actions",
+    defaultWidth: 140,
+    minWidth: 118,
+    maxWidth: 220,
+    align: "right",
+  },
+];
+const DEFAULT_LIBRARY_TABLE_COLUMN_ORDER = LIBRARY_TABLE_COLUMNS.map(
+  (column) => column.id,
+);
+const DEFAULT_LIBRARY_TABLE_FILTERS: LibraryTableFilters = {
+  title: "",
+  folder: "",
+  types: [],
+  statuses: [],
+};
 
 function getFileTypeLabel(fileType: string | null | undefined): string {
   const normalizedRaw = (fileType || "").toLowerCase().trim();
@@ -113,6 +201,121 @@ function getFileTypeLabel(fileType: string | null | undefined): string {
     FILE_TYPE_LABEL[normalized] ||
     (normalized ? normalized.toUpperCase() : "FILE")
   );
+}
+
+function getLibraryTableColumnConfig(
+  columnId: LibraryTableColumnId,
+): LibraryTableColumnConfig {
+  return (
+    LIBRARY_TABLE_COLUMNS.find((column) => column.id === columnId) ||
+    LIBRARY_TABLE_COLUMNS[0]
+  );
+}
+
+function isLibraryTableColumnId(value: unknown): value is LibraryTableColumnId {
+  return (
+    typeof value === "string" &&
+    LIBRARY_TABLE_COLUMNS.some((column) => column.id === value)
+  );
+}
+
+function getDefaultLibraryColumnWidths(): LibraryTableColumnWidths {
+  return LIBRARY_TABLE_COLUMNS.reduce((widths, column) => {
+    widths[column.id] = column.defaultWidth;
+    return widths;
+  }, {} as LibraryTableColumnWidths);
+}
+
+function normalizeLibraryColumnOrder(value: unknown): LibraryTableColumnId[] {
+  const requested = Array.isArray(value)
+    ? value.filter(isLibraryTableColumnId)
+    : [];
+  return [
+    ...requested,
+    ...DEFAULT_LIBRARY_TABLE_COLUMN_ORDER.filter(
+      (columnId) => !requested.includes(columnId),
+    ),
+  ];
+}
+
+function clampLibraryColumnWidth(
+  columnId: LibraryTableColumnId,
+  width: number,
+): number {
+  const config = getLibraryTableColumnConfig(columnId);
+  if (!Number.isFinite(width)) return config.defaultWidth;
+  return Math.max(config.minWidth, Math.min(config.maxWidth, Math.round(width)));
+}
+
+function normalizeLibraryColumnWidths(
+  value: unknown,
+): LibraryTableColumnWidths {
+  const defaults = getDefaultLibraryColumnWidths();
+  if (!value || typeof value !== "object") return defaults;
+  const rawWidths = value as Partial<Record<LibraryTableColumnId, unknown>>;
+  return LIBRARY_TABLE_COLUMNS.reduce((widths, column) => {
+    const rawWidth = Number(rawWidths[column.id]);
+    widths[column.id] = clampLibraryColumnWidth(
+      column.id,
+      Number.isFinite(rawWidth) ? rawWidth : column.defaultWidth,
+    );
+    return widths;
+  }, {} as LibraryTableColumnWidths);
+}
+
+function readLibraryTableState(): {
+  columnOrder: LibraryTableColumnId[];
+  columnWidths: LibraryTableColumnWidths;
+} {
+  if (typeof window === "undefined") {
+    return {
+      columnOrder: DEFAULT_LIBRARY_TABLE_COLUMN_ORDER,
+      columnWidths: getDefaultLibraryColumnWidths(),
+    };
+  }
+  try {
+    const rawState = window.localStorage.getItem(LIBRARY_TABLE_STORAGE_KEY);
+    const parsedState = rawState ? JSON.parse(rawState) : {};
+    const storedState =
+      parsedState && typeof parsedState === "object" ? parsedState : {};
+    return {
+      columnOrder: normalizeLibraryColumnOrder(
+        (storedState as { columnOrder?: unknown }).columnOrder,
+      ),
+      columnWidths: normalizeLibraryColumnWidths(
+        (storedState as { columnWidths?: unknown }).columnWidths,
+      ),
+    };
+  } catch {
+    return {
+      columnOrder: DEFAULT_LIBRARY_TABLE_COLUMN_ORDER,
+      columnWidths: getDefaultLibraryColumnWidths(),
+    };
+  }
+}
+
+function buildLibraryTableGridTemplate(
+  columnOrder: LibraryTableColumnId[],
+  columnWidths: LibraryTableColumnWidths,
+): string {
+  return [
+    `${MATERIAL_TABLE_ICON_WIDTH}px`,
+    ...columnOrder.map(
+      (columnId) => `${clampLibraryColumnWidth(columnId, columnWidths[columnId])}px`,
+    ),
+  ].join(" ");
+}
+
+function getLibraryTableMinWidth(
+  columnOrder: LibraryTableColumnId[],
+  columnWidths: LibraryTableColumnWidths,
+): number {
+  const columnsWidth = columnOrder.reduce(
+    (total, columnId) =>
+      total + clampLibraryColumnWidth(columnId, columnWidths[columnId]),
+    MATERIAL_TABLE_ICON_WIDTH,
+  );
+  return Math.max(920, columnsWidth);
 }
 
 function formatSize(bytes: number | null | undefined): string {
@@ -360,6 +563,102 @@ function getMaterialRole(mat: Material): MaterialRole {
   }
 
   return "study";
+}
+
+function getMaterialColumnText(
+  mat: Material,
+  columnId: LibraryTableColumnId,
+): string {
+  const role = getMaterialRole(mat);
+  const normalizedType = String(mat.file_type || "").toLowerCase();
+  const supportsDocling = ["pdf", "docx", "pptx", "powerpoint"].includes(
+    normalizedType,
+  );
+  switch (columnId) {
+    case "title":
+      return getMaterialTitle(mat);
+    case "folder":
+      return getMaterialFolder(mat);
+    case "type":
+      return [
+        getFileTypeLabel(mat.file_type),
+        role === "reference" ? "Course reference" : "",
+        role === "setup" ? "Setup" : "",
+        supportsDocling ? `D:${Number(mat.docling_asset_count || 0)}` : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+    case "size":
+      return formatSize(getMaterialSize(mat));
+    case "status":
+      return mat.enabled ? "On" : "Off";
+    case "actions":
+      return "View Re-extract Edit Delete";
+    default:
+      return "";
+  }
+}
+
+function getAutoFitWidthForColumn(
+  columnId: LibraryTableColumnId,
+  materials: Material[],
+): number {
+  const column = getLibraryTableColumnConfig(columnId);
+  const longestTextLength = Math.max(
+    column.label.length,
+    ...materials.map((material) =>
+      getMaterialColumnText(material, columnId).length,
+    ),
+  );
+  const charWidth = columnId === "title" || columnId === "folder" ? 9 : 10;
+  return clampLibraryColumnWidth(columnId, longestTextLength * charWidth + 58);
+}
+
+function tableFilterIsActive(
+  filters: LibraryTableFilters,
+  filterKey: LibraryTableFilterKey | undefined,
+): boolean {
+  if (!filterKey) return false;
+  if (filterKey === "title") return Boolean(filters.title.trim());
+  if (filterKey === "folder") return Boolean(filters.folder.trim());
+  if (filterKey === "type") return filters.types.length > 0;
+  if (filterKey === "status") return filters.statuses.length > 0;
+  return false;
+}
+
+function materialMatchesLibraryTableFilters(
+  mat: Material,
+  filters: LibraryTableFilters,
+): boolean {
+  const titleFilter = filters.title.trim().toLowerCase();
+  if (
+    titleFilter &&
+    !getMaterialTitle(mat).toLowerCase().includes(titleFilter)
+  ) {
+    return false;
+  }
+
+  const folderFilter = filters.folder.trim().toLowerCase();
+  if (
+    folderFilter &&
+    !getMaterialFolder(mat).toLowerCase().includes(folderFilter)
+  ) {
+    return false;
+  }
+
+  if (
+    filters.types.length > 0 &&
+    !filters.types.includes(getFileTypeLabel(mat.file_type))
+  ) {
+    return false;
+  }
+
+  if (filters.statuses.length > 0) {
+    const status: LibraryStatusFilter = mat.enabled ? "on" : "off";
+    if (!filters.statuses.includes(status)) return false;
+  }
+
+  return true;
 }
 
 function buildFolderTree(materials: Material[]): FolderNode {
@@ -622,6 +921,8 @@ function renderMaterialRow(
   viewContent: (id: number) => void,
   reextractContent: (id: number) => void,
   isReextracting: boolean,
+  columnOrder: LibraryTableColumnId[],
+  gridTemplateColumns: string,
 ) {
   const displayTitle = getMaterialTitle(mat);
   const folderLabel = getMaterialFolder(mat);
@@ -633,193 +934,220 @@ function renderMaterialRow(
   const hasDoclingAssets = Boolean(mat.has_docling_assets);
   const doclingAssetCount = Number(mat.docling_asset_count || 0);
 
+  const renderCell = (columnId: LibraryTableColumnId) => {
+    switch (columnId) {
+      case "title":
+        return (
+          <div key={columnId} className="min-w-0">
+            {editingId === mat.id ? (
+              <div className="flex items-center gap-1">
+                <input
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className={`${INPUT_BASE} flex-1 h-9 py-1 text-base`}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") saveEdit();
+                    if (e.key === "Escape") setEditingId(null);
+                  }}
+                />
+                <button
+                  onClick={saveEdit}
+                  className="text-primary hover:text-primary/80"
+                >
+                  <Check className={ICON_SM} />
+                </button>
+                <button
+                  onClick={() => setEditingId(null)}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className={ICON_SM} />
+                </button>
+              </div>
+            ) : (
+              <div className={`${TEXT_BODY} truncate`} title={displayTitle}>
+                {displayTitle}
+                {mat.extraction_error && (
+                  <span
+                    className="text-red-400 ml-1"
+                    title={mat.extraction_error}
+                  >
+                    [ERR]
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      case "folder":
+        return (
+          <div
+            key={columnId}
+            className={`${TEXT_MUTED} min-w-0 truncate`}
+            title={folderLabel}
+          >
+            {folderLabel}
+          </div>
+        );
+      case "type":
+        return (
+          <div
+            key={columnId}
+            className="flex min-w-0 flex-wrap items-center gap-1.5 overflow-visible"
+          >
+            {isDuplicate ? (
+              <Badge
+                variant="outline"
+                className={`${TEXT_BADGE} h-4 shrink-0 px-1 w-fit border-yellow-500/50 text-yellow-400`}
+              >
+                DUPE
+              </Badge>
+            ) : null}
+            <Badge
+              variant="outline"
+              className={`${TEXT_BADGE} h-4 shrink-0 px-1 w-fit`}
+            >
+              {getFileTypeLabel(mat.file_type)}
+            </Badge>
+            {materialRole === "reference" ? (
+              <Badge
+                variant="outline"
+                className={`${TEXT_BADGE} h-4 shrink-0 px-1 w-fit border-sky-500/50 text-sky-300`}
+                title="Course reference; manually selectable for Tutor"
+              >
+                COURSE REF
+              </Badge>
+            ) : null}
+            {materialRole === "setup" ? (
+              <Badge
+                variant="outline"
+                className={`${TEXT_BADGE} h-4 shrink-0 px-1 w-fit border-emerald-500/50 text-emerald-300`}
+                title="Course setup file"
+              >
+                SETUP
+              </Badge>
+            ) : null}
+            {canReextract ? (
+              <Badge
+                variant="outline"
+                className={`${TEXT_BADGE} h-4 shrink-0 px-1 w-fit ${hasDoclingAssets ? "border-green-500/60 text-green-300" : "border-yellow-500/60 text-yellow-300"}`}
+                title={
+                  hasDoclingAssets
+                    ? `${doclingAssetCount} Docling asset${doclingAssetCount === 1 ? "" : "s"} detected`
+                    : "No Docling image assets detected"
+                }
+              >
+                D:{doclingAssetCount}
+              </Badge>
+            ) : null}
+          </div>
+        );
+      case "size":
+        return (
+          <div key={columnId} className={TEXT_MUTED}>
+            {formatSize(getMaterialSize(mat))}
+          </div>
+        );
+      case "status":
+        return (
+          <button
+            key={columnId}
+            onClick={() => toggleEnabled(mat)}
+            className={`flex items-center gap-1 ${TEXT_MUTED} hover:text-foreground transition-colors`}
+          >
+            {mat.enabled ? (
+              <>
+                <ToggleRight className={`${ICON_SM} text-primary`} />
+                <span>On</span>
+              </>
+            ) : (
+              <>
+                <ToggleLeft className={ICON_SM} />
+                <span>Off</span>
+              </>
+            )}
+          </button>
+        );
+      case "actions":
+        return (
+          <div key={columnId} className="flex items-center gap-1 justify-end">
+            <button
+              onClick={() => viewContent(mat.id)}
+              className="text-muted-foreground hover:text-primary transition-colors p-0.5"
+              title="View content"
+              aria-label="View content"
+            >
+              <Eye className={ICON_SM} />
+            </button>
+            {canReextract ? (
+              <button
+                onClick={() => reextractContent(mat.id)}
+                disabled={isReextracting}
+                className="text-muted-foreground hover:text-primary transition-colors p-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Re-extract with Docling"
+                aria-label="Re-extract with Docling"
+              >
+                <RefreshCw
+                  className={`${ICON_SM} ${isReextracting ? "animate-spin" : ""}`}
+                />
+              </button>
+            ) : null}
+            <button
+              onClick={() => startEdit(mat)}
+              className="text-muted-foreground hover:text-primary transition-colors p-0.5"
+              title="Edit title"
+              aria-label="Edit title"
+            >
+              <Pencil className={ICON_SM} />
+            </button>
+
+            {deleteConfirm === mat.id ? (
+              <div className="flex items-center gap-0.5">
+                <button
+                  onClick={() => deleteMutation.mutate(mat.id)}
+                  className="text-red-400 hover:text-red-300 p-0.5"
+                  title="Confirm delete"
+                  aria-label="Confirm delete"
+                >
+                  <Check className={ICON_SM} />
+                </button>
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  className="text-muted-foreground hover:text-foreground p-0.5"
+                  title="Cancel"
+                  aria-label="Cancel delete"
+                >
+                  <X className={ICON_SM} />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setDeleteConfirm(mat.id)}
+                className="text-muted-foreground hover:text-red-400 transition-colors p-0.5"
+                title="Delete"
+                aria-label="Delete"
+              >
+                <Trash2 className={ICON_SM} />
+              </button>
+            )}
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div
       key={mat.id}
       className={`grid gap-3 px-3 py-2.5 items-center border-b border-primary/10 hover:bg-primary/5 transition-colors ${!mat.enabled ? "opacity-50" : ""}`}
       style={{
-        gridTemplateColumns: MATERIAL_TABLE_GRID_TEMPLATE,
+        gridTemplateColumns,
       }}
     >
       <div className="flex items-center justify-center">
         <FileText className={`${ICON_SM} text-primary/70`} />
       </div>
-
-      {/* Title */}
-      <div className="min-w-0">
-        {editingId === mat.id ? (
-          <div className="flex items-center gap-1">
-            <input
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              className={`${INPUT_BASE} flex-1 h-9 py-1 text-base`}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") saveEdit();
-                if (e.key === "Escape") setEditingId(null);
-              }}
-            />
-            <button
-              onClick={saveEdit}
-              className="text-primary hover:text-primary/80"
-            >
-              <Check className={ICON_SM} />
-            </button>
-            <button
-              onClick={() => setEditingId(null)}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <X className={ICON_SM} />
-            </button>
-          </div>
-        ) : (
-          <div className={`${TEXT_BODY} truncate`} title={displayTitle}>
-            {displayTitle}
-            {mat.extraction_error && (
-              <span className="text-red-400 ml-1" title={mat.extraction_error}>
-                [ERR]
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Folder */}
-      <div className={`${TEXT_MUTED} truncate`} title={folderLabel}>
-        {folderLabel}
-      </div>
-
-      {/* Type */}
-      <div className="flex min-w-0 flex-wrap items-center gap-1.5 overflow-visible">
-        {isDuplicate ? (
-          <Badge
-            variant="outline"
-            className={`${TEXT_BADGE} h-4 shrink-0 px-1 w-fit border-yellow-500/50 text-yellow-400`}
-          >
-            DUPE
-          </Badge>
-        ) : null}
-        <Badge
-          variant="outline"
-          className={`${TEXT_BADGE} h-4 shrink-0 px-1 w-fit`}
-        >
-          {getFileTypeLabel(mat.file_type)}
-        </Badge>
-        {materialRole === "reference" ? (
-          <Badge
-            variant="outline"
-            className={`${TEXT_BADGE} h-4 shrink-0 px-1 w-fit border-sky-500/50 text-sky-300`}
-            title="Course reference; manually selectable for Tutor"
-          >
-            COURSE REF
-          </Badge>
-        ) : null}
-        {materialRole === "setup" ? (
-          <Badge
-            variant="outline"
-            className={`${TEXT_BADGE} h-4 shrink-0 px-1 w-fit border-emerald-500/50 text-emerald-300`}
-            title="Course setup file"
-          >
-            SETUP
-          </Badge>
-        ) : null}
-        {canReextract ? (
-          <Badge
-            variant="outline"
-            className={`${TEXT_BADGE} h-4 shrink-0 px-1 w-fit ${hasDoclingAssets ? "border-green-500/60 text-green-300" : "border-yellow-500/60 text-yellow-300"}`}
-            title={
-              hasDoclingAssets
-                ? `${doclingAssetCount} Docling asset${doclingAssetCount === 1 ? "" : "s"} detected`
-                : "No Docling image assets detected"
-            }
-          >
-            D:{doclingAssetCount}
-          </Badge>
-        ) : null}
-      </div>
-
-      {/* Size */}
-      <div className={TEXT_MUTED}>{formatSize(getMaterialSize(mat))}</div>
-
-      {/* Enabled toggle */}
-      <button
-        onClick={() => toggleEnabled(mat)}
-        className={`flex items-center gap-1 ${TEXT_MUTED} hover:text-foreground transition-colors`}
-      >
-        {mat.enabled ? (
-          <>
-            <ToggleRight className={`${ICON_SM} text-primary`} />
-            <span>On</span>
-          </>
-        ) : (
-          <>
-            <ToggleLeft className={ICON_SM} />
-            <span>Off</span>
-          </>
-        )}
-      </button>
-
-      {/* Actions */}
-      <div className="flex items-center gap-1 justify-end">
-        <button
-          onClick={() => viewContent(mat.id)}
-          className="text-muted-foreground hover:text-primary transition-colors p-0.5"
-          title="View content"
-          aria-label="View content"
-        >
-          <Eye className={ICON_SM} />
-        </button>
-        {canReextract ? (
-          <button
-            onClick={() => reextractContent(mat.id)}
-            disabled={isReextracting}
-            className="text-muted-foreground hover:text-primary transition-colors p-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Re-extract with Docling"
-            aria-label="Re-extract with Docling"
-          >
-            <RefreshCw
-              className={`${ICON_SM} ${isReextracting ? "animate-spin" : ""}`}
-            />
-          </button>
-        ) : null}
-        <button
-          onClick={() => startEdit(mat)}
-          className="text-muted-foreground hover:text-primary transition-colors p-0.5"
-          title="Edit title"
-          aria-label="Edit title"
-        >
-          <Pencil className={ICON_SM} />
-        </button>
-
-        {deleteConfirm === mat.id ? (
-          <div className="flex items-center gap-0.5">
-            <button
-              onClick={() => deleteMutation.mutate(mat.id)}
-              className="text-red-400 hover:text-red-300 p-0.5"
-              title="Confirm delete"
-              aria-label="Confirm delete"
-            >
-              <Check className={ICON_SM} />
-            </button>
-            <button
-              onClick={() => setDeleteConfirm(null)}
-              className="text-muted-foreground hover:text-foreground p-0.5"
-              title="Cancel"
-              aria-label="Cancel delete"
-            >
-              <X className={ICON_SM} />
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setDeleteConfirm(mat.id)}
-            className="text-muted-foreground hover:text-red-400 transition-colors p-0.5"
-            title="Delete"
-            aria-label="Delete"
-          >
-            <Trash2 className={ICON_SM} />
-          </button>
-        )}
-      </div>
+      {columnOrder.map((columnId) => renderCell(columnId))}
     </div>
   );
 }
@@ -827,12 +1155,24 @@ function renderMaterialRow(
 function useLibraryPageController() {
   const queryClient = useQueryClient();
   const initialLaunchState = useMemo(() => readInitialLibraryLaunchState(), []);
+  const initialTableState = useMemo(() => readLibraryTableState(), []);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [activeLibraryTab, setActiveLibraryTab] =
     useState<LibraryWorkflowTab>("materials");
   const [librarySearchQuery, setLibrarySearchQuery] = useState("");
+  const [libraryTableColumnOrder, setLibraryTableColumnOrder] = useState<
+    LibraryTableColumnId[]
+  >(initialTableState.columnOrder);
+  const [libraryTableColumnWidths, setLibraryTableColumnWidths] =
+    useState<LibraryTableColumnWidths>(initialTableState.columnWidths);
+  const [draggedLibraryColumnId, setDraggedLibraryColumnId] =
+    useState<LibraryTableColumnId | null>(null);
+  const [openLibraryTableFilter, setOpenLibraryTableFilter] =
+    useState<LibraryTableFilterKey | null>(null);
+  const [libraryTableFilters, setLibraryTableFilters] =
+    useState<LibraryTableFilters>(DEFAULT_LIBRARY_TABLE_FILTERS);
   const [uploadCourseTarget, setUploadCourseTarget] = useState<string>(
     initialLaunchState.uploadCourseTarget,
   );
@@ -1094,12 +1434,46 @@ function useLibraryPageController() {
     sidebarMode,
     materials,
   ]);
-  const visibleCatalogMaterials = useMemo(
+  const searchedCatalogMaterials = useMemo(
     () =>
       visibleMaterials.filter((material) =>
         materialMatchesLibrarySearch(material, librarySearchQuery),
       ),
     [librarySearchQuery, visibleMaterials],
+  );
+  const visibleCatalogMaterials = useMemo(
+    () =>
+      searchedCatalogMaterials.filter((material) =>
+        materialMatchesLibraryTableFilters(material, libraryTableFilters),
+      ),
+    [libraryTableFilters, searchedCatalogMaterials],
+  );
+  const libraryTableGridTemplate = useMemo(
+    () =>
+      buildLibraryTableGridTemplate(
+        libraryTableColumnOrder,
+        libraryTableColumnWidths,
+      ),
+    [libraryTableColumnOrder, libraryTableColumnWidths],
+  );
+  const libraryTableMinWidth = useMemo(
+    () =>
+      getLibraryTableMinWidth(
+        libraryTableColumnOrder,
+        libraryTableColumnWidths,
+      ),
+    [libraryTableColumnOrder, libraryTableColumnWidths],
+  );
+  const libraryTableTypeOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          searchedCatalogMaterials.map((material) =>
+            getFileTypeLabel(material.file_type),
+          ),
+        ),
+      ).sort((a, b) => a.localeCompare(b)),
+    [searchedCatalogMaterials],
   );
   const selectedFolderLabel = useMemo(() => {
     if (sidebarMode === "courses") {
@@ -1140,6 +1514,117 @@ function useLibraryPageController() {
     } else {
       selectFolderPath(ALL_FOLDERS_KEY);
     }
+  };
+
+  const setLibraryColumnWidth = useCallback(
+    (columnId: LibraryTableColumnId, width: number) => {
+      setLibraryTableColumnWidths((prev) => ({
+        ...prev,
+        [columnId]: clampLibraryColumnWidth(columnId, width),
+      }));
+    },
+    [],
+  );
+
+  const startLibraryColumnResize = useCallback(
+    (
+      event: ReactMouseEvent<HTMLButtonElement>,
+      columnId: LibraryTableColumnId,
+    ) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const startX = event.clientX;
+      const startWidth = libraryTableColumnWidths[columnId];
+
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+        setLibraryColumnWidth(
+          columnId,
+          startWidth + moveEvent.clientX - startX,
+        );
+      };
+      const handleMouseUp = () => {
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mouseup", handleMouseUp);
+      };
+
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+    },
+    [libraryTableColumnWidths, setLibraryColumnWidth],
+  );
+
+  const autoFitLibraryColumn = useCallback(
+    (columnId: LibraryTableColumnId) => {
+      const fitMaterials = visibleCatalogMaterials.length
+        ? visibleCatalogMaterials
+        : searchedCatalogMaterials;
+      setLibraryColumnWidth(
+        columnId,
+        getAutoFitWidthForColumn(columnId, fitMaterials),
+      );
+    },
+    [searchedCatalogMaterials, setLibraryColumnWidth, visibleCatalogMaterials],
+  );
+
+  const dropLibraryColumn = (targetColumnId: LibraryTableColumnId) => {
+    if (!draggedLibraryColumnId || draggedLibraryColumnId === targetColumnId) {
+      setDraggedLibraryColumnId(null);
+      return;
+    }
+    setLibraryTableColumnOrder((prev) => {
+      const withoutDragged = prev.filter(
+        (columnId) => columnId !== draggedLibraryColumnId,
+      );
+      const targetIndex = withoutDragged.indexOf(targetColumnId);
+      const insertIndex = targetIndex < 0 ? withoutDragged.length : targetIndex;
+      const next = [...withoutDragged];
+      next.splice(insertIndex, 0, draggedLibraryColumnId);
+      return normalizeLibraryColumnOrder(next);
+    });
+    setDraggedLibraryColumnId(null);
+  };
+
+  const setTextTableFilter = (
+    filterKey: "title" | "folder",
+    value: string,
+  ) => {
+    setLibraryTableFilters((prev) => ({
+      ...prev,
+      [filterKey]: value,
+    }));
+  };
+
+  const toggleTypeTableFilter = (type: string) => {
+    setLibraryTableFilters((prev) => {
+      const active = prev.types.includes(type);
+      return {
+        ...prev,
+        types: active
+          ? prev.types.filter((value) => value !== type)
+          : [...prev.types, type],
+      };
+    });
+  };
+
+  const toggleStatusTableFilter = (status: LibraryStatusFilter) => {
+    setLibraryTableFilters((prev) => {
+      const active = prev.statuses.includes(status);
+      return {
+        ...prev,
+        statuses: active
+          ? prev.statuses.filter((value) => value !== status)
+          : [...prev.statuses, status],
+      };
+    });
+  };
+
+  const clearTableFilter = (filterKey: LibraryTableFilterKey) => {
+    setLibraryTableFilters((prev) => {
+      if (filterKey === "title") return { ...prev, title: "" };
+      if (filterKey === "folder") return { ...prev, folder: "" };
+      if (filterKey === "type") return { ...prev, types: [] };
+      return { ...prev, statuses: [] };
+    });
   };
 
   const dupeChecksums = useMemo(() => {
@@ -1210,6 +1695,21 @@ function useLibraryPageController() {
       new Set(sourceUploadCandidates.map((candidate) => candidate.path)),
     );
   };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        LIBRARY_TABLE_STORAGE_KEY,
+        JSON.stringify({
+          columnOrder: libraryTableColumnOrder,
+          columnWidths: libraryTableColumnWidths,
+        }),
+      );
+    } catch {
+      // Local storage is a convenience for column layout, not a workflow dependency.
+    }
+  }, [libraryTableColumnOrder, libraryTableColumnWidths]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -1367,6 +1867,190 @@ function useLibraryPageController() {
   const visibleTabFileCount = visibleCatalogMaterials.length;
   const visibleTabFileLabel = "file";
   const selectedSourceUploadCount = selectedSourceUploadPaths.size;
+
+  const renderLibraryTableFilterMenu = (
+    filterKey: LibraryTableFilterKey,
+    alignRight = false,
+  ) => {
+    const stopFilterEvent = (
+      event: ReactMouseEvent<HTMLDivElement | HTMLButtonElement>,
+    ) => {
+      event.stopPropagation();
+    };
+    return (
+      <div
+        className={cn(
+          "absolute top-[calc(100%+6px)] z-30 w-64 rounded-[0.85rem] border border-primary/35 bg-black/95 p-3 shadow-[0_18px_40px_rgba(0,0,0,0.55)]",
+          alignRight ? "right-0" : "left-0",
+        )}
+        onClick={stopFilterEvent}
+        onMouseDown={stopFilterEvent}
+      >
+        {filterKey === "title" ? (
+          <label className="block space-y-1">
+            <span className={`${TEXT_BADGE} text-muted-foreground`}>
+              Title contains
+            </span>
+            <input
+              aria-label="Filter title text"
+              className={`${INPUT_BASE} h-9 py-1 text-sm`}
+              value={libraryTableFilters.title}
+              onChange={(event) =>
+                setTextTableFilter("title", event.target.value)
+              }
+            />
+          </label>
+        ) : null}
+
+        {filterKey === "folder" ? (
+          <label className="block space-y-1">
+            <span className={`${TEXT_BADGE} text-muted-foreground`}>
+              Folder contains
+            </span>
+            <input
+              aria-label="Filter folder text"
+              className={`${INPUT_BASE} h-9 py-1 text-sm`}
+              value={libraryTableFilters.folder}
+              onChange={(event) =>
+                setTextTableFilter("folder", event.target.value)
+              }
+            />
+          </label>
+        ) : null}
+
+        {filterKey === "type" ? (
+          <div className="space-y-2">
+            <div className={`${TEXT_BADGE} text-muted-foreground`}>
+              File types
+            </div>
+            {libraryTableTypeOptions.length ? (
+              libraryTableTypeOptions.map((type) => (
+                <label
+                  key={type}
+                  className="flex items-center gap-2 font-terminal text-sm text-foreground"
+                >
+                  <input
+                    type="checkbox"
+                    checked={libraryTableFilters.types.includes(type)}
+                    onChange={() => toggleTypeTableFilter(type)}
+                    className="h-4 w-4 accent-primary"
+                  />
+                  <span>{type}</span>
+                </label>
+              ))
+            ) : (
+              <div className={TEXT_MUTED}>No file types in this view.</div>
+            )}
+          </div>
+        ) : null}
+
+        {filterKey === "status" ? (
+          <div className="space-y-2">
+            <div className={`${TEXT_BADGE} text-muted-foreground`}>
+              Status
+            </div>
+            {(["on", "off"] as LibraryStatusFilter[]).map((status) => (
+              <label
+                key={status}
+                className="flex items-center gap-2 font-terminal text-sm text-foreground"
+              >
+                <input
+                  type="checkbox"
+                  checked={libraryTableFilters.statuses.includes(status)}
+                  onChange={() => toggleStatusTableFilter(status)}
+                  className="h-4 w-4 accent-primary"
+                />
+                <span>{status === "on" ? "On" : "Off"}</span>
+              </label>
+            ))}
+          </div>
+        ) : null}
+
+        <div className="mt-3 flex justify-between gap-2">
+          <button
+            type="button"
+            className="library-action-button min-h-8 px-3 text-xs"
+            onClick={() => clearTableFilter(filterKey)}
+          >
+            Clear
+          </button>
+          <button
+            type="button"
+            className="library-action-button min-h-8 px-3 text-xs"
+            onClick={() => setOpenLibraryTableFilter(null)}
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderLibraryTableHeaderCell = (columnId: LibraryTableColumnId) => {
+    const column = getLibraryTableColumnConfig(columnId);
+    const filterActive = tableFilterIsActive(
+      libraryTableFilters,
+      column.filter,
+    );
+    return (
+      <div
+        key={column.id}
+        data-testid={`library-table-header-${column.id}`}
+        data-library-column-id={column.id}
+        draggable
+        onDragStart={() => setDraggedLibraryColumnId(column.id)}
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={() => dropLibraryColumn(column.id)}
+        className={cn(
+          "relative flex min-w-0 items-center gap-2 pr-3 font-terminal text-sm uppercase tracking-[0.12em] text-muted-foreground",
+          column.align === "right" ? "justify-end text-right" : "justify-start",
+        )}
+      >
+        <span className="truncate">{column.label}</span>
+        {column.filter ? (
+          <>
+            <button
+              type="button"
+              aria-label={`Filter ${column.label} column`}
+              title={`Filter ${column.label}`}
+              className={cn(
+                "library-icon-button h-6 w-6 shrink-0 border-primary/20 text-muted-foreground",
+                filterActive ? "border-primary/60 text-primary" : "",
+              )}
+              onMouseDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                setOpenLibraryTableFilter((prev) =>
+                  prev === column.filter ? null : column.filter || null,
+                );
+              }}
+            >
+              <ListFilter className="h-3 w-3" />
+            </button>
+            {openLibraryTableFilter === column.filter
+              ? renderLibraryTableFilterMenu(
+                  column.filter,
+                  column.id === "type" || column.id === "status",
+                )
+              : null}
+          </>
+        ) : null}
+        <button
+          type="button"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label={`Resize ${column.label} column`}
+          title="Drag to resize. Double-click to auto-fit."
+          className="absolute -right-2 top-0 h-full w-4 cursor-col-resize rounded-none border-0 bg-transparent p-0 hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/70"
+          onMouseDown={(event) => startLibraryColumnResize(event, column.id)}
+          onDoubleClick={(event) => {
+            event.stopPropagation();
+            autoFitLibraryColumn(column.id);
+          }}
+        />
+      </div>
+    );
+  };
 
   return (
     <PageScaffold
@@ -2020,22 +2704,18 @@ function useLibraryPageController() {
                     </div>
                   ) : (
                     <div className="h-full min-h-0 overflow-auto">
-                      <div className="min-w-[1240px]">
+                      <div style={{ minWidth: libraryTableMinWidth }}>
                         <div
                           className="grid gap-3 px-3 py-2 border-b border-primary/15 bg-black/80 sticky top-0 z-10"
+                          data-testid="library-material-table-header"
                           style={{
-                            gridTemplateColumns: MATERIAL_TABLE_GRID_TEMPLATE,
+                            gridTemplateColumns: libraryTableGridTemplate,
                           }}
                         >
                           <div aria-hidden="true" />
-                          <div className={TEXT_MUTED}>Title</div>
-                          <div className={TEXT_MUTED}>Folder</div>
-                          <div className={TEXT_MUTED}>Type</div>
-                          <div className={TEXT_MUTED}>Size</div>
-                          <div className={TEXT_MUTED}>Status</div>
-                          <div className={`${TEXT_MUTED} text-right`}>
-                            Actions
-                          </div>
+                          {libraryTableColumnOrder.map((columnId) =>
+                            renderLibraryTableHeaderCell(columnId),
+                          )}
                         </div>
                         {visibleCatalogMaterials.map((mat) =>
                           renderMaterialRow(
@@ -2056,6 +2736,8 @@ function useLibraryPageController() {
                             setViewingMaterialId,
                             reextractMaterial,
                             reextractingMaterialIds.includes(mat.id),
+                            libraryTableColumnOrder,
+                            libraryTableGridTemplate,
                           ),
                         )}
                       </div>

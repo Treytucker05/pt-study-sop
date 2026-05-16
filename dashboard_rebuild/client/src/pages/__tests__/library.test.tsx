@@ -421,6 +421,101 @@ describe("Library catalog", () => {
     expect(screen.getByText("Professional Writing")).toBeInTheDocument();
   });
 
+  it("filters catalog rows from basic file-column filter buttons", async () => {
+    getMaterialsMock.mockResolvedValue([
+      {
+        id: 201,
+        title: "Movement Objectives",
+        source_path: "11_Movement Science II/objectives.pdf",
+        folder_path: "11_Movement Science II",
+        file_type: "pdf",
+        file_size: 1024,
+        course_id: null,
+        enabled: true,
+        extraction_error: null,
+        checksum: "filter-201",
+        created_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+        updated_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+      },
+      {
+        id: 202,
+        title: "Task Analysis Slides",
+        source_path: "11_Movement Science II/task-analysis.pptx",
+        folder_path: "11_Movement Science II",
+        file_type: "pptx",
+        file_size: 2048,
+        course_id: null,
+        enabled: true,
+        extraction_error: null,
+        checksum: "filter-202",
+        created_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+        updated_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+      },
+    ]);
+
+    renderLibrary();
+
+    expect(await screen.findByText("Movement Objectives")).toBeInTheDocument();
+    expect(screen.getByText("Task Analysis Slides")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /filter type column/i }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "PDF" }));
+
+    expect(screen.getByText("Movement Objectives")).toBeInTheDocument();
+    expect(screen.queryByText("Task Analysis Slides")).not.toBeInTheDocument();
+  });
+
+  it("supports basic file-explorer column resize, autofit, and drag ordering", async () => {
+    getMaterialsMock.mockResolvedValue([
+      {
+        id: 301,
+        title: "MSII Topic 1 - Control of Human Movement With A Long Name",
+        source_path:
+          "11_Movement Science II/10_Intro/MSII Topic 1 - Control of Human Movement.pptx",
+        folder_path: "11_Movement Science II/10_Intro",
+        file_type: "pptx",
+        file_size: 4096,
+        course_id: null,
+        enabled: true,
+        extraction_error: null,
+        checksum: "explorer-301",
+        created_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+        updated_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+      },
+    ]);
+
+    renderLibrary();
+
+    expect(await screen.findByText(/MSII Topic 1/)).toBeInTheDocument();
+    const headerRow = screen.getByTestId("library-material-table-header");
+    const initialTemplate = headerRow.style.gridTemplateColumns;
+
+    fireEvent.doubleClick(
+      screen.getByRole("separator", { name: /resize title column/i }),
+    );
+    expect(headerRow.style.gridTemplateColumns).not.toBe(initialTemplate);
+
+    const titleResize = screen.getByRole("separator", {
+      name: /resize title column/i,
+    });
+    const beforeDragTemplate = headerRow.style.gridTemplateColumns;
+    fireEvent.mouseDown(titleResize, { clientX: 100 });
+    fireEvent.mouseMove(window, { clientX: 150 });
+    fireEvent.mouseUp(window);
+    expect(headerRow.style.gridTemplateColumns).not.toBe(beforeDragTemplate);
+
+    const titleHeader = screen.getByTestId("library-table-header-title");
+    const folderHeader = screen.getByTestId("library-table-header-folder");
+    fireEvent.dragStart(folderHeader);
+    fireEvent.dragOver(titleHeader);
+    fireEvent.drop(titleHeader);
+
+    const orderedColumns = Array.from(
+      headerRow.querySelectorAll("[data-library-column-id]"),
+    ).map((node) => node.getAttribute("data-library-column-id"));
+    expect(orderedColumns.slice(0, 2)).toEqual(["folder", "title"]);
+  });
+
   it("consumes Tutor Page 1 handoff and preselects the upload course target", async () => {
     getActiveCoursesMock.mockResolvedValue([
       { id: 9, name: "Neuro", code: "NEU-9" },

@@ -2712,3 +2712,11 @@ Recommended next steps:
 - Each source-file candidate has an explicit checkbox and `Upload Selected` action backed by the existing selected-file sync endpoint, keeping imports file-by-file instead of bulk folder ingestion.
 - Converted source folder rail rows from custom `div role="button"` controls to real buttons so browser clicks reliably activate folder selection.
 - Validation: `npm run test -- client/src/pages/__tests__/library.test.tsx`; `.venv/bin/python -m pytest brain/tests/test_tutor_material_pipeline_certification.py -q`; `npm run check`; `npm run build`; built-in browser verification on `/library` confirmed `10_Dx Mgmt Integumentary` opens Upload with source checkboxes and a checked candidate updates the button to `Upload Selected (1)`.
+
+## 2026-05-15 - Library file explorer table controls
+
+- Added basic file-explorer behavior to the `/library` file table: column widths are stateful, separators drag-resize, double-click auto-fits to visible file text, and headers can be dragged to reorder columns.
+- Added simple header filters for Title, Folder, Type, and Status while preserving the catalog-only Library boundary.
+- Persisted column width/order preferences in local storage and hardened table-state loading against invalid stored JSON.
+- Fixed right-edge filter menus to align inward so Type/Status menus do not clip their Clear/Done controls.
+- Validation: `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`; built-in browser verification before the final alignment tweak confirmed header controls render and the Type filter narrowed 11 rows to 1 TXT row. The final post-build reload was blocked by Browser Use URL policy, so the next operator refresh should visually confirm the right-edge menu placement.
