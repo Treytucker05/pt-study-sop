@@ -19,6 +19,8 @@ import {
   SESSION_SEED_SHAPE_PREFIX,
 } from "@/lib/canvasFromBundle";
 import {
+  conceptMapToTldrawShapes,
+  isConceptMapCanvasShapeId,
   isMindMapCanvasShapeId,
   mindMapToTldrawShapes,
 } from "@/lib/canvasGraphFromMaps";
@@ -209,6 +211,26 @@ export function StudioTldrawWorkspace({
       ed.zoomToFit?.({ animation: { duration: 0 } }),
     );
     toast("Mind map added to canvas.");
+  }, [editor, sessionBundle]);
+
+  const handleInsertConceptMap = useCallback(() => {
+    if (!editor || !sessionBundle?.isReady) return;
+    const { shapes } = conceptMapToTldrawShapes(sessionBundle);
+    if (shapes.length === 0) {
+      toast("No session concepts yet to map.");
+      return;
+    }
+    const existing = editor.getCurrentPageShapeIds();
+    const stale = [...existing].filter((id) =>
+      isConceptMapCanvasShapeId(String(id)),
+    );
+    if (stale.length > 0) editor.deleteShapes(stale as never);
+    editor.createShapes(shapes as never);
+    const ed = editor as Editor & { zoomToFit?: (opts?: unknown) => void };
+    requestAnimationFrame(() =>
+      ed.zoomToFit?.({ animation: { duration: 0 } }),
+    );
+    toast("Concept map added to canvas.");
   }, [editor, sessionBundle]);
 
   const patchWorkspaceState = useCallback(
@@ -424,6 +446,21 @@ export function StudioTldrawWorkspace({
             className="h-8 rounded-full border-primary/20 bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-primary/84 hover:bg-black/30 disabled:cursor-default disabled:opacity-50"
           >
             Insert Mind Map
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            data-testid="canvas-insert-concept-map"
+            onClick={handleInsertConceptMap}
+            disabled={!editor || !sessionBundle?.isReady}
+            title={
+              sessionBundle?.isReady
+                ? "Insert the concept map as native, editable canvas shapes"
+                : "No session material yet"
+            }
+            className="h-8 rounded-full border-primary/20 bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-primary/84 hover:bg-black/30 disabled:cursor-default disabled:opacity-50"
+          >
+            Insert Concept Map
           </Button>
           <Badge
             variant="outline"

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  conceptMapToTldrawShapes,
+  isConceptMapCanvasShapeId,
   isMindMapCanvasShapeId,
   mindMapToTldrawShapes,
 } from "@/lib/canvasGraphFromMaps";
@@ -102,5 +104,38 @@ describe("mindMapToTldrawShapes", () => {
     const xs = new Set(geo.map((g) => Math.round(g.x)));
     // root and its child must not stack at the same x in an LR layout
     expect(xs.size).toBeGreaterThan(1);
+  });
+});
+
+describe("conceptMapToTldrawShapes", () => {
+  it("returns nothing for a not-ready bundle", () => {
+    const { shapes, bounds } = conceptMapToTldrawShapes(
+      emptySessionMaterialBundle("workflow:test"),
+    );
+    expect(shapes).toEqual([]);
+    expect(bounds).toBeNull();
+  });
+
+  it("emits native geo nodes for concepts with valid props + ids", () => {
+    const { shapes, bounds } = conceptMapToTldrawShapes(
+      bundleWith({
+        concepts: [
+          { concept: "Reciprocal inhibition", materialId: null, sourceTitle: null },
+          { concept: "Autogenic inhibition", materialId: null, sourceTitle: null },
+        ],
+      }),
+    );
+    const geo = shapes.filter((s) => s.type === "geo");
+    expect(geo).toHaveLength(2);
+    for (const g of geo) {
+      if (g.type !== "geo") continue;
+      expect(g.props.geo).toBe("rectangle");
+      expect(g.props.color).toBe("blue");
+      expect(g.props.font).toBe("mono");
+      expect(g.props.w).toBeGreaterThan(0);
+      expect(isConceptMapCanvasShapeId(String(g.id))).toBe(true);
+      expect(g.x).toBeGreaterThanOrEqual(460 - 1);
+    }
+    expect(bounds).not.toBeNull();
   });
 });
