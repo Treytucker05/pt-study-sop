@@ -2840,7 +2840,7 @@ function useLibraryPageController() {
           if (!open) setViewingMaterialId(null);
         }}
       >
-        <DialogContent className="flex h-[88vh] max-h-[88vh] max-w-6xl flex-col gap-0 overflow-hidden border-primary/35 bg-[#050506] p-0">
+        <DialogContent className="flex h-[88vh] max-h-[88vh] max-w-6xl flex-col gap-0 overflow-hidden border-primary/35 bg-[#000000] p-0">
           <DialogHeader className="shrink-0 border-b border-primary/15 bg-black/70 px-5 py-4">
             <DialogTitle className="library-material-dialog-title flex items-start gap-2 pr-8">
               <FileText className={`${ICON_SM} mt-1 shrink-0 text-primary/80`} />

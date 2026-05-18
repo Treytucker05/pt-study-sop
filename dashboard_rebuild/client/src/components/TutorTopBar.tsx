@@ -83,10 +83,10 @@ const RUNTIME_STATUS_STYLES: Record<TutorTeachRuntimeStatus, string> = {
 };
 
 const RUNTIME_CARD_BASE =
-  "relative overflow-hidden border border-[var(--ds-rose78-a18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.1)_22%,rgba(0,0,0,0.26)_100%),linear-gradient(135deg,rgba(255,44,78,0.08),rgba(0,0,0,0.02)_42%,rgba(0,0,0,0.1)_100%)] p-4 backdrop-blur-sm shadow-[0_14px_28px_rgba(0,0,0,0.14)]";
+  "relative overflow-hidden border border-[var(--ds-rose78-a18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.1)_22%,rgba(0,0,0,0.26)_100%),linear-gradient(135deg,rgba(255,42,76,0.08),rgba(0,0,0,0.02)_42%,rgba(0,0,0,0.1)_100%)] p-4 backdrop-blur-sm shadow-[0_14px_28px_rgba(0,0,0,0.14)]";
 
 const TUTOR_STRIP =
-  "relative overflow-hidden border border-[rgba(255,78,108,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(0,0,0,0.1)_20%,rgba(0,0,0,0.24)_100%),linear-gradient(135deg,rgba(255,42,76,0.07),rgba(0,0,0,0.03)_46%,rgba(0,0,0,0.09)_100%)] px-4 py-3 backdrop-blur-sm shadow-[0_10px_24px_rgba(0,0,0,0.12)]";
+  "relative overflow-hidden border border-[rgba(255,68,104,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(0,0,0,0.1)_20%,rgba(0,0,0,0.24)_100%),linear-gradient(135deg,rgba(255,42,76,0.07),rgba(0,0,0,0.03)_46%,rgba(0,0,0,0.09)_100%)] px-4 py-3 backdrop-blur-sm shadow-[0_10px_24px_rgba(0,0,0,0.12)]";
 
 const TUTOR_META_CHIP =
   "inline-flex min-h-[40px] items-center gap-2 border border-[var(--ds-rose78-a18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.12)_28%,rgba(0,0,0,0.24)_100%)] px-3 py-2 font-mono text-sm text-foreground/82 backdrop-blur-sm";
@@ -108,7 +108,7 @@ function runtimeBadgeClasses(status: TutorTeachRuntimeStatus): string {
 
 function tutorUtilityButton(compact = false): string {
   return cn(
-    "inline-flex min-h-[40px] items-center justify-center gap-2 rounded-[var(--ds-radius-xs)] border border-[var(--ds-rose78-a18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.12)_26%,rgba(0,0,0,0.24)_100%)] px-3 py-2 font-mono text-ui-2xs uppercase tracking-[0.16em] text-foreground/78 transition-colors duration-150 ease-out hover:border-[rgba(255,108,136,0.32)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55 focus-visible:ring-offset-2 focus-visible:ring-offset-black backdrop-blur-sm",
+    "inline-flex min-h-[40px] items-center justify-center gap-2 rounded-[var(--ds-radius-xs)] border border-[var(--ds-rose78-a18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.12)_26%,rgba(0,0,0,0.24)_100%)] px-3 py-2 font-mono text-ui-2xs uppercase tracking-[0.16em] text-foreground/78 transition-colors duration-150 ease-out hover:border-[rgba(251,113,133,0.32)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55 focus-visible:ring-offset-2 focus-visible:ring-offset-black backdrop-blur-sm",
     compact ? "h-10 w-10 px-0" : null,
   );
 }

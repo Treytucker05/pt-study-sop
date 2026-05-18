@@ -304,7 +304,7 @@ function EntryResumePanel({
     return (
       <div
         data-testid="tutor-entry-resume-panel"
-        className="space-y-3 rounded-[var(--ds-r-090)] border border-[var(--ds-accent-a22)] bg-[rgba(255,68,104,0.12)] p-4 font-mono text-sm leading-6 text-[#ffe3e9]"
+        className="space-y-3 rounded-[var(--ds-r-090)] border border-[var(--ds-accent-a22)] bg-[rgba(255,68,104,0.12)] p-4 font-mono text-sm leading-6 text-[#ffe3ea]"
       >
         <div>Could not load past sessions.</div>
         <button
@@ -1960,7 +1960,7 @@ export function TutorShell({
         {entryCardStatusMessage ? (
           <div
             data-testid="studio-entry-status-message"
-            className="rounded-[var(--ds-r-090)] border border-[var(--ds-accent-a22)] bg-[rgba(255,68,104,0.12)] px-4 py-3 font-mono text-xs leading-6 text-[#ffe3e9]"
+            className="rounded-[var(--ds-r-090)] border border-[var(--ds-accent-a22)] bg-[rgba(255,68,104,0.12)] px-4 py-3 font-mono text-xs leading-6 text-[#ffe3ea]"
           >
             {entryCardStatusMessage}
           </div>

@@ -21,7 +21,7 @@ function BrainChip({
 }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-full border border-red-500/60 bg-[radial-gradient(circle_at_35%_35%,rgba(255,255,255,0.2),rgba(10,0,0,0.88)_72%)] shadow-[0_0_22px_rgba(255,78,78,0.32),0_14px_30px_rgba(0,0,0,0.48)] ${className}`}
+      className={`inline-flex shrink-0 items-center justify-center rounded-full border border-red-500/60 bg-[radial-gradient(circle_at_35%_35%,rgba(255,255,255,0.2),rgba(10,4,7,0.88)_72%)] shadow-[0_0_22px_rgba(255,74,74,0.32),0_14px_30px_rgba(0,0,0,0.48)] ${className}`}
     >
       <img
         src={logoImg}
@@ -44,7 +44,7 @@ function Wordmark({
 }) {
   return (
     <span
-      className={`uppercase leading-none text-[var(--ds-paper-warm)] [text-shadow:0_0_18px_rgba(255,120,120,0.68),0_0_38px_rgba(255,82,82,0.28),0_5px_0_rgba(28,8,8,0.98)] ${className}`}
+      className={`uppercase leading-none text-[var(--ds-paper-warm)] [text-shadow:0_0_18px_rgba(255,120,120,0.68),0_0_38px_rgba(255,74,74,0.28),0_5px_0_rgba(28,8,8,0.98)] ${className}`}
       style={{
         fontFamily,
         ...style,
@@ -57,9 +57,9 @@ function Wordmark({
 
 function PreviewFrame({ children }: { children: ReactNode }) {
   return (
-    <div className="relative h-[22rem] overflow-hidden rounded-[var(--ds-radius-xl)] border border-red-500/18 bg-[linear-gradient(180deg,rgba(15,0,0,0.96),rgba(5,0,0,0.98))] shadow-[0_20px_56px_rgba(0,0,0,0.52)]">
+    <div className="relative h-[22rem] overflow-hidden rounded-[var(--ds-radius-xl)] border border-red-500/18 bg-[linear-gradient(180deg,rgba(18,0,0,0.96),rgba(10,4,7,0.98))] shadow-[0_20px_56px_rgba(0,0,0,0.52)]">
       <div className="absolute inset-0 bg-[linear-gradient(rgba(220,38,38,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.06)_1px,transparent_1px)] bg-[size:20px_20px]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_12%,rgba(255,86,86,0.15),transparent_18%),linear-gradient(180deg,rgba(0,0,0,0.2),rgba(0,0,0,0.56)_48%,rgba(0,0,0,0.86)_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_12%,rgba(255,92,92,0.15),transparent_18%),linear-gradient(180deg,rgba(0,0,0,0.2),rgba(0,0,0,0.56)_48%,rgba(0,0,0,0.86)_100%)]" />
       <div className="absolute inset-x-0 bottom-[-6%] h-[68%]">
         <img
           src={navShellBackground}
@@ -84,7 +84,7 @@ const TITLE_VARIANTS: TitleVariant[] = [
       "A one-line lockup with equal bookend chips and a single shared glow plane. This is the most stable version for the live navbar.",
     renderLockup: () => (
       <div className="absolute left-[4.8%] top-[1.25rem] flex items-center gap-4">
-        <div className="pointer-events-none absolute left-[3.8rem] top-1/2 h-[4.5rem] w-[42rem] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,86,86,0.46),transparent_72%)] blur-3xl" />
+        <div className="pointer-events-none absolute left-[3.8rem] top-1/2 h-[4.5rem] w-[42rem] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,92,92,0.46),transparent_72%)] blur-3xl" />
         <BrainChip className="relative z-10 h-[5.3rem] w-[5.3rem]" imgClassName="h-[3.4rem] w-[3.4rem]" />
         <Wordmark
           fontFamily="var(--font-oxanium)"
@@ -109,7 +109,7 @@ const TITLE_VARIANTS: TitleVariant[] = [
       <div className="absolute left-[3.8%] top-[1rem] flex items-center gap-3">
         <BrainChip className="relative z-10 h-[5.05rem] w-[5.05rem]" imgClassName="h-[3.15rem] w-[3.15rem]" />
         <div className="relative rounded-[var(--ds-r-180)] border border-red-400/35 bg-[linear-gradient(180deg,rgba(28,0,0,0.82),rgba(12,0,0,0.96))] px-5 py-3 shadow-[0_0_20px_rgba(255,92,92,0.22),0_14px_28px_rgba(0,0,0,0.45)]">
-          <div className="pointer-events-none absolute inset-x-6 top-1/2 h-[3.75rem] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,86,86,0.26),transparent_72%)] blur-2xl" />
+          <div className="pointer-events-none absolute inset-x-6 top-1/2 h-[3.75rem] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,92,92,0.26),transparent_72%)] blur-2xl" />
           <Wordmark
             fontFamily="var(--font-orbitron)"
             className="relative z-10"
@@ -134,7 +134,7 @@ const TITLE_VARIANTS: TitleVariant[] = [
       <div className="absolute left-[4.6%] top-[1.5rem] flex items-center gap-5">
         <BrainChip className="relative z-10 h-[4.8rem] w-[4.8rem]" imgClassName="h-[3rem] w-[3rem]" />
         <div className="relative">
-          <div className="pointer-events-none absolute inset-x-0 top-1/2 h-[4.1rem] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,106,106,0.36),transparent_72%)] blur-3xl" />
+          <div className="pointer-events-none absolute inset-x-0 top-1/2 h-[4.1rem] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,108,108,0.36),transparent_72%)] blur-3xl" />
           <Wordmark
             fontFamily="var(--font-audiowide)"
             className="relative z-10"

@@ -153,7 +153,7 @@ function confidenceTone(confidence?: string) {
 const SCHOLAR_PANEL_HEADER =
   "border-b border-primary/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01)_70%)]";
 const SCHOLAR_PANEL_SURFACE =
-  "overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01)_18%,rgba(0,0,0,0.16)_100%),linear-gradient(135deg,rgba(118,10,34,0.18),rgba(10,4,8,0.18)_58%,rgba(0,0,0,0.1)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_16px_30px_rgba(0,0,0,0.16)] backdrop-blur-xl";
+  "overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01)_18%,rgba(0,0,0,0.16)_100%),linear-gradient(135deg,rgba(124,14,38,0.18),rgba(10,4,7,0.18)_58%,rgba(0,0,0,0.1)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_16px_30px_rgba(0,0,0,0.16)] backdrop-blur-xl";
 const SCHOLAR_PANEL_TITLE = TEXT_PANEL_TITLE;
 const SCHOLAR_FIELD_LABEL = `${TEXT_SECTION_LABEL} text-primary/84`;
 const SCHOLAR_COPY = `${TEXT_BODY} text-base leading-7 text-foreground/82`;
@@ -454,7 +454,7 @@ function ScholarWorkspaceTab({
                         type="button"
                         className={`w-full rounded-[var(--ds-r-100)] text-left border p-4 bg-black/30 transition ${
                           isSelected
-                            ? "border-primary shadow-[0_0_0_1px_rgba(255,94,126,0.18)]"
+                            ? "border-primary shadow-[0_0_0_1px_rgba(255,98,126,0.18)]"
                             : "border-primary/20 hover:border-primary/60"
                         }`}
                         onClick={() =>

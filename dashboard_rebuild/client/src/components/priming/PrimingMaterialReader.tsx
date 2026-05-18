@@ -157,7 +157,7 @@ export function PrimingMaterialReader({
               onClick={() => setActiveId(m.id)}
               className={`flex shrink-0 items-center gap-2 rounded-[var(--ds-r-095)] border px-3 py-2 font-mono text-sm leading-5 transition-colors ${
                 isActive
-                  ? "border-primary/50 bg-primary/10 text-foreground shadow-[0_0_14px_rgba(255,86,120,0.12)]"
+                  ? "border-primary/50 bg-primary/10 text-foreground shadow-[0_0_14px_rgba(255,84,116,0.12)]"
                   : "border-transparent text-foreground/68 hover:border-primary/20 hover:text-foreground/86"
               }`}
             >

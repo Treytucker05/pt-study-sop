@@ -513,7 +513,7 @@ function renderTerms(terms: Array<{ term: string; definition: string | null; raw
           <dt className="text-[11px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]">
             {entry.term}
           </dt>
-          <dd className="mt-1 text-sm leading-6 text-[#ffe7ec]/80">
+          <dd className="mt-1 text-sm leading-6 text-[#ffe3ea]/80">
             {entry.definition || entry.raw}
           </dd>
         </div>
@@ -1169,7 +1169,7 @@ export function TutorWorkflowPrimingPanel({
                 {materialChips.map((chip) => (
                   <span
                     key={chip.id}
-                    className="rounded-full border border-[var(--ds-accent-a18)] bg-[rgba(255,68,104,0.1)] px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-[#ffe1e8]"
+                    className="rounded-full border border-[var(--ds-accent-a18)] bg-[rgba(255,68,104,0.1)] px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-[#ffe3ea]"
                   >
                     {chip.label}
                   </span>
@@ -1274,7 +1274,7 @@ export function TutorWorkflowPrimingPanel({
                       <div className="space-y-2.5 px-4 py-3 pl-5">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <div className="text-[10px] uppercase tracking-[0.18em] text-[#ffe1e8]/60">
+                            <div className="text-[10px] uppercase tracking-[0.18em] text-[#ffe3ea]/60">
                               {method.method_id}
                             </div>
                             <div className="mt-1 font-semibold text-white">
@@ -1300,7 +1300,7 @@ export function TutorWorkflowPrimingPanel({
                         <p
                           data-testid="priming-method-card-description"
                           title={description}
-                          className="line-clamp-1 text-sm leading-6 text-[#ffe6ec]/74"
+                          className="line-clamp-1 text-sm leading-6 text-[#ffe3ea]/74"
                         >
                           {description}
                         </p>
@@ -1376,7 +1376,7 @@ export function TutorWorkflowPrimingPanel({
             </div>
           ) : null}
           {primeMethodsError ? (
-            <div className="rounded-[var(--ds-r-075)] border border-[rgba(255,82,82,0.24)] bg-[rgba(80,0,0,0.18)] px-3 py-2 text-sm text-[#ffb9b9]">
+            <div className="rounded-[var(--ds-r-075)] border border-[rgba(255,74,74,0.24)] bg-[rgba(80,0,0,0.18)] px-3 py-2 text-sm text-[#ffb9b9]">
               Failed to load PRIME methods.
             </div>
           ) : null}

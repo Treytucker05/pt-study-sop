@@ -52,7 +52,7 @@ export function buildMaterialViewerPopoutHtml(args: {
     <style>
       :root {
         color-scheme: dark;
-        --bg: #05070d;
+        --bg: #08080c;
         --surface: rgba(16, 22, 33, 0.95);
         --border: rgba(94, 234, 212, 0.2);
         --text: #e5edf8;
@@ -122,7 +122,7 @@ export function buildMaterialViewerPopoutHtml(args: {
       }
       .body iframe {
         flex: 1;
-        background: #111;
+        background: #121212;
       }
       .body pre {
         flex: 1;

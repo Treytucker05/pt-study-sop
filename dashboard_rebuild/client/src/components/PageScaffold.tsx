@@ -118,11 +118,11 @@ export function PageScaffold({
             >
               <defs>
                 <linearGradient id={glowId} x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="rgba(255,40,65,0.3)" />
-                  <stop offset="12%" stopColor="rgba(255,50,75,1)" />
-                  <stop offset="50%" stopColor="rgba(255,60,85,1)" />
-                  <stop offset="88%" stopColor="rgba(255,50,75,1)" />
-                  <stop offset="100%" stopColor="rgba(255,40,65,0.3)" />
+                  <stop offset="0%" stopColor="rgba(255,35,60,0.3)" />
+                  <stop offset="12%" stopColor="rgba(255,42,76,1)" />
+                  <stop offset="50%" stopColor="rgba(255,42,76,1)" />
+                  <stop offset="88%" stopColor="rgba(255,42,76,1)" />
+                  <stop offset="100%" stopColor="rgba(255,35,60,0.3)" />
                 </linearGradient>
                 <filter id={blurId}>
                   <feGaussianBlur stdDeviation="2" />

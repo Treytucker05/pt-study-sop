@@ -307,7 +307,7 @@ function makePlaceholder(
   description: string,
 ): ReactNode {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 rounded-[var(--ds-r-090)] border border-dashed border-[rgba(255,104,132,0.24)] bg-black/20 p-4 text-center">
+    <div className="flex h-full flex-col items-center justify-center gap-3 rounded-[var(--ds-r-090)] border border-dashed border-[rgba(255,98,126,0.24)] bg-black/20 p-4 text-center">
       <div className="font-mono text-sm uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]">
         {title}
       </div>
@@ -1807,10 +1807,10 @@ export function StudioShell({
                                 }
                               }}
                               className={cn(
-                                "rounded-full border-[rgba(255,120,146,0.18)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]",
+                                "rounded-full border-[rgba(255,118,144,0.18)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]",
                                 panelAlreadyOpen &&
                                   !definition.allowMultiple &&
-                                  "border-[rgba(255,124,150,0.36)] bg-[rgba(255,78,108,0.14)] text-white",
+                                  "border-[rgba(255,118,144,0.36)] bg-[rgba(255,68,104,0.14)] text-white",
                               )}
                             >
                               <definition.icon className="mr-1.5 h-3.5 w-3.5" />
@@ -1867,10 +1867,10 @@ export function StudioShell({
                               }
                             }}
                             className={cn(
-                              "rounded-full border-[rgba(255,120,146,0.18)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]",
+                              "rounded-full border-[rgba(255,118,144,0.18)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]",
                               panelAlreadyOpen &&
                                 !definition.allowMultiple &&
-                                "border-[rgba(255,124,150,0.36)] bg-[rgba(255,78,108,0.14)] text-white",
+                                "border-[rgba(255,118,144,0.36)] bg-[rgba(255,68,104,0.14)] text-white",
                             )}
                           >
                             <definition.icon className="mr-1.5 h-3.5 w-3.5" />
@@ -1934,7 +1934,7 @@ export function StudioShell({
                             <span className="uppercase tracking-[0.16em]">
                               {label}
                             </span>
-                            <span className="truncate text-[9px] uppercase tracking-[0.12em] text-[rgba(255,201,213,0.4)]">
+                            <span className="truncate text-[9px] uppercase tracking-[0.12em] text-[rgba(255,200,211,0.4)]">
                               {hint}
                             </span>
                           </button>
@@ -1951,7 +1951,7 @@ export function StudioShell({
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
                   {selectedPanelIds.length > 0 ? (
-                    <span className="rounded-full border border-[rgba(255,118,144,0.12)] bg-black/20 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffc9d5]">
+                    <span className="rounded-full border border-[rgba(255,118,144,0.12)] bg-black/20 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffc8d3]">
                       {selectedPanelIds.length} Selected
                     </span>
                   ) : null}
@@ -2067,7 +2067,7 @@ export function StudioShell({
                                   current.filter((entry) => entry.id !== item.id),
                                 );
                               }}
-                              className="rounded-md p-1 text-[#ffc9d5]/70 hover:bg-[rgba(255,84,116,0.2)] hover:text-white"
+                              className="rounded-md p-1 text-[#ffc8d3]/70 hover:bg-[rgba(255,84,116,0.2)] hover:text-white"
                             >
                               <X className="h-3 w-3" />
                             </button>
@@ -2156,7 +2156,7 @@ export function StudioShell({
             className={cn(
               "relative flex-1 scroll-mt-4 select-none overflow-hidden rounded-[var(--ds-r-100)] border border-[var(--ds-accent-a16)]",
               isCanvasDragging ? "cursor-grabbing" : "cursor-grab",
-              "bg-[radial-gradient(circle_at_top,rgba(255,70,104,0.10),transparent_20%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.24))]",
+              "bg-[radial-gradient(circle_at_top,rgba(255,68,104,0.10),transparent_20%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.24))]",
             )}
             onPointerDown={(event) => {
               const target = event.target as HTMLElement | null;
@@ -2273,7 +2273,7 @@ export function StudioShell({
                     onPopOut={() => handlePopOut(layoutItem.id)}
                     onSendBack={() => handleSendBack(layoutItem.id)}
                     style={{ zIndex: layoutItem.zIndex }}
-                    className="bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02)_12%,rgba(0,0,0,0.18)_100%),linear-gradient(135deg,rgba(124,14,38,0.18),rgba(18,5,10,0.86)_58%,rgba(0,0,0,0.96)_100%)] shadow-[0_14px_32px_rgba(0,0,0,0.28),0_0_0_1px_rgba(255,86,118,0.12)]"
+                    className="bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02)_12%,rgba(0,0,0,0.18)_100%),linear-gradient(135deg,rgba(124,14,38,0.18),rgba(18,7,11,0.86)_58%,rgba(0,0,0,0.96)_100%)] shadow-[0_14px_32px_rgba(0,0,0,0.28),0_0_0_1px_rgba(255,84,116,0.12)]"
                     onTitlePointerDown={(event) => {
                       event.stopPropagation();
                       bringPanelToFront(layoutItem.id);
@@ -2402,7 +2402,7 @@ export function StudioShell({
                   onChange={(event) => {
                     applyCanvasScale(Number(event.currentTarget.value));
                   }}
-                  className="h-1.5 w-28 cursor-pointer appearance-none rounded-full bg-[rgba(255,84,116,0.18)] accent-[rgb(255,108,138)] md:w-36"
+                  className="h-1.5 w-28 cursor-pointer appearance-none rounded-full bg-[rgba(255,84,116,0.18)] accent-[rgb(255,118,144)] md:w-36"
                 />
                 <span
                   aria-live="polite"

@@ -381,7 +381,7 @@ export function StudioObsidianPanel({
 
   if (!rootFolder) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 rounded-[var(--ds-r-090)] border border-dashed border-[rgba(255,104,132,0.24)] bg-black/20 p-4 text-center">
+      <div className="flex h-full flex-col items-center justify-center gap-3 rounded-[var(--ds-r-090)] border border-dashed border-[rgba(255,98,126,0.24)] bg-black/20 p-4 text-center">
         <FolderTree className="h-5 w-5 text-[var(--ds-fg-pink-2)]" />
         <div className="font-mono text-sm uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]">
           Obsidian Vault
@@ -571,10 +571,10 @@ export function StudioObsidianPanel({
                 value={editorDraft}
                 onChange={(event) => setEditorDraft(event.target.value)}
                 aria-label="Edit vault note"
-                className="h-full min-h-[240px] w-full resize-none rounded-[var(--ds-r-070)] border border-[var(--ds-accent-a18)] bg-black/40 p-3 font-mono text-xs leading-6 text-[#fff3f6] outline-none"
+                className="h-full min-h-[240px] w-full resize-none rounded-[var(--ds-r-070)] border border-[var(--ds-accent-a18)] bg-black/40 p-3 font-mono text-xs leading-6 text-[#fff6f8] outline-none"
               />
             ) : (
-              <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-6 text-[#fff3f6]">
+              <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-6 text-[#fff6f8]">
                 {selectedContent}
               </pre>
             )
