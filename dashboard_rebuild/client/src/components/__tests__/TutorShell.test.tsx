@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TutorShell } from "@/components/TutorShell";
 import { buildStudioShellPresetLayout } from "@/components/studio/StudioShell";
 import { getStudioCanvasShapeId } from "@/lib/studioCanvasShapes";
+import { expandAllSourceFolders } from "@/test/sourceShelf";
 import {
   getStudioExcerptObjectId,
   getStudioImageObjectId,
@@ -870,6 +871,7 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
 
     const sourceShelf = screen.getByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
     expect(sourceShelf).toHaveTextContent("Current Run");
     expect(sourceShelf).toHaveTextContent("Exercise Physiology");
     expect(sourceShelf).toHaveTextContent("Week 7");
@@ -916,6 +918,7 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
 
     const sourceShelf = screen.getByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
     await userEvent.click(within(sourceShelf).getByRole("button", { name: /^library$/i }));
 
     expect(sourceShelf).toHaveTextContent("Showing library materials");
@@ -976,6 +979,7 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
 
     const sourceShelf = screen.getByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
     await userEvent.click(within(sourceShelf).getByRole("button", { name: /^vault$/i }));
     await waitFor(() =>
       expect(getObsidianFilesMock).toHaveBeenCalledWith(
@@ -1053,6 +1057,7 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
 
     const sourceShelf = screen.getByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
     expect(sourceShelf).toHaveTextContent("Exercise Physiology/Week 7");
 
     await userEvent.click(within(sourceShelf).getByRole("button", { name: /^vault$/i }));
@@ -1077,6 +1082,7 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
 
     const sourceShelf = screen.getByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
 
     expect(screen.getByTestId("mock-priming-loaded-materials")).toHaveTextContent(
       "1 loaded materials",
@@ -1945,6 +1951,7 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
 
     const sourceShelf = screen.getByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
     const workspace = await screen.findByTestId("studio-tldraw-workspace");
 
     await user.click(
@@ -2593,6 +2600,7 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
 
     const sourceShelf = screen.getByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
     const workspace = await screen.findByTestId("studio-tldraw-workspace");
 
     expect(workspace).toHaveTextContent("0 active canvas objects");
@@ -2645,6 +2653,7 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
 
     const sourceShelf = screen.getByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
     const documentDock = screen.getByTestId("studio-document-dock");
     const workspace = screen.getByTestId("studio-tldraw-workspace");
 
@@ -2740,6 +2749,7 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
 
     const sourceShelf = screen.getByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
     const documentDock = screen.getByTestId("studio-document-dock");
     const workspace = screen.getByTestId("studio-tldraw-workspace");
 

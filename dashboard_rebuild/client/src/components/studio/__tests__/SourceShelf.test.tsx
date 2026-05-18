@@ -5,6 +5,7 @@ import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SourceShelf } from "@/components/studio/SourceShelf";
+import { expandAllSourceFolders } from "@/test/sourceShelf";
 import type { Material } from "@/lib/api";
 import type { StudioWorkspaceObject } from "@/lib/studioWorkspaceObjects";
 
@@ -142,6 +143,7 @@ describe("SourceShelf", () => {
     renderSourceShelfHarness();
 
     const shelf = screen.getByTestId("source-shelf-content");
+    await expandAllSourceFolders(shelf);
     expect(within(shelf).getByRole("button", { name: /^all$/i })).toHaveAttribute(
       "aria-pressed",
       "true",
@@ -205,6 +207,7 @@ describe("SourceShelf", () => {
         "Exercise Physiology/Week 7",
       ),
     );
+    await expandAllSourceFolders(shelf);
 
     expect(
       await within(shelf).findByText("Cardio.md", undefined, { timeout: 3000 }),
@@ -223,9 +226,11 @@ describe("SourceShelf", () => {
     renderSourceShelfHarness();
 
     const shelf = screen.getByTestId("source-shelf-content");
+    await expandAllSourceFolders(shelf);
     await user.click(within(shelf).getByRole("button", { name: /^library$/i }));
 
     const input = within(shelf).getByTestId("source-shelf-upload-input");
+    await expandAllSourceFolders(shelf);
     await user.upload(
       input,
       new File(["alpha"], "Hemodynamics Notes.txt", { type: "text/plain" }),
@@ -249,6 +254,7 @@ describe("SourceShelf", () => {
     renderSourceShelfHarness({ onOpenInDocumentDock });
 
     const shelf = screen.getByTestId("source-shelf-content");
+    await expandAllSourceFolders(shelf);
     const checkbox = within(shelf).getByRole("checkbox", {
       name: /include cardiac output lecture in current run/i,
     });
@@ -336,6 +342,20 @@ describe("SourceShelf", () => {
     );
 
     const shelf = screen.getByTestId("source-shelf-content");
+
+    // Folders now start collapsed (user preference) — expand course → Library
+    // to reach the leaf before asserting on its rendered name.
+    const user = userEvent.setup();
+    await user.click(
+      await within(shelf).findByRole("button", {
+        name: /exercise physiology \d+\/\d+ loaded/i,
+      }),
+    );
+    await user.click(
+      await within(shelf).findByRole("button", {
+        name: /library \d+\/\d+ loaded/i,
+      }),
+    );
 
     // Basename is displayed as the leaf detail.
     expect(

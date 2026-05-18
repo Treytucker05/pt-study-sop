@@ -4,6 +4,8 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ComponentProps, ReactNode } from "react";
 
+import { expandAllSourceFolders } from "@/test/sourceShelf";
+
 const {
   getSessionMock,
   getMaterialsMock,
@@ -936,6 +938,7 @@ describe("Tutor page restore", () => {
     expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
     expect(await screen.findByTestId("studio-priming-panel")).toBeInTheDocument();
     const sourceShelf = await screen.findByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
     expect(sourceShelf).toHaveTextContent("Renal Physiology");
     expect(sourceShelf).toHaveTextContent("2 materials loaded");
     expect(sourceShelf).toHaveTextContent("Renal Notes");
@@ -1209,6 +1212,7 @@ describe("Tutor page restore", () => {
 
     expect(await screen.findByTestId("studio-priming-panel")).toBeInTheDocument();
     const sourceShelf = await screen.findByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
     expect(sourceShelf).toHaveTextContent("Neuro");
     expect(sourceShelf).toHaveTextContent("2 materials loaded");
     expect(sourceShelf).toHaveTextContent("Neuro Lecture");
@@ -1303,6 +1307,7 @@ describe("Tutor page restore", () => {
     await user.click(screen.getByRole("button", { name: /start session/i }));
 
     const sourceShelf = await screen.findByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
     expect(sourceShelf).toHaveTextContent("1 material loaded");
     expect(sourceShelf).toHaveTextContent("1 materials in run");
     expect(sourceShelf).toHaveTextContent("MSII Topic 1 Objectives");

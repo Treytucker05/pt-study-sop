@@ -496,7 +496,9 @@ function buildSourceTree(args: {
       id: workspaceObject.id,
       kind: "leaf",
       sourceType: "material",
-      label: workspaceObject.title,
+      // Show only the file's basename, never a full filesystem path, even
+      // when the material title is itself an absolute path (real data).
+      label: basenameFromPath(workspaceObject.title),
       detail: basenameFromPath(workspaceObject.detail),
       badge: workspaceObject.badge,
       checked: selectedMaterialIdSet.has(material.id),
@@ -876,10 +878,10 @@ export function SourceShelf({
       selectedPaths,
     ],
   );
-  const defaultExpandedIds = useMemo(
-    () => collectDefaultExpandedNodeIds(fullTree),
-    [fullTree],
-  );
+  // Source Shelf opens with every folder collapsed (user preference). The
+  // re-add effect below then becomes a no-op, so manual expand/collapse
+  // persists across tree rebuilds instead of being forced back open.
+  const defaultExpandedIds = useMemo<string[]>(() => [], []);
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(
     () => new Set(defaultExpandedIds),
   );
