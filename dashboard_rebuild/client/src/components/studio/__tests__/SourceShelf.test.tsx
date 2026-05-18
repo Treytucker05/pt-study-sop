@@ -428,12 +428,15 @@ describe("SourceShelf", () => {
     await user.click(syncButton);
 
     // The resolved folder is passed explicitly (not a silent env
-    // fallback); course_id threaded; no selected_files => whole-root.
+    // fallback). course_id is null on purpose: a whole-Root-Folder sync
+    // spans many classes, so the backend must auto-link each file to its
+    // own course by folder name — pinning the open course is the bug
+    // that collapsed everything into one class.
     await waitFor(() =>
       expect(startSyncMock).toHaveBeenCalledWith({
         folder_path:
           "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School",
-        course_id: 1,
+        course_id: null,
       }),
     );
     await waitFor(

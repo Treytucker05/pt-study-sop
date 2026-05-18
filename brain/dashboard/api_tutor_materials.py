@@ -1250,17 +1250,36 @@ def _build_gemini_vision_context(
     return "\n\n".join(blocks), ""
 
 
-def _auto_link_materials_to_courses(conn: sqlite3.Connection) -> dict:
-    """Match unlinked rag_docs materials to courses by folder_path -> course name."""
+def _auto_link_materials_to_courses(
+    conn: sqlite3.Connection, *, force: bool = False
+) -> dict:
+    """Match rag_docs materials to courses by folder_path -> course name.
+
+    Default: only links rows whose course_id IS NULL (safe, additive).
+
+    force=True: re-derives course_id from folder_path for ALL
+    corpus='materials' rows (the folder is the source of truth for a
+    whole-Root-Folder reconcile). This repairs rows that a prior sync
+    force-assigned to the wrong course; a row whose top folder matches no
+    course is reset to NULL so it surfaces under its real folder instead
+    of staying glued to a stale course.
+    """
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
-    cur.execute(
-        """SELECT id, folder_path FROM rag_docs
-           WHERE course_id IS NULL
-             AND COALESCE(corpus, 'materials') IN ('materials', 'course_setup')
-             AND folder_path IS NOT NULL AND TRIM(folder_path) != ''"""
-    )
+    if force:
+        cur.execute(
+            """SELECT id, folder_path, course_id FROM rag_docs
+               WHERE COALESCE(corpus, 'materials') = 'materials'
+                 AND folder_path IS NOT NULL AND TRIM(folder_path) != ''"""
+        )
+    else:
+        cur.execute(
+            """SELECT id, folder_path, course_id FROM rag_docs
+               WHERE course_id IS NULL
+                 AND COALESCE(corpus, 'materials') IN ('materials', 'course_setup')
+                 AND folder_path IS NOT NULL AND TRIM(folder_path) != ''"""
+        )
     unlinked = cur.fetchall()
 
     # Auto-linking should not match new uploads to archived courses.
@@ -1294,17 +1313,26 @@ def _auto_link_materials_to_courses(conn: sqlite3.Connection) -> dict:
 
     for row in unlinked:
         course_id = _match_course(row["folder_path"])
+        current = row["course_id"]
         if course_id is not None:
-            cur.execute(
-                "UPDATE rag_docs SET course_id = ? WHERE id = ?",
-                (course_id, row["id"]),
-            )
+            if course_id != current:
+                cur.execute(
+                    "UPDATE rag_docs SET course_id = ? WHERE id = ?",
+                    (course_id, row["id"]),
+                )
             linked += 1
             top = row["folder_path"].replace("\\", "/").strip("/").split("/")[0].strip()
             if top not in mappings:
                 cname = next((n for cid, n in course_map if cid == course_id), "?")
                 mappings[top] = cname
         else:
+            # force: a stale/forced course on a folder that names no course
+            # is wrong — reset to NULL so the file shows under its folder.
+            if force and current is not None:
+                cur.execute(
+                    "UPDATE rag_docs SET course_id = NULL WHERE id = ?",
+                    (row["id"],),
+                )
             still_unlinked += 1
 
     conn.commit()
@@ -1513,11 +1541,15 @@ def _launch_materials_sync_job(
                     last_error=str(embed_exc),
                 )
 
-            # Auto-link materials to courses by folder_path only for unassigned syncs.
+            # Whole-root reconcile (no pinned course): the folder is the
+            # source of truth, so force-rederive course_id for every
+            # materials row — this also repairs rows a prior course-pinned
+            # sync mis-assigned. Course-pinned syncs keep their explicit
+            # assignment and skip auto-linking entirely.
             if course_id is None:
                 try:
                     link_conn = get_connection()
-                    _auto_link_materials_to_courses(link_conn)
+                    _auto_link_materials_to_courses(link_conn, force=True)
                     link_conn.close()
                 except Exception:
                     pass

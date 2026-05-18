@@ -823,13 +823,21 @@ function SourceShelfTreeNode({
  * file (that is the Root-Folder ↔ Uploaded-Files reconciliation the user
  * asked for). Mirrors library.tsx waitForMaterialSyncJob.
  */
-async function waitForSourceSyncJob(jobId: string) {
+async function waitForSourceSyncJob(
+  jobId: string,
+  onProgress?: (
+    status: Awaited<ReturnType<typeof api.tutor.getSyncMaterialsStatus>>,
+  ) => void,
+) {
   let lastStatus: Awaited<
     ReturnType<typeof api.tutor.getSyncMaterialsStatus>
   > | null = null;
-  for (let attempt = 0; attempt < 50; attempt += 1) {
+  // 112 files + embeddings can run for several minutes; cap generously
+  // (~10 min) and surface progress so the tree can fill in live.
+  for (let attempt = 0; attempt < 1000; attempt += 1) {
     await new Promise((resolve) => setTimeout(resolve, 600));
     lastStatus = await api.tutor.getSyncMaterialsStatus(jobId);
+    onProgress?.(lastStatus);
     if (lastStatus.status === "completed" || lastStatus.status === "failed") {
       return lastStatus;
     }
@@ -1048,10 +1056,22 @@ export function SourceShelf({
     }
   };
 
-  // Reconcile the configured Root Folder into Library IN PLACE — no
-  // folder_path / no selected_files means "sync the whole configured root
-  // by its folder structure", so the user doesn't have to re-upload every
-  // file. Synced materials carry folder_path, which the tree now nests.
+  const invalidateMaterialQueries = () =>
+    Promise.all(
+      [
+        "tutor-materials",
+        "tutor-chat-materials-all-enabled",
+        "tutor-content-sources",
+        "tutor-embed-status",
+      ].map((key) => queryClient.invalidateQueries({ queryKey: [key] })),
+    );
+
+  // Reconcile the WHOLE configured Root Folder into Library in place — no
+  // re-upload. course_id is intentionally NOT pinned to the open course:
+  // the root spans many classes, so the backend must auto-link each file
+  // to its own course by folder name (it only does so when course_id is
+  // null — passing a course force-assigns every file to that one class,
+  // which is the disconnect that collapsed everything into one course).
   const handleSyncRootFolder = async () => {
     if (syncing) return;
     setSyncing(true);
@@ -1061,31 +1081,41 @@ export function SourceShelf({
         // Explicit folder beats the server env fallback so the sync
         // provably targets the folder shown in the UI.
         folder_path: resolvedRootFolder || undefined,
-        course_id: typeof courseId === "number" ? courseId : null,
+        // null => backend auto-links each file to its class by folder.
+        course_id: null,
       });
+      // Long job (extract + embed across the whole root). Refresh the
+      // tree periodically so classes appear as they stream in, not only
+      // at the very end.
+      let tick = 0;
       const status = start.job_id
-        ? await waitForSourceSyncJob(start.job_id)
+        ? await waitForSourceSyncJob(start.job_id, () => {
+            tick += 1;
+            if (tick % 5 === 0) void invalidateMaterialQueries();
+          })
         : null;
       if (status?.status === "failed") {
         throw new Error(status.last_error || "Root Folder sync failed.");
       }
+      await invalidateMaterialQueries();
       const processed = Number(status?.sync_result?.processed || 0);
-      await Promise.all(
-        [
-          "tutor-materials",
-          "tutor-chat-materials-all-enabled",
-          "tutor-content-sources",
-          "tutor-embed-status",
-        ].map((key) =>
-          queryClient.invalidateQueries({ queryKey: [key] }),
-        ),
-      );
-      toast.success(
-        processed > 0
-          ? `Synced ${processed} file${processed === 1 ? "" : "s"} from the Root Folder.`
-          : "Root Folder is already in sync.",
-        { id: pending },
-      );
+      if (status && status.status !== "completed") {
+        toast.message(
+          `Root Folder sync still running (${processed} file${
+            processed === 1 ? "" : "s"
+          } so far). Classes will keep filling in.`,
+          { id: pending },
+        );
+      } else {
+        toast.success(
+          processed > 0
+            ? `Synced ${processed} file${
+                processed === 1 ? "" : "s"
+              } from the Root Folder across their classes.`
+            : "Root Folder is already in sync.",
+          { id: pending },
+        );
+      }
     } catch (err) {
       toast.error(
         `Root Folder sync failed: ${
