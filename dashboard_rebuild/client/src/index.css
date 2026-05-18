@@ -841,6 +841,9 @@
 
   .page-shell__title {
     margin: 0;
+    /* Nudge the title up so the dipline sits under the word (Phase 5 hero
+     * compaction shifted it off the SVG low-run). */
+    transform: translateY(-0.2rem);
     font-family: var(--font-arcade);
     font-size: clamp(1rem, 0.85rem + 0.7vw, 1.4rem);
     line-height: 1.15;
@@ -865,9 +868,9 @@
     display: grid;
     flex: 0 1 48rem;
     width: min(100%, 48rem);
-    gap: 0.65rem;
+    gap: 0.5rem;
     grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-    grid-auto-rows: minmax(44px, auto);
+    grid-auto-rows: minmax(36px, auto);
     align-items: stretch;
     align-content: start;
   }
@@ -1037,11 +1040,11 @@
   }
 
   .page-shell__stat {
-    min-height: 44px;
+    min-height: 36px;
     width: 100%;
     min-width: 0;
     max-width: none;
-    padding: 0.7rem 0.85rem;
+    padding: 0.4rem 0.7rem;
     border-radius: 0.25rem;
     border: 1px solid rgba(255,118,144,0.18);
     border-top: 2px solid rgba(255,35,60,0.52);
@@ -1061,7 +1064,7 @@
 
   .page-shell__stat-label {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: 0.72rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: hsl(var(--foreground) / 0.62);
@@ -1069,8 +1072,8 @@
 
   .page-shell__stat-value {
     font-family: var(--font-mono);
-    font-size: 1.2rem;
-    line-height: 1.4;
+    font-size: 1rem;
+    line-height: 1.3;
     color: hsl(var(--foreground) / 0.96);
   }
 
