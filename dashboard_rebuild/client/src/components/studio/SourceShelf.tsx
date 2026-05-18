@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import type { Material } from "@/lib/api";
+import { materialFolderSegments } from "@/lib/materialFolder";
 import { basenameFromPath as sharedBasenameFromPath, splitPath as sharedSplitPath } from "@/lib/pathDisplay";
 import type { StudioWorkspaceObject } from "@/lib/studioWorkspaceObjects";
 
@@ -484,15 +485,8 @@ function buildSourceTree(args: {
         return next;
       })();
 
-    const libraryFolder = ensureFolder(
-      courseFolder.children,
-      `${courseFolder.id}:library`,
-      "Library",
-      "source",
-    );
-
     const workspaceObject = createMaterialWorkspaceObject(material);
-    libraryFolder.children.push({
+    const leaf: SourceLeafNode = {
       id: workspaceObject.id,
       kind: "leaf",
       sourceType: "material",
@@ -503,7 +497,39 @@ function buildSourceTree(args: {
       badge: workspaceObject.badge,
       checked: selectedMaterialIdSet.has(material.id),
       workspaceObject,
+    };
+
+    // Nest the material by its real folder hierarchy (folder_path /
+    // sanitized source_path) instead of one flat "Library" bucket — this
+    // is the disconnect: synced materials already carry folder_path.
+    const rawSegments = materialFolderSegments(material);
+    const startsWithCourse =
+      rawSegments.length > 0 &&
+      normalizeKey(rawSegments[0]) === normalizeKey(courseLabel);
+    const segments = startsWithCourse ? rawSegments.slice(1) : rawSegments;
+
+    if (segments.length === 0) {
+      // Unfoldered (e.g. uploaded files) — small bucket, not a giant catch-all.
+      ensureFolder(
+        courseFolder.children,
+        `${courseFolder.id}:unsorted`,
+        "Unsorted",
+        "source",
+      ).children.push(leaf);
+      return;
+    }
+
+    let parentFolder = courseFolder;
+    segments.forEach((segment, index) => {
+      const segmentKey = normalizeKey(segment) || `segment-${index}`;
+      parentFolder = ensureFolder(
+        parentFolder.children,
+        `${parentFolder.id}:m:${segmentKey}`,
+        segment,
+        "path",
+      );
     });
+    parentFolder.children.push(leaf);
   });
 
   knownVaultPaths.forEach((path) => {

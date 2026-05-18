@@ -343,19 +343,11 @@ describe("SourceShelf", () => {
 
     const shelf = screen.getByTestId("source-shelf-content");
 
-    // Folders now start collapsed (user preference) — expand course → Library
-    // to reach the leaf before asserting on its rendered name.
-    const user = userEvent.setup();
-    await user.click(
-      await within(shelf).findByRole("button", {
-        name: /exercise physiology \d+\/\d+ loaded/i,
-      }),
-    );
-    await user.click(
-      await within(shelf).findByRole("button", {
-        name: /library \d+\/\d+ loaded/i,
-      }),
-    );
+    // Folders now start collapsed (user preference) and materials nest by
+    // their real folder hierarchy (folder_path → "Uploaded Files" here),
+    // not one flat "Library" bucket. Expand every folder structure-
+    // independently to reach the leaf before asserting on its rendered name.
+    await expandAllSourceFolders(shelf);
 
     // Basename is displayed as the leaf detail.
     expect(
