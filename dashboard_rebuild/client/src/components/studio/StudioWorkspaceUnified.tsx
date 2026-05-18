@@ -65,7 +65,10 @@ export function StudioWorkspaceUnified({
     "mind-map": false,
     "concept-map": false,
   });
-  const [materialSidebarOpen, setMaterialSidebarOpen] = useState(true);
+  // Closed by default — the material / Prime-Packet sidebar previously stayed
+  // pinned over the canvas with no easy way to dismiss it. The always-visible
+  // toggle (studio-workspace-material-toggle) summons it on demand.
+  const [materialSidebarOpen, setMaterialSidebarOpen] = useState(false);
   const [conceptMapCommand, setConceptMapCommand] = useState<GraphCanvasCommand | null>(null);
   const [mindMapCommand, setMindMapCommand] = useState<GraphCanvasCommand | null>(null);
   const lastConceptMapRequestKeyRef = useRef<number | null>(null);
