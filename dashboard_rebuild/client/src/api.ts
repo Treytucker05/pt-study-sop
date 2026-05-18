@@ -961,6 +961,15 @@ export const api = {
       request<TutorSessionEndResult>(`/tutor/session/${sessionId}/end`, {
         method: "POST",
       }),
+    resumeSession: (sessionId: string) =>
+      request<{
+        session_id: string;
+        status: string;
+        prior_status?: string;
+        already_active?: boolean;
+      }>(`/tutor/session/${sessionId}/resume`, {
+        method: "POST",
+      }),
     deleteSession: (sessionId: string) =>
       request<{
         deleted: boolean;

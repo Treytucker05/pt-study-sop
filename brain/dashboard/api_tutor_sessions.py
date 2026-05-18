@@ -1511,6 +1511,67 @@ def end_session(session_id: str):
 
 
 # ---------------------------------------------------------------------------
+# POST /api/tutor/session/<id>/resume — Reactivate an ended/completed session
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/session/<session_id>/resume", methods=["POST"])
+def resume_session(session_id: str):
+    """Reactivate a previously ended/completed/abandoned Tutor session so the
+    learner can continue it from PREVIOUS SESSIONS.
+
+    Turn submission requires ``status == 'active'`` (see api_tutor_turns), so a
+    session that was ended can be viewed but not continued until its status is
+    flipped back. This endpoint flips ``status`` -> ``'active'`` and clears
+    ``ended_at``. It is idempotent: resuming an already-active session is a
+    no-op success.
+    """
+    from dashboard.api_tutor_turns import _get_tutor_session
+
+    conn = get_connection()
+    session = _get_tutor_session(conn, session_id)
+    if not session:
+        conn.close()
+        return jsonify({"error": "Session not found"}), 404
+
+    prior_status = str(session.get("status") or "").strip().lower()
+    if prior_status == "active":
+        conn.close()
+        return jsonify(
+            {
+                "session_id": session_id,
+                "status": "active",
+                "prior_status": prior_status,
+                "already_active": True,
+            }
+        )
+
+    cur = conn.cursor()
+    cur.execute(
+        """UPDATE tutor_sessions
+           SET status = 'active', ended_at = NULL
+           WHERE session_id = ?""",
+        (session_id,),
+    )
+    conn.commit()
+    conn.close()
+
+    _LOG.info(
+        "resume_session session_id=%s prior_status=%s -> active",
+        session_id,
+        prior_status or "unknown",
+    )
+    return jsonify(
+        {
+            "session_id": session_id,
+            "status": "active",
+            "prior_status": prior_status,
+            "already_active": False,
+        }
+    )
+
+
+# ---------------------------------------------------------------------------
 # GET /api/tutor/session/<id>/summary — Full session summary + optional Obsidian save
 # ---------------------------------------------------------------------------
 

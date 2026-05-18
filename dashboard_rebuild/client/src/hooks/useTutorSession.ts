@@ -604,11 +604,21 @@ export function useTutorSession({
   const resumeSession = useCallback(
     async (sessionId: string) => {
       try {
-        const session = await api.tutor.getSession(sessionId);
+        let session = await api.tutor.getSession(sessionId);
         if (!isTutorSessionActive(session.status)) {
-          clearActiveSessionState();
-          toast.error("Session is not active. Start a new Tutor run from this surface.");
-          return;
+          // Ended/completed/abandoned sessions can be VIEWED but not
+          // continued (turn submission requires status === 'active'). The
+          // product promises "resume from Previous Sessions", so reactivate
+          // the session on the backend, then reload its restored state.
+          await api.tutor.resumeSession(sessionId);
+          session = await api.tutor.getSession(sessionId);
+          if (!isTutorSessionActive(session.status)) {
+            clearActiveSessionState();
+            toast.error(
+              "Could not reactivate this session. Start a new Tutor run instead.",
+            );
+            return;
+          }
         }
         applySessionState(session);
         toast.success("Session resumed");

@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { api } from "@/lib/api";
 import {
@@ -26,6 +27,7 @@ import {
   Sparkles,
   Loader2,
   Trash2,
+  RotateCcw,
 } from "lucide-react";
 import { ICON_SM, INPUT_BASE, SELECT_BASE } from "@/lib/theme";
 import { CONTROL_PLANE_COLORS } from "@/lib/colors";
@@ -836,6 +838,10 @@ export function TutorTopBar({
     <ViewSessionDialog
       session={viewingSession}
       onClose={() => setViewingSession(null)}
+      onResume={(sessionId) => {
+        setViewingSession(null);
+        onResumeSession(sessionId);
+      }}
     />
     </>
   );
@@ -844,9 +850,14 @@ export function TutorTopBar({
 interface ViewSessionDialogProps {
   session: TutorSessionSummary | null;
   onClose: () => void;
+  onResume: (sessionId: string) => void;
 }
 
-function ViewSessionDialog({ session, onClose }: ViewSessionDialogProps) {
+function ViewSessionDialog({
+  session,
+  onClose,
+  onResume,
+}: ViewSessionDialogProps) {
   const sessionId = session?.session_id ?? null;
   const { data: detail, isLoading, isError } = useQuery({
     queryKey: ["tutor-session-detail", sessionId],
@@ -918,6 +929,16 @@ function ViewSessionDialog({ session, onClose }: ViewSessionDialogProps) {
                 </div>
               )}
             </div>
+            <DialogFooter className="mt-4 border-t border-primary/15 pt-4">
+              <Button
+                type="button"
+                onClick={() => onResume(session.session_id)}
+                className="rounded-none border-2 border-primary font-arcade text-ui-2xs"
+              >
+                <RotateCcw className="mr-2 h-3.5 w-3.5" />
+                RESUME SESSION
+              </Button>
+            </DialogFooter>
           </>
         ) : null}
       </DialogContent>
