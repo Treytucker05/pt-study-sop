@@ -631,7 +631,16 @@ export function StudioTldrawWorkspace({
           <Tldraw
             autoFocus={false}
             hideUi
-            onMount={(mountedEditor) => setEditor(mountedEditor)}
+            onMount={(mountedEditor) => {
+              setEditor(mountedEditor);
+              // Match the cockpit theme — tldraw defaults to light, which
+              // rendered a glaring white canvas against the dark UI.
+              // Optional-chained so it safely no-ops if the editor lacks the
+              // preferences API (e.g. test mocks).
+              mountedEditor.user?.updateUserPreferences?.({
+                colorScheme: "dark",
+              });
+            }}
           />
         </div>
       </div>
