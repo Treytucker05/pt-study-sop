@@ -18,6 +18,10 @@ import {
   buildSessionSeedShapes,
   SESSION_SEED_SHAPE_PREFIX,
 } from "@/lib/canvasFromBundle";
+import {
+  isMindMapCanvasShapeId,
+  mindMapToTldrawShapes,
+} from "@/lib/canvasGraphFromMaps";
 import type { SessionMaterialBundle } from "@/lib/sessionMaterialBundle";
 import { Tldraw } from "tldraw";
 import "tldraw/tldraw.css";
@@ -182,6 +186,31 @@ export function StudioTldrawWorkspace({
       sessionSeedKeyRef.current = sessionBundle.sessionKey;
     }
   }, [applySessionSeed, editor, sessionBundle]);
+
+  // Phase B: drop the mind map onto the canvas as NATIVE, editable tldraw
+  // shapes (geo nodes + arrow edges) via the dagre-laid-out converter.
+  // No packShapes — dagre already lays it out and arrows have fixed
+  // endpoints, so re-packing would detach edges. zoomToFit only.
+  const handleInsertMindMap = useCallback(() => {
+    if (!editor || !sessionBundle?.isReady) return;
+    const { shapes } = mindMapToTldrawShapes(sessionBundle);
+    if (shapes.length === 0) {
+      toast("No session material yet to map.");
+      return;
+    }
+    const existing = editor.getCurrentPageShapeIds();
+    const stale = [...existing].filter((id) =>
+      isMindMapCanvasShapeId(String(id)),
+    );
+    if (stale.length > 0) editor.deleteShapes(stale as never);
+    editor.createShapes(shapes as never);
+    const ed = editor as Editor & { zoomToFit?: (opts?: unknown) => void };
+    requestAnimationFrame(() =>
+      ed.zoomToFit?.({ animation: { duration: 0 } }),
+    );
+    toast("Mind map added to canvas.");
+  }, [editor, sessionBundle]);
+
   const patchWorkspaceState = useCallback(
     (workspaceObject: StudioWorkspaceObject, patch: StudioWorkspaceCardState) => {
       onUpdateWorkspaceObject?.(workspaceObject.id, {
@@ -380,6 +409,21 @@ export function StudioTldrawWorkspace({
             className="h-8 rounded-full border-primary/20 bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-primary/84 hover:bg-black/30 disabled:cursor-default disabled:opacity-50"
           >
             Refresh from session
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            data-testid="canvas-insert-mind-map"
+            onClick={handleInsertMindMap}
+            disabled={!editor || !sessionBundle?.isReady}
+            title={
+              sessionBundle?.isReady
+                ? "Insert the mind map as native, editable canvas shapes"
+                : "No session material yet"
+            }
+            className="h-8 rounded-full border-primary/20 bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-primary/84 hover:bg-black/30 disabled:cursor-default disabled:opacity-50"
+          >
+            Insert Mind Map
           </Button>
           <Badge
             variant="outline"
