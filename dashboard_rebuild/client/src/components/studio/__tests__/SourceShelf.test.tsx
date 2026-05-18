@@ -12,6 +12,7 @@ import type { StudioWorkspaceObject } from "@/lib/studioWorkspaceObjects";
 const getObsidianFilesMock = vi.fn();
 const startSyncMock = vi.fn();
 const getSyncStatusMock = vi.fn();
+const previewSyncMock = vi.fn();
 
 vi.mock("@/lib/api", () => ({
   api: {
@@ -19,6 +20,8 @@ vi.mock("@/lib/api", () => ({
       getFiles: (...args: unknown[]) => getObsidianFilesMock(...args),
     },
     tutor: {
+      previewSyncMaterialsFolder: (...args: unknown[]) =>
+        previewSyncMock(...args),
       startSyncMaterialsFolder: (...args: unknown[]) => startSyncMock(...args),
       getSyncMaterialsStatus: (...args: unknown[]) =>
         getSyncStatusMock(...args),
@@ -145,6 +148,13 @@ describe("SourceShelf", () => {
     getObsidianFilesMock.mockResolvedValue({ success: true, files: [] });
     startSyncMock.mockReset();
     getSyncStatusMock.mockReset();
+    previewSyncMock.mockReset();
+    previewSyncMock.mockResolvedValue({
+      ok: true,
+      folder: "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School",
+      tree: { type: "folder", name: "PT School", path: "", children: [] },
+      counts: { folders: 2, files: 5 },
+    });
   });
 
   it("renders one searchable tree, filters it in real time, and cascades course checkbox selection", async () => {
@@ -402,14 +412,29 @@ describe("SourceShelf", () => {
     renderSourceShelfHarness();
 
     const shelf = screen.getByTestId("source-shelf-content");
+
+    // The resolved Root Folder is shown so the user can verify it.
+    expect(
+      await within(shelf).findByText(
+        "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School",
+      ),
+    ).toBeInTheDocument();
+
     const syncButton = within(shelf).getByRole("button", {
       name: /sync root folder/i,
     });
+    // Button stays disabled until the Root Folder resolves.
+    await waitFor(() => expect(syncButton).not.toBeDisabled());
     await user.click(syncButton);
 
-    // course_id is threaded through; no selected_files => whole-root sync.
+    // The resolved folder is passed explicitly (not a silent env
+    // fallback); course_id threaded; no selected_files => whole-root.
     await waitFor(() =>
-      expect(startSyncMock).toHaveBeenCalledWith({ course_id: 1 }),
+      expect(startSyncMock).toHaveBeenCalledWith({
+        folder_path:
+          "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School",
+        course_id: 1,
+      }),
     );
     await waitFor(
       () => expect(getSyncStatusMock).toHaveBeenCalledWith("job-1"),

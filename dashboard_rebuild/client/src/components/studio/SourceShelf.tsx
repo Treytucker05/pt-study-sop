@@ -18,7 +18,7 @@ import {
   Search,
   Upload,
 } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -859,6 +859,20 @@ export function SourceShelf({
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const queryClient = useQueryClient();
   const [syncing, setSyncing] = useState(false);
+  // Resolve the configured Root Folder (TUTOR_MATERIALS_DIR /
+  // PT_SCHOOL_MATERIALS_DIR / brain/.env) so the user can SEE exactly
+  // which folder a sync will read, and so we pass it explicitly rather
+  // than relying on a silent server-side env fallback.
+  const { data: rootFolderPreview, error: rootFolderError } = useQuery({
+    queryKey: ["studio-root-folder-preview"],
+    queryFn: () => api.tutor.previewSyncMaterialsFolder({}),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+  const resolvedRootFolder = rootFolderPreview?.folder ?? null;
+  const rootFolderFileCount = rootFolderPreview?.counts?.files ?? null;
+  const rootFolderErrorMessage =
+    rootFolderError instanceof Error ? rootFolderError.message : null;
   const [activeFilter, setActiveFilter] = useState<SourceShelfFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [listedVaultPaths, setListedVaultPaths] = useState<string[]>([]);
@@ -1044,6 +1058,9 @@ export function SourceShelf({
     const pending = toast.loading("Syncing Root Folder…");
     try {
       const start = await api.tutor.startSyncMaterialsFolder({
+        // Explicit folder beats the server env fallback so the sync
+        // provably targets the folder shown in the UI.
+        folder_path: resolvedRootFolder || undefined,
         course_id: typeof courseId === "number" ? courseId : null,
       });
       const status = start.job_id
@@ -1136,8 +1153,12 @@ export function SourceShelf({
             type="button"
             variant="outline"
             onClick={handleSyncRootFolder}
-            disabled={syncing}
-            title="Re-index the configured Root Folder into Library by its folder structure — no re-upload needed."
+            disabled={syncing || !resolvedRootFolder}
+            title={
+              resolvedRootFolder
+                ? `Re-index ${resolvedRootFolder} into Library by its folder structure — no re-upload needed.`
+                : "Root Folder not resolved — set TUTOR_MATERIALS_DIR / PT_SCHOOL_MATERIALS_DIR (brain/.env)."
+            }
             className="h-10 rounded-full border-primary/20 bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-white/82 hover:bg-black/30 hover:text-white"
           >
             {syncing ? (
@@ -1166,6 +1187,38 @@ export function SourceShelf({
             className="hidden"
             onChange={handleUploadChange}
           />
+        </div>
+
+        <div
+          data-testid="source-shelf-root-folder"
+          className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[10px] uppercase tracking-[0.18em] text-foreground/60"
+        >
+          <span className="text-primary">Root Folder</span>
+          {resolvedRootFolder ? (
+            <>
+              <span
+                title={resolvedRootFolder}
+                className="max-w-full truncate font-mono normal-case tracking-normal text-foreground/82"
+              >
+                {resolvedRootFolder}
+              </span>
+              {typeof rootFolderFileCount === "number" ? (
+                <span className="text-foreground/45">
+                  · {rootFolderFileCount} file
+                  {rootFolderFileCount === 1 ? "" : "s"}
+                </span>
+              ) : null}
+            </>
+          ) : (
+            <span
+              title={rootFolderErrorMessage ?? undefined}
+              className="font-mono normal-case tracking-normal text-amber-300/80"
+            >
+              {rootFolderErrorMessage
+                ? `Not resolved — ${rootFolderErrorMessage}`
+                : "Resolving…"}
+            </span>
+          )}
         </div>
       </div>
 
