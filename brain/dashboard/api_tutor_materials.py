@@ -1474,7 +1474,7 @@ def _launch_materials_sync_job(
             }
             _update_sync_job(
                 job_id,
-                phase="embedding",
+                phase="linking",
                 sync_result=combined_sync_result,
                 processed=int(combined_sync_result.get("processed") or 0),
                 total=int(combined_sync_result.get("total") or 0),
@@ -1482,6 +1482,22 @@ def _launch_materials_sync_job(
                 errors=int(combined_sync_result.get("failed") or len(sync_errors)),
                 current_file=None,
             )
+
+            # Folder -> course relink is pure metadata with NO dependency on
+            # embeddings. Run it BEFORE the slow / best-effort / hang-prone
+            # embed phase so the corrected class distribution lands
+            # immediately and is never gated by (or lost to) a stuck embed.
+            # Whole-root reconcile (course_id is None) force-rederives every
+            # materials row, repairing prior course-pinned mis-assignments.
+            if course_id is None:
+                try:
+                    link_conn = get_connection()
+                    _auto_link_materials_to_courses(link_conn, force=True)
+                    link_conn.close()
+                except Exception:
+                    pass
+
+            _update_sync_job(job_id, phase="embedding")
 
             try:
                 from concurrent.futures import (
@@ -1522,37 +1538,34 @@ def _launch_materials_sync_job(
                         progress_callback=_embed_progress,
                     )
 
-                with _TPE(max_workers=1) as _phase_executor:
+                # Do NOT use _TPE as a context manager: its __exit__ calls
+                # shutdown(wait=True), which blocks until the worker
+                # finishes — so a stuck embed would hang the job forever
+                # and make _EMBED_PHASE_TIMEOUT a no-op. Manage manually
+                # and shut down non-blocking on timeout.
+                _phase_executor = _TPE(max_workers=1)
+                try:
                     _phase_future = _phase_executor.submit(_run_embed)
-                    try:
-                        embed_result = _phase_future.result(
-                            timeout=_EMBED_PHASE_TIMEOUT
-                        )
-                    except _TETimeout:
-                        _phase_future.cancel()
-                        raise RuntimeError(
-                            f"Embedding phase timed out after {_EMBED_PHASE_TIMEOUT}s"
-                        )
-                _update_sync_job(job_id, embed_result=embed_result)
+                    embed_result = _phase_future.result(
+                        timeout=_EMBED_PHASE_TIMEOUT
+                    )
+                    _update_sync_job(job_id, embed_result=embed_result)
+                except _TETimeout:
+                    _phase_future.cancel()
+                    raise RuntimeError(
+                        f"Embedding phase timed out after {_EMBED_PHASE_TIMEOUT}s"
+                    )
+                finally:
+                    _phase_executor.shutdown(wait=False, cancel_futures=True)
             except Exception as embed_exc:
+                # Embedding is best-effort; the course relink already ran
+                # above, so a slow/failed/timed-out embed never blocks the
+                # corrected class distribution from landing.
                 _update_sync_job(
                     job_id,
                     embed_result={"error": str(embed_exc)},
                     last_error=str(embed_exc),
                 )
-
-            # Whole-root reconcile (no pinned course): the folder is the
-            # source of truth, so force-rederive course_id for every
-            # materials row — this also repairs rows a prior course-pinned
-            # sync mis-assigned. Course-pinned syncs keep their explicit
-            # assignment and skip auto-linking entirely.
-            if course_id is None:
-                try:
-                    link_conn = get_connection()
-                    _auto_link_materials_to_courses(link_conn, force=True)
-                    link_conn.close()
-                except Exception:
-                    pass
 
             _update_sync_job(job_id, status="completed", phase="completed")
         except Exception as exc:
