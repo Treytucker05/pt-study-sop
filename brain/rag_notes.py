@@ -769,10 +769,14 @@ def sync_folder_to_rag(
     # Above the cap: oversized *PDFs* are split into per-chapter docs
     # (content kept, fast); other oversized binaries are skipped (can't
     # chapter-split a 200 MB video). Env-tunable; 0 disables the cap.
+    # 12 MB: real lecture materials are a few MB; textbooks are tens-to-
+    # hundreds of MB. Above this, PDFs route to the fast fitz chapter
+    # splitter instead of the slow MinerU/OCR extractor (which times out
+    # ~120 s/file on mid-size books). Env-tunable; 0 disables the cap.
     try:
-        max_file_mb = float(os.environ.get("RAG_SYNC_MAX_FILE_MB", "40"))
+        max_file_mb = float(os.environ.get("RAG_SYNC_MAX_FILE_MB", "12"))
     except (TypeError, ValueError):
-        max_file_mb = 40.0
+        max_file_mb = 12.0
     max_file_bytes = int(max_file_mb * 1024 * 1024) if max_file_mb > 0 else 0
 
     candidate_files: list[Path] = []
