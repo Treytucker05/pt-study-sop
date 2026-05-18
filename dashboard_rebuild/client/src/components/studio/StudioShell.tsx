@@ -40,6 +40,7 @@ import {
   type WorkspacePanelSizePresetKey,
 } from "@/components/ui/WorkspacePanel";
 import { Button } from "@/components/ui/button";
+import { CONTROL_DECK, CONTROL_KICKER } from "@/components/shell/controlStyles";
 import type { StudioPanelLayoutItem } from "@/lib/studioPanelLayout";
 import { cn } from "@/lib/utils";
 import {
@@ -774,6 +775,9 @@ export function StudioShell({
   const canvasViewportRef = useRef<HTMLDivElement | null>(null);
   const groupSequenceRef = useRef(1);
   const [shouldFocusLayout, setShouldFocusLayout] = useState(false);
+  const [pendingCenterPanelKey, setPendingCenterPanelKey] = useState<
+    string | null
+  >(null);
   const [windowsMenuOpen, setWindowsMenuOpen] = useState(false);
   const windowsMenuRef = useRef<HTMLDivElement | null>(null);
   const [popouts, setPopouts] = useState<
@@ -1645,6 +1649,24 @@ export function StudioShell({
     return () => cancelAnimationFrame(frame);
   }, [focusOpenPanels, shouldFocusLayout]);
 
+  // After a deck button spawns/raises its panel, center the canvas viewport
+  // on that panel (the one the user picked). Runs once the layout state
+  // reflects the spawn; no-ops in tests where canvas refs are null.
+  useEffect(() => {
+    if (!pendingCenterPanelKey) return;
+    const target = normalizePanelKey(pendingCenterPanelKey);
+    const frame = requestAnimationFrame(() => {
+      let top: StudioPanelLayoutItem | null = null;
+      for (const item of resolvedLayout) {
+        if (normalizePanelKey(item.panel) !== target) continue;
+        if (!top || (item.zIndex ?? 0) >= (top.zIndex ?? 0)) top = item;
+      }
+      if (top) centerViewportOnPanel(top.id);
+      setPendingCenterPanelKey(null);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [pendingCenterPanelKey, resolvedLayout, centerViewportOnPanel]);
+
   useEffect(() => {
     if (
       typeof externalLayoutFocusRequestKey !== "number" ||
@@ -1747,11 +1769,14 @@ export function StudioShell({
           >
             <div
               data-testid="studio-toolbar"
-              className="flex flex-col gap-3 rounded-[var(--ds-r-100)] border border-[var(--ds-accent-a16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.14)_100%)] px-3 py-3 shadow-[0_14px_28px_rgba(0,0,0,0.2)]"
+              className={cn(
+                CONTROL_DECK,
+                "flex w-full flex-col gap-2 overflow-visible px-4 py-2.5",
+              )}
             >
             <div
               data-testid="studio-toolbar-pipeline"
-              className="flex flex-wrap items-stretch gap-0"
+              className="flex flex-wrap items-stretch gap-x-2 gap-y-2"
             >
               {PIPELINE_STAGES.map((stage, stageIndex) => {
                 const stagePanels = STAGE_PANEL_ORDER[stage.key]
@@ -1770,20 +1795,16 @@ export function StudioShell({
                     {stageIndex > 0 ? (
                       <div
                         aria-hidden="true"
-                        className="flex shrink-0 items-end pb-2 pr-1.5 pl-0.5 font-mono text-[12px] text-[rgba(255,118,144,0.32)]"
+                        className="flex shrink-0 items-center px-1 font-mono text-base text-primary/70"
                       >
                         →
                       </div>
                     ) : null}
                     <div
                       data-testid={`studio-toolbar-zone-${stage.key}`}
-                      className={cn(
-                        "flex flex-col gap-1.5 px-2.5 py-1",
-                        stageIndex > 0 &&
-                          "border-l border-dashed border-[rgba(255,118,144,0.12)] pl-3",
-                      )}
+                      className="flex flex-col gap-1.5 px-3 py-1"
                     >
-                      <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[var(--ds-blush-a44)]">
+                      <span className={CONTROL_KICKER}>
                         {stage.label}
                       </span>
                       <div className="flex flex-wrap items-center gap-2">
@@ -1802,6 +1823,7 @@ export function StudioShell({
                                 queuePanelLayoutChange((current) =>
                                   spawnPanelLayout(current, definition),
                                 );
+                                setPendingCenterPanelKey(definition.panel);
                                 if (resolvedLayout.length === 0) {
                                   setShouldFocusLayout(true);
                                 }
@@ -1824,7 +1846,6 @@ export function StudioShell({
                 );
               })}
 
-              <div className="ml-auto" aria-hidden="true" />
               {SIDE_CLUSTERS.map((cluster) => {
                 const clusterPanels = STAGE_PANEL_ORDER[cluster.key]
                   .map((panelKey) =>
@@ -1841,9 +1862,9 @@ export function StudioShell({
                   <div
                     key={cluster.key}
                     data-testid={`studio-toolbar-zone-${cluster.key}`}
-                    className="flex flex-col gap-1.5 border-l border-dashed border-[var(--ds-accent-a16)] pl-3 px-2.5 py-1"
+                    className="flex flex-col gap-1.5 px-3 py-1"
                   >
-                    <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[var(--ds-blush-a44)]">
+                    <span className={CONTROL_KICKER}>
                       {cluster.label}
                     </span>
                     <div className="flex flex-wrap items-center gap-2">
@@ -1862,6 +1883,7 @@ export function StudioShell({
                               queuePanelLayoutChange((current) =>
                                 spawnPanelLayout(current, definition),
                               );
+                              setPendingCenterPanelKey(definition.panel);
                               if (resolvedLayout.length === 0) {
                                 setShouldFocusLayout(true);
                               }
@@ -1886,10 +1908,10 @@ export function StudioShell({
 
             <div
               data-testid="studio-toolbar-controls"
-              className="flex flex-wrap items-end gap-0 border-t border-dashed border-[rgba(255,118,144,0.10)] pt-3"
+              className="flex flex-wrap items-end gap-x-2 gap-y-2 border-t border-primary/15 pt-2.5 mt-0.5"
             >
               <div className="flex flex-col gap-1.5 px-2.5 py-1">
-                <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[var(--ds-blush-a44)]">
+                <span className={CONTROL_KICKER}>
                   START
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
@@ -1945,8 +1967,8 @@ export function StudioShell({
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1.5 border-l border-dashed border-[var(--ds-accent-a16)] px-3 py-1">
-                <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[var(--ds-blush-a44)]">
+              <div className="flex flex-col gap-1.5 px-3 py-1">
+                <span className={CONTROL_KICKER}>
                   SELECT
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
@@ -1991,8 +2013,8 @@ export function StudioShell({
                 </div>
               </div>
 
-              <div className="ml-auto flex flex-col gap-1.5 border-l border-dashed border-[var(--ds-accent-a16)] px-3 py-1">
-                <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[var(--ds-blush-a44)]">
+              <div className="flex flex-col gap-1.5 px-3 py-1">
+                <span className={CONTROL_KICKER}>
                   ARRANGE
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
