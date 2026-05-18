@@ -882,13 +882,18 @@ def sync_folder_to_rag(
             continue
 
         doc_type = _infer_doc_type_from_suffix(file_path.suffix)
-        # seconds — skip files that hang longer (env-tunable for tests/ops)
+        # Seconds to allow per file before skipping (env-tunable). The
+        # interactive web sync keeps the 120 s default so a slow file
+        # can't hang the request. A background batch run sets this to 0
+        # (or negative) => NO timeout, so a slow-but-correct extractor
+        # like Docling/OCR is allowed to run to completion.
         try:
             per_file_timeout = int(
                 os.environ.get("RAG_SYNC_PER_FILE_TIMEOUT", "120")
             )
         except (TypeError, ValueError):
             per_file_timeout = 120
+        result_timeout = per_file_timeout if per_file_timeout > 0 else None
         # NOTE: do NOT use ThreadPoolExecutor as a context manager here. Its
         # __exit__ calls shutdown(wait=True), which blocks until the worker
         # finishes — so a hung ingest (e.g. a pathological textbook PDF)
@@ -907,7 +912,7 @@ def sync_folder_to_rag(
                 folder_path=rel_folder,
                 enabled=1,
             )
-            doc_id = future.result(timeout=per_file_timeout)
+            doc_id = future.result(timeout=result_timeout)
             ingested_ids.append(int(doc_id))
             processed += 1
         except concurrent.futures.TimeoutError:
@@ -1412,6 +1417,108 @@ def _cli_search(args: argparse.Namespace) -> None:
     print(format_search_results(results, args.query))
 
 
+def _cli_folder_sync(args: argparse.Namespace) -> None:
+    """Background bulk-sync a materials root folder, then force-relink.
+
+    This is the long-running batch path: it runs the SAME pipeline as the
+    interactive "Sync Root Folder" (Docling extraction, chapter-split for
+    big PDFs) but with NO per-file timeout by default, so slow-but-correct
+    extractors (Docling/OCR on scanned textbooks) run to completion. Safe
+    to launch detached (nohup/&); resumable via checksum-skip.
+    """
+    import time as _time
+    from collections import Counter
+
+    root = (
+        args.folder
+        or os.environ.get("TUTOR_MATERIALS_DIR")
+        or os.environ.get("PT_SCHOOL_MATERIALS_DIR")
+    )
+    if not root:
+        print("[ERROR] No folder. Pass --folder or set TUTOR_MATERIALS_DIR.")
+        raise SystemExit(2)
+    root = str(Path(root).expanduser())
+    if not Path(root).is_dir():
+        print(f"[ERROR] Not a directory: {root}")
+        raise SystemExit(2)
+
+    os.environ["RAG_SYNC_PER_FILE_TIMEOUT"] = (
+        str(args.timeout) if args.timeout is not None else "0"  # 0 = unlimited
+    )
+    if args.max_file_mb is not None:
+        os.environ["RAG_SYNC_MAX_FILE_MB"] = str(args.max_file_mb)
+
+    last = [0.0]
+
+    def _progress(p: dict) -> None:
+        now = _time.time()
+        if now - last[0] >= 5 or p.get("phase") != "syncing":
+            last[0] = now
+            print(
+                f"[{p.get('phase')}] {p.get('processed')}/{p.get('total')} "
+                f"idx={p.get('index')} err={p.get('errors')} "
+                f"cur={p.get('current_file')}",
+                flush=True,
+            )
+
+    print(
+        f"[folder-sync] root={root} "
+        f"per_file_timeout={os.environ['RAG_SYNC_PER_FILE_TIMEOUT']} "
+        f"max_file_mb={os.environ.get('RAG_SYNC_MAX_FILE_MB', '12')}",
+        flush=True,
+    )
+    result = sync_folder_to_rag(
+        root, corpus="materials", course_id=None, progress_callback=_progress
+    )
+    print(
+        f"[sync done] processed={result.get('processed')}/{result.get('total')} "
+        f"failed={result.get('failed')} deleted={result.get('deleted')}",
+        flush=True,
+    )
+    for e in (result.get("errors") or [])[:15]:
+        print("  - ", e, flush=True)
+
+    print("[relink] force-rederiving course_id from folder_path ...", flush=True)
+    try:
+        from dashboard.api_tutor_materials import _auto_link_materials_to_courses
+
+        conn = sqlite3.connect(DB_PATH, timeout=60)
+        link = _auto_link_materials_to_courses(conn, force=True)
+        conn.close()
+        print(f"[relink] {link}", flush=True)
+    except Exception as exc:
+        print(f"[relink ERROR] {exc}", flush=True)
+
+    conn = sqlite3.connect(DB_PATH, timeout=60)
+    cmap = {i: n for i, n in conn.execute("SELECT id,name FROM courses")}
+    rows = conn.execute(
+        "SELECT course_id, source_path FROM rag_docs "
+        "WHERE COALESCE(corpus,'materials')='materials' "
+        "AND folder_path IS NOT NULL AND TRIM(folder_path)!=''"
+    ).fetchall()
+    conn.close()
+    cnt = Counter(
+        cmap.get(c, "UNASSIGNED" if c is None else f"course#{c}") for c, _ in rows
+    )
+    chap = sum(1 for _, sp in rows if "#ch" in (sp or ""))
+    print(
+        f"\n[byClass] total materials rows={len(rows)} | chapter docs={chap}",
+        flush=True,
+    )
+    for k, v in sorted(cnt.items(), key=lambda x: -x[1]):
+        print(f"  {v:5d}  {k}", flush=True)
+
+    if args.embed:
+        print("[embed] running embeddings (slow) ...", flush=True)
+        try:
+            from tutor_rag import embed_rag_docs
+
+            print(f"[embed] {embed_rag_docs(corpus='materials')}", flush=True)
+        except Exception as exc:
+            print(f"[embed ERROR] {exc}", flush=True)
+    print("[folder-sync] DONE", flush=True)
+
+
 def main(argv: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(
         description="Minimal RAG helper for markdown notes (Brain/pt-study)."
@@ -1433,6 +1540,35 @@ def main(argv: Optional[List[str]] = None) -> None:
         help="Optional topic tags to associate (space-separated; e.g. hip gait anatomy)",
     )
     ingest_p.set_defaults(func=_cli_ingest)
+
+    fs_p = subparsers.add_parser(
+        "folder-sync",
+        help="Background bulk-sync a materials root folder into rag_docs "
+        "(no per-file timeout) then force-relink each file to its class.",
+    )
+    fs_p.add_argument(
+        "--folder",
+        help="Root folder (default: $TUTOR_MATERIALS_DIR / $PT_SCHOOL_MATERIALS_DIR)",
+    )
+    fs_p.add_argument(
+        "--timeout",
+        type=int,
+        default=None,
+        help="Per-file timeout seconds (default: 0 = unlimited, for batch)",
+    )
+    fs_p.add_argument(
+        "--max-file-mb",
+        type=float,
+        default=None,
+        dest="max_file_mb",
+        help="Chapter-split PDFs larger than this many MB (default: 12)",
+    )
+    fs_p.add_argument(
+        "--embed",
+        action="store_true",
+        help="Also run embeddings after relink (slow; optional)",
+    )
+    fs_p.set_defaults(func=_cli_folder_sync)
 
     search_p = subparsers.add_parser(
         "search", help="Search ingested notes for a query string"
