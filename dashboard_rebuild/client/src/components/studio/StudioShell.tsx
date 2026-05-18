@@ -307,8 +307,8 @@ function makePlaceholder(
   description: string,
 ): ReactNode {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 rounded-[0.9rem] border border-dashed border-[rgba(255,104,132,0.24)] bg-black/20 p-4 text-center">
-      <div className="font-mono text-sm uppercase tracking-[0.18em] text-[#ffd6de]">
+    <div className="flex h-full flex-col items-center justify-center gap-3 rounded-[var(--ds-r-090)] border border-dashed border-[rgba(255,104,132,0.24)] bg-black/20 p-4 text-center">
+      <div className="font-mono text-sm uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]">
         {title}
       </div>
       <p className="max-w-sm font-mono text-xs leading-6 text-[#ffc8d3]/72">
@@ -1747,7 +1747,7 @@ export function StudioShell({
           >
             <div
               data-testid="studio-toolbar"
-              className="flex flex-col gap-3 rounded-[1rem] border border-[rgba(255,118,144,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.14)_100%)] px-3 py-3 shadow-[0_14px_28px_rgba(0,0,0,0.2)]"
+              className="flex flex-col gap-3 rounded-[var(--ds-r-100)] border border-[var(--ds-accent-a16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.14)_100%)] px-3 py-3 shadow-[0_14px_28px_rgba(0,0,0,0.2)]"
             >
             <div
               data-testid="studio-toolbar-pipeline"
@@ -1783,7 +1783,7 @@ export function StudioShell({
                           "border-l border-dashed border-[rgba(255,118,144,0.12)] pl-3",
                       )}
                     >
-                      <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[rgba(255,201,213,0.44)]">
+                      <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[var(--ds-blush-a44)]">
                         {stage.label}
                       </span>
                       <div className="flex flex-wrap items-center gap-2">
@@ -1807,7 +1807,7 @@ export function StudioShell({
                                 }
                               }}
                               className={cn(
-                                "rounded-full border-[rgba(255,120,146,0.18)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]",
+                                "rounded-full border-[rgba(255,120,146,0.18)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]",
                                 panelAlreadyOpen &&
                                   !definition.allowMultiple &&
                                   "border-[rgba(255,124,150,0.36)] bg-[rgba(255,78,108,0.14)] text-white",
@@ -1841,9 +1841,9 @@ export function StudioShell({
                   <div
                     key={cluster.key}
                     data-testid={`studio-toolbar-zone-${cluster.key}`}
-                    className="flex flex-col gap-1.5 border-l border-dashed border-[rgba(255,118,144,0.16)] pl-3 px-2.5 py-1"
+                    className="flex flex-col gap-1.5 border-l border-dashed border-[var(--ds-accent-a16)] pl-3 px-2.5 py-1"
                   >
-                    <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[rgba(255,201,213,0.44)]">
+                    <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[var(--ds-blush-a44)]">
                       {cluster.label}
                     </span>
                     <div className="flex flex-wrap items-center gap-2">
@@ -1867,7 +1867,7 @@ export function StudioShell({
                               }
                             }}
                             className={cn(
-                              "rounded-full border-[rgba(255,120,146,0.18)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]",
+                              "rounded-full border-[rgba(255,120,146,0.18)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]",
                               panelAlreadyOpen &&
                                 !definition.allowMultiple &&
                                 "border-[rgba(255,124,150,0.36)] bg-[rgba(255,78,108,0.14)] text-white",
@@ -1889,7 +1889,7 @@ export function StudioShell({
               className="flex flex-wrap items-end gap-0 border-t border-dashed border-[rgba(255,118,144,0.10)] pt-3"
             >
               <div className="flex flex-col gap-1.5 px-2.5 py-1">
-                <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[rgba(255,201,213,0.44)]">
+                <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[var(--ds-blush-a44)]">
                   START
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
@@ -1903,7 +1903,7 @@ export function StudioShell({
                       aria-expanded={layoutMenuOpen}
                       title="Apply a saved layout preset"
                       onClick={() => setLayoutMenuOpen((open) => !open)}
-                      className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white"
+                      className="rounded-full border border-[var(--ds-accent-a16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)] hover:text-white"
                     >
                       <LayoutGrid className="mr-1.5 h-3.5 w-3.5" />
                       Layout
@@ -1913,7 +1913,7 @@ export function StudioShell({
                       <div
                         role="menu"
                         aria-label="Layout presets"
-                        className="absolute left-0 top-[calc(100%+0.5rem)] z-40 w-72 overflow-hidden rounded-xl border border-[rgba(255,118,144,0.22)] bg-black/90 p-1 shadow-[0_18px_36px_rgba(0,0,0,0.45)] backdrop-blur-sm"
+                        className="absolute left-0 top-[calc(100%+0.5rem)] z-40 w-72 overflow-hidden rounded-xl border border-[var(--ds-accent-a22)] bg-black/90 p-1 shadow-[0_18px_36px_rgba(0,0,0,0.45)] backdrop-blur-sm"
                       >
                         {LAYOUT_PRESETS.map(({ key: preset, label, hint }) => (
                           <button
@@ -1929,7 +1929,7 @@ export function StudioShell({
                               setShouldFocusLayout(true);
                               setLayoutMenuOpen(false);
                             }}
-                            className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left font-mono text-[11px] text-[#ffd6de] hover:bg-[rgba(255,84,116,0.14)] hover:text-white"
+                            className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left font-mono text-[11px] text-[var(--ds-fg-pink-1)] hover:bg-[rgba(255,84,116,0.14)] hover:text-white"
                           >
                             <span className="uppercase tracking-[0.16em]">
                               {label}
@@ -1945,8 +1945,8 @@ export function StudioShell({
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1.5 border-l border-dashed border-[rgba(255,118,144,0.16)] px-3 py-1">
-                <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[rgba(255,201,213,0.44)]">
+              <div className="flex flex-col gap-1.5 border-l border-dashed border-[var(--ds-accent-a16)] px-3 py-1">
+                <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[var(--ds-blush-a44)]">
                   SELECT
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
@@ -1968,7 +1968,7 @@ export function StudioShell({
                         applyGroupIdToPanels(current, selectedPanelIds, groupId),
                       );
                     }}
-                    className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white disabled:opacity-40"
+                    className="rounded-full border border-[var(--ds-accent-a16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)] hover:text-white disabled:opacity-40"
                   >
                     Group
                   </Button>
@@ -1984,15 +1984,15 @@ export function StudioShell({
                         applyGroupIdToPanels(current, selectedPanelIds, null),
                       );
                     }}
-                    className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white disabled:opacity-40"
+                    className="rounded-full border border-[var(--ds-accent-a16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)] hover:text-white disabled:opacity-40"
                   >
                     Ungroup
                   </Button>
                 </div>
               </div>
 
-              <div className="ml-auto flex flex-col gap-1.5 border-l border-dashed border-[rgba(255,118,144,0.16)] px-3 py-1">
-                <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[rgba(255,201,213,0.44)]">
+              <div className="ml-auto flex flex-col gap-1.5 border-l border-dashed border-[var(--ds-accent-a16)] px-3 py-1">
+                <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[var(--ds-blush-a44)]">
                   ARRANGE
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
@@ -2007,7 +2007,7 @@ export function StudioShell({
                   title="Raise or close any open window"
                   disabled={resolvedLayout.length === 0}
                   onClick={() => setWindowsMenuOpen((open) => !open)}
-                  className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white disabled:opacity-40"
+                  className="rounded-full border border-[var(--ds-accent-a16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)] hover:text-white disabled:opacity-40"
                 >
                   <Layers className="mr-1.5 h-3.5 w-3.5" />
                   Windows ({resolvedLayout.length})
@@ -2016,7 +2016,7 @@ export function StudioShell({
                   <div
                     role="menu"
                     aria-label="Open windows"
-                    className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-64 overflow-hidden rounded-xl border border-[rgba(255,118,144,0.22)] bg-black/90 p-1 shadow-[0_18px_36px_rgba(0,0,0,0.45)] backdrop-blur-sm"
+                    className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-64 overflow-hidden rounded-xl border border-[var(--ds-accent-a22)] bg-black/90 p-1 shadow-[0_18px_36px_rgba(0,0,0,0.45)] backdrop-blur-sm"
                   >
                     {[...resolvedLayout]
                       .sort((a, b) => (b.zIndex || 0) - (a.zIndex || 0))
@@ -2034,7 +2034,7 @@ export function StudioShell({
                             key={item.id}
                             role="menuitem"
                             className={cn(
-                              "flex items-center gap-2 rounded-lg px-2 py-1.5 font-mono text-[11px] text-[#ffd6de] hover:bg-[rgba(255,84,116,0.14)]",
+                              "flex items-center gap-2 rounded-lg px-2 py-1.5 font-mono text-[11px] text-[var(--ds-fg-pink-1)] hover:bg-[rgba(255,84,116,0.14)]",
                               isTopmost && "bg-[rgba(255,84,116,0.10)]",
                             )}
                           >
@@ -2107,7 +2107,7 @@ export function StudioShell({
                   );
                   setShouldFocusLayout(true);
                 }}
-                className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white disabled:opacity-40"
+                className="rounded-full border border-[var(--ds-accent-a16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)] hover:text-white disabled:opacity-40"
               >
                 <LayoutGrid className="mr-1.5 h-3.5 w-3.5" />
                 Tidy Up
@@ -2122,7 +2122,7 @@ export function StudioShell({
                 onClick={() => {
                   centerOpenPanels();
                 }}
-                className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white disabled:opacity-40"
+                className="rounded-full border border-[var(--ds-accent-a16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)] hover:text-white disabled:opacity-40"
               >
                 <Crosshair className="mr-1.5 h-3.5 w-3.5" />
                 Center
@@ -2141,7 +2141,7 @@ export function StudioShell({
                   }
                   queuePanelLayoutChange([]);
                 }}
-                className="rounded-full border border-[rgba(255,118,144,0.16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white disabled:opacity-40"
+                className="rounded-full border border-[var(--ds-accent-a16)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)] hover:text-white disabled:opacity-40"
               >
                 Clear Canvas
               </Button>
@@ -2154,7 +2154,7 @@ export function StudioShell({
             data-testid="studio-canvas"
             ref={canvasViewportRef}
             className={cn(
-              "relative flex-1 scroll-mt-4 select-none overflow-hidden rounded-[1rem] border border-[rgba(255,118,144,0.16)]",
+              "relative flex-1 scroll-mt-4 select-none overflow-hidden rounded-[var(--ds-r-100)] border border-[var(--ds-accent-a16)]",
               isCanvasDragging ? "cursor-grabbing" : "cursor-grab",
               "bg-[radial-gradient(circle_at_top,rgba(255,70,104,0.10),transparent_20%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.24))]",
             )}
@@ -2369,7 +2369,7 @@ export function StudioShell({
               <div
                 data-testid="studio-canvas-nav"
                 data-canvas-drag-disabled="true"
-                className="pointer-events-auto absolute bottom-4 right-4 z-30 flex items-center gap-1.5 rounded-full border border-[rgba(255,118,144,0.22)] bg-black/55 px-2 py-1.5 shadow-[0_14px_28px_rgba(0,0,0,0.35)] backdrop-blur-sm"
+                className="pointer-events-auto absolute bottom-4 right-4 z-30 flex items-center gap-1.5 rounded-full border border-[var(--ds-accent-a22)] bg-black/55 px-2 py-1.5 shadow-[0_14px_28px_rgba(0,0,0,0.35)] backdrop-blur-sm"
                 onPointerDown={(event) => event.stopPropagation()}
                 onWheel={(event) => event.stopPropagation()}
               >
@@ -2384,7 +2384,7 @@ export function StudioShell({
                       canvasTransformRef.current.scale - CANVAS_SCALE_STEP * 10,
                     )
                   }
-                  className="h-7 w-7 rounded-full border border-[rgba(255,118,144,0.14)] bg-[rgba(255,84,116,0.08)] text-[#ffd6de] hover:text-white"
+                  className="h-7 w-7 rounded-full border border-[var(--ds-accent-a14)] bg-[var(--ds-rose-a08)] text-[var(--ds-fg-pink-1)] hover:text-white"
                 >
                   <ZoomOut className="h-3.5 w-3.5" />
                 </Button>
@@ -2406,7 +2406,7 @@ export function StudioShell({
                 />
                 <span
                   aria-live="polite"
-                  className="min-w-[3.25rem] text-right font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]"
+                  className="min-w-[3.25rem] text-right font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]"
                 >
                   {Math.round(canvasScale * 100)}%
                 </span>
@@ -2421,7 +2421,7 @@ export function StudioShell({
                       canvasTransformRef.current.scale + CANVAS_SCALE_STEP * 10,
                     )
                   }
-                  className="h-7 w-7 rounded-full border border-[rgba(255,118,144,0.14)] bg-[rgba(255,84,116,0.08)] text-[#ffd6de] hover:text-white"
+                  className="h-7 w-7 rounded-full border border-[var(--ds-accent-a14)] bg-[var(--ds-rose-a08)] text-[var(--ds-fg-pink-1)] hover:text-white"
                 >
                   <ZoomIn className="h-3.5 w-3.5" />
                 </Button>
@@ -2433,7 +2433,7 @@ export function StudioShell({
                   aria-label="Fit to View"
                   title="Fit all panels to view (Shift + 1)"
                   onClick={() => fitOpenPanels()}
-                  className="h-7 w-7 rounded-full border border-[rgba(255,118,144,0.14)] bg-[rgba(255,84,116,0.08)] text-[#ffd6de] hover:text-white"
+                  className="h-7 w-7 rounded-full border border-[var(--ds-accent-a14)] bg-[var(--ds-rose-a08)] text-[var(--ds-fg-pink-1)] hover:text-white"
                 >
                   <Maximize2 className="h-3.5 w-3.5" />
                 </Button>
@@ -2444,7 +2444,7 @@ export function StudioShell({
                   aria-label="Zoom to 100%"
                   title="Zoom to 100% (Shift + 0)"
                   onClick={() => zoomTo100()}
-                  className="h-7 rounded-full border border-[rgba(255,118,144,0.14)] bg-[rgba(255,84,116,0.08)] px-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] hover:text-white"
+                  className="h-7 rounded-full border border-[var(--ds-accent-a14)] bg-[var(--ds-rose-a08)] px-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)] hover:text-white"
                 >
                   <Target className="mr-1 h-3.5 w-3.5" />
                   1:1

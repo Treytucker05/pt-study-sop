@@ -16,7 +16,7 @@ export function StudioPacketSections({
         <section
           key={section.id}
           data-testid={`${sectionTestIdPrefix}-${section.id}`}
-          className="space-y-3 rounded-[0.85rem] border border-primary/12 bg-black/12 p-3"
+          className="space-y-3 rounded-[var(--ds-r-085)] border border-primary/12 bg-black/12 p-3"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -40,7 +40,7 @@ export function StudioPacketSections({
               {section.entries.map((entry) => (
                 <div
                   key={entry.id}
-                  className="rounded-[0.75rem] border border-primary/10 bg-black/18 p-2.5"
+                  className="rounded-[var(--ds-r-075)] border border-primary/10 bg-black/18 p-2.5"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -64,7 +64,7 @@ export function StudioPacketSections({
               ))}
             </div>
           ) : (
-            <div className="rounded-[0.75rem] border border-dashed border-primary/12 bg-black/12 p-3 text-xs leading-5 text-foreground/58">
+            <div className="rounded-[var(--ds-r-075)] border border-dashed border-primary/12 bg-black/12 p-3 text-xs leading-5 text-foreground/58">
               {section.emptyMessage}
             </div>
           )}

@@ -162,9 +162,9 @@ function VaultTree({
                 onSelectFile(fullPath);
               }}
               className={cn(
-                "flex w-full items-center gap-2 rounded-[0.75rem] px-2 py-1.5 text-left font-mono text-xs transition",
+                "flex w-full items-center gap-2 rounded-[var(--ds-r-075)] px-2 py-1.5 text-left font-mono text-xs transition",
                 isFolder
-                  ? "text-[#ffd6de] hover:bg-black/20 hover:text-white"
+                  ? "text-[var(--ds-fg-pink-1)] hover:bg-black/20 hover:text-white"
                   : "text-[#ffc8d3]/72 hover:bg-black/20 hover:text-white",
                 !isFolder &&
                   selectedPath?.toLowerCase() === fullPath.toLowerCase() &&
@@ -381,9 +381,9 @@ export function StudioObsidianPanel({
 
   if (!rootFolder) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 rounded-[0.9rem] border border-dashed border-[rgba(255,104,132,0.24)] bg-black/20 p-4 text-center">
-        <FolderTree className="h-5 w-5 text-[#ffb9c7]" />
-        <div className="font-mono text-sm uppercase tracking-[0.18em] text-[#ffd6de]">
+      <div className="flex h-full flex-col items-center justify-center gap-3 rounded-[var(--ds-r-090)] border border-dashed border-[rgba(255,104,132,0.24)] bg-black/20 p-4 text-center">
+        <FolderTree className="h-5 w-5 text-[var(--ds-fg-pink-2)]" />
+        <div className="font-mono text-sm uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]">
           Obsidian Vault
         </div>
         <p className="max-w-sm font-mono text-xs leading-6 text-[#ffc8d3]/72">
@@ -398,9 +398,9 @@ export function StudioObsidianPanel({
       data-testid="studio-obsidian-browser"
       className="grid h-full min-h-0 gap-3 p-3 lg:grid-cols-[280px_minmax(0,1fr)]"
     >
-      <div className="flex min-h-0 flex-col gap-3 rounded-[0.9rem] border border-[rgba(255,118,144,0.18)] bg-black/25 p-3">
+      <div className="flex min-h-0 flex-col gap-3 rounded-[var(--ds-r-090)] border border-[var(--ds-accent-a18)] bg-black/25 p-3">
         <div className="space-y-1">
-          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]">
             Vault Browser
           </div>
           <div className="font-mono text-sm text-white">{rootLabel}</div>
@@ -433,7 +433,7 @@ export function StudioObsidianPanel({
                   ),
                 );
             }}
-            className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]"
+            className="rounded-full border-[var(--ds-accent-a18)] bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]"
           >
             <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
             Open Obsidian
@@ -447,7 +447,7 @@ export function StudioObsidianPanel({
             onClick={() => {
               void handleCreateNote();
             }}
-            className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]"
+            className="rounded-full border-[var(--ds-accent-a18)] bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]"
           >
             <FilePlus2 className="mr-1.5 h-3.5 w-3.5" />
             {isCreatingNote ? "Creating..." : "Create Note"}
@@ -460,19 +460,19 @@ export function StudioObsidianPanel({
             onClick={() => {
               void handleSaveSessionNotes();
             }}
-            className="rounded-full border border-[rgba(255,118,144,0.22)] bg-[rgba(255,68,104,0.18)] px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-white hover:bg-[rgba(255,68,104,0.28)]"
+            className="rounded-full border border-[var(--ds-accent-a22)] bg-[var(--ds-rose68-a18)] px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-white hover:bg-[var(--ds-rose68-a28)]"
           >
             <Save className="mr-1.5 h-3.5 w-3.5" />
             {isSavingSessionNotes ? "Saving..." : "Save to Vault"}
           </Button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto rounded-[0.9rem] border border-[rgba(255,118,144,0.14)] bg-black/20 p-2">
+        <div className="min-h-0 flex-1 overflow-y-auto rounded-[var(--ds-r-090)] border border-[var(--ds-accent-a14)] bg-black/20 p-2">
           <button
             type="button"
             data-testid="studio-obsidian-root-node"
             onClick={() => toggleFolder(rootFolder)}
-            className="flex w-full items-center gap-2 rounded-[0.75rem] px-2 py-1.5 text-left font-mono text-xs text-white transition hover:bg-black/20"
+            className="flex w-full items-center gap-2 rounded-[var(--ds-r-075)] px-2 py-1.5 text-left font-mono text-xs text-white transition hover:bg-black/20"
           >
             {expandedFolders.has(rootFolder) ? (
               <ChevronDown className="h-3.5 w-3.5 shrink-0" />
@@ -496,10 +496,10 @@ export function StudioObsidianPanel({
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-col rounded-[0.9rem] border border-[rgba(255,118,144,0.18)] bg-black/25 p-3">
+      <div className="flex min-h-0 flex-col rounded-[var(--ds-r-090)] border border-[var(--ds-accent-a18)] bg-black/25 p-3">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+            <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]">
               {editMode === "edit" ? "Editing" : "Preview"}
             </div>
             <div className="truncate font-mono text-sm text-white">
@@ -515,7 +515,7 @@ export function StudioObsidianPanel({
                   variant="outline"
                   data-testid="studio-obsidian-edit-note"
                   onClick={handleStartEdit}
-                  className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]"
+                  className="rounded-full border-[var(--ds-accent-a18)] bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]"
                 >
                   <Pencil className="mr-1.5 h-3.5 w-3.5" />
                   Edit
@@ -529,7 +529,7 @@ export function StudioObsidianPanel({
                     data-testid="studio-obsidian-cancel-edit"
                     disabled={isSavingEdit}
                     onClick={handleCancelEdit}
-                    className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]"
+                    className="rounded-full border-[var(--ds-accent-a18)] bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]"
                   >
                     Cancel
                   </Button>
@@ -541,7 +541,7 @@ export function StudioObsidianPanel({
                     onClick={() => {
                       void handleSaveEdit();
                     }}
-                    className="rounded-full border border-[rgba(255,118,144,0.22)] bg-[rgba(255,68,104,0.18)] px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-white hover:bg-[rgba(255,68,104,0.28)]"
+                    className="rounded-full border border-[var(--ds-accent-a22)] bg-[var(--ds-rose68-a18)] px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-white hover:bg-[var(--ds-rose68-a28)]"
                   >
                     <Save className="mr-1.5 h-3.5 w-3.5" />
                     {isSavingEdit ? "Saving..." : "Save"}
@@ -554,7 +554,7 @@ export function StudioObsidianPanel({
 
         <div
           data-testid="studio-obsidian-preview"
-          className="min-h-0 flex-1 overflow-y-auto rounded-[0.9rem] border border-[rgba(255,118,144,0.14)] bg-black/20 p-4"
+          className="min-h-0 flex-1 overflow-y-auto rounded-[var(--ds-r-090)] border border-[var(--ds-accent-a14)] bg-black/20 p-4"
         >
           {!selectedPath ? (
             <div className="font-mono text-xs leading-6 text-[#ffc8d3]/68">
@@ -571,7 +571,7 @@ export function StudioObsidianPanel({
                 value={editorDraft}
                 onChange={(event) => setEditorDraft(event.target.value)}
                 aria-label="Edit vault note"
-                className="h-full min-h-[240px] w-full resize-none rounded-[0.7rem] border border-[rgba(255,118,144,0.18)] bg-black/40 p-3 font-mono text-xs leading-6 text-[#fff3f6] outline-none"
+                className="h-full min-h-[240px] w-full resize-none rounded-[var(--ds-r-070)] border border-[var(--ds-accent-a18)] bg-black/40 p-3 font-mono text-xs leading-6 text-[#fff3f6] outline-none"
               />
             ) : (
               <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-6 text-[#fff3f6]">

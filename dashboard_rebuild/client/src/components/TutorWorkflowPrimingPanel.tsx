@@ -481,10 +481,10 @@ function renderObjectives(objectives: Array<{ lo_code?: string | null; title?: s
       {objectives.map((item, index) => (
         <li
           key={`${item.lo_code || "objective"}-${item.title || index}-${index}`}
-          className="rounded-[0.75rem] border border-[rgba(255,118,144,0.14)] bg-black/25 px-3 py-2.5"
+          className="rounded-[var(--ds-r-075)] border border-[var(--ds-accent-a14)] bg-black/25 px-3 py-2.5"
         >
           <div className="flex items-start gap-3">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[rgba(255,118,144,0.18)] bg-black/35 text-[11px] text-[#ffb9c7]">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[var(--ds-accent-a18)] bg-black/35 text-[11px] text-[var(--ds-fg-pink-2)]">
               {index + 1}
             </div>
             <div className="min-w-0 space-y-1">
@@ -508,9 +508,9 @@ function renderTerms(terms: Array<{ term: string; definition: string | null; raw
       {terms.map((entry, index) => (
         <div
           key={`${entry.term}-${index}`}
-          className="rounded-[0.75rem] border border-[rgba(255,118,144,0.14)] bg-black/25 px-3 py-2.5"
+          className="rounded-[var(--ds-r-075)] border border-[var(--ds-accent-a14)] bg-black/25 px-3 py-2.5"
         >
-          <dt className="text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+          <dt className="text-[11px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]">
             {entry.term}
           </dt>
           <dd className="mt-1 text-sm leading-6 text-[#ffe7ec]/80">
@@ -538,8 +538,8 @@ function renderResultBody(
     const mermaid = extractMermaidBlock(block.content);
     if (mermaid && !options.revealedConceptMapBlockIds.includes(block.id)) {
       return (
-        <div className="rounded-[0.8rem] border border-[rgba(255,118,144,0.16)] bg-black/25 p-3">
-          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+        <div className="rounded-[var(--ds-r-080)] border border-[var(--ds-accent-a16)] bg-black/25 p-3">
+          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]">
             Concept Map Output
           </div>
           <p className="mt-2 text-sm leading-6 text-[#ffd9e1]/72">
@@ -550,7 +550,7 @@ function renderResultBody(
               type="button"
               variant="outline"
               onClick={() => options.onRevealConceptMapText(block.id)}
-              className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd9e1]"
+              className="rounded-full border-[var(--ds-accent-a18)] bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-3)]"
             >
               View as Text
             </Button>
@@ -558,7 +558,7 @@ function renderResultBody(
               type="button"
               variant="outline"
               onClick={() => options.onOpenConceptMapInWorkspace?.(mermaid)}
-              className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd9e1]"
+              className="rounded-full border-[var(--ds-accent-a18)] bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-3)]"
             >
               Open in Graph Tool
             </Button>
@@ -573,7 +573,7 @@ function renderResultBody(
   }
 
   return (
-    <div className="rounded-[0.8rem] border border-[rgba(255,118,144,0.14)] bg-black/25 p-3">
+    <div className="rounded-[var(--ds-r-080)] border border-[var(--ds-accent-a14)] bg-black/25 p-3">
       <ObsidianRenderer content={buildBlockMarkdown(block)} />
     </div>
   );
@@ -1139,10 +1139,10 @@ export function TutorWorkflowPrimingPanel({
       data-testid="priming-tool-panel"
       className="flex min-h-0 flex-col gap-4 font-mono text-sm text-foreground/78"
     >
-      <section className="rounded-[0.95rem] border border-[rgba(255,118,144,0.16)] bg-black/20 p-4">
+      <section className="rounded-[var(--ds-r-095)] border border-[var(--ds-accent-a16)] bg-black/20 p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]">
               Material + Method
             </div>
             <p className="mt-1 text-sm leading-6 text-[#ffd9e1]/70">
@@ -1152,7 +1152,7 @@ export function TutorWorkflowPrimingPanel({
           {selectionMode ? (
             <Badge
               variant="outline"
-              className="rounded-full border-[rgba(255,118,144,0.18)] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]"
+              className="rounded-full border-[var(--ds-accent-a18)] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]"
             >
               {selectionMode === "method" ? "Methods" : "Chain"}
             </Badge>
@@ -1169,14 +1169,14 @@ export function TutorWorkflowPrimingPanel({
                 {materialChips.map((chip) => (
                   <span
                     key={chip.id}
-                    className="rounded-full border border-[rgba(255,118,144,0.18)] bg-[rgba(255,68,104,0.1)] px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-[#ffe1e8]"
+                    className="rounded-full border border-[var(--ds-accent-a18)] bg-[rgba(255,68,104,0.1)] px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-[#ffe1e8]"
                   >
                     {chip.label}
                   </span>
                 ))}
               </div>
             ) : (
-              <div className="mt-2 rounded-[0.75rem] border border-dashed border-[rgba(255,118,144,0.18)] bg-black/15 px-3 py-2.5 text-sm leading-6 text-[#ffd9e1]/62">
+              <div className="mt-2 rounded-[var(--ds-r-075)] border border-dashed border-[var(--ds-accent-a18)] bg-black/15 px-3 py-2.5 text-sm leading-6 text-[#ffd9e1]/62">
                 No materials loaded — open Source Shelf to add.
               </div>
             )}
@@ -1192,7 +1192,7 @@ export function TutorWorkflowPrimingPanel({
               value={typeof chainId === "number" ? String(chainId) : ""}
               onChange={(event) => handleChainSelectionChange(event.target.value)}
               disabled={templateChainsLoading}
-              className="mt-2 h-11 w-full rounded-[0.85rem] border border-[rgba(255,118,144,0.18)] bg-black/30 px-3 text-sm text-white outline-none"
+              className="mt-2 h-11 w-full rounded-[var(--ds-r-085)] border border-[var(--ds-accent-a18)] bg-black/30 px-3 text-sm text-white outline-none"
             >
               <option value="">
                 {templateChainsLoading ? "Loading chains..." : "Select a chain instead of method cards"}
@@ -1217,7 +1217,7 @@ export function TutorWorkflowPrimingPanel({
               </div>
               <Badge
                 variant="outline"
-                className="rounded-full border-[rgba(255,118,144,0.18)] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]"
+                className="rounded-full border-[var(--ds-accent-a18)] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]"
               >
                 {selectedMethodCards.length > 0
                   ? `${selectedMethodCards.length} selected`
@@ -1226,7 +1226,7 @@ export function TutorWorkflowPrimingPanel({
             </div>
 
             {primeMethodsLoading ? (
-              <div className="rounded-[0.85rem] border border-dashed border-[rgba(255,118,144,0.18)] bg-black/15 px-4 py-5 text-sm leading-6 text-[#ffd9e1]/62">
+              <div className="rounded-[var(--ds-r-085)] border border-dashed border-[var(--ds-accent-a18)] bg-black/15 px-4 py-5 text-sm leading-6 text-[#ffd9e1]/62">
                 Loading PRIME methods...
               </div>
             ) : primeMethods.length > 0 ? (
@@ -1259,7 +1259,7 @@ export function TutorWorkflowPrimingPanel({
                       data-selected={isSelected ? "true" : "false"}
                       onClick={() => handleToggleMethod(method.method_id!)}
                       className={cn(
-                        "group relative overflow-hidden rounded-[0.95rem] border text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd6de]",
+                        "group relative overflow-hidden rounded-[var(--ds-r-095)] border text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-fg-pink-1)]",
                         tone.surface,
                         isSelected ? tone.selected : "opacity-92",
                       )}
@@ -1327,7 +1327,7 @@ export function TutorWorkflowPrimingPanel({
                 })}
               </div>
             ) : (
-              <div className="rounded-[0.85rem] border border-dashed border-[rgba(255,118,144,0.18)] bg-black/15 px-4 py-5 text-sm leading-6 text-[#ffd9e1]/62">
+              <div className="rounded-[var(--ds-r-085)] border border-dashed border-[var(--ds-accent-a18)] bg-black/15 px-4 py-5 text-sm leading-6 text-[#ffd9e1]/62">
                 No PRIME methods are available right now.
               </div>
             )}
@@ -1343,7 +1343,7 @@ export function TutorWorkflowPrimingPanel({
                   type="button"
                   variant="outline"
                   onClick={() => setPrimingMethods([])}
-                  className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd9e1]"
+                  className="rounded-full border-[var(--ds-accent-a18)] bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-3)]"
                 >
                   Clear Methods
                 </Button>
@@ -1359,7 +1359,7 @@ export function TutorWorkflowPrimingPanel({
                 void handleRun();
               }}
               disabled={runDisabled}
-              className="h-11 rounded-full border border-[rgba(255,118,144,0.22)] bg-[rgba(255,68,104,0.18)] px-5 font-mono text-[11px] uppercase tracking-[0.18em] text-white hover:bg-[rgba(255,68,104,0.28)]"
+              className="h-11 rounded-full border border-[var(--ds-accent-a22)] bg-[var(--ds-rose68-a18)] px-5 font-mono text-[11px] uppercase tracking-[0.18em] text-white hover:bg-[var(--ds-rose68-a28)]"
             >
               {runningChain || isRunningAssist ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1371,22 +1371,22 @@ export function TutorWorkflowPrimingPanel({
           </div>
 
           {selectionMode ? (
-            <div className="rounded-[0.75rem] border border-[rgba(255,118,144,0.14)] bg-black/15 px-3 py-2 text-sm leading-6 text-[#ffd9e1]/66">
+            <div className="rounded-[var(--ds-r-075)] border border-[var(--ds-accent-a14)] bg-black/15 px-3 py-2 text-sm leading-6 text-[#ffd9e1]/66">
               {selectionHelperText}
             </div>
           ) : null}
           {primeMethodsError ? (
-            <div className="rounded-[0.75rem] border border-[rgba(255,82,82,0.24)] bg-[rgba(80,0,0,0.18)] px-3 py-2 text-sm text-[#ffb9b9]">
+            <div className="rounded-[var(--ds-r-075)] border border-[rgba(255,82,82,0.24)] bg-[rgba(80,0,0,0.18)] px-3 py-2 text-sm text-[#ffb9b9]">
               Failed to load PRIME methods.
             </div>
           ) : null}
         </div>
       </section>
 
-      <section className="rounded-[0.95rem] border border-[rgba(255,118,144,0.16)] bg-black/20 p-4">
+      <section className="rounded-[var(--ds-r-095)] border border-[var(--ds-accent-a16)] bg-black/20 p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]">
               Output Area
             </div>
           <p className="mt-1 text-sm leading-6 text-[#ffd9e1]/70">
@@ -1398,7 +1398,7 @@ export function TutorWorkflowPrimingPanel({
           {displayedRun ? (
             <Badge
               variant="outline"
-              className="rounded-full border-[rgba(255,118,144,0.18)] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]"
+              className="rounded-full border-[var(--ds-accent-a18)] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]"
             >
               {displayedRun.kind === "method" && !displayedRun.methodId
                 ? "Method Results"
@@ -1411,11 +1411,11 @@ export function TutorWorkflowPrimingPanel({
 
         <div className="mt-4">
           {!displayedRun ? (
-            <div className="rounded-[0.85rem] border border-dashed border-[rgba(255,118,144,0.18)] bg-black/15 px-4 py-8 text-center text-sm leading-6 text-[#ffd9e1]/62">
+            <div className="rounded-[var(--ds-r-085)] border border-dashed border-[var(--ds-accent-a18)] bg-black/15 px-4 py-8 text-center text-sm leading-6 text-[#ffd9e1]/62">
               Select a method and click RUN to extract study artifacts.
             </div>
           ) : displayedRun.blocks.length === 0 ? (
-            <div className="rounded-[0.85rem] border border-dashed border-[rgba(255,118,144,0.18)] bg-black/15 px-4 py-8 text-center text-sm leading-6 text-[#ffd9e1]/62">
+            <div className="rounded-[var(--ds-r-085)] border border-dashed border-[var(--ds-accent-a18)] bg-black/15 px-4 py-8 text-center text-sm leading-6 text-[#ffd9e1]/62">
               This run completed, but no study artifacts were returned for the selected output format.
             </div>
           ) : (
@@ -1424,7 +1424,7 @@ export function TutorWorkflowPrimingPanel({
                 <article
                   key={block.id}
                   data-testid="priming-result-block"
-                  className="rounded-[0.9rem] border border-[rgba(255,118,144,0.14)] bg-black/18 p-4"
+                  className="rounded-[var(--ds-r-090)] border border-[var(--ds-accent-a14)] bg-black/18 p-4"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
@@ -1435,7 +1435,7 @@ export function TutorWorkflowPrimingPanel({
                     </div>
                     <Badge
                       variant="outline"
-                      className="rounded-full border-[rgba(255,118,144,0.18)] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]"
+                      className="rounded-full border-[var(--ds-accent-a18)] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]"
                     >
                       {block.badge}
                     </Badge>
@@ -1454,7 +1454,7 @@ export function TutorWorkflowPrimingPanel({
                       type="button"
                       variant="outline"
                       onClick={() => handlePromote(block)}
-                      className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd9e1]"
+                      className="rounded-full border-[var(--ds-accent-a18)] bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-3)]"
                     >
                       <Sparkles className="mr-2 h-3.5 w-3.5" />
                       Send to Prime Packet
@@ -1469,7 +1469,7 @@ export function TutorWorkflowPrimingPanel({
                         type="button"
                         variant="outline"
                         onClick={() => handleSendToWorkspace(block)}
-                        className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd9e1]"
+                        className="rounded-full border-[var(--ds-accent-a18)] bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-3)]"
                       >
                         Send to Workspace
                       </Button>
@@ -1482,9 +1482,9 @@ export function TutorWorkflowPrimingPanel({
         </div>
       </section>
 
-      <section className="flex min-h-[260px] flex-col rounded-[0.95rem] border border-[rgba(255,118,144,0.16)] bg-black/20 p-4">
+      <section className="flex min-h-[260px] flex-col rounded-[var(--ds-r-095)] border border-[var(--ds-accent-a16)] bg-black/20 p-4">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]">
             Priming Chat
           </div>
           <p className="mt-1 text-sm leading-6 text-[#ffd9e1]/70">
@@ -1496,7 +1496,7 @@ export function TutorWorkflowPrimingPanel({
 
         <div className="mt-4 flex-1 space-y-3 overflow-y-auto pr-1">
           {chatTurns.length === 0 ? (
-            <div className="rounded-[0.85rem] border border-dashed border-[rgba(255,118,144,0.18)] bg-black/15 px-4 py-5 text-sm leading-6 text-[#ffd9e1]/62">
+            <div className="rounded-[var(--ds-r-085)] border border-dashed border-[var(--ds-accent-a18)] bg-black/15 px-4 py-5 text-sm leading-6 text-[#ffd9e1]/62">
               {chatDisabled
                 ? "Run a method or chain first to unlock chat with the current Priming results."
                 : "Ask Priming to expand a specific objective, cite a claim, or rewrite the current output."}
@@ -1506,16 +1506,16 @@ export function TutorWorkflowPrimingPanel({
               <article
                 key={turn.id}
                 data-testid={`priming-chat-turn-${turn.role}`}
-                className={`rounded-[0.85rem] border px-4 py-3 ${
+                className={`rounded-[var(--ds-r-085)] border px-4 py-3 ${
                   turn.role === "assistant"
-                    ? "border-[rgba(255,118,144,0.16)] bg-black/22"
+                    ? "border-[var(--ds-accent-a16)] bg-black/22"
                     : "border-[rgba(255,118,144,0.12)] bg-[rgba(255,68,104,0.08)]"
                 }`}
               >
                 <div className="text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]/76">
                   {turn.role === "assistant" ? "Priming Assist" : "You"}
                 </div>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#ffe6ec]">
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--ds-fg-pink-5)]">
                   {turn.message}
                 </p>
                 {turn.role === "assistant" && turn.updatedRun ? (
@@ -1525,7 +1525,7 @@ export function TutorWorkflowPrimingPanel({
                       variant="outline"
                       onClick={() => handleApplyRefinedResults(turn.id, turn.updatedRun!)}
                       disabled={Boolean(turn.applied)}
-                      className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd9e1]"
+                      className="rounded-full border-[var(--ds-accent-a18)] bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-3)]"
                     >
                       {turn.applied ? "Applied" : "Apply changes"}
                     </Button>
@@ -1562,7 +1562,7 @@ export function TutorWorkflowPrimingPanel({
                   ? "Run a method first to chat with Priming results"
                   : "Ask Priming to refine the current results"
               }
-              className="min-h-[86px] w-full rounded-[0.85rem] border border-[rgba(255,118,144,0.14)] bg-black/25 px-3 py-3 text-sm text-[#ffe6ec] outline-none placeholder:text-[#ffd9e1]/38 disabled:text-[#ffd9e1]/48"
+              className="min-h-[86px] w-full rounded-[var(--ds-r-085)] border border-[var(--ds-accent-a14)] bg-black/25 px-3 py-3 text-sm text-[var(--ds-fg-pink-5)] outline-none placeholder:text-[#ffd9e1]/38 disabled:text-[#ffd9e1]/48"
             />
             <div className="flex items-center justify-between gap-3">
               <div className="text-[11px] leading-5 text-[#ffd9e1]/56">
@@ -1577,7 +1577,7 @@ export function TutorWorkflowPrimingPanel({
                   void handleSendChat();
                 }}
                 disabled={chatDisabled || sendingChat || !chatInput.trim()}
-                className="rounded-full border border-[rgba(255,118,144,0.22)] bg-[rgba(255,68,104,0.18)] px-5 font-mono text-[10px] uppercase tracking-[0.18em] text-white hover:bg-[rgba(255,68,104,0.28)]"
+                className="rounded-full border border-[var(--ds-accent-a22)] bg-[var(--ds-rose68-a18)] px-5 font-mono text-[10px] uppercase tracking-[0.18em] text-white hover:bg-[var(--ds-rose68-a28)]"
               >
                 {sendingChat ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -83,7 +83,7 @@ const ALL_FOLDERS_KEY = "";
 const LIBRARY_PANEL_SURFACE = "library-panel-surface";
 const LIBRARY_PANEL_INSET = "library-panel-inset";
 const LIBRARY_ACTION_BUTTON = "library-action-button";
-const LIBRARY_SELECT = `${SELECT_BASE} library-field h-10 min-h-[40px] rounded-[0.75rem] px-3`;
+const LIBRARY_SELECT = `${SELECT_BASE} library-field h-10 min-h-[40px] rounded-[var(--ds-r-075)] px-3`;
 const LIBRARY_SECTION_LABEL = "library-section-label";
 const LIBRARY_MAIN_TITLE =
   "font-arcade text-base uppercase tracking-[0.16em] text-white";
@@ -1880,7 +1880,7 @@ function useLibraryPageController() {
     return (
       <div
         className={cn(
-          "absolute top-[calc(100%+6px)] z-30 w-64 rounded-[0.85rem] border border-primary/35 bg-black/95 p-3 shadow-[0_18px_40px_rgba(0,0,0,0.55)]",
+          "absolute top-[calc(100%+6px)] z-30 w-64 rounded-[var(--ds-r-085)] border border-primary/35 bg-black/95 p-3 shadow-[0_18px_40px_rgba(0,0,0,0.55)]",
           alignRight ? "right-0" : "left-0",
         )}
         onClick={stopFilterEvent}
@@ -2135,7 +2135,7 @@ function useLibraryPageController() {
                   </HudButton>
                 </div>
                 {sidebarMode === "folders" ? (
-                  <div className="mt-3 rounded-[0.85rem] border border-primary/15 bg-black/35 p-2">
+                  <div className="mt-3 rounded-[var(--ds-r-085)] border border-primary/15 bg-black/35 p-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className={LIBRARY_SECTION_LABEL}>FOLDERS</div>
@@ -2473,7 +2473,7 @@ function useLibraryPageController() {
                       ].map(([label, copy]) => (
                         <div
                           key={label}
-                            className="library-step-card rounded-[0.75rem] p-3"
+                            className="library-step-card rounded-[var(--ds-r-075)] p-3"
                         >
                           <div className="font-arcade text-base uppercase tracking-[0.14em] text-primary/85">
                             {label}
@@ -2527,7 +2527,7 @@ function useLibraryPageController() {
                     {sidebarMode === "folders" &&
                     selectedFolderPath !== ALL_FOLDERS_KEY ? (
                       <div
-                        className="rounded-[0.85rem] border border-primary/15 bg-black/35 p-3"
+                        className="rounded-[var(--ds-r-085)] border border-primary/15 bg-black/35 p-3"
                         data-testid="library-source-upload-candidates"
                       >
                         <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">

@@ -44,7 +44,7 @@ function Wordmark({
 }) {
   return (
     <span
-      className={`uppercase leading-none text-[#fff4ed] [text-shadow:0_0_18px_rgba(255,120,120,0.68),0_0_38px_rgba(255,82,82,0.28),0_5px_0_rgba(28,8,8,0.98)] ${className}`}
+      className={`uppercase leading-none text-[var(--ds-paper-warm)] [text-shadow:0_0_18px_rgba(255,120,120,0.68),0_0_38px_rgba(255,82,82,0.28),0_5px_0_rgba(28,8,8,0.98)] ${className}`}
       style={{
         fontFamily,
         ...style,
@@ -108,7 +108,7 @@ const TITLE_VARIANTS: TitleVariant[] = [
     renderLockup: () => (
       <div className="absolute left-[3.8%] top-[1rem] flex items-center gap-3">
         <BrainChip className="relative z-10 h-[5.05rem] w-[5.05rem]" imgClassName="h-[3.15rem] w-[3.15rem]" />
-        <div className="relative rounded-[1.8rem] border border-red-400/35 bg-[linear-gradient(180deg,rgba(28,0,0,0.82),rgba(12,0,0,0.96))] px-5 py-3 shadow-[0_0_20px_rgba(255,92,92,0.22),0_14px_28px_rgba(0,0,0,0.45)]">
+        <div className="relative rounded-[var(--ds-r-180)] border border-red-400/35 bg-[linear-gradient(180deg,rgba(28,0,0,0.82),rgba(12,0,0,0.96))] px-5 py-3 shadow-[0_0_20px_rgba(255,92,92,0.22),0_14px_28px_rgba(0,0,0,0.45)]">
           <div className="pointer-events-none absolute inset-x-6 top-1/2 h-[3.75rem] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,86,86,0.26),transparent_72%)] blur-2xl" />
           <Wordmark
             fontFamily="var(--font-orbitron)"
@@ -152,14 +152,14 @@ const TITLE_VARIANTS: TitleVariant[] = [
 
 function VariantCard({ variant }: { variant: TitleVariant }) {
   return (
-    <section className="overflow-hidden rounded-[1.8rem] border border-red-500/20 bg-black/45 shadow-[0_18px_56px_rgba(0,0,0,0.42)]">
+    <section className="overflow-hidden rounded-[var(--ds-r-180)] border border-red-500/20 bg-black/45 shadow-[0_18px_56px_rgba(0,0,0,0.42)]">
       <div className="border-b border-red-500/18 px-5 py-4">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="font-terminal text-[0.72rem] uppercase tracking-[0.3em] text-red-300/72">
               {variant.fontLabel}
             </div>
-            <h2 className="mt-1 font-arcade text-base leading-tight text-[#fff4ed] sm:text-lg">
+            <h2 className="mt-1 font-arcade text-base leading-tight text-[var(--ds-paper-warm)] sm:text-lg">
               {variant.name}
             </h2>
           </div>
@@ -183,13 +183,13 @@ function VariantCard({ variant }: { variant: TitleVariant }) {
 
 export default function NavLabPage() {
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#120000_0%,#050000_100%)] text-[#fff4ed]">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#120000_0%,#050000_100%)] text-[var(--ds-paper-warm)]">
       <div className="mx-auto w-full max-w-[1500px] px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8 rounded-[1.8rem] border border-red-500/20 bg-black/55 p-6 shadow-[0_22px_60px_rgba(0,0,0,0.48)] backdrop-blur-md">
+        <div className="mb-8 rounded-[var(--ds-r-180)] border border-red-500/20 bg-black/55 p-6 shadow-[0_22px_60px_rgba(0,0,0,0.48)] backdrop-blur-md">
           <div className="font-terminal text-[0.74rem] uppercase tracking-[0.34em] text-red-300/74">
             Title Lockup Lab
           </div>
-          <h1 className="mt-3 max-w-5xl font-arcade text-2xl leading-tight text-[#fff4ed] sm:text-3xl">
+          <h1 className="mt-3 max-w-5xl font-arcade text-2xl leading-tight text-[var(--ds-paper-warm)] sm:text-3xl">
             Compare three live title directions before we touch the real header again.
           </h1>
           <p className="mt-4 max-w-4xl font-terminal text-sm leading-7 text-red-100/78 sm:text-[0.95rem]">

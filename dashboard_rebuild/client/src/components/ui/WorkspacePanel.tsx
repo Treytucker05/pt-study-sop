@@ -72,10 +72,10 @@ const BTN_CLASSES =
   "inline-flex items-center justify-center w-6 h-6 rounded-sm text-primary/50 hover:text-primary/80 transition-colors";
 
 const SIZE_CONTROL_CLASSES =
-  "inline-flex h-7 items-center justify-center rounded-[0.7rem] border border-[rgba(255,108,138,0.18)] bg-[radial-gradient(circle,rgba(255,84,116,0.10)_0%,rgba(0,0,0,0)_95%),linear-gradient(rgba(255,84,116,0.05)_1px,transparent_1px),linear-gradient(to_right,rgba(255,84,116,0.05)_1px,transparent_1px)] bg-[size:cover,10px_10px,10px_10px] px-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd4dd] shadow-[0_0_0_1px_rgba(255,84,116,0.08),0_8px_18px_rgba(0,0,0,0.16)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(255,160,176,0.32)] hover:text-white";
+  "inline-flex h-7 items-center justify-center rounded-[var(--ds-r-070)] border border-[rgba(255,108,138,0.18)] bg-[radial-gradient(circle,rgba(255,84,116,0.10)_0%,rgba(0,0,0,0)_95%),linear-gradient(rgba(255,84,116,0.05)_1px,transparent_1px),linear-gradient(to_right,rgba(255,84,116,0.05)_1px,transparent_1px)] bg-[size:cover,10px_10px,10px_10px] px-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd4dd] shadow-[0_0_0_1px_rgba(255,84,116,0.08),0_8px_18px_rgba(0,0,0,0.16)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(255,160,176,0.32)] hover:text-white";
 
 const SIZE_MENU_ITEM_CLASSES =
-  "flex w-full items-center justify-between gap-3 rounded-[0.75rem] border border-transparent px-3 py-2 text-left font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd4dd] transition-colors hover:border-[rgba(255,118,144,0.22)] hover:bg-[rgba(255,84,116,0.12)] hover:text-white";
+  "flex w-full items-center justify-between gap-3 rounded-[var(--ds-r-075)] border border-transparent px-3 py-2 text-left font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd4dd] transition-colors hover:border-[var(--ds-accent-a22)] hover:bg-[rgba(255,84,116,0.12)] hover:text-white";
 
 const PANEL_FIT_CONTENT_MAX_WIDTH = 1400;
 const PANEL_FIT_CONTENT_MAX_HEIGHT = 1000;
@@ -463,7 +463,7 @@ export function WorkspacePanel({
         onPositionChange?.(position);
       }}
       className={cn(
-        "workspace-panel-root flex min-w-0 min-h-0 flex-col overflow-hidden border border-primary/15 rounded-[0.95rem] bg-background/60 backdrop-blur-sm",
+        "workspace-panel-root flex min-w-0 min-h-0 flex-col overflow-hidden border border-primary/15 rounded-[var(--ds-r-095)] bg-background/60 backdrop-blur-sm",
         "shadow-[0_18px_36px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,110,140,0.08)]",
         selected &&
           "border-primary/65 shadow-[0_0_0_1px_rgba(255,116,142,0.44),0_20px_40px_rgba(0,0,0,0.34),0_0_24px_rgba(255,92,128,0.08)]",
@@ -480,7 +480,7 @@ export function WorkspacePanel({
       <div
         className={cn(
           TITLE_BAR_CLASSES,
-          "workspace-panel-drag-handle relative rounded-t-[0.95rem]",
+          "workspace-panel-drag-handle relative rounded-t-[var(--ds-r-095)]",
           selected && "bg-[linear-gradient(180deg,rgba(255,122,146,0.28),rgba(18,6,12,0.94))]",
         )}
         onPointerDown={handleTitlePointerDown}
@@ -566,7 +566,7 @@ export function WorkspacePanel({
 
                   {sizeMenuOpen ? (
                     <div
-                      className="absolute right-0 top-[calc(100%+0.4rem)] z-30 flex min-w-[13rem] flex-col gap-1 rounded-[0.95rem] border border-[rgba(255,118,144,0.22)] bg-[linear-gradient(180deg,rgba(30,8,16,0.96),rgba(6,2,4,0.98))] p-2 shadow-[0_18px_34px_rgba(0,0,0,0.34),0_0_0_1px_rgba(255,84,116,0.10)]"
+                      className="absolute right-0 top-[calc(100%+0.4rem)] z-30 flex min-w-[13rem] flex-col gap-1 rounded-[var(--ds-r-095)] border border-[var(--ds-accent-a22)] bg-[linear-gradient(180deg,rgba(30,8,16,0.96),rgba(6,2,4,0.98))] p-2 shadow-[0_18px_34px_rgba(0,0,0,0.34),0_0_0_1px_rgba(255,84,116,0.10)]"
                       data-testid={`${dataTestId || id}-size-menu`}
                     >
                       {(

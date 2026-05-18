@@ -223,7 +223,7 @@ export default function MasteryPage() {
                 </div>
                 <div className="grid gap-2">
                   {Object.entries(STATUS_CONFIG).map(([key, config]) => (
-                    <div key={key} className={cn("rounded-[1rem] border bg-black/20 p-3", config.border)}>
+                    <div key={key} className={cn("rounded-[var(--ds-r-100)] border bg-black/20 p-3", config.border)}>
                       <div className="flex items-center justify-between gap-2">
                         <span className={cn("flex items-center gap-2 font-arcade text-xs", config.color)}>
                           <config.Icon className="h-3.5 w-3.5" />
@@ -238,7 +238,7 @@ export default function MasteryPage() {
                 </div>
               </div>
 
-              <div className="space-y-2 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+              <div className="space-y-2 rounded-[var(--ds-r-100)] border border-primary/20 bg-black/20 p-3">
                 <div className="font-arcade text-ui-xs uppercase tracking-[0.24em] text-primary/80">
                   Selected Skill
                 </div>
@@ -257,7 +257,7 @@ export default function MasteryPage() {
                 )}
               </div>
 
-              <div className="space-y-2 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+              <div className="space-y-2 rounded-[var(--ds-r-100)] border border-primary/20 bg-black/20 p-3">
                 <div className="font-arcade text-ui-xs uppercase tracking-[0.24em] text-primary/80">
                   How To Read This
                 </div>

@@ -26,7 +26,7 @@ export function MemoryPanel({
 
   return (
     <div className="space-y-4 font-mono text-sm text-foreground/78">
-      <div className="rounded-[0.85rem] border border-primary/15 bg-black/15 p-3">
+      <div className="rounded-[var(--ds-r-085)] border border-primary/15 bg-black/15 p-3">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
@@ -77,7 +77,7 @@ export function MemoryPanel({
         </div>
       </div>
 
-      <div className="rounded-[0.85rem] border border-primary/15 bg-black/15 p-3">
+      <div className="rounded-[var(--ds-r-085)] border border-primary/15 bg-black/15 p-3">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
@@ -102,7 +102,7 @@ export function MemoryPanel({
         </div>
       </div>
 
-      <div className="rounded-[0.85rem] border border-primary/10 bg-black/10 p-3">
+      <div className="rounded-[var(--ds-r-085)] border border-primary/10 bg-black/10 p-3">
         <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
           History
         </div>
@@ -111,7 +111,7 @@ export function MemoryPanel({
             {historyEntries.map((entry) => (
               <div
                 key={entry.id}
-                className="rounded-[0.85rem] border border-primary/12 bg-black/15 p-3"
+                className="rounded-[var(--ds-r-085)] border border-primary/12 bg-black/15 p-3"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>

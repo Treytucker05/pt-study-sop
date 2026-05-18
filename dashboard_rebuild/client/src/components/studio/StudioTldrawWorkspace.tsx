@@ -313,7 +313,7 @@ export function StudioTldrawWorkspace({
     <div
       ref={workspaceRootRef}
       data-testid="studio-tldraw-workspace"
-      className="flex h-full min-h-0 flex-col rounded-[0.85rem] border border-primary/15 bg-black/20"
+      className="flex h-full min-h-0 flex-col rounded-[var(--ds-r-085)] border border-primary/15 bg-black/20"
     >
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-primary/12 px-4 py-3 font-mono text-sm text-foreground/78">
         <div>
@@ -360,7 +360,7 @@ export function StudioTldrawWorkspace({
       </div>
       <div className="relative min-h-0 flex-1">
         <div className="pointer-events-none absolute left-4 top-4 z-10 w-full max-w-sm space-y-2">
-          <div className="rounded-[0.85rem] border border-primary/18 bg-black/65 px-3 py-2 font-mono text-sm text-foreground/78 shadow-[0_16px_36px_rgba(0,0,0,0.32)] backdrop-blur">
+          <div className="rounded-[var(--ds-r-085)] border border-primary/18 bg-black/65 px-3 py-2 font-mono text-sm text-foreground/78 shadow-[var(--ds-shadow-elev)] backdrop-blur">
             <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
               Current Run Ready
             </div>
@@ -370,7 +370,7 @@ export function StudioTldrawWorkspace({
             </div>
           </div>
 
-          <div className="rounded-[0.85rem] border border-primary/18 bg-black/65 px-3 py-2 font-mono text-sm text-foreground/78 shadow-[0_16px_36px_rgba(0,0,0,0.32)] backdrop-blur">
+          <div className="rounded-[var(--ds-r-085)] border border-primary/18 bg-black/65 px-3 py-2 font-mono text-sm text-foreground/78 shadow-[var(--ds-shadow-elev)] backdrop-blur">
             <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
               Canvas Objects
             </div>
@@ -381,7 +381,7 @@ export function StudioTldrawWorkspace({
           </div>
 
           {excerptObjects.length > 0 ? (
-            <div className="pointer-events-auto rounded-[0.85rem] border border-primary/18 bg-black/65 px-3 py-3 font-mono text-sm text-foreground/78 shadow-[0_16px_36px_rgba(0,0,0,0.32)] backdrop-blur">
+            <div className="pointer-events-auto rounded-[var(--ds-r-085)] border border-primary/18 bg-black/65 px-3 py-3 font-mono text-sm text-foreground/78 shadow-[var(--ds-shadow-elev)] backdrop-blur">
               <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
                 Workspace Excerpts
               </div>
@@ -396,7 +396,7 @@ export function StudioTldrawWorkspace({
                   return (
                     <div
                       key={workspaceObject.id}
-                      className="rounded-[0.75rem] border border-primary/12 bg-black/30 p-2.5"
+                      className="rounded-[var(--ds-r-075)] border border-primary/12 bg-black/30 p-2.5"
                     >
                       <div className="text-sm text-foreground">{sourceLabel}</div>
                       <div className="mt-1 text-xs leading-5 text-foreground/62">
@@ -426,7 +426,7 @@ export function StudioTldrawWorkspace({
           ) : null}
 
           {textNoteObjects.length > 0 ? (
-            <div className="pointer-events-auto rounded-[0.85rem] border border-primary/18 bg-black/65 px-3 py-3 font-mono text-sm text-foreground/78 shadow-[0_16px_36px_rgba(0,0,0,0.32)] backdrop-blur">
+            <div className="pointer-events-auto rounded-[var(--ds-r-085)] border border-primary/18 bg-black/65 px-3 py-3 font-mono text-sm text-foreground/78 shadow-[var(--ds-shadow-elev)] backdrop-blur">
               <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
                 Workspace Notes
               </div>
@@ -447,7 +447,7 @@ export function StudioTldrawWorkspace({
                   return (
                     <div
                       key={workspaceObject.id}
-                      className="rounded-[0.75rem] border border-primary/12 bg-black/30 p-2.5"
+                      className="rounded-[var(--ds-r-075)] border border-primary/12 bg-black/30 p-2.5"
                     >
                       {isEditing ? (
                         <div className="space-y-2">
@@ -457,7 +457,7 @@ export function StudioTldrawWorkspace({
                               aria-label="Workspace card title"
                               value={editingTitle}
                               onChange={(event) => setEditingTitle(event.target.value)}
-                              className="rounded-[0.65rem] border border-primary/18 bg-black/40 px-2 py-1.5 text-xs normal-case tracking-normal text-foreground outline-none focus:border-primary/50"
+                              className="rounded-[var(--ds-r-065)] border border-primary/18 bg-black/40 px-2 py-1.5 text-xs normal-case tracking-normal text-foreground outline-none focus:border-primary/50"
                             />
                           </label>
                           <label className="flex flex-col gap-1 text-[10px] uppercase tracking-[0.14em] text-primary/72">
@@ -467,7 +467,7 @@ export function StudioTldrawWorkspace({
                               value={editingDetail}
                               onChange={(event) => setEditingDetail(event.target.value)}
                               rows={4}
-                              className="rounded-[0.65rem] border border-primary/18 bg-black/40 px-2 py-1.5 text-xs normal-case leading-5 tracking-normal text-foreground outline-none focus:border-primary/50"
+                              className="rounded-[var(--ds-r-065)] border border-primary/18 bg-black/40 px-2 py-1.5 text-xs normal-case leading-5 tracking-normal text-foreground outline-none focus:border-primary/50"
                             />
                           </label>
                           <div className="flex flex-wrap gap-1.5">
@@ -602,7 +602,7 @@ export function StudioTldrawWorkspace({
           ) : null}
 
           {imageObjects.length > 0 ? (
-            <div className="pointer-events-auto rounded-[0.85rem] border border-primary/18 bg-black/65 px-3 py-3 font-mono text-sm text-foreground/78 shadow-[0_16px_36px_rgba(0,0,0,0.32)] backdrop-blur">
+            <div className="pointer-events-auto rounded-[var(--ds-r-085)] border border-primary/18 bg-black/65 px-3 py-3 font-mono text-sm text-foreground/78 shadow-[var(--ds-shadow-elev)] backdrop-blur">
               <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
                 Workspace Images
               </div>
@@ -610,7 +610,7 @@ export function StudioTldrawWorkspace({
                 {imageObjects.map((workspaceObject) => (
                   <div
                     key={workspaceObject.id}
-                    className="rounded-[0.75rem] border border-primary/12 bg-black/30 p-2.5"
+                    className="rounded-[var(--ds-r-075)] border border-primary/12 bg-black/30 p-2.5"
                   >
                     <div className="text-sm text-foreground">{workspaceObject.title}</div>
                     <div className="mt-1 text-xs leading-5 text-foreground/62">
@@ -619,7 +619,7 @@ export function StudioTldrawWorkspace({
                     <img
                       src={workspaceObject.asset.url}
                       alt={workspaceObject.title}
-                      className="mt-3 max-h-32 w-full rounded-[0.75rem] border border-primary/12 object-contain"
+                      className="mt-3 max-h-32 w-full rounded-[var(--ds-r-075)] border border-primary/12 object-contain"
                     />
                   </div>
                 ))}

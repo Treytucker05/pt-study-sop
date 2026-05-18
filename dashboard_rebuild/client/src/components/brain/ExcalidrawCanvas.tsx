@@ -230,7 +230,7 @@ export const ExcalidrawCanvas = forwardRef<
         data-testid="legacy-canvas-stage"
         className="flex min-h-0 flex-1 items-center justify-center border-t border-primary/10 bg-black/20 p-6"
       >
-        <div className="max-w-lg rounded-[0.9rem] border border-primary/15 bg-black/40 p-5 text-center">
+        <div className="max-w-lg rounded-[var(--ds-r-090)] border border-primary/15 bg-black/40 p-5 text-center">
           <div className="font-arcade text-ui-xs uppercase tracking-[0.18em] text-primary">
             Legacy Canvas
           </div>

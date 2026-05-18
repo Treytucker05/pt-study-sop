@@ -3,6 +3,9 @@
 @import "tw-animate-css";
 @source "./**/*.{ts,tsx,js,jsx,html}";
 @source "../../shared/**/*.{ts,tsx,js,jsx,html}";
+/* Markdown is documentation, not markup: never harvest class-like strings
+ * from code samples in *.md (e.g. component README examples). */
+@source not "./**/*.md";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -242,6 +245,105 @@
   );
   --ds-hero-grid: rgba(255, 52, 92, 0.3);
   --ds-hero-line: rgba(255, 90, 118, 0.85);
+
+  /* =====================================================================
+   * Neural Command Deck — Token Layer (added Phase 2, design-system work)
+   * ---------------------------------------------------------------------
+   * TIER 1 — TARGET SCALES: the canonical design-system values. Use these
+   *   in NEW code. Phase 5 (reviewed visual change) collapses near-
+   *   duplicates into these. Currently inert (no consumers yet).
+   * TIER 2 — BRIDGE TOKENS: exact current literal values. Phase 3 swaps
+   *   identical literals 1:1 onto these (pixel-identical dedup). They are
+   *   TRANSITIONAL — retired when Phase 5 maps them onto Tier 1.
+   * Plain custom properties (not @theme) on purpose: Tailwind generates
+   * no utilities from these, so this whole block is render-inert until
+   * referenced. Verified via var-resolved normalized-CSS equivalence.
+   * ===================================================================== */
+
+  /* TIER 1 — target radius scale (6 steps) */
+  --ds-radius-xs: 0.25rem;
+  --ds-radius-sm: 0.5rem;
+  --ds-radius-md: 0.75rem;
+  --ds-radius-lg: 1rem;
+  --ds-radius-xl: 1.25rem;
+  --ds-radius-2xl: 1.75rem;
+
+  /* TIER 1 — target elevation scale (5 steps) */
+  --ds-elev-0: none;
+  --ds-elev-1: 0 8px 18px rgba(0, 0, 0, 0.18);
+  --ds-elev-2: 0 12px 26px rgba(0, 0, 0, 0.28);
+  --ds-elev-3: 0 16px 36px rgba(0, 0, 0, 0.32);
+  --ds-elev-4: 0 22px 56px rgba(0, 0, 0, 0.48);
+
+  /* TIER 1 — target color system (base hues; alpha applied via ramp) */
+  --ds-accent-rgb: 255 118 144; /* dominant pink */
+  --ds-rose-rgb: 255 84 116; /* structural rose */
+  --ds-scrim-rgb: 0 0 0; /* black scrims */
+  --ds-sheen-rgb: 255 255 255; /* white inner sheen */
+  /* canonical alpha ramp: 02 03 04 05 06 08 10 12 14 16 18 20 22 24 28 32 45 48 */
+
+  /* TIER 2 — radius bridges (exact; covers 201/208 arbitrary-radius uses) */
+  --ds-r-100: 1rem;       /* rounded-[1rem]    ×56 */
+  --ds-r-085: 0.85rem;    /* rounded-[0.85rem] ×54 */
+  --ds-r-095: 0.95rem;    /* rounded-[0.95rem] ×23 */
+  --ds-r-090: 0.9rem;     /* rounded-[0.9rem]  ×18 */
+  --ds-r-075: 0.75rem;    /* rounded-[0.75rem] ×17 */
+  --ds-r-020: 0.2rem;     /* rounded-[0.2rem]  ×9  */
+  --ds-r-080: 0.8rem;     /* rounded-[0.8rem]  ×7  */
+  --ds-r-070: 0.7rem;     /* rounded-[0.7rem]  ×7  */
+  --ds-r-065: 0.65rem;    /* rounded-[0.65rem] ×4  */
+  --ds-r-180: 1.8rem;     /* rounded-[1.8rem]  ×3  */
+  --ds-r-120: 1.2rem;     /* rounded-[1.2rem]  ×3  */
+
+  /* TIER 2 — shadow bridge (exact; only cluster with ≥3 repeats) */
+  --ds-shadow-elev: 0 16px 36px rgba(0, 0, 0, 0.32); /* ×5 */
+
+  /* TIER 2 — accent pink bridges  rgba(255,118,144,α) */
+  --ds-accent-a18: rgba(255, 118, 144, 0.18); /* ×46 */
+  --ds-accent-a16: rgba(255, 118, 144, 0.16); /* ×18 */
+  --ds-accent-a22: rgba(255, 118, 144, 0.22); /* ×16 */
+  --ds-accent-a14: rgba(255, 118, 144, 0.14); /* ×12 */
+
+  /* TIER 2 — black scrim bridges  rgba(0,0,0,α) */
+  --ds-scrim-a12: rgba(0, 0, 0, 0.12); /* ×13 */
+  --ds-scrim-a24: rgba(0, 0, 0, 0.24); /* ×10 */
+  --ds-scrim-a18: rgba(0, 0, 0, 0.18); /* ×9  */
+  --ds-scrim-a28: rgba(0, 0, 0, 0.28); /* ×8  */
+  --ds-scrim-a20: rgba(0, 0, 0, 0.2);  /* ×7  */
+  --ds-scrim-a10: rgba(0, 0, 0, 0.1);  /* ×7  */
+  --ds-scrim-a32: rgba(0, 0, 0, 0.32); /* ×6  */
+  --ds-scrim-a14: rgba(0, 0, 0, 0.14); /* ×6  */
+  --ds-scrim-a48: rgba(0, 0, 0, 0.48); /* ×5  */
+  --ds-scrim-a45: rgba(0, 0, 0, 0.45); /* ×5  */
+  --ds-scrim-a22: rgba(0, 0, 0, 0.22); /* ×5  */
+  --ds-scrim-a16: rgba(0, 0, 0, 0.16); /* ×5  */
+
+  /* TIER 2 — white sheen bridges  rgba(255,255,255,α) */
+  --ds-sheen-a02: rgba(255, 255, 255, 0.02); /* ×11 */
+  --ds-sheen-a06: rgba(255, 255, 255, 0.06); /* ×10 */
+  --ds-sheen-a08: rgba(255, 255, 255, 0.08); /* ×9  */
+  --ds-sheen-a04: rgba(255, 255, 255, 0.04); /* ×7  */
+  --ds-sheen-a03: rgba(255, 255, 255, 0.03); /* ×7  */
+  --ds-sheen-a05: rgba(255, 255, 255, 0.05); /* ×6  */
+  --ds-sheen-a01: rgba(255, 255, 255, 0.01); /* ×5  */
+
+  /* TIER 2 — other repeated rgba bridges */
+  --ds-rose-a08: rgba(255, 84, 116, 0.08);   /* ×7 */
+  --ds-rose78-a18: rgba(255, 78, 108, 0.18); /* ×5 */
+  --ds-rose68-a28: rgba(255, 68, 104, 0.28); /* ×5 */
+  --ds-rose68-a18: rgba(255, 68, 104, 0.18); /* ×5 */
+  --ds-blush-a44: rgba(255, 201, 213, 0.44); /* ×5 */
+
+  /* TIER 2 — hex bridges (exact; ≥3 repeats) */
+  --ds-fg-pink-1: #ffd6de;   /* ×37 */
+  --ds-fg-pink-2: #ffb9c7;   /* ×32 */
+  --ds-fg-pink-3: #ffd9e1;   /* ×29 */
+  --ds-fg-pink-4: #ffc8d3;   /* ×22 */
+  --ds-fg-pink-5: #ffe6ec;   /* ×3  */
+  --ds-fg-pink-6: #ffe3ea;   /* ×3  */
+  --ds-paper-warm: #fff4ed;  /* ×7  */
+  --ds-danger-500: #ef4444;  /* ×5  */
+  --ds-ink: #000;            /* ×3  */
 }
 
 @layer base {

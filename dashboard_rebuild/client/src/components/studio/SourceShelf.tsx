@@ -997,7 +997,7 @@ export function SourceShelf({
       data-testid="source-shelf-content"
       className="flex h-full min-h-0 flex-col gap-4 font-mono text-sm text-foreground/82"
     >
-      <div className="space-y-3 rounded-[0.95rem] border border-primary/15 bg-black/15 p-3">
+      <div className="space-y-3 rounded-[var(--ds-r-095)] border border-primary/15 bg-black/15 p-3">
         <div className="flex flex-wrap gap-2">
           {SOURCE_FILTERS.map(([filterId, label]) => {
             const isActive = activeFilter === filterId;
@@ -1054,7 +1054,7 @@ export function SourceShelf({
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
-        <div className="rounded-[0.95rem] border border-primary/15 bg-black/15 p-3">
+        <div className="rounded-[var(--ds-r-095)] border border-primary/15 bg-black/15 p-3">
           <div className="text-[10px] uppercase tracking-[0.18em] text-primary">
             Course
           </div>
@@ -1075,7 +1075,7 @@ export function SourceShelf({
           </div>
         </div>
 
-        <div className="rounded-[0.95rem] border border-primary/15 bg-black/15 p-3">
+        <div className="rounded-[var(--ds-r-095)] border border-primary/15 bg-black/15 p-3">
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
             <BookOpen className="h-3.5 w-3.5" />
             Current Run
@@ -1093,7 +1093,7 @@ export function SourceShelf({
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col rounded-[1rem] border border-primary/14 bg-black/10 p-3">
+      <div className="flex min-h-0 flex-1 flex-col rounded-[var(--ds-r-100)] border border-primary/14 bg-black/10 p-3">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="text-[10px] uppercase tracking-[0.18em] text-primary">
             Unified Source Tree
@@ -1129,7 +1129,7 @@ export function SourceShelf({
               ))}
             </div>
           ) : (
-            <div className="rounded-[0.95rem] border border-dashed border-primary/16 bg-black/15 px-4 py-6 text-sm text-foreground/56">
+            <div className="rounded-[var(--ds-r-095)] border border-dashed border-primary/16 bg-black/15 px-4 py-6 text-sm text-foreground/56">
               {vaultListingLoading && activeFilter === "vault"
                 ? "Loading vault notes..."
                 : "No sources match the current filter."}

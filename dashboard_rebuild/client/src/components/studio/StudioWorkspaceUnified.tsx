@@ -244,7 +244,7 @@ export function StudioWorkspaceUnified({
                 aria-selected={isActive}
                 onClick={() => handleSelectTab(tab.id)}
                 className={cn(
-                  "rounded-[0.65rem] border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] transition-colors",
+                  "rounded-[var(--ds-r-065)] border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] transition-colors",
                   isActive
                     ? "border-primary/30 bg-black/20 text-white"
                     : "border-transparent text-foreground/70 hover:border-primary/15 hover:bg-black/15 hover:text-white",
@@ -320,7 +320,7 @@ export function StudioWorkspaceUnified({
                     ? "Re-seed the concept map from the active session"
                     : "No session material yet"
                 }
-                className="rounded-[0.65rem] border border-primary/25 bg-black/35 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-foreground/78 transition-colors hover:border-primary/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-[var(--ds-r-065)] border border-primary/25 bg-black/35 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-foreground/78 transition-colors hover:border-primary/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Refresh from session
               </button>

@@ -59,7 +59,7 @@ export function PrimingBlockBar({
         <div
           className={cn(
             CONTROL_DECK_SECTION,
-            "absolute bottom-full left-0 right-0 z-50 mx-2 mb-2 rounded-[1.2rem] px-4 py-4",
+            "absolute bottom-full left-0 right-0 z-50 mx-2 mb-2 rounded-[var(--ds-r-120)] px-4 py-4",
           )}
           role="dialog"
           aria-label={`Details for ${expandedBlock.name}`}
@@ -92,7 +92,7 @@ export function PrimingBlockBar({
             <button
               type="button"
               onClick={() => handleActivate(expandedBlock)}
-              className="shrink-0 rounded-[0.95rem] border border-red-500/60 bg-red-500/10 px-3 py-2 font-arcade text-ui-xs uppercase tracking-[0.16em] text-red-200 transition-colors hover:bg-red-500/20"
+              className="shrink-0 rounded-[var(--ds-r-095)] border border-red-500/60 bg-red-500/10 px-3 py-2 font-arcade text-ui-xs uppercase tracking-[0.16em] text-red-200 transition-colors hover:bg-red-500/20"
             >
               Use Block
             </button>
@@ -130,7 +130,7 @@ export function PrimingBlockBar({
                 aria-pressed={isExpanded}
                 className={[
                   "flex shrink-0 items-center gap-1.5 border px-2.5 py-1.5 transition-colors",
-                  "rounded-[0.95rem] font-arcade text-ui-xs uppercase tracking-[0.14em]",
+                  "rounded-[var(--ds-r-095)] font-arcade text-ui-xs uppercase tracking-[0.14em]",
                   isActive
                     ? "border-yellow-500/50 bg-yellow-500/5 text-yellow-400"
                     : "border-primary/20 bg-black/40 text-muted-foreground hover:border-primary/40",

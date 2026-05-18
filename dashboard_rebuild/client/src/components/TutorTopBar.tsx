@@ -83,16 +83,16 @@ const RUNTIME_STATUS_STYLES: Record<TutorTeachRuntimeStatus, string> = {
 };
 
 const RUNTIME_CARD_BASE =
-  "relative overflow-hidden border border-[rgba(255,78,108,0.18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.1)_22%,rgba(0,0,0,0.26)_100%),linear-gradient(135deg,rgba(255,44,78,0.08),rgba(0,0,0,0.02)_42%,rgba(0,0,0,0.1)_100%)] p-4 backdrop-blur-sm shadow-[0_14px_28px_rgba(0,0,0,0.14)]";
+  "relative overflow-hidden border border-[var(--ds-rose78-a18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.1)_22%,rgba(0,0,0,0.26)_100%),linear-gradient(135deg,rgba(255,44,78,0.08),rgba(0,0,0,0.02)_42%,rgba(0,0,0,0.1)_100%)] p-4 backdrop-blur-sm shadow-[0_14px_28px_rgba(0,0,0,0.14)]";
 
 const TUTOR_STRIP =
   "relative overflow-hidden border border-[rgba(255,78,108,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(0,0,0,0.1)_20%,rgba(0,0,0,0.24)_100%),linear-gradient(135deg,rgba(255,42,76,0.07),rgba(0,0,0,0.03)_46%,rgba(0,0,0,0.09)_100%)] px-4 py-3 backdrop-blur-sm shadow-[0_10px_24px_rgba(0,0,0,0.12)]";
 
 const TUTOR_META_CHIP =
-  "inline-flex min-h-[40px] items-center gap-2 border border-[rgba(255,78,108,0.18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.12)_28%,rgba(0,0,0,0.24)_100%)] px-3 py-2 font-mono text-sm text-foreground/82 backdrop-blur-sm";
+  "inline-flex min-h-[40px] items-center gap-2 border border-[var(--ds-rose78-a18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.12)_28%,rgba(0,0,0,0.24)_100%)] px-3 py-2 font-mono text-sm text-foreground/82 backdrop-blur-sm";
 
 const TUTOR_SELECT_OPTION_CLASS =
-  "bg-[#12070b] text-[#ffe3ea]";
+  "bg-[#12070b] text-[var(--ds-fg-pink-6)]";
 
 const TUTOR_SELECT_OPTION_STYLE = {
   backgroundColor: "#12070b",
@@ -101,14 +101,14 @@ const TUTOR_SELECT_OPTION_STYLE = {
 
 function runtimeBadgeClasses(status: TutorTeachRuntimeStatus): string {
   return cn(
-    "rounded-[0.2rem] px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em]",
+    "rounded-[var(--ds-r-020)] px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em]",
     RUNTIME_STATUS_STYLES[status],
   );
 }
 
 function tutorUtilityButton(compact = false): string {
   return cn(
-    "inline-flex min-h-[40px] items-center justify-center gap-2 rounded-[0.28rem] border border-[rgba(255,78,108,0.18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.12)_26%,rgba(0,0,0,0.24)_100%)] px-3 py-2 font-mono text-ui-2xs uppercase tracking-[0.16em] text-foreground/78 transition-colors duration-150 ease-out hover:border-[rgba(255,108,136,0.32)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55 focus-visible:ring-offset-2 focus-visible:ring-offset-black backdrop-blur-sm",
+    "inline-flex min-h-[40px] items-center justify-center gap-2 rounded-[0.28rem] border border-[var(--ds-rose78-a18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.12)_26%,rgba(0,0,0,0.24)_100%)] px-3 py-2 font-mono text-ui-2xs uppercase tracking-[0.16em] text-foreground/78 transition-colors duration-150 ease-out hover:border-[rgba(255,108,136,0.32)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55 focus-visible:ring-offset-2 focus-visible:ring-offset-black backdrop-blur-sm",
     compact ? "h-10 w-10 px-0" : null,
   );
 }
@@ -309,7 +309,7 @@ export function TutorTopBar({
           {workflowStageLabel ? (
             <Badge
               variant="outline"
-              className="rounded-[0.2rem] border-primary/20 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em]"
+              className="rounded-[var(--ds-r-020)] border-primary/20 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em]"
             >
               STAGE {workflowStageLabel}
             </Badge>
@@ -317,7 +317,7 @@ export function TutorTopBar({
           {workflowStatusLabel ? (
             <Badge
               variant="outline"
-              className="rounded-[0.2rem] border-secondary/25 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em]"
+              className="rounded-[var(--ds-r-020)] border-secondary/25 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em]"
             >
               {workflowStatusLabel}
             </Badge>
@@ -325,14 +325,14 @@ export function TutorTopBar({
           {isTutorSessionView ? (
             <Badge
               variant="outline"
-              className="rounded-[0.2rem] border-emerald-500/26 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em] text-emerald-300"
+              className="rounded-[var(--ds-r-020)] border-emerald-500/26 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em] text-emerald-300"
             >
               LIVE SESSION
             </Badge>
           ) : (
             <Badge
               variant="outline"
-              className="rounded-[0.2rem] border-primary/20 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em] text-foreground/76"
+              className="rounded-[var(--ds-r-020)] border-primary/20 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em] text-foreground/76"
             >
               READY
             </Badge>
@@ -516,7 +516,7 @@ export function TutorTopBar({
                         <Badge
                           variant="outline"
                           className={cn(
-                            "h-5 shrink-0 rounded-[0.2rem] px-1.5 font-mono text-ui-2xs uppercase tracking-[0.18em]",
+                            "h-5 shrink-0 rounded-[var(--ds-r-020)] px-1.5 font-mono text-ui-2xs uppercase tracking-[0.18em]",
                             previousSessionStatusClasses(previousSession.status),
                           )}
                         >
@@ -524,7 +524,7 @@ export function TutorTopBar({
                         </Badge>
                         <Badge
                           variant="outline"
-                          className="h-5 shrink-0 rounded-[0.2rem] border-primary/18 px-1.5 font-mono text-ui-2xs uppercase tracking-[0.18em] text-foreground/66"
+                          className="h-5 shrink-0 rounded-[var(--ds-r-020)] border-primary/18 px-1.5 font-mono text-ui-2xs uppercase tracking-[0.18em] text-foreground/66"
                         >
                           {formatPreviousSessionPhaseLabel(previousSession.phase)}
                         </Badge>
@@ -639,7 +639,7 @@ export function TutorTopBar({
                 <Badge
                   variant="outline"
                   className={cn(
-                    "h-7 rounded-[0.2rem] px-2 font-mono text-ui-2xs uppercase tracking-[0.18em]",
+                    "h-7 rounded-[var(--ds-r-020)] px-2 font-mono text-ui-2xs uppercase tracking-[0.18em]",
                     CONTROL_PLANE_COLORS[getMethodStageColorKey(currentBlock)]
                       ?.badge || "bg-secondary/20 text-muted-foreground",
                   )}

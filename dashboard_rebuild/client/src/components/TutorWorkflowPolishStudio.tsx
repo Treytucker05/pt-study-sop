@@ -475,7 +475,7 @@ export function TutorWorkflowPolishStudio({
   ];
 
   const fieldClassName =
-    "rounded-[1rem] border border-[rgba(255,122,146,0.18)] bg-black/40 font-mono text-base leading-6 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] placeholder:text-foreground/32 focus-visible:border-primary/45 focus-visible:ring-primary/45";
+    "rounded-[var(--ds-r-100)] border border-[rgba(255,122,146,0.18)] bg-black/40 font-mono text-base leading-6 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] placeholder:text-foreground/32 focus-visible:border-primary/45 focus-visible:ring-primary/45";
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
