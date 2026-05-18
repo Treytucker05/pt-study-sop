@@ -2616,7 +2616,7 @@ describe("TutorShell studio routing", () => {
     expect(mockTldrawEditor.createShapes).toHaveBeenCalledWith([
       expect.objectContaining({
         id: getStudioCanvasShapeId("material:101"),
-        type: "note",
+        type: "text",
       }),
     ]);
     expect(
@@ -2878,7 +2878,7 @@ describe("TutorShell studio routing", () => {
             selectionLabel: "Paragraph 1",
           }),
         ),
-        type: "note",
+        type: "text",
       }),
     ]);
   });
@@ -2949,7 +2949,7 @@ describe("TutorShell studio routing", () => {
             selectionLabel: "Viewer selection",
           }),
         ),
-        type: "note",
+        type: "text",
       }),
     ]);
   });
@@ -3045,7 +3045,7 @@ describe("TutorShell studio routing", () => {
             assetUrl: previewSrc ?? "",
           }),
         ),
-        type: "note",
+        type: "text",
       }),
     ]);
   });

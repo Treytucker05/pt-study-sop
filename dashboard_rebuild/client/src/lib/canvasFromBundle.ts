@@ -14,7 +14,9 @@ const GRID_COLUMNS = 3;
 const BOX_WIDTH = 320;
 const BOX_HEIGHT = 240;
 const BOX_PAD = 40;
-const GRID_ORIGIN_X = 96;
+// Origin clears the fixed left "WORKSPACE NOTES" overlay (max-w-sm 384px
+// + left-4 gutter) so seeded shapes never spawn directly under it.
+const GRID_ORIGIN_X = 460;
 const GRID_ORIGIN_Y = 96;
 const MAX_FRAMES = 12;
 
@@ -28,10 +30,18 @@ export function isSessionSeedShapeId(id: unknown): boolean {
 
 export type SessionSeedShapeSpec = {
   id: ReturnType<typeof createShapeId>;
-  type: "note";
+  type: "text";
   x: number;
   y: number;
-  props: { richText: ReturnType<typeof toRichText> };
+  props: {
+    richText: ReturnType<typeof toRichText>;
+    font: "mono";
+    size: "s";
+    color: "white";
+    textAlign: "start";
+    w: number;
+    autoSize: false;
+  };
   meta: { source: "session-seed"; role: "lo"; sessionKey: string };
 };
 
@@ -78,11 +88,17 @@ export function buildSessionSeedShapes(
 
     return {
       id: getSessionSeedShapeId(`lo-${idx}`),
-      type: "note" as const,
+      type: "text" as const,
       x,
       y,
       props: {
         richText: toRichText(buildFrameBody(loTitle, relatedBullets)),
+        font: "mono" as const,
+        size: "s" as const,
+        color: "white" as const,
+        textAlign: "start" as const,
+        w: BOX_WIDTH,
+        autoSize: false as const,
       },
       meta: {
         source: "session-seed" as const,

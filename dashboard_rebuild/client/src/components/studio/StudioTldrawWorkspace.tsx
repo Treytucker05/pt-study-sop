@@ -127,6 +127,19 @@ export function StudioTldrawWorkspace({
       if (shapes.length === 0) return false;
       deleteSessionSeedShapes(targetEditor);
       targetEditor.createShapes(shapes as never);
+      // Variable-length text wraps taller than the fixed grid step, so the
+      // grid coords alone overlap. Bin-pack the seeded shapes (potpack) so
+      // they never overlap each other, then frame them in view. Optional-
+      // chained so it safely no-ops where the editor lacks the API (mocks).
+      const ed = targetEditor as Editor & {
+        packShapes?: (ids: unknown, gap?: number) => void;
+        zoomToFit?: (opts?: unknown) => void;
+      };
+      const seededIds = shapes.map((s) => s.id);
+      requestAnimationFrame(() => {
+        ed.packShapes?.(seededIds as never, 32);
+        ed.zoomToFit?.({ animation: { duration: 0 } });
+      });
       return true;
     },
     [deleteSessionSeedShapes],
@@ -290,6 +303,24 @@ export function StudioTldrawWorkspace({
 
     if (shapesToDelete.length > 0) {
       editor.deleteShapes(shapesToDelete);
+    }
+
+    // When the canvas-object set changes, bin-pack the studio shapes so they
+    // never overlap and frame them in view (they spawn off the default
+    // viewport at the overlay-clearing origin). Optional-chained so it
+    // safely no-ops where the editor lacks the API (test mocks).
+    if (shapesToCreate.length > 0 || shapesToDelete.length > 0) {
+      const ed = editor as Editor & {
+        packShapes?: (ids: unknown, gap?: number) => void;
+        zoomToFit?: (opts?: unknown) => void;
+      };
+      const studioShapeIds = nextObjectIds.map((id) =>
+        getStudioCanvasShapeId(id),
+      );
+      requestAnimationFrame(() => {
+        ed.packShapes?.(studioShapeIds as never, 32);
+        ed.zoomToFit?.({ animation: { duration: 0 } });
+      });
     }
 
     syncedObjectIdsRef.current = nextObjectIds;
