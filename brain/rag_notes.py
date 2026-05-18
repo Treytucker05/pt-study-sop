@@ -755,26 +755,42 @@ def sync_folder_to_rag(
         )
 
         doc_type = _infer_doc_type_from_suffix(file_path.suffix)
-        per_file_timeout = 120  # seconds — skip files that hang longer
+        # seconds — skip files that hang longer (env-tunable for tests/ops)
         try:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(
-                    ingest_document,
-                    path=str(file_path),
-                    doc_type=doc_type,
-                    course_id=course_id,
-                    topic_tags=["study-folder"],
-                    corpus=corpus,
-                    folder_path=rel_folder,
-                    enabled=1,
-                )
-                doc_id = future.result(timeout=per_file_timeout)
+            per_file_timeout = int(
+                os.environ.get("RAG_SYNC_PER_FILE_TIMEOUT", "120")
+            )
+        except (TypeError, ValueError):
+            per_file_timeout = 120
+        # NOTE: do NOT use ThreadPoolExecutor as a context manager here. Its
+        # __exit__ calls shutdown(wait=True), which blocks until the worker
+        # finishes — so a hung ingest (e.g. a pathological textbook PDF)
+        # would stall the WHOLE sync forever despite the timeout. We manage
+        # the executor manually and shut it down non-blocking on timeout so
+        # the sync skips the bad file and keeps going.
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        try:
+            future = executor.submit(
+                ingest_document,
+                path=str(file_path),
+                doc_type=doc_type,
+                course_id=course_id,
+                topic_tags=["study-folder"],
+                corpus=corpus,
+                folder_path=rel_folder,
+                enabled=1,
+            )
+            doc_id = future.result(timeout=per_file_timeout)
             ingested_ids.append(int(doc_id))
             processed += 1
         except concurrent.futures.TimeoutError:
             errors.append(f"{file_path}: timed out after {per_file_timeout}s")
+            future.cancel()
         except Exception as exc:
             errors.append(f"{file_path}: {exc}")
+        finally:
+            # wait=False: never block the sync on a doomed worker thread.
+            executor.shutdown(wait=False, cancel_futures=True)
 
         _emit_progress(
             {
