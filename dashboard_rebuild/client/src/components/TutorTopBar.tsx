@@ -108,7 +108,7 @@ function runtimeBadgeClasses(status: TutorTeachRuntimeStatus): string {
 
 function tutorUtilityButton(compact = false): string {
   return cn(
-    "inline-flex min-h-[40px] items-center justify-center gap-2 rounded-[0.28rem] border border-[var(--ds-rose78-a18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.12)_26%,rgba(0,0,0,0.24)_100%)] px-3 py-2 font-mono text-ui-2xs uppercase tracking-[0.16em] text-foreground/78 transition-colors duration-150 ease-out hover:border-[rgba(255,108,136,0.32)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55 focus-visible:ring-offset-2 focus-visible:ring-offset-black backdrop-blur-sm",
+    "inline-flex min-h-[40px] items-center justify-center gap-2 rounded-[var(--ds-radius-xs)] border border-[var(--ds-rose78-a18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.12)_26%,rgba(0,0,0,0.24)_100%)] px-3 py-2 font-mono text-ui-2xs uppercase tracking-[0.16em] text-foreground/78 transition-colors duration-150 ease-out hover:border-[rgba(255,108,136,0.32)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55 focus-visible:ring-offset-2 focus-visible:ring-offset-black backdrop-blur-sm",
     compact ? "h-10 w-10 px-0" : null,
   );
 }

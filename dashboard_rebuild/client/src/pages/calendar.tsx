@@ -1967,7 +1967,7 @@ function useCalendarPageController() {
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 overflow-hidden rounded-[1.1rem] border border-primary/25 bg-black/30 flex flex-col">
+          <div className="flex-1 min-h-0 overflow-hidden rounded-[var(--ds-radius-lg)] border border-primary/25 bg-black/30 flex flex-col">
               {/* MONTH VIEW */}
               {viewMode === 'month' && (
                 <>

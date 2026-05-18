@@ -214,7 +214,7 @@ export function StudioWorkspaceUnified({
                 ? "Hide material sidebar"
                 : "Show material sidebar"
             }
-            className="inline-flex h-7 w-7 items-center justify-center rounded-[0.55rem] border border-primary/15 bg-black/30 text-foreground/68 transition-colors hover:border-primary/35 hover:bg-primary/10 hover:text-white"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--ds-radius-sm)] border border-primary/15 bg-black/30 text-foreground/68 transition-colors hover:border-primary/35 hover:bg-primary/10 hover:text-white"
           >
             {materialSidebarOpen ? (
               <PanelLeftClose className="h-3.5 w-3.5" />

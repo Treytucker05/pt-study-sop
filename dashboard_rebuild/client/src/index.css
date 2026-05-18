@@ -261,12 +261,14 @@
    * ===================================================================== */
 
   /* TIER 1 — target radius scale (6 steps) */
-  --ds-radius-xs: 0.25rem;
-  --ds-radius-sm: 0.5rem;
-  --ds-radius-md: 0.75rem;
+  /* Frequency-anchored: md/lg sit ON the two dominant radii (0.85 ×54,
+   * 1.0 ×57) so 60% of usage does not move. (Phase 5 radius collapse.) */
+  --ds-radius-xs: 0.2rem;
+  --ds-radius-sm: 0.65rem;
+  --ds-radius-md: 0.85rem;
   --ds-radius-lg: 1rem;
   --ds-radius-xl: 1.25rem;
-  --ds-radius-2xl: 1.75rem;
+  --ds-radius-2xl: 1.8rem;
 
   /* TIER 1 — target elevation scale (5 steps) */
   --ds-elev-0: none;
@@ -283,17 +285,19 @@
   /* canonical alpha ramp: 02 03 04 05 06 08 10 12 14 16 18 20 22 24 28 32 45 48 */
 
   /* TIER 2 — radius bridges (exact; covers 201/208 arbitrary-radius uses) */
-  --ds-r-100: 1rem;       /* rounded-[1rem]    ×56 */
-  --ds-r-085: 0.85rem;    /* rounded-[0.85rem] ×54 */
-  --ds-r-095: 0.95rem;    /* rounded-[0.95rem] ×23 */
-  --ds-r-090: 0.9rem;     /* rounded-[0.9rem]  ×18 */
-  --ds-r-075: 0.75rem;    /* rounded-[0.75rem] ×17 */
-  --ds-r-020: 0.2rem;     /* rounded-[0.2rem]  ×9  */
-  --ds-r-080: 0.8rem;     /* rounded-[0.8rem]  ×7  */
-  --ds-r-070: 0.7rem;     /* rounded-[0.7rem]  ×7  */
-  --ds-r-065: 0.65rem;    /* rounded-[0.65rem] ×4  */
-  --ds-r-180: 1.8rem;     /* rounded-[1.8rem]  ×3  */
-  --ds-r-120: 1.2rem;     /* rounded-[1.2rem]  ×3  */
+  /* Phase 5: bridges now ALIAS the Tier-1 scale (snap per approved map).
+   * Comment shows: original literal ×uses → snapped step (Δpx@16root). */
+  --ds-r-100: var(--ds-radius-lg);  /* 1rem    ×57 → lg 1.0   (0)    */
+  --ds-r-085: var(--ds-radius-md);  /* 0.85rem ×54 → md 0.85  (0)    */
+  --ds-r-095: var(--ds-radius-lg);  /* 0.95rem ×24 → lg 1.0   (+0.8) */
+  --ds-r-090: var(--ds-radius-md);  /* 0.9rem  ×19 → md 0.85  (-0.8) */
+  --ds-r-075: var(--ds-radius-md);  /* 0.75rem ×17 → md 0.85  (+1.6) */
+  --ds-r-020: var(--ds-radius-xs);  /* 0.2rem  ×9  → xs 0.2   (0)    */
+  --ds-r-080: var(--ds-radius-md);  /* 0.8rem  ×7  → md 0.85  (+0.8) */
+  --ds-r-070: var(--ds-radius-sm);  /* 0.7rem  ×7  → sm 0.65  (-0.8) */
+  --ds-r-065: var(--ds-radius-sm);  /* 0.65rem ×4  → sm 0.65  (0)    */
+  --ds-r-180: var(--ds-radius-2xl); /* 1.8rem  ×3  → 2xl 1.8  (0)    */
+  --ds-r-120: var(--ds-radius-xl);  /* 1.2rem  ×3  → xl 1.25  (+0.8) */
 
   /* TIER 2 — shadow bridge (exact; only cluster with ≥3 repeats) */
   --ds-shadow-elev: 0 16px 36px rgba(0, 0, 0, 0.32); /* ×5 */

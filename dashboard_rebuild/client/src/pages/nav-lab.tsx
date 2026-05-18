@@ -57,7 +57,7 @@ function Wordmark({
 
 function PreviewFrame({ children }: { children: ReactNode }) {
   return (
-    <div className="relative h-[22rem] overflow-hidden rounded-[1.5rem] border border-red-500/18 bg-[linear-gradient(180deg,rgba(15,0,0,0.96),rgba(5,0,0,0.98))] shadow-[0_20px_56px_rgba(0,0,0,0.52)]">
+    <div className="relative h-[22rem] overflow-hidden rounded-[var(--ds-radius-xl)] border border-red-500/18 bg-[linear-gradient(180deg,rgba(15,0,0,0.96),rgba(5,0,0,0.98))] shadow-[0_20px_56px_rgba(0,0,0,0.52)]">
       <div className="absolute inset-0 bg-[linear-gradient(rgba(220,38,38,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.06)_1px,transparent_1px)] bg-[size:20px_20px]" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_12%,rgba(255,86,86,0.15),transparent_18%),linear-gradient(180deg,rgba(0,0,0,0.2),rgba(0,0,0,0.56)_48%,rgba(0,0,0,0.86)_100%)]" />
       <div className="absolute inset-x-0 bottom-[-6%] h-[68%]">

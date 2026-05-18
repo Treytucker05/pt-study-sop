@@ -235,7 +235,7 @@ const navButtonImageClass = (item: NavItem, isActive: boolean) =>
 
 const navShellLinkClass = (item: NavItem, isActive: boolean) =>
   cn(
-    "group absolute z-10 flex cursor-pointer items-center justify-center rounded-[1.4rem] pointer-events-auto",
+    "group absolute z-10 flex cursor-pointer items-center justify-center rounded-[var(--ds-radius-xl)] pointer-events-auto",
     "after:pointer-events-none after:absolute after:inset-[8%] after:rounded-[var(--ds-r-120)] after:border-0 after:transition-[border-color,box-shadow,opacity] after:duration-200",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
     item.tier === "primary"
