@@ -578,6 +578,67 @@ def ingest_url_document(
     )
 
 
+def ingest_pdf_by_chapters(
+    path: str,
+    *,
+    course_id: Optional[int] = None,
+    corpus: str = "materials",
+    folder_path: str = "",
+    topic_tags: Optional[Iterable[str]] = None,
+    max_pages: int = 60,
+) -> tuple[list[int], int, list[str]]:
+    """Split an oversized PDF into per-chapter docs and upsert each.
+
+    Returns ``(doc_ids, chapter_count, errors)``. Each chapter is keyed by
+    a STABLE logical source_path ``<path>#ch<NN>`` so re-syncs upsert
+    (checksum-skip) rather than duplicate. ``folder_path`` is preserved so
+    the course relink still maps every chapter to the book's class.
+    """
+    from text_extractor import split_pdf_into_chapters
+
+    chapters = split_pdf_into_chapters(path, max_pages=max_pages)
+    if not chapters:
+        return [], 0, [f"{path}: chapter split produced no extractable text"]
+
+    tags = ", ".join(t.strip() for t in (topic_tags or []) if t.strip())
+    base_name = Path(path).name
+    doc_ids: list[int] = []
+    errs: list[str] = []
+    for idx, ch in enumerate(chapters, start=1):
+        title = (ch.get("title") or f"Chapter {idx}").strip()
+        text = (ch.get("text") or "").strip()
+        if not text:
+            continue
+        logical_source = f"{path}#ch{idx:02d}"
+        content = f"# {base_name} — {title}\n\n{text}"
+        try:
+            did = _upsert_rag_doc(
+                source_path=logical_source,
+                doc_type="pdf",
+                course_id=course_id,
+                topic_tags=tags,
+                content=content,
+                checksum=_checksum(content),
+                metadata={
+                    "binary": True,
+                    "chapter_split": True,
+                    "chapter_of": base_name,
+                    "chapter_title": title,
+                    "pages": [ch.get("page_start"), ch.get("page_end")],
+                    "ingest_source": "rag_notes.ingest_pdf_by_chapters",
+                    "ingested_at": datetime.now().isoformat(timespec="seconds"),
+                },
+                corpus=corpus,
+                folder_path=folder_path,
+                enabled=1,
+                file_type="pdf",
+            )
+            doc_ids.append(int(did))
+        except Exception as exc:
+            errs.append(f"{logical_source}: {exc}")
+    return doc_ids, len(doc_ids), errs
+
+
 def _infer_doc_type_from_suffix(suffix: str) -> str:
     s = suffix.lower()
     if s in {".md", ".markdown"}:
@@ -703,7 +764,20 @@ def sync_folder_to_rag(
             # Progress reporting is best-effort and should never block sync.
             pass
 
+    # Oversized files (e.g. 100-300 MB reference textbooks) reliably blow
+    # past the per-file timeout and choke the heavy tiered extractor.
+    # Above the cap: oversized *PDFs* are split into per-chapter docs
+    # (content kept, fast); other oversized binaries are skipped (can't
+    # chapter-split a 200 MB video). Env-tunable; 0 disables the cap.
+    try:
+        max_file_mb = float(os.environ.get("RAG_SYNC_MAX_FILE_MB", "40"))
+    except (TypeError, ValueError):
+        max_file_mb = 40.0
+    max_file_bytes = int(max_file_mb * 1024 * 1024) if max_file_mb > 0 else 0
+
     candidate_files: list[Path] = []
+    oversize_skips: list[str] = []
+    oversize_pdf_paths: set[str] = set()
     for dirpath, dirnames, filenames in os.walk(str(root)):
         dirnames[:] = [d for d in dirnames if d not in exclude_dir_names]
         for filename in filenames:
@@ -713,6 +787,21 @@ def sync_folder_to_rag(
             rel_file = os.path.relpath(str(file_path), str(root)).replace("\\", "/")
             if normalized_include_paths is not None and rel_file not in normalized_include_paths:
                 continue
+            if max_file_bytes:
+                try:
+                    size = file_path.stat().st_size
+                except OSError:
+                    size = 0
+                if size > max_file_bytes:
+                    if file_path.suffix.lower() == ".pdf":
+                        # Keep it: route through the chapter splitter below.
+                        oversize_pdf_paths.add(str(file_path))
+                    else:
+                        oversize_skips.append(
+                            f"{rel_file}: skipped — {size // (1024 * 1024)} MB "
+                            f"exceeds RAG_SYNC_MAX_FILE_MB={max_file_mb}"
+                        )
+                        continue
             candidate_files.append(file_path)
 
     total_files = len(candidate_files)
@@ -753,6 +842,40 @@ def sync_folder_to_rag(
                 "errors": len(errors),
             }
         )
+
+        # Oversized PDF → split into per-chapter docs instead of choking
+        # the heavy extractor. Content is kept; folder_path preserved so
+        # the course relink still maps each chapter to the book's class.
+        if str(file_path) in oversize_pdf_paths:
+            try:
+                ch_ids, ch_count, ch_errs = ingest_pdf_by_chapters(
+                    str(file_path),
+                    course_id=course_id,
+                    corpus=corpus,
+                    folder_path=rel_folder,
+                    topic_tags=["study-folder", "chapter-split"],
+                )
+                ingested_ids.extend(ch_ids)
+                errors.extend(ch_errs)
+                if ch_count > 0:
+                    processed += 1
+                elif not ch_errs:
+                    errors.append(
+                        f"{rel_file}: oversized PDF, no chapters extracted"
+                    )
+            except Exception as exc:
+                errors.append(f"{rel_file}: chapter split failed: {exc}")
+            _emit_progress(
+                {
+                    "phase": "syncing",
+                    "processed": processed,
+                    "total": total_files,
+                    "index": index,
+                    "current_file": rel_file,
+                    "errors": len(errors),
+                }
+            )
+            continue
 
         doc_type = _infer_doc_type_from_suffix(file_path.suffix)
         # seconds — skip files that hang longer (env-tunable for tests/ops)
@@ -836,6 +959,11 @@ def sync_folder_to_rag(
             deleted_paths = list(prune_result.get("deleted_paths") or [])
         except Exception as exc:
             errors.append(f"stale_prune: {exc}")
+
+    # Surface non-PDF oversized skips alongside per-file errors so the
+    # caller/UI can report exactly what was left out and why.
+    if oversize_skips:
+        errors.extend(oversize_skips)
 
     return {
         "ok": len(errors) == 0,

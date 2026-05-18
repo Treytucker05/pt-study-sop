@@ -161,6 +161,109 @@ def _extract_pdf_pdfplumber(path: Path) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Chapter splitter — for huge textbook PDFs that choke the heavy extractor
+# ---------------------------------------------------------------------------
+
+def split_pdf_into_chapters(
+    path: str,
+    *,
+    max_pages: int = 60,
+    min_chars: int = 200,
+) -> list[dict]:
+    """Split a PDF into chapter-sized text segments using its embedded TOC.
+
+    Huge textbooks (100-300 MB, 800-1800 pages) reliably hang the heavy
+    tiered extractor (MinerU/OCR on the whole book). But fast page-level
+    text extraction (PyMuPDF) per chapter does not. This reads the PDF
+    outline, derives top-level (chapter) page ranges, sub-splits any
+    range longer than ``max_pages``, and returns one entry per segment::
+
+        [{"title", "text", "page_start", "page_end"}, ...]
+
+    Falls back to fixed ``max_pages`` windows when there is no usable
+    outline. Returns ``[]`` on any failure so callers can degrade
+    gracefully (skip the file) instead of crashing the sync.
+    """
+    try:
+        import fitz  # PyMuPDF
+    except Exception as exc:  # pragma: no cover - env without PyMuPDF
+        logger.warning("split_pdf_into_chapters: PyMuPDF unavailable: %s", exc)
+        return []
+
+    try:
+        doc = fitz.open(path)
+    except Exception as exc:
+        logger.warning("split_pdf_into_chapters: cannot open %s: %s", path, exc)
+        return []
+
+    try:
+        page_count = doc.page_count
+        if page_count <= 0:
+            return []
+
+        # 0-based [start, end) segments from level-1 TOC entries.
+        try:
+            toc = doc.get_toc(simple=True) or []
+        except Exception:
+            toc = []
+        level1 = [
+            (int(entry[2]) - 1, str(entry[1]).strip())
+            for entry in toc
+            if len(entry) >= 3 and entry[0] == 1 and 1 <= int(entry[2]) <= page_count
+        ]
+
+        raw_segments: list[tuple[str, int, int]] = []
+        if len(level1) >= 2:
+            for i, (start, title) in enumerate(level1):
+                end = level1[i + 1][0] if i + 1 < len(level1) else page_count
+                if end > start:
+                    raw_segments.append((title or f"Section {i + 1}", start, end))
+        if not raw_segments:
+            # No usable outline → fixed page windows.
+            for i, start in enumerate(range(0, page_count, max_pages)):
+                end = min(start + max_pages, page_count)
+                raw_segments.append((f"Pages {start + 1}-{end}", start, end))
+
+        # Sub-split any segment longer than max_pages so no piece is huge.
+        segments: list[tuple[str, int, int]] = []
+        for title, start, end in raw_segments:
+            if end - start <= max_pages:
+                segments.append((title, start, end))
+                continue
+            part = 1
+            for w_start in range(start, end, max_pages):
+                w_end = min(w_start + max_pages, end)
+                segments.append((f"{title} (part {part})", w_start, w_end))
+                part += 1
+
+        results: list[dict] = []
+        for title, start, end in segments:
+            chunks: list[str] = []
+            for pno in range(start, end):
+                try:
+                    chunks.append(doc.load_page(pno).get_text())
+                except Exception:
+                    continue
+            text = "\n".join(chunks).strip()
+            if len(text) < min_chars:
+                continue  # cover/blank/figure-only segment — skip
+            results.append(
+                {
+                    "title": title,
+                    "text": text,
+                    "page_start": start + 1,
+                    "page_end": end,
+                }
+            )
+        return results
+    finally:
+        try:
+            doc.close()
+        except Exception:
+            pass
+
+
+# ---------------------------------------------------------------------------
 # Dispatcher — tries tiers in order, falls through gracefully
 # ---------------------------------------------------------------------------
 
