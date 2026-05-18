@@ -10,11 +10,18 @@ import type { Material } from "@/lib/api";
 import type { StudioWorkspaceObject } from "@/lib/studioWorkspaceObjects";
 
 const getObsidianFilesMock = vi.fn();
+const startSyncMock = vi.fn();
+const getSyncStatusMock = vi.fn();
 
 vi.mock("@/lib/api", () => ({
   api: {
     obsidian: {
       getFiles: (...args: unknown[]) => getObsidianFilesMock(...args),
+    },
+    tutor: {
+      startSyncMaterialsFolder: (...args: unknown[]) => startSyncMock(...args),
+      getSyncMaterialsStatus: (...args: unknown[]) =>
+        getSyncStatusMock(...args),
     },
   },
 }));
@@ -136,6 +143,8 @@ describe("SourceShelf", () => {
   beforeEach(() => {
     getObsidianFilesMock.mockReset();
     getObsidianFilesMock.mockResolvedValue({ success: true, files: [] });
+    startSyncMock.mockReset();
+    getSyncStatusMock.mockReset();
   });
 
   it("renders one searchable tree, filters it in real time, and cascades course checkbox selection", async () => {
@@ -377,5 +386,42 @@ describe("SourceShelf", () => {
       'button[aria-label="Open Cardiovascular in Document Dock"]',
     );
     expect(openButton).not.toBeNull();
+  });
+
+  // The Root Folder ↔ Library disconnect: instead of re-uploading every
+  // file, "Sync Root Folder" re-indexes the configured root in place.
+  it("syncs the Root Folder in place without re-uploading material", async () => {
+    const user = userEvent.setup();
+    startSyncMock.mockResolvedValue({ job_id: "job-1" });
+    getSyncStatusMock.mockResolvedValue({
+      job_id: "job-1",
+      status: "completed",
+      sync_result: { processed: 3 },
+    });
+
+    renderSourceShelfHarness();
+
+    const shelf = screen.getByTestId("source-shelf-content");
+    const syncButton = within(shelf).getByRole("button", {
+      name: /sync root folder/i,
+    });
+    await user.click(syncButton);
+
+    // course_id is threaded through; no selected_files => whole-root sync.
+    await waitFor(() =>
+      expect(startSyncMock).toHaveBeenCalledWith({ course_id: 1 }),
+    );
+    await waitFor(
+      () => expect(getSyncStatusMock).toHaveBeenCalledWith("job-1"),
+      { timeout: 3000 },
+    );
+    // Button returns to its idle label once the job completes.
+    await waitFor(
+      () =>
+        expect(
+          within(shelf).getByRole("button", { name: /sync root folder/i }),
+        ).not.toBeDisabled(),
+      { timeout: 3000 },
+    );
   });
 });

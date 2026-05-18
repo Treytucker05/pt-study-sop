@@ -11,11 +11,15 @@ import {
   ChevronRight,
   ExternalLink,
   Folder,
+  FolderSync,
   FolderTree,
+  Loader2,
   Plus,
   Search,
   Upload,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -813,6 +817,26 @@ function SourceShelfTreeNode({
   );
 }
 
+/**
+ * Poll a Root-Folder sync job to completion. The in-place sync re-indexes
+ * the configured Root Folder by folder structure WITHOUT re-uploading each
+ * file (that is the Root-Folder ↔ Uploaded-Files reconciliation the user
+ * asked for). Mirrors library.tsx waitForMaterialSyncJob.
+ */
+async function waitForSourceSyncJob(jobId: string) {
+  let lastStatus: Awaited<
+    ReturnType<typeof api.tutor.getSyncMaterialsStatus>
+  > | null = null;
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    lastStatus = await api.tutor.getSyncMaterialsStatus(jobId);
+    if (lastStatus.status === "completed" || lastStatus.status === "failed") {
+      return lastStatus;
+    }
+  }
+  return lastStatus;
+}
+
 export function SourceShelf({
   courseId,
   courseName,
@@ -833,6 +857,8 @@ export function SourceShelf({
   onOpenInDocumentDock,
 }: SourceShelfProps) {
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
+  const queryClient = useQueryClient();
+  const [syncing, setSyncing] = useState(false);
   const [activeFilter, setActiveFilter] = useState<SourceShelfFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [listedVaultPaths, setListedVaultPaths] = useState<string[]>([]);
@@ -1008,6 +1034,53 @@ export function SourceShelf({
     }
   };
 
+  // Reconcile the configured Root Folder into Library IN PLACE — no
+  // folder_path / no selected_files means "sync the whole configured root
+  // by its folder structure", so the user doesn't have to re-upload every
+  // file. Synced materials carry folder_path, which the tree now nests.
+  const handleSyncRootFolder = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    const pending = toast.loading("Syncing Root Folder…");
+    try {
+      const start = await api.tutor.startSyncMaterialsFolder({
+        course_id: typeof courseId === "number" ? courseId : null,
+      });
+      const status = start.job_id
+        ? await waitForSourceSyncJob(start.job_id)
+        : null;
+      if (status?.status === "failed") {
+        throw new Error(status.last_error || "Root Folder sync failed.");
+      }
+      const processed = Number(status?.sync_result?.processed || 0);
+      await Promise.all(
+        [
+          "tutor-materials",
+          "tutor-chat-materials-all-enabled",
+          "tutor-content-sources",
+          "tutor-embed-status",
+        ].map((key) =>
+          queryClient.invalidateQueries({ queryKey: [key] }),
+        ),
+      );
+      toast.success(
+        processed > 0
+          ? `Synced ${processed} file${processed === 1 ? "" : "s"} from the Root Folder.`
+          : "Root Folder is already in sync.",
+        { id: pending },
+      );
+    } catch (err) {
+      toast.error(
+        `Root Folder sync failed: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`,
+        { id: pending },
+      );
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const handleUploadChange = async (event: ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || event.target.files.length === 0) {
       return;
@@ -1059,6 +1132,21 @@ export function SourceShelf({
             />
           </label>
 
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleSyncRootFolder}
+            disabled={syncing}
+            title="Re-index the configured Root Folder into Library by its folder structure — no re-upload needed."
+            className="h-10 rounded-full border-primary/20 bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-white/82 hover:bg-black/30 hover:text-white"
+          >
+            {syncing ? (
+              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <FolderSync className="mr-2 h-3.5 w-3.5" />
+            )}
+            {syncing ? "Syncing..." : "Sync Root Folder"}
+          </Button>
           <Button
             type="button"
             variant="outline"
