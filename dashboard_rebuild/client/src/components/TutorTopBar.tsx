@@ -88,10 +88,10 @@ const RUNTIME_CARD_BASE =
   "relative overflow-hidden border border-[var(--ds-rose78-a18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.1)_22%,rgba(0,0,0,0.26)_100%),linear-gradient(135deg,rgba(255,42,76,0.08),rgba(0,0,0,0.02)_42%,rgba(0,0,0,0.1)_100%)] p-4 backdrop-blur-sm shadow-[0_14px_28px_rgba(0,0,0,0.14)]";
 
 const TUTOR_STRIP =
-  "relative overflow-hidden border border-[rgba(255,68,104,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(0,0,0,0.1)_20%,rgba(0,0,0,0.24)_100%),linear-gradient(135deg,rgba(255,42,76,0.07),rgba(0,0,0,0.03)_46%,rgba(0,0,0,0.09)_100%)] px-4 py-3 backdrop-blur-sm shadow-[0_10px_24px_rgba(0,0,0,0.12)]";
+  "relative overflow-hidden border border-[rgba(255,68,104,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(0,0,0,0.1)_20%,rgba(0,0,0,0.24)_100%),linear-gradient(135deg,rgba(255,42,76,0.07),rgba(0,0,0,0.03)_46%,rgba(0,0,0,0.09)_100%)] px-3 py-1.5 backdrop-blur-sm shadow-[0_10px_24px_rgba(0,0,0,0.12)]";
 
 const TUTOR_META_CHIP =
-  "inline-flex min-h-[40px] items-center gap-2 border border-[var(--ds-rose78-a18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.12)_28%,rgba(0,0,0,0.24)_100%)] px-3 py-2 font-mono text-sm text-foreground/82 backdrop-blur-sm";
+  "inline-flex min-h-0 items-center gap-2 border border-[var(--ds-rose78-a18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.12)_28%,rgba(0,0,0,0.24)_100%)] px-2.5 py-1 font-mono text-sm text-foreground/82 backdrop-blur-sm";
 
 const TUTOR_SELECT_OPTION_CLASS =
   "bg-[#12070b] text-[var(--ds-fg-pink-6)]";
@@ -297,7 +297,7 @@ export function TutorTopBar({
         </div>
       ) : null}
 
-      <div className="space-y-3">
+      <div className="space-y-1.5">
         <div
           className={cn(TUTOR_STRIP, "flex flex-wrap items-center gap-2.5")}
         >
@@ -593,7 +593,7 @@ export function TutorTopBar({
       </div>
 
       {isTutorSessionView ? (
-        <div className="space-y-3">
+        <div className="space-y-1.5">
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <div
               className={cn(

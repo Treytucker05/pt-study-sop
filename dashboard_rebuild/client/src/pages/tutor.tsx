@@ -1287,6 +1287,9 @@ function useTutorPageController() {
         mainClassName="tutor-shell-frame__main"
         contentClassName="relative min-h-0"
         topBar={tutorTopBar}
+        topBarVariant="integrated"
+        topBarClassName="py-1"
+        topBarSurfaceClassName="min-h-0"
       >
         <TutorShell
         activeSessionId={liveTutorSessionId}
