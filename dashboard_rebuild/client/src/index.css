@@ -647,6 +647,19 @@
     overflow: hidden;
   }
 
+  /*
+   * The base `.page-shell__content` is `flex` but NOT grow — it sizes to
+   * its content. Fine for normal scrolling pages, but in the locked app
+   * shell the parent is height-bounded, so a non-growing content box
+   * leaves the rest of the shell as an empty black void below the
+   * workspace. Make it fill the bounded shell so the workspace occupies
+   * the entire window (scoped to locked mode — other pages unchanged).
+   */
+  .page-shell.page-shell--app > .page-shell__content {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
   .page-shell__hero {
     position: relative;
     overflow: hidden;

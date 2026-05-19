@@ -162,7 +162,24 @@ function formatEntryMaterialLabel(
   }
 
   const basename = resolvedLabel.split(/[\\/]/).pop()?.trim() || resolvedLabel;
-  return basename || "Unknown material";
+  if (!basename) return "Unknown material";
+
+  // Chapter-split docs carry a logical "<file>.<ext>#chNN" source path.
+  // Render them readably + distinctly: "Physical Therapy for Children — Ch 2"
+  // (otherwise every chapter shows the same truncated "…Children.pdf#ch…").
+  const chapterAt = basename.search(/#ch\d+$/i);
+  if (chapterAt > 0) {
+    const num = basename
+      .slice(chapterAt)
+      .replace(/#ch/i, "")
+      .replace(/^0+(?=\d)/, "");
+    const stem = basename
+      .slice(0, chapterAt)
+      .replace(/\.[A-Za-z0-9]{1,6}$/, "")
+      .trim();
+    return `${stem || basename} — Ch ${num}`;
+  }
+  return basename;
 }
 
 const ENTRY_CARD_UPLOAD_ACCEPT = ".pdf,.docx,.mp4,.pptx";
@@ -1228,6 +1245,7 @@ export function TutorShell({
         : 0,
     [hub],
   );
+  const [entryMaterialFilter, setEntryMaterialFilter] = useState("");
   const selectedCourseMaterials = useMemo(
     () =>
       typeof hub.courseId === "number"
@@ -1235,6 +1253,21 @@ export function TutorShell({
         : [],
     [hub.chatMaterials, hub.courseId],
   );
+  const filteredCourseMaterials = useMemo(() => {
+    const q = entryMaterialFilter.trim().toLowerCase();
+    if (!q) return selectedCourseMaterials;
+    return selectedCourseMaterials.filter((material) => {
+      const label = formatEntryMaterialLabel(
+        material.title,
+        material.source_path,
+      ).toLowerCase();
+      return (
+        label.includes(q) ||
+        (material.source_path || "").toLowerCase().includes(q) ||
+        (material.title || "").toLowerCase().includes(q)
+      );
+    });
+  }, [selectedCourseMaterials, entryMaterialFilter]);
   const selectedCourseMaterialIds = useMemo(
     () => selectedCourseMaterials.map((material) => material.id),
     [selectedCourseMaterials],
@@ -2007,10 +2040,18 @@ export function TutorShell({
               {allEntryMaterialsSelected ? "Deselect All" : "Select All"}
             </button>
           </div>
-          <div className="max-h-[200px] overflow-y-auto rounded-[var(--ds-r-090)] border border-[var(--ds-accent-a18)] bg-black/30 p-2">
-            {selectedCourseMaterials.length > 0 ? (
+          <input
+            type="text"
+            value={entryMaterialFilter}
+            onChange={(event) => setEntryMaterialFilter(event.target.value)}
+            placeholder={`Filter ${selectedCourseMaterials.length} materials…`}
+            aria-label="Filter session materials"
+            className="w-full rounded-[var(--ds-r-080)] border border-[var(--ds-accent-a18)] bg-black/40 px-3 py-2 font-mono text-sm text-white outline-none placeholder:text-[#ffc8d3]/45 focus:border-[var(--ds-accent-a36)]"
+          />
+          <div className="max-h-[240px] overflow-y-auto rounded-[var(--ds-r-090)] border border-[var(--ds-accent-a18)] bg-black/30 p-2">
+            {filteredCourseMaterials.length > 0 ? (
               <div className="space-y-2">
-                {selectedCourseMaterials.map((material) => {
+                {filteredCourseMaterials.map((material) => {
                   const checked = hub.selectedMaterials.includes(material.id);
                   const entryMaterialLabel = formatEntryMaterialLabel(
                     material.title,
@@ -2019,16 +2060,17 @@ export function TutorShell({
                   return (
                     <label
                       key={material.id}
-                      className="flex cursor-pointer items-center gap-3 rounded-[var(--ds-r-080)] border border-transparent px-2 py-2 transition hover:border-[var(--ds-accent-a18)] hover:bg-black/20"
+                      title={entryMaterialLabel}
+                      className="flex cursor-pointer items-start gap-3 rounded-[var(--ds-r-080)] border border-transparent px-2 py-2 transition hover:border-[var(--ds-accent-a18)] hover:bg-black/20"
                     >
                       <input
                         type="checkbox"
                         checked={checked}
                         onChange={() => handleToggleEntryMaterial(material.id)}
-                        className="h-4 w-4 rounded border-[rgba(255,118,144,0.28)] bg-black/40 text-primary"
+                        className="mt-0.5 h-4 w-4 shrink-0 rounded border-[rgba(255,118,144,0.28)] bg-black/40 text-primary"
                       />
                       <div className="min-w-0 flex-1">
-                        <div className="truncate font-mono text-sm text-white">
+                        <div className="break-words font-mono text-sm leading-snug text-white [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
                           {entryMaterialLabel}
                         </div>
                       </div>
@@ -2041,7 +2083,9 @@ export function TutorShell({
               </div>
             ) : (
               <div className="font-mono text-xs leading-6 text-[#ffc8d3]/68">
-                No materials available for this course yet.
+                {selectedCourseMaterials.length > 0
+                  ? `No materials match “${entryMaterialFilter.trim()}”.`
+                  : "No materials available for this course yet."}
               </div>
             )}
           </div>
