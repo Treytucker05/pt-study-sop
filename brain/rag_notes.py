@@ -1417,17 +1417,60 @@ def _cli_search(args: argparse.Namespace) -> None:
     print(format_search_results(results, args.query))
 
 
+def _relink_and_report() -> None:
+    """Force-rederive course_id from folder_path for every materials row,
+    then print the byClass distribution. Pure metadata — no extraction,
+    no embeddings, no dependency on a sync run. This is the sanctioned
+    tested operation (dashboard.api_tutor_materials), exposed as a CLI.
+    """
+    from collections import Counter
+
+    print("[relink] force-rederiving course_id from folder_path ...", flush=True)
+    try:
+        from dashboard.api_tutor_materials import _auto_link_materials_to_courses
+
+        conn = sqlite3.connect(DB_PATH, timeout=60)
+        link = _auto_link_materials_to_courses(conn, force=True)
+        conn.close()
+        print(f"[relink] {link}", flush=True)
+    except Exception as exc:
+        print(f"[relink ERROR] {exc}", flush=True)
+
+    conn = sqlite3.connect(DB_PATH, timeout=60)
+    cmap = {i: n for i, n in conn.execute("SELECT id,name FROM courses")}
+    rows = conn.execute(
+        "SELECT course_id, source_path FROM rag_docs "
+        "WHERE COALESCE(corpus,'materials')='materials' "
+        "AND folder_path IS NOT NULL AND TRIM(folder_path)!=''"
+    ).fetchall()
+    conn.close()
+    cnt = Counter(
+        cmap.get(c, "UNASSIGNED" if c is None else f"course#{c}") for c, _ in rows
+    )
+    chap = sum(1 for _, sp in rows if "#ch" in (sp or ""))
+    print(
+        f"\n[byClass] total materials rows={len(rows)} | chapter docs={chap}",
+        flush=True,
+    )
+    for k, v in sorted(cnt.items(), key=lambda x: -x[1]):
+        print(f"  {v:5d}  {k}", flush=True)
+
+
+def _cli_relink(args: argparse.Namespace) -> None:
+    """Just run the folder->course relink + byClass (no sync/extraction)."""
+    _relink_and_report()
+
+
 def _cli_folder_sync(args: argparse.Namespace) -> None:
     """Background bulk-sync a materials root folder, then force-relink.
 
     This is the long-running batch path: it runs the SAME pipeline as the
     interactive "Sync Root Folder" (Docling extraction, chapter-split for
-    big PDFs) but with NO per-file timeout by default, so slow-but-correct
-    extractors (Docling/OCR on scanned textbooks) run to completion. Safe
-    to launch detached (nohup/&); resumable via checksum-skip.
+    big PDFs) but with a generous 15-min per-file timeout (vs the web
+    sync's 120 s) so slow OCR finishes while a genuine Docling hang is
+    still skipped. Safe to launch detached (nohup/&).
     """
     import time as _time
-    from collections import Counter
 
     root = (
         args.folder
@@ -1442,8 +1485,13 @@ def _cli_folder_sync(args: argparse.Namespace) -> None:
         print(f"[ERROR] Not a directory: {root}")
         raise SystemExit(2)
 
+    # Generous default (15 min/file) — NOT unlimited. Docling can truly
+    # hang (not just be slow) on a pathological PDF; with no timeout one
+    # bad file freezes the whole batch forever. 900 s lets legit slow OCR
+    # finish while still skipping a genuine hang. Pass --timeout 0 to
+    # force unlimited (use with care).
     os.environ["RAG_SYNC_PER_FILE_TIMEOUT"] = (
-        str(args.timeout) if args.timeout is not None else "0"  # 0 = unlimited
+        str(args.timeout) if args.timeout is not None else "900"
     )
     if args.max_file_mb is not None:
         os.environ["RAG_SYNC_MAX_FILE_MB"] = str(args.max_file_mb)
@@ -1478,35 +1526,7 @@ def _cli_folder_sync(args: argparse.Namespace) -> None:
     for e in (result.get("errors") or [])[:15]:
         print("  - ", e, flush=True)
 
-    print("[relink] force-rederiving course_id from folder_path ...", flush=True)
-    try:
-        from dashboard.api_tutor_materials import _auto_link_materials_to_courses
-
-        conn = sqlite3.connect(DB_PATH, timeout=60)
-        link = _auto_link_materials_to_courses(conn, force=True)
-        conn.close()
-        print(f"[relink] {link}", flush=True)
-    except Exception as exc:
-        print(f"[relink ERROR] {exc}", flush=True)
-
-    conn = sqlite3.connect(DB_PATH, timeout=60)
-    cmap = {i: n for i, n in conn.execute("SELECT id,name FROM courses")}
-    rows = conn.execute(
-        "SELECT course_id, source_path FROM rag_docs "
-        "WHERE COALESCE(corpus,'materials')='materials' "
-        "AND folder_path IS NOT NULL AND TRIM(folder_path)!=''"
-    ).fetchall()
-    conn.close()
-    cnt = Counter(
-        cmap.get(c, "UNASSIGNED" if c is None else f"course#{c}") for c, _ in rows
-    )
-    chap = sum(1 for _, sp in rows if "#ch" in (sp or ""))
-    print(
-        f"\n[byClass] total materials rows={len(rows)} | chapter docs={chap}",
-        flush=True,
-    )
-    for k, v in sorted(cnt.items(), key=lambda x: -x[1]):
-        print(f"  {v:5d}  {k}", flush=True)
+    _relink_and_report()
 
     if args.embed:
         print("[embed] running embeddings (slow) ...", flush=True)
@@ -1569,6 +1589,13 @@ def main(argv: Optional[List[str]] = None) -> None:
         help="Also run embeddings after relink (slow; optional)",
     )
     fs_p.set_defaults(func=_cli_folder_sync)
+
+    relink_p = subparsers.add_parser(
+        "relink",
+        help="Force-rederive course_id from folder_path for all materials "
+        "rows + print byClass (no sync/extraction; pure metadata).",
+    )
+    relink_p.set_defaults(func=_cli_relink)
 
     search_p = subparsers.add_parser(
         "search", help="Search ingested notes for a query string"
