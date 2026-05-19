@@ -17,6 +17,7 @@ import {
   Layers,
   LayoutGrid,
   Maximize2,
+  Minimize2,
   MessageSquare,
   NotebookPen,
   Package,
@@ -43,6 +44,7 @@ import { Button } from "@/components/ui/button";
 import { CONTROL_DECK, CONTROL_KICKER } from "@/components/shell/controlStyles";
 import type { StudioPanelLayoutItem } from "@/lib/studioPanelLayout";
 import { cn } from "@/lib/utils";
+import { useCanvasLocked, toggleCanvasLocked } from "@/lib/canvasLock";
 import {
   openPanelPopoutWindow,
   createPanelPopoutTransport,
@@ -1108,6 +1110,7 @@ export function StudioShell({
     () => resolvedLayout.filter((item) => selectedPanelIds.includes(item.id)),
     [resolvedLayout, selectedPanelIds],
   );
+  const canvasLocked = useCanvasLocked();
   const canGroupSelection = selectedPanelIds.length >= 2;
   const canUngroupSelection = selectedPanels.some((item) => item.groupId);
 
@@ -2148,6 +2151,36 @@ export function StudioShell({
               >
                 <Crosshair className="mr-1.5 h-3.5 w-3.5" />
                 Center
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-pressed={canvasLocked}
+                aria-label={
+                  canvasLocked
+                    ? "Unlock canvas — return to scrollable page"
+                    : "Lock canvas — full-screen workspace"
+                }
+                title={
+                  canvasLocked
+                    ? "Unlock: bring back the header/hero and normal page scrolling"
+                    : "Lock: hide the header/hero and fill the screen with the canvas (no page scroll)"
+                }
+                onClick={() => toggleCanvasLocked()}
+                className={cn(
+                  "rounded-full border px-3 font-mono text-[10px] uppercase tracking-[0.18em] hover:text-white",
+                  canvasLocked
+                    ? "border-primary/60 bg-primary/15 text-white"
+                    : "border-[var(--ds-accent-a16)] bg-black/25 text-[var(--ds-fg-pink-1)]",
+                )}
+              >
+                {canvasLocked ? (
+                  <Minimize2 className="mr-1.5 h-3.5 w-3.5" />
+                ) : (
+                  <Maximize2 className="mr-1.5 h-3.5 w-3.5" />
+                )}
+                {canvasLocked ? "Unlock Canvas" : "Lock Canvas"}
               </Button>
               <Button
                 type="button"

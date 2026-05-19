@@ -632,6 +632,21 @@
     gap: 1rem;
   }
 
+  /*
+   * Viewport-locked app shell (opt-in; currently Tutor only).
+   * Two-class selector intentionally outweighs the base `.page-shell`
+   * `min-height:100%` and Tailwind single-class utilities so the shell
+   * fills its (now height-bounded) parent and CLIPS — letting the inner
+   * flex-1 / min-h-0 / overflow-hidden chain (page-shell__content →
+   * CoreWorkspaceFrame → TutorShell → StudioShell → canvas) finally
+   * engage and scroll internally instead of growing the page.
+   */
+  .page-shell.page-shell--app {
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
   .page-shell__hero {
     position: relative;
     overflow: hidden;

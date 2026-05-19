@@ -1,5 +1,6 @@
 import { CoreWorkspaceFrame } from "@/components/CoreWorkspaceFrame";
 import { PageScaffold } from "@/components/PageScaffold";
+import { useCanvasLocked } from "@/lib/canvasLock";
 import { TutorShell } from "@/components/TutorShell";
 import { TutorTopBar } from "@/components/TutorTopBar";
 import { HudButton } from "@/components/ui/HudButton";
@@ -61,6 +62,7 @@ function toJsonRecords<T extends object>(items: T[]): Record<string, unknown>[] 
 
 function useTutorPageController() {
   const queryClient = useQueryClient();
+  const canvasLocked = useCanvasLocked();
   const initialRouteQuery = useMemo(() => readTutorShellQuery(), []);
   const pendingLaunchHandoff = useMemo(() => peekTutorLaunchHandoff(), []);
   const lastPersistedShellKeyRef = useRef("");
@@ -1211,7 +1213,7 @@ function useTutorPageController() {
       eyebrow="Live Study Core"
       title="Tutor"
       subtitle="Run your study plan from Workspace Home through Priming, then move into Tutor and Final Sync without losing context."
-      className="h-full min-h-0"
+      className={`h-full min-h-0${canvasLocked ? " page-shell--app" : ""}`}
       contentClassName="gap-6"
       heroClassName="tutor-page-hero"
       stats={tutorHeroStats}

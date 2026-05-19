@@ -48,6 +48,7 @@ import {
   controlToggleButton,
 } from "@/components/shell/controlStyles";
 import { cn } from "@/lib/utils";
+import { useCanvasLocked } from "@/lib/canvasLock";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useToast } from "@/use-toast";
@@ -288,6 +289,11 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
   const isBrainPage = currentPath === "/";
   const isTutorPage = currentPath === "/tutor";
   const isWorkspaceRoute = isBrainPage || isTutorPage;
+  // User-controlled full-canvas mode (Tutor only). OFF by default →
+  // page behaves exactly as before. ON → viewport-locked, chrome
+  // hidden, canvas fills the screen.
+  const canvasLockOn = useCanvasLocked();
+  const canvasLockActive = isTutorPage && canvasLockOn;
   const backdropImageClassName = isTutorPage
     ? "absolute inset-0 scale-[1.02] opacity-[0.56]"
     : "absolute inset-0 scale-[1.08] blur-[10px] opacity-[0.16]";
@@ -777,7 +783,11 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <div
       className={cn(
-        "relative flex min-h-[100dvh] w-full min-w-0 flex-col overflow-x-hidden bg-background font-terminal text-foreground",
+        "relative flex w-full min-w-0 flex-col overflow-x-hidden bg-background font-terminal text-foreground",
+        // Canvas-lock ON (Tutor, user toggled): viewport-locked app
+        // shell. OFF / any other route: unchanged document-scroll growth
+        // (byte-identical to before this feature).
+        canvasLockActive ? "h-[100dvh] overflow-hidden" : "min-h-[100dvh]",
       )}
     >
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
@@ -803,7 +813,11 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
       {/* Top Nav — static header attached to normal page flow */}
       <header
         data-header-shell
-        className="relative z-20 border-b-4 border-red-700 shadow-[0_10px_30px_rgba(220,38,38,0.4)]"
+        className={cn(
+          "relative z-20 border-b-4 border-red-700 shadow-[0_10px_30px_rgba(220,38,38,0.4)]",
+          // Full-canvas lock: hide global nav for a full-bleed workspace.
+          canvasLockActive && "hidden",
+        )}
         data-header-state="expanded"
       >
         {/* Banner Image Background */}
@@ -1375,18 +1389,33 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
       </button>
 
       {/* Hero portal — PageScaffold renders the page hero here, outside main */}
-      <div id="page-hero-portal" className="relative z-10 w-full min-w-0 overflow-x-hidden" />
+      <div
+        id="page-hero-portal"
+        className={cn(
+          "relative z-10 w-full min-w-0 overflow-x-hidden",
+          canvasLockActive && "hidden",
+        )}
+      />
 
       <main
         className={cn(
           "relative z-10 w-full min-w-0 flex-1 overflow-x-hidden",
-          isWorkspaceRoute ? "" : "px-2 py-3 sm:px-3 md:px-5 md:py-4",
+          // Canvas-lock ON: bounded flex child so the workspace scrolls
+          // internally. OFF: byte-identical to before — Brain no
+          // padding, non-workspace padded/content-growing.
+          canvasLockActive
+            ? "min-h-0 overflow-y-hidden"
+            : isWorkspaceRoute
+              ? ""
+              : "px-2 py-3 sm:px-3 md:px-5 md:py-4",
         )}
       >
         <div
           className={cn(
             "page-enter",
-            isWorkspaceRoute
+            canvasLockActive
+              ? "min-h-0 flex flex-col flex-1 h-full"
+              : isWorkspaceRoute
                 ? "min-h-full flex flex-col"
                 : "app-route-shell min-h-full",
           )}
@@ -1396,7 +1425,12 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* Footer */}
-      <footer className="z-20 border-t border-secondary bg-black/95 py-2">
+      <footer
+        className={cn(
+          "z-20 border-t border-secondary bg-black/95 py-2",
+          canvasLockActive && "hidden",
+        )}
+      >
         <div className="container mx-auto px-4 flex justify-between items-center text-xs text-muted-foreground font-terminal">
           <div className="flex gap-4">
             <span>
